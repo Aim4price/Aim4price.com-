@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import AppHeader from '../components/AppHeader';
 import styles from './page.module.css';
 
 function FacebookIcon() {
@@ -27,34 +28,7 @@ function LinkedInIcon() {
 export default function HomePage() {
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.headerInner}>
-          <Link href="/" className={styles.brand}>
-            <Image src="/brand/aim4price-mark-black.png" alt="Aim4price" width={34} height={28} priority />
-            <span className={styles.brandText}>Aim4price</span>
-          </Link>
-
-          <nav className={styles.nav} aria-label="Primary navigation">
-            <Link href="/" className={`${styles.navLink} ${styles.navLinkActive}`}>
-              Home
-            </Link>
-            <Link href="/valuation" className={styles.navLink}>
-              Valuation
-            </Link>
-            <span className={styles.navLinkMuted}>Asset Register</span>
-            <span className={styles.navLinkMuted}>Marketplace</span>
-          </nav>
-
-          <div className={styles.headerActions}>
-            <a href="#" className={styles.signupButton}>
-              Sign Up
-            </a>
-            <a href="#" className={styles.loginButton}>
-              Login
-            </a>
-          </div>
-        </div>
-      </header>
+      <AppHeader active="home" />
 
       <section className={styles.heroSection}>
         <div className={styles.shell}>
@@ -258,8 +232,8 @@ export default function HomePage() {
               </div>
 
               <p className={styles.footerMade}>
-                Made with <span aria-hidden="true">💚</span> by Aim4price <span className={styles.dot}>•</span> in South
-                Africa
+                Made with <span aria-hidden="true">💚</span> by Aim4price <span className={styles.dot}>•</span> in
+                South Africa
               </p>
             </div>
           </div>
