@@ -185,7 +185,7 @@ export default function HomePage() {
       <section className={styles.ctaSection}>
         <div className={styles.shellNarrow}>
           <div className={styles.ctaPanel}>
-            <h2 className={styles.ctaTitle}>Get started — create an asset register.</h2>
+            <h2 className={styles.ctaTitle}>Get started - Create an asset register.</h2>
             <p className={styles.ctaText}>
               Open your account, add your machinery, and keep valuations organised in one place.
             </p>
