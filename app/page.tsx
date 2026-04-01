@@ -69,7 +69,7 @@ export default function HomePage() {
               </h1>
 
               <p className={styles.heroText}>
-                Discover your machinery values, build an asset register and buy &amp; sell with confidence —
+                Discover your machinery values, build an asset register and buy &amp; sell with confidence -
                 all on one easy-to-use platform.
               </p>
 
@@ -80,7 +80,7 @@ export default function HomePage() {
               </div>
 
               <p className={styles.heroNote}>
-                Trusted by farmers, insurance brokers, and dealers across South Africa.
+                Trusted by farmers, insurance brokers, and dealers across ZA.
               </p>
             </div>
 
@@ -267,7 +267,7 @@ export default function HomePage() {
 
         <div className={styles.footerBottom}>
           <div className={styles.shell}>
-            <p className={styles.copyright}>© 2024 Aim4price. All rights reserved.</p>
+            <p className={styles.copyright}>© 2026 Aim4price. All rights reserved.</p>
           </div>
         </div>
       </footer>
