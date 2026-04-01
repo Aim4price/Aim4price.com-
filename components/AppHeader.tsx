@@ -6,26 +6,34 @@ type ActivePage = 'home' | 'valuation' | 'asset-register' | 'marketplace';
 
 type AppHeaderProps = {
   active: ActivePage;
-  ctaHref?: string;
-  ctaLabel?: string;
+  signupHref?: string;
+  loginHref?: string;
 };
 
 const navItems: Array<{ key: ActivePage; href: string; label: string }> = [
   { key: 'home', href: '/', label: 'Home' },
   { key: 'valuation', href: '/valuation', label: 'Valuation' },
+  { key: 'asset-register', href: '/asset-register', label: 'Asset Register' },
+  { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
 ];
 
 export default function AppHeader({
   active,
-  ctaHref = '/valuation',
-  ctaLabel = 'Start valuation',
+  signupHref = '#',
+  loginHref = '#',
 }: AppHeaderProps) {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
         <Link href="/" className={styles.brand}>
           <span className={styles.brandMarkWrap}>
-            <Image src="/brand/aim4price-mark.png" alt="Aim4price" width={44} height={34} priority />
+            <Image
+              src="/brand/aim4price-mark-black.png"
+              alt="Aim4price"
+              width={34}
+              height={28}
+              priority
+            />
           </span>
           <span className={styles.brandText}>Aim4price</span>
         </Link>
@@ -43,9 +51,12 @@ export default function AppHeader({
         </nav>
 
         <div className={styles.actions}>
-          <Link href={ctaHref} className={styles.primaryButton}>
-            {ctaLabel}
-          </Link>
+          <a href={signupHref} className={styles.signupButton}>
+            Sign Up
+          </a>
+          <a href={loginHref} className={styles.loginButton}>
+            Login
+          </a>
         </div>
       </div>
     </header>
