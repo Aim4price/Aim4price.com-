@@ -43,9 +43,10 @@ export type TractorCatalogRow = {
   imageSrc: string;
 };
 
-export type DepartmentBand = {
+export type DepartmentAgBand = {
   id: string;
   label: string;
+  tractorType: TractorType;
   minPowerKw: number;
   maxPowerKw: number;
   minKw: number;
@@ -61,6 +62,8 @@ export type DepartmentBand = {
   salvageFloorPct: number;
   minimumValuePercent: number;
 };
+
+export type DepartmentBand = DepartmentAgBand;
 
 export type MarketplaceListing = {
   id: string;
@@ -82,12 +85,20 @@ export type MarketplaceListing = {
   area: string;
   location: string;
   sourceName: string;
+  sourceUrl?: string;
   dateAdvertised: string;
   advertisedPriceExVat: number;
   priceExVat: number;
   askingPriceExVat: number;
   price: number;
   imageSrc: string;
+};
+
+export type EquipmentTypeOption = {
+  key: 'tractor' | 'combine' | 'baler' | 'sprayer';
+  label: string;
+  imageSrc: string;
+  active: boolean;
 };
 
 const DEFAULT_IMAGE = '/brand/Tractor.png';
@@ -424,25 +435,28 @@ export const tractors: TractorCatalogRow[] = [
   }),
 ];
 
-function departmentBand(input: {
+function createDepartmentBand(input: {
   id: string;
+  tractorType: TractorType;
   minPowerKw: number;
   maxPowerKw: number;
   drive: DriveType;
   replacementPriceExVat: number;
   hourlyDepreciationExVat: number;
   salvageFloorPercent: number;
-}): DepartmentBand {
-  const midpointKw = Math.round((input.minPowerKw + input.maxPowerKw) / 2);
+  powerKw?: number;
+}): DepartmentAgBand {
+  const representativeKw = input.powerKw ?? Math.round((input.minPowerKw + input.maxPowerKw) / 2);
 
   return {
     id: input.id,
-    label: `${input.minPowerKw}-${input.maxPowerKw} kW ${input.drive.toUpperCase()}`,
+    label: `${input.tractorType} ${input.minPowerKw}-${input.maxPowerKw} kW ${input.drive.toUpperCase()}`,
+    tractorType: input.tractorType,
     minPowerKw: input.minPowerKw,
     maxPowerKw: input.maxPowerKw,
     minKw: input.minPowerKw,
     maxKw: input.maxPowerKw,
-    powerKw: midpointKw,
+    powerKw: representativeKw,
     drive: input.drive,
     replacementPriceExVat: input.replacementPriceExVat,
     replacementExVat: input.replacementPriceExVat,
@@ -455,9 +469,10 @@ function departmentBand(input: {
   };
 }
 
-export const departmentBands: DepartmentBand[] = [
-  departmentBand({
-    id: '2wd-60-79',
+export const departmentBands: DepartmentAgBand[] = [
+  createDepartmentBand({
+    id: 'field-2wd-60-79',
+    tractorType: 'field',
     minPowerKw: 60,
     maxPowerKw: 79,
     drive: '2wd',
@@ -465,8 +480,9 @@ export const departmentBands: DepartmentBand[] = [
     hourlyDepreciationExVat: 18,
     salvageFloorPercent: 0.36,
   }),
-  departmentBand({
-    id: '2wd-80-99',
+  createDepartmentBand({
+    id: 'field-2wd-80-99',
+    tractorType: 'field',
     minPowerKw: 80,
     maxPowerKw: 99,
     drive: '2wd',
@@ -474,8 +490,9 @@ export const departmentBands: DepartmentBand[] = [
     hourlyDepreciationExVat: 21,
     salvageFloorPercent: 0.35,
   }),
-  departmentBand({
-    id: '4wd-50-69',
+  createDepartmentBand({
+    id: 'field-4wd-50-69',
+    tractorType: 'field',
     minPowerKw: 50,
     maxPowerKw: 69,
     drive: '4wd',
@@ -483,8 +500,9 @@ export const departmentBands: DepartmentBand[] = [
     hourlyDepreciationExVat: 20,
     salvageFloorPercent: 0.37,
   }),
-  departmentBand({
-    id: '4wd-70-89',
+  createDepartmentBand({
+    id: 'field-4wd-70-89',
+    tractorType: 'field',
     minPowerKw: 70,
     maxPowerKw: 89,
     drive: '4wd',
@@ -492,8 +510,9 @@ export const departmentBands: DepartmentBand[] = [
     hourlyDepreciationExVat: 26,
     salvageFloorPercent: 0.35,
   }),
-  departmentBand({
-    id: '4wd-90-109',
+  createDepartmentBand({
+    id: 'field-4wd-90-109',
+    tractorType: 'field',
     minPowerKw: 90,
     maxPowerKw: 109,
     drive: '4wd',
@@ -501,14 +520,45 @@ export const departmentBands: DepartmentBand[] = [
     hourlyDepreciationExVat: 32,
     salvageFloorPercent: 0.34,
   }),
-  departmentBand({
-    id: '4wd-110-129',
+  createDepartmentBand({
+    id: 'field-4wd-110-129',
+    tractorType: 'field',
     minPowerKw: 110,
     maxPowerKw: 129,
     drive: '4wd',
     replacementPriceExVat: 1360000,
     hourlyDepreciationExVat: 38,
     salvageFloorPercent: 0.33,
+  }),
+  createDepartmentBand({
+    id: 'orchard-4wd-50-69',
+    tractorType: 'orchard',
+    minPowerKw: 50,
+    maxPowerKw: 69,
+    drive: '4wd',
+    replacementPriceExVat: 780000,
+    hourlyDepreciationExVat: 20,
+    salvageFloorPercent: 0.37,
+  }),
+  createDepartmentBand({
+    id: 'orchard-4wd-70-89',
+    tractorType: 'orchard',
+    minPowerKw: 70,
+    maxPowerKw: 89,
+    drive: '4wd',
+    replacementPriceExVat: 980000,
+    hourlyDepreciationExVat: 26,
+    salvageFloorPercent: 0.35,
+  }),
+  createDepartmentBand({
+    id: 'orchard-4wd-90-109',
+    tractorType: 'orchard',
+    minPowerKw: 90,
+    maxPowerKw: 109,
+    drive: '4wd',
+    replacementPriceExVat: 1180000,
+    hourlyDepreciationExVat: 32,
+    salvageFloorPercent: 0.34,
   }),
 ];
 
@@ -525,6 +575,7 @@ function listing(input: {
   province: string;
   area: string;
   sourceName: string;
+  sourceUrl?: string;
   dateAdvertised: string;
   advertisedPriceExVat: number;
 }): MarketplaceListing {
@@ -552,6 +603,7 @@ function listing(input: {
     area: input.area,
     location: `${input.area}, ${input.province}`,
     sourceName: input.sourceName,
+    sourceUrl: input.sourceUrl,
     dateAdvertised: input.dateAdvertised,
     advertisedPriceExVat: input.advertisedPriceExVat,
     priceExVat: input.advertisedPriceExVat,
@@ -804,7 +856,7 @@ export const listings: MarketplaceListing[] = [
   }),
 ];
 
-export const equipmentTypes = [
+export const equipmentTypes: EquipmentTypeOption[] = [
   {
     key: 'tractor',
     label: 'Tractor',
