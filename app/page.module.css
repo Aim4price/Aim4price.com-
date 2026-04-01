@@ -17,7 +17,7 @@
   position: sticky;
   top: 0;
   z-index: 80;
-  background: rgba(251, 252, 251, 0.9);
+  background: rgba(251, 252, 251, 0.92);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--line-soft);
 }
@@ -36,7 +36,7 @@
 .footerBrand {
   display: inline-flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.7rem;
   text-decoration: none;
   color: var(--text-strong);
 }
@@ -139,36 +139,40 @@
   font-size: 0.94rem;
   font-weight: 600;
   color: #31413c;
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(18, 45, 37, 0.11);
 }
 
 .heroSection {
-  padding: 3.3rem 0 3.05rem;
+  padding: 3.35rem 0 3.9rem;
+  background:
+    radial-gradient(circle at top left, rgba(23, 77, 62, 0.05), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, rgba(247, 249, 248, 0.55) 100%);
 }
 
 .heroGrid {
   display: grid;
   grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
   align-items: center;
-  gap: 3.8rem;
+  gap: 3.9rem;
 }
 
 .heroCopy {
-  max-width: 31.5rem;
+  max-width: 32rem;
 }
 
 .heroTitle {
   margin: 0;
-  font-size: clamp(2.95rem, 4vw, 4.15rem);
-  line-height: 1.11;
+  font-size: clamp(3rem, 4vw, 4.15rem);
+  line-height: 1.08;
   font-weight: 700;
   letter-spacing: -0.055em;
   color: #243c35;
 }
 
 .heroText {
-  margin: 1.38rem 0 0;
+  margin: 1.45rem 0 0;
+  max-width: 32rem;
   font-size: 1.12rem;
   line-height: 1.84;
   color: #6f7974;
@@ -176,7 +180,7 @@
 }
 
 .heroActions {
-  margin-top: 1.55rem;
+  margin-top: 1.65rem;
 }
 
 .primaryCta {
@@ -191,42 +195,30 @@
 }
 
 .heroNote {
-  margin: 0.95rem 0 0;
-  font-size: 0.985rem;
+  margin: 1rem 0 0;
+  max-width: 34rem;
+  font-size: 0.99rem;
   color: #7b8580;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .heroVisual {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: stretch;
-}
-
-.heroLogoWrap {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding-left: 0.15rem;
-}
-
-.heroLogo {
-  width: auto;
-  height: auto;
-  max-width: 18.5rem;
+  justify-content: flex-end;
 }
 
 .heroImageFrame {
   position: relative;
   width: 100%;
   max-width: 43rem;
-  min-height: 23rem;
+  min-height: 23.5rem;
   overflow: hidden;
-  border-radius: 1.7rem;
+  border-radius: 1.8rem;
   background: #e7ece9;
-  box-shadow: 0 22px 42px rgba(16, 42, 34, 0.09);
+  border: 1px solid rgba(18, 45, 37, 0.06);
+  box-shadow:
+    0 24px 46px rgba(16, 42, 34, 0.09),
+    0 3px 10px rgba(16, 42, 34, 0.04);
 }
 
 .heroImageFrame::after {
@@ -234,8 +226,8 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 22%),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 24%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 24%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 26%);
   pointer-events: none;
   z-index: 1;
 }
@@ -243,11 +235,13 @@
 .heroImage {
   object-fit: cover;
   object-position: center;
-  filter: saturate(1.02) contrast(1.01) brightness(1.01);
 }
 
 .featureSection {
-  padding: 0.9rem 0 3.25rem;
+  padding: 3.25rem 0 3.55rem;
+  background: #f7f9f8;
+  border-top: 1px solid rgba(18, 45, 37, 0.05);
+  border-bottom: 1px solid rgba(18, 45, 37, 0.05);
 }
 
 .featureGrid {
@@ -257,13 +251,13 @@
 }
 
 .featureCard {
-  min-height: 18rem;
-  padding: 1.55rem 1.35rem 1.45rem;
-  border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(18, 45, 37, 0.04);
+  min-height: 18.2rem;
+  padding: 1.65rem 1.45rem 1.5rem;
+  border-radius: 1.4rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(18, 45, 37, 0.05);
   box-shadow:
-    0 14px 30px rgba(18, 45, 37, 0.045),
+    0 16px 34px rgba(18, 45, 37, 0.045),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
   display: flex;
   flex-direction: column;
@@ -277,7 +271,7 @@
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: linear-gradient(180deg, #f7f8f7 0%, #f1f3f2 100%);
+  background: linear-gradient(180deg, #f7f8f7 0%, #f0f3f2 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
   overflow: hidden;
 }
@@ -289,7 +283,7 @@
 }
 
 .featureTitle {
-  margin: 1.15rem 0 0;
+  margin: 1.2rem 0 0;
   font-size: 1rem;
   line-height: 1.5;
   font-weight: 700;
@@ -298,50 +292,72 @@
 }
 
 .featureText {
-  margin: 0.82rem 0 0;
+  margin: 0.88rem 0 0;
+  max-width: 18rem;
   font-size: 0.98rem;
-  line-height: 1.72;
+  line-height: 1.74;
   color: #707b76;
 }
 
 .statementSection {
-  padding: 2.65rem 0 3.35rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.52) 100%);
-  border-top: 1px solid rgba(18, 45, 37, 0.04);
-  border-bottom: 1px solid rgba(18, 45, 37, 0.04);
+  padding: 4rem 0 4.15rem;
+  background: linear-gradient(180deg, #eef4f1 0%, #f4f8f6 100%);
+  border-top: 1px solid rgba(18, 45, 37, 0.05);
+  border-bottom: 1px solid rgba(18, 45, 37, 0.05);
 }
 
 .statementTitle {
   margin: 0;
   text-align: center;
-  font-size: clamp(1.95rem, 3vw, 2.8rem);
-  line-height: 1.42;
+  font-size: clamp(2rem, 3vw, 2.9rem);
+  line-height: 1.4;
   font-weight: 700;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.045em;
   color: #233c35;
 }
 
 .statementText {
   max-width: 57rem;
-  margin: 1.2rem auto 0;
+  margin: 1.3rem auto 0;
   text-align: center;
   font-size: 1.08rem;
-  line-height: 1.88;
+  line-height: 1.9;
   color: #6e7974;
 }
 
 .ctaSection {
-  padding: 3rem 0 3.65rem;
+  padding: 4rem 0 4.15rem;
+  background: #ffffff;
+}
+
+.ctaPanel {
+  padding: 2.5rem 2.2rem;
+  border-radius: 1.6rem;
+  background:
+    linear-gradient(180deg, rgba(247, 250, 248, 0.96) 0%, rgba(241, 246, 243, 0.96) 100%);
+  border: 1px solid rgba(18, 45, 37, 0.06);
+  box-shadow:
+    0 20px 42px rgba(18, 45, 37, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
 .ctaTitle {
   margin: 0;
   text-align: center;
-  font-size: clamp(1.95rem, 3vw, 2.55rem);
-  line-height: 1.22;
+  font-size: clamp(2rem, 3vw, 2.65rem);
+  line-height: 1.2;
   font-weight: 700;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.045em;
   color: #223b34;
+}
+
+.ctaText {
+  max-width: 42rem;
+  margin: 1rem auto 0;
+  text-align: center;
+  font-size: 1.04rem;
+  line-height: 1.8;
+  color: #6f7974;
 }
 
 .ctaButtons {
@@ -349,7 +365,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.85rem;
-  margin-top: 1.5rem;
+  margin-top: 1.55rem;
   flex-wrap: wrap;
 }
 
@@ -360,15 +376,14 @@
   font-size: 1rem;
   font-weight: 700;
   color: #30413b;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(18, 45, 37, 0.09);
   box-shadow: 0 8px 18px rgba(18, 45, 37, 0.05);
 }
 
 .footer {
-  margin-top: 0.8rem;
   border-top: 1px solid rgba(18, 45, 37, 0.06);
-  background: linear-gradient(180deg, rgba(246, 249, 247, 0.82) 0%, rgba(239, 243, 241, 0.96) 100%);
+  background: linear-gradient(180deg, rgba(246, 249, 247, 0.9) 0%, rgba(239, 243, 241, 0.98) 100%);
 }
 
 .footerTop {
@@ -376,7 +391,7 @@
   grid-template-columns: 1.05fr 1.45fr auto;
   gap: 2rem;
   align-items: start;
-  padding: 1.8rem 0 1.55rem;
+  padding: 1.85rem 0 1.55rem;
 }
 
 .footerBrandCol {
@@ -467,7 +482,7 @@
 @media (max-width: 1100px) {
   .heroGrid {
     grid-template-columns: 1fr;
-    gap: 2.6rem;
+    gap: 2.65rem;
   }
 
   .heroCopy {
@@ -475,12 +490,7 @@
   }
 
   .heroVisual {
-    align-items: center;
-  }
-
-  .heroLogoWrap {
     justify-content: center;
-    padding-left: 0;
   }
 
   .heroImageFrame {
@@ -520,8 +530,28 @@
     justify-content: flex-start;
   }
 
+  .heroSection {
+    padding: 2.5rem 0 3rem;
+  }
+
+  .featureSection {
+    padding: 2.6rem 0 2.9rem;
+  }
+
+  .statementSection {
+    padding: 3.1rem 0 3.2rem;
+  }
+
+  .ctaSection {
+    padding: 3rem 0 3.2rem;
+  }
+
   .featureCard {
     min-height: auto;
+  }
+
+  .ctaPanel {
+    padding: 2rem 1.3rem;
   }
 }
 
@@ -532,27 +562,29 @@
     width: min(100% - 1.4rem, 1180px);
   }
 
-  .heroSection {
-    padding-top: 2.2rem;
-  }
-
   .heroTitle {
     font-size: 2.45rem;
-    line-height: 1.14;
+    line-height: 1.1;
   }
 
   .heroText,
-  .statementText {
+  .statementText,
+  .ctaText {
     font-size: 1rem;
-  }
-
-  .heroLogo {
-    max-width: 15rem;
   }
 
   .heroImageFrame {
     min-height: 12rem;
     border-radius: 1.15rem;
+  }
+
+  .featureCard {
+    padding: 1.45rem 1.1rem 1.3rem;
+  }
+
+  .featureIconCircle {
+    width: 5.4rem;
+    height: 5.4rem;
   }
 
   .primaryCta,
