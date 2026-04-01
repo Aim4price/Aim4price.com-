@@ -216,13 +216,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className={styles.statementSection}>
+      <section className={styles.statementSection} id="platform">
         <div className={styles.shellNarrow}>
           <h2 className={styles.statementTitle}>
             Built for owners wanting to know their machinery values.
             <br />
             Built on provable data.
           </h2>
+
           <p className={styles.statementText}>
             Aim4price is a one-stop platform for agricultural and industrial equipment pricing. Build and manage
             your asset register, get instant, data-driven valuations, and easily move your equipment to the
@@ -239,7 +240,7 @@ export default function HomePage() {
             <Link href="/valuation" className={styles.primaryCta}>
               Sign Up For Free
             </Link>
-            <a href="#" className={styles.secondaryCta}>
+            <a href="#platform" className={styles.secondaryCta}>
               Learn More
             </a>
           </div>
