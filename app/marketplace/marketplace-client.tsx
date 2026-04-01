@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { useMemo, useState, type ChangeEvent } from 'react';
+import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 import { listings } from '../../lib/tractor-data';
 import { money } from '../../lib/tractor-logic';
@@ -56,19 +56,7 @@ export default function MarketplaceClient({
 
   return (
     <main className={styles.page}>
-      <header className={styles.top}>
-        <Link href="/" className={styles.brand}>
-          ← Aim4price
-        </Link>
-
-        <nav className={styles.nav}>
-          <Link href="/valuation">Valuation</Link>
-          <Link href="/asset-register">Asset Register</Link>
-          <Link href="/marketplace" className={styles.active}>
-            Marketplace
-          </Link>
-        </nav>
-      </header>
+      <AppHeader active="marketplace" />
 
       <section className={styles.wrap}>
         <div>
@@ -137,12 +125,7 @@ export default function MarketplaceClient({
               </div>
 
               {listing.sourceUrl ? (
-                <a
-                  href={listing.sourceUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={styles.secondary}
-                >
+                <a href={listing.sourceUrl} target="_blank" rel="noreferrer" className={styles.secondary}>
                   View source
                 </a>
               ) : (
