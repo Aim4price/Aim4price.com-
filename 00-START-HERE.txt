@@ -1,0 +1,5 @@
+1. Unzip this folder.
+2. Push it to a new GitHub repository.
+3. Connect that repository to Railway.
+4. Railway should run the normal Next.js install/build/start flow.
+5. Open / for the homepage or /valuation for the tractors-first valuation flow.

@@ -1,0 +1,6 @@
+Railway runtime fix:
+- build = npm run build
+- start = npm start
+- no custom PORT variable needed unless you want to force 3000
+- if Railway asks for a target port for the public domain and you set PORT=3000, use 3000
+- if you do not set PORT manually, use the port Railway detects for the running service
