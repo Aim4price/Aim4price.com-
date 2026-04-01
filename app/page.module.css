@@ -1,0 +1,356 @@
+.page {
+  position: relative;
+  overflow: hidden;
+}
+
+.container {
+  width: min(100% - 2rem, 1180px);
+  margin-inline: auto;
+}
+
+.heroSection {
+  padding: clamp(3rem, 6vw, 5.5rem) 0 3.5rem;
+}
+
+.heroGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(2rem, 4vw, 3.5rem);
+}
+
+.heroCopy {
+  max-width: 40rem;
+}
+
+.eyebrow,
+.sectionEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(23, 77, 62, 0.08);
+  color: var(--brand-700);
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.heroTitle {
+  margin: 1.2rem 0 0;
+  font-size: clamp(2.8rem, 5.5vw, 5rem);
+  line-height: 0.98;
+  letter-spacing: -0.06em;
+  color: var(--text-strong);
+}
+
+.heroBody,
+.sectionBody,
+.ctaBody {
+  margin: 1.35rem 0 0;
+  max-width: 38rem;
+  font-size: clamp(1.04rem, 1.45vw, 1.2rem);
+  line-height: 1.72;
+  color: var(--text-muted);
+}
+
+.heroActions,
+.ctaActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-top: 1.5rem;
+}
+
+.primaryButton,
+.secondaryButton,
+.inlineLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0.9rem 1.25rem;
+  border-radius: 0.95rem;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.primaryButton {
+  color: #fff;
+  background: linear-gradient(180deg, var(--brand-700), var(--brand-900));
+  box-shadow: 0 18px 36px rgba(17, 63, 50, 0.18);
+}
+
+.secondaryButton {
+  color: var(--text-strong);
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(14, 36, 31, 0.1);
+  box-shadow: 0 12px 26px rgba(14, 36, 31, 0.08);
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.8rem;
+}
+
+.metricCard,
+.featureCard,
+.flowCard,
+.showcaseCard,
+.ctaCard {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(16, 42, 34, 0.08);
+  border-radius: 1.5rem;
+  box-shadow: 0 20px 40px rgba(16, 42, 34, 0.08);
+}
+
+.metricCard {
+  padding: 1.2rem;
+}
+
+.metricLabel {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.metricValue {
+  display: block;
+  margin-top: 0.55rem;
+  font-size: 1.45rem;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.metricCard p,
+.featureCard p,
+.flowCard p,
+.showcaseCard p {
+  margin: 0.7rem 0 0;
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+
+.heroVisual {
+  position: relative;
+  padding-bottom: 2rem;
+}
+
+.heroPhotoFrame {
+  position: relative;
+  min-height: 520px;
+  border-radius: 2rem;
+  overflow: hidden;
+  border: 1px solid rgba(16, 42, 34, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(235, 241, 237, 0.78));
+  box-shadow: 0 34px 64px rgba(16, 42, 34, 0.14);
+}
+
+.heroImage,
+.showcaseImage {
+  object-fit: cover;
+}
+
+.floatingCard {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 0;
+  width: min(100%, 21rem);
+  padding: 1.2rem;
+  border-radius: 1.45rem;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(16, 42, 34, 0.08);
+  box-shadow: 0 24px 48px rgba(16, 42, 34, 0.14);
+}
+
+.floatingLabel {
+  display: inline-flex;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(23, 77, 62, 0.08);
+  color: var(--brand-700);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.floatingTitle {
+  margin: 0.85rem 0 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.04em;
+}
+
+.floatingMeta {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted);
+}
+
+.floatingValues {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.floatingValues span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.floatingValues strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1.15rem;
+}
+
+.coverage {
+  letter-spacing: 0.04em;
+}
+
+.section,
+.sectionAlt,
+.ctaSection {
+  padding: 0 0 4rem;
+}
+
+.sectionAlt {
+  padding-top: 0.5rem;
+}
+
+.sectionHeader {
+  max-width: 48rem;
+}
+
+.sectionTitle,
+.ctaTitle {
+  margin: 1rem 0 0;
+  font-size: clamp(2rem, 4vw, 3.05rem);
+  line-height: 1.04;
+  letter-spacing: -0.05em;
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.featureCard,
+.flowCard,
+.showcaseCard {
+  padding: 1.45rem;
+}
+
+.featureCard h3,
+.flowCard h3,
+.showcaseCard h3 {
+  margin: 0;
+  font-size: 1.18rem;
+  letter-spacing: -0.03em;
+}
+
+.showcaseGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.88fr);
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.flowGrid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.flowNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  background: rgba(23, 77, 62, 0.08);
+  color: var(--brand-700);
+  font-weight: 800;
+}
+
+
+.showcaseCopy {
+  max-width: 42rem;
+}
+
+.showcasePanel {
+  display: grid;
+  gap: 1rem;
+}
+
+.showcaseImageWrap {
+  position: relative;
+  min-height: 360px;
+  border-radius: 1.8rem;
+  overflow: hidden;
+  border: 1px solid rgba(16, 42, 34, 0.08);
+  box-shadow: 0 30px 58px rgba(16, 42, 34, 0.12);
+}
+
+.inlineLink {
+  width: fit-content;
+  min-height: auto;
+  padding: 0;
+  border-radius: 0;
+  color: var(--brand-700);
+  background: transparent;
+  box-shadow: none;
+  margin-top: 1rem;
+}
+
+.ctaCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.25rem;
+  padding: 1.65rem;
+  align-items: center;
+}
+
+.ctaBody code {
+  padding: 0.15rem 0.38rem;
+  border-radius: 0.4rem;
+  background: rgba(23, 77, 62, 0.08);
+}
+
+@media (max-width: 1080px) {
+  .metricGrid,
+  .featureGrid,
+  .floatingValues {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 960px) {
+  .heroGrid,
+  .showcaseGrid,
+  .ctaCard {
+    grid-template-columns: 1fr;
+  }
+
+  .heroPhotoFrame {
+    min-height: 420px;
+  }
+
+  .floatingCard {
+    position: static;
+    width: 100%;
+    margin-top: 1rem;
+  }
+}
