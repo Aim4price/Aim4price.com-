@@ -1,0 +1,81 @@
+.footer {
+  margin-top: 5rem;
+  border-top: 1px solid rgba(16, 42, 34, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(244, 246, 243, 0.98));
+}
+
+.shell {
+  width: min(100% - 2rem, 1180px);
+  margin-inline: auto;
+}
+
+.brandColumn {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.brandName {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  color: var(--text-strong);
+}
+
+.brandText {
+  margin: 0;
+  max-width: 26rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+.linksGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+.linksGrid h3 {
+  margin: 0 0 1rem;
+  font-size: 0.94rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.linksGrid a,
+.linksGrid span {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: var(--text-strong);
+  text-decoration: none;
+  opacity: 0.86;
+}
+
+.linksGrid a:hover {
+  color: var(--brand-700);
+}
+
+.footer > .shell {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: clamp(2rem, 4vw, 5rem);
+  padding: 3rem 0 2.2rem;
+}
+
+.metaRow {
+  border-top: 1px solid rgba(16, 42, 34, 0.08);
+}
+
+.metaRow .shell {
+  padding: 1rem 0 1.4rem;
+  color: var(--text-muted);
+  font-size: 0.94rem;
+}
+
+@media (max-width: 820px) {
+  .footer > .shell,
+  .linksGrid {
+    grid-template-columns: 1fr;
+  }
+}

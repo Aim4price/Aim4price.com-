@@ -1,0 +1,114 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  backdrop-filter: blur(16px);
+  background: rgba(247, 249, 247, 0.88);
+  border-bottom: 1px solid rgba(14, 36, 31, 0.08);
+}
+
+.inner {
+  width: min(100% - 2rem, 1180px);
+  min-height: 5rem;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  color: var(--text-strong);
+  text-decoration: none;
+}
+
+.brandMarkWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(23, 77, 62, 0.1), rgba(23, 77, 62, 0.02));
+  border: 1px solid rgba(23, 77, 62, 0.1);
+}
+
+.brandText {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.navLink {
+  position: relative;
+  padding: 0.8rem 0.95rem;
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-weight: 650;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.navLink:hover {
+  color: var(--text-strong);
+  background: rgba(23, 77, 62, 0.05);
+}
+
+.navLinkActive {
+  color: var(--text-strong);
+}
+
+.navLinkActive::after {
+  content: '';
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 0.25rem;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--brand-700), rgba(23, 77, 62, 0.42));
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.9rem;
+  padding: 0.85rem 1.2rem;
+  border-radius: 0.95rem;
+  text-decoration: none;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  background: linear-gradient(180deg, var(--brand-700), var(--brand-900));
+  box-shadow: 0 16px 32px rgba(17, 63, 50, 0.18);
+}
+
+@media (max-width: 960px) {
+  .inner {
+    grid-template-columns: 1fr;
+    padding: 0.85rem 0 1rem;
+  }
+
+  .nav,
+  .actions {
+    justify-content: flex-start;
+  }
+}
