@@ -4,11 +4,11 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Aim4price Tractor Valuations',
+    default: 'Aim4price – Agricultural & Industrial Machinery Pricing',
     template: '%s | Aim4price',
   },
   description:
-    'Aim4price tractor valuation prototype with homepage improvements, a cleaner valuation flow, and Railway-friendly deployment settings.',
+    'Build asset registers, determine true machinery values, and buy or sell with confidence — all on one easy-to-use platform.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
