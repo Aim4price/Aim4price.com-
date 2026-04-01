@@ -8,6 +8,8 @@ type AppHeaderProps = {
   active: ActivePage;
   signupHref?: string;
   loginHref?: string;
+  ctaHref?: string;
+  ctaLabel?: string;
 };
 
 const navItems: Array<{ key: ActivePage; href: string; label: string }> = [
@@ -26,15 +28,13 @@ export default function AppHeader({
     <header className={styles.header}>
       <div className={styles.inner}>
         <Link href="/" className={styles.brand}>
-          <span className={styles.brandMarkWrap}>
-            <Image
-              src="/brand/aim4price-mark-black.png"
-              alt="Aim4price"
-              width={34}
-              height={28}
-              priority
-            />
-          </span>
+          <Image
+            src="/brand/aim4price-mark-black.png"
+            alt="Aim4price"
+            width={34}
+            height={28}
+            priority
+          />
           <span className={styles.brandText}>Aim4price</span>
         </Link>
 
