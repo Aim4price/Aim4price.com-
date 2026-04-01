@@ -122,9 +122,9 @@ export default function HomePage() {
               </h1>
 
               <p className={styles.heroText}>
-                Build asset registers, determine true machinery values,
+                Determine true machinery values, build asset registers
                 <br />
-                and buy or sell with confidence —
+                and buy or sell with confidence -
                 <br />
                 all on one easy-to-use platform.
               </p>
@@ -136,14 +136,14 @@ export default function HomePage() {
               </div>
 
               <p className={styles.heroNote}>
-                Trusted by farmers, contractors, and dealers across South Africa
+                Trusted by farmers, insurance brokers, and dealers across South Africa
               </p>
             </div>
 
             <div className={styles.heroVisual}>
               <div className={styles.heroImageFrame}>
                 <Image
-                  src="/images/hero-tractor.png"
+                  src="/images/hero-tractor-black.png"
                   alt="Green tractor in a field"
                   fill
                   priority
