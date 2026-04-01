@@ -61,7 +61,7 @@ export default function HomePage() {
           <div className={styles.heroGrid}>
             <div className={styles.heroCopy}>
               <h1 className={styles.heroTitle}>
-                Agricultural &amp; Industrial
+                Agri &amp; Industrial
                 <br />
                 Machinery Pricing
                 <br />
