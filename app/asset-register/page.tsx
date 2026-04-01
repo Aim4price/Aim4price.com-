@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 import { clearItems, deleteItem, loadItems, saveItem, type SavedItem } from '../../lib/register';
 import { money } from '../../lib/tractor-logic';
@@ -51,18 +51,7 @@ export default function RegisterPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.top}>
-        <Link href="/" className={styles.brand}>
-          ← Aim4price
-        </Link>
-        <nav className={styles.nav}>
-          <Link href="/valuation">Valuation</Link>
-          <Link href="/asset-register" className={styles.active}>
-            Asset Register
-          </Link>
-          <Link href="/marketplace">Marketplace</Link>
-        </nav>
-      </header>
+      <AppHeader active="asset-register" />
 
       <section className={styles.wrap}>
         <div>
@@ -99,7 +88,11 @@ export default function RegisterPage() {
                 <div key={item.id} className={styles.item}>
                   <div>
                     <strong>{item.title}</strong>
-                    <span>{item.kind === 'tractor' ? `${item.brandName} · ${item.modelName}` : item.note || 'Manual asset'}</span>
+                    <span>
+                      {item.kind === 'tractor'
+                        ? `${item.brandName} · ${item.modelName}`
+                        : item.note || 'Manual asset'}
+                    </span>
                   </div>
 
                   <div className={styles.itemRight}>
