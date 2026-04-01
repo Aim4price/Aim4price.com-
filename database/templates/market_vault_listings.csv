@@ -1,0 +1,2 @@
+id,equipment_type,brand_slug,brand_name,model_name,tractor_type,drive,cab,power_kw,year_model,hours,advertised_price_ex_vat,source_name,source_url,province,area,date_advertised
+m6,tractor,landini,Landini,Solis 20,field,4wd,open-station,13,2020,1200,145000,Prototype Market Vault,https://example.com/landini-solis20-1,Western Cape,Ceres,2026-02-21

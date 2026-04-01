@@ -1,0 +1,5 @@
+create table tractor_catalog(id text primary key, brand_slug text not null, brand_name text not null, model_name text not null, tractor_type text not null, drive text not null, cab text not null, power_kw integer not null, year_start integer not null, year_end integer not null, aim4price_replacement_ex_vat numeric(14,2) not null);
+
+create table department_ag_bands(id text primary key, tractor_type text not null, drive text not null, power_kw integer not null, replacement_price_ex_vat numeric(14,2) not null, depreciation_per_hour_ex_vat numeric(14,2) not null);
+
+create table market_vault_listings(id text primary key, equipment_type text not null default "tractor", brand_slug text not null, brand_name text not null, model_name text not null, tractor_type text not null, drive text not null, cab text not null, power_kw integer not null, year_model integer not null, hours integer not null, advertised_price_ex_vat numeric(14,2) not null, source_name text not null, source_url text not null, province text, area text, date_advertised date);
