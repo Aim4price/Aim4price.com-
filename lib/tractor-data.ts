@@ -72,6 +72,9 @@ export type MarketplaceListing = {
   tractorType: TractorType;
   drive: DriveType;
   cab: CabType;
+  powerKw: number;
+  powerHp: number;
+  horsepowerHp: number;
   yearModel: number;
   year: number;
   hours: number;
@@ -525,6 +528,10 @@ function listing(input: {
   dateAdvertised: string;
   advertisedPriceExVat: number;
 }): MarketplaceListing {
+  const matchedTractor = tractors.find((tractor) => tractor.id === input.modelId);
+  const powerKw = matchedTractor?.powerKw ?? 75;
+  const powerHp = matchedTractor?.powerHp ?? Math.round(powerKw * 1.341);
+
   return {
     id: input.id,
     modelId: input.modelId,
@@ -535,6 +542,9 @@ function listing(input: {
     tractorType: input.tractorType,
     drive: input.drive,
     cab: input.cab,
+    powerKw,
+    powerHp,
+    horsepowerHp: powerHp,
     yearModel: input.yearModel,
     year: input.yearModel,
     hours: input.hours,
