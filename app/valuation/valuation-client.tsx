@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
@@ -14,7 +13,6 @@ import {
   type ConditionKey,
   type DriveType,
   type TractorCatalogRow,
-  type TractorType,
 } from '../../lib/tractor-data';
 import { conditionLabel, money, range, runValuation, type Result } from '../../lib/tractor-logic';
 import { saveItem } from '../../lib/register';
@@ -32,6 +30,14 @@ type MethodCard = {
 
 const INITIAL_MODEL_ID = 'john-deere-6135b-field-4wd-cab';
 
+const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
+  { step: 1, label: 'Type' },
+  { step: 2, label: 'Brand' },
+  { step: 3, label: 'Model' },
+  { step: 4, label: 'Inputs' },
+  { step: 5, label: 'Value' },
+];
+
 function nextStep(step: Step): Step {
   return step === 1 ? 2 : step === 2 ? 3 : step === 3 ? 4 : 5;
 }
@@ -47,27 +53,17 @@ function getMethodValue(result: Result, method: MethodKey): number | null {
 }
 
 function getMethodLabel(method: MethodKey): string {
-  if (method === 'aim4price') return 'Aim4price value';
-  if (method === 'market') return 'Market midpoint';
-  return 'Department guideline';
+  if (method === 'aim4price') return 'Aim4price Value';
+  if (method === 'market') return 'Estimated Market Value';
+  return 'DALRRD Reference';
 }
 
-function coverageLabel(band: Result['coverageBand']): string {
-  if (band === 'green') return 'High overlap';
-  if (band === 'amber') return 'Partial overlap';
-  return 'Low overlap';
-}
+function getMethodDisplay(result: Result, method: MethodKey): string {
+  if (method === 'market') {
+    return range(result.marketLow, result.marketHigh);
+  }
 
-function coverageText(band: Result['coverageBand']): string {
-  if (band === 'green') return 'All three methods returned a usable number.';
-  if (band === 'amber') return 'Two valuation methods returned a usable number.';
-  return 'Only one valuation method returned a usable number.';
-}
-
-function coverageClassName(band: Result['coverageBand']): string {
-  if (band === 'green') return styles.coverageGreen;
-  if (band === 'amber') return styles.coverageAmber;
-  return styles.coverageRed;
+  return money(getMethodValue(result, method));
 }
 
 function getRangePercent(low: number | null, high: number | null, value: number | null): number {
@@ -78,39 +74,48 @@ function getRangePercent(low: number | null, high: number | null, value: number 
   return Math.min(100, Math.max(0, percent));
 }
 
-function getStepCopy(step: Step) {
+function getStepMeta(step: Step) {
   switch (step) {
     case 1:
       return {
-        eyebrow: 'Step 1 of 5',
-        title: 'Start with tractors only',
-        body: 'This build keeps the first release scoped to tractor valuations so the main flow is stable and easy to test.',
+        title: 'Choose Equipment Type',
+        body: 'Select your equipment type. Tractor is the active category in this prototype.',
       };
     case 2:
       return {
-        eyebrow: 'Step 2 of 5',
-        title: 'Choose the tractor brand',
-        body: 'Search the bundled brand list and pick the manufacturer before filtering down to the actual tractor model.',
+        title: 'Choose Brand',
+        body: 'Search or select a tractor brand. This step is text-based only, with no logo dependency.',
       };
     case 3:
       return {
-        eyebrow: 'Step 3 of 5',
-        title: 'Filter to the right tractor model',
-        body: 'Use tractor type, drive and cab filters to reduce the model list before selecting the exact unit profile.',
+        title: 'Select Tractor Model',
+        body: 'Filter by drive and cab configuration, then choose the closest bundled test model.',
       };
     case 4:
       return {
-        eyebrow: 'Step 4 of 5',
-        title: 'Enter the valuation inputs',
-        body: 'Set the year model, hours and condition, then calculate the three values and compare them on the result screen.',
+        title: 'Enter Valuation Inputs',
+        body: 'Choose the year model, input hours, and set the condition before generating the valuation.',
       };
     default:
       return {
-        eyebrow: 'Step 5 of 5',
-        title: 'Review the value stack',
-        body: 'Compare the three valuation methods, choose the number you want to foreground, and keep the next action obvious.',
+        title: 'Valuation Results',
+        body: 'Review the calculated values and next actions.',
       };
   }
+}
+
+function getConditionHint(condition: ConditionKey): string {
+  if (condition === 'excellent') return 'Best kept condition';
+  if (condition === 'good') return 'Well maintained working tractor';
+  if (condition === 'fair') return 'Average wear for age';
+  if (condition === 'used') return 'Heavy general use visible';
+  return 'Requires attention before sale';
+}
+
+function getConfidenceLabel(result: Result): string {
+  if (result.marketCount >= 5) return 'Confidence: High';
+  if (result.marketCount >= 2) return 'Confidence: Medium';
+  return 'Confidence: Low';
 }
 
 export default function ValuationClient() {
@@ -120,7 +125,6 @@ export default function ValuationClient() {
   const [brandQuery, setBrandQuery] = useState('');
   const [modelQuery, setModelQuery] = useState('');
   const [brandSlug, setBrandSlug] = useState('john-deere');
-  const [tractorType, setTractorType] = useState<TractorType>('field');
   const [drive, setDrive] = useState<DriveType>('4wd');
   const [cab, setCab] = useState<CabType>('cab');
   const [modelId, setModelId] = useState(INITIAL_MODEL_ID);
@@ -131,7 +135,7 @@ export default function ValuationClient() {
   const [selectedMethod, setSelectedMethod] = useState<MethodKey | null>(null);
   const [message, setMessage] = useState('');
 
-  const stepCopy = getStepCopy(step);
+  const stepMeta = getStepMeta(step);
 
   const matchingBrands = useMemo(
     () =>
@@ -145,16 +149,15 @@ export default function ValuationClient() {
     () =>
       tractors.filter((tractor) => {
         const matchesBrand = tractor.brandSlug === brandSlug;
-        const matchesType = tractor.tractorType === tractorType;
         const matchesDrive = tractor.drive === drive;
         const matchesCab = tractor.cab === cab;
         const matchesQuery = !modelQuery.trim()
           ? true
           : `${tractor.brandName} ${tractor.modelName}`.toLowerCase().includes(modelQuery.trim().toLowerCase());
 
-        return matchesBrand && matchesType && matchesDrive && matchesCab && matchesQuery;
+        return matchesBrand && matchesDrive && matchesCab && matchesQuery;
       }),
-    [brandSlug, tractorType, drive, cab, modelQuery],
+    [brandSlug, drive, cab, modelQuery],
   );
 
   const selectedModel = useMemo<TractorCatalogRow | null>(() => {
@@ -194,30 +197,33 @@ export default function ValuationClient() {
     [selectedModel],
   );
 
+  const selectedBrandName = useMemo(
+    () => brands.find((brand) => brand.slug === brandSlug)?.name ?? '—',
+    [brandSlug],
+  );
+
   const methodCards = useMemo<MethodCard[]>(() => {
     if (!result) return [];
 
     return [
       {
         key: 'aim4price',
-        label: 'Aim4price value',
-        note: 'Age, usage and condition are all reflected here.',
+        label: 'Aim4price Value',
+        note: 'Based on our pricing engine and market trends.',
         value: result.aim4priceValueExVat,
         available: result.aim4priceValueExVat !== null,
       },
       {
         key: 'market',
-        label: 'Market midpoint',
-        note: result.marketCount
-          ? `${result.marketCount} matching comparable${result.marketCount === 1 ? '' : 's'} in the current filter.`
-          : 'No market midpoint was available for this profile.',
+        label: 'Market Range',
+        note: `${result.marketCount} similar listing${result.marketCount === 1 ? '' : 's'} in the prototype set.`,
         value: result.marketMid,
         available: result.marketMid !== null,
       },
       {
         key: 'department',
-        label: 'Department guideline',
-        note: 'Replacement less hourly depreciation, subject to the salvage floor.',
+        label: 'DALRRD Reference',
+        note: 'Guide reference based on kW band and drive type.',
         value: result.departmentValueExVat,
         available: result.departmentValueExVat !== null,
       },
@@ -226,11 +232,11 @@ export default function ValuationClient() {
 
   const selectedMethodValue = result && selectedMethod ? getMethodValue(result, selectedMethod) : null;
   const headlineValue = selectedMethodValue ?? result?.previewValueExVat ?? null;
-  const headlineLabel = selectedMethod ? getMethodLabel(selectedMethod) : result?.previewLabel ?? 'Preview value';
+  const headlineLabel = selectedMethod ? getMethodLabel(selectedMethod) : 'Estimated Market Value';
   const rangePercent = getRangePercent(
     result?.marketLow ?? null,
     result?.marketHigh ?? null,
-    selectedMethod === 'market' ? selectedMethodValue : result?.previewValueExVat ?? result?.marketMid ?? null,
+    selectedMethod === 'market' ? selectedMethodValue : result?.marketMid ?? headlineValue,
   );
 
   const canContinue = useMemo(() => {
@@ -240,7 +246,29 @@ export default function ValuationClient() {
   }, [step, selectedModel, hours]);
 
   const nextLabel =
-    step === 1 ? 'Choose brand' : step === 2 ? 'Choose model' : step === 3 ? 'Enter inputs' : 'Get valuation';
+    step === 1
+      ? 'Choose Brand'
+      : step === 2
+        ? 'Choose Model'
+        : step === 3
+          ? 'Enter Inputs'
+          : 'Get Valuation';
+
+  function resetWizard() {
+    setStep(1);
+    setBrandQuery('');
+    setModelQuery('');
+    setBrandSlug('john-deere');
+    setDrive('4wd');
+    setCab('cab');
+    setModelId(INITIAL_MODEL_ID);
+    setYear(2020);
+    setHours('3500');
+    setCondition('good');
+    setResult(null);
+    setSelectedMethod(null);
+    setMessage('');
+  }
 
   function handleBack() {
     setMessage('');
@@ -277,7 +305,14 @@ export default function ValuationClient() {
       });
 
       setResult(nextResult);
-      const defaultMethod: MethodKey = nextResult.marketMid !== null ? 'market' : nextResult.aim4priceValueExVat !== null ? 'aim4price' : 'department';
+
+      const defaultMethod: MethodKey =
+        nextResult.marketMid !== null
+          ? 'market'
+          : nextResult.aim4priceValueExVat !== null
+            ? 'aim4price'
+            : 'department';
+
       setSelectedMethod(defaultMethod);
       setStep(5);
       return;
@@ -335,30 +370,40 @@ export default function ValuationClient() {
     setMessage('');
   }
 
-  function renderBuilderContent() {
+  function renderWizardBody() {
     if (step === 1) {
       return (
-        <div className={styles.typePanel}>
-          <div className={styles.typeImageWrap}>
-            <Image
-              src="/images/tractor-generic.png"
-              alt="Tractor preview"
-              fill
-              className={styles.coverImage}
-              sizes="(max-width: 960px) 100vw, 40vw"
-            />
+        <div className={styles.typeGrid}>
+          <button type="button" className={`${styles.typeCard} ${styles.typeCardActive}`}>
+            <div className={styles.typeImageBox}>
+              <Image
+                src="/brand/Tractor.png"
+                alt="Tractor equipment type"
+                fill
+                className={styles.typeImage}
+                sizes="180px"
+              />
+            </div>
+            <strong>Tractor</strong>
+            <span>Active for prototype testing</span>
+          </button>
+
+          <div className={`${styles.typeCard} ${styles.typeCardDisabled}`}>
+            <div className={styles.typeImageBox} />
+            <strong>Combine</strong>
+            <span>Coming soon</span>
           </div>
-          <div>
-            <h2 className={styles.blockTitle}>Tractor valuations are the active scope.</h2>
-            <p className={styles.blockBody}>
-              Asset register and marketplace remain in the project, but the main journey in this build is the
-              tractor valuation workflow.
-            </p>
-            <ul className={styles.bulletList}>
-              <li>Aim4price value</li>
-              <li>Market midpoint and range</li>
-              <li>Department guideline value</li>
-            </ul>
+
+          <div className={`${styles.typeCard} ${styles.typeCardDisabled}`}>
+            <div className={styles.typeImageBox} />
+            <strong>Baler</strong>
+            <span>Coming soon</span>
+          </div>
+
+          <div className={`${styles.typeCard} ${styles.typeCardDisabled}`}>
+            <div className={styles.typeImageBox} />
+            <strong>Sprayer</strong>
+            <span>Coming soon</span>
           </div>
         </div>
       );
@@ -367,38 +412,40 @@ export default function ValuationClient() {
     if (step === 2) {
       return (
         <>
-          <div className={styles.searchBar}>
+          <div className={styles.searchWrap}>
             <input
               value={brandQuery}
               onChange={(event: ChangeEvent<HTMLInputElement>) => setBrandQuery(event.target.value)}
-              placeholder="Search brands"
+              placeholder="Search brands..."
               aria-label="Search brands"
+              className={styles.searchInput}
             />
           </div>
 
-          <div className={styles.choiceGrid}>
-            {matchingBrands.map((brand) => {
-              const active = brandSlug === brand.slug;
-              const tractorCount = tractors.filter((tractor) => tractor.brandSlug === brand.slug).length;
+          {matchingBrands.length ? (
+            <div className={styles.brandGrid}>
+              {matchingBrands.map((brand) => {
+                const active = brandSlug === brand.slug;
 
-              return (
-                <button
-                  key={brand.slug}
-                  type="button"
-                  className={`${styles.choiceButton} ${active ? styles.choiceButtonActive : ''}`}
-                  onClick={() => {
-                    setBrandSlug(brand.slug);
-                    setMessage('');
-                  }}
-                >
-                  <strong>{brand.name}</strong>
-                  <span>{tractorCount} bundled model{tractorCount === 1 ? '' : 's'}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {!matchingBrands.length ? <div className={styles.emptyState}>No brands matched that search.</div> : null}
+                return (
+                  <button
+                    key={brand.slug}
+                    type="button"
+                    className={`${styles.brandCard} ${active ? styles.brandCardActive : ''}`}
+                    onClick={() => {
+                      setBrandSlug(brand.slug);
+                      setModelQuery('');
+                      setMessage('');
+                    }}
+                  >
+                    {brand.name}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={styles.emptyState}>No brands matched that search.</div>
+          )}
         </>
       );
     }
@@ -406,34 +453,15 @@ export default function ValuationClient() {
     if (step === 3) {
       return (
         <>
-          <div className={styles.filterGrid}>
-            <div className={styles.filterGroup}>
-              <span className={styles.filterLabel}>Tractor type</span>
-              <div className={styles.chipRow}>
-                {(['field', 'orchard'] as TractorType[]).map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={`${styles.chip} ${tractorType === value ? styles.chipActive : ''}`}
-                    onClick={() => {
-                      setTractorType(value);
-                      setMessage('');
-                    }}
-                  >
-                    {value === 'field' ? 'Field' : 'Orchard'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
+          <div className={styles.filterToolbar}>
             <div className={styles.filterGroup}>
               <span className={styles.filterLabel}>Drive</span>
-              <div className={styles.chipRow}>
+              <div className={styles.pillRow}>
                 {(['2wd', '4wd'] as DriveType[]).map((value) => (
                   <button
                     key={value}
                     type="button"
-                    className={`${styles.chip} ${drive === value ? styles.chipActive : ''}`}
+                    className={`${styles.pillButton} ${drive === value ? styles.pillButtonActive : ''}`}
                     onClick={() => {
                       setDrive(value);
                       setMessage('');
@@ -446,36 +474,37 @@ export default function ValuationClient() {
             </div>
 
             <div className={styles.filterGroup}>
-              <span className={styles.filterLabel}>Operator station</span>
-              <div className={styles.chipRow}>
+              <span className={styles.filterLabel}>Cab</span>
+              <div className={styles.pillRow}>
                 {(['cab', 'open-station'] as CabType[]).map((value) => (
                   <button
                     key={value}
                     type="button"
-                    className={`${styles.chip} ${cab === value ? styles.chipActive : ''}`}
+                    className={`${styles.pillButton} ${cab === value ? styles.pillButtonActive : ''}`}
                     onClick={() => {
                       setCab(value);
                       setMessage('');
                     }}
                   >
-                    {value === 'cab' ? 'Cab' : 'Open station'}
+                    {value === 'cab' ? 'Cab: Yes' : 'Cab: No'}
                   </button>
                 ))}
               </div>
             </div>
           </div>
 
-          <div className={styles.searchBar}>
+          <div className={styles.searchWrap}>
             <input
               value={modelQuery}
               onChange={(event: ChangeEvent<HTMLInputElement>) => setModelQuery(event.target.value)}
-              placeholder="Search tractor models"
+              placeholder="Search tractor models..."
               aria-label="Search tractor models"
+              className={styles.searchInput}
             />
           </div>
 
           {filteredModels.length ? (
-            <div className={styles.modelGrid}>
+            <div className={styles.modelList}>
               {filteredModels.map((model) => {
                 const active = selectedModel?.id === model.id;
 
@@ -483,7 +512,7 @@ export default function ValuationClient() {
                   <button
                     key={model.id}
                     type="button"
-                    className={`${styles.modelCard} ${active ? styles.modelCardActive : ''}`}
+                    className={`${styles.modelRow} ${active ? styles.modelRowActive : ''}`}
                     onClick={() => {
                       setModelId(model.id);
                       setYear(model.yearEnd);
@@ -491,31 +520,63 @@ export default function ValuationClient() {
                     }}
                   >
                     <div>
-                      <strong>{model.brandName} {model.modelName}</strong>
-                      <span className={styles.modelMeta}>
-                        {model.powerKw} kW • {model.drive.toUpperCase()} • {model.cab === 'cab' ? 'Cab' : 'Open station'}
+                      <strong>
+                        {model.brandName} {model.modelName}
+                      </strong>
+                      <span className={styles.modelRowMeta}>
+                        {model.powerKw} kW • {model.drive.toUpperCase()} •{' '}
+                        {model.cab === 'cab' ? 'Cab' : 'No cab'}
                       </span>
                     </div>
-                    <span className={styles.modelYears}>{model.yearStart}–{model.yearEnd}</span>
+                    <span className={styles.modelRowYear}>
+                      {model.yearStart}–{model.yearEnd}
+                    </span>
                   </button>
                 );
               })}
             </div>
           ) : (
             <div className={styles.emptyState}>
-              No tractor models matched the current combination of brand, type, drive and cab.
+              No tractor models matched the current combination of brand, drive and cab.
             </div>
           )}
+
+          {selectedModel ? (
+            <div className={styles.selectionCard}>
+              <div className={styles.selectionImageBox}>
+                <Image
+                  src="/brand/Tractor.png"
+                  alt="Selected tractor"
+                  fill
+                  className={styles.typeImage}
+                  sizes="120px"
+                />
+              </div>
+              <div className={styles.selectionMeta}>
+                <strong>
+                  {selectedModel.brandName} {selectedModel.modelName}
+                </strong>
+                <span>
+                  {selectedModel.powerKw} kW • {selectedModel.drive.toUpperCase()} •{' '}
+                  {selectedModel.cab === 'cab' ? 'Cab' : 'No cab'}
+                </span>
+                <span>{selectedBrandName}</span>
+              </div>
+            </div>
+          ) : null}
         </>
       );
     }
 
     return (
       <>
-        <div className={styles.fieldGrid}>
+        <div className={styles.inputGrid}>
           <label className={styles.field}>
-            <span>Year model</span>
-            <select value={year} onChange={(event: ChangeEvent<HTMLSelectElement>) => setYear(Number(event.target.value))}>
+            <span>Choose Year Model</span>
+            <select
+              value={year}
+              onChange={(event: ChangeEvent<HTMLSelectElement>) => setYear(Number(event.target.value))}
+            >
               {years.map((availableYear) => (
                 <option key={availableYear} value={availableYear}>
                   {availableYear}
@@ -525,15 +586,19 @@ export default function ValuationClient() {
           </label>
 
           <label className={styles.field}>
-            <span>Hours</span>
+            <span>Input Hours</span>
             <input
               value={hours}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setHours(event.target.value.replace(/[^0-9]/g, ''))}
-              placeholder="3500"
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setHours(event.target.value.replace(/[^0-9]/g, ''))
+              }
+              placeholder="3,500"
               inputMode="numeric"
             />
           </label>
         </div>
+
+        <p className={styles.fieldHint}>Estimated by what is shown on the engine hour meter.</p>
 
         <div className={styles.conditionGrid}>
           {conditionOptions.map((option) => (
@@ -547,32 +612,29 @@ export default function ValuationClient() {
               }}
             >
               <strong>{option.label}</strong>
-              <span>
-                {option.key === 'excellent' && 'Best kept condition'}
-                {option.key === 'good' && 'Well maintained working tractor'}
-                {option.key === 'fair' && 'Average wear for age'}
-                {option.key === 'used' && 'Heavy general use visible'}
-                {option.key === 'serious' && 'Requires attention before sale'}
-              </span>
+              <span>{getConditionHint(option.key)}</span>
             </button>
           ))}
         </div>
 
         {selectedModel ? (
-          <div className={styles.snapshotCard}>
-            <div className={styles.snapshotImageWrap}>
+          <div className={styles.selectionCard}>
+            <div className={styles.selectionImageBox}>
               <Image
-                src="/images/tractor-generic.png"
+                src="/brand/Tractor.png"
                 alt="Selected tractor"
                 fill
-                className={styles.coverImage}
+                className={styles.typeImage}
                 sizes="120px"
               />
             </div>
-            <div className={styles.snapshotMeta}>
-              <strong>{selectedModel.brandName} {selectedModel.modelName}</strong>
+            <div className={styles.selectionMeta}>
+              <strong>
+                {selectedModel.brandName} {selectedModel.modelName}
+              </strong>
               <span>
-                {selectedModel.powerKw} kW • {selectedModel.tractorType === 'field' ? 'Field' : 'Orchard'} • {selectedModel.drive.toUpperCase()} • {selectedModel.cab === 'cab' ? 'Cab' : 'Open station'}
+                {selectedModel.powerKw} kW • {selectedModel.drive.toUpperCase()} •{' '}
+                {selectedModel.cab === 'cab' ? 'Cab' : 'No cab'}
               </span>
               <span>Condition: {conditionLabel(condition)}</span>
             </div>
@@ -582,106 +644,51 @@ export default function ValuationClient() {
     );
   }
 
-  function renderSummaryCard() {
-    return (
-      <aside className={styles.summaryCard}>
-        <div className={styles.summaryImageWrap}>
-          <Image
-            src="/images/tractor-generic.png"
-            alt="Tractor valuation summary"
-            fill
-            className={styles.coverImage}
-            sizes="(max-width: 960px) 100vw, 32vw"
-          />
-        </div>
-
-        <span className={styles.summaryBadge}>Current selection</span>
-        <h2 className={styles.summaryTitle}>
-          {selectedModel ? `${selectedModel.brandName} ${selectedModel.modelName}` : 'Choose a matching tractor'}
-        </h2>
-        <p className={styles.summaryBody}>
-          Keep the scope on valuation first. This side panel keeps the current tractor visible so the flow stays easy to understand.
-        </p>
-
-        <dl className={styles.summaryList}>
-          <div>
-            <dt>Brand</dt>
-            <dd>{brands.find((brand) => brand.slug === brandSlug)?.name ?? '—'}</dd>
-          </div>
-          <div>
-            <dt>Type</dt>
-            <dd>{tractorType === 'field' ? 'Field' : 'Orchard'}</dd>
-          </div>
-          <div>
-            <dt>Drive</dt>
-            <dd>{drive.toUpperCase()}</dd>
-          </div>
-          <div>
-            <dt>Station</dt>
-            <dd>{cab === 'cab' ? 'Cab' : 'Open station'}</dd>
-          </div>
-          <div>
-            <dt>Hours</dt>
-            <dd>{hours ? Number(hours).toLocaleString('en-ZA') : '—'}</dd>
-          </div>
-          <div>
-            <dt>Condition</dt>
-            <dd>{conditionLabel(condition)}</dd>
-          </div>
-        </dl>
-
-        {selectedModel ? (
-          <div className={styles.summaryValueCard}>
-            <span>Replacement value</span>
-            <strong>{money(selectedModel.aim4priceReplacementExVat)}</strong>
-          </div>
-        ) : null}
-      </aside>
-    );
-  }
-
   return (
     <main className={styles.page}>
       <AppHeader active="valuation" ctaHref="/valuation" ctaLabel="Restart Valuation" />
 
       <div className={styles.container}>
         {step !== 5 ? (
-          <section className={styles.builderLayout}>
-            <article className={styles.builderCard}>
-              <div className={styles.progressRow}>
-                {[1, 2, 3, 4, 5].map((item) => {
-                  const itemStep = item as Step;
-                  const isActive = step === itemStep;
-                  const isComplete = step > itemStep;
+          <section className={styles.wizardShell}>
+            <article className={styles.wizardCard}>
+              <div className={styles.wizardHeader}>
+                <div className={styles.stepper}>
+                  {WIZARD_STEPS.map((item, index) => {
+                    const isActive = step === item.step;
+                    const isComplete = step > item.step;
 
-                  return (
-                    <div key={item} className={styles.progressItem}>
-                      <span
-                        className={`${styles.progressDot} ${isActive ? styles.progressDotActive : ''} ${
-                          isComplete ? styles.progressDotComplete : ''
-                        }`}
-                      >
-                        {item}
-                      </span>
-                    </div>
-                  );
-                })}
+                    return (
+                      <div key={item.step} className={styles.stepperItem}>
+                        <span
+                          className={`${styles.stepperBullet} ${
+                            isActive ? styles.stepperBulletActive : ''
+                          } ${isComplete ? styles.stepperBulletComplete : ''}`}
+                        >
+                          {isComplete ? '✓' : item.step}
+                        </span>
+                        <span className={styles.stepperLabel}>{item.label}</span>
+                        {index < WIZARD_STEPS.length - 1 ? <span className={styles.stepperLine} /> : null}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div className={styles.stepHeader}>
-                <span className={styles.eyebrow}>{stepCopy.eyebrow}</span>
-                <h1 className={styles.stepTitle}>{stepCopy.title}</h1>
-                <p className={styles.stepBody}>{stepCopy.body}</p>
+              <div className={styles.stepContent}>
+                <h1 className={styles.stepTitle}>{stepMeta.title}</h1>
+                <p className={styles.stepText}>{stepMeta.body}</p>
+
+                {message ? <div className={styles.message}>{message}</div> : null}
+
+                {renderWizardBody()}
               </div>
 
-              {message ? <div className={styles.message}>{message}</div> : null}
-
-              {renderBuilderContent()}
-
-              <div className={styles.actionsRow}>
+              <div className={styles.wizardFooter}>
                 <button type="button" className={styles.secondaryButton} onClick={handleBack}>
-                  {step === 1 ? 'Back home' : 'Back'}
+                  {step === 1 ? 'Back Home' : 'Back'}
                 </button>
+
                 <button
                   type="button"
                   className={styles.primaryButton}
@@ -692,204 +699,200 @@ export default function ValuationClient() {
                 </button>
               </div>
             </article>
-
-            {renderSummaryCard()}
           </section>
         ) : result ? (
           <section className={styles.resultsLayout}>
             <div className={styles.resultsMain}>
-              <div className={styles.resultTopBar}>
-                <button type="button" className={styles.linkButton} onClick={() => setStep(4)}>
-                  ← Back to inputs
+              <div className={styles.resultsTopbar}>
+                <button type="button" className={styles.backLink} onClick={() => setStep(4)}>
+                  ← Back to search
                 </button>
+                <span className={styles.statusBadge}>Valuation complete</span>
               </div>
 
               {message ? <div className={styles.message}>{message}</div> : null}
 
-              <article className={styles.resultHeroCard}>
-                <div className={styles.resultHeroTop}>
-                  <div>
-                    <span className={styles.badge}>{headlineLabel}</span>
-                    <h1 className={styles.resultTitle}>
-                      {result.model.brandName} {result.model.modelName}
-                    </h1>
-                    <p className={styles.resultMeta}>
-                      {year} model • {result.model.powerKw} kW • {Number(hours).toLocaleString('en-ZA')} hours •{' '}
-                      {conditionLabel(condition)}
-                    </p>
-                  </div>
+              <article className={styles.heroCard}>
+                <div className={styles.heroTop}>
+                  <div className={styles.heroIdentity}>
+                    <div className={styles.heroImageBox}>
+                      <Image
+                        src="/brand/Tractor.png"
+                        alt="Valuation result tractor"
+                        fill
+                        className={styles.typeImage}
+                        sizes="132px"
+                      />
+                    </div>
 
-                  <div className={styles.resultHeroImageWrap}>
-                    <Image
-                      src="/images/tractor-generic.png"
-                      alt="Valuation result tractor"
-                      fill
-                      className={styles.coverImage}
-                      sizes="180px"
-                    />
+                    <div className={styles.heroInfo}>
+                      <h1 className={styles.resultTitle}>
+                        {result.model.brandName} {result.model.modelName}
+                      </h1>
+                      <p className={styles.heroMeta}>
+                        Tractor • {year} • {result.model.powerKw} kW • {Number(hours).toLocaleString('en-ZA')} hours
+                      </p>
+                      <button type="button" className={styles.inlineButton} onClick={() => setStep(4)}>
+                        Edit Details
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                <div className={styles.resultHeadline}>{money(headlineValue)}</div>
-                <p className={styles.resultSubline}>
-                  VAT excluded. Default preview uses the market midpoint first, then falls back to the other methods if needed.
-                </p>
-
-                <div className={styles.methodGrid}>
-                  {methodCards.map((card) => (
-                    <div key={card.key} className={styles.methodCard}>
-                      <span className={styles.methodCardLabel}>{card.label}</span>
-                      <strong className={styles.methodCardValue}>{money(card.value)}</strong>
-                      <span className={styles.methodCardNote}>{card.note}</span>
+                <div className={styles.valuePanel}>
+                  <div className={styles.valuePanelTop}>
+                    <div>
+                      <span className={styles.valueLabel}>{headlineLabel}</span>
+                      <div className={styles.valueAmount}>{money(headlineValue)}</div>
+                      <p className={styles.valueMeta}>ZAR • South Africa • Excl. VAT (indicative)</p>
                     </div>
-                  ))}
+
+                    <span className={styles.confidenceBadge}>{getConfidenceLabel(result)}</span>
+                  </div>
+
+                  <div className={styles.methodGrid}>
+                    {methodCards.map((card) => {
+                      const active = selectedMethod === card.key;
+                      const unavailable = !card.available;
+
+                      return (
+                        <button
+                          key={card.key}
+                          type="button"
+                          className={`${styles.methodButton} ${
+                            active ? styles.methodButtonActive : ''
+                          } ${unavailable ? styles.methodButtonDisabled : ''}`}
+                          onClick={() => handleMethodSelect(card.key)}
+                          disabled={unavailable}
+                        >
+                          <span className={styles.methodTitle}>{card.label}</span>
+                          <strong className={styles.methodValue}>
+                            {card.key === 'market' ? getMethodDisplay(result, 'market') : money(card.value)}
+                          </strong>
+                          <span className={styles.methodNote}>{card.note}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </article>
 
-              <article className={styles.compareCard}>
-                <div className={styles.cardHeader}>
+              <article className={styles.assetCard}>
+                <div className={styles.assetHeader}>
                   <div>
-                    <h2 className={styles.cardTitle}>Market comparables</h2>
-                    <p className={styles.cardText}>
-                      {result.marketCount
-                        ? `Structured prototype listings used for the market range and midpoint.`
-                        : 'No structured comparables were available for this profile.'}
+                    <h2 className={styles.assetTitle}>Save to Asset Register</h2>
+                    <p className={styles.assetText}>
+                      Track this asset, update values over time, and export reports later.
                     </p>
                   </div>
-
-                  <span className={`${styles.coveragePill} ${coverageClassName(result.coverageBand)}`}>
-                    {coverageLabel(result.coverageBand)}
-                  </span>
                 </div>
 
-                {result.marketSources.length ? (
-                  <div className={styles.compsList}>
-                    {result.marketSources.map((listing) => (
-                      <article key={listing.id} className={styles.compCard}>
-                        <div>
-                          <h3>
-                            {listing.brandName} {listing.modelName}
-                          </h3>
-                          <p className={styles.compMeta}>
-                            {listing.yearModel} • {listing.hours.toLocaleString('en-ZA')} hours • {listing.province} • {listing.area}
-                          </p>
-                          <p className={styles.compSource}>
-                            {listing.sourceName} • Advertised {listing.dateAdvertised}
-                          </p>
-                        </div>
-                        <strong className={styles.compPrice}>{money(listing.advertisedPriceExVat)}</strong>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <div className={styles.emptyState}>No comparable listing cards are available for this tractor selection.</div>
-                )}
+                <button type="button" className={styles.assetButton} onClick={handleSave}>
+                  Save to My Assets
+                </button>
+
+                <div className={styles.assetFootnote}>
+                  Prototype mode: this currently saves locally only.
+                </div>
               </article>
             </div>
 
             <aside className={styles.resultsSide}>
               <article className={styles.sideCard}>
-                <h2 className={styles.cardTitle}>Select the saved number</h2>
-                <p className={styles.cardText}>
-                  Review the three methods and choose which number the result screen should carry forward.
-                </p>
+                <h2 className={styles.sideTitle}>Value Breakdown</h2>
 
-                <div className={styles.selectGrid}>
-                  {methodCards.map((card) => {
-                    const active = selectedMethod === card.key;
-                    const unavailable = !card.available;
+                <div className={styles.breakdownList}>
+                  <div className={styles.breakdownRow}>
+                    <span className={styles.breakdownKey}>Condition</span>
+                    <span className={styles.breakdownValue}>{conditionLabel(condition)}</span>
+                  </div>
 
-                    return (
-                      <button
-                        key={card.key}
-                        type="button"
-                        className={`${styles.selectCard} ${active ? styles.selectCardActive : ''} ${
-                          unavailable ? styles.selectCardUnavailable : ''
-                        }`}
-                        onClick={() => handleMethodSelect(card.key)}
-                        disabled={unavailable}
-                      >
-                        <span>{card.label}</span>
-                        <strong>{money(card.value)}</strong>
-                        <small>{unavailable ? 'Unavailable for this profile' : 'Available to save'}</small>
-                      </button>
-                    );
-                  })}
-                </div>
+                  <div className={styles.breakdownRow}>
+                    <span className={styles.breakdownKey}>Hours</span>
+                    <span className={styles.breakdownValue}>
+                      {Number(hours).toLocaleString('en-ZA')} hours
+                    </span>
+                  </div>
 
-                <div className={styles.actionsStack}>
-                  <button type="button" className={styles.primaryButton} onClick={handleSave}>
-                    Save locally
-                  </button>
-                  <button type="button" className={styles.secondaryButton} onClick={handlePrint}>
-                    Print / Save PDF
-                  </button>
+                  <div className={styles.breakdownRow}>
+                    <span className={styles.breakdownKey}>Selected source</span>
+                    <span className={styles.breakdownValue}>{headlineLabel}</span>
+                  </div>
+
+                  <div className={styles.breakdownRow}>
+                    <span className={styles.breakdownKey}>Coverage</span>
+                    <span className={styles.breakdownValue}>{getConfidenceLabel(result)}</span>
+                  </div>
                 </div>
               </article>
 
               <article className={styles.sideCard}>
-                <h2 className={styles.cardTitle}>Value context</h2>
-                <div className={styles.factGrid}>
-                  <div className={styles.factCard}>
-                    <span>Coverage</span>
-                    <strong>{coverageLabel(result.coverageBand)}</strong>
-                    <small>{coverageText(result.coverageBand)}</small>
-                  </div>
-                  <div className={styles.factCard}>
-                    <span>Market range</span>
-                    <strong>{range(result.marketLow, result.marketHigh)}</strong>
-                    <small>{result.marketCount} comp{result.marketCount === 1 ? '' : 's'} in range</small>
-                  </div>
-                  <div className={styles.factCard}>
-                    <span>Department band</span>
-                    <strong>
-                      {result.departmentBand ? `${result.departmentBand.powerKw} kW ${result.departmentBand.drive.toUpperCase()}` : 'N/A'}
-                    </strong>
-                    <small>
-                      {result.departmentBand
-                        ? `${money(result.departmentBand.replacementPriceExVat)} replacement reference`
-                        : 'No department band matched'}
-                    </small>
-                  </div>
+                <div className={styles.rangeCardHead}>
+                  <h2 className={styles.sideTitle}>Market Range</h2>
+                  <span className={styles.rangeBadge}>
+                    {result.marketCount} comp{result.marketCount === 1 ? '' : 's'}
+                  </span>
                 </div>
+
+                <div className={styles.rangeCurrent}>{money(result.marketMid ?? headlineValue)}</div>
 
                 <div className={styles.rangeTrack}>
                   <div className={styles.rangeFill} style={{ width: `${rangePercent}%` }} />
                   <div className={styles.rangePin} style={{ left: `${rangePercent}%` }} />
                 </div>
+
                 <div className={styles.rangeLabels}>
-                  <strong>{money(result.marketLow)}</strong>
+                  <span>{money(result.marketLow)}</span>
                   <span>{money(result.marketHigh)}</span>
+                </div>
+
+                <p className={styles.rangeNote}>
+                  Based on similar {year} models in the current local prototype set.
+                </p>
+              </article>
+
+              <article className={styles.sideCard}>
+                <h2 className={styles.sideTitle}>Data Sources</h2>
+
+                <div className={styles.sourceList}>
+                  <div className={styles.sourceItem}>
+                    <strong className={styles.sourceItemTitle}>Live Market Listings</strong>
+                    <span className={styles.sourceItemText}>
+                      {result.marketCount} local prototype comparable listing
+                      {result.marketCount === 1 ? '' : 's'}
+                    </span>
+                  </div>
+
+                  <div className={styles.sourceItem}>
+                    <strong className={styles.sourceItemTitle}>Aim4price Pricing Logic</strong>
+                    <span className={styles.sourceItemText}>Age, usage and condition weighting</span>
+                  </div>
+
+                  <div className={styles.sourceItem}>
+                    <strong className={styles.sourceItemTitle}>DALRRD Guidelines</strong>
+                    <span className={styles.sourceItemText}>Power band and drive type reference</span>
+                  </div>
                 </div>
               </article>
 
-  <article className={styles.sideCard}>
-    <h2 className={styles.cardTitle}>Next steps</h2>
-    <p className={styles.cardText}>
-      Refine the valuation, start another tractor valuation, or return to the homepage.
-    </p>
-    <div className={styles.actionsStack}>
-      <button type="button" className={styles.secondaryButton} onClick={() => setStep(4)}>
-        Refine inputs
-      </button>
-      <button
-        type="button"
-        className={styles.secondaryButton}
-        onClick={() => {
-          setResult(null);
-          setSelectedMethod(null);
-          setStep(1);
-          setMessage('');
-        }}
-      >
-        Start new valuation
-      </button>
-      <Link href="/" className={styles.secondaryButton}>
-        Return home
-      </Link>
-    </div>
-  </article>
-</aside>
+              <article className={styles.sideCard}>
+                <h2 className={styles.sideTitle}>Next Steps</h2>
+
+                <div className={styles.actionStack}>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setStep(4)}>
+                    Refine Inputs
+                  </button>
+
+                  <button type="button" className={styles.secondaryButton} onClick={handlePrint}>
+                    Download PDF Report
+                  </button>
+
+                  <button type="button" className={styles.primaryButton} onClick={resetWizard}>
+                    Start New Valuation
+                  </button>
+                </div>
+              </article>
+            </aside>
           </section>
         ) : null}
       </div>
