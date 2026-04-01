@@ -1,68 +1,68 @@
 .header {
   position: sticky;
   top: 0;
-  z-index: 60;
-  backdrop-filter: blur(16px);
-  background: rgba(247, 249, 247, 0.88);
-  border-bottom: 1px solid rgba(14, 36, 31, 0.08);
+  z-index: 80;
+  background: rgba(251, 252, 251, 0.92);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .inner {
-  width: min(100% - 2rem, 1180px);
+  width: min(100% - 3rem, 1180px);
+  margin: 0 auto;
   min-height: 5rem;
-  margin-inline: auto;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1.4rem;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.85rem;
-  color: var(--text-strong);
+  gap: 0.7rem;
   text-decoration: none;
+  color: var(--text-strong);
 }
 
 .brandMarkWrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 1rem;
-  background: linear-gradient(180deg, rgba(23, 77, 62, 0.1), rgba(23, 77, 62, 0.02));
-  border: 1px solid rgba(23, 77, 62, 0.1);
+  flex: 0 0 auto;
 }
 
 .brandText {
-  font-size: 1.6rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
 .nav {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 0.25rem;
+  align-items: center;
+  gap: 0.42rem;
   flex-wrap: wrap;
 }
 
 .navLink {
   position: relative;
-  padding: 0.8rem 0.95rem;
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.6rem;
+  padding: 0 0.82rem;
+  font-size: 0.93rem;
+  font-weight: 600;
   text-decoration: none;
-  color: var(--text-muted);
-  font-weight: 650;
-  transition: background 160ms ease, color 160ms ease;
+  white-space: nowrap;
+  color: #3d4b46;
+  transition: color 180ms ease;
 }
 
 .navLink:hover {
   color: var(--text-strong);
-  background: rgba(23, 77, 62, 0.05);
 }
 
 .navLinkActive {
@@ -72,43 +72,81 @@
 .navLinkActive::after {
   content: '';
   position: absolute;
-  left: 1rem;
-  right: 1rem;
-  bottom: 0.25rem;
-  height: 3px;
+  left: 0.82rem;
+  right: 0.82rem;
+  bottom: 0.38rem;
+  height: 2.5px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--brand-700), rgba(23, 77, 62, 0.42));
+  background: #1d624e;
 }
 
 .actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 0.72rem;
 }
 
-.primaryButton {
+.signupButton,
+.loginButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.9rem;
-  padding: 0.85rem 1.2rem;
-  border-radius: 0.95rem;
   text-decoration: none;
-  font-weight: 800;
-  line-height: 1;
-  color: #fff;
-  background: linear-gradient(180deg, var(--brand-700), var(--brand-900));
-  box-shadow: 0 16px 32px rgba(17, 63, 50, 0.18);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
 }
 
-@media (max-width: 960px) {
+.signupButton:hover,
+.loginButton:hover {
+  transform: translateY(-1px);
+}
+
+.signupButton {
+  min-height: 2.8rem;
+  padding: 0 1.08rem;
+  border-radius: 0.76rem;
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(180deg, #1a5944 0%, #124334 100%);
+  box-shadow: 0 10px 22px rgba(17, 63, 50, 0.12);
+}
+
+.loginButton {
+  min-height: 2.8rem;
+  padding: 0 0.98rem;
+  border-radius: 0.76rem;
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: #31413c;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(18, 45, 37, 0.11);
+}
+
+@media (max-width: 860px) {
   .inner {
     grid-template-columns: 1fr;
-    padding: 0.85rem 0 1rem;
+    padding: 0.95rem 0 1.05rem;
+    gap: 0.85rem;
   }
 
-  .nav,
+  .nav {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
   .actions {
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .inner {
+    width: min(100% - 1.4rem, 1180px);
   }
 }
