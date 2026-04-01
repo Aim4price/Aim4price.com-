@@ -30,7 +30,7 @@ export default function HomePage() {
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <Link href="/" className={styles.brand}>
-            <Image src="/brand/aim4price-mark.png" alt="Aim4price" width={34} height={28} priority />
+            <Image src="/brand/aim4price-mark-black.png" alt="Aim4price" width={34} height={28} priority />
             <span className={styles.brandText}>Aim4price</span>
           </Link>
 
@@ -69,10 +69,7 @@ export default function HomePage() {
               </h1>
 
               <p className={styles.heroText}>
-                Build asset registers, determine true machinery values,
-                <br />
-                and buy or sell with confidence —
-                <br />
+                Discover your machinery values, build an asset register and buy &amp; sell with confidence —
                 all on one easy-to-use platform.
               </p>
 
@@ -83,22 +80,11 @@ export default function HomePage() {
               </div>
 
               <p className={styles.heroNote}>
-                Trusted by farmers, contractors, and dealers across South Africa
+                Trusted by farmers, insurance brokers, and dealers across South Africa.
               </p>
             </div>
 
             <div className={styles.heroVisual}>
-              <div className={styles.heroLogoWrap}>
-                <Image
-                  src="/brand/Aim4price Logo.png"
-                  alt="Aim4price Logo"
-                  width={320}
-                  height={100}
-                  className={styles.heroLogo}
-                  priority
-                />
-              </div>
-
               <div className={styles.heroImageFrame}>
                 <Image
                   src="/brand/Home-page.png"
@@ -133,11 +119,7 @@ export default function HomePage() {
                 Machinery Values
               </h2>
               <p className={styles.featureText}>
-                Get accurate, data-driven valuations
-                <br />
-                for your agricultural and industrial
-                <br />
-                equipment.
+                Get accurate, data-driven valuations for your agricultural and industrial equipment.
               </p>
             </article>
 
@@ -157,11 +139,7 @@ export default function HomePage() {
                 &amp; Valuations
               </h2>
               <p className={styles.featureText}>
-                Build and save asset registers to track,
-                <br />
-                update, and value your equipment
-                <br />
-                over time.
+                Build and save asset registers to track, update, and value your equipment over time.
               </p>
             </article>
 
@@ -181,11 +159,7 @@ export default function HomePage() {
                 Equipment
               </h2>
               <p className={styles.featureText}>
-                Move equipment to the marketplace
-                <br />
-                and connect with vetted buyers
-                <br />
-                and sellers.
+                Move equipment to the marketplace and connect with vetted buyers and sellers.
               </p>
             </article>
           </div>
@@ -210,15 +184,20 @@ export default function HomePage() {
 
       <section className={styles.ctaSection}>
         <div className={styles.shellNarrow}>
-          <h2 className={styles.ctaTitle}>Get started in minutes — join Aim4price today!</h2>
+          <div className={styles.ctaPanel}>
+            <h2 className={styles.ctaTitle}>Get started — create an asset register in minutes.</h2>
+            <p className={styles.ctaText}>
+              Open your account, add your machinery, and keep valuations organised in one place from the start.
+            </p>
 
-          <div className={styles.ctaButtons}>
-            <Link href="/valuation" className={styles.primaryCta}>
-              Sign Up For Free
-            </Link>
-            <a href="#platform" className={styles.secondaryCta}>
-              Learn More
-            </a>
+            <div className={styles.ctaButtons}>
+              <Link href="/valuation" className={styles.primaryCta}>
+                Sign Up For Free
+              </Link>
+              <a href="#platform" className={styles.secondaryCta}>
+                Learn More
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -228,7 +207,7 @@ export default function HomePage() {
           <div className={styles.footerTop}>
             <div className={styles.footerBrandCol}>
               <Link href="/" className={styles.footerBrand}>
-                <Image src="/brand/aim4price-mark.png" alt="Aim4price" width={36} height={30} />
+                <Image src="/brand/aim4price-mark-black.png" alt="Aim4price" width={36} height={30} />
                 <span className={styles.footerBrandText}>Aim4price</span>
               </Link>
             </div>
@@ -288,7 +267,7 @@ export default function HomePage() {
 
         <div className={styles.footerBottom}>
           <div className={styles.shell}>
-            <p className={styles.copyright}>© 2026 Aim4price. All rights reserved.</p>
+            <p className={styles.copyright}>© 2024 Aim4price. All rights reserved.</p>
           </div>
         </div>
       </footer>
