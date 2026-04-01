@@ -15,11 +15,11 @@ const montserrat = Montserrat({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Aim4price – Agricultural & Industrial Machinery Pricing',
+    default: 'Aim4price - Agricultural & Industrial Machinery Pricing',
     template: '%s | Aim4price',
   },
   description:
-    'Build asset registers, determine true machinery values, and buy or sell with confidence — all on one easy-to-use platform.',
+    'Determine true machinery values, build asset registers and buy or sell with confidence - all on one easy-to-use platform.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
