@@ -2,48 +2,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import styles from './page.module.css';
 
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.featureSvg}>
-      <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M16 16L21 21" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ClipboardIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.featureSvg}>
-      <rect x="6" y="5" width="12" height="15" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <rect x="9" y="3" width="6" height="4" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M9 11H15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M9 15H13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function StoreIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.featureSvg}>
-      <path
-        d="M4 9.5L6 5H18L20 9.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M5 9.5H19V18.5C19 19.3284 18.3284 20 17.5 20H6.5C5.67157 20 5 19.3284 5 18.5V9.5Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <path d="M9 20V14H15V20" fill="none" stroke="currentColor" strokeWidth="1.8" />
-    </svg>
-  );
-}
-
 function FacebookIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.socialSvg}>
@@ -60,17 +18,6 @@ function LinkedInIcon() {
     <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.socialSvg}>
       <path
         d="M7.35 8.55C6.42 8.55 5.84 7.92 5.84 7.12C5.84 6.31 6.43 5.69 7.38 5.69C8.33 5.69 8.89 6.31 8.91 7.12C8.91 7.92 8.33 8.55 7.35 8.55ZM6.07 18.5V9.93H8.63V18.5H6.07ZM10.24 18.5V9.93H12.69V11.1H12.72C13.06 10.46 13.89 9.75 15.3 9.75C18.24 9.75 18.78 11.69 18.78 14.2V18.5H16.22V14.49C16.22 13.54 16.2 12.32 14.89 12.32C13.56 12.32 13.35 13.36 13.35 14.42V18.5H10.24Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function TwitterIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.socialSvg}>
-      <path
-        d="M18.9 7.25C18.39 7.48 17.85 7.63 17.28 7.7C17.87 7.35 18.33 6.8 18.54 6.15C17.99 6.48 17.37 6.72 16.71 6.85C16.19 6.29 15.45 5.95 14.64 5.95C13.08 5.95 11.82 7.21 11.82 8.77C11.82 8.99 11.85 9.2 11.89 9.4C9.54 9.28 7.44 8.17 6.05 6.48C5.81 6.9 5.67 7.39 5.67 7.92C5.67 8.92 6.18 9.8 6.96 10.32C6.5 10.31 6.08 10.18 5.72 9.98V10.02C5.72 11.42 6.72 12.58 8.04 12.84C7.8 12.9 7.55 12.94 7.28 12.94C7.1 12.94 6.93 12.92 6.76 12.89C7.11 14 8.15 14.81 9.38 14.83C8.42 15.58 7.21 16.03 5.9 16.03C5.67 16.03 5.44 16.02 5.22 15.99C6.46 16.79 7.94 17.25 9.53 17.25C14.63 17.25 17.42 13.03 17.42 9.37C17.42 9.25 17.42 9.12 17.41 9C17.95 8.61 18.42 8.12 18.9 7.25Z"
         fill="currentColor"
       />
     </svg>
@@ -122,9 +69,9 @@ export default function HomePage() {
               </h1>
 
               <p className={styles.heroText}>
-                Determine true machinery values, build asset registers
+                Build asset registers, determine true machinery values,
                 <br />
-                and buy or sell with confidence -
+                and buy or sell with confidence —
                 <br />
                 all on one easy-to-use platform.
               </p>
@@ -136,15 +83,26 @@ export default function HomePage() {
               </div>
 
               <p className={styles.heroNote}>
-                Trusted by farmers, insurance brokers, and dealers across South Africa
+                Trusted by farmers, contractors, and dealers across South Africa
               </p>
             </div>
 
             <div className={styles.heroVisual}>
+              <div className={styles.heroLogoWrap}>
+                <Image
+                  src="/brand/Aim4price Logo.png"
+                  alt="Aim4price Logo"
+                  width={320}
+                  height={100}
+                  className={styles.heroLogo}
+                  priority
+                />
+              </div>
+
               <div className={styles.heroImageFrame}>
                 <Image
-                  src="/images/hero-tractor-black.png"
-                  alt="Green tractor in a field"
+                  src="/brand/Home-page.png"
+                  alt="Aim4price homepage machinery banner"
                   fill
                   priority
                   sizes="(max-width: 980px) 100vw, 48vw"
@@ -161,7 +119,13 @@ export default function HomePage() {
           <div className={styles.featureGrid}>
             <article className={styles.featureCard}>
               <div className={styles.featureIconCircle}>
-                <SearchIcon />
+                <Image
+                  src="/brand/Valuations.png"
+                  alt="Valuations"
+                  width={108}
+                  height={108}
+                  className={styles.featureImage}
+                />
               </div>
               <h2 className={styles.featureTitle}>
                 Instantly Know Your
@@ -179,7 +143,13 @@ export default function HomePage() {
 
             <article className={styles.featureCard}>
               <div className={styles.featureIconCircle}>
-                <ClipboardIcon />
+                <Image
+                  src="/brand/Register.png"
+                  alt="Register"
+                  width={108}
+                  height={108}
+                  className={styles.featureImage}
+                />
               </div>
               <h2 className={styles.featureTitle}>
                 Manage Your Assets
@@ -197,7 +167,13 @@ export default function HomePage() {
 
             <article className={styles.featureCard}>
               <div className={styles.featureIconCircle}>
-                <StoreIcon />
+                <Image
+                  src="/brand/Buy & Sell.png"
+                  alt="Buy and Sell"
+                  width={108}
+                  height={108}
+                  className={styles.featureImage}
+                />
               </div>
               <h2 className={styles.featureTitle}>
                 Easily Buy &amp; Sell
@@ -300,9 +276,6 @@ export default function HomePage() {
                 <a href="#" className={styles.socialButton} aria-label="LinkedIn">
                   <LinkedInIcon />
                 </a>
-                <a href="#" className={styles.socialButton} aria-label="Twitter">
-                  <TwitterIcon />
-                </a>
               </div>
 
               <p className={styles.footerMade}>
@@ -315,7 +288,7 @@ export default function HomePage() {
 
         <div className={styles.footerBottom}>
           <div className={styles.shell}>
-            <p className={styles.copyright}>© 2024 Aim4price. All rights reserved.</p>
+            <p className={styles.copyright}>© 2026 Aim4price. All rights reserved.</p>
           </div>
         </div>
       </footer>
