@@ -1,6 +1,17 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { Inter, Montserrat } from 'next/font/google';
 import './globals.css';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-body',
+});
+
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  variable: '--font-heading',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -13,7 +24,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${inter.variable} ${montserrat.variable}`}>
       <body>{children}</body>
     </html>
   );
