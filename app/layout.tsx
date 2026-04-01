@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     template: '%s | Aim4price',
   },
   description:
-    'Determine true machinery values, build asset registers and buy or sell with confidence - all on one easy-to-use platform.',
+    'Discover your machinery values, build asset registers and buy & sell with confidence - all on one easy-to-use platform.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
