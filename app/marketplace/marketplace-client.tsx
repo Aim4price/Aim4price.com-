@@ -23,11 +23,29 @@ export default function MarketplaceClient({
   const visible = useMemo(
     () =>
       listings.filter((listing) => {
-        if (initialFilters.brand && listing.brandSlug !== initialFilters.brand && listing.brandName !== initialFilters.brand) return false;
-        if (initialFilters.model && listing.modelName !== initialFilters.model) return false;
-        if (initialFilters.drive && listing.drive !== initialFilters.drive) return false;
-        if (initialFilters.type && listing.tractorType !== initialFilters.type) return false;
-        if (!query.trim()) return true;
+        if (
+          initialFilters.brand &&
+          listing.brandSlug !== initialFilters.brand &&
+          listing.brandName !== initialFilters.brand
+        ) {
+          return false;
+        }
+
+        if (initialFilters.model && listing.modelName !== initialFilters.model) {
+          return false;
+        }
+
+        if (initialFilters.drive && listing.drive !== initialFilters.drive) {
+          return false;
+        }
+
+        if (initialFilters.type && listing.tractorType !== initialFilters.type) {
+          return false;
+        }
+
+        if (!query.trim()) {
+          return true;
+        }
 
         return `${listing.brandName} ${listing.modelName} ${listing.area} ${listing.province}`
           .toLowerCase()
@@ -42,6 +60,7 @@ export default function MarketplaceClient({
         <Link href="/" className={styles.brand}>
           ← Aim4price
         </Link>
+
         <nav className={styles.nav}>
           <Link href="/valuation">Valuation</Link>
           <Link href="/asset-register">Asset Register</Link>
@@ -67,7 +86,9 @@ export default function MarketplaceClient({
         />
         {initialFilters.brand ? <span className={styles.pill}>Brand: {initialFilters.brand}</span> : null}
         {initialFilters.model ? <span className={styles.pill}>Model: {initialFilters.model}</span> : null}
-        {initialFilters.drive ? <span className={styles.pill}>Drive: {initialFilters.drive.toUpperCase()}</span> : null}
+        {initialFilters.drive ? (
+          <span className={styles.pill}>Drive: {initialFilters.drive.toUpperCase()}</span>
+        ) : null}
       </div>
 
       <section className={styles.grid}>
@@ -83,6 +104,7 @@ export default function MarketplaceClient({
                   {listing.cab === 'cab' ? 'Cab' : 'Open Station'} • {listing.powerKw} kW
                 </p>
               </div>
+
               <div className={styles.price}>
                 {money(listing.advertisedPriceExVat)}
                 <small>VAT excluded</small>
@@ -113,9 +135,19 @@ export default function MarketplaceClient({
                 <strong>{listing.sourceName}</strong>
                 <p>Advertised: {listing.dateAdvertised}</p>
               </div>
-              <a href={listing.sourceUrl} target="_blank" rel="noreferrer" className={styles.secondary}>
-                View source
-              </a>
+
+              {listing.sourceUrl ? (
+                <a
+                  href={listing.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={styles.secondary}
+                >
+                  View source
+                </a>
+              ) : (
+                <span className={styles.secondary}>Source unavailable</span>
+              )}
             </div>
           </article>
         ))}
