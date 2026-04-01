@@ -169,9 +169,9 @@ export default function HomePage() {
       <section className={styles.statementSection} id="platform">
         <div className={styles.shellNarrow}>
           <h2 className={styles.statementTitle}>
-            Built for owners wanting to know their machinery values.
+            Built for machinery owners
             <br />
-            Built on provable data.
+            wanting to know their machinery values.
           </h2>
 
           <p className={styles.statementText}>
@@ -185,9 +185,9 @@ export default function HomePage() {
       <section className={styles.ctaSection}>
         <div className={styles.shellNarrow}>
           <div className={styles.ctaPanel}>
-            <h2 className={styles.ctaTitle}>Get started — create an asset register in minutes.</h2>
+            <h2 className={styles.ctaTitle}>Get started — create an asset register.</h2>
             <p className={styles.ctaText}>
-              Open your account, add your machinery, and keep valuations organised in one place from the start.
+              Open your account, add your machinery, and keep valuations organised in one place.
             </p>
 
             <div className={styles.ctaButtons}>
