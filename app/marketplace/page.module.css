@@ -9,7 +9,7 @@
 }
 
 .inner {
-  width: min(100% - 2rem, 1180px);
+  width: var(--shell-width);
   margin: 0 auto;
 }
 
@@ -527,7 +527,7 @@
 
 @media (max-width: 960px) {
   .inner {
-    width: min(100% - 1.2rem, 1180px);
+    width: var(--shell-width);
   }
 
   .heroTop,
