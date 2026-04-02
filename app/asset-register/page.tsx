@@ -206,160 +206,162 @@ export default function RegisterPage() {
     <main className={styles.page}>
       <AppHeader active="asset-register" />
 
-      <section className={styles.wrap}>
-        <div>
-          <h1>Asset Register</h1>
-          <p>
-            The total uses the chosen value from each saved row. Everything is VAT excluded. Tractor
-            assets can also be sent to the Aim4price marketplace from here.
-          </p>
-        </div>
-        <div className={styles.total}>{money(total)}</div>
-      </section>
+      <div className={styles.content}>
+        <section className={styles.wrap}>
+          <div>
+            <h1>Asset Register</h1>
+            <p>
+              The total uses the chosen value from each saved row. Everything is VAT excluded.
+              Tractor assets can also be sent to the Aim4price marketplace from here.
+            </p>
+          </div>
+          <div className={styles.total}>{money(total)}</div>
+        </section>
 
-      <section className={styles.layout}>
-        <article className={styles.card}>
-          <div className={styles.rowBetween}>
-            <div>
-              <h2>Saved Assets</h2>
-              <p>
-                Tractor rows keep the valuation values. Manual rows let you add houses or other
-                items. Marketplace upload is only available for tractor assets.
-              </p>
+        <section className={styles.layout}>
+          <article className={styles.card}>
+            <div className={styles.rowBetween}>
+              <div>
+                <h2>Saved Assets</h2>
+                <p>
+                  Tractor rows keep the valuation values. Manual rows let you add houses or other
+                  items. Marketplace upload is only available for tractor assets.
+                </p>
+              </div>
+
+              {items.length ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const confirmed = window.confirm('Clear all saved items from the asset register?');
+                    if (!confirmed) return;
+
+                    clearItems();
+                    refresh();
+                    setNotice('Asset register cleared.');
+                  }}
+                  className={styles.secondary}
+                >
+                  Clear
+                </button>
+              ) : null}
             </div>
 
-            {items.length ? (
-              <button
-                type="button"
-                onClick={() => {
-                  const confirmed = window.confirm('Clear all saved items from the asset register?');
-                  if (!confirmed) return;
+            <div className={styles.list}>
+              {items.length ? (
+                items.map((item) => {
+                  const isPublished = publishedAssetIds.includes(item.id);
 
-                  clearItems();
-                  refresh();
-                  setNotice('Asset register cleared.');
-                }}
-                className={styles.secondary}
-              >
-                Clear
-              </button>
-            ) : null}
-          </div>
+                  return (
+                    <div key={item.id} className={styles.item}>
+                      <div>
+                        <strong>{item.title}</strong>
+                        <span>
+                          {item.kind === 'tractor'
+                            ? `${item.brandName} · ${item.modelName}${
+                                item.yearModel ? ` · ${item.yearModel}` : ''
+                              }${item.hours ? ` · ${item.hours.toLocaleString('en-ZA')} hrs` : ''}`
+                            : item.note || 'Manual asset'}
+                        </span>
 
-          <div className={styles.list}>
-            {items.length ? (
-              items.map((item) => {
-                const isPublished = publishedAssetIds.includes(item.id);
+                        {item.kind === 'tractor' ? (
+                          <div
+                            style={{
+                              marginTop: '0.45rem',
+                              fontSize: '0.84rem',
+                              fontWeight: 800,
+                              color: isPublished ? '#1d6b46' : 'var(--text-muted)',
+                            }}
+                          >
+                            {isPublished ? 'Marketplace live' : 'Not yet on marketplace'}
+                          </div>
+                        ) : null}
+                      </div>
 
-                return (
-                  <div key={item.id} className={styles.item}>
-                    <div>
-                      <strong>{item.title}</strong>
-                      <span>
-                        {item.kind === 'tractor'
-                          ? `${item.brandName} · ${item.modelName}${
-                              item.yearModel ? ` · ${item.yearModel}` : ''
-                            }${item.hours ? ` · ${item.hours.toLocaleString('en-ZA')} hrs` : ''}`
-                          : item.note || 'Manual asset'}
-                      </span>
+                      <div className={styles.itemRight}>
+                        <strong>{money(item.selectedValueExVat)}</strong>
+                        <span>{item.selectedMethod.toUpperCase()}</span>
+                      </div>
 
-                      {item.kind === 'tractor' ? (
-                        <div
-                          style={{
-                            marginTop: '0.45rem',
-                            fontSize: '0.84rem',
-                            fontWeight: 800,
-                            color: isPublished ? '#1d6b46' : 'var(--text-muted)',
-                          }}
-                        >
-                          {isPublished ? 'Marketplace live' : 'Not yet on marketplace'}
-                        </div>
-                      ) : null}
-                    </div>
+                      <div className={styles.itemActions}>
+                        {item.kind === 'tractor' ? (
+                          <button
+                            type="button"
+                            className={styles.secondary}
+                            onClick={() => publishToMarketplace(item)}
+                          >
+                            {isPublished ? 'Update Marketplace' : 'Send to Marketplace'}
+                          </button>
+                        ) : null}
 
-                    <div className={styles.itemRight}>
-                      <strong>{money(item.selectedValueExVat)}</strong>
-                      <span>{item.selectedMethod.toUpperCase()}</span>
-                    </div>
-
-                    <div className={styles.itemActions}>
-                      {item.kind === 'tractor' ? (
                         <button
                           type="button"
                           className={styles.secondary}
-                          onClick={() => publishToMarketplace(item)}
+                          onClick={() => editValue(item)}
                         >
-                          {isPublished ? 'Update Marketplace' : 'Send to Marketplace'}
+                          Edit Value
                         </button>
-                      ) : null}
 
-                      <button
-                        type="button"
-                        className={styles.secondary}
-                        onClick={() => editValue(item)}
-                      >
-                        Edit Value
-                      </button>
-
-                      <button
-                        type="button"
-                        className={styles.secondary}
-                        onClick={() => removeItem(item)}
-                      >
-                        Delete
-                      </button>
+                        <button
+                          type="button"
+                          className={styles.secondary}
+                          onClick={() => removeItem(item)}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className={styles.empty}>
-                No saved items yet. Save a tractor from the valuation page first.
-              </div>
-            )}
-          </div>
-        </article>
-
-        <aside className={styles.card}>
-          <h2>Add Manual Asset</h2>
-
-          <label>Title</label>
-          <input
-            value={title}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setTitle(event.target.value)}
-            placeholder="Farm house"
-          />
-
-          <label>Value (VAT excluded)</label>
-          <input
-            value={value}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setValue(event.target.value.replace(/[^0-9]/g, ''))
-            }
-            placeholder="2500000"
-          />
-
-          <button type="button" className={styles.primary} onClick={add}>
-            Add to Register
-          </button>
-
-          {message ? (
-            <div
-              className={styles.message}
-              style={
-                messageTone === 'error'
-                  ? {
-                      background: 'rgba(177, 38, 38, 0.1)',
-                      color: '#8e1f1f',
-                    }
-                  : undefined
-              }
-            >
-              {message}
+                  );
+                })
+              ) : (
+                <div className={styles.empty}>
+                  No saved items yet. Save a tractor from the valuation page first.
+                </div>
+              )}
             </div>
-          ) : null}
-        </aside>
-      </section>
+          </article>
+
+          <aside className={styles.card}>
+            <h2>Add Manual Asset</h2>
+
+            <label>Title</label>
+            <input
+              value={title}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setTitle(event.target.value)}
+              placeholder="Farm house"
+            />
+
+            <label>Value (VAT excluded)</label>
+            <input
+              value={value}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setValue(event.target.value.replace(/[^0-9]/g, ''))
+              }
+              placeholder="2500000"
+            />
+
+            <button type="button" className={styles.primary} onClick={add}>
+              Add to Register
+            </button>
+
+            {message ? (
+              <div
+                className={styles.message}
+                style={
+                  messageTone === 'error'
+                    ? {
+                        background: 'rgba(177, 38, 38, 0.1)',
+                        color: '#8e1f1f',
+                      }
+                    : undefined
+                }
+              >
+                {message}
+              </div>
+            ) : null}
+          </aside>
+        </section>
+      </div>
     </main>
   );
 }
