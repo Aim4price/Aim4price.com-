@@ -221,6 +221,10 @@ export default function ValuationClient() {
   const isYearValid = yearMode === 'guided'
     ? Number.isInteger(year)
     : Number.isInteger(activeYear) && activeYear >= 1950 && activeYear <= CURRENT_YEAR;
+  const selectedYearDisplay = isYearValid ? String(activeYear) : 'Enter year';
+  const enteredHours = Number(hours);
+  const enteredHoursDisplay =
+    Number.isFinite(enteredHours) && enteredHours > 0 ? enteredHours.toLocaleString('en-ZA') : 'Enter hours';
 
   const methodCards = useMemo<MethodCard[]>(() => {
     if (!result) return [];
@@ -614,10 +618,11 @@ export default function ValuationClient() {
     return (
       <>
         <div className={styles.inputGrid}>
-          <div className={styles.fieldBlock}>
-            <label className={styles.field}>
-              <span>Year Model</span>
-              <div className={styles.pillRow}>
+          <div className={`${styles.fieldBlock} ${styles.inputPanel}`}>
+            <div className={styles.panelHeader}>
+              <span className={styles.panelLabel}>Year Model</span>
+
+              <div className={styles.panelToggle}>
                 <button
                   type="button"
                   className={`${styles.pillButton} ${yearMode === 'guided' ? styles.pillButtonActive : ''}`}
@@ -642,11 +647,15 @@ export default function ValuationClient() {
                   Other Year
                 </button>
               </div>
+            </div>
 
+            <div className={styles.panelControl}>
               {yearMode === 'guided' ? (
                 <select
                   value={year}
                   onChange={(event: ChangeEvent<HTMLSelectElement>) => setYear(Number(event.target.value))}
+                  className={styles.controlInput}
+                  aria-label="Choose guided year model"
                 >
                   {years.map((availableYear) => (
                     <option key={availableYear} value={availableYear}>
@@ -663,18 +672,23 @@ export default function ValuationClient() {
                   placeholder="e.g. 2017"
                   inputMode="numeric"
                   aria-label="Enter year model manually"
+                  className={styles.controlInput}
                 />
               )}
-            </label>
+            </div>
 
             <p className={styles.fieldHint}>
               Guided years are based on bundled model data. Use Other Year when your tractor year model is not shown.
             </p>
           </div>
 
-          <div className={styles.fieldBlock}>
-            <label className={styles.field}>
-              <span>Engine Hours</span>
+          <div className={`${styles.fieldBlock} ${styles.inputPanel}`}>
+            <div className={styles.panelHeader}>
+              <span className={styles.panelLabel}>Engine Hours</span>
+              <span className={styles.panelBadge}>Hour meter</span>
+            </div>
+
+            <div className={styles.panelControl}>
               <input
                 value={hours}
                 onChange={(event: ChangeEvent<HTMLInputElement>) =>
@@ -682,54 +696,77 @@ export default function ValuationClient() {
                 }
                 placeholder="3,500"
                 inputMode="numeric"
+                aria-label="Enter engine hours"
+                className={styles.controlInput}
               />
-            </label>
+            </div>
 
             <p className={styles.fieldHint}>Use the reading shown on the engine hour meter.</p>
           </div>
         </div>
 
         <div className={styles.conditionSection}>
-          <span className={styles.sectionLabel}>Overall Condition</span>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionLabel}>Overall Condition</span>
+            <span className={styles.sectionHint}>Choose the option that best matches the tractor today.</span>
+          </div>
 
-            <div className={styles.conditionGrid}>
-          {conditionOptions.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              className={`${styles.conditionCard} ${condition === option.key ? styles.conditionCardActive : ''}`}
-              onClick={() => {
-                setCondition(option.key);
-                setMessage('');
-              }}
-            >
-              <strong>{option.label}</strong>
-              <span>{getConditionHint(option.key)}</span>
-            </button>
-          ))}
+          <div className={styles.conditionGrid}>
+            {conditionOptions.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                className={`${styles.conditionCard} ${condition === option.key ? styles.conditionCardActive : ''}`}
+                onClick={() => {
+                  setCondition(option.key);
+                  setMessage('');
+                }}
+              >
+                <strong>{option.label}</strong>
+                <span>{getConditionHint(option.key)}</span>
+              </button>
+            ))}
           </div>
         </div>
 
         {selectedModel ? (
           <div className={styles.selectionCard}>
-            <div className={styles.selectionMeta}>
-              <span className={styles.selectionEyebrow}>Selected model</span>
-              <strong>
-                {selectedModel.brandName} {selectedModel.modelName}
-              </strong>
+            <div className={styles.selectionCardGrid}>
+              <div className={styles.selectionMeta}>
+                <span className={styles.selectionEyebrow}>Selected model</span>
+                <strong>
+                  {selectedModel.brandName} {selectedModel.modelName}
+                </strong>
 
-              <div className={styles.selectionChipRow}>
-                <span className={styles.modelChip}>{getTractorTypeLabel(selectedModel.tractorType)}</span>
-                <span className={styles.modelChip}>{selectedModel.drive.toUpperCase()}</span>
-                <span className={styles.modelChip}>{getCabDisplay(selectedModel.cab)}</span>
-                <span className={styles.modelChip}>{selectedModel.powerKw} kW</span>
-                <span className={styles.modelChip}>
-                  {selectedModel.yearStart}–{selectedModel.yearEnd}
-                </span>
+                <div className={styles.selectionChipRow}>
+                  <span className={styles.modelChip}>{getTractorTypeLabel(selectedModel.tractorType)}</span>
+                  <span className={styles.modelChip}>{selectedModel.drive.toUpperCase()}</span>
+                  <span className={styles.modelChip}>{getCabDisplay(selectedModel.cab)}</span>
+                  <span className={styles.modelChip}>{selectedModel.powerKw} kW</span>
+                  <span className={styles.modelChip}>
+                    {selectedModel.yearStart}–{selectedModel.yearEnd}
+                  </span>
+                </div>
+
+                <span>Guided years: {selectedModel.yearStart}–{selectedModel.yearEnd}</span>
               </div>
 
-              <span>Guided years: {selectedModel.yearStart}–{selectedModel.yearEnd}</span>
-              <span>Selected condition: {conditionLabel(condition)}</span>
+              <div className={styles.selectionFacts}>
+                <div className={styles.selectionFact}>
+                  <span>Chosen year</span>
+                  <strong>{selectedYearDisplay}</strong>
+                </div>
+
+                <div className={styles.selectionFact}>
+                  <span>Engine hours</span>
+                  <strong>{enteredHoursDisplay}</strong>
+                </div>
+
+                <div className={styles.selectionFact}>
+                  <span>Condition</span>
+                  <strong>{conditionLabel(condition)}</strong>
+                </div>
+              </div>
             </div>
           </div>
         ) : null}
