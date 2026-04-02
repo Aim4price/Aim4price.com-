@@ -138,147 +138,152 @@ export default function MarketplaceClient({
 
   return (
     <main className={styles.page}>
-      <AppHeader active="marketplace" />
+      <div className={styles.topBand}>
+        <AppHeader active="marketplace" />
+      </div>
 
-      <section className={styles.hero}>
-        <div className={styles.heroTop}>
-          <div className={styles.heroCopy}>
-            <span className={styles.eyebrow}>Aim4price marketplace</span>
-            <h1>Marketplace</h1>
-            <p>
-              Browse Aim4price in-house listings. Anyone can view listings. Contact details
-              only unlock after sign-in. Listings flow from valuation to asset register and
-              then into marketplace.
-            </p>
+      <div className={styles.inner}>
+        <section className={styles.hero}>
+          <div className={styles.heroTop}>
+            <div className={styles.heroCopy}>
+              <span className={styles.eyebrow}>Aim4price marketplace</span>
+              <h1>Marketplace</h1>
+              <p>
+                Browse Aim4price in-house tractor listings. Anyone can view listings. Contact
+                details only unlock after sign-in. Listings should flow from valuation to asset
+                register and then into marketplace.
+              </p>
+            </div>
+
+            <aside className={styles.totalCard}>
+              <strong>{visible.length}</strong>
+              <span>Live listings</span>
+              <small>Public browsing • Contact locked</small>
+            </aside>
           </div>
 
-          <aside className={styles.totalCard}>
-            <strong>{visible.length}</strong>
-            <span>Live listings</span>
-            <small>Public browsing • Contact locked</small>
-          </aside>
-        </div>
+          <div className={styles.searchPanel}>
+            <label htmlFor="marketplace-search" className={styles.searchLabel}>
+              Search listings
+            </label>
 
-        <div className={styles.searchPanel}>
-          <label htmlFor="marketplace-search" className={styles.searchLabel}>
-            Search listings
-          </label>
+            <input
+              id="marketplace-search"
+              value={query}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
+              placeholder="Search brand, model, area or province"
+            />
 
-          <input
-            id="marketplace-search"
-            value={query}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
-            placeholder="Search brand, model, area or province"
-          />
-
-          {activePills.length ? (
-            <div className={styles.pillRow}>
-              {activePills.map((pill) => (
-                <span key={pill} className={styles.pill}>
-                  {pill}
-                </span>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      </section>
-
-      <section className={styles.grid}>
-        {visible.length > 0 ? (
-          visible.map((listing) => (
-            <article key={listing.id} className={styles.card}>
-              <div className={styles.imageFrame}>
-                <img
-                  src={listing.imageSrc}
-                  alt={`${listing.brandName} ${listing.modelName}`}
-                  className={styles.image}
-                  onError={(event) => {
-                    event.currentTarget.src = FALLBACK_IMAGE;
-                  }}
-                />
-                <span className={styles.imageTag}>In-house listing</span>
+            {activePills.length ? (
+              <div className={styles.pillRow}>
+                {activePills.map((pill) => (
+                  <span key={pill} className={styles.pill}>
+                    {pill}
+                  </span>
+                ))}
               </div>
+            ) : null}
+          </div>
+        </section>
 
-              <div className={styles.cardHead}>
-                <div className={styles.titleBlock}>
-                  <h2>
-                    {listing.brandName} {listing.modelName}
-                  </h2>
-                  <p className={styles.specLine}>
-                    {formatTypeLabel(listing.tractorType)} tractor • {listing.drive.toUpperCase()} •{' '}
-                    {formatCabLabel(listing.cab)} • {listing.powerKw} kW
+        <section className={styles.grid}>
+          {visible.length > 0 ? (
+            visible.map((listing) => (
+              <article key={listing.id} className={styles.card}>
+                <div className={styles.imageFrame}>
+                  <img
+                    src={listing.imageSrc}
+                    alt={`${listing.brandName} ${listing.modelName}`}
+                    className={styles.image}
+                    onError={(event) => {
+                      event.currentTarget.src = FALLBACK_IMAGE;
+                    }}
+                  />
+                  <span className={styles.imageTag}>In-house listing</span>
+                </div>
+
+                <div className={styles.cardHead}>
+                  <div className={styles.titleBlock}>
+                    <h2>
+                      {listing.brandName} {listing.modelName}
+                    </h2>
+                    <p className={styles.specLine}>
+                      {formatTypeLabel(listing.tractorType)} tractor •{' '}
+                      {listing.drive.toUpperCase()} • {formatCabLabel(listing.cab)} •{' '}
+                      {listing.powerKw} kW
+                    </p>
+                  </div>
+
+                  <div className={styles.priceBlock}>
+                    <strong>{money(listing.askingPriceExVat)}</strong>
+                    <small>VAT excluded</small>
+                  </div>
+                </div>
+
+                <div className={styles.stats}>
+                  <div className={styles.statCard}>
+                    <span className={styles.statLabel}>Year</span>
+                    <strong className={styles.statValue}>{listing.yearModel}</strong>
+                  </div>
+
+                  <div className={styles.statCard}>
+                    <span className={styles.statLabel}>Engine hours</span>
+                    <strong className={styles.statValue}>
+                      {listing.hours.toLocaleString('en-ZA')}
+                    </strong>
+                  </div>
+
+                  <div className={styles.statCard}>
+                    <span className={styles.statLabel}>Province</span>
+                    <strong className={styles.statValue}>{listing.province}</strong>
+                  </div>
+
+                  <div className={styles.statCard}>
+                    <span className={styles.statLabel}>Area</span>
+                    <strong className={styles.statValue}>{listing.area}</strong>
+                  </div>
+                </div>
+
+                <div className={styles.noteBox}>
+                  <strong>Listing summary</strong>
+                  <p>
+                    Aim4price marketplace listing for{' '}
+                    <b>
+                      {listing.brandName} {listing.modelName}
+                    </b>{' '}
+                    located in {listing.seller.locationLabel}. Listed on {listing.dateAdvertised}.
                   </p>
                 </div>
 
-                <div className={styles.priceBlock}>
-                  <strong>{money(listing.askingPriceExVat)}</strong>
-                  <small>VAT excluded</small>
-                </div>
-              </div>
+                <div className={styles.contactRow}>
+                  <div className={styles.contactCopy}>
+                    <strong>Seller contact</strong>
+                    {isSignedIn ? (
+                      <p>
+                        {listing.seller.sellerName} • {listing.seller.sellerPhone} •{' '}
+                        {listing.seller.sellerEmail}
+                      </p>
+                    ) : (
+                      <p>Sign in above to view seller phone number and email address.</p>
+                    )}
+                  </div>
 
-              <div className={styles.stats}>
-                <div className={styles.statCard}>
-                  <span className={styles.statLabel}>Year</span>
-                  <strong className={styles.statValue}>{listing.yearModel}</strong>
-                </div>
-
-                <div className={styles.statCard}>
-                  <span className={styles.statLabel}>Engine hours</span>
-                  <strong className={styles.statValue}>
-                    {listing.hours.toLocaleString('en-ZA')}
-                  </strong>
-                </div>
-
-                <div className={styles.statCard}>
-                  <span className={styles.statLabel}>Province</span>
-                  <strong className={styles.statValue}>{listing.province}</strong>
-                </div>
-
-                <div className={styles.statCard}>
-                  <span className={styles.statLabel}>Area</span>
-                  <strong className={styles.statValue}>{listing.area}</strong>
-                </div>
-              </div>
-
-              <div className={styles.noteBox}>
-                <strong>Listing summary</strong>
-                <p>
-                  Aim4price marketplace listing for{' '}
-                  <b>
-                    {listing.brandName} {listing.modelName}
-                  </b>{' '}
-                  located in {listing.seller.locationLabel}. Listed on {listing.dateAdvertised}.
-                </p>
-              </div>
-
-              <div className={styles.contactRow}>
-                <div className={styles.contactCopy}>
-                  <strong>Seller contact</strong>
                   {isSignedIn ? (
-                    <p>
-                      {listing.seller.sellerName} • {listing.seller.sellerPhone} •{' '}
-                      {listing.seller.sellerEmail}
-                    </p>
+                    <span className={styles.secondary}>Contact unlocked</span>
                   ) : (
-                    <p>Sign in above to view seller phone number and email address.</p>
+                    <span className={styles.secondary}>Contact locked</span>
                   )}
                 </div>
-
-                {isSignedIn ? (
-                  <span className={styles.secondary}>Contact unlocked</span>
-                ) : (
-                  <span className={styles.secondary}>Contact locked</span>
-                )}
-              </div>
+              </article>
+            ))
+          ) : (
+            <article className={styles.emptyState}>
+              <h2>No listings found</h2>
+              <p>Try a different brand, model, area or province.</p>
             </article>
-          ))
-        ) : (
-          <article className={styles.emptyState}>
-            <h2>No listings found</h2>
-            <p>Try a different brand, model, area or province.</p>
-          </article>
-        )}
-      </section>
+          )}
+        </section>
+      </div>
     </main>
   );
 }
