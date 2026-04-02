@@ -125,6 +125,40 @@
   margin-top: 1.8rem;
 }
 
+.typePicker {
+  display: grid;
+  grid-template-columns: 3.4rem minmax(0, 320px) 3.4rem;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.8rem;
+}
+
+.typePickerCard {
+  width: 100%;
+}
+
+.typeArrow {
+  width: 3.4rem;
+  height: 3.4rem;
+  border: 1px solid rgba(18, 45, 37, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #7a8781;
+  font-size: 1.7rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  box-shadow:
+    0 10px 22px rgba(16, 42, 34, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.typeArrow:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
 .typeCard,
 .brandCard,
 .pillButton,
@@ -160,6 +194,7 @@
 }
 
 .typeCard {
+  cursor: pointer;
   min-height: 15.5rem;
   padding: 1rem;
   border-radius: 1.2rem;
@@ -175,11 +210,21 @@
 }
 
 .typeCardActive {
-  border-color: rgba(26, 89, 68, 0.22);
-  background: linear-gradient(180deg, #ffffff 0%, #f4faf7 100%);
+  border-color: rgba(26, 89, 68, 0.7);
+  background: linear-gradient(180deg, #f8fdf9 0%, #e7f5ed 100%);
   box-shadow:
-    0 16px 34px rgba(18, 45, 37, 0.06),
+    0 18px 38px rgba(17, 63, 50, 0.18),
+    0 0 0 4px rgba(26, 89, 68, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.typeCardActive .typeImageBox {
+  background: linear-gradient(180deg, #eef8f2 0%, #dcefe4 100%);
+  border-color: rgba(26, 89, 68, 0.2);
+}
+
+.typeCardActive strong {
+  color: #0f5e40;
 }
 
 .typeCardDisabled {
@@ -922,6 +967,11 @@
   .filterToolbar,
   .inputGrid {
     grid-template-columns: 1fr;
+  }
+
+  .typePicker {
+    grid-template-columns: 2.9rem minmax(0, 1fr) 2.9rem;
+    gap: 0.75rem;
   }
 
   .wizardFooter,
