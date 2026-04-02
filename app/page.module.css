@@ -15,7 +15,7 @@
 }
 
 .heroSection {
-  padding: clamp(2.75rem, 4vw, 4.8rem) 0 clamp(3rem, 5vw, 4.75rem);
+  padding: clamp(2.45rem, 3.8vw, 4.1rem) 0 clamp(2.9rem, 4.4vw, 4rem);
   background:
     radial-gradient(circle at 18% 0%, rgba(25, 88, 66, 0.12), transparent 30%),
     linear-gradient(180deg, #fdfefd 0%, #f5f8f6 100%);
@@ -26,11 +26,11 @@
   display: grid;
   grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
   align-items: center;
-  gap: 4.25rem;
+  gap: 3.6rem;
 }
 
 .heroCopy {
-  max-width: 34rem;
+  max-width: 35rem;
   animation: contentReveal 700ms ease both;
 }
 
@@ -46,8 +46,8 @@
 }
 
 .heroTitle {
-  margin: 0.9rem 0 0;
-  font-size: clamp(3.05rem, 4.3vw, 4.7rem);
+  margin: 0.85rem 0 0;
+  font-size: clamp(2.95rem, 4.25vw, 4.55rem);
   line-height: 1.02;
   letter-spacing: -0.06em;
   font-weight: 750;
@@ -65,10 +65,10 @@
 }
 
 .heroText {
-  margin: 1.45rem 0 0;
+  margin: 1.25rem 0 0;
   max-width: 33rem;
-  font-size: 1.1rem;
-  line-height: 1.9;
+  font-size: 1.08rem;
+  line-height: 1.84;
   color: #667570;
 }
 
@@ -77,7 +77,7 @@
   align-items: center;
   gap: 0.85rem;
   flex-wrap: wrap;
-  margin-top: 1.85rem;
+  margin-top: 1.65rem;
 }
 
 .primaryCta,
@@ -118,10 +118,10 @@
 }
 
 .heroNote {
-  margin: 1rem 0 0;
+  margin: 0.95rem 0 0;
   max-width: 34rem;
   font-size: 0.98rem;
-  line-height: 1.7;
+  line-height: 1.68;
   color: #6f8079;
 }
 
@@ -141,7 +141,7 @@
 .heroImageFrame {
   position: relative;
   width: 100%;
-  min-height: 28rem;
+  min-height: 27.25rem;
   overflow: hidden;
   isolation: isolate;
   border-radius: 1.95rem;
@@ -221,44 +221,44 @@
 }
 
 .featureSection {
-  padding: 3.3rem 0 4rem;
+  padding: 2.7rem 0 3.45rem;
   background: #ffffff;
   border-bottom: 1px solid rgba(18, 45, 37, 0.06);
 }
 
 .sectionIntro {
   max-width: 42rem;
-  margin: 0 auto 1.9rem;
+  margin: 0 auto 1.55rem;
   text-align: center;
 }
 
 .sectionTitle {
-  margin: 0.9rem 0 0;
-  font-size: clamp(1.95rem, 3vw, 2.6rem);
-  line-height: 1.15;
+  margin: 0.72rem 0 0;
+  font-size: clamp(1.9rem, 2.9vw, 2.45rem);
+  line-height: 1.12;
   letter-spacing: -0.045em;
   font-weight: 700;
   color: #233b33;
 }
 
 .sectionText {
-  margin: 0.85rem auto 0;
-  max-width: 34rem;
-  font-size: 1.03rem;
-  line-height: 1.75;
+  margin: 0.7rem auto 0;
+  max-width: 37rem;
+  font-size: 1.01rem;
+  line-height: 1.72;
   color: #6a7872;
 }
 
 .featureGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.1rem;
+  gap: 1rem;
 }
 
 .featureCard {
   position: relative;
-  min-height: 19.25rem;
-  padding: 1.7rem 1.45rem 1.45rem;
+  min-height: 18rem;
+  padding: 1.55rem 1.35rem 1.3rem;
   overflow: hidden;
   border-radius: 1.45rem;
   text-decoration: none;
@@ -311,8 +311,8 @@
 }
 
 .featureIconCircle {
-  width: 6.4rem;
-  height: 6.4rem;
+  width: 6rem;
+  height: 6rem;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -330,19 +330,19 @@
 }
 
 .featureTitle {
-  margin: 1.25rem 0 0;
-  font-size: 1.08rem;
-  line-height: 1.45;
+  margin: 1.05rem 0 0;
+  font-size: 1.06rem;
+  line-height: 1.42;
   font-weight: 700;
   letter-spacing: -0.03em;
   color: #29423a;
 }
 
 .featureText {
-  margin: 0.8rem 0 0;
+  margin: 0.72rem 0 0;
   max-width: 18rem;
-  font-size: 0.98rem;
-  line-height: 1.72;
+  font-size: 0.97rem;
+  line-height: 1.68;
   color: #6d7a75;
 }
 
@@ -351,7 +351,7 @@
   align-items: center;
   gap: 0.4rem;
   margin-top: auto;
-  padding-top: 1.15rem;
+  padding-top: 0.95rem;
   font-size: 0.92rem;
   font-weight: 700;
   color: #1c5a45;
@@ -363,7 +363,7 @@
 }
 
 .statementSection {
-  padding: 4.15rem 0;
+  padding: 3.35rem 0 3.55rem;
   background: linear-gradient(180deg, #eef5f1 0%, #f6faf8 100%);
   border-top: 1px solid rgba(18, 45, 37, 0.06);
   border-bottom: 1px solid rgba(18, 45, 37, 0.06);
@@ -371,36 +371,38 @@
 
 .statementRow {
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-  gap: 3.2rem;
-  align-items: start;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  gap: 2.45rem;
+  align-items: center;
 }
 
 .statementTitle {
-  margin: 0.9rem 0 0;
-  max-width: 28rem;
-  font-size: clamp(2.15rem, 3vw, 3.1rem);
-  line-height: 1.12;
+  margin: 0.8rem 0 0;
+  max-width: 35rem;
+  font-size: clamp(2rem, 2.8vw, 3rem);
+  line-height: 1.08;
   letter-spacing: -0.05em;
   font-weight: 700;
   color: #233b33;
 }
 
 .statementText {
-  margin: 2.2rem 0 0;
-  max-width: 36rem;
-  font-size: 1.07rem;
-  line-height: 1.95;
+  margin: 0;
+  max-width: 34rem;
+  font-size: 1.04rem;
+  line-height: 1.86;
   color: #62726c;
 }
 
 .ctaSection {
-  padding: 4rem 0 4.25rem;
+  padding: 2.8rem 0 3.05rem;
   background: #f9fbfa;
 }
 
 .ctaPanel {
-  padding: 2.6rem 2.3rem;
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: 2.3rem 2rem;
   border-radius: 1.65rem;
   text-align: center;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(241, 247, 243, 0.98) 100%);
@@ -412,25 +414,25 @@
 
 .ctaTitle {
   margin: 0;
-  font-size: clamp(2rem, 3vw, 2.85rem);
-  line-height: 1.12;
+  font-size: clamp(1.95rem, 2.8vw, 2.65rem);
+  line-height: 1.1;
   letter-spacing: -0.045em;
   font-weight: 700;
   color: #223b34;
 }
 
 .ctaText {
-  max-width: 41rem;
-  margin: 1rem auto 0;
-  font-size: 1.03rem;
-  line-height: 1.8;
+  max-width: 39rem;
+  margin: 0.9rem auto 0;
+  font-size: 1.02rem;
+  line-height: 1.76;
   color: #687771;
 }
 
 .ctaButtons {
   display: flex;
   justify-content: center;
-  margin-top: 1.55rem;
+  margin-top: 1.35rem;
 }
 
 .footer {
@@ -441,15 +443,15 @@
 .footerTop {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-  gap: 2.5rem;
+  gap: 2.2rem;
   align-items: start;
-  padding: 2rem 0 1.6rem;
+  padding: 1.7rem 0 1.35rem;
 }
 
 .footerBrandCol {
   display: flex;
   flex-direction: column;
-  gap: 0.95rem;
+  gap: 0.85rem;
 }
 
 .footerBrand {
@@ -469,9 +471,9 @@
 
 .footerBlurb {
   margin: 0;
-  max-width: 24rem;
+  max-width: 25rem;
   font-size: 1rem;
-  line-height: 1.75;
+  line-height: 1.7;
   color: #667470;
 }
 
@@ -487,7 +489,7 @@
 }
 
 .footerHeading {
-  margin: 0 0 0.95rem;
+  margin: 0 0 0.85rem;
   font-size: 0.98rem;
   line-height: 1.2;
   font-weight: 700;
@@ -497,7 +499,7 @@
 .footerLink {
   display: inline-block;
   width: fit-content;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.7rem;
   font-size: 0.97rem;
   text-decoration: none;
   color: #63706b;
@@ -517,7 +519,7 @@
 
 .copyright {
   margin: 0;
-  padding: 1rem 0 1.15rem;
+  padding: 0.9rem 0 1rem;
   text-align: center;
   font-size: 0.96rem;
   color: #75817c;
@@ -537,9 +539,11 @@
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
@@ -549,9 +553,11 @@
   0% {
     transform: translateY(0) scale(1.02);
   }
+
   50% {
     transform: translateY(-10px) scale(1.035);
   }
+
   100% {
     transform: translateY(0) scale(1.02);
   }
@@ -562,10 +568,12 @@
     opacity: 0.68;
     transform: scale(0.96);
   }
+
   50% {
     opacity: 1;
     transform: scale(1.04);
   }
+
   100% {
     opacity: 0.68;
     transform: scale(0.96);
@@ -577,6 +585,7 @@
     opacity: 0;
     transform: translateY(18px) scale(0.985);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0) scale(1.02);
@@ -588,6 +597,7 @@
     opacity: 0;
     transform: translateY(14px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -602,7 +612,7 @@
   }
 
   .heroGrid {
-    gap: 2.75rem;
+    gap: 2.6rem;
   }
 
   .heroCopy {
@@ -617,8 +627,13 @@
     max-width: 100%;
   }
 
+  .statementRow {
+    align-items: start;
+    gap: 1.15rem;
+  }
+
   .statementText {
-    margin-top: 0.65rem;
+    margin-top: 0.1rem;
     max-width: none;
   }
 
@@ -644,7 +659,7 @@
   }
 
   .heroSection {
-    padding: 2.4rem 0 3rem;
+    padding: 2.2rem 0 2.75rem;
   }
 
   .heroTitle {
@@ -674,15 +689,24 @@
     border-radius: 1.2rem;
   }
 
-  .featureSection,
-  .statementSection,
+  .featureSection {
+    padding: 2.45rem 0 2.9rem;
+  }
+
+  .statementSection {
+    padding: 2.7rem 0 2.85rem;
+  }
+
   .ctaSection {
-    padding-top: 3rem;
-    padding-bottom: 3rem;
+    padding: 2.4rem 0 2.7rem;
   }
 
   .ctaPanel {
-    padding: 2rem 1.2rem;
+    padding: 1.9rem 1.2rem;
+  }
+
+  .footerTop {
+    padding: 1.45rem 0 1.1rem;
   }
 
   .footerLinks {
