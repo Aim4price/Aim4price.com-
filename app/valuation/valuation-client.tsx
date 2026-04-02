@@ -21,6 +21,7 @@ import { saveItem } from '../../lib/register';
 type Step = 1 | 2 | 3 | 4 | 5;
 type MethodKey = 'aim4price' | 'market' | 'department';
 type EquipmentType = 'tractor';
+type GpsType = 'full-autosteer' | 'guidance-only';
 
 type MethodCard = {
   key: MethodKey;
@@ -96,7 +97,7 @@ function getStepMeta(step: Step) {
     case 4:
       return {
         title: 'Enter Tractor Details',
-        body: 'Confirm the year model, enter engine hours, and choose the overall condition before generating the valuation.',
+        body: 'Complete the tractor details in order below. Start with the year model, then enter engine hours, then confirm overall condition and fitted extras.',
       };
     default:
       return {
@@ -132,6 +133,58 @@ function getCabDisplay(cabValue: CabType): string {
   return cabValue === 'cab' ? 'Cab' : 'Open station';
 }
 
+function getGpsTypeLabel(type: GpsType): string {
+  return type === 'full-autosteer' ? 'Full Autosteer' : 'Guidance Only';
+}
+
+function buildExtrasSummaryChips(
+  frontPto: boolean,
+  frontLoader: boolean,
+  gpsEnabled: boolean,
+  gpsType: GpsType | null,
+  gpsYear: string,
+): string[] {
+  const chips: string[] = [];
+
+  if (frontPto) {
+    chips.push('Front Hitch & Front PTO');
+  }
+
+  if (frontLoader) {
+    chips.push('Front Loader');
+  }
+
+  if (gpsEnabled) {
+    let gpsLabel = 'GPS';
+
+    if (gpsType) {
+      gpsLabel = `${gpsLabel} • ${getGpsTypeLabel(gpsType)}`;
+    }
+
+    if (gpsYear.trim()) {
+      gpsLabel = `${gpsLabel} • ${gpsYear.trim()}`;
+    }
+
+    chips.push(gpsLabel);
+  }
+
+  if (!chips.length) {
+    chips.push('No fitted extras selected');
+  }
+
+  return chips;
+}
+
+function buildExtrasSummaryText(
+  frontPto: boolean,
+  frontLoader: boolean,
+  gpsEnabled: boolean,
+  gpsType: GpsType | null,
+  gpsYear: string,
+): string {
+  return buildExtrasSummaryChips(frontPto, frontLoader, gpsEnabled, gpsType, gpsYear).join(' · ');
+}
+
 export default function ValuationClient() {
   const router = useRouter();
 
@@ -146,10 +199,17 @@ export default function ValuationClient() {
   const [cab, setCab] = useState<CabType | null>(null);
   const [modelId, setModelId] = useState('');
   const [yearMode, setYearMode] = useState<'guided' | 'manual'>('guided');
-  const [year, setYear] = useState(2020);
+  const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
+  const [year, setYear] = useState<number | null>(null);
   const [manualYear, setManualYear] = useState('');
-  const [hours, setHours] = useState('3500');
-  const [condition, setCondition] = useState<ConditionKey>('good');
+  const [hours, setHours] = useState('');
+  const [condition, setCondition] = useState<ConditionKey | null>(null);
+  const [extrasOpen, setExtrasOpen] = useState(false);
+  const [frontPto, setFrontPto] = useState(false);
+  const [frontLoader, setFrontLoader] = useState(false);
+  const [gpsEnabled, setGpsEnabled] = useState(false);
+  const [gpsType, setGpsType] = useState<GpsType | null>(null);
+  const [gpsYear, setGpsYear] = useState('');
   const [result, setResult] = useState<Result | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<MethodKey | null>(null);
   const [message, setMessage] = useState('');
@@ -157,38 +217,63 @@ export default function ValuationClient() {
   const stepMeta = getStepMeta(step);
   const brandDropdownRef = useRef<HTMLDivElement | null>(null);
   const brandSearchInputRef = useRef<HTMLInputElement | null>(null);
+  const yearDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const sortedBrands = useMemo(
     () => [...brands].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
     [],
   );
 
-  const filteredModels = useMemo(
-    () => {
-      if (!tractorType || !drive || !cab) return [];
+  const filteredModels = useMemo(() => {
+    if (!tractorType || !drive || !cab) return [];
 
-      return tractors.filter((tractor) => {
-        const normalizedQuery = modelQuery.trim().toLowerCase();
-        const matchesBrand = tractor.brandSlug === brandSlug;
-        const matchesType = tractor.tractorType === tractorType;
-        const matchesDrive = tractor.drive === drive;
-        const matchesCab = tractor.cab === cab;
-        const matchesQuery = !normalizedQuery
-          ? true
-          : `${tractor.brandName} ${tractor.modelName} ${tractor.tractorType} ${tractor.drive} ${tractor.cab}`
-              .toLowerCase()
-              .includes(normalizedQuery);
+    return tractors.filter((tractor) => {
+      const normalizedQuery = modelQuery.trim().toLowerCase();
+      const matchesBrand = tractor.brandSlug === brandSlug;
+      const matchesType = tractor.tractorType === tractorType;
+      const matchesDrive = tractor.drive === drive;
+      const matchesCab = tractor.cab === cab;
+      const matchesQuery = !normalizedQuery
+        ? true
+        : `${tractor.brandName} ${tractor.modelName} ${tractor.tractorType} ${tractor.drive} ${tractor.cab}`
+            .toLowerCase()
+            .includes(normalizedQuery);
 
-        return matchesBrand && matchesType && matchesDrive && matchesCab && matchesQuery;
-      });
-    },
-    [brandSlug, tractorType, drive, cab, modelQuery],
-  );
+      return matchesBrand && matchesType && matchesDrive && matchesCab && matchesQuery;
+    });
+  }, [brandSlug, tractorType, drive, cab, modelQuery]);
 
   const selectedModel = useMemo<TractorCatalogRow | null>(
     () => filteredModels.find((model) => model.id === modelId) ?? null,
     [filteredModels, modelId],
   );
+
+  function invalidateResult() {
+    setResult(null);
+    setSelectedMethod(null);
+  }
+
+  function resetExtrasState() {
+    setFrontPto(false);
+    setFrontLoader(false);
+    setGpsEnabled(false);
+    setGpsType(null);
+    setGpsYear('');
+    setExtrasOpen(false);
+  }
+
+  function resetDetailState(options?: { keepYearMode?: boolean }) {
+    if (!options?.keepYearMode) {
+      setYearMode('guided');
+    }
+    setYearDropdownOpen(false);
+    setYear(null);
+    setManualYear('');
+    setHours('');
+    setCondition(null);
+    resetExtrasState();
+    invalidateResult();
+  }
 
   useEffect(() => {
     if (!filteredModels.length) {
@@ -204,10 +289,15 @@ export default function ValuationClient() {
   }, [filteredModels, modelId]);
 
   useEffect(() => {
-    if (!selectedModel || yearMode !== 'guided') return;
+    if (!selectedModel) {
+      setYear(null);
+      return;
+    }
 
-    if (year < selectedModel.yearStart || year > selectedModel.yearEnd) {
-      setYear(selectedModel.yearEnd);
+    if (yearMode === 'guided' && year !== null) {
+      if (year < selectedModel.yearStart || year > selectedModel.yearEnd) {
+        setYear(null);
+      }
     }
   }, [selectedModel, yearMode, year]);
 
@@ -215,6 +305,11 @@ export default function ValuationClient() {
     if (step !== 2) {
       setBrandDropdownOpen(false);
       setBrandSearch('');
+    }
+
+    if (step !== 4) {
+      setYearDropdownOpen(false);
+      setExtrasOpen(false);
     }
   }, [step]);
 
@@ -232,21 +327,44 @@ export default function ValuationClient() {
   }, [brandDropdownOpen]);
 
   useEffect(() => {
-    if (!brandDropdownOpen) return;
+    if (!gpsEnabled) {
+      setGpsType(null);
+      setGpsYear('');
+    }
+  }, [gpsEnabled]);
+
+  useEffect(() => {
+    if (!extrasOpen || typeof document === 'undefined') return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [extrasOpen]);
+
+  useEffect(() => {
+    if (!brandDropdownOpen && !yearDropdownOpen && !extrasOpen) return;
 
     function handlePointerDown(event: MouseEvent | TouchEvent) {
-      if (!brandDropdownRef.current) return;
-
       const target = event.target;
-      if (target instanceof Node && !brandDropdownRef.current.contains(target)) {
+      if (!(target instanceof Node)) return;
+
+      if (brandDropdownOpen && brandDropdownRef.current && !brandDropdownRef.current.contains(target)) {
         setBrandDropdownOpen(false);
+      }
+
+      if (yearDropdownOpen && yearDropdownRef.current && !yearDropdownRef.current.contains(target)) {
+        setYearDropdownOpen(false);
       }
     }
 
     function handleEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setBrandDropdownOpen(false);
-      }
+      if (event.key !== 'Escape') return;
+      setBrandDropdownOpen(false);
+      setYearDropdownOpen(false);
+      setExtrasOpen(false);
     }
 
     document.addEventListener('mousedown', handlePointerDown);
@@ -258,7 +376,7 @@ export default function ValuationClient() {
       document.removeEventListener('touchstart', handlePointerDown);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [brandDropdownOpen]);
+  }, [brandDropdownOpen, yearDropdownOpen, extrasOpen]);
 
   const years = useMemo(
     () =>
@@ -284,14 +402,24 @@ export default function ValuationClient() {
     return sortedBrands.filter((brand) => brand.name.toLowerCase().includes(normalizedQuery));
   }, [brandSearch, sortedBrands]);
 
-  const activeYear = yearMode === 'manual' ? Number(manualYear) : year;
-  const isYearValid = yearMode === 'guided'
-    ? Number.isInteger(year)
-    : Number.isInteger(activeYear) && activeYear >= 1950 && activeYear <= CURRENT_YEAR;
-  const selectedYearDisplay = isYearValid ? String(activeYear) : 'Enter year';
+  const activeYear = yearMode === 'manual' ? Number(manualYear) : year ?? Number.NaN;
+  const isYearValid =
+    yearMode === 'guided'
+      ? Number.isInteger(year)
+      : Number.isInteger(activeYear) && activeYear >= 1950 && activeYear <= CURRENT_YEAR;
+  const selectedYearDisplay = isYearValid ? String(activeYear) : 'Choose year';
   const enteredHours = Number(hours);
-  const enteredHoursDisplay =
-    Number.isFinite(enteredHours) && enteredHours > 0 ? enteredHours.toLocaleString('en-ZA') : 'Enter hours';
+  const isHoursValid = Number.isFinite(enteredHours) && enteredHours > 0;
+  const enteredHoursDisplay = isHoursValid ? `${enteredHours.toLocaleString('en-ZA')} hrs` : 'Type hours';
+  const selectedConditionDisplay = condition ? conditionLabel(condition) : 'Choose condition';
+  const extrasSummaryChips = useMemo(
+    () => buildExtrasSummaryChips(frontPto, frontLoader, gpsEnabled, gpsType, gpsYear),
+    [frontPto, frontLoader, gpsEnabled, gpsType, gpsYear],
+  );
+  const extrasSummaryText = useMemo(
+    () => buildExtrasSummaryText(frontPto, frontLoader, gpsEnabled, gpsType, gpsYear),
+    [frontPto, frontLoader, gpsEnabled, gpsType, gpsYear],
+  );
 
   const methodCards = useMemo<MethodCard[]>(() => {
     if (!result) return [];
@@ -330,12 +458,17 @@ export default function ValuationClient() {
     selectedMethod === 'market' ? selectedMethodValue : result?.marketMid ?? headlineValue,
   );
 
+  const yearUnlocked = Boolean(selectedModel);
+  const hoursUnlocked = yearUnlocked && isYearValid;
+  const conditionUnlocked = hoursUnlocked && isHoursValid;
+  const extrasUnlocked = conditionUnlocked && condition !== null;
+
   const canContinue = useMemo(() => {
     if (step === 1) return selectedType === 'tractor';
     if (step === 3) return Boolean(selectedModel);
-    if (step === 4) return Boolean(selectedModel && isYearValid && Number(hours) > 0);
+    if (step === 4) return Boolean(selectedModel && isYearValid && isHoursValid && condition);
     return true;
-  }, [step, selectedType, selectedModel, isYearValid, hours]);
+  }, [step, selectedType, selectedModel, isYearValid, isHoursValid, condition]);
 
   const nextLabel =
     step === 1
@@ -357,14 +490,10 @@ export default function ValuationClient() {
     setDrive(null);
     setCab(null);
     setModelId('');
-    setYearMode('guided');
-    setYear(2020);
-    setManualYear('');
-    setHours('3500');
-    setCondition('good');
     setResult(null);
     setSelectedMethod(null);
     setMessage('');
+    resetDetailState();
   }
 
   function handleBack() {
@@ -397,6 +526,11 @@ export default function ValuationClient() {
 
       if (!Number.isFinite(parsedHours) || parsedHours <= 0) {
         setMessage('Enter engine hours greater than zero before running the valuation.');
+        return;
+      }
+
+      if (!condition) {
+        setMessage('Choose the overall condition before running the valuation.');
         return;
       }
 
@@ -438,7 +572,9 @@ export default function ValuationClient() {
     }
 
     saveItem({
-      id: `${result.model.id}-${activeYear}-${hours}-${selectedMethod}`,
+      id: `${result.model.id}-${activeYear}-${hours}-${condition ?? 'condition'}-${
+        frontPto ? 'pto' : 'no-pto'
+      }-${frontLoader ? 'loader' : 'no-loader'}-${gpsEnabled ? `gps-${gpsType ?? 'enabled'}-${gpsYear || 'year'}` : 'no-gps'}-${selectedMethod}`,
       kind: 'tractor',
       title: `${result.model.brandName} ${result.model.modelName}`,
       brandName: result.model.brandName,
@@ -452,6 +588,7 @@ export default function ValuationClient() {
       aim4priceValueExVat: result.aim4priceValueExVat,
       marketMidExVat: result.marketMid,
       departmentValueExVat: result.departmentValueExVat,
+      note: extrasSummaryText !== 'No fitted extras selected' ? `Extras: ${extrasSummaryText}` : undefined,
       createdAtIso: new Date().toISOString(),
     });
 
@@ -573,6 +710,7 @@ export default function ValuationClient() {
                                 setCab(null);
                                 setModelId('');
                                 setModelQuery('');
+                                resetDetailState();
                               }
 
                               setBrandDropdownOpen(false);
@@ -633,6 +771,7 @@ export default function ValuationClient() {
                         setCab(null);
                         setModelId('');
                         setModelQuery('');
+                        resetDetailState();
                       }
                       setMessage('');
                     }}
@@ -669,6 +808,7 @@ export default function ValuationClient() {
                           setCab(null);
                           setModelId('');
                           setModelQuery('');
+                          resetDetailState();
                         }
                         setMessage('');
                       }}
@@ -709,6 +849,7 @@ export default function ValuationClient() {
                           setCab(value);
                           setModelId('');
                           setModelQuery('');
+                          resetDetailState();
                         }
                         setMessage('');
                       }}
@@ -765,9 +906,9 @@ export default function ValuationClient() {
                           type="button"
                           className={`${styles.modelRow} ${active ? styles.modelRowActive : ''}`}
                           onClick={() => {
-                            setModelId(model.id);
-                            if (yearMode === 'guided') {
-                              setYear(model.yearEnd);
+                            if (model.id !== modelId) {
+                              setModelId(model.id);
+                              resetDetailState();
                             }
                             setMessage('');
                           }}
@@ -823,7 +964,11 @@ export default function ValuationClient() {
     return (
       <>
         <div className={styles.inputGrid}>
-          <div className={`${styles.fieldBlock} ${styles.inputPanel}`}>
+          <div
+            className={`${styles.fieldBlock} ${styles.inputPanel} ${
+              yearUnlocked ? styles.filterGroupUnlocked : styles.filterGroupLocked
+            }`}
+          >
             <div className={styles.panelHeader}>
               <span className={styles.panelLabel}>Year Model</span>
 
@@ -833,6 +978,22 @@ export default function ValuationClient() {
                   className={`${styles.pillButton} ${yearMode === 'guided' ? styles.pillButtonActive : ''}`}
                   onClick={() => {
                     setYearMode('guided');
+                    const manualValue = Number(manualYear);
+                    if (
+                      selectedModel &&
+                      Number.isInteger(manualValue) &&
+                      manualValue >= selectedModel.yearStart &&
+                      manualValue <= selectedModel.yearEnd
+                    ) {
+                      setYear(manualValue);
+                    } else if (
+                      !selectedModel ||
+                      year === null ||
+                      year < selectedModel.yearStart ||
+                      year > selectedModel.yearEnd
+                    ) {
+                      setYear(null);
+                    }
                     setMessage('');
                   }}
                   aria-pressed={yearMode === 'guided'}
@@ -844,7 +1005,10 @@ export default function ValuationClient() {
                   className={`${styles.pillButton} ${yearMode === 'manual' ? styles.pillButtonActive : ''}`}
                   onClick={() => {
                     setYearMode('manual');
-                    setManualYear(String(year));
+                    if (year !== null) {
+                      setManualYear(String(year));
+                    }
+                    setYearDropdownOpen(false);
                     setMessage('');
                   }}
                   aria-pressed={yearMode === 'manual'}
@@ -856,25 +1020,67 @@ export default function ValuationClient() {
 
             <div className={styles.panelControl}>
               {yearMode === 'guided' ? (
-                <select
-                  value={year}
-                  onChange={(event: ChangeEvent<HTMLSelectElement>) => setYear(Number(event.target.value))}
-                  className={styles.controlInput}
-                  aria-label="Choose guided year model"
-                >
-                  {years.map((availableYear) => (
-                    <option key={availableYear} value={availableYear}>
-                      {availableYear}
-                    </option>
-                  ))}
-                </select>
+                <div className={styles.dropdownField} ref={yearDropdownRef}>
+                  <button
+                    type="button"
+                    className={`${styles.dropdownTrigger} ${yearDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
+                    onClick={() => {
+                      if (!selectedModel) return;
+                      setYearDropdownOpen((open) => !open);
+                      setMessage('');
+                    }}
+                    aria-haspopup="listbox"
+                    aria-expanded={yearDropdownOpen}
+                    aria-label="Choose guided year model"
+                  >
+                    <span className={styles.dropdownTriggerText}>{selectedYearDisplay}</span>
+                    <span className={styles.dropdownTriggerIcon} aria-hidden="true">
+                      {yearDropdownOpen ? '▴' : '▾'}
+                    </span>
+                  </button>
+
+                  {yearDropdownOpen ? (
+                    <div className={styles.dropdownMenu}>
+                      <div className={styles.dropdownList} role="listbox" aria-label="Available guided years">
+                        {years.length ? (
+                          years.map((availableYear) => {
+                            const active = year === availableYear;
+
+                            return (
+                              <button
+                                key={availableYear}
+                                type="button"
+                                role="option"
+                                aria-selected={active}
+                                className={`${styles.dropdownOption} ${active ? styles.dropdownOptionActive : ''}`}
+                                onClick={() => {
+                                  setYear(availableYear);
+                                  setYearDropdownOpen(false);
+                                  setMessage('');
+                                  invalidateResult();
+                                }}
+                              >
+                                <span className={styles.dropdownOptionText}>{availableYear}</span>
+                                {active ? <span className={styles.dropdownOptionBadge}>Selected</span> : null}
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <div className={styles.dropdownEmpty}>No guided years loaded for this model yet.</div>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               ) : (
                 <input
                   value={manualYear}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    setManualYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))
-                  }
-                  placeholder="e.g. 2017"
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setManualYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4));
+                    setMessage('');
+                    invalidateResult();
+                  }}
+                  placeholder="Type year model here"
                   inputMode="numeric"
                   aria-label="Enter year model manually"
                   className={styles.controlInput}
@@ -887,49 +1093,126 @@ export default function ValuationClient() {
             </p>
           </div>
 
-          <div className={`${styles.fieldBlock} ${styles.inputPanel}`}>
+          <div
+            className={`${styles.fieldBlock} ${styles.inputPanel} ${
+              hoursUnlocked ? styles.filterGroupUnlocked : styles.filterGroupLocked
+            }`}
+          >
             <div className={styles.panelHeader}>
               <span className={styles.panelLabel}>Engine Hours</span>
-              <span className={styles.panelBadge}>Hour meter</span>
+              <span className={styles.filterStatusBadge}>
+                {!hoursUnlocked ? 'Locked' : isHoursValid ? 'Entered' : 'Required'}
+              </span>
             </div>
 
             <div className={styles.panelControl}>
-              <input
-                value={hours}
-                onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                  setHours(event.target.value.replace(/[^0-9]/g, ''))
-                }
-                placeholder="3,500"
-                inputMode="numeric"
-                aria-label="Enter engine hours"
-                className={styles.controlInput}
-              />
+              {hoursUnlocked ? (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(0, 1fr) auto',
+                    gap: '0.75rem',
+                    alignItems: 'center',
+                  }}
+                >
+                  <input
+                    value={hours}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      setHours(event.target.value.replace(/[^0-9]/g, ''));
+                      setMessage('');
+                      invalidateResult();
+                    }}
+                    placeholder="Type engine hours here"
+                    inputMode="numeric"
+                    aria-label="Enter engine hours"
+                    className={styles.controlInput}
+                  />
+                  <span className={styles.panelBadge}>hrs</span>
+                </div>
+              ) : (
+                <p className={styles.filterLockedText}>
+                  Select the year model first. Engine hours unlock immediately afterwards.
+                </p>
+              )}
             </div>
 
             <p className={styles.fieldHint}>Use the reading shown on the engine hour meter.</p>
           </div>
         </div>
 
-        <div className={styles.conditionSection}>
+        <div
+          className={`${styles.conditionSection} ${
+            conditionUnlocked ? styles.filterGroupUnlocked : styles.filterGroupLocked
+          }`}
+        >
           <div className={styles.sectionHeader}>
             <span className={styles.sectionLabel}>Overall Condition</span>
-            <span className={styles.sectionHint}>Choose the option that best matches the tractor today.</span>
+            <span className={styles.filterStatusBadge}>
+              {!conditionUnlocked ? 'Locked' : condition ? 'Selected' : 'Required'}
+            </span>
           </div>
 
-          <div className={styles.conditionGrid}>
-            {conditionOptions.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                className={`${styles.conditionCard} ${condition === option.key ? styles.conditionCardActive : ''}`}
-                onClick={() => {
-                  setCondition(option.key);
-                  setMessage('');
-                }}
-              >
-                <strong>{option.label}</strong>
-                <span>{getConditionHint(option.key)}</span>
-              </button>
+          {conditionUnlocked ? (
+            <>
+              <p className={styles.sectionHint} style={{ marginTop: '0.65rem' }}>
+                Choose the option that best matches the tractor today.
+              </p>
+
+              <div className={styles.conditionGrid}>
+                {conditionOptions.map((option) => (
+                  <button
+                    key={option.key}
+                    type="button"
+                    className={`${styles.conditionCard} ${condition === option.key ? styles.conditionCardActive : ''}`}
+                    onClick={() => {
+                      setCondition(option.key);
+                      setMessage('');
+                      invalidateResult();
+                    }}
+                  >
+                    <strong>{option.label}</strong>
+                    <span>{getConditionHint(option.key)}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className={styles.filterLockedText} style={{ marginTop: '0.85rem' }}>
+              Enter engine hours first. Overall condition unlocks after that.
+            </p>
+          )}
+        </div>
+
+        <div
+          className={`${styles.selectionCard} ${extrasUnlocked ? styles.filterGroupUnlocked : styles.filterGroupLocked}`}
+        >
+          <div className={styles.sectionHeader}>
+            <div>
+              <span className={styles.selectionEyebrow}>Extras</span>
+              <strong style={{ display: 'block', marginTop: '0.4rem', color: '#223b34', fontSize: '1.03rem' }}>
+                Add fitted extras
+              </strong>
+            </div>
+
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => setExtrasOpen(true)}
+              disabled={!extrasUnlocked}
+            >
+              Extras
+            </button>
+          </div>
+
+          <p className={styles.fieldHint} style={{ minHeight: 0, marginTop: '0.7rem' }}>
+            Add fitted extras such as Front Hitch & Front PTO, Front Loader and GPS.
+          </p>
+
+          <div className={styles.selectionChipRow} style={{ marginTop: '0.8rem' }}>
+            {extrasSummaryChips.map((chip) => (
+              <span key={chip} className={styles.modelChip}>
+                {chip}
+              </span>
             ))}
           </div>
         </div>
@@ -938,7 +1221,7 @@ export default function ValuationClient() {
           <div className={styles.selectionCard}>
             <div className={styles.selectionCardGrid}>
               <div className={styles.selectionMeta}>
-                <span className={styles.selectionEyebrow}>Selected model</span>
+                <span className={styles.selectionEyebrow}>Summary</span>
                 <strong>
                   {selectedModel.brandName} {selectedModel.modelName}
                 </strong>
@@ -969,7 +1252,12 @@ export default function ValuationClient() {
 
                 <div className={styles.selectionFact}>
                   <span>Condition</span>
-                  <strong>{conditionLabel(condition)}</strong>
+                  <strong>{selectedConditionDisplay}</strong>
+                </div>
+
+                <div className={styles.selectionFact}>
+                  <span>Extras</span>
+                  <strong>{extrasSummaryText}</strong>
                 </div>
               </div>
             </div>
@@ -980,282 +1268,528 @@ export default function ValuationClient() {
   }
 
   return (
-    <main className={styles.page}>
-      <AppHeader active="valuation" ctaHref="/valuation" ctaLabel="Restart Valuation" />
+    <>
+      <main className={styles.page}>
+        <AppHeader active="valuation" ctaHref="/valuation" ctaLabel="Restart Valuation" />
 
-      <div className={styles.container}>
-        {step !== 5 ? (
-          <section className={styles.wizardShell}>
-            <article className={styles.wizardCard}>
-              <div className={styles.wizardHeader}>
-                <div className={styles.stepper}>
-                  {WIZARD_STEPS.map((item, index) => {
-                    const isActive = step === item.step;
-                    const isComplete = step > item.step;
-
-                    return (
-                      <div
-                        key={item.step}
-                        className={`${styles.stepperItem} ${isActive ? styles.stepperItemActive : ''} ${
-                          isComplete ? styles.stepperItemComplete : ''
-                        }`}
-                      >
-                        <span
-                          className={`${styles.stepperBullet} ${
-                            isActive ? styles.stepperBulletActive : ''
-                          } ${isComplete ? styles.stepperBulletComplete : ''}`}
-                        >
-                          {isComplete ? '✓' : item.step}
-                        </span>
-                        <span
-                          className={`${styles.stepperLabel} ${isActive ? styles.stepperLabelActive : ''} ${
-                            isComplete ? styles.stepperLabelComplete : ''
-                          }`}
-                        >
-                          {item.label}
-                        </span>
-                        {index < WIZARD_STEPS.length - 1 ? (
-                          <span
-                            className={`${styles.stepperLine} ${step > item.step ? styles.stepperLineComplete : ''}`}
-                          />
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className={styles.stepContent}>
-                <h1 className={styles.stepTitle}>{stepMeta.title}</h1>
-                <p className={styles.stepText}>{stepMeta.body}</p>
-
-                {message ? <div className={styles.message}>{message}</div> : null}
-
-                {renderWizardBody()}
-              </div>
-
-              <div className={styles.wizardFooter}>
-                <button type="button" className={styles.secondaryButton} onClick={handleBack}>
-                  {step === 1 ? 'Back Home' : 'Back'}
-                </button>
-
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={handleNext}
-                  disabled={!canContinue}
-                >
-                  {nextLabel}
-                </button>
-              </div>
-            </article>
-          </section>
-        ) : result ? (
-          <section className={styles.resultsLayout}>
-            <div className={styles.resultsMain}>
-              <div className={styles.resultsTopbar}>
-                <button type="button" className={styles.backLink} onClick={() => setStep(4)}>
-                  ← Back to search
-                </button>
-                <span className={styles.statusBadge}>Valuation complete</span>
-              </div>
-
-              {message ? <div className={styles.message}>{message}</div> : null}
-
-              <article className={styles.heroCard}>
-                <div className={styles.heroTop}>
-                  <div className={styles.heroIdentity}>
-                    <div className={styles.heroImageBox}>
-                      <Image
-                        src="/brand/Tractor.png"
-                        alt="Valuation result tractor"
-                        fill
-                        className={styles.typeImage}
-                        sizes="132px"
-                      />
-                    </div>
-
-                    <div className={styles.heroInfo}>
-                      <h1 className={styles.resultTitle}>
-                        {result.model.brandName} {result.model.modelName}
-                      </h1>
-                      <p className={styles.heroMeta}>
-                        {getTractorTypeLabel(result.model.tractorType)} tractor • {getDriveDisplay(result.model.drive)} •{' '}
-                        {getCabDisplay(result.model.cab)} • {activeYear} • {result.model.powerKw} kW •{' '}
-                        {Number(hours).toLocaleString('en-ZA')} engine hours
-                      </p>
-                      <button type="button" className={styles.inlineButton} onClick={() => setStep(4)}>
-                        Edit Details
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className={styles.valuePanel}>
-                  <div className={styles.valuePanelTop}>
-                    <div>
-                      <span className={styles.valueLabel}>{headlineLabel}</span>
-                      <div className={styles.valueAmount}>{money(headlineValue)}</div>
-                      <p className={styles.valueMeta}>ZAR • South Africa • Excl. VAT (indicative)</p>
-                    </div>
-
-                    <span className={styles.confidenceBadge}>{getConfidenceLabel(result)}</span>
-                  </div>
-
-                  <div className={styles.methodGrid}>
-                    {methodCards.map((card) => {
-                      const active = selectedMethod === card.key;
-                      const unavailable = !card.available;
+        <div className={styles.container}>
+          {step !== 5 ? (
+            <section className={styles.wizardShell}>
+              <article className={styles.wizardCard}>
+                <div className={styles.wizardHeader}>
+                  <div className={styles.stepper}>
+                    {WIZARD_STEPS.map((item, index) => {
+                      const isActive = step === item.step;
+                      const isComplete = step > item.step;
 
                       return (
-                        <button
-                          key={card.key}
-                          type="button"
-                          className={`${styles.methodButton} ${
-                            active ? styles.methodButtonActive : ''
-                          } ${unavailable ? styles.methodButtonDisabled : ''}`}
-                          onClick={() => handleMethodSelect(card.key)}
-                          disabled={unavailable}
+                        <div
+                          key={item.step}
+                          className={`${styles.stepperItem} ${isActive ? styles.stepperItemActive : ''} ${
+                            isComplete ? styles.stepperItemComplete : ''
+                          }`}
                         >
-                          <span className={styles.methodTitle}>{card.label}</span>
-                          <strong className={styles.methodValue}>
-                            {card.key === 'market' ? getMethodDisplay(result, 'market') : money(card.value)}
-                          </strong>
-                          <span className={styles.methodNote}>{card.note}</span>
-                        </button>
+                          <span
+                            className={`${styles.stepperBullet} ${
+                              isActive ? styles.stepperBulletActive : ''
+                            } ${isComplete ? styles.stepperBulletComplete : ''}`}
+                          >
+                            {isComplete ? '✓' : item.step}
+                          </span>
+                          <span
+                            className={`${styles.stepperLabel} ${isActive ? styles.stepperLabelActive : ''} ${
+                              isComplete ? styles.stepperLabelComplete : ''
+                            }`}
+                          >
+                            {item.label}
+                          </span>
+                          {index < WIZARD_STEPS.length - 1 ? (
+                            <span
+                              className={`${styles.stepperLine} ${step > item.step ? styles.stepperLineComplete : ''}`}
+                            />
+                          ) : null}
+                        </div>
                       );
                     })}
                   </div>
                 </div>
-              </article>
 
-              <article className={styles.assetCard}>
-                <div className={styles.assetHeader}>
-                  <div>
-                    <h2 className={styles.assetTitle}>Save to Asset Register</h2>
-                    <p className={styles.assetText}>
-                      Track this asset, update values over time, and export reports later.
-                    </p>
+                <div className={styles.stepContent}>
+                  <h1 className={styles.stepTitle}>{stepMeta.title}</h1>
+                  <p className={styles.stepText}>{stepMeta.body}</p>
+
+                  {message ? <div className={styles.message}>{message}</div> : null}
+
+                  {renderWizardBody()}
+                </div>
+
+                <div className={styles.wizardFooter}>
+                  <button type="button" className={styles.secondaryButton} onClick={handleBack}>
+                    {step === 1 ? 'Back Home' : 'Back'}
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={handleNext}
+                    disabled={!canContinue}
+                  >
+                    {nextLabel}
+                  </button>
+                </div>
+              </article>
+            </section>
+          ) : result ? (
+            <section className={styles.resultsLayout}>
+              <div className={styles.resultsMain}>
+                <div className={styles.resultsTopbar}>
+                  <button type="button" className={styles.backLink} onClick={() => setStep(4)}>
+                    ← Back to search
+                  </button>
+                  <span className={styles.statusBadge}>Valuation complete</span>
+                </div>
+
+                {message ? <div className={styles.message}>{message}</div> : null}
+
+                <article className={styles.heroCard}>
+                  <div className={styles.heroTop}>
+                    <div className={styles.heroIdentity}>
+                      <div className={styles.heroImageBox}>
+                        <Image
+                          src="/brand/Tractor.png"
+                          alt="Valuation result tractor"
+                          fill
+                          className={styles.typeImage}
+                          sizes="132px"
+                        />
+                      </div>
+
+                      <div className={styles.heroInfo}>
+                        <h1 className={styles.resultTitle}>
+                          {result.model.brandName} {result.model.modelName}
+                        </h1>
+                        <p className={styles.heroMeta}>
+                          {getTractorTypeLabel(result.model.tractorType)} tractor • {getDriveDisplay(result.model.drive)} •{' '}
+                          {getCabDisplay(result.model.cab)} • {activeYear} • {result.model.powerKw} kW •{' '}
+                          {Number(hours).toLocaleString('en-ZA')} engine hours
+                        </p>
+                        <button type="button" className={styles.inlineButton} onClick={() => setStep(4)}>
+                          Edit Details
+                        </button>
+                      </div>
+                    </div>
                   </div>
+
+                  <div className={styles.valuePanel}>
+                    <div className={styles.valuePanelTop}>
+                      <div>
+                        <span className={styles.valueLabel}>{headlineLabel}</span>
+                        <div className={styles.valueAmount}>{money(headlineValue)}</div>
+                        <p className={styles.valueMeta}>ZAR • South Africa • Excl. VAT (indicative)</p>
+                      </div>
+
+                      <span className={styles.confidenceBadge}>{getConfidenceLabel(result)}</span>
+                    </div>
+
+                    <div className={styles.methodGrid}>
+                      {methodCards.map((card) => {
+                        const active = selectedMethod === card.key;
+                        const unavailable = !card.available;
+
+                        return (
+                          <button
+                            key={card.key}
+                            type="button"
+                            className={`${styles.methodButton} ${
+                              active ? styles.methodButtonActive : ''
+                            } ${unavailable ? styles.methodButtonDisabled : ''}`}
+                            onClick={() => handleMethodSelect(card.key)}
+                            disabled={unavailable}
+                          >
+                            <span className={styles.methodTitle}>{card.label}</span>
+                            <strong className={styles.methodValue}>
+                              {card.key === 'market' ? getMethodDisplay(result, 'market') : money(card.value)}
+                            </strong>
+                            <span className={styles.methodNote}>{card.note}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </article>
+
+                <article className={styles.assetCard}>
+                  <div className={styles.assetHeader}>
+                    <div>
+                      <h2 className={styles.assetTitle}>Save to Asset Register</h2>
+                      <p className={styles.assetText}>
+                        Track this asset, update values over time, and export reports later.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button type="button" className={styles.assetButton} onClick={handleSave}>
+                    Save to My Assets
+                  </button>
+
+                  <div className={styles.assetFootnote}>Prototype mode: this currently saves locally only.</div>
+                </article>
+              </div>
+
+              <aside className={styles.resultsSide}>
+                <article className={styles.sideCard}>
+                  <h2 className={styles.sideTitle}>Value Breakdown</h2>
+
+                  <div className={styles.breakdownList}>
+                    <div className={styles.breakdownRow}>
+                      <span className={styles.breakdownKey}>Specification</span>
+                      <span className={styles.breakdownValue}>
+                        {getTractorTypeLabel(result.model.tractorType)} • {getDriveDisplay(result.model.drive)} •{' '}
+                        {getCabDisplay(result.model.cab)}
+                      </span>
+                    </div>
+
+                    <div className={styles.breakdownRow}>
+                      <span className={styles.breakdownKey}>Condition</span>
+                      <span className={styles.breakdownValue}>{selectedConditionDisplay}</span>
+                    </div>
+
+                    <div className={styles.breakdownRow}>
+                      <span className={styles.breakdownKey}>Engine hours</span>
+                      <span className={styles.breakdownValue}>
+                        {Number(hours).toLocaleString('en-ZA')} engine hours
+                      </span>
+                    </div>
+
+                    <div className={styles.breakdownRow}>
+                      <span className={styles.breakdownKey}>Extras</span>
+                      <span className={styles.breakdownValue}>{extrasSummaryText}</span>
+                    </div>
+
+                    <div className={styles.breakdownRow}>
+                      <span className={styles.breakdownKey}>Selected source</span>
+                      <span className={styles.breakdownValue}>{headlineLabel}</span>
+                    </div>
+
+                    <div className={styles.breakdownRow}>
+                      <span className={styles.breakdownKey}>Coverage</span>
+                      <span className={styles.breakdownValue}>{getConfidenceLabel(result)}</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article className={styles.sideCard}>
+                  <div className={styles.rangeCardHead}>
+                    <h2 className={styles.sideTitle}>Market Range</h2>
+                    <span className={styles.rangeBadge}>
+                      {result.marketCount} comp{result.marketCount === 1 ? '' : 's'}
+                    </span>
+                  </div>
+
+                  <div className={styles.rangeCurrent}>{money(result.marketMid ?? headlineValue)}</div>
+
+                  <div className={styles.rangeTrack}>
+                    <div className={styles.rangeFill} style={{ width: `${rangePercent}%` }} />
+                    <div className={styles.rangePin} style={{ left: `${rangePercent}%` }} />
+                  </div>
+
+                  <div className={styles.rangeLabels}>
+                    <span>{money(result.marketLow)}</span>
+                    <span>{money(result.marketHigh)}</span>
+                  </div>
+
+                  <p className={styles.rangeNote}>
+                    Based on similar {activeYear} models in the current local prototype set.
+                  </p>
+                </article>
+
+                <article className={styles.sideCard}>
+                  <h2 className={styles.sideTitle}>Data Sources</h2>
+
+                  <div className={styles.sourceList}>
+                    <div className={styles.sourceItem}>
+                      <strong className={styles.sourceItemTitle}>Live Market Listings</strong>
+                      <span className={styles.sourceItemText}>
+                        {result.marketCount} local prototype comparable listing{result.marketCount === 1 ? '' : 's'}
+                      </span>
+                    </div>
+
+                    <div className={styles.sourceItem}>
+                      <strong className={styles.sourceItemTitle}>Aim4price Pricing Logic</strong>
+                      <span className={styles.sourceItemText}>Age, usage and condition weighting</span>
+                    </div>
+
+                    <div className={styles.sourceItem}>
+                      <strong className={styles.sourceItemTitle}>DALRRD Guidelines</strong>
+                      <span className={styles.sourceItemText}>Power band and drive type reference</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article className={styles.sideCard}>
+                  <h2 className={styles.sideTitle}>Next Steps</h2>
+
+                  <div className={styles.actionStack}>
+                    <button type="button" className={styles.secondaryButton} onClick={() => setStep(4)}>
+                      Refine Inputs
+                    </button>
+
+                    <button type="button" className={styles.secondaryButton} onClick={handlePrint}>
+                      Download PDF Report
+                    </button>
+
+                    <button type="button" className={styles.primaryButton} onClick={resetWizard}>
+                      Start New Valuation
+                    </button>
+                  </div>
+                </article>
+              </aside>
+            </section>
+          ) : null}
+        </div>
+      </main>
+
+      {extrasOpen ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Select fitted extras"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(16, 32, 26, 0.52)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            zIndex: 120,
+            display: 'grid',
+            placeItems: 'center',
+            padding: '1rem',
+          }}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setExtrasOpen(false);
+            }
+          }}
+        >
+          <article
+            className={styles.wizardCard}
+            style={{
+              width: 'min(880px, 100%)',
+              maxHeight: 'min(88vh, 920px)',
+              overflowY: 'auto',
+              borderRadius: '1.35rem',
+            }}
+          >
+            <div
+              style={{
+                padding: '1.25rem 1.35rem 1rem',
+                borderBottom: '1px solid rgba(18, 45, 37, 0.08)',
+                background: 'linear-gradient(180deg, rgba(248, 251, 249, 0.98) 0%, rgba(244, 248, 246, 0.94) 100%)',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: '1rem',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div>
+                  <span className={styles.selectionEyebrow}>Extras</span>
+                  <h2 style={{ margin: '0.45rem 0 0', fontSize: '1.55rem', lineHeight: 1.1, color: '#223b34' }}>
+                    Fitted extras
+                  </h2>
+                  <p style={{ margin: '0.55rem 0 0', color: '#6f7974', lineHeight: 1.6 }}>
+                    Select the extras installed on this tractor before generating the valuation.
+                  </p>
                 </div>
 
-                <button type="button" className={styles.assetButton} onClick={handleSave}>
-                  Save to My Assets
+                <button type="button" className={styles.secondaryButton} onClick={() => setExtrasOpen(false)}>
+                  Close
                 </button>
-
-                <div className={styles.assetFootnote}>
-                  Prototype mode: this currently saves locally only.
-                </div>
-              </article>
+              </div>
             </div>
 
-            <aside className={styles.resultsSide}>
-              <article className={styles.sideCard}>
-                <h2 className={styles.sideTitle}>Value Breakdown</h2>
-
-                <div className={styles.breakdownList}>
-                  <div className={styles.breakdownRow}>
-                    <span className={styles.breakdownKey}>Specification</span>
-                    <span className={styles.breakdownValue}>
-                      {getTractorTypeLabel(result.model.tractorType)} • {getDriveDisplay(result.model.drive)} •{' '}
-                      {getCabDisplay(result.model.cab)}
-                    </span>
+            <div style={{ padding: '1.25rem 1.35rem 1.35rem' }}>
+              <div className={styles.filterToolbar}>
+                <div className={`${styles.filterGroup} ${styles.filterGroupUnlocked}`}>
+                  <div className={styles.filterGroupHead}>
+                    <span className={styles.filterLabel}>Front Hitch & Front PTO</span>
+                    <span className={styles.filterStatusBadge}>{frontPto ? 'Included' : 'Optional'}</span>
                   </div>
 
-                  <div className={styles.breakdownRow}>
-                    <span className={styles.breakdownKey}>Condition</span>
-                    <span className={styles.breakdownValue}>{conditionLabel(condition)}</span>
-                  </div>
-
-                  <div className={styles.breakdownRow}>
-                    <span className={styles.breakdownKey}>Engine hours</span>
-                    <span className={styles.breakdownValue}>
-                      {Number(hours).toLocaleString('en-ZA')} engine hours
-                    </span>
-                  </div>
-
-                  <div className={styles.breakdownRow}>
-                    <span className={styles.breakdownKey}>Selected source</span>
-                    <span className={styles.breakdownValue}>{headlineLabel}</span>
-                  </div>
-
-                  <div className={styles.breakdownRow}>
-                    <span className={styles.breakdownKey}>Coverage</span>
-                    <span className={styles.breakdownValue}>{getConfidenceLabel(result)}</span>
+                  <div className={styles.pillRow}>
+                    <button
+                      type="button"
+                      className={`${styles.pillButton} ${frontPto ? styles.pillButtonActive : ''}`}
+                      onClick={() => setFrontPto(true)}
+                      aria-pressed={frontPto}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.pillButton} ${!frontPto ? styles.pillButtonActive : ''}`}
+                      onClick={() => setFrontPto(false)}
+                      aria-pressed={!frontPto}
+                    >
+                      No
+                    </button>
                   </div>
                 </div>
-              </article>
 
-              <article className={styles.sideCard}>
-                <div className={styles.rangeCardHead}>
-                  <h2 className={styles.sideTitle}>Market Range</h2>
-                  <span className={styles.rangeBadge}>
-                    {result.marketCount} comp{result.marketCount === 1 ? '' : 's'}
+                <div className={`${styles.filterGroup} ${styles.filterGroupUnlocked}`}>
+                  <div className={styles.filterGroupHead}>
+                    <span className={styles.filterLabel}>Front Loader</span>
+                    <span className={styles.filterStatusBadge}>{frontLoader ? 'Included' : 'Optional'}</span>
+                  </div>
+
+                  <div className={styles.pillRow}>
+                    <button
+                      type="button"
+                      className={`${styles.pillButton} ${frontLoader ? styles.pillButtonActive : ''}`}
+                      onClick={() => setFrontLoader(true)}
+                      aria-pressed={frontLoader}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.pillButton} ${!frontLoader ? styles.pillButtonActive : ''}`}
+                      onClick={() => setFrontLoader(false)}
+                      aria-pressed={!frontLoader}
+                    >
+                      No
+                    </button>
+                  </div>
+                </div>
+
+                <div className={`${styles.filterGroup} ${styles.filterGroupUnlocked}`}>
+                  <div className={styles.filterGroupHead}>
+                    <span className={styles.filterLabel}>GPS</span>
+                    <span className={styles.filterStatusBadge}>{gpsEnabled ? 'Included' : 'Optional'}</span>
+                  </div>
+
+                  <div className={styles.pillRow}>
+                    <button
+                      type="button"
+                      className={`${styles.pillButton} ${gpsEnabled ? styles.pillButtonActive : ''}`}
+                      onClick={() => setGpsEnabled(true)}
+                      aria-pressed={gpsEnabled}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.pillButton} ${!gpsEnabled ? styles.pillButtonActive : ''}`}
+                      onClick={() => setGpsEnabled(false)}
+                      aria-pressed={!gpsEnabled}
+                    >
+                      No
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {gpsEnabled ? (
+                <div className={styles.inputGrid} style={{ marginTop: '1rem' }}>
+                  <div className={`${styles.fieldBlock} ${styles.inputPanel} ${styles.filterGroupUnlocked}`}>
+                    <div className={styles.panelHeader}>
+                      <span className={styles.panelLabel}>GPS Type</span>
+                      <span className={styles.filterStatusBadge}>{gpsType ? 'Selected' : 'Optional'}</span>
+                    </div>
+
+                    <div className={styles.panelControl}>
+                      <div className={styles.pillRow}>
+                        {(['full-autosteer', 'guidance-only'] as GpsType[]).map((value) => (
+                          <button
+                            key={value}
+                            type="button"
+                            className={`${styles.pillButton} ${gpsType === value ? styles.pillButtonActive : ''}`}
+                            onClick={() => setGpsType(value)}
+                            aria-pressed={gpsType === value}
+                          >
+                            {getGpsTypeLabel(value)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <p className={styles.fieldHint}>Add the installed GPS system type if known.</p>
+                  </div>
+
+                  <div className={`${styles.fieldBlock} ${styles.inputPanel} ${styles.filterGroupUnlocked}`}>
+                    <div className={styles.panelHeader}>
+                      <span className={styles.panelLabel}>GPS Year</span>
+                      <span className={styles.filterStatusBadge}>{gpsYear.trim() ? 'Entered' : 'Optional'}</span>
+                    </div>
+
+                    <div className={styles.panelControl}>
+                      <input
+                        value={gpsYear}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                          setGpsYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))
+                        }
+                        placeholder="Type GPS year here"
+                        inputMode="numeric"
+                        aria-label="Enter GPS year"
+                        className={styles.controlInput}
+                      />
+                    </div>
+
+                    <p className={styles.fieldHint}>Use the approximate GPS year model where available.</p>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className={styles.selectionCard} style={{ marginTop: '1rem' }}>
+                <div className={styles.sectionHeader}>
+                  <span className={styles.selectionEyebrow}>Selected extras</span>
+                  <span className={styles.filterStatusBadge}>
+                    {extrasSummaryChips[0] === 'No fitted extras selected' ? 'None' : `${extrasSummaryChips.length} item${extrasSummaryChips.length === 1 ? '' : 's'}`}
                   </span>
                 </div>
 
-                <div className={styles.rangeCurrent}>{money(result.marketMid ?? headlineValue)}</div>
-
-                <div className={styles.rangeTrack}>
-                  <div className={styles.rangeFill} style={{ width: `${rangePercent}%` }} />
-                  <div className={styles.rangePin} style={{ left: `${rangePercent}%` }} />
-                </div>
-
-                <div className={styles.rangeLabels}>
-                  <span>{money(result.marketLow)}</span>
-                  <span>{money(result.marketHigh)}</span>
-                </div>
-
-                <p className={styles.rangeNote}>
-                  Based on similar {activeYear} models in the current local prototype set.
-                </p>
-              </article>
-
-              <article className={styles.sideCard}>
-                <h2 className={styles.sideTitle}>Data Sources</h2>
-
-                <div className={styles.sourceList}>
-                  <div className={styles.sourceItem}>
-                    <strong className={styles.sourceItemTitle}>Live Market Listings</strong>
-                    <span className={styles.sourceItemText}>
-                      {result.marketCount} local prototype comparable listing
-                      {result.marketCount === 1 ? '' : 's'}
+                <div className={styles.selectionChipRow} style={{ marginTop: '0.8rem' }}>
+                  {extrasSummaryChips.map((chip) => (
+                    <span key={chip} className={styles.modelChip}>
+                      {chip}
                     </span>
-                  </div>
-
-                  <div className={styles.sourceItem}>
-                    <strong className={styles.sourceItemTitle}>Aim4price Pricing Logic</strong>
-                    <span className={styles.sourceItemText}>Age, usage and condition weighting</span>
-                  </div>
-
-                  <div className={styles.sourceItem}>
-                    <strong className={styles.sourceItemTitle}>DALRRD Guidelines</strong>
-                    <span className={styles.sourceItemText}>Power band and drive type reference</span>
-                  </div>
+                  ))}
                 </div>
-              </article>
+              </div>
+            </div>
 
-              <article className={styles.sideCard}>
-                <h2 className={styles.sideTitle}>Next Steps</h2>
-
-                <div className={styles.actionStack}>
-                  <button type="button" className={styles.secondaryButton} onClick={() => setStep(4)}>
-                    Refine Inputs
-                  </button>
-
-                  <button type="button" className={styles.secondaryButton} onClick={handlePrint}>
-                    Download PDF Report
-                  </button>
-
-                  <button type="button" className={styles.primaryButton} onClick={resetWizard}>
-                    Start New Valuation
-                  </button>
-                </div>
-              </article>
-            </aside>
-          </section>
-        ) : null}
-      </div>
-    </main>
+            <div
+              style={{
+                padding: '1rem 1.35rem 1.25rem',
+                borderTop: '1px solid rgba(18, 45, 37, 0.08)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: '1rem',
+                flexWrap: 'wrap',
+              }}
+            >
+              <button type="button" className={styles.secondaryButton} onClick={() => setExtrasOpen(false)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={() => {
+                  setExtrasOpen(false);
+                  setMessage('');
+                  invalidateResult();
+                }}
+              >
+                Apply Extras
+              </button>
+            </div>
+          </article>
+        </div>
+      ) : null}
+    </>
   );
 }
