@@ -291,6 +291,7 @@
 }
 
 .searchInput,
+.controlInput,
 .field input,
 .field select,
 .dropdownSearchInput {
@@ -310,6 +311,7 @@
 }
 
 .searchInput::placeholder,
+.controlInput::placeholder,
 .field input::placeholder,
 .dropdownSearchInput::placeholder {
   color: #97a39d;
@@ -317,6 +319,7 @@
 }
 
 .searchInput:focus,
+.controlInput:focus,
 .field input:focus,
 .field select:focus,
 .dropdownSearchInput:focus {
@@ -870,6 +873,7 @@
 .panelControl {
   display: grid;
   align-content: start;
+  gap: 0.75rem;
   min-height: 3.35rem;
 }
 
