@@ -12,6 +12,7 @@ import {
   type CabType,
   type ConditionKey,
   type DriveType,
+  type MarketplaceListing,
   type TractorCatalogRow,
   type TractorType,
 } from '../../lib/tractor-data';
@@ -115,9 +116,17 @@ function getConditionHint(condition: ConditionKey): string {
   return 'Requires attention before sale';
 }
 
+function getConfidenceLevel(result: Result): 'high' | 'medium' | 'low' {
+  if (result.marketCount >= 5) return 'high';
+  if (result.marketCount >= 2) return 'medium';
+  return 'low';
+}
+
 function getConfidenceLabel(result: Result): string {
-  if (result.marketCount >= 5) return 'Confidence: High';
-  if (result.marketCount >= 2) return 'Confidence: Medium';
+  const level = getConfidenceLevel(result);
+
+  if (level === 'high') return 'Confidence: High';
+  if (level === 'medium') return 'Confidence: Medium';
   return 'Confidence: Low';
 }
 
@@ -185,6 +194,35 @@ function buildExtrasSummaryText(
   return buildExtrasSummaryChips(frontPto, frontLoader, gpsEnabled, gpsType, gpsYear).join(' · ');
 }
 
+
+function getListingBasePrice(listing: MarketplaceListing): number {
+  const candidates = [
+    Number(listing.advertisedPriceExVat),
+    Number(listing.askingPriceExVat),
+    Number(listing.priceExVat),
+    Number(listing.price),
+  ].filter((value) => Number.isFinite(value) && value > 0);
+
+  return candidates[0] ?? 0;
+}
+
+function getListingComparablePrice(listing: MarketplaceListing, extrasValueExVat: number): number {
+  return Math.round(getListingBasePrice(listing) + Math.max(0, Number(extrasValueExVat) || 0));
+}
+
+function formatListingDate(value: string): string {
+  if (!value.trim()) return 'Date not supplied';
+
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return value;
+
+  return new Intl.DateTimeFormat('en-ZA', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(parsed);
+}
+
 export default function ValuationClient() {
   const router = useRouter();
 
@@ -212,6 +250,7 @@ export default function ValuationClient() {
   const [gpsYear, setGpsYear] = useState('');
   const [result, setResult] = useState<Result | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<MethodKey | null>(null);
+  const [selectedComparableIndex, setSelectedComparableIndex] = useState(0);
   const [message, setMessage] = useState('');
 
   const stepMeta = getStepMeta(step);
@@ -428,14 +467,14 @@ export default function ValuationClient() {
       {
         key: 'aim4price',
         label: 'Aim4price Value',
-        note: 'Based on our pricing engine and market trends.',
+        note: 'Based on our pricing engine and comparable market trends.',
         value: result.aim4priceValueExVat,
         available: result.aim4priceValueExVat !== null,
       },
       {
         key: 'market',
         label: 'Market Range',
-        note: `${result.marketCount} similar listing${result.marketCount === 1 ? '' : 's'} in the prototype set.`,
+        note: `${result.marketCount} proveable market listing${result.marketCount === 1 ? '' : 's'} linked below.`,
         value: result.marketMid,
         available: result.marketMid !== null,
       },
@@ -456,6 +495,68 @@ export default function ValuationClient() {
     result?.marketLow ?? null,
     result?.marketHigh ?? null,
     selectedMethod === 'market' ? selectedMethodValue : result?.marketMid ?? headlineValue,
+  );
+  const confidenceLevel = result ? getConfidenceLevel(result) : 'low';
+  const confidenceClassName =
+    confidenceLevel === 'high'
+      ? styles.confidenceHigh
+      : confidenceLevel === 'medium'
+        ? styles.confidenceMedium
+        : styles.confidenceLow;
+
+  const comparableListings = useMemo<MarketplaceListing[]>(() => {
+    if (!result) return [];
+
+    return [...result.marketSources].sort((left, right) => {
+      const priceDelta =
+        getListingComparablePrice(left, result.extrasValueExVat) -
+        getListingComparablePrice(right, result.extrasValueExVat);
+
+      if (priceDelta !== 0) return priceDelta;
+      if (left.yearModel !== right.yearModel) return left.yearModel - right.yearModel;
+
+      return left.hours - right.hours;
+    });
+  }, [result]);
+
+  useEffect(() => {
+    if (!result || !comparableListings.length) {
+      setSelectedComparableIndex(0);
+      return;
+    }
+
+    const fallbackIndex = Math.floor(comparableListings.length / 2);
+    const targetValue =
+      result.marketMid ??
+      getListingComparablePrice(comparableListings[fallbackIndex], result.extrasValueExVat);
+
+    let bestIndex = fallbackIndex;
+    let bestDelta = Number.POSITIVE_INFINITY;
+
+    comparableListings.forEach((listing, index) => {
+      const delta = Math.abs(getListingComparablePrice(listing, result.extrasValueExVat) - targetValue);
+
+      if (delta < bestDelta) {
+        bestDelta = delta;
+        bestIndex = index;
+      }
+    });
+
+    setSelectedComparableIndex(bestIndex);
+  }, [comparableListings, result]);
+
+  const safeComparableIndex = comparableListings.length
+    ? Math.min(selectedComparableIndex, comparableListings.length - 1)
+    : 0;
+  const selectedComparable = comparableListings[safeComparableIndex] ?? null;
+  const selectedComparableValue =
+    selectedComparable && result
+      ? getListingComparablePrice(selectedComparable, result.extrasValueExVat)
+      : result?.marketMid ?? null;
+  const selectedComparablePercent = getRangePercent(
+    result?.marketLow ?? null,
+    result?.marketHigh ?? null,
+    selectedComparableValue,
   );
 
   const yearUnlocked = Boolean(selectedModel);
@@ -1382,13 +1483,15 @@ export default function ValuationClient() {
 
                   <div className={styles.valuePanel}>
                     <div className={styles.valuePanelTop}>
-                      <div>
+                      <div className={styles.valuePanelIntro}>
                         <span className={styles.valueLabel}>{headlineLabel}</span>
                         <div className={styles.valueAmount}>{money(headlineValue)}</div>
                         <p className={styles.valueMeta}>ZAR • South Africa • Excl. VAT (indicative)</p>
                       </div>
 
-                      <span className={styles.confidenceBadge}>{getConfidenceLabel(result)}</span>
+                      <span className={`${styles.confidenceBadge} ${confidenceClassName}`}>
+                        {getConfidenceLabel(result)}
+                      </span>
                     </div>
 
                     <div className={styles.methodGrid}>
@@ -1419,26 +1522,39 @@ export default function ValuationClient() {
                 </article>
 
                 <article className={styles.assetCard}>
-                  <div className={styles.assetHeader}>
+                  <div className={styles.actionHeader}>
                     <div>
                       <h2 className={styles.assetTitle}>Save to Asset Register</h2>
                       <p className={styles.assetText}>
-                        Track this asset, update values over time, and export reports later.
+                        Save this valuation, return later, and keep the next actions together in one place.
                       </p>
                     </div>
+                    <span className={styles.actionBadge}>Quick actions</span>
                   </div>
 
-                  <button type="button" className={styles.assetButton} onClick={handleSave}>
-                    Save to My Assets
-                  </button>
+                  <div className={styles.actionGrid}>
+                    <button type="button" className={`${styles.assetButton} ${styles.actionPrimary}`} onClick={handleSave}>
+                      Save to My Assets
+                    </button>
 
-                  <div className={styles.assetFootnote}>Prototype mode: this currently saves locally only.</div>
+                    <button type="button" className={styles.secondaryButton} onClick={handlePrint}>
+                      Download PDF Report
+                    </button>
+
+                    <button type="button" className={styles.secondaryButton} onClick={() => setStep(4)}>
+                      Refine Inputs
+                    </button>
+
+                    <button type="button" className={styles.secondaryButton} onClick={resetWizard}>
+                      Start New Valuation
+                    </button>
+                  </div>
                 </article>
               </div>
 
               <aside className={styles.resultsSide}>
-                <article className={styles.sideCard}>
-                  <h2 className={styles.sideTitle}>Value Breakdown</h2>
+                <article className={`${styles.sideCard} ${styles.summaryCard}`}>
+                  <h2 className={styles.sideTitle}>Summary</h2>
 
                   <div className={styles.breakdownList}>
                     <div className={styles.breakdownRow}>
@@ -1467,30 +1583,55 @@ export default function ValuationClient() {
                     </div>
 
                     <div className={styles.breakdownRow}>
-                      <span className={styles.breakdownKey}>Selected source</span>
+                      <span className={styles.breakdownKey}>Displayed value</span>
                       <span className={styles.breakdownValue}>{headlineLabel}</span>
                     </div>
 
                     <div className={styles.breakdownRow}>
-                      <span className={styles.breakdownKey}>Coverage</span>
+                      <span className={styles.breakdownKey}>Confidence</span>
                       <span className={styles.breakdownValue}>{getConfidenceLabel(result)}</span>
                     </div>
                   </div>
                 </article>
 
-                <article className={styles.sideCard}>
+                <article className={`${styles.sideCard} ${styles.marketCard}`}>
                   <div className={styles.rangeCardHead}>
                     <h2 className={styles.sideTitle}>Market Range</h2>
                     <span className={styles.rangeBadge}>
-                      {result.marketCount} comp{result.marketCount === 1 ? '' : 's'}
+                      {result.marketCount} proveable listing{result.marketCount === 1 ? '' : 's'}
                     </span>
                   </div>
 
-                  <div className={styles.rangeCurrent}>{money(result.marketMid ?? headlineValue)}</div>
+                  <div className={styles.rangeCurrentWrap}>
+                    <div className={styles.rangeCurrentLabel}>Selected comparable</div>
+                    <div className={styles.rangeCurrent}>{money(selectedComparableValue)}</div>
+                    <p className={styles.rangeCurrentMeta}>
+                      {selectedComparable
+                        ? `${selectedComparable.yearModel} • ${selectedComparable.hours.toLocaleString('en-ZA')} engine hours • ${selectedComparable.sourceName}`
+                        : `Based on comparable ${activeYear} market listings.`}
+                    </p>
+                  </div>
 
-                  <div className={styles.rangeTrack}>
-                    <div className={styles.rangeFill} style={{ width: `${rangePercent}%` }} />
-                    <div className={styles.rangePin} style={{ left: `${rangePercent}%` }} />
+                  <div className={styles.rangeInteractive}>
+                    <div className={styles.rangeTrack}>
+                      <div className={styles.rangeFill} style={{ width: `${selectedComparablePercent}%` }} />
+                      <div className={styles.rangePin} style={{ left: `${selectedComparablePercent}%` }} />
+                    </div>
+
+                    {comparableListings.length > 1 ? (
+                      <input
+                        type="range"
+                        min={0}
+                        max={Math.max(0, comparableListings.length - 1)}
+                        step={1}
+                        value={safeComparableIndex}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                          setSelectedComparableIndex(Number(event.target.value))
+                        }
+                        className={styles.rangeSliderInput}
+                        aria-label="Browse proveable market listings"
+                      />
+                    ) : null}
                   </div>
 
                   <div className={styles.rangeLabels}>
@@ -1498,49 +1639,75 @@ export default function ValuationClient() {
                     <span>{money(result.marketHigh)}</span>
                   </div>
 
-                  <p className={styles.rangeNote}>
-                    Based on similar {activeYear} models in the current local prototype set.
-                  </p>
-                </article>
-
-                <article className={styles.sideCard}>
-                  <h2 className={styles.sideTitle}>Data Sources</h2>
-
-                  <div className={styles.sourceList}>
-                    <div className={styles.sourceItem}>
-                      <strong className={styles.sourceItemTitle}>Live Market Listings</strong>
-                      <span className={styles.sourceItemText}>
-                        {result.marketCount} local prototype comparable listing{result.marketCount === 1 ? '' : 's'}
-                      </span>
+                  <div className={styles.marketListingsBlock}>
+                    <div className={styles.marketListingsHead}>
+                      <h3 className={styles.marketListingsTitle}>Proveable Market Listings</h3>
+                      {comparableListings.length ? (
+                        <span className={styles.marketListingsCount}>
+                          {safeComparableIndex + 1} / {comparableListings.length}
+                        </span>
+                      ) : null}
                     </div>
 
-                    <div className={styles.sourceItem}>
-                      <strong className={styles.sourceItemTitle}>Aim4price Pricing Logic</strong>
-                      <span className={styles.sourceItemText}>Age, usage and condition weighting</span>
-                    </div>
+                    {comparableListings.length ? (
+                      <div className={styles.listingList}>
+                        {comparableListings.map((listing, index) => {
+                          const isActive = index === safeComparableIndex;
+                          const comparableValue = getListingComparablePrice(listing, result.extrasValueExVat);
 
-                    <div className={styles.sourceItem}>
-                      <strong className={styles.sourceItemTitle}>DALRRD Guidelines</strong>
-                      <span className={styles.sourceItemText}>Power band and drive type reference</span>
-                    </div>
-                  </div>
-                </article>
+                          return (
+                            <article
+                              key={listing.id}
+                              className={`${styles.listingCard} ${isActive ? styles.listingCardActive : ''}`}
+                            >
+                              <button
+                                type="button"
+                                className={styles.listingSelectButton}
+                                onClick={() => setSelectedComparableIndex(index)}
+                              >
+                                <div className={styles.listingCardTop}>
+                                  <strong className={styles.listingCardValue}>{money(comparableValue)}</strong>
+                                  <span className={styles.listingCardSource}>{listing.sourceName}</span>
+                                </div>
 
-                <article className={styles.sideCard}>
-                  <h2 className={styles.sideTitle}>Next Steps</h2>
+                                <div className={styles.listingCardMeta}>
+                                  {listing.yearModel} • {listing.hours.toLocaleString('en-ZA')} engine hours • {listing.area},{' '}
+                                  {listing.province}
+                                </div>
 
-                  <div className={styles.actionStack}>
-                    <button type="button" className={styles.secondaryButton} onClick={() => setStep(4)}>
-                      Refine Inputs
-                    </button>
+                                {result.extrasValueExVat > 0 ? (
+                                  <div className={styles.listingAdjustmentNote}>
+                                    Raw listing {money(getListingBasePrice(listing))} • adjusted for selected extras
+                                  </div>
+                                ) : null}
+                              </button>
 
-                    <button type="button" className={styles.secondaryButton} onClick={handlePrint}>
-                      Download PDF Report
-                    </button>
+                              <div className={styles.listingCardFooter}>
+                                <span className={styles.listingCardDate}>{formatListingDate(listing.dateAdvertised)}</span>
 
-                    <button type="button" className={styles.primaryButton} onClick={resetWizard}>
-                      Start New Valuation
-                    </button>
+                                {listing.sourceUrl ? (
+                                  <a
+                                    href={listing.sourceUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className={styles.listingLink}
+                                  >
+                                    Open source ↗
+                                  </a>
+                                ) : (
+                                  <span className={styles.listingLinkMuted}>Source link not yet attached</span>
+                                )}
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className={styles.rangeNote}>
+                        No proveable market listings matched this tractor yet. Add more market listings to improve
+                        confidence and range quality.
+                      </p>
+                    )}
                   </div>
                 </article>
               </aside>
