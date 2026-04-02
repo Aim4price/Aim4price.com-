@@ -44,19 +44,29 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.7rem;
+  gap: 0.85rem;
   flex-wrap: wrap;
 }
 
 .stepperItem {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.65rem;
+  padding: 0.32rem 0.5rem;
+  border-radius: 999px;
+}
+
+.stepperItemActive {
+  background: rgba(26, 89, 68, 0.08);
+}
+
+.stepperItemComplete {
+  background: rgba(23, 77, 62, 0.05);
 }
 
 .stepperBullet {
-  width: 2rem;
-  height: 2rem;
+  width: 2.1rem;
+  height: 2.1rem;
   border-radius: 999px;
   display: grid;
   place-items: center;
@@ -74,16 +84,28 @@
 }
 
 .stepperLine {
-  width: 2.45rem;
+  width: 2.15rem;
   height: 2px;
   border-radius: 999px;
   background: rgba(18, 68, 52, 0.18);
+}
+
+.stepperLineComplete {
+  background: linear-gradient(90deg, #1a5944 0%, #2f7f65 100%);
 }
 
 .stepperLabel {
   font-size: 0.84rem;
   font-weight: 700;
   color: #66736d;
+}
+
+.stepperLabelActive {
+  color: #1c4134;
+}
+
+.stepperLabelComplete {
+  color: #295948;
 }
 
 .stepContent {
@@ -323,14 +345,18 @@
 
 .filterToolbar {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   margin-top: 1.45rem;
 }
 
 .filterGroup {
   display: grid;
-  gap: 0.55rem;
+  gap: 0.6rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: rgba(248, 250, 249, 0.96);
 }
 
 .filterLabel,
@@ -351,25 +377,55 @@
 
 .pillButton {
   cursor: pointer;
-  min-height: 2.75rem;
-  padding: 0 1rem;
-  border-radius: 999px;
+  min-height: 2.9rem;
+  padding: 0 1.1rem;
+  border-radius: 0.95rem;
   border: 1px solid rgba(18, 45, 37, 0.1);
   background: #ffffff;
   color: #33433d;
-  font-weight: 700;
+  font-weight: 800;
   box-shadow: 0 8px 18px rgba(16, 42, 34, 0.04);
 }
 
 .pillButtonActive {
-  border-color: #1a5944;
+  border-color: rgba(26, 89, 68, 0.35);
   background: linear-gradient(180deg, #1a5944 0%, #124334 100%);
   color: #ffffff;
+  box-shadow: 0 12px 24px rgba(17, 63, 50, 0.16);
+}
+
+
+.filterHint {
+  margin: 0.95rem 0 0;
+  color: #66736d;
+  line-height: 1.6;
+}
+
+.filterSummary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: rgba(246, 249, 247, 0.98);
+}
+
+.filterSummaryTitle {
+  font-weight: 800;
+  color: #1f342d;
+}
+
+.filterSummaryText {
+  color: #66736d;
+  text-align: right;
 }
 
 .modelList {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.85rem;
   margin-top: 1rem;
 }
 
@@ -379,10 +435,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem 1.05rem;
+  padding: 1.05rem 1.1rem;
   border-radius: 1rem;
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background: rgba(255, 255, 255, 0.97);
   text-align: left;
   box-shadow:
     0 10px 22px rgba(16, 42, 34, 0.045),
@@ -390,8 +446,25 @@
 }
 
 .modelRowActive {
-  border-color: rgba(26, 89, 68, 0.24);
-  background: linear-gradient(180deg, #ffffff 0%, #f4faf7 100%);
+  border-color: rgba(26, 89, 68, 0.52);
+  background: linear-gradient(180deg, #fbfefd 0%, #edf7f1 100%);
+  box-shadow:
+    0 18px 34px rgba(17, 63, 50, 0.12),
+    0 0 0 4px rgba(26, 89, 68, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.modelRowBody {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.modelRowHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .modelRow strong {
@@ -407,10 +480,52 @@
   font-size: 0.94rem;
 }
 
+.modelChipRow,
+.selectionChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.modelChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.95rem;
+  padding: 0 0.72rem;
+  border-radius: 999px;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background: rgba(244, 247, 245, 0.98);
+  color: #4d5b56;
+  font-size: 0.83rem;
+  font-weight: 700;
+}
+
+.modelRowSelectedBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.95rem;
+  padding: 0 0.72rem;
+  border-radius: 999px;
+  background: #dff1e5;
+  color: #0f6a46;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.modelRowActive .modelChip {
+  border-color: rgba(26, 89, 68, 0.14);
+  background: #eaf5ef;
+  color: #0f5e40;
+}
+
 .modelRowYear {
   white-space: nowrap;
-  font-weight: 700;
+  font-weight: 800;
   color: #55635d;
+}
+
+.modelRowActive .modelRowYear {
+  color: #0f5e40;
 }
 
 .emptyState {
@@ -479,11 +594,8 @@
 }
 
 .selectionCard {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
   margin-top: 1.3rem;
-  padding: 1rem;
+  padding: 1rem 1.05rem;
   border-radius: 1.15rem;
   border: 1px solid rgba(18, 45, 37, 0.07);
   background: linear-gradient(180deg, rgba(247, 250, 248, 0.96) 0%, rgba(241, 246, 243, 0.96) 100%);
@@ -502,7 +614,16 @@
 
 .selectionMeta {
   display: grid;
-  gap: 0.25rem;
+  gap: 0.45rem;
+}
+
+.selectionEyebrow {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6f7a75;
 }
 
 .selectionMeta strong {
@@ -969,6 +1090,15 @@
     grid-template-columns: 1fr;
   }
 
+  .filterSummary {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filterSummaryText {
+    text-align: left;
+  }
+
   .typePicker {
     grid-template-columns: 2.9rem minmax(0, 1fr) 2.9rem;
     gap: 0.75rem;
@@ -978,7 +1108,6 @@
   .resultsTopbar,
   .heroTop,
   .heroIdentity,
-  .selectionCard,
   .valuePanelTop {
     flex-direction: column;
     align-items: stretch;
