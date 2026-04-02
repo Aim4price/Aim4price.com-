@@ -1,27 +1,33 @@
 import MarketplaceClient from './marketplace-client';
 
-type SearchParams = {
-  brand?: string | string[];
-  model?: string | string[];
-  drive?: string | string[];
-  type?: string | string[];
+type SearchParamValue = string | string[] | undefined;
+
+type MarketplacePageProps = {
+  searchParams?: {
+    brand?: SearchParamValue;
+    model?: SearchParamValue;
+    drive?: SearchParamValue;
+    type?: SearchParamValue;
+  };
 };
 
-function pick(value: string | string[] | undefined): string {
-  return Array.isArray(value) ? value[0] ?? '' : value ?? '';
+function pick(value: SearchParamValue): string {
+  if (Array.isArray(value)) {
+    return String(value[0] ?? '').trim();
+  }
+
+  return String(value ?? '').trim();
 }
 
-export default function MarketplacePage({
-  searchParams,
-}: {
-  searchParams?: SearchParams;
-}) {
-  const initialFilters = {
-    brand: pick(searchParams?.brand),
-    model: pick(searchParams?.model),
-    drive: pick(searchParams?.drive),
-    type: pick(searchParams?.type),
-  };
-
-  return <MarketplaceClient initialFilters={initialFilters} />;
+export default function MarketplacePage({ searchParams }: MarketplacePageProps) {
+  return (
+    <MarketplaceClient
+      initialFilters={{
+        brand: pick(searchParams?.brand),
+        model: pick(searchParams?.model),
+        drive: pick(searchParams?.drive),
+        type: pick(searchParams?.type),
+      }}
+    />
+  );
 }
