@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
@@ -136,6 +136,8 @@ export default function ValuationClient() {
   const [selectedType, setSelectedType] = useState<EquipmentType | null>(null);
   const [modelQuery, setModelQuery] = useState('');
   const [brandSlug, setBrandSlug] = useState('john-deere');
+  const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
+  const [brandSearch, setBrandSearch] = useState('');
   const [tractorType, setTractorType] = useState<TractorType>('field');
   const [drive, setDrive] = useState<DriveType>('4wd');
   const [cab, setCab] = useState<CabType>('cab');
@@ -150,6 +152,8 @@ export default function ValuationClient() {
   const [message, setMessage] = useState('');
 
   const stepMeta = getStepMeta(step);
+  const brandDropdownRef = useRef<HTMLDivElement | null>(null);
+  const brandSearchInputRef = useRef<HTMLInputElement | null>(null);
 
   const sortedBrands = useMemo(
     () => [...brands].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
@@ -201,6 +205,55 @@ export default function ValuationClient() {
     }
   }, [selectedModel, yearMode, year]);
 
+  useEffect(() => {
+    if (step !== 2) {
+      setBrandDropdownOpen(false);
+      setBrandSearch('');
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (!brandDropdownOpen) {
+      setBrandSearch('');
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      brandSearchInputRef.current?.focus();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [brandDropdownOpen]);
+
+  useEffect(() => {
+    if (!brandDropdownOpen) return;
+
+    function handlePointerDown(event: MouseEvent | TouchEvent) {
+      if (!brandDropdownRef.current) return;
+
+      const target = event.target;
+      if (target instanceof Node && !brandDropdownRef.current.contains(target)) {
+        setBrandDropdownOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setBrandDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [brandDropdownOpen]);
+
   const years = useMemo(
     () =>
       selectedModel
@@ -216,6 +269,14 @@ export default function ValuationClient() {
     () => brands.find((brand) => brand.slug === brandSlug)?.name ?? '—',
     [brandSlug],
   );
+
+  const filteredBrandOptions = useMemo(() => {
+    const normalizedQuery = brandSearch.trim().toLowerCase();
+
+    if (!normalizedQuery) return sortedBrands;
+
+    return sortedBrands.filter((brand) => brand.name.toLowerCase().includes(normalizedQuery));
+  }, [brandSearch, sortedBrands]);
 
   const activeYear = yearMode === 'manual' ? Number(manualYear) : year;
   const isYearValid = yearMode === 'guided'
@@ -284,6 +345,8 @@ export default function ValuationClient() {
     setSelectedType(null);
     setModelQuery('');
     setBrandSlug('john-deere');
+    setBrandDropdownOpen(false);
+    setBrandSearch('');
     setTractorType('field');
     setDrive('4wd');
     setCab('cab');
@@ -447,24 +510,73 @@ export default function ValuationClient() {
     if (step === 2) {
       return (
         <div className={styles.searchWrap}>
-          <label className={styles.field}>
-            <span>Choose Brand</span>
-            <select
-              value={brandSlug}
-              onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-                setBrandSlug(event.target.value);
-                setModelQuery('');
-                setMessage('');
-              }}
-              aria-label="Choose tractor brand"
-            >
-              {sortedBrands.map((brand) => (
-                <option key={brand.slug} value={brand.slug}>
-                  {brand.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Choose Brand</span>
+
+            <div className={styles.dropdownField} ref={brandDropdownRef}>
+              <button
+                type="button"
+                className={`${styles.dropdownTrigger} ${brandDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
+                onClick={() => {
+                  setBrandDropdownOpen((open) => !open);
+                  setMessage('');
+                }}
+                aria-haspopup="listbox"
+                aria-expanded={brandDropdownOpen}
+                aria-label="Choose tractor brand"
+              >
+                <span className={styles.dropdownTriggerText}>{selectedBrandName}</span>
+                <span className={styles.dropdownTriggerIcon} aria-hidden="true">
+                  {brandDropdownOpen ? '▴' : '▾'}
+                </span>
+              </button>
+
+              {brandDropdownOpen ? (
+                <div className={styles.dropdownMenu}>
+                  <div className={styles.dropdownSearchWrap}>
+                    <input
+                      ref={brandSearchInputRef}
+                      value={brandSearch}
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => setBrandSearch(event.target.value)}
+                      placeholder="Search brand..."
+                      aria-label="Search brands"
+                      className={styles.dropdownSearchInput}
+                    />
+                  </div>
+
+                  <div className={styles.dropdownList} role="listbox" aria-label="Available tractor brands">
+                    {filteredBrandOptions.length ? (
+                      filteredBrandOptions.map((brand) => {
+                        const active = brand.slug === brandSlug;
+
+                        return (
+                          <button
+                            key={brand.slug}
+                            type="button"
+                            role="option"
+                            aria-selected={active}
+                            className={`${styles.dropdownOption} ${active ? styles.dropdownOptionActive : ''}`}
+                            onClick={() => {
+                              setBrandSlug(brand.slug);
+                              setModelQuery('');
+                              setBrandDropdownOpen(false);
+                              setBrandSearch('');
+                              setMessage('');
+                            }}
+                          >
+                            <span className={styles.dropdownOptionText}>{brand.name}</span>
+                            {active ? <span className={styles.dropdownOptionBadge}>Selected</span> : null}
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className={styles.dropdownEmpty}>No brands matched “{brandSearch.trim()}”.</div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
         </div>
       );
     }
