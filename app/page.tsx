@@ -95,7 +95,7 @@ export default function HomePage() {
             <p className={styles.sectionEyebrow}>Choose a section</p>
             <h2 className={styles.sectionTitle}>Open the part of Aim4price you need.</h2>
             <p className={styles.sectionText}>
-              The cards below are clickable and take users straight into the correct page.
+              Each card below is clickable and opens the correct part of the platform.
             </p>
           </div>
 
@@ -132,8 +132,8 @@ export default function HomePage() {
             </div>
 
             <p className={styles.statementText}>
-              Aim4price helps users value equipment faster, organise machinery in an asset register,
-              and move the right units to market with more confidence and clearer data.
+              Aim4price helps users value equipment faster, organise machinery in an asset
+              register, and move the right units to market with clearer, more usable data.
             </p>
           </div>
         </div>
