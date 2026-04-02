@@ -1610,3 +1610,452 @@
     border-color: rgba(0, 0, 0, 0.14);
   }
 }
+
+
+/* === Final valuation result refinement === */
+.resultsLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.resultsMain,
+.resultsSide {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.heroCard,
+.assetCard,
+.sideCard {
+  padding: 1.1rem;
+  border-radius: 1.4rem;
+}
+
+.heroTop {
+  gap: 0.9rem;
+}
+
+.heroIdentity {
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+}
+
+.heroImageBox {
+  width: 124px;
+  min-width: 124px;
+  height: 96px;
+  border-radius: 1rem;
+}
+
+.heroInfo {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.resultTitle {
+  font-size: clamp(1.9rem, 2.9vw, 2.5rem);
+}
+
+.heroMeta {
+  font-size: 1rem;
+}
+
+.inlineButton {
+  min-height: 2.55rem;
+  padding-inline: 0.9rem;
+}
+
+.valuePanel {
+  margin-top: 1rem;
+  padding: 1.15rem;
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, #eef6f1 0%, #e4efe8 100%);
+}
+
+.valuePanelTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.valuePanelIntro {
+  min-width: 0;
+}
+
+.valueLabel {
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+}
+
+.valueAmount {
+  margin-top: 0.3rem;
+  font-size: clamp(2.45rem, 4.6vw, 3.45rem);
+}
+
+.valueMeta {
+  margin-top: 0.45rem;
+  font-size: 0.98rem;
+}
+
+.confidenceBadge {
+  min-height: 2rem;
+  padding: 0 0.85rem;
+  border: 1px solid transparent;
+  font-size: 0.82rem;
+}
+
+.confidenceHigh {
+  background: #dff3e6;
+  border-color: rgba(20, 92, 56, 0.14);
+  color: #0f6a46;
+}
+
+.confidenceMedium {
+  background: #fff1c9;
+  border-color: rgba(160, 121, 10, 0.14);
+  color: #8a6500;
+}
+
+.confidenceLow {
+  background: #fde0dd;
+  border-color: rgba(163, 39, 27, 0.12);
+  color: #a3271b;
+}
+
+.methodGrid {
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.methodButton {
+  padding: 0.95rem;
+  border-radius: 0.95rem;
+}
+
+.methodTitle {
+  font-size: 0.88rem;
+}
+
+.methodValue {
+  margin-top: 0.4rem;
+  font-size: 1.25rem;
+}
+
+.methodNote {
+  margin-top: 0.4rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.actionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.actionBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  background: rgba(23, 77, 62, 0.08);
+  color: #1d624e;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.actionPrimary {
+  grid-column: 1 / -1;
+}
+
+.summaryCard,
+.marketCard {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.breakdownList {
+  gap: 0.75rem;
+  margin-top: 0;
+}
+
+.breakdownRow {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 0.9rem;
+  align-items: start;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid rgba(18, 45, 37, 0.06);
+}
+
+.breakdownRow:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.breakdownKey {
+  font-size: 0.92rem;
+}
+
+.breakdownValue {
+  font-size: 0.95rem;
+  text-align: right;
+  line-height: 1.45;
+}
+
+.rangeCardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.rangeBadge {
+  min-height: 2rem;
+  padding: 0 0.8rem;
+  background: #edf2ff;
+  color: #3562d6;
+  font-size: 0.8rem;
+}
+
+.rangeCurrentWrap {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  background: rgba(247, 250, 248, 0.92);
+  border: 1px solid rgba(18, 45, 37, 0.06);
+}
+
+.rangeCurrentLabel {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6a776f;
+}
+
+.rangeCurrent {
+  margin-top: 0;
+  text-align: left;
+  font-size: 1.7rem;
+  line-height: 1.05;
+}
+
+.rangeCurrentMeta {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #6f7a75;
+}
+
+.rangeInteractive {
+  position: relative;
+  margin-top: 0.05rem;
+}
+
+.rangeTrack {
+  margin-top: 0;
+  height: 0.7rem;
+}
+
+.rangeSliderInput {
+  position: absolute;
+  inset: -0.7rem 0 -0.7rem 0;
+  width: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.marketListingsBlock {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 0.15rem;
+  border-top: 1px solid rgba(18, 45, 37, 0.06);
+}
+
+.marketListingsHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.marketListingsTitle {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  color: #223b34;
+}
+
+.marketListingsCount {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #6f7a75;
+}
+
+.listingList {
+  display: grid;
+  gap: 0.7rem;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 0.15rem;
+}
+
+.listingCard {
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: rgba(247, 250, 248, 0.92);
+  overflow: hidden;
+}
+
+.listingCardActive {
+  border-color: rgba(26, 89, 68, 0.32);
+  box-shadow:
+    0 0 0 1px rgba(26, 89, 68, 0.08),
+    0 12px 28px rgba(17, 63, 50, 0.08);
+}
+
+.listingSelectButton {
+  width: 100%;
+  padding: 0.9rem 0.95rem 0.65rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.listingCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.listingCardValue {
+  font-size: 1.1rem;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: #1d332c;
+}
+
+.listingCardSource {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding: 0 0.65rem;
+  border-radius: 999px;
+  background: rgba(23, 77, 62, 0.08);
+  color: #1d624e;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.listingCardMeta {
+  margin-top: 0.45rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #6f7a75;
+}
+
+.listingAdjustmentNote {
+  margin-top: 0.45rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: #557066;
+}
+
+.listingCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.95rem 0.85rem;
+  border-top: 1px solid rgba(18, 45, 37, 0.06);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.listingCardDate {
+  font-size: 0.82rem;
+  color: #6f7a75;
+}
+
+.listingLink,
+.listingLinkMuted {
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.listingLink {
+  color: #1d624e;
+  text-decoration: none;
+}
+
+.listingLink:hover {
+  text-decoration: underline;
+}
+
+.listingLinkMuted {
+  color: #88948f;
+}
+
+@media (max-width: 1180px) {
+  .resultsLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .heroIdentity,
+  .valuePanelTop,
+  .actionHeader,
+  .rangeCardHead,
+  .marketListingsHead,
+  .listingCardTop,
+  .listingCardFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .heroImageBox {
+    width: 100%;
+    min-width: 0;
+    height: 180px;
+  }
+
+  .actionGrid,
+  .methodGrid,
+  .breakdownRow {
+    grid-template-columns: 1fr;
+  }
+
+  .actionPrimary {
+    grid-column: auto;
+  }
+
+  .breakdownValue {
+    text-align: left;
+  }
+
+  .listingList {
+    max-height: none;
+  }
+}
