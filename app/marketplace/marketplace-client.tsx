@@ -143,11 +143,11 @@ export default function MarketplaceClient({
       <section className={styles.hero}>
         <div className={styles.heroTop}>
           <div className={styles.heroCopy}>
-            <span className={styles.eyebrow}>Aim4price tractor marketplace</span>
+            <span className={styles.eyebrow}>Aim4price marketplace</span>
             <h1>Marketplace</h1>
             <p>
-              Browse Aim4price in-house tractor listings. Anyone can view listings. Contact details
-              only unlock after sign-in. Listings should flow from valuation to asset register and
+              Browse Aim4price in-house listings. Anyone can view listings. Contact details
+              only unlock after sign-in. Listings flow from valuation to asset register and
               then into marketplace.
             </p>
           </div>
