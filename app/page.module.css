@@ -5,12 +5,12 @@
 }
 
 .shell {
-  width: min(100% - 3rem, 1180px);
+  width: var(--shell-width);
   margin: 0 auto;
 }
 
 .shellNarrow {
-  width: min(100% - 3rem, 1040px);
+  width: var(--shell-narrow-width);
   margin: 0 auto;
 }
 
