@@ -4,7 +4,7 @@
 }
 
 .content {
-  width: min(100% - 2rem, 1180px);
+  width: var(--shell-width);
   margin: 0 auto;
   padding: 1.75rem 0 4rem;
 }
@@ -249,7 +249,6 @@
 
 @media (max-width: 960px) {
   .content {
-    width: min(100% - 1.2rem, 1180px);
     padding: 1.35rem 0 3rem;
   }
 
