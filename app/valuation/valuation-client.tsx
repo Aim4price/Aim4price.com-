@@ -30,7 +30,6 @@ type MethodCard = {
   available: boolean;
 };
 
-const INITIAL_MODEL_ID = 'john-deere-6135b-field-4wd-cab';
 const CURRENT_YEAR = new Date().getFullYear() + 1;
 
 const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
@@ -92,7 +91,7 @@ function getStepMeta(step: Step) {
     case 3:
       return {
         title: 'Select Tractor Model',
-        body: 'Filter by tractor type, drive and cab configuration, then choose the closest bundled test model.',
+        body: 'Select the tractor type, drive layout and cab setup in sequence, then choose the closest matching model from the Aim4price catalogue.',
       };
     case 4:
       return {
@@ -125,6 +124,10 @@ function getTractorTypeLabel(type: TractorType): string {
   return type === 'orchard' ? 'Orchard' : 'Field';
 }
 
+function getDriveDisplay(driveValue: DriveType): string {
+  return driveValue === 'tracks' ? 'Tracks' : driveValue.toUpperCase();
+}
+
 function getCabDisplay(cabValue: CabType): string {
   return cabValue === 'cab' ? 'Cab' : 'Open station';
 }
@@ -138,10 +141,10 @@ export default function ValuationClient() {
   const [brandSlug, setBrandSlug] = useState('john-deere');
   const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
   const [brandSearch, setBrandSearch] = useState('');
-  const [tractorType, setTractorType] = useState<TractorType>('field');
-  const [drive, setDrive] = useState<DriveType>('4wd');
-  const [cab, setCab] = useState<CabType>('cab');
-  const [modelId, setModelId] = useState(INITIAL_MODEL_ID);
+  const [tractorType, setTractorType] = useState<TractorType | null>(null);
+  const [drive, setDrive] = useState<DriveType | null>(null);
+  const [cab, setCab] = useState<CabType | null>(null);
+  const [modelId, setModelId] = useState('');
   const [yearMode, setYearMode] = useState<'guided' | 'manual'>('guided');
   const [year, setYear] = useState(2020);
   const [manualYear, setManualYear] = useState('');
@@ -161,8 +164,10 @@ export default function ValuationClient() {
   );
 
   const filteredModels = useMemo(
-    () =>
-      tractors.filter((tractor) => {
+    () => {
+      if (!tractorType || !drive || !cab) return [];
+
+      return tractors.filter((tractor) => {
         const normalizedQuery = modelQuery.trim().toLowerCase();
         const matchesBrand = tractor.brandSlug === brandSlug;
         const matchesType = tractor.tractorType === tractorType;
@@ -175,14 +180,15 @@ export default function ValuationClient() {
               .includes(normalizedQuery);
 
         return matchesBrand && matchesType && matchesDrive && matchesCab && matchesQuery;
-      }),
+      });
+    },
     [brandSlug, tractorType, drive, cab, modelQuery],
   );
 
-  const selectedModel = useMemo<TractorCatalogRow | null>(() => {
-    if (!filteredModels.length) return null;
-    return filteredModels.find((model) => model.id === modelId) ?? filteredModels[0];
-  }, [filteredModels, modelId]);
+  const selectedModel = useMemo<TractorCatalogRow | null>(
+    () => filteredModels.find((model) => model.id === modelId) ?? null,
+    [filteredModels, modelId],
+  );
 
   useEffect(() => {
     if (!filteredModels.length) {
@@ -192,8 +198,8 @@ export default function ValuationClient() {
       return;
     }
 
-    if (!filteredModels.some((model) => model.id === modelId)) {
-      setModelId(filteredModels[0].id);
+    if (modelId && !filteredModels.some((model) => model.id === modelId)) {
+      setModelId('');
     }
   }, [filteredModels, modelId]);
 
@@ -347,10 +353,10 @@ export default function ValuationClient() {
     setBrandSlug('john-deere');
     setBrandDropdownOpen(false);
     setBrandSearch('');
-    setTractorType('field');
-    setDrive('4wd');
-    setCab('cab');
-    setModelId(INITIAL_MODEL_ID);
+    setTractorType(null);
+    setDrive(null);
+    setCab(null);
+    setModelId('');
     setYearMode('guided');
     setYear(2020);
     setManualYear('');
@@ -557,8 +563,18 @@ export default function ValuationClient() {
                             aria-selected={active}
                             className={`${styles.dropdownOption} ${active ? styles.dropdownOptionActive : ''}`}
                             onClick={() => {
+                              const brandChanged = brand.slug !== brandSlug;
+
                               setBrandSlug(brand.slug);
-                              setModelQuery('');
+
+                              if (brandChanged) {
+                                setTractorType(null);
+                                setDrive(null);
+                                setCab(null);
+                                setModelId('');
+                                setModelQuery('');
+                              }
+
                               setBrandDropdownOpen(false);
                               setBrandSearch('');
                               setMessage('');
@@ -582,11 +598,28 @@ export default function ValuationClient() {
     }
 
     if (step === 3) {
+      const driveUnlocked = tractorType !== null;
+      const cabUnlocked = driveUnlocked && drive !== null;
+      const modelsUnlocked = cabUnlocked && cab !== null;
+      const stageText = !tractorType
+        ? 'Start by choosing the tractor type.'
+        : !drive
+          ? 'Now choose the drive layout.'
+          : !cab
+            ? 'Now choose the cab setup.'
+            : !selectedModel
+              ? 'Matching models are now ready below. Select the closest one to continue.'
+              : 'Model selected. Review the result below or continue to tractor details.';
+
       return (
         <>
           <div className={styles.filterToolbar}>
-            <div className={styles.filterGroup}>
-              <span className={styles.filterLabel}>Tractor Type</span>
+            <div className={`${styles.filterGroup} ${styles.filterGroupUnlocked}`}>
+              <div className={styles.filterGroupHead}>
+                <span className={styles.filterLabel}>Tractor Type</span>
+                <span className={styles.filterStatusBadge}>{tractorType ? 'Selected' : 'Required'}</span>
+              </div>
+
               <div className={styles.pillRow}>
                 {(['field', 'orchard'] as TractorType[]).map((value) => (
                   <button
@@ -594,7 +627,13 @@ export default function ValuationClient() {
                     type="button"
                     className={`${styles.pillButton} ${tractorType === value ? styles.pillButtonActive : ''}`}
                     onClick={() => {
-                      setTractorType(value);
+                      if (tractorType !== value) {
+                        setTractorType(value);
+                        setDrive(null);
+                        setCab(null);
+                        setModelId('');
+                        setModelQuery('');
+                      }
                       setMessage('');
                     }}
                     aria-pressed={tractorType === value}
@@ -605,122 +644,176 @@ export default function ValuationClient() {
               </div>
             </div>
 
-            <div className={styles.filterGroup}>
-              <span className={styles.filterLabel}>Drive</span>
-              <div className={styles.pillRow}>
-                {(['2wd', '4wd'] as DriveType[]).map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={`${styles.pillButton} ${drive === value ? styles.pillButtonActive : ''}`}
-                    onClick={() => {
-                      setDrive(value);
-                      setMessage('');
-                    }}
-                    aria-pressed={drive === value}
-                  >
-                    {value.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.filterGroup}>
-              <span className={styles.filterLabel}>Cab Setup</span>
-              <div className={styles.pillRow}>
-                {(['cab', 'open-station'] as CabType[]).map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={`${styles.pillButton} ${cab === value ? styles.pillButtonActive : ''}`}
-                    onClick={() => {
-                      setCab(value);
-                      setMessage('');
-                    }}
-                    aria-pressed={cab === value}
-                  >
-                    {getCabDisplay(value)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <p className={styles.filterHint}>
-            Start with the tractor type, then narrow by drive and cab before selecting the closest model.
-          </p>
-
-          <div className={styles.searchWrap}>
-            <input
-              value={modelQuery}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                setModelQuery(event.target.value);
-                setMessage('');
-              }}
-              placeholder={`Search ${selectedBrandName} models...`}
-              aria-label="Search tractor models"
-              className={styles.searchInput}
-            />
-          </div>
-
-          {filteredModels.length ? (
-            <>
-              <div className={styles.filterSummary}>
-                <span className={styles.filterSummaryTitle}>
-                  {filteredModels.length} model{filteredModels.length === 1 ? '' : 's'} found
-                </span>
-                <span className={styles.filterSummaryText}>
-                  {selectedBrandName} • {getTractorTypeLabel(tractorType)} • {drive.toUpperCase()} •{' '}
-                  {getCabDisplay(cab)}
+            <div
+              className={`${styles.filterGroup} ${
+                driveUnlocked ? styles.filterGroupUnlocked : styles.filterGroupLocked
+              }`}
+            >
+              <div className={styles.filterGroupHead}>
+                <span className={styles.filterLabel}>Drive</span>
+                <span className={styles.filterStatusBadge}>
+                  {!driveUnlocked ? 'Locked' : drive ? 'Selected' : 'Required'}
                 </span>
               </div>
 
-              <div className={styles.modelList}>
-                {filteredModels.map((model) => {
-                  const active = selectedModel?.id === model.id;
-
-                  return (
+              {driveUnlocked ? (
+                <div className={styles.pillRow}>
+                  {(['2wd', '4wd', 'tracks'] as DriveType[]).map((value) => (
                     <button
-                      key={model.id}
+                      key={value}
                       type="button"
-                      className={`${styles.modelRow} ${active ? styles.modelRowActive : ''}`}
+                      className={`${styles.pillButton} ${drive === value ? styles.pillButtonActive : ''}`}
                       onClick={() => {
-                        setModelId(model.id);
-                        if (yearMode === 'guided') {
-                          setYear(model.yearEnd);
+                        if (drive !== value) {
+                          setDrive(value);
+                          setCab(null);
+                          setModelId('');
+                          setModelQuery('');
                         }
                         setMessage('');
                       }}
-                      aria-pressed={active}
+                      aria-pressed={drive === value}
                     >
-                      <div className={styles.modelRowBody}>
-                        <div className={styles.modelRowHeader}>
-                          <strong>
-                            {model.brandName} {model.modelName}
-                          </strong>
-                          {active ? <span className={styles.modelRowSelectedBadge}>Selected</span> : null}
-                        </div>
-
-                        <div className={styles.modelChipRow}>
-                          <span className={styles.modelChip}>{getTractorTypeLabel(model.tractorType)}</span>
-                          <span className={styles.modelChip}>{model.drive.toUpperCase()}</span>
-                          <span className={styles.modelChip}>{getCabDisplay(model.cab)}</span>
-                          <span className={styles.modelChip}>{model.powerKw} kW</span>
-                        </div>
-                      </div>
-
-                      <span className={styles.modelRowYear}>
-                        {model.yearStart}–{model.yearEnd}
-                      </span>
+                      {getDriveDisplay(value)}
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.filterLockedText}>
+                  Select tractor type first. Drive options unlock immediately afterwards.
+                </p>
+              )}
+            </div>
+
+            <div
+              className={`${styles.filterGroup} ${
+                cabUnlocked ? styles.filterGroupUnlocked : styles.filterGroupLocked
+              }`}
+            >
+              <div className={styles.filterGroupHead}>
+                <span className={styles.filterLabel}>Cab Setup</span>
+                <span className={styles.filterStatusBadge}>
+                  {!cabUnlocked ? 'Locked' : cab ? 'Selected' : 'Required'}
+                </span>
               </div>
+
+              {cabUnlocked ? (
+                <div className={styles.pillRow}>
+                  {(['cab', 'open-station'] as CabType[]).map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={`${styles.pillButton} ${cab === value ? styles.pillButtonActive : ''}`}
+                      onClick={() => {
+                        if (cab !== value) {
+                          setCab(value);
+                          setModelId('');
+                          setModelQuery('');
+                        }
+                        setMessage('');
+                      }}
+                      aria-pressed={cab === value}
+                    >
+                      {getCabDisplay(value)}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.filterLockedText}>
+                  Select the drive layout first. Cab options unlock after that choice.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <p className={styles.filterHint}>{stageText}</p>
+
+          {modelsUnlocked ? (
+            <>
+              <div className={styles.searchWrap}>
+                <input
+                  value={modelQuery}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setModelQuery(event.target.value);
+                    setMessage('');
+                  }}
+                  placeholder={`Search ${selectedBrandName} models...`}
+                  aria-label="Search tractor models"
+                  className={styles.searchInput}
+                />
+              </div>
+
+              {filteredModels.length ? (
+                <>
+                  <div className={styles.filterSummary}>
+                    <span className={styles.filterSummaryTitle}>
+                      {filteredModels.length} model{filteredModels.length === 1 ? '' : 's'} available
+                    </span>
+                    <span className={styles.filterSummaryText}>
+                      {selectedBrandName} • {getTractorTypeLabel(tractorType!)} • {getDriveDisplay(drive!)} •{' '}
+                      {getCabDisplay(cab!)}
+                    </span>
+                  </div>
+
+                  <div className={styles.modelList}>
+                    {filteredModels.map((model) => {
+                      const active = selectedModel?.id === model.id;
+
+                      return (
+                        <button
+                          key={model.id}
+                          type="button"
+                          className={`${styles.modelRow} ${active ? styles.modelRowActive : ''}`}
+                          onClick={() => {
+                            setModelId(model.id);
+                            if (yearMode === 'guided') {
+                              setYear(model.yearEnd);
+                            }
+                            setMessage('');
+                          }}
+                          aria-pressed={active}
+                        >
+                          <div className={styles.modelRowBody}>
+                            <div className={styles.modelRowHeader}>
+                              <strong>
+                                {model.brandName} {model.modelName}
+                              </strong>
+                              {active ? <span className={styles.modelRowSelectedBadge}>Selected</span> : null}
+                            </div>
+
+                            <div className={styles.modelChipRow}>
+                              <span className={styles.modelChip}>{getTractorTypeLabel(model.tractorType)}</span>
+                              <span className={styles.modelChip}>{getDriveDisplay(model.drive)}</span>
+                              <span className={styles.modelChip}>{getCabDisplay(model.cab)}</span>
+                              <span className={styles.modelChip}>{model.powerKw} kW</span>
+                            </div>
+                          </div>
+
+                          <span className={styles.modelRowYear}>
+                            {model.yearStart}–{model.yearEnd}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div className={styles.emptyState}>
+                  {drive === 'tracks'
+                    ? `Tracks is enabled, but no bundled ${selectedBrandName} track models are loaded yet.`
+                    : `No tractor models matched ${selectedBrandName}, ${getTractorTypeLabel(
+                        tractorType!,
+                      )}, ${getDriveDisplay(drive!)} and ${getCabDisplay(cab!)}.`}
+                </div>
+              )}
             </>
           ) : (
-            <div className={styles.emptyState}>
-              No tractor models matched {selectedBrandName}, {getTractorTypeLabel(tractorType)}, {drive.toUpperCase()}
-              {' '}and {getCabDisplay(cab)}.
+            <div className={styles.selectionPrompt}>
+              <span className={styles.selectionPromptLabel}>Model selection</span>
+              <strong>
+                {!tractorType ? 'Choose tractor type first' : !drive ? 'Choose drive next' : 'Choose cab setup next'}
+              </strong>
+              <p>Models only appear after the full tractor configuration has been selected.</p>
             </div>
           )}
         </>
@@ -852,7 +945,7 @@ export default function ValuationClient() {
 
                 <div className={styles.selectionChipRow}>
                   <span className={styles.modelChip}>{getTractorTypeLabel(selectedModel.tractorType)}</span>
-                  <span className={styles.modelChip}>{selectedModel.drive.toUpperCase()}</span>
+                  <span className={styles.modelChip}>{getDriveDisplay(selectedModel.drive)}</span>
                   <span className={styles.modelChip}>{getCabDisplay(selectedModel.cab)}</span>
                   <span className={styles.modelChip}>{selectedModel.powerKw} kW</span>
                   <span className={styles.modelChip}>
@@ -987,7 +1080,7 @@ export default function ValuationClient() {
                         {result.model.brandName} {result.model.modelName}
                       </h1>
                       <p className={styles.heroMeta}>
-                        {getTractorTypeLabel(result.model.tractorType)} tractor • {result.model.drive.toUpperCase()} •{' '}
+                        {getTractorTypeLabel(result.model.tractorType)} tractor • {getDriveDisplay(result.model.drive)} •{' '}
                         {getCabDisplay(result.model.cab)} • {activeYear} • {result.model.powerKw} kW •{' '}
                         {Number(hours).toLocaleString('en-ZA')} engine hours
                       </p>
@@ -1064,7 +1157,7 @@ export default function ValuationClient() {
                   <div className={styles.breakdownRow}>
                     <span className={styles.breakdownKey}>Specification</span>
                     <span className={styles.breakdownValue}>
-                      {getTractorTypeLabel(result.model.tractorType)} • {result.model.drive.toUpperCase()} •{' '}
+                      {getTractorTypeLabel(result.model.tractorType)} • {getDriveDisplay(result.model.drive)} •{' '}
                       {getCabDisplay(result.model.cab)}
                     </span>
                   </div>
