@@ -63,8 +63,7 @@ export default function MarketplaceClient({
     () =>
       [...listings]
         .sort(
-          (a, b) =>
-            new Date(b.dateAdvertised).getTime() - new Date(a.dateAdvertised).getTime(),
+          (a, b) => new Date(b.dateAdvertised).getTime() - new Date(a.dateAdvertised).getTime(),
         )
         .map((listing, index) => ({
           ...listing,
@@ -130,133 +129,130 @@ export default function MarketplaceClient({
     ],
   );
 
+  const activePills = [
+    initialFilters.brand ? `Brand: ${initialFilters.brand}` : '',
+    initialFilters.model ? `Model: ${initialFilters.model}` : '',
+    initialFilters.drive ? `Drive: ${initialFilters.drive.toUpperCase()}` : '',
+    initialFilters.type ? `Type: ${formatTypeLabel(initialFilters.type)}` : '',
+  ].filter(Boolean);
+
   return (
     <main className={styles.page}>
       <AppHeader active="marketplace" />
 
-      <section className={styles.wrap}>
-        <div>
-          <h1>Marketplace</h1>
-          <p>
-            Browse Aim4price in-house tractor listings. Anyone can view listings,
-            but contact details only unlock after sign-in. Listings should flow
-            from valuation to asset register and then into marketplace.
-          </p>
+      <section className={styles.hero}>
+        <div className={styles.heroTop}>
+          <div className={styles.heroCopy}>
+            <span className={styles.eyebrow}>Aim4price tractor marketplace</span>
+            <h1>Marketplace</h1>
+            <p>
+              Browse Aim4price in-house tractor listings. Anyone can view listings. Contact details
+              only unlock after sign-in. Listings should flow from valuation to asset register and
+              then into marketplace.
+            </p>
+          </div>
+
+          <aside className={styles.totalCard}>
+            <strong>{visible.length}</strong>
+            <span>Live listings</span>
+            <small>Public browsing • Contact locked</small>
+          </aside>
         </div>
 
-        <div className={styles.total}>{visible.length} listings</div>
+        <div className={styles.searchPanel}>
+          <label htmlFor="marketplace-search" className={styles.searchLabel}>
+            Search listings
+          </label>
+
+          <input
+            id="marketplace-search"
+            value={query}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
+            placeholder="Search brand, model, area or province"
+          />
+
+          {activePills.length ? (
+            <div className={styles.pillRow}>
+              {activePills.map((pill) => (
+                <span key={pill} className={styles.pill}>
+                  {pill}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
       </section>
-
-      <div className={styles.filters}>
-        <input
-          value={query}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
-          placeholder="Search brand, model, area or province"
-        />
-
-        {initialFilters.brand ? (
-          <span className={styles.pill}>Brand: {initialFilters.brand}</span>
-        ) : null}
-
-        {initialFilters.model ? (
-          <span className={styles.pill}>Model: {initialFilters.model}</span>
-        ) : null}
-
-        {initialFilters.drive ? (
-          <span className={styles.pill}>Drive: {initialFilters.drive.toUpperCase()}</span>
-        ) : null}
-
-        {initialFilters.type ? (
-          <span className={styles.pill}>Type: {formatTypeLabel(initialFilters.type)}</span>
-        ) : null}
-      </div>
 
       <section className={styles.grid}>
         {visible.length > 0 ? (
           visible.map((listing) => (
             <article key={listing.id} className={styles.card}>
-              <div
-                style={{
-                  width: '100%',
-                  aspectRatio: '16 / 9',
-                  overflow: 'hidden',
-                  borderRadius: '1.15rem',
-                  marginBottom: '1rem',
-                  border: '1px solid rgba(16, 42, 34, 0.08)',
-                  background: '#f7faf8',
-                }}
-              >
+              <div className={styles.imageFrame}>
                 <img
                   src={listing.imageSrc}
                   alt={`${listing.brandName} ${listing.modelName}`}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    display: 'block',
-                  }}
+                  className={styles.image}
                   onError={(event) => {
                     event.currentTarget.src = FALLBACK_IMAGE;
                   }}
                 />
+                <span className={styles.imageTag}>In-house listing</span>
               </div>
 
-              <div className={styles.rowBetween}>
-                <div>
+              <div className={styles.cardHead}>
+                <div className={styles.titleBlock}>
                   <h2>
                     {listing.brandName} {listing.modelName}
                   </h2>
-                  <p>
-                    {formatTypeLabel(listing.tractorType)} tractor •{' '}
-                    {listing.drive.toUpperCase()} • {formatCabLabel(listing.cab)} •{' '}
-                    {listing.powerKw} kW
+                  <p className={styles.specLine}>
+                    {formatTypeLabel(listing.tractorType)} tractor • {listing.drive.toUpperCase()} •{' '}
+                    {formatCabLabel(listing.cab)} • {listing.powerKw} kW
                   </p>
                 </div>
 
-                <div className={styles.price}>
-                  {money(listing.askingPriceExVat)}
+                <div className={styles.priceBlock}>
+                  <strong>{money(listing.askingPriceExVat)}</strong>
                   <small>VAT excluded</small>
                 </div>
               </div>
 
               <div className={styles.stats}>
-                <div>
-                  <span>Year</span>
-                  <strong>{listing.yearModel}</strong>
+                <div className={styles.statCard}>
+                  <span className={styles.statLabel}>Year</span>
+                  <strong className={styles.statValue}>{listing.yearModel}</strong>
                 </div>
-                <div>
-                  <span>Engine hours</span>
-                  <strong>{listing.hours.toLocaleString('en-ZA')}</strong>
+
+                <div className={styles.statCard}>
+                  <span className={styles.statLabel}>Engine hours</span>
+                  <strong className={styles.statValue}>
+                    {listing.hours.toLocaleString('en-ZA')}
+                  </strong>
                 </div>
-                <div>
-                  <span>Province</span>
-                  <strong>{listing.province}</strong>
+
+                <div className={styles.statCard}>
+                  <span className={styles.statLabel}>Province</span>
+                  <strong className={styles.statValue}>{listing.province}</strong>
                 </div>
-                <div>
-                  <span>Area</span>
-                  <strong>{listing.area}</strong>
+
+                <div className={styles.statCard}>
+                  <span className={styles.statLabel}>Area</span>
+                  <strong className={styles.statValue}>{listing.area}</strong>
                 </div>
               </div>
 
-              <div style={{ marginTop: '1rem' }}>
-                <p style={{ margin: 0, color: 'var(--text-muted)', lineHeight: 1.65 }}>
+              <div className={styles.noteBox}>
+                <strong>Listing summary</strong>
+                <p>
                   Aim4price marketplace listing for{' '}
-                  <strong>
+                  <b>
                     {listing.brandName} {listing.modelName}
-                  </strong>{' '}
+                  </b>{' '}
                   located in {listing.seller.locationLabel}. Listed on {listing.dateAdvertised}.
                 </p>
               </div>
 
-              <div
-                className={styles.rowBetween}
-                style={{
-                  marginTop: '1rem',
-                  paddingTop: '1rem',
-                  borderTop: '1px solid rgba(16, 42, 34, 0.08)',
-                }}
-              >
-                <div>
+              <div className={styles.contactRow}>
+                <div className={styles.contactCopy}>
                   <strong>Seller contact</strong>
                   {isSignedIn ? (
                     <p>
@@ -264,24 +260,22 @@ export default function MarketplaceClient({
                       {listing.seller.sellerEmail}
                     </p>
                   ) : (
-                    <p>Sign in to view seller phone number and email address.</p>
+                    <p>Sign in above to view seller phone number and email address.</p>
                   )}
                 </div>
 
                 {isSignedIn ? (
                   <span className={styles.secondary}>Contact unlocked</span>
                 ) : (
-                  <a href="#" className={styles.secondary}>
-                    Sign in to view contact
-                  </a>
+                  <span className={styles.secondary}>Contact locked</span>
                 )}
               </div>
             </article>
           ))
         ) : (
-          <article className={styles.card}>
+          <article className={styles.emptyState}>
             <h2>No listings found</h2>
-            <p>Try a different search or remove some filters.</p>
+            <p>Try a different brand, model, area or province.</p>
           </article>
         )}
       </section>
