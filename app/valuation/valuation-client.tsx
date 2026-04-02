@@ -19,6 +19,7 @@ import { saveItem } from '../../lib/register';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 type MethodKey = 'aim4price' | 'market' | 'department';
+type EquipmentType = 'tractor';
 
 type MethodCard = {
   key: MethodKey;
@@ -79,7 +80,7 @@ function getStepMeta(step: Step) {
     case 1:
       return {
         title: 'Choose Equipment Type',
-        body: 'Select your equipment type. Tractor is the active category in this prototype.',
+        body: 'Select your equipment type to continue.',
       };
     case 2:
       return {
@@ -122,6 +123,7 @@ export default function ValuationClient() {
   const router = useRouter();
 
   const [step, setStep] = useState<Step>(1);
+  const [selectedType, setSelectedType] = useState<EquipmentType | null>(null);
   const [brandQuery, setBrandQuery] = useState('');
   const [modelQuery, setModelQuery] = useState('');
   const [brandSlug, setBrandSlug] = useState('john-deere');
@@ -240,10 +242,11 @@ export default function ValuationClient() {
   );
 
   const canContinue = useMemo(() => {
+    if (step === 1) return selectedType === 'tractor';
     if (step === 3) return Boolean(selectedModel);
     if (step === 4) return Boolean(selectedModel && Number(hours) > 0);
     return true;
-  }, [step, selectedModel, hours]);
+  }, [step, selectedType, selectedModel, hours]);
 
   const nextLabel =
     step === 1
@@ -256,6 +259,7 @@ export default function ValuationClient() {
 
   function resetWizard() {
     setStep(1);
+    setSelectedType(null);
     setBrandQuery('');
     setModelQuery('');
     setBrandSlug('john-deere');
@@ -372,39 +376,50 @@ export default function ValuationClient() {
 
   function renderWizardBody() {
     if (step === 1) {
+      const isTractorSelected = selectedType === 'tractor';
+
       return (
-        <div className={styles.typeGrid}>
-          <button type="button" className={`${styles.typeCard} ${styles.typeCardActive}`}>
+        <div className={styles.typePicker}>
+          <button
+            type="button"
+            className={styles.typeArrow}
+            aria-label="Previous equipment type"
+            disabled
+          >
+            ‹
+          </button>
+
+          <button
+            type="button"
+            className={`${styles.typeCard} ${styles.typePickerCard} ${
+              isTractorSelected ? styles.typeCardActive : ''
+            }`}
+            onClick={() => {
+              setSelectedType('tractor');
+              setMessage('');
+            }}
+            aria-pressed={isTractorSelected}
+          >
             <div className={styles.typeImageBox}>
               <Image
                 src="/brand/Tractor.png"
                 alt="Tractor equipment type"
                 fill
                 className={styles.typeImage}
-                sizes="180px"
+                sizes="220px"
               />
             </div>
             <strong>Tractor</strong>
-            <span>Active for prototype testing</span>
           </button>
 
-          <div className={`${styles.typeCard} ${styles.typeCardDisabled}`}>
-            <div className={styles.typeImageBox} />
-            <strong>Combine</strong>
-            <span>Coming soon</span>
-          </div>
-
-          <div className={`${styles.typeCard} ${styles.typeCardDisabled}`}>
-            <div className={styles.typeImageBox} />
-            <strong>Baler</strong>
-            <span>Coming soon</span>
-          </div>
-
-          <div className={`${styles.typeCard} ${styles.typeCardDisabled}`}>
-            <div className={styles.typeImageBox} />
-            <strong>Sprayer</strong>
-            <span>Coming soon</span>
-          </div>
+          <button
+            type="button"
+            className={styles.typeArrow}
+            aria-label="Next equipment type"
+            disabled
+          >
+            ›
+          </button>
         </div>
       );
     }
