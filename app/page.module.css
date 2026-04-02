@@ -655,7 +655,7 @@
 @media (max-width: 720px) {
   .shell,
   .shellNarrow {
-    width: min(100% - 1.4rem, 1180px);
+    width: var(--shell-width);
   }
 
   .heroSection {
