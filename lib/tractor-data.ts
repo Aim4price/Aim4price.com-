@@ -3,7 +3,7 @@
 // This is local dummy data intended to keep the valuation UI populated while you design.
 
 export type TractorType = 'field' | 'orchard';
-export type DriveType = '2wd' | '4wd';
+export type DriveType = '2wd' | '4wd' | 'tracks';
 export type CabType = 'cab' | 'open-station';
 export type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 
