@@ -8,6 +8,11 @@
   --line-soft: rgba(18, 45, 37, 0.06);
   --shadow-soft: 0 18px 38px rgba(16, 42, 34, 0.06);
   --shadow-card: 0 12px 30px rgba(16, 42, 34, 0.05);
+  --shell-max: 1180px;
+  --shell-narrow-max: 1040px;
+  --shell-gutter: 1.5rem;
+  --shell-width: min(calc(100% - (var(--shell-gutter) * 2)), var(--shell-max));
+  --shell-narrow-width: min(calc(100% - (var(--shell-gutter) * 2)), var(--shell-narrow-max));
   color-scheme: light;
 }
 
@@ -24,6 +29,7 @@ body {
 
 html {
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -34,6 +40,7 @@ body {
   color: var(--text-strong);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
 }
 
 a {
@@ -81,4 +88,10 @@ h4,
 
 ::selection {
   background: rgba(23, 77, 62, 0.14);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --shell-gutter: 0.7rem;
+  }
 }
