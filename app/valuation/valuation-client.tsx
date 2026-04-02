@@ -31,12 +31,13 @@ type MethodCard = {
 };
 
 const INITIAL_MODEL_ID = 'john-deere-6135b-field-4wd-cab';
+const CURRENT_YEAR = new Date().getFullYear() + 1;
 
 const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
   { step: 1, label: 'Type' },
   { step: 2, label: 'Brand' },
   { step: 3, label: 'Model' },
-  { step: 4, label: 'Inputs' },
+  { step: 4, label: 'Details' },
   { step: 5, label: 'Value' },
 ];
 
@@ -95,8 +96,8 @@ function getStepMeta(step: Step) {
       };
     case 4:
       return {
-        title: 'Enter Valuation Inputs',
-        body: 'Choose the year model, input hours, and set the condition before generating the valuation.',
+        title: 'Enter Tractor Details',
+        body: 'Confirm the year model, enter engine hours, and choose the overall condition before generating the valuation.',
       };
     default:
       return {
@@ -139,7 +140,9 @@ export default function ValuationClient() {
   const [drive, setDrive] = useState<DriveType>('4wd');
   const [cab, setCab] = useState<CabType>('cab');
   const [modelId, setModelId] = useState(INITIAL_MODEL_ID);
+  const [yearMode, setYearMode] = useState<'guided' | 'manual'>('guided');
   const [year, setYear] = useState(2020);
+  const [manualYear, setManualYear] = useState('');
   const [hours, setHours] = useState('3500');
   const [condition, setCondition] = useState<ConditionKey>('good');
   const [result, setResult] = useState<Result | null>(null);
@@ -191,12 +194,12 @@ export default function ValuationClient() {
   }, [filteredModels, modelId]);
 
   useEffect(() => {
-    if (!selectedModel) return;
+    if (!selectedModel || yearMode !== 'guided') return;
 
     if (year < selectedModel.yearStart || year > selectedModel.yearEnd) {
       setYear(selectedModel.yearEnd);
     }
-  }, [selectedModel, year]);
+  }, [selectedModel, yearMode, year]);
 
   const years = useMemo(
     () =>
@@ -213,6 +216,11 @@ export default function ValuationClient() {
     () => brands.find((brand) => brand.slug === brandSlug)?.name ?? '—',
     [brandSlug],
   );
+
+  const activeYear = yearMode === 'manual' ? Number(manualYear) : year;
+  const isYearValid = yearMode === 'guided'
+    ? Number.isInteger(year)
+    : Number.isInteger(activeYear) && activeYear >= 1950 && activeYear <= CURRENT_YEAR;
 
   const methodCards = useMemo<MethodCard[]>(() => {
     if (!result) return [];
@@ -254,9 +262,9 @@ export default function ValuationClient() {
   const canContinue = useMemo(() => {
     if (step === 1) return selectedType === 'tractor';
     if (step === 3) return Boolean(selectedModel);
-    if (step === 4) return Boolean(selectedModel && Number(hours) > 0);
+    if (step === 4) return Boolean(selectedModel && isYearValid && Number(hours) > 0);
     return true;
-  }, [step, selectedType, selectedModel, hours]);
+  }, [step, selectedType, selectedModel, isYearValid, hours]);
 
   const nextLabel =
     step === 1
@@ -264,7 +272,7 @@ export default function ValuationClient() {
       : step === 2
         ? 'Choose Model'
         : step === 3
-          ? 'Enter Inputs'
+          ? 'Enter Details'
           : 'Get Valuation';
 
   function resetWizard() {
@@ -276,7 +284,9 @@ export default function ValuationClient() {
     setDrive('4wd');
     setCab('cab');
     setModelId(INITIAL_MODEL_ID);
+    setYearMode('guided');
     setYear(2020);
+    setManualYear('');
     setHours('3500');
     setCondition('good');
     setResult(null);
@@ -305,15 +315,21 @@ export default function ValuationClient() {
 
     if (step === 4) {
       const parsedHours = Number(hours);
+      const parsedYear = activeYear;
 
-      if (!selectedModel || !Number.isFinite(parsedHours) || parsedHours <= 0) {
-        setMessage('Enter operating hours greater than zero before running the valuation.');
+      if (!selectedModel || !isYearValid) {
+        setMessage('Enter a valid year model before running the valuation.');
+        return;
+      }
+
+      if (!Number.isFinite(parsedHours) || parsedHours <= 0) {
+        setMessage('Enter engine hours greater than zero before running the valuation.');
         return;
       }
 
       const nextResult = runValuation({
         modelId: selectedModel.id,
-        year,
+        year: parsedYear,
         hours: parsedHours,
         condition,
       });
@@ -349,14 +365,14 @@ export default function ValuationClient() {
     }
 
     saveItem({
-      id: `${result.model.id}-${year}-${hours}-${selectedMethod}`,
+      id: `${result.model.id}-${activeYear}-${hours}-${selectedMethod}`,
       kind: 'tractor',
       title: `${result.model.brandName} ${result.model.modelName}`,
       brandName: result.model.brandName,
       modelName: result.model.modelName,
       drive: result.model.drive,
       tractorType: result.model.tractorType,
-      yearModel: year,
+      yearModel: activeYear,
       hours: Number(hours),
       selectedMethod,
       selectedValueExVat: value,
@@ -554,7 +570,9 @@ export default function ValuationClient() {
                       className={`${styles.modelRow} ${active ? styles.modelRowActive : ''}`}
                       onClick={() => {
                         setModelId(model.id);
-                        setYear(model.yearEnd);
+                        if (yearMode === 'guided') {
+                          setYear(model.yearEnd);
+                        }
                         setMessage('');
                       }}
                       aria-pressed={active}
@@ -596,36 +614,85 @@ export default function ValuationClient() {
     return (
       <>
         <div className={styles.inputGrid}>
-          <label className={styles.field}>
-            <span>Choose Year Model</span>
-            <select
-              value={year}
-              onChange={(event: ChangeEvent<HTMLSelectElement>) => setYear(Number(event.target.value))}
-            >
-              {years.map((availableYear) => (
-                <option key={availableYear} value={availableYear}>
-                  {availableYear}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className={styles.fieldBlock}>
+            <label className={styles.field}>
+              <span>Year Model</span>
+              <div className={styles.pillRow}>
+                <button
+                  type="button"
+                  className={`${styles.pillButton} ${yearMode === 'guided' ? styles.pillButtonActive : ''}`}
+                  onClick={() => {
+                    setYearMode('guided');
+                    setMessage('');
+                  }}
+                  aria-pressed={yearMode === 'guided'}
+                >
+                  Guided Years
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.pillButton} ${yearMode === 'manual' ? styles.pillButtonActive : ''}`}
+                  onClick={() => {
+                    setYearMode('manual');
+                    setManualYear(String(year));
+                    setMessage('');
+                  }}
+                  aria-pressed={yearMode === 'manual'}
+                >
+                  Other Year
+                </button>
+              </div>
 
-          <label className={styles.field}>
-            <span>Input Hours</span>
-            <input
-              value={hours}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                setHours(event.target.value.replace(/[^0-9]/g, ''))
-              }
-              placeholder="3,500"
-              inputMode="numeric"
-            />
-          </label>
+              {yearMode === 'guided' ? (
+                <select
+                  value={year}
+                  onChange={(event: ChangeEvent<HTMLSelectElement>) => setYear(Number(event.target.value))}
+                >
+                  {years.map((availableYear) => (
+                    <option key={availableYear} value={availableYear}>
+                      {availableYear}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  value={manualYear}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    setManualYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))
+                  }
+                  placeholder="e.g. 2017"
+                  inputMode="numeric"
+                  aria-label="Enter year model manually"
+                />
+              )}
+            </label>
+
+            <p className={styles.fieldHint}>
+              Guided years are based on bundled model data. Use Other Year when your tractor year model is not shown.
+            </p>
+          </div>
+
+          <div className={styles.fieldBlock}>
+            <label className={styles.field}>
+              <span>Engine Hours</span>
+              <input
+                value={hours}
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  setHours(event.target.value.replace(/[^0-9]/g, ''))
+                }
+                placeholder="3,500"
+                inputMode="numeric"
+              />
+            </label>
+
+            <p className={styles.fieldHint}>Use the reading shown on the engine hour meter.</p>
+          </div>
         </div>
 
-        <p className={styles.fieldHint}>Estimated by what is shown on the engine hour meter.</p>
+        <div className={styles.conditionSection}>
+          <span className={styles.sectionLabel}>Overall Condition</span>
 
-        <div className={styles.conditionGrid}>
+            <div className={styles.conditionGrid}>
           {conditionOptions.map((option) => (
             <button
               key={option.key}
@@ -640,6 +707,7 @@ export default function ValuationClient() {
               <span>{getConditionHint(option.key)}</span>
             </button>
           ))}
+          </div>
         </div>
 
         {selectedModel ? (
@@ -660,7 +728,8 @@ export default function ValuationClient() {
                 </span>
               </div>
 
-              <span>Condition: {conditionLabel(condition)}</span>
+              <span>Guided years: {selectedModel.yearStart}–{selectedModel.yearEnd}</span>
+              <span>Selected condition: {conditionLabel(condition)}</span>
             </div>
           </div>
         ) : null}
@@ -770,8 +839,8 @@ export default function ValuationClient() {
                       </h1>
                       <p className={styles.heroMeta}>
                         {getTractorTypeLabel(result.model.tractorType)} tractor • {result.model.drive.toUpperCase()} •{' '}
-                        {getCabDisplay(result.model.cab)} • {year} • {result.model.powerKw} kW •{' '}
-                        {Number(hours).toLocaleString('en-ZA')} hours
+                        {getCabDisplay(result.model.cab)} • {activeYear} • {result.model.powerKw} kW •{' '}
+                        {Number(hours).toLocaleString('en-ZA')} engine hours
                       </p>
                       <button type="button" className={styles.inlineButton} onClick={() => setStep(4)}>
                         Edit Details
@@ -857,9 +926,9 @@ export default function ValuationClient() {
                   </div>
 
                   <div className={styles.breakdownRow}>
-                    <span className={styles.breakdownKey}>Hours</span>
+                    <span className={styles.breakdownKey}>Engine hours</span>
                     <span className={styles.breakdownValue}>
-                      {Number(hours).toLocaleString('en-ZA')} hours
+                      {Number(hours).toLocaleString('en-ZA')} engine hours
                     </span>
                   </div>
 
@@ -896,7 +965,7 @@ export default function ValuationClient() {
                 </div>
 
                 <p className={styles.rangeNote}>
-                  Based on similar {year} models in the current local prototype set.
+                  Based on similar {activeYear} models in the current local prototype set.
                 </p>
               </article>
 
