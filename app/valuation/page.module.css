@@ -1252,7 +1252,7 @@
 
 @media (max-width: 860px) {
   .container {
-    width: min(100% - 1.4rem, 1180px);
+    width: var(--shell-width);
     padding-top: 1.25rem;
   }
 
