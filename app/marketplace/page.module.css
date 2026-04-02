@@ -5,7 +5,7 @@
 
 .topBand {
   width: 100%;
-  background: rgba(251, 252, 251, 0.92);
+  background: #ffffff;
 }
 
 .inner {
@@ -244,13 +244,19 @@
   bottom: 0.85rem;
 }
 
-.cardHead,
-.modalHeader {
+.cardHead {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
   margin-top: 1rem;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
 }
 
 .titleBlock,
@@ -266,6 +272,10 @@
   line-height: 1.14;
   letter-spacing: -0.03em;
   color: var(--text-strong);
+}
+
+.modalTitleBlock h2 {
+  margin-top: 0.7rem;
 }
 
 .specLine {
@@ -381,15 +391,19 @@
   align-items: center;
   justify-content: center;
   padding: 1.2rem;
+  overflow-y: auto;
   background: rgba(16, 42, 34, 0.22);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .modal {
   position: relative;
   width: min(100%, 1140px);
-  max-height: calc(100vh - 2.4rem);
+  height: min(820px, calc(100dvh - 2.4rem));
+  max-height: calc(100dvh - 2.4rem);
   overflow: hidden;
   border-radius: 1.7rem;
   background: rgba(255, 255, 255, 0.98);
@@ -416,10 +430,13 @@
 .modalLayout {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
-  min-height: min(720px, calc(100vh - 2.4rem));
+  height: 100%;
+  min-height: 0;
 }
 
 .viewer {
+  min-width: 0;
+  min-height: 0;
   padding: 1.2rem;
   background: #f8faf9;
   border-right: 1px solid rgba(16, 42, 34, 0.08);
@@ -430,10 +447,10 @@
   width: 100%;
   height: 100%;
   min-height: 420px;
+  overflow: hidden;
   border-radius: 1.3rem;
   border: 1px solid rgba(16, 42, 34, 0.08);
   background: linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
-  overflow: hidden;
 }
 
 .modalImage {
@@ -486,12 +503,12 @@
 }
 
 .modalContent {
+  min-width: 0;
+  min-height: 0;
   padding: 1.25rem;
-  overflow: auto;
-}
-
-.modalTitleBlock h2 {
-  margin-top: 0.7rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .modalSection {
@@ -525,20 +542,6 @@
     grid-template-columns: 1fr;
   }
 
-  .modalLayout {
-    grid-template-columns: 1fr;
-    min-height: auto;
-  }
-
-  .viewer {
-    border-right: 0;
-    border-bottom: 1px solid rgba(16, 42, 34, 0.08);
-  }
-
-  .modalStats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .priceBlock,
   .modalPriceBlock {
     text-align: left;
@@ -548,8 +551,39 @@
     min-width: 0;
   }
 
+  .modalOverlay {
+    align-items: flex-start;
+    padding: 0.65rem;
+    overflow-y: auto;
+  }
+
   .modal {
-    max-height: calc(100vh - 1.4rem);
+    width: 100%;
+    height: calc(100dvh - 1.3rem);
+    max-height: calc(100dvh - 1.3rem);
+    border-radius: 1.35rem;
+  }
+
+  .modalLayout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100%;
+  }
+
+  .viewer {
+    padding: 1rem;
+    border-right: 0;
+    border-bottom: 1px solid rgba(16, 42, 34, 0.08);
+  }
+
+  .modalContent {
+    min-height: 0;
+    padding: 1rem;
+    overflow-y: auto;
+  }
+
+  .modalStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .modalImageFrame {
@@ -564,9 +598,7 @@
   }
 
   .searchPanel,
-  .card,
-  .modalContent,
-  .viewer {
+  .card {
     padding: 1rem;
   }
 
@@ -585,11 +617,22 @@
   }
 
   .modalOverlay {
-    padding: 0.6rem;
+    padding: 0.5rem;
   }
 
   .modal {
-    border-radius: 1.35rem;
+    height: calc(100dvh - 1rem);
+    max-height: calc(100dvh - 1rem);
+    border-radius: 1.2rem;
+  }
+
+  .viewer,
+  .modalContent {
+    padding: 0.95rem;
+  }
+
+  .modalImageFrame {
+    min-height: 260px;
   }
 
   .modalBadge {
