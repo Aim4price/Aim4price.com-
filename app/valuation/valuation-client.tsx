@@ -85,7 +85,7 @@ function getStepMeta(step: Step) {
     case 2:
       return {
         title: 'Choose Brand',
-        body: 'Search or select a tractor brand. This step is text-based only, with no logo dependency.',
+        body: 'Select a tractor brand from the dropdown list.',
       };
     case 3:
       return {
@@ -124,7 +124,6 @@ export default function ValuationClient() {
 
   const [step, setStep] = useState<Step>(1);
   const [selectedType, setSelectedType] = useState<EquipmentType | null>(null);
-  const [brandQuery, setBrandQuery] = useState('');
   const [modelQuery, setModelQuery] = useState('');
   const [brandSlug, setBrandSlug] = useState('john-deere');
   const [drive, setDrive] = useState<DriveType>('4wd');
@@ -139,12 +138,9 @@ export default function ValuationClient() {
 
   const stepMeta = getStepMeta(step);
 
-  const matchingBrands = useMemo(
-    () =>
-      brands.filter((brand) =>
-        !brandQuery.trim() ? true : brand.name.toLowerCase().includes(brandQuery.trim().toLowerCase()),
-      ),
-    [brandQuery],
+  const sortedBrands = useMemo(
+    () => [...brands].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
+    [],
   );
 
   const filteredModels = useMemo(
@@ -260,7 +256,6 @@ export default function ValuationClient() {
   function resetWizard() {
     setStep(1);
     setSelectedType(null);
-    setBrandQuery('');
     setModelQuery('');
     setBrandSlug('john-deere');
     setDrive('4wd');
@@ -380,12 +375,7 @@ export default function ValuationClient() {
 
       return (
         <div className={styles.typePicker}>
-          <button
-            type="button"
-            className={styles.typeArrow}
-            aria-label="Previous equipment type"
-            disabled
-          >
+          <button type="button" className={styles.typeArrow} aria-label="Previous equipment type" disabled>
             ‹
           </button>
 
@@ -412,12 +402,7 @@ export default function ValuationClient() {
             <strong>Tractor</strong>
           </button>
 
-          <button
-            type="button"
-            className={styles.typeArrow}
-            aria-label="Next equipment type"
-            disabled
-          >
+          <button type="button" className={styles.typeArrow} aria-label="Next equipment type" disabled>
             ›
           </button>
         </div>
@@ -426,42 +411,26 @@ export default function ValuationClient() {
 
     if (step === 2) {
       return (
-        <>
-          <div className={styles.searchWrap}>
-            <input
-              value={brandQuery}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setBrandQuery(event.target.value)}
-              placeholder="Search brands..."
-              aria-label="Search brands"
-              className={styles.searchInput}
-            />
-          </div>
-
-          {matchingBrands.length ? (
-            <div className={styles.brandGrid}>
-              {matchingBrands.map((brand) => {
-                const active = brandSlug === brand.slug;
-
-                return (
-                  <button
-                    key={brand.slug}
-                    type="button"
-                    className={`${styles.brandCard} ${active ? styles.brandCardActive : ''}`}
-                    onClick={() => {
-                      setBrandSlug(brand.slug);
-                      setModelQuery('');
-                      setMessage('');
-                    }}
-                  >
-                    {brand.name}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className={styles.emptyState}>No brands matched that search.</div>
-          )}
-        </>
+        <div className={styles.searchWrap}>
+          <label className={styles.field}>
+            <span>Choose Brand</span>
+            <select
+              value={brandSlug}
+              onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+                setBrandSlug(event.target.value);
+                setModelQuery('');
+                setMessage('');
+              }}
+              aria-label="Choose tractor brand"
+            >
+              {sortedBrands.map((brand) => (
+                <option key={brand.slug} value={brand.slug}>
+                  {brand.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       );
     }
 
