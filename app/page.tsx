@@ -9,45 +9,48 @@ const featureCards = [
   {
     href: '/valuation',
     image: '/brand/Valuations.png',
-    label: 'Free',
+    label: 'Fast',
     title: 'Valuation',
-    text: 'Get a fast machinery value with a guided flow.',
-    action: 'Open valuation',
+    text: 'Get a guided machinery value, quickly.',
+    action: 'Start valuation',
   },
   {
     href: registerHref,
     image: '/brand/Register.png',
     label: 'Save',
     title: 'Asset Register',
-    text: 'Keep equipment values and records in one place.',
+    text: 'Keep machinery values and records in one place.',
     action: 'Open register',
   },
   {
     href: '/marketplace',
     image: '/brand/Buy & Sell.png',
-    label: 'List',
+    label: 'Move',
     title: 'Marketplace',
-    text: 'Move equipment to market with less friction.',
+    text: 'Take the right machines to market faster.',
     action: 'Open marketplace',
   },
 ] as const;
 
-const audienceCards = [
+const steps = [
   {
-    title: 'Owners',
-    text: 'See what your machinery is worth.',
+    number: '01',
+    title: 'Value',
+    text: 'Choose the machine and get a clean estimate.',
   },
   {
-    title: 'Dealers',
-    text: 'Value stock faster and more clearly.',
+    number: '02',
+    title: 'Save',
+    text: 'Store the machine in your asset register.',
   },
   {
-    title: 'Brokers',
-    text: 'Start with cleaner machinery data.',
+    number: '03',
+    title: 'Move',
+    text: 'List the right unit when you are ready.',
   },
 ] as const;
 
-const heroChips = ['Fast valuation', 'Asset register', 'Marketplace'];
+const heroMeta = ['Free valuation', 'Asset register', 'Marketplace'];
 
 export default function HomePage() {
   return (
@@ -62,7 +65,10 @@ export default function HomePage() {
 
               <h1 className={styles.heroTitle}>Know what your machinery is worth.</h1>
 
-              <p className={styles.heroText}>Value it. Register it. Move it to market.</p>
+              <p className={styles.heroText}>
+                Free valuation, asset register, and marketplace tools for faster machinery
+                decisions.
+              </p>
 
               <div className={styles.heroActions}>
                 <Link href="/valuation" className={styles.primaryCta}>
@@ -73,10 +79,10 @@ export default function HomePage() {
                 </Link>
               </div>
 
-              <div className={styles.heroChips} aria-label="Platform sections">
-                {heroChips.map((chip) => (
-                  <span key={chip} className={styles.heroChip}>
-                    {chip}
+              <div className={styles.heroMeta} aria-label="Platform sections">
+                {heroMeta.map((item) => (
+                  <span key={item} className={styles.heroMetaItem}>
+                    {item}
                   </span>
                 ))}
               </div>
@@ -86,14 +92,17 @@ export default function HomePage() {
               <Link href="/valuation" className={styles.heroImageLink} aria-label="Open valuation">
                 <div className={styles.heroImageFrame}>
                   <div className={styles.heroGlow} />
+                  <div className={styles.heroPill}>Clear, guided flow</div>
+
                   <Image
                     src="/brand/Home-page.png"
-                    alt="Aim4price machinery banner"
+                    alt="Aim4price machinery homepage banner"
                     fill
                     priority
                     sizes="(max-width: 980px) 100vw, 48vw"
                     className={styles.heroImage}
                   />
+
                   <div className={styles.heroImageBadge}>Open valuation</div>
                 </div>
               </Link>
@@ -107,16 +116,17 @@ export default function HomePage() {
           <div className={styles.sectionIntro}>
             <p className={styles.sectionEyebrow}>Choose a section</p>
             <h2 className={styles.sectionTitle}>Three clear paths.</h2>
+            <p className={styles.sectionText}>Open exactly what you need.</p>
           </div>
 
           <div className={styles.featureGrid}>
             {featureCards.map((card) => (
               <Link key={card.title} href={card.href} className={styles.featureCard}>
-                <div className={styles.featureTopRow}>
+                <div className={styles.featureTop}>
                   <span className={styles.featureLabel}>{card.label}</span>
                 </div>
 
-                <div className={styles.featureIconWrap}>
+                <div className={styles.featureImageWrap}>
                   <Image
                     src={card.image}
                     alt={card.title}
@@ -135,19 +145,21 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className={styles.audienceSection} id="platform">
+      <section className={styles.stepsSection} id="platform">
         <div className={styles.shellNarrow}>
-          <div className={styles.audiencePanel}>
-            <div className={styles.audienceIntro}>
-              <p className={styles.sectionEyebrow}>Built for</p>
-              <h2 className={styles.sectionTitle}>Owners. Dealers. Brokers.</h2>
+          <div className={styles.stepsPanel}>
+            <div className={styles.sectionIntro}>
+              <p className={styles.sectionEyebrow}>How it works</p>
+              <h2 className={styles.sectionTitle}>Simple by design.</h2>
+              <p className={styles.sectionText}>Very little noise. Just the core workflow.</p>
             </div>
 
-            <div className={styles.audienceGrid}>
-              {audienceCards.map((card) => (
-                <div key={card.title} className={styles.audienceCard}>
-                  <h3 className={styles.audienceTitle}>{card.title}</h3>
-                  <p className={styles.audienceText}>{card.text}</p>
+            <div className={styles.stepsGrid}>
+              {steps.map((step) => (
+                <div key={step.number} className={styles.stepCard}>
+                  <span className={styles.stepNumber}>{step.number}</span>
+                  <h3 className={styles.stepTitle}>{step.title}</h3>
+                  <p className={styles.stepText}>{step.text}</p>
                 </div>
               ))}
             </div>
@@ -158,10 +170,15 @@ export default function HomePage() {
       <section className={styles.ctaSection}>
         <div className={styles.shellNarrow}>
           <div className={styles.ctaPanel}>
-            <p className={styles.sectionEyebrow}>Get started</p>
-            <h2 className={styles.ctaTitle}>Open your asset register.</h2>
+            <p className={styles.ctaEyebrow}>Get started</p>
+            <h2 className={styles.ctaTitle}>Start with a free valuation.</h2>
+            <p className={styles.ctaText}>Then save the machine to your asset register.</p>
+
             <div className={styles.ctaButtons}>
-              <Link href={registerHref} className={styles.primaryCta}>
+              <Link href="/valuation" className={styles.ctaPrimary}>
+                Start Free Valuation
+              </Link>
+              <Link href={registerHref} className={styles.ctaSecondary}>
                 Open Asset Register
               </Link>
             </div>
