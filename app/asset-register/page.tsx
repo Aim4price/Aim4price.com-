@@ -24,14 +24,6 @@ import { money } from '../../lib/tractor-logic';
 type NoticeTone = 'success' | 'error';
 type AssetFilter = 'all' | 'tractor' | 'manual' | 'property' | 'live';
 
-type ActivityEntry = {
-  id: string;
-  title: string;
-  detail: string;
-  atIso: string;
-  tone: 'default' | 'success';
-};
-
 const DEFAULT_MARKETPLACE_SELLER = 'Aim4price Seller';
 const DEFAULT_MARKETPLACE_AREA = 'Seller Location';
 const DEFAULT_MARKETPLACE_PROVINCE = 'South Africa';
@@ -201,39 +193,6 @@ export default function RegisterPage() {
       liveListings,
     };
   }, [items, publishedAssetIds]);
-
-  const activity = useMemo<ActivityEntry[]>(() => {
-    const addedEvents: ActivityEntry[] = items.map((item) => ({
-      id: `added-${item.id}`,
-      title: item.title,
-      detail:
-        item.kind === 'tractor'
-          ? 'Saved from valuation into the register'
-          : item.kind === 'property'
-            ? 'Property asset added manually'
-            : 'Manual asset added to the register',
-      atIso: item.createdAtIso,
-      tone: 'default',
-    }));
-
-    const listingEvents: ActivityEntry[] = publishedListings
-      .filter((listing) => listing.sourceAssetId)
-      .map((listing) => {
-        const sourceItem = items.find((item) => item.id === listing.sourceAssetId);
-
-        return {
-          id: `published-${listing.id}`,
-          title: sourceItem?.title ?? listing.title,
-          detail: `Sent to marketplace at ${money(listing.askingPriceExVat)}`,
-          atIso: listing.publishedAtIso,
-          tone: 'success' as const,
-        };
-      });
-
-    return [...listingEvents, ...addedEvents]
-      .sort((a, b) => new Date(b.atIso).getTime() - new Date(a.atIso).getTime())
-      .slice(0, 8);
-  }, [items, publishedListings]);
 
   function refresh() {
     setItems(loadItems());
@@ -466,7 +425,11 @@ export default function RegisterPage() {
                     </button>
                   ) : null}
 
-                  <button type="button" className={styles.primaryButton} onClick={() => setIsAddOpen(true)}>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => setIsAddOpen(true)}
+                  >
                     + Add Asset
                   </button>
                 </div>
@@ -595,41 +558,6 @@ export default function RegisterPage() {
                 )}
               </div>
             </article>
-
-            <article className={styles.surface}>
-              <div className={styles.sectionHeader}>
-                <div>
-                  <h2>Recent Activity</h2>
-                  <p>The register should feel alive even before the full database logic is wired in.</p>
-                </div>
-              </div>
-
-              <div className={styles.activityList}>
-                {activity.length ? (
-                  activity.map((entry) => (
-                    <div key={entry.id} className={styles.activityItem}>
-                      <div
-                        className={`${styles.activityDot} ${
-                          entry.tone === 'success' ? styles.activityDotSuccess : ''
-                        }`}
-                      />
-                      <div className={styles.activityText}>
-                        <strong>{entry.title}</strong>
-                        <span>{entry.detail}</span>
-                      </div>
-                      <time className={styles.activityTime} dateTime={entry.atIso}>
-                        {timeAgo(entry.atIso)}
-                      </time>
-                    </div>
-                  ))
-                ) : (
-                  <div className={styles.emptyState}>
-                    <strong>No activity yet.</strong>
-                    <span>Your first saved asset or marketplace listing will appear here.</span>
-                  </div>
-                )}
-              </div>
-            </article>
           </div>
 
           <aside className={styles.rail}>
@@ -680,14 +608,20 @@ export default function RegisterPage() {
                   Save from Valuation
                 </Link>
 
-                <button type="button" className={styles.quickButton} onClick={() => setIsAddOpen(true)}>
+                <button
+                  type="button"
+                  className={styles.quickButton}
+                  onClick={() => setIsAddOpen(true)}
+                >
                   Add Manual Asset
                 </button>
 
                 <button
                   type="button"
                   className={styles.quickButton}
-                  onClick={() => setNotice('Wire “Refresh All Values” once the revaluation inputs are stored.')}
+                  onClick={() =>
+                    setNotice('Wire “Refresh All Values” once the revaluation inputs are stored.')
+                  }
                 >
                   Refresh All Values
                 </button>
@@ -695,27 +629,13 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   className={styles.quickButton}
-                  onClick={() => setNotice('Connect this button to your PDF asset register export when ready.')}
+                  onClick={() =>
+                    setNotice('Connect this button to your PDF asset register export when ready.')
+                  }
                 >
                   Generate Asset Report
                 </button>
               </div>
-            </article>
-
-            <article className={styles.surface}>
-              <div className={styles.sectionHeader}>
-                <div>
-                  <h2>Register Rules</h2>
-                  <p>Keep the product logic simple and obvious to the user.</p>
-                </div>
-              </div>
-
-              <ul className={styles.rulesList}>
-                <li>Saved valuation rows stay ready for future refresh logic.</li>
-                <li>Every row can be manually overridden at any time.</li>
-                <li>Property and manual assets belong in the same register.</li>
-                <li>Selling should remain a fast three-field handoff.</li>
-              </ul>
             </article>
           </aside>
         </section>
@@ -729,7 +649,12 @@ export default function RegisterPage() {
                 <h3 id="add-asset-title">Add Asset</h3>
                 <p>Add manual equipment, property, or another non-valuation asset.</p>
               </div>
-              <button type="button" className={styles.modalClose} onClick={closeAddModal} aria-label="Close add asset modal">
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={closeAddModal}
+                aria-label="Close add asset modal"
+              >
                 ×
               </button>
             </div>
@@ -798,7 +723,12 @@ export default function RegisterPage() {
                 <h3 id="override-title">Override Value</h3>
                 <p>{overrideItem.title}</p>
               </div>
-              <button type="button" className={styles.modalClose} onClick={closeOverrideModal} aria-label="Close override modal">
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={closeOverrideModal}
+                aria-label="Close override modal"
+              >
                 ×
               </button>
             </div>
@@ -845,7 +775,12 @@ export default function RegisterPage() {
                 <h3 id="sell-title">Send to Marketplace</h3>
                 <p>{sellItem.title}</p>
               </div>
-              <button type="button" className={styles.modalClose} onClick={closeSellModal} aria-label="Close marketplace modal">
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={closeSellModal}
+                aria-label="Close marketplace modal"
+              >
                 ×
               </button>
             </div>
