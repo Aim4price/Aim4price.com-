@@ -9,7 +9,7 @@ const routes = [
   {
     href: '/valuation',
     image: '/brand/Valuations.png',
-    label: 'Fast',
+    label: 'Value',
     title: 'Valuation',
     text: 'Get a guided machinery value with a clean, direct flow.',
     action: 'Start valuation',
@@ -17,7 +17,7 @@ const routes = [
   {
     href: registerHref,
     image: '/brand/Register.png',
-    label: 'Save',
+    label: 'Manage',
     title: 'Asset Register',
     text: 'Keep equipment values and records in one working place.',
     action: 'Open register',
@@ -25,7 +25,7 @@ const routes = [
   {
     href: '/marketplace',
     image: '/brand/Buy & Sell.png',
-    label: 'Move',
+    label: 'Market',
     title: 'Marketplace',
     text: 'Browse machinery and move the right unit to market.',
     action: 'Open marketplace',
@@ -111,9 +111,9 @@ export default function HomePage() {
       <section className={styles.routesSection}>
         <div className={styles.shell}>
           <div className={styles.sectionIntro}>
-            <p className={styles.eyebrow}>Three clear sections</p>
-            <h2 className={styles.sectionTitle}>Choose what you need.</h2>
-            <p className={styles.sectionText}>Everything starts with a simple route.</p>
+            <p className={styles.eyebrow}>One clear platform</p>
+            <h2 className={styles.sectionTitle}>Choose your route.</h2>
+            <p className={styles.sectionText}>Value first, then manage records or move to market.</p>
           </div>
 
           <div className={styles.routesGrid}>
@@ -147,8 +147,8 @@ export default function HomePage() {
           <div className={styles.flowPanel}>
             <div className={styles.sectionIntroCompact}>
               <p className={styles.flowEyebrow}>How it works</p>
-              <h2 className={styles.flowTitle}>Simple by design.</h2>
-              <p className={styles.flowText}>Very little noise. Just the core workflow.</p>
+              <h2 className={styles.flowTitle}>Simple, practical, and easy to follow.</h2>
+              <p className={styles.flowText}>Start with value, save what matters, then move to market.</p>
             </div>
 
             <div className={styles.stepsGrid}>
@@ -169,7 +169,7 @@ export default function HomePage() {
           <div className={styles.ctaPanel}>
             <p className={styles.ctaEyebrow}>Get started</p>
             <h2 className={styles.ctaTitle}>Start with a free valuation.</h2>
-            <p className={styles.ctaText}>Then save the machine to your asset register.</p>
+            <p className={styles.ctaText}>Then save the machine to your asset register when needed.</p>
 
             <div className={styles.ctaButtons}>
               <Link href="/valuation" className={styles.ctaPrimary}>
