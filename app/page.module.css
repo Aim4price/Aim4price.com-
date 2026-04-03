@@ -1,16 +1,16 @@
 .page {
   min-height: 100vh;
   color: #213831;
-  background: #fbfcfb;
+  background: transparent;
 }
 
 .shell {
-  width: min(100% - 2rem, 1180px);
+  width: var(--shell-width);
   margin: 0 auto;
 }
 
 .shellNarrow {
-  width: min(100% - 2rem, 1040px);
+  width: var(--shell-narrow-width);
   margin: 0 auto;
 }
 
@@ -30,10 +30,8 @@
 }
 
 .heroSection {
-  padding: clamp(2rem, 3vw, 3.4rem) 0 clamp(2.6rem, 4vw, 4.2rem);
-  background:
-    radial-gradient(circle at 18% 0%, rgba(27, 107, 79, 0.1), transparent 28%),
-    linear-gradient(180deg, #fcfdfc 0%, #f4f8f5 100%);
+  padding: clamp(1.9rem, 3vw, 3.2rem) 0 clamp(2.4rem, 4vw, 3.9rem);
+  background: linear-gradient(180deg, #fbfcfb 0%, #f5f8f6 100%);
   border-bottom: 1px solid rgba(18, 45, 37, 0.06);
 }
 
@@ -41,7 +39,7 @@
   display: grid;
   grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
   align-items: center;
-  gap: clamp(2rem, 3vw, 3.4rem);
+  gap: clamp(2rem, 3vw, 3.3rem);
 }
 
 .heroCopy {
@@ -50,7 +48,7 @@
 
 .heroTitle {
   margin: 0.8rem 0 0;
-  font-size: clamp(3rem, 5vw, 5.2rem);
+  font-size: clamp(3rem, 5vw, 5.1rem);
   line-height: 0.95;
   letter-spacing: -0.075em;
   font-weight: 800;
@@ -61,7 +59,7 @@
 .heroText {
   margin: 1rem 0 0;
   max-width: 29rem;
-  font-size: 1.08rem;
+  font-size: 1.06rem;
   line-height: 1.62;
   color: #61706b;
 }
@@ -71,7 +69,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.8rem;
-  margin-top: 1.5rem;
+  margin-top: 1.45rem;
 }
 
 .primaryCta,
@@ -94,8 +92,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.3rem;
-  padding: 0 1.35rem;
+  min-height: 3.2rem;
+  padding: 0 1.32rem;
   border-radius: 0.95rem;
   text-decoration: none;
   font-size: 0.96rem;
@@ -131,21 +129,20 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
-  margin-top: 1.1rem;
+  margin-top: 1.05rem;
 }
 
 .heroMetaItem {
   display: inline-flex;
   align-items: center;
-  min-height: 2.05rem;
-  padding: 0 0.82rem;
+  min-height: 2rem;
+  padding: 0 0.8rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(18, 45, 37, 0.08);
   color: #385047;
-  font-size: 0.88rem;
+  font-size: 0.87rem;
   font-weight: 600;
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.04);
 }
 
 .heroVisual {
@@ -163,14 +160,12 @@
 .heroImageFrame {
   position: relative;
   width: 100%;
-  min-height: 29rem;
+  min-height: 28rem;
   overflow: hidden;
-  border-radius: 1.9rem;
+  border-radius: 1.8rem;
   background: linear-gradient(180deg, #e7efe9 0%, #dfe8e2 100%);
   border: 1px solid rgba(18, 45, 37, 0.08);
-  box-shadow:
-    0 28px 52px rgba(16, 42, 34, 0.1),
-    0 10px 20px rgba(16, 42, 34, 0.05);
+  box-shadow: 0 24px 46px rgba(16, 42, 34, 0.09);
 }
 
 .heroImage {
@@ -190,7 +185,7 @@
   pointer-events: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 24%),
-    linear-gradient(0deg, rgba(8, 28, 22, 0.18) 0%, rgba(8, 28, 22, 0) 34%);
+    linear-gradient(0deg, rgba(8, 28, 22, 0.14) 0%, rgba(8, 28, 22, 0) 34%);
 }
 
 .heroPill,
@@ -200,10 +195,9 @@
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(15, 47, 38, 0.08);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 18px rgba(12, 35, 29, 0.08);
+  box-shadow: 0 8px 16px rgba(12, 35, 29, 0.07);
   color: #224338;
   font-weight: 700;
 }
@@ -211,18 +205,18 @@
 .heroPill {
   top: 1rem;
   right: 1rem;
-  min-height: 2.35rem;
-  padding: 0 0.85rem;
-  font-size: 0.86rem;
+  min-height: 2.28rem;
+  padding: 0 0.82rem;
+  font-size: 0.84rem;
 }
 
 .heroImageBadge {
   left: 1rem;
   bottom: 1rem;
-  min-height: 2.7rem;
+  min-height: 2.65rem;
   padding: 0 0.95rem;
   gap: 0.45rem;
-  font-size: 0.92rem;
+  font-size: 0.91rem;
 }
 
 .heroImageBadge::after,
@@ -232,8 +226,8 @@
 }
 
 .routesSection {
-  padding: 2.5rem 0 3.15rem;
-  background: #ffffff;
+  padding: 2.4rem 0 2.95rem;
+  background: #fcfdfc;
   border-bottom: 1px solid rgba(18, 45, 37, 0.06);
 }
 
@@ -244,12 +238,12 @@
 
 .sectionIntro {
   max-width: 36rem;
-  margin: 0 auto 1.5rem;
+  margin: 0 auto 1.45rem;
 }
 
 .sectionIntroCompact {
   max-width: 34rem;
-  margin: 0 auto 1.45rem;
+  margin: 0 auto 1.35rem;
 }
 
 .sectionTitle,
@@ -262,7 +256,7 @@
 }
 
 .sectionTitle {
-  font-size: clamp(1.95rem, 3vw, 2.6rem);
+  font-size: clamp(1.95rem, 3vw, 2.5rem);
   font-weight: 760;
   color: #213a32;
 }
@@ -270,10 +264,10 @@
 .sectionText,
 .flowText,
 .ctaText {
-  margin: 0.62rem auto 0;
-  max-width: 31rem;
+  margin: 0.6rem auto 0;
+  max-width: 32rem;
   font-size: 1rem;
-  line-height: 1.65;
+  line-height: 1.64;
 }
 
 .sectionText,
@@ -291,16 +285,14 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 17rem;
+  min-height: 16.8rem;
   padding: 1.2rem;
   overflow: hidden;
-  border-radius: 1.4rem;
+  border-radius: 1.35rem;
   text-decoration: none;
-  background: linear-gradient(180deg, #fcfdfc 0%, #f5f8f6 100%);
+  background: linear-gradient(180deg, #fcfdfc 0%, #f6f8f7 100%);
   border: 1px solid rgba(18, 45, 37, 0.06);
-  box-shadow:
-    0 18px 36px rgba(18, 45, 37, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 30px rgba(18, 45, 37, 0.045);
 }
 
 .routeCard::before {
@@ -323,11 +315,8 @@
 }
 
 .routeCard:hover {
-  border-color: rgba(25, 88, 66, 0.14);
-  box-shadow:
-    0 24px 42px rgba(18, 45, 37, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
-  background: linear-gradient(180deg, #ffffff 0%, #edf5f0 100%);
+  border-color: rgba(25, 88, 66, 0.12);
+  box-shadow: 0 22px 38px rgba(18, 45, 37, 0.07);
 }
 
 .routeTop {
@@ -338,14 +327,14 @@
 .routeLabel {
   display: inline-flex;
   align-items: center;
-  min-height: 1.9rem;
+  min-height: 1.86rem;
   padding: 0 0.7rem;
   border-radius: 999px;
-  background: rgba(23, 77, 62, 0.08);
-  color: #1c5d49;
-  font-size: 0.78rem;
+  background: rgba(23, 77, 62, 0.07);
+  color: #1d5d49;
+  font-size: 0.77rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -355,11 +344,11 @@
   display: grid;
   place-items: center;
   margin-top: 0.85rem;
-  border-radius: 1.3rem;
+  border-radius: 1.25rem;
   background: linear-gradient(180deg, #ffffff 0%, #eef4f1 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    0 10px 22px rgba(18, 45, 37, 0.06);
+    0 10px 20px rgba(18, 45, 37, 0.05);
 }
 
 .routeIcon {
@@ -370,7 +359,7 @@
 
 .routeTitle {
   margin: 1rem 0 0;
-  font-size: 1.18rem;
+  font-size: 1.16rem;
   line-height: 1.2;
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -378,7 +367,7 @@
 }
 
 .routeText {
-  margin: 0.6rem 0 0;
+  margin: 0.58rem 0 0;
   max-width: 16rem;
   font-size: 0.96rem;
   line-height: 1.58;
@@ -397,16 +386,16 @@
 }
 
 .flowSection {
-  padding: 2.8rem 0 3rem;
+  padding: 2.6rem 0 2.8rem;
   background: linear-gradient(180deg, #eef5f1 0%, #f8fbf9 100%);
   border-bottom: 1px solid rgba(18, 45, 37, 0.06);
 }
 
 .flowPanel {
-  padding: 1.8rem;
-  border-radius: 1.8rem;
+  padding: 1.7rem;
+  border-radius: 1.75rem;
   background: linear-gradient(180deg, #184b39 0%, #11382c 100%);
-  box-shadow: 0 24px 48px rgba(12, 36, 28, 0.14);
+  box-shadow: 0 22px 42px rgba(12, 36, 28, 0.12);
 }
 
 .flowEyebrow {
@@ -414,7 +403,7 @@
 }
 
 .flowTitle {
-  font-size: clamp(2rem, 3vw, 2.8rem);
+  font-size: clamp(1.95rem, 3vw, 2.65rem);
   font-weight: 760;
   color: #ffffff;
 }
@@ -430,8 +419,8 @@
 }
 
 .stepCard {
-  padding: 1.15rem 1rem;
-  border-radius: 1.25rem;
+  padding: 1.1rem 1rem;
+  border-radius: 1.2rem;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -465,16 +454,16 @@
 }
 
 .ctaSection {
-  padding: 2.7rem 0 3.2rem;
+  padding: 2.5rem 0 2.9rem;
   background: #fbfcfb;
 }
 
 .ctaPanel {
-  padding: 2.2rem 1.5rem;
-  border-radius: 1.8rem;
+  padding: 2rem 1.5rem;
+  border-radius: 1.7rem;
   text-align: center;
   background: linear-gradient(180deg, #1b6349 0%, #123f31 100%);
-  box-shadow: 0 28px 50px rgba(13, 44, 34, 0.15);
+  box-shadow: 0 24px 44px rgba(13, 44, 34, 0.13);
 }
 
 .ctaEyebrow {
@@ -482,7 +471,7 @@
 }
 
 .ctaTitle {
-  font-size: clamp(2rem, 3vw, 2.8rem);
+  font-size: clamp(1.95rem, 3vw, 2.65rem);
   font-weight: 760;
   color: #ffffff;
 }
@@ -500,7 +489,7 @@
 .ctaSecondary {
   color: #184634;
   background: #ffffff;
-  box-shadow: 0 14px 28px rgba(8, 24, 19, 0.12);
+  box-shadow: 0 12px 24px rgba(8, 24, 19, 0.1);
 }
 
 .primaryCta:focus-visible,
@@ -544,7 +533,7 @@
 
 @media (max-width: 720px) {
   .heroSection {
-    padding: 1.75rem 0 2.4rem;
+    padding: 1.65rem 0 2.3rem;
   }
 
   .heroTitle {
@@ -585,13 +574,13 @@
   .routesSection,
   .flowSection,
   .ctaSection {
-    padding-top: 2.2rem;
-    padding-bottom: 2.5rem;
+    padding-top: 2.1rem;
+    padding-bottom: 2.4rem;
   }
 
   .flowPanel,
   .ctaPanel {
-    padding: 1.35rem 1rem;
+    padding: 1.3rem 1rem;
   }
 }
 
