@@ -32,6 +32,8 @@ export type MarketplaceListing = {
   province: string;
   area: string;
   location: string;
+  sourceName?: string;
+  sourceUrl?: string;
   description: string;
   sellerName: string;
   sellerCompany?: string;
@@ -153,6 +155,8 @@ function fromMarketVaultListing(
     province: listing.province,
     area: listing.area,
     location: listing.location,
+    sourceName: listing.sourceName,
+    sourceUrl: listing.sourceUrl,
     description: `${listing.brandName} ${listing.modelName} listed in ${listing.area}, ${listing.province}. Prototype Aim4price marketplace listing.`,
     sellerName: seller.sellerName,
     sellerCompany: seller.sellerCompany,
