@@ -223,6 +223,10 @@ function formatListingDate(value: string): string {
   }).format(parsed);
 }
 
+function getSourceLinkLabel(value: string): string {
+  return value.trim();
+}
+
 export default function ValuationClient() {
   const router = useRouter();
 
@@ -491,11 +495,6 @@ export default function ValuationClient() {
   const selectedMethodValue = result && selectedMethod ? getMethodValue(result, selectedMethod) : null;
   const headlineValue = selectedMethodValue ?? result?.previewValueExVat ?? null;
   const headlineLabel = selectedMethod ? getMethodLabel(selectedMethod) : 'Estimated Market Value';
-  const rangePercent = getRangePercent(
-    result?.marketLow ?? null,
-    result?.marketHigh ?? null,
-    selectedMethod === 'market' ? selectedMethodValue : result?.marketMid ?? headlineValue,
-  );
   const confidenceLevel = result ? getConfidenceLevel(result) : 'low';
   const confidenceClassName =
     confidenceLevel === 'high'
@@ -503,6 +502,12 @@ export default function ValuationClient() {
       : confidenceLevel === 'medium'
         ? styles.confidenceMedium
         : styles.confidenceLow;
+  const confidencePanelClassName =
+    confidenceLevel === 'high'
+      ? styles.valuePanelHigh
+      : confidenceLevel === 'medium'
+        ? styles.valuePanelMedium
+        : styles.valuePanelLow;
 
   const comparableListings = useMemo<MarketplaceListing[]>(() => {
     if (!result) return [];
@@ -549,6 +554,7 @@ export default function ValuationClient() {
     ? Math.min(selectedComparableIndex, comparableListings.length - 1)
     : 0;
   const selectedComparable = comparableListings[safeComparableIndex] ?? null;
+  const selectedComparableSourceUrl = selectedComparable?.sourceUrl?.trim() ?? '';
   const selectedComparableValue =
     selectedComparable && result
       ? getListingComparablePrice(selectedComparable, result.extrasValueExVat)
@@ -1481,7 +1487,7 @@ export default function ValuationClient() {
                     </div>
                   </div>
 
-                  <div className={styles.valuePanel}>
+                  <div className={`${styles.valuePanel} ${confidencePanelClassName}`}>
                     <div className={styles.valuePanelTop}>
                       <div className={styles.valuePanelIntro}>
                         <span className={styles.valueLabel}>{headlineLabel}</span>
@@ -1589,7 +1595,11 @@ export default function ValuationClient() {
 
                     <div className={styles.breakdownRow}>
                       <span className={styles.breakdownKey}>Confidence</span>
-                      <span className={styles.breakdownValue}>{getConfidenceLabel(result)}</span>
+                      <span className={styles.breakdownValue}>
+                        <span className={`${styles.summaryConfidenceBadge} ${confidenceClassName}`}>
+                          {getConfidenceLabel(result)}
+                        </span>
+                      </span>
                     </div>
                   </div>
                 </article>
@@ -1610,6 +1620,28 @@ export default function ValuationClient() {
                         ? `${selectedComparable.yearModel} • ${selectedComparable.hours.toLocaleString('en-ZA')} engine hours • ${selectedComparable.sourceName}`
                         : `Based on comparable ${activeYear} market listings.`}
                     </p>
+
+                    {selectedComparable ? (
+                      selectedComparableSourceUrl ? (
+                        <div className={styles.rangeCurrentLinkBlock}>
+                          <span className={styles.rangeCurrentLinkLabel}>Selected source URL</span>
+                          <a
+                            href={selectedComparableSourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={styles.rangeCurrentLink}
+                            title={selectedComparableSourceUrl}
+                          >
+                            {getSourceLinkLabel(selectedComparableSourceUrl)}
+                          </a>
+                        </div>
+                      ) : (
+                        <p className={styles.rangeCurrentLinkEmpty}>
+                          Attach a source URL to this comparable in the market listing library to show the live
+                          listing here.
+                        </p>
+                      )
+                    ) : null}
                   </div>
 
                   <div className={styles.rangeInteractive}>
@@ -1671,8 +1703,13 @@ export default function ValuationClient() {
                                 </div>
 
                                 <div className={styles.listingCardMeta}>
-                                  {listing.yearModel} • {listing.hours.toLocaleString('en-ZA')} engine hours • {listing.area},{' '}
-                                  {listing.province}
+                                  <span className={styles.listingMetaChip}>{listing.yearModel} model</span>
+                                  <span className={styles.listingMetaChip}>
+                                    {listing.hours.toLocaleString('en-ZA')} engine hours
+                                  </span>
+                                  <span className={styles.listingMetaChip}>
+                                    {listing.area}, {listing.province}
+                                  </span>
                                 </div>
 
                                 {result.extrasValueExVat > 0 ? (
@@ -1683,7 +1720,10 @@ export default function ValuationClient() {
                               </button>
 
                               <div className={styles.listingCardFooter}>
-                                <span className={styles.listingCardDate}>{formatListingDate(listing.dateAdvertised)}</span>
+                                <div className={styles.listingCardFooterMeta}>
+                                  <span className={styles.listingCardDateLabel}>Advertised</span>
+                                  <span className={styles.listingCardDate}>{formatListingDate(listing.dateAdvertised)}</span>
+                                </div>
 
                                 {listing.sourceUrl ? (
                                   <a
@@ -1691,11 +1731,12 @@ export default function ValuationClient() {
                                     target="_blank"
                                     rel="noreferrer"
                                     className={styles.listingLink}
+                                    title={listing.sourceUrl}
                                   >
-                                    Open source ↗
+                                    {getSourceLinkLabel(listing.sourceUrl)}
                                   </a>
                                 ) : (
-                                  <span className={styles.listingLinkMuted}>Source link not yet attached</span>
+                                  <span className={styles.listingLinkMuted}>Source URL not yet attached</span>
                                 )}
                               </div>
                             </article>
