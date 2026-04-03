@@ -1,2231 +1,2718 @@
-'use client';
-
-import Image from 'next/image';
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import AppHeader from '../../components/AppHeader';
-import styles from './page.module.css';
-import {
-  brands,
-  conditionOptions,
-  tractors,
-  type CabType,
-  type ConditionKey,
-  type DriveType,
-  type MarketplaceListing,
-  type TractorCatalogRow,
-  type TractorType,
-} from '../../lib/tractor-data';
-import { conditionLabel, money, range, runValuation, type Result } from '../../lib/tractor-logic';
-import { saveItem } from '../../lib/register';
-
-type Step = 1 | 2 | 3 | 4 | 5;
-type MethodKey = 'aim4price' | 'market' | 'department';
-type EquipmentType = 'tractor';
-type GpsType = 'full-autosteer' | 'guidance-only';
-type ConfigStepKey = 'type' | 'drive' | 'cab' | 'model';
-type DetailsStepKey = 'year' | 'hours' | 'condition' | 'extras';
-
-type MethodCard = {
-  key: MethodKey;
-  label: string;
-  note: string;
-  value: number | null;
-  available: boolean;
-};
-
-const CURRENT_YEAR = new Date().getFullYear() + 1;
-
-const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
-  { step: 1, label: 'Type' },
-  { step: 2, label: 'Brand' },
-  { step: 3, label: 'Model' },
-  { step: 4, label: 'Details' },
-  { step: 5, label: 'Value' },
-];
-
-const CONFIG_STEPS: Array<{ key: ConfigStepKey; label: string }> = [
-  { key: 'type', label: 'Type' },
-  { key: 'drive', label: 'Drive' },
-  { key: 'cab', label: 'Cab' },
-  { key: 'model', label: 'Model' },
-];
-
-const DETAILS_STEPS: Array<{ key: DetailsStepKey; label: string }> = [
-  { key: 'year', label: 'Year' },
-  { key: 'hours', label: 'Hours' },
-  { key: 'condition', label: 'Condition' },
-  { key: 'extras', label: 'Extras' },
-];
-
-function nextStep(step: Step): Step {
-  return step === 1 ? 2 : step === 2 ? 3 : step === 3 ? 4 : 5;
+.page {
+  min-height: 100vh;
+  padding-bottom: 4rem;
+  background:
+    radial-gradient(circle at top left, rgba(23, 77, 62, 0.05), transparent 28%),
+    linear-gradient(180deg, #fbfcfb 0%, #f3f6f4 100%);
+  color: var(--text-strong);
 }
 
-function previousStep(step: Step): Step {
-  return step === 5 ? 4 : step === 4 ? 3 : step === 3 ? 2 : 1;
-}
-
-function getMethodValue(result: Result, method: MethodKey): number | null {
-  if (method === 'aim4price') return result.aim4priceValueExVat;
-  if (method === 'market') return result.marketMid;
-  return result.departmentValueExVat;
-}
-
-function getMethodLabel(method: MethodKey): string {
-  if (method === 'aim4price') return 'Aim4price Value';
-  if (method === 'market') return 'Estimated Market Value';
-  return 'DALRRD Reference';
-}
-
-function getMethodDisplay(result: Result, method: MethodKey): string {
-  if (method === 'market') {
-    return range(result.marketLow, result.marketHigh);
-  }
-
-  return money(getMethodValue(result, method));
-}
-
-function getRangePercent(low: number | null, high: number | null, value: number | null): number {
-  if (low === null || high === null || value === null) return 50;
-  if (high <= low) return 50;
-
-  const percent = ((value - low) / (high - low)) * 100;
-  return Math.min(100, Math.max(0, percent));
-}
-
-function getStepMeta(step: Step) {
-  switch (step) {
-    case 1:
-      return {
-        title: 'Choose Equipment Type',
-        body: 'Select your equipment type to continue.',
-      };
-    case 2:
-      return {
-        title: 'Choose Brand',
-        body: 'Select a tractor brand from the dropdown list.',
-      };
-    case 3:
-      return {
-        title: 'Choose Tractor Model',
-        body: 'Four quick choices. One at a time.',
-      };
-    case 4:
-      return {
-        title: 'Enter Tractor Details',
-        body: 'Four quick details. One at a time.',
-      };
-    default:
-      return {
-        title: 'Valuation Results',
-        body: 'Review the calculated values and next actions.',
-      };
-  }
-}
-
-function getConditionHint(condition: ConditionKey): string {
-  if (condition === 'excellent') return 'Best kept condition';
-  if (condition === 'good') return 'Well maintained working tractor';
-  if (condition === 'fair') return 'Average wear for age';
-  if (condition === 'used') return 'Heavy general use visible';
-  return 'Requires attention before sale';
-}
-
-function getConfidenceLevel(result: Result): 'high' | 'medium' | 'low' {
-  if (result.marketCount >= 5) return 'high';
-  if (result.marketCount >= 2) return 'medium';
-  return 'low';
-}
-
-function getConfidenceLabel(result: Result): string {
-  const level = getConfidenceLevel(result);
-
-  if (level === 'high') return 'Confidence: High';
-  if (level === 'medium') return 'Confidence: Medium';
-  return 'Confidence: Low';
-}
-
-function getTractorTypeLabel(type: TractorType): string {
-  return type === 'orchard' ? 'Orchard' : 'Field';
-}
-
-function getDriveDisplay(driveValue: DriveType): string {
-  return driveValue === 'tracks' ? 'Tracks' : driveValue.toUpperCase();
-}
-
-function getCabDisplay(cabValue: CabType): string {
-  return cabValue === 'cab' ? 'Cab' : 'Open station';
-}
-
-function getGpsTypeLabel(type: GpsType): string {
-  return type === 'full-autosteer' ? 'Full Autosteer' : 'Guidance Only';
-}
-
-function buildExtrasSummaryChips(
-  frontPto: boolean,
-  frontLoader: boolean,
-  gpsEnabled: boolean,
-  gpsType: GpsType | null,
-  gpsYear: string,
-): string[] {
-  const chips: string[] = [];
-
-  if (frontPto) {
-    chips.push('Front Hitch & Front PTO');
-  }
-
-  if (frontLoader) {
-    chips.push('Front Loader');
-  }
-
-  if (gpsEnabled) {
-    let gpsLabel = 'GPS';
-
-    if (gpsType) {
-      gpsLabel = `${gpsLabel} • ${getGpsTypeLabel(gpsType)}`;
-    }
-
-    if (gpsYear.trim()) {
-      gpsLabel = `${gpsLabel} • ${gpsYear.trim()}`;
-    }
-
-    chips.push(gpsLabel);
-  }
-
-  if (!chips.length) {
-    chips.push('No fitted extras selected');
-  }
-
-  return chips;
-}
-
-function buildExtrasSummaryText(
-  frontPto: boolean,
-  frontLoader: boolean,
-  gpsEnabled: boolean,
-  gpsType: GpsType | null,
-  gpsYear: string,
-): string {
-  return buildExtrasSummaryChips(frontPto, frontLoader, gpsEnabled, gpsType, gpsYear).join(' · ');
+.container {
+  width: var(--shell-width);
+  margin-inline: auto;
+  padding-top: 2rem;
 }
 
 
-function getListingBasePrice(listing: MarketplaceListing): number {
-  const candidates = [
-    Number(listing.advertisedPriceExVat),
-    Number(listing.askingPriceExVat),
-    Number(listing.priceExVat),
-    Number(listing.price),
-  ].filter((value) => Number.isFinite(value) && value > 0);
-
-  return candidates[0] ?? 0;
+.heroIntro {
+  width: min(100%, 1040px);
+  margin: 0 auto 1.25rem;
+  padding: 1.55rem 1.65rem;
+  border-radius: 1.7rem;
+  background:
+    linear-gradient(135deg, #11382d 0%, #185644 58%, #2b7a61 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0));
+  border: 1px solid rgba(17, 56, 45, 0.16);
+  box-shadow:
+    0 24px 48px rgba(15, 53, 42, 0.14),
+    0 8px 18px rgba(15, 53, 42, 0.08);
 }
 
-function getListingComparablePrice(listing: MarketplaceListing, extrasValueExVat: number): number {
-  return Math.round(getListingBasePrice(listing) + Math.max(0, Number(extrasValueExVat) || 0));
+.heroIntroContent {
+  max-width: 44rem;
 }
 
-function formatListingDate(value: string): string {
-  if (!value.trim()) return 'Date not supplied';
-
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return value;
-
-  return new Intl.DateTimeFormat('en-ZA', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(parsed);
+.heroBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.95rem;
+  padding: 0 0.82rem;
+  border-radius: 999px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.77rem;
+  font-weight: 800;
+  color: #dff6ea;
+  background: rgba(232, 252, 241, 0.12);
+  border: 1px solid rgba(232, 252, 241, 0.16);
 }
 
-function getSourceLinkLabel(value: string): string {
-  return value.trim();
+.heroIntroTitle {
+  margin: 0.9rem 0 0.58rem;
+  max-width: 10.5ch;
+  color: #ffffff;
+  font-size: clamp(2.6rem, 5vw, 4.2rem);
+  line-height: 0.96;
+  letter-spacing: -0.065em;
 }
 
-export default function ValuationClient() {
-  const router = useRouter();
+.heroIntroText {
+  max-width: 40rem;
+  margin: 0;
+  color: rgba(229, 244, 237, 0.92);
+  font-size: 1.04rem;
+  line-height: 1.72;
+}
 
-  const [step, setStep] = useState<Step>(1);
-  const [selectedType, setSelectedType] = useState<EquipmentType | null>(null);
-  const [modelQuery, setModelQuery] = useState('');
-  const [brandSlug, setBrandSlug] = useState('john-deere');
-  const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
-  const [brandSearch, setBrandSearch] = useState('');
-  const [tractorType, setTractorType] = useState<TractorType | null>(null);
-  const [drive, setDrive] = useState<DriveType | null>(null);
-  const [cab, setCab] = useState<CabType | null>(null);
-  const [modelId, setModelId] = useState('');
-  const [yearMode, setYearMode] = useState<'guided' | 'manual'>('guided');
-  const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
-  const [year, setYear] = useState<number | null>(null);
-  const [manualYear, setManualYear] = useState('');
-  const [hours, setHours] = useState('');
-  const [condition, setCondition] = useState<ConditionKey | null>(null);
-  const [configFocus, setConfigFocus] = useState<ConfigStepKey | null>(null);
-  const [detailsFocus, setDetailsFocus] = useState<DetailsStepKey | null>(null);
-  const [yearConfirmed, setYearConfirmed] = useState(false);
-  const [hoursConfirmed, setHoursConfirmed] = useState(false);
-  const [extrasReviewed, setExtrasReviewed] = useState(false);
-  const [frontPto, setFrontPto] = useState(false);
-  const [frontLoader, setFrontLoader] = useState(false);
-  const [gpsEnabled, setGpsEnabled] = useState(false);
-  const [gpsType, setGpsType] = useState<GpsType | null>(null);
-  const [gpsYear, setGpsYear] = useState('');
-  const [result, setResult] = useState<Result | null>(null);
-  const [selectedMethod, setSelectedMethod] = useState<MethodKey | null>(null);
-  const [selectedComparableIndex, setSelectedComparableIndex] = useState(0);
-  const [message, setMessage] = useState('');
+.wizardShell {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+}
 
-  const stepMeta = getStepMeta(step);
-  const brandDropdownRef = useRef<HTMLDivElement | null>(null);
-  const brandSearchInputRef = useRef<HTMLInputElement | null>(null);
-  const yearDropdownRef = useRef<HTMLDivElement | null>(null);
+.wizardCard,
+.heroCard,
+.assetCard,
+.sideCard {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  border-radius: 1.6rem;
+  box-shadow:
+    0 20px 44px rgba(16, 42, 34, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
 
-  const sortedBrands = useMemo(
-    () => [...brands].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
-    [],
-  );
+.wizardCard {
+  overflow: hidden;
+}
 
-  const matchingModels = useMemo(() => {
-    if (!tractorType || !drive || !cab) return [];
+.wizardHeader {
+  padding: 1.2rem 1.4rem 1rem;
+  border-bottom: 1px solid rgba(18, 45, 37, 0.06);
+  background: linear-gradient(180deg, rgba(248, 251, 249, 0.96) 0%, rgba(244, 248, 246, 0.92) 100%);
+}
 
-    return tractors.filter(
-      (tractor) =>
-        tractor.brandSlug === brandSlug &&
-        tractor.tractorType === tractorType &&
-        tractor.drive === drive &&
-        tractor.cab === cab,
-    );
-  }, [brandSlug, tractorType, drive, cab]);
+.stepper {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.85rem;
+  align-items: stretch;
+}
 
-  const filteredModels = useMemo(() => {
-    const normalizedQuery = modelQuery.trim().toLowerCase();
+.stepperItem {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.38rem 0.55rem;
+  border-radius: 999px;
+}
 
-    if (!normalizedQuery) {
-      return matchingModels;
-    }
+.stepperItemActive {
+  background: rgba(26, 89, 68, 0.08);
+}
 
-    return matchingModels.filter((tractor) =>
-      `${tractor.brandName} ${tractor.modelName} ${tractor.tractorType} ${tractor.drive} ${tractor.cab} ${tractor.powerKw}`
-        .toLowerCase()
-        .includes(normalizedQuery),
-    );
-  }, [matchingModels, modelQuery]);
+.stepperItemComplete {
+  background: rgba(23, 77, 62, 0.05);
+}
 
-  const selectedModel = useMemo<TractorCatalogRow | null>(
-    () => matchingModels.find((model) => model.id === modelId) ?? null,
-    [matchingModels, modelId],
-  );
+.stepperBullet {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #e7ece9;
+  color: #7f8e87;
+  font-size: 0.82rem;
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
 
-  function invalidateResult() {
-    setResult(null);
-    setSelectedMethod(null);
+.stepperBulletActive,
+.stepperBulletComplete {
+  background: linear-gradient(180deg, #1a5944 0%, #124334 100%);
+  color: #ffffff;
+}
+
+.stepperLine {
+  flex: 1 1 auto;
+  min-width: 1rem;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(18, 68, 52, 0.18);
+}
+
+.stepperLineComplete {
+  background: linear-gradient(90deg, #1a5944 0%, #2f7f65 100%);
+}
+
+.stepperLabel {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #66736d;
+}
+
+.stepperLabelActive {
+  color: #1c4134;
+}
+
+.stepperLabelComplete {
+  color: #295948;
+}
+
+.stepContent {
+  padding: 2.2rem 1.8rem 1.7rem;
+}
+
+.stepTitle {
+  margin: 0;
+  text-align: center;
+  font-size: clamp(2rem, 3vw, 2.7rem);
+  line-height: 1.08;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  color: #223b34;
+}
+
+.stepText {
+  max-width: 42rem;
+  margin: 0.95rem auto 0;
+  text-align: center;
+  font-size: 1.02rem;
+  line-height: 1.8;
+  color: #6f7974;
+}
+
+.message {
+  margin-top: 1.15rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  background: rgba(33, 129, 85, 0.1);
+  color: #1d6b46;
+  font-weight: 700;
+}
+
+.typeGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.8rem;
+}
+
+.typePicker {
+  display: grid;
+  grid-template-columns: 3.4rem minmax(0, 320px) 3.4rem;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.8rem;
+}
+
+.typePickerCard {
+  width: 100%;
+}
+
+.typeArrow {
+  width: 3.4rem;
+  height: 3.4rem;
+  border: 1px solid rgba(18, 45, 37, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #7a8781;
+  font-size: 1.7rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  box-shadow:
+    0 10px 22px rgba(16, 42, 34, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.typeArrow:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.typeCard,
+.brandCard,
+.pillButton,
+.modelRow,
+.conditionCard,
+.methodButton,
+.secondaryButton,
+.primaryButton,
+.assetButton,
+.inlineButton,
+.backLink {
+  font: inherit;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.typeCard:hover,
+.brandCard:hover,
+.pillButton:hover,
+.modelRow:hover,
+.conditionCard:hover,
+.methodButton:hover,
+.secondaryButton:hover,
+.primaryButton:hover,
+.assetButton:hover,
+.inlineButton:hover,
+.backLink:hover {
+  transform: translateY(-1px);
+}
+
+.typeCard {
+  cursor: pointer;
+  min-height: 15.5rem;
+  padding: 1rem;
+  border-radius: 1.2rem;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 14px 28px rgba(18, 45, 37, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.typeCardActive {
+  border-color: rgba(26, 89, 68, 0.7);
+  background: linear-gradient(180deg, #f8fdf9 0%, #e7f5ed 100%);
+  box-shadow:
+    0 18px 38px rgba(17, 63, 50, 0.18),
+    0 0 0 4px rgba(26, 89, 68, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.typeCardActive .typeImageBox {
+  background: linear-gradient(180deg, #eef8f2 0%, #dcefe4 100%);
+  border-color: rgba(26, 89, 68, 0.2);
+}
+
+.typeCardActive strong {
+  color: #0f5e40;
+}
+
+.typeCardDisabled {
+  opacity: 0.56;
+  pointer-events: none;
+}
+
+.typeImageBox {
+  position: relative;
+  width: 100%;
+  height: 150px;
+  margin-bottom: 1rem;
+  border-radius: 1rem;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, #f6f8f7 0%, #eef2ef 100%);
+  border: 1px solid rgba(18, 45, 37, 0.05);
+}
+
+.typeImage {
+  object-fit: contain;
+  object-position: center;
+  padding: 0.95rem;
+}
+
+.typeCard strong {
+  font-size: 1rem;
+  line-height: 1.35;
+  color: #223b34;
+}
+
+.typeCard span {
+  margin-top: 0.35rem;
+  color: #74817b;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.searchWrap {
+  margin-top: 1.45rem;
+}
+
+.searchInput,
+.controlInput,
+.field input,
+.field select,
+.dropdownSearchInput {
+  width: 100%;
+  min-height: 3.35rem;
+  padding: 0 1.05rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.12);
+  background: #ffffff;
+  color: var(--text-strong);
+  font-size: 1rem;
+  font-weight: 600;
+  outline: none;
+  box-shadow:
+    0 1px 2px rgba(16, 42, 34, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.searchInput::placeholder,
+.controlInput::placeholder,
+.field input::placeholder,
+.dropdownSearchInput::placeholder {
+  color: #97a39d;
+  font-weight: 500;
+}
+
+.searchInput:focus,
+.controlInput:focus,
+.field input:focus,
+.field select:focus,
+.dropdownSearchInput:focus {
+  border-color: rgba(26, 89, 68, 0.34);
+  box-shadow: 0 0 0 4px rgba(26, 89, 68, 0.08);
+}
+
+.dropdownField {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.dropdownTrigger {
+  cursor: pointer;
+  width: 100%;
+  min-height: 3.6rem;
+  padding: 0.9rem 1.05rem;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(18, 45, 37, 0.12);
+  background: linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
+  color: var(--text-strong);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  text-align: left;
+  box-shadow:
+    0 10px 24px rgba(16, 42, 34, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.dropdownTriggerOpen {
+  border-color: rgba(26, 89, 68, 0.34);
+  box-shadow:
+    0 16px 30px rgba(16, 42, 34, 0.08),
+    0 0 0 4px rgba(26, 89, 68, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.dropdownTriggerText {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #223b34;
+}
+
+.dropdownTriggerIcon {
+  flex: 0 0 auto;
+  color: #5d6d66;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.dropdownMenu {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border-radius: 1.15rem;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background: linear-gradient(180deg, rgba(252, 253, 252, 0.98) 0%, rgba(246, 249, 247, 0.98) 100%);
+  box-shadow:
+    0 18px 36px rgba(16, 42, 34, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.dropdownSearchWrap {
+  display: grid;
+}
+
+.dropdownList {
+  display: grid;
+  gap: 0.55rem;
+  max-height: 21rem;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+}
+
+.dropdownOption {
+  cursor: pointer;
+  width: 100%;
+  min-height: 3.35rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: rgba(255, 255, 255, 0.96);
+  color: #223b34;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  text-align: left;
+  box-shadow:
+    0 10px 22px rgba(16, 42, 34, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.dropdownOption:hover {
+  border-color: rgba(26, 89, 68, 0.18);
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
+}
+
+.dropdownOptionActive {
+  border-color: rgba(26, 89, 68, 0.42);
+  background: linear-gradient(180deg, #fbfefd 0%, #edf7f1 100%);
+  box-shadow:
+    0 14px 28px rgba(16, 42, 34, 0.075),
+    0 0 0 4px rgba(26, 89, 68, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.dropdownOptionText {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: inherit;
+}
+
+.dropdownOptionBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.95rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  background: #dff1e5;
+  color: #0f6a46;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.dropdownEmpty {
+  padding: 1rem 1.05rem;
+  border-radius: 1rem;
+  border: 1px dashed rgba(18, 45, 37, 0.14);
+  background: rgba(255, 255, 255, 0.8);
+  color: #6f7a75;
+  line-height: 1.6;
+}
+
+.brandGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.brandCard {
+  min-height: 4rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: rgba(255, 255, 255, 0.96);
+  color: #29423a;
+  font-weight: 700;
+  text-align: center;
+  box-shadow:
+    0 10px 22px rgba(16, 42, 34, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.brandCardActive {
+  border-color: rgba(26, 89, 68, 0.24);
+  background: linear-gradient(180deg, #ffffff 0%, #f4faf7 100%);
+  color: #1d624e;
+}
+
+.filterToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.45rem;
+  align-items: stretch;
+}
+
+.filterGroup {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  min-height: 9.25rem;
+  padding: 1rem 1.05rem;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: rgba(248, 250, 249, 0.96);
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+
+.filterGroupHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filterGroupUnlocked {
+  background: rgba(248, 250, 249, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.filterGroupLocked {
+  border-style: dashed;
+  background: rgba(245, 247, 246, 0.9);
+  opacity: 0.88;
+  box-shadow: none;
+}
+
+.filterStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.9rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  background: rgba(23, 77, 62, 0.08);
+  color: #1d624e;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.filterLockedText {
+  margin: 0;
+  color: #7a8781;
+  line-height: 1.6;
+}
+
+.filterLabel,
+.fieldLabel {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: #6f7a75;
+}
+
+.pillRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.pillButton {
+  cursor: pointer;
+  position: relative;
+  min-height: 3.05rem;
+  padding: 0 1.2rem;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8f6 100%);
+  color: #2b3d36;
+  font-size: 0.97rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow:
+    0 10px 22px rgba(16, 42, 34, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.pillButtonActive {
+  border-color: rgba(18, 72, 55, 0.48);
+  background: linear-gradient(180deg, #1e6a51 0%, #134736 100%);
+  color: #ffffff;
+  box-shadow:
+    0 16px 30px rgba(17, 63, 50, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.pillButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+
+.filterHint {
+  margin: 0.95rem 0 0;
+  color: #66736d;
+  line-height: 1.6;
+}
+
+.filterSummary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: rgba(246, 249, 247, 0.98);
+}
+
+.filterSummaryTitle {
+  font-weight: 800;
+  color: #1f342d;
+}
+
+.filterSummaryText {
+  color: #66736d;
+  text-align: right;
+}
+
+.modelList {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.modelRow {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.05rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background: rgba(255, 255, 255, 0.97);
+  text-align: left;
+  box-shadow:
+    0 10px 22px rgba(16, 42, 34, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.modelRowActive {
+  border-color: rgba(26, 89, 68, 0.52);
+  background: linear-gradient(180deg, #fbfefd 0%, #edf7f1 100%);
+  box-shadow:
+    0 18px 34px rgba(17, 63, 50, 0.12),
+    0 0 0 4px rgba(26, 89, 68, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.modelRowBody {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.modelRowHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.modelRow strong {
+  display: block;
+  color: #223b34;
+  font-size: 1rem;
+}
+
+.modelRowMeta {
+  display: block;
+  margin-top: 0.3rem;
+  color: #74817b;
+  font-size: 0.94rem;
+}
+
+.modelChipRow,
+.selectionChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.modelChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.95rem;
+  padding: 0 0.72rem;
+  border-radius: 999px;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background: rgba(244, 247, 245, 0.98);
+  color: #4d5b56;
+  font-size: 0.83rem;
+  font-weight: 700;
+}
+
+.modelRowSelectedBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.95rem;
+  padding: 0 0.72rem;
+  border-radius: 999px;
+  background: #dff1e5;
+  color: #0f6a46;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.modelRowActive .modelChip {
+  border-color: rgba(26, 89, 68, 0.14);
+  background: #eaf5ef;
+  color: #0f5e40;
+}
+
+.modelRowYear {
+  white-space: nowrap;
+  font-weight: 800;
+  color: #55635d;
+}
+
+.modelRowActive .modelRowYear {
+  color: #0f5e40;
+}
+
+.emptyState {
+  margin-top: 1rem;
+  padding: 1rem 1.05rem;
+  border-radius: 1rem;
+  border: 1px dashed rgba(18, 45, 37, 0.14);
+  background: #f6f9f7;
+  color: #6f7a75;
+}
+
+.selectionPrompt {
+  margin-top: 1rem;
+  padding: 1.05rem 1.1rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px dashed rgba(18, 45, 37, 0.14);
+  background: rgba(247, 250, 248, 0.96);
+}
+
+.selectionPromptLabel {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6f7a75;
+}
+
+.selectionPrompt strong {
+  display: block;
+  margin-top: 0.45rem;
+  color: #223b34;
+  font-size: 1.02rem;
+}
+
+.selectionPrompt p {
+  margin: 0.45rem 0 0;
+  color: #6f7a75;
+  line-height: 1.6;
+}
+
+.inputGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.1rem;
+  margin-top: 1.45rem;
+  align-items: stretch;
+}
+
+.fieldBlock {
+  display: grid;
+  gap: 0.8rem;
+  align-content: stretch;
+}
+
+.inputPanel {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 0.8rem;
+  min-height: 13.7rem;
+  padding: 1rem 1.05rem 1.05rem;
+  border-radius: 1.15rem;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: linear-gradient(180deg, rgba(249, 251, 250, 0.98) 0%, rgba(244, 248, 246, 0.96) 100%);
+  box-shadow:
+    0 12px 26px rgba(16, 42, 34, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.panelHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.9rem 1rem;
+  min-height: 3.35rem;
+}
+
+.panelLabel {
+  display: block;
+  align-self: center;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: #6f7a75;
+  line-height: 1;
+}
+
+.panelToggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  width: 100%;
+  max-width: 18rem;
+  min-width: 18rem;
+  justify-self: end;
+  align-self: stretch;
+}
+
+.panelToggle .pillButton {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.35rem;
+  padding: 0 1.2rem;
+  border-radius: 1.1rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.panelBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  min-height: 3.35rem;
+  padding: 0 1.15rem;
+  border-radius: 1.1rem;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8f6 100%);
+  color: #50615a;
+  font-size: 0.83rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow:
+    0 10px 22px rgba(16, 42, 34, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.panelControl {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  min-height: 3.35rem;
+}
+
+.controlInput {
+  width: 100%;
+}
+
+.fieldHint {
+  margin: 0;
+  min-height: 3rem;
+  color: #85928b;
+  font-size: 0.95rem;
+  line-height: 1.58;
+}
+
+.conditionSection {
+  margin-top: 1.2rem;
+  padding: 1rem 1.05rem 1.05rem;
+  border-radius: 1.15rem;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: linear-gradient(180deg, rgba(249, 251, 250, 0.98) 0%, rgba(244, 248, 246, 0.96) 100%);
+  box-shadow:
+    0 12px 26px rgba(16, 42, 34, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.sectionLabel {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6f7a75;
+}
+
+.sectionHint {
+  color: #88928d;
+  font-size: 0.92rem;
+}
+
+.conditionGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.conditionCard {
+  cursor: pointer;
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+  min-height: 5.5rem;
+  padding: 1rem 0.95rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: rgba(255, 255, 255, 0.96);
+  text-align: left;
+  box-shadow:
+    0 10px 22px rgba(16, 42, 34, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.conditionCardActive {
+  border-color: rgba(26, 89, 68, 0.24);
+  background: linear-gradient(180deg, #ffffff 0%, #f4faf7 100%);
+}
+
+.conditionCard strong {
+  display: block;
+  color: #223b34;
+  font-size: 0.95rem;
+}
+
+.conditionCard span {
+  display: block;
+  margin-top: 0.35rem;
+  color: #74817b;
+  font-size: 0.87rem;
+  line-height: 1.5;
+}
+
+.selectionCard {
+  margin-top: 1.3rem;
+  padding: 1rem 1.05rem;
+  border-radius: 1.15rem;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: linear-gradient(180deg, rgba(247, 250, 248, 0.96) 0%, rgba(241, 246, 243, 0.96) 100%);
+}
+
+.selectionCardGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(220px, 0.9fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.selectionImageBox {
+  position: relative;
+  width: 124px;
+  min-width: 124px;
+  height: 100px;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f6f8f7 0%, #eef2ef 100%);
+  border: 1px solid rgba(18, 45, 37, 0.05);
+}
+
+.selectionMeta {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.selectionEyebrow {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6f7a75;
+}
+
+.selectionMeta strong {
+  color: #223b34;
+  font-size: 1.03rem;
+}
+
+.selectionMeta span {
+  color: #6f7a75;
+  line-height: 1.55;
+}
+
+.selectionFacts {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.selectionFact {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(18, 45, 37, 0.06);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.selectionFact span {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: #7a8781;
+}
+
+.selectionFact strong {
+  color: #1f342d;
+  font-size: 1rem;
+}
+
+.wizardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.8rem 1.4rem;
+  border-top: 1px solid rgba(18, 45, 37, 0.06);
+  background: rgba(250, 251, 250, 0.82);
+}
+
+.secondaryButton,
+.primaryButton,
+.assetButton {
+  min-height: 3.1rem;
+  padding: 0 1.15rem;
+  border-radius: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.secondaryButton {
+  cursor: pointer;
+  border: 1px solid rgba(18, 45, 37, 0.1);
+  color: #30413b;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.05);
+}
+
+.primaryButton,
+.assetButton {
+  cursor: pointer;
+  border: 0;
+  color: #ffffff;
+  background: linear-gradient(180deg, #1a5944 0%, #124334 100%);
+  box-shadow: 0 12px 24px rgba(17, 63, 50, 0.16);
+}
+
+.secondaryButton:disabled,
+.primaryButton:disabled,
+.assetButton:disabled,
+.methodButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.resultsLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.8fr);
+  gap: 1.2rem;
+  align-items: start;
+}
+
+.resultsMain,
+.resultsSide {
+  display: grid;
+  gap: 1rem;
+}
+
+.resultsTopbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.backLink {
+  cursor: pointer;
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1d624e;
+  font-weight: 700;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  background: rgba(23, 77, 62, 0.08);
+  color: #1d624e;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.heroCard,
+.assetCard,
+.sideCard {
+  padding: 1.3rem;
+}
+
+.heroTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.heroIdentity {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.heroImageBox {
+  position: relative;
+  width: 136px;
+  min-width: 136px;
+  height: 108px;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f6f8f7 0%, #eef2ef 100%);
+  border: 1px solid rgba(18, 45, 37, 0.05);
+}
+
+.heroInfo {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.resultTitle {
+  margin: 0;
+  font-size: clamp(2rem, 3vw, 2.55rem);
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+  color: #1f342d;
+}
+
+.heroMeta {
+  margin: 0;
+  color: #6f7a75;
+  line-height: 1.55;
+}
+
+.inlineButton {
+  cursor: pointer;
+  min-height: 2.65rem;
+  width: max-content;
+  padding: 0 0.95rem;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(18, 45, 37, 0.1);
+  background: #ffffff;
+  color: #1d624e;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.05);
+}
+
+.valuePanel {
+  margin-top: 1.25rem;
+  padding: 1.3rem;
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, #eef6f1 0%, #e6f0e9 100%);
+  border: 1px solid rgba(23, 77, 62, 0.1);
+}
+
+.valuePanelTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.valueLabel {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #295948;
+}
+
+.valueAmount {
+  margin-top: 0.35rem;
+  font-size: clamp(2.5rem, 5vw, 3.65rem);
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+  font-weight: 800;
+  color: #0d5a3c;
+}
+
+.valueMeta {
+  margin: 0.5rem 0 0;
+  color: #617069;
+}
+
+.confidenceBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.2rem;
+  padding: 0 0.95rem;
+  border-radius: 999px;
+  background: #dff1e5;
+  color: #0f6a46;
+  font-size: 0.84rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.methodGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 1.15rem;
+}
+
+.methodButton {
+  cursor: pointer;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: rgba(255, 255, 255, 0.86);
+  text-align: left;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+.methodButtonActive {
+  border-color: var(--value-method-active-border);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.methodButtonDisabled {
+  opacity: 0.55;
+}
+
+.methodTitle {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #295948;
+}
+
+.methodValue {
+  display: block;
+  margin-top: 0.45rem;
+  font-size: 1.35rem;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  color: #1d332c;
+}
+
+.methodNote {
+  display: block;
+  margin-top: 0.45rem;
+  color: #6f7a75;
+  line-height: 1.55;
+  font-size: 0.9rem;
+}
+
+.assetHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.assetTitle {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+  color: #223b34;
+}
+
+.assetText {
+  margin: 0.35rem 0 0;
+  color: #6f7a75;
+  line-height: 1.65;
+}
+
+.assetButton {
+  width: 100%;
+  margin-top: 1.1rem;
+}
+
+.assetFootnote {
+  margin-top: 0.85rem;
+  padding: 0.8rem 0.95rem;
+  border-radius: 0.9rem;
+  background: #edf7f1;
+  color: #0f6a46;
+  font-size: 0.92rem;
+}
+
+.sideTitle {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: -0.03em;
+  color: #223b34;
+}
+
+.breakdownList {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 0.95rem;
+}
+
+.breakdownRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.breakdownKey {
+  color: #6f7a75;
+}
+
+.breakdownValue {
+  font-weight: 700;
+  color: #1f342d;
+  text-align: right;
+}
+
+.rangeCardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.rangeBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  background: #edf2ff;
+  color: #3562d6;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.rangeCurrent {
+  margin-top: 0.85rem;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #1f342d;
+}
+
+.rangeTrack {
+  position: relative;
+  height: 0.72rem;
+  margin-top: 1rem;
+  border-radius: 999px;
+  background: rgba(18, 45, 37, 0.08);
+  overflow: hidden;
+}
+
+.rangeFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #1a5944 0%, #2f7f65 100%);
+}
+
+.rangePin {
+  position: absolute;
+  top: 50%;
+  width: 1rem;
+  height: 1rem;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: #ffffff;
+  border: 3px solid #1a5944;
+}
+
+.rangeLabels {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  color: #6f7a75;
+}
+
+.rangeNote {
+  margin: 0.8rem 0 0;
+  color: #6f7a75;
+  line-height: 1.6;
+}
+
+.sourceList {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.95rem;
+}
+
+.sourceItem {
+  padding: 0.9rem 0.95rem;
+  border-radius: 0.95rem;
+  background: rgba(247, 250, 248, 0.92);
+  border: 1px solid rgba(18, 45, 37, 0.06);
+}
+
+.sourceItemTitle {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #223b34;
+}
+
+.sourceItemText {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #6f7a75;
+}
+
+.actionStack {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.95rem;
+}
+
+@media (max-width: 1100px) {
+  .typeGrid,
+  .brandGrid,
+  .methodGrid,
+  .conditionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  function resetExtrasState() {
-    setFrontPto(false);
-    setFrontLoader(false);
-    setGpsEnabled(false);
-    setGpsType(null);
-    setGpsYear('');
-    setExtrasReviewed(false);
+  .resultsLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .container {
+    width: var(--shell-width);
+    padding-top: 1.25rem;
   }
 
-  function resetDetailState(options?: { keepYearMode?: boolean }) {
-    if (!options?.keepYearMode) {
-      setYearMode('guided');
-    }
-    setYearDropdownOpen(false);
-    setYear(null);
-    setManualYear('');
-    setHours('');
-    setCondition(null);
-    setYearConfirmed(false);
-    setHoursConfirmed(false);
-    setDetailsFocus(null);
-    resetExtrasState();
-    invalidateResult();
+  .stepContent {
+    padding: 1.6rem 1rem 1.3rem;
   }
 
-  function markExtrasDirty() {
-    setExtrasReviewed(false);
-    invalidateResult();
+  .stepper {
+    grid-template-columns: 1fr;
   }
 
-  function confirmYearSelection() {
-    if (!selectedModel || !isYearValid) {
-      setMessage('Enter a valid year first.');
-      return;
-    }
-
-    setYearConfirmed(true);
-    setDetailsFocus(null);
-    setMessage('');
+  .stepperLine {
+    display: none;
   }
 
-  function confirmHoursSelection() {
-    if (!isHoursValid) {
-      setMessage('Enter engine hours first.');
-      return;
-    }
-
-    setHoursConfirmed(true);
-    setDetailsFocus(null);
-    setMessage('');
+  .typeGrid,
+  .brandGrid,
+  .conditionGrid,
+  .methodGrid,
+  .inputGrid,
+  .selectionCardGrid {
+    grid-template-columns: 1fr;
   }
 
-  function applyExtrasSelection() {
-    setExtrasReviewed(true);
-    setDetailsFocus(null);
-    setMessage('');
+  .filterToolbar {
+    flex-direction: column;
   }
 
-  function clearExtrasSelection() {
-    setFrontPto(false);
-    setFrontLoader(false);
-    setGpsEnabled(false);
-    setGpsType(null);
-    setGpsYear('');
-    setExtrasReviewed(true);
-    setDetailsFocus(null);
-    setMessage('');
-    invalidateResult();
+  .filterGroup {
+    flex-basis: auto;
+    width: 100%;
+    min-height: 0;
   }
 
-  useEffect(() => {
-    if (!matchingModels.length) {
-      if (modelId !== '') {
-        setModelId('');
-      }
-      return;
-    }
-
-    if (modelId && !matchingModels.some((model) => model.id === modelId)) {
-      setModelId('');
-    }
-  }, [matchingModels, modelId]);
-
-  useEffect(() => {
-    if (!selectedModel) {
-      setYear(null);
-      setYearConfirmed(false);
-      setHoursConfirmed(false);
-      setCondition(null);
-      setExtrasReviewed(false);
-      return;
-    }
-
-    if (yearMode === 'guided' && year !== null) {
-      if (year < selectedModel.yearStart || year > selectedModel.yearEnd) {
-        setYear(null);
-        setYearConfirmed(false);
-      }
-    }
-  }, [selectedModel, yearMode, year]);
-
-  useEffect(() => {
-    if (step !== 2) {
-      setBrandDropdownOpen(false);
-      setBrandSearch('');
-    }
-
-    if (step !== 3) {
-      setConfigFocus(null);
-    }
-
-    if (step !== 4) {
-      setDetailsFocus(null);
-      setYearDropdownOpen(false);
-    }
-  }, [step]);
-
-  useEffect(() => {
-    if (!brandDropdownOpen) {
-      setBrandSearch('');
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      brandSearchInputRef.current?.focus();
-    }, 0);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [brandDropdownOpen]);
-
-  useEffect(() => {
-    if (!gpsEnabled) {
-      setGpsType(null);
-      setGpsYear('');
-    }
-  }, [gpsEnabled]);
-
-  useEffect(() => {
-    if (!brandDropdownOpen && !yearDropdownOpen) return;
-
-    function handlePointerDown(event: MouseEvent | TouchEvent) {
-      const target = event.target;
-      if (!(target instanceof Node)) return;
-
-      if (brandDropdownOpen && brandDropdownRef.current && !brandDropdownRef.current.contains(target)) {
-        setBrandDropdownOpen(false);
-      }
-
-      if (yearDropdownOpen && yearDropdownRef.current && !yearDropdownRef.current.contains(target)) {
-        setYearDropdownOpen(false);
-      }
-    }
-
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return;
-      setBrandDropdownOpen(false);
-      setYearDropdownOpen(false);
-    }
-
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('touchstart', handlePointerDown);
-    document.addEventListener('keydown', handleEscape);
-
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('touchstart', handlePointerDown);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [brandDropdownOpen, yearDropdownOpen]);
-
-  const years = useMemo(
-    () =>
-      selectedModel
-        ? Array.from(
-            { length: selectedModel.yearEnd - selectedModel.yearStart + 1 },
-            (_, index) => selectedModel.yearEnd - index,
-          )
-        : [],
-    [selectedModel],
-  );
-
-  const selectedBrandName = useMemo(
-    () => brands.find((brand) => brand.slug === brandSlug)?.name ?? '—',
-    [brandSlug],
-  );
-
-  const filteredBrandOptions = useMemo(() => {
-    const normalizedQuery = brandSearch.trim().toLowerCase();
-
-    if (!normalizedQuery) return sortedBrands;
-
-    return sortedBrands.filter((brand) => brand.name.toLowerCase().includes(normalizedQuery));
-  }, [brandSearch, sortedBrands]);
-
-  const activeYear = yearMode === 'manual' ? Number(manualYear) : year ?? Number.NaN;
-  const isYearValid =
-    yearMode === 'guided'
-      ? Number.isInteger(year)
-      : Number.isInteger(activeYear) && activeYear >= 1950 && activeYear <= CURRENT_YEAR;
-  const selectedYearDisplay = isYearValid ? String(activeYear) : 'Choose year';
-  const enteredHours = Number(hours);
-  const isHoursValid = Number.isFinite(enteredHours) && enteredHours > 0;
-  const enteredHoursDisplay = isHoursValid ? `${enteredHours.toLocaleString('en-ZA')} hrs` : 'Type hours';
-  const selectedConditionDisplay = condition ? conditionLabel(condition) : 'Choose condition';
-  const extrasSummaryChips = useMemo(
-    () => buildExtrasSummaryChips(frontPto, frontLoader, gpsEnabled, gpsType, gpsYear),
-    [frontPto, frontLoader, gpsEnabled, gpsType, gpsYear],
-  );
-  const extrasSummaryText = useMemo(
-    () => buildExtrasSummaryText(frontPto, frontLoader, gpsEnabled, gpsType, gpsYear),
-    [frontPto, frontLoader, gpsEnabled, gpsType, gpsYear],
-  );
-
-  const methodCards = useMemo<MethodCard[]>(() => {
-    if (!result) return [];
-
-    return [
-      {
-        key: 'aim4price',
-        label: 'Aim4price Value',
-        note: 'Based on our pricing engine and comparable market trends.',
-        value: result.aim4priceValueExVat,
-        available: result.aim4priceValueExVat !== null,
-      },
-      {
-        key: 'market',
-        label: 'Market Range',
-        note: `${result.marketCount} proveable market listing${result.marketCount === 1 ? '' : 's'} linked below.`,
-        value: result.marketMid,
-        available: result.marketMid !== null,
-      },
-      {
-        key: 'department',
-        label: 'DALRRD Reference',
-        note: 'Guide reference based on kW band and drive type.',
-        value: result.departmentValueExVat,
-        available: result.departmentValueExVat !== null,
-      },
-    ];
-  }, [result]);
-
-  const selectedMethodValue = result && selectedMethod ? getMethodValue(result, selectedMethod) : null;
-  const headlineValue = selectedMethodValue ?? result?.previewValueExVat ?? null;
-  const headlineLabel = selectedMethod ? getMethodLabel(selectedMethod) : 'Estimated Market Value';
-  const confidenceLevel = result ? getConfidenceLevel(result) : 'low';
-  const confidenceClassName =
-    confidenceLevel === 'high'
-      ? styles.confidenceHigh
-      : confidenceLevel === 'medium'
-        ? styles.confidenceMedium
-        : styles.confidenceLow;
-  const confidencePanelClassName =
-    confidenceLevel === 'high'
-      ? styles.valuePanelHigh
-      : confidenceLevel === 'medium'
-        ? styles.valuePanelMedium
-        : styles.valuePanelLow;
-
-  const comparableListings = useMemo<MarketplaceListing[]>(() => {
-    if (!result) return [];
-
-    return [...result.marketSources].sort((left, right) => {
-      const priceDelta =
-        getListingComparablePrice(left, result.extrasValueExVat) -
-        getListingComparablePrice(right, result.extrasValueExVat);
-
-      if (priceDelta !== 0) return priceDelta;
-      if (left.yearModel !== right.yearModel) return left.yearModel - right.yearModel;
-
-      return left.hours - right.hours;
-    });
-  }, [result]);
-
-  useEffect(() => {
-    if (!result || !comparableListings.length) {
-      setSelectedComparableIndex(0);
-      return;
-    }
-
-    const fallbackIndex = Math.floor(comparableListings.length / 2);
-    const targetValue =
-      result.marketMid ??
-      getListingComparablePrice(comparableListings[fallbackIndex], result.extrasValueExVat);
-
-    let bestIndex = fallbackIndex;
-    let bestDelta = Number.POSITIVE_INFINITY;
-
-    comparableListings.forEach((listing, index) => {
-      const delta = Math.abs(getListingComparablePrice(listing, result.extrasValueExVat) - targetValue);
-
-      if (delta < bestDelta) {
-        bestDelta = delta;
-        bestIndex = index;
-      }
-    });
-
-    setSelectedComparableIndex(bestIndex);
-  }, [comparableListings, result]);
-
-  const safeComparableIndex = comparableListings.length
-    ? Math.min(selectedComparableIndex, comparableListings.length - 1)
-    : 0;
-  const selectedComparable = comparableListings[safeComparableIndex] ?? null;
-  const selectedComparableSourceUrl = selectedComparable?.sourceUrl?.trim() ?? '';
-  const selectedComparableValue =
-    selectedComparable && result
-      ? getListingComparablePrice(selectedComparable, result.extrasValueExVat)
-      : result?.marketMid ?? null;
-  const selectedComparablePercent = getRangePercent(
-    result?.marketLow ?? null,
-    result?.marketHigh ?? null,
-    selectedComparableValue,
-  );
-
-  const configComplete = Boolean(tractorType && drive && cab && selectedModel);
-  const configAutoStep: ConfigStepKey = !tractorType ? 'type' : !drive ? 'drive' : !cab ? 'cab' : 'model';
-  const activeConfigStep = configFocus ?? configAutoStep;
-  const configStepNumber = CONFIG_STEPS.findIndex((item) => item.key === activeConfigStep) + 1;
-
-  const detailsComplete = Boolean(yearConfirmed && hoursConfirmed && condition !== null && extrasReviewed);
-  const detailsAutoStep: DetailsStepKey = !yearConfirmed
-    ? 'year'
-    : !hoursConfirmed
-      ? 'hours'
-      : !condition
-        ? 'condition'
-        : 'extras';
-  const activeDetailsStep = detailsFocus ?? detailsAutoStep;
-  const activeDetailsStepNumber = DETAILS_STEPS.findIndex((item) => item.key === activeDetailsStep) + 1;
-
-  const canContinue = useMemo(() => {
-    if (step === 1) return selectedType === 'tractor';
-    if (step === 3) return configComplete;
-    if (step === 4) {
-      return Boolean(selectedModel && isYearValid && isHoursValid && yearConfirmed && hoursConfirmed && condition && extrasReviewed);
-    }
-    return true;
-  }, [
-    step,
-    selectedType,
-    configComplete,
-    selectedModel,
-    isYearValid,
-    isHoursValid,
-    yearConfirmed,
-    hoursConfirmed,
-    condition,
-    extrasReviewed,
-  ]);
-
-  const nextLabel =
-    step === 1
-      ? 'Choose Brand'
-      : step === 2
-        ? 'Choose Model'
-        : step === 3
-          ? 'Enter Details'
-          : 'Get Valuation';
-
-  function resetWizard() {
-    setStep(1);
-    setSelectedType(null);
-    setModelQuery('');
-    setBrandSlug('john-deere');
-    setBrandDropdownOpen(false);
-    setBrandSearch('');
-    setTractorType(null);
-    setDrive(null);
-    setCab(null);
-    setModelId('');
-    setConfigFocus(null);
-    setDetailsFocus(null);
-    setYearConfirmed(false);
-    setHoursConfirmed(false);
-    setExtrasReviewed(false);
-    setResult(null);
-    setSelectedMethod(null);
-    setMessage('');
-    resetDetailState();
+  .sectionHeader,
+  .filterSummary {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
-  function handleBack() {
-    setMessage('');
-
-    if (step === 1) {
-      router.push('/');
-      return;
-    }
-
-    setStep(previousStep(step));
+  .panelHeader {
+    grid-template-columns: 1fr;
+    align-items: start;
+    min-height: 0;
   }
 
-  function handleNext() {
-    setMessage('');
-
-    if (step === 3 && !selectedModel) {
-      setMessage('Choose a model first.');
-      return;
-    }
-
-    if (step === 4) {
-      const parsedHours = Number(hours);
-      const parsedYear = activeYear;
-
-      if (!selectedModel || !isYearValid || !yearConfirmed) {
-        setMessage('Confirm the year first.');
-        return;
-      }
-
-      if (!Number.isFinite(parsedHours) || parsedHours <= 0 || !hoursConfirmed) {
-        setMessage('Confirm the engine hours first.');
-        return;
-      }
-
-      if (!condition) {
-        setMessage('Choose the condition first.');
-        return;
-      }
-
-      if (!extrasReviewed) {
-        setMessage('Review the extras first.');
-        return;
-      }
-
-      const nextResult = runValuation({
-        modelId: selectedModel.id,
-        year: parsedYear,
-        hours: parsedHours,
-        condition,
-        frontPto,
-        frontLoader,
-        gpsEnabled,
-        gpsType,
-        gpsYear,
-      });
-
-      setResult(nextResult);
-
-      const defaultMethod: MethodKey =
-        nextResult.marketMid !== null
-          ? 'market'
-          : nextResult.aim4priceValueExVat !== null
-            ? 'aim4price'
-            : 'department';
-
-      setSelectedMethod(defaultMethod);
-      setStep(5);
-      return;
-    }
-
-    setStep(nextStep(step));
+  .panelToggle,
+  .panelBadge {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    justify-self: stretch;
   }
 
-  function handleSave() {
-    if (!result || !selectedMethod) {
-      setMessage('Choose which number should be saved first.');
-      return;
-    }
-
-    const value = getMethodValue(result, selectedMethod);
-
-    if (value === null) {
-      setMessage('That method is not available for this tractor profile.');
-      return;
-    }
-
-    saveItem({
-      id: `${result.model.id}-${activeYear}-${hours}-${condition ?? 'condition'}-${
-        frontPto ? 'pto' : 'no-pto'
-      }-${frontLoader ? 'loader' : 'no-loader'}-${gpsEnabled ? `gps-${gpsType ?? 'enabled'}-${gpsYear || 'year'}` : 'no-gps'}-${selectedMethod}`,
-      kind: 'tractor',
-      title: `${result.model.brandName} ${result.model.modelName}`,
-      brandName: result.model.brandName,
-      modelName: result.model.modelName,
-      drive: result.model.drive,
-      tractorType: result.model.tractorType,
-      yearModel: activeYear,
-      hours: Number(hours),
-      selectedMethod,
-      selectedValueExVat: value,
-      aim4priceValueExVat: result.aim4priceValueExVat,
-      marketMidExVat: result.marketMid,
-      departmentValueExVat: result.departmentValueExVat,
-      note: extrasSummaryText !== 'No fitted extras selected' ? `Extras: ${extrasSummaryText}` : undefined,
-      createdAtIso: new Date().toISOString(),
-    });
-
-    setMessage('Saved locally to prototype storage.');
+  .panelBadge {
+    justify-content: flex-start;
   }
 
-  function handlePrint() {
-    if (!result || typeof window === 'undefined') return;
-    window.print();
+  .dropdownMenu {
+    padding: 0.75rem;
   }
 
-  function handleMethodSelect(method: MethodKey) {
-    if (!result) return;
-
-    const value = getMethodValue(result, method);
-    if (value === null) return;
-
-    setSelectedMethod(method);
-    setMessage('');
+  .dropdownOption {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
-  function renderWizardBody() {
-    if (step === 1) {
-      const isTractorSelected = selectedType === 'tractor';
-
-      return (
-        <div className={styles.typePicker}>
-          <button type="button" className={styles.typeArrow} aria-label="Previous equipment type" disabled>
-            ‹
-          </button>
-
-          <button
-            type="button"
-            className={`${styles.typeCard} ${styles.typePickerCard} ${
-              isTractorSelected ? styles.typeCardActive : ''
-            }`}
-            onClick={() => {
-              setSelectedType('tractor');
-              setMessage('');
-            }}
-            aria-pressed={isTractorSelected}
-          >
-            <div className={styles.typeImageBox}>
-              <Image
-                src="/brand/Tractor.png"
-                alt="Tractor equipment type"
-                fill
-                className={styles.typeImage}
-                sizes="220px"
-              />
-            </div>
-            <strong>Tractor</strong>
-          </button>
-
-          <button type="button" className={styles.typeArrow} aria-label="Next equipment type" disabled>
-            ›
-          </button>
-        </div>
-      );
-    }
-
-    if (step === 2) {
-      return (
-        <div className={styles.searchWrap}>
-          <div className={styles.field}>
-            <span className={styles.fieldLabel}>Choose Brand</span>
-
-            <div className={styles.dropdownField} ref={brandDropdownRef}>
-              <button
-                type="button"
-                className={`${styles.dropdownTrigger} ${brandDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
-                onClick={() => {
-                  setBrandDropdownOpen((open) => !open);
-                  setMessage('');
-                }}
-                aria-haspopup="listbox"
-                aria-expanded={brandDropdownOpen}
-                aria-label="Choose tractor brand"
-              >
-                <span className={styles.dropdownTriggerText}>{selectedBrandName}</span>
-                <span className={styles.dropdownTriggerIcon} aria-hidden="true">
-                  {brandDropdownOpen ? '▴' : '▾'}
-                </span>
-              </button>
-
-              {brandDropdownOpen ? (
-                <div className={styles.dropdownMenu}>
-                  <div className={styles.dropdownSearchWrap}>
-                    <input
-                      ref={brandSearchInputRef}
-                      value={brandSearch}
-                      onChange={(event: ChangeEvent<HTMLInputElement>) => setBrandSearch(event.target.value)}
-                      placeholder="Search brand..."
-                      aria-label="Search brands"
-                      className={styles.dropdownSearchInput}
-                    />
-                  </div>
-
-                  <div className={styles.dropdownList} role="listbox" aria-label="Available tractor brands">
-                    {filteredBrandOptions.length ? (
-                      filteredBrandOptions.map((brand) => {
-                        const active = brand.slug === brandSlug;
-
-                        return (
-                          <button
-                            key={brand.slug}
-                            type="button"
-                            role="option"
-                            aria-selected={active}
-                            className={`${styles.dropdownOption} ${active ? styles.dropdownOptionActive : ''}`}
-                            onClick={() => {
-                              const brandChanged = brand.slug !== brandSlug;
-
-                              setBrandSlug(brand.slug);
-
-                              if (brandChanged) {
-                                setTractorType(null);
-                                setDrive(null);
-                                setCab(null);
-                                setModelId('');
-                                setModelQuery('');
-                                resetDetailState();
-                              }
-
-                              setBrandDropdownOpen(false);
-                              setBrandSearch('');
-                              setMessage('');
-                            }}
-                          >
-                            <span className={styles.dropdownOptionText}>{brand.name}</span>
-                            {active ? <span className={styles.dropdownOptionBadge}>Selected</span> : null}
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <div className={styles.dropdownEmpty}>No brands matched “{brandSearch.trim()}”.</div>
-                    )}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (step === 3) {
-      const configRows = [
-        tractorType
-          ? { key: 'type' as ConfigStepKey, label: 'Type', value: getTractorTypeLabel(tractorType) }
-          : null,
-        drive ? { key: 'drive' as ConfigStepKey, label: 'Drive', value: getDriveDisplay(drive) } : null,
-        cab ? { key: 'cab' as ConfigStepKey, label: 'Cab', value: getCabDisplay(cab) } : null,
-        selectedModel
-          ? {
-              key: 'model' as ConfigStepKey,
-              label: 'Model',
-              value: `${selectedModel.brandName} ${selectedModel.modelName}`,
-            }
-          : null,
-      ].filter(
-        (
-          row,
-        ): row is {
-          key: ConfigStepKey;
-          label: string;
-          value: string;
-        } => Boolean(row),
-      );
-
-      const configReviewMode = configComplete && configFocus === null;
-      const emptySearchMessage = matchingModels.length
-        ? `No models match “${modelQuery.trim()}”.`
-        : drive === 'tracks'
-          ? `No ${selectedBrandName} track models are loaded yet.`
-          : 'No models are loaded for this setup yet.';
-
-      return (
-        <div className={styles.flowShell}>
-          <div className={styles.flowTopline}>
-            <span className={styles.flowToplineLabel}>Brand</span>
-            <strong className={styles.flowToplineValue}>{selectedBrandName}</strong>
-          </div>
-
-          <div className={styles.miniStepper} aria-label="Model setup progress">
-            {CONFIG_STEPS.map((item) => {
-              const complete =
-                item.key === 'type'
-                  ? Boolean(tractorType)
-                  : item.key === 'drive'
-                    ? Boolean(drive)
-                    : item.key === 'cab'
-                      ? Boolean(cab)
-                      : Boolean(selectedModel);
-              const active = !configReviewMode && activeConfigStep === item.key;
-
-              return (
-                <div
-                  key={item.key}
-                  className={`${styles.miniStep} ${active ? styles.miniStepActive : ''} ${
-                    complete ? styles.miniStepComplete : ''
-                  }`}
-                >
-                  <span className={styles.miniStepNumber}>{complete ? '✓' : CONFIG_STEPS.findIndex((stepItem) => stepItem.key === item.key) + 1}</span>
-                  <span className={styles.miniStepLabel}>{item.label}</span>
-                </div>
-              );
-            })}
-          </div>
-
-          {configRows.length ? (
-            <div className={styles.answerStack}>
-              {configRows.map((row) => (
-                <div key={row.key} className={styles.answerRow}>
-                  <div className={styles.answerRowText}>
-                    <span className={styles.answerRowLabel}>{row.label}</span>
-                    <strong className={styles.answerRowValue}>{row.value}</strong>
-                  </div>
-
-                  <button
-                    type="button"
-                    className={styles.answerEdit}
-                    onClick={() => {
-                      setConfigFocus(row.key);
-                      setMessage('');
-                    }}
-                  >
-                    Edit
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : null}
-
-          {configReviewMode ? (
-            <div className={`${styles.currentCard} ${styles.readyCard}`}>
-              <div className={styles.currentCardHead}>
-                <div>
-                  <span className={styles.currentEyebrow}>Ready</span>
-                  <h2 className={styles.currentTitle}>Model selected</h2>
-                </div>
-                <span className={styles.currentIndex}>4 / 4</span>
-              </div>
-
-              {selectedModel ? (
-                <div className={styles.readyModelBlock}>
-                  <strong className={styles.readyModelTitle}>
-                    {selectedModel.brandName} {selectedModel.modelName}
-                  </strong>
-
-                  <div className={styles.selectionChipRow}>
-                    <span className={styles.modelChip}>{getTractorTypeLabel(selectedModel.tractorType)}</span>
-                    <span className={styles.modelChip}>{getDriveDisplay(selectedModel.drive)}</span>
-                    <span className={styles.modelChip}>{getCabDisplay(selectedModel.cab)}</span>
-                    <span className={styles.modelChip}>{selectedModel.powerKw} kW</span>
-                    <span className={styles.modelChip}>
-                      {selectedModel.yearStart}–{selectedModel.yearEnd}
-                    </span>
-                  </div>
-                </div>
-              ) : null}
-
-              <p className={styles.currentHint}>Continue to enter year, hours, condition and extras.</p>
-            </div>
-          ) : activeConfigStep === 'type' ? (
-            <div className={styles.currentCard}>
-              <div className={styles.currentCardHead}>
-                <div>
-                  <span className={styles.currentEyebrow}>Now</span>
-                  <h2 className={styles.currentTitle}>Field or orchard?</h2>
-                </div>
-                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
-              </div>
-
-              <div className={styles.choiceGrid}>
-                {([
-                  { key: 'field' as TractorType, title: 'Field', note: 'Broad-acre / row crop' },
-                  { key: 'orchard' as TractorType, title: 'Orchard', note: 'Orchard / vineyard' },
-                ]).map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className={`${styles.choiceCard} ${tractorType === item.key ? styles.choiceCardActive : ''}`}
-                    onClick={() => {
-                      const changed = tractorType !== item.key;
-
-                      setTractorType(item.key);
-                      setMessage('');
-
-                      if (changed) {
-                        setDrive(null);
-                        setCab(null);
-                        setModelId('');
-                        setModelQuery('');
-                        resetDetailState();
-                      }
-
-                      setConfigFocus('drive');
-                    }}
-                    aria-pressed={tractorType === item.key}
-                  >
-                    <strong>{item.title}</strong>
-                    <span className={styles.choiceCardNote}>{item.note}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : activeConfigStep === 'drive' ? (
-            <div className={styles.currentCard}>
-              <div className={styles.currentCardHead}>
-                <div>
-                  <span className={styles.currentEyebrow}>Now</span>
-                  <h2 className={styles.currentTitle}>Choose drive</h2>
-                </div>
-                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
-              </div>
-
-              <div className={styles.choiceGrid}>
-                {([
-                  { key: '2wd' as DriveType, title: '2WD', note: 'Two-wheel drive' },
-                  { key: '4wd' as DriveType, title: '4WD', note: 'Four-wheel drive' },
-                  { key: 'tracks' as DriveType, title: 'Tracks', note: 'Tracked tractor' },
-                ]).map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className={`${styles.choiceCard} ${drive === item.key ? styles.choiceCardActive : ''}`}
-                    onClick={() => {
-                      const changed = drive !== item.key;
-
-                      setDrive(item.key);
-                      setMessage('');
-
-                      if (changed) {
-                        setCab(null);
-                        setModelId('');
-                        setModelQuery('');
-                        resetDetailState();
-                      }
-
-                      setConfigFocus('cab');
-                    }}
-                    aria-pressed={drive === item.key}
-                  >
-                    <strong>{item.title}</strong>
-                    <span className={styles.choiceCardNote}>{item.note}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : activeConfigStep === 'cab' ? (
-            <div className={styles.currentCard}>
-              <div className={styles.currentCardHead}>
-                <div>
-                  <span className={styles.currentEyebrow}>Now</span>
-                  <h2 className={styles.currentTitle}>Choose cab</h2>
-                </div>
-                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
-              </div>
-
-              <div className={styles.choiceGrid}>
-                {([
-                  { key: 'cab' as CabType, title: 'Cab', note: 'Enclosed operator cab' },
-                  { key: 'open-station' as CabType, title: 'Open station', note: 'No enclosed cab' },
-                ]).map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className={`${styles.choiceCard} ${cab === item.key ? styles.choiceCardActive : ''}`}
-                    onClick={() => {
-                      const changed = cab !== item.key;
-
-                      setCab(item.key);
-                      setMessage('');
-
-                      if (changed) {
-                        setModelId('');
-                        setModelQuery('');
-                        resetDetailState();
-                      }
-
-                      setConfigFocus('model');
-                    }}
-                    aria-pressed={cab === item.key}
-                  >
-                    <strong>{item.title}</strong>
-                    <span className={styles.choiceCardNote}>{item.note}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className={styles.currentCard}>
-              <div className={styles.currentCardHead}>
-                <div>
-                  <span className={styles.currentEyebrow}>Now</span>
-                  <h2 className={styles.currentTitle}>Choose model</h2>
-                </div>
-                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
-              </div>
-
-              <div className={styles.selectionChipRow} style={{ marginBottom: '0.95rem' }}>
-                {tractorType ? <span className={styles.modelChip}>{getTractorTypeLabel(tractorType)}</span> : null}
-                {drive ? <span className={styles.modelChip}>{getDriveDisplay(drive)}</span> : null}
-                {cab ? <span className={styles.modelChip}>{getCabDisplay(cab)}</span> : null}
-              </div>
-
-              <div className={styles.searchWrap}>
-                <input
-                  value={modelQuery}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                    setModelQuery(event.target.value);
-                    setMessage('');
-                  }}
-                  placeholder={`Search ${selectedBrandName} models`}
-                  aria-label="Search tractor models"
-                  className={styles.searchInput}
-                />
-              </div>
-
-              {selectedModel ? (
-                <div className={styles.selectedCallout}>
-                  <span className={styles.currentEyebrow}>Selected</span>
-                  <strong className={styles.selectedCalloutTitle}>
-                    {selectedModel.brandName} {selectedModel.modelName}
-                  </strong>
-                  <span className={styles.selectedCalloutBody}>Choose a different model below if needed.</span>
-                </div>
-              ) : null}
-
-              {filteredModels.length ? (
-                <>
-                  <div className={styles.currentCount}>
-                    {filteredModels.length} model{filteredModels.length === 1 ? '' : 's'} found
-                  </div>
-
-                  <div className={styles.modelList}>
-                    {filteredModels.map((model) => {
-                      const active = selectedModel?.id === model.id;
-
-                      return (
-                        <button
-                          key={model.id}
-                          type="button"
-                          className={`${styles.modelRow} ${active ? styles.modelRowActive : ''}`}
-                          onClick={() => {
-                            const changed = model.id !== modelId;
-
-                            if (changed) {
-                              setModelId(model.id);
-                              resetDetailState();
-                            }
-
-                            setConfigFocus(null);
-                            setMessage('');
-                          }}
-                          aria-pressed={active}
-                        >
-                          <div className={styles.modelRowBody}>
-                            <div className={styles.modelRowHeader}>
-                              <strong>
-                                {model.brandName} {model.modelName}
-                              </strong>
-                              {active ? <span className={styles.modelRowSelectedBadge}>Selected</span> : null}
-                            </div>
-
-                            <div className={styles.modelChipRow}>
-                              <span className={styles.modelChip}>{getTractorTypeLabel(model.tractorType)}</span>
-                              <span className={styles.modelChip}>{getDriveDisplay(model.drive)}</span>
-                              <span className={styles.modelChip}>{getCabDisplay(model.cab)}</span>
-                              <span className={styles.modelChip}>{model.powerKw} kW</span>
-                            </div>
-                          </div>
-
-                          <span className={styles.modelRowYear}>
-                            {model.yearStart}–{model.yearEnd}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                <div className={styles.emptyState}>
-                  <p>{emptySearchMessage}</p>
-                  {modelQuery.trim() ? (
-                    <div className={styles.emptyStateActions}>
-                      <button
-                        type="button"
-                        className={styles.secondaryButton}
-                        onClick={() => setModelQuery('')}
-                      >
-                        Clear search
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    const detailRows = [
-      yearConfirmed ? { key: 'year' as DetailsStepKey, label: 'Year', value: selectedYearDisplay } : null,
-      hoursConfirmed ? { key: 'hours' as DetailsStepKey, label: 'Hours', value: enteredHoursDisplay } : null,
-      condition ? { key: 'condition' as DetailsStepKey, label: 'Condition', value: conditionLabel(condition) } : null,
-      extrasReviewed ? { key: 'extras' as DetailsStepKey, label: 'Extras', value: extrasSummaryText } : null,
-    ].filter(
-      (
-        row,
-      ): row is {
-        key: DetailsStepKey;
-        label: string;
-        value: string;
-      } => Boolean(row),
-    );
-
-    const detailsReviewMode = detailsComplete && detailsFocus === null;
-
-    return (
-      <div className={styles.flowShell}>
-        {selectedModel ? (
-          <div className={styles.focusContext}>
-            <span className={styles.flowToplineLabel}>Model</span>
-            <strong className={styles.flowToplineValue}>
-              {selectedModel.brandName} {selectedModel.modelName}
-            </strong>
-            <div className={styles.selectionChipRow}>
-              <span className={styles.modelChip}>{getTractorTypeLabel(selectedModel.tractorType)}</span>
-              <span className={styles.modelChip}>{getDriveDisplay(selectedModel.drive)}</span>
-              <span className={styles.modelChip}>{getCabDisplay(selectedModel.cab)}</span>
-              <span className={styles.modelChip}>{selectedModel.powerKw} kW</span>
-              <span className={styles.modelChip}>
-                {selectedModel.yearStart}–{selectedModel.yearEnd}
-              </span>
-            </div>
-          </div>
-        ) : null}
-
-        <div className={styles.miniStepper} aria-label="Details progress">
-          {DETAILS_STEPS.map((item) => {
-            const complete =
-              item.key === 'year'
-                ? yearConfirmed
-                : item.key === 'hours'
-                  ? hoursConfirmed
-                  : item.key === 'condition'
-                    ? Boolean(condition)
-                    : extrasReviewed;
-            const active = !detailsReviewMode && activeDetailsStep === item.key;
-
-            return (
-              <div
-                key={item.key}
-                className={`${styles.miniStep} ${active ? styles.miniStepActive : ''} ${
-                  complete ? styles.miniStepComplete : ''
-                }`}
-              >
-                <span className={styles.miniStepNumber}>{complete ? '✓' : DETAILS_STEPS.findIndex((stepItem) => stepItem.key === item.key) + 1}</span>
-                <span className={styles.miniStepLabel}>{item.label}</span>
-              </div>
-            );
-          })}
-        </div>
-
-        {detailRows.length ? (
-          <div className={styles.answerStack}>
-            {detailRows.map((row) => (
-              <div key={row.key} className={styles.answerRow}>
-                <div className={styles.answerRowText}>
-                  <span className={styles.answerRowLabel}>{row.label}</span>
-                  <strong className={styles.answerRowValue}>{row.value}</strong>
-                </div>
-
-                <button
-                  type="button"
-                  className={styles.answerEdit}
-                  onClick={() => {
-                    setDetailsFocus(row.key);
-                    setMessage('');
-                  }}
-                >
-                  Edit
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : null}
-
-        {detailsReviewMode ? (
-          <div className={`${styles.currentCard} ${styles.readyCard}`}>
-            <div className={styles.currentCardHead}>
-              <div>
-                <span className={styles.currentEyebrow}>Ready</span>
-                <h2 className={styles.currentTitle}>Get valuation</h2>
-              </div>
-              <span className={styles.currentIndex}>4 / 4</span>
-            </div>
-
-            <div className={styles.selectionFacts}>
-              <div className={styles.selectionFact}>
-                <span>Year</span>
-                <strong>{selectedYearDisplay}</strong>
-              </div>
-
-              <div className={styles.selectionFact}>
-                <span>Hours</span>
-                <strong>{enteredHoursDisplay}</strong>
-              </div>
-
-              <div className={styles.selectionFact}>
-                <span>Condition</span>
-                <strong>{selectedConditionDisplay}</strong>
-              </div>
-
-              <div className={styles.selectionFact}>
-                <span>Extras</span>
-                <strong>{extrasSummaryText}</strong>
-              </div>
-            </div>
-          </div>
-        ) : activeDetailsStep === 'year' ? (
-          <div className={styles.currentCard}>
-            <div className={styles.currentCardHead}>
-              <div>
-                <span className={styles.currentEyebrow}>Now</span>
-                <h2 className={styles.currentTitle}>Choose year</h2>
-              </div>
-              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
-            </div>
-
-            <div className={styles.segmentRail}>
-              <button
-                type="button"
-                className={`${styles.pillButton} ${yearMode === 'guided' ? styles.pillButtonActive : ''}`}
-                onClick={() => {
-                  setYearMode('guided');
-                  setYearDropdownOpen(false);
-                  setYearConfirmed(false);
-                  setMessage('');
-                  invalidateResult();
-                }}
-                aria-pressed={yearMode === 'guided'}
-              >
-                Guided years
-              </button>
-              <button
-                type="button"
-                className={`${styles.pillButton} ${yearMode === 'manual' ? styles.pillButtonActive : ''}`}
-                onClick={() => {
-                  setYearMode('manual');
-                  if (year !== null) {
-                    setManualYear(String(year));
-                  }
-                  setYearDropdownOpen(false);
-                  setYearConfirmed(false);
-                  setMessage('');
-                  invalidateResult();
-                }}
-                aria-pressed={yearMode === 'manual'}
-              >
-                Other year
-              </button>
-            </div>
-
-            {yearMode === 'guided' ? (
-              <div className={styles.inlineFieldRow}>
-                <div className={styles.dropdownField} ref={yearDropdownRef}>
-                  <button
-                    type="button"
-                    className={`${styles.dropdownTrigger} ${yearDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
-                    onClick={() => {
-                      if (!selectedModel) return;
-                      setYearDropdownOpen((open) => !open);
-                      setMessage('');
-                    }}
-                    aria-haspopup="listbox"
-                    aria-expanded={yearDropdownOpen}
-                    aria-label="Choose guided year model"
-                  >
-                    <span className={styles.dropdownTriggerText}>{selectedYearDisplay}</span>
-                    <span className={styles.dropdownTriggerIcon} aria-hidden="true">
-                      {yearDropdownOpen ? '▴' : '▾'}
-                    </span>
-                  </button>
-
-                  {yearDropdownOpen ? (
-                    <div className={styles.dropdownMenu}>
-                      <div className={styles.dropdownList} role="listbox" aria-label="Available guided years">
-                        {years.length ? (
-                          years.map((availableYear) => {
-                            const active = year === availableYear;
-
-                            return (
-                              <button
-                                key={availableYear}
-                                type="button"
-                                role="option"
-                                aria-selected={active}
-                                className={`${styles.dropdownOption} ${active ? styles.dropdownOptionActive : ''}`}
-                                onClick={() => {
-                                  setYear(availableYear);
-                                  setYearDropdownOpen(false);
-                                  setYearConfirmed(false);
-                                  setMessage('');
-                                  invalidateResult();
-                                }}
-                              >
-                                <span className={styles.dropdownOptionText}>{availableYear}</span>
-                                {active ? <span className={styles.dropdownOptionBadge}>Selected</span> : null}
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <div className={styles.dropdownEmpty}>No guided years loaded for this model yet.</div>
-                        )}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={confirmYearSelection}
-                  disabled={!isYearValid}
-                >
-                  Next: Hours
-                </button>
-              </div>
-            ) : (
-              <div className={styles.inlineFieldRow}>
-                <input
-                  value={manualYear}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                    setManualYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4));
-                    setYearConfirmed(false);
-                    setMessage('');
-                    invalidateResult();
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      confirmYearSelection();
-                    }
-                  }}
-                  placeholder="Type year"
-                  inputMode="numeric"
-                  aria-label="Enter year model manually"
-                  className={styles.controlInput}
-                />
-
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={confirmYearSelection}
-                  disabled={!isYearValid}
-                >
-                  Next: Hours
-                </button>
-              </div>
-            )}
-
-            {selectedModel ? (
-              <p className={styles.currentHint}>Guided range: {selectedModel.yearStart}–{selectedModel.yearEnd}</p>
-            ) : null}
-          </div>
-        ) : activeDetailsStep === 'hours' ? (
-          <div className={styles.currentCard}>
-            <div className={styles.currentCardHead}>
-              <div>
-                <span className={styles.currentEyebrow}>Now</span>
-                <h2 className={styles.currentTitle}>Enter engine hours</h2>
-              </div>
-              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
-            </div>
-
-            <div className={styles.inlineFieldRow}>
-              <div className={styles.inlineFieldInputWrap}>
-                <input
-                  value={hours}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                    setHours(event.target.value.replace(/[^0-9]/g, ''));
-                    setHoursConfirmed(false);
-                    setMessage('');
-                    invalidateResult();
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      confirmHoursSelection();
-                    }
-                  }}
-                  placeholder="Type hours"
-                  inputMode="numeric"
-                  aria-label="Enter engine hours"
-                  className={styles.controlInput}
-                />
-                <span className={styles.inlineFieldSuffix}>hrs</span>
-              </div>
-
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={confirmHoursSelection}
-                disabled={!isHoursValid}
-              >
-                Next: Condition
-              </button>
-            </div>
-
-            <p className={styles.currentHint}>Use the meter reading.</p>
-          </div>
-        ) : activeDetailsStep === 'condition' ? (
-          <div className={styles.currentCard}>
-            <div className={styles.currentCardHead}>
-              <div>
-                <span className={styles.currentEyebrow}>Now</span>
-                <h2 className={styles.currentTitle}>Choose condition</h2>
-              </div>
-              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
-            </div>
-
-            <div className={styles.conditionGrid}>
-              {conditionOptions.map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  className={`${styles.conditionCard} ${condition === option.key ? styles.conditionCardActive : ''}`}
-                  onClick={() => {
-                    setCondition(option.key);
-                    setDetailsFocus(null);
-                    setMessage('');
-                    invalidateResult();
-                  }}
-                >
-                  <strong>{option.label}</strong>
-                  <span>{getConditionHint(option.key)}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className={styles.currentCard}>
-            <div className={styles.currentCardHead}>
-              <div>
-                <span className={styles.currentEyebrow}>Now</span>
-                <h2 className={styles.currentTitle}>Review extras</h2>
-              </div>
-              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
-            </div>
-
-            <div className={styles.togglePanelGrid}>
-              <div className={styles.togglePanel}>
-                <div className={styles.togglePanelCopy}>
-                  <strong className={styles.togglePanelTitle}>Front Hitch & Front PTO</strong>
-                  <span className={styles.togglePanelNote}>Installed?</span>
-                </div>
-                <div className={styles.pillRow}>
-                  <button
-                    type="button"
-                    className={`${styles.pillButton} ${frontPto ? styles.pillButtonActive : ''}`}
-                    onClick={() => {
-                      setFrontPto(true);
-                      setMessage('');
-                      markExtrasDirty();
-                    }}
-                    aria-pressed={frontPto}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.pillButton} ${!frontPto ? styles.pillButtonActive : ''}`}
-                    onClick={() => {
-                      setFrontPto(false);
-                      setMessage('');
-                      markExtrasDirty();
-                    }}
-                    aria-pressed={!frontPto}
-                  >
-                    No
-                  </button>
-                </div>
-              </div>
-
-              <div className={styles.togglePanel}>
-                <div className={styles.togglePanelCopy}>
-                  <strong className={styles.togglePanelTitle}>Front Loader</strong>
-                  <span className={styles.togglePanelNote}>Installed?</span>
-                </div>
-                <div className={styles.pillRow}>
-                  <button
-                    type="button"
-                    className={`${styles.pillButton} ${frontLoader ? styles.pillButtonActive : ''}`}
-                    onClick={() => {
-                      setFrontLoader(true);
-                      setMessage('');
-                      markExtrasDirty();
-                    }}
-                    aria-pressed={frontLoader}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.pillButton} ${!frontLoader ? styles.pillButtonActive : ''}`}
-                    onClick={() => {
-                      setFrontLoader(false);
-                      setMessage('');
-                      markExtrasDirty();
-                    }}
-                    aria-pressed={!frontLoader}
-                  >
-                    No
-                  </button>
-                </div>
-              </div>
-
-              <div className={styles.togglePanel}>
-                <div className={styles.togglePanelCopy}>
-                  <strong className={styles.togglePanelTitle}>GPS</strong>
-                  <span className={styles.togglePanelNote}>Installed?</span>
-                </div>
-                <div className={styles.pillRow}>
-                  <button
-                    type="button"
-                    className={`${styles.pillButton} ${gpsEnabled ? styles.pillButtonActive : ''}`}
-                    onClick={() => {
-                      setGpsEnabled(true);
-                      setMessage('');
-                      markExtrasDirty();
-                    }}
-                    aria-pressed={gpsEnabled}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.pillButton} ${!gpsEnabled ? styles.pillButtonActive : ''}`}
-                    onClick={() => {
-                      setGpsEnabled(false);
-                      setMessage('');
-                      markExtrasDirty();
-                    }}
-                    aria-pressed={!gpsEnabled}
-                  >
-                    No
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {gpsEnabled ? (
-              <div className={styles.gpsDetailGrid}>
-                <div className={styles.togglePanel}>
-                  <div className={styles.togglePanelCopy}>
-                    <strong className={styles.togglePanelTitle}>GPS type</strong>
-                    <span className={styles.togglePanelNote}>Optional</span>
-                  </div>
-                  <div className={styles.pillRow}>
-                    {(['full-autosteer', 'guidance-only'] as GpsType[]).map((value) => (
-                      <button
-                        key={value}
-                        type="button"
-                        className={`${styles.pillButton} ${gpsType === value ? styles.pillButtonActive : ''}`}
-                        onClick={() => {
-                          setGpsType(value);
-                          setMessage('');
-                          markExtrasDirty();
-                        }}
-                        aria-pressed={gpsType === value}
-                      >
-                        {getGpsTypeLabel(value)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className={styles.togglePanel}>
-                  <div className={styles.togglePanelCopy}>
-                    <strong className={styles.togglePanelTitle}>GPS year</strong>
-                    <span className={styles.togglePanelNote}>Optional</span>
-                  </div>
-                  <input
-                    value={gpsYear}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                      setGpsYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4));
-                      setMessage('');
-                      markExtrasDirty();
-                    }}
-                    placeholder="Type year"
-                    inputMode="numeric"
-                    aria-label="Enter GPS year"
-                    className={styles.controlInput}
-                  />
-                </div>
-              </div>
-            ) : null}
-
-            <div className={styles.selectionChipRow} style={{ marginTop: '1rem' }}>
-              {extrasSummaryChips.map((chip) => (
-                <span key={chip} className={styles.modelChip}>
-                  {chip}
-                </span>
-              ))}
-            </div>
-
-            <div className={styles.currentCardActions}>
-              <button type="button" className={styles.secondaryButton} onClick={clearExtrasSelection}>
-                No fitted extras
-              </button>
-              <button type="button" className={styles.primaryButton} onClick={applyExtrasSelection}>
-                Save extras
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    );
+  .fieldHint {
+    min-height: 0;
   }
 
-  return (
-    <>
-      <main className={styles.page}>
-        <AppHeader active="valuation" ctaHref="/asset-register" ctaLabel="Asset Register" />
+  .filterSummaryText {
+    text-align: left;
+  }
 
-        <div className={styles.container}>
-          {step !== 5 ? (
-            <>
-              <section className={styles.heroIntro}>
-                <div className={styles.heroIntroContent}>
-                  <span className={styles.heroBadge}>Valuation</span>
-                  <h1 className={styles.heroIntroTitle}>Know what your machinery is worth.</h1>
-                  <p className={styles.heroIntroText}>
-                    Move from tractor setup to a clean value output with a simple guided flow.
-                  </p>
-                </div>
-              </section>
+  .typePicker {
+    grid-template-columns: 2.9rem minmax(0, 1fr) 2.9rem;
+    gap: 0.75rem;
+  }
 
-              <section className={styles.wizardShell}>
-              <article className={styles.wizardCard}>
-                <div className={styles.wizardHeader}>
-                  <div className={styles.stepper}>
-                    {WIZARD_STEPS.map((item, index) => {
-                      const isActive = step === item.step;
-                      const isComplete = step > item.step;
+  .wizardFooter,
+  .resultsTopbar,
+  .heroTop,
+  .heroIdentity,
+  .valuePanelTop {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-                      return (
-                        <div
-                          key={item.step}
-                          className={`${styles.stepperItem} ${isActive ? styles.stepperItemActive : ''} ${
-                            isComplete ? styles.stepperItemComplete : ''
-                          }`}
-                        >
-                          <span
-                            className={`${styles.stepperBullet} ${
-                              isActive ? styles.stepperBulletActive : ''
-                            } ${isComplete ? styles.stepperBulletComplete : ''}`}
-                          >
-                            {isComplete ? '✓' : item.step}
-                          </span>
-                          <span
-                            className={`${styles.stepperLabel} ${isActive ? styles.stepperLabelActive : ''} ${
-                              isComplete ? styles.stepperLabelComplete : ''
-                            }`}
-                          >
-                            {item.label}
-                          </span>
-                          {index < WIZARD_STEPS.length - 1 ? (
-                            <span
-                              className={`${styles.stepperLine} ${step > item.step ? styles.stepperLineComplete : ''}`}
-                            />
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+  .wizardFooter {
+    padding: 1rem;
+  }
 
-                <div className={styles.stepContent}>
-                  <h1 className={styles.stepTitle}>{stepMeta.title}</h1>
-                  <p className={styles.stepText}>{stepMeta.body}</p>
+  .selectionImageBox,
+  .heroImageBox {
+    width: 100%;
+    min-width: 0;
+    height: 180px;
+  }
 
-                  {message ? <div className={styles.message}>{message}</div> : null}
+  .secondaryButton,
+  .primaryButton,
+  .assetButton {
+    width: 100%;
+  }
+}
 
-                  {renderWizardBody()}
-                </div>
+@media print {
+  .page :global(header),
+  .resultsTopbar,
+  .actionStack,
+  .assetCard,
+  .wizardShell {
+    display: none !important;
+  }
 
-                <div className={styles.wizardFooter}>
-                  <button type="button" className={styles.secondaryButton} onClick={handleBack}>
-                    {step === 1 ? 'Back Home' : 'Back'}
-                  </button>
+  .container {
+    width: 100%;
+    padding-top: 0;
+  }
 
-                  <button
-                    type="button"
-                    className={styles.primaryButton}
-                    onClick={handleNext}
-                    disabled={!canContinue}
-                  >
-                    {nextLabel}
-                  </button>
-                </div>
-              </article>
-            </section>
-            </>
-          ) : result ? (
-            <section className={styles.resultsLayout}>
-              <div className={styles.resultsMain}>
-                <div className={styles.resultsTopbar}>
-                  <button type="button" className={styles.backLink} onClick={() => setStep(4)}>
-                    ← Back to search
-                  </button>
-                  <span className={styles.statusBadge}>Valuation complete</span>
-                </div>
+  .resultsLayout {
+    grid-template-columns: 1fr;
+  }
 
-                {message ? <div className={styles.message}>{message}</div> : null}
+  .heroCard,
+  .sideCard {
+    box-shadow: none;
+    border-color: rgba(0, 0, 0, 0.14);
+  }
+}
 
-                <article className={styles.heroCard}>
-                  <div className={styles.heroTop}>
-                    <div className={styles.heroIdentity}>
-                      <div className={styles.heroImageBox}>
-                        <Image
-                          src="/brand/Tractor.png"
-                          alt="Valuation result tractor"
-                          fill
-                          className={styles.typeImage}
-                          sizes="132px"
-                        />
-                      </div>
 
-                      <div className={styles.heroInfo}>
-                        <h1 className={styles.resultTitle}>
-                          {result.model.brandName} {result.model.modelName}
-                        </h1>
-                        <p className={styles.heroMeta}>
-                          {getTractorTypeLabel(result.model.tractorType)} tractor • {getDriveDisplay(result.model.drive)} •{' '}
-                          {getCabDisplay(result.model.cab)} • {activeYear} • {result.model.powerKw} kW •{' '}
-                          {Number(hours).toLocaleString('en-ZA')} engine hours
-                        </p>
-                        <button type="button" className={styles.inlineButton} onClick={() => setStep(4)}>
-                          Edit Details
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+/* === Final valuation result refinement === */
+.resultsLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
+  gap: 1rem;
+  align-items: start;
+}
 
-                  <div className={`${styles.valuePanel} ${confidencePanelClassName}`}>
-                    <div className={styles.valuePanelTop}>
-                      <div className={styles.valuePanelIntro}>
-                        <span className={styles.valueLabel}>{headlineLabel}</span>
-                        <div className={styles.valueAmount}>{money(headlineValue)}</div>
-                        <p className={styles.valueMeta}>ZAR • South Africa • Excl. VAT (indicative)</p>
-                      </div>
+.resultsMain,
+.resultsSide {
+  display: grid;
+  gap: 0.95rem;
+}
 
-                      <span className={`${styles.confidenceBadge} ${confidenceClassName}`}>
-                        {getConfidenceLabel(result)}
-                      </span>
-                    </div>
+.heroCard,
+.assetCard,
+.sideCard {
+  padding: 1.1rem;
+  border-radius: 1.4rem;
+}
 
-                    <div className={styles.methodGrid}>
-                      {methodCards.map((card) => {
-                        const active = selectedMethod === card.key;
-                        const unavailable = !card.available;
+.heroTop {
+  gap: 0.9rem;
+}
 
-                        return (
-                          <button
-                            key={card.key}
-                            type="button"
-                            className={`${styles.methodButton} ${
-                              active ? styles.methodButtonActive : ''
-                            } ${unavailable ? styles.methodButtonDisabled : ''}`}
-                            onClick={() => handleMethodSelect(card.key)}
-                            disabled={unavailable}
-                          >
-                            <span className={styles.methodTitle}>{card.label}</span>
-                            <strong className={styles.methodValue}>
-                              {card.key === 'market' ? getMethodDisplay(result, 'market') : money(card.value)}
-                            </strong>
-                            <span className={styles.methodNote}>{card.note}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </article>
+.heroIdentity {
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+}
 
-                <article className={styles.assetCard}>
-                  <div className={styles.actionHeader}>
-                    <div>
-                      <h2 className={styles.assetTitle}>Save to Asset Register</h2>
-                      <p className={styles.assetText}>
-                        Save this valuation, return later, and keep the next actions together in one place.
-                      </p>
-                    </div>
-                    <span className={styles.actionBadge}>Quick actions</span>
-                  </div>
+.heroImageBox {
+  width: 124px;
+  min-width: 124px;
+  height: 96px;
+  border-radius: 1rem;
+}
 
-                  <div className={styles.actionGrid}>
-                    <button type="button" className={`${styles.assetButton} ${styles.actionPrimary}`} onClick={handleSave}>
-                      Save to My Assets
-                    </button>
+.heroInfo {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
 
-                    <button type="button" className={styles.secondaryButton} onClick={handlePrint}>
-                      Download PDF Report
-                    </button>
+.resultTitle {
+  font-size: clamp(1.9rem, 2.9vw, 2.5rem);
+}
 
-                    <button type="button" className={styles.secondaryButton} onClick={() => setStep(4)}>
-                      Refine Inputs
-                    </button>
+.heroMeta {
+  font-size: 1rem;
+}
 
-                    <button type="button" className={styles.secondaryButton} onClick={resetWizard}>
-                      Start New Valuation
-                    </button>
-                  </div>
-                </article>
-              </div>
+.inlineButton {
+  min-height: 2.55rem;
+  padding-inline: 0.9rem;
+}
 
-              <aside className={styles.resultsSide}>
-                <article className={`${styles.sideCard} ${styles.summaryCard}`}>
-                  <h2 className={styles.sideTitle}>Summary</h2>
+.valuePanel {
+  --value-panel-bg-start: #eef6f1;
+  --value-panel-bg-end: #e4efe8;
+  --value-panel-border: rgba(23, 77, 62, 0.1);
+  --value-label-color: #295948;
+  --value-amount-color: #0d5a3c;
+  --value-meta-color: #617069;
+  --value-method-surface: rgba(255, 255, 255, 0.88);
+  --value-method-border: rgba(18, 45, 37, 0.07);
+  --value-method-active-border: rgba(26, 89, 68, 0.24);
+  margin-top: 1rem;
+  padding: 1.15rem;
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, var(--value-panel-bg-start) 0%, var(--value-panel-bg-end) 100%);
+  border: 1px solid var(--value-panel-border);
+}
 
-                  <div className={styles.breakdownList}>
-                    <div className={styles.breakdownRow}>
-                      <span className={styles.breakdownKey}>Specification</span>
-                      <span className={styles.breakdownValue}>
-                        {getTractorTypeLabel(result.model.tractorType)} • {getDriveDisplay(result.model.drive)} •{' '}
-                        {getCabDisplay(result.model.cab)}
-                      </span>
-                    </div>
+.valuePanelHigh {
+  --value-panel-bg-start: #eef6f1;
+  --value-panel-bg-end: #e4efe8;
+  --value-panel-border: rgba(23, 77, 62, 0.1);
+  --value-label-color: #295948;
+  --value-amount-color: #0d5a3c;
+  --value-meta-color: #617069;
+}
 
-                    <div className={styles.breakdownRow}>
-                      <span className={styles.breakdownKey}>Condition</span>
-                      <span className={styles.breakdownValue}>{selectedConditionDisplay}</span>
-                    </div>
+.valuePanelMedium {
+  --value-panel-bg-start: #fff5d9;
+  --value-panel-bg-end: #ffe7ad;
+  --value-panel-border: rgba(160, 121, 10, 0.16);
+  --value-label-color: #7a5800;
+  --value-amount-color: #7a5800;
+  --value-meta-color: #7a6b45;
+}
 
-                    <div className={styles.breakdownRow}>
-                      <span className={styles.breakdownKey}>Engine hours</span>
-                      <span className={styles.breakdownValue}>
-                        {Number(hours).toLocaleString('en-ZA')} engine hours
-                      </span>
-                    </div>
+.valuePanelLow {
+  --value-panel-bg-start: #ffe7e3;
+  --value-panel-bg-end: #f7d0ca;
+  --value-panel-border: rgba(163, 39, 27, 0.18);
+  --value-label-color: #8f2d22;
+  --value-amount-color: #8f2d22;
+  --value-meta-color: #8a5e59;
+}
 
-                    <div className={styles.breakdownRow}>
-                      <span className={styles.breakdownKey}>Extras</span>
-                      <span className={styles.breakdownValue}>{extrasSummaryText}</span>
-                    </div>
+.valuePanelTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
 
-                    <div className={styles.breakdownRow}>
-                      <span className={styles.breakdownKey}>Displayed value</span>
-                      <span className={styles.breakdownValue}>{headlineLabel}</span>
-                    </div>
+.valuePanelIntro {
+  min-width: 0;
+}
 
-                    <div className={styles.breakdownRow}>
-                      <span className={styles.breakdownKey}>Confidence</span>
-                      <span className={styles.breakdownValue}>
-                        <span className={`${styles.summaryConfidenceBadge} ${confidenceClassName}`}>
-                          {getConfidenceLabel(result)}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-                </article>
+.valueLabel {
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+  color: var(--value-label-color);
+}
 
-                <article className={`${styles.sideCard} ${styles.marketCard}`}>
-                  <div className={styles.rangeCardHead}>
-                    <h2 className={styles.sideTitle}>Market Range</h2>
-                    <span className={styles.rangeBadge}>
-                      {result.marketCount} proveable listing{result.marketCount === 1 ? '' : 's'}
-                    </span>
-                  </div>
+.valueAmount {
+  margin-top: 0.3rem;
+  font-size: clamp(2.45rem, 4.6vw, 3.45rem);
+  color: var(--value-amount-color);
+}
 
-                  <div className={styles.rangeCurrentWrap}>
-                    <div className={styles.rangeCurrentLabel}>Selected comparable</div>
-                    <div className={styles.rangeCurrent}>{money(selectedComparableValue)}</div>
-                    <p className={styles.rangeCurrentMeta}>
-                      {selectedComparable
-                        ? `${selectedComparable.yearModel} • ${selectedComparable.hours.toLocaleString('en-ZA')} engine hours • ${selectedComparable.sourceName}`
-                        : `Based on comparable ${activeYear} market listings.`}
-                    </p>
+.valueMeta {
+  margin-top: 0.45rem;
+  font-size: 0.98rem;
+  color: var(--value-meta-color);
+}
 
-                    {selectedComparable ? (
-                      selectedComparableSourceUrl ? (
-                        <div className={styles.rangeCurrentLinkBlock}>
-                          <span className={styles.rangeCurrentLinkLabel}>Selected source URL</span>
-                          <a
-                            href={selectedComparableSourceUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={styles.rangeCurrentLink}
-                            title={selectedComparableSourceUrl}
-                          >
-                            {getSourceLinkLabel(selectedComparableSourceUrl)}
-                          </a>
-                        </div>
-                      ) : (
-                        <p className={styles.rangeCurrentLinkEmpty}>
-                          Attach a source URL to this comparable in the market listing library to show the live
-                          listing here.
-                        </p>
-                      )
-                    ) : null}
-                  </div>
+.confidenceBadge {
+  min-height: 2rem;
+  padding: 0 0.85rem;
+  border: 1px solid transparent;
+  font-size: 0.82rem;
+}
 
-                  <div className={styles.rangeInteractive}>
-                    <div className={styles.rangeTrack}>
-                      <div className={styles.rangeFill} style={{ width: `${selectedComparablePercent}%` }} />
-                      <div className={styles.rangePin} style={{ left: `${selectedComparablePercent}%` }} />
-                    </div>
+.summaryConfidenceBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  margin-left: auto;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
 
-                    {comparableListings.length > 1 ? (
-                      <input
-                        type="range"
-                        min={0}
-                        max={Math.max(0, comparableListings.length - 1)}
-                        step={1}
-                        value={safeComparableIndex}
-                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                          setSelectedComparableIndex(Number(event.target.value))
-                        }
-                        className={styles.rangeSliderInput}
-                        aria-label="Browse proveable market listings"
-                      />
-                    ) : null}
-                  </div>
+.confidenceHigh {
+  background: #dff3e6;
+  border-color: rgba(20, 92, 56, 0.14);
+  color: #0f6a46;
+}
 
-                  <div className={styles.rangeLabels}>
-                    <span>{money(result.marketLow)}</span>
-                    <span>{money(result.marketHigh)}</span>
-                  </div>
+.confidenceMedium {
+  background: #fff1c9;
+  border-color: rgba(160, 121, 10, 0.14);
+  color: #8a6500;
+}
 
-                  <div className={styles.marketListingsBlock}>
-                    <div className={styles.marketListingsHead}>
-                      <h3 className={styles.marketListingsTitle}>Proveable Market Listings</h3>
-                      {comparableListings.length ? (
-                        <span className={styles.marketListingsCount}>
-                          {safeComparableIndex + 1} / {comparableListings.length}
-                        </span>
-                      ) : null}
-                    </div>
+.confidenceLow {
+  background: #fde0dd;
+  border-color: rgba(163, 39, 27, 0.12);
+  color: #a3271b;
+}
 
-                    {comparableListings.length ? (
-                      <div className={styles.listingList}>
-                        {comparableListings.map((listing, index) => {
-                          const isActive = index === safeComparableIndex;
-                          const comparableValue = getListingComparablePrice(listing, result.extrasValueExVat);
+.methodGrid {
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
 
-                          return (
-                            <article
-                              key={listing.id}
-                              className={`${styles.listingCard} ${isActive ? styles.listingCardActive : ''}`}
-                            >
-                              <button
-                                type="button"
-                                className={styles.listingSelectButton}
-                                onClick={() => setSelectedComparableIndex(index)}
-                              >
-                                <div className={styles.listingCardTop}>
-                                  <strong className={styles.listingCardValue}>{money(comparableValue)}</strong>
-                                  <span className={styles.listingCardSource}>{listing.sourceName}</span>
-                                </div>
+.methodButton {
+  padding: 0.95rem;
+  border-radius: 0.95rem;
+  border-color: var(--value-method-border);
+  background: var(--value-method-surface);
+}
 
-                                <div className={styles.listingCardMeta}>
-                                  <span className={styles.listingMetaChip}>{listing.yearModel} model</span>
-                                  <span className={styles.listingMetaChip}>
-                                    {listing.hours.toLocaleString('en-ZA')} engine hours
-                                  </span>
-                                  <span className={styles.listingMetaChip}>
-                                    {listing.area}, {listing.province}
-                                  </span>
-                                </div>
+.methodTitle {
+  font-size: 0.88rem;
+}
 
-                                {result.extrasValueExVat > 0 ? (
-                                  <div className={styles.listingAdjustmentNote}>
-                                    Raw listing {money(getListingBasePrice(listing))} • adjusted for selected extras
-                                  </div>
-                                ) : null}
-                              </button>
+.methodValue {
+  margin-top: 0.4rem;
+  font-size: 1.25rem;
+}
 
-                              <div className={styles.listingCardFooter}>
-                                <div className={styles.listingCardFooterMeta}>
-                                  <span className={styles.listingCardDateLabel}>Advertised</span>
-                                  <span className={styles.listingCardDate}>{formatListingDate(listing.dateAdvertised)}</span>
-                                </div>
+.methodNote {
+  margin-top: 0.4rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
 
-                                {listing.sourceUrl ? (
-                                  <a
-                                    href={listing.sourceUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className={styles.listingLink}
-                                    title={listing.sourceUrl}
-                                  >
-                                    {getSourceLinkLabel(listing.sourceUrl)}
-                                  </a>
-                                ) : (
-                                  <span className={styles.listingLinkMuted}>Source URL not yet attached</span>
-                                )}
-                              </div>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className={styles.rangeNote}>
-                        No proveable market listings matched this tractor yet. Add more market listings to improve
-                        confidence and range quality.
-                      </p>
-                    )}
-                  </div>
-                </article>
-              </aside>
-            </section>
-          ) : null}
-        </div>
-      </main>
+.actionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
 
-    </>
-  );
+.actionBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  background: rgba(23, 77, 62, 0.08);
+  color: #1d624e;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.actionPrimary {
+  grid-column: 1 / -1;
+}
+
+.summaryCard,
+.marketCard {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.breakdownList {
+  gap: 0.75rem;
+  margin-top: 0;
+}
+
+.breakdownRow {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 0.9rem;
+  align-items: start;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid rgba(18, 45, 37, 0.06);
+}
+
+.breakdownRow:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.breakdownKey {
+  font-size: 0.92rem;
+}
+
+.breakdownValue {
+  font-size: 0.95rem;
+  text-align: right;
+  line-height: 1.45;
+}
+
+.rangeCardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.rangeBadge {
+  min-height: 2rem;
+  padding: 0 0.8rem;
+  background: #edf2ff;
+  color: #3562d6;
+  font-size: 0.8rem;
+}
+
+.rangeCurrentWrap {
+  display: grid;
+  gap: 0.4rem;
+  padding: 1.05rem 1.1rem;
+  border-radius: 1rem;
+  background: rgba(247, 250, 248, 0.92);
+  border: 1px solid rgba(18, 45, 37, 0.06);
+}
+
+.rangeCurrentLabel {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6a776f;
+}
+
+.rangeCurrent {
+  margin-top: 0;
+  text-align: left;
+  font-size: 1.7rem;
+  line-height: 1.05;
+}
+
+.rangeCurrentMeta {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #6f7a75;
+}
+
+.rangeCurrentLinkBlock {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.2rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(18, 45, 37, 0.08);
+}
+
+.rangeCurrentLinkLabel {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6a776f;
+}
+
+.rangeCurrentLink {
+  display: block;
+  max-width: 100%;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.55;
+  color: #1d624e;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.rangeCurrentLink:hover {
+  text-decoration: underline;
+}
+
+.rangeCurrentLinkEmpty {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: #7b8781;
+}
+
+.rangeInteractive {
+  position: relative;
+  margin-top: 0.05rem;
+}
+
+.rangeTrack {
+  margin-top: 0;
+  height: 0.7rem;
+}
+
+.rangeSliderInput {
+  position: absolute;
+  inset: -0.7rem 0 -0.7rem 0;
+  width: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.marketListingsBlock {
+  display: grid;
+  gap: 1rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(18, 45, 37, 0.06);
+}
+
+.marketListingsHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.marketListingsTitle {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  color: #223b34;
+}
+
+.marketListingsCount {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #6f7a75;
+}
+
+.listingList {
+  display: grid;
+  gap: 1rem;
+  max-height: 460px;
+  overflow: auto;
+  padding-right: 0.4rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(26, 89, 68, 0.25) transparent;
+}
+
+.listingList::-webkit-scrollbar {
+  width: 8px;
+}
+
+.listingList::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(26, 89, 68, 0.2);
+}
+
+.listingCard {
+  border-radius: 1.05rem;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: rgba(247, 250, 248, 0.92);
+  box-shadow: 0 8px 18px rgba(16, 42, 34, 0.04);
+  overflow: hidden;
+}
+
+.listingCardActive {
+  border-color: rgba(26, 89, 68, 0.32);
+  box-shadow:
+    0 0 0 1px rgba(26, 89, 68, 0.08),
+    0 12px 28px rgba(17, 63, 50, 0.08);
+}
+
+.listingSelectButton {
+  display: grid;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 1rem 1.05rem 0.8rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.listingCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.listingCardValue {
+  font-size: 1.16rem;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: #1d332c;
+}
+
+.listingCardSource {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.85rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  background: rgba(23, 77, 62, 0.08);
+  color: #1d624e;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.listingCardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.55rem;
+  margin-top: 0;
+}
+
+.listingMetaChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.8rem;
+  padding: 0 0.72rem;
+  border-radius: 999px;
+  background: rgba(18, 45, 37, 0.06);
+  color: #52635d;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.listingAdjustmentNote {
+  margin-top: 0;
+  padding-top: 0.6rem;
+  border-top: 1px dashed rgba(18, 45, 37, 0.1);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #557066;
+}
+
+.listingCardFooter {
+  display: grid;
+  gap: 0.6rem;
+  align-items: start;
+  padding: 0.9rem 1.05rem 1rem;
+  border-top: 1px solid rgba(18, 45, 37, 0.06);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.listingCardFooterMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.listingCardDateLabel {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6f7a75;
+}
+
+.listingCardDate {
+  font-size: 0.82rem;
+  color: #6f7a75;
+}
+
+.listingLink,
+.listingLinkMuted {
+  display: block;
+  width: 100%;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.listingLink {
+  color: #1d624e;
+  text-decoration: none;
+}
+
+.listingLink:hover {
+  text-decoration: underline;
+}
+
+.listingLinkMuted {
+  color: #88948f;
+}
+
+@media (max-width: 1180px) {
+  .resultsLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .heroIdentity,
+  .valuePanelTop,
+  .actionHeader,
+  .rangeCardHead,
+  .marketListingsHead,
+  .listingCardTop {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .heroImageBox {
+    width: 100%;
+    min-width: 0;
+    height: 180px;
+  }
+
+  .actionGrid,
+  .methodGrid,
+  .breakdownRow {
+    grid-template-columns: 1fr;
+  }
+
+  .actionPrimary {
+    grid-column: auto;
+  }
+
+  .breakdownValue {
+    text-align: left;
+  }
+
+  .summaryConfidenceBadge {
+    margin-left: 0;
+  }
+
+  .rangeCurrentLink,
+  .listingLink,
+  .listingLinkMuted {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .listingList {
+    max-height: none;
+  }
+
+  .listingCardFooterMeta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+
+/* Progressive step flow */
+.flowShell {
+  display: grid;
+  gap: 1rem;
+}
+
+.flowTopline,
+.focusContext {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem 1.15rem;
+  border-radius: 1.1rem;
+  background: linear-gradient(180deg, rgba(248, 251, 249, 0.96) 0%, rgba(242, 247, 244, 0.96) 100%);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+}
+
+.flowToplineLabel {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6a7670;
+}
+
+.flowToplineValue {
+  font-size: 1.02rem;
+  line-height: 1.25;
+  color: #203a33;
+}
+
+.miniStepper {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.72rem;
+}
+
+.miniStep {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.62rem;
+  padding: 0.78rem 0.88rem;
+  border-radius: 1rem;
+  background: rgba(248, 249, 248, 0.95);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  color: #67716c;
+}
+
+.miniStepActive {
+  background: linear-gradient(180deg, rgba(24, 77, 61, 0.14) 0%, rgba(24, 77, 61, 0.08) 100%);
+  border-color: rgba(24, 77, 61, 0.26);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  color: #173f33;
+}
+
+.miniStepComplete {
+  background: linear-gradient(180deg, rgba(216, 238, 228, 0.95) 0%, rgba(231, 245, 238, 0.95) 100%);
+  border-color: rgba(30, 102, 79, 0.18);
+  color: #194537;
+}
+
+.miniStepNumber {
+  width: 1.78rem;
+  height: 1.78rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.miniStepLabel {
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.answerStack {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.answerRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.86rem 1rem;
+  border-radius: 0.98rem;
+  background: rgba(251, 252, 251, 0.96);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+}
+
+.answerRowText {
+  min-width: 0;
+  display: grid;
+  gap: 0.16rem;
+}
+
+.answerRowLabel {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6f7974;
+}
+
+.answerRowValue {
+  min-width: 0;
+  font-size: 0.97rem;
+  line-height: 1.35;
+  color: #1f3932;
+  word-break: break-word;
+}
+
+.answerEdit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.4rem;
+  padding: 0 0.92rem;
+  border-radius: 0.84rem;
+  border: 1px solid rgba(18, 45, 37, 0.1);
+  background: #ffffff;
+  color: #274138;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.answerEdit:hover {
+  transform: translateY(-1px);
+  border-color: rgba(24, 77, 61, 0.18);
+  box-shadow: 0 10px 18px rgba(18, 45, 37, 0.06);
+}
+
+.currentCard {
+  display: grid;
+  gap: 1rem;
+  padding: 1.3rem 1.35rem 1.4rem;
+  border-radius: 1.28rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.985) 0%, rgba(249, 251, 250, 0.985) 100%);
+  border: 1px solid rgba(18, 45, 37, 0.1);
+  box-shadow:
+    0 18px 32px rgba(16, 42, 34, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.currentCardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.currentEyebrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.65rem;
+  padding: 0 0.58rem;
+  border-radius: 999px;
+  background: rgba(24, 77, 61, 0.08);
+  color: #1b4a3b;
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.currentTitle {
+  margin: 0.48rem 0 0;
+  font-size: clamp(1.34rem, 2vw, 1.82rem);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  color: #1d3831;
+}
+
+.currentIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.1rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  background: rgba(240, 244, 242, 0.92);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #5f6c66;
+}
+
+.currentHint {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #5f6c66;
+}
+
+.choiceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.82rem;
+}
+
+.choiceCard {
+  display: grid;
+  gap: 0.36rem;
+  align-content: center;
+  min-height: 7.7rem;
+  padding: 1.05rem 1.08rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.1);
+  background: linear-gradient(180deg, #ffffff 0%, #f8faf9 100%);
+  color: #203a33;
+  text-align: left;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.choiceCard strong {
+  font-size: 1.06rem;
+  line-height: 1.2;
+}
+
+.choiceCardNote {
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #64706a;
+}
+
+.choiceCard:hover {
+  transform: translateY(-1px);
+  border-color: rgba(24, 77, 61, 0.18);
+  box-shadow: 0 14px 24px rgba(18, 45, 37, 0.06);
+}
+
+.choiceCardActive {
+  border-color: rgba(24, 77, 61, 0.28);
+  background: linear-gradient(180deg, rgba(226, 241, 234, 0.95) 0%, rgba(242, 249, 245, 0.98) 100%);
+  box-shadow:
+    0 14px 26px rgba(18, 45, 37, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.readyCard {
+  background: linear-gradient(180deg, rgba(241, 248, 244, 0.98) 0%, rgba(249, 252, 250, 0.99) 100%);
+  border-color: rgba(24, 77, 61, 0.16);
+}
+
+.readyModelBlock {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.readyModelTitle {
+  font-size: 1.08rem;
+  color: #1f3932;
+}
+
+.selectedCallout {
+  display: grid;
+  gap: 0.34rem;
+  padding: 0.92rem 0.98rem;
+  border-radius: 0.96rem;
+  background: linear-gradient(180deg, rgba(239, 247, 243, 0.95) 0%, rgba(247, 251, 249, 0.98) 100%);
+  border: 1px solid rgba(24, 77, 61, 0.12);
+}
+
+.selectedCalloutTitle {
+  font-size: 1rem;
+  color: #1f3932;
+}
+
+.selectedCalloutBody {
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #5f6c66;
+}
+
+.currentCount {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #5f6c66;
+}
+
+.emptyStateActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.segmentRail {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.68rem;
+}
+
+.inlineFieldRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: start;
+}
+
+.inlineFieldInputWrap {
+  position: relative;
+}
+
+.inlineFieldSuffix {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #6a7670;
+}
+
+.currentCardActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  padding-top: 0.15rem;
+}
+
+.togglePanelGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.togglePanel {
+  display: grid;
+  gap: 0.78rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  background: rgba(248, 250, 249, 0.96);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+}
+
+.togglePanelCopy {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.togglePanelTitle {
+  font-size: 1rem;
+  line-height: 1.25;
+  color: #213a33;
+}
+
+.togglePanelNote {
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: #64706a;
+}
+
+.gpsDetailGrid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 980px) {
+  .miniStepper {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .choiceGrid,
+  .gpsDetailGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .inlineFieldRow {
+    grid-template-columns: 1fr;
+  }
+
+  .currentCardActions {
+    justify-content: stretch;
+  }
+
+  .currentCardActions > * {
+    flex: 1 1 220px;
+  }
+}
+
+@media (max-width: 720px) {
+  .flowTopline,
+  .focusContext,
+  .currentCard {
+    padding: 1rem;
+  }
+
+  .miniStepper {
+    grid-template-columns: 1fr;
+  }
+
+  .answerRow {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .choiceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .choiceCard {
+    min-height: 6.6rem;
+  }
+
+  .currentTitle {
+    font-size: 1.28rem;
+  }
+}
+
+
+@media (max-width: 860px) {
+  .heroIntro {
+    padding: 1.25rem 1.15rem;
+    border-radius: 1.4rem;
+  }
+
+  .heroIntroTitle {
+    max-width: 12ch;
+    font-size: clamp(2.2rem, 8vw, 3.2rem);
+  }
+
+  .heroIntroText {
+    font-size: 0.98rem;
+    line-height: 1.65;
+  }
 }
