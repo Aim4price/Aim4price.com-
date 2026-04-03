@@ -393,7 +393,7 @@ export default function RegisterPage() {
   }
 
   function handleRefreshValue(item: SavedItem) {
-    setNotice(`Wire “Refresh Value” for ${item.title} to rerun the saved valuation inputs.`);
+    setNotice(`Connect “Refresh Value” for ${item.title} to rerun the saved valuation inputs.`);
   }
 
   function closeBackdrop(event: MouseEvent<HTMLDivElement>) {
@@ -419,7 +419,7 @@ export default function RegisterPage() {
               <span className={styles.kicker}>Stored values and key assets</span>
               <h1>Asset Register</h1>
               <p>
-                Keep equipment, property, and manual assets in one simple register. Save from
+                Keep equipment, property, and manual assets in one working register. Save from
                 valuation, update values when needed, and move the right machine to marketplace.
               </p>
             </div>
@@ -432,10 +432,6 @@ export default function RegisterPage() {
               <article className={styles.heroStat}>
                 <span>Total assets</span>
                 <strong>{summary.totalAssets}</strong>
-              </article>
-              <article className={styles.heroStat}>
-                <span>Marketplace live</span>
-                <strong>{summary.liveListings}</strong>
               </article>
             </div>
           </div>
@@ -459,9 +455,7 @@ export default function RegisterPage() {
                 <div>
                   <span className={styles.eyebrow}>My assets</span>
                   <h2>Saved assets</h2>
-                  <p>
-                    Search, filter, and manage saved assets without digging through clutter.
-                  </p>
+                  <p>Search, filter, and manage saved assets without digging through clutter.</p>
                 </div>
 
                 <div className={styles.panelActions}>
@@ -674,9 +668,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   className={styles.quickButton}
-                  onClick={() =>
-                    setNotice('Wire “Refresh All Values” once the revaluation inputs are stored.')
-                  }
+                  onClick={() => setNotice('Connect “Refresh All Values” once revaluation is ready.')}
                 >
                   Refresh All Values
                 </button>
@@ -684,9 +676,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   className={styles.quickButton}
-                  onClick={() =>
-                    setNotice('Connect this button to your PDF asset register export when ready.')
-                  }
+                  onClick={() => setNotice('Connect this button to your asset register PDF export.')}
                 >
                   Generate Asset Report
                 </button>
@@ -902,7 +892,7 @@ export default function RegisterPage() {
         <div className={styles.modalBackdrop} onClick={closeBackdrop}>
           <div className={styles.confirmCard} role="dialog" aria-modal="true" aria-labelledby="clear-title">
             <h3 id="clear-title">Clear asset register?</h3>
-            <p>This removes all saved assets from local storage in the current prototype.</p>
+            <p>This removes all saved assets from the current register.</p>
             <div className={styles.modalActions}>
               <button type="button" className={styles.modalSecondary} onClick={() => setIsClearOpen(false)}>
                 Cancel
