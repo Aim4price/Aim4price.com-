@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Inter, Montserrat } from 'next/font/google';
+import AppFooter from '../components/AppFooter';
 import './globals.css';
 
 const inter = Inter({
@@ -19,13 +20,18 @@ export const metadata: Metadata = {
     template: '%s | Aim4price',
   },
   description:
-    'Discover your machinery values, build asset registers and buy & sell with confidence - all on one easy-to-use platform.',
+    'Discover machinery values, build asset registers, and browse the marketplace from one clear workflow.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${montserrat.variable}`}>
-      <body>{children}</body>
+      <body>
+        <div className="appRoot">
+          {children}
+          <AppFooter />
+        </div>
+      </body>
     </html>
   );
 }
