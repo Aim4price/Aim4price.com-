@@ -478,17 +478,11 @@ export default function RegisterPage() {
                         <div className={styles.assetCell}>
                           <div className={styles.assetTitleLine}>
                             <strong>{item.title}</strong>
-                            <span
-                              className={`${styles.statusBadge} ${
-                                isLive ? styles.statusLive : styles.statusIdle
-                              }`}
-                            >
-                              {isLive
-                                ? 'Marketplace live'
-                                : item.kind === 'tractor'
-                                  ? 'Ready to sell'
-                                  : 'Manual entry'}
-                            </span>
+                            {isLive ? (
+                              <span className={`${styles.statusBadge} ${styles.statusLive}`}>
+                                Marketplace live
+                              </span>
+                            ) : null}
                           </div>
                           <span className={styles.assetMeta}>{formatItemMeta(item)}</span>
                         </div>
