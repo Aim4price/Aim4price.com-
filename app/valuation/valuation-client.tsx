@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
@@ -93,12 +93,12 @@ function getStepMeta(step: Step) {
     case 3:
       return {
         title: 'Select Tractor Model',
-        body: 'Select the tractor type, drive layout and cab setup in sequence, then choose the closest matching model from the Aim4price catalogue.',
+        body: 'Work from left to right: choose tractor type, then drive, then cab setup, then select the closest matching model from the Aim4price catalogue.',
       };
     case 4:
       return {
         title: 'Enter Tractor Details',
-        body: 'Complete the tractor details in order below. Start with the year model, then enter engine hours, then confirm overall condition and fitted extras.',
+        body: 'Work from top to bottom: choose year model, enter engine hours, choose overall condition, then add fitted extras only if they apply.',
       };
     default:
       return {
@@ -261,6 +261,64 @@ function FlowGuide({ items }: { items: FlowGuideItem[] }) {
           <span className={styles.flowGuideValue}>{item.value}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+type StatusTone = 'done' | 'active' | 'next' | 'neutral';
+
+function StatusBadge({ label, tone }: { label: string; tone: StatusTone }) {
+  const toneClassName =
+    tone === 'done'
+      ? styles.filterStatusBadgeDone
+      : tone === 'active'
+        ? styles.filterStatusBadgeAction
+        : tone === 'neutral'
+          ? styles.filterStatusBadgeNeutral
+          : styles.filterStatusBadgePending;
+
+  return <span className={`${styles.filterStatusBadge} ${toneClassName}`}>{label}</span>;
+}
+
+function ActionBanner({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className={styles.actionBanner} role="status" aria-live="polite">
+      <span className={styles.actionBannerBadge}>Current step</span>
+      <strong className={styles.actionBannerTitle}>{title}</strong>
+      <p className={styles.actionBannerText}>{detail}</p>
+    </div>
+  );
+}
+
+function LockedStage({
+  locked,
+  badge,
+  title,
+  hint,
+  children,
+}: {
+  locked: boolean;
+  badge: string;
+  title: string;
+  hint: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={`${styles.lockedStage} ${locked ? styles.lockedStageLocked : ''}`}>
+      <div
+        className={`${styles.lockedStageContent} ${locked ? styles.lockedStageContentLocked : ''}`}
+        aria-hidden={locked}
+      >
+        {children}
+      </div>
+
+      {locked ? (
+        <div className={styles.lockedStageOverlay}>
+          <span className={styles.lockedStageBadge}>{badge}</span>
+          <strong className={styles.lockedStageTitle}>{title}</strong>
+          <p className={styles.lockedStageText}>{hint}</p>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -884,15 +942,40 @@ export default function ValuationClient() {
       const driveUnlocked = tractorType !== null;
       const cabUnlocked = driveUnlocked && drive !== null;
       const modelsUnlocked = cabUnlocked && cab !== null;
-      const stageText = !tractorType
-        ? 'Start by choosing the tractor type.'
+      const modelAction = !tractorType
+        ? {
+            title: 'Choose tractor type',
+            detail: 'Start with Field or Orchard. That unlocks the rest of the model setup flow.',
+          }
         : !drive
-          ? 'Now choose the drive layout.'
+          ? {
+              title: 'Choose drive layout',
+              detail: 'Pick 2WD, 4WD or Tracks so Aim4price can narrow the matching models correctly.',
+            }
           : !cab
-            ? 'Now choose the cab setup.'
+            ? {
+                title: 'Choose cab setup',
+                detail: 'Choose Cab or Open station to complete the basic tractor profile.',
+              }
             : !selectedModel
-              ? 'Matching models are now ready below. Select the closest one to continue.'
-              : 'Model selected. Review the result below or continue to tractor details.';
+              ? {
+                  title: 'Choose tractor model',
+                  detail: 'Use search if needed, then select the closest matching model from the list below.',
+                }
+              : {
+                  title: 'Model selected',
+                  detail: 'Your tractor model is selected. Review it below, then continue to tractor details.',
+                };
+      const modelLockTitle = !tractorType
+        ? 'Choose tractor type first'
+        : !drive
+          ? 'Choose drive layout first'
+          : 'Choose cab setup first';
+      const modelLockHint = !tractorType
+        ? 'Start with Field or Orchard to unlock drive options.'
+        : !drive
+          ? 'Drive must be selected before cab setup and model search unlock.'
+          : 'Once cab setup is selected, the search box and matching model list will appear.';
       const modelFlow: FlowGuideItem[] = [
         {
           stepLabel: 'Step 1',
@@ -903,30 +986,46 @@ export default function ValuationClient() {
         {
           stepLabel: 'Step 2',
           label: 'Drive',
-          value: drive ? getDriveDisplay(drive) : driveUnlocked ? 'Choose 2WD, 4WD or tracks' : 'Unlocks after tractor type',
+          value: drive
+            ? getDriveDisplay(drive)
+            : driveUnlocked
+              ? 'Choose 2WD, 4WD or tracks'
+              : 'Unlocks after tractor type',
           state: getFlowGuideState(Boolean(drive), driveUnlocked && !drive),
         },
         {
           stepLabel: 'Step 3',
           label: 'Cab setup',
-          value: cab ? getCabDisplay(cab) : cabUnlocked ? 'Choose cab or open station' : 'Unlocks after drive',
+          value: cab
+            ? getCabDisplay(cab)
+            : cabUnlocked
+              ? 'Choose cab or open station'
+              : 'Unlocks after drive',
           state: getFlowGuideState(Boolean(cab), cabUnlocked && !cab),
         },
         {
           stepLabel: 'Step 4',
           label: 'Model',
-          value: selectedModel ? `${selectedModel.brandName} ${selectedModel.modelName}` : modelsUnlocked ? 'Select the closest matching model' : 'Unlocks after cab setup',
+          value: selectedModel
+            ? `${selectedModel.brandName} ${selectedModel.modelName}`
+            : modelsUnlocked
+              ? 'Select the closest matching model'
+              : 'Unlocks after cab setup',
           state: getFlowGuideState(Boolean(selectedModel), modelsUnlocked && !selectedModel),
         },
       ];
 
       return (
         <>
+          <ActionBanner title={modelAction.title} detail={modelAction.detail} />
+
+          <FlowGuide items={modelFlow} />
+
           <div className={styles.filterToolbar}>
             <div className={`${styles.filterGroup} ${styles.filterGroupUnlocked}`}>
               <div className={styles.filterGroupHead}>
                 <span className={styles.filterLabel}>Tractor Type</span>
-                <span className={styles.filterStatusBadge}>{tractorType ? 'Selected' : 'Choose'}</span>
+                <StatusBadge label={tractorType ? 'Selected' : 'Choose'} tone={tractorType ? 'done' : 'active'} />
               </div>
 
               <div className={styles.pillRow}>
@@ -952,6 +1051,8 @@ export default function ValuationClient() {
                   </button>
                 ))}
               </div>
+
+              <p className={styles.groupHint}>Start here. Choose the tractor type that best matches the machine.</p>
             </div>
 
             <div
@@ -961,13 +1062,19 @@ export default function ValuationClient() {
             >
               <div className={styles.filterGroupHead}>
                 <span className={styles.filterLabel}>Drive</span>
-                <span className={styles.filterStatusBadge}>
-                  {!driveUnlocked ? 'Next' : drive ? 'Selected' : 'Choose'}
-                </span>
+                <StatusBadge
+                  label={!driveUnlocked ? 'Next' : drive ? 'Selected' : 'Choose'}
+                  tone={!driveUnlocked ? 'next' : drive ? 'done' : 'active'}
+                />
               </div>
 
-              <div className={`${styles.lockedPanelBody} ${!driveUnlocked ? styles.lockedPanelBodyLocked : ''}`}>
-                <div className={`${styles.pillRow} ${!driveUnlocked ? styles.lockedVisual : ''}`} aria-hidden={!driveUnlocked}>
+              <LockedStage
+                locked={!driveUnlocked}
+                badge="Step 2"
+                title="Choose tractor type first"
+                hint="Drive options unlock as soon as a tractor type is selected."
+              >
+                <div className={styles.pillRow}>
                   {(['2wd', '4wd', 'tracks'] as DriveType[]).map((value) => (
                     <button
                       key={value}
@@ -990,7 +1097,9 @@ export default function ValuationClient() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </LockedStage>
+
+              <p className={styles.groupHint}>{driveUnlocked ? 'Choose the drive layout that matches the tractor.' : ' '}</p>
             </div>
 
             <div
@@ -1000,13 +1109,19 @@ export default function ValuationClient() {
             >
               <div className={styles.filterGroupHead}>
                 <span className={styles.filterLabel}>Cab Setup</span>
-                <span className={styles.filterStatusBadge}>
-                  {!cabUnlocked ? 'Next' : cab ? 'Selected' : 'Choose'}
-                </span>
+                <StatusBadge
+                  label={!cabUnlocked ? 'Next' : cab ? 'Selected' : 'Choose'}
+                  tone={!cabUnlocked ? 'next' : cab ? 'done' : 'active'}
+                />
               </div>
 
-              <div className={`${styles.lockedPanelBody} ${!cabUnlocked ? styles.lockedPanelBodyLocked : ''}`}>
-                <div className={`${styles.pillRow} ${!cabUnlocked ? styles.lockedVisual : ''}`} aria-hidden={!cabUnlocked}>
+              <LockedStage
+                locked={!cabUnlocked}
+                badge="Step 3"
+                title="Choose drive first"
+                hint="Cab options unlock after the drive layout has been selected."
+              >
+                <div className={styles.pillRow}>
                   {(['cab', 'open-station'] as CabType[]).map((value) => (
                     <button
                       key={value}
@@ -1028,13 +1143,11 @@ export default function ValuationClient() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </LockedStage>
+
+              <p className={styles.groupHint}>{cabUnlocked ? 'Choose Cab or Open station to continue.' : ' '}</p>
             </div>
           </div>
-
-          <p className={`${styles.filterHint} ${styles.filterHintLead}`}>{stageText}</p>
-
-          <FlowGuide items={modelFlow} />
 
           {modelsUnlocked ? (
             <>
@@ -1119,11 +1232,11 @@ export default function ValuationClient() {
             <div className={styles.selectionPrompt}>
               <div className={styles.selectionPromptHeader}>
                 <span className={styles.selectionPromptLabel}>Model selection</span>
-                <span className={`${styles.filterStatusBadge} ${styles.filterStatusBadgePending}`}>Next</span>
+                <StatusBadge label="Next" tone="next" />
               </div>
 
-              <div className={styles.lockedPreviewStack}>
-                <div className={styles.lockedVisual} aria-hidden="true">
+              <LockedStage locked badge="Step 4" title={modelLockTitle} hint={modelLockHint}>
+                <div className={styles.lockedPreviewStack}>
                   <input
                     value=""
                     readOnly
@@ -1132,40 +1245,60 @@ export default function ValuationClient() {
                     aria-label="Search tractor models"
                     className={styles.searchInput}
                   />
-                </div>
 
-                <div className={`${styles.modelList} ${styles.lockedVisual}`} aria-hidden="true">
-                  {Array.from({ length: 3 }).map((_, index) => (
-                    <button
-                      key={`locked-model-${index}`}
-                      type="button"
-                      className={`${styles.modelRow} ${styles.modelRowGhost}`}
-                      disabled
-                    >
-                      <div className={styles.modelRowBody}>
-                        <div className={styles.modelRowHeader}>
-                          <strong>{selectedBrandName} model</strong>
+                  <div className={styles.modelList}>
+                    {Array.from({ length: 3 }).map((_, index) => (
+                      <button
+                        key={`locked-model-${index}`}
+                        type="button"
+                        className={`${styles.modelRow} ${styles.modelRowGhost}`}
+                        disabled
+                      >
+                        <div className={styles.modelRowBody}>
+                          <div className={styles.modelRowHeader}>
+                            <strong>{selectedBrandName} model</strong>
+                          </div>
+
+                          <div className={styles.modelChipRow}>
+                            <span className={styles.modelChip}>Type</span>
+                            <span className={styles.modelChip}>Drive</span>
+                            <span className={styles.modelChip}>Cab</span>
+                            <span className={styles.modelChip}>kW</span>
+                          </div>
                         </div>
 
-                        <div className={styles.modelChipRow}>
-                          <span className={styles.modelChip}>Type</span>
-                          <span className={styles.modelChip}>Drive</span>
-                          <span className={styles.modelChip}>Cab</span>
-                          <span className={styles.modelChip}>kW</span>
-                        </div>
-                      </div>
-
-                      <span className={styles.modelRowYear}>Year range</span>
-                    </button>
-                  ))}
+                        <span className={styles.modelRowYear}>Year range</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </LockedStage>
             </div>
           )}
         </>
       );
     }
 
+    const extrasSelected = frontPto || frontLoader || gpsEnabled;
+    const detailsAction = !isYearValid
+      ? {
+          title: 'Choose year model',
+          detail: 'Start with Guided Years. Use Other Year only when the listed years do not include your tractor.',
+        }
+      : !isHoursValid
+        ? {
+            title: 'Enter engine hours',
+            detail: 'Use the reading shown on the tractor hour meter to continue.',
+          }
+        : !condition
+          ? {
+              title: 'Choose overall condition',
+              detail: 'Pick the option that best matches the tractor today.',
+            }
+          : {
+              title: 'Add extras if fitted',
+              detail: 'This final setup step is optional. Add Front Hitch & Front PTO, Front Loader or GPS only if fitted.',
+            };
     const detailsFlow: FlowGuideItem[] = [
       {
         stepLabel: 'Step 1',
@@ -1176,25 +1309,39 @@ export default function ValuationClient() {
       {
         stepLabel: 'Step 2',
         label: 'Engine hours',
-        value: isHoursValid ? enteredHoursDisplay : hoursUnlocked ? 'Enter current engine hours' : 'Unlocks after year model',
+        value: isHoursValid
+          ? enteredHoursDisplay
+          : hoursUnlocked
+            ? 'Enter current engine hours'
+            : 'Unlocks after year model',
         state: getFlowGuideState(isHoursValid, hoursUnlocked && !isHoursValid),
       },
       {
         stepLabel: 'Step 3',
         label: 'Condition',
-        value: condition ? conditionLabel(condition) : conditionUnlocked ? 'Choose overall condition' : 'Unlocks after engine hours',
+        value: condition
+          ? conditionLabel(condition)
+          : conditionUnlocked
+            ? 'Choose overall condition'
+            : 'Unlocks after engine hours',
         state: getFlowGuideState(Boolean(condition), conditionUnlocked && !condition),
       },
       {
         stepLabel: 'Step 4',
         label: 'Extras',
-        value: extrasUnlocked ? 'Add optional fitted extras' : 'Unlocks after condition',
-        state: getFlowGuideState(extrasUnlocked, false),
+        value: extrasSelected
+          ? extrasSummaryText
+          : extrasUnlocked
+            ? 'Optional — add extras if fitted'
+            : 'Unlocks after condition',
+        state: getFlowGuideState(extrasSelected, extrasUnlocked && !extrasSelected),
       },
     ];
 
     return (
       <>
+        <ActionBanner title={detailsAction.title} detail={detailsAction.detail} />
+
         <FlowGuide items={detailsFlow} />
 
         <div className={styles.inputGrid}>
@@ -1205,51 +1352,52 @@ export default function ValuationClient() {
           >
             <div className={styles.panelHeader}>
               <span className={styles.panelLabel}>Year Model</span>
+              <StatusBadge label={isYearValid ? 'Selected' : 'Choose'} tone={isYearValid ? 'done' : 'active'} />
+            </div>
 
-              <div className={styles.panelToggle}>
-                <button
-                  type="button"
-                  className={`${styles.pillButton} ${yearMode === 'guided' ? styles.pillButtonActive : ''}`}
-                  onClick={() => {
-                    setYearMode('guided');
-                    const manualValue = Number(manualYear);
-                    if (
-                      selectedModel &&
-                      Number.isInteger(manualValue) &&
-                      manualValue >= selectedModel.yearStart &&
-                      manualValue <= selectedModel.yearEnd
-                    ) {
-                      setYear(manualValue);
-                    } else if (
-                      !selectedModel ||
-                      year === null ||
-                      year < selectedModel.yearStart ||
-                      year > selectedModel.yearEnd
-                    ) {
-                      setYear(null);
-                    }
-                    setMessage('');
-                  }}
-                  aria-pressed={yearMode === 'guided'}
-                >
-                  Guided Years
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.pillButton} ${yearMode === 'manual' ? styles.pillButtonActive : ''}`}
-                  onClick={() => {
-                    setYearMode('manual');
-                    if (year !== null) {
-                      setManualYear(String(year));
-                    }
-                    setYearDropdownOpen(false);
-                    setMessage('');
-                  }}
-                  aria-pressed={yearMode === 'manual'}
-                >
-                  Other Year
-                </button>
-              </div>
+            <div className={styles.panelToggle}>
+              <button
+                type="button"
+                className={`${styles.pillButton} ${yearMode === 'guided' ? styles.pillButtonActive : ''}`}
+                onClick={() => {
+                  setYearMode('guided');
+                  const manualValue = Number(manualYear);
+                  if (
+                    selectedModel &&
+                    Number.isInteger(manualValue) &&
+                    manualValue >= selectedModel.yearStart &&
+                    manualValue <= selectedModel.yearEnd
+                  ) {
+                    setYear(manualValue);
+                  } else if (
+                    !selectedModel ||
+                    year === null ||
+                    year < selectedModel.yearStart ||
+                    year > selectedModel.yearEnd
+                  ) {
+                    setYear(null);
+                  }
+                  setMessage('');
+                }}
+                aria-pressed={yearMode === 'guided'}
+              >
+                Guided Years
+              </button>
+              <button
+                type="button"
+                className={`${styles.pillButton} ${yearMode === 'manual' ? styles.pillButtonActive : ''}`}
+                onClick={() => {
+                  setYearMode('manual');
+                  if (year !== null) {
+                    setManualYear(String(year));
+                  }
+                  setYearDropdownOpen(false);
+                  setMessage('');
+                }}
+                aria-pressed={yearMode === 'manual'}
+              >
+                Other Year
+              </button>
             </div>
 
             <div className={styles.panelControl}>
@@ -1323,7 +1471,7 @@ export default function ValuationClient() {
             </div>
 
             <p className={styles.fieldHint}>
-              Guided years are based on bundled model data. Use Other Year when your tractor year model is not shown.
+              Guided years are based on bundled model data. Use Other Year only when your tractor year model is not shown.
             </p>
           </div>
 
@@ -1334,12 +1482,18 @@ export default function ValuationClient() {
           >
             <div className={styles.panelHeader}>
               <span className={styles.panelLabel}>Engine Hours</span>
-              <span className={styles.filterStatusBadge}>
-                {!hoursUnlocked ? 'Next' : isHoursValid ? 'Entered' : 'Enter'}
-              </span>
+              <StatusBadge
+                label={!hoursUnlocked ? 'Next' : isHoursValid ? 'Entered' : 'Enter'}
+                tone={!hoursUnlocked ? 'next' : isHoursValid ? 'done' : 'active'}
+              />
             </div>
 
-            <div className={`${styles.panelControl} ${!hoursUnlocked ? styles.lockedVisual : ''}`} aria-hidden={!hoursUnlocked}>
+            <LockedStage
+              locked={!hoursUnlocked}
+              badge="Step 2"
+              title="Choose year model first"
+              hint="Engine hours unlock after a year model has been selected."
+            >
               <div className={styles.panelInputRow}>
                 <input
                   value={hours}
@@ -1356,7 +1510,7 @@ export default function ValuationClient() {
                 />
                 <span className={styles.panelBadge}>hrs</span>
               </div>
-            </div>
+            </LockedStage>
 
             <p className={styles.fieldHint}>{hoursUnlocked ? 'Use the reading shown on the engine hour meter.' : ' '}</p>
           </div>
@@ -1369,33 +1523,41 @@ export default function ValuationClient() {
         >
           <div className={styles.sectionHeader}>
             <span className={styles.sectionLabel}>Overall Condition</span>
-            <span className={styles.filterStatusBadge}>
-              {!conditionUnlocked ? 'Next' : condition ? 'Selected' : 'Choose'}
-            </span>
+            <StatusBadge
+              label={!conditionUnlocked ? 'Next' : condition ? 'Selected' : 'Choose'}
+              tone={!conditionUnlocked ? 'next' : condition ? 'done' : 'active'}
+            />
           </div>
 
           <p className={styles.sectionHint} style={{ marginTop: '0.65rem' }}>
             {conditionUnlocked ? 'Choose the option that best matches the tractor today.' : ' '}
           </p>
 
-          <div className={`${styles.conditionGrid} ${!conditionUnlocked ? styles.lockedVisual : ''}`} aria-hidden={!conditionUnlocked}>
-            {conditionOptions.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                className={`${styles.conditionCard} ${condition === option.key ? styles.conditionCardActive : ''}`}
-                onClick={() => {
-                  setCondition(option.key);
-                  setMessage('');
-                  invalidateResult();
-                }}
-                disabled={!conditionUnlocked}
-              >
-                <strong>{option.label}</strong>
-                <span>{getConditionHint(option.key)}</span>
-              </button>
-            ))}
-          </div>
+          <LockedStage
+            locked={!conditionUnlocked}
+            badge="Step 3"
+            title="Enter engine hours first"
+            hint="Condition options unlock after engine hours have been entered."
+          >
+            <div className={styles.conditionGrid}>
+              {conditionOptions.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  className={`${styles.conditionCard} ${condition === option.key ? styles.conditionCardActive : ''}`}
+                  onClick={() => {
+                    setCondition(option.key);
+                    setMessage('');
+                    invalidateResult();
+                  }}
+                  disabled={!conditionUnlocked}
+                >
+                  <strong>{option.label}</strong>
+                  <span>{getConditionHint(option.key)}</span>
+                </button>
+              ))}
+            </div>
+          </LockedStage>
         </div>
 
         <div
@@ -1408,32 +1570,43 @@ export default function ValuationClient() {
                 Add fitted extras
               </strong>
             </div>
-
-            <div className={!extrasUnlocked ? styles.lockedVisualSoft : undefined}>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={() => setExtrasOpen(true)}
-                disabled={!extrasUnlocked}
-              >
-                Extras
-              </button>
-            </div>
+            <StatusBadge
+              label={!extrasUnlocked ? 'Next' : extrasSelected ? 'Added' : 'Optional'}
+              tone={!extrasUnlocked ? 'next' : extrasSelected ? 'done' : 'neutral'}
+            />
           </div>
 
-          <div className={!extrasUnlocked ? styles.lockedVisualSoft : undefined} aria-hidden={!extrasUnlocked}>
-            <p className={styles.fieldHint} style={{ minHeight: 0, marginTop: '0.7rem' }}>
-              Add fitted extras such as Front Hitch & Front PTO, Front Loader and GPS.
-            </p>
+          <LockedStage
+            locked={!extrasUnlocked}
+            badge="Optional"
+            title="Choose condition first"
+            hint="Extras unlock after overall condition is selected. Add them only if fitted to this tractor."
+          >
+            <div className={styles.extrasCardContent}>
+              <p className={styles.fieldHint} style={{ minHeight: 0, marginTop: 0 }}>
+                Add fitted extras such as Front Hitch & Front PTO, Front Loader and GPS.
+              </p>
 
-            <div className={styles.selectionChipRow} style={{ marginTop: '0.8rem' }}>
-              {extrasSummaryChips.map((chip) => (
-                <span key={chip} className={styles.modelChip}>
-                  {chip}
-                </span>
-              ))}
+              <div className={styles.extrasActionRow}>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={() => setExtrasOpen(true)}
+                  disabled={!extrasUnlocked}
+                >
+                  Add / Edit Extras
+                </button>
+              </div>
+
+              <div className={styles.selectionChipRow}>
+                {extrasSummaryChips.map((chip) => (
+                  <span key={chip} className={styles.modelChip}>
+                    {chip}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          </LockedStage>
         </div>
 
         {selectedModel ? (
@@ -1485,7 +1658,6 @@ export default function ValuationClient() {
       </>
     );
   }
-
   return (
     <>
       <main className={styles.page}>
