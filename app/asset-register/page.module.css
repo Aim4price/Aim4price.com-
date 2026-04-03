@@ -4,9 +4,9 @@
 }
 
 .content {
-  width: min(calc(100% - 2rem), 1240px);
+  width: min(calc(100% - 2rem), 1320px);
   margin: 0 auto;
-  padding: 1.75rem 0 4rem;
+  padding: 1.85rem 0 4rem;
 }
 
 .hero {
@@ -45,8 +45,8 @@
 .hero p {
   margin: 0;
   color: var(--text-muted);
-  line-height: 1.7;
-  font-size: 1.02rem;
+  line-height: 1.72;
+  font-size: 1.04rem;
 }
 
 .notice {
@@ -71,14 +71,13 @@
 
 .dashboard {
   display: grid;
-  grid-template-columns: minmax(0, 1.75fr) minmax(300px, 340px);
+  grid-template-columns: minmax(0, 1.95fr) minmax(320px, 360px);
   gap: 1.5rem;
-  margin-top: 1.5rem;
+  margin-top: 1.6rem;
 }
 
 .mainColumn {
   display: grid;
-  gap: 1.5rem;
 }
 
 .rail {
@@ -90,9 +89,9 @@
 }
 
 .surface {
-  padding: 1.5rem;
+  padding: 1.6rem;
   border-radius: 1.5rem;
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(16, 42, 34, 0.08);
   box-shadow:
     0 18px 38px rgba(16, 42, 34, 0.06),
@@ -125,8 +124,8 @@
 }
 
 .surface h2 {
-  font-size: 1.35rem;
-  line-height: 1.1;
+  font-size: 1.42rem;
+  line-height: 1.08;
   letter-spacing: -0.03em;
 }
 
@@ -136,7 +135,7 @@
 .confirmCard p {
   margin: 0.35rem 0 0;
   color: var(--text-muted);
-  line-height: 1.65;
+  line-height: 1.68;
 }
 
 .primaryButton,
@@ -208,9 +207,9 @@
 
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 220px;
-  gap: 0.9rem;
-  margin-top: 1.4rem;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 1rem;
+  margin-top: 1.55rem;
 }
 
 .searchField,
@@ -268,23 +267,23 @@
 }
 
 .tableWrap {
-  margin-top: 1.25rem;
+  margin-top: 1.35rem;
   border: 1px solid rgba(16, 42, 34, 0.07);
-  border-radius: 1.2rem;
+  border-radius: 1.25rem;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .tableHead,
 .row {
   display: grid;
-  grid-template-columns: minmax(260px, 2.2fr) 0.9fr 1fr 0.9fr auto;
-  gap: 1rem;
+  grid-template-columns: minmax(280px, 2.4fr) minmax(112px, 0.8fr) minmax(160px, 1fr) minmax(120px, 0.92fr) minmax(270px, 1.28fr);
+  gap: 1.35rem;
   align-items: center;
 }
 
 .tableHead {
-  padding: 0.95rem 1.1rem;
+  padding: 1rem 1.3rem;
   background: rgba(247, 250, 248, 0.9);
   border-bottom: 1px solid rgba(16, 42, 34, 0.07);
   color: var(--text-muted);
@@ -299,8 +298,9 @@
 }
 
 .row {
-  padding: 1rem 1.1rem;
+  padding: 1.3rem;
   border-bottom: 1px solid rgba(16, 42, 34, 0.06);
+  align-items: start;
   transition: background 180ms ease;
 }
 
@@ -314,7 +314,9 @@
 
 .assetCell,
 .valueCell,
-.dateCell {
+.dateCell,
+.typeCell,
+.rowActions {
   min-width: 0;
 }
 
@@ -327,30 +329,31 @@
 
 .assetTitleLine strong,
 .valueCell strong,
-.dateCell strong,
-.activityText strong {
+.dateCell strong {
   display: block;
   color: var(--text-strong);
 }
 
 .assetTitleLine strong {
-  font-size: 1.05rem;
+  font-size: 1.12rem;
+  line-height: 1.2;
 }
 
 .assetMeta,
-.dateCell span,
-.activityText span {
+.dateCell span {
   display: block;
-  margin-top: 0.22rem;
+  margin-top: 0.45rem;
   color: var(--text-muted);
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .typeCell,
 .valueCell,
 .dateCell {
   display: grid;
-  gap: 0.35rem;
+  align-content: start;
+  gap: 0.5rem;
+  padding-top: 0.1rem;
 }
 
 .typeBadge,
@@ -361,12 +364,13 @@
   align-items: center;
   justify-content: center;
   width: fit-content;
-  min-height: 1.9rem;
+  min-height: 1.95rem;
   padding: 0 0.72rem;
   border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .typeBadge {
@@ -395,25 +399,38 @@
   border-color: rgba(16, 42, 34, 0.08);
 }
 
+.valueCell strong {
+  font-size: 1.22rem;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.dateCell strong {
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
 .rowActions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.55rem;
+  align-content: flex-start;
+  gap: 0.6rem;
 }
 
 .inlineButton,
 .inlineButtonPrimary,
 .inlineButtonDanger {
-  min-height: 2.45rem;
-  padding: 0.62rem 0.82rem;
+  min-height: 2.5rem;
+  padding: 0.68rem 0.9rem;
   font-size: 0.87rem;
+  white-space: nowrap;
 }
 
 .emptyState {
   display: grid;
   gap: 0.35rem;
-  padding: 1.35rem;
+  padding: 1.45rem;
   color: var(--text-muted);
 }
 
@@ -436,7 +453,7 @@
 }
 
 .summaryHeader strong {
-  font-size: clamp(2rem, 4vw, 2.55rem);
+  font-size: clamp(2rem, 4vw, 2.8rem);
   line-height: 1;
   letter-spacing: -0.05em;
 }
@@ -444,7 +461,7 @@
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.8rem;
+  gap: 0.85rem;
   margin-top: 1rem;
 }
 
@@ -503,50 +520,6 @@
   color: #fff;
   background: linear-gradient(180deg, var(--brand-700), var(--brand-900));
   box-shadow: 0 16px 32px rgba(17, 63, 50, 0.16);
-}
-
-.rulesList {
-  margin: 0;
-  padding-left: 1.15rem;
-  color: var(--text-muted);
-  display: grid;
-  gap: 0.7rem;
-  line-height: 1.6;
-}
-
-.activityList {
-  display: grid;
-  gap: 0.8rem;
-  margin-top: 1rem;
-}
-
-.activityItem {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 0.85rem;
-  align-items: center;
-  padding: 0.95rem 1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(16, 42, 34, 0.07);
-  background: rgba(248, 250, 249, 0.84);
-}
-
-.activityDot {
-  width: 0.72rem;
-  height: 0.72rem;
-  border-radius: 999px;
-  background: rgba(16, 42, 34, 0.24);
-}
-
-.activityDotSuccess {
-  background: #1d6b46;
-}
-
-.activityTime {
-  color: var(--text-muted);
-  font-size: 0.84rem;
-  font-weight: 700;
-  white-space: nowrap;
 }
 
 .modalBackdrop {
@@ -631,9 +604,9 @@
   outline-offset: 3px;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1260px) {
   .content {
-    width: min(calc(100% - 1.5rem), 1180px);
+    width: min(calc(100% - 1.5rem), 1260px);
   }
 
   .dashboard {
@@ -645,11 +618,7 @@
   }
 }
 
-@media (max-width: 980px) {
-  .content {
-    padding: 1.35rem 0 3rem;
-  }
-
+@media (max-width: 1100px) {
   .panelTop,
   .sectionHeader {
     flex-direction: column;
@@ -678,7 +647,7 @@
   }
 
   .rowActions {
-    gap: 0.45rem;
+    gap: 0.5rem;
   }
 
   .tableHead {
@@ -693,7 +662,7 @@
   .row {
     border: 1px solid rgba(16, 42, 34, 0.07);
     border-radius: 1rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.8rem;
     background: rgba(255, 255, 255, 0.94);
   }
 
@@ -703,6 +672,10 @@
 }
 
 @media (max-width: 720px) {
+  .content {
+    padding: 1.35rem 0 3rem;
+  }
+
   .surface,
   .modalCard,
   .confirmCard {
@@ -715,9 +688,7 @@
   }
 
   .highlightCard,
-  .activityItem,
   .modalActions {
-    grid-template-columns: 1fr;
     flex-direction: column;
     align-items: stretch;
   }
@@ -738,13 +709,5 @@
   .rowActions {
     display: grid;
     grid-template-columns: 1fr;
-  }
-
-  .activityItem {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .activityTime {
-    grid-column: 2;
   }
 }
