@@ -227,6 +227,44 @@ function getSourceLinkLabel(value: string): string {
   return value.trim();
 }
 
+type FlowGuideState = 'complete' | 'current' | 'upcoming';
+
+type FlowGuideItem = {
+  stepLabel: string;
+  label: string;
+  value: string;
+  state: FlowGuideState;
+};
+
+function getFlowGuideState(isComplete: boolean, isCurrent: boolean): FlowGuideState {
+  if (isComplete) return 'complete';
+  if (isCurrent) return 'current';
+  return 'upcoming';
+}
+
+function FlowGuide({ items }: { items: FlowGuideItem[] }) {
+  return (
+    <div className={styles.flowGuide} aria-label="Valuation setup flow">
+      {items.map((item) => (
+        <div
+          key={`${item.stepLabel}-${item.label}`}
+          className={`${styles.flowGuideCard} ${
+            item.state === 'complete'
+              ? styles.flowGuideCardComplete
+              : item.state === 'current'
+                ? styles.flowGuideCardCurrent
+                : styles.flowGuideCardUpcoming
+          }`}
+        >
+          <span className={styles.flowGuideStep}>{item.stepLabel}</span>
+          <strong className={styles.flowGuideTitle}>{item.label}</strong>
+          <span className={styles.flowGuideValue}>{item.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ValuationClient() {
   const router = useRouter();
 
@@ -855,6 +893,32 @@ export default function ValuationClient() {
             : !selectedModel
               ? 'Matching models are now ready below. Select the closest one to continue.'
               : 'Model selected. Review the result below or continue to tractor details.';
+      const modelFlow: FlowGuideItem[] = [
+        {
+          stepLabel: 'Step 1',
+          label: 'Tractor type',
+          value: tractorType ? getTractorTypeLabel(tractorType) : 'Choose field or orchard',
+          state: getFlowGuideState(Boolean(tractorType), !tractorType),
+        },
+        {
+          stepLabel: 'Step 2',
+          label: 'Drive',
+          value: drive ? getDriveDisplay(drive) : driveUnlocked ? 'Choose 2WD, 4WD or tracks' : 'Unlocks after tractor type',
+          state: getFlowGuideState(Boolean(drive), driveUnlocked && !drive),
+        },
+        {
+          stepLabel: 'Step 3',
+          label: 'Cab setup',
+          value: cab ? getCabDisplay(cab) : cabUnlocked ? 'Choose cab or open station' : 'Unlocks after drive',
+          state: getFlowGuideState(Boolean(cab), cabUnlocked && !cab),
+        },
+        {
+          stepLabel: 'Step 4',
+          label: 'Model',
+          value: selectedModel ? `${selectedModel.brandName} ${selectedModel.modelName}` : modelsUnlocked ? 'Select the closest matching model' : 'Unlocks after cab setup',
+          state: getFlowGuideState(Boolean(selectedModel), modelsUnlocked && !selectedModel),
+        },
+      ];
 
       return (
         <>
@@ -968,7 +1032,9 @@ export default function ValuationClient() {
             </div>
           </div>
 
-          <p className={styles.filterHint}>{stageText}</p>
+          <p className={`${styles.filterHint} ${styles.filterHintLead}`}>{stageText}</p>
+
+          <FlowGuide items={modelFlow} />
 
           {modelsUnlocked ? (
             <>
@@ -1100,8 +1166,37 @@ export default function ValuationClient() {
       );
     }
 
+    const detailsFlow: FlowGuideItem[] = [
+      {
+        stepLabel: 'Step 1',
+        label: 'Year model',
+        value: isYearValid ? selectedYearDisplay : 'Choose guided year or enter other year',
+        state: getFlowGuideState(isYearValid, !isYearValid),
+      },
+      {
+        stepLabel: 'Step 2',
+        label: 'Engine hours',
+        value: isHoursValid ? enteredHoursDisplay : hoursUnlocked ? 'Enter current engine hours' : 'Unlocks after year model',
+        state: getFlowGuideState(isHoursValid, hoursUnlocked && !isHoursValid),
+      },
+      {
+        stepLabel: 'Step 3',
+        label: 'Condition',
+        value: condition ? conditionLabel(condition) : conditionUnlocked ? 'Choose overall condition' : 'Unlocks after engine hours',
+        state: getFlowGuideState(Boolean(condition), conditionUnlocked && !condition),
+      },
+      {
+        stepLabel: 'Step 4',
+        label: 'Extras',
+        value: extrasUnlocked ? 'Add optional fitted extras' : 'Unlocks after condition',
+        state: getFlowGuideState(extrasUnlocked, false),
+      },
+    ];
+
     return (
       <>
+        <FlowGuide items={detailsFlow} />
+
         <div className={styles.inputGrid}>
           <div
             className={`${styles.fieldBlock} ${styles.inputPanel} ${
