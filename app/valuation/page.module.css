@@ -141,6 +141,82 @@
   font-weight: 700;
 }
 
+.flowGuide {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 1.15rem;
+}
+
+.flowGuideCard {
+  display: grid;
+  gap: 0.28rem;
+  min-height: 5.9rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 10px 22px rgba(16, 42, 34, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.flowGuideCardComplete {
+  border-color: rgba(26, 89, 68, 0.16);
+  background: linear-gradient(180deg, #f7fcf9 0%, #edf7f1 100%);
+}
+
+.flowGuideCardCurrent {
+  border-color: rgba(26, 89, 68, 0.34);
+  background: linear-gradient(180deg, #ffffff 0%, #f1f8f4 100%);
+  box-shadow:
+    0 14px 26px rgba(17, 63, 50, 0.08),
+    0 0 0 3px rgba(26, 89, 68, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.flowGuideCardUpcoming {
+  border-color: rgba(18, 45, 37, 0.06);
+  background: linear-gradient(180deg, rgba(244, 248, 246, 0.98) 0%, rgba(239, 243, 241, 0.96) 100%);
+}
+
+.flowGuideStep {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 1.65rem;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  background: rgba(18, 45, 37, 0.06);
+  color: #61706a;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.flowGuideCardComplete .flowGuideStep,
+.flowGuideCardCurrent .flowGuideStep {
+  background: rgba(26, 89, 68, 0.1);
+  color: #185340;
+}
+
+.flowGuideTitle {
+  color: #223b34;
+  font-size: 0.96rem;
+  line-height: 1.3;
+}
+
+.flowGuideValue {
+  color: #6e7a74;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.flowGuideCardComplete .flowGuideValue {
+  color: #2c5f4b;
+}
+
 .typeGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -525,9 +601,11 @@
 }
 
 .filterGroupLocked {
-  border-color: rgba(18, 45, 37, 0.06);
-  background: linear-gradient(180deg, rgba(246, 249, 247, 0.98) 0%, rgba(242, 246, 244, 0.96) 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  border-color: rgba(18, 45, 37, 0.08);
+  background: linear-gradient(180deg, rgba(238, 243, 240, 0.98) 0%, rgba(232, 238, 234, 0.96) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.66),
+    0 10px 22px rgba(16, 42, 34, 0.025);
 }
 
 .filterStatusBadge {
@@ -553,8 +631,8 @@
 }
 
 .filterStatusBadgePending {
-  background: rgba(18, 45, 37, 0.05);
-  color: #8a948f;
+  background: rgba(18, 45, 37, 0.08);
+  color: #67736d;
 }
 
 .lockedPanelBody {
@@ -576,13 +654,13 @@
 }
 
 .lockedVisual {
-  filter: blur(4px);
-  opacity: 0.48;
+  filter: blur(8px);
+  opacity: 0.14;
 }
 
 .lockedVisualSoft {
-  filter: blur(3px);
-  opacity: 0.58;
+  filter: blur(6px);
+  opacity: 0.22;
 }
 
 .filterLabel,
@@ -639,6 +717,16 @@
   margin: 0.95rem 0 0;
   color: #66736d;
   line-height: 1.6;
+}
+
+.filterHintLead {
+  margin-top: 1.1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(26, 89, 68, 0.08);
+  background: linear-gradient(180deg, rgba(247, 251, 249, 0.98) 0%, rgba(242, 247, 244, 0.98) 100%);
+  color: #29463b;
+  font-weight: 700;
 }
 
 .filterSummary {
@@ -1575,7 +1663,8 @@
   .conditionGrid,
   .methodGrid,
   .inputGrid,
-  .selectionCardGrid {
+  .selectionCardGrid,
+  .flowGuide {
     grid-template-columns: 1fr;
   }
 
