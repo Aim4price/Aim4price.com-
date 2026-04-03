@@ -1264,8 +1264,8 @@
 }
 
 .methodButtonActive {
-  border-color: rgba(26, 89, 68, 0.24);
-  background: #ffffff;
+  border-color: var(--value-method-active-border);
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .methodButtonDisabled {
@@ -1670,10 +1670,47 @@
 }
 
 .valuePanel {
+  --value-panel-bg-start: #eef6f1;
+  --value-panel-bg-end: #e4efe8;
+  --value-panel-border: rgba(23, 77, 62, 0.1);
+  --value-label-color: #295948;
+  --value-amount-color: #0d5a3c;
+  --value-meta-color: #617069;
+  --value-method-surface: rgba(255, 255, 255, 0.88);
+  --value-method-border: rgba(18, 45, 37, 0.07);
+  --value-method-active-border: rgba(26, 89, 68, 0.24);
   margin-top: 1rem;
   padding: 1.15rem;
   border-radius: 1.15rem;
-  background: linear-gradient(180deg, #eef6f1 0%, #e4efe8 100%);
+  background: linear-gradient(180deg, var(--value-panel-bg-start) 0%, var(--value-panel-bg-end) 100%);
+  border: 1px solid var(--value-panel-border);
+}
+
+.valuePanelHigh {
+  --value-panel-bg-start: #eef6f1;
+  --value-panel-bg-end: #e4efe8;
+  --value-panel-border: rgba(23, 77, 62, 0.1);
+  --value-label-color: #295948;
+  --value-amount-color: #0d5a3c;
+  --value-meta-color: #617069;
+}
+
+.valuePanelMedium {
+  --value-panel-bg-start: #fff5d9;
+  --value-panel-bg-end: #ffe7ad;
+  --value-panel-border: rgba(160, 121, 10, 0.16);
+  --value-label-color: #7a5800;
+  --value-amount-color: #7a5800;
+  --value-meta-color: #7a6b45;
+}
+
+.valuePanelLow {
+  --value-panel-bg-start: #ffe7e3;
+  --value-panel-bg-end: #f7d0ca;
+  --value-panel-border: rgba(163, 39, 27, 0.18);
+  --value-label-color: #8f2d22;
+  --value-amount-color: #8f2d22;
+  --value-meta-color: #8a5e59;
 }
 
 .valuePanelTop {
@@ -1690,16 +1727,19 @@
 .valueLabel {
   font-size: 0.82rem;
   letter-spacing: 0.05em;
+  color: var(--value-label-color);
 }
 
 .valueAmount {
   margin-top: 0.3rem;
   font-size: clamp(2.45rem, 4.6vw, 3.45rem);
+  color: var(--value-amount-color);
 }
 
 .valueMeta {
   margin-top: 0.45rem;
   font-size: 0.98rem;
+  color: var(--value-meta-color);
 }
 
 .confidenceBadge {
@@ -1707,6 +1747,19 @@
   padding: 0 0.85rem;
   border: 1px solid transparent;
   font-size: 0.82rem;
+}
+
+.summaryConfidenceBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  margin-left: auto;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .confidenceHigh {
@@ -1735,6 +1788,8 @@
 .methodButton {
   padding: 0.95rem;
   border-radius: 0.95rem;
+  border-color: var(--value-method-border);
+  background: var(--value-method-surface);
 }
 
 .methodTitle {
@@ -1835,8 +1890,8 @@
 
 .rangeCurrentWrap {
   display: grid;
-  gap: 0.25rem;
-  padding: 0.95rem 1rem;
+  gap: 0.4rem;
+  padding: 1.05rem 1.1rem;
   border-radius: 1rem;
   background: rgba(247, 250, 248, 0.92);
   border: 1px solid rgba(18, 45, 37, 0.06);
@@ -1860,8 +1915,46 @@
 .rangeCurrentMeta {
   margin: 0;
   font-size: 0.92rem;
-  line-height: 1.45;
+  line-height: 1.5;
   color: #6f7a75;
+}
+
+.rangeCurrentLinkBlock {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.2rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(18, 45, 37, 0.08);
+}
+
+.rangeCurrentLinkLabel {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6a776f;
+}
+
+.rangeCurrentLink {
+  display: block;
+  max-width: 100%;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.55;
+  color: #1d624e;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.rangeCurrentLink:hover {
+  text-decoration: underline;
+}
+
+.rangeCurrentLinkEmpty {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: #7b8781;
 }
 
 .rangeInteractive {
@@ -1885,8 +1978,8 @@
 
 .marketListingsBlock {
   display: grid;
-  gap: 0.75rem;
-  padding-top: 0.15rem;
+  gap: 1rem;
+  padding-top: 0.7rem;
   border-top: 1px solid rgba(18, 45, 37, 0.06);
 }
 
@@ -1912,16 +2005,28 @@
 
 .listingList {
   display: grid;
-  gap: 0.7rem;
-  max-height: 420px;
+  gap: 1rem;
+  max-height: 460px;
   overflow: auto;
-  padding-right: 0.15rem;
+  padding-right: 0.4rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(26, 89, 68, 0.25) transparent;
+}
+
+.listingList::-webkit-scrollbar {
+  width: 8px;
+}
+
+.listingList::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(26, 89, 68, 0.2);
 }
 
 .listingCard {
-  border-radius: 1rem;
+  border-radius: 1.05rem;
   border: 1px solid rgba(18, 45, 37, 0.07);
   background: rgba(247, 250, 248, 0.92);
+  box-shadow: 0 8px 18px rgba(16, 42, 34, 0.04);
   overflow: hidden;
 }
 
@@ -1933,8 +2038,10 @@
 }
 
 .listingSelectButton {
+  display: grid;
+  gap: 0.65rem;
   width: 100%;
-  padding: 0.9rem 0.95rem 0.65rem;
+  padding: 1rem 1.05rem 0.8rem;
   border: 0;
   background: transparent;
   text-align: left;
@@ -1944,13 +2051,13 @@
 
 .listingCardTop {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.85rem;
+  gap: 1rem;
 }
 
 .listingCardValue {
-  font-size: 1.1rem;
+  font-size: 1.16rem;
   line-height: 1.1;
   letter-spacing: -0.03em;
   color: #1d332c;
@@ -1959,8 +2066,8 @@
 .listingCardSource {
   display: inline-flex;
   align-items: center;
-  min-height: 1.75rem;
-  padding: 0 0.65rem;
+  min-height: 1.85rem;
+  padding: 0 0.7rem;
   border-radius: 999px;
   background: rgba(23, 77, 62, 0.08);
   color: #1d624e;
@@ -1970,27 +2077,56 @@
 }
 
 .listingCardMeta {
-  margin-top: 0.45rem;
-  font-size: 0.9rem;
-  line-height: 1.45;
-  color: #6f7a75;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.55rem;
+  margin-top: 0;
+}
+
+.listingMetaChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.8rem;
+  padding: 0 0.72rem;
+  border-radius: 999px;
+  background: rgba(18, 45, 37, 0.06);
+  color: #52635d;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .listingAdjustmentNote {
-  margin-top: 0.45rem;
+  margin-top: 0;
+  padding-top: 0.6rem;
+  border-top: 1px dashed rgba(18, 45, 37, 0.1);
   font-size: 0.82rem;
-  line-height: 1.4;
+  line-height: 1.45;
   color: #557066;
 }
 
 .listingCardFooter {
+  display: grid;
+  gap: 0.6rem;
+  align-items: start;
+  padding: 0.9rem 1.05rem 1rem;
+  border-top: 1px solid rgba(18, 45, 37, 0.06);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.listingCardFooterMeta {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.75rem 0.95rem 0.85rem;
-  border-top: 1px solid rgba(18, 45, 37, 0.06);
-  background: rgba(255, 255, 255, 0.78);
+}
+
+.listingCardDateLabel {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6f7a75;
 }
 
 .listingCardDate {
@@ -2000,8 +2136,12 @@
 
 .listingLink,
 .listingLinkMuted {
+  display: block;
+  width: 100%;
   font-size: 0.84rem;
   font-weight: 700;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .listingLink {
@@ -2029,8 +2169,7 @@
   .actionHeader,
   .rangeCardHead,
   .marketListingsHead,
-  .listingCardTop,
-  .listingCardFooter {
+  .listingCardTop {
     flex-direction: column;
     align-items: stretch;
   }
@@ -2055,7 +2194,23 @@
     text-align: left;
   }
 
+  .summaryConfidenceBadge {
+    margin-left: 0;
+  }
+
+  .rangeCurrentLink,
+  .listingLink,
+  .listingLinkMuted {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
   .listingList {
     max-height: none;
+  }
+
+  .listingCardFooterMeta {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
