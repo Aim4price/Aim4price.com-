@@ -416,11 +416,11 @@ export default function RegisterPage() {
         <section className={styles.heroShell}>
           <div className={styles.hero}>
             <div className={styles.heroCopy}>
-              <span className={styles.kicker}>Stored values and key assets</span>
+              <span className={styles.kicker}>Stored values, tracked assets, marketplace-ready</span>
               <h1>Asset Register</h1>
               <p>
-                Keep equipment, property, and manual assets in one working register. Save from
-                valuation, update values when needed, and move the right machine to marketplace.
+                Keep equipment, property, and manual assets in one working register. Search fast,
+                update values when needed, and move the right machine to marketplace.
               </p>
             </div>
 
@@ -432,6 +432,10 @@ export default function RegisterPage() {
               <article className={styles.heroStat}>
                 <span>Total assets</span>
                 <strong>{summary.totalAssets}</strong>
+              </article>
+              <article className={styles.heroStat}>
+                <span>Marketplace live</span>
+                <strong>{summary.liveListings}</strong>
               </article>
             </div>
           </div>
@@ -455,7 +459,7 @@ export default function RegisterPage() {
                 <div>
                   <span className={styles.eyebrow}>My assets</span>
                   <h2>Saved assets</h2>
-                  <p>Search, filter, and manage saved assets without digging through clutter.</p>
+                  <p>Find the asset, check the value, and take the next action without friction.</p>
                 </div>
 
                 <div className={styles.panelActions}>
@@ -554,7 +558,7 @@ export default function RegisterPage() {
                           <div className={styles.assetHint}>
                             {item.kind === 'tractor'
                               ? 'Saved from valuation and ready for value refresh or marketplace publishing.'
-                              : 'Manually tracked inside the same register for a single portfolio view.'}
+                              : 'Tracked inside the same register for one clean portfolio view.'}
                           </div>
 
                           <div className={styles.assetActions}>
@@ -616,7 +620,7 @@ export default function RegisterPage() {
               <div className={styles.summaryTop}>
                 <span className={styles.summaryLabel}>Register overview</span>
                 <strong>{money(totalValue)}</strong>
-                <p>A single view across equipment, property, and manual assets.</p>
+                <p>A single view across equipment, property, manual assets, and live marketplace stock.</p>
               </div>
 
               <div className={styles.summaryGrid}>
@@ -652,7 +656,7 @@ export default function RegisterPage() {
                 <div>
                   <span className={styles.eyebrow}>Quick actions</span>
                   <h2>Quick actions</h2>
-                  <p>The most common register actions, kept close and easy to use.</p>
+                  <p>Keep the most common register actions close and easy to use.</p>
                 </div>
               </div>
 
