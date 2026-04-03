@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
@@ -23,28 +23,8 @@ type Step = 1 | 2 | 3 | 4 | 5;
 type MethodKey = 'aim4price' | 'market' | 'department';
 type EquipmentType = 'tractor';
 type GpsType = 'full-autosteer' | 'guidance-only';
-type ModelFlowStage = 'tractorType' | 'drive' | 'cab' | 'model' | 'complete';
-type DetailFlowStage = 'year' | 'hours' | 'condition' | 'extras' | 'complete';
-type ExtrasDraft = {
-  frontPto: boolean;
-  frontLoader: boolean;
-  gpsEnabled: boolean;
-  gpsType: GpsType | null;
-  gpsYear: string;
-};
-type FlowSummaryRowProps = {
-  label: string;
-  value: string;
-  hint?: string;
-  onEdit: () => void;
-};
-type FocusCardProps = {
-  stepLabel: string;
-  title: string;
-  body: string;
-  children: ReactNode;
-  badgeText?: string;
-};
+type ConfigStepKey = 'type' | 'drive' | 'cab' | 'model';
+type DetailsStepKey = 'year' | 'hours' | 'condition' | 'extras';
 
 type MethodCard = {
   key: MethodKey;
@@ -62,6 +42,20 @@ const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
   { step: 3, label: 'Model' },
   { step: 4, label: 'Details' },
   { step: 5, label: 'Value' },
+];
+
+const CONFIG_STEPS: Array<{ key: ConfigStepKey; label: string }> = [
+  { key: 'type', label: 'Type' },
+  { key: 'drive', label: 'Drive' },
+  { key: 'cab', label: 'Cab' },
+  { key: 'model', label: 'Model' },
+];
+
+const DETAILS_STEPS: Array<{ key: DetailsStepKey; label: string }> = [
+  { key: 'year', label: 'Year' },
+  { key: 'hours', label: 'Hours' },
+  { key: 'condition', label: 'Condition' },
+  { key: 'extras', label: 'Extras' },
 ];
 
 function nextStep(step: Step): Step {
@@ -114,13 +108,13 @@ function getStepMeta(step: Step) {
       };
     case 3:
       return {
-        title: 'Select Tractor Model',
-        body: 'Answer one tractor setup question at a time, then choose the closest matching model from the Aim4price catalogue.',
+        title: 'Choose Tractor Model',
+        body: 'Four quick choices. One at a time.',
       };
     case 4:
       return {
         title: 'Enter Tractor Details',
-        body: 'Enter one tractor detail at a time. Completed answers collapse above the current question so the next action stays obvious.',
+        body: 'Four quick details. One at a time.',
       };
     default:
       return {
@@ -268,14 +262,16 @@ export default function ValuationClient() {
   const [manualYear, setManualYear] = useState('');
   const [hours, setHours] = useState('');
   const [condition, setCondition] = useState<ConditionKey | null>(null);
-  const [extrasOpen, setExtrasOpen] = useState(false);
+  const [configFocus, setConfigFocus] = useState<ConfigStepKey | null>(null);
+  const [detailsFocus, setDetailsFocus] = useState<DetailsStepKey | null>(null);
+  const [yearConfirmed, setYearConfirmed] = useState(false);
+  const [hoursConfirmed, setHoursConfirmed] = useState(false);
+  const [extrasReviewed, setExtrasReviewed] = useState(false);
   const [frontPto, setFrontPto] = useState(false);
   const [frontLoader, setFrontLoader] = useState(false);
   const [gpsEnabled, setGpsEnabled] = useState(false);
   const [gpsType, setGpsType] = useState<GpsType | null>(null);
   const [gpsYear, setGpsYear] = useState('');
-  const [extrasReviewed, setExtrasReviewed] = useState(false);
-  const [extrasDraft, setExtrasDraft] = useState<ExtrasDraft | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<MethodKey | null>(null);
   const [selectedComparableIndex, setSelectedComparableIndex] = useState(0);
@@ -291,28 +287,35 @@ export default function ValuationClient() {
     [],
   );
 
-  const filteredModels = useMemo(() => {
+  const matchingModels = useMemo(() => {
     if (!tractorType || !drive || !cab) return [];
 
-    return tractors.filter((tractor) => {
-      const normalizedQuery = modelQuery.trim().toLowerCase();
-      const matchesBrand = tractor.brandSlug === brandSlug;
-      const matchesType = tractor.tractorType === tractorType;
-      const matchesDrive = tractor.drive === drive;
-      const matchesCab = tractor.cab === cab;
-      const matchesQuery = !normalizedQuery
-        ? true
-        : `${tractor.brandName} ${tractor.modelName} ${tractor.tractorType} ${tractor.drive} ${tractor.cab}`
-            .toLowerCase()
-            .includes(normalizedQuery);
+    return tractors.filter(
+      (tractor) =>
+        tractor.brandSlug === brandSlug &&
+        tractor.tractorType === tractorType &&
+        tractor.drive === drive &&
+        tractor.cab === cab,
+    );
+  }, [brandSlug, tractorType, drive, cab]);
 
-      return matchesBrand && matchesType && matchesDrive && matchesCab && matchesQuery;
-    });
-  }, [brandSlug, tractorType, drive, cab, modelQuery]);
+  const filteredModels = useMemo(() => {
+    const normalizedQuery = modelQuery.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return matchingModels;
+    }
+
+    return matchingModels.filter((tractor) =>
+      `${tractor.brandName} ${tractor.modelName} ${tractor.tractorType} ${tractor.drive} ${tractor.cab} ${tractor.powerKw}`
+        .toLowerCase()
+        .includes(normalizedQuery),
+    );
+  }, [matchingModels, modelQuery]);
 
   const selectedModel = useMemo<TractorCatalogRow | null>(
-    () => filteredModels.find((model) => model.id === modelId) ?? null,
-    [filteredModels, modelId],
+    () => matchingModels.find((model) => model.id === modelId) ?? null,
+    [matchingModels, modelId],
   );
 
   function invalidateResult() {
@@ -327,8 +330,6 @@ export default function ValuationClient() {
     setGpsType(null);
     setGpsYear('');
     setExtrasReviewed(false);
-    setExtrasDraft(null);
-    setExtrasOpen(false);
   }
 
   function resetDetailState(options?: { keepYearMode?: boolean }) {
@@ -340,32 +341,85 @@ export default function ValuationClient() {
     setManualYear('');
     setHours('');
     setCondition(null);
+    setYearConfirmed(false);
+    setHoursConfirmed(false);
+    setDetailsFocus(null);
     resetExtrasState();
     invalidateResult();
   }
 
+  function markExtrasDirty() {
+    setExtrasReviewed(false);
+    invalidateResult();
+  }
+
+  function confirmYearSelection() {
+    if (!selectedModel || !isYearValid) {
+      setMessage('Enter a valid year first.');
+      return;
+    }
+
+    setYearConfirmed(true);
+    setDetailsFocus(null);
+    setMessage('');
+  }
+
+  function confirmHoursSelection() {
+    if (!isHoursValid) {
+      setMessage('Enter engine hours first.');
+      return;
+    }
+
+    setHoursConfirmed(true);
+    setDetailsFocus(null);
+    setMessage('');
+  }
+
+  function applyExtrasSelection() {
+    setExtrasReviewed(true);
+    setDetailsFocus(null);
+    setMessage('');
+  }
+
+  function clearExtrasSelection() {
+    setFrontPto(false);
+    setFrontLoader(false);
+    setGpsEnabled(false);
+    setGpsType(null);
+    setGpsYear('');
+    setExtrasReviewed(true);
+    setDetailsFocus(null);
+    setMessage('');
+    invalidateResult();
+  }
+
   useEffect(() => {
-    if (!filteredModels.length) {
+    if (!matchingModels.length) {
       if (modelId !== '') {
         setModelId('');
       }
       return;
     }
 
-    if (modelId && !filteredModels.some((model) => model.id === modelId)) {
+    if (modelId && !matchingModels.some((model) => model.id === modelId)) {
       setModelId('');
     }
-  }, [filteredModels, modelId]);
+  }, [matchingModels, modelId]);
 
   useEffect(() => {
     if (!selectedModel) {
       setYear(null);
+      setYearConfirmed(false);
+      setHoursConfirmed(false);
+      setCondition(null);
+      setExtrasReviewed(false);
       return;
     }
 
     if (yearMode === 'guided' && year !== null) {
       if (year < selectedModel.yearStart || year > selectedModel.yearEnd) {
         setYear(null);
+        setYearConfirmed(false);
       }
     }
   }, [selectedModel, yearMode, year]);
@@ -376,9 +430,13 @@ export default function ValuationClient() {
       setBrandSearch('');
     }
 
+    if (step !== 3) {
+      setConfigFocus(null);
+    }
+
     if (step !== 4) {
+      setDetailsFocus(null);
       setYearDropdownOpen(false);
-      setExtrasOpen(false);
     }
   }, [step]);
 
@@ -403,18 +461,7 @@ export default function ValuationClient() {
   }, [gpsEnabled]);
 
   useEffect(() => {
-    if (!extrasOpen || typeof document === 'undefined') return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [extrasOpen]);
-
-  useEffect(() => {
-    if (!brandDropdownOpen && !yearDropdownOpen && !extrasOpen) return;
+    if (!brandDropdownOpen && !yearDropdownOpen) return;
 
     function handlePointerDown(event: MouseEvent | TouchEvent) {
       const target = event.target;
@@ -433,7 +480,6 @@ export default function ValuationClient() {
       if (event.key !== 'Escape') return;
       setBrandDropdownOpen(false);
       setYearDropdownOpen(false);
-      setExtrasOpen(false);
     }
 
     document.addEventListener('mousedown', handlePointerDown);
@@ -445,7 +491,7 @@ export default function ValuationClient() {
       document.removeEventListener('touchstart', handlePointerDown);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [brandDropdownOpen, yearDropdownOpen, extrasOpen]);
+  }, [brandDropdownOpen, yearDropdownOpen]);
 
   const years = useMemo(
     () =>
@@ -489,27 +535,6 @@ export default function ValuationClient() {
     () => buildExtrasSummaryText(frontPto, frontLoader, gpsEnabled, gpsType, gpsYear),
     [frontPto, frontLoader, gpsEnabled, gpsType, gpsYear],
   );
-
-  const modelFlowStage: ModelFlowStage = !tractorType
-    ? 'tractorType'
-    : !drive
-      ? 'drive'
-      : !cab
-        ? 'cab'
-        : !selectedModel
-          ? 'model'
-          : 'complete';
-  const detailFlowStage: DetailFlowStage = !isYearValid
-    ? 'year'
-    : !isHoursValid
-      ? 'hours'
-      : !condition
-        ? 'condition'
-        : !extrasReviewed
-          ? 'extras'
-          : 'complete';
-  const modelProgressCount = [tractorType, drive, cab, selectedModel].filter(Boolean).length;
-  const detailProgressCount = [isYearValid, isHoursValid, condition !== null, extrasReviewed].filter(Boolean).length;
 
   const methodCards = useMemo<MethodCard[]>(() => {
     if (!result) return [];
@@ -612,17 +637,41 @@ export default function ValuationClient() {
     selectedComparableValue,
   );
 
-  const yearUnlocked = Boolean(selectedModel);
-  const hoursUnlocked = yearUnlocked && isYearValid;
-  const conditionUnlocked = hoursUnlocked && isHoursValid;
-  const extrasUnlocked = conditionUnlocked && condition !== null;
+  const configComplete = Boolean(tractorType && drive && cab && selectedModel);
+  const configAutoStep: ConfigStepKey = !tractorType ? 'type' : !drive ? 'drive' : !cab ? 'cab' : 'model';
+  const activeConfigStep = configFocus ?? configAutoStep;
+  const configStepNumber = CONFIG_STEPS.findIndex((item) => item.key === activeConfigStep) + 1;
+
+  const detailsComplete = Boolean(yearConfirmed && hoursConfirmed && condition !== null && extrasReviewed);
+  const detailsAutoStep: DetailsStepKey = !yearConfirmed
+    ? 'year'
+    : !hoursConfirmed
+      ? 'hours'
+      : !condition
+        ? 'condition'
+        : 'extras';
+  const activeDetailsStep = detailsFocus ?? detailsAutoStep;
+  const activeDetailsStepNumber = DETAILS_STEPS.findIndex((item) => item.key === activeDetailsStep) + 1;
 
   const canContinue = useMemo(() => {
     if (step === 1) return selectedType === 'tractor';
-    if (step === 3) return Boolean(selectedModel);
-    if (step === 4) return Boolean(selectedModel && isYearValid && isHoursValid && condition && extrasReviewed);
+    if (step === 3) return configComplete;
+    if (step === 4) {
+      return Boolean(selectedModel && isYearValid && isHoursValid && yearConfirmed && hoursConfirmed && condition && extrasReviewed);
+    }
     return true;
-  }, [step, selectedType, selectedModel, isYearValid, isHoursValid, condition]);
+  }, [
+    step,
+    selectedType,
+    configComplete,
+    selectedModel,
+    isYearValid,
+    isHoursValid,
+    yearConfirmed,
+    hoursConfirmed,
+    condition,
+    extrasReviewed,
+  ]);
 
   const nextLabel =
     step === 1
@@ -644,6 +693,11 @@ export default function ValuationClient() {
     setDrive(null);
     setCab(null);
     setModelId('');
+    setConfigFocus(null);
+    setDetailsFocus(null);
+    setYearConfirmed(false);
+    setHoursConfirmed(false);
+    setExtrasReviewed(false);
     setResult(null);
     setSelectedMethod(null);
     setMessage('');
@@ -665,7 +719,7 @@ export default function ValuationClient() {
     setMessage('');
 
     if (step === 3 && !selectedModel) {
-      setMessage('No tractor models match the current filters. Adjust the filters and try again.');
+      setMessage('Choose a model first.');
       return;
     }
 
@@ -673,23 +727,23 @@ export default function ValuationClient() {
       const parsedHours = Number(hours);
       const parsedYear = activeYear;
 
-      if (!selectedModel || !isYearValid) {
-        setMessage('Enter a valid year model before running the valuation.');
+      if (!selectedModel || !isYearValid || !yearConfirmed) {
+        setMessage('Confirm the year first.');
         return;
       }
 
-      if (!Number.isFinite(parsedHours) || parsedHours <= 0) {
-        setMessage('Enter engine hours greater than zero before running the valuation.');
+      if (!Number.isFinite(parsedHours) || parsedHours <= 0 || !hoursConfirmed) {
+        setMessage('Confirm the engine hours first.');
         return;
       }
 
       if (!condition) {
-        setMessage('Choose the overall condition before running the valuation.');
+        setMessage('Choose the condition first.');
         return;
       }
 
       if (!extrasReviewed) {
-        setMessage('Confirm the fitted extras before running the valuation.');
+        setMessage('Review the extras first.');
         return;
       }
 
@@ -698,6 +752,11 @@ export default function ValuationClient() {
         year: parsedYear,
         hours: parsedHours,
         condition,
+        frontPto,
+        frontLoader,
+        gpsEnabled,
+        gpsType,
+        gpsYear,
       });
 
       setResult(nextResult);
@@ -767,124 +826,6 @@ export default function ValuationClient() {
 
     setSelectedMethod(method);
     setMessage('');
-  }
-
-  function openExtrasEditor() {
-    setExtrasDraft({
-      frontPto,
-      frontLoader,
-      gpsEnabled,
-      gpsType,
-      gpsYear,
-    });
-    setExtrasOpen(true);
-    setMessage('');
-  }
-
-  function handleEditTractorType() {
-    setTractorType(null);
-    setDrive(null);
-    setCab(null);
-    setModelId('');
-    setModelQuery('');
-    resetDetailState();
-    setMessage('');
-  }
-
-  function handleEditDrive() {
-    setDrive(null);
-    setCab(null);
-    setModelId('');
-    setModelQuery('');
-    resetDetailState();
-    setMessage('');
-  }
-
-  function handleEditCab() {
-    setCab(null);
-    setModelId('');
-    setModelQuery('');
-    resetDetailState();
-    setMessage('');
-  }
-
-  function handleEditModel() {
-    setModelId('');
-    resetDetailState();
-    setMessage('');
-  }
-
-  function handleEditYear() {
-    setYearDropdownOpen(false);
-    setYear(null);
-    setManualYear('');
-    setHours('');
-    setCondition(null);
-    resetExtrasState();
-    invalidateResult();
-    setMessage('');
-  }
-
-  function handleEditHours() {
-    setHours('');
-    setCondition(null);
-    resetExtrasState();
-    invalidateResult();
-    setMessage('');
-  }
-
-  function handleEditCondition() {
-    setCondition(null);
-    resetExtrasState();
-    invalidateResult();
-    setMessage('');
-  }
-
-  function handleConfirmNoExtras() {
-    setFrontPto(false);
-    setFrontLoader(false);
-    setGpsEnabled(false);
-    setGpsType(null);
-    setGpsYear('');
-    setExtrasReviewed(true);
-    setExtrasDraft(null);
-    setExtrasOpen(false);
-    invalidateResult();
-    setMessage('');
-  }
-
-  function FlowSummaryRow({ label, value, hint, onEdit }: FlowSummaryRowProps) {
-    return (
-      <div className={styles.flowSummaryRow}>
-        <div className={styles.flowSummaryMeta}>
-          <span className={styles.flowSummaryLabel}>{label}</span>
-          <strong className={styles.flowSummaryValue}>{value}</strong>
-          {hint ? <span className={styles.flowSummaryHint}>{hint}</span> : null}
-        </div>
-
-        <button type="button" className={styles.flowEditButton} onClick={onEdit}>
-          Edit
-        </button>
-      </div>
-    );
-  }
-
-  function FocusCard({ stepLabel, title, body, children, badgeText = 'Current' }: FocusCardProps) {
-    return (
-      <section className={styles.focusCard}>
-        <div className={styles.focusCardHeader}>
-          <div>
-            <span className={styles.focusCardStep}>{stepLabel}</span>
-            <h2 className={styles.focusCardTitle}>{title}</h2>
-            <p className={styles.focusCardText}>{body}</p>
-          </div>
-
-          <span className={styles.focusCardBadge}>{badgeText}</span>
-        </div>
-
-        <div className={styles.focusCardBody}>{children}</div>
-      </section>
-    );
   }
 
   function renderWizardBody() {
@@ -1013,217 +954,298 @@ export default function ValuationClient() {
     }
 
     if (step === 3) {
-      const currentModelPrompt =
-        modelFlowStage === 'tractorType'
-          ? 'Start by choosing whether this is a field or orchard tractor.'
-          : modelFlowStage === 'drive'
-            ? 'Now choose the drive layout that matches the tractor.'
-            : modelFlowStage === 'cab'
-              ? 'Now choose the cab setup.'
-              : modelFlowStage === 'model'
-                ? 'The matching model list is ready below.'
-                : 'Model selected. Continue to tractor details when you are ready.';
+      const configRows = [
+        tractorType
+          ? { key: 'type' as ConfigStepKey, label: 'Type', value: getTractorTypeLabel(tractorType) }
+          : null,
+        drive ? { key: 'drive' as ConfigStepKey, label: 'Drive', value: getDriveDisplay(drive) } : null,
+        cab ? { key: 'cab' as ConfigStepKey, label: 'Cab', value: getCabDisplay(cab) } : null,
+        selectedModel
+          ? {
+              key: 'model' as ConfigStepKey,
+              label: 'Model',
+              value: `${selectedModel.brandName} ${selectedModel.modelName}`,
+            }
+          : null,
+      ].filter(
+        (
+          row,
+        ): row is {
+          key: ConfigStepKey;
+          label: string;
+          value: string;
+        } => Boolean(row),
+      );
+
+      const configReviewMode = configComplete && configFocus === null;
+      const emptySearchMessage = matchingModels.length
+        ? `No models match “${modelQuery.trim()}”.`
+        : drive === 'tracks'
+          ? `No ${selectedBrandName} track models are loaded yet.`
+          : 'No models are loaded for this setup yet.';
 
       return (
-        <div className={styles.flowLayout}>
-          <div className={styles.flowIntroCard}>
-            <div className={styles.flowIntroTop}>
-              <div>
-                <span className={styles.flowIntroEyebrow}>Configure tractor</span>
-                <strong className={styles.flowIntroHeading}>One clear question at a time</strong>
-                <p className={styles.flowIntroText}>
-                  Only the open card needs attention. Completed answers collapse into short summaries so the next
-                  action stays obvious.
-                </p>
-              </div>
-
-              <span className={styles.flowProgressBadge}>{modelProgressCount}/4 complete</span>
-            </div>
-
-            <div className={styles.contextPillRow}>
-              <span className={styles.contextPill}>Brand: {selectedBrandName}</span>
-              {tractorType ? <span className={styles.contextPill}>Type: {getTractorTypeLabel(tractorType)}</span> : null}
-              {drive ? <span className={styles.contextPill}>Drive: {getDriveDisplay(drive)}</span> : null}
-              {cab ? <span className={styles.contextPill}>Cab: {getCabDisplay(cab)}</span> : null}
-            </div>
-
-            <p className={styles.flowInlineHint}>{currentModelPrompt}</p>
+        <div className={styles.flowShell}>
+          <div className={styles.flowTopline}>
+            <span className={styles.flowToplineLabel}>Brand</span>
+            <strong className={styles.flowToplineValue}>{selectedBrandName}</strong>
           </div>
 
-          {tractorType ? (
-            <FlowSummaryRow
-              label="3.1 Tractor type"
-              value={getTractorTypeLabel(tractorType)}
-              hint="This controls which models appear next."
-              onEdit={handleEditTractorType}
-            />
-          ) : (
-            <FocusCard
-              stepLabel="3.1 Tractor type"
-              title="Choose tractor type"
-              body="Select the tractor type first. The next setup question opens immediately afterwards."
-            >
-              <div className={styles.pillRow}>
-                {(['field', 'orchard'] as TractorType[]).map((value) => (
+          <div className={styles.miniStepper} aria-label="Model setup progress">
+            {CONFIG_STEPS.map((item) => {
+              const complete =
+                item.key === 'type'
+                  ? Boolean(tractorType)
+                  : item.key === 'drive'
+                    ? Boolean(drive)
+                    : item.key === 'cab'
+                      ? Boolean(cab)
+                      : Boolean(selectedModel);
+              const active = !configReviewMode && activeConfigStep === item.key;
+
+              return (
+                <div
+                  key={item.key}
+                  className={`${styles.miniStep} ${active ? styles.miniStepActive : ''} ${
+                    complete ? styles.miniStepComplete : ''
+                  }`}
+                >
+                  <span className={styles.miniStepNumber}>{complete ? '✓' : CONFIG_STEPS.findIndex((stepItem) => stepItem.key === item.key) + 1}</span>
+                  <span className={styles.miniStepLabel}>{item.label}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {configRows.length ? (
+            <div className={styles.answerStack}>
+              {configRows.map((row) => (
+                <div key={row.key} className={styles.answerRow}>
+                  <div className={styles.answerRowText}>
+                    <span className={styles.answerRowLabel}>{row.label}</span>
+                    <strong className={styles.answerRowValue}>{row.value}</strong>
+                  </div>
+
                   <button
-                    key={value}
                     type="button"
-                    className={`${styles.pillButton} ${tractorType === value ? styles.pillButtonActive : ''}`}
+                    className={styles.answerEdit}
                     onClick={() => {
-                      if (tractorType !== value) {
-                        setTractorType(value);
+                      setConfigFocus(row.key);
+                      setMessage('');
+                    }}
+                  >
+                    Edit
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {configReviewMode ? (
+            <div className={`${styles.currentCard} ${styles.readyCard}`}>
+              <div className={styles.currentCardHead}>
+                <div>
+                  <span className={styles.currentEyebrow}>Ready</span>
+                  <h2 className={styles.currentTitle}>Model selected</h2>
+                </div>
+                <span className={styles.currentIndex}>4 / 4</span>
+              </div>
+
+              {selectedModel ? (
+                <div className={styles.readyModelBlock}>
+                  <strong className={styles.readyModelTitle}>
+                    {selectedModel.brandName} {selectedModel.modelName}
+                  </strong>
+
+                  <div className={styles.selectionChipRow}>
+                    <span className={styles.modelChip}>{getTractorTypeLabel(selectedModel.tractorType)}</span>
+                    <span className={styles.modelChip}>{getDriveDisplay(selectedModel.drive)}</span>
+                    <span className={styles.modelChip}>{getCabDisplay(selectedModel.cab)}</span>
+                    <span className={styles.modelChip}>{selectedModel.powerKw} kW</span>
+                    <span className={styles.modelChip}>
+                      {selectedModel.yearStart}–{selectedModel.yearEnd}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+
+              <p className={styles.currentHint}>Continue to enter year, hours, condition and extras.</p>
+            </div>
+          ) : activeConfigStep === 'type' ? (
+            <div className={styles.currentCard}>
+              <div className={styles.currentCardHead}>
+                <div>
+                  <span className={styles.currentEyebrow}>Now</span>
+                  <h2 className={styles.currentTitle}>Field or orchard?</h2>
+                </div>
+                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
+              </div>
+
+              <div className={styles.choiceGrid}>
+                {([
+                  { key: 'field' as TractorType, title: 'Field', note: 'Broad-acre / row crop' },
+                  { key: 'orchard' as TractorType, title: 'Orchard', note: 'Orchard / vineyard' },
+                ]).map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={`${styles.choiceCard} ${tractorType === item.key ? styles.choiceCardActive : ''}`}
+                    onClick={() => {
+                      const changed = tractorType !== item.key;
+
+                      setTractorType(item.key);
+                      setMessage('');
+
+                      if (changed) {
                         setDrive(null);
                         setCab(null);
                         setModelId('');
                         setModelQuery('');
                         resetDetailState();
                       }
-                      setMessage('');
+
+                      setConfigFocus('drive');
                     }}
-                    aria-pressed={tractorType === value}
+                    aria-pressed={tractorType === item.key}
                   >
-                    {getTractorTypeLabel(value)}
+                    <strong>{item.title}</strong>
+                    <span className={styles.choiceCardNote}>{item.note}</span>
                   </button>
                 ))}
               </div>
-            </FocusCard>
-          )}
-
-          {tractorType ? (
-            drive ? (
-              <FlowSummaryRow
-                label="3.2 Drive"
-                value={getDriveDisplay(drive)}
-                hint="Used to narrow the matching model list."
-                onEdit={handleEditDrive}
-              />
-            ) : (
-              <FocusCard
-                stepLabel="3.2 Drive"
-                title="Choose drive layout"
-                body="Pick the drive layout that matches the tractor."
-              >
-                <div className={styles.pillRow}>
-                  {(['2wd', '4wd', 'tracks'] as DriveType[]).map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      className={`${styles.pillButton} ${drive === value ? styles.pillButtonActive : ''}`}
-                      onClick={() => {
-                        if (drive !== value) {
-                          setDrive(value);
-                          setCab(null);
-                          setModelId('');
-                          setModelQuery('');
-                          resetDetailState();
-                        }
-                        setMessage('');
-                      }}
-                      aria-pressed={drive === value}
-                    >
-                      {getDriveDisplay(value)}
-                    </button>
-                  ))}
+            </div>
+          ) : activeConfigStep === 'drive' ? (
+            <div className={styles.currentCard}>
+              <div className={styles.currentCardHead}>
+                <div>
+                  <span className={styles.currentEyebrow}>Now</span>
+                  <h2 className={styles.currentTitle}>Choose drive</h2>
                 </div>
-              </FocusCard>
-            )
-          ) : null}
+                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
+              </div>
 
-          {tractorType && drive ? (
-            cab ? (
-              <FlowSummaryRow
-                label="3.3 Cab setup"
-                value={getCabDisplay(cab)}
-                hint="This finishes the tractor setup filter."
-                onEdit={handleEditCab}
-              />
-            ) : (
-              <FocusCard
-                stepLabel="3.3 Cab setup"
-                title="Choose cab setup"
-                body="Select whether the tractor has a cab or an open station setup."
-              >
-                <div className={styles.pillRow}>
-                  {(['cab', 'open-station'] as CabType[]).map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      className={`${styles.pillButton} ${cab === value ? styles.pillButtonActive : ''}`}
-                      onClick={() => {
-                        if (cab !== value) {
-                          setCab(value);
-                          setModelId('');
-                          setModelQuery('');
-                          resetDetailState();
-                        }
-                        setMessage('');
-                      }}
-                      aria-pressed={cab === value}
-                    >
-                      {getCabDisplay(value)}
-                    </button>
-                  ))}
-                </div>
-              </FocusCard>
-            )
-          ) : null}
+              <div className={styles.choiceGrid}>
+                {([
+                  { key: '2wd' as DriveType, title: '2WD', note: 'Two-wheel drive' },
+                  { key: '4wd' as DriveType, title: '4WD', note: 'Four-wheel drive' },
+                  { key: 'tracks' as DriveType, title: 'Tracks', note: 'Tracked tractor' },
+                ]).map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={`${styles.choiceCard} ${drive === item.key ? styles.choiceCardActive : ''}`}
+                    onClick={() => {
+                      const changed = drive !== item.key;
 
-          {tractorType && drive && cab ? (
-            selectedModel ? (
-              <>
-                <FlowSummaryRow
-                  label="3.4 Model"
-                  value={`${selectedModel.brandName} ${selectedModel.modelName}`}
-                  hint={`${selectedModel.yearStart}–${selectedModel.yearEnd} • ${selectedModel.powerKw} kW`}
-                  onEdit={handleEditModel}
-                />
-
-                <div className={styles.readyCard}>
-                  <div className={styles.readyCardHeader}>
-                    <div>
-                      <span className={styles.readyCardLabel}>Step 3 complete</span>
-                      <strong>Tractor model selected</strong>
-                      <p className={styles.readyCardText}>
-                        Continue below to enter year model, engine hours, condition and fitted extras.
-                      </p>
-                    </div>
-
-                    <span className={styles.flowProgressBadge}>Ready for Step 4</span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <FocusCard
-                stepLabel="3.4 Model"
-                title="Choose model"
-                body="Now choose the closest matching model. You can search if the list is long."
-                badgeText="Final step"
-              >
-                <div className={styles.filterSummary}>
-                  <span className={styles.filterSummaryTitle}>Matching setup</span>
-                  <span className={styles.filterSummaryText}>
-                    {selectedBrandName} • {getTractorTypeLabel(tractorType)} • {getDriveDisplay(drive)} •{' '}
-                    {getCabDisplay(cab)}
-                  </span>
-                </div>
-
-                <div className={styles.searchWrap}>
-                  <input
-                    value={modelQuery}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                      setModelQuery(event.target.value);
+                      setDrive(item.key);
                       setMessage('');
-                    }}
-                    placeholder={`Search ${selectedBrandName} models...`}
-                    aria-label="Search tractor models"
-                    className={styles.searchInput}
-                  />
-                </div>
 
-                {filteredModels.length ? (
+                      if (changed) {
+                        setCab(null);
+                        setModelId('');
+                        setModelQuery('');
+                        resetDetailState();
+                      }
+
+                      setConfigFocus('cab');
+                    }}
+                    aria-pressed={drive === item.key}
+                  >
+                    <strong>{item.title}</strong>
+                    <span className={styles.choiceCardNote}>{item.note}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : activeConfigStep === 'cab' ? (
+            <div className={styles.currentCard}>
+              <div className={styles.currentCardHead}>
+                <div>
+                  <span className={styles.currentEyebrow}>Now</span>
+                  <h2 className={styles.currentTitle}>Choose cab</h2>
+                </div>
+                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
+              </div>
+
+              <div className={styles.choiceGrid}>
+                {([
+                  { key: 'cab' as CabType, title: 'Cab', note: 'Enclosed operator cab' },
+                  { key: 'open-station' as CabType, title: 'Open station', note: 'No enclosed cab' },
+                ]).map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={`${styles.choiceCard} ${cab === item.key ? styles.choiceCardActive : ''}`}
+                    onClick={() => {
+                      const changed = cab !== item.key;
+
+                      setCab(item.key);
+                      setMessage('');
+
+                      if (changed) {
+                        setModelId('');
+                        setModelQuery('');
+                        resetDetailState();
+                      }
+
+                      setConfigFocus('model');
+                    }}
+                    aria-pressed={cab === item.key}
+                  >
+                    <strong>{item.title}</strong>
+                    <span className={styles.choiceCardNote}>{item.note}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className={styles.currentCard}>
+              <div className={styles.currentCardHead}>
+                <div>
+                  <span className={styles.currentEyebrow}>Now</span>
+                  <h2 className={styles.currentTitle}>Choose model</h2>
+                </div>
+                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
+              </div>
+
+              <div className={styles.selectionChipRow} style={{ marginBottom: '0.95rem' }}>
+                {tractorType ? <span className={styles.modelChip}>{getTractorTypeLabel(tractorType)}</span> : null}
+                {drive ? <span className={styles.modelChip}>{getDriveDisplay(drive)}</span> : null}
+                {cab ? <span className={styles.modelChip}>{getCabDisplay(cab)}</span> : null}
+              </div>
+
+              <div className={styles.searchWrap}>
+                <input
+                  value={modelQuery}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setModelQuery(event.target.value);
+                    setMessage('');
+                  }}
+                  placeholder={`Search ${selectedBrandName} models`}
+                  aria-label="Search tractor models"
+                  className={styles.searchInput}
+                />
+              </div>
+
+              {selectedModel ? (
+                <div className={styles.selectedCallout}>
+                  <span className={styles.currentEyebrow}>Selected</span>
+                  <strong className={styles.selectedCalloutTitle}>
+                    {selectedModel.brandName} {selectedModel.modelName}
+                  </strong>
+                  <span className={styles.selectedCalloutBody}>Choose a different model below if needed.</span>
+                </div>
+              ) : null}
+
+              {filteredModels.length ? (
+                <>
+                  <div className={styles.currentCount}>
+                    {filteredModels.length} model{filteredModels.length === 1 ? '' : 's'} found
+                  </div>
+
                   <div className={styles.modelList}>
                     {filteredModels.map((model) => {
-                      const active = modelId === model.id;
+                      const active = selectedModel?.id === model.id;
 
                       return (
                         <button
@@ -1231,10 +1253,14 @@ export default function ValuationClient() {
                           type="button"
                           className={`${styles.modelRow} ${active ? styles.modelRowActive : ''}`}
                           onClick={() => {
-                            if (model.id !== modelId) {
+                            const changed = model.id !== modelId;
+
+                            if (changed) {
                               setModelId(model.id);
                               resetDetailState();
                             }
+
+                            setConfigFocus(null);
                             setMessage('');
                           }}
                           aria-pressed={active}
@@ -1262,348 +1288,545 @@ export default function ValuationClient() {
                       );
                     })}
                   </div>
-                ) : (
-                  <div className={styles.emptyState}>
-                    {drive === 'tracks'
-                      ? `Tracks is enabled, but no bundled ${selectedBrandName} track models are loaded yet.`
-                      : `No tractor models matched ${selectedBrandName}, ${getTractorTypeLabel(
-                          tractorType,
-                        )}, ${getDriveDisplay(drive)} and ${getCabDisplay(cab)}.`}
-                  </div>
-                )}
-              </FocusCard>
-            )
-          ) : null}
+                </>
+              ) : (
+                <div className={styles.emptyState}>
+                  <p>{emptySearchMessage}</p>
+                  {modelQuery.trim() ? (
+                    <div className={styles.emptyStateActions}>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={() => setModelQuery('')}
+                      >
+                        Clear search
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       );
     }
 
-    if (!selectedModel) {
-      return null;
-    }
+    const detailRows = [
+      yearConfirmed ? { key: 'year' as DetailsStepKey, label: 'Year', value: selectedYearDisplay } : null,
+      hoursConfirmed ? { key: 'hours' as DetailsStepKey, label: 'Hours', value: enteredHoursDisplay } : null,
+      condition ? { key: 'condition' as DetailsStepKey, label: 'Condition', value: conditionLabel(condition) } : null,
+      extrasReviewed ? { key: 'extras' as DetailsStepKey, label: 'Extras', value: extrasSummaryText } : null,
+    ].filter(
+      (
+        row,
+      ): row is {
+        key: DetailsStepKey;
+        label: string;
+        value: string;
+      } => Boolean(row),
+    );
 
-    const yearHint =
-      yearMode === 'guided'
-        ? `Guided years loaded: ${selectedModel.yearStart}–${selectedModel.yearEnd}.`
-        : `Enter a four-digit year between 1950 and ${CURRENT_YEAR}.`;
+    const detailsReviewMode = detailsComplete && detailsFocus === null;
 
     return (
-      <div className={styles.flowLayout}>
-        <div className={styles.flowIntroCard}>
-          <div className={styles.flowIntroTop}>
-            <div>
-              <span className={styles.flowIntroEyebrow}>Enter tractor details</span>
-              <strong className={styles.flowIntroHeading}>Keep moving one answer at a time</strong>
-              <p className={styles.flowIntroText}>
-                The current question stays open. Everything already answered closes into a short summary above it.
-              </p>
+      <div className={styles.flowShell}>
+        {selectedModel ? (
+          <div className={styles.focusContext}>
+            <span className={styles.flowToplineLabel}>Model</span>
+            <strong className={styles.flowToplineValue}>
+              {selectedModel.brandName} {selectedModel.modelName}
+            </strong>
+            <div className={styles.selectionChipRow}>
+              <span className={styles.modelChip}>{getTractorTypeLabel(selectedModel.tractorType)}</span>
+              <span className={styles.modelChip}>{getDriveDisplay(selectedModel.drive)}</span>
+              <span className={styles.modelChip}>{getCabDisplay(selectedModel.cab)}</span>
+              <span className={styles.modelChip}>{selectedModel.powerKw} kW</span>
+              <span className={styles.modelChip}>
+                {selectedModel.yearStart}–{selectedModel.yearEnd}
+              </span>
             </div>
-
-            <span className={styles.flowProgressBadge}>{detailProgressCount}/4 complete</span>
           </div>
+        ) : null}
 
-          <div className={styles.contextPillRow}>
-            <span className={styles.contextPill}>
-              Model: {selectedModel.brandName} {selectedModel.modelName}
-            </span>
-            <span className={styles.contextPill}>
-              Spec: {getTractorTypeLabel(selectedModel.tractorType)} • {getDriveDisplay(selectedModel.drive)} •{' '}
-              {getCabDisplay(selectedModel.cab)}
-            </span>
-            <span className={styles.contextPill}>
-              Guided years: {selectedModel.yearStart}–{selectedModel.yearEnd}
-            </span>
-          </div>
+        <div className={styles.miniStepper} aria-label="Details progress">
+          {DETAILS_STEPS.map((item) => {
+            const complete =
+              item.key === 'year'
+                ? yearConfirmed
+                : item.key === 'hours'
+                  ? hoursConfirmed
+                  : item.key === 'condition'
+                    ? Boolean(condition)
+                    : extrasReviewed;
+            const active = !detailsReviewMode && activeDetailsStep === item.key;
+
+            return (
+              <div
+                key={item.key}
+                className={`${styles.miniStep} ${active ? styles.miniStepActive : ''} ${
+                  complete ? styles.miniStepComplete : ''
+                }`}
+              >
+                <span className={styles.miniStepNumber}>{complete ? '✓' : DETAILS_STEPS.findIndex((stepItem) => stepItem.key === item.key) + 1}</span>
+                <span className={styles.miniStepLabel}>{item.label}</span>
+              </div>
+            );
+          })}
         </div>
 
-        {isYearValid ? (
-          <FlowSummaryRow
-            label="4.1 Year model"
-            value={selectedYearDisplay}
-            hint={yearMode === 'guided' ? yearHint : 'Entered manually'}
-            onEdit={handleEditYear}
-          />
-        ) : (
-          <FocusCard
-            stepLabel="4.1 Year model"
-            title="Choose year model"
-            body="Start with the tractor year model. Use Guided Years where possible, or switch to Other Year if it is not listed."
-          >
-            <div className={`${styles.fieldBlock} ${styles.inputPanel} ${styles.flowCompactPanel}`}>
-              <div className={styles.panelHeader}>
-                <span className={styles.panelLabel}>Year Model</span>
+        {detailRows.length ? (
+          <div className={styles.answerStack}>
+            {detailRows.map((row) => (
+              <div key={row.key} className={styles.answerRow}>
+                <div className={styles.answerRowText}>
+                  <span className={styles.answerRowLabel}>{row.label}</span>
+                  <strong className={styles.answerRowValue}>{row.value}</strong>
+                </div>
 
-                <div className={styles.panelToggle}>
+                <button
+                  type="button"
+                  className={styles.answerEdit}
+                  onClick={() => {
+                    setDetailsFocus(row.key);
+                    setMessage('');
+                  }}
+                >
+                  Edit
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {detailsReviewMode ? (
+          <div className={`${styles.currentCard} ${styles.readyCard}`}>
+            <div className={styles.currentCardHead}>
+              <div>
+                <span className={styles.currentEyebrow}>Ready</span>
+                <h2 className={styles.currentTitle}>Get valuation</h2>
+              </div>
+              <span className={styles.currentIndex}>4 / 4</span>
+            </div>
+
+            <div className={styles.selectionFacts}>
+              <div className={styles.selectionFact}>
+                <span>Year</span>
+                <strong>{selectedYearDisplay}</strong>
+              </div>
+
+              <div className={styles.selectionFact}>
+                <span>Hours</span>
+                <strong>{enteredHoursDisplay}</strong>
+              </div>
+
+              <div className={styles.selectionFact}>
+                <span>Condition</span>
+                <strong>{selectedConditionDisplay}</strong>
+              </div>
+
+              <div className={styles.selectionFact}>
+                <span>Extras</span>
+                <strong>{extrasSummaryText}</strong>
+              </div>
+            </div>
+          </div>
+        ) : activeDetailsStep === 'year' ? (
+          <div className={styles.currentCard}>
+            <div className={styles.currentCardHead}>
+              <div>
+                <span className={styles.currentEyebrow}>Now</span>
+                <h2 className={styles.currentTitle}>Choose year</h2>
+              </div>
+              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
+            </div>
+
+            <div className={styles.segmentRail}>
+              <button
+                type="button"
+                className={`${styles.pillButton} ${yearMode === 'guided' ? styles.pillButtonActive : ''}`}
+                onClick={() => {
+                  setYearMode('guided');
+                  setYearDropdownOpen(false);
+                  setYearConfirmed(false);
+                  setMessage('');
+                  invalidateResult();
+                }}
+                aria-pressed={yearMode === 'guided'}
+              >
+                Guided years
+              </button>
+              <button
+                type="button"
+                className={`${styles.pillButton} ${yearMode === 'manual' ? styles.pillButtonActive : ''}`}
+                onClick={() => {
+                  setYearMode('manual');
+                  if (year !== null) {
+                    setManualYear(String(year));
+                  }
+                  setYearDropdownOpen(false);
+                  setYearConfirmed(false);
+                  setMessage('');
+                  invalidateResult();
+                }}
+                aria-pressed={yearMode === 'manual'}
+              >
+                Other year
+              </button>
+            </div>
+
+            {yearMode === 'guided' ? (
+              <div className={styles.inlineFieldRow}>
+                <div className={styles.dropdownField} ref={yearDropdownRef}>
                   <button
                     type="button"
-                    className={`${styles.pillButton} ${yearMode === 'guided' ? styles.pillButtonActive : ''}`}
+                    className={`${styles.dropdownTrigger} ${yearDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
                     onClick={() => {
-                      setYearMode('guided');
-                      const manualValue = Number(manualYear);
-                      if (
-                        selectedModel &&
-                        Number.isInteger(manualValue) &&
-                        manualValue >= selectedModel.yearStart &&
-                        manualValue <= selectedModel.yearEnd
-                      ) {
-                        setYear(manualValue);
-                      } else if (
-                        year === null ||
-                        year < selectedModel.yearStart ||
-                        year > selectedModel.yearEnd
-                      ) {
-                        setYear(null);
-                      }
+                      if (!selectedModel) return;
+                      setYearDropdownOpen((open) => !open);
                       setMessage('');
                     }}
-                    aria-pressed={yearMode === 'guided'}
+                    aria-haspopup="listbox"
+                    aria-expanded={yearDropdownOpen}
+                    aria-label="Choose guided year model"
                   >
-                    Guided Years
+                    <span className={styles.dropdownTriggerText}>{selectedYearDisplay}</span>
+                    <span className={styles.dropdownTriggerIcon} aria-hidden="true">
+                      {yearDropdownOpen ? '▴' : '▾'}
+                    </span>
+                  </button>
+
+                  {yearDropdownOpen ? (
+                    <div className={styles.dropdownMenu}>
+                      <div className={styles.dropdownList} role="listbox" aria-label="Available guided years">
+                        {years.length ? (
+                          years.map((availableYear) => {
+                            const active = year === availableYear;
+
+                            return (
+                              <button
+                                key={availableYear}
+                                type="button"
+                                role="option"
+                                aria-selected={active}
+                                className={`${styles.dropdownOption} ${active ? styles.dropdownOptionActive : ''}`}
+                                onClick={() => {
+                                  setYear(availableYear);
+                                  setYearDropdownOpen(false);
+                                  setYearConfirmed(false);
+                                  setMessage('');
+                                  invalidateResult();
+                                }}
+                              >
+                                <span className={styles.dropdownOptionText}>{availableYear}</span>
+                                {active ? <span className={styles.dropdownOptionBadge}>Selected</span> : null}
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <div className={styles.dropdownEmpty}>No guided years loaded for this model yet.</div>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={confirmYearSelection}
+                  disabled={!isYearValid}
+                >
+                  Next: Hours
+                </button>
+              </div>
+            ) : (
+              <div className={styles.inlineFieldRow}>
+                <input
+                  value={manualYear}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setManualYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4));
+                    setYearConfirmed(false);
+                    setMessage('');
+                    invalidateResult();
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      confirmYearSelection();
+                    }
+                  }}
+                  placeholder="Type year"
+                  inputMode="numeric"
+                  aria-label="Enter year model manually"
+                  className={styles.controlInput}
+                />
+
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={confirmYearSelection}
+                  disabled={!isYearValid}
+                >
+                  Next: Hours
+                </button>
+              </div>
+            )}
+
+            {selectedModel ? (
+              <p className={styles.currentHint}>Guided range: {selectedModel.yearStart}–{selectedModel.yearEnd}</p>
+            ) : null}
+          </div>
+        ) : activeDetailsStep === 'hours' ? (
+          <div className={styles.currentCard}>
+            <div className={styles.currentCardHead}>
+              <div>
+                <span className={styles.currentEyebrow}>Now</span>
+                <h2 className={styles.currentTitle}>Enter engine hours</h2>
+              </div>
+              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
+            </div>
+
+            <div className={styles.inlineFieldRow}>
+              <div className={styles.inlineFieldInputWrap}>
+                <input
+                  value={hours}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setHours(event.target.value.replace(/[^0-9]/g, ''));
+                    setHoursConfirmed(false);
+                    setMessage('');
+                    invalidateResult();
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      confirmHoursSelection();
+                    }
+                  }}
+                  placeholder="Type hours"
+                  inputMode="numeric"
+                  aria-label="Enter engine hours"
+                  className={styles.controlInput}
+                />
+                <span className={styles.inlineFieldSuffix}>hrs</span>
+              </div>
+
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={confirmHoursSelection}
+                disabled={!isHoursValid}
+              >
+                Next: Condition
+              </button>
+            </div>
+
+            <p className={styles.currentHint}>Use the meter reading.</p>
+          </div>
+        ) : activeDetailsStep === 'condition' ? (
+          <div className={styles.currentCard}>
+            <div className={styles.currentCardHead}>
+              <div>
+                <span className={styles.currentEyebrow}>Now</span>
+                <h2 className={styles.currentTitle}>Choose condition</h2>
+              </div>
+              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
+            </div>
+
+            <div className={styles.conditionGrid}>
+              {conditionOptions.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  className={`${styles.conditionCard} ${condition === option.key ? styles.conditionCardActive : ''}`}
+                  onClick={() => {
+                    setCondition(option.key);
+                    setDetailsFocus(null);
+                    setMessage('');
+                    invalidateResult();
+                  }}
+                >
+                  <strong>{option.label}</strong>
+                  <span>{getConditionHint(option.key)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className={styles.currentCard}>
+            <div className={styles.currentCardHead}>
+              <div>
+                <span className={styles.currentEyebrow}>Now</span>
+                <h2 className={styles.currentTitle}>Review extras</h2>
+              </div>
+              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
+            </div>
+
+            <div className={styles.togglePanelGrid}>
+              <div className={styles.togglePanel}>
+                <div className={styles.togglePanelCopy}>
+                  <strong className={styles.togglePanelTitle}>Front Hitch & Front PTO</strong>
+                  <span className={styles.togglePanelNote}>Installed?</span>
+                </div>
+                <div className={styles.pillRow}>
+                  <button
+                    type="button"
+                    className={`${styles.pillButton} ${frontPto ? styles.pillButtonActive : ''}`}
+                    onClick={() => {
+                      setFrontPto(true);
+                      setMessage('');
+                      markExtrasDirty();
+                    }}
+                    aria-pressed={frontPto}
+                  >
+                    Yes
                   </button>
                   <button
                     type="button"
-                    className={`${styles.pillButton} ${yearMode === 'manual' ? styles.pillButtonActive : ''}`}
+                    className={`${styles.pillButton} ${!frontPto ? styles.pillButtonActive : ''}`}
                     onClick={() => {
-                      setYearMode('manual');
-                      if (year !== null) {
-                        setManualYear(String(year));
-                      }
-                      setYearDropdownOpen(false);
+                      setFrontPto(false);
                       setMessage('');
+                      markExtrasDirty();
                     }}
-                    aria-pressed={yearMode === 'manual'}
+                    aria-pressed={!frontPto}
                   >
-                    Other Year
+                    No
                   </button>
                 </div>
               </div>
 
-              <div className={styles.panelControl}>
-                {yearMode === 'guided' ? (
-                  <div className={styles.dropdownField} ref={yearDropdownRef}>
-                    <button
-                      type="button"
-                      className={`${styles.dropdownTrigger} ${yearDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
-                      onClick={() => {
-                        setYearDropdownOpen((open) => !open);
-                        setMessage('');
-                      }}
-                      aria-haspopup="listbox"
-                      aria-expanded={yearDropdownOpen}
-                      aria-label="Choose guided year model"
-                    >
-                      <span className={styles.dropdownTriggerText}>{selectedYearDisplay}</span>
-                      <span className={styles.dropdownTriggerIcon} aria-hidden="true">
-                        {yearDropdownOpen ? '▴' : '▾'}
-                      </span>
-                    </button>
-
-                    {yearDropdownOpen ? (
-                      <div className={styles.dropdownMenu}>
-                        <div className={styles.dropdownList} role="listbox" aria-label="Available guided years">
-                          {years.length ? (
-                            years.map((availableYear) => {
-                              const active = year === availableYear;
-
-                              return (
-                                <button
-                                  key={availableYear}
-                                  type="button"
-                                  role="option"
-                                  aria-selected={active}
-                                  className={`${styles.dropdownOption} ${active ? styles.dropdownOptionActive : ''}`}
-                                  onClick={() => {
-                                    setYear(availableYear);
-                                    setYearDropdownOpen(false);
-                                    setMessage('');
-                                    invalidateResult();
-                                  }}
-                                >
-                                  <span className={styles.dropdownOptionText}>{availableYear}</span>
-                                  {active ? <span className={styles.dropdownOptionBadge}>Selected</span> : null}
-                                </button>
-                              );
-                            })
-                          ) : (
-                            <div className={styles.dropdownEmpty}>No guided years loaded for this model yet.</div>
-                          )}
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : (
-                  <input
-                    value={manualYear}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                      setManualYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4));
+              <div className={styles.togglePanel}>
+                <div className={styles.togglePanelCopy}>
+                  <strong className={styles.togglePanelTitle}>Front Loader</strong>
+                  <span className={styles.togglePanelNote}>Installed?</span>
+                </div>
+                <div className={styles.pillRow}>
+                  <button
+                    type="button"
+                    className={`${styles.pillButton} ${frontLoader ? styles.pillButtonActive : ''}`}
+                    onClick={() => {
+                      setFrontLoader(true);
                       setMessage('');
-                      invalidateResult();
+                      markExtrasDirty();
                     }}
-                    placeholder="Type year model here"
+                    aria-pressed={frontLoader}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.pillButton} ${!frontLoader ? styles.pillButtonActive : ''}`}
+                    onClick={() => {
+                      setFrontLoader(false);
+                      setMessage('');
+                      markExtrasDirty();
+                    }}
+                    aria-pressed={!frontLoader}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.togglePanel}>
+                <div className={styles.togglePanelCopy}>
+                  <strong className={styles.togglePanelTitle}>GPS</strong>
+                  <span className={styles.togglePanelNote}>Installed?</span>
+                </div>
+                <div className={styles.pillRow}>
+                  <button
+                    type="button"
+                    className={`${styles.pillButton} ${gpsEnabled ? styles.pillButtonActive : ''}`}
+                    onClick={() => {
+                      setGpsEnabled(true);
+                      setMessage('');
+                      markExtrasDirty();
+                    }}
+                    aria-pressed={gpsEnabled}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.pillButton} ${!gpsEnabled ? styles.pillButtonActive : ''}`}
+                    onClick={() => {
+                      setGpsEnabled(false);
+                      setMessage('');
+                      markExtrasDirty();
+                    }}
+                    aria-pressed={!gpsEnabled}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {gpsEnabled ? (
+              <div className={styles.gpsDetailGrid}>
+                <div className={styles.togglePanel}>
+                  <div className={styles.togglePanelCopy}>
+                    <strong className={styles.togglePanelTitle}>GPS type</strong>
+                    <span className={styles.togglePanelNote}>Optional</span>
+                  </div>
+                  <div className={styles.pillRow}>
+                    {(['full-autosteer', 'guidance-only'] as GpsType[]).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={`${styles.pillButton} ${gpsType === value ? styles.pillButtonActive : ''}`}
+                        onClick={() => {
+                          setGpsType(value);
+                          setMessage('');
+                          markExtrasDirty();
+                        }}
+                        aria-pressed={gpsType === value}
+                      >
+                        {getGpsTypeLabel(value)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.togglePanel}>
+                  <div className={styles.togglePanelCopy}>
+                    <strong className={styles.togglePanelTitle}>GPS year</strong>
+                    <span className={styles.togglePanelNote}>Optional</span>
+                  </div>
+                  <input
+                    value={gpsYear}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      setGpsYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4));
+                      setMessage('');
+                      markExtrasDirty();
+                    }}
+                    placeholder="Type year"
                     inputMode="numeric"
-                    aria-label="Enter year model manually"
+                    aria-label="Enter GPS year"
                     className={styles.controlInput}
                   />
-                )}
+                </div>
               </div>
+            ) : null}
 
-              <p className={styles.fieldHint}>{yearHint}</p>
+            <div className={styles.selectionChipRow} style={{ marginTop: '1rem' }}>
+              {extrasSummaryChips.map((chip) => (
+                <span key={chip} className={styles.modelChip}>
+                  {chip}
+                </span>
+              ))}
             </div>
-          </FocusCard>
+
+            <div className={styles.currentCardActions}>
+              <button type="button" className={styles.secondaryButton} onClick={clearExtrasSelection}>
+                No fitted extras
+              </button>
+              <button type="button" className={styles.primaryButton} onClick={applyExtrasSelection}>
+                Save extras
+              </button>
+            </div>
+          </div>
         )}
-
-        {isYearValid ? (
-          isHoursValid ? (
-            <FlowSummaryRow
-              label="4.2 Engine hours"
-              value={enteredHoursDisplay}
-              hint="Use the reading shown on the engine hour meter."
-              onEdit={handleEditHours}
-            />
-          ) : (
-            <FocusCard
-              stepLabel="4.2 Engine hours"
-              title="Enter engine hours"
-              body="Use the number currently shown on the engine hour meter."
-            >
-              <div className={`${styles.fieldBlock} ${styles.inputPanel} ${styles.flowCompactPanel}`}>
-                <div className={styles.panelHeader}>
-                  <span className={styles.panelLabel}>Engine Hours</span>
-                  <span className={styles.filterStatusBadge}>{isHoursValid ? 'Entered' : 'Required'}</span>
-                </div>
-
-                <div className={styles.panelControl}>
-                  <div className={styles.panelInputRow}>
-                    <input
-                      value={hours}
-                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                        setHours(event.target.value.replace(/[^0-9]/g, ''));
-                        setMessage('');
-                        invalidateResult();
-                      }}
-                      placeholder="Type engine hours here"
-                      inputMode="numeric"
-                      aria-label="Enter engine hours"
-                      className={styles.controlInput}
-                    />
-                    <span className={styles.panelBadge}>hrs</span>
-                  </div>
-                </div>
-
-                <p className={styles.fieldHint}>Example: 3500. Enter numbers only.</p>
-              </div>
-            </FocusCard>
-          )
-        ) : null}
-
-        {isYearValid && isHoursValid ? (
-          condition ? (
-            <FlowSummaryRow
-              label="4.3 Overall condition"
-              value={conditionLabel(condition)}
-              hint={getConditionHint(condition)}
-              onEdit={handleEditCondition}
-            />
-          ) : (
-            <FocusCard
-              stepLabel="4.3 Overall condition"
-              title="Choose overall condition"
-              body="Pick the option that best describes the tractor today."
-            >
-              <div className={styles.conditionGrid}>
-                {conditionOptions.map((option) => (
-                  <button
-                    key={option.key}
-                    type="button"
-                    className={`${styles.conditionCard} ${condition === option.key ? styles.conditionCardActive : ''}`}
-                    onClick={() => {
-                      setCondition(option.key);
-                      setMessage('');
-                      invalidateResult();
-                    }}
-                  >
-                    <strong>{option.label}</strong>
-                    <span>{getConditionHint(option.key)}</span>
-                  </button>
-                ))}
-              </div>
-            </FocusCard>
-          )
-        ) : null}
-
-        {isYearValid && isHoursValid && condition ? (
-          extrasReviewed ? (
-            <>
-              <FlowSummaryRow
-                label="4.4 Fitted extras"
-                value={extrasSummaryText}
-                hint="Optional extras confirmed for this valuation."
-                onEdit={openExtrasEditor}
-              />
-
-              <div className={styles.readyCard}>
-                <div className={styles.readyCardHeader}>
-                  <div>
-                    <span className={styles.readyCardLabel}>Ready for valuation</span>
-                    <strong>All tractor details are complete</strong>
-                    <p className={styles.readyCardText}>
-                      Click Get Valuation below to calculate the current values for this tractor profile.
-                    </p>
-                  </div>
-
-                  <span className={styles.flowProgressBadge}>Step 4 complete</span>
-                </div>
-
-                <div className={styles.readyCardGrid}>
-                  <div className={styles.readyCardFact}>
-                    <span>Year model</span>
-                    <strong>{selectedYearDisplay}</strong>
-                  </div>
-                  <div className={styles.readyCardFact}>
-                    <span>Engine hours</span>
-                    <strong>{enteredHoursDisplay}</strong>
-                  </div>
-                  <div className={styles.readyCardFact}>
-                    <span>Condition</span>
-                    <strong>{selectedConditionDisplay}</strong>
-                  </div>
-                  <div className={styles.readyCardFact}>
-                    <span>Extras</span>
-                    <strong>{extrasSummaryText}</strong>
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : (
-            <FocusCard
-              stepLabel="4.4 Fitted extras"
-              title="Confirm fitted extras"
-              body="Extras are optional. Open the extras pop-up if anything is fitted, or confirm that there are no fitted extras."
-              badgeText="Final step"
-            >
-              <div className={styles.focusActionRow}>
-                <button type="button" className={styles.primaryButton} onClick={openExtrasEditor}>
-                  Select Fitted Extras
-                </button>
-                <button type="button" className={styles.secondaryButton} onClick={handleConfirmNoExtras}>
-                  No Fitted Extras
-                </button>
-              </div>
-
-              <p className={styles.focusInlineHint}>
-                Confirming no extras keeps the valuation quick and easy for first-time users.
-              </p>
-
-              <div className={styles.selectionChipRow}>
-                {extrasSummaryChips.map((chip) => (
-                  <span key={chip} className={styles.modelChip}>
-                    {chip}
-                  </span>
-                ))}
-              </div>
-            </FocusCard>
-          )
-        ) : null}
       </div>
     );
   }
@@ -1991,326 +2214,6 @@ export default function ValuationClient() {
         </div>
       </main>
 
-      {extrasOpen && extrasDraft ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Select fitted extras"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(12, 29, 23, 0.58)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            zIndex: 120,
-            display: 'grid',
-            placeItems: 'center',
-            padding: '1rem',
-          }}
-          onClick={(event) => {
-            if (event.target === event.currentTarget) {
-              setExtrasOpen(false);
-              setExtrasDraft(null);
-            }
-          }}
-        >
-          <article
-            className={styles.wizardCard}
-            style={{
-              width: 'min(880px, 100%)',
-              maxHeight: 'min(88vh, 920px)',
-              overflowY: 'auto',
-              borderRadius: '1.35rem',
-            }}
-          >
-            <div
-              style={{
-                padding: '1.25rem 1.35rem 1rem',
-                borderBottom: '1px solid rgba(18, 45, 37, 0.08)',
-                background: 'linear-gradient(180deg, rgba(248, 251, 249, 0.98) 0%, rgba(244, 248, 246, 0.94) 100%)',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  gap: '1rem',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div>
-                  <span className={styles.selectionEyebrow}>Extras</span>
-                  <h2 style={{ margin: '0.45rem 0 0', fontSize: '1.55rem', lineHeight: 1.1, color: '#223b34' }}>
-                    Fitted extras
-                  </h2>
-                  <p style={{ margin: '0.55rem 0 0', color: '#6f7974', lineHeight: 1.6 }}>
-                    Choose the extras fitted to this tractor, then apply and return to the valuation flow.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
-                  onClick={() => {
-                    setExtrasOpen(false);
-                    setExtrasDraft(null);
-                  }}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-
-            <div style={{ padding: '1.25rem 1.35rem 1.35rem' }}>
-              <div className={styles.filterToolbar}>
-                <div className={`${styles.filterGroup} ${styles.filterGroupUnlocked}`}>
-                  <div className={styles.filterGroupHead}>
-                    <span className={styles.filterLabel}>Front Hitch & Front PTO</span>
-                    <span className={styles.filterStatusBadge}>{extrasDraft.frontPto ? 'Included' : 'Optional'}</span>
-                  </div>
-
-                  <div className={styles.pillRow}>
-                    <button
-                      type="button"
-                      className={`${styles.pillButton} ${extrasDraft.frontPto ? styles.pillButtonActive : ''}`}
-                      onClick={() =>
-                        setExtrasDraft((current) => (current ? { ...current, frontPto: true } : current))
-                      }
-                      aria-pressed={extrasDraft.frontPto}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.pillButton} ${!extrasDraft.frontPto ? styles.pillButtonActive : ''}`}
-                      onClick={() =>
-                        setExtrasDraft((current) => (current ? { ...current, frontPto: false } : current))
-                      }
-                      aria-pressed={!extrasDraft.frontPto}
-                    >
-                      No
-                    </button>
-                  </div>
-                </div>
-
-                <div className={`${styles.filterGroup} ${styles.filterGroupUnlocked}`}>
-                  <div className={styles.filterGroupHead}>
-                    <span className={styles.filterLabel}>Front Loader</span>
-                    <span className={styles.filterStatusBadge}>{extrasDraft.frontLoader ? 'Included' : 'Optional'}</span>
-                  </div>
-
-                  <div className={styles.pillRow}>
-                    <button
-                      type="button"
-                      className={`${styles.pillButton} ${extrasDraft.frontLoader ? styles.pillButtonActive : ''}`}
-                      onClick={() =>
-                        setExtrasDraft((current) => (current ? { ...current, frontLoader: true } : current))
-                      }
-                      aria-pressed={extrasDraft.frontLoader}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.pillButton} ${!extrasDraft.frontLoader ? styles.pillButtonActive : ''}`}
-                      onClick={() =>
-                        setExtrasDraft((current) => (current ? { ...current, frontLoader: false } : current))
-                      }
-                      aria-pressed={!extrasDraft.frontLoader}
-                    >
-                      No
-                    </button>
-                  </div>
-                </div>
-
-                <div className={`${styles.filterGroup} ${styles.filterGroupUnlocked}`}>
-                  <div className={styles.filterGroupHead}>
-                    <span className={styles.filterLabel}>GPS</span>
-                    <span className={styles.filterStatusBadge}>{extrasDraft.gpsEnabled ? 'Included' : 'Optional'}</span>
-                  </div>
-
-                  <div className={styles.pillRow}>
-                    <button
-                      type="button"
-                      className={`${styles.pillButton} ${extrasDraft.gpsEnabled ? styles.pillButtonActive : ''}`}
-                      onClick={() =>
-                        setExtrasDraft((current) =>
-                          current
-                            ? {
-                                ...current,
-                                gpsEnabled: true,
-                              }
-                            : current,
-                        )
-                      }
-                      aria-pressed={extrasDraft.gpsEnabled}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.pillButton} ${!extrasDraft.gpsEnabled ? styles.pillButtonActive : ''}`}
-                      onClick={() =>
-                        setExtrasDraft((current) =>
-                          current
-                            ? {
-                                ...current,
-                                gpsEnabled: false,
-                                gpsType: null,
-                                gpsYear: '',
-                              }
-                            : current,
-                        )
-                      }
-                      aria-pressed={!extrasDraft.gpsEnabled}
-                    >
-                      No
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {extrasDraft.gpsEnabled ? (
-                <div className={styles.inputGrid} style={{ marginTop: '1rem' }}>
-                  <div className={`${styles.fieldBlock} ${styles.inputPanel} ${styles.filterGroupUnlocked}`}>
-                    <div className={styles.panelHeader}>
-                      <span className={styles.panelLabel}>GPS Type</span>
-                      <span className={styles.filterStatusBadge}>{extrasDraft.gpsType ? 'Selected' : 'Optional'}</span>
-                    </div>
-
-                    <div className={styles.panelControl}>
-                      <div className={styles.pillRow}>
-                        {(['full-autosteer', 'guidance-only'] as GpsType[]).map((value) => (
-                          <button
-                            key={value}
-                            type="button"
-                            className={`${styles.pillButton} ${extrasDraft.gpsType === value ? styles.pillButtonActive : ''}`}
-                            onClick={() =>
-                              setExtrasDraft((current) => (current ? { ...current, gpsType: value } : current))
-                            }
-                            aria-pressed={extrasDraft.gpsType === value}
-                          >
-                            {getGpsTypeLabel(value)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <p className={styles.fieldHint}>Add the installed GPS system type if known.</p>
-                  </div>
-
-                  <div className={`${styles.fieldBlock} ${styles.inputPanel} ${styles.filterGroupUnlocked}`}>
-                    <div className={styles.panelHeader}>
-                      <span className={styles.panelLabel}>GPS Year</span>
-                      <span className={styles.filterStatusBadge}>{extrasDraft.gpsYear.trim() ? 'Entered' : 'Optional'}</span>
-                    </div>
-
-                    <div className={styles.panelControl}>
-                      <input
-                        value={extrasDraft.gpsYear}
-                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                          setExtrasDraft((current) =>
-                            current
-                              ? {
-                                  ...current,
-                                  gpsYear: event.target.value.replace(/[^0-9]/g, '').slice(0, 4),
-                                }
-                              : current,
-                          )
-                        }
-                        placeholder="Type GPS year here"
-                        inputMode="numeric"
-                        aria-label="Enter GPS year"
-                        className={styles.controlInput}
-                      />
-                    </div>
-
-                    <p className={styles.fieldHint}>Use the approximate GPS year model where available.</p>
-                  </div>
-                </div>
-              ) : null}
-
-              <div className={styles.selectionCard} style={{ marginTop: '1rem' }}>
-                <div className={styles.sectionHeader}>
-                  <span className={styles.selectionEyebrow}>Selected extras</span>
-                  <span className={styles.filterStatusBadge}>
-                    {(() => {
-                      const chips = buildExtrasSummaryChips(
-                        extrasDraft.frontPto,
-                        extrasDraft.frontLoader,
-                        extrasDraft.gpsEnabled,
-                        extrasDraft.gpsType,
-                        extrasDraft.gpsYear,
-                      );
-                      return chips[0] === 'No fitted extras selected' ? 'None' : `${chips.length} item${chips.length === 1 ? '' : 's'}`;
-                    })()}
-                  </span>
-                </div>
-
-                <div className={styles.selectionChipRow} style={{ marginTop: '0.8rem' }}>
-                  {buildExtrasSummaryChips(
-                    extrasDraft.frontPto,
-                    extrasDraft.frontLoader,
-                    extrasDraft.gpsEnabled,
-                    extrasDraft.gpsType,
-                    extrasDraft.gpsYear,
-                  ).map((chip) => (
-                    <span key={chip} className={styles.modelChip}>
-                      {chip}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                padding: '1rem 1.35rem 1.25rem',
-                borderTop: '1px solid rgba(18, 45, 37, 0.08)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: '1rem',
-                flexWrap: 'wrap',
-              }}
-            >
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={() => {
-                  setExtrasOpen(false);
-                  setExtrasDraft(null);
-                }}
-              >
-                Cancel
-              </button>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <button type="button" className={styles.secondaryButton} onClick={handleConfirmNoExtras}>
-                  No Fitted Extras
-                </button>
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={() => {
-                    setFrontPto(extrasDraft.frontPto);
-                    setFrontLoader(extrasDraft.frontLoader);
-                    setGpsEnabled(extrasDraft.gpsEnabled);
-                    setGpsType(extrasDraft.gpsEnabled ? extrasDraft.gpsType : null);
-                    setGpsYear(extrasDraft.gpsEnabled ? extrasDraft.gpsYear : '');
-                    setExtrasReviewed(true);
-                    setExtrasOpen(false);
-                    setExtrasDraft(null);
-                    setMessage('');
-                    invalidateResult();
-                  }}
-                >
-                  Apply Extras
-                </button>
-              </div>
-            </div>
-          </article>
-        </div>
-      ) : null}
     </>
   );
 }
