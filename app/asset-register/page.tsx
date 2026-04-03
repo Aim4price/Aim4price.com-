@@ -53,6 +53,16 @@ function typeLabel(value: SavedItemKind): string {
   );
 }
 
+function typeShortLabel(value: SavedItemKind): string {
+  return (
+    {
+      tractor: 'Equipment',
+      manual: 'Manual',
+      property: 'Property',
+    }[value] ?? 'Manual'
+  );
+}
+
 function formatItemMeta(item: SavedItem): string {
   if (item.kind !== 'tractor') {
     return item.note || 'Added manually to the register';
@@ -127,6 +137,18 @@ function matchesSearch(item: SavedItem, query: string): boolean {
   return haystack.includes(needle);
 }
 
+function filterLabel(value: AssetFilter): string {
+  return (
+    {
+      all: 'All Assets',
+      tractor: 'Equipment',
+      property: 'Property',
+      manual: 'Manual Assets',
+      live: 'Marketplace Live',
+    }[value] ?? 'All Assets'
+  );
+}
+
 export default function RegisterPage() {
   const [items, setItems] = useState<SavedItem[]>([]);
   const [publishedListings, setPublishedListings] = useState<MarketplaceListing[]>([]);
@@ -165,20 +187,6 @@ export default function RegisterPage() {
     );
   }, [publishedListings]);
 
-  const filteredItems = useMemo(() => {
-    return items.filter((item) => {
-      if (!matchesSearch(item, search)) return false;
-
-      if (filter === 'all') return true;
-      if (filter === 'live') return publishedAssetIds.has(item.id);
-      return item.kind === filter;
-    });
-  }, [filter, items, publishedAssetIds, search]);
-
-  const totalValue = useMemo(() => {
-    return items.reduce((sum, item) => sum + Number(item.selectedValueExVat || 0), 0);
-  }, [items]);
-
   const summary = useMemo(() => {
     const tractors = items.filter((item) => item.kind === 'tractor').length;
     const properties = items.filter((item) => item.kind === 'property').length;
@@ -193,6 +201,31 @@ export default function RegisterPage() {
       liveListings,
     };
   }, [items, publishedAssetIds]);
+
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      if (!matchesSearch(item, search)) return false;
+
+      if (filter === 'all') return true;
+      if (filter === 'live') return publishedAssetIds.has(item.id);
+      return item.kind === filter;
+    });
+  }, [filter, items, publishedAssetIds, search]);
+
+  const totalValue = useMemo(() => {
+    return items.reduce((sum, item) => sum + Number(item.selectedValueExVat || 0), 0);
+  }, [items]);
+
+  const filterOptions: { key: AssetFilter; count: number }[] = useMemo(
+    () => [
+      { key: 'all', count: summary.totalAssets },
+      { key: 'tractor', count: summary.tractors },
+      { key: 'property', count: summary.properties },
+      { key: 'manual', count: summary.manualAssets },
+      { key: 'live', count: summary.liveListings },
+    ],
+    [summary],
+  );
 
   function refresh() {
     setItems(loadItems());
@@ -380,14 +413,31 @@ export default function RegisterPage() {
       <AppHeader active="asset-register" />
 
       <div className={styles.content}>
-        <section className={styles.hero}>
-          <div className={styles.heroText}>
-            <span className={styles.kicker}>Stored equipment, property, and manual assets</span>
-            <h1>Asset Register</h1>
-            <p>
-              Save valuation rows, add manual assets such as houses, override values anytime, and
-              push tractors straight to marketplace when they are ready to sell.
-            </p>
+        <section className={styles.heroShell}>
+          <div className={styles.hero}>
+            <div className={styles.heroCopy}>
+              <span className={styles.kicker}>Warm, portfolio-led asset management</span>
+              <h1>Asset Register</h1>
+              <p>
+                Keep equipment, property, and manual assets in one working register. Save from
+                valuation, override when needed, and push equipment to marketplace when it is ready.
+              </p>
+            </div>
+
+            <div className={styles.heroStats}>
+              <article className={styles.heroStat}>
+                <span>Portfolio value</span>
+                <strong>{money(totalValue)}</strong>
+              </article>
+              <article className={styles.heroStat}>
+                <span>Total assets</span>
+                <strong>{summary.totalAssets}</strong>
+              </article>
+              <article className={styles.heroStat}>
+                <span>Marketplace live</span>
+                <strong>{summary.liveListings}</strong>
+              </article>
+            </div>
           </div>
 
           {message ? (
@@ -404,17 +454,18 @@ export default function RegisterPage() {
 
         <section className={styles.dashboard}>
           <div className={styles.mainColumn}>
-            <article className={styles.surface}>
-              <div className={styles.panelTop}>
-                <div className={styles.panelIntro}>
-                  <h2>My Assets</h2>
+            <article className={`${styles.surface} ${styles.controlSurface}`}>
+              <div className={styles.panelHeader}>
+                <div>
+                  <span className={styles.eyebrow}>My assets</span>
+                  <h2>Clear, workable portfolio view</h2>
                   <p>
-                    Each row can be refreshed, manually overridden, or sent to marketplace. Manual
-                    assets and property stay fully editable in the same register.
+                    The register should feel simple at first glance: find the asset, check the value,
+                    then take the next action.
                   </p>
                 </div>
 
-                <div className={styles.panelTopActions}>
+                <div className={styles.panelActions}>
                   {items.length ? (
                     <button
                       type="button"
@@ -435,165 +486,180 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <div className={styles.toolbar}>
+              <div className={styles.filterBar}>
                 <label className={styles.searchField}>
-                  <span className={styles.searchLabel}>Search</span>
+                  <span>Search</span>
                   <input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search assets, brands, models, or notes..."
+                    placeholder="Search title, brand, model, note, or type..."
                   />
-                </label>
-
-                <label className={styles.filterField}>
-                  <span className={styles.searchLabel}>Filter</span>
-                  <select
-                    value={filter}
-                    onChange={(event) => setFilter(event.target.value as AssetFilter)}
-                  >
-                    <option value="all">All Assets</option>
-                    <option value="tractor">Equipment</option>
-                    <option value="property">Property</option>
-                    <option value="manual">Manual Assets</option>
-                    <option value="live">Marketplace Live</option>
-                  </select>
                 </label>
               </div>
 
-              <div className={styles.tableWrap}>
-                <div className={styles.tableHead}>
-                  <span>Asset</span>
-                  <span>Type</span>
-                  <span>Current Value</span>
-                  <span>Last Added</span>
-                  <span className={styles.actionsHead}>Actions</span>
-                </div>
+              <div className={styles.filterChips}>
+                {filterOptions.map((option) => (
+                  <button
+                    key={option.key}
+                    type="button"
+                    className={`${styles.filterChip} ${filter === option.key ? styles.filterChipActive : ''}`}
+                    onClick={() => setFilter(option.key)}
+                    aria-pressed={filter === option.key}
+                  >
+                    <span>{filterLabel(option.key)}</span>
+                    <strong>{option.count}</strong>
+                  </button>
+                ))}
+              </div>
+            </article>
 
-                {filteredItems.length ? (
-                  filteredItems.map((item) => {
+            <article className={`${styles.surface} ${styles.listSurface}`}>
+              <div className={styles.sectionRow}>
+                <div>
+                  <span className={styles.eyebrow}>Showing</span>
+                  <h2>{filterLabel(filter)}</h2>
+                  <p>
+                    {filteredItems.length} {filteredItems.length === 1 ? 'asset' : 'assets'} visible in
+                    the current view.
+                  </p>
+                </div>
+              </div>
+
+              {filteredItems.length ? (
+                <div className={styles.assetGrid}>
+                  {filteredItems.map((item) => {
                     const isLive = publishedAssetIds.has(item.id);
 
                     return (
-                      <div key={item.id} className={styles.row}>
-                        <div className={styles.assetCell}>
-                          <div className={styles.assetTitleLine}>
-                            <strong>{item.title}</strong>
-                            {isLive ? (
-                              <span className={`${styles.statusBadge} ${styles.statusLive}`}>
-                                Marketplace live
-                              </span>
-                            ) : null}
+                      <article key={item.id} className={styles.assetCard}>
+                        <div className={styles.assetTop}>
+                          <div className={styles.assetIdentity}>
+                            <div className={styles.assetBadges}>
+                              <span className={styles.kindBadge}>{typeShortLabel(item.kind)}</span>
+                              <span className={styles.methodBadge}>{methodLabel(item.selectedMethod)}</span>
+                              {isLive ? (
+                                <span className={`${styles.stateBadge} ${styles.stateBadgeLive}`}>
+                                  Marketplace live
+                                </span>
+                              ) : null}
+                            </div>
+
+                            <h3>{item.title}</h3>
+                            <p>{formatItemMeta(item)}</p>
                           </div>
-                          <span className={styles.assetMeta}>{formatItemMeta(item)}</span>
+
+                          <div className={styles.valuePanel}>
+                            <span className={styles.valueLabel}>Current value</span>
+                            <strong>{money(item.selectedValueExVat)}</strong>
+                            <small>
+                              Added {timeAgo(item.createdAtIso)} · {formatDateLabel(item.createdAtIso)}
+                            </small>
+                          </div>
                         </div>
 
-                        <div className={styles.typeCell}>
-                          <span className={styles.typeBadge}>{typeLabel(item.kind)}</span>
-                        </div>
+                        <div className={styles.assetFooter}>
+                          <div className={styles.assetHint}>
+                            {item.kind === 'tractor'
+                              ? 'Saved from valuation and ready for value refresh or marketplace publishing.'
+                              : 'Manually tracked inside the same register for a single portfolio view.'}
+                          </div>
 
-                        <div className={styles.valueCell}>
-                          <strong>{money(item.selectedValueExVat)}</strong>
-                          <span className={styles.methodBadge}>{methodLabel(item.selectedMethod)}</span>
-                        </div>
+                          <div className={styles.assetActions}>
+                            {item.kind === 'tractor' ? (
+                              <button
+                                type="button"
+                                className={styles.secondaryButton}
+                                onClick={() => handleRefreshValue(item)}
+                              >
+                                Refresh Value
+                              </button>
+                            ) : null}
 
-                        <div className={styles.dateCell}>
-                          <strong>{timeAgo(item.createdAtIso)}</strong>
-                          <span>{formatDateLabel(item.createdAtIso)}</span>
-                        </div>
-
-                        <div className={styles.rowActions}>
-                          {item.kind === 'tractor' ? (
                             <button
                               type="button"
-                              className={styles.inlineButton}
-                              onClick={() => handleRefreshValue(item)}
+                              className={styles.secondaryButton}
+                              onClick={() => openOverrideModal(item)}
                             >
-                              Refresh Value
+                              Override Value
                             </button>
-                          ) : null}
 
-                          <button
-                            type="button"
-                            className={styles.inlineButton}
-                            onClick={() => openOverrideModal(item)}
-                          >
-                            Override Value
-                          </button>
+                            {item.kind === 'tractor' ? (
+                              <button
+                                type="button"
+                                className={styles.primaryInlineButton}
+                                onClick={() => openSellModal(item)}
+                              >
+                                {isLive ? 'Update Listing' : 'Send to Marketplace'}
+                              </button>
+                            ) : null}
 
-                          {item.kind === 'tractor' ? (
                             <button
                               type="button"
-                              className={styles.inlineButtonPrimary}
-                              onClick={() => openSellModal(item)}
+                              className={styles.dangerButton}
+                              onClick={() => setDeleteItemState(item)}
                             >
-                              {isLive ? 'Update Listing' : 'Sell'}
+                              Delete
                             </button>
-                          ) : null}
-
-                          <button
-                            type="button"
-                            className={styles.inlineButtonDanger}
-                            onClick={() => setDeleteItemState(item)}
-                          >
-                            Delete
-                          </button>
+                          </div>
                         </div>
-                      </div>
+                      </article>
                     );
-                  })
-                ) : (
-                  <div className={styles.emptyState}>
-                    <strong>No assets found.</strong>
-                    <span>
-                      Save equipment from Valuation, or add a manual asset such as a house,
-                      workshop, trailer, or store room.
-                    </span>
-                  </div>
-                )}
-              </div>
+                  })}
+                </div>
+              ) : (
+                <div className={styles.emptyState}>
+                  <strong>No assets found.</strong>
+                  <span>
+                    Save equipment from Valuation, or add a manual asset such as a house, workshop,
+                    trailer, or storeroom.
+                  </span>
+                </div>
+              )}
             </article>
           </div>
 
           <aside className={styles.rail}>
-            <article className={styles.surface}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Portfolio Value</span>
+            <article className={`${styles.surface} ${styles.summarySurface}`}>
+              <div className={styles.summaryTop}>
+                <span className={styles.summaryLabel}>Portfolio overview</span>
                 <strong>{money(totalValue)}</strong>
+                <p>One register across machinery, property, and manual assets.</p>
               </div>
 
-              <div className={styles.statsGrid}>
-                <div className={styles.statCard}>
+              <div className={styles.summaryGrid}>
+                <div className={styles.summaryCard}>
                   <span>Total assets</span>
                   <strong>{summary.totalAssets}</strong>
                 </div>
-                <div className={styles.statCard}>
+                <div className={styles.summaryCard}>
                   <span>Equipment</span>
                   <strong>{summary.tractors}</strong>
                 </div>
-                <div className={styles.statCard}>
+                <div className={styles.summaryCard}>
                   <span>Property</span>
                   <strong>{summary.properties}</strong>
                 </div>
-                <div className={styles.statCard}>
-                  <span>Manual assets</span>
+                <div className={styles.summaryCard}>
+                  <span>Manual</span>
                   <strong>{summary.manualAssets}</strong>
                 </div>
               </div>
 
-              <div className={styles.highlightCard}>
+              <div className={styles.liveStrip}>
                 <div>
-                  <span className={styles.highlightLabel}>Marketplace live</span>
+                  <span>Marketplace live</span>
                   <strong>{summary.liveListings} assets</strong>
                 </div>
-                <span className={styles.highlightPill}>Tracked</span>
+                <span className={styles.livePill}>Tracked</span>
               </div>
             </article>
 
-            <article className={styles.surface}>
-              <div className={styles.sectionHeader}>
+            <article className={`${styles.surface} ${styles.quickSurface}`}>
+              <div className={styles.sectionRow}>
                 <div>
-                  <h2>Quick Actions</h2>
-                  <p>Keep the most common asset workflows obvious.</p>
+                  <span className={styles.eyebrow}>Quick actions</span>
+                  <h2>Keep the next step obvious</h2>
+                  <p>Use the most common register actions without hunting for them.</p>
                 </div>
               </div>
 
@@ -609,7 +675,9 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   className={styles.quickButton}
-                  onClick={() => setNotice('Wire “Refresh All Values” once the revaluation inputs are stored.')}
+                  onClick={() =>
+                    setNotice('Wire “Refresh All Values” once the revaluation inputs are stored.')
+                  }
                 >
                   Refresh All Values
                 </button>
@@ -617,7 +685,9 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   className={styles.quickButton}
-                  onClick={() => setNotice('Connect this button to your PDF asset register export when ready.')}
+                  onClick={() =>
+                    setNotice('Connect this button to your PDF asset register export when ready.')
+                  }
                 >
                   Generate Asset Report
                 </button>
@@ -698,12 +768,7 @@ export default function RegisterPage() {
 
       {overrideItem ? (
         <div className={styles.modalBackdrop} onClick={closeBackdrop}>
-          <div
-            className={styles.modalCard}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="override-title"
-          >
+          <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="override-title">
             <div className={styles.modalHeader}>
               <div>
                 <h3 id="override-title">Override Value</h3>
