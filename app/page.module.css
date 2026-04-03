@@ -15,63 +15,73 @@
 }
 
 .heroSection {
-  padding: clamp(2rem, 3.6vw, 3.6rem) 0 clamp(2.5rem, 4vw, 4.2rem);
+  padding: clamp(2rem, 3.5vw, 3.8rem) 0 clamp(2.6rem, 4vw, 4.4rem);
   background:
-    radial-gradient(circle at 15% 0%, rgba(28, 101, 76, 0.12), transparent 28%),
-    linear-gradient(180deg, #fcfdfc 0%, #f4f8f5 100%);
+    radial-gradient(circle at 15% 0%, rgba(30, 109, 81, 0.12), transparent 28%),
+    linear-gradient(180deg, #fcfdfc 0%, #f3f8f5 100%);
   border-bottom: 1px solid rgba(18, 45, 37, 0.06);
 }
 
 .heroGrid {
   display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   align-items: center;
-  gap: clamp(1.8rem, 3vw, 3.5rem);
+  gap: clamp(2rem, 3.2vw, 4rem);
 }
 
 .heroCopy {
-  max-width: 33rem;
+  max-width: 34rem;
 }
 
 .heroEyebrow,
-.sectionEyebrow {
+.sectionEyebrow,
+.ctaEyebrow {
   margin: 0;
   font-size: 0.78rem;
   line-height: 1.2;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   font-weight: 700;
+}
+
+.heroEyebrow,
+.sectionEyebrow {
   color: #648076;
 }
 
+.ctaEyebrow {
+  color: rgba(255, 255, 255, 0.74);
+}
+
 .heroTitle {
-  margin: 0.85rem 0 0;
-  font-size: clamp(3rem, 4.5vw, 4.9rem);
-  line-height: 0.98;
-  letter-spacing: -0.07em;
-  font-weight: 750;
+  margin: 0.8rem 0 0;
+  font-size: clamp(3rem, 4.8vw, 5.1rem);
+  line-height: 0.95;
+  letter-spacing: -0.075em;
+  font-weight: 800;
   color: #203a31;
   text-wrap: balance;
 }
 
 .heroText {
   margin: 1rem 0 0;
-  max-width: 26rem;
-  font-size: clamp(1.08rem, 1.5vw, 1.18rem);
-  line-height: 1.55;
-  font-weight: 500;
-  color: #5f6f69;
+  max-width: 29rem;
+  font-size: 1.08rem;
+  line-height: 1.62;
+  color: #60706a;
 }
 
 .heroActions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.8rem;
-  margin-top: 1.45rem;
+  margin-top: 1.55rem;
 }
 
 .primaryCta,
-.secondaryCta {
+.secondaryCta,
+.ctaPrimary,
+.ctaSecondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -91,6 +101,8 @@
 
 .primaryCta:hover,
 .secondaryCta:hover,
+.ctaPrimary:hover,
+.ctaSecondary:hover,
 .featureCard:hover,
 .heroImageLink:hover {
   transform: translateY(-2px);
@@ -98,7 +110,7 @@
 
 .primaryCta {
   color: #ffffff;
-  background: linear-gradient(180deg, #195842 0%, #124233 100%);
+  background: linear-gradient(180deg, #1a5d46 0%, #124233 100%);
   box-shadow: 0 14px 28px rgba(17, 63, 50, 0.14);
 }
 
@@ -109,22 +121,22 @@
   box-shadow: 0 10px 20px rgba(18, 45, 37, 0.05);
 }
 
-.heroChips {
+.heroMeta {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
   margin-top: 1.15rem;
 }
 
-.heroChip {
+.heroMetaItem {
   display: inline-flex;
   align-items: center;
   min-height: 2.1rem;
   padding: 0 0.8rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(18, 45, 37, 0.08);
-  color: #365247;
+  color: #355146;
   font-size: 0.88rem;
   font-weight: 600;
   box-shadow: 0 8px 18px rgba(18, 45, 37, 0.04);
@@ -138,7 +150,7 @@
 .heroImageLink {
   display: block;
   width: 100%;
-  max-width: 45rem;
+  max-width: 46rem;
   text-decoration: none;
   transition: transform 180ms ease;
 }
@@ -146,7 +158,7 @@
 .heroImageFrame {
   position: relative;
   width: 100%;
-  min-height: 29rem;
+  min-height: 30rem;
   overflow: hidden;
   isolation: isolate;
   border-radius: 2rem;
@@ -161,18 +173,37 @@
   position: absolute;
   right: -8%;
   bottom: -10%;
-  width: 58%;
-  height: 58%;
+  width: 60%;
+  height: 60%;
   z-index: 0;
-  background: radial-gradient(circle, rgba(33, 125, 92, 0.22) 0%, rgba(33, 125, 92, 0) 72%);
+  background: radial-gradient(circle, rgba(33, 125, 92, 0.2) 0%, rgba(33, 125, 92, 0) 72%);
   filter: blur(18px);
+}
+
+.heroPill {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.4rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  backdrop-filter: blur(10px);
+  color: #244338;
+  font-size: 0.86rem;
+  font-weight: 700;
+  box-shadow: 0 10px 18px rgba(12, 35, 29, 0.08);
 }
 
 .heroImage {
   object-fit: cover;
   object-position: center;
   z-index: 1;
-  transition: transform 280ms ease;
+  transition: transform 300ms ease;
 }
 
 .heroImageLink:hover .heroImage {
@@ -216,25 +247,33 @@
 }
 
 .featureSection {
-  padding: 2.4rem 0 3rem;
+  padding: 2.55rem 0 3.2rem;
   background: #ffffff;
   border-bottom: 1px solid rgba(18, 45, 37, 0.06);
 }
 
 .sectionIntro {
-  max-width: 34rem;
-  margin: 0 auto 1.4rem;
+  max-width: 36rem;
+  margin: 0 auto 1.55rem;
   text-align: center;
 }
 
 .sectionTitle {
   margin: 0.68rem 0 0;
-  font-size: clamp(1.9rem, 2.9vw, 2.5rem);
+  font-size: clamp(1.95rem, 3vw, 2.6rem);
   line-height: 1.08;
   letter-spacing: -0.05em;
   font-weight: 700;
-  color: #213a31;
+  color: #213a32;
   text-wrap: balance;
+}
+
+.sectionText {
+  margin: 0.62rem auto 0;
+  max-width: 31rem;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: #697772;
 }
 
 .featureGrid {
@@ -247,12 +286,12 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 17rem;
-  padding: 1.25rem;
+  min-height: 17.5rem;
+  padding: 1.25rem 1.25rem 1.2rem;
   overflow: hidden;
   border-radius: 1.45rem;
   text-decoration: none;
-  background: linear-gradient(180deg, #fbfcfb 0%, #f4f7f5 100%);
+  background: linear-gradient(180deg, #fcfdfc 0%, #f4f7f5 100%);
   border: 1px solid rgba(18, 45, 37, 0.06);
   box-shadow:
     0 18px 36px rgba(18, 45, 37, 0.05),
@@ -267,10 +306,20 @@
 .featureCard::before {
   content: '';
   position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  border-radius: 1.45rem 0 0 1.45rem;
-  background: linear-gradient(180deg, #1f7a60 0%, #4fb58e 100%);
+  inset: 0 0 auto 0;
+  height: 4px;
+}
+
+.featureCard:nth-child(1)::before {
+  background: linear-gradient(90deg, #1f7a60 0%, #49b68a 100%);
+}
+
+.featureCard:nth-child(2)::before {
+  background: linear-gradient(90deg, #8ea13f 0%, #c6d56d 100%);
+}
+
+.featureCard:nth-child(3)::before {
+  background: linear-gradient(90deg, #527ea1 0%, #8fb1cc 100%);
 }
 
 .featureCard:hover {
@@ -278,10 +327,10 @@
   box-shadow:
     0 24px 42px rgba(18, 45, 37, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
-  background: linear-gradient(180deg, #ffffff 0%, #eef5f1 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #edf5f0 100%);
 }
 
-.featureTopRow {
+.featureTop {
   display: flex;
   justify-content: flex-end;
 }
@@ -290,22 +339,22 @@
   display: inline-flex;
   align-items: center;
   min-height: 1.9rem;
-  padding: 0 0.65rem;
+  padding: 0 0.7rem;
   border-radius: 999px;
   background: rgba(23, 77, 62, 0.08);
-  color: #1d5f4a;
+  color: #1c5d49;
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.featureIconWrap {
-  width: 5rem;
-  height: 5rem;
+.featureImageWrap {
+  width: 5.1rem;
+  height: 5.1rem;
   display: grid;
   place-items: center;
-  margin-top: 0.65rem;
+  margin-top: 0.8rem;
   border-radius: 1.35rem;
   background: linear-gradient(180deg, #ffffff 0%, #eef4f1 100%);
   box-shadow:
@@ -321,7 +370,7 @@
 
 .featureTitle {
   margin: 1rem 0 0;
-  font-size: 1.16rem;
+  font-size: 1.18rem;
   line-height: 1.2;
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -329,11 +378,11 @@
 }
 
 .featureText {
-  margin: 0.65rem 0 0;
+  margin: 0.64rem 0 0;
   max-width: 16rem;
-  font-size: 0.95rem;
+  font-size: 0.96rem;
   line-height: 1.58;
-  color: #687671;
+  color: #6a7872;
 }
 
 .featureAction {
@@ -352,82 +401,109 @@
   font-size: 1rem;
 }
 
-.audienceSection {
-  padding: 2.75rem 0 3rem;
-  background: linear-gradient(180deg, #eef5f1 0%, #f7faf8 100%);
+.stepsSection {
+  padding: 2.8rem 0 3.1rem;
+  background: linear-gradient(180deg, #eef5f1 0%, #f8fbf9 100%);
   border-bottom: 1px solid rgba(18, 45, 37, 0.06);
 }
 
-.audiencePanel {
+.stepsPanel {
   padding: 1.8rem;
-  border-radius: 1.7rem;
-  background: rgba(255, 255, 255, 0.72);
+  border-radius: 1.8rem;
+  background: rgba(255, 255, 255, 0.78);
   border: 1px solid rgba(18, 45, 37, 0.06);
   box-shadow: 0 18px 36px rgba(18, 45, 37, 0.04);
 }
 
-.audienceIntro {
-  text-align: center;
-}
-
-.audienceGrid {
+.stepsGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.9rem;
-  margin-top: 1.35rem;
+  gap: 1rem;
 }
 
-.audienceCard {
+.stepCard {
   padding: 1.15rem 1rem;
-  border-radius: 1.25rem;
+  border-radius: 1.3rem;
   background: #ffffff;
   border: 1px solid rgba(18, 45, 37, 0.06);
 }
 
-.audienceTitle {
-  margin: 0;
+.stepNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.78rem;
+  background: #eaf4ee;
+  color: #17513e;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.stepTitle {
+  margin: 0.9rem 0 0;
   font-size: 1rem;
-  line-height: 1.2;
+  line-height: 1.25;
   font-weight: 700;
   color: #223c33;
 }
 
-.audienceText {
-  margin: 0.55rem 0 0;
+.stepText {
+  margin: 0.56rem 0 0;
   font-size: 0.93rem;
   line-height: 1.55;
   color: #65736e;
 }
 
 .ctaSection {
-  padding: 2.4rem 0 2.9rem;
+  padding: 2.6rem 0 3rem;
   background: #fbfcfb;
 }
 
 .ctaPanel {
-  padding: 2rem 1.4rem;
-  border-radius: 1.7rem;
+  padding: 2.2rem 1.5rem;
+  border-radius: 1.8rem;
   text-align: center;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(241, 247, 243, 0.98) 100%);
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  box-shadow:
-    0 22px 44px rgba(18, 45, 37, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  background: linear-gradient(180deg, #1a5d46 0%, #123f31 100%);
+  box-shadow: 0 28px 50px rgba(13, 44, 34, 0.16);
 }
 
 .ctaTitle {
-  margin: 0.68rem 0 0;
-  font-size: clamp(1.95rem, 2.9vw, 2.7rem);
+  margin: 0.72rem 0 0;
+  font-size: clamp(2rem, 3vw, 2.8rem);
   line-height: 1.05;
   letter-spacing: -0.05em;
-  font-weight: 700;
-  color: #213a32;
+  font-weight: 750;
+  color: #ffffff;
+}
+
+.ctaText {
+  max-width: 32rem;
+  margin: 0.72rem auto 0;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .ctaButtons {
   display: flex;
   justify-content: center;
-  margin-top: 1.3rem;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 1.35rem;
+}
+
+.ctaPrimary {
+  color: #174634;
+  background: #ffffff;
+  box-shadow: 0 14px 28px rgba(8, 24, 19, 0.12);
+}
+
+.ctaSecondary {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
 }
 
 .footer {
@@ -452,7 +528,7 @@
 }
 
 .footerBrandText {
-  font-size: 1.03rem;
+  font-size: 1.04rem;
   font-weight: 700;
   letter-spacing: -0.03em;
 }
@@ -466,7 +542,7 @@
 .footerLink {
   font-size: 0.95rem;
   text-decoration: none;
-  color: #63706b;
+  color: #64716c;
   transition: color 180ms ease;
 }
 
@@ -484,6 +560,8 @@
 
 .primaryCta:focus-visible,
 .secondaryCta:focus-visible,
+.ctaPrimary:focus-visible,
+.ctaSecondary:focus-visible,
 .heroImageLink:focus-visible,
 .featureCard:focus-visible,
 .footerBrand:focus-visible,
@@ -512,7 +590,7 @@
 
 @media (max-width: 900px) {
   .featureGrid,
-  .audienceGrid {
+  .stepsGrid {
     grid-template-columns: 1fr;
   }
 
@@ -528,15 +606,18 @@
   }
 
   .heroSection {
-    padding: 1.7rem 0 2.5rem;
+    padding: 1.75rem 0 2.5rem;
   }
 
   .heroTitle {
-    font-size: 2.55rem;
+    font-size: 2.6rem;
     line-height: 1.02;
   }
 
-  .heroText {
+  .heroText,
+  .sectionText,
+  .stepText,
+  .ctaText {
     font-size: 1rem;
   }
 
@@ -546,23 +627,30 @@
   }
 
   .primaryCta,
-  .secondaryCta {
+  .secondaryCta,
+  .ctaPrimary,
+  .ctaSecondary {
     width: 100%;
   }
 
   .heroImageFrame {
-    min-height: 17rem;
-    border-radius: 1.25rem;
+    min-height: 17.5rem;
+    border-radius: 1.3rem;
+  }
+
+  .heroPill {
+    top: 0.8rem;
+    right: 0.8rem;
   }
 
   .featureSection,
-  .audienceSection,
+  .stepsSection,
   .ctaSection {
     padding-top: 2.2rem;
-    padding-bottom: 2.4rem;
+    padding-bottom: 2.5rem;
   }
 
-  .audiencePanel,
+  .stepsPanel,
   .ctaPanel {
     padding: 1.35rem 1rem;
   }
@@ -580,6 +668,8 @@
 @media (prefers-reduced-motion: reduce) {
   .primaryCta,
   .secondaryCta,
+  .ctaPrimary,
+  .ctaSecondary,
   .featureCard,
   .heroImageLink,
   .heroImage,
