@@ -1,2718 +1,919 @@
-.page {
-  min-height: 100vh;
-  padding-bottom: 4rem;
-  background:
-    radial-gradient(circle at top left, rgba(23, 77, 62, 0.05), transparent 28%),
-    linear-gradient(180deg, #fbfcfb 0%, #f3f6f4 100%);
-  color: var(--text-strong);
-}
-
-.container {
-  width: var(--shell-width);
-  margin-inline: auto;
-  padding-top: 2rem;
-}
-
-
-.heroIntro {
-  width: min(100%, 1040px);
-  margin: 0 auto 1.25rem;
-  padding: 1.55rem 1.65rem;
-  border-radius: 1.7rem;
-  background:
-    linear-gradient(135deg, #11382d 0%, #185644 58%, #2b7a61 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0));
-  border: 1px solid rgba(17, 56, 45, 0.16);
-  box-shadow:
-    0 24px 48px rgba(15, 53, 42, 0.14),
-    0 8px 18px rgba(15, 53, 42, 0.08);
-}
-
-.heroIntroContent {
-  max-width: 44rem;
-}
-
-.heroBadge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.95rem;
-  padding: 0 0.82rem;
-  border-radius: 999px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  font-size: 0.77rem;
-  font-weight: 800;
-  color: #dff6ea;
-  background: rgba(232, 252, 241, 0.12);
-  border: 1px solid rgba(232, 252, 241, 0.16);
-}
-
-.heroIntroTitle {
-  margin: 0.9rem 0 0.58rem;
-  max-width: 10.5ch;
-  color: #ffffff;
-  font-size: clamp(2.6rem, 5vw, 4.2rem);
-  line-height: 0.96;
-  letter-spacing: -0.065em;
-}
-
-.heroIntroText {
-  max-width: 40rem;
-  margin: 0;
-  color: rgba(229, 244, 237, 0.92);
-  font-size: 1.04rem;
-  line-height: 1.72;
-}
-
-.wizardShell {
-  width: min(100%, 1040px);
-  margin: 0 auto;
-}
-
-.wizardCard,
-.heroCard,
-.assetCard,
-.sideCard {
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  border-radius: 1.6rem;
-  box-shadow:
-    0 20px 44px rgba(16, 42, 34, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
-.wizardCard {
-  overflow: hidden;
-}
-
-.wizardHeader {
-  padding: 1.2rem 1.4rem 1rem;
-  border-bottom: 1px solid rgba(18, 45, 37, 0.06);
-  background: linear-gradient(180deg, rgba(248, 251, 249, 0.96) 0%, rgba(244, 248, 246, 0.92) 100%);
-}
-
-.stepper {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.85rem;
-  align-items: stretch;
-}
-
-.stepperItem {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  min-width: 0;
-  padding: 0.38rem 0.55rem;
-  border-radius: 999px;
-}
-
-.stepperItemActive {
-  background: rgba(26, 89, 68, 0.08);
-}
-
-.stepperItemComplete {
-  background: rgba(23, 77, 62, 0.05);
-}
-
-.stepperBullet {
-  width: 2.1rem;
-  height: 2.1rem;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  background: #e7ece9;
-  color: #7f8e87;
-  font-size: 0.82rem;
-  font-weight: 800;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
-}
-
-.stepperBulletActive,
-.stepperBulletComplete {
-  background: linear-gradient(180deg, #1a5944 0%, #124334 100%);
-  color: #ffffff;
-}
-
-.stepperLine {
-  flex: 1 1 auto;
-  min-width: 1rem;
-  height: 2px;
-  border-radius: 999px;
-  background: rgba(18, 68, 52, 0.18);
-}
-
-.stepperLineComplete {
-  background: linear-gradient(90deg, #1a5944 0%, #2f7f65 100%);
-}
-
-.stepperLabel {
-  font-size: 0.84rem;
-  font-weight: 700;
-  color: #66736d;
-}
-
-.stepperLabelActive {
-  color: #1c4134;
-}
-
-.stepperLabelComplete {
-  color: #295948;
-}
-
-.stepContent {
-  padding: 2.2rem 1.8rem 1.7rem;
-}
-
-.stepTitle {
-  margin: 0;
-  text-align: center;
-  font-size: clamp(2rem, 3vw, 2.7rem);
-  line-height: 1.08;
-  font-weight: 700;
-  letter-spacing: -0.05em;
-  color: #223b34;
-}
-
-.stepText {
-  max-width: 42rem;
-  margin: 0.95rem auto 0;
-  text-align: center;
-  font-size: 1.02rem;
-  line-height: 1.8;
-  color: #6f7974;
-}
-
-.message {
-  margin-top: 1.15rem;
-  padding: 0.95rem 1rem;
-  border-radius: 1rem;
-  background: rgba(33, 129, 85, 0.1);
-  color: #1d6b46;
-  font-weight: 700;
-}
-
-.typeGrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1rem;
-  margin-top: 1.8rem;
-}
-
-.typePicker {
-  display: grid;
-  grid-template-columns: 3.4rem minmax(0, 320px) 3.4rem;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 1.8rem;
-}
-
-.typePickerCard {
-  width: 100%;
-}
-
-.typeArrow {
-  width: 3.4rem;
-  height: 3.4rem;
-  border: 1px solid rgba(18, 45, 37, 0.1);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.96);
-  color: #7a8781;
-  font-size: 1.7rem;
-  line-height: 1;
-  display: grid;
-  place-items: center;
-  box-shadow:
-    0 10px 22px rgba(16, 42, 34, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
-.typeArrow:disabled {
-  opacity: 1;
-  cursor: default;
-}
-
-.typeCard,
-.brandCard,
-.pillButton,
-.modelRow,
-.conditionCard,
-.methodButton,
-.secondaryButton,
-.primaryButton,
-.assetButton,
-.inlineButton,
-.backLink {
-  font: inherit;
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease,
-    background 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
-}
-
-.typeCard:hover,
-.brandCard:hover,
-.pillButton:hover,
-.modelRow:hover,
-.conditionCard:hover,
-.methodButton:hover,
-.secondaryButton:hover,
-.primaryButton:hover,
-.assetButton:hover,
-.inlineButton:hover,
-.backLink:hover {
-  transform: translateY(-1px);
-}
-
-.typeCard {
-  cursor: pointer;
-  min-height: 15.5rem;
-  padding: 1rem;
-  border-radius: 1.2rem;
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow:
-    0 14px 28px rgba(18, 45, 37, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.typeCardActive {
-  border-color: rgba(26, 89, 68, 0.7);
-  background: linear-gradient(180deg, #f8fdf9 0%, #e7f5ed 100%);
-  box-shadow:
-    0 18px 38px rgba(17, 63, 50, 0.18),
-    0 0 0 4px rgba(26, 89, 68, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
-}
-
-.typeCardActive .typeImageBox {
-  background: linear-gradient(180deg, #eef8f2 0%, #dcefe4 100%);
-  border-color: rgba(26, 89, 68, 0.2);
-}
-
-.typeCardActive strong {
-  color: #0f5e40;
-}
-
-.typeCardDisabled {
-  opacity: 0.56;
-  pointer-events: none;
-}
-
-.typeImageBox {
-  position: relative;
-  width: 100%;
-  height: 150px;
-  margin-bottom: 1rem;
-  border-radius: 1rem;
-  overflow: hidden;
-  background:
-    linear-gradient(180deg, #f6f8f7 0%, #eef2ef 100%);
-  border: 1px solid rgba(18, 45, 37, 0.05);
-}
-
-.typeImage {
-  object-fit: contain;
-  object-position: center;
-  padding: 0.95rem;
-}
-
-.typeCard strong {
-  font-size: 1rem;
-  line-height: 1.35;
-  color: #223b34;
-}
-
-.typeCard span {
-  margin-top: 0.35rem;
-  color: #74817b;
-  font-size: 0.94rem;
-  line-height: 1.5;
-}
-
-.searchWrap {
-  margin-top: 1.45rem;
-}
-
-.searchInput,
-.controlInput,
-.field input,
-.field select,
-.dropdownSearchInput {
-  width: 100%;
-  min-height: 3.35rem;
-  padding: 0 1.05rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(18, 45, 37, 0.12);
-  background: #ffffff;
-  color: var(--text-strong);
-  font-size: 1rem;
-  font-weight: 600;
-  outline: none;
-  box-shadow:
-    0 1px 2px rgba(16, 42, 34, 0.02),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
-}
-
-.searchInput::placeholder,
-.controlInput::placeholder,
-.field input::placeholder,
-.dropdownSearchInput::placeholder {
-  color: #97a39d;
-  font-weight: 500;
-}
-
-.searchInput:focus,
-.controlInput:focus,
-.field input:focus,
-.field select:focus,
-.dropdownSearchInput:focus {
-  border-color: rgba(26, 89, 68, 0.34);
-  box-shadow: 0 0 0 4px rgba(26, 89, 68, 0.08);
-}
-
-.dropdownField {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.dropdownTrigger {
-  cursor: pointer;
-  width: 100%;
-  min-height: 3.6rem;
-  padding: 0.9rem 1.05rem;
-  border-radius: 1.05rem;
-  border: 1px solid rgba(18, 45, 37, 0.12);
-  background: linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
-  color: var(--text-strong);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  text-align: left;
-  box-shadow:
-    0 10px 24px rgba(16, 42, 34, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
-.dropdownTriggerOpen {
-  border-color: rgba(26, 89, 68, 0.34);
-  box-shadow:
-    0 16px 30px rgba(16, 42, 34, 0.08),
-    0 0 0 4px rgba(26, 89, 68, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
-.dropdownTriggerText {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #223b34;
-}
-
-.dropdownTriggerIcon {
-  flex: 0 0 auto;
-  color: #5d6d66;
-  font-size: 1rem;
-  line-height: 1;
-}
-
-.dropdownMenu {
-  display: grid;
-  gap: 0.75rem;
-  padding: 0.9rem;
-  border-radius: 1.15rem;
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  background: linear-gradient(180deg, rgba(252, 253, 252, 0.98) 0%, rgba(246, 249, 247, 0.98) 100%);
-  box-shadow:
-    0 18px 36px rgba(16, 42, 34, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
-.dropdownSearchWrap {
-  display: grid;
-}
-
-.dropdownList {
-  display: grid;
-  gap: 0.55rem;
-  max-height: 21rem;
-  overflow-y: auto;
-  padding-right: 0.15rem;
-}
-
-.dropdownOption {
-  cursor: pointer;
-  width: 100%;
-  min-height: 3.35rem;
-  padding: 0.85rem 1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  background: rgba(255, 255, 255, 0.96);
-  color: #223b34;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  text-align: left;
-  box-shadow:
-    0 10px 22px rgba(16, 42, 34, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
-.dropdownOption:hover {
-  border-color: rgba(26, 89, 68, 0.18);
-  background: linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
-}
-
-.dropdownOptionActive {
-  border-color: rgba(26, 89, 68, 0.42);
-  background: linear-gradient(180deg, #fbfefd 0%, #edf7f1 100%);
-  box-shadow:
-    0 14px 28px rgba(16, 42, 34, 0.075),
-    0 0 0 4px rgba(26, 89, 68, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
-}
-
-.dropdownOptionText {
-  font-size: 0.98rem;
-  font-weight: 700;
-  color: inherit;
-}
-
-.dropdownOptionBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 1.95rem;
-  padding: 0 0.75rem;
-  border-radius: 999px;
-  background: #dff1e5;
-  color: #0f6a46;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.dropdownEmpty {
-  padding: 1rem 1.05rem;
-  border-radius: 1rem;
-  border: 1px dashed rgba(18, 45, 37, 0.14);
-  background: rgba(255, 255, 255, 0.8);
-  color: #6f7a75;
-  line-height: 1.6;
-}
-
-.brandGrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.85rem;
-  margin-top: 1rem;
-}
-
-.brandCard {
-  min-height: 4rem;
-  padding: 0.9rem 1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  background: rgba(255, 255, 255, 0.96);
-  color: #29423a;
-  font-weight: 700;
-  text-align: center;
-  box-shadow:
-    0 10px 22px rgba(16, 42, 34, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
-.brandCardActive {
-  border-color: rgba(26, 89, 68, 0.24);
-  background: linear-gradient(180deg, #ffffff 0%, #f4faf7 100%);
-  color: #1d624e;
-}
-
-.filterToolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 1.45rem;
-  align-items: stretch;
-}
-
-.filterGroup {
-  flex: 1 1 280px;
-  min-width: 0;
-  display: grid;
-  align-content: start;
-  gap: 0.75rem;
-  min-height: 9.25rem;
-  padding: 1rem 1.05rem;
-  border-radius: 1.05rem;
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  background: rgba(248, 250, 249, 0.96);
-  transition:
-    border-color 160ms ease,
-    background 160ms ease,
-    box-shadow 160ms ease,
-    opacity 160ms ease;
-}
-
-.filterGroupHead {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.filterGroupUnlocked {
-  background: rgba(248, 250, 249, 0.96);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
-}
-
-.filterGroupLocked {
-  border-style: dashed;
-  background: rgba(245, 247, 246, 0.9);
-  opacity: 0.88;
-  box-shadow: none;
-}
-
-.filterStatusBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 1.9rem;
-  padding: 0 0.7rem;
-  border-radius: 999px;
-  background: rgba(23, 77, 62, 0.08);
-  color: #1d624e;
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.filterLockedText {
-  margin: 0;
-  color: #7a8781;
-  line-height: 1.6;
-}
-
-.filterLabel,
-.fieldLabel {
-  display: block;
-  font-size: 0.82rem;
-  font-weight: 800;
-  letter-spacing: 0.045em;
-  text-transform: uppercase;
-  color: #6f7a75;
-}
-
-.pillRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-}
-
-.pillButton {
-  cursor: pointer;
-  position: relative;
-  min-height: 3.05rem;
-  padding: 0 1.2rem;
-  border-radius: 1.05rem;
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  background: linear-gradient(180deg, #ffffff 0%, #f5f8f6 100%);
-  color: #2b3d36;
-  font-size: 0.97rem;
-  font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
-  box-shadow:
-    0 10px 22px rgba(16, 42, 34, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
-.pillButtonActive {
-  border-color: rgba(18, 72, 55, 0.48);
-  background: linear-gradient(180deg, #1e6a51 0%, #134736 100%);
-  color: #ffffff;
-  box-shadow:
-    0 16px 30px rgba(17, 63, 50, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
-}
-
-.pillButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-  transform: none;
-  box-shadow: none;
-}
-
-.filterHint {
-  margin: 0.95rem 0 0;
-  color: #66736d;
-  line-height: 1.6;
-}
-
-.filterSummary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
-  padding: 0.95rem 1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  background: rgba(246, 249, 247, 0.98);
-}
-
-.filterSummaryTitle {
-  font-weight: 800;
-  color: #1f342d;
-}
-
-.filterSummaryText {
-  color: #66736d;
-  text-align: right;
-}
-
-.modelList {
-  display: grid;
-  gap: 0.85rem;
-  margin-top: 1rem;
-}
-
-.modelRow {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.05rem 1.1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  background: rgba(255, 255, 255, 0.97);
-  text-align: left;
-  box-shadow:
-    0 10px 22px rgba(16, 42, 34, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
-.modelRowActive {
-  border-color: rgba(26, 89, 68, 0.52);
-  background: linear-gradient(180deg, #fbfefd 0%, #edf7f1 100%);
-  box-shadow:
-    0 18px 34px rgba(17, 63, 50, 0.12),
-    0 0 0 4px rgba(26, 89, 68, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
-}
-
-.modelRowBody {
-  display: grid;
-  gap: 0.6rem;
-  min-width: 0;
-}
-
-.modelRowHeader {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.modelRow strong {
-  display: block;
-  color: #223b34;
-  font-size: 1rem;
-}
-
-.modelRowMeta {
-  display: block;
-  margin-top: 0.3rem;
-  color: #74817b;
-  font-size: 0.94rem;
-}
-
-.modelChipRow,
-.selectionChipRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.modelChip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.95rem;
-  padding: 0 0.72rem;
-  border-radius: 999px;
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  background: rgba(244, 247, 245, 0.98);
-  color: #4d5b56;
-  font-size: 0.83rem;
-  font-weight: 700;
-}
-
-.modelRowSelectedBadge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.95rem;
-  padding: 0 0.72rem;
-  border-radius: 999px;
-  background: #dff1e5;
-  color: #0f6a46;
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.modelRowActive .modelChip {
-  border-color: rgba(26, 89, 68, 0.14);
-  background: #eaf5ef;
-  color: #0f5e40;
-}
-
-.modelRowYear {
-  white-space: nowrap;
-  font-weight: 800;
-  color: #55635d;
-}
-
-.modelRowActive .modelRowYear {
-  color: #0f5e40;
-}
-
-.emptyState {
-  margin-top: 1rem;
-  padding: 1rem 1.05rem;
-  border-radius: 1rem;
-  border: 1px dashed rgba(18, 45, 37, 0.14);
-  background: #f6f9f7;
-  color: #6f7a75;
-}
-
-.selectionPrompt {
-  margin-top: 1rem;
-  padding: 1.05rem 1.1rem 1.1rem;
-  border-radius: 1rem;
-  border: 1px dashed rgba(18, 45, 37, 0.14);
-  background: rgba(247, 250, 248, 0.96);
-}
-
-.selectionPromptLabel {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: #6f7a75;
-}
-
-.selectionPrompt strong {
-  display: block;
-  margin-top: 0.45rem;
-  color: #223b34;
-  font-size: 1.02rem;
-}
-
-.selectionPrompt p {
-  margin: 0.45rem 0 0;
-  color: #6f7a75;
-  line-height: 1.6;
-}
-
-.inputGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.1rem;
-  margin-top: 1.45rem;
-  align-items: stretch;
-}
-
-.fieldBlock {
-  display: grid;
-  gap: 0.8rem;
-  align-content: stretch;
-}
-
-.inputPanel {
-  display: grid;
-  grid-template-rows: auto auto 1fr;
-  gap: 0.8rem;
-  min-height: 13.7rem;
-  padding: 1rem 1.05rem 1.05rem;
-  border-radius: 1.15rem;
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  background: linear-gradient(180deg, rgba(249, 251, 250, 0.98) 0%, rgba(244, 248, 246, 0.96) 100%);
-  box-shadow:
-    0 12px 26px rgba(16, 42, 34, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
-.field {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.panelHeader {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.9rem 1rem;
-  min-height: 3.35rem;
-}
-
-.panelLabel {
-  display: block;
-  align-self: center;
-  font-size: 0.82rem;
-  font-weight: 800;
-  letter-spacing: 0.045em;
-  text-transform: uppercase;
-  color: #6f7a75;
-  line-height: 1;
-}
-
-.panelToggle {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
-  width: 100%;
-  max-width: 18rem;
-  min-width: 18rem;
-  justify-self: end;
-  align-self: stretch;
-}
-
-.panelToggle .pillButton {
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 3.35rem;
-  padding: 0 1.2rem;
-  border-radius: 1.1rem;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.panelBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  justify-self: end;
-  min-height: 3.35rem;
-  padding: 0 1.15rem;
-  border-radius: 1.1rem;
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  background: linear-gradient(180deg, #ffffff 0%, #f5f8f6 100%);
-  color: #50615a;
-  font-size: 0.83rem;
-  font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
-  box-shadow:
-    0 10px 22px rgba(16, 42, 34, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
-.panelControl {
-  display: grid;
-  align-content: start;
-  gap: 0.75rem;
-  min-height: 3.35rem;
-}
-
-.controlInput {
-  width: 100%;
-}
-
-.fieldHint {
-  margin: 0;
-  min-height: 3rem;
-  color: #85928b;
-  font-size: 0.95rem;
-  line-height: 1.58;
-}
-
-.conditionSection {
-  margin-top: 1.2rem;
-  padding: 1rem 1.05rem 1.05rem;
-  border-radius: 1.15rem;
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  background: linear-gradient(180deg, rgba(249, 251, 250, 0.98) 0%, rgba(244, 248, 246, 0.96) 100%);
-  box-shadow:
-    0 12px 26px rgba(16, 42, 34, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
-.sectionHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.9rem;
-  flex-wrap: wrap;
-}
-
-.sectionLabel {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: #6f7a75;
-}
-
-.sectionHint {
-  color: #88928d;
-  font-size: 0.92rem;
-}
-
-.conditionGrid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.conditionCard {
-  cursor: pointer;
-  display: grid;
-  align-content: start;
-  gap: 0.25rem;
-  min-height: 5.5rem;
-  padding: 1rem 0.95rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  background: rgba(255, 255, 255, 0.96);
-  text-align: left;
-  box-shadow:
-    0 10px 22px rgba(16, 42, 34, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
-.conditionCardActive {
-  border-color: rgba(26, 89, 68, 0.24);
-  background: linear-gradient(180deg, #ffffff 0%, #f4faf7 100%);
-}
-
-.conditionCard strong {
-  display: block;
-  color: #223b34;
-  font-size: 0.95rem;
-}
-
-.conditionCard span {
-  display: block;
-  margin-top: 0.35rem;
-  color: #74817b;
-  font-size: 0.87rem;
-  line-height: 1.5;
-}
-
-.selectionCard {
-  margin-top: 1.3rem;
-  padding: 1rem 1.05rem;
-  border-radius: 1.15rem;
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  background: linear-gradient(180deg, rgba(247, 250, 248, 0.96) 0%, rgba(241, 246, 243, 0.96) 100%);
-}
-
-.selectionCardGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(220px, 0.9fr);
-  gap: 1rem;
-  align-items: start;
-}
-
-.selectionImageBox {
-  position: relative;
-  width: 124px;
-  min-width: 124px;
-  height: 100px;
-  border-radius: 1rem;
-  overflow: hidden;
-  background: linear-gradient(180deg, #f6f8f7 0%, #eef2ef 100%);
-  border: 1px solid rgba(18, 45, 37, 0.05);
-}
-
-.selectionMeta {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.selectionEyebrow {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: #6f7a75;
-}
-
-.selectionMeta strong {
-  color: #223b34;
-  font-size: 1.03rem;
-}
-
-.selectionMeta span {
-  color: #6f7a75;
-  line-height: 1.55;
-}
-
-.selectionFacts {
-  display: grid;
-  gap: 0.7rem;
-}
-
-.selectionFact {
-  display: grid;
-  gap: 0.25rem;
-  padding: 0.8rem 0.9rem;
-  border-radius: 0.95rem;
-  border: 1px solid rgba(18, 45, 37, 0.06);
-  background: rgba(255, 255, 255, 0.82);
-}
-
-.selectionFact span {
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.045em;
-  text-transform: uppercase;
-  color: #7a8781;
-}
-
-.selectionFact strong {
-  color: #1f342d;
-  font-size: 1rem;
-}
-
-.wizardFooter {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.1rem 1.8rem 1.4rem;
-  border-top: 1px solid rgba(18, 45, 37, 0.06);
-  background: rgba(250, 251, 250, 0.82);
-}
-
-.secondaryButton,
-.primaryButton,
-.assetButton {
-  min-height: 3.1rem;
-  padding: 0 1.15rem;
-  border-radius: 0.9rem;
-  font-weight: 700;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.secondaryButton {
-  cursor: pointer;
-  border: 1px solid rgba(18, 45, 37, 0.1);
-  color: #30413b;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.05);
-}
-
-.primaryButton,
-.assetButton {
-  cursor: pointer;
-  border: 0;
-  color: #ffffff;
-  background: linear-gradient(180deg, #1a5944 0%, #124334 100%);
-  box-shadow: 0 12px 24px rgba(17, 63, 50, 0.16);
-}
-
-.secondaryButton:disabled,
-.primaryButton:disabled,
-.assetButton:disabled,
-.methodButton:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
-}
-
-.resultsLayout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.8fr);
-  gap: 1.2rem;
-  align-items: start;
-}
-
-.resultsMain,
-.resultsSide {
-  display: grid;
-  gap: 1rem;
-}
-
-.resultsTopbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.backLink {
-  cursor: pointer;
-  min-height: auto;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #1d624e;
-  font-weight: 700;
-}
-
-.statusBadge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2rem;
-  padding: 0 0.85rem;
-  border-radius: 999px;
-  background: rgba(23, 77, 62, 0.08);
-  color: #1d624e;
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.heroCard,
-.assetCard,
-.sideCard {
-  padding: 1.3rem;
-}
-
-.heroTop {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.heroIdentity {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.heroImageBox {
-  position: relative;
-  width: 136px;
-  min-width: 136px;
-  height: 108px;
-  border-radius: 1rem;
-  overflow: hidden;
-  background: linear-gradient(180deg, #f6f8f7 0%, #eef2ef 100%);
-  border: 1px solid rgba(18, 45, 37, 0.05);
-}
-
-.heroInfo {
-  display: grid;
-  gap: 0.4rem;
-}
-
-.resultTitle {
-  margin: 0;
-  font-size: clamp(2rem, 3vw, 2.55rem);
-  line-height: 1.05;
-  letter-spacing: -0.045em;
-  color: #1f342d;
-}
-
-.heroMeta {
-  margin: 0;
-  color: #6f7a75;
-  line-height: 1.55;
-}
-
-.inlineButton {
-  cursor: pointer;
-  min-height: 2.65rem;
-  width: max-content;
-  padding: 0 0.95rem;
-  border-radius: 0.8rem;
-  border: 1px solid rgba(18, 45, 37, 0.1);
-  background: #ffffff;
-  color: #1d624e;
-  font-weight: 700;
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.05);
-}
-
-.valuePanel {
-  margin-top: 1.25rem;
-  padding: 1.3rem;
-  border-radius: 1.2rem;
-  background: linear-gradient(180deg, #eef6f1 0%, #e6f0e9 100%);
-  border: 1px solid rgba(23, 77, 62, 0.1);
-}
-
-.valuePanelTop {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: flex-start;
-}
-
-.valueLabel {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: #295948;
-}
-
-.valueAmount {
-  margin-top: 0.35rem;
-  font-size: clamp(2.5rem, 5vw, 3.65rem);
-  line-height: 0.95;
-  letter-spacing: -0.06em;
-  font-weight: 800;
-  color: #0d5a3c;
-}
-
-.valueMeta {
-  margin: 0.5rem 0 0;
-  color: #617069;
-}
-
-.confidenceBadge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.2rem;
-  padding: 0 0.95rem;
-  border-radius: 999px;
-  background: #dff1e5;
-  color: #0f6a46;
-  font-size: 0.84rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.methodGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
-  margin-top: 1.15rem;
-}
-
-.methodButton {
-  cursor: pointer;
-  padding: 1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  background: rgba(255, 255, 255, 0.86);
-  text-align: left;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
-}
-
-.methodButtonActive {
-  border-color: var(--value-method-active-border);
-  background: rgba(255, 255, 255, 0.96);
-}
-
-.methodButtonDisabled {
-  opacity: 0.55;
-}
-
-.methodTitle {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #295948;
-}
-
-.methodValue {
-  display: block;
-  margin-top: 0.45rem;
-  font-size: 1.35rem;
-  line-height: 1.2;
-  letter-spacing: -0.03em;
-  color: #1d332c;
-}
-
-.methodNote {
-  display: block;
-  margin-top: 0.45rem;
-  color: #6f7a75;
-  line-height: 1.55;
-  font-size: 0.9rem;
-}
-
-.assetHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.assetTitle {
-  margin: 0;
-  font-size: 1.35rem;
-  letter-spacing: -0.03em;
-  color: #223b34;
-}
-
-.assetText {
-  margin: 0.35rem 0 0;
-  color: #6f7a75;
-  line-height: 1.65;
-}
-
-.assetButton {
-  width: 100%;
-  margin-top: 1.1rem;
-}
-
-.assetFootnote {
-  margin-top: 0.85rem;
-  padding: 0.8rem 0.95rem;
-  border-radius: 0.9rem;
-  background: #edf7f1;
-  color: #0f6a46;
-  font-size: 0.92rem;
-}
-
-.sideTitle {
-  margin: 0;
-  font-size: 1.2rem;
-  letter-spacing: -0.03em;
-  color: #223b34;
-}
-
-.breakdownList {
-  display: grid;
-  gap: 0.9rem;
-  margin-top: 0.95rem;
-}
-
-.breakdownRow {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: flex-start;
-}
-
-.breakdownKey {
-  color: #6f7a75;
-}
-
-.breakdownValue {
-  font-weight: 700;
-  color: #1f342d;
-  text-align: right;
-}
-
-.rangeCardHead {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-.rangeBadge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2rem;
-  padding: 0 0.8rem;
-  border-radius: 999px;
-  background: #edf2ff;
-  color: #3562d6;
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.rangeCurrent {
-  margin-top: 0.85rem;
-  text-align: center;
-  font-size: 1.35rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: #1f342d;
-}
-
-.rangeTrack {
-  position: relative;
-  height: 0.72rem;
-  margin-top: 1rem;
-  border-radius: 999px;
-  background: rgba(18, 45, 37, 0.08);
-  overflow: hidden;
-}
-
-.rangeFill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #1a5944 0%, #2f7f65 100%);
-}
-
-.rangePin {
-  position: absolute;
-  top: 50%;
-  width: 1rem;
-  height: 1rem;
-  transform: translate(-50%, -50%);
-  border-radius: 999px;
-  background: #ffffff;
-  border: 3px solid #1a5944;
-}
-
-.rangeLabels {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 0.75rem;
-  color: #6f7a75;
-}
-
-.rangeNote {
-  margin: 0.8rem 0 0;
-  color: #6f7a75;
-  line-height: 1.6;
-}
-
-.sourceList {
-  display: grid;
-  gap: 0.85rem;
-  margin-top: 0.95rem;
-}
-
-.sourceItem {
-  padding: 0.9rem 0.95rem;
-  border-radius: 0.95rem;
-  background: rgba(247, 250, 248, 0.92);
-  border: 1px solid rgba(18, 45, 37, 0.06);
-}
-
-.sourceItemTitle {
-  display: block;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #223b34;
-}
-
-.sourceItemText {
-  display: block;
-  margin-top: 0.25rem;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  color: #6f7a75;
-}
-
-.actionStack {
-  display: grid;
-  gap: 0.75rem;
-  margin-top: 0.95rem;
-}
-
-@media (max-width: 1100px) {
-  .typeGrid,
-  .brandGrid,
-  .methodGrid,
-  .conditionGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+'use client';
+
+import Link from 'next/link';
+import { useEffect, useMemo, useState, type FormEvent, type MouseEvent } from 'react';
+import AppHeader from '../../components/AppHeader';
+import styles from './page.module.css';
+import {
+  clearItems,
+  deleteItem,
+  loadItems,
+  saveItem,
+  type SavedItem,
+  type SavedItemKind,
+  type SavedItemMethod,
+} from '../../lib/register';
+import {
+  loadPublishedMarketplaceListings,
+  publishRegisterItemToMarketplace,
+  removeMarketplaceListing,
+  type MarketplaceListing,
+} from '../../lib/marketplace';
+import { money } from '../../lib/tractor-logic';
+
+type NoticeTone = 'success' | 'error';
+type AssetFilter = 'all' | 'tractor' | 'manual' | 'property' | 'live';
+
+const DEFAULT_MARKETPLACE_SELLER = 'Aim4price Seller';
+const DEFAULT_MARKETPLACE_AREA = 'Seller Location';
+const DEFAULT_MARKETPLACE_PROVINCE = 'South Africa';
+
+function parseMoney(value: string): number {
+  return Number(String(value).replace(/[^0-9.]/g, ''));
+}
+
+function methodLabel(value: SavedItemMethod): string {
+  return (
+    {
+      aim4price: 'Aim4price',
+      market: 'Market',
+      department: 'Department',
+      manual: 'Manual Override',
+    }[value] ?? 'Manual Override'
+  );
+}
+
+function typeLabel(value: SavedItemKind): string {
+  return (
+    {
+      tractor: 'Equipment',
+      manual: 'Manual Asset',
+      property: 'Property',
+    }[value] ?? 'Manual Asset'
+  );
+}
+
+function typeShortLabel(value: SavedItemKind): string {
+  return (
+    {
+      tractor: 'Equipment',
+      manual: 'Manual',
+      property: 'Property',
+    }[value] ?? 'Manual'
+  );
+}
+
+function formatItemMeta(item: SavedItem): string {
+  if (item.kind !== 'tractor') {
+    return item.note || 'Added manually to the register';
   }
 
-  .resultsLayout {
-    grid-template-columns: 1fr;
-  }
-}
+  const parts = [item.brandName, item.modelName, item.yearModel ? String(item.yearModel) : undefined];
 
-@media (max-width: 860px) {
-  .container {
-    width: var(--shell-width);
-    padding-top: 1.25rem;
+  if (item.hours) {
+    parts.push(`${item.hours.toLocaleString('en-ZA')} hours`);
   }
 
-  .stepContent {
-    padding: 1.6rem 1rem 1.3rem;
+  return parts.filter(Boolean).join(' · ') || 'Saved from valuation';
+}
+
+function formatDateLabel(value: string): string {
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return 'Unknown';
   }
 
-  .stepper {
-    grid-template-columns: 1fr;
+  return new Intl.DateTimeFormat('en-ZA', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(parsed);
+}
+
+function timeAgo(value: string): string {
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return 'Unknown';
   }
 
-  .stepperLine {
-    display: none;
+  const elapsed = Date.now() - parsed.getTime();
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  if (elapsed < hour) {
+    const minutes = Math.max(1, Math.round(elapsed / minute));
+    return `${minutes} min ago`;
   }
 
-  .typeGrid,
-  .brandGrid,
-  .conditionGrid,
-  .methodGrid,
-  .inputGrid,
-  .selectionCardGrid {
-    grid-template-columns: 1fr;
+  if (elapsed < day) {
+    const hours = Math.max(1, Math.round(elapsed / hour));
+    return `${hours} hour${hours === 1 ? '' : 's'} ago`;
   }
 
-  .filterToolbar {
-    flex-direction: column;
+  const days = Math.max(1, Math.round(elapsed / day));
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}
+
+function matchesSearch(item: SavedItem, query: string): boolean {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+
+  const haystack = [
+    item.title,
+    item.brandName,
+    item.modelName,
+    item.note,
+    item.kind,
+    item.tractorType,
+    item.drive,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return haystack.includes(needle);
+}
+
+function filterLabel(value: AssetFilter): string {
+  return (
+    {
+      all: 'All Assets',
+      tractor: 'Equipment',
+      property: 'Property',
+      manual: 'Manual Assets',
+      live: 'Marketplace Live',
+    }[value] ?? 'All Assets'
+  );
+}
+
+export default function RegisterPage() {
+  const [items, setItems] = useState<SavedItem[]>([]);
+  const [publishedListings, setPublishedListings] = useState<MarketplaceListing[]>([]);
+  const [message, setMessage] = useState('');
+  const [messageTone, setMessageTone] = useState<NoticeTone>('success');
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<AssetFilter>('all');
+
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [newKind, setNewKind] = useState<SavedItemKind>('manual');
+  const [newTitle, setNewTitle] = useState('');
+  const [newValue, setNewValue] = useState('');
+  const [newNote, setNewNote] = useState('');
+
+  const [overrideItem, setOverrideItem] = useState<SavedItem | null>(null);
+  const [overrideValue, setOverrideValue] = useState('');
+  const [overrideNote, setOverrideNote] = useState('');
+
+  const [sellItem, setSellItem] = useState<SavedItem | null>(null);
+  const [sellPrice, setSellPrice] = useState('');
+  const [sellNotes, setSellNotes] = useState('');
+  const [sellPhone, setSellPhone] = useState('');
+
+  const [deleteItemState, setDeleteItemState] = useState<SavedItem | null>(null);
+  const [isClearOpen, setIsClearOpen] = useState(false);
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const publishedAssetIds = useMemo(() => {
+    return new Set(
+      publishedListings
+        .map((listing) => listing.sourceAssetId)
+        .filter((value): value is string => Boolean(value)),
+    );
+  }, [publishedListings]);
+
+  const summary = useMemo(() => {
+    const tractors = items.filter((item) => item.kind === 'tractor').length;
+    const properties = items.filter((item) => item.kind === 'property').length;
+    const manualAssets = items.filter((item) => item.kind === 'manual').length;
+    const liveListings = items.filter((item) => publishedAssetIds.has(item.id)).length;
+
+    return {
+      totalAssets: items.length,
+      tractors,
+      properties,
+      manualAssets,
+      liveListings,
+    };
+  }, [items, publishedAssetIds]);
+
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      if (!matchesSearch(item, search)) return false;
+
+      if (filter === 'all') return true;
+      if (filter === 'live') return publishedAssetIds.has(item.id);
+      return item.kind === filter;
+    });
+  }, [filter, items, publishedAssetIds, search]);
+
+  const totalValue = useMemo(() => {
+    return items.reduce((sum, item) => sum + Number(item.selectedValueExVat || 0), 0);
+  }, [items]);
+
+  const filterOptions: { key: AssetFilter; count: number }[] = useMemo(
+    () => [
+      { key: 'all', count: summary.totalAssets },
+      { key: 'tractor', count: summary.tractors },
+      { key: 'property', count: summary.properties },
+      { key: 'manual', count: summary.manualAssets },
+      { key: 'live', count: summary.liveListings },
+    ],
+    [summary],
+  );
+
+  function refresh() {
+    setItems(loadItems());
+    setPublishedListings(
+      loadPublishedMarketplaceListings().filter((listing) => listing.publishedBy === 'asset-register'),
+    );
   }
 
-  .filterGroup {
-    flex-basis: auto;
-    width: 100%;
-    min-height: 0;
+  function setNotice(text: string, tone: NoticeTone = 'success') {
+    setMessage(text);
+    setMessageTone(tone);
   }
 
-  .sectionHeader,
-  .filterSummary {
-    flex-direction: column;
-    align-items: flex-start;
+  function closeAddModal() {
+    setIsAddOpen(false);
+    setNewKind('manual');
+    setNewTitle('');
+    setNewValue('');
+    setNewNote('');
   }
 
-  .panelHeader {
-    grid-template-columns: 1fr;
-    align-items: start;
-    min-height: 0;
+  function openOverrideModal(item: SavedItem) {
+    setOverrideItem(item);
+    setOverrideValue(String(Math.round(item.selectedValueExVat || 0)));
+    setOverrideNote(item.note ?? '');
   }
 
-  .panelToggle,
-  .panelBadge {
-    width: 100%;
-    max-width: none;
-    min-width: 0;
-    justify-self: stretch;
+  function closeOverrideModal() {
+    setOverrideItem(null);
+    setOverrideValue('');
+    setOverrideNote('');
   }
 
-  .panelBadge {
-    justify-content: flex-start;
+  function openSellModal(item: SavedItem) {
+    if (item.kind !== 'tractor') {
+      setNotice('Only valuation equipment can be sent to marketplace.', 'error');
+      return;
+    }
+
+    setSellItem(item);
+    setSellPrice(String(Math.round(item.selectedValueExVat || 0)));
+    setSellNotes(item.note ?? '');
+    setSellPhone('');
   }
 
-  .dropdownMenu {
-    padding: 0.75rem;
+  function closeSellModal() {
+    setSellItem(null);
+    setSellPrice('');
+    setSellNotes('');
+    setSellPhone('');
   }
 
-  .dropdownOption {
-    align-items: flex-start;
-    flex-direction: column;
+  function submitAdd(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const parsed = parseMoney(newValue);
+
+    if (!newTitle.trim() || !Number.isFinite(parsed) || parsed <= 0) {
+      setNotice('Give the asset a title and a value greater than zero.', 'error');
+      return;
+    }
+
+    saveItem({
+      id: `${newKind}-${Date.now()}-${newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      kind: newKind,
+      title: newTitle.trim(),
+      selectedMethod: 'manual',
+      selectedValueExVat: Math.round(parsed),
+      note: newNote.trim() || (newKind === 'property' ? 'Property asset' : 'Manual asset'),
+      createdAtIso: new Date().toISOString(),
+    });
+
+    refresh();
+    closeAddModal();
+    setNotice(`${newTitle.trim()} added to the register.`);
   }
 
-  .fieldHint {
-    min-height: 0;
+  function submitOverride(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!overrideItem) {
+      return;
+    }
+
+    const parsed = parseMoney(overrideValue);
+
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setNotice('Enter a valid override value greater than zero.', 'error');
+      return;
+    }
+
+    saveItem({
+      ...overrideItem,
+      selectedMethod: 'manual',
+      selectedValueExVat: Math.round(parsed),
+      note: overrideNote.trim() || overrideItem.note,
+    });
+
+    refresh();
+    closeOverrideModal();
+    setNotice(`${overrideItem.title} updated.`);
   }
 
-  .filterSummaryText {
-    text-align: left;
+  function submitSell(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!sellItem) {
+      return;
+    }
+
+    const askingPriceExVat = parseMoney(sellPrice);
+
+    if (!Number.isFinite(askingPriceExVat) || askingPriceExVat <= 0) {
+      setNotice('Enter a valid selling price greater than zero.', 'error');
+      return;
+    }
+
+    if (!sellPhone.trim()) {
+      setNotice('Primary contact number is required.', 'error');
+      return;
+    }
+
+    try {
+      publishRegisterItemToMarketplace(sellItem, {
+        askingPriceExVat: Math.round(askingPriceExVat),
+        description: sellNotes.trim() || undefined,
+        sellerName: DEFAULT_MARKETPLACE_SELLER,
+        sellerPhone: sellPhone.trim(),
+        area: DEFAULT_MARKETPLACE_AREA,
+        province: DEFAULT_MARKETPLACE_PROVINCE,
+      });
+
+      refresh();
+      closeSellModal();
+      setNotice(`${sellItem.title} sent to marketplace.`);
+    } catch (error) {
+      setNotice(
+        error instanceof Error ? error.message : 'Unable to publish this asset to marketplace.',
+        'error',
+      );
+    }
   }
 
-  .typePicker {
-    grid-template-columns: 2.9rem minmax(0, 1fr) 2.9rem;
-    gap: 0.75rem;
+  function confirmDelete() {
+    if (!deleteItemState) {
+      return;
+    }
+
+    deleteItem(deleteItemState.id);
+
+    if (deleteItemState.kind === 'tractor') {
+      removeMarketplaceListing(`market-${deleteItemState.id}`);
+    }
+
+    refresh();
+    setNotice(`${deleteItemState.title} deleted.`);
+    setDeleteItemState(null);
   }
 
-  .wizardFooter,
-  .resultsTopbar,
-  .heroTop,
-  .heroIdentity,
-  .valuePanelTop {
-    flex-direction: column;
-    align-items: stretch;
+  function confirmClear() {
+    clearItems();
+    refresh();
+    setIsClearOpen(false);
+    setNotice('Asset register cleared.');
   }
 
-  .wizardFooter {
-    padding: 1rem;
+  function handleRefreshValue(item: SavedItem) {
+    setNotice(`Wire “Refresh Value” for ${item.title} to rerun the saved valuation inputs.`);
   }
 
-  .selectionImageBox,
-  .heroImageBox {
-    width: 100%;
-    min-width: 0;
-    height: 180px;
+  function closeBackdrop(event: MouseEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+
+    closeAddModal();
+    closeOverrideModal();
+    closeSellModal();
+    setDeleteItemState(null);
+    setIsClearOpen(false);
   }
 
-  .secondaryButton,
-  .primaryButton,
-  .assetButton {
-    width: 100%;
-  }
-}
-
-@media print {
-  .page :global(header),
-  .resultsTopbar,
-  .actionStack,
-  .assetCard,
-  .wizardShell {
-    display: none !important;
-  }
-
-  .container {
-    width: 100%;
-    padding-top: 0;
-  }
-
-  .resultsLayout {
-    grid-template-columns: 1fr;
-  }
-
-  .heroCard,
-  .sideCard {
-    box-shadow: none;
-    border-color: rgba(0, 0, 0, 0.14);
-  }
-}
-
-
-/* === Final valuation result refinement === */
-.resultsLayout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
-  gap: 1rem;
-  align-items: start;
-}
-
-.resultsMain,
-.resultsSide {
-  display: grid;
-  gap: 0.95rem;
-}
-
-.heroCard,
-.assetCard,
-.sideCard {
-  padding: 1.1rem;
-  border-radius: 1.4rem;
-}
-
-.heroTop {
-  gap: 0.9rem;
-}
-
-.heroIdentity {
-  display: flex;
-  align-items: center;
-  gap: 0.95rem;
-}
-
-.heroImageBox {
-  width: 124px;
-  min-width: 124px;
-  height: 96px;
-  border-radius: 1rem;
-}
-
-.heroInfo {
-  display: grid;
-  gap: 0.35rem;
-  min-width: 0;
-}
-
-.resultTitle {
-  font-size: clamp(1.9rem, 2.9vw, 2.5rem);
-}
-
-.heroMeta {
-  font-size: 1rem;
-}
-
-.inlineButton {
-  min-height: 2.55rem;
-  padding-inline: 0.9rem;
-}
-
-.valuePanel {
-  --value-panel-bg-start: #eef6f1;
-  --value-panel-bg-end: #e4efe8;
-  --value-panel-border: rgba(23, 77, 62, 0.1);
-  --value-label-color: #295948;
-  --value-amount-color: #0d5a3c;
-  --value-meta-color: #617069;
-  --value-method-surface: rgba(255, 255, 255, 0.88);
-  --value-method-border: rgba(18, 45, 37, 0.07);
-  --value-method-active-border: rgba(26, 89, 68, 0.24);
-  margin-top: 1rem;
-  padding: 1.15rem;
-  border-radius: 1.15rem;
-  background: linear-gradient(180deg, var(--value-panel-bg-start) 0%, var(--value-panel-bg-end) 100%);
-  border: 1px solid var(--value-panel-border);
-}
-
-.valuePanelHigh {
-  --value-panel-bg-start: #eef6f1;
-  --value-panel-bg-end: #e4efe8;
-  --value-panel-border: rgba(23, 77, 62, 0.1);
-  --value-label-color: #295948;
-  --value-amount-color: #0d5a3c;
-  --value-meta-color: #617069;
-}
-
-.valuePanelMedium {
-  --value-panel-bg-start: #fff5d9;
-  --value-panel-bg-end: #ffe7ad;
-  --value-panel-border: rgba(160, 121, 10, 0.16);
-  --value-label-color: #7a5800;
-  --value-amount-color: #7a5800;
-  --value-meta-color: #7a6b45;
-}
-
-.valuePanelLow {
-  --value-panel-bg-start: #ffe7e3;
-  --value-panel-bg-end: #f7d0ca;
-  --value-panel-border: rgba(163, 39, 27, 0.18);
-  --value-label-color: #8f2d22;
-  --value-amount-color: #8f2d22;
-  --value-meta-color: #8a5e59;
-}
-
-.valuePanelTop {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.85rem;
-}
-
-.valuePanelIntro {
-  min-width: 0;
-}
-
-.valueLabel {
-  font-size: 0.82rem;
-  letter-spacing: 0.05em;
-  color: var(--value-label-color);
-}
-
-.valueAmount {
-  margin-top: 0.3rem;
-  font-size: clamp(2.45rem, 4.6vw, 3.45rem);
-  color: var(--value-amount-color);
-}
-
-.valueMeta {
-  margin-top: 0.45rem;
-  font-size: 0.98rem;
-  color: var(--value-meta-color);
-}
-
-.confidenceBadge {
-  min-height: 2rem;
-  padding: 0 0.85rem;
-  border: 1px solid transparent;
-  font-size: 0.82rem;
-}
-
-.summaryConfidenceBadge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.9rem;
-  margin-left: auto;
-  padding: 0 0.8rem;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  font-size: 0.8rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.confidenceHigh {
-  background: #dff3e6;
-  border-color: rgba(20, 92, 56, 0.14);
-  color: #0f6a46;
-}
-
-.confidenceMedium {
-  background: #fff1c9;
-  border-color: rgba(160, 121, 10, 0.14);
-  color: #8a6500;
-}
-
-.confidenceLow {
-  background: #fde0dd;
-  border-color: rgba(163, 39, 27, 0.12);
-  color: #a3271b;
-}
-
-.methodGrid {
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.methodButton {
-  padding: 0.95rem;
-  border-radius: 0.95rem;
-  border-color: var(--value-method-border);
-  background: var(--value-method-surface);
-}
-
-.methodTitle {
-  font-size: 0.88rem;
-}
-
-.methodValue {
-  margin-top: 0.4rem;
-  font-size: 1.25rem;
-}
-
-.methodNote {
-  margin-top: 0.4rem;
-  font-size: 0.88rem;
-  line-height: 1.45;
-}
-
-.actionHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.85rem;
-}
-
-.actionBadge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2rem;
-  padding: 0 0.8rem;
-  border-radius: 999px;
-  background: rgba(23, 77, 62, 0.08);
-  color: #1d624e;
-  font-size: 0.82rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.actionGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.actionPrimary {
-  grid-column: 1 / -1;
-}
-
-.summaryCard,
-.marketCard {
-  display: grid;
-  gap: 0.85rem;
-}
-
-.breakdownList {
-  gap: 0.75rem;
-  margin-top: 0;
-}
-
-.breakdownRow {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 0.9rem;
-  align-items: start;
-  padding-bottom: 0.7rem;
-  border-bottom: 1px solid rgba(18, 45, 37, 0.06);
-}
-
-.breakdownRow:last-child {
-  padding-bottom: 0;
-  border-bottom: 0;
-}
-
-.breakdownKey {
-  font-size: 0.92rem;
-}
-
-.breakdownValue {
-  font-size: 0.95rem;
-  text-align: right;
-  line-height: 1.45;
-}
-
-.rangeCardHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.85rem;
-}
-
-.rangeBadge {
-  min-height: 2rem;
-  padding: 0 0.8rem;
-  background: #edf2ff;
-  color: #3562d6;
-  font-size: 0.8rem;
-}
-
-.rangeCurrentWrap {
-  display: grid;
-  gap: 0.4rem;
-  padding: 1.05rem 1.1rem;
-  border-radius: 1rem;
-  background: rgba(247, 250, 248, 0.92);
-  border: 1px solid rgba(18, 45, 37, 0.06);
-}
-
-.rangeCurrentLabel {
-  font-size: 0.82rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #6a776f;
-}
-
-.rangeCurrent {
-  margin-top: 0;
-  text-align: left;
-  font-size: 1.7rem;
-  line-height: 1.05;
-}
-
-.rangeCurrentMeta {
-  margin: 0;
-  font-size: 0.92rem;
-  line-height: 1.5;
-  color: #6f7a75;
-}
-
-.rangeCurrentLinkBlock {
-  display: grid;
-  gap: 0.35rem;
-  margin-top: 0.2rem;
-  padding-top: 0.7rem;
-  border-top: 1px solid rgba(18, 45, 37, 0.08);
-}
-
-.rangeCurrentLinkLabel {
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: #6a776f;
-}
-
-.rangeCurrentLink {
-  display: block;
-  max-width: 100%;
-  font-size: 0.84rem;
-  font-weight: 700;
-  line-height: 1.55;
-  color: #1d624e;
-  text-decoration: none;
-  overflow-wrap: anywhere;
-}
-
-.rangeCurrentLink:hover {
-  text-decoration: underline;
-}
-
-.rangeCurrentLinkEmpty {
-  margin: 0;
-  font-size: 0.84rem;
-  line-height: 1.5;
-  color: #7b8781;
-}
-
-.rangeInteractive {
-  position: relative;
-  margin-top: 0.05rem;
-}
-
-.rangeTrack {
-  margin-top: 0;
-  height: 0.7rem;
-}
-
-.rangeSliderInput {
-  position: absolute;
-  inset: -0.7rem 0 -0.7rem 0;
-  width: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.marketListingsBlock {
-  display: grid;
-  gap: 1rem;
-  padding-top: 0.7rem;
-  border-top: 1px solid rgba(18, 45, 37, 0.06);
-}
-
-.marketListingsHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.marketListingsTitle {
-  margin: 0;
-  font-size: 1rem;
-  letter-spacing: -0.02em;
-  color: #223b34;
-}
-
-.marketListingsCount {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #6f7a75;
-}
-
-.listingList {
-  display: grid;
-  gap: 1rem;
-  max-height: 460px;
-  overflow: auto;
-  padding-right: 0.4rem;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(26, 89, 68, 0.25) transparent;
-}
-
-.listingList::-webkit-scrollbar {
-  width: 8px;
-}
-
-.listingList::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(26, 89, 68, 0.2);
-}
-
-.listingCard {
-  border-radius: 1.05rem;
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  background: rgba(247, 250, 248, 0.92);
-  box-shadow: 0 8px 18px rgba(16, 42, 34, 0.04);
-  overflow: hidden;
-}
-
-.listingCardActive {
-  border-color: rgba(26, 89, 68, 0.32);
-  box-shadow:
-    0 0 0 1px rgba(26, 89, 68, 0.08),
-    0 12px 28px rgba(17, 63, 50, 0.08);
-}
-
-.listingSelectButton {
-  display: grid;
-  gap: 0.65rem;
-  width: 100%;
-  padding: 1rem 1.05rem 0.8rem;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  font: inherit;
-}
-
-.listingCardTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.listingCardValue {
-  font-size: 1.16rem;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-  color: #1d332c;
-}
-
-.listingCardSource {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.85rem;
-  padding: 0 0.7rem;
-  border-radius: 999px;
-  background: rgba(23, 77, 62, 0.08);
-  color: #1d624e;
-  font-size: 0.78rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.listingCardMeta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 0.55rem;
-  margin-top: 0;
-}
-
-.listingMetaChip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.8rem;
-  padding: 0 0.72rem;
-  border-radius: 999px;
-  background: rgba(18, 45, 37, 0.06);
-  color: #52635d;
-  font-size: 0.82rem;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.listingAdjustmentNote {
-  margin-top: 0;
-  padding-top: 0.6rem;
-  border-top: 1px dashed rgba(18, 45, 37, 0.1);
-  font-size: 0.82rem;
-  line-height: 1.45;
-  color: #557066;
-}
-
-.listingCardFooter {
-  display: grid;
-  gap: 0.6rem;
-  align-items: start;
-  padding: 0.9rem 1.05rem 1rem;
-  border-top: 1px solid rgba(18, 45, 37, 0.06);
-  background: rgba(255, 255, 255, 0.78);
-}
-
-.listingCardFooterMeta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.listingCardDateLabel {
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: #6f7a75;
-}
-
-.listingCardDate {
-  font-size: 0.82rem;
-  color: #6f7a75;
-}
-
-.listingLink,
-.listingLinkMuted {
-  display: block;
-  width: 100%;
-  font-size: 0.84rem;
-  font-weight: 700;
-  line-height: 1.55;
-  overflow-wrap: anywhere;
-}
-
-.listingLink {
-  color: #1d624e;
-  text-decoration: none;
-}
-
-.listingLink:hover {
-  text-decoration: underline;
-}
-
-.listingLinkMuted {
-  color: #88948f;
-}
-
-@media (max-width: 1180px) {
-  .resultsLayout {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 860px) {
-  .heroIdentity,
-  .valuePanelTop,
-  .actionHeader,
-  .rangeCardHead,
-  .marketListingsHead,
-  .listingCardTop {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .heroImageBox {
-    width: 100%;
-    min-width: 0;
-    height: 180px;
-  }
-
-  .actionGrid,
-  .methodGrid,
-  .breakdownRow {
-    grid-template-columns: 1fr;
-  }
-
-  .actionPrimary {
-    grid-column: auto;
-  }
-
-  .breakdownValue {
-    text-align: left;
-  }
-
-  .summaryConfidenceBadge {
-    margin-left: 0;
-  }
-
-  .rangeCurrentLink,
-  .listingLink,
-  .listingLinkMuted {
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-
-  .listingList {
-    max-height: none;
-  }
-
-  .listingCardFooterMeta {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-
-/* Progressive step flow */
-.flowShell {
-  display: grid;
-  gap: 1rem;
-}
-
-.flowTopline,
-.focusContext {
-  display: grid;
-  gap: 0.5rem;
-  padding: 1rem 1.15rem;
-  border-radius: 1.1rem;
-  background: linear-gradient(180deg, rgba(248, 251, 249, 0.96) 0%, rgba(242, 247, 244, 0.96) 100%);
-  border: 1px solid rgba(18, 45, 37, 0.08);
-}
-
-.flowToplineLabel {
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #6a7670;
-}
-
-.flowToplineValue {
-  font-size: 1.02rem;
-  line-height: 1.25;
-  color: #203a33;
-}
-
-.miniStepper {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.72rem;
-}
-
-.miniStep {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 0.62rem;
-  padding: 0.78rem 0.88rem;
-  border-radius: 1rem;
-  background: rgba(248, 249, 248, 0.95);
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  color: #67716c;
-}
-
-.miniStepActive {
-  background: linear-gradient(180deg, rgba(24, 77, 61, 0.14) 0%, rgba(24, 77, 61, 0.08) 100%);
-  border-color: rgba(24, 77, 61, 0.26);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
-  color: #173f33;
-}
-
-.miniStepComplete {
-  background: linear-gradient(180deg, rgba(216, 238, 228, 0.95) 0%, rgba(231, 245, 238, 0.95) 100%);
-  border-color: rgba(30, 102, 79, 0.18);
-  color: #194537;
-}
-
-.miniStepNumber {
-  width: 1.78rem;
-  height: 1.78rem;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  font-size: 0.84rem;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.miniStepLabel {
-  min-width: 0;
-  font-size: 0.9rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.answerStack {
-  display: grid;
-  gap: 0.7rem;
-}
-
-.answerRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.86rem 1rem;
-  border-radius: 0.98rem;
-  background: rgba(251, 252, 251, 0.96);
-  border: 1px solid rgba(18, 45, 37, 0.08);
-}
-
-.answerRowText {
-  min-width: 0;
-  display: grid;
-  gap: 0.16rem;
-}
-
-.answerRowLabel {
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #6f7974;
-}
-
-.answerRowValue {
-  min-width: 0;
-  font-size: 0.97rem;
-  line-height: 1.35;
-  color: #1f3932;
-  word-break: break-word;
-}
-
-.answerEdit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.4rem;
-  padding: 0 0.92rem;
-  border-radius: 0.84rem;
-  border: 1px solid rgba(18, 45, 37, 0.1);
-  background: #ffffff;
-  color: #274138;
-  font-size: 0.9rem;
-  font-weight: 700;
-  transition:
-    transform 180ms ease,
-    border-color 180ms ease,
-    box-shadow 180ms ease,
-    background 180ms ease;
-}
-
-.answerEdit:hover {
-  transform: translateY(-1px);
-  border-color: rgba(24, 77, 61, 0.18);
-  box-shadow: 0 10px 18px rgba(18, 45, 37, 0.06);
-}
-
-.currentCard {
-  display: grid;
-  gap: 1rem;
-  padding: 1.3rem 1.35rem 1.4rem;
-  border-radius: 1.28rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.985) 0%, rgba(249, 251, 250, 0.985) 100%);
-  border: 1px solid rgba(18, 45, 37, 0.1);
-  box-shadow:
-    0 18px 32px rgba(16, 42, 34, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
-}
-
-.currentCardHead {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.currentEyebrow {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 1.65rem;
-  padding: 0 0.58rem;
-  border-radius: 999px;
-  background: rgba(24, 77, 61, 0.08);
-  color: #1b4a3b;
-  font-size: 0.73rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.currentTitle {
-  margin: 0.48rem 0 0;
-  font-size: clamp(1.34rem, 2vw, 1.82rem);
-  line-height: 1.06;
-  letter-spacing: -0.03em;
-  color: #1d3831;
-}
-
-.currentIndex {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.1rem;
-  padding: 0 0.75rem;
-  border-radius: 999px;
-  background: rgba(240, 244, 242, 0.92);
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  font-size: 0.84rem;
-  font-weight: 800;
-  color: #5f6c66;
-}
-
-.currentHint {
-  margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: #5f6c66;
-}
-
-.choiceGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.82rem;
-}
-
-.choiceCard {
-  display: grid;
-  gap: 0.36rem;
-  align-content: center;
-  min-height: 7.7rem;
-  padding: 1.05rem 1.08rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(18, 45, 37, 0.1);
-  background: linear-gradient(180deg, #ffffff 0%, #f8faf9 100%);
-  color: #203a33;
-  text-align: left;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
-  transition:
-    transform 180ms ease,
-    border-color 180ms ease,
-    box-shadow 180ms ease,
-    background 180ms ease;
-}
-
-.choiceCard strong {
-  font-size: 1.06rem;
-  line-height: 1.2;
-}
-
-.choiceCardNote {
-  font-size: 0.92rem;
-  line-height: 1.45;
-  color: #64706a;
-}
-
-.choiceCard:hover {
-  transform: translateY(-1px);
-  border-color: rgba(24, 77, 61, 0.18);
-  box-shadow: 0 14px 24px rgba(18, 45, 37, 0.06);
-}
-
-.choiceCardActive {
-  border-color: rgba(24, 77, 61, 0.28);
-  background: linear-gradient(180deg, rgba(226, 241, 234, 0.95) 0%, rgba(242, 249, 245, 0.98) 100%);
-  box-shadow:
-    0 14px 26px rgba(18, 45, 37, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
-}
-
-.readyCard {
-  background: linear-gradient(180deg, rgba(241, 248, 244, 0.98) 0%, rgba(249, 252, 250, 0.99) 100%);
-  border-color: rgba(24, 77, 61, 0.16);
-}
-
-.readyModelBlock {
-  display: grid;
-  gap: 0.8rem;
-}
-
-.readyModelTitle {
-  font-size: 1.08rem;
-  color: #1f3932;
-}
-
-.selectedCallout {
-  display: grid;
-  gap: 0.34rem;
-  padding: 0.92rem 0.98rem;
-  border-radius: 0.96rem;
-  background: linear-gradient(180deg, rgba(239, 247, 243, 0.95) 0%, rgba(247, 251, 249, 0.98) 100%);
-  border: 1px solid rgba(24, 77, 61, 0.12);
-}
-
-.selectedCalloutTitle {
-  font-size: 1rem;
-  color: #1f3932;
-}
-
-.selectedCalloutBody {
-  font-size: 0.92rem;
-  line-height: 1.45;
-  color: #5f6c66;
-}
-
-.currentCount {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #5f6c66;
-}
-
-.emptyStateActions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 0.9rem;
-}
-
-.segmentRail {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.68rem;
-}
-
-.inlineFieldRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.8rem;
-  align-items: start;
-}
-
-.inlineFieldInputWrap {
-  position: relative;
-}
-
-.inlineFieldSuffix {
-  position: absolute;
-  top: 50%;
-  right: 1rem;
-  transform: translateY(-50%);
-  pointer-events: none;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #6a7670;
-}
-
-.currentCardActions {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.8rem;
-  flex-wrap: wrap;
-  padding-top: 0.15rem;
-}
-
-.togglePanelGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.8rem;
-}
-
-.togglePanel {
-  display: grid;
-  gap: 0.78rem;
-  padding: 0.95rem 1rem;
-  border-radius: 1rem;
-  background: rgba(248, 250, 249, 0.96);
-  border: 1px solid rgba(18, 45, 37, 0.08);
-}
-
-.togglePanelCopy {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.togglePanelTitle {
-  font-size: 1rem;
-  line-height: 1.25;
-  color: #213a33;
-}
-
-.togglePanelNote {
-  font-size: 0.88rem;
-  line-height: 1.4;
-  color: #64706a;
-}
-
-.gpsDetailGrid {
-  display: grid;
-  gap: 0.8rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-@media (max-width: 980px) {
-  .miniStepper {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .choiceGrid,
-  .gpsDetailGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .inlineFieldRow {
-    grid-template-columns: 1fr;
-  }
-
-  .currentCardActions {
-    justify-content: stretch;
-  }
-
-  .currentCardActions > * {
-    flex: 1 1 220px;
-  }
-}
-
-@media (max-width: 720px) {
-  .flowTopline,
-  .focusContext,
-  .currentCard {
-    padding: 1rem;
-  }
-
-  .miniStepper {
-    grid-template-columns: 1fr;
-  }
-
-  .answerRow {
-    grid-template-columns: 1fr;
-    align-items: stretch;
-  }
-
-  .choiceGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .choiceCard {
-    min-height: 6.6rem;
-  }
-
-  .currentTitle {
-    font-size: 1.28rem;
-  }
-}
-
-
-@media (max-width: 860px) {
-  .heroIntro {
-    padding: 1.25rem 1.15rem;
-    border-radius: 1.4rem;
-  }
-
-  .heroIntroTitle {
-    max-width: 12ch;
-    font-size: clamp(2.2rem, 8vw, 3.2rem);
-  }
-
-  .heroIntroText {
-    font-size: 0.98rem;
-    line-height: 1.65;
-  }
+  return (
+    <main className={styles.page}>
+      <AppHeader active="asset-register" />
+
+      <div className={styles.content}>
+        <section className={styles.heroShell}>
+          <div className={styles.hero}>
+            <div className={styles.heroCopy}>
+              <span className={styles.kicker}>Stored values and key assets</span>
+              <h1>Asset Register</h1>
+              <p>
+                Keep equipment, property, and manual assets in one simple register. Save from
+                valuation, update values when needed, and move the right machine to marketplace.
+              </p>
+            </div>
+
+            <div className={styles.heroStats}>
+              <article className={styles.heroStat}>
+                <span>Portfolio value</span>
+                <strong>{money(totalValue)}</strong>
+              </article>
+              <article className={styles.heroStat}>
+                <span>Total assets</span>
+                <strong>{summary.totalAssets}</strong>
+              </article>
+              <article className={styles.heroStat}>
+                <span>Marketplace live</span>
+                <strong>{summary.liveListings}</strong>
+              </article>
+            </div>
+          </div>
+
+          {message ? (
+            <div
+              className={`${styles.notice} ${
+                messageTone === 'error' ? styles.noticeError : styles.noticeSuccess
+              }`}
+              role="status"
+            >
+              {message}
+            </div>
+          ) : null}
+        </section>
+
+        <section className={styles.dashboard}>
+          <div className={styles.mainColumn}>
+            <article className={`${styles.surface} ${styles.controlSurface}`}>
+              <div className={styles.panelHeader}>
+                <div>
+                  <span className={styles.eyebrow}>My assets</span>
+                  <h2>Saved assets</h2>
+                  <p>
+                    Search, filter, and manage saved assets without digging through clutter.
+                  </p>
+                </div>
+
+                <div className={styles.panelActions}>
+                  {items.length ? (
+                    <button
+                      type="button"
+                      className={styles.ghostButton}
+                      onClick={() => setIsClearOpen(true)}
+                    >
+                      Clear register
+                    </button>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => setIsAddOpen(true)}
+                  >
+                    + Add Asset
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.filterBar}>
+                <label className={styles.searchField}>
+                  <span>Search</span>
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search title, brand, model, note, or type..."
+                  />
+                </label>
+              </div>
+
+              <div className={styles.filterChips}>
+                {filterOptions.map((option) => (
+                  <button
+                    key={option.key}
+                    type="button"
+                    className={`${styles.filterChip} ${filter === option.key ? styles.filterChipActive : ''}`}
+                    onClick={() => setFilter(option.key)}
+                    aria-pressed={filter === option.key}
+                  >
+                    <span>{filterLabel(option.key)}</span>
+                    <strong>{option.count}</strong>
+                  </button>
+                ))}
+              </div>
+            </article>
+
+            <article className={`${styles.surface} ${styles.listSurface}`}>
+              <div className={styles.sectionRow}>
+                <div>
+                  <span className={styles.eyebrow}>Register view</span>
+                  <h2>{filterLabel(filter)}</h2>
+                  <p>
+                    {filteredItems.length} {filteredItems.length === 1 ? 'asset' : 'assets'} visible in
+                    the current view.
+                  </p>
+                </div>
+              </div>
+
+              {filteredItems.length ? (
+                <div className={styles.assetGrid}>
+                  {filteredItems.map((item) => {
+                    const isLive = publishedAssetIds.has(item.id);
+
+                    return (
+                      <article key={item.id} className={styles.assetCard}>
+                        <div className={styles.assetTop}>
+                          <div className={styles.assetIdentity}>
+                            <div className={styles.assetBadges}>
+                              <span className={styles.kindBadge}>{typeShortLabel(item.kind)}</span>
+                              <span className={styles.methodBadge}>{methodLabel(item.selectedMethod)}</span>
+                              {isLive ? (
+                                <span className={`${styles.stateBadge} ${styles.stateBadgeLive}`}>
+                                  Marketplace live
+                                </span>
+                              ) : null}
+                            </div>
+
+                            <h3>{item.title}</h3>
+                            <p>{formatItemMeta(item)}</p>
+                          </div>
+
+                          <div className={styles.valuePanel}>
+                            <span className={styles.valueLabel}>Current value</span>
+                            <strong>{money(item.selectedValueExVat)}</strong>
+                            <small>
+                              Added {timeAgo(item.createdAtIso)} · {formatDateLabel(item.createdAtIso)}
+                            </small>
+                          </div>
+                        </div>
+
+                        <div className={styles.assetFooter}>
+                          <div className={styles.assetHint}>
+                            {item.kind === 'tractor'
+                              ? 'Saved from valuation and ready for value refresh or marketplace publishing.'
+                              : 'Manually tracked inside the same register for a single portfolio view.'}
+                          </div>
+
+                          <div className={styles.assetActions}>
+                            {item.kind === 'tractor' ? (
+                              <button
+                                type="button"
+                                className={styles.secondaryButton}
+                                onClick={() => handleRefreshValue(item)}
+                              >
+                                Refresh Value
+                              </button>
+                            ) : null}
+
+                            <button
+                              type="button"
+                              className={styles.secondaryButton}
+                              onClick={() => openOverrideModal(item)}
+                            >
+                              Override Value
+                            </button>
+
+                            {item.kind === 'tractor' ? (
+                              <button
+                                type="button"
+                                className={styles.primaryInlineButton}
+                                onClick={() => openSellModal(item)}
+                              >
+                                {isLive ? 'Update Listing' : 'Send to Marketplace'}
+                              </button>
+                            ) : null}
+
+                            <button
+                              type="button"
+                              className={styles.dangerButton}
+                              onClick={() => setDeleteItemState(item)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className={styles.emptyState}>
+                  <strong>No assets found.</strong>
+                  <span>
+                    Save equipment from Valuation, or add a manual asset such as a house, workshop,
+                    trailer, or storeroom.
+                  </span>
+                </div>
+              )}
+            </article>
+          </div>
+
+          <aside className={styles.rail}>
+            <article className={`${styles.surface} ${styles.summarySurface}`}>
+              <div className={styles.summaryTop}>
+                <span className={styles.summaryLabel}>Register overview</span>
+                <strong>{money(totalValue)}</strong>
+                <p>A single view across equipment, property, and manual assets.</p>
+              </div>
+
+              <div className={styles.summaryGrid}>
+                <div className={styles.summaryCard}>
+                  <span>Total assets</span>
+                  <strong>{summary.totalAssets}</strong>
+                </div>
+                <div className={styles.summaryCard}>
+                  <span>Equipment</span>
+                  <strong>{summary.tractors}</strong>
+                </div>
+                <div className={styles.summaryCard}>
+                  <span>Property</span>
+                  <strong>{summary.properties}</strong>
+                </div>
+                <div className={styles.summaryCard}>
+                  <span>Manual</span>
+                  <strong>{summary.manualAssets}</strong>
+                </div>
+              </div>
+
+              <div className={styles.liveStrip}>
+                <div>
+                  <span>Marketplace live</span>
+                  <strong>{summary.liveListings} assets</strong>
+                </div>
+                <span className={styles.livePill}>Tracked</span>
+              </div>
+            </article>
+
+            <article className={`${styles.surface} ${styles.quickSurface}`}>
+              <div className={styles.sectionRow}>
+                <div>
+                  <span className={styles.eyebrow}>Quick actions</span>
+                  <h2>Quick actions</h2>
+                  <p>The most common register actions, kept close and easy to use.</p>
+                </div>
+              </div>
+
+              <div className={styles.quickActions}>
+                <Link href="/valuation" className={styles.quickLink}>
+                  Save from Valuation
+                </Link>
+
+                <button type="button" className={styles.quickButton} onClick={() => setIsAddOpen(true)}>
+                  Add Manual Asset
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.quickButton}
+                  onClick={() =>
+                    setNotice('Wire “Refresh All Values” once the revaluation inputs are stored.')
+                  }
+                >
+                  Refresh All Values
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.quickButton}
+                  onClick={() =>
+                    setNotice('Connect this button to your PDF asset register export when ready.')
+                  }
+                >
+                  Generate Asset Report
+                </button>
+              </div>
+            </article>
+          </aside>
+        </section>
+      </div>
+
+      {isAddOpen ? (
+        <div className={styles.modalBackdrop} onClick={closeBackdrop}>
+          <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="add-asset-title">
+            <div className={styles.modalHeader}>
+              <div>
+                <h3 id="add-asset-title">Add Asset</h3>
+                <p>Add manual equipment, property, or another non-valuation asset.</p>
+              </div>
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={closeAddModal}
+                aria-label="Close add asset modal"
+              >
+                ×
+              </button>
+            </div>
+
+            <form className={styles.modalForm} onSubmit={submitAdd}>
+              <label>
+                <span>Asset type</span>
+                <select value={newKind} onChange={(event) => setNewKind(event.target.value as SavedItemKind)}>
+                  <option value="manual">Manual Asset</option>
+                  <option value="property">Property / House</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Title</span>
+                <input
+                  value={newTitle}
+                  onChange={(event) => setNewTitle(event.target.value)}
+                  placeholder={newKind === 'property' ? 'Farm house' : 'Workshop trailer'}
+                />
+              </label>
+
+              <label>
+                <span>Value (VAT excluded)</span>
+                <input
+                  value={newValue}
+                  onChange={(event) => setNewValue(event.target.value)}
+                  inputMode="numeric"
+                  placeholder="2500000"
+                />
+              </label>
+
+              <label>
+                <span>Notes</span>
+                <textarea
+                  value={newNote}
+                  onChange={(event) => setNewNote(event.target.value)}
+                  placeholder="Optional notes about the asset"
+                  rows={4}
+                />
+              </label>
+
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.modalSecondary} onClick={closeAddModal}>
+                  Cancel
+                </button>
+                <button type="submit" className={styles.modalPrimary}>
+                  Save Asset
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {overrideItem ? (
+        <div className={styles.modalBackdrop} onClick={closeBackdrop}>
+          <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="override-title">
+            <div className={styles.modalHeader}>
+              <div>
+                <h3 id="override-title">Override Value</h3>
+                <p>{overrideItem.title}</p>
+              </div>
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={closeOverrideModal}
+                aria-label="Close override modal"
+              >
+                ×
+              </button>
+            </div>
+
+            <form className={styles.modalForm} onSubmit={submitOverride}>
+              <label>
+                <span>New register value</span>
+                <input
+                  value={overrideValue}
+                  onChange={(event) => setOverrideValue(event.target.value)}
+                  inputMode="numeric"
+                  placeholder="845000"
+                />
+              </label>
+
+              <label>
+                <span>Notes</span>
+                <textarea
+                  value={overrideNote}
+                  onChange={(event) => setOverrideNote(event.target.value)}
+                  placeholder="Optional override note"
+                  rows={4}
+                />
+              </label>
+
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.modalSecondary} onClick={closeOverrideModal}>
+                  Cancel
+                </button>
+                <button type="submit" className={styles.modalPrimary}>
+                  Save Override
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {sellItem ? (
+        <div className={styles.modalBackdrop} onClick={closeBackdrop}>
+          <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="sell-title">
+            <div className={styles.modalHeader}>
+              <div>
+                <h3 id="sell-title">Send to Marketplace</h3>
+                <p>{sellItem.title}</p>
+              </div>
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={closeSellModal}
+                aria-label="Close marketplace modal"
+              >
+                ×
+              </button>
+            </div>
+
+            <form className={styles.modalForm} onSubmit={submitSell}>
+              <label>
+                <span>What do you want to sell it for?</span>
+                <input
+                  value={sellPrice}
+                  onChange={(event) => setSellPrice(event.target.value)}
+                  inputMode="numeric"
+                  placeholder="925000"
+                />
+              </label>
+
+              <label>
+                <span>Notes</span>
+                <textarea
+                  value={sellNotes}
+                  onChange={(event) => setSellNotes(event.target.value)}
+                  placeholder="Short selling notes for the listing"
+                  rows={4}
+                />
+              </label>
+
+              <label>
+                <span>Primary contact number</span>
+                <input
+                  value={sellPhone}
+                  onChange={(event) => setSellPhone(event.target.value)}
+                  inputMode="tel"
+                  placeholder="082 123 4567"
+                />
+              </label>
+
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.modalSecondary} onClick={closeSellModal}>
+                  Cancel
+                </button>
+                <button type="submit" className={styles.modalPrimary}>
+                  {publishedAssetIds.has(sellItem.id) ? 'Update Listing' : 'Send to Marketplace'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {deleteItemState ? (
+        <div className={styles.modalBackdrop} onClick={closeBackdrop}>
+          <div className={styles.confirmCard} role="dialog" aria-modal="true" aria-labelledby="delete-title">
+            <h3 id="delete-title">Delete asset?</h3>
+            <p>
+              Remove <strong>{deleteItemState.title}</strong> from the asset register.
+            </p>
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.modalSecondary} onClick={() => setDeleteItemState(null)}>
+                Cancel
+              </button>
+              <button type="button" className={styles.modalDanger} onClick={confirmDelete}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isClearOpen ? (
+        <div className={styles.modalBackdrop} onClick={closeBackdrop}>
+          <div className={styles.confirmCard} role="dialog" aria-modal="true" aria-labelledby="clear-title">
+            <h3 id="clear-title">Clear asset register?</h3>
+            <p>This removes all saved assets from local storage in the current prototype.</p>
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.modalSecondary} onClick={() => setIsClearOpen(false)}>
+                Cancel
+              </button>
+              <button type="button" className={styles.modalDanger} onClick={confirmClear}>
+                Clear register
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </main>
+  );
 }
