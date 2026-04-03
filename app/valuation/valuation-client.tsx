@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
@@ -20,20 +20,23 @@ import { conditionLabel, money, range, runValuation, type Result } from '../../l
 import { saveItem } from '../../lib/register';
 
 type Step = 1 | 2 | 3 | 4 | 5;
-type EquipmentType = 'tractor';
 type MethodKey = 'aim4price' | 'market' | 'department';
+type EquipmentType = 'tractor';
 type GpsType = 'full-autosteer' | 'guidance-only';
+type ConfigStepKey = 'type' | 'drive' | 'cab' | 'model';
+type DetailsStepKey = 'year' | 'hours' | 'condition' | 'extras';
 
 type MethodCard = {
   key: MethodKey;
   label: string;
   note: string;
   value: number | null;
-  display: string;
   available: boolean;
 };
 
-const STEP_ITEMS: Array<{ step: Step; label: string }> = [
+const CURRENT_YEAR = new Date().getFullYear() + 1;
+
+const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
   { step: 1, label: 'Type' },
   { step: 2, label: 'Brand' },
   { step: 3, label: 'Model' },
@@ -41,7 +44,19 @@ const STEP_ITEMS: Array<{ step: Step; label: string }> = [
   { step: 5, label: 'Value' },
 ];
 
-const CURRENT_YEAR = new Date().getFullYear() + 1;
+const CONFIG_STEPS: Array<{ key: ConfigStepKey; label: string }> = [
+  { key: 'type', label: 'Type' },
+  { key: 'drive', label: 'Drive' },
+  { key: 'cab', label: 'Cab' },
+  { key: 'model', label: 'Model' },
+];
+
+const DETAILS_STEPS: Array<{ key: DetailsStepKey; label: string }> = [
+  { key: 'year', label: 'Year' },
+  { key: 'hours', label: 'Hours' },
+  { key: 'condition', label: 'Condition' },
+  { key: 'extras', label: 'Extras' },
+];
 
 function nextStep(step: Step): Step {
   return step === 1 ? 2 : step === 2 ? 3 : step === 3 ? 4 : 5;
@@ -57,6 +72,12 @@ function getMethodValue(result: Result, method: MethodKey): number | null {
   return result.departmentValueExVat;
 }
 
+function getMethodLabel(method: MethodKey): string {
+  if (method === 'aim4price') return 'Aim4price Value';
+  if (method === 'market') return 'Estimated Market Value';
+  return 'DALRRD Reference';
+}
+
 function getMethodDisplay(result: Result, method: MethodKey): string {
   if (method === 'market') {
     return range(result.marketLow, result.marketHigh);
@@ -65,104 +86,80 @@ function getMethodDisplay(result: Result, method: MethodKey): string {
   return money(getMethodValue(result, method));
 }
 
-function getMethodLabel(method: MethodKey): string {
-  if (method === 'aim4price') return 'Aim4price Value';
-  if (method === 'market') return 'Estimated Market Value';
-  return 'DALRRD Reference';
+function getRangePercent(low: number | null, high: number | null, value: number | null): number {
+  if (low === null || high === null || value === null) return 50;
+  if (high <= low) return 50;
+
+  const percent = ((value - low) / (high - low)) * 100;
+  return Math.min(100, Math.max(0, percent));
 }
 
-function getMethodNote(method: MethodKey): string {
-  if (method === 'aim4price') return 'Depreciation, condition, age, hours and fitted extras.';
-  if (method === 'market') return 'Comparable listings around your selected profile.';
-  return 'Department-style reference based on power band and usage.';
+function getStepMeta(step: Step) {
+  switch (step) {
+    case 1:
+      return {
+        title: 'Choose Equipment Type',
+        body: 'Select your equipment type to continue.',
+      };
+    case 2:
+      return {
+        title: 'Choose Brand',
+        body: 'Select a tractor brand from the dropdown list.',
+      };
+    case 3:
+      return {
+        title: 'Choose Tractor Model',
+        body: 'Four quick choices. One at a time.',
+      };
+    case 4:
+      return {
+        title: 'Enter Tractor Details',
+        body: 'Four quick details. One at a time.',
+      };
+    default:
+      return {
+        title: 'Valuation Results',
+        body: 'Review the calculated values and next actions.',
+      };
+  }
 }
 
-function getStepTitle(step: Step): string {
-  if (step === 1) return 'Choose equipment type';
-  if (step === 2) return 'Choose brand';
-  if (step === 3) return 'Choose tractor model';
-  if (step === 4) return 'Enter tractor details';
-  return 'Valuation results';
+function getConditionHint(condition: ConditionKey): string {
+  if (condition === 'excellent') return 'Best kept condition';
+  if (condition === 'good') return 'Well maintained working tractor';
+  if (condition === 'fair') return 'Average wear for age';
+  if (condition === 'used') return 'Heavy general use visible';
+  return 'Requires attention before sale';
 }
 
-function getStepText(step: Step): string {
-  if (step === 1) return 'Keep it simple. Start with the equipment class you want to value.';
-  if (step === 2) return 'Search or scroll. Pick the brand to continue.';
-  if (step === 3) return 'Finish the tractor setup, then choose the exact model.';
-  if (step === 4) return 'Add the year, hours, condition and any fitted extras.';
-  return 'Review the calculated values, comparables and next actions.';
-}
-
-function getTractorTypeLabel(value: TractorType): string {
-  return value === 'orchard' ? 'Orchard' : 'Field';
-}
-
-function getDriveLabel(value: DriveType): string {
-  return value === 'tracks' ? 'Tracks' : value.toUpperCase();
-}
-
-function getCabLabel(value: CabType): string {
-  return value === 'cab' ? 'Cab' : 'Open station';
-}
-
-function getGpsTypeLabel(value: GpsType): string {
-  return value === 'full-autosteer' ? 'Full autosteer' : 'Guidance only';
-}
-
-function getConfidenceTone(result: Result): 'high' | 'medium' | 'low' {
+function getConfidenceLevel(result: Result): 'high' | 'medium' | 'low' {
   if (result.marketCount >= 5) return 'high';
   if (result.marketCount >= 2) return 'medium';
   return 'low';
 }
 
 function getConfidenceLabel(result: Result): string {
-  const tone = getConfidenceTone(result);
-  if (tone === 'high') return 'High confidence';
-  if (tone === 'medium') return 'Medium confidence';
-  return 'Low confidence';
+  const level = getConfidenceLevel(result);
+
+  if (level === 'high') return 'Confidence: High';
+  if (level === 'medium') return 'Confidence: Medium';
+  return 'Confidence: Low';
 }
 
-function getCoverageLabel(result: Result): string {
-  if (result.coverageBand === 'green') return 'All three value signals available';
-  if (result.coverageBand === 'amber') return 'Two value signals available';
-  return 'Single value signal available';
+function getTractorTypeLabel(type: TractorType): string {
+  return type === 'orchard' ? 'Orchard' : 'Field';
 }
 
-function getRangePercent(low: number | null, high: number | null, value: number | null): number {
-  if (low === null || high === null || value === null || high <= low) {
-    return 50;
-  }
-
-  const percent = ((value - low) / (high - low)) * 100;
-  return Math.max(0, Math.min(100, percent));
+function getDriveDisplay(driveValue: DriveType): string {
+  return driveValue === 'tracks' ? 'Tracks' : driveValue.toUpperCase();
 }
 
-function formatListingDate(value: string): string {
-  if (!value.trim()) return 'Date not supplied';
-
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return value;
-
-  return new Intl.DateTimeFormat('en-ZA', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(parsed);
+function getCabDisplay(cabValue: CabType): string {
+  return cabValue === 'cab' ? 'Cab' : 'Open station';
 }
 
-function getListingBasePrice(listing: MarketplaceListing): number {
-  const candidates = [
-    Number(listing.advertisedPriceExVat),
-    Number(listing.askingPriceExVat),
-    Number(listing.priceExVat),
-    Number(listing.price),
-  ].filter((value) => Number.isFinite(value) && value > 0);
-
-  return candidates[0] ?? 0;
-}
-
-function getListingComparablePrice(listing: MarketplaceListing, extrasValueExVat: number): number {
-  return Math.round(getListingBasePrice(listing) + Math.max(0, Number(extrasValueExVat) || 0));
+function getGpsTypeLabel(type: GpsType): string {
+  return type === 'full-autosteer' ? 'Full Autosteer' : 'Guidance Only';
 }
 
 function buildExtrasSummaryChips(
@@ -183,17 +180,17 @@ function buildExtrasSummaryChips(
   }
 
   if (gpsEnabled) {
-    let label = 'GPS';
+    let gpsLabel = 'GPS';
 
     if (gpsType) {
-      label += ` • ${getGpsTypeLabel(gpsType)}`;
+      gpsLabel = `${gpsLabel} • ${getGpsTypeLabel(gpsType)}`;
     }
 
     if (gpsYear.trim()) {
-      label += ` • ${gpsYear.trim()}`;
+      gpsLabel = `${gpsLabel} • ${gpsYear.trim()}`;
     }
 
-    chips.push(label);
+    chips.push(gpsLabel);
   }
 
   if (!chips.length) {
@@ -213,57 +210,85 @@ function buildExtrasSummaryText(
   return buildExtrasSummaryChips(frontPto, frontLoader, gpsEnabled, gpsType, gpsYear).join(' · ');
 }
 
+
+function getListingBasePrice(listing: MarketplaceListing): number {
+  const candidates = [
+    Number(listing.advertisedPriceExVat),
+    Number(listing.askingPriceExVat),
+    Number(listing.priceExVat),
+    Number(listing.price),
+  ].filter((value) => Number.isFinite(value) && value > 0);
+
+  return candidates[0] ?? 0;
+}
+
+function getListingComparablePrice(listing: MarketplaceListing, extrasValueExVat: number): number {
+  return Math.round(getListingBasePrice(listing) + Math.max(0, Number(extrasValueExVat) || 0));
+}
+
+function formatListingDate(value: string): string {
+  if (!value.trim()) return 'Date not supplied';
+
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return value;
+
+  return new Intl.DateTimeFormat('en-ZA', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(parsed);
+}
+
+function getSourceLinkLabel(value: string): string {
+  return value.trim();
+}
+
 export default function ValuationClient() {
   const router = useRouter();
 
   const [step, setStep] = useState<Step>(1);
   const [selectedType, setSelectedType] = useState<EquipmentType | null>(null);
+  const [modelQuery, setModelQuery] = useState('');
   const [brandSlug, setBrandSlug] = useState('john-deere');
+  const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
   const [brandSearch, setBrandSearch] = useState('');
   const [tractorType, setTractorType] = useState<TractorType | null>(null);
   const [drive, setDrive] = useState<DriveType | null>(null);
   const [cab, setCab] = useState<CabType | null>(null);
-  const [modelQuery, setModelQuery] = useState('');
   const [modelId, setModelId] = useState('');
   const [yearMode, setYearMode] = useState<'guided' | 'manual'>('guided');
+  const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
   const [year, setYear] = useState<number | null>(null);
   const [manualYear, setManualYear] = useState('');
   const [hours, setHours] = useState('');
-  const [condition, setCondition] = useState<ConditionKey>('good');
+  const [condition, setCondition] = useState<ConditionKey | null>(null);
+  const [configFocus, setConfigFocus] = useState<ConfigStepKey | null>(null);
+  const [detailsFocus, setDetailsFocus] = useState<DetailsStepKey | null>(null);
+  const [yearConfirmed, setYearConfirmed] = useState(false);
+  const [hoursConfirmed, setHoursConfirmed] = useState(false);
+  const [extrasReviewed, setExtrasReviewed] = useState(false);
   const [frontPto, setFrontPto] = useState(false);
   const [frontLoader, setFrontLoader] = useState(false);
   const [gpsEnabled, setGpsEnabled] = useState(false);
-  const [gpsType, setGpsType] = useState<GpsType>('guidance-only');
+  const [gpsType, setGpsType] = useState<GpsType | null>(null);
   const [gpsYear, setGpsYear] = useState('');
   const [result, setResult] = useState<Result | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<MethodKey | null>(null);
   const [selectedComparableIndex, setSelectedComparableIndex] = useState(0);
   const [message, setMessage] = useState('');
 
+  const stepMeta = getStepMeta(step);
+  const brandDropdownRef = useRef<HTMLDivElement | null>(null);
+  const brandSearchInputRef = useRef<HTMLInputElement | null>(null);
+  const yearDropdownRef = useRef<HTMLDivElement | null>(null);
+
   const sortedBrands = useMemo(
-    () => [...brands].sort((left, right) => left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })),
+    () => [...brands].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
     [],
   );
 
-  const filteredBrands = useMemo(() => {
-    const query = brandSearch.trim().toLowerCase();
-
-    if (!query) {
-      return sortedBrands;
-    }
-
-    return sortedBrands.filter((brand) => brand.name.toLowerCase().includes(query));
-  }, [brandSearch, sortedBrands]);
-
-  const selectedBrand = useMemo(
-    () => sortedBrands.find((brand) => brand.slug === brandSlug) ?? sortedBrands[0],
-    [brandSlug, sortedBrands],
-  );
-
   const matchingModels = useMemo(() => {
-    if (!tractorType || !drive || !cab) {
-      return [];
-    }
+    if (!tractorType || !drive || !cab) return [];
 
     return tractors.filter(
       (tractor) =>
@@ -272,265 +297,487 @@ export default function ValuationClient() {
         tractor.drive === drive &&
         tractor.cab === cab,
     );
-  }, [brandSlug, cab, drive, tractorType]);
+  }, [brandSlug, tractorType, drive, cab]);
 
   const filteredModels = useMemo(() => {
-    const query = modelQuery.trim().toLowerCase();
+    const normalizedQuery = modelQuery.trim().toLowerCase();
 
-    if (!query) {
+    if (!normalizedQuery) {
       return matchingModels;
     }
 
-    return matchingModels.filter((tractor) => {
-      return [
-        tractor.brandName,
-        tractor.modelName,
-        tractor.tractorType,
-        tractor.drive,
-        tractor.cab,
-        tractor.powerKw,
-        tractor.powerHp,
-      ]
-        .join(' ')
+    return matchingModels.filter((tractor) =>
+      `${tractor.brandName} ${tractor.modelName} ${tractor.tractorType} ${tractor.drive} ${tractor.cab} ${tractor.powerKw}`
         .toLowerCase()
-        .includes(query);
-    });
+        .includes(normalizedQuery),
+    );
   }, [matchingModels, modelQuery]);
 
   const selectedModel = useMemo<TractorCatalogRow | null>(
-    () => matchingModels.find((tractor) => tractor.id === modelId) ?? null,
+    () => matchingModels.find((model) => model.id === modelId) ?? null,
     [matchingModels, modelId],
   );
 
-  const guidedYears = useMemo(() => {
+  function invalidateResult() {
+    setResult(null);
+    setSelectedMethod(null);
+  }
+
+  function resetExtrasState() {
+    setFrontPto(false);
+    setFrontLoader(false);
+    setGpsEnabled(false);
+    setGpsType(null);
+    setGpsYear('');
+    setExtrasReviewed(false);
+  }
+
+  function resetDetailState(options?: { keepYearMode?: boolean }) {
+    if (!options?.keepYearMode) {
+      setYearMode('guided');
+    }
+    setYearDropdownOpen(false);
+    setYear(null);
+    setManualYear('');
+    setHours('');
+    setCondition(null);
+    setYearConfirmed(false);
+    setHoursConfirmed(false);
+    setDetailsFocus(null);
+    resetExtrasState();
+    invalidateResult();
+  }
+
+  function markExtrasDirty() {
+    setExtrasReviewed(false);
+    invalidateResult();
+  }
+
+  function confirmYearSelection() {
+    if (!selectedModel || !isYearValid) {
+      setMessage('Enter a valid year first.');
+      return;
+    }
+
+    setYearConfirmed(true);
+    setDetailsFocus(null);
+    setMessage('');
+  }
+
+  function confirmHoursSelection() {
+    if (!isHoursValid) {
+      setMessage('Enter engine hours first.');
+      return;
+    }
+
+    setHoursConfirmed(true);
+    setDetailsFocus(null);
+    setMessage('');
+  }
+
+  function applyExtrasSelection() {
+    setExtrasReviewed(true);
+    setDetailsFocus(null);
+    setMessage('');
+  }
+
+  function clearExtrasSelection() {
+    setFrontPto(false);
+    setFrontLoader(false);
+    setGpsEnabled(false);
+    setGpsType(null);
+    setGpsYear('');
+    setExtrasReviewed(true);
+    setDetailsFocus(null);
+    setMessage('');
+    invalidateResult();
+  }
+
+  useEffect(() => {
+    if (!matchingModels.length) {
+      if (modelId !== '') {
+        setModelId('');
+      }
+      return;
+    }
+
+    if (modelId && !matchingModels.some((model) => model.id === modelId)) {
+      setModelId('');
+    }
+  }, [matchingModels, modelId]);
+
+  useEffect(() => {
     if (!selectedModel) {
-      return [] as number[];
+      setYear(null);
+      setYearConfirmed(false);
+      setHoursConfirmed(false);
+      setCondition(null);
+      setExtrasReviewed(false);
+      return;
     }
 
-    const values: number[] = [];
-    for (let current = selectedModel.yearEnd; current >= selectedModel.yearStart; current -= 1) {
-      values.push(current);
+    if (yearMode === 'guided' && year !== null) {
+      if (year < selectedModel.yearStart || year > selectedModel.yearEnd) {
+        setYear(null);
+        setYearConfirmed(false);
+      }
+    }
+  }, [selectedModel, yearMode, year]);
+
+  useEffect(() => {
+    if (step !== 2) {
+      setBrandDropdownOpen(false);
+      setBrandSearch('');
     }
 
-    return values;
-  }, [selectedModel]);
-
-  const activeYear = useMemo(() => {
-    if (yearMode === 'guided') {
-      return year;
+    if (step !== 3) {
+      setConfigFocus(null);
     }
 
-    const parsed = Number(manualYear);
-    if (!Number.isInteger(parsed)) {
-      return null;
+    if (step !== 4) {
+      setDetailsFocus(null);
+      setYearDropdownOpen(false);
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (!brandDropdownOpen) {
+      setBrandSearch('');
+      return;
     }
 
-    return parsed;
-  }, [manualYear, year, yearMode]);
+    const timeoutId = window.setTimeout(() => {
+      brandSearchInputRef.current?.focus();
+    }, 0);
 
+    return () => window.clearTimeout(timeoutId);
+  }, [brandDropdownOpen]);
+
+  useEffect(() => {
+    if (!gpsEnabled) {
+      setGpsType(null);
+      setGpsYear('');
+    }
+  }, [gpsEnabled]);
+
+  useEffect(() => {
+    if (!brandDropdownOpen && !yearDropdownOpen) return;
+
+    function handlePointerDown(event: MouseEvent | TouchEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+
+      if (brandDropdownOpen && brandDropdownRef.current && !brandDropdownRef.current.contains(target)) {
+        setBrandDropdownOpen(false);
+      }
+
+      if (yearDropdownOpen && yearDropdownRef.current && !yearDropdownRef.current.contains(target)) {
+        setYearDropdownOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      setBrandDropdownOpen(false);
+      setYearDropdownOpen(false);
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [brandDropdownOpen, yearDropdownOpen]);
+
+  const years = useMemo(
+    () =>
+      selectedModel
+        ? Array.from(
+            { length: selectedModel.yearEnd - selectedModel.yearStart + 1 },
+            (_, index) => selectedModel.yearEnd - index,
+          )
+        : [],
+    [selectedModel],
+  );
+
+  const selectedBrandName = useMemo(
+    () => brands.find((brand) => brand.slug === brandSlug)?.name ?? '—',
+    [brandSlug],
+  );
+
+  const filteredBrandOptions = useMemo(() => {
+    const normalizedQuery = brandSearch.trim().toLowerCase();
+
+    if (!normalizedQuery) return sortedBrands;
+
+    return sortedBrands.filter((brand) => brand.name.toLowerCase().includes(normalizedQuery));
+  }, [brandSearch, sortedBrands]);
+
+  const activeYear = yearMode === 'manual' ? Number(manualYear) : year ?? Number.NaN;
+  const isYearValid =
+    yearMode === 'guided'
+      ? Number.isInteger(year)
+      : Number.isInteger(activeYear) && activeYear >= 1950 && activeYear <= CURRENT_YEAR;
+  const selectedYearDisplay = isYearValid ? String(activeYear) : 'Choose year';
+  const enteredHours = Number(hours);
+  const isHoursValid = Number.isFinite(enteredHours) && enteredHours > 0;
+  const enteredHoursDisplay = isHoursValid ? `${enteredHours.toLocaleString('en-ZA')} hrs` : 'Type hours';
+  const selectedConditionDisplay = condition ? conditionLabel(condition) : 'Choose condition';
   const extrasSummaryChips = useMemo(
     () => buildExtrasSummaryChips(frontPto, frontLoader, gpsEnabled, gpsType, gpsYear),
     [frontPto, frontLoader, gpsEnabled, gpsType, gpsYear],
   );
-
   const extrasSummaryText = useMemo(
     () => buildExtrasSummaryText(frontPto, frontLoader, gpsEnabled, gpsType, gpsYear),
     [frontPto, frontLoader, gpsEnabled, gpsType, gpsYear],
   );
 
   const methodCards = useMemo<MethodCard[]>(() => {
-    if (!result) {
-      return [
-        {
-          key: 'aim4price',
-          label: 'Aim4price Value',
-          note: getMethodNote('aim4price'),
-          value: null,
-          display: 'Unavailable',
-          available: false,
-        },
-        {
-          key: 'market',
-          label: 'Estimated Market Value',
-          note: getMethodNote('market'),
-          value: null,
-          display: 'Unavailable',
-          available: false,
-        },
-        {
-          key: 'department',
-          label: 'DALRRD Reference',
-          note: getMethodNote('department'),
-          value: null,
-          display: 'Unavailable',
-          available: false,
-        },
-      ];
-    }
+    if (!result) return [];
 
-    return (['aim4price', 'market', 'department'] as MethodKey[]).map((method) => ({
-      key: method,
-      label: getMethodLabel(method),
-      note: getMethodNote(method),
-      value: getMethodValue(result, method),
-      display: getMethodDisplay(result, method),
-      available: getMethodValue(result, method) !== null,
-    }));
+    return [
+      {
+        key: 'aim4price',
+        label: 'Aim4price Value',
+        note: 'Based on our pricing engine and comparable market trends.',
+        value: result.aim4priceValueExVat,
+        available: result.aim4priceValueExVat !== null,
+      },
+      {
+        key: 'market',
+        label: 'Market Range',
+        note: `${result.marketCount} proveable market listing${result.marketCount === 1 ? '' : 's'} linked below.`,
+        value: result.marketMid,
+        available: result.marketMid !== null,
+      },
+      {
+        key: 'department',
+        label: 'DALRRD Reference',
+        note: 'Guide reference based on kW band and drive type.',
+        value: result.departmentValueExVat,
+        available: result.departmentValueExVat !== null,
+      },
+    ];
   }, [result]);
 
-  const selectedMethodCard = useMemo(
-    () => methodCards.find((card) => card.key === selectedMethod) ?? null,
-    [methodCards, selectedMethod],
-  );
+  const selectedMethodValue = result && selectedMethod ? getMethodValue(result, selectedMethod) : null;
+  const headlineValue = selectedMethodValue ?? result?.previewValueExVat ?? null;
+  const headlineLabel = selectedMethod ? getMethodLabel(selectedMethod) : 'Estimated Market Value';
+  const confidenceLevel = result ? getConfidenceLevel(result) : 'low';
+  const confidenceClassName =
+    confidenceLevel === 'high'
+      ? styles.confidenceHigh
+      : confidenceLevel === 'medium'
+        ? styles.confidenceMedium
+        : styles.confidenceLow;
+  const confidencePanelClassName =
+    confidenceLevel === 'high'
+      ? styles.valuePanelHigh
+      : confidenceLevel === 'medium'
+        ? styles.valuePanelMedium
+        : styles.valuePanelLow;
 
-  const selectedComparable = result?.marketSources[selectedComparableIndex] ?? null;
+  const comparableListings = useMemo<MarketplaceListing[]>(() => {
+    if (!result) return [];
 
-  function resetModelState() {
-    setModelQuery('');
-    setModelId('');
-    setYearMode('guided');
-    setYear(null);
-    setManualYear('');
-    setHours('');
-    setCondition('good');
-    setFrontPto(false);
-    setFrontLoader(false);
-    setGpsEnabled(false);
-    setGpsType('guidance-only');
-    setGpsYear('');
-    setResult(null);
-    setSelectedMethod(null);
-    setSelectedComparableIndex(0);
-  }
+    return [...result.marketSources].sort((left, right) => {
+      const priceDelta =
+        getListingComparablePrice(left, result.extrasValueExVat) -
+        getListingComparablePrice(right, result.extrasValueExVat);
 
-  function handleBrandSelect(nextSlug: string) {
-    if (nextSlug === brandSlug) {
-      setMessage('');
+      if (priceDelta !== 0) return priceDelta;
+      if (left.yearModel !== right.yearModel) return left.yearModel - right.yearModel;
+
+      return left.hours - right.hours;
+    });
+  }, [result]);
+
+  useEffect(() => {
+    if (!result || !comparableListings.length) {
+      setSelectedComparableIndex(0);
       return;
     }
 
-    setBrandSlug(nextSlug);
+    const fallbackIndex = Math.floor(comparableListings.length / 2);
+    const targetValue =
+      result.marketMid ??
+      getListingComparablePrice(comparableListings[fallbackIndex], result.extrasValueExVat);
+
+    let bestIndex = fallbackIndex;
+    let bestDelta = Number.POSITIVE_INFINITY;
+
+    comparableListings.forEach((listing, index) => {
+      const delta = Math.abs(getListingComparablePrice(listing, result.extrasValueExVat) - targetValue);
+
+      if (delta < bestDelta) {
+        bestDelta = delta;
+        bestIndex = index;
+      }
+    });
+
+    setSelectedComparableIndex(bestIndex);
+  }, [comparableListings, result]);
+
+  const safeComparableIndex = comparableListings.length
+    ? Math.min(selectedComparableIndex, comparableListings.length - 1)
+    : 0;
+  const selectedComparable = comparableListings[safeComparableIndex] ?? null;
+  const selectedComparableSourceUrl = selectedComparable?.sourceUrl?.trim() ?? '';
+  const selectedComparableValue =
+    selectedComparable && result
+      ? getListingComparablePrice(selectedComparable, result.extrasValueExVat)
+      : result?.marketMid ?? null;
+  const selectedComparablePercent = getRangePercent(
+    result?.marketLow ?? null,
+    result?.marketHigh ?? null,
+    selectedComparableValue,
+  );
+
+  const configComplete = Boolean(tractorType && drive && cab && selectedModel);
+  const configAutoStep: ConfigStepKey = !tractorType ? 'type' : !drive ? 'drive' : !cab ? 'cab' : 'model';
+  const activeConfigStep = configFocus ?? configAutoStep;
+  const configStepNumber = CONFIG_STEPS.findIndex((item) => item.key === activeConfigStep) + 1;
+
+  const detailsComplete = Boolean(yearConfirmed && hoursConfirmed && condition !== null && extrasReviewed);
+  const detailsAutoStep: DetailsStepKey = !yearConfirmed
+    ? 'year'
+    : !hoursConfirmed
+      ? 'hours'
+      : !condition
+        ? 'condition'
+        : 'extras';
+  const activeDetailsStep = detailsFocus ?? detailsAutoStep;
+  const activeDetailsStepNumber = DETAILS_STEPS.findIndex((item) => item.key === activeDetailsStep) + 1;
+
+  const canContinue = useMemo(() => {
+    if (step === 1) return selectedType === 'tractor';
+    if (step === 3) return configComplete;
+    if (step === 4) {
+      return Boolean(selectedModel && isYearValid && isHoursValid && yearConfirmed && hoursConfirmed && condition && extrasReviewed);
+    }
+    return true;
+  }, [
+    step,
+    selectedType,
+    configComplete,
+    selectedModel,
+    isYearValid,
+    isHoursValid,
+    yearConfirmed,
+    hoursConfirmed,
+    condition,
+    extrasReviewed,
+  ]);
+
+  const nextLabel =
+    step === 1
+      ? 'Choose Brand'
+      : step === 2
+        ? 'Choose Model'
+        : step === 3
+          ? 'Enter Details'
+          : 'Get Valuation';
+
+  function resetWizard() {
+    setStep(1);
+    setSelectedType(null);
+    setModelQuery('');
+    setBrandSlug('john-deere');
+    setBrandDropdownOpen(false);
+    setBrandSearch('');
     setTractorType(null);
     setDrive(null);
     setCab(null);
-    resetModelState();
-    setMessage('');
-  }
-
-  function handleSelectModel(model: TractorCatalogRow) {
-    setModelId(model.id);
-    setYear(model.yearEnd);
-    setManualYear('');
+    setModelId('');
+    setConfigFocus(null);
+    setDetailsFocus(null);
+    setYearConfirmed(false);
+    setHoursConfirmed(false);
+    setExtrasReviewed(false);
     setResult(null);
     setSelectedMethod(null);
-    setSelectedComparableIndex(0);
     setMessage('');
+    resetDetailState();
+  }
+
+  function handleBack() {
+    setMessage('');
+
+    if (step === 1) {
+      router.push('/');
+      return;
+    }
+
+    setStep(previousStep(step));
   }
 
   function handleNext() {
     setMessage('');
 
-    if (step === 1) {
-      if (!selectedType) {
-        setMessage('Choose an equipment type first.');
-        return;
-      }
-
-      setStep(2);
-      return;
-    }
-
-    if (step === 2) {
-      setStep(3);
-      return;
-    }
-
-    if (step === 3) {
-      if (!tractorType || !drive || !cab || !selectedModel) {
-        setMessage('Complete the tractor setup and choose a model.');
-        return;
-      }
-
-      setStep(4);
+    if (step === 3 && !selectedModel) {
+      setMessage('Choose a model first.');
       return;
     }
 
     if (step === 4) {
-      if (!selectedModel) {
-        setMessage('Choose a model first.');
-        setStep(3);
-        return;
-      }
-
-      if (!activeYear || activeYear < 1950 || activeYear > CURRENT_YEAR) {
-        setMessage(`Enter a valid year between 1950 and ${CURRENT_YEAR}.`);
-        return;
-      }
-
       const parsedHours = Number(hours);
-      if (!Number.isFinite(parsedHours) || parsedHours < 0) {
-        setMessage('Enter engine hours to continue.');
+      const parsedYear = activeYear;
+
+      if (!selectedModel || !isYearValid || !yearConfirmed) {
+        setMessage('Confirm the year first.');
         return;
       }
 
-      if (gpsEnabled) {
-        const parsedGpsYear = gpsYear.trim() ? Number(gpsYear) : activeYear;
-        if (!Number.isInteger(parsedGpsYear) || parsedGpsYear < 1950 || parsedGpsYear > CURRENT_YEAR) {
-          setMessage(`Enter a valid GPS year between 1950 and ${CURRENT_YEAR}.`);
-          return;
-        }
+      if (!Number.isFinite(parsedHours) || parsedHours <= 0 || !hoursConfirmed) {
+        setMessage('Confirm the engine hours first.');
+        return;
       }
 
-      try {
-        const nextResult = runValuation({
-          modelId: selectedModel.id,
-          year: activeYear,
-          hours: parsedHours,
-          condition,
-          frontPto,
-          frontLoader,
-          gpsEnabled,
-          gpsType,
-          gpsYear: gpsEnabled ? gpsYear.trim() || String(activeYear) : null,
-        });
-
-        setResult(nextResult);
-        setSelectedComparableIndex(0);
-
-        const defaultMethod: MethodKey =
-          nextResult.marketMid !== null
-            ? 'market'
-            : nextResult.aim4priceValueExVat !== null
-              ? 'aim4price'
-              : 'department';
-
-        setSelectedMethod(defaultMethod);
-        setStep(5);
-      } catch {
-        setMessage('Unable to calculate this valuation. Please review the tractor details.');
+      if (!condition) {
+        setMessage('Choose the condition first.');
+        return;
       }
 
+      if (!extrasReviewed) {
+        setMessage('Review the extras first.');
+        return;
+      }
+
+      const nextResult = runValuation({
+        modelId: selectedModel.id,
+        year: parsedYear,
+        hours: parsedHours,
+        condition,
+        frontPto,
+        frontLoader,
+        gpsEnabled,
+        gpsType,
+        gpsYear,
+      });
+
+      setResult(nextResult);
+
+      const defaultMethod: MethodKey =
+        nextResult.marketMid !== null
+          ? 'market'
+          : nextResult.aim4priceValueExVat !== null
+            ? 'aim4price'
+            : 'department';
+
+      setSelectedMethod(defaultMethod);
+      setStep(5);
       return;
     }
-  }
 
-  function handleBack() {
-    setMessage('');
-    setStep(previousStep(step));
-  }
-
-  function handleMethodSelect(method: MethodKey) {
-    if (!result) return;
-
-    const value = getMethodValue(result, method);
-    if (value === null) return;
-
-    setSelectedMethod(method);
-    setMessage('');
+    setStep(nextStep(step));
   }
 
   function handleSave() {
-    if (!result || !selectedMethod || !activeYear) {
+    if (!result || !selectedMethod) {
       setMessage('Choose which number should be saved first.');
       return;
     }
@@ -543,7 +790,9 @@ export default function ValuationClient() {
     }
 
     saveItem({
-      id: `${result.model.id}-${activeYear}-${hours}-${condition}-${frontPto ? 'pto' : 'no-pto'}-${frontLoader ? 'loader' : 'no-loader'}-${gpsEnabled ? `gps-${gpsType}-${gpsYear || activeYear}` : 'no-gps'}-${selectedMethod}`,
+      id: `${result.model.id}-${activeYear}-${hours}-${condition ?? 'condition'}-${
+        frontPto ? 'pto' : 'no-pto'
+      }-${frontLoader ? 'loader' : 'no-loader'}-${gpsEnabled ? `gps-${gpsType ?? 'enabled'}-${gpsYear || 'year'}` : 'no-gps'}-${selectedMethod}`,
       kind: 'tractor',
       title: `${result.model.brandName} ${result.model.modelName}`,
       brandName: result.model.brandName,
@@ -561,60 +810,59 @@ export default function ValuationClient() {
       createdAtIso: new Date().toISOString(),
     });
 
-    setMessage('Saved locally to Asset Register prototype storage.');
-  }
-
-  function handleStartAgain() {
-    setStep(1);
-    setSelectedType(null);
-    setBrandSearch('');
-    setBrandSlug('john-deere');
-    setTractorType(null);
-    setDrive(null);
-    setCab(null);
-    resetModelState();
-    setMessage('');
-  }
-
-  function handleViewMarketplace() {
-    const search = new URLSearchParams();
-
-    if (selectedBrand?.slug) {
-      search.set('brand', selectedBrand.slug);
-    }
-
-    if (selectedModel?.modelName) {
-      search.set('model', selectedModel.modelName);
-    }
-
-    router.push(`/marketplace${search.toString() ? `?${search.toString()}` : ''}`);
+    setMessage('Saved locally to prototype storage.');
   }
 
   function handlePrint() {
-    if (typeof window === 'undefined') return;
+    if (!result || typeof window === 'undefined') return;
     window.print();
   }
 
-  function renderStepBody() {
+  function handleMethodSelect(method: MethodKey) {
+    if (!result) return;
+
+    const value = getMethodValue(result, method);
+    if (value === null) return;
+
+    setSelectedMethod(method);
+    setMessage('');
+  }
+
+  function renderWizardBody() {
     if (step === 1) {
+      const isTractorSelected = selectedType === 'tractor';
+
       return (
-        <div className={styles.typeGrid}>
+        <div className={styles.typePicker}>
+          <button type="button" className={styles.typeArrow} aria-label="Previous equipment type" disabled>
+            ‹
+          </button>
+
           <button
             type="button"
-            className={`${styles.typeCard} ${selectedType === 'tractor' ? styles.typeCardActive : ''}`}
+            className={`${styles.typeCard} ${styles.typePickerCard} ${
+              isTractorSelected ? styles.typeCardActive : ''
+            }`}
             onClick={() => {
               setSelectedType('tractor');
               setMessage('');
             }}
-            aria-pressed={selectedType === 'tractor'}
+            aria-pressed={isTractorSelected}
           >
-            <div className={styles.typeMedia}>
-              <Image src="/brand/Tractor.png" alt="Tractor" fill className={styles.typeImage} sizes="260px" />
+            <div className={styles.typeImageBox}>
+              <Image
+                src="/brand/Tractor.png"
+                alt="Tractor equipment type"
+                fill
+                className={styles.typeImage}
+                sizes="220px"
+              />
             </div>
-            <div className={styles.typeText}>
-              <strong>Tractor</strong>
-              <span>Start the valuation flow for a tractor profile.</span>
-            </div>
+            <strong>Tractor</strong>
+          </button>
+
+          <button type="button" className={styles.typeArrow} aria-label="Next equipment type" disabled>
+            ›
           </button>
         </div>
       );
@@ -622,691 +870,1362 @@ export default function ValuationClient() {
 
     if (step === 2) {
       return (
-        <div className={styles.brandPanel}>
-          <div className={styles.inputGroup}>
-            <label htmlFor="brand-search" className={styles.inputLabel}>
-              Search brand
-            </label>
-            <input
-              id="brand-search"
-              value={brandSearch}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setBrandSearch(event.target.value)}
-              placeholder="Start typing a brand..."
-              className={styles.textInput}
-            />
-          </div>
+        <div className={styles.searchWrap}>
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Choose Brand</span>
 
-          <div className={styles.brandList} role="listbox" aria-label="Brands">
-            {filteredBrands.map((brand) => {
-              const active = brand.slug === brandSlug;
+            <div className={styles.dropdownField} ref={brandDropdownRef}>
+              <button
+                type="button"
+                className={`${styles.dropdownTrigger} ${brandDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
+                onClick={() => {
+                  setBrandDropdownOpen((open) => !open);
+                  setMessage('');
+                }}
+                aria-haspopup="listbox"
+                aria-expanded={brandDropdownOpen}
+                aria-label="Choose tractor brand"
+              >
+                <span className={styles.dropdownTriggerText}>{selectedBrandName}</span>
+                <span className={styles.dropdownTriggerIcon} aria-hidden="true">
+                  {brandDropdownOpen ? '▴' : '▾'}
+                </span>
+              </button>
 
-              return (
-                <button
-                  key={brand.slug}
-                  type="button"
-                  role="option"
-                  aria-selected={active}
-                  className={`${styles.brandButton} ${active ? styles.brandButtonActive : ''}`}
-                  onClick={() => handleBrandSelect(brand.slug)}
-                >
-                  <span>{brand.name}</span>
-                  {active ? <small>Selected</small> : null}
-                </button>
-              );
-            })}
+              {brandDropdownOpen ? (
+                <div className={styles.dropdownMenu}>
+                  <div className={styles.dropdownSearchWrap}>
+                    <input
+                      ref={brandSearchInputRef}
+                      value={brandSearch}
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => setBrandSearch(event.target.value)}
+                      placeholder="Search brand..."
+                      aria-label="Search brands"
+                      className={styles.dropdownSearchInput}
+                    />
+                  </div>
+
+                  <div className={styles.dropdownList} role="listbox" aria-label="Available tractor brands">
+                    {filteredBrandOptions.length ? (
+                      filteredBrandOptions.map((brand) => {
+                        const active = brand.slug === brandSlug;
+
+                        return (
+                          <button
+                            key={brand.slug}
+                            type="button"
+                            role="option"
+                            aria-selected={active}
+                            className={`${styles.dropdownOption} ${active ? styles.dropdownOptionActive : ''}`}
+                            onClick={() => {
+                              const brandChanged = brand.slug !== brandSlug;
+
+                              setBrandSlug(brand.slug);
+
+                              if (brandChanged) {
+                                setTractorType(null);
+                                setDrive(null);
+                                setCab(null);
+                                setModelId('');
+                                setModelQuery('');
+                                resetDetailState();
+                              }
+
+                              setBrandDropdownOpen(false);
+                              setBrandSearch('');
+                              setMessage('');
+                            }}
+                          >
+                            <span className={styles.dropdownOptionText}>{brand.name}</span>
+                            {active ? <span className={styles.dropdownOptionBadge}>Selected</span> : null}
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className={styles.dropdownEmpty}>No brands matched “{brandSearch.trim()}”.</div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       );
     }
 
     if (step === 3) {
-      return (
-        <div className={styles.modelStep}>
-          <div className={styles.segmentBlock}>
-            <div className={styles.segmentHeader}>
-              <span className={styles.inputLabel}>Tractor type</span>
-            </div>
-            <div className={styles.segmentRow}>
-              {(['field', 'orchard'] as TractorType[]).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={`${styles.segmentButton} ${tractorType === value ? styles.segmentButtonActive : ''}`}
-                  onClick={() => {
-                    setTractorType(value);
-                    setDrive(null);
-                    setCab(null);
-                    resetModelState();
-                    setMessage('');
-                  }}
-                >
-                  {getTractorTypeLabel(value)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.segmentBlock}>
-            <div className={styles.segmentHeader}>
-              <span className={styles.inputLabel}>Drive</span>
-            </div>
-            <div className={styles.segmentRow}>
-              {(['2wd', '4wd', 'tracks'] as DriveType[]).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  disabled={!tractorType}
-                  className={`${styles.segmentButton} ${drive === value ? styles.segmentButtonActive : ''}`}
-                  onClick={() => {
-                    setDrive(value);
-                    setCab(null);
-                    resetModelState();
-                    setMessage('');
-                  }}
-                >
-                  {getDriveLabel(value)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.segmentBlock}>
-            <div className={styles.segmentHeader}>
-              <span className={styles.inputLabel}>Cab</span>
-            </div>
-            <div className={styles.segmentRow}>
-              {(['cab', 'open-station'] as CabType[]).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  disabled={!drive}
-                  className={`${styles.segmentButton} ${cab === value ? styles.segmentButtonActive : ''}`}
-                  onClick={() => {
-                    setCab(value);
-                    resetModelState();
-                    setMessage('');
-                  }}
-                >
-                  {getCabLabel(value)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.inputGroup}>
-            <label htmlFor="model-search" className={styles.inputLabel}>
-              Search model
-            </label>
-            <input
-              id="model-search"
-              value={modelQuery}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setModelQuery(event.target.value)}
-              placeholder={selectedModel ? selectedModel.modelName : 'Search model name...'}
-              className={styles.textInput}
-              disabled={!tractorType || !drive || !cab}
-            />
-          </div>
-
-          <div className={styles.modelList}>
-            {filteredModels.length ? (
-              filteredModels.map((model) => {
-                const active = model.id === modelId;
-
-                return (
-                  <button
-                    key={model.id}
-                    type="button"
-                    className={`${styles.modelCard} ${active ? styles.modelCardActive : ''}`}
-                    onClick={() => handleSelectModel(model)}
-                  >
-                    <div className={styles.modelCardTop}>
-                      <strong>{model.brandName} {model.modelName}</strong>
-                      <span>{model.powerKw} kW · {model.powerHp} hp</span>
-                    </div>
-                    <div className={styles.modelCardMeta}>
-                      <span>{getTractorTypeLabel(model.tractorType)}</span>
-                      <span>{getDriveLabel(model.drive)}</span>
-                      <span>{getCabLabel(model.cab)}</span>
-                      <span>{model.yearStart}–{model.yearEnd}</span>
-                    </div>
-                  </button>
-                );
-              })
-            ) : (
-              <div className={styles.emptyState}>
-                {!tractorType || !drive || !cab
-                  ? 'Choose tractor type, drive and cab to load models.'
-                  : 'No models match this setup yet.'}
-              </div>
-            )}
-          </div>
-        </div>
+      const configRows = [
+        tractorType
+          ? { key: 'type' as ConfigStepKey, label: 'Type', value: getTractorTypeLabel(tractorType) }
+          : null,
+        drive ? { key: 'drive' as ConfigStepKey, label: 'Drive', value: getDriveDisplay(drive) } : null,
+        cab ? { key: 'cab' as ConfigStepKey, label: 'Cab', value: getCabDisplay(cab) } : null,
+        selectedModel
+          ? {
+              key: 'model' as ConfigStepKey,
+              label: 'Model',
+              value: `${selectedModel.brandName} ${selectedModel.modelName}`,
+            }
+          : null,
+      ].filter(
+        (
+          row,
+        ): row is {
+          key: ConfigStepKey;
+          label: string;
+          value: string;
+        } => Boolean(row),
       );
-    }
 
-    if (step === 4) {
+      const configReviewMode = configComplete && configFocus === null;
+      const emptySearchMessage = matchingModels.length
+        ? `No models match “${modelQuery.trim()}”.`
+        : drive === 'tracks'
+          ? `No ${selectedBrandName} track models are loaded yet.`
+          : 'No models are loaded for this setup yet.';
+
       return (
-        <div className={styles.detailsStep}>
-          <div className={styles.detailGrid}>
-            <div className={styles.inputGroup}>
-              <span className={styles.inputLabel}>Year model</span>
-              <div className={styles.segmentRow}>
-                <button
-                  type="button"
-                  className={`${styles.segmentButton} ${yearMode === 'guided' ? styles.segmentButtonActive : ''}`}
-                  onClick={() => {
-                    setYearMode('guided');
-                    if (!year && guidedYears.length) {
-                      setYear(guidedYears[0]);
-                    }
-                  }}
-                >
-                  Guided
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.segmentButton} ${yearMode === 'manual' ? styles.segmentButtonActive : ''}`}
-                  onClick={() => setYearMode('manual')}
-                >
-                  Other
-                </button>
-              </div>
-
-              {yearMode === 'guided' ? (
-                <select
-                  value={year ?? ''}
-                  onChange={(event) => setYear(event.target.value ? Number(event.target.value) : null)}
-                  className={styles.selectInput}
-                >
-                  <option value="">Select year</option>
-                  {guidedYears.map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  value={manualYear}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => setManualYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
-                  inputMode="numeric"
-                  placeholder="Type year model"
-                  className={styles.textInput}
-                />
-              )}
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label htmlFor="engine-hours" className={styles.inputLabel}>
-                Engine hours
-              </label>
-              <input
-                id="engine-hours"
-                value={hours}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => setHours(event.target.value.replace(/[^0-9]/g, ''))}
-                inputMode="numeric"
-                placeholder="Type engine hours here"
-                className={styles.textInput}
-              />
-            </div>
+        <div className={styles.flowShell}>
+          <div className={styles.flowTopline}>
+            <span className={styles.flowToplineLabel}>Brand</span>
+            <strong className={styles.flowToplineValue}>{selectedBrandName}</strong>
           </div>
 
-          <div className={styles.inputGroup}>
-            <span className={styles.inputLabel}>Condition</span>
-            <div className={styles.conditionGrid}>
-              {conditionOptions.map((option) => {
-                const active = option.key === condition;
-
-                return (
-                  <button
-                    key={option.key}
-                    type="button"
-                    className={`${styles.conditionCard} ${active ? styles.conditionCardActive : ''}`}
-                    onClick={() => setCondition(option.key)}
-                  >
-                    <strong>{option.label}</strong>
-                    <span>{conditionLabel(option.key)}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className={styles.extrasGrid}>
-            <button
-              type="button"
-              className={`${styles.toggleCard} ${frontPto ? styles.toggleCardActive : ''}`}
-              onClick={() => setFrontPto((value) => !value)}
-              aria-pressed={frontPto}
-            >
-              <strong>Front Hitch & Front PTO</strong>
-              <span>Add fitted PTO and hitch value where applicable.</span>
-            </button>
-
-            <button
-              type="button"
-              className={`${styles.toggleCard} ${frontLoader ? styles.toggleCardActive : ''}`}
-              onClick={() => setFrontLoader((value) => !value)}
-              aria-pressed={frontLoader}
-            >
-              <strong>Front Loader</strong>
-              <span>Include a loader adjustment in the output value.</span>
-            </button>
-
-            <button
-              type="button"
-              className={`${styles.toggleCard} ${gpsEnabled ? styles.toggleCardActive : ''}`}
-              onClick={() => setGpsEnabled((value) => !value)}
-              aria-pressed={gpsEnabled}
-            >
-              <strong>GPS</strong>
-              <span>Add guidance or autosteer equipment value.</span>
-            </button>
-          </div>
-
-          {gpsEnabled ? (
-            <div className={styles.gpsPanel}>
-              <div className={styles.inputGroup}>
-                <span className={styles.inputLabel}>GPS type</span>
-                <div className={styles.segmentRow}>
-                  {(['guidance-only', 'full-autosteer'] as GpsType[]).map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      className={`${styles.segmentButton} ${gpsType === value ? styles.segmentButtonActive : ''}`}
-                      onClick={() => setGpsType(value)}
-                    >
-                      {getGpsTypeLabel(value)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className={styles.inputGroup}>
-                <label htmlFor="gps-year" className={styles.inputLabel}>
-                  GPS year
-                </label>
-                <input
-                  id="gps-year"
-                  value={gpsYear}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => setGpsYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
-                  inputMode="numeric"
-                  placeholder="Type GPS year"
-                  className={styles.textInput}
-                />
-              </div>
-            </div>
-          ) : null}
-
-          <div className={styles.reviewCard}>
-            <div className={styles.reviewHeader}>
-              <strong>Ready to calculate</strong>
-              <span>{selectedModel ? `${selectedModel.brandName} ${selectedModel.modelName}` : 'Select a model'}</span>
-            </div>
-            <div className={styles.reviewMeta}>
-              <span>{activeYear || 'Year not set'}</span>
-              <span>{hours ? `${Number(hours).toLocaleString('en-ZA')} hours` : 'Hours not set'}</span>
-              <span>{conditionLabel(condition)}</span>
-              <span>{extrasSummaryText}</span>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (!result) {
-      return null;
-    }
-
-    const confidenceTone = getConfidenceTone(result);
-    const selectedValue = selectedMethod ? getMethodValue(result, selectedMethod) : result.previewValueExVat;
-    const selectedRangePercent = getRangePercent(result.marketLow, result.marketHigh, selectedValue);
-
-    return (
-      <div className={styles.resultsLayout}>
-        <section className={`${styles.resultHero} ${confidenceTone === 'high' ? styles.resultHeroHigh : confidenceTone === 'medium' ? styles.resultHeroMedium : styles.resultHeroLow}`}>
-          <div className={styles.resultHeroTop}>
-            <div>
-              <span className={styles.kickerLight}>{getConfidenceLabel(result)}</span>
-              <h2>{selectedMethodCard?.label ?? result.previewLabel}</h2>
-              <p>{selectedMethodCard?.note ?? 'Choose the number you want to save and work from.'}</p>
-            </div>
-            <div className={styles.primaryValueCard}>
-              <span>Selected value</span>
-              <strong>{selectedMethodCard?.display ?? money(result.previewValueExVat)}</strong>
-              <small>{getCoverageLabel(result)}</small>
-            </div>
-          </div>
-
-          <div className={styles.rangeCard}>
-            <div className={styles.rangeHeader}>
-              <span>Market range</span>
-              <strong>{range(result.marketLow, result.marketHigh)}</strong>
-            </div>
-            <div className={styles.rangeTrack} aria-hidden="true">
-              <span className={styles.rangeFill} style={{ width: `${selectedRangePercent}%` }} />
-              <span className={styles.rangeMarker} style={{ left: `${selectedRangePercent}%` }} />
-            </div>
-            <div className={styles.rangeLabels}>
-              <small>{money(result.marketLow)}</small>
-              <small>{money(result.marketHigh)}</small>
-            </div>
-          </div>
-        </section>
-
-        <section className={styles.methodSection}>
-          <div className={styles.sectionHeading}>
-            <div>
-              <span className={styles.kicker}>Value methods</span>
-              <h3>Choose the number to use</h3>
-            </div>
-          </div>
-
-          <div className={styles.methodGrid}>
-            {methodCards.map((card) => {
-              const active = card.key === selectedMethod;
+          <div className={styles.miniStepper} aria-label="Model setup progress">
+            {CONFIG_STEPS.map((item) => {
+              const complete =
+                item.key === 'type'
+                  ? Boolean(tractorType)
+                  : item.key === 'drive'
+                    ? Boolean(drive)
+                    : item.key === 'cab'
+                      ? Boolean(cab)
+                      : Boolean(selectedModel);
+              const active = !configReviewMode && activeConfigStep === item.key;
 
               return (
-                <button
-                  key={card.key}
-                  type="button"
-                  disabled={!card.available}
-                  className={`${styles.methodCard} ${active ? styles.methodCardActive : ''} ${!card.available ? styles.methodCardDisabled : ''}`}
-                  onClick={() => handleMethodSelect(card.key)}
+                <div
+                  key={item.key}
+                  className={`${styles.miniStep} ${active ? styles.miniStepActive : ''} ${
+                    complete ? styles.miniStepComplete : ''
+                  }`}
                 >
-                  <div className={styles.methodCardTop}>
-                    <strong>{card.label}</strong>
-                    {active ? <span className={styles.methodBadge}>Selected</span> : null}
-                  </div>
-                  <div className={styles.methodValue}>{card.display}</div>
-                  <p>{card.note}</p>
-                </button>
+                  <span className={styles.miniStepNumber}>{complete ? '✓' : CONFIG_STEPS.findIndex((stepItem) => stepItem.key === item.key) + 1}</span>
+                  <span className={styles.miniStepLabel}>{item.label}</span>
+                </div>
               );
             })}
           </div>
-        </section>
 
-        <section className={styles.summarySection}>
-          <div className={styles.sectionHeading}>
-            <div>
-              <span className={styles.kicker}>Summary</span>
-              <h3>Tractor profile and value drivers</h3>
-            </div>
-          </div>
-
-          <div className={styles.summaryGrid}>
-            <article className={styles.infoCard}>
-              <span className={styles.infoLabel}>Profile</span>
-              <strong>{result.model.brandName} {result.model.modelName}</strong>
-              <div className={styles.infoMeta}>
-                <span>{getTractorTypeLabel(result.model.tractorType)}</span>
-                <span>{getDriveLabel(result.model.drive)}</span>
-                <span>{getCabLabel(result.model.cab)}</span>
-                <span>{activeYear}</span>
-                <span>{Number(hours).toLocaleString('en-ZA')} hours</span>
-                <span>{conditionLabel(condition)}</span>
-              </div>
-            </article>
-
-            <article className={styles.infoCard}>
-              <span className={styles.infoLabel}>Replacement price</span>
-              <strong>{money(result.model.replacementPriceExVat)}</strong>
-              <p>Used as the styling-stage baseline for the current valuation model.</p>
-            </article>
-
-            <article className={styles.infoCard}>
-              <span className={styles.infoLabel}>Extras added</span>
-              <strong>{money(result.extrasValueExVat)}</strong>
-              <div className={styles.infoMeta}>
-                {extrasSummaryChips.map((item) => (
-                  <span key={item}>{item}</span>
-                ))}
-              </div>
-            </article>
-          </div>
-
-          <div className={styles.breakdownGrid}>
-            <article className={styles.breakdownCard}>
-              <span className={styles.breakdownLabel}>Front Hitch & Front PTO</span>
-              <strong>{money(result.frontPtoValueExVat)}</strong>
-            </article>
-            <article className={styles.breakdownCard}>
-              <span className={styles.breakdownLabel}>Front Loader</span>
-              <strong>{money(result.frontLoaderValueExVat)}</strong>
-            </article>
-            <article className={styles.breakdownCard}>
-              <span className={styles.breakdownLabel}>GPS</span>
-              <strong>{money(result.gpsValueExVat)}</strong>
-            </article>
-          </div>
-        </section>
-
-        <section className={styles.comparablesSection}>
-          <div className={styles.sectionHeading}>
-            <div>
-              <span className={styles.kicker}>Provable market listings</span>
-              <h3>Comparable market sources</h3>
-            </div>
-            <div className={styles.sectionStat}>{result.marketCount} listing{result.marketCount === 1 ? '' : 's'}</div>
-          </div>
-
-          {result.marketSources.length ? (
-            <>
-              <div className={styles.comparablesList}>
-                {result.marketSources.map((listing, index) => {
-                  const active = index === selectedComparableIndex;
-                  const comparablePrice = getListingComparablePrice(listing, result.extrasValueExVat);
-
-                  return (
-                    <button
-                      key={listing.id}
-                      type="button"
-                      className={`${styles.comparableCard} ${active ? styles.comparableCardActive : ''}`}
-                      onClick={() => setSelectedComparableIndex(index)}
-                    >
-                      <div className={styles.comparableTop}>
-                        <strong>{listing.brandName} {listing.modelName}</strong>
-                        <span>{money(comparablePrice)}</span>
-                      </div>
-                      <div className={styles.comparableMeta}>
-                        <span>{listing.yearModel}</span>
-                        <span>{listing.hours.toLocaleString('en-ZA')} hours</span>
-                        <span>{listing.area}, {listing.province}</span>
-                        <span>{formatListingDate(listing.dateAdvertised)}</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {selectedComparable ? (
-                <div className={styles.comparablePreview}>
-                  <div className={styles.comparablePreviewTop}>
-                    <div>
-                      <span className={styles.infoLabel}>Selected comparable</span>
-                      <strong>{selectedComparable.brandName} {selectedComparable.modelName}</strong>
-                    </div>
-                    <div className={styles.previewValue}>{money(getListingComparablePrice(selectedComparable, result.extrasValueExVat))}</div>
+          {configRows.length ? (
+            <div className={styles.answerStack}>
+              {configRows.map((row) => (
+                <div key={row.key} className={styles.answerRow}>
+                  <div className={styles.answerRowText}>
+                    <span className={styles.answerRowLabel}>{row.label}</span>
+                    <strong className={styles.answerRowValue}>{row.value}</strong>
                   </div>
 
-                  <div className={styles.previewMeta}>
-                    <span>{selectedComparable.yearModel}</span>
-                    <span>{selectedComparable.hours.toLocaleString('en-ZA')} hours</span>
-                    <span>{selectedComparable.area}, {selectedComparable.province}</span>
-                    <span>{selectedComparable.sourceName}</span>
-                    <span>{formatListingDate(selectedComparable.dateAdvertised)}</span>
-                  </div>
+                  <button
+                    type="button"
+                    className={styles.answerEdit}
+                    onClick={() => {
+                      setConfigFocus(row.key);
+                      setMessage('');
+                    }}
+                  >
+                    Edit
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
 
-                  {selectedComparable.sourceUrl ? (
-                    <a href={selectedComparable.sourceUrl} target="_blank" rel="noreferrer" className={styles.linkButton}>
-                      Open source listing
-                    </a>
-                  ) : null}
+          {configReviewMode ? (
+            <div className={`${styles.currentCard} ${styles.readyCard}`}>
+              <div className={styles.currentCardHead}>
+                <div>
+                  <span className={styles.currentEyebrow}>Ready</span>
+                  <h2 className={styles.currentTitle}>Model selected</h2>
+                </div>
+                <span className={styles.currentIndex}>4 / 4</span>
+              </div>
+
+              {selectedModel ? (
+                <div className={styles.readyModelBlock}>
+                  <strong className={styles.readyModelTitle}>
+                    {selectedModel.brandName} {selectedModel.modelName}
+                  </strong>
+
+                  <div className={styles.selectionChipRow}>
+                    <span className={styles.modelChip}>{getTractorTypeLabel(selectedModel.tractorType)}</span>
+                    <span className={styles.modelChip}>{getDriveDisplay(selectedModel.drive)}</span>
+                    <span className={styles.modelChip}>{getCabDisplay(selectedModel.cab)}</span>
+                    <span className={styles.modelChip}>{selectedModel.powerKw} kW</span>
+                    <span className={styles.modelChip}>
+                      {selectedModel.yearStart}–{selectedModel.yearEnd}
+                    </span>
+                  </div>
                 </div>
               ) : null}
-            </>
+
+              <p className={styles.currentHint}>Continue to enter year, hours, condition and extras.</p>
+            </div>
+          ) : activeConfigStep === 'type' ? (
+            <div className={styles.currentCard}>
+              <div className={styles.currentCardHead}>
+                <div>
+                  <span className={styles.currentEyebrow}>Now</span>
+                  <h2 className={styles.currentTitle}>Field or orchard?</h2>
+                </div>
+                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
+              </div>
+
+              <div className={styles.choiceGrid}>
+                {([
+                  { key: 'field' as TractorType, title: 'Field', note: 'Broad-acre / row crop' },
+                  { key: 'orchard' as TractorType, title: 'Orchard', note: 'Orchard / vineyard' },
+                ]).map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={`${styles.choiceCard} ${tractorType === item.key ? styles.choiceCardActive : ''}`}
+                    onClick={() => {
+                      const changed = tractorType !== item.key;
+
+                      setTractorType(item.key);
+                      setMessage('');
+
+                      if (changed) {
+                        setDrive(null);
+                        setCab(null);
+                        setModelId('');
+                        setModelQuery('');
+                        resetDetailState();
+                      }
+
+                      setConfigFocus('drive');
+                    }}
+                    aria-pressed={tractorType === item.key}
+                  >
+                    <strong>{item.title}</strong>
+                    <span className={styles.choiceCardNote}>{item.note}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : activeConfigStep === 'drive' ? (
+            <div className={styles.currentCard}>
+              <div className={styles.currentCardHead}>
+                <div>
+                  <span className={styles.currentEyebrow}>Now</span>
+                  <h2 className={styles.currentTitle}>Choose drive</h2>
+                </div>
+                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
+              </div>
+
+              <div className={styles.choiceGrid}>
+                {([
+                  { key: '2wd' as DriveType, title: '2WD', note: 'Two-wheel drive' },
+                  { key: '4wd' as DriveType, title: '4WD', note: 'Four-wheel drive' },
+                  { key: 'tracks' as DriveType, title: 'Tracks', note: 'Tracked tractor' },
+                ]).map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={`${styles.choiceCard} ${drive === item.key ? styles.choiceCardActive : ''}`}
+                    onClick={() => {
+                      const changed = drive !== item.key;
+
+                      setDrive(item.key);
+                      setMessage('');
+
+                      if (changed) {
+                        setCab(null);
+                        setModelId('');
+                        setModelQuery('');
+                        resetDetailState();
+                      }
+
+                      setConfigFocus('cab');
+                    }}
+                    aria-pressed={drive === item.key}
+                  >
+                    <strong>{item.title}</strong>
+                    <span className={styles.choiceCardNote}>{item.note}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : activeConfigStep === 'cab' ? (
+            <div className={styles.currentCard}>
+              <div className={styles.currentCardHead}>
+                <div>
+                  <span className={styles.currentEyebrow}>Now</span>
+                  <h2 className={styles.currentTitle}>Choose cab</h2>
+                </div>
+                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
+              </div>
+
+              <div className={styles.choiceGrid}>
+                {([
+                  { key: 'cab' as CabType, title: 'Cab', note: 'Enclosed operator cab' },
+                  { key: 'open-station' as CabType, title: 'Open station', note: 'No enclosed cab' },
+                ]).map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={`${styles.choiceCard} ${cab === item.key ? styles.choiceCardActive : ''}`}
+                    onClick={() => {
+                      const changed = cab !== item.key;
+
+                      setCab(item.key);
+                      setMessage('');
+
+                      if (changed) {
+                        setModelId('');
+                        setModelQuery('');
+                        resetDetailState();
+                      }
+
+                      setConfigFocus('model');
+                    }}
+                    aria-pressed={cab === item.key}
+                  >
+                    <strong>{item.title}</strong>
+                    <span className={styles.choiceCardNote}>{item.note}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           ) : (
-            <div className={styles.emptyState}>No market comparables matched this tractor profile yet.</div>
+            <div className={styles.currentCard}>
+              <div className={styles.currentCardHead}>
+                <div>
+                  <span className={styles.currentEyebrow}>Now</span>
+                  <h2 className={styles.currentTitle}>Choose model</h2>
+                </div>
+                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
+              </div>
+
+              <div className={styles.selectionChipRow} style={{ marginBottom: '0.95rem' }}>
+                {tractorType ? <span className={styles.modelChip}>{getTractorTypeLabel(tractorType)}</span> : null}
+                {drive ? <span className={styles.modelChip}>{getDriveDisplay(drive)}</span> : null}
+                {cab ? <span className={styles.modelChip}>{getCabDisplay(cab)}</span> : null}
+              </div>
+
+              <div className={styles.searchWrap}>
+                <input
+                  value={modelQuery}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setModelQuery(event.target.value);
+                    setMessage('');
+                  }}
+                  placeholder={`Search ${selectedBrandName} models`}
+                  aria-label="Search tractor models"
+                  className={styles.searchInput}
+                />
+              </div>
+
+              {selectedModel ? (
+                <div className={styles.selectedCallout}>
+                  <span className={styles.currentEyebrow}>Selected</span>
+                  <strong className={styles.selectedCalloutTitle}>
+                    {selectedModel.brandName} {selectedModel.modelName}
+                  </strong>
+                  <span className={styles.selectedCalloutBody}>Choose a different model below if needed.</span>
+                </div>
+              ) : null}
+
+              {filteredModels.length ? (
+                <>
+                  <div className={styles.currentCount}>
+                    {filteredModels.length} model{filteredModels.length === 1 ? '' : 's'} found
+                  </div>
+
+                  <div className={styles.modelList}>
+                    {filteredModels.map((model) => {
+                      const active = selectedModel?.id === model.id;
+
+                      return (
+                        <button
+                          key={model.id}
+                          type="button"
+                          className={`${styles.modelRow} ${active ? styles.modelRowActive : ''}`}
+                          onClick={() => {
+                            const changed = model.id !== modelId;
+
+                            if (changed) {
+                              setModelId(model.id);
+                              resetDetailState();
+                            }
+
+                            setConfigFocus(null);
+                            setMessage('');
+                          }}
+                          aria-pressed={active}
+                        >
+                          <div className={styles.modelRowBody}>
+                            <div className={styles.modelRowHeader}>
+                              <strong>
+                                {model.brandName} {model.modelName}
+                              </strong>
+                              {active ? <span className={styles.modelRowSelectedBadge}>Selected</span> : null}
+                            </div>
+
+                            <div className={styles.modelChipRow}>
+                              <span className={styles.modelChip}>{getTractorTypeLabel(model.tractorType)}</span>
+                              <span className={styles.modelChip}>{getDriveDisplay(model.drive)}</span>
+                              <span className={styles.modelChip}>{getCabDisplay(model.cab)}</span>
+                              <span className={styles.modelChip}>{model.powerKw} kW</span>
+                            </div>
+                          </div>
+
+                          <span className={styles.modelRowYear}>
+                            {model.yearStart}–{model.yearEnd}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div className={styles.emptyState}>
+                  <p>{emptySearchMessage}</p>
+                  {modelQuery.trim() ? (
+                    <div className={styles.emptyStateActions}>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={() => setModelQuery('')}
+                      >
+                        Clear search
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
           )}
-        </section>
+        </div>
+      );
+    }
+
+    const detailRows = [
+      yearConfirmed ? { key: 'year' as DetailsStepKey, label: 'Year', value: selectedYearDisplay } : null,
+      hoursConfirmed ? { key: 'hours' as DetailsStepKey, label: 'Hours', value: enteredHoursDisplay } : null,
+      condition ? { key: 'condition' as DetailsStepKey, label: 'Condition', value: conditionLabel(condition) } : null,
+      extrasReviewed ? { key: 'extras' as DetailsStepKey, label: 'Extras', value: extrasSummaryText } : null,
+    ].filter(
+      (
+        row,
+      ): row is {
+        key: DetailsStepKey;
+        label: string;
+        value: string;
+      } => Boolean(row),
+    );
+
+    const detailsReviewMode = detailsComplete && detailsFocus === null;
+
+    return (
+      <div className={styles.flowShell}>
+        {selectedModel ? (
+          <div className={styles.focusContext}>
+            <span className={styles.flowToplineLabel}>Model</span>
+            <strong className={styles.flowToplineValue}>
+              {selectedModel.brandName} {selectedModel.modelName}
+            </strong>
+            <div className={styles.selectionChipRow}>
+              <span className={styles.modelChip}>{getTractorTypeLabel(selectedModel.tractorType)}</span>
+              <span className={styles.modelChip}>{getDriveDisplay(selectedModel.drive)}</span>
+              <span className={styles.modelChip}>{getCabDisplay(selectedModel.cab)}</span>
+              <span className={styles.modelChip}>{selectedModel.powerKw} kW</span>
+              <span className={styles.modelChip}>
+                {selectedModel.yearStart}–{selectedModel.yearEnd}
+              </span>
+            </div>
+          </div>
+        ) : null}
+
+        <div className={styles.miniStepper} aria-label="Details progress">
+          {DETAILS_STEPS.map((item) => {
+            const complete =
+              item.key === 'year'
+                ? yearConfirmed
+                : item.key === 'hours'
+                  ? hoursConfirmed
+                  : item.key === 'condition'
+                    ? Boolean(condition)
+                    : extrasReviewed;
+            const active = !detailsReviewMode && activeDetailsStep === item.key;
+
+            return (
+              <div
+                key={item.key}
+                className={`${styles.miniStep} ${active ? styles.miniStepActive : ''} ${
+                  complete ? styles.miniStepComplete : ''
+                }`}
+              >
+                <span className={styles.miniStepNumber}>{complete ? '✓' : DETAILS_STEPS.findIndex((stepItem) => stepItem.key === item.key) + 1}</span>
+                <span className={styles.miniStepLabel}>{item.label}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {detailRows.length ? (
+          <div className={styles.answerStack}>
+            {detailRows.map((row) => (
+              <div key={row.key} className={styles.answerRow}>
+                <div className={styles.answerRowText}>
+                  <span className={styles.answerRowLabel}>{row.label}</span>
+                  <strong className={styles.answerRowValue}>{row.value}</strong>
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.answerEdit}
+                  onClick={() => {
+                    setDetailsFocus(row.key);
+                    setMessage('');
+                  }}
+                >
+                  Edit
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {detailsReviewMode ? (
+          <div className={`${styles.currentCard} ${styles.readyCard}`}>
+            <div className={styles.currentCardHead}>
+              <div>
+                <span className={styles.currentEyebrow}>Ready</span>
+                <h2 className={styles.currentTitle}>Get valuation</h2>
+              </div>
+              <span className={styles.currentIndex}>4 / 4</span>
+            </div>
+
+            <div className={styles.selectionFacts}>
+              <div className={styles.selectionFact}>
+                <span>Year</span>
+                <strong>{selectedYearDisplay}</strong>
+              </div>
+
+              <div className={styles.selectionFact}>
+                <span>Hours</span>
+                <strong>{enteredHoursDisplay}</strong>
+              </div>
+
+              <div className={styles.selectionFact}>
+                <span>Condition</span>
+                <strong>{selectedConditionDisplay}</strong>
+              </div>
+
+              <div className={styles.selectionFact}>
+                <span>Extras</span>
+                <strong>{extrasSummaryText}</strong>
+              </div>
+            </div>
+          </div>
+        ) : activeDetailsStep === 'year' ? (
+          <div className={styles.currentCard}>
+            <div className={styles.currentCardHead}>
+              <div>
+                <span className={styles.currentEyebrow}>Now</span>
+                <h2 className={styles.currentTitle}>Choose year</h2>
+              </div>
+              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
+            </div>
+
+            <div className={styles.segmentRail}>
+              <button
+                type="button"
+                className={`${styles.pillButton} ${yearMode === 'guided' ? styles.pillButtonActive : ''}`}
+                onClick={() => {
+                  setYearMode('guided');
+                  setYearDropdownOpen(false);
+                  setYearConfirmed(false);
+                  setMessage('');
+                  invalidateResult();
+                }}
+                aria-pressed={yearMode === 'guided'}
+              >
+                Guided years
+              </button>
+              <button
+                type="button"
+                className={`${styles.pillButton} ${yearMode === 'manual' ? styles.pillButtonActive : ''}`}
+                onClick={() => {
+                  setYearMode('manual');
+                  if (year !== null) {
+                    setManualYear(String(year));
+                  }
+                  setYearDropdownOpen(false);
+                  setYearConfirmed(false);
+                  setMessage('');
+                  invalidateResult();
+                }}
+                aria-pressed={yearMode === 'manual'}
+              >
+                Other year
+              </button>
+            </div>
+
+            {yearMode === 'guided' ? (
+              <div className={styles.inlineFieldRow}>
+                <div className={styles.dropdownField} ref={yearDropdownRef}>
+                  <button
+                    type="button"
+                    className={`${styles.dropdownTrigger} ${yearDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
+                    onClick={() => {
+                      if (!selectedModel) return;
+                      setYearDropdownOpen((open) => !open);
+                      setMessage('');
+                    }}
+                    aria-haspopup="listbox"
+                    aria-expanded={yearDropdownOpen}
+                    aria-label="Choose guided year model"
+                  >
+                    <span className={styles.dropdownTriggerText}>{selectedYearDisplay}</span>
+                    <span className={styles.dropdownTriggerIcon} aria-hidden="true">
+                      {yearDropdownOpen ? '▴' : '▾'}
+                    </span>
+                  </button>
+
+                  {yearDropdownOpen ? (
+                    <div className={styles.dropdownMenu}>
+                      <div className={styles.dropdownList} role="listbox" aria-label="Available guided years">
+                        {years.length ? (
+                          years.map((availableYear) => {
+                            const active = year === availableYear;
+
+                            return (
+                              <button
+                                key={availableYear}
+                                type="button"
+                                role="option"
+                                aria-selected={active}
+                                className={`${styles.dropdownOption} ${active ? styles.dropdownOptionActive : ''}`}
+                                onClick={() => {
+                                  setYear(availableYear);
+                                  setYearDropdownOpen(false);
+                                  setYearConfirmed(false);
+                                  setMessage('');
+                                  invalidateResult();
+                                }}
+                              >
+                                <span className={styles.dropdownOptionText}>{availableYear}</span>
+                                {active ? <span className={styles.dropdownOptionBadge}>Selected</span> : null}
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <div className={styles.dropdownEmpty}>No guided years loaded for this model yet.</div>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={confirmYearSelection}
+                  disabled={!isYearValid}
+                >
+                  Next: Hours
+                </button>
+              </div>
+            ) : (
+              <div className={styles.inlineFieldRow}>
+                <input
+                  value={manualYear}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setManualYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4));
+                    setYearConfirmed(false);
+                    setMessage('');
+                    invalidateResult();
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      confirmYearSelection();
+                    }
+                  }}
+                  placeholder="Type year"
+                  inputMode="numeric"
+                  aria-label="Enter year model manually"
+                  className={styles.controlInput}
+                />
+
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={confirmYearSelection}
+                  disabled={!isYearValid}
+                >
+                  Next: Hours
+                </button>
+              </div>
+            )}
+
+            {selectedModel ? (
+              <p className={styles.currentHint}>Guided range: {selectedModel.yearStart}–{selectedModel.yearEnd}</p>
+            ) : null}
+          </div>
+        ) : activeDetailsStep === 'hours' ? (
+          <div className={styles.currentCard}>
+            <div className={styles.currentCardHead}>
+              <div>
+                <span className={styles.currentEyebrow}>Now</span>
+                <h2 className={styles.currentTitle}>Enter engine hours</h2>
+              </div>
+              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
+            </div>
+
+            <div className={styles.inlineFieldRow}>
+              <div className={styles.inlineFieldInputWrap}>
+                <input
+                  value={hours}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setHours(event.target.value.replace(/[^0-9]/g, ''));
+                    setHoursConfirmed(false);
+                    setMessage('');
+                    invalidateResult();
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      confirmHoursSelection();
+                    }
+                  }}
+                  placeholder="Type hours"
+                  inputMode="numeric"
+                  aria-label="Enter engine hours"
+                  className={styles.controlInput}
+                />
+                <span className={styles.inlineFieldSuffix}>hrs</span>
+              </div>
+
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={confirmHoursSelection}
+                disabled={!isHoursValid}
+              >
+                Next: Condition
+              </button>
+            </div>
+
+            <p className={styles.currentHint}>Use the meter reading.</p>
+          </div>
+        ) : activeDetailsStep === 'condition' ? (
+          <div className={styles.currentCard}>
+            <div className={styles.currentCardHead}>
+              <div>
+                <span className={styles.currentEyebrow}>Now</span>
+                <h2 className={styles.currentTitle}>Choose condition</h2>
+              </div>
+              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
+            </div>
+
+            <div className={styles.conditionGrid}>
+              {conditionOptions.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  className={`${styles.conditionCard} ${condition === option.key ? styles.conditionCardActive : ''}`}
+                  onClick={() => {
+                    setCondition(option.key);
+                    setDetailsFocus(null);
+                    setMessage('');
+                    invalidateResult();
+                  }}
+                >
+                  <strong>{option.label}</strong>
+                  <span>{getConditionHint(option.key)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className={styles.currentCard}>
+            <div className={styles.currentCardHead}>
+              <div>
+                <span className={styles.currentEyebrow}>Now</span>
+                <h2 className={styles.currentTitle}>Review extras</h2>
+              </div>
+              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
+            </div>
+
+            <div className={styles.togglePanelGrid}>
+              <div className={styles.togglePanel}>
+                <div className={styles.togglePanelCopy}>
+                  <strong className={styles.togglePanelTitle}>Front Hitch & Front PTO</strong>
+                  <span className={styles.togglePanelNote}>Installed?</span>
+                </div>
+                <div className={styles.pillRow}>
+                  <button
+                    type="button"
+                    className={`${styles.pillButton} ${frontPto ? styles.pillButtonActive : ''}`}
+                    onClick={() => {
+                      setFrontPto(true);
+                      setMessage('');
+                      markExtrasDirty();
+                    }}
+                    aria-pressed={frontPto}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.pillButton} ${!frontPto ? styles.pillButtonActive : ''}`}
+                    onClick={() => {
+                      setFrontPto(false);
+                      setMessage('');
+                      markExtrasDirty();
+                    }}
+                    aria-pressed={!frontPto}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.togglePanel}>
+                <div className={styles.togglePanelCopy}>
+                  <strong className={styles.togglePanelTitle}>Front Loader</strong>
+                  <span className={styles.togglePanelNote}>Installed?</span>
+                </div>
+                <div className={styles.pillRow}>
+                  <button
+                    type="button"
+                    className={`${styles.pillButton} ${frontLoader ? styles.pillButtonActive : ''}`}
+                    onClick={() => {
+                      setFrontLoader(true);
+                      setMessage('');
+                      markExtrasDirty();
+                    }}
+                    aria-pressed={frontLoader}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.pillButton} ${!frontLoader ? styles.pillButtonActive : ''}`}
+                    onClick={() => {
+                      setFrontLoader(false);
+                      setMessage('');
+                      markExtrasDirty();
+                    }}
+                    aria-pressed={!frontLoader}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.togglePanel}>
+                <div className={styles.togglePanelCopy}>
+                  <strong className={styles.togglePanelTitle}>GPS</strong>
+                  <span className={styles.togglePanelNote}>Installed?</span>
+                </div>
+                <div className={styles.pillRow}>
+                  <button
+                    type="button"
+                    className={`${styles.pillButton} ${gpsEnabled ? styles.pillButtonActive : ''}`}
+                    onClick={() => {
+                      setGpsEnabled(true);
+                      setMessage('');
+                      markExtrasDirty();
+                    }}
+                    aria-pressed={gpsEnabled}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.pillButton} ${!gpsEnabled ? styles.pillButtonActive : ''}`}
+                    onClick={() => {
+                      setGpsEnabled(false);
+                      setMessage('');
+                      markExtrasDirty();
+                    }}
+                    aria-pressed={!gpsEnabled}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {gpsEnabled ? (
+              <div className={styles.gpsDetailGrid}>
+                <div className={styles.togglePanel}>
+                  <div className={styles.togglePanelCopy}>
+                    <strong className={styles.togglePanelTitle}>GPS type</strong>
+                    <span className={styles.togglePanelNote}>Optional</span>
+                  </div>
+                  <div className={styles.pillRow}>
+                    {(['full-autosteer', 'guidance-only'] as GpsType[]).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={`${styles.pillButton} ${gpsType === value ? styles.pillButtonActive : ''}`}
+                        onClick={() => {
+                          setGpsType(value);
+                          setMessage('');
+                          markExtrasDirty();
+                        }}
+                        aria-pressed={gpsType === value}
+                      >
+                        {getGpsTypeLabel(value)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.togglePanel}>
+                  <div className={styles.togglePanelCopy}>
+                    <strong className={styles.togglePanelTitle}>GPS year</strong>
+                    <span className={styles.togglePanelNote}>Optional</span>
+                  </div>
+                  <input
+                    value={gpsYear}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      setGpsYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4));
+                      setMessage('');
+                      markExtrasDirty();
+                    }}
+                    placeholder="Type year"
+                    inputMode="numeric"
+                    aria-label="Enter GPS year"
+                    className={styles.controlInput}
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            <div className={styles.selectionChipRow} style={{ marginTop: '1rem' }}>
+              {extrasSummaryChips.map((chip) => (
+                <span key={chip} className={styles.modelChip}>
+                  {chip}
+                </span>
+              ))}
+            </div>
+
+            <div className={styles.currentCardActions}>
+              <button type="button" className={styles.secondaryButton} onClick={clearExtrasSelection}>
+                No fitted extras
+              </button>
+              <button type="button" className={styles.primaryButton} onClick={applyExtrasSelection}>
+                Save extras
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className={styles.page}>
-      <AppHeader active="valuation" ctaHref="/asset-register" ctaLabel="Asset Register" />
+    <>
+      <main className={styles.page}>
+        <AppHeader active="valuation" ctaHref="/asset-register" ctaLabel="Asset Register" />
 
-      <div className={styles.inner}>
-        <section className={styles.hero}>
-          <div className={styles.heroCopy}>
-            <span className={styles.kickerLight}>Valuation</span>
-            <h1>Make valuation feel simple, clear and trustworthy.</h1>
-            <p>
-              Use the current styling prototype to move from tractor setup to value output with a cleaner,
-              more confident flow.
-            </p>
-          </div>
-
-          <div className={styles.heroStats}>
-            <article className={styles.heroStat}>
-              <span>Brand</span>
-              <strong>{selectedBrand?.name ?? 'Choose'}</strong>
-            </article>
-            <article className={styles.heroStat}>
-              <span>Model</span>
-              <strong>{selectedModel ? selectedModel.modelName : 'Not selected'}</strong>
-            </article>
-            <article className={styles.heroStat}>
-              <span>Current step</span>
-              <strong>{STEP_ITEMS.find((item) => item.step === step)?.label}</strong>
-            </article>
-          </div>
-        </section>
-
-        <div className={styles.shell}>
-          <main className={styles.mainColumn}>
-            <section className={styles.wizardCard}>
-              <div className={styles.stepper} aria-label="Valuation steps">
-                {STEP_ITEMS.map((item) => {
-                  const complete = step > item.step;
-                  const active = step === item.step;
-
-                  return (
-                    <div
-                      key={item.step}
-                      className={`${styles.stepItem} ${active ? styles.stepItemActive : ''} ${complete ? styles.stepItemComplete : ''}`}
-                    >
-                      <span className={styles.stepNumber}>{complete ? '✓' : item.step}</span>
-                      <span className={styles.stepLabel}>{item.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className={styles.cardBody}>
-                <div className={styles.cardHeader}>
-                  <div>
-                    <span className={styles.kicker}>{STEP_ITEMS.find((item) => item.step === step)?.label}</span>
-                    <h2>{getStepTitle(step)}</h2>
-                    <p>{getStepText(step)}</p>
-                  </div>
-                </div>
-
-                {message ? <div className={styles.notice}>{message}</div> : null}
-
-                {renderStepBody()}
-              </div>
-
-              <div className={styles.cardFooter}>
-                <button type="button" className={styles.secondaryButton} onClick={handleBack} disabled={step === 1}>
-                  Back
-                </button>
-
-                {step < 5 ? (
-                  <button type="button" className={styles.primaryButton} onClick={handleNext}>
-                    {step === 4 ? 'Calculate value' : 'Continue'}
-                  </button>
-                ) : (
-                  <div className={styles.footerActions}>
-                    <button type="button" className={styles.secondaryButton} onClick={() => setStep(4)}>
-                      Edit details
-                    </button>
-                    <button type="button" className={styles.primaryButton} onClick={handleSave}>
-                      Save to Asset Register
-                    </button>
-                  </div>
-                )}
-              </div>
-            </section>
-          </main>
-
-          <aside className={styles.rail}>
-            <section className={styles.sideCard}>
-              <span className={styles.kicker}>Current setup</span>
-              <h3>Live valuation summary</h3>
-              <div className={styles.sideList}>
-                <div className={styles.sideRow}>
-                  <span>Type</span>
-                  <strong>{selectedType === 'tractor' ? 'Tractor' : 'Not selected'}</strong>
-                </div>
-                <div className={styles.sideRow}>
-                  <span>Brand</span>
-                  <strong>{selectedBrand?.name ?? 'Not selected'}</strong>
-                </div>
-                <div className={styles.sideRow}>
-                  <span>Model</span>
-                  <strong>{selectedModel ? `${selectedModel.brandName} ${selectedModel.modelName}` : 'Not selected'}</strong>
-                </div>
-                <div className={styles.sideRow}>
-                  <span>Details</span>
-                  <strong>
-                    {activeYear ? `${activeYear}` : 'Year pending'}
-                    {hours ? ` · ${Number(hours).toLocaleString('en-ZA')} hrs` : ''}
-                  </strong>
-                </div>
-                <div className={styles.sideRow}>
-                  <span>Condition</span>
-                  <strong>{conditionLabel(condition)}</strong>
-                </div>
-              </div>
-            </section>
-
-            <section className={styles.sideCardAlt}>
-              <span className={styles.kicker}>Fitted extras</span>
-              <h3>What is included</h3>
-              <div className={styles.chipList}>
-                {extrasSummaryChips.map((item) => (
-                  <span key={item} className={styles.chip}>
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </section>
-
-            {step === 5 && result ? (
-              <section className={styles.sideCardAlt}>
-                <span className={styles.kicker}>Next actions</span>
-                <h3>Keep moving</h3>
-                <div className={styles.actionStack}>
-                  <button type="button" className={styles.primaryButtonWide} onClick={handleSave}>
-                    Save to Asset Register
-                  </button>
-                  <button type="button" className={styles.secondaryButtonWide} onClick={handleViewMarketplace}>
-                    View Marketplace
-                  </button>
-                  <button type="button" className={styles.secondaryButtonWide} onClick={handlePrint}>
-                    Print result
-                  </button>
-                  <button type="button" className={styles.secondaryButtonWide} onClick={handleStartAgain}>
-                    Start new valuation
-                  </button>
+        <div className={styles.container}>
+          {step !== 5 ? (
+            <>
+              <section className={styles.heroIntro}>
+                <div className={styles.heroIntroContent}>
+                  <span className={styles.heroBadge}>Valuation</span>
+                  <h1 className={styles.heroIntroTitle}>Know what your machinery is worth.</h1>
+                  <p className={styles.heroIntroText}>
+                    Move from tractor setup to a clean value output with a simple guided flow.
+                  </p>
                 </div>
               </section>
-            ) : null}
-          </aside>
+
+              <section className={styles.wizardShell}>
+              <article className={styles.wizardCard}>
+                <div className={styles.wizardHeader}>
+                  <div className={styles.stepper}>
+                    {WIZARD_STEPS.map((item, index) => {
+                      const isActive = step === item.step;
+                      const isComplete = step > item.step;
+
+                      return (
+                        <div
+                          key={item.step}
+                          className={`${styles.stepperItem} ${isActive ? styles.stepperItemActive : ''} ${
+                            isComplete ? styles.stepperItemComplete : ''
+                          }`}
+                        >
+                          <span
+                            className={`${styles.stepperBullet} ${
+                              isActive ? styles.stepperBulletActive : ''
+                            } ${isComplete ? styles.stepperBulletComplete : ''}`}
+                          >
+                            {isComplete ? '✓' : item.step}
+                          </span>
+                          <span
+                            className={`${styles.stepperLabel} ${isActive ? styles.stepperLabelActive : ''} ${
+                              isComplete ? styles.stepperLabelComplete : ''
+                            }`}
+                          >
+                            {item.label}
+                          </span>
+                          {index < WIZARD_STEPS.length - 1 ? (
+                            <span
+                              className={`${styles.stepperLine} ${step > item.step ? styles.stepperLineComplete : ''}`}
+                            />
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className={styles.stepContent}>
+                  <h1 className={styles.stepTitle}>{stepMeta.title}</h1>
+                  <p className={styles.stepText}>{stepMeta.body}</p>
+
+                  {message ? <div className={styles.message}>{message}</div> : null}
+
+                  {renderWizardBody()}
+                </div>
+
+                <div className={styles.wizardFooter}>
+                  <button type="button" className={styles.secondaryButton} onClick={handleBack}>
+                    {step === 1 ? 'Back Home' : 'Back'}
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={handleNext}
+                    disabled={!canContinue}
+                  >
+                    {nextLabel}
+                  </button>
+                </div>
+              </article>
+            </section>
+            </>
+          ) : result ? (
+            <section className={styles.resultsLayout}>
+              <div className={styles.resultsMain}>
+                <div className={styles.resultsTopbar}>
+                  <button type="button" className={styles.backLink} onClick={() => setStep(4)}>
+                    ← Back to search
+                  </button>
+                  <span className={styles.statusBadge}>Valuation complete</span>
+                </div>
+
+                {message ? <div className={styles.message}>{message}</div> : null}
+
+                <article className={styles.heroCard}>
+                  <div className={styles.heroTop}>
+                    <div className={styles.heroIdentity}>
+                      <div className={styles.heroImageBox}>
+                        <Image
+                          src="/brand/Tractor.png"
+                          alt="Valuation result tractor"
+                          fill
+                          className={styles.typeImage}
+                          sizes="132px"
+                        />
+                      </div>
+
+                      <div className={styles.heroInfo}>
+                        <h1 className={styles.resultTitle}>
+                          {result.model.brandName} {result.model.modelName}
+                        </h1>
+                        <p className={styles.heroMeta}>
+                          {getTractorTypeLabel(result.model.tractorType)} tractor • {getDriveDisplay(result.model.drive)} •{' '}
+                          {getCabDisplay(result.model.cab)} • {activeYear} • {result.model.powerKw} kW •{' '}
+                          {Number(hours).toLocaleString('en-ZA')} engine hours
+                        </p>
+                        <button type="button" className={styles.inlineButton} onClick={() => setStep(4)}>
+                          Edit Details
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={`${styles.valuePanel} ${confidencePanelClassName}`}>
+                    <div className={styles.valuePanelTop}>
+                      <div className={styles.valuePanelIntro}>
+                        <span className={styles.valueLabel}>{headlineLabel}</span>
+                        <div className={styles.valueAmount}>{money(headlineValue)}</div>
+                        <p className={styles.valueMeta}>ZAR • South Africa • Excl. VAT (indicative)</p>
+                      </div>
+
+                      <span className={`${styles.confidenceBadge} ${confidenceClassName}`}>
+                        {getConfidenceLabel(result)}
+                      </span>
+                    </div>
+
+                    <div className={styles.methodGrid}>
+                      {methodCards.map((card) => {
+                        const active = selectedMethod === card.key;
+                        const unavailable = !card.available;
+
+                        return (
+                          <button
+                            key={card.key}
+                            type="button"
+                            className={`${styles.methodButton} ${
+                              active ? styles.methodButtonActive : ''
+                            } ${unavailable ? styles.methodButtonDisabled : ''}`}
+                            onClick={() => handleMethodSelect(card.key)}
+                            disabled={unavailable}
+                          >
+                            <span className={styles.methodTitle}>{card.label}</span>
+                            <strong className={styles.methodValue}>
+                              {card.key === 'market' ? getMethodDisplay(result, 'market') : money(card.value)}
+                            </strong>
+                            <span className={styles.methodNote}>{card.note}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </article>
+
+                <article className={styles.assetCard}>
+                  <div className={styles.actionHeader}>
+                    <div>
+                      <h2 className={styles.assetTitle}>Save to Asset Register</h2>
+                      <p className={styles.assetText}>
+                        Save this valuation, return later, and keep the next actions together in one place.
+                      </p>
+                    </div>
+                    <span className={styles.actionBadge}>Quick actions</span>
+                  </div>
+
+                  <div className={styles.actionGrid}>
+                    <button type="button" className={`${styles.assetButton} ${styles.actionPrimary}`} onClick={handleSave}>
+                      Save to My Assets
+                    </button>
+
+                    <button type="button" className={styles.secondaryButton} onClick={handlePrint}>
+                      Download PDF Report
+                    </button>
+
+                    <button type="button" className={styles.secondaryButton} onClick={() => setStep(4)}>
+                      Refine Inputs
+                    </button>
+
+                    <button type="button" className={styles.secondaryButton} onClick={resetWizard}>
+                      Start New Valuation
+                    </button>
+                  </div>
+                </article>
+              </div>
+
+              <aside className={styles.resultsSide}>
+                <article className={`${styles.sideCard} ${styles.summaryCard}`}>
+                  <h2 className={styles.sideTitle}>Summary</h2>
+
+                  <div className={styles.breakdownList}>
+                    <div className={styles.breakdownRow}>
+                      <span className={styles.breakdownKey}>Specification</span>
+                      <span className={styles.breakdownValue}>
+                        {getTractorTypeLabel(result.model.tractorType)} • {getDriveDisplay(result.model.drive)} •{' '}
+                        {getCabDisplay(result.model.cab)}
+                      </span>
+                    </div>
+
+                    <div className={styles.breakdownRow}>
+                      <span className={styles.breakdownKey}>Condition</span>
+                      <span className={styles.breakdownValue}>{selectedConditionDisplay}</span>
+                    </div>
+
+                    <div className={styles.breakdownRow}>
+                      <span className={styles.breakdownKey}>Engine hours</span>
+                      <span className={styles.breakdownValue}>
+                        {Number(hours).toLocaleString('en-ZA')} engine hours
+                      </span>
+                    </div>
+
+                    <div className={styles.breakdownRow}>
+                      <span className={styles.breakdownKey}>Extras</span>
+                      <span className={styles.breakdownValue}>{extrasSummaryText}</span>
+                    </div>
+
+                    <div className={styles.breakdownRow}>
+                      <span className={styles.breakdownKey}>Displayed value</span>
+                      <span className={styles.breakdownValue}>{headlineLabel}</span>
+                    </div>
+
+                    <div className={styles.breakdownRow}>
+                      <span className={styles.breakdownKey}>Confidence</span>
+                      <span className={styles.breakdownValue}>
+                        <span className={`${styles.summaryConfidenceBadge} ${confidenceClassName}`}>
+                          {getConfidenceLabel(result)}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </article>
+
+                <article className={`${styles.sideCard} ${styles.marketCard}`}>
+                  <div className={styles.rangeCardHead}>
+                    <h2 className={styles.sideTitle}>Market Range</h2>
+                    <span className={styles.rangeBadge}>
+                      {result.marketCount} proveable listing{result.marketCount === 1 ? '' : 's'}
+                    </span>
+                  </div>
+
+                  <div className={styles.rangeCurrentWrap}>
+                    <div className={styles.rangeCurrentLabel}>Selected comparable</div>
+                    <div className={styles.rangeCurrent}>{money(selectedComparableValue)}</div>
+                    <p className={styles.rangeCurrentMeta}>
+                      {selectedComparable
+                        ? `${selectedComparable.yearModel} • ${selectedComparable.hours.toLocaleString('en-ZA')} engine hours • ${selectedComparable.sourceName}`
+                        : `Based on comparable ${activeYear} market listings.`}
+                    </p>
+
+                    {selectedComparable ? (
+                      selectedComparableSourceUrl ? (
+                        <div className={styles.rangeCurrentLinkBlock}>
+                          <span className={styles.rangeCurrentLinkLabel}>Selected source URL</span>
+                          <a
+                            href={selectedComparableSourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={styles.rangeCurrentLink}
+                            title={selectedComparableSourceUrl}
+                          >
+                            {getSourceLinkLabel(selectedComparableSourceUrl)}
+                          </a>
+                        </div>
+                      ) : (
+                        <p className={styles.rangeCurrentLinkEmpty}>
+                          Attach a source URL to this comparable in the market listing library to show the live
+                          listing here.
+                        </p>
+                      )
+                    ) : null}
+                  </div>
+
+                  <div className={styles.rangeInteractive}>
+                    <div className={styles.rangeTrack}>
+                      <div className={styles.rangeFill} style={{ width: `${selectedComparablePercent}%` }} />
+                      <div className={styles.rangePin} style={{ left: `${selectedComparablePercent}%` }} />
+                    </div>
+
+                    {comparableListings.length > 1 ? (
+                      <input
+                        type="range"
+                        min={0}
+                        max={Math.max(0, comparableListings.length - 1)}
+                        step={1}
+                        value={safeComparableIndex}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                          setSelectedComparableIndex(Number(event.target.value))
+                        }
+                        className={styles.rangeSliderInput}
+                        aria-label="Browse proveable market listings"
+                      />
+                    ) : null}
+                  </div>
+
+                  <div className={styles.rangeLabels}>
+                    <span>{money(result.marketLow)}</span>
+                    <span>{money(result.marketHigh)}</span>
+                  </div>
+
+                  <div className={styles.marketListingsBlock}>
+                    <div className={styles.marketListingsHead}>
+                      <h3 className={styles.marketListingsTitle}>Proveable Market Listings</h3>
+                      {comparableListings.length ? (
+                        <span className={styles.marketListingsCount}>
+                          {safeComparableIndex + 1} / {comparableListings.length}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {comparableListings.length ? (
+                      <div className={styles.listingList}>
+                        {comparableListings.map((listing, index) => {
+                          const isActive = index === safeComparableIndex;
+                          const comparableValue = getListingComparablePrice(listing, result.extrasValueExVat);
+
+                          return (
+                            <article
+                              key={listing.id}
+                              className={`${styles.listingCard} ${isActive ? styles.listingCardActive : ''}`}
+                            >
+                              <button
+                                type="button"
+                                className={styles.listingSelectButton}
+                                onClick={() => setSelectedComparableIndex(index)}
+                              >
+                                <div className={styles.listingCardTop}>
+                                  <strong className={styles.listingCardValue}>{money(comparableValue)}</strong>
+                                  <span className={styles.listingCardSource}>{listing.sourceName}</span>
+                                </div>
+
+                                <div className={styles.listingCardMeta}>
+                                  <span className={styles.listingMetaChip}>{listing.yearModel} model</span>
+                                  <span className={styles.listingMetaChip}>
+                                    {listing.hours.toLocaleString('en-ZA')} engine hours
+                                  </span>
+                                  <span className={styles.listingMetaChip}>
+                                    {listing.area}, {listing.province}
+                                  </span>
+                                </div>
+
+                                {result.extrasValueExVat > 0 ? (
+                                  <div className={styles.listingAdjustmentNote}>
+                                    Raw listing {money(getListingBasePrice(listing))} • adjusted for selected extras
+                                  </div>
+                                ) : null}
+                              </button>
+
+                              <div className={styles.listingCardFooter}>
+                                <div className={styles.listingCardFooterMeta}>
+                                  <span className={styles.listingCardDateLabel}>Advertised</span>
+                                  <span className={styles.listingCardDate}>{formatListingDate(listing.dateAdvertised)}</span>
+                                </div>
+
+                                {listing.sourceUrl ? (
+                                  <a
+                                    href={listing.sourceUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className={styles.listingLink}
+                                    title={listing.sourceUrl}
+                                  >
+                                    {getSourceLinkLabel(listing.sourceUrl)}
+                                  </a>
+                                ) : (
+                                  <span className={styles.listingLinkMuted}>Source URL not yet attached</span>
+                                )}
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className={styles.rangeNote}>
+                        No proveable market listings matched this tractor yet. Add more market listings to improve
+                        confidence and range quality.
+                      </p>
+                    )}
+                  </div>
+                </article>
+              </aside>
+            </section>
+          ) : null}
         </div>
-      </div>
-    </div>
+      </main>
+
+    </>
   );
 }
