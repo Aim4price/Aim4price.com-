@@ -862,7 +862,7 @@ export default function ValuationClient() {
             <div className={`${styles.filterGroup} ${styles.filterGroupUnlocked}`}>
               <div className={styles.filterGroupHead}>
                 <span className={styles.filterLabel}>Tractor Type</span>
-                <span className={styles.filterStatusBadge}>{tractorType ? 'Selected' : 'Required'}</span>
+                <span className={styles.filterStatusBadge}>{tractorType ? 'Selected' : 'Choose'}</span>
               </div>
 
               <div className={styles.pillRow}>
@@ -898,12 +898,12 @@ export default function ValuationClient() {
               <div className={styles.filterGroupHead}>
                 <span className={styles.filterLabel}>Drive</span>
                 <span className={styles.filterStatusBadge}>
-                  {!driveUnlocked ? 'Locked' : drive ? 'Selected' : 'Required'}
+                  {!driveUnlocked ? 'Next' : drive ? 'Selected' : 'Choose'}
                 </span>
               </div>
 
-              {driveUnlocked ? (
-                <div className={styles.pillRow}>
+              <div className={`${styles.lockedPanelBody} ${!driveUnlocked ? styles.lockedPanelBodyLocked : ''}`}>
+                <div className={`${styles.pillRow} ${!driveUnlocked ? styles.lockedVisual : ''}`} aria-hidden={!driveUnlocked}>
                   {(['2wd', '4wd', 'tracks'] as DriveType[]).map((value) => (
                     <button
                       key={value}
@@ -920,16 +920,13 @@ export default function ValuationClient() {
                         setMessage('');
                       }}
                       aria-pressed={drive === value}
+                      disabled={!driveUnlocked}
                     >
                       {getDriveDisplay(value)}
                     </button>
                   ))}
                 </div>
-              ) : (
-                <p className={styles.filterLockedText}>
-                  Select tractor type first. Drive options unlock immediately afterwards.
-                </p>
-              )}
+              </div>
             </div>
 
             <div
@@ -940,12 +937,12 @@ export default function ValuationClient() {
               <div className={styles.filterGroupHead}>
                 <span className={styles.filterLabel}>Cab Setup</span>
                 <span className={styles.filterStatusBadge}>
-                  {!cabUnlocked ? 'Locked' : cab ? 'Selected' : 'Required'}
+                  {!cabUnlocked ? 'Next' : cab ? 'Selected' : 'Choose'}
                 </span>
               </div>
 
-              {cabUnlocked ? (
-                <div className={styles.pillRow}>
+              <div className={`${styles.lockedPanelBody} ${!cabUnlocked ? styles.lockedPanelBodyLocked : ''}`}>
+                <div className={`${styles.pillRow} ${!cabUnlocked ? styles.lockedVisual : ''}`} aria-hidden={!cabUnlocked}>
                   {(['cab', 'open-station'] as CabType[]).map((value) => (
                     <button
                       key={value}
@@ -961,16 +958,13 @@ export default function ValuationClient() {
                         setMessage('');
                       }}
                       aria-pressed={cab === value}
+                      disabled={!cabUnlocked}
                     >
                       {getCabDisplay(value)}
                     </button>
                   ))}
                 </div>
-              ) : (
-                <p className={styles.filterLockedText}>
-                  Select the drive layout first. Cab options unlock after that choice.
-                </p>
-              )}
+              </div>
             </div>
           </div>
 
@@ -1057,11 +1051,49 @@ export default function ValuationClient() {
             </>
           ) : (
             <div className={styles.selectionPrompt}>
-              <span className={styles.selectionPromptLabel}>Model selection</span>
-              <strong>
-                {!tractorType ? 'Choose tractor type first' : !drive ? 'Choose drive next' : 'Choose cab setup next'}
-              </strong>
-              <p>Models only appear after the full tractor configuration has been selected.</p>
+              <div className={styles.selectionPromptHeader}>
+                <span className={styles.selectionPromptLabel}>Model selection</span>
+                <span className={`${styles.filterStatusBadge} ${styles.filterStatusBadgePending}`}>Next</span>
+              </div>
+
+              <div className={styles.lockedPreviewStack}>
+                <div className={styles.lockedVisual} aria-hidden="true">
+                  <input
+                    value=""
+                    readOnly
+                    disabled
+                    placeholder={`Search ${selectedBrandName} models...`}
+                    aria-label="Search tractor models"
+                    className={styles.searchInput}
+                  />
+                </div>
+
+                <div className={`${styles.modelList} ${styles.lockedVisual}`} aria-hidden="true">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <button
+                      key={`locked-model-${index}`}
+                      type="button"
+                      className={`${styles.modelRow} ${styles.modelRowGhost}`}
+                      disabled
+                    >
+                      <div className={styles.modelRowBody}>
+                        <div className={styles.modelRowHeader}>
+                          <strong>{selectedBrandName} model</strong>
+                        </div>
+
+                        <div className={styles.modelChipRow}>
+                          <span className={styles.modelChip}>Type</span>
+                          <span className={styles.modelChip}>Drive</span>
+                          <span className={styles.modelChip}>Cab</span>
+                          <span className={styles.modelChip}>kW</span>
+                        </div>
+                      </div>
+
+                      <span className={styles.modelRowYear}>Year range</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </>
@@ -1208,42 +1240,30 @@ export default function ValuationClient() {
             <div className={styles.panelHeader}>
               <span className={styles.panelLabel}>Engine Hours</span>
               <span className={styles.filterStatusBadge}>
-                {!hoursUnlocked ? 'Locked' : isHoursValid ? 'Entered' : 'Required'}
+                {!hoursUnlocked ? 'Next' : isHoursValid ? 'Entered' : 'Enter'}
               </span>
             </div>
 
-            <div className={styles.panelControl}>
-              {hoursUnlocked ? (
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(0, 1fr) auto',
-                    gap: '0.75rem',
-                    alignItems: 'center',
+            <div className={`${styles.panelControl} ${!hoursUnlocked ? styles.lockedVisual : ''}`} aria-hidden={!hoursUnlocked}>
+              <div className={styles.panelInputRow}>
+                <input
+                  value={hours}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setHours(event.target.value.replace(/[^0-9]/g, ''));
+                    setMessage('');
+                    invalidateResult();
                   }}
-                >
-                  <input
-                    value={hours}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                      setHours(event.target.value.replace(/[^0-9]/g, ''));
-                      setMessage('');
-                      invalidateResult();
-                    }}
-                    placeholder="Type engine hours here"
-                    inputMode="numeric"
-                    aria-label="Enter engine hours"
-                    className={styles.controlInput}
-                  />
-                  <span className={styles.panelBadge}>hrs</span>
-                </div>
-              ) : (
-                <p className={styles.filterLockedText}>
-                  Select the year model first. Engine hours unlock immediately afterwards.
-                </p>
-              )}
+                  placeholder="Type engine hours here"
+                  inputMode="numeric"
+                  aria-label="Enter engine hours"
+                  className={styles.controlInput}
+                  disabled={!hoursUnlocked}
+                />
+                <span className={styles.panelBadge}>hrs</span>
+              </div>
             </div>
 
-            <p className={styles.fieldHint}>Use the reading shown on the engine hour meter.</p>
+            <p className={styles.fieldHint}>{hoursUnlocked ? 'Use the reading shown on the engine hour meter.' : ' '}</p>
           </div>
         </div>
 
@@ -1255,39 +1275,32 @@ export default function ValuationClient() {
           <div className={styles.sectionHeader}>
             <span className={styles.sectionLabel}>Overall Condition</span>
             <span className={styles.filterStatusBadge}>
-              {!conditionUnlocked ? 'Locked' : condition ? 'Selected' : 'Required'}
+              {!conditionUnlocked ? 'Next' : condition ? 'Selected' : 'Choose'}
             </span>
           </div>
 
-          {conditionUnlocked ? (
-            <>
-              <p className={styles.sectionHint} style={{ marginTop: '0.65rem' }}>
-                Choose the option that best matches the tractor today.
-              </p>
+          <p className={styles.sectionHint} style={{ marginTop: '0.65rem' }}>
+            {conditionUnlocked ? 'Choose the option that best matches the tractor today.' : ' '}
+          </p>
 
-              <div className={styles.conditionGrid}>
-                {conditionOptions.map((option) => (
-                  <button
-                    key={option.key}
-                    type="button"
-                    className={`${styles.conditionCard} ${condition === option.key ? styles.conditionCardActive : ''}`}
-                    onClick={() => {
-                      setCondition(option.key);
-                      setMessage('');
-                      invalidateResult();
-                    }}
-                  >
-                    <strong>{option.label}</strong>
-                    <span>{getConditionHint(option.key)}</span>
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : (
-            <p className={styles.filterLockedText} style={{ marginTop: '0.85rem' }}>
-              Enter engine hours first. Overall condition unlocks after that.
-            </p>
-          )}
+          <div className={`${styles.conditionGrid} ${!conditionUnlocked ? styles.lockedVisual : ''}`} aria-hidden={!conditionUnlocked}>
+            {conditionOptions.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                className={`${styles.conditionCard} ${condition === option.key ? styles.conditionCardActive : ''}`}
+                onClick={() => {
+                  setCondition(option.key);
+                  setMessage('');
+                  invalidateResult();
+                }}
+                disabled={!conditionUnlocked}
+              >
+                <strong>{option.label}</strong>
+                <span>{getConditionHint(option.key)}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div
@@ -1301,26 +1314,30 @@ export default function ValuationClient() {
               </strong>
             </div>
 
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={() => setExtrasOpen(true)}
-              disabled={!extrasUnlocked}
-            >
-              Extras
-            </button>
+            <div className={!extrasUnlocked ? styles.lockedVisualSoft : undefined}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => setExtrasOpen(true)}
+                disabled={!extrasUnlocked}
+              >
+                Extras
+              </button>
+            </div>
           </div>
 
-          <p className={styles.fieldHint} style={{ minHeight: 0, marginTop: '0.7rem' }}>
-            Add fitted extras such as Front Hitch & Front PTO, Front Loader and GPS.
-          </p>
+          <div className={!extrasUnlocked ? styles.lockedVisualSoft : undefined} aria-hidden={!extrasUnlocked}>
+            <p className={styles.fieldHint} style={{ minHeight: 0, marginTop: '0.7rem' }}>
+              Add fitted extras such as Front Hitch & Front PTO, Front Loader and GPS.
+            </p>
 
-          <div className={styles.selectionChipRow} style={{ marginTop: '0.8rem' }}>
-            {extrasSummaryChips.map((chip) => (
-              <span key={chip} className={styles.modelChip}>
-                {chip}
-              </span>
-            ))}
+            <div className={styles.selectionChipRow} style={{ marginTop: '0.8rem' }}>
+              {extrasSummaryChips.map((chip) => (
+                <span key={chip} className={styles.modelChip}>
+                  {chip}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
