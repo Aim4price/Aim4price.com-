@@ -406,7 +406,7 @@ export default function RegisterPage() {
           <div className={styles.mainColumn}>
             <article className={styles.surface}>
               <div className={styles.panelTop}>
-                <div>
+                <div className={styles.panelIntro}>
                   <h2>My Assets</h2>
                   <p>
                     Each row can be refreshed, manually overridden, or sent to marketplace. Manual
@@ -608,20 +608,14 @@ export default function RegisterPage() {
                   Save from Valuation
                 </Link>
 
-                <button
-                  type="button"
-                  className={styles.quickButton}
-                  onClick={() => setIsAddOpen(true)}
-                >
+                <button type="button" className={styles.quickButton} onClick={() => setIsAddOpen(true)}>
                   Add Manual Asset
                 </button>
 
                 <button
                   type="button"
                   className={styles.quickButton}
-                  onClick={() =>
-                    setNotice('Wire “Refresh All Values” once the revaluation inputs are stored.')
-                  }
+                  onClick={() => setNotice('Wire “Refresh All Values” once the revaluation inputs are stored.')}
                 >
                   Refresh All Values
                 </button>
@@ -629,9 +623,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   className={styles.quickButton}
-                  onClick={() =>
-                    setNotice('Connect this button to your PDF asset register export when ready.')
-                  }
+                  onClick={() => setNotice('Connect this button to your PDF asset register export when ready.')}
                 >
                   Generate Asset Report
                 </button>
