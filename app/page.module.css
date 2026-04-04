@@ -30,7 +30,7 @@
 }
 
 .heroSection {
-  padding: clamp(1.9rem, 3vw, 3.2rem) 0 clamp(2.4rem, 4vw, 3.9rem);
+  padding: clamp(1.85rem, 3vw, 3rem) 0 clamp(2rem, 3.4vw, 3.15rem);
   background: linear-gradient(180deg, #fbfcfb 0%, #f5f8f6 100%);
   border-bottom: 1px solid rgba(18, 45, 37, 0.06);
 }
@@ -39,27 +39,27 @@
   display: grid;
   grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
   align-items: center;
-  gap: clamp(2rem, 3vw, 3.3rem);
+  gap: clamp(2rem, 3vw, 3rem);
 }
 
 .heroCopy {
-  max-width: 34rem;
+  max-width: 33.25rem;
 }
 
 .heroTitle {
-  margin: 0.8rem 0 0;
-  font-size: clamp(3rem, 5vw, 5.1rem);
-  line-height: 0.99;
-  letter-spacing: -0.058em;
+  margin: 0.72rem 0 0;
+  font-size: clamp(3rem, 5vw, 5.05rem);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
   font-weight: 800;
   color: #1c392f;
   text-wrap: balance;
 }
 
 .heroText {
-  margin: 1rem 0 0;
+  margin: 1.05rem 0 0;
   max-width: 29rem;
-  font-size: 1.06rem;
+  font-size: 1.05rem;
   line-height: 1.62;
   color: #61706b;
 }
@@ -69,8 +69,15 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.8rem;
-  margin-top: 1.45rem;
   justify-content: center;
+}
+
+.heroActions {
+  margin-top: 1.5rem;
+}
+
+.ctaButtons {
+  margin-top: 1.3rem;
 }
 
 .primaryCta,
@@ -130,7 +137,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
-  margin-top: 1.05rem;
+  margin-top: 0.95rem;
 }
 
 .heroMetaItem {
@@ -149,19 +156,20 @@
 .heroVisual {
   display: flex;
   justify-content: flex-end;
+  align-self: center;
 }
 
 .heroImageLink {
   display: block;
   width: 100%;
-  max-width: 45rem;
+  max-width: 44rem;
   text-decoration: none;
 }
 
 .heroImageFrame {
   position: relative;
   width: 100%;
-  min-height: 28rem;
+  min-height: 27.2rem;
   overflow: hidden;
   border-radius: 1.8rem;
   background: linear-gradient(180deg, #e7efe9 0%, #dfe8e2 100%);
@@ -227,7 +235,7 @@
 }
 
 .routesSection {
-  padding: 2.4rem 0 2.95rem;
+  padding: 1.7rem 0 2.35rem;
   background: #fcfdfc;
   border-bottom: 1px solid rgba(18, 45, 37, 0.06);
 }
@@ -239,25 +247,25 @@
 
 .sectionIntro {
   max-width: 36rem;
-  margin: 0 auto 1.45rem;
+  margin: 0 auto 1.25rem;
 }
 
 .sectionIntroCompact {
   max-width: 34rem;
-  margin: 0 auto 1.35rem;
+  margin: 0 auto 1.15rem;
 }
 
 .sectionTitle,
 .flowTitle,
 .ctaTitle {
-  margin: 0.68rem 0 0;
+  margin: 0.62rem 0 0;
   line-height: 1.06;
   letter-spacing: -0.05em;
   text-wrap: balance;
 }
 
 .sectionTitle {
-  font-size: clamp(1.95rem, 3vw, 2.5rem);
+  font-size: clamp(1.95rem, 3vw, 2.45rem);
   font-weight: 760;
   color: #213a32;
 }
@@ -265,10 +273,10 @@
 .sectionText,
 .flowText,
 .ctaText {
-  margin: 0.6rem auto 0;
+  margin: 0.55rem auto 0;
   max-width: 32rem;
   font-size: 1rem;
-  line-height: 1.64;
+  line-height: 1.62;
 }
 
 .sectionText,
@@ -279,15 +287,15 @@
 .routesGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 0.95rem;
 }
 
 .routeCard {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 16.8rem;
-  padding: 1.2rem;
+  min-height: 15.85rem;
+  padding: 1.15rem;
   overflow: hidden;
   border-radius: 1.35rem;
   text-decoration: none;
@@ -308,7 +316,7 @@
 }
 
 .routeCard[data-index='2']::before {
-  background: linear-gradient(90deg, #20262e 0%, #49515c 100%);
+  background: linear-gradient(90deg, #20262e 0%, #4b5562 100%);
 }
 
 .routeCard[data-index='3']::before {
@@ -344,13 +352,18 @@
   color: #28313a;
 }
 
+.routeCard[data-index='3'] .routeLabel {
+  background: rgba(63, 110, 167, 0.1);
+  color: #2f6098;
+}
+
 .routeIconWrap {
-  width: 5rem;
-  height: 5rem;
+  width: 4.9rem;
+  height: 4.9rem;
   display: grid;
   place-items: center;
-  margin-top: 0.85rem;
-  border-radius: 1.25rem;
+  margin-top: 0.8rem;
+  border-radius: 1.2rem;
   background: linear-gradient(180deg, #ffffff 0%, #eef4f1 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.96),
@@ -358,7 +371,7 @@
 }
 
 .routeCard[data-index='2'] .routeIcon {
-  filter: grayscale(1) brightness(0.28) contrast(1.1);
+  filter: grayscale(1) brightness(0.28) contrast(1.08);
 }
 
 .routeIcon {
@@ -368,7 +381,7 @@
 }
 
 .routeTitle {
-  margin: 1rem 0 0;
+  margin: 0.95rem 0 0;
   font-size: 1.16rem;
   line-height: 1.2;
   font-weight: 700;
@@ -377,7 +390,7 @@
 }
 
 .routeText {
-  margin: 0.58rem 0 0;
+  margin: 0.52rem 0 0;
   max-width: 16rem;
   font-size: 0.96rem;
   line-height: 1.58;
@@ -389,20 +402,28 @@
   align-items: center;
   gap: 0.4rem;
   margin-top: auto;
-  padding-top: 1rem;
+  padding-top: 0.95rem;
   font-size: 0.92rem;
   font-weight: 700;
   color: #1c5a45;
 }
 
+.routeCard[data-index='2'] .routeAction {
+  color: #2a333d;
+}
+
+.routeCard[data-index='3'] .routeAction {
+  color: #2d6098;
+}
+
 .flowSection {
-  padding: 2.6rem 0 2.8rem;
+  padding: 2.15rem 0 2.35rem;
   background: linear-gradient(180deg, #eef5f1 0%, #f8fbf9 100%);
   border-bottom: 1px solid rgba(18, 45, 37, 0.06);
 }
 
 .flowPanel {
-  padding: 1.7rem;
+  padding: 1.5rem 1.45rem;
   border-radius: 1.75rem;
   background: linear-gradient(180deg, #184b39 0%, #11382c 100%);
   box-shadow: 0 22px 42px rgba(12, 36, 28, 0.12);
@@ -413,7 +434,7 @@
 }
 
 .flowTitle {
-  font-size: clamp(1.95rem, 3vw, 2.65rem);
+  font-size: clamp(1.95rem, 3vw, 2.6rem);
   font-weight: 760;
   color: #ffffff;
 }
@@ -425,11 +446,11 @@
 .stepsGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 0.95rem;
 }
 
 .stepCard {
-  padding: 1.1rem 1rem;
+  padding: 1rem;
   border-radius: 1.2rem;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -449,7 +470,7 @@
 }
 
 .stepTitle {
-  margin: 0.9rem 0 0;
+  margin: 0.85rem 0 0;
   font-size: 1rem;
   line-height: 1.25;
   font-weight: 700;
@@ -457,19 +478,19 @@
 }
 
 .stepText {
-  margin: 0.56rem 0 0;
+  margin: 0.5rem 0 0;
   font-size: 0.93rem;
   line-height: 1.55;
   color: rgba(255, 255, 255, 0.74);
 }
 
 .ctaSection {
-  padding: 2.5rem 0 2.9rem;
+  padding: 2rem 0 2.2rem;
   background: #fbfcfb;
 }
 
 .ctaPanel {
-  padding: 2rem 1.5rem;
+  padding: 1.8rem 1.35rem;
   border-radius: 1.7rem;
   text-align: center;
   background: linear-gradient(180deg, #1b6349 0%, #123f31 100%);
@@ -481,7 +502,7 @@
 }
 
 .ctaTitle {
-  font-size: clamp(1.95rem, 3vw, 2.65rem);
+  font-size: clamp(1.95rem, 3vw, 2.55rem);
   font-weight: 760;
   color: #ffffff;
 }
@@ -543,12 +564,12 @@
 
 @media (max-width: 720px) {
   .heroSection {
-    padding: 1.65rem 0 2.3rem;
+    padding: 1.6rem 0 2.2rem;
   }
 
   .heroTitle {
     font-size: 2.6rem;
-    line-height: 1.02;
+    line-height: 1.01;
   }
 
   .heroText,
@@ -584,13 +605,13 @@
   .routesSection,
   .flowSection,
   .ctaSection {
-    padding-top: 2.1rem;
-    padding-bottom: 2.4rem;
+    padding-top: 2rem;
+    padding-bottom: 2.25rem;
   }
 
   .flowPanel,
   .ctaPanel {
-    padding: 1.3rem 1rem;
+    padding: 1.25rem 1rem;
   }
 }
 
