@@ -19,7 +19,7 @@ const routes = [
     image: '/brand/Register.png',
     label: 'Manage',
     title: 'Asset Register',
-    text: 'Keep equipment values and records in one working place.',
+    text: 'Keep equipment values and records in one clear working view.',
     action: 'Open register',
   },
   {
@@ -27,7 +27,7 @@ const routes = [
     image: '/brand/Buy & Sell.png',
     label: 'Market',
     title: 'Marketplace',
-    text: 'Browse machinery and send the right unit to marketplace when ready to sell.',
+    text: 'Browse machinery and list the right unit when ready to sell.',
     action: 'Open marketplace',
   },
 ] as const;
@@ -114,7 +114,7 @@ export default function HomePage() {
             <p className={styles.eyebrow}>One clear platform</p>
             <h2 className={styles.sectionTitle}>Choose your route.</h2>
             <p className={styles.sectionText}>
-              Value first, then manage records or send equipment to marketplace.
+              Start with valuation, then manage records or list for sale.
             </p>
           </div>
 
@@ -156,7 +156,7 @@ export default function HomePage() {
               <p className={styles.flowEyebrow}>How it works</p>
               <h2 className={styles.flowTitle}>Simple, practical, and easy to follow.</h2>
               <p className={styles.flowText}>
-                Start with value, save what matters, then list when you are ready to sell.
+                Start with valuation, save what matters, then list when you are ready to sell.
               </p>
             </div>
 
@@ -178,7 +178,9 @@ export default function HomePage() {
           <div className={styles.ctaPanel}>
             <p className={styles.ctaEyebrow}>Get started</p>
             <h2 className={styles.ctaTitle}>Start with a free valuation.</h2>
-            <p className={styles.ctaText}>Then save the machine to your asset register when needed.</p>
+            <p className={styles.ctaText}>
+              Then save the machine to your asset register when needed.
+            </p>
 
             <div className={styles.ctaButtons}>
               <Link href="/valuation" className={styles.ctaPrimary}>
