@@ -416,11 +416,10 @@ export default function RegisterPage() {
         <section className={styles.heroShell}>
           <div className={styles.hero}>
             <div className={styles.heroCopy}>
-              <span className={styles.kicker}>Stored values, tracked assets, marketplace-ready</span>
-              <h1>Asset Register</h1>
+              <span className={styles.kicker}>Asset Register</span>
+              <h1>Keep your assets organised and ready to act on.</h1>
               <p>
-                Keep equipment, property, and manual assets in one working register. Search fast,
-                update values when needed, and move the right machine to marketplace.
+                Keep saved values, manual assets, and marketplace-ready equipment in one clean register. Search fast, check the value, and take the next step without friction.
               </p>
             </div>
 
