@@ -49,8 +49,8 @@
 .heroTitle {
   margin: 0.8rem 0 0;
   font-size: clamp(3rem, 5vw, 5.1rem);
-  line-height: 0.95;
-  letter-spacing: -0.075em;
+  line-height: 0.99;
+  letter-spacing: -0.058em;
   font-weight: 800;
   color: #1c392f;
   text-wrap: balance;
@@ -70,6 +70,7 @@
   flex-wrap: wrap;
   gap: 0.8rem;
   margin-top: 1.45rem;
+  justify-content: center;
 }
 
 .primaryCta,
@@ -307,7 +308,7 @@
 }
 
 .routeCard[data-index='2']::before {
-  background: linear-gradient(90deg, #9b7a2a 0%, #d3ad56 100%);
+  background: linear-gradient(90deg, #20262e 0%, #49515c 100%);
 }
 
 .routeCard[data-index='3']::before {
@@ -338,6 +339,11 @@
   text-transform: uppercase;
 }
 
+.routeCard[data-index='2'] .routeLabel {
+  background: rgba(32, 38, 46, 0.08);
+  color: #28313a;
+}
+
 .routeIconWrap {
   width: 5rem;
   height: 5rem;
@@ -349,6 +355,10 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.96),
     0 10px 20px rgba(18, 45, 37, 0.05);
+}
+
+.routeCard[data-index='2'] .routeIcon {
+  filter: grayscale(1) brightness(0.28) contrast(1.1);
 }
 
 .routeIcon {
