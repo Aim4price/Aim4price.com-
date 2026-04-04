@@ -27,7 +27,7 @@ const routes = [
     image: '/brand/Buy & Sell.png',
     label: 'Market',
     title: 'Marketplace',
-    text: 'Browse machinery and move the right unit to market.',
+    text: 'Browse machinery and send the right unit to marketplace when ready to sell.',
     action: 'Open marketplace',
   },
 ] as const;
@@ -45,8 +45,8 @@ const steps = [
   },
   {
     number: '03',
-    title: 'Move to market',
-    text: 'Push the right unit to marketplace when you are ready to sell.',
+    title: 'List for sale',
+    text: 'Send the right machine to marketplace when you are ready to sell.',
   },
 ] as const;
 
@@ -113,12 +113,19 @@ export default function HomePage() {
           <div className={styles.sectionIntro}>
             <p className={styles.eyebrow}>One clear platform</p>
             <h2 className={styles.sectionTitle}>Choose your route.</h2>
-            <p className={styles.sectionText}>Value first, then manage records or move to market.</p>
+            <p className={styles.sectionText}>
+              Value first, then manage records or send equipment to marketplace.
+            </p>
           </div>
 
           <div className={styles.routesGrid}>
             {routes.map((route, index) => (
-              <Link key={route.title} href={route.href} className={styles.routeCard} data-index={index + 1}>
+              <Link
+                key={route.title}
+                href={route.href}
+                className={styles.routeCard}
+                data-index={index + 1}
+              >
                 <div className={styles.routeTop}>
                   <span className={styles.routeLabel}>{route.label}</span>
                 </div>
@@ -148,7 +155,9 @@ export default function HomePage() {
             <div className={styles.sectionIntroCompact}>
               <p className={styles.flowEyebrow}>How it works</p>
               <h2 className={styles.flowTitle}>Simple, practical, and easy to follow.</h2>
-              <p className={styles.flowText}>Start with value, save what matters, then move to market.</p>
+              <p className={styles.flowText}>
+                Start with value, save what matters, then list when you are ready to sell.
+              </p>
             </div>
 
             <div className={styles.stepsGrid}>
