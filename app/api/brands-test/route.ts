@@ -1,52 +1,41 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '../../../lib/db';
+import type { BrandRow } from '../../../lib/tractor-data';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-type PgLikeError = Error & {
-  code?: string;
-  detail?: string;
-  hint?: string;
-};
 
 export async function GET() {
   try {
     const db = getDb();
 
-    const connection = await db.query(`
-      select
-        current_database() as database_name,
-        current_schema() as schema_name,
-        current_user as user_name
-    `);
-
-    const result = await db.query(`
-      select id, slug, name, logo_path, is_active
+    const result = await db.query<{
+      slug: string;
+      name: string;
+    }>(`
+      select slug, name
       from brands
       where is_active = true
       order by name asc
     `);
 
+    const brands: BrandRow[] = result.rows.map((row) => ({
+      slug: row.slug,
+      name: row.name,
+    }));
+
     return NextResponse.json({
       ok: true,
-      connection: connection.rows[0],
-      count: result.rows.length,
-      brands: result.rows,
+      count: brands.length,
+      brands,
     });
-  } catch (error: unknown) {
-    console.error('brands-test failed', error);
-
-    const pgError = error as PgLikeError;
+  } catch (error) {
+    console.error('brands route failed', error);
 
     return NextResponse.json(
       {
         ok: false,
-        error: 'Database test failed',
-        message: pgError?.message ?? 'Unknown database error',
-        code: pgError?.code ?? null,
-        detail: pgError?.detail ?? null,
-        hint: pgError?.hint ?? null,
+        error: 'Failed to load brands',
       },
       { status: 500 }
     );
