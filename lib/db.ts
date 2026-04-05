@@ -4,14 +4,22 @@ const globalForDb = globalThis as typeof globalThis & {
   aim4pricePool?: Pool;
 };
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set');
+const requiredVars = ['PGHOST', 'PGPORT', 'PGUSER', 'PGPASSWORD', 'PGDATABASE'] as const;
+
+for (const key of requiredVars) {
+  if (!process.env[key]) {
+    throw new Error(`${key} is not set`);
+  }
 }
 
 export const db =
   globalForDb.aim4pricePool ??
   new Pool({
-    connectionString: process.env.DATABASE_URL,
+    host: process.env.PGHOST,
+    port: Number(process.env.PGPORT),
+    user: process.env.PGUSER,
+    password: process.env.PGPASSWORD,
+    database: process.env.PGDATABASE,
   });
 
 if (process.env.NODE_ENV !== 'production') {
