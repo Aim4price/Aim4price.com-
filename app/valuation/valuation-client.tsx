@@ -6,9 +6,10 @@ import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 import {
-  brands,
+  brands as seedBrands,
   conditionOptions,
   tractors,
+  type BrandRow,
   type CabType,
   type ConditionKey,
   type DriveType,
@@ -32,6 +33,13 @@ type MethodCard = {
   note: string;
   value: number | null;
   available: boolean;
+};
+
+type BrandsApiResponse = {
+  ok: boolean;
+  count?: number;
+  brands?: BrandRow[];
+  error?: string;
 };
 
 const CURRENT_YEAR = new Date().getFullYear() + 1;
@@ -276,6 +284,8 @@ export default function ValuationClient() {
   const [selectedMethod, setSelectedMethod] = useState<MethodKey | null>(null);
   const [selectedComparableIndex, setSelectedComparableIndex] = useState(0);
   const [message, setMessage] = useState('');
+  const [availableBrands, setAvailableBrands] = useState<BrandRow[]>(seedBrands);
+  const [brandsLoading, setBrandsLoading] = useState(true);
 
   const stepMeta = getStepMeta(step);
   const brandDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -283,8 +293,8 @@ export default function ValuationClient() {
   const yearDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const sortedBrands = useMemo(
-    () => [...brands].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
-    [],
+    () => [...availableBrands].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
+    [availableBrands],
   );
 
   const matchingModels = useMemo(() => {
@@ -392,6 +402,52 @@ export default function ValuationClient() {
     setMessage('');
     invalidateResult();
   }
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadBrands() {
+      try {
+        const response = await fetch('/api/brands', {
+          cache: 'no-store',
+        });
+
+        const data = (await response.json()) as BrandsApiResponse;
+
+        if (!response.ok || !data.ok || !Array.isArray(data.brands)) {
+          throw new Error(data.error ?? 'Failed to load brands from the database.');
+        }
+
+        if (!ignore) {
+          setAvailableBrands(data.brands);
+        }
+      } catch (error) {
+        console.error('Failed to load brands from /api/brands', error);
+
+        if (!ignore) {
+          setAvailableBrands(seedBrands);
+        }
+      } finally {
+        if (!ignore) {
+          setBrandsLoading(false);
+        }
+      }
+    }
+
+    loadBrands();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!availableBrands.length) return;
+
+    if (!availableBrands.some((brand) => brand.slug === brandSlug)) {
+      setBrandSlug(availableBrands[0].slug);
+    }
+  }, [availableBrands, brandSlug]);
 
   useEffect(() => {
     if (!matchingModels.length) {
@@ -505,8 +561,8 @@ export default function ValuationClient() {
   );
 
   const selectedBrandName = useMemo(
-    () => brands.find((brand) => brand.slug === brandSlug)?.name ?? '—',
-    [brandSlug],
+    () => availableBrands.find((brand) => brand.slug === brandSlug)?.name ?? '—',
+    [availableBrands, brandSlug],
   );
 
   const filteredBrandOptions = useMemo(() => {
@@ -885,8 +941,11 @@ export default function ValuationClient() {
                 aria-haspopup="listbox"
                 aria-expanded={brandDropdownOpen}
                 aria-label="Choose tractor brand"
+                disabled={brandsLoading || !sortedBrands.length}
               >
-                <span className={styles.dropdownTriggerText}>{selectedBrandName}</span>
+                <span className={styles.dropdownTriggerText}>
+                  {brandsLoading ? 'Loading brands...' : selectedBrandName}
+                </span>
                 <span className={styles.dropdownTriggerIcon} aria-hidden="true">
                   {brandDropdownOpen ? '▴' : '▾'}
                 </span>
@@ -906,7 +965,9 @@ export default function ValuationClient() {
                   </div>
 
                   <div className={styles.dropdownList} role="listbox" aria-label="Available tractor brands">
-                    {filteredBrandOptions.length ? (
+                    {brandsLoading ? (
+                      <div className={styles.dropdownEmpty}>Loading brands...</div>
+                    ) : filteredBrandOptions.length ? (
                       filteredBrandOptions.map((brand) => {
                         const active = brand.slug === brandSlug;
 
@@ -942,7 +1003,9 @@ export default function ValuationClient() {
                         );
                       })
                     ) : (
-                      <div className={styles.dropdownEmpty}>No brands matched “{brandSearch.trim()}”.</div>
+                      <div className={styles.dropdownEmpty}>
+                        {sortedBrands.length ? `No brands matched “${brandSearch.trim()}”.` : 'No brands loaded yet.'}
+                      </div>
                     )}
                   </div>
                 </div>
