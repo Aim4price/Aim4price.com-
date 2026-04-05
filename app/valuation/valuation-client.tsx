@@ -42,6 +42,13 @@ type BrandsApiResponse = {
   error?: string;
 };
 
+type TractorModelsApiResponse = {
+  ok: boolean;
+  count?: number;
+  models?: TractorCatalogRow[];
+  error?: string;
+};
+
 const CURRENT_YEAR = new Date().getFullYear() + 1;
 
 const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
@@ -286,6 +293,8 @@ export default function ValuationClient() {
   const [message, setMessage] = useState('');
   const [availableBrands, setAvailableBrands] = useState<BrandRow[]>(seedBrands);
   const [brandsLoading, setBrandsLoading] = useState(true);
+  const [availableModels, setAvailableModels] = useState<TractorCatalogRow[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
 
   const stepMeta = getStepMeta(step);
   const brandDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -297,17 +306,7 @@ export default function ValuationClient() {
     [availableBrands],
   );
 
-  const matchingModels = useMemo(() => {
-    if (!tractorType || !drive || !cab) return [];
-
-    return tractors.filter(
-      (tractor) =>
-        tractor.brandSlug === brandSlug &&
-        tractor.tractorType === tractorType &&
-        tractor.drive === drive &&
-        tractor.cab === cab,
-    );
-  }, [brandSlug, tractorType, drive, cab]);
+  const matchingModels = useMemo(() => availableModels, [availableModels]);
 
   const filteredModels = useMemo(() => {
     const normalizedQuery = modelQuery.trim().toLowerCase();
@@ -440,6 +439,74 @@ export default function ValuationClient() {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    if (!brandSlug || !tractorType || !drive || !cab) {
+      setAvailableModels([]);
+      setModelsLoading(false);
+      return () => {
+        ignore = true;
+      };
+    }
+
+    const currentBrandSlug = brandSlug;
+    const currentTractorType = tractorType;
+    const currentDrive = drive;
+    const currentCab = cab;
+
+    async function loadModels() {
+      setModelsLoading(true);
+
+      try {
+        const params = new URLSearchParams();
+        params.set('brandSlug', currentBrandSlug);
+        params.set('tractorType', currentTractorType);
+        params.set('drive', currentDrive);
+        params.set('cab', currentCab);
+
+        const response = await fetch(`/api/tractor-models?${params.toString()}`, {
+          cache: 'no-store',
+        });
+
+        const data = (await response.json()) as TractorModelsApiResponse;
+
+        if (!response.ok || !data.ok || !Array.isArray(data.models)) {
+          throw new Error(data.error ?? 'Failed to load models from the database.');
+        }
+
+        if (!ignore) {
+          setAvailableModels(data.models);
+        }
+      } catch (error) {
+        console.error('Failed to load models from /api/tractor-models', error);
+
+        if (!ignore) {
+          setAvailableModels(
+            tractors.filter(
+              (tractor) =>
+                tractor.brandSlug === currentBrandSlug &&
+                tractor.tractorType === currentTractorType &&
+                tractor.drive === currentDrive &&
+                tractor.cab === currentCab,
+            ),
+          );
+        }
+      } finally {
+        if (!ignore) {
+          setModelsLoading(false);
+        }
+      }
+    }
+
+    loadModels();
+
+    return () => {
+      ignore = true;
+    };
+  }, [brandSlug, tractorType, drive, cab]);
+
 
   useEffect(() => {
     if (!availableBrands.length) return;
@@ -1287,6 +1354,7 @@ export default function ValuationClient() {
                   placeholder={`Search ${selectedBrandName} models`}
                   aria-label="Search tractor models"
                   className={styles.searchInput}
+                  disabled={modelsLoading}
                 />
               </div>
 
@@ -1300,7 +1368,11 @@ export default function ValuationClient() {
                 </div>
               ) : null}
 
-              {filteredModels.length ? (
+              {modelsLoading ? (
+                <div className={styles.emptyState}>
+                  <p>Loading models...</p>
+                </div>
+              ) : filteredModels.length ? (
                 <>
                   <div className={styles.currentCount}>
                     {filteredModels.length} model{filteredModels.length === 1 ? '' : 's'} found
