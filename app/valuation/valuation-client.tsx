@@ -17,7 +17,7 @@ import {
   type TractorCatalogRow,
   type TractorType,
 } from '../../lib/tractor-data';
-import { conditionLabel, money, range, runValuation, type Result } from '../../lib/tractor-logic';
+import { conditionLabel, money, range, type Result } from '../../lib/tractor-logic';
 import { saveItem } from '../../lib/register';
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -46,6 +46,12 @@ type TractorModelsApiResponse = {
   ok: boolean;
   count?: number;
   models?: TractorCatalogRow[];
+  error?: string;
+};
+
+type TractorValuationApiResponse = {
+  ok: boolean;
+  result?: Result;
   error?: string;
 };
 
@@ -295,6 +301,7 @@ export default function ValuationClient() {
   const [brandsLoading, setBrandsLoading] = useState(true);
   const [availableModels, setAvailableModels] = useState<TractorCatalogRow[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
+  const [valuationLoading, setValuationLoading] = useState(false);
 
   const stepMeta = getStepMeta(step);
   const brandDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -796,8 +803,9 @@ export default function ValuationClient() {
     extrasReviewed,
   ]);
 
-  const nextLabel =
-    step === 1
+  const nextLabel = valuationLoading
+    ? 'Calculating...'
+    : step === 1
       ? 'Choose Brand'
       : step === 2
         ? 'Choose Model'
@@ -823,6 +831,7 @@ export default function ValuationClient() {
     setExtrasReviewed(false);
     setResult(null);
     setSelectedMethod(null);
+    setValuationLoading(false);
     setMessage('');
     resetDetailState();
   }
@@ -838,7 +847,7 @@ export default function ValuationClient() {
     setStep(previousStep(step));
   }
 
-  function handleNext() {
+  async function handleNext() {
     setMessage('');
 
     if (step === 3 && !selectedModel) {
@@ -870,29 +879,53 @@ export default function ValuationClient() {
         return;
       }
 
-      const nextResult = runValuation({
-        modelId: selectedModel.id,
-        year: parsedYear,
-        hours: parsedHours,
-        condition,
-        frontPto,
-        frontLoader,
-        gpsEnabled,
-        gpsType,
-        gpsYear,
-      });
+      setValuationLoading(true);
 
-      setResult(nextResult);
+      try {
+        const response = await fetch('/api/tractor-valuations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            modelId: selectedModel.id,
+            year: parsedYear,
+            hours: parsedHours,
+            condition,
+            frontPto,
+            frontLoader,
+            gpsEnabled,
+            gpsType,
+            gpsYear,
+          }),
+        });
 
-      const defaultMethod: MethodKey =
-        nextResult.marketMid !== null
-          ? 'market'
-          : nextResult.aim4priceValueExVat !== null
-            ? 'aim4price'
-            : 'department';
+        const data = (await response.json()) as TractorValuationApiResponse;
 
-      setSelectedMethod(defaultMethod);
-      setStep(5);
+        if (!response.ok || !data.ok || !data.result) {
+          throw new Error(data.error ?? 'Failed to calculate valuation.');
+        }
+
+        const nextResult = data.result;
+
+        setResult(nextResult);
+
+        const defaultMethod: MethodKey =
+          nextResult.marketMid !== null
+            ? 'market'
+            : nextResult.aim4priceValueExVat !== null
+              ? 'aim4price'
+              : 'department';
+
+        setSelectedMethod(defaultMethod);
+        setStep(5);
+      } catch (error) {
+        console.error('Failed to calculate valuation from /api/tractor-valuations', error);
+        setMessage(error instanceof Error ? error.message : 'Failed to calculate valuation.');
+      } finally {
+        setValuationLoading(false);
+      }
+
       return;
     }
 
@@ -2042,7 +2075,7 @@ export default function ValuationClient() {
                     type="button"
                     className={styles.primaryButton}
                     onClick={handleNext}
-                    disabled={!canContinue}
+                    disabled={!canContinue || valuationLoading}
                   >
                     {nextLabel}
                   </button>
