@@ -1,27 +1,45 @@
 import { Pool } from 'pg';
 
-const globalForDb = globalThis as typeof globalThis & {
-  aim4pricePool?: Pool;
-};
-
-const requiredVars = ['PGHOST', 'PGPORT', 'PGUSER', 'PGPASSWORD', 'PGDATABASE'] as const;
-
-for (const key of requiredVars) {
-  if (!process.env[key]) {
-    throw new Error(`${key} is not set`);
-  }
+declare global {
+  // eslint-disable-next-line no-var
+  var aim4pricePool: Pool | undefined;
 }
 
-export const db =
-  globalForDb.aim4pricePool ??
-  new Pool({
-    host: process.env.PGHOST,
-    port: Number(process.env.PGPORT),
-    user: process.env.PGUSER,
-    password: process.env.PGPASSWORD,
-    database: process.env.PGDATABASE,
-  });
+function createPool(): Pool {
+  const hasPgParts =
+    Boolean(process.env.PGHOST) &&
+    Boolean(process.env.PGPORT) &&
+    Boolean(process.env.PGUSER) &&
+    Boolean(process.env.PGPASSWORD) &&
+    Boolean(process.env.PGDATABASE);
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForDb.aim4pricePool = db;
+  if (hasPgParts) {
+    return new Pool({
+      host: process.env.PGHOST,
+      port: Number(process.env.PGPORT),
+      user: process.env.PGUSER,
+      password: process.env.PGPASSWORD,
+      database: process.env.PGDATABASE,
+      ssl: false,
+    });
+  }
+
+  if (process.env.DATABASE_URL) {
+    return new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: false,
+    });
+  }
+
+  throw new Error(
+    'Database connection variables are missing. Add PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE to the app service.'
+  );
+}
+
+export function getDb(): Pool {
+  if (!global.aim4pricePool) {
+    global.aim4pricePool = createPool();
+  }
+
+  return global.aim4pricePool;
 }
