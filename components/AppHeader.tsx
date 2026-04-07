@@ -67,15 +67,14 @@ export default function AppHeader({
           <Image
             src="/brand/aim4price-mark-black.png"
             alt="Aim4price"
-            width={34}
-            height={28}
+            width={44}
+            height={36}
             priority
             className={styles.brandImage}
           />
 
           <span className={styles.brandCopy}>
             <span className={styles.brandTitle}>Aim4price</span>
-            <span className={styles.brandSubtext}>Value, register, market</span>
           </span>
         </Link>
 
@@ -99,12 +98,12 @@ export default function AppHeader({
         </nav>
 
         <div className={styles.actions}>
-          <SmartLink href={primaryHref} className={styles.signupButton}>
-            {ctaLabel}
-          </SmartLink>
-
           <SmartLink href={loginHref} className={styles.loginButton}>
             Login
+          </SmartLink>
+
+          <SmartLink href={primaryHref} className={styles.signupButton}>
+            {ctaLabel}
           </SmartLink>
         </div>
       </div>
