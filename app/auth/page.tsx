@@ -35,12 +35,6 @@ const initialLoginState: LoginFormState = {
   rememberMe: true,
 };
 
-const quickPoints = [
-  'Save valuations and review them later.',
-  'Build one clean equipment register.',
-  'Unlock member marketplace contact details.',
-] as const;
-
 function getModeFromHash(hash: string): Mode {
   return hash.replace('#', '').toLowerCase() === 'login' ? 'login' : 'signup';
 }
@@ -71,17 +65,15 @@ export default function AuthPage() {
     () =>
       mode === 'signup'
         ? {
-            overline: 'Create your account',
-            title: 'Get started with Aim4price.',
-            text: 'Create a clean member account for saved valuations, asset records, and marketplace access.',
+            title: 'Create your account',
+            text: 'Save valuations, manage records, and access member-only marketplace features.',
             action: 'Create account',
             footer: 'Already have an account?',
             footerCta: 'Log in',
           }
         : {
-            overline: 'Welcome back',
-            title: 'Log in to your account.',
-            text: 'Open your saved machinery records, latest valuations, and active marketplace activity.',
+            title: 'Welcome back',
+            text: 'Log in to open your saved machinery records, valuations, and listings.',
             action: 'Log in',
             footer: 'New to Aim4price?',
             footerCta: 'Create account',
@@ -116,7 +108,7 @@ export default function AuthPage() {
 
     setNotice({
       type: 'success',
-      text: 'Interface ready. The next step is wiring this screen into Better Auth and PostgreSQL.',
+      text: 'UI complete. Next step is connecting Better Auth and PostgreSQL.',
     });
   };
 
@@ -130,312 +122,256 @@ export default function AuthPage() {
 
     setNotice({
       type: 'success',
-      text: 'Interface ready. The next step is wiring this screen into Better Auth and PostgreSQL.',
+      text: 'UI complete. Next step is connecting Better Auth and PostgreSQL.',
     });
   };
 
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
-        <header className={styles.topBar}>
-          <Link href="/" className={styles.brandLink} aria-label="Go to Aim4price home">
+        <div className={styles.topRow}>
+          <Link href="/" className={styles.homeLink}>
+            Back to home
+          </Link>
+        </div>
+
+        <section className={styles.card} aria-labelledby="auth-heading">
+          <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
             <Image
               src="/brand/aim4price-mark-black.png"
               alt="Aim4price"
-              width={38}
-              height={30}
+              width={42}
+              height={34}
               className={styles.brandMark}
               priority
             />
-
-            <span className={styles.brandTextWrap}>
+            <div className={styles.brandTextWrap}>
               <span className={styles.brandText}>Aim4price</span>
-              <span className={styles.brandSubtext}>Value, register, market</span>
-            </span>
+              <span className={styles.brandSubtext}>Agricultural & Industrial Machinery</span>
+            </div>
           </Link>
 
-          <div className={styles.topActions}>
-            <Link href="/valuation" className={styles.topLink}>
-              Free valuation
-            </Link>
-            <Link href="/marketplace" className={styles.topLink}>
-              Marketplace
-            </Link>
+          <div className={styles.switcher} aria-label="Auth mode switcher">
+            <button
+              type="button"
+              onClick={() => updateHashAndMode('signup')}
+              className={`${styles.switchButton} ${mode === 'signup' ? styles.switchButtonActive : ''}`}
+            >
+              Sign up
+            </button>
+            <button
+              type="button"
+              onClick={() => updateHashAndMode('login')}
+              className={`${styles.switchButton} ${mode === 'login' ? styles.switchButtonActive : ''}`}
+            >
+              Login
+            </button>
           </div>
-        </header>
 
-        <section className={styles.hero}>
-          <div className={styles.copyColumn}>
-            <span className={styles.eyebrow}>Member access</span>
-            <h1 className={styles.heroTitle}>A cleaner way to manage machinery.</h1>
-            <p className={styles.heroText}>
-              Built for owners, dealers, and serious buyers who want one simple place for values,
-              records, and next steps.
-            </p>
+          <div className={styles.header}>
+            <h1 id="auth-heading" className={styles.title}>
+              {copy.title}
+            </h1>
+            <p className={styles.text}>{copy.text}</p>
+          </div>
 
-            <div className={styles.pointList}>
-              {quickPoints.map((point) => (
-                <div key={point} className={styles.pointItem}>
-                  <span className={styles.pointDot} aria-hidden="true" />
-                  <span>{point}</span>
-                </div>
-              ))}
+          <button type="button" className={styles.googleButton}>
+            <span className={styles.googleMark} aria-hidden="true">
+              G
+            </span>
+            Continue with Google
+          </button>
+
+          <div className={styles.divider}>
+            <span>or continue with email</span>
+          </div>
+
+          {notice ? (
+            <div
+              className={`${styles.notice} ${
+                notice.type === 'success' ? styles.noticeSuccess : styles.noticeError
+              }`}
+            >
+              {notice.text}
             </div>
+          ) : null}
 
-            <div className={styles.previewCard}>
-              <div className={styles.previewTop}>
-                <div>
-                  <p className={styles.previewLabel}>Inside your account</p>
-                  <h2 className={styles.previewTitle}>One place for your equipment.</h2>
-                </div>
-                <span className={styles.previewPill}>Private member area</span>
+          {mode === 'signup' ? (
+            <form className={styles.form} onSubmit={handleSignupSubmit} noValidate>
+              <div className={styles.nameRow}>
+                <label className={styles.field}>
+                  <span className={styles.label}>First name</span>
+                  <input
+                    type="text"
+                    autoComplete="given-name"
+                    placeholder="Kuyler"
+                    className={styles.input}
+                    value={signupForm.firstName}
+                    onChange={(event) =>
+                      setSignupForm((current) => ({ ...current, firstName: event.target.value }))
+                    }
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span className={styles.label}>Last name</span>
+                  <input
+                    type="text"
+                    autoComplete="family-name"
+                    placeholder="Geldenhuys"
+                    className={styles.input}
+                    value={signupForm.lastName}
+                    onChange={(event) =>
+                      setSignupForm((current) => ({ ...current, lastName: event.target.value }))
+                    }
+                  />
+                </label>
               </div>
 
-              <div className={styles.previewImageFrame}>
-                <Image
-                  src="/brand/Home-page.png"
-                  alt="Aim4price preview"
-                  fill
-                  sizes="(max-width: 980px) 100vw, 48vw"
-                  className={styles.previewImage}
+              <label className={styles.field}>
+                <span className={styles.label}>Email</span>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@example.com"
+                  className={styles.input}
+                  value={signupForm.email}
+                  onChange={(event) =>
+                    setSignupForm((current) => ({ ...current, email: event.target.value }))
+                  }
                 />
-                <div className={styles.previewOverlayCard}>
-                  <span className={styles.previewOverlayLabel}>Member actions</span>
-                  <strong className={styles.previewOverlayTitle}>
-                    Save values. Build records. Move to market.
-                  </strong>
+              </label>
+
+              <label className={styles.field}>
+                <span className={styles.label}>Password</span>
+                <div className={styles.passwordWrap}>
+                  <input
+                    type={showSignupPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    placeholder="Create a secure password"
+                    className={`${styles.input} ${styles.passwordInput}`}
+                    value={signupForm.password}
+                    onChange={(event) =>
+                      setSignupForm((current) => ({ ...current, password: event.target.value }))
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSignupPassword((current) => !current)}
+                    className={styles.passwordToggle}
+                    aria-label={showSignupPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showSignupPassword ? 'Hide' : 'Show'}
+                  </button>
                 </div>
-              </div>
-            </div>
-          </div>
+              </label>
 
-          <div className={styles.formColumn}>
-            <section className={styles.card} aria-labelledby="auth-heading">
-              <div className={styles.switcher} aria-label="Auth mode switcher">
-                <button
-                  type="button"
-                  onClick={() => updateHashAndMode('signup')}
-                  className={`${styles.switchButton} ${mode === 'signup' ? styles.switchButtonActive : ''}`}
-                >
-                  Sign up
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateHashAndMode('login')}
-                  className={`${styles.switchButton} ${mode === 'login' ? styles.switchButtonActive : ''}`}
-                >
-                  Login
-                </button>
-              </div>
-
-              <div className={styles.cardHeader}>
-                <span className={styles.cardEyebrow}>{copy.overline}</span>
-                <h2 id="auth-heading" className={styles.cardTitle}>
-                  {copy.title}
-                </h2>
-                <p className={styles.cardText}>{copy.text}</p>
-              </div>
-
-              <button type="button" className={styles.googleButton}>
-                <span className={styles.googleMark} aria-hidden="true">
-                  G
+              <label className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  className={styles.checkbox}
+                  checked={signupForm.termsAccepted}
+                  onChange={(event) =>
+                    setSignupForm((current) => ({
+                      ...current,
+                      termsAccepted: event.target.checked,
+                    }))
+                  }
+                />
+                <span>
+                  I agree to the{' '}
+                  <a href="#" className={styles.inlineLink}>
+                    Terms
+                  </a>{' '}
+                  and{' '}
+                  <a href="#" className={styles.inlineLink}>
+                    Privacy Policy
+                  </a>
+                  .
                 </span>
-                Continue with Google
-              </button>
+              </label>
 
-              <div className={styles.divider}>
-                <span>or continue with email</span>
+              <button type="submit" className={styles.primaryButton}>
+                {copy.action}
+              </button>
+            </form>
+          ) : (
+            <form className={styles.form} onSubmit={handleLoginSubmit} noValidate>
+              <label className={styles.field}>
+                <span className={styles.label}>Email</span>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@example.com"
+                  className={styles.input}
+                  value={loginForm.email}
+                  onChange={(event) =>
+                    setLoginForm((current) => ({ ...current, email: event.target.value }))
+                  }
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span className={styles.label}>Password</span>
+                <div className={styles.passwordWrap}>
+                  <input
+                    type={showLoginPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    placeholder="Enter your password"
+                    className={`${styles.input} ${styles.passwordInput}`}
+                    value={loginForm.password}
+                    onChange={(event) =>
+                      setLoginForm((current) => ({ ...current, password: event.target.value }))
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword((current) => !current)}
+                    className={styles.passwordToggle}
+                    aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showLoginPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </label>
+
+              <div className={styles.metaRow}>
+                <label className={styles.checkboxRow}>
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={loginForm.rememberMe}
+                    onChange={(event) =>
+                      setLoginForm((current) => ({
+                        ...current,
+                        rememberMe: event.target.checked,
+                      }))
+                    }
+                  />
+                  <span>Remember me</span>
+                </label>
+
+                <a href="#" className={styles.inlineLink}>
+                  Forgot password?
+                </a>
               </div>
 
-              {notice ? (
-                <div
-                  className={`${styles.notice} ${
-                    notice.type === 'success' ? styles.noticeSuccess : styles.noticeError
-                  }`}
-                >
-                  {notice.text}
-                </div>
-              ) : null}
+              <button type="submit" className={styles.primaryButton}>
+                {copy.action}
+              </button>
+            </form>
+          )}
 
-              {mode === 'signup' ? (
-                <form className={styles.form} onSubmit={handleSignupSubmit} noValidate>
-                  <div className={styles.nameRow}>
-                    <label className={styles.field}>
-                      <span className={styles.label}>First name</span>
-                      <input
-                        type="text"
-                        autoComplete="given-name"
-                        placeholder="Kuyler"
-                        className={styles.input}
-                        value={signupForm.firstName}
-                        onChange={(event) =>
-                          setSignupForm((current) => ({ ...current, firstName: event.target.value }))
-                        }
-                      />
-                    </label>
-
-                    <label className={styles.field}>
-                      <span className={styles.label}>Last name</span>
-                      <input
-                        type="text"
-                        autoComplete="family-name"
-                        placeholder="Geldenhuys"
-                        className={styles.input}
-                        value={signupForm.lastName}
-                        onChange={(event) =>
-                          setSignupForm((current) => ({ ...current, lastName: event.target.value }))
-                        }
-                      />
-                    </label>
-                  </div>
-
-                  <label className={styles.field}>
-                    <span className={styles.label}>Email</span>
-                    <input
-                      type="email"
-                      autoComplete="email"
-                      placeholder="name@example.com"
-                      className={styles.input}
-                      value={signupForm.email}
-                      onChange={(event) =>
-                        setSignupForm((current) => ({ ...current, email: event.target.value }))
-                      }
-                    />
-                  </label>
-
-                  <label className={styles.field}>
-                    <span className={styles.label}>Password</span>
-                    <div className={styles.passwordWrap}>
-                      <input
-                        type={showSignupPassword ? 'text' : 'password'}
-                        autoComplete="new-password"
-                        placeholder="Create a secure password"
-                        className={`${styles.input} ${styles.passwordInput}`}
-                        value={signupForm.password}
-                        onChange={(event) =>
-                          setSignupForm((current) => ({ ...current, password: event.target.value }))
-                        }
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowSignupPassword((current) => !current)}
-                        className={styles.passwordToggle}
-                        aria-label={showSignupPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showSignupPassword ? 'Hide' : 'Show'}
-                      </button>
-                    </div>
-                    <span className={styles.hint}>Use at least 8 characters.</span>
-                  </label>
-
-                  <label className={styles.checkboxRow}>
-                    <input
-                      type="checkbox"
-                      className={styles.checkbox}
-                      checked={signupForm.termsAccepted}
-                      onChange={(event) =>
-                        setSignupForm((current) => ({
-                          ...current,
-                          termsAccepted: event.target.checked,
-                        }))
-                      }
-                    />
-                    <span>
-                      I agree to the{' '}
-                      <a href="#" className={styles.inlineLink}>
-                        Terms
-                      </a>{' '}
-                      and{' '}
-                      <a href="#" className={styles.inlineLink}>
-                        Privacy Policy
-                      </a>
-                      .
-                    </span>
-                  </label>
-
-                  <button type="submit" className={styles.primaryButton}>
-                    {copy.action}
-                  </button>
-                </form>
-              ) : (
-                <form className={styles.form} onSubmit={handleLoginSubmit} noValidate>
-                  <label className={styles.field}>
-                    <span className={styles.label}>Email</span>
-                    <input
-                      type="email"
-                      autoComplete="email"
-                      placeholder="name@example.com"
-                      className={styles.input}
-                      value={loginForm.email}
-                      onChange={(event) =>
-                        setLoginForm((current) => ({ ...current, email: event.target.value }))
-                      }
-                    />
-                  </label>
-
-                  <label className={styles.field}>
-                    <span className={styles.label}>Password</span>
-                    <div className={styles.passwordWrap}>
-                      <input
-                        type={showLoginPassword ? 'text' : 'password'}
-                        autoComplete="current-password"
-                        placeholder="Enter your password"
-                        className={`${styles.input} ${styles.passwordInput}`}
-                        value={loginForm.password}
-                        onChange={(event) =>
-                          setLoginForm((current) => ({ ...current, password: event.target.value }))
-                        }
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowLoginPassword((current) => !current)}
-                        className={styles.passwordToggle}
-                        aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showLoginPassword ? 'Hide' : 'Show'}
-                      </button>
-                    </div>
-                  </label>
-
-                  <div className={styles.metaRow}>
-                    <label className={styles.checkboxRow}>
-                      <input
-                        type="checkbox"
-                        className={styles.checkbox}
-                        checked={loginForm.rememberMe}
-                        onChange={(event) =>
-                          setLoginForm((current) => ({
-                            ...current,
-                            rememberMe: event.target.checked,
-                          }))
-                        }
-                      />
-                      <span>Remember me</span>
-                    </label>
-
-                    <a href="#" className={styles.inlineLink}>
-                      Forgot password?
-                    </a>
-                  </div>
-
-                  <button type="submit" className={styles.primaryButton}>
-                    {copy.action}
-                  </button>
-                </form>
-              )}
-
-              <p className={styles.footerText}>
-                {copy.footer}{' '}
-                <button
-                  type="button"
-                  className={styles.footerButton}
-                  onClick={() => updateHashAndMode(mode === 'signup' ? 'login' : 'signup')}
-                >
-                  {copy.footerCta}
-                </button>
-              </p>
-            </section>
-          </div>
+          <p className={styles.footerText}>
+            {copy.footer}{' '}
+            <button
+              type="button"
+              className={styles.footerButton}
+              onClick={() => updateHashAndMode(mode === 'signup' ? 'login' : 'signup')}
+            >
+              {copy.footerCta}
+            </button>
+          </p>
         </section>
       </div>
     </main>
