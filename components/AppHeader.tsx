@@ -53,8 +53,8 @@ function SmartLink({
 
 export default function AppHeader({
   active,
-  signupHref = '#',
-  loginHref = '#',
+  signupHref = '/auth#signup',
+  loginHref = '/auth#login',
   ctaHref,
   ctaLabel = 'Create Account',
 }: AppHeaderProps) {
