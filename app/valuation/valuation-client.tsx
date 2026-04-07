@@ -125,17 +125,17 @@ function getStepMeta(step: Step) {
     case 2:
       return {
         title: 'Choose Brand',
-        body: 'Select a tractor brand from the dropdown list.',
+        body: 'Choose the brand to narrow the available models.',
       };
     case 3:
       return {
-        title: 'Choose Tractor Model',
-        body: 'Four quick choices. One at a time.',
+        title: 'Choose Model',
+        body: 'Set the machine type and pick the matching model.',
       };
     case 4:
       return {
-        title: 'Enter Tractor Details',
-        body: 'Four quick details. One at a time.',
+        title: 'Enter Equipment Details',
+        body: 'Add year, hours, condition and extras. Use the next button below to move through.',
       };
     default:
       return {
@@ -147,7 +147,7 @@ function getStepMeta(step: Step) {
 
 function getConditionHint(condition: ConditionKey): string {
   if (condition === 'excellent') return 'Best kept condition';
-  if (condition === 'good') return 'Well maintained working tractor';
+  if (condition === 'good') return 'Well maintained working machine';
   if (condition === 'fair') return 'Average wear for age';
   if (condition === 'used') return 'Heavy general use visible';
   return 'Requires attention before sale';
@@ -369,42 +369,45 @@ export default function ValuationClient() {
     invalidateResult();
   }
 
-  function confirmYearSelection() {
+  function confirmYearSelection(options?: { advance?: boolean }) {
     if (!selectedModel || !isYearValid) {
       setMessage('Enter a valid year first.');
-      return;
+      return false;
     }
 
     setYearConfirmed(true);
-    setDetailsFocus(null);
+    setDetailsFocus(options?.advance ? 'hours' : null);
     setMessage('');
+    return true;
   }
 
-  function confirmHoursSelection() {
+  function confirmHoursSelection(options?: { advance?: boolean }) {
     if (!isHoursValid) {
       setMessage('Enter engine hours first.');
-      return;
+      return false;
     }
 
     setHoursConfirmed(true);
-    setDetailsFocus(null);
+    setDetailsFocus(options?.advance ? 'condition' : null);
     setMessage('');
+    return true;
   }
 
-  function applyExtrasSelection() {
+  function applyExtrasSelection(options?: { keepFocus?: boolean }) {
     setExtrasReviewed(true);
-    setDetailsFocus(null);
+    setDetailsFocus(options?.keepFocus ? 'extras' : null);
     setMessage('');
+    return true;
   }
 
-  function clearExtrasSelection() {
+  function clearExtrasSelection(options?: { keepFocus?: boolean }) {
     setFrontPto(false);
     setFrontLoader(false);
     setGpsEnabled(false);
     setGpsType(null);
     setGpsYear('');
     setExtrasReviewed(true);
-    setDetailsFocus(null);
+    setDetailsFocus(options?.keepFocus ? 'extras' : null);
     setMessage('');
     invalidateResult();
   }
@@ -680,7 +683,7 @@ export default function ValuationClient() {
       {
         key: 'market',
         label: 'Market Range',
-        note: `${result.marketCount} proveable market listing${result.marketCount === 1 ? '' : 's'} linked below.`,
+        note: `${result.marketCount} provable market listing${result.marketCount === 1 ? '' : 's'} linked below.`,
         value: result.marketMid,
         available: result.marketMid !== null,
       },
@@ -787,7 +790,11 @@ export default function ValuationClient() {
     if (step === 1) return selectedType === 'tractor';
     if (step === 3) return configComplete;
     if (step === 4) {
-      return Boolean(selectedModel && isYearValid && isHoursValid && yearConfirmed && hoursConfirmed && condition && extrasReviewed);
+      if (!selectedModel) return false;
+      if (activeDetailsStep === 'year') return isYearValid;
+      if (activeDetailsStep === 'hours') return isHoursValid;
+      if (activeDetailsStep === 'condition') return Boolean(condition);
+      return true;
     }
     return true;
   }, [
@@ -795,12 +802,10 @@ export default function ValuationClient() {
     selectedType,
     configComplete,
     selectedModel,
+    activeDetailsStep,
     isYearValid,
     isHoursValid,
-    yearConfirmed,
-    hoursConfirmed,
     condition,
-    extrasReviewed,
   ]);
 
   const nextLabel = valuationLoading
@@ -811,7 +816,15 @@ export default function ValuationClient() {
         ? 'Choose Model'
         : step === 3
           ? 'Enter Details'
-          : 'Get Valuation';
+          : step === 4
+            ? activeDetailsStep === 'year'
+              ? 'Next: Hours'
+              : activeDetailsStep === 'hours'
+                ? 'Next: Condition'
+                : activeDetailsStep === 'condition'
+                  ? 'Next: Extras'
+                  : 'Get Valuation'
+            : 'Get Valuation';
 
   function resetWizard() {
     setStep(1);
@@ -856,6 +869,26 @@ export default function ValuationClient() {
     }
 
     if (step === 4) {
+      if (activeDetailsStep === 'year') {
+        confirmYearSelection({ advance: true });
+        return;
+      }
+
+      if (activeDetailsStep === 'hours') {
+        confirmHoursSelection({ advance: true });
+        return;
+      }
+
+      if (activeDetailsStep === 'condition') {
+        if (!condition) {
+          setMessage('Choose the condition first.');
+          return;
+        }
+
+        setDetailsFocus('extras');
+        return;
+      }
+
       const parsedHours = Number(hours);
       const parsedYear = activeYear;
 
@@ -875,8 +908,7 @@ export default function ValuationClient() {
       }
 
       if (!extrasReviewed) {
-        setMessage('Review the extras first.');
-        return;
+        applyExtrasSelection();
       }
 
       setValuationLoading(true);
@@ -941,7 +973,7 @@ export default function ValuationClient() {
     const value = getMethodValue(result, selectedMethod);
 
     if (value === null) {
-      setMessage('That method is not available for this tractor profile.');
+      setMessage('That method is not available for this equipment profile.');
       return;
     }
 
@@ -1040,7 +1072,7 @@ export default function ValuationClient() {
                 }}
                 aria-haspopup="listbox"
                 aria-expanded={brandDropdownOpen}
-                aria-label="Choose tractor brand"
+                aria-label="Choose brand"
                 disabled={brandsLoading || !sortedBrands.length}
               >
                 <span className={styles.dropdownTriggerText}>
@@ -1064,7 +1096,7 @@ export default function ValuationClient() {
                     />
                   </div>
 
-                  <div className={styles.dropdownList} role="listbox" aria-label="Available tractor brands">
+                  <div className={styles.dropdownList} role="listbox" aria-label="Available brands">
                     {brandsLoading ? (
                       <div className={styles.dropdownEmpty}>Loading brands...</div>
                     ) : filteredBrandOptions.length ? (
@@ -1385,7 +1417,7 @@ export default function ValuationClient() {
                     setMessage('');
                   }}
                   placeholder={`Search ${selectedBrandName} models`}
-                  aria-label="Search tractor models"
+                  aria-label="Search models"
                   className={styles.searchInput}
                   disabled={modelsLoading}
                 />
@@ -1643,101 +1675,79 @@ export default function ValuationClient() {
             </div>
 
             {yearMode === 'guided' ? (
-              <div className={styles.inlineFieldRow}>
-                <div className={styles.dropdownField} ref={yearDropdownRef}>
-                  <button
-                    type="button"
-                    className={`${styles.dropdownTrigger} ${yearDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
-                    onClick={() => {
-                      if (!selectedModel) return;
-                      setYearDropdownOpen((open) => !open);
-                      setMessage('');
-                    }}
-                    aria-haspopup="listbox"
-                    aria-expanded={yearDropdownOpen}
-                    aria-label="Choose guided year model"
-                  >
-                    <span className={styles.dropdownTriggerText}>{selectedYearDisplay}</span>
-                    <span className={styles.dropdownTriggerIcon} aria-hidden="true">
-                      {yearDropdownOpen ? '▴' : '▾'}
-                    </span>
-                  </button>
-
-                  {yearDropdownOpen ? (
-                    <div className={styles.dropdownMenu}>
-                      <div className={styles.dropdownList} role="listbox" aria-label="Available guided years">
-                        {years.length ? (
-                          years.map((availableYear) => {
-                            const active = year === availableYear;
-
-                            return (
-                              <button
-                                key={availableYear}
-                                type="button"
-                                role="option"
-                                aria-selected={active}
-                                className={`${styles.dropdownOption} ${active ? styles.dropdownOptionActive : ''}`}
-                                onClick={() => {
-                                  setYear(availableYear);
-                                  setYearDropdownOpen(false);
-                                  setYearConfirmed(false);
-                                  setMessage('');
-                                  invalidateResult();
-                                }}
-                              >
-                                <span className={styles.dropdownOptionText}>{availableYear}</span>
-                                {active ? <span className={styles.dropdownOptionBadge}>Selected</span> : null}
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <div className={styles.dropdownEmpty}>No guided years loaded for this model yet.</div>
-                        )}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-
+              <div className={styles.dropdownField} ref={yearDropdownRef}>
                 <button
                   type="button"
-                  className={styles.primaryButton}
-                  onClick={confirmYearSelection}
-                  disabled={!isYearValid}
+                  className={`${styles.dropdownTrigger} ${yearDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
+                  onClick={() => {
+                    if (!selectedModel) return;
+                    setYearDropdownOpen((open) => !open);
+                    setMessage('');
+                  }}
+                  aria-haspopup="listbox"
+                  aria-expanded={yearDropdownOpen}
+                  aria-label="Choose guided year model"
                 >
-                  Next: Hours
+                  <span className={styles.dropdownTriggerText}>{selectedYearDisplay}</span>
+                  <span className={styles.dropdownTriggerIcon} aria-hidden="true">
+                    {yearDropdownOpen ? '▴' : '▾'}
+                  </span>
                 </button>
+
+                {yearDropdownOpen ? (
+                  <div className={styles.dropdownMenu}>
+                    <div className={styles.dropdownList} role="listbox" aria-label="Available guided years">
+                      {years.length ? (
+                        years.map((availableYear) => {
+                          const active = year === availableYear;
+
+                          return (
+                            <button
+                              key={availableYear}
+                              type="button"
+                              role="option"
+                              aria-selected={active}
+                              className={`${styles.dropdownOption} ${active ? styles.dropdownOptionActive : ''}`}
+                              onClick={() => {
+                                setYear(availableYear);
+                                setYearDropdownOpen(false);
+                                setYearConfirmed(false);
+                                setMessage('');
+                                invalidateResult();
+                              }}
+                            >
+                              <span className={styles.dropdownOptionText}>{availableYear}</span>
+                              {active ? <span className={styles.dropdownOptionBadge}>Selected</span> : null}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className={styles.dropdownEmpty}>No guided years loaded for this model yet.</div>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : (
-              <div className={styles.inlineFieldRow}>
-                <input
-                  value={manualYear}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                    setManualYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4));
-                    setYearConfirmed(false);
-                    setMessage('');
-                    invalidateResult();
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      confirmYearSelection();
-                    }
-                  }}
-                  placeholder="Type year"
-                  inputMode="numeric"
-                  aria-label="Enter year model manually"
-                  className={styles.controlInput}
-                />
-
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={confirmYearSelection}
-                  disabled={!isYearValid}
-                >
-                  Next: Hours
-                </button>
-              </div>
+              <input
+                value={manualYear}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                  setManualYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4));
+                  setYearConfirmed(false);
+                  setMessage('');
+                  invalidateResult();
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    confirmYearSelection({ advance: true });
+                  }
+                }}
+                placeholder="Type year"
+                inputMode="numeric"
+                aria-label="Enter year model manually"
+                className={styles.controlInput}
+              />
             )}
 
             {selectedModel ? (
@@ -1754,38 +1764,27 @@ export default function ValuationClient() {
               <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
             </div>
 
-            <div className={styles.inlineFieldRow}>
-              <div className={styles.inlineFieldInputWrap}>
-                <input
-                  value={hours}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                    setHours(event.target.value.replace(/[^0-9]/g, ''));
-                    setHoursConfirmed(false);
-                    setMessage('');
-                    invalidateResult();
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      confirmHoursSelection();
-                    }
-                  }}
-                  placeholder="Type hours"
-                  inputMode="numeric"
-                  aria-label="Enter engine hours"
-                  className={styles.controlInput}
-                />
-                <span className={styles.inlineFieldSuffix}>hrs</span>
-              </div>
-
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={confirmHoursSelection}
-                disabled={!isHoursValid}
-              >
-                Next: Condition
-              </button>
+            <div className={styles.inlineFieldInputWrap}>
+              <input
+                value={hours}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                  setHours(event.target.value.replace(/[^0-9]/g, ''));
+                  setHoursConfirmed(false);
+                  setMessage('');
+                  invalidateResult();
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    confirmHoursSelection({ advance: true });
+                  }
+                }}
+                placeholder="Type hours"
+                inputMode="numeric"
+                aria-label="Enter engine hours"
+                className={styles.controlInput}
+              />
+              <span className={styles.inlineFieldSuffix}>hrs</span>
             </div>
 
             <p className={styles.currentHint}>Use the meter reading.</p>
@@ -1985,12 +1984,15 @@ export default function ValuationClient() {
               ))}
             </div>
 
+            <p className={styles.currentHint}>Extras are optional. Leave anything that is not fitted switched off, then continue below.</p>
+
             <div className={styles.currentCardActions}>
-              <button type="button" className={styles.secondaryButton} onClick={clearExtrasSelection}>
-                No fitted extras
-              </button>
-              <button type="button" className={styles.primaryButton} onClick={applyExtrasSelection}>
-                Save extras
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => clearExtrasSelection({ keepFocus: true })}
+              >
+                Clear all extras
               </button>
             </div>
           </div>
@@ -2012,7 +2014,7 @@ export default function ValuationClient() {
                   <span className={styles.heroBadge}>Valuation</span>
                   <h1 className={styles.heroIntroTitle}>Know what your machinery is worth.</h1>
                   <p className={styles.heroIntroText}>
-                    Move from tractor setup to a clean value output with a simple guided flow.
+                    Answer a few quick questions and get a clear valuation for your equipment.
                   </p>
                 </div>
               </section>
@@ -2245,7 +2247,7 @@ export default function ValuationClient() {
                   <div className={styles.rangeCardHead}>
                     <h2 className={styles.sideTitle}>Market Range</h2>
                     <span className={styles.rangeBadge}>
-                      {result.marketCount} proveable listing{result.marketCount === 1 ? '' : 's'}
+                      {result.marketCount} provable listing{result.marketCount === 1 ? '' : 's'}
                     </span>
                   </div>
 
@@ -2298,7 +2300,7 @@ export default function ValuationClient() {
                           setSelectedComparableIndex(Number(event.target.value))
                         }
                         className={styles.rangeSliderInput}
-                        aria-label="Browse proveable market listings"
+                        aria-label="Browse provable market listings"
                       />
                     ) : null}
                   </div>
@@ -2382,7 +2384,7 @@ export default function ValuationClient() {
                       </div>
                     ) : (
                       <p className={styles.rangeNote}>
-                        No proveable market listings matched this tractor yet. Add more market listings to improve
+                        No provable market listings matched this equipment yet. Add more market listings to improve
                         confidence and range quality.
                       </p>
                     )}
