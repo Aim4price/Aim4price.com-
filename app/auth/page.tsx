@@ -6,13 +6,20 @@ import Link from 'next/link';
 import styles from './page.module.css';
 
 type Mode = 'signup' | 'login';
+type NoticeTone = 'success' | 'error' | 'info';
+
+type AuthNotice = {
+  tone: NoticeTone;
+  title: string;
+  text: string;
+} | null;
 
 type SignupFormState = {
-  firstName: string;
-  lastName: string;
+  name: string;
   email: string;
   password: string;
-  termsAccepted: boolean;
+  confirmPassword: string;
+  acceptTerms: boolean;
 };
 
 type LoginFormState = {
@@ -21,12 +28,15 @@ type LoginFormState = {
   rememberMe: boolean;
 };
 
+const AUTH_BASE_PATH = '/api/auth';
+const POST_LOGIN_REDIRECT = '/asset-register';
+
 const initialSignupState: SignupFormState = {
-  firstName: '',
-  lastName: '',
+  name: '',
   email: '',
   password: '',
-  termsAccepted: false,
+  confirmPassword: '',
+  acceptTerms: false,
 };
 
 const initialLoginState: LoginFormState = {
@@ -39,16 +49,109 @@ function getModeFromHash(hash: string): Mode {
   return hash.replace('#', '').toLowerCase() === 'login' ? 'login' : 'signup';
 }
 
+function getNestedRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function extractErrorMessage(payload: unknown): string | null {
+  const record = getNestedRecord(payload);
+
+  if (!record) {
+    return null;
+  }
+
+  const errorRecord = getNestedRecord(record.error);
+  const dataRecord = getNestedRecord(record.data);
+
+  const candidates = [
+    record.message,
+    record.error,
+    record.reason,
+    errorRecord?.message,
+    errorRecord?.error,
+    dataRecord?.message,
+    dataRecord?.error,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function extractRedirectUrl(payload: unknown): string | null {
+  const record = getNestedRecord(payload);
+
+  if (!record) {
+    return null;
+  }
+
+  const dataRecord = getNestedRecord(record.data);
+  const candidates = [
+    record.url,
+    record.redirectTo,
+    record.redirectURL,
+    record.location,
+    dataRecord?.url,
+    dataRecord?.redirectTo,
+    dataRecord?.redirectURL,
+    dataRecord?.location,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+async function postAuth(path: string, body: Record<string, unknown>) {
+  const response = await fetch(`${AUTH_BASE_PATH}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(body),
+  });
+
+  const payload = await response.json().catch(() => null);
+
+  if (response.status === 404) {
+    throw new Error(
+      'Authentication backend not connected yet. Mount Better Auth at /api/auth and this page is ready.',
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(payload) ?? 'Authentication request failed. Please try again.');
+  }
+
+  return payload;
+}
+
 export default function AuthPage() {
   const [mode, setMode] = useState<Mode>('signup');
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [signupForm, setSignupForm] = useState<SignupFormState>(initialSignupState);
   const [loginForm, setLoginForm] = useState<LoginFormState>(initialLoginState);
-  const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [notice, setNotice] = useState<AuthNotice>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
 
     const syncModeFromHash = () => {
       setMode(getModeFromHash(window.location.hash));
@@ -65,23 +168,27 @@ export default function AuthPage() {
     () =>
       mode === 'signup'
         ? {
-            title: 'Create your account',
-            text: 'Save valuations, manage records, and access member-only marketplace features.',
+            title: 'Create your Aim4price account',
+            text: 'Save valuations, organise your asset register, and keep your machinery workflow in one place.',
             action: 'Create account',
             footer: 'Already have an account?',
-            footerCta: 'Log in',
+            footerAction: 'Log in',
           }
         : {
-            title: 'Welcome back',
-            text: 'Log in to open your saved machinery records, valuations, and listings.',
+            title: 'Log in to your account',
+            text: 'Open your saved valuations, records, and machinery activity with secure email access.',
             action: 'Log in',
-            footer: 'New to Aim4price?',
-            footerCta: 'Create account',
+            footer: 'Need an account?',
+            footerAction: 'Create one',
           },
     [mode],
   );
 
   const updateHashAndMode = (nextMode: Mode) => {
+    if (isSubmitting) {
+      return;
+    }
+
     setMode(nextMode);
     setNotice(null);
 
@@ -93,249 +200,398 @@ export default function AuthPage() {
     }
   };
 
-  const handleSignupSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSignupSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setNotice(null);
 
-    if (!signupForm.firstName || !signupForm.lastName || !signupForm.email || !signupForm.password) {
-      setNotice({ type: 'error', text: 'Complete all required fields before continuing.' });
+    const name = signupForm.name.trim();
+    const email = signupForm.email.trim();
+
+    if (!name || !email || !signupForm.password || !signupForm.confirmPassword) {
+      setNotice({
+        tone: 'error',
+        title: 'Missing information',
+        text: 'Complete all required fields before creating your account.',
+      });
       return;
     }
 
-    if (!signupForm.termsAccepted) {
-      setNotice({ type: 'error', text: 'Accept the terms before creating an account.' });
+    if (signupForm.password.length < 8) {
+      setNotice({
+        tone: 'error',
+        title: 'Password too short',
+        text: 'Use at least 8 characters. That matches Better Auth’s default minimum password length.',
+      });
       return;
     }
 
-    setNotice({
-      type: 'success',
-      text: 'UI complete. Next step is connecting Better Auth and PostgreSQL.',
-    });
+    if (signupForm.password !== signupForm.confirmPassword) {
+      setNotice({
+        tone: 'error',
+        title: 'Passwords do not match',
+        text: 'Confirm the same password in both password fields.',
+      });
+      return;
+    }
+
+    if (!signupForm.acceptTerms) {
+      setNotice({
+        tone: 'error',
+        title: 'Terms required',
+        text: 'Accept the terms and privacy policy before continuing.',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const payload = await postAuth('/sign-up/email', {
+        name,
+        email,
+        password: signupForm.password,
+        callbackURL: POST_LOGIN_REDIRECT,
+      });
+
+      const redirectUrl = extractRedirectUrl(payload);
+
+      setSignupForm(initialSignupState);
+      setNotice({
+        tone: 'success',
+        title: 'Account created',
+        text: 'Your sign-up request was accepted. If email verification is enabled, finish that step from your inbox before continuing.',
+      });
+
+      if (redirectUrl && typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          window.location.assign(redirectUrl);
+        }, 350);
+        return;
+      }
+
+      window.setTimeout(() => {
+        updateHashAndMode('login');
+      }, 950);
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        title: 'Unable to create account',
+        text: error instanceof Error ? error.message : 'Something went wrong. Please try again.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleLoginSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleLoginSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setNotice(null);
 
-    if (!loginForm.email || !loginForm.password) {
-      setNotice({ type: 'error', text: 'Enter both email and password before logging in.' });
+    const email = loginForm.email.trim();
+
+    if (!email || !loginForm.password) {
+      setNotice({
+        tone: 'error',
+        title: 'Missing information',
+        text: 'Enter both your email and password before logging in.',
+      });
       return;
     }
 
-    setNotice({
-      type: 'success',
-      text: 'UI complete. Next step is connecting Better Auth and PostgreSQL.',
-    });
+    setIsSubmitting(true);
+
+    try {
+      const payload = await postAuth('/sign-in/email', {
+        email,
+        password: loginForm.password,
+        rememberMe: loginForm.rememberMe,
+        callbackURL: POST_LOGIN_REDIRECT,
+      });
+
+      const redirectUrl = extractRedirectUrl(payload) ?? POST_LOGIN_REDIRECT;
+
+      setNotice({
+        tone: 'success',
+        title: 'Login successful',
+        text: 'Redirecting to your account area.',
+      });
+
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          window.location.assign(redirectUrl);
+        }, 250);
+      }
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        title: 'Unable to log in',
+        text: error instanceof Error ? error.message : 'Something went wrong. Please try again.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
-        <div className={styles.topRow}>
+        <div className={styles.topBar}>
+          <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
+            <Image
+              src="/brand/aim4price-mark-black.png"
+              alt="Aim4price"
+              width={52}
+              height={44}
+              className={styles.brandMark}
+              priority
+            />
+
+            <span className={styles.brandCopy}>
+              <span className={styles.brandTitle}>Aim4price</span>
+              <span className={styles.brandSubtext}>Agricultural &amp; industrial machinery pricing</span>
+            </span>
+          </Link>
+
           <Link href="/" className={styles.homeLink}>
             Back to home
           </Link>
         </div>
 
-        <section className={styles.card} aria-labelledby="auth-heading">
-          <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
-            <Image
-              src="/brand/aim4price-mark-black.png"
-              alt="Aim4price"
-              width={42}
-              height={34}
-              className={styles.brandMark}
-              priority
-            />
-            <div className={styles.brandTextWrap}>
-              <span className={styles.brandText}>Aim4price</span>
-              <span className={styles.brandSubtext}>Agricultural & Industrial Machinery</span>
+        <section className={styles.frame}>
+          <aside className={styles.showcase}>
+            <div className={styles.showcaseHeader}>
+              <span className={styles.eyebrow}>Secure account access</span>
+              <h2 className={styles.showcaseTitle}>Keep your machinery work in one place.</h2>
+              <p className={styles.showcaseText}>
+                Create an account to save valuations, organise key assets, and move equipment into
+                the marketplace without restarting your workflow every time.
+              </p>
             </div>
-          </Link>
 
-          <div className={styles.switcher} aria-label="Auth mode switcher">
-            <button
-              type="button"
-              onClick={() => updateHashAndMode('signup')}
-              className={`${styles.switchButton} ${mode === 'signup' ? styles.switchButtonActive : ''}`}
-            >
-              Sign up
-            </button>
-            <button
-              type="button"
-              onClick={() => updateHashAndMode('login')}
-              className={`${styles.switchButton} ${mode === 'login' ? styles.switchButtonActive : ''}`}
-            >
-              Login
-            </button>
-          </div>
+            <div className={styles.visualPanel}>
+              <Image
+                src="/brand/Home-page.png"
+                alt="Aim4price machinery platform preview"
+                fill
+                priority
+                sizes="(max-width: 1040px) 100vw, 46vw"
+                className={styles.visualImage}
+              />
 
-          <div className={styles.header}>
-            <h1 id="auth-heading" className={styles.title}>
-              {copy.title}
-            </h1>
-            <p className={styles.text}>{copy.text}</p>
-          </div>
+              <div className={styles.visualShade} aria-hidden="true" />
 
-          <button type="button" className={styles.googleButton}>
-            <span className={styles.googleMark} aria-hidden="true">
-              G
-            </span>
-            Continue with Google
-          </button>
+              <div className={styles.visualBadge}>One clear platform</div>
 
-          <div className={styles.divider}>
-            <span>or continue with email</span>
-          </div>
+              <div className={styles.statGrid}>
+                <article className={styles.statCard}>
+                  <span className={styles.statLabel}>Valuations</span>
+                  <strong className={styles.statValue}>Save every result</strong>
+                </article>
 
-          {notice ? (
-            <div
-              className={`${styles.notice} ${
-                notice.type === 'success' ? styles.noticeSuccess : styles.noticeError
-              }`}
-            >
-              {notice.text}
-            </div>
-          ) : null}
+                <article className={styles.statCard}>
+                  <span className={styles.statLabel}>Register</span>
+                  <strong className={styles.statValue}>Track key assets</strong>
+                </article>
 
-          {mode === 'signup' ? (
-            <form className={styles.form} onSubmit={handleSignupSubmit} noValidate>
-              <div className={styles.nameRow}>
-                <label className={styles.field}>
-                  <span className={styles.label}>First name</span>
-                  <input
-                    type="text"
-                    autoComplete="given-name"
-                    placeholder="Kuyler"
-                    className={styles.input}
-                    value={signupForm.firstName}
-                    onChange={(event) =>
-                      setSignupForm((current) => ({ ...current, firstName: event.target.value }))
-                    }
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span className={styles.label}>Last name</span>
-                  <input
-                    type="text"
-                    autoComplete="family-name"
-                    placeholder="Geldenhuys"
-                    className={styles.input}
-                    value={signupForm.lastName}
-                    onChange={(event) =>
-                      setSignupForm((current) => ({ ...current, lastName: event.target.value }))
-                    }
-                  />
-                </label>
+                <article className={styles.statCard}>
+                  <span className={styles.statLabel}>Marketplace</span>
+                  <strong className={styles.statValue}>Move equipment faster</strong>
+                </article>
               </div>
+            </div>
+          </aside>
 
-              <label className={styles.field}>
-                <span className={styles.label}>Email</span>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  placeholder="name@example.com"
-                  className={styles.input}
-                  value={signupForm.email}
-                  onChange={(event) =>
-                    setSignupForm((current) => ({ ...current, email: event.target.value }))
-                  }
-                />
-              </label>
+          <section className={styles.authCard} aria-labelledby="auth-heading">
+            <div className={styles.modeRail} aria-label="Authentication mode">
+              <button
+                type="button"
+                onClick={() => updateHashAndMode('signup')}
+                className={`${styles.modeButton} ${mode === 'signup' ? styles.modeButtonActive : ''}`}
+                aria-pressed={mode === 'signup'}
+              >
+                Sign up
+              </button>
 
-              <label className={styles.field}>
-                <span className={styles.label}>Password</span>
-                <div className={styles.passwordWrap}>
+              <button
+                type="button"
+                onClick={() => updateHashAndMode('login')}
+                className={`${styles.modeButton} ${mode === 'login' ? styles.modeButtonActive : ''}`}
+                aria-pressed={mode === 'login'}
+              >
+                Login
+              </button>
+            </div>
+
+            <div className={styles.authHeader}>
+              <p className={styles.authEyebrow}>Email &amp; password access</p>
+              <h1 id="auth-heading" className={styles.authTitle}>
+                {copy.title}
+              </h1>
+              <p className={styles.authText}>{copy.text}</p>
+            </div>
+
+            {notice ? (
+              <div
+                className={`${styles.notice} ${
+                  notice.tone === 'success'
+                    ? styles.noticeSuccess
+                    : notice.tone === 'info'
+                      ? styles.noticeInfo
+                      : styles.noticeError
+                }`}
+                role={notice.tone === 'error' ? 'alert' : 'status'}
+                aria-live="polite"
+              >
+                <strong className={styles.noticeTitle}>{notice.title}</strong>
+                <span className={styles.noticeText}>{notice.text}</span>
+              </div>
+            ) : null}
+
+            {mode === 'signup' ? (
+              <form className={styles.form} onSubmit={handleSignupSubmit} noValidate>
+                <label className={styles.field}>
+                  <span className={styles.label}>Full name</span>
+                  <input
+                    type="text"
+                    name="name"
+                    autoComplete="name"
+                    placeholder="Kuyler Geldenhuys"
+                    className={styles.input}
+                    value={signupForm.name}
+                    onChange={(event) =>
+                      setSignupForm((current) => ({ ...current, name: event.target.value }))
+                    }
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span className={styles.label}>Email address</span>
+                  <input
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    inputMode="email"
+                    placeholder="name@example.com"
+                    className={styles.input}
+                    value={signupForm.email}
+                    onChange={(event) =>
+                      setSignupForm((current) => ({ ...current, email: event.target.value }))
+                    }
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <div className={styles.labelRow}>
+                    <span className={styles.label}>Password</span>
+                    <span className={styles.helperText}>Minimum 8 characters</span>
+                  </div>
+
+                  <div className={styles.passwordWrap}>
+                    <input
+                      type={showSignupPassword ? 'text' : 'password'}
+                      name="password"
+                      autoComplete="new-password"
+                      placeholder="Create a secure password"
+                      className={`${styles.input} ${styles.passwordInput}`}
+                      value={signupForm.password}
+                      onChange={(event) =>
+                        setSignupForm((current) => ({ ...current, password: event.target.value }))
+                      }
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowSignupPassword((current) => !current)}
+                      className={styles.passwordToggle}
+                      aria-label={showSignupPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showSignupPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </label>
+
+                <label className={styles.field}>
+                  <span className={styles.label}>Confirm password</span>
                   <input
                     type={showSignupPassword ? 'text' : 'password'}
+                    name="confirmPassword"
                     autoComplete="new-password"
-                    placeholder="Create a secure password"
-                    className={`${styles.input} ${styles.passwordInput}`}
-                    value={signupForm.password}
+                    placeholder="Repeat your password"
+                    className={styles.input}
+                    value={signupForm.confirmPassword}
                     onChange={(event) =>
-                      setSignupForm((current) => ({ ...current, password: event.target.value }))
+                      setSignupForm((current) => ({
+                        ...current,
+                        confirmPassword: event.target.value,
+                      }))
                     }
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowSignupPassword((current) => !current)}
-                    className={styles.passwordToggle}
-                    aria-label={showSignupPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showSignupPassword ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-              </label>
+                </label>
 
-              <label className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  className={styles.checkbox}
-                  checked={signupForm.termsAccepted}
-                  onChange={(event) =>
-                    setSignupForm((current) => ({
-                      ...current,
-                      termsAccepted: event.target.checked,
-                    }))
-                  }
-                />
-                <span>
-                  I agree to the{' '}
-                  <a href="#" className={styles.inlineLink}>
-                    Terms
-                  </a>{' '}
-                  and{' '}
-                  <a href="#" className={styles.inlineLink}>
-                    Privacy Policy
-                  </a>
-                  .
-                </span>
-              </label>
-
-              <button type="submit" className={styles.primaryButton}>
-                {copy.action}
-              </button>
-            </form>
-          ) : (
-            <form className={styles.form} onSubmit={handleLoginSubmit} noValidate>
-              <label className={styles.field}>
-                <span className={styles.label}>Email</span>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  placeholder="name@example.com"
-                  className={styles.input}
-                  value={loginForm.email}
-                  onChange={(event) =>
-                    setLoginForm((current) => ({ ...current, email: event.target.value }))
-                  }
-                />
-              </label>
-
-              <label className={styles.field}>
-                <span className={styles.label}>Password</span>
-                <div className={styles.passwordWrap}>
+                <label className={styles.checkboxRow}>
                   <input
-                    type={showLoginPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    placeholder="Enter your password"
-                    className={`${styles.input} ${styles.passwordInput}`}
-                    value={loginForm.password}
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={signupForm.acceptTerms}
                     onChange={(event) =>
-                      setLoginForm((current) => ({ ...current, password: event.target.value }))
+                      setSignupForm((current) => ({
+                        ...current,
+                        acceptTerms: event.target.checked,
+                      }))
                     }
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowLoginPassword((current) => !current)}
-                    className={styles.passwordToggle}
-                    aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showLoginPassword ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-              </label>
+                  <span>I agree to the terms and privacy policy.</span>
+                </label>
 
-              <div className={styles.metaRow}>
+                <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>
+                  {isSubmitting ? 'Creating account...' : copy.action}
+                </button>
+              </form>
+            ) : (
+              <form className={styles.form} onSubmit={handleLoginSubmit} noValidate>
+                <label className={styles.field}>
+                  <span className={styles.label}>Email address</span>
+                  <input
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    inputMode="email"
+                    placeholder="name@example.com"
+                    className={styles.input}
+                    value={loginForm.email}
+                    onChange={(event) =>
+                      setLoginForm((current) => ({ ...current, email: event.target.value }))
+                    }
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span className={styles.label}>Password</span>
+
+                  <div className={styles.passwordWrap}>
+                    <input
+                      type={showLoginPassword ? 'text' : 'password'}
+                      name="password"
+                      autoComplete="current-password"
+                      placeholder="Enter your password"
+                      className={`${styles.input} ${styles.passwordInput}`}
+                      value={loginForm.password}
+                      onChange={(event) =>
+                        setLoginForm((current) => ({ ...current, password: event.target.value }))
+                      }
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword((current) => !current)}
+                      className={styles.passwordToggle}
+                      aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showLoginPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </label>
+
                 <label className={styles.checkboxRow}>
                   <input
                     type="checkbox"
@@ -348,30 +604,26 @@ export default function AuthPage() {
                       }))
                     }
                   />
-                  <span>Remember me</span>
+                  <span>Keep me signed in on this device.</span>
                 </label>
 
-                <a href="#" className={styles.inlineLink}>
-                  Forgot password?
-                </a>
-              </div>
+                <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>
+                  {isSubmitting ? 'Logging in...' : copy.action}
+                </button>
+              </form>
+            )}
 
-              <button type="submit" className={styles.primaryButton}>
-                {copy.action}
+            <p className={styles.footerText}>
+              {copy.footer}{' '}
+              <button
+                type="button"
+                className={styles.footerButton}
+                onClick={() => updateHashAndMode(mode === 'signup' ? 'login' : 'signup')}
+              >
+                {copy.footerAction}
               </button>
-            </form>
-          )}
-
-          <p className={styles.footerText}>
-            {copy.footer}{' '}
-            <button
-              type="button"
-              className={styles.footerButton}
-              onClick={() => updateHashAndMode(mode === 'signup' ? 'login' : 'signup')}
-            >
-              {copy.footerCta}
-            </button>
-          </p>
+            </p>
+          </section>
         </section>
       </div>
     </main>
