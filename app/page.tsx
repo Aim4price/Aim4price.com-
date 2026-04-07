@@ -5,58 +5,79 @@ import styles from './page.module.css';
 
 const registerHref = '/asset-register';
 
+const platformItems = [
+  {
+    theme: 'value',
+    title: 'Valuation',
+    text: 'Free start',
+  },
+  {
+    theme: 'manage',
+    title: 'Asset Register',
+    text: 'Save key machines',
+  },
+  {
+    theme: 'market',
+    title: 'Marketplace',
+    text: 'List when ready',
+  },
+] as const;
+
 const routes = [
   {
     href: '/valuation',
     image: '/brand/Valuations.png',
-    tone: 'value',
+    theme: 'value',
     label: 'Value',
     title: 'Valuation',
-    text: 'Get a guided machinery value with a clean, direct flow.',
+    text: 'Get a guided machinery value with a clean, practical flow.',
     action: 'Start valuation',
   },
   {
     href: registerHref,
     image: '/brand/Register.png',
-    tone: 'manage',
+    theme: 'manage',
     label: 'Manage',
     title: 'Asset Register',
-    text: 'Store key machines, values, and records in one clear working view.',
+    text: 'Keep important equipment values and records in one working view.',
     action: 'Open register',
   },
   {
     href: '/marketplace',
     image: '/brand/Buy & Sell.png',
-    tone: 'market',
+    theme: 'market',
     label: 'Market',
     title: 'Marketplace',
-    text: 'Browse machinery and list the right unit when you are ready to sell.',
+    text: 'Browse listings and move the right unit to market when ready.',
     action: 'Open marketplace',
   },
 ] as const;
 
-const steps = [
+const workflowSteps = [
   {
     number: '01',
+    href: '/valuation',
+    theme: 'value',
     title: 'Get a free valuation',
-    text: 'Start with a fast machinery value so you know where the machine stands.',
+    text: 'Start with a direct machinery valuation built for fast decisions.',
+    action: 'Start Free Valuation',
   },
   {
     number: '02',
+    href: registerHref,
+    theme: 'manage',
     title: 'Save key assets',
-    text: 'Move the right machines into your register for cleaner record keeping.',
+    text: 'Store the right machines in the asset register for easy management.',
+    action: 'Open Asset Register',
   },
   {
     number: '03',
+    href: '/marketplace',
+    theme: 'market',
     title: 'List for sale',
-    text: 'Take the next step into marketplace when the timing makes sense.',
+    text: 'Browse or list machinery in marketplace when you are ready to sell.',
+    action: 'Open Marketplace',
   },
-] as const;
-
-const heroMeta = [
-  { label: 'Free valuation', tone: 'value' },
-  { label: 'Cleaner records', tone: 'manage' },
-  { label: 'Marketplace ready', tone: 'market' },
 ] as const;
 
 export default function HomePage() {
@@ -68,17 +89,15 @@ export default function HomePage() {
         <div className={styles.shell}>
           <div className={styles.heroGrid}>
             <div className={styles.heroCopy}>
-              <p className={styles.eyebrow}>Agricultural &amp; industrial machinery platform</p>
+              <p className={styles.eyebrow}>Agricultural &amp; industrial machinery pricing</p>
 
               <h1 className={styles.heroTitle}>
-                Value machinery.
-                <span className={styles.heroTitleAccent}> Manage records.</span>
-                <span className={styles.heroTitleMuted}> List with confidence.</span>
+                Know what your machinery is worth — then decide what to do next.
               </h1>
 
               <p className={styles.heroText}>
-                Aim4price keeps valuation, asset register, and marketplace tools in one
-                practical working flow.
+                Start with a free valuation, save important equipment in the asset register,
+                and move the right machine to marketplace when you are ready to sell.
               </p>
 
               <div className={styles.heroActions}>
@@ -91,10 +110,11 @@ export default function HomePage() {
               </div>
 
               <div className={styles.heroMeta} aria-label="Platform sections">
-                {heroMeta.map((item) => (
-                  <span key={item.label} className={styles.heroMetaItem} data-tone={item.tone}>
-                    {item.label}
-                  </span>
+                {platformItems.map((item) => (
+                  <div key={item.title} className={styles.heroMetaItem} data-theme={item.theme}>
+                    <strong>{item.title}</strong>
+                    <span>{item.text}</span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -102,26 +122,25 @@ export default function HomePage() {
             <div className={styles.heroVisual}>
               <Link href="/valuation" className={styles.heroImageLink} aria-label="Open valuation">
                 <div className={styles.heroImageFrame}>
-                  <div className={styles.heroPill} data-tone="value">
-                    Guided valuation flow
-                  </div>
-                  <div className={styles.heroPillStack}>
-                    <span className={styles.heroMiniPill} data-tone="manage">
-                      Asset register ready
-                    </span>
-                    <span className={styles.heroMiniPill} data-tone="market">
-                      Marketplace next
-                    </span>
-                  </div>
                   <Image
                     src="/brand/Home-page.png"
-                    alt="Aim4price home preview"
+                    alt="Aim4price platform overview"
                     fill
                     priority
                     sizes="(max-width: 980px) 100vw, 48vw"
                     className={styles.heroImage}
                   />
-                  <div className={styles.heroImageBadge}>Open valuation</div>
+
+                  <div className={styles.heroTopBadge}>One platform. Three tools.</div>
+
+                  <div className={styles.heroOverlayStack}>
+                    {platformItems.map((item) => (
+                      <div key={item.title} className={styles.heroOverlayCard} data-theme={item.theme}>
+                        <span className={styles.heroOverlayLabel}>{item.title}</span>
+                        <strong>{item.text}</strong>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </Link>
             </div>
@@ -133,9 +152,10 @@ export default function HomePage() {
         <div className={styles.shell}>
           <div className={styles.sectionIntro}>
             <p className={styles.eyebrow}>One clear platform</p>
-            <h2 className={styles.sectionTitle}>Choose the route you need next.</h2>
+            <h2 className={styles.sectionTitle}>Choose what you want to do next.</h2>
             <p className={styles.sectionText}>
-              Each section works on its own, but the real strength is the flow between them.
+              Each part works on its own, but together they create one clean machinery
+              workflow.
             </p>
           </div>
 
@@ -145,7 +165,7 @@ export default function HomePage() {
                 key={route.title}
                 href={route.href}
                 className={styles.routeCard}
-                data-tone={route.tone}
+                data-theme={route.theme}
               >
                 <div className={styles.routeTop}>
                   <span className={styles.routeLabel}>{route.label}</span>
@@ -170,41 +190,38 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className={styles.journeySection}>
+      <section className={styles.workflowSection}>
         <div className={styles.shell}>
-          <div className={styles.journeyPanel}>
-            <div className={styles.sectionIntroCompact}>
-              <p className={styles.flowEyebrow}>How it works</p>
-              <h2 className={styles.flowTitle}>Simple. Practical. Effective.</h2>
-              <p className={styles.flowText}>
-                Start with valuation, save what matters, then move the right machine to market.
+          <div className={styles.workflowPanel}>
+            <div className={styles.workflowIntro}>
+              <p className={styles.workflowEyebrow}>Simple workflow</p>
+              <h2 className={styles.workflowTitle}>Simple. Practical. Effective.</h2>
+              <p className={styles.workflowText}>
+                Start with valuation, then manage, and list your machinery for sale — all in
+                one seamless workflow.
               </p>
             </div>
 
             <div className={styles.stepsGrid}>
-              {steps.map((step, index) => (
-                <div key={step.number} className={styles.stepCard} data-tone={routes[index]?.tone}>
+              {workflowSteps.map((step) => (
+                <div key={step.number} className={styles.stepCard} data-theme={step.theme}>
                   <span className={styles.stepNumber}>{step.number}</span>
                   <h3 className={styles.stepTitle}>{step.title}</h3>
                   <p className={styles.stepText}>{step.text}</p>
+                  <Link href={step.href} className={styles.stepAction}>
+                    {step.action}
+                  </Link>
                 </div>
               ))}
             </div>
 
-            <div className={styles.journeyFooter}>
-              <p className={styles.journeyText}>
-                Start with a free valuation, then open the asset register when you want to keep
-                the machine in your working set.
-              </p>
-
-              <div className={styles.ctaButtons}>
-                <Link href="/valuation" className={styles.ctaPrimary}>
-                  Start Free Valuation
-                </Link>
-                <Link href={registerHref} className={styles.ctaSecondary}>
-                  Open Asset Register
-                </Link>
-              </div>
+            <div className={styles.workflowActions}>
+              <Link href="/valuation" className={styles.workflowPrimaryCta}>
+                Start Free Valuation
+              </Link>
+              <Link href={registerHref} className={styles.workflowSecondaryCta}>
+                Open Asset Register
+              </Link>
             </div>
           </div>
         </div>
