@@ -1,7 +1,10 @@
 .page {
   min-height: 100vh;
-  color: #213831;
-  background: transparent;
+  color: var(--text-strong);
+  background:
+    radial-gradient(circle at top left, rgba(24, 77, 61, 0.06), transparent 24%),
+    radial-gradient(circle at top right, rgba(43, 98, 156, 0.06), transparent 22%),
+    linear-gradient(180deg, #fbfcfb 0%, #f4f7f5 100%);
 }
 
 .shell {
@@ -10,72 +13,63 @@
 }
 
 .eyebrow,
-.flowEyebrow {
+.workflowEyebrow {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 1.95rem;
+  padding: 0 0.82rem;
+  border-radius: 999px;
   font-size: 0.78rem;
-  line-height: 1.2;
-  letter-spacing: 0.18em;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-weight: 700;
 }
 
 .eyebrow {
-  color: #6a7e75;
+  color: #295748;
+  background: rgba(24, 77, 61, 0.08);
+  border: 1px solid rgba(24, 77, 61, 0.1);
 }
 
 .heroSection {
-  padding: clamp(2rem, 3vw, 3rem) 0 clamp(2.25rem, 3.2vw, 3.3rem);
-  background:
-    radial-gradient(circle at top left, rgba(31, 122, 96, 0.08) 0%, rgba(31, 122, 96, 0) 34%),
-    radial-gradient(circle at top right, rgba(59, 99, 156, 0.08) 0%, rgba(59, 99, 156, 0) 30%),
-    linear-gradient(180deg, #fbfcfb 0%, #f4f8f6 100%);
-  border-bottom: 1px solid rgba(18, 45, 37, 0.06);
+  padding: clamp(1.8rem, 3vw, 2.8rem) 0 1.65rem;
 }
 
 .heroGrid {
   display: grid;
-  grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
   align-items: center;
-  gap: clamp(1.75rem, 2.8vw, 3rem);
+  gap: clamp(1.4rem, 2.6vw, 2.35rem);
 }
 
 .heroCopy {
-  max-width: 33rem;
+  max-width: 35rem;
 }
 
 .heroTitle {
-  margin: 0.72rem 0 0;
-  font-size: clamp(3rem, 5vw, 5.1rem);
-  line-height: 0.98;
-  letter-spacing: -0.062em;
+  margin: 0.9rem 0 0;
+  max-width: 11.5ch;
+  font-size: clamp(3rem, 5.2vw, 5.2rem);
+  line-height: 0.96;
+  letter-spacing: -0.065em;
   font-weight: 800;
-  color: #18362d;
+  color: #1f3831;
   text-wrap: balance;
-}
-
-.heroTitleAccent,
-.heroTitleMuted {
-  display: block;
-}
-
-.heroTitleAccent {
-  color: #1f6c53;
-}
-
-.heroTitleMuted {
-  color: #365d93;
 }
 
 .heroText {
   margin: 1.05rem 0 0;
-  max-width: 31rem;
+  max-width: 33rem;
   font-size: 1.05rem;
-  line-height: 1.64;
-  color: #62716c;
+  line-height: 1.72;
+  color: #63716c;
 }
 
 .heroActions,
-.ctaButtons {
+.workflowActions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -83,20 +77,15 @@
 }
 
 .heroActions {
-  margin-top: 1.5rem;
-  justify-content: flex-start;
-}
-
-.ctaButtons {
-  justify-content: center;
+  margin-top: 1.45rem;
 }
 
 .primaryCta,
 .secondaryCta,
-.ctaPrimary,
-.ctaSecondary,
 .routeCard,
-.heroImageLink {
+.stepAction,
+.workflowPrimaryCta,
+.workflowSecondaryCta {
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -107,113 +96,130 @@
 
 .primaryCta,
 .secondaryCta,
-.ctaPrimary,
-.ctaSecondary {
+.stepAction,
+.workflowPrimaryCta,
+.workflowSecondaryCta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.2rem;
-  padding: 0 1.32rem;
+  min-height: 3.22rem;
+  padding: 0 1.34rem;
   border-radius: 0.98rem;
   text-decoration: none;
   font-size: 0.96rem;
   font-weight: 700;
 }
 
+.primaryCta,
+.workflowPrimaryCta {
+  color: #ffffff;
+  background: linear-gradient(180deg, #1a5f47 0%, #123f31 100%);
+  box-shadow: 0 16px 30px rgba(17, 63, 50, 0.16);
+}
+
+.secondaryCta,
+.workflowSecondaryCta {
+  color: #28363f;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(18, 45, 37, 0.1);
+  box-shadow: 0 12px 22px rgba(18, 45, 37, 0.06);
+}
+
 .primaryCta:hover,
 .secondaryCta:hover,
-.ctaPrimary:hover,
-.ctaSecondary:hover,
 .routeCard:hover,
-.heroImageLink:hover {
+.heroImageLink:hover,
+.stepAction:hover,
+.workflowPrimaryCta:hover,
+.workflowSecondaryCta:hover {
   transform: translateY(-2px);
-}
-
-.primaryCta {
-  color: #ffffff;
-  background: linear-gradient(180deg, #1b6349 0%, #123f31 100%);
-  box-shadow: 0 14px 28px rgba(17, 63, 50, 0.14);
-}
-
-.secondaryCta {
-  color: #2f433c;
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid rgba(18, 45, 37, 0.1);
-  box-shadow: 0 10px 20px rgba(18, 45, 37, 0.05);
 }
 
 .heroMeta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.65rem;
-  margin-top: 1rem;
-}
-
-.heroMetaItem,
-.heroMiniPill,
-.heroPill,
-.heroImageBadge,
-.routeLabel,
-.stepNumber {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  font-weight: 700;
+  gap: 0.75rem;
+  margin-top: 1.2rem;
 }
 
 .heroMetaItem {
-  min-height: 2rem;
-  padding: 0 0.82rem;
-  border: 1px solid transparent;
-  font-size: 0.87rem;
+  display: grid;
+  gap: 0.14rem;
+  min-width: 9.1rem;
+  padding: 0.82rem 0.95rem;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 22px rgba(18, 45, 37, 0.04);
 }
 
-.heroMetaItem[data-tone='value'] {
-  color: #1d604b;
-  background: rgba(31, 122, 96, 0.09);
-  border-color: rgba(31, 122, 96, 0.12);
+.heroMetaItem strong {
+  font-size: 0.92rem;
+  line-height: 1.1;
+  color: #213831;
 }
 
-.heroMetaItem[data-tone='manage'] {
-  color: #2e3944;
-  background: rgba(32, 38, 46, 0.07);
-  border-color: rgba(32, 38, 46, 0.1);
+.heroMetaItem span {
+  font-size: 0.78rem;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #61706b;
 }
 
-.heroMetaItem[data-tone='market'] {
-  color: #2f6098;
-  background: rgba(63, 110, 167, 0.09);
-  border-color: rgba(63, 110, 167, 0.12);
+.heroMetaItem[data-theme='value'] {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(232, 247, 240, 0.96) 100%);
+  border-color: rgba(28, 106, 79, 0.14);
+}
+
+.heroMetaItem[data-theme='value'] span {
+  color: #1e6a4f;
+}
+
+.heroMetaItem[data-theme='manage'] {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(240, 243, 246, 0.96) 100%);
+  border-color: rgba(39, 51, 61, 0.12);
+}
+
+.heroMetaItem[data-theme='manage'] span {
+  color: #35424c;
+}
+
+.heroMetaItem[data-theme='market'] {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(236, 244, 253, 0.98) 100%);
+  border-color: rgba(43, 98, 156, 0.14);
+}
+
+.heroMetaItem[data-theme='market'] span {
+  color: #2b629c;
 }
 
 .heroVisual {
   display: flex;
   justify-content: flex-end;
-  align-self: stretch;
 }
 
 .heroImageLink {
   display: block;
   width: 100%;
-  max-width: 45rem;
   text-decoration: none;
 }
 
 .heroImageFrame {
   position: relative;
-  width: 100%;
-  min-height: 29rem;
+  min-height: 31rem;
   overflow: hidden;
-  border-radius: 1.75rem;
-  background: linear-gradient(180deg, #dfe7e3 0%, #d2dcd6 100%);
+  border-radius: 1.95rem;
   border: 1px solid rgba(18, 45, 37, 0.08);
-  box-shadow: 0 26px 52px rgba(16, 42, 34, 0.1);
+  background: linear-gradient(135deg, #dfe8e2 0%, #eef3ef 100%);
+  box-shadow:
+    0 26px 48px rgba(16, 42, 34, 0.1),
+    0 10px 24px rgba(16, 42, 34, 0.05);
 }
 
 .heroImage {
   object-fit: cover;
   object-position: center;
-  transition: transform 300ms ease;
+  transition: transform 320ms ease;
 }
 
 .heroImageLink:hover .heroImage {
@@ -226,155 +232,144 @@
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 24%),
-    linear-gradient(0deg, rgba(8, 28, 22, 0.12) 0%, rgba(8, 28, 22, 0) 34%);
+    linear-gradient(180deg, rgba(8, 24, 19, 0.05) 0%, rgba(8, 24, 19, 0) 24%),
+    linear-gradient(0deg, rgba(8, 24, 19, 0.28) 0%, rgba(8, 24, 19, 0.08) 32%, rgba(8, 24, 19, 0) 56%);
 }
 
-.heroPill,
-.heroImageBadge,
-.heroMiniPill {
+.heroTopBadge {
   position: absolute;
-  z-index: 2;
-  border: 1px solid rgba(15, 47, 38, 0.08);
-  box-shadow: 0 10px 18px rgba(12, 35, 29, 0.08);
-  backdrop-filter: blur(10px);
-}
-
-.heroPill {
   top: 1rem;
   right: 1rem;
-  min-height: 2.3rem;
-  padding: 0 0.82rem;
-  font-size: 0.84rem;
-  color: #1d604b;
-  background: rgba(255, 255, 255, 0.9);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.2rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  box-shadow: 0 10px 20px rgba(12, 35, 29, 0.08);
+  color: #1f3f34;
+  font-size: 0.83rem;
+  font-weight: 800;
 }
 
-.heroPillStack {
+.heroOverlayStack {
   position: absolute;
   left: 1rem;
-  top: 1rem;
+  bottom: 1rem;
   z-index: 2;
   display: grid;
-  gap: 0.5rem;
+  gap: 0.68rem;
+  width: min(100% - 2rem, 17.5rem);
 }
 
-.heroMiniPill {
-  position: static;
-  min-height: 2.2rem;
-  padding: 0 0.78rem;
-  font-size: 0.81rem;
-  background: rgba(255, 255, 255, 0.88);
+.heroOverlayCard {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.78rem 0.9rem;
+  border-radius: 1rem;
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 22px rgba(12, 35, 29, 0.08);
 }
 
-.heroMiniPill[data-tone='manage'] {
-  color: #2c3741;
+.heroOverlayLabel {
+  font-size: 0.76rem;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 
-.heroMiniPill[data-tone='market'] {
-  color: #2e6096;
+.heroOverlayCard strong {
+  font-size: 0.9rem;
+  line-height: 1.15;
+  color: #223a32;
 }
 
-.heroImageBadge {
-  left: 1rem;
-  bottom: 1rem;
-  min-height: 2.65rem;
-  padding: 0 0.95rem;
-  gap: 0.45rem;
-  font-size: 0.91rem;
-  color: #ffffff;
-  background: linear-gradient(180deg, rgba(27, 99, 73, 0.95) 0%, rgba(18, 63, 49, 0.95) 100%);
+.heroOverlayCard[data-theme='value'] {
+  background: rgba(232, 247, 240, 0.94);
 }
 
-.heroImageBadge::after,
-.routeAction::after {
-  content: '→';
-  font-size: 1rem;
+.heroOverlayCard[data-theme='value'] .heroOverlayLabel {
+  color: #1e6a4f;
+}
+
+.heroOverlayCard[data-theme='manage'] {
+  background: rgba(240, 243, 246, 0.94);
+}
+
+.heroOverlayCard[data-theme='manage'] .heroOverlayLabel {
+  color: #35424c;
+}
+
+.heroOverlayCard[data-theme='market'] {
+  background: rgba(236, 244, 253, 0.94);
+}
+
+.heroOverlayCard[data-theme='market'] .heroOverlayLabel {
+  color: #2b629c;
 }
 
 .routesSection {
-  padding: 2rem 0 2.5rem;
-  background: #fcfdfc;
-  border-bottom: 1px solid rgba(18, 45, 37, 0.06);
-}
-
-.sectionIntro,
-.sectionIntroCompact {
-  text-align: center;
+  padding: 1.1rem 0 2.1rem;
 }
 
 .sectionIntro {
-  max-width: 39rem;
-  margin: 0 auto 1.3rem;
-}
-
-.sectionIntroCompact {
-  max-width: 42rem;
-  margin: 0 auto 1.4rem;
+  max-width: 40rem;
+  margin: 0 auto 1.25rem;
+  text-align: center;
 }
 
 .sectionTitle,
-.flowTitle {
-  margin: 0.62rem 0 0;
-  line-height: 1.05;
-  letter-spacing: -0.05em;
+.workflowTitle {
+  margin: 0.72rem 0 0;
+  line-height: 1.02;
+  letter-spacing: -0.055em;
   text-wrap: balance;
 }
 
 .sectionTitle {
-  font-size: clamp(2rem, 3vw, 2.6rem);
-  font-weight: 760;
-  color: #203933;
-}
-
-.flowTitle {
-  font-size: clamp(2.15rem, 3.3vw, 3rem);
+  font-size: clamp(2rem, 3vw, 2.55rem);
   font-weight: 780;
-  color: #ffffff;
+  color: #223b34;
 }
 
 .sectionText,
-.flowText,
-.journeyText {
-  margin: 0.58rem auto 0;
+.workflowText {
+  margin: 0.56rem auto 0;
+  max-width: 35rem;
   font-size: 1rem;
-  line-height: 1.62;
+  line-height: 1.7;
 }
 
 .sectionText {
-  max-width: 33rem;
-  color: #6a7872;
+  color: #68756f;
 }
 
-.flowEyebrow {
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.flowText {
-  max-width: 35rem;
-  color: rgba(255, 255, 255, 0.82);
-}
-
-.routesGrid {
+.routesGrid,
+.stepsGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
-  align-items: stretch;
 }
 
 .routeCard {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 16rem;
-  height: 100%;
-  padding: 1.18rem;
+  min-height: 17.2rem;
+  padding: 1.15rem;
   overflow: hidden;
-  border-radius: 1.4rem;
+  border-radius: 1.45rem;
   text-decoration: none;
-  background: linear-gradient(180deg, #ffffff 0%, #f6f8f7 100%);
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  box-shadow: 0 16px 30px rgba(18, 45, 37, 0.045);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 248, 0.96) 100%);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.94),
+    0 16px 30px rgba(18, 45, 37, 0.05);
 }
 
 .routeCard::before {
@@ -384,39 +379,22 @@
   height: 4px;
 }
 
-.routeCard[data-tone='value'] {
-  background:
-    linear-gradient(180deg, rgba(31, 122, 96, 0.04) 0%, rgba(255, 255, 255, 1) 32%),
-    linear-gradient(180deg, #ffffff 0%, #f6f8f7 100%);
+.routeCard[data-theme='value']::before {
+  background: linear-gradient(90deg, #1d6a4f 0%, #4eaf87 100%);
 }
 
-.routeCard[data-tone='manage'] {
-  background:
-    linear-gradient(180deg, rgba(32, 38, 46, 0.04) 0%, rgba(255, 255, 255, 1) 32%),
-    linear-gradient(180deg, #ffffff 0%, #f6f8f7 100%);
+.routeCard[data-theme='manage']::before {
+  background: linear-gradient(90deg, #26323b 0%, #56626d 100%);
 }
 
-.routeCard[data-tone='market'] {
-  background:
-    linear-gradient(180deg, rgba(63, 110, 167, 0.05) 0%, rgba(255, 255, 255, 1) 32%),
-    linear-gradient(180deg, #ffffff 0%, #f6f8f7 100%);
-}
-
-.routeCard[data-tone='value']::before {
-  background: linear-gradient(90deg, #1f7a60 0%, #49b68a 100%);
-}
-
-.routeCard[data-tone='manage']::before {
-  background: linear-gradient(90deg, #20262e 0%, #4b5562 100%);
-}
-
-.routeCard[data-tone='market']::before {
-  background: linear-gradient(90deg, #3f6ea7 0%, #7ba7e1 100%);
+.routeCard[data-theme='market']::before {
+  background: linear-gradient(90deg, #2b629c 0%, #78a7e2 100%);
 }
 
 .routeCard:hover {
-  border-color: rgba(25, 88, 66, 0.12);
-  box-shadow: 0 22px 38px rgba(18, 45, 37, 0.07);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.94),
+    0 22px 38px rgba(18, 45, 37, 0.08);
 }
 
 .routeTop {
@@ -425,26 +403,30 @@
 }
 
 .routeLabel {
-  min-height: 1.9rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.92rem;
   padding: 0 0.72rem;
+  border-radius: 999px;
   font-size: 0.77rem;
+  font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.routeCard[data-tone='value'] .routeLabel {
-  background: rgba(31, 122, 96, 0.08);
-  color: #1d604b;
+.routeCard[data-theme='value'] .routeLabel {
+  color: #1c6048;
+  background: rgba(29, 106, 79, 0.08);
 }
 
-.routeCard[data-tone='manage'] .routeLabel {
-  background: rgba(32, 38, 46, 0.08);
-  color: #2f3842;
+.routeCard[data-theme='manage'] .routeLabel {
+  color: #2f3a45;
+  background: rgba(38, 50, 59, 0.08);
 }
 
-.routeCard[data-tone='market'] .routeLabel {
-  background: rgba(63, 110, 167, 0.1);
-  color: #2f6098;
+.routeCard[data-theme='market'] .routeLabel {
+  color: #2b629c;
+  background: rgba(43, 98, 156, 0.1);
 }
 
 .routeIconWrap {
@@ -452,16 +434,23 @@
   height: 5rem;
   display: grid;
   place-items: center;
-  margin-top: 0.82rem;
-  border-radius: 1.2rem;
-  background: linear-gradient(180deg, #ffffff 0%, #eef4f1 100%);
+  margin-top: 0.85rem;
+  border-radius: 1.25rem;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.96),
     0 10px 20px rgba(18, 45, 37, 0.05);
 }
 
-.routeCard[data-tone='manage'] .routeIcon {
-  filter: grayscale(1) brightness(0.28) contrast(1.08);
+.routeCard[data-theme='value'] .routeIconWrap {
+  background: linear-gradient(180deg, #ffffff 0%, #edf6f1 100%);
+}
+
+.routeCard[data-theme='manage'] .routeIconWrap {
+  background: linear-gradient(180deg, #ffffff 0%, #f1f3f6 100%);
+}
+
+.routeCard[data-theme='market'] .routeIconWrap {
+  background: linear-gradient(180deg, #ffffff 0%, #eef5fd 100%);
 }
 
 .routeIcon {
@@ -470,184 +459,217 @@
   object-fit: contain;
 }
 
-.routeTitle {
-  margin: 0.98rem 0 0;
+.routeCard[data-theme='manage'] .routeIcon {
+  filter: grayscale(1) brightness(0.28) contrast(1.06);
+}
+
+.routeTitle,
+.stepTitle {
+  margin: 0.95rem 0 0;
   font-size: 1.18rem;
   line-height: 1.2;
-  font-weight: 700;
+  font-weight: 750;
   letter-spacing: -0.03em;
-  color: #223f36;
+}
+
+.routeTitle {
+  color: #213831;
+}
+
+.routeText,
+.stepText {
+  margin: 0.52rem 0 0;
+  font-size: 0.97rem;
+  line-height: 1.62;
 }
 
 .routeText {
-  margin: 0.52rem 0 0;
-  font-size: 0.96rem;
-  line-height: 1.58;
-  color: #6b7973;
+  max-width: 16.25rem;
+  color: #6a7772;
 }
 
 .routeAction {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.42rem;
   margin-top: auto;
   padding-top: 1rem;
   font-size: 0.92rem;
-  font-weight: 700;
+  font-weight: 800;
 }
 
-.routeCard[data-tone='value'] .routeAction {
-  color: #1c5a45;
+.routeAction::after,
+.stepAction::after {
+  content: '→';
+  font-size: 1rem;
 }
 
-.routeCard[data-tone='manage'] .routeAction {
-  color: #2a333d;
+.routeCard[data-theme='value'] .routeAction {
+  color: #1b6149;
 }
 
-.routeCard[data-tone='market'] .routeAction {
-  color: #2d6098;
+.routeCard[data-theme='manage'] .routeAction {
+  color: #2c3640;
 }
 
-.journeySection {
-  padding: 2.2rem 0 2.8rem;
-  background: linear-gradient(180deg, #eef5f1 0%, #f8fbf9 100%);
+.routeCard[data-theme='market'] .routeAction {
+  color: #2b629c;
 }
 
-.journeyPanel {
+.workflowSection {
+  padding: 0 0 2.6rem;
+}
+
+.workflowPanel {
   position: relative;
   overflow: hidden;
-  padding: 1.75rem;
-  border-radius: 1.9rem;
+  padding: clamp(1.5rem, 2.8vw, 2.2rem);
+  border-radius: 2rem;
   background:
-    radial-gradient(circle at top left, rgba(66, 164, 122, 0.22) 0%, rgba(66, 164, 122, 0) 28%),
-    radial-gradient(circle at top right, rgba(123, 167, 225, 0.16) 0%, rgba(123, 167, 225, 0) 24%),
-    linear-gradient(180deg, #16513d 0%, #123c2f 100%);
-  box-shadow: 0 24px 46px rgba(12, 36, 28, 0.13);
+    radial-gradient(circle at 85% 18%, rgba(78, 175, 135, 0.18), transparent 24%),
+    radial-gradient(circle at 10% 100%, rgba(203, 165, 84, 0.18), transparent 22%),
+    linear-gradient(135deg, #10382b 0%, #165440 56%, #1a6049 100%);
+  border: 1px solid rgba(16, 56, 43, 0.18);
+  box-shadow:
+    0 28px 52px rgba(12, 36, 28, 0.14),
+    0 10px 22px rgba(12, 36, 28, 0.08);
 }
 
-.journeyPanel::before {
+.workflowPanel::after {
   content: '';
   position: absolute;
-  inset: auto -12% -45% auto;
-  width: 26rem;
-  height: 26rem;
-  border-radius: 50%;
-  background: rgba(242, 198, 116, 0.08);
-  filter: blur(16px);
+  inset: auto 0 0 0;
+  height: 42%;
   pointer-events: none;
+  background: linear-gradient(180deg, rgba(198, 161, 82, 0) 0%, rgba(198, 161, 82, 0.12) 100%);
+}
+
+.workflowIntro {
+  position: relative;
+  z-index: 1;
+  max-width: 43rem;
+  margin: 0 auto 1.4rem;
+  text-align: center;
+}
+
+.workflowEyebrow {
+  color: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.workflowTitle {
+  font-size: clamp(2.35rem, 4vw, 3.55rem);
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.workflowText {
+  color: rgba(233, 243, 237, 0.84);
 }
 
 .stepsGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-  margin-top: 1.55rem;
+  position: relative;
+  z-index: 1;
 }
 
 .stepCard {
-  position: relative;
-  padding: 1.15rem;
-  border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 16px 30px rgba(7, 24, 18, 0.12);
-}
-
-.stepCard::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 4px;
-  border-radius: 1.35rem 1.35rem 0 0;
-}
-
-.stepCard[data-tone='value']::before {
-  background: linear-gradient(90deg, #1f7a60 0%, #49b68a 100%);
-}
-
-.stepCard[data-tone='manage']::before {
-  background: linear-gradient(90deg, #20262e 0%, #4b5562 100%);
-}
-
-.stepCard[data-tone='market']::before {
-  background: linear-gradient(90deg, #3f6ea7 0%, #7ba7e1 100%);
+  display: flex;
+  flex-direction: column;
+  min-height: 15.75rem;
+  padding: 1.2rem;
+  border-radius: 1.45rem;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.94),
+    0 16px 28px rgba(12, 36, 28, 0.08);
 }
 
 .stepNumber {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  min-width: 2.1rem;
-  min-height: 2.1rem;
-  padding: 0 0.78rem;
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 0.82rem;
   font-size: 0.88rem;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
+  line-height: 1;
+  font-weight: 800;
 }
 
-.stepCard[data-tone='value'] .stepNumber {
-  background: linear-gradient(180deg, #1f7a60 0%, #175843 100%);
+.stepCard[data-theme='value'] .stepNumber {
+  background: rgba(29, 106, 79, 0.1);
+  color: #1d6a4f;
 }
 
-.stepCard[data-tone='manage'] .stepNumber {
-  background: linear-gradient(180deg, #3b424a 0%, #262d36 100%);
+.stepCard[data-theme='manage'] .stepNumber {
+  background: rgba(38, 50, 59, 0.1);
+  color: #2f3a45;
 }
 
-.stepCard[data-tone='market'] .stepNumber {
-  background: linear-gradient(180deg, #4c79b4 0%, #335f98 100%);
+.stepCard[data-theme='market'] .stepNumber {
+  background: rgba(43, 98, 156, 0.1);
+  color: #2b629c;
 }
 
 .stepTitle {
-  margin: 0.92rem 0 0;
-  font-size: 1.16rem;
-  line-height: 1.25;
-  font-weight: 700;
-  color: #17352d;
+  color: #203831;
 }
 
 .stepText {
-  margin: 0.52rem 0 0;
-  font-size: 0.94rem;
-  line-height: 1.6;
-  color: #667670;
+  color: #68756f;
 }
 
-.journeyFooter {
-  display: grid;
-  justify-items: center;
-  gap: 1.15rem;
-  margin-top: 1.45rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+.stepAction {
+  gap: 0.42rem;
+  margin-top: auto;
+  align-self: flex-start;
+  min-height: 2.9rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  box-shadow: none;
 }
 
-.journeyText {
-  max-width: 40rem;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.82);
-}
-
-.ctaPrimary {
+.stepCard[data-theme='value'] .stepAction {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(180deg, #1a5f47 0%, #123f31 100%);
 }
 
-.ctaSecondary {
-  color: #184634;
-  background: #ffffff;
-  box-shadow: 0 12px 24px rgba(8, 24, 19, 0.1);
+.stepCard[data-theme='manage'] .stepAction {
+  color: #ffffff;
+  background: linear-gradient(180deg, #2c3640 0%, #222a31 100%);
+}
+
+.stepCard[data-theme='market'] .stepAction {
+  color: #ffffff;
+  background: linear-gradient(180deg, #356faf 0%, #285486 100%);
+}
+
+.workflowActions {
+  position: relative;
+  z-index: 1;
+  justify-content: center;
+  margin-top: 1.25rem;
+}
+
+.workflowPrimaryCta,
+.workflowSecondaryCta {
+  min-width: 13.8rem;
 }
 
 .primaryCta:focus-visible,
 .secondaryCta:focus-visible,
-.ctaPrimary:focus-visible,
-.ctaSecondary:focus-visible,
 .heroImageLink:focus-visible,
-.routeCard:focus-visible {
+.routeCard:focus-visible,
+.stepAction:focus-visible,
+.workflowPrimaryCta:focus-visible,
+.workflowSecondaryCta:focus-visible {
   outline: 3px solid rgba(31, 122, 96, 0.24);
   outline-offset: 4px;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1120px) {
   .heroGrid {
     grid-template-columns: 1fr;
   }
@@ -657,11 +679,7 @@
   }
 
   .heroVisual {
-    justify-content: center;
-  }
-
-  .heroImageLink {
-    max-width: 100%;
+    justify-content: stretch;
   }
 }
 
@@ -675,87 +693,87 @@
   .stepCard {
     min-height: auto;
   }
+
+  .routeText {
+    max-width: none;
+  }
 }
 
 @media (max-width: 720px) {
   .heroSection {
-    padding: 1.6rem 0 2.1rem;
+    padding-top: 1.5rem;
   }
 
   .heroTitle {
-    font-size: 2.65rem;
-    line-height: 1;
+    font-size: 2.75rem;
   }
 
   .heroText,
   .sectionText,
-  .flowText,
-  .stepText,
-  .journeyText {
+  .workflowText,
+  .routeText,
+  .stepText {
     font-size: 1rem;
   }
 
   .heroActions,
-  .ctaButtons {
+  .workflowActions {
     flex-direction: column;
+    align-items: stretch;
   }
 
   .primaryCta,
   .secondaryCta,
-  .ctaPrimary,
-  .ctaSecondary {
+  .workflowPrimaryCta,
+  .workflowSecondaryCta {
     width: 100%;
   }
 
+  .heroMeta {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .heroMetaItem {
+    min-width: 0;
+  }
+
   .heroImageFrame {
-    min-height: 18rem;
-    border-radius: 1.35rem;
+    min-height: 22rem;
+    border-radius: 1.55rem;
   }
 
-  .heroPill,
-  .heroPillStack {
-    left: 0.8rem;
-    right: auto;
+  .heroTopBadge {
+    top: 0.85rem;
+    right: 0.85rem;
   }
 
-  .heroPill {
-    top: 0.8rem;
-  }
-
-  .heroPillStack {
-    top: 3.55rem;
-  }
-
-  .heroImageBadge {
-    left: 0.8rem;
-    bottom: 0.8rem;
-  }
-
-  .routesSection,
-  .journeySection {
-    padding-top: 2rem;
-    padding-bottom: 2.2rem;
-  }
-
-  .journeyPanel {
-    padding: 1.2rem 1rem;
-    border-radius: 1.5rem;
+  .heroOverlayStack {
+    left: 0.85rem;
+    right: 0.85rem;
+    bottom: 0.85rem;
+    width: auto;
   }
 
   .routeCard,
   .stepCard {
-    padding: 1rem;
+    padding: 1.05rem;
+  }
+
+  .workflowPanel {
+    border-radius: 1.65rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .primaryCta,
   .secondaryCta,
-  .ctaPrimary,
-  .ctaSecondary,
   .routeCard,
   .heroImageLink,
-  .heroImage {
+  .heroImage,
+  .stepAction,
+  .workflowPrimaryCta,
+  .workflowSecondaryCta {
     transition: none !important;
   }
 }
