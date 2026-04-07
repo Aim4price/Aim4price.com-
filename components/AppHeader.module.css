@@ -3,33 +3,33 @@
   top: 0;
   z-index: 90;
   width: 100%;
-  background: rgba(250, 251, 250, 0.92);
+  background: rgba(250, 251, 250, 0.94);
   backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(18, 45, 37, 0.08);
+  border-bottom: 1px solid rgba(18, 45, 37, 0.07);
 }
 
 .inner {
   width: var(--shell-width);
   margin: 0 auto;
-  min-height: 6.2rem;
-  padding: 1rem 0;
+  min-height: 5.85rem;
+  padding: 0.92rem 0;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 1.4rem;
+  gap: 1.2rem;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.95rem;
+  gap: 0.88rem;
   min-width: 0;
   text-decoration: none;
   color: var(--text-strong);
 }
 
 .brandImage {
-  width: 2.5rem;
+  width: 2.65rem;
   height: auto;
   flex: 0 0 auto;
   object-fit: contain;
@@ -42,10 +42,10 @@
 }
 
 .brandTitle {
-  font-size: 1.42rem;
+  font-size: 1.5rem;
   line-height: 1;
   font-weight: 800;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.048em;
   color: var(--text-strong);
 }
 
@@ -59,25 +59,25 @@
   min-width: 0;
   display: inline-flex;
   align-items: center;
-  gap: 0.46rem;
-  padding: 0.42rem;
-  border-radius: 1.35rem;
+  gap: 0.38rem;
+  padding: 0.36rem;
+  border-radius: 1.25rem;
   background: rgba(255, 255, 255, 0.84);
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  box-shadow: 0 10px 24px rgba(18, 45, 37, 0.045);
+  border: 1px solid rgba(18, 45, 37, 0.065);
+  box-shadow: 0 10px 24px rgba(18, 45, 37, 0.04);
 }
 
 .navLink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.1rem;
-  padding: 0 1.18rem;
-  border-radius: 1rem;
+  min-height: 3rem;
+  padding: 0 1.12rem;
+  border-radius: 0.94rem;
   border: 1px solid transparent;
   text-decoration: none;
   white-space: nowrap;
-  font-size: 0.99rem;
+  font-size: 0.97rem;
   font-weight: 700;
   color: #46554f;
   transition:
@@ -96,8 +96,8 @@
 .navLinkActive {
   color: #163f32;
   background: #ffffff;
-  border-color: rgba(23, 77, 62, 0.1);
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.05);
+  border-color: rgba(23, 77, 62, 0.09);
+  box-shadow: 0 8px 16px rgba(18, 45, 37, 0.045);
 }
 
 .actions {
@@ -105,7 +105,7 @@
   grid-auto-flow: column;
   align-items: center;
   justify-self: end;
-  gap: 0.82rem;
+  gap: 0.74rem;
 }
 
 .signupButton,
@@ -113,12 +113,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.2rem;
-  padding: 0 1.38rem;
-  border-radius: 1rem;
+  min-height: 3.08rem;
+  padding: 0 1.34rem;
+  border-radius: 0.96rem;
   border: 1px solid transparent;
   text-decoration: none;
-  font-size: 1rem;
+  font-size: 0.98rem;
   line-height: 1;
   white-space: nowrap;
   transition:
@@ -145,8 +145,8 @@
   font-weight: 700;
   color: #31423c;
   background: rgba(255, 255, 255, 0.94);
-  border-color: rgba(18, 45, 37, 0.12);
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.045);
+  border-color: rgba(18, 45, 37, 0.11);
+  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.04);
 }
 
 .brand:focus-visible,
@@ -163,7 +163,7 @@
   }
 
   .navLink {
-    padding: 0 1rem;
+    padding: 0 0.98rem;
   }
 
   .signupButton,
@@ -177,7 +177,7 @@
     grid-template-columns: 1fr;
     align-items: start;
     gap: 0.95rem;
-    padding: 1rem 0 1.1rem;
+    padding: 1rem 0 1.08rem;
   }
 
   .nav {
@@ -194,6 +194,14 @@
 }
 
 @media (max-width: 720px) {
+  .brandImage {
+    width: 2.35rem;
+  }
+
+  .brandTitle {
+    font-size: 1.34rem;
+  }
+
   .nav,
   .actions {
     width: 100%;
@@ -203,7 +211,7 @@
     width: 100%;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.6rem;
+    gap: 0.58rem;
     padding: 0;
     background: none;
     border: 0;
@@ -211,7 +219,7 @@
   }
 
   .navLink {
-    min-height: 3.05rem;
+    min-height: 3rem;
     padding: 0 0.78rem;
     background: rgba(255, 255, 255, 0.92);
     border-color: rgba(18, 45, 37, 0.08);
