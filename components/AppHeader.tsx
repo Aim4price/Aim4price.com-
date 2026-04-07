@@ -67,8 +67,8 @@ export default function AppHeader({
           <Image
             src="/brand/aim4price-mark-black.png"
             alt="Aim4price"
-            width={44}
-            height={36}
+            width={48}
+            height={40}
             priority
             className={styles.brandImage}
           />
@@ -102,7 +102,7 @@ export default function AppHeader({
             Login
           </SmartLink>
 
-          <SmartLink href={primaryHref} className={styles.signupButton}>
+          <SmartLink href={ctaHref ?? primaryHref} className={styles.signupButton}>
             {ctaLabel}
           </SmartLink>
         </div>
