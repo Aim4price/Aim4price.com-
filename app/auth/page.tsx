@@ -31,6 +31,24 @@ type LoginFormState = {
 const AUTH_BASE_PATH = '/api/auth';
 const POST_LOGIN_REDIRECT = '/asset-register';
 
+const showcaseCards = [
+  {
+    label: 'Valuation',
+    title: 'Save each result',
+    text: 'Keep important machinery values linked to your account.',
+  },
+  {
+    label: 'Asset register',
+    title: 'Organise records',
+    text: 'Manage key equipment without rebuilding lists every time.',
+  },
+  {
+    label: 'Marketplace',
+    title: 'Move faster later',
+    text: 'Bring saved equipment into future sale workflows more easily.',
+  },
+] as const;
+
 const initialSignupState: SignupFormState = {
   name: '',
   email: '',
@@ -57,7 +75,22 @@ function getNestedRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
+async function readResponsePayload(response: Response) {
+  const contentType = response.headers.get('content-type') ?? '';
+
+  if (contentType.includes('application/json')) {
+    return response.json().catch(() => null);
+  }
+
+  const text = await response.text().catch(() => '');
+  return text.trim() ? { message: text } : null;
+}
+
 function extractErrorMessage(payload: unknown): string | null {
+  if (typeof payload === 'string' && payload.trim()) {
+    return payload;
+  }
+
   const record = getNestedRecord(payload);
 
   if (!record) {
@@ -114,6 +147,14 @@ function extractRedirectUrl(payload: unknown): string | null {
   return null;
 }
 
+function getCallbackUrl() {
+  if (typeof window === 'undefined') {
+    return POST_LOGIN_REDIRECT;
+  }
+
+  return new URL(POST_LOGIN_REDIRECT, window.location.origin).toString();
+}
+
 async function postAuth(path: string, body: Record<string, unknown>) {
   const response = await fetch(`${AUTH_BASE_PATH}${path}`, {
     method: 'POST',
@@ -124,7 +165,7 @@ async function postAuth(path: string, body: Record<string, unknown>) {
     body: JSON.stringify(body),
   });
 
-  const payload = await response.json().catch(() => null);
+  const payload = await readResponsePayload(response);
 
   if (response.status === 404) {
     throw new Error(
@@ -176,7 +217,7 @@ export default function AuthPage() {
           }
         : {
             title: 'Log in to your account',
-            text: 'Open your saved valuations, records, and machinery activity with secure email access.',
+            text: 'Open your saved valuations and machinery records with secure email access.',
             action: 'Log in',
             footer: 'Need an account?',
             footerAction: 'Create one',
@@ -220,7 +261,7 @@ export default function AuthPage() {
       setNotice({
         tone: 'error',
         title: 'Password too short',
-        text: 'Use at least 8 characters. That matches Better Auth’s default minimum password length.',
+        text: 'Use at least 8 characters before continuing.',
       });
       return;
     }
@@ -250,7 +291,7 @@ export default function AuthPage() {
         name,
         email,
         password: signupForm.password,
-        callbackURL: POST_LOGIN_REDIRECT,
+        callbackURL: getCallbackUrl(),
       });
 
       const redirectUrl = extractRedirectUrl(payload);
@@ -269,9 +310,11 @@ export default function AuthPage() {
         return;
       }
 
-      window.setTimeout(() => {
-        updateHashAndMode('login');
-      }, 950);
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          updateHashAndMode('login');
+        }, 900);
+      }
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -305,7 +348,7 @@ export default function AuthPage() {
         email,
         password: loginForm.password,
         rememberMe: loginForm.rememberMe,
-        callbackURL: POST_LOGIN_REDIRECT,
+        callbackURL: getCallbackUrl(),
       });
 
       const redirectUrl = extractRedirectUrl(payload) ?? POST_LOGIN_REDIRECT;
@@ -340,8 +383,8 @@ export default function AuthPage() {
             <Image
               src="/brand/aim4price-mark-black.png"
               alt="Aim4price"
-              width={52}
-              height={44}
+              width={56}
+              height={46}
               className={styles.brandMark}
               priority
             />
@@ -361,47 +404,39 @@ export default function AuthPage() {
           <aside className={styles.showcase}>
             <div className={styles.showcaseHeader}>
               <span className={styles.eyebrow}>Secure account access</span>
-              <h2 className={styles.showcaseTitle}>Keep your machinery work in one place.</h2>
+              <h2 className={styles.showcaseTitle}>A cleaner place to manage machinery decisions.</h2>
               <p className={styles.showcaseText}>
-                Create an account to save valuations, organise key assets, and move equipment into
-                the marketplace without restarting your workflow every time.
+                Create an account to keep valuations, asset records, and future sale activity tied to one clean workflow.
               </p>
             </div>
 
             <div className={styles.visualPanel}>
+              <div className={styles.visualBadge}>One clear platform</div>
+
               <Image
                 src="/brand/Home-page.png"
                 alt="Aim4price machinery platform preview"
                 fill
                 priority
-                sizes="(max-width: 1040px) 100vw, 46vw"
+                sizes="(max-width: 1080px) 100vw, 48vw"
                 className={styles.visualImage}
               />
 
               <div className={styles.visualShade} aria-hidden="true" />
+            </div>
 
-              <div className={styles.visualBadge}>One clear platform</div>
-
-              <div className={styles.statGrid}>
-                <article className={styles.statCard}>
-                  <span className={styles.statLabel}>Valuations</span>
-                  <strong className={styles.statValue}>Save every result</strong>
+            <div className={styles.signalGrid}>
+              {showcaseCards.map((card) => (
+                <article key={card.label} className={styles.signalCard}>
+                  <span className={styles.signalLabel}>{card.label}</span>
+                  <strong className={styles.signalTitle}>{card.title}</strong>
+                  <span className={styles.signalText}>{card.text}</span>
                 </article>
-
-                <article className={styles.statCard}>
-                  <span className={styles.statLabel}>Register</span>
-                  <strong className={styles.statValue}>Track key assets</strong>
-                </article>
-
-                <article className={styles.statCard}>
-                  <span className={styles.statLabel}>Marketplace</span>
-                  <strong className={styles.statValue}>Move equipment faster</strong>
-                </article>
-              </div>
+              ))}
             </div>
           </aside>
 
-          <section className={styles.authCard} aria-labelledby="auth-heading">
+          <section className={styles.authCard} aria-labelledby="auth-heading" aria-busy={isSubmitting}>
             <div className={styles.modeRail} aria-label="Authentication mode">
               <button
                 type="button"
@@ -491,6 +526,7 @@ export default function AuthPage() {
                       type={showSignupPassword ? 'text' : 'password'}
                       name="password"
                       autoComplete="new-password"
+                      minLength={8}
                       placeholder="Create a secure password"
                       className={`${styles.input} ${styles.passwordInput}`}
                       value={signupForm.password}
@@ -516,6 +552,7 @@ export default function AuthPage() {
                     type={showSignupPassword ? 'text' : 'password'}
                     name="confirmPassword"
                     autoComplete="new-password"
+                    minLength={8}
                     placeholder="Repeat your password"
                     className={styles.input}
                     value={signupForm.confirmPassword}
