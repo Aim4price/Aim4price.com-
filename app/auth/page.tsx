@@ -35,6 +35,12 @@ const initialLoginState: LoginFormState = {
   rememberMe: true,
 };
 
+const quickPoints = [
+  'Save valuations and review them later.',
+  'Build one clean equipment register.',
+  'Unlock member marketplace contact details.',
+] as const;
+
 function getModeFromHash(hash: string): Mode {
   return hash.replace('#', '').toLowerCase() === 'login' ? 'login' : 'signup';
 }
@@ -45,14 +51,10 @@ export default function AuthPage() {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [signupForm, setSignupForm] = useState<SignupFormState>(initialSignupState);
   const [loginForm, setLoginForm] = useState<LoginFormState>(initialLoginState);
-  const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(
-    null,
-  );
+  const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
+    if (typeof window === 'undefined') return;
 
     const syncModeFromHash = () => {
       setMode(getModeFromHash(window.location.hash));
@@ -62,23 +64,27 @@ export default function AuthPage() {
     syncModeFromHash();
     window.addEventListener('hashchange', syncModeFromHash);
 
-    return () => {
-      window.removeEventListener('hashchange', syncModeFromHash);
-    };
+    return () => window.removeEventListener('hashchange', syncModeFromHash);
   }, []);
 
-  const heading = useMemo(
+  const copy = useMemo(
     () =>
       mode === 'signup'
         ? {
-            kicker: 'Create your account',
-            title: 'Join Aim4price.',
-            text: 'Save valuations, build your asset register, and unlock member-only marketplace contact details.',
+            overline: 'Create your account',
+            title: 'Get started with Aim4price.',
+            text: 'Create a clean member account for saved valuations, asset records, and marketplace access.',
+            action: 'Create account',
+            footer: 'Already have an account?',
+            footerCta: 'Log in',
           }
         : {
-            kicker: 'Welcome back',
-            title: 'Log in to Aim4price.',
-            text: 'Pick up your saved valuations, asset register, and marketplace activity from one secure account.',
+            overline: 'Welcome back',
+            title: 'Log in to your account.',
+            text: 'Open your saved machinery records, latest valuations, and active marketplace activity.',
+            action: 'Log in',
+            footer: 'New to Aim4price?',
+            footerCta: 'Create account',
           },
     [mode],
   );
@@ -99,24 +105,18 @@ export default function AuthPage() {
     event.preventDefault();
 
     if (!signupForm.firstName || !signupForm.lastName || !signupForm.email || !signupForm.password) {
-      setNotice({
-        type: 'error',
-        text: 'Complete all required fields before continuing.',
-      });
+      setNotice({ type: 'error', text: 'Complete all required fields before continuing.' });
       return;
     }
 
     if (!signupForm.termsAccepted) {
-      setNotice({
-        type: 'error',
-        text: 'Accept the terms before creating an account.',
-      });
+      setNotice({ type: 'error', text: 'Accept the terms before creating an account.' });
       return;
     }
 
     setNotice({
       type: 'success',
-      text: 'Design stage only. This screen is ready for Better Auth + PostgreSQL wiring next.',
+      text: 'Interface ready. The next step is wiring this screen into Better Auth and PostgreSQL.',
     });
   };
 
@@ -124,29 +124,26 @@ export default function AuthPage() {
     event.preventDefault();
 
     if (!loginForm.email || !loginForm.password) {
-      setNotice({
-        type: 'error',
-        text: 'Enter both email and password before logging in.',
-      });
+      setNotice({ type: 'error', text: 'Enter both email and password before logging in.' });
       return;
     }
 
     setNotice({
       type: 'success',
-      text: 'Design stage only. This login form is ready for Better Auth + PostgreSQL wiring next.',
+      text: 'Interface ready. The next step is wiring this screen into Better Auth and PostgreSQL.',
     });
   };
 
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
-        <div className={styles.topBar}>
+        <header className={styles.topBar}>
           <Link href="/" className={styles.brandLink} aria-label="Go to Aim4price home">
             <Image
               src="/brand/aim4price-mark-black.png"
               alt="Aim4price"
-              width={40}
-              height={32}
+              width={38}
+              height={30}
               className={styles.brandMark}
               priority
             />
@@ -158,90 +155,96 @@ export default function AuthPage() {
           </Link>
 
           <div className={styles.topActions}>
-            <Link href="/valuation" className={styles.topGhostButton}>
-              Start Free Valuation
+            <Link href="/valuation" className={styles.topLink}>
+              Free valuation
             </Link>
-            <Link href="/marketplace" className={styles.topGhostButton}>
-              Browse Marketplace
+            <Link href="/marketplace" className={styles.topLink}>
+              Marketplace
             </Link>
           </div>
-        </div>
+        </header>
 
-        <section className={styles.panel}>
-          <div className={styles.intro}>
-            <div className={styles.introInner}>
-              <div>
-                <span className={styles.badge}>Member account access</span>
-                <h1 className={styles.title}>Value. Save. Move faster.</h1>
-                <p className={styles.text}>
-                  Aim4price accounts are built for farmers, dealers, brokers, and machinery buyers
-                  who need one clean place to manage values, asset records, and next actions.
-                </p>
+        <section className={styles.hero}>
+          <div className={styles.copyColumn}>
+            <span className={styles.eyebrow}>Member access</span>
+            <h1 className={styles.heroTitle}>A cleaner way to manage machinery.</h1>
+            <p className={styles.heroText}>
+              Built for owners, dealers, and serious buyers who want one simple place for values,
+              records, and next steps.
+            </p>
+
+            <div className={styles.pointList}>
+              {quickPoints.map((point) => (
+                <div key={point} className={styles.pointItem}>
+                  <span className={styles.pointDot} aria-hidden="true" />
+                  <span>{point}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className={styles.previewCard}>
+              <div className={styles.previewTop}>
+                <div>
+                  <p className={styles.previewLabel}>Inside your account</p>
+                  <h2 className={styles.previewTitle}>One place for your equipment.</h2>
+                </div>
+                <span className={styles.previewPill}>Private member area</span>
               </div>
 
-              <div className={styles.featureGrid}>
-                <div className={styles.feature}>
-                  <span className={styles.featureLabel}>Saved valuations</span>
-                  <span className={styles.featureValue}>1 place</span>
-                  <p className={styles.featureText}>
-                    Keep valuation history tied to the right machine and refresh it when needed.
-                  </p>
-                </div>
-
-                <div className={styles.feature}>
-                  <span className={styles.featureLabel}>Asset register</span>
-                  <span className={styles.featureValue}>Live records</span>
-                  <p className={styles.featureText}>
-                    Build an equipment register ready for internal review, insurance, or finance.
-                  </p>
-                </div>
-
-                <div className={styles.feature}>
-                  <span className={styles.featureLabel}>Marketplace access</span>
-                  <span className={styles.featureValue}>Member unlock</span>
-                  <p className={styles.featureText}>
-                    Signed-in members can access seller contact details and manage listings faster.
-                  </p>
-                </div>
-
-                <div className={styles.feature}>
-                  <span className={styles.featureLabel}>Built to scale</span>
-                  <span className={styles.featureValue}>Farmer to institution</span>
-                  <p className={styles.featureText}>
-                    Clean account structure now, with room for dealer, broker, and admin roles later.
-                  </p>
+              <div className={styles.previewImageFrame}>
+                <Image
+                  src="/brand/Home-page.png"
+                  alt="Aim4price preview"
+                  fill
+                  sizes="(max-width: 980px) 100vw, 48vw"
+                  className={styles.previewImage}
+                />
+                <div className={styles.previewOverlayCard}>
+                  <span className={styles.previewOverlayLabel}>Member actions</span>
+                  <strong className={styles.previewOverlayTitle}>
+                    Save values. Build records. Move to market.
+                  </strong>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className={styles.card}>
-            <div className={styles.cardInner}>
+          <div className={styles.formColumn}>
+            <section className={styles.card} aria-labelledby="auth-heading">
               <div className={styles.switcher} aria-label="Auth mode switcher">
                 <button
                   type="button"
                   onClick={() => updateHashAndMode('signup')}
-                  className={`${styles.switchButton} ${
-                    mode === 'signup' ? styles.switchButtonActive : ''
-                  }`}
+                  className={`${styles.switchButton} ${mode === 'signup' ? styles.switchButtonActive : ''}`}
                 >
                   Sign up
                 </button>
                 <button
                   type="button"
                   onClick={() => updateHashAndMode('login')}
-                  className={`${styles.switchButton} ${
-                    mode === 'login' ? styles.switchButtonActive : ''
-                  }`}
+                  className={`${styles.switchButton} ${mode === 'login' ? styles.switchButtonActive : ''}`}
                 >
                   Login
                 </button>
               </div>
 
-              <div className={styles.header}>
-                <span className={styles.kicker}>{heading.kicker}</span>
-                <h2 className={styles.heading}>{heading.title}</h2>
-                <p className={styles.subheading}>{heading.text}</p>
+              <div className={styles.cardHeader}>
+                <span className={styles.cardEyebrow}>{copy.overline}</span>
+                <h2 id="auth-heading" className={styles.cardTitle}>
+                  {copy.title}
+                </h2>
+                <p className={styles.cardText}>{copy.text}</p>
+              </div>
+
+              <button type="button" className={styles.googleButton}>
+                <span className={styles.googleMark} aria-hidden="true">
+                  G
+                </span>
+                Continue with Google
+              </button>
+
+              <div className={styles.divider}>
+                <span>or continue with email</span>
               </div>
 
               {notice ? (
@@ -260,15 +263,13 @@ export default function AuthPage() {
                     <label className={styles.field}>
                       <span className={styles.label}>First name</span>
                       <input
-                        className={styles.input}
                         type="text"
+                        autoComplete="given-name"
                         placeholder="Kuyler"
+                        className={styles.input}
                         value={signupForm.firstName}
                         onChange={(event) =>
-                          setSignupForm((current) => ({
-                            ...current,
-                            firstName: event.target.value,
-                          }))
+                          setSignupForm((current) => ({ ...current, firstName: event.target.value }))
                         }
                       />
                     </label>
@@ -276,32 +277,28 @@ export default function AuthPage() {
                     <label className={styles.field}>
                       <span className={styles.label}>Last name</span>
                       <input
-                        className={styles.input}
                         type="text"
+                        autoComplete="family-name"
                         placeholder="Geldenhuys"
+                        className={styles.input}
                         value={signupForm.lastName}
                         onChange={(event) =>
-                          setSignupForm((current) => ({
-                            ...current,
-                            lastName: event.target.value,
-                          }))
+                          setSignupForm((current) => ({ ...current, lastName: event.target.value }))
                         }
                       />
                     </label>
                   </div>
 
                   <label className={styles.field}>
-                    <span className={styles.label}>Email address</span>
+                    <span className={styles.label}>Email</span>
                     <input
-                      className={styles.input}
                       type="email"
+                      autoComplete="email"
                       placeholder="name@example.com"
+                      className={styles.input}
                       value={signupForm.email}
                       onChange={(event) =>
-                        setSignupForm((current) => ({
-                          ...current,
-                          email: event.target.value,
-                        }))
+                        setSignupForm((current) => ({ ...current, email: event.target.value }))
                       }
                     />
                   </label>
@@ -310,81 +307,68 @@ export default function AuthPage() {
                     <span className={styles.label}>Password</span>
                     <div className={styles.passwordWrap}>
                       <input
-                        className={`${styles.input} ${styles.passwordInput}`}
                         type={showSignupPassword ? 'text' : 'password'}
-                        placeholder="Create a strong password"
+                        autoComplete="new-password"
+                        placeholder="Create a secure password"
+                        className={`${styles.input} ${styles.passwordInput}`}
                         value={signupForm.password}
                         onChange={(event) =>
-                          setSignupForm((current) => ({
-                            ...current,
-                            password: event.target.value,
-                          }))
+                          setSignupForm((current) => ({ ...current, password: event.target.value }))
                         }
                       />
                       <button
                         type="button"
-                        className={styles.passwordToggle}
                         onClick={() => setShowSignupPassword((current) => !current)}
+                        className={styles.passwordToggle}
                         aria-label={showSignupPassword ? 'Hide password' : 'Show password'}
                       >
                         {showSignupPassword ? 'Hide' : 'Show'}
                       </button>
                     </div>
-                    <span className={styles.hint}>
-                      Use 8+ characters. Email verification and password reset can be wired next.
+                    <span className={styles.hint}>Use at least 8 characters.</span>
+                  </label>
+
+                  <label className={styles.checkboxRow}>
+                    <input
+                      type="checkbox"
+                      className={styles.checkbox}
+                      checked={signupForm.termsAccepted}
+                      onChange={(event) =>
+                        setSignupForm((current) => ({
+                          ...current,
+                          termsAccepted: event.target.checked,
+                        }))
+                      }
+                    />
+                    <span>
+                      I agree to the{' '}
+                      <a href="#" className={styles.inlineLink}>
+                        Terms
+                      </a>{' '}
+                      and{' '}
+                      <a href="#" className={styles.inlineLink}>
+                        Privacy Policy
+                      </a>
+                      .
                     </span>
                   </label>
 
-                  <div className={styles.metaRow}>
-                    <label className={styles.checkboxRow}>
-                      <input
-                        className={styles.checkbox}
-                        type="checkbox"
-                        checked={signupForm.termsAccepted}
-                        onChange={(event) =>
-                          setSignupForm((current) => ({
-                            ...current,
-                            termsAccepted: event.target.checked,
-                          }))
-                        }
-                      />
-                      <span>
-                        I agree to the <a href="#" className={styles.inlineLink}>terms</a> and{' '}
-                        <a href="#" className={styles.inlineLink}>privacy policy</a>.
-                      </span>
-                    </label>
-                  </div>
-
-                  <div className={styles.actionsRow}>
-                    <button type="submit" className={styles.submitButton}>
-                      Create account
-                    </button>
-                  </div>
-
-                  <div className={styles.divider}>
-                    <span>Future provider options</span>
-                  </div>
-
-                  <div className={styles.actionsRow}>
-                    <button type="button" className={styles.socialButton}>
-                      Continue with Google
-                    </button>
-                  </div>
+                  <button type="submit" className={styles.primaryButton}>
+                    {copy.action}
+                  </button>
                 </form>
               ) : (
                 <form className={styles.form} onSubmit={handleLoginSubmit} noValidate>
                   <label className={styles.field}>
-                    <span className={styles.label}>Email address</span>
+                    <span className={styles.label}>Email</span>
                     <input
-                      className={styles.input}
                       type="email"
+                      autoComplete="email"
                       placeholder="name@example.com"
+                      className={styles.input}
                       value={loginForm.email}
                       onChange={(event) =>
-                        setLoginForm((current) => ({
-                          ...current,
-                          email: event.target.value,
-                        }))
+                        setLoginForm((current) => ({ ...current, email: event.target.value }))
                       }
                     />
                   </label>
@@ -393,21 +377,19 @@ export default function AuthPage() {
                     <span className={styles.label}>Password</span>
                     <div className={styles.passwordWrap}>
                       <input
-                        className={`${styles.input} ${styles.passwordInput}`}
                         type={showLoginPassword ? 'text' : 'password'}
+                        autoComplete="current-password"
                         placeholder="Enter your password"
+                        className={`${styles.input} ${styles.passwordInput}`}
                         value={loginForm.password}
                         onChange={(event) =>
-                          setLoginForm((current) => ({
-                            ...current,
-                            password: event.target.value,
-                          }))
+                          setLoginForm((current) => ({ ...current, password: event.target.value }))
                         }
                       />
                       <button
                         type="button"
-                        className={styles.passwordToggle}
                         onClick={() => setShowLoginPassword((current) => !current)}
+                        className={styles.passwordToggle}
                         aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
                       >
                         {showLoginPassword ? 'Hide' : 'Show'}
@@ -418,8 +400,8 @@ export default function AuthPage() {
                   <div className={styles.metaRow}>
                     <label className={styles.checkboxRow}>
                       <input
-                        className={styles.checkbox}
                         type="checkbox"
+                        className={styles.checkbox}
                         checked={loginForm.rememberMe}
                         onChange={(event) =>
                           setLoginForm((current) => ({
@@ -428,76 +410,31 @@ export default function AuthPage() {
                           }))
                         }
                       />
-                      <span>Keep me signed in on this device</span>
+                      <span>Remember me</span>
                     </label>
 
-                    <a href="#" className={styles.forgotLink}>
+                    <a href="#" className={styles.inlineLink}>
                       Forgot password?
                     </a>
                   </div>
 
-                  <div className={styles.actionsRow}>
-                    <button type="submit" className={styles.submitButton}>
-                      Login
-                    </button>
-                  </div>
-
-                  <div className={styles.divider}>
-                    <span>Future provider options</span>
-                  </div>
-
-                  <div className={styles.actionsRow}>
-                    <button type="button" className={styles.socialButton}>
-                      Continue with Google
-                    </button>
-                  </div>
+                  <button type="submit" className={styles.primaryButton}>
+                    {copy.action}
+                  </button>
                 </form>
               )}
 
-              <div className={styles.trustGrid}>
-                <div className={styles.trustItem}>
-                  <span className={styles.trustLabel}>Account purpose</span>
-                  <span className={styles.trustValue}>Valuation + register</span>
-                  <p className={styles.trustText}>
-                    Built for secure member access around saved machinery records.
-                  </p>
-                </div>
-
-                <div className={styles.trustItem}>
-                  <span className={styles.trustLabel}>Next auth step</span>
-                  <span className={styles.trustValue}>Better Auth</span>
-                  <p className={styles.trustText}>
-                    This UI is designed to connect cleanly to PostgreSQL on Railway.
-                  </p>
-                </div>
-
-                <div className={styles.trustItem}>
-                  <span className={styles.trustLabel}>Future roles</span>
-                  <span className={styles.trustValue}>User / dealer / broker</span>
-                  <p className={styles.trustText}>
-                    Ready for role-aware permissions once the backend is connected.
-                  </p>
-                </div>
-              </div>
-
-              <div className={styles.footer}>
-                <p className={styles.footerText}>
-                  {mode === 'signup' ? 'Already have an account?' : 'Need a new account?'}{' '}
-                  <button
-                    type="button"
-                    className={styles.footerTextButton}
-                    onClick={() => updateHashAndMode(mode === 'signup' ? 'login' : 'signup')}
-                  >
-                    {mode === 'signup' ? 'Log in here' : 'Create one here'}
-                  </button>
-                  .
-                </p>
-                <p className={styles.footerText}>
-                  This page is intentionally front-end only so you can approve the look and feel
-                  before we connect Better Auth, sessions, and PostgreSQL.
-                </p>
-              </div>
-            </div>
+              <p className={styles.footerText}>
+                {copy.footer}{' '}
+                <button
+                  type="button"
+                  className={styles.footerButton}
+                  onClick={() => updateHashAndMode(mode === 'signup' ? 'login' : 'signup')}
+                >
+                  {copy.footerCta}
+                </button>
+              </p>
+            </section>
           </div>
         </section>
       </div>
