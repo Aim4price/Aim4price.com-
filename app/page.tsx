@@ -5,7 +5,7 @@ import styles from './page.module.css';
 
 const registerHref = '/asset-register';
 
-const platformItems = [
+const heroHighlights = [
   {
     theme: 'value',
     title: 'Valuation',
@@ -23,43 +23,13 @@ const platformItems = [
   },
 ] as const;
 
-const routes = [
-  {
-    href: '/valuation',
-    image: '/brand/Valuations.png',
-    theme: 'value',
-    label: 'Value',
-    title: 'Valuation',
-    text: 'Get a guided machinery value with a clean, practical flow.',
-    action: 'Start valuation',
-  },
-  {
-    href: registerHref,
-    image: '/brand/Register.png',
-    theme: 'manage',
-    label: 'Manage',
-    title: 'Asset Register',
-    text: 'Keep important equipment values and records in one working view.',
-    action: 'Open register',
-  },
-  {
-    href: '/marketplace',
-    image: '/brand/Buy & Sell.png',
-    theme: 'market',
-    label: 'Market',
-    title: 'Marketplace',
-    text: 'Browse listings and move the right unit to market when ready.',
-    action: 'Open marketplace',
-  },
-] as const;
-
 const workflowSteps = [
   {
     number: '01',
     href: '/valuation',
     theme: 'value',
     title: 'Get a free valuation',
-    text: 'Start with a direct machinery valuation built for fast decisions.',
+    text: 'Start with a free and straightforward valuation.',
     action: 'Start Free Valuation',
   },
   {
@@ -67,7 +37,7 @@ const workflowSteps = [
     href: registerHref,
     theme: 'manage',
     title: 'Save key assets',
-    text: 'Store the right machines in the asset register for easy management.',
+    text: 'Store important equipment in the asset register for easier management.',
     action: 'Open Asset Register',
   },
   {
@@ -91,9 +61,7 @@ export default function HomePage() {
             <div className={styles.heroCopy}>
               <p className={styles.eyebrow}>Agricultural &amp; industrial machinery pricing</p>
 
-              <h1 className={styles.heroTitle}>
-                Know what your machinery is worth — then decide what to do next.
-              </h1>
+              <h1 className={styles.heroTitle}>Know what your machinery is worth.</h1>
 
               <p className={styles.heroText}>
                 Start with a free valuation, save important equipment in the asset register,
@@ -109,9 +77,13 @@ export default function HomePage() {
                 </Link>
               </div>
 
-              <div className={styles.heroMeta} aria-label="Platform sections">
-                {platformItems.map((item) => (
-                  <div key={item.title} className={styles.heroMetaItem} data-theme={item.theme}>
+              <div className={styles.heroHighlights} aria-label="Platform sections">
+                {heroHighlights.map((item) => (
+                  <div
+                    key={item.title}
+                    className={styles.heroHighlightCard}
+                    data-theme={item.theme}
+                  >
                     <strong>{item.title}</strong>
                     <span>{item.text}</span>
                   </div>
@@ -122,70 +94,28 @@ export default function HomePage() {
             <div className={styles.heroVisual}>
               <Link href="/valuation" className={styles.heroImageLink} aria-label="Open valuation">
                 <div className={styles.heroImageFrame}>
+                  <div className={styles.heroTopBadge}>One clean platform</div>
+
                   <Image
                     src="/brand/Home-page.png"
-                    alt="Aim4price platform overview"
+                    alt="Aim4price platform preview"
                     fill
                     priority
                     sizes="(max-width: 980px) 100vw, 48vw"
                     className={styles.heroImage}
                   />
 
-                  <div className={styles.heroTopBadge}>One platform. Three tools.</div>
+                  <div className={styles.heroInfoCard}>
+                    <p className={styles.heroInfoTitle}>Value. Register. Market.</p>
+                    <p className={styles.heroInfoText}>
+                      Three connected tools for clearer machinery decisions.
+                    </p>
 
-                  <div className={styles.heroOverlayStack}>
-                    {platformItems.map((item) => (
-                      <div key={item.title} className={styles.heroOverlayCard} data-theme={item.theme}>
-                        <span className={styles.heroOverlayLabel}>{item.title}</span>
-                        <strong>{item.text}</strong>
-                      </div>
-                    ))}
+                    <span className={styles.heroInfoAction}>Open valuation →</span>
                   </div>
                 </div>
               </Link>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.routesSection}>
-        <div className={styles.shell}>
-          <div className={styles.sectionIntro}>
-            <p className={styles.eyebrow}>One clear platform</p>
-            <h2 className={styles.sectionTitle}>Choose what you want to do next.</h2>
-            <p className={styles.sectionText}>
-              Each part works on its own, but together they create one clean machinery
-              workflow.
-            </p>
-          </div>
-
-          <div className={styles.routesGrid}>
-            {routes.map((route) => (
-              <Link
-                key={route.title}
-                href={route.href}
-                className={styles.routeCard}
-                data-theme={route.theme}
-              >
-                <div className={styles.routeTop}>
-                  <span className={styles.routeLabel}>{route.label}</span>
-                </div>
-
-                <div className={styles.routeIconWrap}>
-                  <Image
-                    src={route.image}
-                    alt={route.title}
-                    width={82}
-                    height={82}
-                    className={styles.routeIcon}
-                  />
-                </div>
-
-                <h3 className={styles.routeTitle}>{route.title}</h3>
-                <p className={styles.routeText}>{route.text}</p>
-                <span className={styles.routeAction}>{route.action}</span>
-              </Link>
-            ))}
           </div>
         </div>
       </section>
