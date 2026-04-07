@@ -19,7 +19,7 @@ const workflowSteps = [
     href: registerHref,
     theme: 'manage',
     title: 'Save key assets',
-    text: 'Keep important machinery in the asset register for easy management.',
+    text: 'Keep important machinery in the asset register for easier management.',
     action: 'Open Asset Register',
   },
   {
@@ -46,35 +46,28 @@ export default function HomePage() {
               <h1 className={styles.heroTitle}>Know what your machinery is worth.</h1>
 
               <p className={styles.heroText}>
-                Start with a free valuation. Save key machinery in your asset register. Then
-                move the right machine to marketplace when you are ready to sell.
+                Free valuation, asset register, and marketplace tools for clearer machinery
+                decisions.
               </p>
-
-              <div className={styles.heroActions}>
-                <Link href="/valuation" className={styles.primaryCta}>
-                  Start Free Valuation
-                </Link>
-                <Link href={registerHref} className={styles.secondaryCta}>
-                  Open Asset Register
-                </Link>
-              </div>
             </div>
 
             <div className={styles.heroVisual}>
-              <Link href="/valuation" className={styles.heroImageLink} aria-label="Open valuation">
-                <div className={styles.heroImageFrame}>
-                  <div className={styles.heroTopBadge}>One clear platform</div>
+              <div className={styles.heroImageFrame}>
+                <div className={styles.heroTopBadge}>One clear platform</div>
 
-                  <Image
-                    src="/brand/Home-page.png"
-                    alt="Aim4price agricultural and industrial machinery overview"
-                    fill
-                    priority
-                    sizes="(max-width: 1100px) 100vw, 56vw"
-                    className={styles.heroImage}
-                  />
-                </div>
-              </Link>
+                <Image
+                  src="/brand/Home-page.png"
+                  alt="Aim4price agricultural and industrial machinery overview"
+                  fill
+                  priority
+                  sizes="(max-width: 1100px) 100vw, 58vw"
+                  className={styles.heroImage}
+                />
+
+                <Link href="/valuation" className={styles.heroImageCta}>
+                  Start Free Valuation
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -102,15 +95,6 @@ export default function HomePage() {
                   </Link>
                 </div>
               ))}
-            </div>
-
-            <div className={styles.workflowActions}>
-              <Link href="/valuation" className={styles.workflowPrimaryCta}>
-                Start Free Valuation
-              </Link>
-              <Link href={registerHref} className={styles.workflowSecondaryCta}>
-                Open Asset Register
-              </Link>
             </div>
           </div>
         </div>
