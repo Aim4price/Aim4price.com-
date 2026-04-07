@@ -2,15 +2,15 @@
   min-height: 100vh;
   color: var(--text-strong);
   background:
-    radial-gradient(circle at 0% 0%, rgba(24, 77, 61, 0.08), transparent 28%),
-    radial-gradient(circle at 100% 0%, rgba(43, 98, 156, 0.06), transparent 26%),
+    radial-gradient(circle at 0% 0%, rgba(24, 77, 61, 0.085), transparent 30%),
+    radial-gradient(circle at 100% 0%, rgba(43, 98, 156, 0.06), transparent 25%),
     linear-gradient(180deg, #fbfcfb 0%, #f4f7f5 100%);
 }
 
 .shell {
   width: var(--shell-width);
   margin: 0 auto;
-  padding: 1.3rem 0 3.2rem;
+  padding: 1.3rem 0 3.3rem;
 }
 
 .topBar {
@@ -18,20 +18,20 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.2rem;
+  margin-bottom: 1.18rem;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.92rem;
+  gap: 0.95rem;
   min-width: 0;
   text-decoration: none;
   color: var(--text-strong);
 }
 
 .brandMark {
-  width: 2.8rem;
+  width: 2.95rem;
   height: auto;
   flex: 0 0 auto;
   object-fit: contain;
@@ -39,12 +39,12 @@
 
 .brandCopy {
   display: grid;
-  gap: 0.1rem;
+  gap: 0.08rem;
   min-width: 0;
 }
 
 .brandTitle {
-  font-size: 1.54rem;
+  font-size: 1.58rem;
   line-height: 0.96;
   font-weight: 800;
   letter-spacing: -0.05em;
@@ -53,7 +53,7 @@
 
 .brandSubtext {
   font-size: 0.72rem;
-  line-height: 1.2;
+  line-height: 1.22;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -64,8 +64,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3rem;
-  padding: 0 1.12rem;
+  min-height: 3.05rem;
+  padding: 0 1.14rem;
   border-radius: 999px;
   border: 1px solid rgba(18, 45, 37, 0.1);
   background: rgba(255, 255, 255, 0.92);
@@ -91,15 +91,15 @@
 
 .frame {
   display: grid;
-  grid-template-columns: minmax(0, 1.06fr) minmax(22rem, 0.94fr);
-  gap: 1rem;
-  padding: 1rem;
-  border-radius: 2rem;
+  grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.92fr);
+  gap: 1.05rem;
+  padding: 1.05rem;
+  border-radius: 2.15rem;
   border: 1px solid rgba(18, 45, 37, 0.08);
-  background: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.7);
   box-shadow:
-    0 24px 54px rgba(12, 36, 28, 0.08),
-    0 10px 22px rgba(12, 36, 28, 0.04);
+    0 26px 58px rgba(12, 36, 28, 0.08),
+    0 10px 24px rgba(12, 36, 28, 0.04);
   backdrop-filter: blur(10px);
 }
 
@@ -107,14 +107,15 @@
 .authCard {
   min-width: 0;
   height: 100%;
-  border-radius: 1.6rem;
+  border-radius: 1.72rem;
 }
 
 .showcase {
   position: relative;
   display: grid;
-  gap: 1.2rem;
-  padding: 1.45rem;
+  align-content: start;
+  gap: 1.15rem;
+  padding: 1.5rem;
   border: 1px solid rgba(18, 45, 37, 0.07);
   background:
     radial-gradient(circle at top left, rgba(24, 77, 61, 0.06), transparent 28%),
@@ -122,11 +123,11 @@
   overflow: hidden;
 }
 
-.showcase::after {
+.showcase::before {
   content: '';
   position: absolute;
-  top: -5rem;
-  right: -4rem;
+  top: -4.5rem;
+  right: -3.25rem;
   width: 15rem;
   height: 15rem;
   border-radius: 50%;
@@ -138,8 +139,7 @@
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 0.85rem;
-  align-content: start;
+  gap: 0.82rem;
 }
 
 .eyebrow,
@@ -159,33 +159,33 @@
 }
 
 .eyebrow {
-  color: #265646;
+  color: #295748;
   background: rgba(24, 77, 61, 0.08);
   border: 1px solid rgba(24, 77, 61, 0.1);
 }
 
 .showcaseTitle {
   margin: 0;
-  max-width: 10.5ch;
-  font-size: clamp(2.5rem, 3.8vw, 4.25rem);
-  line-height: 0.93;
+  max-width: 10.2ch;
+  font-size: clamp(2.65rem, 4vw, 4.4rem);
+  line-height: 0.92;
   font-weight: 800;
-  letter-spacing: -0.065em;
+  letter-spacing: -0.07em;
   color: #1f3831;
   text-wrap: balance;
 }
 
 .showcaseText {
   margin: 0;
-  max-width: 34rem;
+  max-width: 35rem;
   font-size: 1rem;
-  line-height: 1.72;
+  line-height: 1.74;
   color: #62706b;
 }
 
 .visualPanel {
   position: relative;
-  min-height: 22.5rem;
+  min-height: 21.5rem;
   border-radius: 1.55rem;
   overflow: hidden;
   border: 1px solid rgba(18, 45, 37, 0.08);
@@ -204,8 +204,8 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 30%),
-    linear-gradient(0deg, rgba(9, 25, 20, 0.48) 0%, rgba(9, 25, 20, 0.08) 42%, rgba(9, 25, 20, 0.02) 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 28%),
+    linear-gradient(0deg, rgba(9, 25, 20, 0.12) 0%, rgba(9, 25, 20, 0) 36%);
   pointer-events: none;
 }
 
@@ -227,51 +227,53 @@
   font-weight: 800;
 }
 
-.statGrid {
-  position: absolute;
-  right: 1rem;
-  bottom: 1rem;
-  left: 1rem;
-  z-index: 2;
+.signalGrid {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 0.82rem;
 }
 
-.statCard {
+.signalCard {
   display: grid;
-  gap: 0.2rem;
-  padding: 0.9rem 0.95rem;
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 12px 24px rgba(9, 25, 20, 0.12);
-  backdrop-filter: blur(8px);
+  gap: 0.24rem;
+  padding: 0.98rem 1rem;
+  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  box-shadow: 0 14px 26px rgba(12, 36, 28, 0.05);
 }
 
-.statLabel {
-  font-size: 0.73rem;
+.signalLabel {
+  font-size: 0.72rem;
   line-height: 1.2;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #62716b;
+  color: #687770;
 }
 
-.statValue {
-  font-size: 0.96rem;
-  line-height: 1.25;
+.signalTitle {
+  font-size: 0.98rem;
+  line-height: 1.28;
   font-weight: 800;
-  color: #19372e;
+  color: #1b372e;
+}
+
+.signalText {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #66746f;
 }
 
 .authCard {
   display: grid;
   align-content: start;
   gap: 1rem;
-  padding: 1.45rem;
+  padding: 1.48rem;
   border: 1px solid rgba(18, 45, 37, 0.07);
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.96);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.78),
     0 22px 40px rgba(16, 42, 34, 0.06),
@@ -282,8 +284,8 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.42rem;
-  padding: 0.35rem;
-  border-radius: 1rem;
+  padding: 0.36rem;
+  border-radius: 1.08rem;
   background: #f3f6f4;
   border: 1px solid rgba(18, 45, 37, 0.07);
 }
@@ -292,13 +294,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.05rem;
+  min-height: 3.1rem;
   padding: 0 1rem;
-  border-radius: 0.85rem;
+  border-radius: 0.9rem;
   border: 1px solid transparent;
   background: transparent;
   color: #66736d;
-  font-size: 0.95rem;
+  font-size: 0.96rem;
   font-weight: 700;
   transition:
     transform 180ms ease,
@@ -332,17 +334,17 @@
 
 .authTitle {
   margin: 0;
-  font-size: clamp(2.15rem, 3.45vw, 3.25rem);
-  line-height: 0.96;
+  font-size: clamp(2.2rem, 3.5vw, 3.3rem);
+  line-height: 0.95;
   font-weight: 800;
-  letter-spacing: -0.065em;
+  letter-spacing: -0.068em;
   color: #1d3a32;
   text-wrap: balance;
 }
 
 .authText {
   margin: 0;
-  max-width: 34rem;
+  max-width: 33rem;
   color: #6d7873;
   font-size: 0.98rem;
   line-height: 1.72;
@@ -350,8 +352,8 @@
 
 .notice {
   display: grid;
-  gap: 0.3rem;
-  padding: 0.95rem 1rem;
+  gap: 0.32rem;
+  padding: 0.98rem 1rem;
   border-radius: 1rem;
   border: 1px solid transparent;
 }
@@ -386,12 +388,12 @@
 
 .form {
   display: grid;
-  gap: 0.92rem;
+  gap: 0.96rem;
 }
 
 .field {
   display: grid;
-  gap: 0.44rem;
+  gap: 0.46rem;
 }
 
 .labelRow {
@@ -416,13 +418,13 @@
 
 .input {
   width: 100%;
-  min-height: 3.45rem;
+  min-height: 3.55rem;
   padding: 0 1rem;
   border-radius: 1rem;
   border: 1px solid rgba(18, 45, 37, 0.1);
   background: #ffffff;
   color: #203831;
-  font-size: 0.98rem;
+  font-size: 0.99rem;
   transition:
     border-color 180ms ease,
     box-shadow 180ms ease,
@@ -449,7 +451,7 @@
 }
 
 .passwordInput {
-  padding-right: 4.3rem;
+  padding-right: 4.35rem;
 }
 
 .passwordToggle {
@@ -458,7 +460,7 @@
   right: 0.66rem;
   transform: translateY(-50%);
   min-width: 3rem;
-  height: 2.32rem;
+  height: 2.34rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -510,15 +512,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.45rem;
+  min-height: 3.58rem;
   padding: 0 1rem;
   border-radius: 1rem;
   border: 0;
   background: linear-gradient(180deg, #1c6048 0%, #143f32 100%);
   color: #ffffff;
-  font-size: 0.98rem;
+  font-size: 0.99rem;
   font-weight: 800;
-  box-shadow: 0 16px 30px rgba(17, 63, 50, 0.16);
+  box-shadow: 0 18px 32px rgba(17, 63, 50, 0.17);
 }
 
 .primaryButton:hover:not(:disabled),
@@ -528,7 +530,7 @@
 }
 
 .primaryButton:disabled {
-  opacity: 0.7;
+  opacity: 0.72;
   box-shadow: 0 10px 20px rgba(17, 63, 50, 0.1);
 }
 
@@ -562,16 +564,12 @@
 }
 
 @media (max-width: 1180px) {
-  .showcaseTitle {
-    max-width: 11.5ch;
-  }
-
-  .statGrid {
+  .signalGrid {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 1040px) {
+@media (max-width: 1080px) {
   .frame {
     grid-template-columns: 1fr;
   }
@@ -590,10 +588,10 @@
   }
 
   .visualPanel {
-    min-height: 19rem;
+    min-height: 18.5rem;
   }
 
-  .statGrid {
+  .signalGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
@@ -619,38 +617,38 @@
 
   .showcase,
   .authCard {
-    padding: 1.05rem;
-    border-radius: 1.3rem;
+    padding: 1.08rem;
+    border-radius: 1.32rem;
   }
 
   .brandTitle {
-    font-size: 1.36rem;
+    font-size: 1.38rem;
   }
 
   .showcaseTitle {
-    font-size: clamp(2.25rem, 9vw, 3rem);
+    font-size: clamp(2.28rem, 9vw, 3.05rem);
   }
 
   .authTitle {
-    font-size: clamp(2rem, 8.2vw, 2.7rem);
+    font-size: clamp(2rem, 8.2vw, 2.72rem);
   }
 
   .visualPanel {
-    min-height: 16rem;
+    min-height: 15.75rem;
   }
 
-  .statGrid {
+  .signalGrid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 540px) {
   .brand {
-    gap: 0.72rem;
+    gap: 0.74rem;
   }
 
   .brandMark {
-    width: 2.4rem;
+    width: 2.45rem;
   }
 
   .brandSubtext {
@@ -658,7 +656,7 @@
   }
 
   .modeButton {
-    min-height: 2.9rem;
+    min-height: 2.94rem;
   }
 
   .labelRow {
