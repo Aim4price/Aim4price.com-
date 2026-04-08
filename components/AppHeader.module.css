@@ -3,20 +3,20 @@
   top: 0;
   z-index: 90;
   width: 100%;
-  background: rgba(250, 251, 250, 0.94);
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(18, 45, 37, 0.07);
+  background: rgba(250, 251, 250, 0.96);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(18, 45, 37, 0.08);
 }
 
 .inner {
   width: var(--shell-width);
   margin: 0 auto;
-  min-height: 5.4rem;
-  padding: 0.8rem 0;
+  min-height: 6.15rem;
+  padding: 0.95rem 0;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 1.2rem;
+  gap: 1.8rem;
 }
 
 .brand {
@@ -28,11 +28,12 @@
 }
 
 .brandTitle {
-  font-size: clamp(1.85rem, 2.2vw, 2.45rem);
+  font-size: clamp(2rem, 2.35vw, 2.7rem);
   line-height: 1;
   font-weight: 800;
-  letter-spacing: -0.065em;
+  letter-spacing: -0.06em;
   color: #17362c;
+  white-space: nowrap;
 }
 
 .nav {
@@ -45,27 +46,28 @@
   min-width: 0;
   display: inline-flex;
   align-items: center;
-  gap: 0.34rem;
-  padding: 0.32rem;
-  border-radius: 1.15rem;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(18, 45, 37, 0.065);
-  box-shadow: 0 10px 24px rgba(18, 45, 37, 0.04);
+  gap: 0.5rem;
+  padding: 0.42rem;
+  border-radius: 1.35rem;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
 }
 
 .navLink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.9rem;
-  padding: 0 1.05rem;
-  border-radius: 0.88rem;
+  min-height: 3.35rem;
+  padding: 0 1.45rem;
+  border-radius: 1rem;
   border: 1px solid transparent;
   text-decoration: none;
   white-space: nowrap;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 700;
-  color: #4b5954;
+  letter-spacing: -0.01em;
+  color: #42514b;
   transition:
     background 180ms ease,
     border-color 180ms ease,
@@ -76,22 +78,43 @@
 
 .navLink:hover {
   color: #17362c;
-  background: rgba(23, 77, 62, 0.05);
+  background: rgba(23, 77, 62, 0.06);
+  transform: translateY(-1px);
 }
 
 .navLinkActive {
   color: #163f32;
   background: #ffffff;
-  border-color: rgba(23, 77, 62, 0.09);
-  box-shadow: 0 8px 16px rgba(18, 45, 37, 0.045);
+  border-color: rgba(23, 77, 62, 0.1);
+  box-shadow: 0 10px 20px rgba(18, 45, 37, 0.05);
 }
 
 .actions {
-  display: grid;
-  grid-auto-flow: column;
+  display: flex;
   align-items: center;
   justify-self: end;
-  gap: 0.72rem;
+}
+
+.actionsRail {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0.42rem;
+  border-radius: 1.35rem;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
+}
+
+.actionDivider {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(23, 54, 44, 0.42);
+  user-select: none;
 }
 
 .signupButton,
@@ -99,14 +122,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3rem;
-  padding: 0 1.26rem;
-  border-radius: 0.95rem;
+  min-height: 3.35rem;
+  padding: 0 1.4rem;
+  border-radius: 1rem;
   border: 1px solid transparent;
   text-decoration: none;
-  font-size: 0.96rem;
+  font-size: 1rem;
   line-height: 1;
   white-space: nowrap;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -120,19 +145,25 @@
   transform: translateY(-1px);
 }
 
-.signupButton {
-  font-weight: 700;
-  color: #ffffff;
-  background: linear-gradient(180deg, #1a5d46 0%, #123f31 100%);
-  box-shadow: 0 12px 24px rgba(18, 63, 49, 0.14);
+.loginButton {
+  color: #42514b;
+  background: transparent;
 }
 
-.loginButton {
-  font-weight: 700;
-  color: #31423c;
-  background: rgba(255, 255, 255, 0.96);
-  border-color: rgba(18, 45, 37, 0.11);
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.04);
+.loginButton:hover {
+  color: #17362c;
+  background: rgba(23, 77, 62, 0.06);
+}
+
+.signupButton {
+  color: #163f32;
+  background: #ffffff;
+  border-color: rgba(23, 77, 62, 0.1);
+  box-shadow: 0 10px 20px rgba(18, 45, 37, 0.05);
+}
+
+.signupButton:hover {
+  background: rgba(23, 77, 62, 0.06);
 }
 
 .brand:focus-visible,
@@ -143,26 +174,23 @@
   outline-offset: 3px;
 }
 
-@media (max-width: 1160px) {
+@media (max-width: 1240px) {
   .inner {
-    gap: 1rem;
+    gap: 1.35rem;
   }
 
-  .navLink {
-    padding: 0 0.94rem;
-  }
-
+  .navLink,
   .signupButton,
   .loginButton {
-    padding: 0 1.1rem;
+    padding: 0 1.2rem;
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1040px) {
   .inner {
     grid-template-columns: 1fr;
     align-items: start;
-    gap: 0.95rem;
+    gap: 1rem;
     padding: 1rem 0 1.08rem;
   }
 
@@ -181,7 +209,7 @@
 
 @media (max-width: 720px) {
   .brandTitle {
-    font-size: 1.75rem;
+    font-size: 1.85rem;
   }
 
   .nav,
@@ -193,7 +221,7 @@
     width: 100%;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.58rem;
+    gap: 0.65rem;
     padding: 0;
     background: none;
     border: 0;
@@ -201,21 +229,47 @@
   }
 
   .navLink {
-    min-height: 3rem;
-    padding: 0 0.78rem;
-    background: rgba(255, 255, 255, 0.92);
+    min-height: 3.2rem;
+    padding: 0 0.95rem;
+    background: rgba(255, 255, 255, 0.94);
     border-color: rgba(18, 45, 37, 0.08);
-    box-shadow: 0 8px 16px rgba(18, 45, 37, 0.04);
+    box-shadow: 0 8px 18px rgba(18, 45, 37, 0.045);
   }
 
-  .actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-flow: row;
-    justify-self: stretch;
+  .actionsRail {
+    width: 100%;
+    justify-content: stretch;
+    gap: 0.2rem;
+    padding: 0;
+    background: none;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .actionDivider {
+    flex: 0 0 auto;
+    padding: 0 0.15rem;
   }
 
   .signupButton,
   .loginButton {
-    width: 100%;
+    flex: 1 1 0;
+    min-height: 3.2rem;
+    padding: 0 0.95rem;
+    background: rgba(255, 255, 255, 0.94);
+    border-color: rgba(18, 45, 37, 0.08);
+    box-shadow: 0 8px 18px rgba(18, 45, 37, 0.045);
+  }
+}
+
+@media (max-width: 560px) {
+  .navRail {
+    grid-template-columns: 1fr;
+  }
+
+  .actionsRail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
   }
 }
