@@ -3,7 +3,23 @@ import Link from 'next/link';
 import AppHeader from '../components/AppHeader';
 import styles from './page.module.css';
 
-const quickActions = [
+type QuickAction = {
+  href: string;
+  title: string;
+  text: string;
+  action: string;
+  primary?: boolean;
+};
+
+type WorkflowStep = {
+  number: string;
+  href: string;
+  title: string;
+  text: string;
+  action: string;
+};
+
+const quickActions: QuickAction[] = [
   {
     href: '/valuation',
     title: 'Free valuation',
@@ -23,9 +39,9 @@ const quickActions = [
     text: 'Browse or move equipment to market when ready.',
     action: 'Open Marketplace',
   },
-] as const;
+];
 
-const workflowSteps = [
+const workflowSteps: WorkflowStep[] = [
   {
     number: '01',
     href: '/valuation',
@@ -47,7 +63,7 @@ const workflowSteps = [
     text: 'When you are ready to buy or sell, use the marketplace as the next logical step.',
     action: 'Open marketplace',
   },
-] as const;
+];
 
 export default function HomePage() {
   return (
