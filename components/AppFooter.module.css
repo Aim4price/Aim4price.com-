@@ -1,7 +1,7 @@
 .footer {
-  margin-top: clamp(4.75rem, 7vw, 6rem);
-  border-top: 1px solid rgba(18, 45, 37, 0.08);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, #fbfcfb 100%);
+  margin-top: clamp(4.25rem, 6vw, 5.5rem);
+  border-top: 0;
+  background: linear-gradient(180deg, #184d3d 0%, #123f31 100%);
 }
 
 .shell {
@@ -14,7 +14,7 @@
   grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
   align-items: start;
   gap: clamp(2.4rem, 5vw, 5.75rem);
-  padding: clamp(3.2rem, 5vw, 4.4rem) 0 clamp(2.35rem, 4vw, 3rem);
+  padding: clamp(3.1rem, 5vw, 4.25rem) 0 clamp(2.2rem, 4vw, 2.8rem);
 }
 
 .brandBlock {
@@ -28,15 +28,15 @@
   line-height: 0.96;
   font-weight: 800;
   letter-spacing: -0.06em;
-  color: var(--text-strong);
+  color: #ffffff;
 }
 
 .brandText {
-  margin: 1.35rem 0 0;
+  margin: 1.2rem 0 0;
   max-width: 35rem;
-  color: var(--text-muted);
-  font-size: 1.02rem;
-  line-height: 1.82;
+  color: rgba(233, 243, 238, 0.88);
+  font-size: 1rem;
+  line-height: 1.8;
 }
 
 .linksGrid {
@@ -52,48 +52,50 @@
 }
 
 .linkColumn h3 {
-  margin: 0 0 0.3rem;
+  margin: 0 0 0.32rem;
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #6d7873;
+  color: rgba(214, 231, 223, 0.72);
 }
 
 .linkColumn a {
   width: fit-content;
   text-decoration: none;
-  color: #233b33;
+  color: #ffffff;
   font-weight: 600;
   line-height: 1.55;
   transition:
     color 0.18s ease,
-    transform 0.18s ease;
+    transform 0.18s ease,
+    opacity 0.18s ease;
 }
 
 .linkColumn a:hover {
-  color: var(--brand-700);
+  opacity: 0.86;
   transform: translateX(2px);
 }
 
 .linkColumn a:focus-visible {
-  outline: 3px solid rgba(23, 77, 62, 0.18);
+  outline: 3px solid rgba(255, 255, 255, 0.18);
   outline-offset: 3px;
 }
 
 .metaRow {
-  border-top: 1px solid rgba(18, 45, 37, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(7, 20, 16, 0.12);
 }
 
 .metaRow .shell {
-  padding: 1.08rem 0 1.35rem;
+  padding: 1.05rem 0 1.28rem;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.85rem 1.2rem;
-  color: #6f7a75;
-  font-size: 0.93rem;
+  color: rgba(232, 242, 237, 0.78);
+  font-size: 0.92rem;
 }
 
 @media (max-width: 900px) {
@@ -108,11 +110,11 @@
 
 @media (max-width: 640px) {
   .footer {
-    margin-top: 4rem;
+    margin-top: 3.7rem;
   }
 
   .topRow {
-    padding: 2.45rem 0 2rem;
+    padding: 2.35rem 0 1.95rem;
   }
 
   .brandText {
@@ -121,7 +123,7 @@
 
   .linksGrid {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1.45rem;
   }
 
   .metaRow .shell {
