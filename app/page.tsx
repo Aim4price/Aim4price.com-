@@ -69,11 +69,7 @@ const workflowSteps: WorkflowStep[] = [
   },
 ];
 
-const heroPoints = [
-  'Free valuation',
-  'Asset register',
-  'Marketplace tools',
-];
+const heroPoints = ['Free valuation', 'Asset register', 'Marketplace tools'];
 
 export default function HomePage() {
   return (
@@ -171,7 +167,7 @@ export default function HomePage() {
         <div className={styles.shell}>
           <div className={styles.workflowWrap}>
             <div className={styles.workflowIntro}>
-              <p className={styles.workflowEyebrow}>How it works</p>
+              <p className={styles.workflowEyebrow}>How Aim4price works</p>
               <h2 className={styles.workflowTitle}>A clean path from value to action.</h2>
               <p className={styles.workflowText}>
                 Users should understand the platform in seconds: value machinery, save records,
