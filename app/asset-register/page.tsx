@@ -595,7 +595,7 @@ export default function AssetRegisterPage() {
 
   return (
     <div className={styles.page}>
-      <AppHeader />
+      <AppHeader active="asset-register" />
 
       <main className={styles.content}>
         <section className={styles.heroShell}>
