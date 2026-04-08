@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import styles from './AppHeader.module.css';
 
@@ -20,21 +19,15 @@ const navItems: Array<{ key: ActivePage; href: string; label: string }> = [
   { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
 ];
 
-function SmartLink({
-  href,
-  className,
-  children,
-}: {
+type SmartLinkProps = {
   href: string;
   className: string;
-  children?: ReactNode;
-}) {
+  children: ReactNode;
+};
+
+function SmartLink({ href, className, children }: SmartLinkProps) {
   const isAnchorLike =
-    href.startsWith('#') ||
-    href.startsWith('http://') ||
-    href.startsWith('https://') ||
-    href.startsWith('mailto:') ||
-    href.startsWith('tel:');
+    href.startsWith('#') || href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:') || href.startsWith('tel:');
 
   if (isAnchorLike) {
     return (
@@ -64,18 +57,7 @@ export default function AppHeader({
     <header className={styles.header}>
       <div className={styles.inner}>
         <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
-          <Image
-            src="/brand/aim4price-mark-black.png"
-            alt="Aim4price"
-            width={48}
-            height={40}
-            priority
-            className={styles.brandImage}
-          />
-
-          <span className={styles.brandCopy}>
-            <span className={styles.brandTitle}>Aim4price</span>
-          </span>
+          <span className={styles.brandTitle}>Aim4price</span>
         </Link>
 
         <nav className={styles.nav} aria-label="Primary navigation">
@@ -102,7 +84,7 @@ export default function AppHeader({
             Login
           </SmartLink>
 
-          <SmartLink href={ctaHref ?? primaryHref} className={styles.signupButton}>
+          <SmartLink href={primaryHref} className={styles.signupButton}>
             {ctaLabel}
           </SmartLink>
         </div>
