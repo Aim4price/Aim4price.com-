@@ -26,6 +26,9 @@ type MarketplaceFilters = {
 
 type SortValue = 'newest' | 'price-low' | 'price-high' | 'hours-low' | 'hours-high' | 'year-new';
 
+const LISTINGS_PER_PAGE = 9;
+const HIDDEN_LISTING_IDS_STORAGE_KEY = 'aim4price-marketplace-hidden-listing-ids';
+
 function normalize(value: string | undefined): string {
   return String(value ?? '').trim().toLowerCase();
 }
@@ -113,13 +116,91 @@ function sortListings(items: MarketplaceListing[], sortBy: SortValue): Marketpla
   return next;
 }
 
+function readHiddenListingIds(): string[] {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const raw = JSON.parse(localStorage.getItem(HIDDEN_LISTING_IDS_STORAGE_KEY) ?? '[]');
+
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+
+    return raw.map((value) => String(value));
+  } catch {
+    return [];
+  }
+}
+
+function writeHiddenListingIds(ids: string[]) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.setItem(HIDDEN_LISTING_IDS_STORAGE_KEY, JSON.stringify(Array.from(new Set(ids))));
+}
+
+function filterHiddenListings(items: MarketplaceListing[]): MarketplaceListing[] {
+  const hiddenIds = new Set(readHiddenListingIds());
+  return items.filter((item) => !hiddenIds.has(String(item.id)));
+}
+
+function isUserUploaded(listing: MarketplaceListing): boolean {
+  const value = listing as MarketplaceListing & {
+    uploadedByUser?: boolean;
+    createdByUser?: boolean;
+    canDelete?: boolean;
+    ownerScope?: string;
+    ownerType?: string;
+  };
+
+  return Boolean(
+    value.uploadedByUser ||
+      value.createdByUser ||
+      value.canDelete ||
+      normalize(value.ownerScope) === 'self' ||
+      normalize(value.ownerType) === 'self' ||
+      normalize(value.publishedBy) === 'asset-register' ||
+      normalize(value.publishedBy) === 'self',
+  );
+}
+
+function buildPagination(currentPage: number, totalPages: number): Array<number | string> {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages: Array<number | string> = [1];
+  const start = Math.max(2, currentPage - 1);
+  const end = Math.min(totalPages - 1, currentPage + 1);
+
+  if (start > 2) {
+    pages.push('ellipsis-left');
+  }
+
+  for (let page = start; page <= end; page += 1) {
+    pages.push(page);
+  }
+
+  if (end < totalPages - 1) {
+    pages.push('ellipsis-right');
+  }
+
+  pages.push(totalPages);
+  return pages;
+}
+
 export default function MarketplaceClient({
   initialFilters,
 }: {
   initialFilters: MarketplaceFilters;
 }) {
   const [query, setQuery] = useState('');
-  const [items, setItems] = useState<MarketplaceListing[]>(seedMarketplaceListings);
+  const [items, setItems] = useState<MarketplaceListing[]>(() =>
+    filterHiddenListings(seedMarketplaceListings),
+  );
   const [activeListing, setActiveListing] = useState<MarketplaceListing | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
@@ -129,12 +210,13 @@ export default function MarketplaceClient({
   const [driveFilter, setDriveFilter] = useState(initialFilters.drive || '');
   const [provinceFilter, setProvinceFilter] = useState('');
   const [sortBy, setSortBy] = useState<SortValue>('newest');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const isSignedIn = false;
 
   useEffect(() => {
     const refresh = () => {
-      setItems(loadMarketplaceListings());
+      setItems(filterHiddenListings(loadMarketplaceListings()));
     };
 
     refresh();
@@ -204,14 +286,37 @@ export default function MarketplaceClient({
         listing.province,
         listing.description,
         listing.yearModel,
+        listing.drive,
+        listing.tractorType,
       ]
         .join(' ')
         .toLowerCase()
         .includes(search);
     });
-  }, [brandFilter, driveFilter, initialFilters.brand, initialFilters.drive, initialFilters.model, initialFilters.type, items, provinceFilter, query, typeFilter, modelFilter]);
+  }, [brandFilter, driveFilter, items, provinceFilter, query, typeFilter, modelFilter]);
 
   const visible = useMemo(() => sortListings(filtered, sortBy), [filtered, sortBy]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, brandFilter, modelFilter, typeFilter, driveFilter, provinceFilter, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(visible.length / LISTINGS_PER_PAGE));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const pageStart = visible.length ? (currentPage - 1) * LISTINGS_PER_PAGE : 0;
+  const pageEnd = Math.min(pageStart + LISTINGS_PER_PAGE, visible.length);
+  const pagedVisible = visible.slice(pageStart, pageEnd);
+
+  const paginationItems = useMemo(
+    () => buildPagination(currentPage, totalPages),
+    [currentPage, totalPages],
+  );
 
   const activeImages = useMemo(
     () => (activeListing ? getImages(activeListing) : [FALLBACK_MARKETPLACE_IMAGE]),
@@ -265,12 +370,12 @@ export default function MarketplaceClient({
     }
 
     return {
-      live: visible.length,
+      live: items.length,
       brands: brands.length,
       provinces: provinces.length,
       newestYear: String(Math.max(...items.map((item) => item.yearModel))),
     };
-  }, [brands.length, items, provinces.length, visible.length]);
+  }, [brands.length, items, provinces.length]);
 
   const activePills = [
     brandFilter ? `Brand: ${brandFilter}` : '',
@@ -280,6 +385,8 @@ export default function MarketplaceClient({
     provinceFilter ? `Province: ${provinceFilter}` : '',
   ].filter(Boolean);
 
+  const canDeleteActiveListing = activeListing ? isUserUploaded(activeListing) : false;
+
   function clearFilters() {
     setQuery('');
     setBrandFilter('');
@@ -288,6 +395,7 @@ export default function MarketplaceClient({
     setDriveFilter('');
     setProvinceFilter('');
     setSortBy('newest');
+    setCurrentPage(1);
   }
 
   function openListing(listing: MarketplaceListing) {
@@ -318,6 +426,26 @@ export default function MarketplaceClient({
     }
   }
 
+  function handleDeleteActiveListing() {
+    if (!activeListing || !isUserUploaded(activeListing)) {
+      return;
+    }
+
+    const listingName = `${activeListing.brandName} ${activeListing.modelName}`;
+    const confirmed = window.confirm(`Delete ${listingName} from the marketplace?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    const listingId = String(activeListing.id);
+    const nextHiddenIds = [...readHiddenListingIds(), listingId];
+    writeHiddenListingIds(nextHiddenIds);
+
+    setItems((current) => current.filter((item) => String(item.id) !== listingId));
+    closeListing();
+  }
+
   return (
     <main className={styles.page}>
       <div className={styles.topBand}>
@@ -331,17 +459,19 @@ export default function MarketplaceClient({
           <div className={styles.heroTop}>
             <div className={styles.heroCopy}>
               <span className={styles.eyebrow}>Aim4price marketplace</span>
-              <h1>Browse listings without friction.</h1>
+              <h1>Browse live machinery listings.</h1>
               <p>
-                Scroll live machinery first. Open any card for notes, location, photo gallery and
-                seller details. Contact numbers stay locked until sign-in.
+                Open any listing for notes, photo gallery, seller area and sign-in gated contact
+                details.
               </p>
             </div>
 
             <aside className={styles.totalCard}>
               <strong>{stats.live}</strong>
               <span>Live listings</span>
-              <small>{brands.length} brands across {stats.provinces} provinces</small>
+              <small>
+                {brands.length} brands across {stats.provinces} provinces
+              </small>
             </aside>
           </div>
 
@@ -349,13 +479,15 @@ export default function MarketplaceClient({
             <div className={styles.heroStat}>
               <span>Browse</span>
               <strong>{stats.live}</strong>
-              <small>visible now</small>
+              <small>currently listed</small>
             </div>
+
             <div className={styles.heroStat}>
               <span>Brands</span>
               <strong>{stats.brands}</strong>
               <small>seeded + register</small>
             </div>
+
             <div className={styles.heroStat}>
               <span>Newest year</span>
               <strong>{stats.newestYear}</strong>
@@ -369,7 +501,7 @@ export default function MarketplaceClient({
             <div>
               <span className={styles.sectionEyebrow}>Find faster</span>
               <h2>Keep browsing simple.</h2>
-              <p>Use only the filters that matter, then scroll the grid.</p>
+              <p>Use the filters that matter, then move through the listing pages.</p>
             </div>
 
             <button type="button" className={styles.clearButton} onClick={clearFilters}>
@@ -378,7 +510,7 @@ export default function MarketplaceClient({
           </div>
 
           <div className={styles.filterGrid}>
-            <label className={styles.field}>
+            <label className={`${styles.field} ${styles.searchField}`}>
               <span>Search</span>
               <input
                 id="marketplace-search"
@@ -388,7 +520,7 @@ export default function MarketplaceClient({
               />
             </label>
 
-            <label className={styles.field}>
+            <label className={`${styles.field} ${styles.brandField}`}>
               <span>Brand</span>
               <select value={brandFilter} onChange={(event) => setBrandFilter(event.target.value)}>
                 <option value="">All brands</option>
@@ -400,8 +532,7 @@ export default function MarketplaceClient({
               </select>
             </label>
 
-
-            <label className={styles.field}>
+            <label className={`${styles.field} ${styles.modelField}`}>
               <span>Model</span>
               <input
                 value={modelFilter}
@@ -409,7 +540,8 @@ export default function MarketplaceClient({
                 placeholder="Type a model"
               />
             </label>
-            <label className={styles.field}>
+
+            <label className={`${styles.field} ${styles.driveField}`}>
               <span>Drive</span>
               <select value={driveFilter} onChange={(event) => setDriveFilter(event.target.value)}>
                 <option value="">All drive types</option>
@@ -418,7 +550,7 @@ export default function MarketplaceClient({
               </select>
             </label>
 
-            <label className={styles.field}>
+            <label className={`${styles.field} ${styles.typeField}`}>
               <span>Type</span>
               <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
                 <option value="">All types</option>
@@ -427,7 +559,7 @@ export default function MarketplaceClient({
               </select>
             </label>
 
-            <label className={styles.field}>
+            <label className={`${styles.field} ${styles.provinceField}`}>
               <span>Province</span>
               <select
                 value={provinceFilter}
@@ -442,7 +574,7 @@ export default function MarketplaceClient({
               </select>
             </label>
 
-            <label className={styles.field}>
+            <label className={`${styles.field} ${styles.sortField}`}>
               <span>Sort</span>
               <select
                 value={sortBy}
@@ -472,15 +604,22 @@ export default function MarketplaceClient({
         <section className={styles.resultsTop}>
           <div>
             <span className={styles.sectionEyebrow}>Results</span>
-            <h2>{visible.length} listing{visible.length === 1 ? '' : 's'} ready to open</h2>
+            <h2>
+              {visible.length} listing{visible.length === 1 ? '' : 's'} ready to open
+            </h2>
           </div>
 
-          <p>Cards stay light. Full location, notes and seller details open inside the listing view.</p>
+          <div className={styles.resultsMeta}>
+            <strong>
+              {visible.length === 0 ? 0 : pageStart + 1}-{pageEnd}
+            </strong>
+            <small>shown on this page</small>
+          </div>
         </section>
 
         <section className={styles.grid}>
-          {visible.length > 0 ? (
-            visible.map((listing) => {
+          {pagedVisible.length > 0 ? (
+            pagedVisible.map((listing) => {
               const cardImages = getImages(listing);
 
               return (
@@ -515,9 +654,8 @@ export default function MarketplaceClient({
                         {listing.brandName} {listing.modelName}
                       </h3>
                       <p className={styles.specLine}>
-                        {formatTypeLabel(listing.tractorType)} tractor •{' '}
-                        {listing.drive.toUpperCase()} • {formatCabLabel(listing.cab)} •{' '}
-                        {listing.powerKw} kW
+                        {formatTypeLabel(listing.tractorType)} tractor • {listing.drive.toUpperCase()} •{' '}
+                        {formatCabLabel(listing.cab)} • {listing.powerKw} kW
                       </p>
                     </div>
 
@@ -542,7 +680,7 @@ export default function MarketplaceClient({
                   </div>
 
                   <div className={styles.cardFooter}>
-                    <span className={styles.clickHint}>Open listing for notes, gallery and seller details</span>
+                    <span className={styles.clickHint}>Open listing details</span>
                     <span className={styles.cardDate}>{formatPublishedDate(listing.publishedAtIso)}</span>
                   </div>
                 </article>
@@ -558,6 +696,54 @@ export default function MarketplaceClient({
             </article>
           )}
         </section>
+
+        {visible.length > 0 ? (
+          <div className={styles.paginationShell}>
+            <div className={styles.paginationCopy}>
+              Page {currentPage} of {totalPages}
+            </div>
+
+            <div className={styles.paginationControls}>
+              <button
+                type="button"
+                className={styles.pageNavButton}
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+
+              {paginationItems.map((item) =>
+                typeof item === 'number' ? (
+                  <button
+                    key={item}
+                    type="button"
+                    className={`${styles.pageButton} ${
+                      item === currentPage ? styles.pageButtonActive : ''
+                    }`}
+                    onClick={() => setCurrentPage(item)}
+                    aria-current={item === currentPage ? 'page' : undefined}
+                  >
+                    {item}
+                  </button>
+                ) : (
+                  <span key={item} className={styles.pageEllipsis}>
+                    …
+                  </span>
+                ),
+              )}
+
+              <button
+                type="button"
+                className={styles.pageNavButton}
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {activeListing ? (
@@ -633,8 +819,9 @@ export default function MarketplaceClient({
                   </div>
 
                   <div className={styles.modalPriceBlock}>
+                    <small>Asking price</small>
                     <strong>{money(activeListing.askingPriceExVat)}</strong>
-                    <small>VAT excluded</small>
+                    <span>VAT excluded</span>
                   </div>
                 </div>
 
@@ -674,6 +861,23 @@ export default function MarketplaceClient({
                     {formatPublishedDate(activeListing.dateAdvertised || activeListing.publishedAtIso)}.
                   </p>
                 </div>
+
+                {canDeleteActiveListing ? (
+                  <div className={styles.ownerCard}>
+                    <div>
+                      <span className={styles.sectionLabel}>Listing actions</span>
+                      <p>You uploaded this listing. You can remove it from the marketplace here.</p>
+                    </div>
+
+                    <button
+                      type="button"
+                      className={styles.deleteAction}
+                      onClick={handleDeleteActiveListing}
+                    >
+                      Delete listing
+                    </button>
+                  </div>
+                ) : null}
 
                 <div className={styles.lockCard}>
                   <div>
