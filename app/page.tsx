@@ -8,6 +8,7 @@ type QuickAction = {
   title: string;
   text: string;
   action: string;
+  note: string;
   primary?: boolean;
 };
 
@@ -23,21 +24,24 @@ const quickActions: QuickAction[] = [
   {
     href: '/valuation',
     title: 'Free valuation',
-    text: 'Get a fast machinery value estimate.',
-    action: 'Start Free Valuation',
+    text: 'Get a fast machinery value estimate in a clean guided flow.',
+    action: 'Start free valuation',
+    note: 'Recommended first step',
     primary: true,
   },
   {
     href: '/asset-register',
     title: 'Asset register',
-    text: 'Save and manage key machinery in one place.',
-    action: 'Open Asset Register',
+    text: 'Store important machinery records and return anytime to update values.',
+    action: 'Open asset register',
+    note: 'Track and organise assets',
   },
   {
     href: '/marketplace',
     title: 'Marketplace',
-    text: 'Browse or move equipment to market when ready.',
-    action: 'Open Marketplace',
+    text: 'Move equipment to market when you are ready to buy or sell.',
+    action: 'Open marketplace',
+    note: 'Take the next commercial step',
   },
 ];
 
@@ -46,23 +50,29 @@ const workflowSteps: WorkflowStep[] = [
     number: '01',
     href: '/valuation',
     title: 'Start with a free valuation',
-    text: 'Choose equipment type, enter the core details, and get a clean value output.',
+    text: 'Select the machinery type, enter the core details, and get a clean value output.',
     action: 'Open valuation',
   },
   {
     number: '02',
     href: '/asset-register',
-    title: 'Save important assets',
-    text: 'Keep machinery records organised and return to them whenever you need to update values.',
-    action: 'Open register',
+    title: 'Save and manage assets',
+    text: 'Keep machinery records organised in one place and return whenever you need updated values.',
+    action: 'Open asset register',
   },
   {
     number: '03',
     href: '/marketplace',
     title: 'Move equipment to market',
-    text: 'When you are ready to buy or sell, use the marketplace as the next logical step.',
+    text: 'When the time is right, move from internal records to active buying or selling.',
     action: 'Open marketplace',
   },
+];
+
+const heroPoints = [
+  'Free valuation',
+  'Asset register',
+  'Marketplace tools',
 ];
 
 export default function HomePage() {
@@ -105,20 +115,30 @@ export default function HomePage() {
                 <h1 className={styles.heroTitle}>Know what your machinery is worth.</h1>
 
                 <p className={styles.heroText}>
-                  Free valuation, asset register, and marketplace tools built for owners who
-                  want clearer machinery decisions backed by practical workflows.
+                  Professional tools for valuing equipment, managing machinery records, and
+                  taking the next commercial step with more clarity.
                 </p>
+
+                <div className={styles.heroMeta}>
+                  {heroPoints.map((point) => (
+                    <span key={point} className={styles.heroMetaItem}>
+                      {point}
+                    </span>
+                  ))}
+                </div>
               </div>
 
               <aside className={styles.heroCard}>
-                <p className={styles.cardEyebrow}>Quick actions</p>
+                <p className={styles.cardEyebrow}>Start here</p>
 
-                <h2 className={styles.cardTitle}>Start with the right next step.</h2>
+                <h2 className={styles.cardTitle}>Choose your next action.</h2>
 
                 <p className={styles.cardText}>
-                  Use the free valuation for a quick answer, the asset register for ongoing
-                  tracking, and the marketplace when you are ready to move equipment.
+                  Most users should start with a free valuation, then save key machinery to the
+                  asset register or move equipment to market when ready.
                 </p>
+
+                <p className={styles.cardSupport}>Clear workflow. Immediate next steps.</p>
 
                 <div className={styles.quickActions}>
                   {quickActions.map((item) => (
@@ -129,10 +149,13 @@ export default function HomePage() {
                         item.primary ? styles.quickActionPrimary : ''
                       }`}
                     >
+                      <span className={styles.quickActionMeta}>{item.note}</span>
+
                       <span className={styles.quickActionTop}>
                         <span className={styles.quickActionTitle}>{item.title}</span>
                         <span className={styles.quickActionArrow}>→</span>
                       </span>
+
                       <span className={styles.quickActionText}>{item.text}</span>
                       <span className={styles.quickActionButton}>{item.action}</span>
                     </Link>
@@ -148,11 +171,11 @@ export default function HomePage() {
         <div className={styles.shell}>
           <div className={styles.workflowWrap}>
             <div className={styles.workflowIntro}>
-              <p className={styles.workflowEyebrow}>Simple workflow</p>
-              <h2 className={styles.workflowTitle}>Simple steps. Clear actions.</h2>
+              <p className={styles.workflowEyebrow}>How it works</p>
+              <h2 className={styles.workflowTitle}>A clean path from value to action.</h2>
               <p className={styles.workflowText}>
-                The home page should immediately show users what to do first, what to do next,
-                and where Aim4price becomes useful every day.
+                Users should understand the platform in seconds: value machinery, save records,
+                then move to market when the time is right.
               </p>
             </div>
 
