@@ -12,6 +12,7 @@ import styles from './page.module.css';
 import {
   FALLBACK_MARKETPLACE_IMAGE,
   loadMarketplaceListings,
+  removeMarketplaceListing,
   seedMarketplaceListings,
   type MarketplaceListing,
 } from '../../lib/marketplace';
@@ -27,7 +28,6 @@ type MarketplaceFilters = {
 type SortValue = 'newest' | 'price-low' | 'price-high' | 'hours-low' | 'hours-high' | 'year-new';
 
 const LISTINGS_PER_PAGE = 9;
-const HIDDEN_LISTING_IDS_STORAGE_KEY = 'aim4price-marketplace-hidden-listing-ids';
 
 function normalize(value: string | undefined): string {
   return String(value ?? '').trim().toLowerCase();
@@ -116,57 +116,6 @@ function sortListings(items: MarketplaceListing[], sortBy: SortValue): Marketpla
   return next;
 }
 
-function readHiddenListingIds(): string[] {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
-  try {
-    const raw = JSON.parse(localStorage.getItem(HIDDEN_LISTING_IDS_STORAGE_KEY) ?? '[]');
-
-    if (!Array.isArray(raw)) {
-      return [];
-    }
-
-    return raw.map((value) => String(value));
-  } catch {
-    return [];
-  }
-}
-
-function writeHiddenListingIds(ids: string[]) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  localStorage.setItem(HIDDEN_LISTING_IDS_STORAGE_KEY, JSON.stringify(Array.from(new Set(ids))));
-}
-
-function filterHiddenListings(items: MarketplaceListing[]): MarketplaceListing[] {
-  const hiddenIds = new Set(readHiddenListingIds());
-  return items.filter((item) => !hiddenIds.has(String(item.id)));
-}
-
-function isUserUploaded(listing: MarketplaceListing): boolean {
-  const value = listing as MarketplaceListing & {
-    uploadedByUser?: boolean;
-    createdByUser?: boolean;
-    canDelete?: boolean;
-    ownerScope?: string;
-    ownerType?: string;
-  };
-
-  return Boolean(
-    value.uploadedByUser ||
-      value.createdByUser ||
-      value.canDelete ||
-      normalize(value.ownerScope) === 'self' ||
-      normalize(value.ownerType) === 'self' ||
-      normalize(value.publishedBy) === 'asset-register' ||
-      normalize(value.publishedBy) === 'self',
-  );
-}
-
 function buildPagination(currentPage: number, totalPages: number): Array<number | string> {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -198,9 +147,7 @@ export default function MarketplaceClient({
   initialFilters: MarketplaceFilters;
 }) {
   const [query, setQuery] = useState('');
-  const [items, setItems] = useState<MarketplaceListing[]>(() =>
-    filterHiddenListings(seedMarketplaceListings),
-  );
+  const [items, setItems] = useState<MarketplaceListing[]>(seedMarketplaceListings);
   const [activeListing, setActiveListing] = useState<MarketplaceListing | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
@@ -216,7 +163,7 @@ export default function MarketplaceClient({
 
   useEffect(() => {
     const refresh = () => {
-      setItems(filterHiddenListings(loadMarketplaceListings()));
+      setItems(loadMarketplaceListings());
     };
 
     refresh();
@@ -385,7 +332,7 @@ export default function MarketplaceClient({
     provinceFilter ? `Province: ${provinceFilter}` : '',
   ].filter(Boolean);
 
-  const canDeleteActiveListing = activeListing ? isUserUploaded(activeListing) : false;
+  const canDeleteActiveListing = activeListing?.publishedBy === 'asset-register';
 
   function clearFilters() {
     setQuery('');
@@ -427,7 +374,7 @@ export default function MarketplaceClient({
   }
 
   function handleDeleteActiveListing() {
-    if (!activeListing || !isUserUploaded(activeListing)) {
+    if (!activeListing || activeListing.publishedBy !== 'asset-register') {
       return;
     }
 
@@ -438,11 +385,8 @@ export default function MarketplaceClient({
       return;
     }
 
-    const listingId = String(activeListing.id);
-    const nextHiddenIds = [...readHiddenListingIds(), listingId];
-    writeHiddenListingIds(nextHiddenIds);
-
-    setItems((current) => current.filter((item) => String(item.id) !== listingId));
+    removeMarketplaceListing(activeListing.id);
+    setItems(loadMarketplaceListings());
     closeListing();
   }
 
