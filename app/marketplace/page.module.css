@@ -21,7 +21,7 @@
   position: relative;
   overflow: hidden;
   margin-top: 1.2rem;
-  padding: 1.5rem;
+  padding: 1.6rem;
   border-radius: 2rem;
   background: linear-gradient(135deg, #0f2745 0%, #173a67 56%, #2b62a6 100%);
   border: 1px solid rgba(11, 31, 58, 0.18);
@@ -84,7 +84,7 @@
 
 .eyebrow {
   background: rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
@@ -98,8 +98,8 @@
 
 .heroCopy h1 {
   margin: 0.8rem 0 0.55rem;
-  max-width: 12ch;
-  font-size: clamp(2.8rem, 5.4vw, 4.25rem);
+  max-width: 11ch;
+  font-size: clamp(2.8rem, 5.4vw, 4.2rem);
   line-height: 0.96;
   letter-spacing: -0.065em;
   color: #ffffff;
@@ -107,10 +107,10 @@
 
 .heroCopy p {
   margin: 0;
-  max-width: 43rem;
+  max-width: 40rem;
   color: rgba(230, 239, 250, 0.86);
   line-height: 1.72;
-  font-size: 1.03rem;
+  font-size: 1.02rem;
 }
 
 .totalCard,
@@ -119,7 +119,11 @@
 .filtersShell,
 .emptyState,
 .modal,
-.statCard {
+.statCard,
+.resultsMeta,
+.priceBlock,
+.modalPriceBlock,
+.paginationShell {
   border: 1px solid rgba(16, 42, 34, 0.08);
   box-shadow:
     0 18px 38px rgba(16, 42, 34, 0.06),
@@ -143,7 +147,8 @@
 .statValue,
 .titleBlock h3,
 .emptyState h2,
-.resultsTop h2 {
+.resultsTop h2,
+.resultsMeta strong {
   color: var(--text-strong);
 }
 
@@ -176,8 +181,8 @@
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.9rem;
-  margin-top: 1.2rem;
+  gap: 0.95rem;
+  margin-top: 1.25rem;
 }
 
 .heroStat {
@@ -212,10 +217,14 @@
 }
 
 .filtersShell {
-  margin-top: 1.2rem;
-  padding: 1.3rem;
+  margin-top: 1.25rem;
+  padding: 1.45rem;
   border-radius: 1.8rem;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.filtersHeader {
+  align-items: flex-end;
 }
 
 .filtersHeader h2,
@@ -228,10 +237,10 @@
 }
 
 .filtersHeader p,
-.resultsTop p,
 .modalHeader p,
 .modalSection p,
 .lockCard p,
+.ownerCard p,
 .emptyState p {
   margin: 0.42rem 0 0;
   color: var(--text-muted);
@@ -243,7 +252,10 @@
 .primaryAction,
 .secondaryAction,
 .galleryArrow,
-.closeButton {
+.closeButton,
+.pageButton,
+.pageNavButton,
+.deleteAction {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -253,12 +265,15 @@
     box-shadow 180ms ease,
     background 180ms ease,
     border-color 180ms ease,
-    color 180ms ease;
+    color 180ms ease,
+    opacity 180ms ease;
 }
 
 .clearButton,
 .secondaryAction,
-.emptyButton {
+.emptyButton,
+.pageButton,
+.pageNavButton {
   min-height: 3rem;
   padding: 0 1rem;
   border-radius: 0.95rem;
@@ -274,20 +289,52 @@
 .primaryAction:hover,
 .card:hover,
 .galleryArrow:hover,
-.closeButton:hover {
+.closeButton:hover,
+.pageButton:hover,
+.pageNavButton:hover,
+.deleteAction:hover {
   transform: translateY(-1px);
 }
 
 .filterGrid {
   display: grid;
-  grid-template-columns: 1.45fr repeat(6, minmax(0, 1fr));
-  gap: 0.85rem;
-  margin-top: 1.15rem;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.3rem;
+  align-items: end;
+}
+
+.searchField {
+  grid-column: span 3;
+}
+
+.brandField {
+  grid-column: span 2;
+}
+
+.modelField {
+  grid-column: span 2;
+}
+
+.driveField {
+  grid-column: span 1;
+}
+
+.typeField {
+  grid-column: span 1;
+}
+
+.provinceField {
+  grid-column: span 1;
+}
+
+.sortField {
+  grid-column: span 2;
 }
 
 .field {
   display: grid;
-  gap: 0.42rem;
+  gap: 0.46rem;
 }
 
 .field span,
@@ -300,8 +347,8 @@
 .field input,
 .field select {
   width: 100%;
-  min-height: 3.2rem;
-  padding: 0.9rem 1rem;
+  min-height: 3.3rem;
+  padding: 0.92rem 1rem;
   border-radius: 1rem;
   border: 1px solid rgba(20, 55, 99, 0.12);
   background: #ffffff;
@@ -327,7 +374,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
-  margin-top: 0.9rem;
+  margin-top: 0.95rem;
 }
 
 .pill {
@@ -344,20 +391,46 @@
 }
 
 .resultsTop {
-  margin-top: 1.5rem;
-  margin-bottom: 0.95rem;
+  margin-top: 1.6rem;
+  margin-bottom: 1rem;
+  align-items: flex-end;
+}
+
+.resultsMeta {
+  min-width: 10rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1.15rem;
+  background: rgba(255, 255, 255, 0.92);
+  text-align: right;
+}
+
+.resultsMeta strong {
+  display: block;
+  font-size: 1.05rem;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.resultsMeta small {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+  line-height: 1.45;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.15rem;
 }
 
 .card {
-  padding: 1rem;
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1.1rem;
   border-radius: 1.6rem;
-  background: rgba(255, 255, 255, 0.97);
+  background: rgba(255, 255, 255, 0.98);
   cursor: pointer;
 }
 
@@ -432,51 +505,91 @@
 }
 
 .cardHead {
-  margin-top: 0.95rem;
+  align-items: flex-start;
+  gap: 0.95rem;
 }
 
 .titleBlock h3 {
   margin: 0;
-  font-size: 1.18rem;
+  font-size: 1.22rem;
   line-height: 1.08;
   letter-spacing: -0.03em;
 }
 
 .specLine {
-  margin: 0.38rem 0 0;
+  margin: 0.42rem 0 0;
   color: var(--text-muted);
-  line-height: 1.6;
+  line-height: 1.62;
   font-size: 0.94rem;
 }
 
 .priceBlock,
 .modalPriceBlock {
-  text-align: right;
+  text-align: left;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #f7fbff 0%, #eef6ff 100%);
+  border-color: rgba(31, 90, 159, 0.12);
+}
+
+.priceBlock {
+  min-width: 8.6rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 1rem;
+}
+
+.modalPriceBlock {
+  min-width: 11rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1.2rem;
 }
 
 .priceBlock strong,
 .modalPriceBlock strong {
   display: block;
-  font-size: 1.1rem;
   line-height: 1.04;
   letter-spacing: -0.04em;
 }
 
+.priceBlock strong {
+  font-size: 1.16rem;
+}
+
+.modalPriceBlock strong {
+  margin-top: 0.28rem;
+  font-size: 1.55rem;
+}
+
 .priceBlock small,
 .modalPriceBlock small,
+.modalPriceBlock span,
 .cardDate {
   display: block;
-  margin-top: 0.3rem;
   color: var(--text-muted);
   line-height: 1.45;
+}
+
+.priceBlock small {
+  margin-top: 0.26rem;
+}
+
+.modalPriceBlock small {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #52719a;
+}
+
+.modalPriceBlock span {
+  margin-top: 0.22rem;
+  font-size: 0.88rem;
 }
 
 .compactStats,
 .modalStats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-top: 0.95rem;
+  gap: 0.8rem;
 }
 
 .modalStats {
@@ -484,14 +597,14 @@
 }
 
 .statCard {
-  padding: 0.85rem 0.9rem;
+  padding: 0.9rem 0.95rem;
   border-radius: 1rem;
   background: #fdfefe;
 }
 
 .statValue {
   display: block;
-  margin-top: 0.34rem;
+  margin-top: 0.36rem;
   font-size: 1rem;
   line-height: 1.12;
   letter-spacing: -0.03em;
@@ -502,14 +615,19 @@
   justify-content: space-between;
   gap: 1rem;
   align-items: center;
-  margin-top: 0.9rem;
 }
 
 .clickHint {
   color: #275183;
-  font-size: 0.9rem;
-  font-weight: 700;
-  line-height: 1.4;
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.cardDate {
+  margin-top: 0;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .emptyState {
@@ -527,6 +645,59 @@
 
 .emptyButton {
   margin-top: 1rem;
+}
+
+.paginationShell {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1.2rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1.3rem;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.paginationCopy {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.pageButton,
+.pageNavButton {
+  min-width: 3rem;
+}
+
+.pageButtonActive {
+  background: linear-gradient(180deg, #2f6fb8 0%, #1d4f88 100%);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(29, 79, 136, 0.18);
+}
+
+.pageNavButton:disabled,
+.pageButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pageEllipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  color: var(--text-muted);
+  font-weight: 700;
 }
 
 .modalOverlay {
@@ -583,8 +754,13 @@
 .modalContent {
   display: grid;
   align-content: start;
-  gap: 0.9rem;
+  gap: 0.95rem;
   padding: 0.25rem 0.15rem 0.25rem 0;
+}
+
+.modalHeader {
+  padding-right: 4.1rem;
+  align-items: flex-start;
 }
 
 .modalHeader h2 {
@@ -611,17 +787,30 @@
 }
 
 .modalSection,
-.lockCard {
+.lockCard,
+.ownerCard {
   padding: 1rem;
   border-radius: 1.2rem;
-  background: #f8fbff;
   border: 1px solid rgba(31, 90, 159, 0.08);
+}
+
+.modalSection {
+  background: #f8fbff;
 }
 
 .lockCard {
   display: grid;
   gap: 0.9rem;
   background: linear-gradient(180deg, #f5f9ff 0%, #eef5ff 100%);
+}
+
+.ownerCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(180deg, #fff8f8 0%, #fff1f1 100%);
+  border-color: rgba(177, 50, 50, 0.12);
 }
 
 .lockActions {
@@ -645,9 +834,33 @@
   background: rgba(255, 255, 255, 0.92);
 }
 
+.deleteAction {
+  min-height: 3rem;
+  padding: 0 1rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(177, 50, 50, 0.18);
+  background: #ffffff;
+  color: #b13232;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 @media (max-width: 1180px) {
   .filterGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .searchField,
+  .modelField,
+  .sortField {
+    grid-column: span 3;
+  }
+
+  .brandField,
+  .driveField,
+  .typeField,
+  .provinceField {
+    grid-column: span 2;
   }
 
   .grid {
@@ -668,13 +881,19 @@
   .modalStats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .ownerCard {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 @media (max-width: 720px) {
   .hero,
   .filtersShell,
   .emptyState,
-  .modal {
+  .modal,
+  .paginationShell {
     border-radius: 1.45rem;
   }
 
@@ -695,15 +914,29 @@
     grid-template-columns: 1fr;
   }
 
+  .searchField,
+  .brandField,
+  .modelField,
+  .driveField,
+  .typeField,
+  .provinceField,
+  .sortField {
+    grid-column: auto;
+  }
+
   .cardHead,
   .cardFooter,
-  .resultsTop {
+  .resultsTop,
+  .modalHeader,
+  .paginationShell {
     flex-direction: column;
     align-items: stretch;
   }
 
   .priceBlock,
-  .modalPriceBlock {
+  .modalPriceBlock,
+  .resultsMeta,
+  .cardDate {
     text-align: left;
   }
 
@@ -727,5 +960,13 @@
 
   .modalImageFrame {
     aspect-ratio: 4 / 3;
+  }
+
+  .modalHeader {
+    padding-right: 0;
+  }
+
+  .paginationControls {
+    width: 100%;
   }
 }
