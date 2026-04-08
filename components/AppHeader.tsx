@@ -27,7 +27,11 @@ type SmartLinkProps = {
 
 function SmartLink({ href, className, children }: SmartLinkProps) {
   const isAnchorLike =
-    href.startsWith('#') || href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:') || href.startsWith('tel:');
+    href.startsWith('#') ||
+    href.startsWith('http://') ||
+    href.startsWith('https://') ||
+    href.startsWith('mailto:') ||
+    href.startsWith('tel:');
 
   if (isAnchorLike) {
     return (
@@ -56,8 +60,8 @@ export default function AppHeader({
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
-          <span className={styles.brandTitle}>Aim4price</span>
+        <Link href="/" className={styles.brand} aria-label="Go to Aim4price.com home">
+          <span className={styles.brandTitle}>Aim4price.com</span>
         </Link>
 
         <nav className={styles.nav} aria-label="Primary navigation">
@@ -80,13 +84,19 @@ export default function AppHeader({
         </nav>
 
         <div className={styles.actions}>
-          <SmartLink href={loginHref} className={styles.loginButton}>
-            Login
-          </SmartLink>
+          <div className={styles.actionsRail}>
+            <SmartLink href={loginHref} className={styles.loginButton}>
+              Login
+            </SmartLink>
 
-          <SmartLink href={primaryHref} className={styles.signupButton}>
-            {ctaLabel}
-          </SmartLink>
+            <span className={styles.actionDivider} aria-hidden="true">
+              |
+            </span>
+
+            <SmartLink href={primaryHref} className={styles.signupButton}>
+              {ctaLabel}
+            </SmartLink>
+          </div>
         </div>
       </div>
     </header>
