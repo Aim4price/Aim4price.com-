@@ -11,7 +11,8 @@ export default function AppFooter() {
           <div className={styles.brandBlock}>
             <div className={styles.brandName}>Aim4price</div>
             <p className={styles.brandText}>
-              Machinery valuation, asset register, and marketplace tools in one clear workflow.
+              Agricultural and industrial machinery pricing, asset register, and marketplace tools
+              built for clearer decisions.
             </p>
           </div>
 
@@ -25,10 +26,9 @@ export default function AppFooter() {
             </div>
 
             <div className={styles.linkColumn}>
-              <h3>Start</h3>
-              <Link href="/valuation">Free valuation</Link>
-              <Link href="/asset-register">Open register</Link>
-              <Link href="/marketplace">Browse marketplace</Link>
+              <h3>Legal</h3>
+              <Link href="/privacy-policy">Privacy Policy</Link>
+              <Link href="/terms-of-service">Terms of Service</Link>
             </div>
           </div>
         </div>
