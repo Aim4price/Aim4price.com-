@@ -1,7 +1,7 @@
 .footer {
-  margin-top: 4.5rem;
+  margin-top: clamp(4.75rem, 7vw, 6rem);
   border-top: 1px solid rgba(18, 45, 37, 0.08);
-  background: #fbfcfb;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, #fbfcfb 100%);
 }
 
 .shell {
@@ -11,76 +11,69 @@
 
 .topRow {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: clamp(2rem, 4vw, 4.5rem);
-  padding: 2.6rem 0 2rem;
+  grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
+  align-items: start;
+  gap: clamp(2.4rem, 5vw, 5.75rem);
+  padding: clamp(3.2rem, 5vw, 4.4rem) 0 clamp(2.35rem, 4vw, 3rem);
 }
 
 .brandBlock {
   display: grid;
-  gap: 0.78rem;
+  align-content: start;
+  min-width: 0;
 }
 
 .brandName {
-  font-size: clamp(1.7rem, 3vw, 2.2rem);
-  line-height: 1.05;
+  font-size: clamp(2rem, 3.5vw, 2.95rem);
+  line-height: 0.96;
   font-weight: 800;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.06em;
   color: var(--text-strong);
 }
 
 .brandText {
-  margin: 0;
-  max-width: 33rem;
+  margin: 1.35rem 0 0;
+  max-width: 35rem;
   color: var(--text-muted);
-  font-size: 1rem;
-  line-height: 1.68;
+  font-size: 1.02rem;
+  line-height: 1.82;
 }
 
 .linksGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.8rem;
+  gap: clamp(1.4rem, 3vw, 2.75rem);
 }
 
 .linkColumn {
   display: grid;
   align-content: start;
-  gap: 0.82rem;
+  gap: 0.92rem;
 }
 
 .linkColumn h3 {
-  margin: 0 0 0.2rem;
+  margin: 0 0 0.3rem;
   font-size: 0.82rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #6d7873;
 }
 
 .linkColumn a {
+  width: fit-content;
   text-decoration: none;
   color: #233b33;
+  font-weight: 600;
   line-height: 1.55;
+  transition:
+    color 0.18s ease,
+    transform 0.18s ease;
 }
 
 .linkColumn a:hover {
   color: var(--brand-700);
-}
-
-.metaRow {
-  border-top: 1px solid rgba(18, 45, 37, 0.08);
-}
-
-.metaRow .shell {
-  padding: 1rem 0 1.25rem;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem 1.2rem;
-  color: #6f7a75;
-  font-size: 0.93rem;
+  transform: translateX(2px);
 }
 
 .linkColumn a:focus-visible {
@@ -88,20 +81,47 @@
   outline-offset: 3px;
 }
 
-@media (max-width: 860px) {
-  .topRow,
-  .linksGrid {
+.metaRow {
+  border-top: 1px solid rgba(18, 45, 37, 0.08);
+}
+
+.metaRow .shell {
+  padding: 1.08rem 0 1.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem 1.2rem;
+  color: #6f7a75;
+  font-size: 0.93rem;
+}
+
+@media (max-width: 900px) {
+  .topRow {
     grid-template-columns: 1fr;
+  }
+
+  .linksGrid {
+    max-width: 32rem;
   }
 }
 
 @media (max-width: 640px) {
   .footer {
-    margin-top: 3.8rem;
+    margin-top: 4rem;
   }
 
   .topRow {
-    padding: 2.2rem 0 1.7rem;
+    padding: 2.45rem 0 2rem;
+  }
+
+  .brandText {
+    margin-top: 1rem;
+  }
+
+  .linksGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 
   .metaRow .shell {
