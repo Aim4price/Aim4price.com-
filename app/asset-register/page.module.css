@@ -1,997 +1,804 @@
-'use client';
-
-import Link from 'next/link';
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
-import AppHeader from '../../components/AppHeader';
-import styles from './page.module.css';
-import {
-  clearItems,
-  deleteItem,
-  loadItems,
-  saveItem,
-  type SavedItem,
-  type SavedItemKind,
-  type SavedItemMethod,
-} from '../../lib/register';
-import {
-  loadPublishedMarketplaceListings,
-  publishRegisterItemToMarketplace,
-  removeMarketplaceListing,
-  type MarketplaceListing,
-} from '../../lib/marketplace';
-import { money } from '../../lib/tractor-logic';
-
-type NoticeTone = 'success' | 'error';
-type AssetFilter = 'all' | 'tractor' | 'manual' | 'property' | 'live';
-type EditorMode = 'add' | 'edit';
-
-type RegisterAsset = SavedItem & {
-  id?: string;
-  title?: string;
-  value?: number;
-  note?: string;
-  brandName?: string;
-  modelName?: string;
-  yearModel?: number;
-  hours?: number;
-  tractorType?: string;
-  drive?: string;
-  cab?: boolean;
-  createdAtIso?: string;
-  updatedAtIso?: string;
-  method?: SavedItemMethod;
-  serialNumber?: string;
-  isFinanced?: boolean;
-  financeNote?: string;
-  photos?: string[];
-  sellerPhone?: string;
-  marketplaceNotes?: string;
-};
-
-type AssetDraft = {
-  kind: SavedItemKind;
-  title: string;
-  value: string;
-  note: string;
-  serialNumber: string;
-  isFinanced: boolean;
-  financeNote: string;
-  photos: string[];
-};
-
-const MAX_PHOTOS = 8;
-
-function createAssetDraft(kind: SavedItemKind = 'manual'): AssetDraft {
-  return {
-    kind,
-    title: '',
-    value: '',
-    note: '',
-    serialNumber: '',
-    isFinanced: false,
-    financeNote: '',
-    photos: [],
-  };
+.page {
+  width: 100%;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 26%),
+    radial-gradient(circle at top left, rgba(15, 23, 42, 0.04), transparent 24%),
+    linear-gradient(180deg, #f6f7f7 0%, #f2f4f5 100%);
 }
 
-function parseMoney(value: string): number {
-  const parsed = Number(String(value).replace(/[^0-9.]/g, ''));
-  return Number.isFinite(parsed) ? parsed : 0;
+.content {
+  width: min(calc(100% - 2rem), 1040px);
+  margin: 0 auto;
+  padding: 1.55rem 0 3.65rem;
 }
 
-function formatMoney(value: number): string {
-  try {
-    return money(value);
-  } catch {
-    return new Intl.NumberFormat('en-ZA', {
-      style: 'currency',
-      currency: 'ZAR',
-      maximumFractionDigits: 0,
-    }).format(value || 0);
+.heroShell {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 1.2rem;
+  min-height: 392px;
+  padding: 1.5rem;
+  border-radius: 2rem;
+  background: linear-gradient(135deg, #1f242c 0%, #27303b 58%, #24415f 100%);
+  border: 1px solid rgba(90, 146, 222, 0.24);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 24px 44px rgba(24, 31, 38, 0.16),
+    0 8px 18px rgba(24, 31, 38, 0.08);
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  right: -10%;
+  bottom: -28%;
+  width: 24rem;
+  height: 24rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(111, 169, 245, 0.26) 0%, rgba(111, 169, 245, 0) 72%);
+  filter: blur(18px);
+  pointer-events: none;
+}
+
+.heroCopy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.kicker,
+.eyebrow,
+.summaryLabel,
+.valueLabel {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 1.95rem;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.kicker {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(111, 169, 245, 0.18);
+}
+
+.heroCopy h1 {
+  margin: 0.82rem 0 0.56rem;
+  max-width: 11ch;
+  color: #ffffff;
+  font-size: clamp(2.8rem, 5.4vw, 4.25rem);
+  line-height: 0.96;
+  letter-spacing: -0.065em;
+}
+
+.heroCopy p {
+  max-width: 43rem;
+  margin: 0;
+  color: rgba(230, 239, 250, 0.86);
+  font-size: 1.03rem;
+  line-height: 1.72;
+}
+
+.heroStats {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: auto;
+}
+
+.heroStat {
+  display: grid;
+  gap: 0.34rem;
+  min-height: 104px;
+  padding: 1rem 1.05rem;
+  border-radius: 1.3rem;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 12px 22px rgba(18, 29, 42, 0.08);
+}
+
+.heroStat span {
+  display: block;
+  color: rgba(226, 237, 251, 0.82);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.heroStat strong {
+  display: block;
+  margin-top: 0.38rem;
+  color: #ffffff;
+  font-size: clamp(1.6rem, 2.4vw, 2.1rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+}
+
+.notice {
+  display: inline-flex;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(21, 28, 35, 0.08);
+  font-weight: 700;
+}
+
+.noticeSuccess {
+  background: rgba(52, 211, 153, 0.1);
+  color: #146c4a;
+}
+
+.noticeError {
+  background: rgba(181, 67, 67, 0.1);
+  color: #8d3434;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 296px;
+  gap: 1.1rem;
+  margin-top: 1.2rem;
+  align-items: start;
+}
+
+.mainColumn {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.rail {
+  position: sticky;
+  top: 5.4rem;
+  display: grid;
+  gap: 1rem;
+  align-self: start;
+}
+
+.surface,
+.modalCard,
+.confirmCard {
+  min-width: 0;
+  padding: 1.2rem;
+  border-radius: 1.45rem;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(26, 34, 44, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 15px 28px rgba(30, 36, 44, 0.06),
+    0 4px 10px rgba(30, 36, 44, 0.03);
+}
+
+.controlSurface,
+.listSurface,
+.quickSurface {
+  position: relative;
+}
+
+.controlSurface::before,
+.listSurface::before,
+.quickSurface::before,
+.summarySurface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(90, 146, 222, 0.26), rgba(90, 146, 222, 0.06) 38%, rgba(90, 146, 222, 0.14) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.summarySurface {
+  background: linear-gradient(180deg, #232a32 0%, #1d252e 100%);
+  border-color: rgba(92, 148, 225, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 18px 34px rgba(23, 29, 36, 0.14);
+}
+
+.panelHeader,
+.sectionRow,
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.95rem;
+  flex-wrap: wrap;
+}
+
+.eyebrow {
+  color: #586676;
+  background: rgba(86, 102, 118, 0.08);
+  border: 1px solid rgba(90, 146, 222, 0.12);
+}
+
+.panelHeader h2,
+.sectionRow h2,
+.modalHeader h3,
+.confirmCard h3 {
+  margin: 0.44rem 0 0;
+  color: var(--text-strong);
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+}
+
+.panelHeader p,
+.sectionRow p,
+.modalHeader p,
+.confirmCard p,
+.summaryTop p {
+  margin: 0.42rem 0 0;
+  color: var(--text-muted);
+  line-height: 1.68;
+}
+
+.summaryTop p,
+.summaryCard span,
+.liveStrip span {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.panelActions,
+.filterBar,
+.modalActions {
+  width: 100%;
+}
+
+.panelActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.primaryButton,
+.ghostButton,
+.secondaryButton,
+.primaryInlineButton,
+.dangerButton,
+.quickLink,
+.quickButton,
+.modalPrimary,
+.modalSecondary,
+.modalDanger,
+.filterChip,
+.modalClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.7rem;
+  padding: 0.76rem 1rem;
+  border-radius: 0.92rem;
+  border: 1px solid transparent;
+  text-decoration: none;
+  font-weight: 800;
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.primaryButton,
+.primaryInlineButton,
+.quickLink,
+.modalPrimary {
+  color: #ffffff;
+  background: linear-gradient(180deg, #28313b, #1c242c);
+  border-color: rgba(90, 146, 222, 0.18);
+  box-shadow: 0 12px 22px rgba(24, 29, 36, 0.12);
+}
+
+.ghostButton,
+.secondaryButton,
+.quickButton,
+.modalSecondary {
+  color: var(--text-strong);
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(26, 34, 44, 0.12);
+}
+
+.dangerButton,
+.modalDanger {
+  color: #9b3c3c;
+  background: rgba(255, 245, 245, 0.98);
+  border-color: rgba(181, 67, 67, 0.18);
+}
+
+.primaryButton:hover,
+.ghostButton:hover,
+.secondaryButton:hover,
+.primaryInlineButton:hover,
+.dangerButton:hover,
+.quickLink:hover,
+.quickButton:hover,
+.modalPrimary:hover,
+.modalSecondary:hover,
+.modalDanger:hover,
+.filterChip:hover,
+.modalClose:hover {
+  transform: translateY(-1px);
+}
+
+.filterBar {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.92rem;
+  margin-top: 1.15rem;
+}
+
+.searchField,
+.modalForm label {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.searchField span,
+.modalForm label span {
+  color: var(--text-strong);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.searchField input,
+.modalForm input,
+.modalForm select,
+.modalForm textarea {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.86rem 1rem;
+  border-radius: 0.92rem;
+  border: 1px solid rgba(26, 34, 44, 0.1);
+  background: #ffffff;
+  color: var(--text-strong);
+  outline: none;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.searchField input::placeholder,
+.modalForm input::placeholder,
+.modalForm textarea::placeholder {
+  color: #8b8478;
+}
+
+.searchField input:focus,
+.modalForm input:focus,
+.modalForm select:focus,
+.modalForm textarea:focus {
+  border-color: rgba(90, 146, 222, 0.34);
+  box-shadow: 0 0 0 4px rgba(90, 146, 222, 0.08);
+}
+
+.modalForm textarea {
+  min-height: 7.4rem;
+  resize: vertical;
+}
+
+.filterChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.68rem;
+  margin-top: 1rem;
+}
+
+.filterChip {
+  gap: 0.65rem;
+  min-height: 3rem;
+  padding: 0.72rem 0.96rem;
+  color: var(--text-strong);
+  background: rgba(248, 249, 249, 0.98);
+  border-color: rgba(26, 34, 44, 0.08);
+}
+
+.filterChip span {
+  font-weight: 700;
+}
+
+.filterChip strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.82rem;
+  min-height: 1.82rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: rgba(35, 41, 47, 0.07);
+  font-size: 0.82rem;
+}
+
+.filterChipActive {
+  color: #ffffff;
+  background: linear-gradient(180deg, #2c3540, #202833);
+  border-color: rgba(90, 146, 222, 0.18);
+  box-shadow: 0 10px 18px rgba(28, 35, 42, 0.08);
+}
+
+.filterChipActive strong {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.assetGrid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+.assetCard {
+  display: grid;
+  gap: 0.95rem;
+  padding: 1.08rem;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(26, 34, 44, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(249, 250, 251, 0.98));
+  box-shadow: 0 12px 24px rgba(32, 38, 44, 0.05);
+}
+
+.assetTop {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 286px);
+  gap: 1rem;
+  align-items: start;
+}
+
+.assetIdentity {
+  min-width: 0;
+}
+
+.assetBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.kindBadge,
+.methodBadge,
+.stateBadge,
+.livePill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.95rem;
+  padding: 0 0.74rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.kindBadge {
+  color: #2c333a;
+  background: rgba(44, 51, 58, 0.08);
+}
+
+.methodBadge {
+  color: #5a6674;
+  background: rgba(90, 102, 116, 0.1);
+}
+
+.stateBadge {
+  border: 1px solid transparent;
+}
+
+.stateBadgeLive,
+.livePill {
+  color: #e7eef6;
+  background: rgba(90, 146, 222, 0.16);
+  border-color: rgba(90, 146, 222, 0.18);
+}
+
+.assetIdentity h3 {
+  margin: 0.82rem 0 0.38rem;
+  color: var(--text-strong);
+  font-size: clamp(1.2rem, 2.4vw, 1.48rem);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+
+.assetIdentity p,
+.assetHint,
+.valuePanel small,
+.emptyState span,
+.summaryCard span,
+.liveStrip span {
+  color: var(--text-muted);
+  line-height: 1.62;
+}
+
+.valuePanel {
+  display: grid;
+  gap: 0.28rem;
+  padding: 1rem;
+  border-radius: 1.12rem;
+  background: linear-gradient(180deg, rgba(245, 247, 249, 0.96), rgba(239, 242, 245, 0.95));
+  border: 1px solid rgba(90, 146, 222, 0.14);
+}
+
+.valueLabel {
+  color: #5a6674;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(90, 146, 222, 0.12);
+}
+
+.valuePanel strong {
+  color: var(--text-strong);
+  font-size: clamp(1.45rem, 3vw, 1.95rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+
+.assetFooter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.95rem;
+  align-items: end;
+}
+
+.assetHint {
+  max-width: 620px;
+}
+
+.assetActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.7rem;
+}
+
+.secondaryButton,
+.primaryInlineButton,
+.dangerButton {
+  min-height: 2.55rem;
+  padding: 0.64rem 0.92rem;
+  font-size: 0.88rem;
+  box-shadow: none;
+}
+
+.emptyState {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1.15rem;
+  padding: 1.2rem;
+  border-radius: 1.12rem;
+  background: rgba(247, 248, 249, 0.92);
+  border: 1px dashed rgba(90, 146, 222, 0.22);
+}
+
+.emptyState strong,
+.summaryTop strong,
+.summaryCard strong,
+.liveStrip strong {
+  color: var(--text-strong);
+}
+
+.summaryTop {
+  display: grid;
+  gap: 0.36rem;
+}
+
+.summaryLabel {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(90, 146, 222, 0.18);
+}
+
+.summaryTop strong {
+  color: #ffffff;
+  font-size: clamp(2rem, 4vw, 2.7rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.summaryCard {
+  display: grid;
+  gap: 0.24rem;
+  padding: 0.95rem;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(90, 146, 222, 0.12);
+}
+
+.summaryCard strong,
+.liveStrip strong {
+  color: #ffffff;
+  font-size: 1.2rem;
+}
+
+.liveStrip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(90, 146, 222, 0.12);
+}
+
+.quickActions {
+  display: grid;
+  gap: 0.82rem;
+}
+
+.quickLink,
+.quickButton {
+  width: 100%;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(18, 22, 26, 0.28);
+  backdrop-filter: blur(12px);
+}
+
+.modalCard,
+.confirmCard {
+  width: min(100%, 560px);
+  max-height: min(92vh, 760px);
+  overflow-y: auto;
+}
+
+.modalClose {
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0;
+  border-color: rgba(26, 34, 44, 0.1);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text-strong);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.modalForm {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.modalPrimary,
+.modalSecondary,
+.modalDanger {
+  min-width: 132px;
+}
+
+.primaryButton:focus-visible,
+.ghostButton:focus-visible,
+.secondaryButton:focus-visible,
+.primaryInlineButton:focus-visible,
+.dangerButton:focus-visible,
+.quickLink:focus-visible,
+.quickButton:focus-visible,
+.modalPrimary:focus-visible,
+.modalSecondary:focus-visible,
+.modalDanger:focus-visible,
+.modalClose:focus-visible,
+.filterChip:focus-visible,
+.searchField input:focus-visible,
+.modalForm input:focus-visible,
+.modalForm select:focus-visible,
+.modalForm textarea:focus-visible {
+  outline: 3px solid rgba(90, 146, 222, 0.18);
+  outline-offset: 3px;
+}
+
+@media (max-width: 1180px) {
+  .content {
+    width: min(calc(100% - 1.5rem), 1040px);
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .rail {
+    position: static;
   }
 }
 
-function methodLabel(value?: SavedItemMethod): string {
-  return (
-    {
-      aim4price: 'Aim4price',
-      market: 'Market',
-      department: 'Department',
-      manual: 'Manual Override',
-    }[value ?? 'manual'] ?? 'Manual Override'
-  );
-}
-
-function typeShortLabel(value: SavedItemKind): string {
-  return (
-    {
-      tractor: 'Equipment',
-      manual: 'Manual',
-      property: 'Property',
-    }[value] ?? 'Manual'
-  );
-}
-
-function filterLabel(value: AssetFilter): string {
-  return (
-    {
-      all: 'All Assets',
-      tractor: 'Equipment',
-      property: 'Property',
-      manual: 'Manual Assets',
-      live: 'Marketplace Live',
-    }[value] ?? 'All Assets'
-  );
-}
-
-function normaliseRegisterItem(item: SavedItem): RegisterAsset {
-  const raw = item as RegisterAsset;
-
-  return {
-    ...raw,
-    id: raw.id ?? `asset-${Math.random().toString(36).slice(2, 10)}`,
-    title: raw.title ?? '',
-    value: Number(raw.value ?? 0),
-    note: raw.note ?? '',
-    kind: raw.kind ?? 'manual',
-    method: raw.method ?? 'manual',
-    createdAtIso: raw.createdAtIso ?? new Date().toISOString(),
-    updatedAtIso: raw.updatedAtIso ?? raw.createdAtIso ?? new Date().toISOString(),
-    serialNumber: raw.serialNumber ?? '',
-    isFinanced: Boolean(raw.isFinanced),
-    financeNote: raw.financeNote ?? '',
-    photos: Array.isArray(raw.photos) ? raw.photos.filter(Boolean) : [],
-    sellerPhone: raw.sellerPhone ?? '',
-    marketplaceNotes: raw.marketplaceNotes ?? '',
-  };
-}
-
-function formatItemMeta(item: RegisterAsset): string {
-  if (item.kind !== 'tractor') {
-    return item.note || 'Added manually to the register';
+@media (max-width: 900px) {
+  .content {
+    padding: 1.35rem 0 3rem;
   }
 
-  const parts = [
-    item.brandName,
-    item.modelName,
-    item.yearModel ? String(item.yearModel) : undefined,
-  ];
-
-  if (item.hours) {
-    parts.push(`${item.hours.toLocaleString('en-ZA')} hours`);
+  .heroStats,
+  .summaryGrid {
+    grid-template-columns: 1fr;
   }
 
-  return parts.filter(Boolean).join(' · ') || 'Saved from valuation';
+  .assetTop,
+  .assetFooter {
+    grid-template-columns: 1fr;
+  }
+
+  .assetActions {
+    justify-content: flex-start;
+  }
 }
 
-function formatDateLabel(value?: string): string {
-  if (!value) {
-    return 'Unknown';
+@media (max-width: 720px) {
+  .surface,
+  .modalCard,
+  .confirmCard,
+  .hero {
+    padding: 1rem;
+    border-radius: 1.24rem;
   }
 
-  const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return 'Unknown';
+  .panelActions,
+  .modalActions,
+  .liveStrip {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  return new Intl.DateTimeFormat('en-ZA', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(parsed);
-}
-
-function timeAgo(value?: string): string {
-  if (!value) {
-    return 'Unknown';
+  .primaryButton,
+  .ghostButton,
+  .secondaryButton,
+  .primaryInlineButton,
+  .dangerButton,
+  .quickLink,
+  .quickButton,
+  .modalPrimary,
+  .modalSecondary,
+  .modalDanger,
+  .filterChip {
+    width: 100%;
   }
 
-  const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return 'Unknown';
+  .filterChips,
+  .assetActions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
-
-  const elapsed = Date.now() - parsed.getTime();
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-
-  if (elapsed < hour) {
-    const minutes = Math.max(1, Math.round(elapsed / minute));
-    return `${minutes} min ago`;
-  }
-
-  if (elapsed < day) {
-    const hours = Math.max(1, Math.round(elapsed / hour));
-    return `${hours} hour${hours === 1 ? '' : 's'} ago`;
-  }
-
-  const days = Math.max(1, Math.round(elapsed / day));
-  return `${days} day${days === 1 ? '' : 's'} ago`;
-}
-
-function matchesSearch(item: RegisterAsset, query: string): boolean {
-  const needle = query.trim().toLowerCase();
-
-  if (!needle) {
-    return true;
-  }
-
-  const haystack = [
-    item.title,
-    item.brandName,
-    item.modelName,
-    item.note,
-    item.kind,
-    item.tractorType,
-    item.drive,
-    item.serialNumber,
-    item.financeNote,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-
-  return haystack.includes(needle);
-}
-
-async function filesToDataUrls(files: FileList | null): Promise<string[]> {
-  if (!files?.length) {
-    return [];
-  }
-
-  return Promise.all(
-    Array.from(files).map(
-      (file) =>
-        new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-
-          reader.onload = () => {
-            if (typeof reader.result === 'string') {
-              resolve(reader.result);
-              return;
-            }
-
-            reject(new Error('Could not read the image.'));
-          };
-
-          reader.onerror = () => reject(new Error('Could not read the image.'));
-          reader.readAsDataURL(file);
-        }),
-    ),
-  );
-}
-
-function getListingId(listing: MarketplaceListing): string | undefined {
-  const record = listing as MarketplaceListing & Record<string, unknown>;
-  const value = record.id;
-  return typeof value === 'string' ? value : undefined;
-}
-
-function getListingAssetId(listing: MarketplaceListing): string | undefined {
-  const record = listing as MarketplaceListing & Record<string, unknown>;
-  const candidates = [
-    record.registerItemId,
-    record.assetId,
-    record.itemId,
-    record.savedItemId,
-    record.sourceId,
-  ];
-
-  for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.trim()) {
-      return candidate;
-    }
-  }
-
-  return undefined;
-}
-
-function assetDetails(item: RegisterAsset, isLive: boolean) {
-  const base = [
-    { label: 'Serial', value: item.serialNumber || '—' },
-    { label: 'Finance', value: item.isFinanced ? 'Financed' : 'Not financed' },
-    { label: 'Photos', value: String(item.photos?.length ?? 0) },
-    { label: 'Marketplace', value: isLive ? 'Live' : 'Not live' },
-  ];
-
-  if (item.kind !== 'tractor') {
-    return [
-      ...base,
-      { label: 'Type', value: typeShortLabel(item.kind) },
-      { label: 'Added', value: formatDateLabel(item.createdAtIso) },
-    ];
-  }
-
-  return [
-    ...base,
-    { label: 'Brand', value: item.brandName || '—' },
-    { label: 'Model', value: item.modelName || '—' },
-    { label: 'Year', value: item.yearModel ? String(item.yearModel) : '—' },
-    {
-      label: 'Hours',
-      value: typeof item.hours === 'number' ? item.hours.toLocaleString('en-ZA') : '—',
-    },
-    { label: 'Drive', value: item.drive || '—' },
-    { label: 'Cab', value: item.cab ? 'Cab' : 'Open station' },
-    { label: 'Added', value: formatDateLabel(item.createdAtIso) },
-  ];
-}
-
-export default function AssetRegisterPage() {
-  const [assets, setAssets] = useState<RegisterAsset[]>([]);
-  const [listings, setListings] = useState<MarketplaceListing[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<AssetFilter>('all');
-  const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
-  const [editorMode, setEditorMode] = useState<EditorMode>('add');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<AssetDraft>(createAssetDraft());
-  const [isSaving, setIsSaving] = useState(false);
-  const [busyAssetId, setBusyAssetId] = useState<string | null>(null);
-
-  const refreshData = async () => {
-    const loadedItems = await Promise.resolve(loadItems());
-    const loadedListings = await Promise.resolve(loadPublishedMarketplaceListings());
-
-    setAssets((loadedItems ?? []).map(normaliseRegisterItem));
-    setListings(Array.isArray(loadedListings) ? loadedListings : []);
-  };
-
-  useEffect(() => {
-    void refreshData();
-  }, []);
-
-  useEffect(() => {
-    if (!notice) {
-      return undefined;
-    }
-
-    const timeout = window.setTimeout(() => setNotice(null), 2600);
-    return () => window.clearTimeout(timeout);
-  }, [notice]);
-
-  const liveAssetIds = useMemo(() => {
-    return new Set(
-      listings
-        .map((listing) => getListingAssetId(listing))
-        .filter((value): value is string => Boolean(value)),
-    );
-  }, [listings]);
-
-  const filteredAssets = useMemo(() => {
-    return assets.filter((item) => {
-      if (!matchesSearch(item, searchQuery)) {
-        return false;
-      }
-
-      if (filter === 'all') {
-        return true;
-      }
-
-      if (filter === 'live') {
-        return Boolean(item.id && liveAssetIds.has(item.id));
-      }
-
-      return item.kind === filter;
-    });
-  }, [assets, filter, liveAssetIds, searchQuery]);
-
-  const totalValue = useMemo(() => {
-    return assets.reduce((sum, item) => sum + Number(item.value ?? 0), 0);
-  }, [assets]);
-
-  const liveCount = useMemo(() => {
-    return assets.filter((item) => Boolean(item.id && liveAssetIds.has(item.id))).length;
-  }, [assets, liveAssetIds]);
-
-  const filterCounts = useMemo(() => {
-    return {
-      all: assets.length,
-      tractor: assets.filter((item) => item.kind === 'tractor').length,
-      manual: assets.filter((item) => item.kind === 'manual').length,
-      property: assets.filter((item) => item.kind === 'property').length,
-      live: liveCount,
-    };
-  }, [assets, liveCount]);
-
-  const resetEditor = () => {
-    setDraft(createAssetDraft());
-    setEditorMode('add');
-    setEditingId(null);
-  };
-
-  const handleDraftChange = <K extends keyof AssetDraft>(key: K, value: AssetDraft[K]) => {
-    setDraft((current) => ({ ...current, [key]: value }));
-  };
-
-  const handlePhotoChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    try {
-      const urls = await filesToDataUrls(event.target.files);
-      setDraft((current) => ({
-        ...current,
-        photos: [...current.photos, ...urls].slice(0, MAX_PHOTOS),
-      }));
-      event.target.value = '';
-    } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Could not add the photos.',
-      });
-    }
-  };
-
-  const handleRemovePhoto = (index: number) => {
-    setDraft((current) => ({
-      ...current,
-      photos: current.photos.filter((_, currentIndex) => currentIndex !== index),
-    }));
-  };
-
-  const handleEdit = (item: RegisterAsset) => {
-    setEditorMode('edit');
-    setEditingId(item.id ?? null);
-    setDraft({
-      kind: item.kind,
-      title: item.title ?? '',
-      value: item.value ? String(item.value) : '',
-      note: item.note ?? '',
-      serialNumber: item.serialNumber ?? '',
-      isFinanced: Boolean(item.isFinanced),
-      financeNote: item.financeNote ?? '',
-      photos: item.photos ?? [],
-    });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsSaving(true);
-
-    try {
-      const existing = assets.find((item) => item.id === editingId);
-      const nowIso = new Date().toISOString();
-
-      const nextItem = normaliseRegisterItem({
-        ...(existing ?? {}),
-        id: existing?.id ?? `asset-${Date.now()}`,
-        kind: draft.kind,
-        title: draft.title.trim(),
-        value: parseMoney(draft.value),
-        note: draft.note.trim(),
-        serialNumber: draft.serialNumber.trim(),
-        isFinanced: draft.isFinanced,
-        financeNote: draft.financeNote.trim(),
-        photos: draft.photos,
-        createdAtIso: existing?.createdAtIso ?? nowIso,
-        updatedAtIso: nowIso,
-        method: existing?.method ?? 'manual',
-      } as SavedItem);
-
-      await Promise.resolve(saveItem(nextItem as SavedItem));
-      await refreshData();
-      resetEditor();
-
-      setNotice({
-        tone: 'success',
-        message: existing ? 'Asset updated successfully.' : 'Asset added to your register.',
-      });
-    } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Could not save the asset.',
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDelete = async (item: RegisterAsset) => {
-    if (!item.id) {
-      return;
-    }
-
-    const approved = window.confirm(`Delete “${item.title || 'this asset'}” from the register?`);
-
-    if (!approved) {
-      return;
-    }
-
-    try {
-      setBusyAssetId(item.id);
-      await Promise.resolve(deleteItem(item.id));
-      await refreshData();
-      setNotice({ tone: 'success', message: 'Asset removed from the register.' });
-
-      if (editingId === item.id) {
-        resetEditor();
-      }
-    } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Could not delete the asset.',
-      });
-    } finally {
-      setBusyAssetId(null);
-    }
-  };
-
-  const handleClearAll = async () => {
-    const approved = window.confirm('Clear the entire asset register? This cannot be undone.');
-
-    if (!approved) {
-      return;
-    }
-
-    try {
-      setBusyAssetId('all');
-      await Promise.resolve(clearItems());
-      await refreshData();
-      resetEditor();
-      setNotice({ tone: 'success', message: 'The asset register was cleared.' });
-    } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Could not clear the register.',
-      });
-    } finally {
-      setBusyAssetId(null);
-    }
-  };
-
-  const handlePublish = async (item: RegisterAsset) => {
-    if (!item.id) {
-      return;
-    }
-
-    try {
-      setBusyAssetId(item.id);
-      const publishFn =
-        publishRegisterItemToMarketplace as unknown as (payload: SavedItem) => Promise<unknown> | unknown;
-      await Promise.resolve(publishFn(item as SavedItem));
-      await refreshData();
-      setNotice({ tone: 'success', message: 'Asset published to marketplace.' });
-    } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Could not publish the asset.',
-      });
-    } finally {
-      setBusyAssetId(null);
-    }
-  };
-
-  const handleUnpublish = async (item: RegisterAsset) => {
-    if (!item.id) {
-      return;
-    }
-
-    const linkedListing = listings.find((listing) => getListingAssetId(listing) === item.id);
-    const listingId = linkedListing ? getListingId(linkedListing) : item.id;
-
-    if (!listingId) {
-      setNotice({ tone: 'error', message: 'Could not locate the marketplace listing.' });
-      return;
-    }
-
-    try {
-      setBusyAssetId(item.id);
-      const removeFn =
-        removeMarketplaceListing as unknown as (listingIdValue: string) => Promise<unknown> | unknown;
-      await Promise.resolve(removeFn(listingId));
-      await refreshData();
-      setNotice({ tone: 'success', message: 'Marketplace listing removed.' });
-    } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Could not remove the listing.',
-      });
-    } finally {
-      setBusyAssetId(null);
-    }
-  };
-
-  return (
-    <div className={styles.page}>
-      <AppHeader active="asset-register" />
-
-      <main className={styles.content}>
-        <section className={styles.heroShell}>
-          <div className={styles.hero}>
-            <div className={styles.heroCopy}>
-              <span className={styles.kicker}>Asset Register</span>
-              <h1>Keep every asset in one clean working register.</h1>
-              <p>
-                Track values, save important notes, keep finance references together, and move selected
-                assets into the marketplace when you are ready.
-              </p>
-            </div>
-
-            <div className={styles.heroStats}>
-              <div className={styles.heroStat}>
-                <span>Total assets</span>
-                <strong>{assets.length}</strong>
-              </div>
-              <div className={styles.heroStat}>
-                <span>Register value</span>
-                <strong>{formatMoney(totalValue)}</strong>
-              </div>
-              <div className={styles.heroStat}>
-                <span>Marketplace live</span>
-                <strong>{liveCount}</strong>
-              </div>
-            </div>
-          </div>
-
-          {notice ? (
-            <div
-              className={`${styles.notice} ${
-                notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError
-              }`}
-            >
-              {notice.message}
-            </div>
-          ) : null}
-        </section>
-
-        <section className={styles.dashboard}>
-          <div className={styles.mainColumn}>
-            <section className={`${styles.surface} ${styles.controlSurface}`}>
-              <div className={styles.panelHeader}>
-                <div>
-                  <span className={styles.eyebrow}>Register editor</span>
-                  <h2>{editorMode === 'edit' ? 'Edit asset' : 'Add asset'}</h2>
-                  <p>
-                    Save manual assets, property, or equipment records. You can update values at any time.
-                  </p>
-                </div>
-
-                <div className={styles.panelActions}>
-                  <button className={styles.ghostButton} type="button" onClick={resetEditor}>
-                    Reset form
-                  </button>
-                  <button
-                    className={styles.dangerButton}
-                    type="button"
-                    onClick={handleClearAll}
-                    disabled={busyAssetId === 'all' || assets.length === 0}
-                  >
-                    Clear register
-                  </button>
-                </div>
-              </div>
-
-              <form className={styles.formGrid} onSubmit={handleSubmit}>
-                <label>
-                  <span>Asset type</span>
-                  <select
-                    value={draft.kind}
-                    onChange={(event) => handleDraftChange('kind', event.target.value as SavedItemKind)}
-                  >
-                    <option value="manual">Manual asset</option>
-                    <option value="tractor">Equipment</option>
-                    <option value="property">Property</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span>Title</span>
-                  <input
-                    value={draft.title}
-                    onChange={(event) => handleDraftChange('title', event.target.value)}
-                    placeholder="Example: John Deere 6155M / Main workshop / Baler stock"
-                    required
-                  />
-                </label>
-
-                <label>
-                  <span>Value</span>
-                  <input
-                    inputMode="decimal"
-                    value={draft.value}
-                    onChange={(event) => handleDraftChange('value', event.target.value)}
-                    placeholder="850000"
-                  />
-                </label>
-
-                <label>
-                  <span>Serial / reference</span>
-                  <input
-                    value={draft.serialNumber}
-                    onChange={(event) => handleDraftChange('serialNumber', event.target.value)}
-                    placeholder="Serial number, unit reference, internal code"
-                  />
-                </label>
-
-                <label className={styles.fullWidth}>
-                  <span>Notes</span>
-                  <textarea
-                    value={draft.note}
-                    onChange={(event) => handleDraftChange('note', event.target.value)}
-                    placeholder="Important condition notes, attachments, ownership detail, usage, or sale notes"
-                  />
-                </label>
-
-                <label className={styles.checkboxRow}>
-                  <input
-                    checked={draft.isFinanced}
-                    onChange={(event) => handleDraftChange('isFinanced', event.target.checked)}
-                    type="checkbox"
-                  />
-                  <span>Asset is financed</span>
-                </label>
-
-                <label className={styles.fullWidth}>
-                  <span>Finance note</span>
-                  <input
-                    value={draft.financeNote}
-                    onChange={(event) => handleDraftChange('financeNote', event.target.value)}
-                    placeholder="Bank, agreement note, outstanding balance reference"
-                  />
-                </label>
-
-                <label className={styles.fullWidth}>
-                  <span>Photos</span>
-                  <input accept="image/*" multiple onChange={handlePhotoChange} type="file" />
-                </label>
-
-                {draft.photos.length ? (
-                  <div className={`${styles.photoStrip} ${styles.fullWidth}`}>
-                    {draft.photos.map((photo, index) => (
-                      <div className={styles.photoThumb} key={`${photo.slice(0, 20)}-${index}`}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img alt={`Asset photo ${index + 1}`} src={photo} />
-                        <button
-                          className={styles.removePhotoButton}
-                          onClick={() => handleRemovePhoto(index)}
-                          type="button"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-
-                <div className={`${styles.modalActions} ${styles.fullWidth}`}>
-                  <button className={styles.primaryButton} disabled={isSaving} type="submit">
-                    {isSaving ? 'Saving...' : editorMode === 'edit' ? 'Save changes' : 'Add to register'}
-                  </button>
-                </div>
-              </form>
-            </section>
-
-            <section className={`${styles.surface} ${styles.listSurface}`}>
-              <div className={styles.sectionRow}>
-                <div>
-                  <span className={styles.eyebrow}>Register assets</span>
-                  <h2>{filterLabel(filter)}</h2>
-                  <p>Search, filter, edit, remove, or publish assets from a single place.</p>
-                </div>
-
-                <div className={styles.panelActions}>
-                  <Link className={styles.secondaryButton} href="/valuation">
-                    Open valuation
-                  </Link>
-                  <Link className={styles.secondaryButton} href="/marketplace">
-                    Open marketplace
-                  </Link>
-                </div>
-              </div>
-
-              <div className={styles.filterBar}>
-                <label className={styles.searchField}>
-                  <span>Search assets</span>
-                  <input
-                    placeholder="Search by title, brand, model, note, serial, drive or finance note"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                  />
-                </label>
-
-                <div className={styles.filterChips}>
-                  {(
-                    [
-                      ['all', filterCounts.all],
-                      ['tractor', filterCounts.tractor],
-                      ['manual', filterCounts.manual],
-                      ['property', filterCounts.property],
-                      ['live', filterCounts.live],
-                    ] as Array<[AssetFilter, number]>
-                  ).map(([value, count]) => (
-                    <button
-                      key={value}
-                      className={`${styles.filterChip} ${filter === value ? styles.filterChipActive : ''}`}
-                      onClick={() => setFilter(value)}
-                      type="button"
-                    >
-                      <span>{filterLabel(value)}</span>
-                      <strong>{count}</strong>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className={styles.assetGrid}>
-                {filteredAssets.length ? (
-                  filteredAssets.map((item) => {
-                    const isLive = Boolean(item.id && liveAssetIds.has(item.id));
-                    const isBusy = busyAssetId === item.id;
-
-                    return (
-                      <article className={styles.assetCard} key={item.id ?? item.title}>
-                        <div className={styles.assetTop}>
-                          <div>
-                            <div className={styles.badgeRow}>
-                              <span className={styles.badge}>{typeShortLabel(item.kind)}</span>
-                              <span className={styles.badge}>{methodLabel(item.method)}</span>
-                              {isLive ? <span className={styles.liveBadge}>Marketplace live</span> : null}
-                            </div>
-                            <h3 className={styles.assetTitle}>{item.title || 'Untitled asset'}</h3>
-                            <p className={styles.assetMeta}>{formatItemMeta(item)}</p>
-                          </div>
-
-                          <div className={styles.priceRow}>
-                            <span className={styles.valueLabel}>Value</span>
-                            <strong>{formatMoney(Number(item.value ?? 0))}</strong>
-                            <small>Updated {timeAgo(item.updatedAtIso || item.createdAtIso)}</small>
-                          </div>
-                        </div>
-
-                        {item.photos?.length ? (
-                          <div className={styles.photoStrip}>
-                            {item.photos.map((photo, index) => (
-                              <div className={styles.photoThumb} key={`${photo.slice(0, 20)}-${index}`}>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img alt={`Saved asset ${index + 1}`} src={photo} />
-                              </div>
-                            ))}
-                          </div>
-                        ) : null}
-
-                        <div className={styles.detailsGrid}>
-                          {assetDetails(item, isLive).map((detail) => (
-                            <div className={styles.detailItem} key={`${item.id}-${detail.label}`}>
-                              <span className={styles.detailLabel}>{detail.label}</span>
-                              <strong className={styles.detailValue}>{detail.value}</strong>
-                            </div>
-                          ))}
-                        </div>
-
-                        {item.note ? <p className={styles.noteText}>{item.note}</p> : null}
-
-                        <div className={styles.cardActions}>
-                          <button className={styles.ghostButton} onClick={() => handleEdit(item)} type="button">
-                            Edit
-                          </button>
-
-                          {isLive ? (
-                            <button
-                              className={styles.secondaryButton}
-                              disabled={isBusy}
-                              onClick={() => handleUnpublish(item)}
-                              type="button"
-                            >
-                              {isBusy ? 'Working...' : 'Remove from marketplace'}
-                            </button>
-                          ) : (
-                            <button
-                              className={styles.primaryInlineButton}
-                              disabled={isBusy}
-                              onClick={() => handlePublish(item)}
-                              type="button"
-                            >
-                              {isBusy ? 'Working...' : 'Publish to marketplace'}
-                            </button>
-                          )}
-
-                          <button
-                            className={styles.dangerButton}
-                            disabled={isBusy}
-                            onClick={() => handleDelete(item)}
-                            type="button"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </article>
-                    );
-                  })
-                ) : (
-                  <div className={styles.emptyState}>
-                    <h3>No assets found</h3>
-                    <p>Try another search term or filter, or add your first asset to the register.</p>
-                  </div>
-                )}
-              </div>
-            </section>
-          </div>
-
-          <aside className={styles.rail}>
-            <section className={`${styles.surface} ${styles.summarySurface}`}>
-              <div className={styles.summaryTop}>
-                <span className={styles.summaryLabel}>Register summary</span>
-                <h2>Keep the high-level numbers visible.</h2>
-                <p>Use this view to understand value concentration and what is already live to market.</p>
-              </div>
-
-              <div className={styles.summaryCards}>
-                <div className={styles.summaryCard}>
-                  <span>Total register value</span>
-                  <strong>{formatMoney(totalValue)}</strong>
-                </div>
-                <div className={styles.summaryCard}>
-                  <span>Equipment assets</span>
-                  <strong>{filterCounts.tractor}</strong>
-                </div>
-                <div className={styles.summaryCard}>
-                  <span>Manual + property assets</span>
-                  <strong>{filterCounts.manual + filterCounts.property}</strong>
-                </div>
-              </div>
-            </section>
-
-            <section className={`${styles.surface} ${styles.quickSurface}`}>
-              <div className={styles.panelHeader}>
-                <div>
-                  <span className={styles.eyebrow}>Quick links</span>
-                  <h2>Move faster</h2>
-                  <p>Jump straight to the pages most often used with the register.</p>
-                </div>
-              </div>
-
-              <div className={styles.quickLinks}>
-                <Link className={styles.quickLink} href="/valuation">
-                  Start valuation
-                </Link>
-                <Link className={styles.quickButton} href="/marketplace">
-                  Open marketplace
-                </Link>
-                <Link className={styles.quickButton} href="/">
-                  Back to home
-                </Link>
-              </div>
-            </section>
-
-            <section className={`${styles.surface} ${styles.quickSurface}`}>
-              <div className={styles.panelHeader}>
-                <div>
-                  <span className={styles.eyebrow}>Live register feed</span>
-                  <h2>Recently updated</h2>
-                  <p>Quick scan of the newest assets in the register.</p>
-                </div>
-              </div>
-
-              <div className={styles.liveList}>
-                {assets
-                  .slice()
-                  .sort((a, b) => {
-                    const aTime = new Date(a.updatedAtIso || a.createdAtIso || 0).getTime();
-                    const bTime = new Date(b.updatedAtIso || b.createdAtIso || 0).getTime();
-                    return bTime - aTime;
-                  })
-                  .slice(0, 5)
-                  .map((item) => (
-                    <div className={styles.liveStrip} key={`recent-${item.id ?? item.title}`}>
-                      <strong>{item.title || 'Untitled asset'}</strong>
-                      <span>{formatMoney(Number(item.value ?? 0))}</span>
-                      <small className={styles.liveMeta}>{timeAgo(item.updatedAtIso || item.createdAtIso)}</small>
-                    </div>
-                  ))}
-
-                {assets.length === 0 ? (
-                  <div className={styles.emptyState}>
-                    <h3>No recent activity</h3>
-                    <p>Your saved assets will start appearing here once you add them.</p>
-                  </div>
-                ) : null}
-              </div>
-            </section>
-          </aside>
-        </section>
-      </main>
-    </div>
-  );
 }
