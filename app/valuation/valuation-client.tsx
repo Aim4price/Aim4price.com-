@@ -6,9 +6,7 @@ import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 import {
-  brands as seedBrands,
   conditionOptions,
-  tractors,
   type BrandRow,
   type CabType,
   type ConditionKey,
@@ -18,7 +16,6 @@ import {
   type TractorType,
 } from '../../lib/tractor-data';
 import { conditionLabel, money, range, type Result } from '../../lib/tractor-logic';
-import { saveItem } from '../../lib/register';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 type MethodKey = 'aim4price' | 'market' | 'department';
@@ -278,7 +275,7 @@ export default function ValuationClient() {
   const [step, setStep] = useState<Step>(1);
   const [selectedType, setSelectedType] = useState<EquipmentType | null>(null);
   const [modelQuery, setModelQuery] = useState('');
-  const [brandSlug, setBrandSlug] = useState('john-deere');
+  const [brandSlug, setBrandSlug] = useState('');
   const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
   const [brandSearch, setBrandSearch] = useState('');
   const [tractorType, setTractorType] = useState<TractorType | null>(null);
@@ -305,7 +302,7 @@ export default function ValuationClient() {
   const [selectedMethod, setSelectedMethod] = useState<MethodKey | null>(null);
   const [selectedComparableIndex, setSelectedComparableIndex] = useState(0);
   const [message, setMessage] = useState('');
-  const [availableBrands, setAvailableBrands] = useState<BrandRow[]>(seedBrands);
+  const [availableBrands, setAvailableBrands] = useState<BrandRow[]>([]);
   const [brandsLoading, setBrandsLoading] = useState(true);
   const [availableModels, setAvailableModels] = useState<TractorCatalogRow[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
@@ -440,7 +437,7 @@ export default function ValuationClient() {
         console.error('Failed to load brands from /api/brands', error);
 
         if (!ignore) {
-          setAvailableBrands(seedBrands);
+          setAvailableBrands([]);
         }
       } finally {
         if (!ignore) {
@@ -499,15 +496,7 @@ export default function ValuationClient() {
         console.error('Failed to load models from /api/tractor-models', error);
 
         if (!ignore) {
-          setAvailableModels(
-            tractors.filter(
-              (tractor) =>
-                tractor.brandSlug === currentBrandSlug &&
-                tractor.tractorType === currentTractorType &&
-                tractor.drive === currentDrive &&
-                tractor.cab === currentCab,
-            ),
-          );
+          setAvailableModels([]);
         }
       } finally {
         if (!ignore) {
@@ -826,7 +815,7 @@ export default function ValuationClient() {
     setStep(1);
     setSelectedType(null);
     setModelQuery('');
-    setBrandSlug('john-deere');
+    setBrandSlug('');
     setBrandDropdownOpen(false);
     setBrandSearch('');
     setTractorType(null);
@@ -984,42 +973,7 @@ export default function ValuationClient() {
         throw new Error(data.error ?? 'Failed to save valuation run.');
       }
 
-      const savedAtIso = data.createdAtIso ?? new Date().toISOString();
-      const selectedValue = typeof data.selectedValueExVat === 'number' ? data.selectedValueExVat : value;
-      const extrasNote = extrasSummaryText !== 'No fitted extras selected' ? `Extras: ${extrasSummaryText}` : undefined;
-
-      saveItem({
-        id: `valuation-run-${data.runId}`,
-        valuationRunId: data.runId,
-        kind: 'tractor',
-        title: `${result.model.brandName} ${result.model.modelName}`,
-        brandName: result.model.brandName,
-        modelName: result.model.modelName,
-        drive: result.model.drive,
-        tractorType: result.model.tractorType,
-        cab: result.model.cab,
-        powerKw: result.model.powerKw,
-        yearModel: activeYear,
-        hours: Number(hours),
-        selectedMethod,
-        method: selectedMethod,
-        selectedValueExVat: selectedValue,
-        value: selectedValue,
-        aim4priceValueExVat: result.aim4priceValueExVat,
-        marketMidExVat: result.marketMid,
-        departmentValueExVat: result.departmentValueExVat,
-        note: extrasNote,
-        marketplaceNotes: extrasNote,
-        serialNumber: '',
-        isFinanced: false,
-        financeNote: '',
-        photos: [],
-        sellerPhone: '',
-        createdAtIso: savedAtIso,
-        updatedAtIso: savedAtIso,
-      });
-
-      setMessage(`Saved to valuation history and asset register. Run ID: ${data.runId}.`);
+      setMessage(`Valuation saved to database. Run ID: ${data.runId}.`);
     } catch (error) {
       console.error('Failed to save valuation run to /api/valuation-runs', error);
       setMessage(error instanceof Error ? error.message : 'Failed to save valuation run.');
@@ -2226,9 +2180,9 @@ export default function ValuationClient() {
                 <article className={styles.assetCard}>
                   <div className={styles.actionHeader}>
                     <div>
-                      <h2 className={styles.assetTitle}>Save to Asset Register</h2>
+                      <h2 className={styles.assetTitle}>Save Valuation</h2>
                       <p className={styles.assetText}>
-                        Save this valuation, return later, and keep the next actions together in one place.
+                        Save this valuation to the database now. Asset register linking comes in the next step.
                       </p>
                     </div>
                     <span className={styles.actionBadge}>Quick actions</span>
@@ -2241,7 +2195,7 @@ export default function ValuationClient() {
                       onClick={handleSave}
                       disabled={saveLoading}
                     >
-                      {saveLoading ? 'Saving...' : 'Save to My Assets'}
+                      {saveLoading ? 'Saving...' : 'Save Valuation'}
                     </button>
 
                     <button type="button" className={styles.secondaryButton} onClick={handlePrint}>
