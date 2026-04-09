@@ -36,7 +36,7 @@ type RegisterAsset = SavedItem & {
   hours?: number;
   tractorType?: string;
   drive?: string;
-  cab?: boolean;
+  cab?: string | boolean;
   createdAtIso?: string;
   updatedAtIso?: string;
   method?: SavedItemMethod;
@@ -131,14 +131,16 @@ function normaliseRegisterItem(item: SavedItem): RegisterAsset {
     ...raw,
     id: raw.id ?? `asset-${Math.random().toString(36).slice(2, 10)}`,
     title: raw.title ?? '',
-    value: Number(raw.value ?? 0),
+    value: Number(raw.value ?? raw.selectedValueExVat ?? 0),
     note: raw.note ?? '',
     kind: raw.kind ?? 'manual',
-    method: raw.method ?? 'manual',
+    method: raw.method ?? raw.selectedMethod ?? 'manual',
     createdAtIso: raw.createdAtIso ?? new Date().toISOString(),
     updatedAtIso: raw.updatedAtIso ?? raw.createdAtIso ?? new Date().toISOString(),
     serialNumber: raw.serialNumber ?? '',
     isFinanced: Boolean(raw.isFinanced),
+    cab: raw.cab,
+    powerKw: raw.powerKw,
     financeNote: raw.financeNote ?? '',
     photos: Array.isArray(raw.photos) ? raw.photos.filter(Boolean) : [],
     sellerPhone: raw.sellerPhone ?? '',
@@ -315,7 +317,10 @@ function assetDetails(item: RegisterAsset, isLive: boolean) {
       value: typeof item.hours === 'number' ? item.hours.toLocaleString('en-ZA') : '—',
     },
     { label: 'Drive', value: item.drive || '—' },
-    { label: 'Cab', value: item.cab ? 'Cab' : 'Open station' },
+    {
+      label: 'Cab',
+      value: item.cab === 'open-station' ? 'Open station' : item.cab === 'cab' ? 'Cab' : '—',
+    },
     { label: 'Added', value: formatDateLabel(item.createdAtIso) },
   ];
 }
@@ -454,12 +459,16 @@ export default function AssetRegisterPage() {
       const existing = assets.find((item) => item.id === editingId);
       const nowIso = new Date().toISOString();
 
+      const parsedValue = parseMoney(draft.value);
+
       const nextItem = normaliseRegisterItem({
         ...(existing ?? {}),
         id: existing?.id ?? `asset-${Date.now()}`,
         kind: draft.kind,
         title: draft.title.trim(),
-        value: parseMoney(draft.value),
+        value: parsedValue,
+        selectedMethod: existing?.selectedMethod ?? 'manual',
+        selectedValueExVat: parsedValue,
         note: draft.note.trim(),
         serialNumber: draft.serialNumber.trim(),
         isFinanced: draft.isFinanced,
@@ -467,7 +476,6 @@ export default function AssetRegisterPage() {
         photos: draft.photos,
         createdAtIso: existing?.createdAtIso ?? nowIso,
         updatedAtIso: nowIso,
-        method: existing?.method ?? 'manual',
       } as SavedItem);
 
       await Promise.resolve(saveItem(nextItem as SavedItem));
@@ -867,25 +875,27 @@ export default function AssetRegisterPage() {
                             Edit
                           </button>
 
-                          {isLive ? (
-                            <button
-                              className={styles.secondaryButton}
-                              disabled={isBusy}
-                              onClick={() => handleUnpublish(item)}
-                              type="button"
-                            >
-                              {isBusy ? 'Working...' : 'Remove from marketplace'}
-                            </button>
-                          ) : (
-                            <button
-                              className={styles.primaryInlineButton}
-                              disabled={isBusy}
-                              onClick={() => handlePublish(item)}
-                              type="button"
-                            >
-                              {isBusy ? 'Working...' : 'Publish to marketplace'}
-                            </button>
-                          )}
+                          {item.kind === 'tractor' ? (
+                            isLive ? (
+                              <button
+                                className={styles.secondaryButton}
+                                disabled={isBusy}
+                                onClick={() => handleUnpublish(item)}
+                                type="button"
+                              >
+                                {isBusy ? 'Working...' : 'Remove from marketplace'}
+                              </button>
+                            ) : (
+                              <button
+                                className={styles.primaryInlineButton}
+                                disabled={isBusy}
+                                onClick={() => handlePublish(item)}
+                                type="button"
+                              >
+                                {isBusy ? 'Working...' : 'Publish to marketplace'}
+                              </button>
+                            )
+                          ) : null}
 
                           <button
                             className={styles.dangerButton}
