@@ -984,10 +984,13 @@ export default function ValuationClient() {
         throw new Error(data.error ?? 'Failed to save valuation run.');
       }
 
+      const savedAtIso = data.createdAtIso ?? new Date().toISOString();
+      const selectedValue = typeof data.selectedValueExVat === 'number' ? data.selectedValueExVat : value;
+      const extrasNote = extrasSummaryText !== 'No fitted extras selected' ? `Extras: ${extrasSummaryText}` : undefined;
+
       saveItem({
-        id: `${result.model.id}-${activeYear}-${hours}-${condition}-${
-          frontPto ? 'pto' : 'no-pto'
-        }-${frontLoader ? 'loader' : 'no-loader'}-${gpsEnabled ? `gps-${gpsType ?? 'enabled'}-${gpsYear || 'year'}` : 'no-gps'}-${selectedMethod}`,
+        id: `valuation-run-${data.runId}`,
+        valuationRunId: data.runId,
         kind: 'tractor',
         title: `${result.model.brandName} ${result.model.modelName}`,
         brandName: result.model.brandName,
@@ -996,19 +999,27 @@ export default function ValuationClient() {
         tractorType: result.model.tractorType,
         cab: result.model.cab,
         powerKw: result.model.powerKw,
-        value,
         yearModel: activeYear,
         hours: Number(hours),
         selectedMethod,
-        selectedValueExVat: value,
+        method: selectedMethod,
+        selectedValueExVat: selectedValue,
+        value: selectedValue,
         aim4priceValueExVat: result.aim4priceValueExVat,
         marketMidExVat: result.marketMid,
         departmentValueExVat: result.departmentValueExVat,
-        note: extrasSummaryText !== 'No fitted extras selected' ? `Extras: ${extrasSummaryText}` : undefined,
-        createdAtIso: data.createdAtIso ?? new Date().toISOString(),
+        note: extrasNote,
+        marketplaceNotes: extrasNote,
+        serialNumber: '',
+        isFinanced: false,
+        financeNote: '',
+        photos: [],
+        sellerPhone: '',
+        createdAtIso: savedAtIso,
+        updatedAtIso: savedAtIso,
       });
 
-      setMessage(`Saved to valuation history. Run ID: ${data.runId}.`);
+      setMessage(`Saved to valuation history and asset register. Run ID: ${data.runId}.`);
     } catch (error) {
       console.error('Failed to save valuation run to /api/valuation-runs', error);
       setMessage(error instanceof Error ? error.message : 'Failed to save valuation run.');
