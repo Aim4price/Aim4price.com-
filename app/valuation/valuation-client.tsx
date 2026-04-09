@@ -55,6 +55,14 @@ type TractorValuationApiResponse = {
   error?: string;
 };
 
+type SaveValuationRunApiResponse = {
+  ok: boolean;
+  runId?: number;
+  createdAtIso?: string;
+  selectedValueExVat?: number;
+  error?: string;
+};
+
 const CURRENT_YEAR = new Date().getFullYear() + 1;
 
 const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
@@ -125,17 +133,17 @@ function getStepMeta(step: Step) {
     case 2:
       return {
         title: 'Choose Brand',
-        body: 'Choose the brand to narrow the available models.',
+        body: 'Select a tractor brand from the dropdown list.',
       };
     case 3:
       return {
-        title: 'Choose Model',
-        body: 'Set the machine type and pick the matching model.',
+        title: 'Choose Tractor Model',
+        body: 'Four quick choices. One at a time.',
       };
     case 4:
       return {
-        title: 'Enter Equipment Details',
-        body: 'Add year, hours, condition and extras. Use the next button below to move through.',
+        title: 'Enter Tractor Details',
+        body: 'Four quick details. One at a time.',
       };
     default:
       return {
@@ -147,7 +155,7 @@ function getStepMeta(step: Step) {
 
 function getConditionHint(condition: ConditionKey): string {
   if (condition === 'excellent') return 'Best kept condition';
-  if (condition === 'good') return 'Well maintained working machine';
+  if (condition === 'good') return 'Well maintained working tractor';
   if (condition === 'fair') return 'Average wear for age';
   if (condition === 'used') return 'Heavy general use visible';
   return 'Requires attention before sale';
@@ -302,6 +310,7 @@ export default function ValuationClient() {
   const [availableModels, setAvailableModels] = useState<TractorCatalogRow[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [valuationLoading, setValuationLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
 
   const stepMeta = getStepMeta(step);
   const brandDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -369,45 +378,42 @@ export default function ValuationClient() {
     invalidateResult();
   }
 
-  function confirmYearSelection(options?: { advance?: boolean }) {
+  function confirmYearSelection() {
     if (!selectedModel || !isYearValid) {
       setMessage('Enter a valid year first.');
-      return false;
+      return;
     }
 
     setYearConfirmed(true);
-    setDetailsFocus(options?.advance ? 'hours' : null);
+    setDetailsFocus(null);
     setMessage('');
-    return true;
   }
 
-  function confirmHoursSelection(options?: { advance?: boolean }) {
+  function confirmHoursSelection() {
     if (!isHoursValid) {
       setMessage('Enter engine hours first.');
-      return false;
+      return;
     }
 
     setHoursConfirmed(true);
-    setDetailsFocus(options?.advance ? 'condition' : null);
+    setDetailsFocus(null);
     setMessage('');
-    return true;
   }
 
-  function applyExtrasSelection(options?: { keepFocus?: boolean }) {
+  function applyExtrasSelection() {
     setExtrasReviewed(true);
-    setDetailsFocus(options?.keepFocus ? 'extras' : null);
+    setDetailsFocus(null);
     setMessage('');
-    return true;
   }
 
-  function clearExtrasSelection(options?: { keepFocus?: boolean }) {
+  function clearExtrasSelection() {
     setFrontPto(false);
     setFrontLoader(false);
     setGpsEnabled(false);
     setGpsType(null);
     setGpsYear('');
     setExtrasReviewed(true);
-    setDetailsFocus(options?.keepFocus ? 'extras' : null);
+    setDetailsFocus(null);
     setMessage('');
     invalidateResult();
   }
@@ -683,7 +689,7 @@ export default function ValuationClient() {
       {
         key: 'market',
         label: 'Market Range',
-        note: `${result.marketCount} provable market listing${result.marketCount === 1 ? '' : 's'} linked below.`,
+        note: `${result.marketCount} proveable market listing${result.marketCount === 1 ? '' : 's'} linked below.`,
         value: result.marketMid,
         available: result.marketMid !== null,
       },
@@ -790,11 +796,7 @@ export default function ValuationClient() {
     if (step === 1) return selectedType === 'tractor';
     if (step === 3) return configComplete;
     if (step === 4) {
-      if (!selectedModel) return false;
-      if (activeDetailsStep === 'year') return isYearValid;
-      if (activeDetailsStep === 'hours') return isHoursValid;
-      if (activeDetailsStep === 'condition') return Boolean(condition);
-      return true;
+      return Boolean(selectedModel && isYearValid && isHoursValid && yearConfirmed && hoursConfirmed && condition && extrasReviewed);
     }
     return true;
   }, [
@@ -802,10 +804,12 @@ export default function ValuationClient() {
     selectedType,
     configComplete,
     selectedModel,
-    activeDetailsStep,
     isYearValid,
     isHoursValid,
+    yearConfirmed,
+    hoursConfirmed,
     condition,
+    extrasReviewed,
   ]);
 
   const nextLabel = valuationLoading
@@ -816,15 +820,7 @@ export default function ValuationClient() {
         ? 'Choose Model'
         : step === 3
           ? 'Enter Details'
-          : step === 4
-            ? activeDetailsStep === 'year'
-              ? 'Next: Hours'
-              : activeDetailsStep === 'hours'
-                ? 'Next: Condition'
-                : activeDetailsStep === 'condition'
-                  ? 'Next: Extras'
-                  : 'Get Valuation'
-            : 'Get Valuation';
+          : 'Get Valuation';
 
   function resetWizard() {
     setStep(1);
@@ -845,6 +841,7 @@ export default function ValuationClient() {
     setResult(null);
     setSelectedMethod(null);
     setValuationLoading(false);
+    setSaveLoading(false);
     setMessage('');
     resetDetailState();
   }
@@ -869,26 +866,6 @@ export default function ValuationClient() {
     }
 
     if (step === 4) {
-      if (activeDetailsStep === 'year') {
-        confirmYearSelection({ advance: true });
-        return;
-      }
-
-      if (activeDetailsStep === 'hours') {
-        confirmHoursSelection({ advance: true });
-        return;
-      }
-
-      if (activeDetailsStep === 'condition') {
-        if (!condition) {
-          setMessage('Choose the condition first.');
-          return;
-        }
-
-        setDetailsFocus('extras');
-        return;
-      }
-
       const parsedHours = Number(hours);
       const parsedYear = activeYear;
 
@@ -908,7 +885,8 @@ export default function ValuationClient() {
       }
 
       if (!extrasReviewed) {
-        applyExtrasSelection();
+        setMessage('Review the extras first.');
+        return;
       }
 
       setValuationLoading(true);
@@ -964,8 +942,8 @@ export default function ValuationClient() {
     setStep(nextStep(step));
   }
 
-  function handleSave() {
-    if (!result || !selectedMethod) {
+  async function handleSave() {
+    if (!result || !selectedMethod || !condition) {
       setMessage('Choose which number should be saved first.');
       return;
     }
@@ -973,32 +951,67 @@ export default function ValuationClient() {
     const value = getMethodValue(result, selectedMethod);
 
     if (value === null) {
-      setMessage('That method is not available for this equipment profile.');
+      setMessage('That method is not available for this tractor profile.');
       return;
     }
 
-    saveItem({
-      id: `${result.model.id}-${activeYear}-${hours}-${condition ?? 'condition'}-${
-        frontPto ? 'pto' : 'no-pto'
-      }-${frontLoader ? 'loader' : 'no-loader'}-${gpsEnabled ? `gps-${gpsType ?? 'enabled'}-${gpsYear || 'year'}` : 'no-gps'}-${selectedMethod}`,
-      kind: 'tractor',
-      title: `${result.model.brandName} ${result.model.modelName}`,
-      brandName: result.model.brandName,
-      modelName: result.model.modelName,
-      drive: result.model.drive,
-      tractorType: result.model.tractorType,
-      yearModel: activeYear,
-      hours: Number(hours),
-      selectedMethod,
-      selectedValueExVat: value,
-      aim4priceValueExVat: result.aim4priceValueExVat,
-      marketMidExVat: result.marketMid,
-      departmentValueExVat: result.departmentValueExVat,
-      note: extrasSummaryText !== 'No fitted extras selected' ? `Extras: ${extrasSummaryText}` : undefined,
-      createdAtIso: new Date().toISOString(),
-    });
+    setSaveLoading(true);
 
-    setMessage('Saved locally to prototype storage.');
+    try {
+      const response = await fetch('/api/valuation-runs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          modelId: result.model.id,
+          year: activeYear,
+          hours: Number(hours),
+          condition,
+          frontPto,
+          frontLoader,
+          gpsEnabled,
+          gpsType,
+          gpsYear,
+          selectedMethod,
+          valuationVersion: 'v1',
+        }),
+      });
+
+      const data = (await response.json()) as SaveValuationRunApiResponse;
+
+      if (!response.ok || !data.ok || !data.runId) {
+        throw new Error(data.error ?? 'Failed to save valuation run.');
+      }
+
+      saveItem({
+        id: `${result.model.id}-${activeYear}-${hours}-${condition}-${
+          frontPto ? 'pto' : 'no-pto'
+        }-${frontLoader ? 'loader' : 'no-loader'}-${gpsEnabled ? `gps-${gpsType ?? 'enabled'}-${gpsYear || 'year'}` : 'no-gps'}-${selectedMethod}`,
+        kind: 'tractor',
+        title: `${result.model.brandName} ${result.model.modelName}`,
+        brandName: result.model.brandName,
+        modelName: result.model.modelName,
+        drive: result.model.drive,
+        tractorType: result.model.tractorType,
+        yearModel: activeYear,
+        hours: Number(hours),
+        selectedMethod,
+        selectedValueExVat: value,
+        aim4priceValueExVat: result.aim4priceValueExVat,
+        marketMidExVat: result.marketMid,
+        departmentValueExVat: result.departmentValueExVat,
+        note: extrasSummaryText !== 'No fitted extras selected' ? `Extras: ${extrasSummaryText}` : undefined,
+        createdAtIso: data.createdAtIso ?? new Date().toISOString(),
+      });
+
+      setMessage(`Saved to valuation history. Run ID: ${data.runId}.`);
+    } catch (error) {
+      console.error('Failed to save valuation run to /api/valuation-runs', error);
+      setMessage(error instanceof Error ? error.message : 'Failed to save valuation run.');
+    } finally {
+      setSaveLoading(false);
+    }
   }
 
   function handlePrint() {
@@ -1072,7 +1085,7 @@ export default function ValuationClient() {
                 }}
                 aria-haspopup="listbox"
                 aria-expanded={brandDropdownOpen}
-                aria-label="Choose brand"
+                aria-label="Choose tractor brand"
                 disabled={brandsLoading || !sortedBrands.length}
               >
                 <span className={styles.dropdownTriggerText}>
@@ -1096,7 +1109,7 @@ export default function ValuationClient() {
                     />
                   </div>
 
-                  <div className={styles.dropdownList} role="listbox" aria-label="Available brands">
+                  <div className={styles.dropdownList} role="listbox" aria-label="Available tractor brands">
                     {brandsLoading ? (
                       <div className={styles.dropdownEmpty}>Loading brands...</div>
                     ) : filteredBrandOptions.length ? (
@@ -1417,7 +1430,7 @@ export default function ValuationClient() {
                     setMessage('');
                   }}
                   placeholder={`Search ${selectedBrandName} models`}
-                  aria-label="Search models"
+                  aria-label="Search tractor models"
                   className={styles.searchInput}
                   disabled={modelsLoading}
                 />
@@ -1675,79 +1688,101 @@ export default function ValuationClient() {
             </div>
 
             {yearMode === 'guided' ? (
-              <div className={styles.dropdownField} ref={yearDropdownRef}>
+              <div className={styles.inlineFieldRow}>
+                <div className={styles.dropdownField} ref={yearDropdownRef}>
+                  <button
+                    type="button"
+                    className={`${styles.dropdownTrigger} ${yearDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
+                    onClick={() => {
+                      if (!selectedModel) return;
+                      setYearDropdownOpen((open) => !open);
+                      setMessage('');
+                    }}
+                    aria-haspopup="listbox"
+                    aria-expanded={yearDropdownOpen}
+                    aria-label="Choose guided year model"
+                  >
+                    <span className={styles.dropdownTriggerText}>{selectedYearDisplay}</span>
+                    <span className={styles.dropdownTriggerIcon} aria-hidden="true">
+                      {yearDropdownOpen ? '▴' : '▾'}
+                    </span>
+                  </button>
+
+                  {yearDropdownOpen ? (
+                    <div className={styles.dropdownMenu}>
+                      <div className={styles.dropdownList} role="listbox" aria-label="Available guided years">
+                        {years.length ? (
+                          years.map((availableYear) => {
+                            const active = year === availableYear;
+
+                            return (
+                              <button
+                                key={availableYear}
+                                type="button"
+                                role="option"
+                                aria-selected={active}
+                                className={`${styles.dropdownOption} ${active ? styles.dropdownOptionActive : ''}`}
+                                onClick={() => {
+                                  setYear(availableYear);
+                                  setYearDropdownOpen(false);
+                                  setYearConfirmed(false);
+                                  setMessage('');
+                                  invalidateResult();
+                                }}
+                              >
+                                <span className={styles.dropdownOptionText}>{availableYear}</span>
+                                {active ? <span className={styles.dropdownOptionBadge}>Selected</span> : null}
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <div className={styles.dropdownEmpty}>No guided years loaded for this model yet.</div>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
                 <button
                   type="button"
-                  className={`${styles.dropdownTrigger} ${yearDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
-                  onClick={() => {
-                    if (!selectedModel) return;
-                    setYearDropdownOpen((open) => !open);
-                    setMessage('');
-                  }}
-                  aria-haspopup="listbox"
-                  aria-expanded={yearDropdownOpen}
-                  aria-label="Choose guided year model"
+                  className={styles.primaryButton}
+                  onClick={confirmYearSelection}
+                  disabled={!isYearValid}
                 >
-                  <span className={styles.dropdownTriggerText}>{selectedYearDisplay}</span>
-                  <span className={styles.dropdownTriggerIcon} aria-hidden="true">
-                    {yearDropdownOpen ? '▴' : '▾'}
-                  </span>
+                  Next: Hours
                 </button>
-
-                {yearDropdownOpen ? (
-                  <div className={styles.dropdownMenu}>
-                    <div className={styles.dropdownList} role="listbox" aria-label="Available guided years">
-                      {years.length ? (
-                        years.map((availableYear) => {
-                          const active = year === availableYear;
-
-                          return (
-                            <button
-                              key={availableYear}
-                              type="button"
-                              role="option"
-                              aria-selected={active}
-                              className={`${styles.dropdownOption} ${active ? styles.dropdownOptionActive : ''}`}
-                              onClick={() => {
-                                setYear(availableYear);
-                                setYearDropdownOpen(false);
-                                setYearConfirmed(false);
-                                setMessage('');
-                                invalidateResult();
-                              }}
-                            >
-                              <span className={styles.dropdownOptionText}>{availableYear}</span>
-                              {active ? <span className={styles.dropdownOptionBadge}>Selected</span> : null}
-                            </button>
-                          );
-                        })
-                      ) : (
-                        <div className={styles.dropdownEmpty}>No guided years loaded for this model yet.</div>
-                      )}
-                    </div>
-                  </div>
-                ) : null}
               </div>
             ) : (
-              <input
-                value={manualYear}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                  setManualYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4));
-                  setYearConfirmed(false);
-                  setMessage('');
-                  invalidateResult();
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    confirmYearSelection({ advance: true });
-                  }
-                }}
-                placeholder="Type year"
-                inputMode="numeric"
-                aria-label="Enter year model manually"
-                className={styles.controlInput}
-              />
+              <div className={styles.inlineFieldRow}>
+                <input
+                  value={manualYear}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setManualYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4));
+                    setYearConfirmed(false);
+                    setMessage('');
+                    invalidateResult();
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      confirmYearSelection();
+                    }
+                  }}
+                  placeholder="Type year"
+                  inputMode="numeric"
+                  aria-label="Enter year model manually"
+                  className={styles.controlInput}
+                />
+
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={confirmYearSelection}
+                  disabled={!isYearValid}
+                >
+                  Next: Hours
+                </button>
+              </div>
             )}
 
             {selectedModel ? (
@@ -1764,27 +1799,38 @@ export default function ValuationClient() {
               <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
             </div>
 
-            <div className={styles.inlineFieldInputWrap}>
-              <input
-                value={hours}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                  setHours(event.target.value.replace(/[^0-9]/g, ''));
-                  setHoursConfirmed(false);
-                  setMessage('');
-                  invalidateResult();
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    confirmHoursSelection({ advance: true });
-                  }
-                }}
-                placeholder="Type hours"
-                inputMode="numeric"
-                aria-label="Enter engine hours"
-                className={styles.controlInput}
-              />
-              <span className={styles.inlineFieldSuffix}>hrs</span>
+            <div className={styles.inlineFieldRow}>
+              <div className={styles.inlineFieldInputWrap}>
+                <input
+                  value={hours}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setHours(event.target.value.replace(/[^0-9]/g, ''));
+                    setHoursConfirmed(false);
+                    setMessage('');
+                    invalidateResult();
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      confirmHoursSelection();
+                    }
+                  }}
+                  placeholder="Type hours"
+                  inputMode="numeric"
+                  aria-label="Enter engine hours"
+                  className={styles.controlInput}
+                />
+                <span className={styles.inlineFieldSuffix}>hrs</span>
+              </div>
+
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={confirmHoursSelection}
+                disabled={!isHoursValid}
+              >
+                Next: Condition
+              </button>
             </div>
 
             <p className={styles.currentHint}>Use the meter reading.</p>
@@ -1984,15 +2030,12 @@ export default function ValuationClient() {
               ))}
             </div>
 
-            <p className={styles.currentHint}>Extras are optional. Leave anything that is not fitted switched off, then continue below.</p>
-
             <div className={styles.currentCardActions}>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={() => clearExtrasSelection({ keepFocus: true })}
-              >
-                Clear all extras
+              <button type="button" className={styles.secondaryButton} onClick={clearExtrasSelection}>
+                No fitted extras
+              </button>
+              <button type="button" className={styles.primaryButton} onClick={applyExtrasSelection}>
+                Save extras
               </button>
             </div>
           </div>
@@ -2014,7 +2057,7 @@ export default function ValuationClient() {
                   <span className={styles.heroBadge}>Valuation</span>
                   <h1 className={styles.heroIntroTitle}>Know what your machinery is worth.</h1>
                   <p className={styles.heroIntroText}>
-                    Answer a few quick questions and get a clear valuation for your equipment.
+                    Move from tractor setup to a clean value output with a simple guided flow.
                   </p>
                 </div>
               </section>
@@ -2178,8 +2221,13 @@ export default function ValuationClient() {
                   </div>
 
                   <div className={styles.actionGrid}>
-                    <button type="button" className={`${styles.assetButton} ${styles.actionPrimary}`} onClick={handleSave}>
-                      Save to My Assets
+                    <button
+                      type="button"
+                      className={`${styles.assetButton} ${styles.actionPrimary}`}
+                      onClick={handleSave}
+                      disabled={saveLoading}
+                    >
+                      {saveLoading ? 'Saving...' : 'Save to My Assets'}
                     </button>
 
                     <button type="button" className={styles.secondaryButton} onClick={handlePrint}>
@@ -2247,7 +2295,7 @@ export default function ValuationClient() {
                   <div className={styles.rangeCardHead}>
                     <h2 className={styles.sideTitle}>Market Range</h2>
                     <span className={styles.rangeBadge}>
-                      {result.marketCount} provable listing{result.marketCount === 1 ? '' : 's'}
+                      {result.marketCount} proveable listing{result.marketCount === 1 ? '' : 's'}
                     </span>
                   </div>
 
@@ -2300,7 +2348,7 @@ export default function ValuationClient() {
                           setSelectedComparableIndex(Number(event.target.value))
                         }
                         className={styles.rangeSliderInput}
-                        aria-label="Browse provable market listings"
+                        aria-label="Browse proveable market listings"
                       />
                     ) : null}
                   </div>
@@ -2384,7 +2432,7 @@ export default function ValuationClient() {
                       </div>
                     ) : (
                       <p className={styles.rangeNote}>
-                        No provable market listings matched this equipment yet. Add more market listings to improve
+                        No proveable market listings matched this tractor yet. Add more market listings to improve
                         confidence and range quality.
                       </p>
                     )}
