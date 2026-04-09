@@ -14,6 +14,7 @@ import {
   type SavedItemMethod,
 } from '../../lib/register';
 import {
+  clearPublishedMarketplaceListings,
   loadPublishedMarketplaceListings,
   publishRegisterItemToMarketplace,
   removeMarketplaceListing,
@@ -25,28 +26,7 @@ type NoticeTone = 'success' | 'error';
 type AssetFilter = 'all' | 'tractor' | 'manual' | 'property' | 'live';
 type EditorMode = 'add' | 'edit';
 
-type RegisterAsset = SavedItem & {
-  id?: string;
-  title?: string;
-  value?: number;
-  note?: string;
-  brandName?: string;
-  modelName?: string;
-  yearModel?: number;
-  hours?: number;
-  tractorType?: string;
-  drive?: string;
-  cab?: string | boolean;
-  createdAtIso?: string;
-  updatedAtIso?: string;
-  method?: SavedItemMethod;
-  serialNumber?: string;
-  isFinanced?: boolean;
-  financeNote?: string;
-  photos?: string[];
-  sellerPhone?: string;
-  marketplaceNotes?: string;
-};
+type RegisterAsset = SavedItem;
 
 type AssetDraft = {
   kind: SavedItemKind;
@@ -76,7 +56,7 @@ function createAssetDraft(kind: SavedItemKind = 'manual'): AssetDraft {
 
 function parseMoney(value: string): number {
   const parsed = Number(String(value).replace(/[^0-9.]/g, ''));
-  return Number.isFinite(parsed) ? parsed : 0;
+  return Number.isFinite(parsed) ? Math.round(parsed) : 0;
 }
 
 function formatMoney(value: number): string {
@@ -125,26 +105,15 @@ function filterLabel(value: AssetFilter): string {
 }
 
 function normaliseRegisterItem(item: SavedItem): RegisterAsset {
-  const raw = item as RegisterAsset;
-
   return {
-    ...raw,
-    id: raw.id ?? `asset-${Math.random().toString(36).slice(2, 10)}`,
-    title: raw.title ?? '',
-    value: Number(raw.value ?? raw.selectedValueExVat ?? 0),
-    note: raw.note ?? '',
-    kind: raw.kind ?? 'manual',
-    method: raw.method ?? raw.selectedMethod ?? 'manual',
-    createdAtIso: raw.createdAtIso ?? new Date().toISOString(),
-    updatedAtIso: raw.updatedAtIso ?? raw.createdAtIso ?? new Date().toISOString(),
-    serialNumber: raw.serialNumber ?? '',
-    isFinanced: Boolean(raw.isFinanced),
-    cab: raw.cab,
-    powerKw: raw.powerKw,
-    financeNote: raw.financeNote ?? '',
-    photos: Array.isArray(raw.photos) ? raw.photos.filter(Boolean) : [],
-    sellerPhone: raw.sellerPhone ?? '',
-    marketplaceNotes: raw.marketplaceNotes ?? '',
+    ...item,
+    value: Number(item.value ?? item.selectedValueExVat ?? 0),
+    selectedMethod: item.selectedMethod ?? item.method ?? 'manual',
+    method: item.method ?? item.selectedMethod ?? 'manual',
+    createdAtIso: item.createdAtIso ?? new Date().toISOString(),
+    updatedAtIso: item.updatedAtIso ?? item.createdAtIso ?? new Date().toISOString(),
+    isFinanced: Boolean(item.isFinanced),
+    photos: Array.isArray(item.photos) ? item.photos.filter(Boolean) : [],
   };
 }
 
@@ -172,7 +141,6 @@ function formatDateLabel(value?: string): string {
   }
 
   const parsed = new Date(value);
-
   if (Number.isNaN(parsed.getTime())) {
     return 'Unknown';
   }
@@ -190,7 +158,6 @@ function timeAgo(value?: string): string {
   }
 
   const parsed = new Date(value);
-
   if (Number.isNaN(parsed.getTime())) {
     return 'Unknown';
   }
@@ -266,15 +233,14 @@ async function filesToDataUrls(files: FileList | null): Promise<string[]> {
   );
 }
 
-function getListingId(listing: MarketplaceListing): string | undefined {
-  const record = listing as MarketplaceListing & Record<string, unknown>;
-  const value = record.id;
-  return typeof value === 'string' ? value : undefined;
+function getListingId(listing: MarketplaceListing): string {
+  return listing.id;
 }
 
 function getListingAssetId(listing: MarketplaceListing): string | undefined {
   const record = listing as MarketplaceListing & Record<string, unknown>;
   const candidates = [
+    listing.sourceAssetId,
     record.registerItemId,
     record.assetId,
     record.itemId,
@@ -377,7 +343,7 @@ export default function AssetRegisterPage() {
       }
 
       if (filter === 'live') {
-        return Boolean(item.id && liveAssetIds.has(item.id));
+        return liveAssetIds.has(item.id);
       }
 
       return item.kind === filter;
@@ -389,7 +355,7 @@ export default function AssetRegisterPage() {
   }, [assets]);
 
   const liveCount = useMemo(() => {
-    return assets.filter((item) => Boolean(item.id && liveAssetIds.has(item.id))).length;
+    return assets.filter((item) => liveAssetIds.has(item.id)).length;
   }, [assets, liveAssetIds]);
 
   const filterCounts = useMemo(() => {
@@ -437,10 +403,10 @@ export default function AssetRegisterPage() {
 
   const handleEdit = (item: RegisterAsset) => {
     setEditorMode('edit');
-    setEditingId(item.id ?? null);
+    setEditingId(item.id);
     setDraft({
       kind: item.kind,
-      title: item.title ?? '',
+      title: item.title,
       value: item.value ? String(item.value) : '',
       note: item.note ?? '',
       serialNumber: item.serialNumber ?? '',
@@ -458,16 +424,21 @@ export default function AssetRegisterPage() {
     try {
       const existing = assets.find((item) => item.id === editingId);
       const nowIso = new Date().toISOString();
-
       const parsedValue = parseMoney(draft.value);
 
       const nextItem = normaliseRegisterItem({
-        ...(existing ?? {}),
-        id: existing?.id ?? `asset-${Date.now()}`,
+        ...(existing ?? {
+          id: `asset-${Date.now()}`,
+          selectedMethod: 'manual',
+          selectedValueExVat: parsedValue,
+          value: parsedValue,
+          createdAtIso: nowIso,
+        }),
         kind: draft.kind,
         title: draft.title.trim(),
         value: parsedValue,
         selectedMethod: existing?.selectedMethod ?? 'manual',
+        method: existing?.method ?? existing?.selectedMethod ?? 'manual',
         selectedValueExVat: parsedValue,
         note: draft.note.trim(),
         serialNumber: draft.serialNumber.trim(),
@@ -476,9 +447,9 @@ export default function AssetRegisterPage() {
         photos: draft.photos,
         createdAtIso: existing?.createdAtIso ?? nowIso,
         updatedAtIso: nowIso,
-      } as SavedItem);
+      });
 
-      await Promise.resolve(saveItem(nextItem as SavedItem));
+      await Promise.resolve(saveItem(nextItem));
       await refreshData();
       resetEditor();
 
@@ -497,10 +468,6 @@ export default function AssetRegisterPage() {
   };
 
   const handleDelete = async (item: RegisterAsset) => {
-    if (!item.id) {
-      return;
-    }
-
     const approved = window.confirm(`Delete “${item.title || 'this asset'}” from the register?`);
 
     if (!approved) {
@@ -509,6 +476,10 @@ export default function AssetRegisterPage() {
 
     try {
       setBusyAssetId(item.id);
+      const linkedListing = listings.find((listing) => getListingAssetId(listing) === item.id);
+      if (linkedListing) {
+        await Promise.resolve(removeMarketplaceListing(getListingId(linkedListing)));
+      }
       await Promise.resolve(deleteItem(item.id));
       await refreshData();
       setNotice({ tone: 'success', message: 'Asset removed from the register.' });
@@ -527,7 +498,7 @@ export default function AssetRegisterPage() {
   };
 
   const handleClearAll = async () => {
-    const approved = window.confirm('Clear the entire asset register? This cannot be undone.');
+    const approved = window.confirm('Clear the entire asset register? This will also remove locally published marketplace items.');
 
     if (!approved) {
       return;
@@ -536,6 +507,7 @@ export default function AssetRegisterPage() {
     try {
       setBusyAssetId('all');
       await Promise.resolve(clearItems());
+      await Promise.resolve(clearPublishedMarketplaceListings());
       await refreshData();
       resetEditor();
       setNotice({ tone: 'success', message: 'The asset register was cleared.' });
@@ -550,15 +522,17 @@ export default function AssetRegisterPage() {
   };
 
   const handlePublish = async (item: RegisterAsset) => {
-    if (!item.id) {
-      return;
-    }
-
     try {
       setBusyAssetId(item.id);
-      const publishFn =
-        publishRegisterItemToMarketplace as unknown as (payload: SavedItem) => Promise<unknown> | unknown;
-      await Promise.resolve(publishFn(item as SavedItem));
+      await Promise.resolve(
+        publishRegisterItemToMarketplace(item, {
+          askingPriceExVat: Number(item.value ?? item.selectedValueExVat ?? 0),
+          description: item.marketplaceNotes || item.note,
+          sellerPhone: item.sellerPhone,
+          imageSrc: item.photos?.[0],
+          imageUrls: item.photos,
+        }),
+      );
       await refreshData();
       setNotice({ tone: 'success', message: 'Asset published to marketplace.' });
     } catch (error) {
@@ -572,12 +546,8 @@ export default function AssetRegisterPage() {
   };
 
   const handleUnpublish = async (item: RegisterAsset) => {
-    if (!item.id) {
-      return;
-    }
-
     const linkedListing = listings.find((listing) => getListingAssetId(listing) === item.id);
-    const listingId = linkedListing ? getListingId(linkedListing) : item.id;
+    const listingId = linkedListing ? getListingId(linkedListing) : undefined;
 
     if (!listingId) {
       setNotice({ tone: 'error', message: 'Could not locate the marketplace listing.' });
@@ -586,9 +556,7 @@ export default function AssetRegisterPage() {
 
     try {
       setBusyAssetId(item.id);
-      const removeFn =
-        removeMarketplaceListing as unknown as (listingIdValue: string) => Promise<unknown> | unknown;
-      await Promise.resolve(removeFn(listingId));
+      await Promise.resolve(removeMarketplaceListing(listingId));
       await refreshData();
       setNotice({ tone: 'success', message: 'Marketplace listing removed.' });
     } catch (error) {
@@ -825,16 +793,16 @@ export default function AssetRegisterPage() {
               <div className={styles.assetGrid}>
                 {filteredAssets.length ? (
                   filteredAssets.map((item) => {
-                    const isLive = Boolean(item.id && liveAssetIds.has(item.id));
+                    const isLive = liveAssetIds.has(item.id);
                     const isBusy = busyAssetId === item.id;
 
                     return (
-                      <article className={styles.assetCard} key={item.id ?? item.title}>
+                      <article className={styles.assetCard} key={item.id}>
                         <div className={styles.assetTop}>
                           <div>
                             <div className={styles.badgeRow}>
                               <span className={styles.badge}>{typeShortLabel(item.kind)}</span>
-                              <span className={styles.badge}>{methodLabel(item.method)}</span>
+                              <span className={styles.badge}>{methodLabel(item.method ?? item.selectedMethod)}</span>
                               {isLive ? <span className={styles.liveBadge}>Marketplace live</span> : null}
                             </div>
                             <h3 className={styles.assetTitle}>{item.title || 'Untitled asset'}</h3>
@@ -984,7 +952,7 @@ export default function AssetRegisterPage() {
                   })
                   .slice(0, 5)
                   .map((item) => (
-                    <div className={styles.liveStrip} key={`recent-${item.id ?? item.title}`}>
+                    <div className={styles.liveStrip} key={`recent-${item.id}`}>
                       <strong>{item.title || 'Untitled asset'}</strong>
                       <span>{formatMoney(Number(item.value ?? 0))}</span>
                       <small className={styles.liveMeta}>{timeAgo(item.updatedAtIso || item.createdAtIso)}</small>
