@@ -139,12 +139,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json<SaveValuationRunApiResponse>(
-      {
-        ok: false,
-        error: 'Failed to save valuation run.',
-      },
-      { status: 500 },
-    );
+return NextResponse.json<SaveValuationRunApiResponse>(
+  {
+    ok: false,
+    error: error instanceof Error ? error.message : 'Failed to save valuation run.',
+  },
+  { status: 500 },
+);
   }
 }
