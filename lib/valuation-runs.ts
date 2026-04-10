@@ -8,6 +8,7 @@ export type MethodKey = 'aim4price' | 'market' | 'department';
 export type SaveValuationRunInput = RunValuationInput & {
   selectedMethod: MethodKey;
   valuationVersion?: string | null;
+  userId?: string | null;
 };
 
 export type SaveValuationRunResult = {
@@ -158,6 +159,7 @@ export async function saveValuationRun(input: SaveValuationRunInput): Promise<Sa
   const inserted = await db.query<InsertedValuationRunRow>(
     `
       insert into valuation_runs (
+        user_id,
         model_id,
         brand_id,
         department_band_id,
@@ -197,11 +199,12 @@ export async function saveValuationRun(input: SaveValuationRunInput): Promise<Sa
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
         $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-        $31, $32, $33, $34::jsonb
+        $31, $32, $33, $34, $35::jsonb
       )
       returning id, created_at
     `,
     [
+      input.userId ?? null,
       catalogLink.model_id,
       catalogLink.brand_id,
       departmentBandId,
