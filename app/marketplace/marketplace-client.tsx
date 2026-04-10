@@ -25,6 +25,11 @@ type MarketplaceFilters = {
   type: string;
 };
 
+type MarketplaceClientProps = {
+  initialFilters: MarketplaceFilters;
+  isSignedIn: boolean;
+};
+
 type SortValue = 'newest' | 'price-low' | 'price-high' | 'hours-low' | 'hours-high' | 'year-new';
 
 const LISTINGS_PER_PAGE = 9;
@@ -143,9 +148,8 @@ function buildPagination(currentPage: number, totalPages: number): Array<number 
 
 export default function MarketplaceClient({
   initialFilters,
-}: {
-  initialFilters: MarketplaceFilters;
-}) {
+  isSignedIn,
+}: MarketplaceClientProps) {
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<MarketplaceListing[]>(seedMarketplaceListings);
   const [activeListing, setActiveListing] = useState<MarketplaceListing | null>(null);
@@ -158,8 +162,6 @@ export default function MarketplaceClient({
   const [provinceFilter, setProvinceFilter] = useState('');
   const [sortBy, setSortBy] = useState<SortValue>('newest');
   const [currentPage, setCurrentPage] = useState(1);
-
-  const isSignedIn = false;
 
   useEffect(() => {
     const refresh = () => {
@@ -841,10 +843,10 @@ export default function MarketplaceClient({
 
                   {!isSignedIn ? (
                     <div className={styles.lockActions}>
-                      <a href="#" className={styles.primaryAction}>
+                      <a href="/auth#signup" className={styles.primaryAction}>
                         Create account
                       </a>
-                      <a href="#" className={styles.secondaryAction}>
+                      <a href="/auth#login" className={styles.secondaryAction}>
                         Login
                       </a>
                     </div>
