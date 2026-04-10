@@ -7,6 +7,7 @@
     "start": "sh -c 'next start -H 0.0.0.0 -p ${PORT:-3000}'"
   },
   "dependencies": {
+    "better-auth": "^1.6.2",
     "next": "14.2.35",
     "pg": "^8.20.0",
     "react": "18.3.1",
