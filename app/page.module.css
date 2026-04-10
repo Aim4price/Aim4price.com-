@@ -10,8 +10,7 @@
 }
 
 .eyebrow,
-.workflowEyebrow,
-.cardEyebrow {
+.workflowEyebrow {
   margin: 0;
   display: inline-flex;
   align-items: center;
@@ -68,35 +67,14 @@
   z-index: 2;
   min-height: clamp(38rem, 49vw, 46rem);
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(24rem, 30rem);
+  grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 1fr);
   align-items: center;
-  gap: clamp(2rem, 3vw, 3.6rem);
+  gap: clamp(2rem, 4vw, 4.5rem);
   padding: clamp(2.6rem, 4vw, 3.8rem) 0;
 }
 
 .heroCopy {
   max-width: 42rem;
-  color: #ffffff;
-}
-
-.heroBrand {
-  display: inline-flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.35rem;
-}
-
-.heroBrandMark {
-  width: 3.4rem;
-  height: auto;
-  object-fit: contain;
-}
-
-.heroBrandName {
-  font-size: clamp(2.15rem, 4vw, 3.15rem);
-  line-height: 1;
-  font-weight: 800;
-  letter-spacing: -0.065em;
   color: #ffffff;
 }
 
@@ -147,146 +125,75 @@
   backdrop-filter: blur(8px);
 }
 
-.heroCard {
-  justify-self: end;
-  width: 100%;
-  max-width: 30rem;
-  padding: 1.8rem;
-  border-radius: 1.9rem;
-  background: rgba(255, 255, 255, 0.97);
-  border: 1px solid rgba(17, 40, 32, 0.08);
-  box-shadow:
-    0 34px 70px rgba(9, 24, 19, 0.24),
-    0 12px 28px rgba(9, 24, 19, 0.12);
-  backdrop-filter: blur(14px);
-}
-
-.cardEyebrow {
-  color: #235341;
-  background: rgba(24, 77, 61, 0.08);
-  border: 1px solid rgba(24, 77, 61, 0.1);
-}
-
-.cardTitle {
-  margin: 1rem 0 0;
-  font-size: clamp(2rem, 2.5vw, 2.7rem);
-  line-height: 0.94;
-  letter-spacing: -0.06em;
-  font-weight: 800;
-  color: #16372c;
-}
-
-.cardText {
-  margin: 1rem 0 0;
-  font-size: 1rem;
-  line-height: 1.68;
-  color: #5d6d67;
-}
-
-.cardSupport {
-  margin: 0.85rem 0 0;
-  font-size: 0.92rem;
-  line-height: 1.4;
-  font-weight: 800;
-  color: #1a5d46;
-}
-
-.quickActions {
+.heroVisual {
+  position: relative;
   display: grid;
-  gap: 0.95rem;
-  margin-top: 1.45rem;
+  justify-items: center;
+  gap: 1.15rem;
+  padding: 1.5rem 0;
 }
 
-.quickAction {
+.heroLogoWrap {
+  position: relative;
   display: grid;
-  gap: 0.56rem;
-  padding: 1.12rem 1.15rem;
-  border-radius: 1.25rem;
-  text-decoration: none;
-  background: #f5f7f6;
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    border-color 180ms ease,
-    background 180ms ease;
+  place-items: center;
+  width: min(100%, 34rem);
+  min-height: 20rem;
 }
 
-.quickAction:hover,
-.stepCard:hover,
-.stepAction:hover {
-  transform: translateY(-2px);
+.heroLogoGlow {
+  position: absolute;
+  width: min(26rem, 78%);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 38%, rgba(255, 255, 255, 0) 72%);
+  filter: blur(14px);
 }
 
-.quickAction:hover {
-  box-shadow: 0 18px 28px rgba(18, 45, 37, 0.08);
-  border-color: rgba(24, 77, 61, 0.14);
+.heroLogo {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 23rem);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 38px rgba(0, 0, 0, 0.34));
 }
 
-.quickActionPrimary {
-  background: linear-gradient(180deg, #175440 0%, #113c2f 100%);
-  border-color: rgba(18, 63, 49, 0.24);
-  box-shadow: 0 18px 34px rgba(17, 60, 47, 0.18);
-}
-
-.quickActionMeta {
-  font-size: 0.74rem;
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #6b7773;
-}
-
-.quickActionTop {
+.heroActions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  max-width: 26rem;
 }
 
-.quickActionTitle {
-  font-size: 1.08rem;
-  line-height: 1.18;
-  font-weight: 800;
-  color: #17372d;
-}
-
-.quickActionPrimary .quickActionMeta,
-.quickActionPrimary .quickActionTitle,
-.quickActionPrimary .quickActionText,
-.quickActionPrimary .quickActionButton,
-.quickActionPrimary .quickActionArrow {
-  color: #ffffff;
-}
-
-.quickActionArrow {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #1d4738;
-  flex-shrink: 0;
-}
-
-.quickActionText {
-  font-size: 0.97rem;
-  line-height: 1.56;
-  color: #667570;
-}
-
-.quickActionButton {
+.heroActionLink {
   display: inline-flex;
   align-items: center;
-  width: fit-content;
-  font-size: 0.9rem;
-  line-height: 1.2;
+  justify-content: center;
+  min-height: 2.3rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.84rem;
   font-weight: 800;
-  color: #1a5d46;
+  line-height: 1;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px);
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
-.quickActionButton::after {
-  content: '→';
-  margin-left: 0.42rem;
-  font-size: 1rem;
+.heroActionLink:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 16px 28px rgba(9, 24, 19, 0.2);
 }
 
 .workflowSection {
@@ -342,7 +249,7 @@
 .stepCard {
   display: flex;
   flex-direction: column;
-  min-height: 18.25rem;
+  min-height: 14.75rem;
   padding: 1.6rem 1.5rem 1.45rem;
   border-radius: 1.55rem;
   background: #ffffff;
@@ -391,79 +298,14 @@
   color: #66716c;
 }
 
-.stepAction {
-  margin-top: auto;
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  min-height: 3rem;
-  padding: 0 1.08rem;
-  border-radius: 999px;
-  text-decoration: none;
-  font-size: 0.92rem;
-  font-weight: 800;
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    border-color 180ms ease,
-    background 180ms ease,
-    color 180ms ease;
-}
-
-.stepAction::after {
-  content: '→';
-  margin-left: 0.42rem;
-  font-size: 1rem;
-}
-
-.stepCard:nth-child(1) .stepAction {
-  color: #ffffff;
-  background: linear-gradient(180deg, #1a5d46 0%, #123f31 100%);
-  border: 1px solid rgba(18, 63, 49, 0.24);
-  box-shadow: 0 14px 26px rgba(18, 63, 49, 0.16);
-}
-
-.stepCard:nth-child(1) .stepAction:hover {
-  background: linear-gradient(180deg, #1e694f 0%, #144636 100%);
-  border-color: rgba(18, 63, 49, 0.28);
-  box-shadow: 0 16px 28px rgba(18, 63, 49, 0.2);
-}
-
-.stepCard:nth-child(2) .stepAction {
-  color: #ffffff;
-  background: linear-gradient(180deg, #232826 0%, #171b19 100%);
-  border: 1px solid rgba(23, 27, 25, 0.3);
-  box-shadow: 0 14px 26px rgba(15, 18, 17, 0.14);
-}
-
-.stepCard:nth-child(2) .stepAction:hover {
-  background: linear-gradient(180deg, #2a302d 0%, #1b201d 100%);
-  border-color: rgba(23, 27, 25, 0.34);
-  box-shadow: 0 16px 28px rgba(15, 18, 17, 0.18);
-}
-
-.stepCard:nth-child(3) .stepAction {
-  color: #ffffff;
-  background: linear-gradient(180deg, #2d69c7 0%, #1f4f98 100%);
-  border: 1px solid rgba(31, 79, 152, 0.28);
-  box-shadow: 0 14px 26px rgba(31, 79, 152, 0.16);
-}
-
-.stepCard:nth-child(3) .stepAction:hover {
-  background: linear-gradient(180deg, #3574d8 0%, #2356a3 100%);
-  border-color: rgba(31, 79, 152, 0.34);
-  box-shadow: 0 16px 28px rgba(31, 79, 152, 0.2);
-}
-
-.quickAction:focus-visible,
-.stepAction:focus-visible {
-  outline: 3px solid rgba(23, 77, 62, 0.18);
+.heroActionLink:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.24);
   outline-offset: 3px;
 }
 
 @media (max-width: 1180px) {
   .heroGrid {
-    grid-template-columns: minmax(0, 1fr) minmax(22rem, 27rem);
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.9fr);
   }
 
   .heroTitle {
@@ -475,7 +317,7 @@
   .heroGrid {
     grid-template-columns: 1fr;
     align-items: end;
-    gap: 1.5rem;
+    gap: 1.8rem;
     padding: 2.1rem 0 2.5rem;
   }
 
@@ -483,9 +325,18 @@
     max-width: 100%;
   }
 
-  .heroCard {
-    justify-self: start;
-    max-width: 36rem;
+  .heroVisual {
+    justify-items: start;
+    gap: 0.95rem;
+  }
+
+  .heroLogoWrap {
+    width: min(100%, 24rem);
+    min-height: 15rem;
+  }
+
+  .heroActions {
+    justify-content: flex-start;
   }
 
   .workflowTitle {
@@ -502,7 +353,7 @@
   }
 
   .stepCard {
-    min-height: 15.75rem;
+    min-height: 13.25rem;
   }
 
   .stepText {
@@ -524,19 +375,6 @@
     padding: 1.65rem 0 1.85rem;
   }
 
-  .heroBrand {
-    gap: 0.74rem;
-    margin-bottom: 1rem;
-  }
-
-  .heroBrandMark {
-    width: 2.7rem;
-  }
-
-  .heroBrandName {
-    font-size: 1.9rem;
-  }
-
   .heroTitle {
     max-width: 8.5ch;
     font-size: clamp(2.45rem, 12vw, 3.9rem);
@@ -555,9 +393,20 @@
     font-size: 0.84rem;
   }
 
-  .heroCard {
-    padding: 1.25rem;
-    border-radius: 1.4rem;
+  .heroLogoWrap {
+    width: min(100%, 18rem);
+    min-height: 12rem;
+  }
+
+  .heroActions {
+    gap: 0.5rem;
+    max-width: 100%;
+  }
+
+  .heroActionLink {
+    min-height: 2.15rem;
+    padding: 0 0.8rem;
+    font-size: 0.78rem;
   }
 
   .workflowWrap {
@@ -581,7 +430,7 @@
   }
 
   .stepCard {
-    min-height: 14.5rem;
+    min-height: 12.75rem;
     padding: 1.35rem 1.2rem 1.25rem;
     border-radius: 1.2rem;
   }
