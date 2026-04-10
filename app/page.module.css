@@ -95,14 +95,14 @@
 }
 
 .heroTitle {
-  margin: 1.2rem 0 0;
+  margin: 1.15rem 0 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  font-size: clamp(3.45rem, 5.05vw, 5.3rem);
-  line-height: 0.88;
-  letter-spacing: -0.08em;
-  font-weight: 800;
+  font-size: clamp(3.18rem, 4.72vw, 4.95rem);
+  line-height: 0.92;
+  letter-spacing: -0.065em;
+  font-weight: 760;
 }
 
 .heroTitleLine {
@@ -111,7 +111,7 @@
 }
 
 .heroTitleLine + .heroTitleLine {
-  margin-top: -0.06em;
+  margin-top: -0.04em;
 }
 
 .heroText {
@@ -379,7 +379,9 @@
   }
 
   .heroTitle {
-    font-size: clamp(3.2rem, 5vw, 4.9rem);
+    font-size: clamp(3rem, 4.85vw, 4.6rem);
+    line-height: 0.92;
+    letter-spacing: -0.06em;
   }
 
   .heroMarkStage {
@@ -464,8 +466,10 @@
   }
 
   .heroTitle {
-    font-size: clamp(2.75rem, 11vw, 4.2rem);
-    line-height: 0.9;
+    font-size: clamp(2.68rem, 10.4vw, 3.95rem);
+    line-height: 0.93;
+    letter-spacing: -0.055em;
+    font-weight: 740;
   }
 
   .heroText {
