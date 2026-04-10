@@ -16,6 +16,7 @@ import {
   type TractorType,
 } from '../../lib/tractor-data';
 import { conditionLabel, money, range, type Result } from '../../lib/tractor-logic';
+import { getGuestValuationCount, incrementGuestValuationCount } from '../../lib/guest-valuation-limit';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 type MethodKey = 'aim4price' | 'market' | 'department';
@@ -236,7 +237,6 @@ function buildExtrasSummaryText(
   return buildExtrasSummaryChips(frontPto, frontLoader, gpsEnabled, gpsType, gpsYear).join(' · ');
 }
 
-
 function getListingBasePrice(listing: MarketplaceListing): number {
   const candidates = [
     Number(listing.advertisedPriceExVat),
@@ -308,7 +308,10 @@ export default function ValuationClient() {
   const [modelsLoading, setModelsLoading] = useState(false);
   const [valuationLoading, setValuationLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [guestValuationCount, setGuestValuationCount] = useState(0);
 
+  const freeGuestValuationsRemaining = Math.max(0, 3 - guestValuationCount);
   const stepMeta = getStepMeta(step);
   const brandDropdownRef = useRef<HTMLDivElement | null>(null);
   const brandSearchInputRef = useRef<HTMLInputElement | null>(null);
@@ -416,6 +419,41 @@ export default function ValuationClient() {
   }
 
   useEffect(() => {
+    let mounted = true;
+
+    async function loadAccessState() {
+      try {
+        const response = await fetch('/api/me', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+
+        const data = (await response.json()) as {
+          ok: boolean;
+          signedIn: boolean;
+          user: { id: string; name: string; email: string } | null;
+        };
+
+        if (!mounted) return;
+
+        setIsSignedIn(Boolean(data?.signedIn));
+        setGuestValuationCount(getGuestValuationCount());
+      } catch {
+        if (!mounted) return;
+
+        setIsSignedIn(false);
+        setGuestValuationCount(getGuestValuationCount());
+      }
+    }
+
+    void loadAccessState();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     let ignore = false;
 
     async function loadBrands() {
@@ -511,7 +549,6 @@ export default function ValuationClient() {
       ignore = true;
     };
   }, [brandSlug, tractorType, drive, cab]);
-
 
   useEffect(() => {
     if (!availableBrands.length) return;
@@ -785,7 +822,15 @@ export default function ValuationClient() {
     if (step === 1) return selectedType === 'tractor';
     if (step === 3) return configComplete;
     if (step === 4) {
-      return Boolean(selectedModel && isYearValid && isHoursValid && yearConfirmed && hoursConfirmed && condition && extrasReviewed);
+      return Boolean(
+        selectedModel &&
+          isYearValid &&
+          isHoursValid &&
+          yearConfirmed &&
+          hoursConfirmed &&
+          condition &&
+          extrasReviewed,
+      );
     }
     return true;
   }, [
@@ -878,6 +923,12 @@ export default function ValuationClient() {
         return;
       }
 
+      if (!isSignedIn && guestValuationCount >= 3) {
+        setMessage('You have used your 3 free valuations. Please create an account or log in to continue.');
+        router.push('/auth#signup');
+        return;
+      }
+
       setValuationLoading(true);
 
       try {
@@ -909,6 +960,11 @@ export default function ValuationClient() {
 
         setResult(nextResult);
 
+        if (!isSignedIn) {
+          const nextCount = incrementGuestValuationCount();
+          setGuestValuationCount(nextCount);
+        }
+
         const defaultMethod: MethodKey =
           nextResult.marketMid !== null
             ? 'market'
@@ -934,6 +990,12 @@ export default function ValuationClient() {
   async function handleSave() {
     if (!result || !selectedMethod || !condition) {
       setMessage('Choose which number should be saved first.');
+      return;
+    }
+
+    if (!isSignedIn) {
+      setMessage('Please create an account or log in to save valuations.');
+      router.push('/auth#signup');
       return;
     }
 
@@ -1186,7 +1248,9 @@ export default function ValuationClient() {
                     complete ? styles.miniStepComplete : ''
                   }`}
                 >
-                  <span className={styles.miniStepNumber}>{complete ? '✓' : CONFIG_STEPS.findIndex((stepItem) => stepItem.key === item.key) + 1}</span>
+                  <span className={styles.miniStepNumber}>
+                    {complete ? '✓' : CONFIG_STEPS.findIndex((stepItem) => stepItem.key === item.key) + 1}
+                  </span>
                   <span className={styles.miniStepLabel}>{item.label}</span>
                 </div>
               );
@@ -1548,7 +1612,9 @@ export default function ValuationClient() {
                   complete ? styles.miniStepComplete : ''
                 }`}
               >
-                <span className={styles.miniStepNumber}>{complete ? '✓' : DETAILS_STEPS.findIndex((stepItem) => stepItem.key === item.key) + 1}</span>
+                <span className={styles.miniStepNumber}>
+                  {complete ? '✓' : DETAILS_STEPS.findIndex((stepItem) => stepItem.key === item.key) + 1}
+                </span>
                 <span className={styles.miniStepLabel}>{item.label}</span>
               </div>
             );
@@ -2027,74 +2093,79 @@ export default function ValuationClient() {
                   <p className={styles.heroIntroText}>
                     Move from tractor setup to a clean value output with a simple guided flow.
                   </p>
+                  {!isSignedIn ? (
+                    <p className={styles.heroIntroText}>
+                      Free guest valuations remaining: {freeGuestValuationsRemaining} / 3
+                    </p>
+                  ) : null}
                 </div>
               </section>
 
               <section className={styles.wizardShell}>
-              <article className={styles.wizardCard}>
-                <div className={styles.wizardHeader}>
-                  <div className={styles.stepper}>
-                    {WIZARD_STEPS.map((item, index) => {
-                      const isActive = step === item.step;
-                      const isComplete = step > item.step;
+                <article className={styles.wizardCard}>
+                  <div className={styles.wizardHeader}>
+                    <div className={styles.stepper}>
+                      {WIZARD_STEPS.map((item, index) => {
+                        const isActive = step === item.step;
+                        const isComplete = step > item.step;
 
-                      return (
-                        <div
-                          key={item.step}
-                          className={`${styles.stepperItem} ${isActive ? styles.stepperItemActive : ''} ${
-                            isComplete ? styles.stepperItemComplete : ''
-                          }`}
-                        >
-                          <span
-                            className={`${styles.stepperBullet} ${
-                              isActive ? styles.stepperBulletActive : ''
-                            } ${isComplete ? styles.stepperBulletComplete : ''}`}
-                          >
-                            {isComplete ? '✓' : item.step}
-                          </span>
-                          <span
-                            className={`${styles.stepperLabel} ${isActive ? styles.stepperLabelActive : ''} ${
-                              isComplete ? styles.stepperLabelComplete : ''
+                        return (
+                          <div
+                            key={item.step}
+                            className={`${styles.stepperItem} ${isActive ? styles.stepperItemActive : ''} ${
+                              isComplete ? styles.stepperItemComplete : ''
                             }`}
                           >
-                            {item.label}
-                          </span>
-                          {index < WIZARD_STEPS.length - 1 ? (
                             <span
-                              className={`${styles.stepperLine} ${step > item.step ? styles.stepperLineComplete : ''}`}
-                            />
-                          ) : null}
-                        </div>
-                      );
-                    })}
+                              className={`${styles.stepperBullet} ${
+                                isActive ? styles.stepperBulletActive : ''
+                              } ${isComplete ? styles.stepperBulletComplete : ''}`}
+                            >
+                              {isComplete ? '✓' : item.step}
+                            </span>
+                            <span
+                              className={`${styles.stepperLabel} ${isActive ? styles.stepperLabelActive : ''} ${
+                                isComplete ? styles.stepperLabelComplete : ''
+                              }`}
+                            >
+                              {item.label}
+                            </span>
+                            {index < WIZARD_STEPS.length - 1 ? (
+                              <span
+                                className={`${styles.stepperLine} ${step > item.step ? styles.stepperLineComplete : ''}`}
+                              />
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
 
-                <div className={styles.stepContent}>
-                  <h1 className={styles.stepTitle}>{stepMeta.title}</h1>
-                  <p className={styles.stepText}>{stepMeta.body}</p>
+                  <div className={styles.stepContent}>
+                    <h1 className={styles.stepTitle}>{stepMeta.title}</h1>
+                    <p className={styles.stepText}>{stepMeta.body}</p>
 
-                  {message ? <div className={styles.message}>{message}</div> : null}
+                    {message ? <div className={styles.message}>{message}</div> : null}
 
-                  {renderWizardBody()}
-                </div>
+                    {renderWizardBody()}
+                  </div>
 
-                <div className={styles.wizardFooter}>
-                  <button type="button" className={styles.secondaryButton} onClick={handleBack}>
-                    {step === 1 ? 'Back Home' : 'Back'}
-                  </button>
+                  <div className={styles.wizardFooter}>
+                    <button type="button" className={styles.secondaryButton} onClick={handleBack}>
+                      {step === 1 ? 'Back Home' : 'Back'}
+                    </button>
 
-                  <button
-                    type="button"
-                    className={styles.primaryButton}
-                    onClick={handleNext}
-                    disabled={!canContinue || valuationLoading}
-                  >
-                    {nextLabel}
-                  </button>
-                </div>
-              </article>
-            </section>
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={handleNext}
+                      disabled={!canContinue || valuationLoading}
+                    >
+                      {nextLabel}
+                    </button>
+                  </div>
+                </article>
+              </section>
             </>
           ) : result ? (
             <section className={styles.resultsLayout}>
@@ -2411,7 +2482,6 @@ export default function ValuationClient() {
           ) : null}
         </div>
       </main>
-
     </>
   );
 }
