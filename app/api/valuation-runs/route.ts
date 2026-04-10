@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { saveValuationRun, type RunValuationInput, type SaveValuationRunInput } from '../../../lib/valuation-runs';
 import { getServerSession } from '../../../lib/auth-session';
-
-type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'rough';
-type MethodKey = 'aim4price' | 'market' | 'department';
-type GpsType = 'full-autosteer' | 'guidance-only';
+import { saveValuationRun, type MethodKey, type SaveValuationRunInput } from '../../../lib/valuation-runs';
+import type { ConditionKey } from '../../../lib/tractor-data';
+import type { GpsType, RunValuationInput } from '../../../lib/tractor-logic';
 
 type SaveValuationRunApiResponse = {
   ok: boolean;
@@ -32,7 +30,7 @@ function normalizeCondition(value: unknown): ConditionKey | null {
     normalized === 'good' ||
     normalized === 'fair' ||
     normalized === 'used' ||
-    normalized === 'rough'
+    normalized === 'serious'
   ) {
     return normalized;
   }
@@ -103,7 +101,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
 
-    if (!session) {
+    if (!session?.user?.id) {
       return NextResponse.json<SaveValuationRunApiResponse>(
         {
           ok: false,
