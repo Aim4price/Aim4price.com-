@@ -53,11 +53,9 @@ export default function HomePage() {
                 <p className={styles.eyebrow}>Agricultural &amp; industrial machinery pricing</p>
 
                 <h1 className={styles.heroTitle}>
-                  Know what
-                  <br />
-                  your machinery
-                  <br />
-                  is worth.
+                  <span className={styles.heroTitleLine}>Know what</span>
+                  <span className={styles.heroTitleLine}>your machinery</span>
+                  <span className={styles.heroTitleLine}>is worth.</span>
                 </h1>
 
                 <p className={styles.heroText}>
@@ -73,14 +71,16 @@ export default function HomePage() {
               </div>
 
               <div className={styles.heroVisual} aria-hidden="true">
-                <Image
-                  src="/brand/aim4price-mark-white.png"
-                  alt=""
-                  width={660}
-                  height={515}
-                  priority
-                  className={styles.heroLogo}
-                />
+                <div className={styles.heroMarkStage}>
+                  <Image
+                    src="/brand/aim4price-mark-white.png"
+                    alt=""
+                    width={660}
+                    height={515}
+                    priority
+                    className={styles.heroLogo}
+                  />
+                </div>
               </div>
             </div>
           </div>
