@@ -26,14 +26,15 @@
 }
 
 .heroSection {
-  padding: 0 0 2.7rem;
+  padding: 0 0 2.75rem;
 }
 
 .heroMedia {
   position: relative;
-  min-height: clamp(35.5rem, 44vw, 41rem);
+  min-height: clamp(36rem, 44vw, 41.5rem);
   overflow: hidden;
   background: #10261f;
+  isolation: isolate;
 }
 
 .heroVideo {
@@ -50,31 +51,39 @@
   background:
     linear-gradient(
       90deg,
-      rgba(7, 19, 15, 0.84) 0%,
-      rgba(7, 19, 15, 0.62) 24%,
-      rgba(7, 19, 15, 0.28) 48%,
-      rgba(7, 19, 15, 0.09) 100%
+      rgba(7, 19, 15, 0.9) 0%,
+      rgba(7, 19, 15, 0.78) 20%,
+      rgba(7, 19, 15, 0.46) 44%,
+      rgba(7, 19, 15, 0.2) 68%,
+      rgba(7, 19, 15, 0.12) 100%
+    ),
+    radial-gradient(
+      circle at 72% 52%,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.02) 22%,
+      rgba(255, 255, 255, 0) 40%
     ),
     linear-gradient(
       180deg,
       rgba(10, 22, 18, 0.12) 0%,
-      rgba(10, 22, 18, 0.28) 100%
+      rgba(10, 22, 18, 0.32) 100%
     );
 }
 
 .heroGrid {
   position: relative;
   z-index: 2;
-  min-height: clamp(35.5rem, 44vw, 41rem);
+  min-height: clamp(36rem, 44vw, 41.5rem);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(14.5rem, 0.72fr);
+  grid-template-columns: minmax(0, 38rem) minmax(18rem, 1fr);
   align-items: center;
-  gap: clamp(0.9rem, 1.9vw, 1.75rem);
-  padding: clamp(3rem, 4.2vw, 3.85rem) 0;
+  justify-content: space-between;
+  gap: clamp(1.5rem, 3vw, 3.2rem);
+  padding: clamp(3rem, 4.3vw, 4rem) 0;
 }
 
 .heroCopy {
-  max-width: 35.5rem;
+  max-width: 38rem;
   color: #ffffff;
 }
 
@@ -86,19 +95,29 @@
 }
 
 .heroTitle {
-  margin: 1rem 0 0;
-  max-width: none;
-  font-size: clamp(3.7rem, 5vw, 5.45rem);
-  line-height: 0.9;
-  letter-spacing: -0.082em;
+  margin: 1.2rem 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-size: clamp(3.45rem, 5.05vw, 5.3rem);
+  line-height: 0.88;
+  letter-spacing: -0.08em;
   font-weight: 800;
-  text-wrap: balance;
+}
+
+.heroTitleLine {
+  display: block;
+  white-space: nowrap;
+}
+
+.heroTitleLine + .heroTitleLine {
+  margin-top: -0.06em;
 }
 
 .heroText {
-  margin: 1.3rem 0 0;
-  max-width: 31rem;
-  font-size: clamp(1.01rem, 1.18vw, 1.1rem);
+  margin: 1.45rem 0 0;
+  max-width: 32rem;
+  font-size: clamp(1rem, 1.18vw, 1.1rem);
   line-height: 1.62;
   color: rgba(246, 248, 247, 0.92);
   text-wrap: pretty;
@@ -113,52 +132,51 @@
 
 .primaryCta {
   position: relative;
+  z-index: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.34rem;
-  padding: 0 1.48rem;
+  min-height: 3.45rem;
+  padding: 0 1.56rem;
   border-radius: 999px;
   text-decoration: none;
-  font-size: 0.96rem;
+  font-size: 0.98rem;
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.015em;
   color: #ffffff;
-  background: linear-gradient(180deg, #1d7b5c 0%, #14533f 100%);
-  border: 1px solid rgba(12, 54, 41, 0.3);
+  background: linear-gradient(180deg, #1e8a66 0%, #156147 100%);
+  border: 1px solid rgba(9, 49, 37, 0.32);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 18px 34px rgba(8, 21, 17, 0.22),
-    0 8px 18px rgba(10, 38, 30, 0.16);
+    0 16px 30px rgba(8, 21, 17, 0.22),
+    0 8px 18px rgba(10, 38, 30, 0.14);
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
     background 180ms ease,
     border-color 180ms ease;
-  animation: ctaPulse 2.45s ease-in-out infinite;
 }
 
-.primaryCta::after {
+.primaryCta::before {
   content: '';
   position: absolute;
-  inset: -0.2rem;
+  inset: -0.15rem;
+  z-index: -1;
   border-radius: inherit;
-  border: 1px solid rgba(32, 131, 100, 0.18);
-  opacity: 0;
-  transform: scale(0.96);
-  animation: ctaHalo 2.45s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(40, 173, 127, 0.42);
+  animation: ctaPulseRing 2.8s cubic-bezier(0.2, 0.7, 0.2, 1) infinite;
   pointer-events: none;
 }
 
 .primaryCta:hover {
   transform: translateY(-2px);
-  background: linear-gradient(180deg, #208364 0%, #165d47 100%);
-  border-color: rgba(12, 54, 41, 0.38);
+  background: linear-gradient(180deg, #23926d 0%, #17694d 100%);
+  border-color: rgba(9, 49, 37, 0.38);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 22px 40px rgba(8, 21, 17, 0.25),
-    0 10px 20px rgba(10, 38, 30, 0.2);
+    0 20px 34px rgba(8, 21, 17, 0.24),
+    0 10px 20px rgba(10, 38, 30, 0.18);
 }
 
 .primaryCta:focus-visible {
@@ -167,61 +185,97 @@
 }
 
 .heroVisual {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   min-height: 100%;
-  padding: 0;
+  padding: 0 0 0 clamp(1rem, 3.5vw, 2.8rem);
+}
+
+.heroVisual::before {
+  content: '';
+  position: absolute;
+  width: min(28rem, 100%);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.08) 28%,
+    rgba(255, 255, 255, 0.02) 58%,
+    rgba(255, 255, 255, 0) 76%
+  );
+  filter: blur(1px);
+}
+
+.heroMarkStage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(100%, 24rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.heroMarkStage::before {
+  content: '';
+  position: absolute;
+  inset: 11%;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.045) 0%,
+    rgba(255, 255, 255, 0.016) 62%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  backdrop-filter: blur(4px);
+}
+
+.heroMarkStage::after {
+  content: '';
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  opacity: 0.85;
 }
 
 .heroLogo {
-  width: min(100%, 16.9rem);
+  position: relative;
+  z-index: 1;
+  width: min(100%, 17.25rem);
   height: auto;
   object-fit: contain;
-  opacity: 0.98;
-  transform: translate(0.2rem, 0.1rem);
-  filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.22));
+  transform: translateX(0.3rem);
+  filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.18));
 }
 
-@keyframes ctaPulse {
-  0%,
-  100% {
-    transform: translateY(0) scale(1);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.18),
-      0 18px 34px rgba(8, 21, 17, 0.22),
-      0 8px 18px rgba(10, 38, 30, 0.16);
+@keyframes ctaPulseRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(40, 173, 127, 0.38);
+    opacity: 0.85;
   }
 
-  50% {
-    transform: translateY(-1px) scale(1.018);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.2),
-      0 22px 40px rgba(8, 21, 17, 0.26),
-      0 10px 22px rgba(10, 38, 30, 0.18);
-  }
-}
-
-@keyframes ctaHalo {
-  0%,
-  100% {
+  70% {
+    box-shadow: 0 0 0 16px rgba(40, 173, 127, 0);
     opacity: 0;
-    transform: scale(0.96);
   }
 
-  50% {
-    opacity: 0.45;
-    transform: scale(1.08);
+  100% {
+    box-shadow: 0 0 0 0 rgba(40, 173, 127, 0);
+    opacity: 0;
   }
 }
 
 .workflowSection {
-  padding: 0 0 2.85rem;
+  padding: 0 0 2.9rem;
 }
 
 .workflowWrap {
-  padding: clamp(2.8rem, 4vw, 3.5rem);
-  border-radius: 2.1rem;
+  padding: clamp(2.7rem, 4vw, 3.45rem);
+  border-radius: 2rem;
   background: #ebefed;
   border: 1px solid rgba(18, 45, 37, 0.07);
 }
@@ -230,7 +284,7 @@
   display: grid;
   justify-items: center;
   gap: 0.95rem;
-  margin: 0 auto 2.45rem;
+  margin: 0 auto 2.4rem;
   text-align: center;
 }
 
@@ -262,15 +316,15 @@
 .stepsGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.15rem;
+  gap: 1.05rem;
 }
 
 .stepCard {
   display: flex;
   flex-direction: column;
   min-height: 14.75rem;
-  padding: 1.65rem 1.5rem 1.45rem;
-  border-radius: 1.5rem;
+  padding: 1.6rem 1.45rem 1.4rem;
+  border-radius: 1.45rem;
   background: #ffffff;
   border: 1px solid rgba(18, 45, 37, 0.07);
   box-shadow: 0 16px 30px rgba(18, 45, 37, 0.05);
@@ -290,19 +344,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3.15rem;
-  height: 3.15rem;
+  width: 3.05rem;
+  height: 3.05rem;
   border-radius: 999px;
   background: #edf5f1;
   color: #184d3d;
-  font-size: 0.96rem;
+  font-size: 0.95rem;
   font-weight: 800;
   letter-spacing: 0.08em;
 }
 
 .stepTitle {
-  margin: 1.2rem 0 0;
-  font-size: 1.31rem;
+  margin: 1.15rem 0 0;
+  font-size: 1.28rem;
   line-height: 1.18;
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -310,8 +364,8 @@
 }
 
 .stepText {
-  margin: 0.95rem 0 0;
-  max-width: 28ch;
+  margin: 0.92rem 0 0;
+  max-width: 29ch;
   font-size: 0.98rem;
   line-height: 1.68;
   color: #66716c;
@@ -319,30 +373,37 @@
 
 @media (max-width: 1180px) {
   .heroGrid {
-    grid-template-columns: minmax(0, 1fr) minmax(13.5rem, 0.7fr);
-    gap: 1rem;
+    grid-template-columns: minmax(0, 35rem) minmax(16rem, 1fr);
+    gap: clamp(1rem, 2vw, 2rem);
   }
 
   .heroTitle {
-    font-size: clamp(3.25rem, 5vw, 5rem);
+    font-size: clamp(3.2rem, 5vw, 4.9rem);
+  }
+
+  .heroMarkStage {
+    width: min(100%, 21.5rem);
   }
 
   .heroLogo {
     width: min(100%, 15.8rem);
-    transform: translate(0.1rem, 0.05rem);
   }
 }
 
 @media (max-width: 980px) {
   .heroGrid {
     grid-template-columns: 1fr;
-    align-items: end;
-    gap: 1.85rem;
-    padding: 2.35rem 0 2.7rem;
+    justify-content: stretch;
+    gap: 1.9rem;
+    padding: 2.5rem 0 2.75rem;
   }
 
   .heroCopy {
     max-width: 100%;
+  }
+
+  .heroTitleLine {
+    white-space: normal;
   }
 
   .heroText {
@@ -351,10 +412,19 @@
 
   .heroVisual {
     justify-content: flex-start;
+    padding-left: 0;
+  }
+
+  .heroVisual::before {
+    width: min(20rem, 90%);
+  }
+
+  .heroMarkStage {
+    width: min(100%, 18rem);
   }
 
   .heroLogo {
-    width: min(100%, 15rem);
+    width: min(100%, 13.5rem);
     transform: none;
   }
 
@@ -371,10 +441,6 @@
     gap: 1rem;
   }
 
-  .stepCard {
-    min-height: 15.75rem;
-  }
-
   .stepText {
     max-width: 100%;
   }
@@ -382,7 +448,7 @@
 
 @media (max-width: 720px) {
   .heroSection {
-    padding-bottom: 1.5rem;
+    padding-bottom: 1.55rem;
   }
 
   .heroMedia,
@@ -391,18 +457,18 @@
   }
 
   .heroGrid {
-    padding: 1.85rem 0 2rem;
-    gap: 1.5rem;
+    padding: 1.9rem 0 2rem;
+    gap: 1.4rem;
   }
 
   .heroTitle {
-    font-size: clamp(2.7rem, 11vw, 4.15rem);
-    line-height: 0.92;
+    font-size: clamp(2.75rem, 11vw, 4.2rem);
+    line-height: 0.9;
   }
 
   .heroText {
     font-size: 0.98rem;
-    line-height: 1.62;
+    line-height: 1.6;
   }
 
   .heroActions {
@@ -410,13 +476,17 @@
   }
 
   .primaryCta {
-    min-height: 3.15rem;
-    padding: 0 1.26rem;
-    font-size: 0.93rem;
+    min-height: 3.18rem;
+    padding: 0 1.32rem;
+    font-size: 0.94rem;
+  }
+
+  .heroMarkStage {
+    width: min(100%, 14.25rem);
   }
 
   .heroLogo {
-    width: min(100%, 13.4rem);
+    width: min(100%, 10.85rem);
   }
 
   .workflowWrap {
@@ -440,7 +510,7 @@
   }
 
   .stepCard {
-    min-height: 14.5rem;
+    min-height: 14.25rem;
     padding: 1.35rem 1.2rem 1.25rem;
     border-radius: 1.2rem;
   }
@@ -451,5 +521,21 @@
 
   .stepText {
     margin-top: 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryCta,
+  .stepCard {
+    transition: none;
+  }
+
+  .primaryCta::before {
+    animation: none;
+  }
+
+  .primaryCta:hover,
+  .stepCard:hover {
+    transform: none;
   }
 }
