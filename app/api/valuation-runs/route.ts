@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
+import { createAssetRegisterItemFromValuation } from '../../../lib/asset-register-db';
 import { saveValuationRun, type MethodKey, type SaveValuationRunInput } from '../../../lib/valuation-runs';
 import type { ConditionKey } from '../../../lib/tractor-data';
 import type { GpsType, RunValuationInput } from '../../../lib/tractor-logic';
@@ -7,6 +8,7 @@ import type { GpsType, RunValuationInput } from '../../../lib/tractor-logic';
 type SaveValuationRunApiResponse = {
   ok: boolean;
   runId?: number;
+  assetId?: number;
   createdAtIso?: string;
   selectedValueExVat?: number;
   error?: string;
@@ -126,9 +128,19 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
     });
 
+    const asset = await createAssetRegisterItemFromValuation({
+      userId: session.user.id,
+      valuationRun: saved,
+      selectedMethod: input.selectedMethod,
+      year: input.year,
+      hours: input.hours,
+      note: '',
+    });
+
     return NextResponse.json<SaveValuationRunApiResponse>({
       ok: true,
       runId: saved.runId,
+      assetId: asset.id,
       createdAtIso: saved.createdAtIso,
       selectedValueExVat: saved.selectedValueExVat,
     });
