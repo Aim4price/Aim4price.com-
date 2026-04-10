@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import styles from './AppHeader.module.css';
@@ -25,18 +25,18 @@ type SessionResponse = {
   } | null;
 };
 
+type SmartLinkProps = {
+  href: string;
+  className: string;
+  children: ReactNode;
+};
+
 const navItems: Array<{ key: ActivePage; href: string; label: string }> = [
   { key: 'home', href: '/', label: 'Home' },
   { key: 'valuation', href: '/valuation', label: 'Valuation' },
   { key: 'asset-register', href: '/asset-register', label: 'Asset Register' },
   { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
 ];
-
-type SmartLinkProps = {
-  href: string;
-  className: string;
-  children: ReactNode;
-};
 
 function SmartLink({ href, className, children }: SmartLinkProps) {
   const isAnchorLike =
@@ -61,6 +61,27 @@ function SmartLink({ href, className, children }: SmartLinkProps) {
   );
 }
 
+function getInitials(name: string): string {
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  if (!parts.length) {
+    return 'A';
+  }
+
+  return parts.map((part) => part.charAt(0).toUpperCase()).join('');
+}
+
+function clearLegacyPrototypeStorage() {
+  if (typeof window === 'undefined') return;
+
+  window.localStorage.removeItem('aim4price-tractors-kit-register');
+  window.localStorage.removeItem('aim4price-tractors-kit-marketplace');
+}
+
 export default function AppHeader({
   active,
   signupHref = '/auth#signup',
@@ -71,10 +92,12 @@ export default function AppHeader({
   const primaryHref = ctaHref ?? signupHref;
   const router = useRouter();
   const pathname = usePathname();
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
-  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [session, setSession] = useState<SessionResponse['user']>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -91,10 +114,10 @@ export default function AppHeader({
         const data = (await response.json()) as SessionResponse;
 
         if (!mounted) return;
-        setIsSignedIn(Boolean(data?.signedIn));
+        setSession(data?.signedIn ? data.user : null);
       } catch {
         if (!mounted) return;
-        setIsSignedIn(false);
+        setSession(null);
       } finally {
         if (mounted) {
           setIsLoadingSession(false);
@@ -109,6 +132,31 @@ export default function AppHeader({
     };
   }, [pathname]);
 
+  useEffect(() => {
+    function handleDocumentClick(event: MouseEvent) {
+      if (!menuRef.current) return;
+      if (menuRef.current.contains(event.target as Node)) return;
+      setMenuOpen(false);
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleDocumentClick);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleDocumentClick);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
+
+  const accountName = useMemo(() => session?.name?.trim() || 'Aim4price User', [session]);
+  const accountInitials = useMemo(() => getInitials(accountName), [accountName]);
+
   async function handleSignOut() {
     try {
       setIsSigningOut(true);
@@ -116,13 +164,18 @@ export default function AppHeader({
       await fetch('/api/auth/sign-out', {
         method: 'POST',
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
       });
-
-      setIsSignedIn(false);
-      router.refresh();
-      router.push('/');
     } finally {
+      clearLegacyPrototypeStorage();
+      setSession(null);
+      setMenuOpen(false);
       setIsSigningOut(false);
+      router.refresh();
+      window.location.href = '/';
     }
   }
 
@@ -154,15 +207,50 @@ export default function AppHeader({
 
         <div className={styles.actions}>
           <div className={styles.actionsRail}>
-            {isLoadingSession ? null : isSignedIn ? (
-              <button
-                type="button"
-                className={styles.signupButton}
-                onClick={handleSignOut}
-                disabled={isSigningOut}
-              >
-                {isSigningOut ? 'Signing out...' : 'Sign out'}
-              </button>
+            {isLoadingSession ? null : session ? (
+              <div className={styles.accountMenu} ref={menuRef}>
+                <button
+                  type="button"
+                  className={styles.accountButton}
+                  aria-expanded={menuOpen}
+                  aria-haspopup="menu"
+                  onClick={() => setMenuOpen((current) => !current)}
+                >
+                  <span className={styles.accountAvatar} aria-hidden="true">
+                    {accountInitials}
+                  </span>
+                  <span className={styles.accountButtonText}>Account</span>
+                </button>
+
+                {menuOpen ? (
+                  <div className={styles.accountPopover} role="menu">
+                    <div className={styles.accountSummary}>
+                      <div className={styles.accountAvatarLarge}>{accountInitials}</div>
+                      <div>
+                        <strong className={styles.accountName}>{accountName}</strong>
+                        <p className={styles.accountEmail}>{session.email}</p>
+                      </div>
+                    </div>
+
+                    <Link href="/asset-register" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                      Asset Register
+                    </Link>
+
+                    <Link href="/asset-register" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                      Account details
+                    </Link>
+
+                    <button
+                      type="button"
+                      className={styles.menuDangerButton}
+                      onClick={handleSignOut}
+                      disabled={isSigningOut}
+                    >
+                      {isSigningOut ? 'Signing out...' : 'Sign out'}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             ) : (
               <>
                 <SmartLink href={loginHref} className={styles.loginButton}>
