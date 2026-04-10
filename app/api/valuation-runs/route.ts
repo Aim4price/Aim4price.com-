@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from '../../../lib/auth-session';
+import { saveValuationRun, type MethodKey, type SaveValuationRunInput } from '../../../lib/valuation-runs';
 import type { ConditionKey } from '../../../lib/tractor-data';
 import type { GpsType, RunValuationInput } from '../../../lib/tractor-logic';
-import { saveValuationRun, type MethodKey, type SaveValuationRunInput } from '../../../lib/valuation-runs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,11 +16,7 @@ type SaveValuationRunApiResponse = {
 };
 
 function parseBoolean(value: unknown): boolean {
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'number') return value !== 0;
-
-  const normalized = String(value ?? '').trim().toLowerCase();
-  return ['1', 'true', 'yes', 'on'].includes(normalized);
+  return value === true || value === 'true' || value === 1 || value === '1';
 }
 
 function normalizeCondition(value: unknown): ConditionKey | null {
@@ -38,16 +35,6 @@ function normalizeCondition(value: unknown): ConditionKey | null {
   return null;
 }
 
-function normalizeGpsType(value: unknown): GpsType | null {
-  const normalized = String(value ?? '').trim().toLowerCase();
-
-  if (normalized === 'full-autosteer' || normalized === 'guidance-only') {
-    return normalized;
-  }
-
-  return null;
-}
-
 function normalizeMethod(value: unknown): MethodKey | null {
   const normalized = String(value ?? '').trim().toLowerCase();
 
@@ -58,7 +45,19 @@ function normalizeMethod(value: unknown): MethodKey | null {
   return null;
 }
 
-function buildInput(body: Partial<RunValuationInput> & { selectedMethod?: unknown; valuationVersion?: unknown }): SaveValuationRunInput | null {
+function normalizeGpsType(value: unknown): GpsType | null {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (normalized === 'full-autosteer' || normalized === 'guidance-only') {
+    return normalized;
+  }
+
+  return null;
+}
+
+function buildInput(
+  body: Partial<RunValuationInput> & { selectedMethod?: unknown; valuationVersion?: unknown },
+): SaveValuationRunInput | null {
   const modelId = String(body.modelId ?? '').trim();
   const year = Number(body.year);
   const hours = Number(body.hours);
@@ -81,6 +80,7 @@ function buildInput(body: Partial<RunValuationInput> & { selectedMethod?: unknow
     gpsYear: body.gpsYear ?? null,
     selectedMethod,
     valuationVersion: String(body.valuationVersion ?? 'v1').trim() || 'v1',
+    userId: null,
   };
 }
 
@@ -96,6 +96,8 @@ function badRequest(message: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession();
+
     const body = (await request.json()) as Partial<RunValuationInput> & {
       selectedMethod?: unknown;
       valuationVersion?: unknown;
@@ -106,7 +108,10 @@ export async function POST(request: NextRequest) {
       return badRequest('modelId, year, hours, condition and selectedMethod are required.');
     }
 
-    const saved = await saveValuationRun(input);
+    const saved = await saveValuationRun({
+      ...input,
+      userId: session?.user?.id ?? null,
+    });
 
     return NextResponse.json<SaveValuationRunApiResponse>({
       ok: true,
@@ -139,12 +144,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-return NextResponse.json<SaveValuationRunApiResponse>(
-  {
-    ok: false,
-    error: error instanceof Error ? error.message : 'Failed to save valuation run.',
-  },
-  { status: 500 },
-);
+    return NextResponse.json<SaveValuationRunApiResponse>(
+      {
+        ok: false,
+        error: 'Failed to save valuation run.',
+      },
+      { status: 500 },
+    );
   }
 }
