@@ -1,3 +1,4 @@
+import { getServerSession } from '../../lib/auth-session';
 import MarketplaceClient from './marketplace-client';
 
 type SearchParamValue = string | string[] | undefined;
@@ -19,9 +20,14 @@ function pick(value: SearchParamValue): string {
   return String(value ?? '').trim();
 }
 
-export default function MarketplacePage({ searchParams }: MarketplacePageProps) {
+export const runtime = 'nodejs';
+
+export default async function MarketplacePage({ searchParams }: MarketplacePageProps) {
+  const session = await getServerSession();
+
   return (
     <MarketplaceClient
+      isSignedIn={Boolean(session)}
       initialFilters={{
         brand: pick(searchParams?.brand),
         model: pick(searchParams?.model),
