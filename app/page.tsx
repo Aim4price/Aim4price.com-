@@ -52,7 +52,13 @@ export default function HomePage() {
               <div className={styles.heroCopy}>
                 <p className={styles.eyebrow}>Agricultural &amp; industrial machinery pricing</p>
 
-                <h1 className={styles.heroTitle}>Know what your machinery is worth.</h1>
+                <h1 className={styles.heroTitle}>
+                  Know what
+                  <br />
+                  your machinery
+                  <br />
+                  is worth.
+                </h1>
 
                 <p className={styles.heroText}>
                   Professional tools for valuing equipment, managing machinery records, and
