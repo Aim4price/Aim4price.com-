@@ -56,6 +56,7 @@ type TractorValuationApiResponse = {
 type SaveValuationRunApiResponse = {
   ok: boolean;
   runId?: number;
+  assetId?: number;
   createdAtIso?: string;
   selectedValueExVat?: number;
   error?: string;
@@ -1035,7 +1036,11 @@ export default function ValuationClient() {
         throw new Error(data.error ?? 'Failed to save valuation run.');
       }
 
-      setMessage(`Valuation saved to database. Run ID: ${data.runId}.`);
+      setMessage(
+        data.assetId
+          ? `Valuation saved. Asset register item #${data.assetId} was created from run #${data.runId}.`
+          : `Valuation saved. Run ID: ${data.runId}.`,
+      );
     } catch (error) {
       console.error('Failed to save valuation run to /api/valuation-runs', error);
       setMessage(error instanceof Error ? error.message : 'Failed to save valuation run.');
@@ -2253,7 +2258,7 @@ export default function ValuationClient() {
                     <div>
                       <h2 className={styles.assetTitle}>Save Valuation</h2>
                       <p className={styles.assetText}>
-                        Save this valuation to the database now. Asset register linking comes in the next step.
+                        Save this valuation now and create an asset register item automatically for the signed-in user.
                       </p>
                     </div>
                     <span className={styles.actionBadge}>Quick actions</span>
