@@ -31,7 +31,7 @@
 
 .heroMedia {
   position: relative;
-  min-height: clamp(35rem, 45vw, 42rem);
+  min-height: clamp(35.5rem, 44vw, 41rem);
   overflow: hidden;
   background: #10261f;
 }
@@ -50,31 +50,31 @@
   background:
     linear-gradient(
       90deg,
-      rgba(7, 19, 15, 0.82) 0%,
-      rgba(7, 19, 15, 0.56) 34%,
-      rgba(7, 19, 15, 0.22) 67%,
-      rgba(7, 19, 15, 0.08) 100%
+      rgba(7, 19, 15, 0.84) 0%,
+      rgba(7, 19, 15, 0.58) 28%,
+      rgba(7, 19, 15, 0.26) 54%,
+      rgba(7, 19, 15, 0.1) 100%
     ),
     linear-gradient(
       180deg,
       rgba(10, 22, 18, 0.12) 0%,
-      rgba(10, 22, 18, 0.32) 100%
+      rgba(10, 22, 18, 0.3) 100%
     );
 }
 
 .heroGrid {
   position: relative;
   z-index: 2;
-  min-height: clamp(35rem, 45vw, 42rem);
+  min-height: clamp(35.5rem, 44vw, 41rem);
   display: grid;
-  grid-template-columns: minmax(0, 1.02fr) minmax(17rem, 0.98fr);
+  grid-template-columns: minmax(0, 1.08fr) minmax(15rem, 0.84fr);
   align-items: center;
-  gap: clamp(2.2rem, 5vw, 5.2rem);
-  padding: clamp(3rem, 4.8vw, 4.4rem) 0;
+  gap: clamp(1.35rem, 2.7vw, 2.6rem);
+  padding: clamp(3rem, 4.2vw, 3.85rem) 0;
 }
 
 .heroCopy {
-  max-width: 39rem;
+  max-width: 41.5rem;
   color: #ffffff;
 }
 
@@ -86,49 +86,49 @@
 }
 
 .heroTitle {
-  margin: 1.18rem 0 0;
-  max-width: 6.95ch;
-  font-size: clamp(3.35rem, 5.3vw, 5.65rem);
+  margin: 1rem 0 0;
+  max-width: 8.45ch;
+  font-size: clamp(3.55rem, 5vw, 5.35rem);
   line-height: 0.9;
-  letter-spacing: -0.07em;
+  letter-spacing: -0.078em;
   font-weight: 800;
-  text-wrap: balance;
 }
 
 .heroText {
-  margin: 1.5rem 0 0;
-  max-width: 33rem;
-  font-size: clamp(1.02rem, 1.28vw, 1.14rem);
-  line-height: 1.64;
+  margin: 1.35rem 0 0;
+  max-width: 31rem;
+  font-size: clamp(1.01rem, 1.18vw, 1.1rem);
+  line-height: 1.62;
   color: rgba(246, 248, 247, 0.92);
+  text-wrap: pretty;
 }
 
 .heroActions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-top: 1.9rem;
+  margin-top: 1.6rem;
 }
 
 .primaryCta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.45rem;
-  padding: 0 1.55rem;
+  min-height: 3.3rem;
+  padding: 0 1.42rem;
   border-radius: 999px;
   text-decoration: none;
-  font-size: 0.97rem;
+  font-size: 0.96rem;
   font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
   color: #ffffff;
-  background: linear-gradient(180deg, #1b7b5b 0%, #145740 100%);
-  border: 1px solid rgba(14, 56, 43, 0.34);
+  background: linear-gradient(180deg, #1c7a5b 0%, #14533f 100%);
+  border: 1px solid rgba(12, 54, 41, 0.3);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 18px 34px rgba(8, 21, 17, 0.24),
-    0 8px 18px rgba(10, 38, 30, 0.18);
+    0 18px 34px rgba(8, 21, 17, 0.22),
+    0 8px 18px rgba(10, 38, 30, 0.16);
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -138,12 +138,12 @@
 
 .primaryCta:hover {
   transform: translateY(-2px);
-  background: linear-gradient(180deg, #208464 0%, #165f47 100%);
-  border-color: rgba(14, 56, 43, 0.42);
+  background: linear-gradient(180deg, #208364 0%, #165d47 100%);
+  border-color: rgba(12, 54, 41, 0.38);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 22px 40px rgba(8, 21, 17, 0.27),
-    0 10px 20px rgba(10, 38, 30, 0.22);
+    0 22px 40px rgba(8, 21, 17, 0.25),
+    0 10px 20px rgba(10, 38, 30, 0.2);
 }
 
 .primaryCta:focus-visible {
@@ -154,18 +154,18 @@
 .heroVisual {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   min-height: 100%;
-  padding-right: clamp(0.3rem, 2vw, 1.4rem);
+  padding: 0;
 }
 
 .heroLogo {
-  width: min(100%, 18rem);
+  width: min(100%, 19.25rem);
   height: auto;
   object-fit: contain;
   opacity: 0.98;
-  transform: translate(0.15rem, -0.35rem);
-  filter: drop-shadow(0 20px 36px rgba(0, 0, 0, 0.24));
+  transform: translate(-0.65rem, 0.15rem);
+  filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.22));
 }
 
 .workflowSection {
@@ -264,23 +264,26 @@
 
 .stepText {
   margin: 0.95rem 0 0;
-  max-width: 29ch;
+  max-width: 28ch;
   font-size: 0.98rem;
-  line-height: 1.7;
+  line-height: 1.68;
   color: #66716c;
 }
 
 @media (max-width: 1180px) {
   .heroGrid {
-    gap: clamp(2rem, 4vw, 3.5rem);
+    grid-template-columns: minmax(0, 1.08fr) minmax(14rem, 0.8fr);
+    gap: 1.35rem;
   }
 
   .heroTitle {
-    font-size: clamp(3rem, 5vw, 5rem);
+    max-width: 8.2ch;
+    font-size: clamp(3.25rem, 5vw, 5rem);
   }
 
   .heroLogo {
-    width: min(100%, 17rem);
+    width: min(100%, 18.25rem);
+    transform: translate(-0.45rem, 0.1rem);
   }
 }
 
@@ -288,26 +291,29 @@
   .heroGrid {
     grid-template-columns: 1fr;
     align-items: end;
-    gap: 1.65rem;
-    padding: 2.3rem 0 2.65rem;
+    gap: 1.85rem;
+    padding: 2.35rem 0 2.7rem;
   }
 
   .heroCopy {
     max-width: 100%;
   }
 
+  .heroTitle {
+    max-width: 8.6ch;
+  }
+
   .heroText {
-    max-width: 38rem;
+    max-width: 34rem;
   }
 
   .heroVisual {
     justify-content: flex-start;
-    padding-right: 0;
   }
 
   .heroLogo {
-    width: min(100%, 15.75rem);
-    transform: translate(0, 0);
+    width: min(100%, 16.5rem);
+    transform: none;
   }
 
   .workflowTitle {
@@ -324,7 +330,7 @@
   }
 
   .stepCard {
-    min-height: 15rem;
+    min-height: 15.75rem;
   }
 
   .stepText {
@@ -343,45 +349,38 @@
   }
 
   .heroGrid {
-    padding: 1.7rem 0 2rem;
-  }
-
-  .eyebrow,
-  .workflowEyebrow {
-    min-height: 2rem;
-    padding: 0 0.88rem;
-    font-size: 0.72rem;
+    padding: 1.85rem 0 2rem;
+    gap: 1.5rem;
   }
 
   .heroTitle {
-    max-width: 7.5ch;
-    font-size: clamp(2.55rem, 11vw, 4rem);
-    letter-spacing: -0.065em;
+    max-width: 8.4ch;
+    font-size: clamp(2.7rem, 11vw, 4.15rem);
+    line-height: 0.92;
   }
 
   .heroText {
-    margin-top: 1.25rem;
     font-size: 0.98rem;
-    line-height: 1.65;
+    line-height: 1.62;
   }
 
   .heroActions {
-    margin-top: 1.45rem;
+    margin-top: 1.35rem;
   }
 
   .primaryCta {
     min-height: 3.15rem;
-    padding: 0 1.22rem;
+    padding: 0 1.26rem;
     font-size: 0.93rem;
   }
 
   .heroLogo {
-    width: min(100%, 13.5rem);
+    width: min(100%, 14rem);
   }
 
   .workflowWrap {
-    padding: 1.5rem;
-    border-radius: 1.35rem;
+    padding: 1.45rem;
+    border-radius: 1.4rem;
   }
 
   .workflowIntro {
@@ -389,7 +388,7 @@
   }
 
   .workflowTitle {
-    font-size: clamp(2rem, 10vw, 3rem);
+    font-size: clamp(2.1rem, 10vw, 3.1rem);
     white-space: normal;
   }
 
@@ -400,9 +399,9 @@
   }
 
   .stepCard {
-    min-height: 14.35rem;
+    min-height: 14.5rem;
     padding: 1.35rem 1.2rem 1.25rem;
-    border-radius: 1.15rem;
+    border-radius: 1.2rem;
   }
 
   .stepTitle {
@@ -410,6 +409,6 @@
   }
 
   .stepText {
-    margin-top: 0.82rem;
+    margin-top: 0.85rem;
   }
 }
