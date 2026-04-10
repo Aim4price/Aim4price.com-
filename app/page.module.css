@@ -10,14 +10,13 @@
 }
 
 .eyebrow,
-.workflowEyebrow,
-.heroActionsEyebrow {
+.workflowEyebrow {
   margin: 0;
   display: inline-flex;
   align-items: center;
   width: fit-content;
   min-height: 2.1rem;
-  padding: 0 0.95rem;
+  padding: 0 0.92rem;
   border-radius: 999px;
   font-size: 0.78rem;
   line-height: 1;
@@ -27,14 +26,14 @@
 }
 
 .heroSection {
-  padding: 0 0 2.4rem;
+  padding: 0 0 2.8rem;
 }
 
 .heroMedia {
   position: relative;
   min-height: clamp(38rem, 49vw, 46rem);
   overflow: hidden;
-  background: #0d221b;
+  background: #0f261f;
 }
 
 .heroVideo {
@@ -51,15 +50,15 @@
   background:
     linear-gradient(
       90deg,
-      rgba(6, 18, 14, 0.84) 0%,
-      rgba(6, 18, 14, 0.68) 28%,
-      rgba(6, 18, 14, 0.28) 62%,
-      rgba(6, 18, 14, 0.22) 100%
+      rgba(8, 21, 17, 0.82) 0%,
+      rgba(8, 21, 17, 0.58) 34%,
+      rgba(8, 21, 17, 0.22) 66%,
+      rgba(8, 21, 17, 0.14) 100%
     ),
     linear-gradient(
       180deg,
-      rgba(7, 16, 13, 0.08) 0%,
-      rgba(7, 16, 13, 0.42) 100%
+      rgba(8, 18, 15, 0.14) 0%,
+      rgba(8, 18, 15, 0.38) 100%
     );
 }
 
@@ -68,271 +67,174 @@
   z-index: 2;
   min-height: clamp(38rem, 49vw, 46rem);
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 30rem);
+  grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 1fr);
   align-items: center;
-  gap: clamp(2rem, 3vw, 4rem);
-  padding: clamp(2.7rem, 4vw, 3.9rem) 0;
+  gap: clamp(2rem, 4vw, 4.5rem);
+  padding: clamp(2.6rem, 4vw, 3.8rem) 0;
 }
 
 .heroCopy {
-  max-width: 43rem;
+  max-width: 42rem;
   color: #ffffff;
 }
 
 .eyebrow {
-  color: rgba(255, 255, 255, 0.97);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(12px);
-}
-
-.heroTitle {
-  margin: 1.1rem 0 0;
-  max-width: 7.1ch;
-  font-size: clamp(3.4rem, 5.9vw, 6rem);
-  line-height: 0.91;
-  letter-spacing: -0.09em;
-  font-weight: 800;
-}
-
-.heroText {
-  margin: 1.35rem 0 0;
-  max-width: 36rem;
-  font-size: clamp(1.02rem, 1.36vw, 1.16rem);
-  line-height: 1.68;
-  color: rgba(244, 248, 246, 0.9);
-}
-
-.heroCtas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.82rem;
-  margin-top: 1.7rem;
-}
-
-.primaryCta,
-.secondaryCta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 3.3rem;
-  padding: 0 1.3rem;
-  border-radius: 999px;
-  text-decoration: none;
-  font-size: 0.95rem;
-  font-weight: 800;
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    border-color 180ms ease,
-    background 180ms ease,
-    color 180ms ease;
-}
-
-.primaryCta {
-  color: #ffffff;
-  background: linear-gradient(180deg, #1d644a 0%, #123e31 100%);
-  border: 1px solid rgba(19, 66, 51, 0.34);
-  box-shadow: 0 16px 34px rgba(8, 23, 18, 0.24);
-}
-
-.secondaryCta {
   color: rgba(255, 255, 255, 0.96);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.09);
   border: 1px solid rgba(255, 255, 255, 0.16);
   backdrop-filter: blur(10px);
 }
 
-.primaryCta:hover,
-.secondaryCta:hover,
-.heroAction:hover,
-.stepCard:hover {
+.heroTitle {
+  margin: 1.1rem 0 0;
+  max-width: 7.4ch;
+  font-size: clamp(3.35rem, 5.8vw, 5.95rem);
+  line-height: 0.92;
+  letter-spacing: -0.085em;
+  font-weight: 800;
+  text-wrap: balance;
+}
+
+.heroText {
+  margin: 1.3rem 0 0;
+  max-width: 35rem;
+  font-size: clamp(1.02rem, 1.35vw, 1.14rem);
+  line-height: 1.68;
+  color: rgba(245, 248, 246, 0.92);
+}
+
+.heroPrimaryActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.55rem;
+}
+
+.heroPrimaryCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0 1.2rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.94rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  color: #17352c;
+  background: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: 0 16px 34px rgba(7, 17, 14, 0.22);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.heroPrimaryCta:hover {
   transform: translateY(-2px);
+  box-shadow: 0 18px 38px rgba(7, 17, 14, 0.28);
+  background: rgba(255, 255, 255, 0.94);
 }
 
-.primaryCta:hover {
-  background: linear-gradient(180deg, #216e52 0%, #154738 100%);
-  box-shadow: 0 18px 36px rgba(8, 23, 18, 0.28);
+.heroPrimaryCta:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.28);
+  outline-offset: 3px;
 }
 
-.secondaryCta:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.22);
+.heroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 1rem;
 }
 
-.pathRail {
-  margin-top: 1.8rem;
-  max-width: 40rem;
-  padding: 1.15rem 1.2rem;
-  border-radius: 1.45rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(12px);
-}
-
-.pathLabel {
-  margin: 0;
-  font-size: 0.74rem;
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.pathItems {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.72rem;
-  margin-top: 0.95rem;
-}
-
-.pathItem {
-  display: grid;
-  gap: 0.35rem;
-  padding: 0.92rem 0.96rem;
-  border-radius: 1.1rem;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-  font-size: 0.92rem;
-  line-height: 1.38;
+.heroMetaItem {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.45rem;
+  padding: 0 0.95rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 0.9rem;
   font-weight: 700;
-}
-
-.pathNumber {
-  font-size: 0.75rem;
-  line-height: 1.1;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.68);
+  line-height: 1;
+  backdrop-filter: blur(8px);
 }
 
 .heroVisual {
+  position: relative;
   display: grid;
   justify-items: center;
-  gap: 1.3rem;
+  gap: 1.15rem;
+  padding: 1.5rem 0;
 }
 
-.logoStage {
+.heroLogoWrap {
   position: relative;
   display: grid;
   place-items: center;
-  width: min(100%, 30rem);
-  min-height: 23rem;
-  padding: 2.4rem;
-  border-radius: 2rem;
-  background: rgba(8, 24, 19, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  overflow: hidden;
-  backdrop-filter: blur(6px);
+  width: min(100%, 34rem);
+  min-height: 20rem;
 }
 
-.logoGlow {
+.heroLogoGlow {
   position: absolute;
-  width: 21rem;
-  height: 21rem;
+  width: min(26rem, 78%);
+  aspect-ratio: 1;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.04) 46%, transparent 72%);
-  filter: blur(10px);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 38%, rgba(255, 255, 255, 0) 72%);
+  filter: blur(14px);
 }
 
 .heroLogo {
   position: relative;
-  width: min(100%, 19rem);
+  z-index: 1;
+  width: min(100%, 23rem);
   height: auto;
   object-fit: contain;
-  filter: drop-shadow(0 14px 40px rgba(0, 0, 0, 0.18));
-}
-
-.heroActionsWrap {
-  width: 100%;
-  max-width: 30rem;
-  padding: 1.05rem;
-  border-radius: 1.45rem;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(12px);
-}
-
-.heroActionsHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.85rem;
-}
-
-.heroActionsEyebrow {
-  color: rgba(255, 255, 255, 0.96);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.heroActionsText {
-  margin: 0;
-  font-size: 0.88rem;
-  line-height: 1.45;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.84);
-  text-align: right;
+  filter: drop-shadow(0 18px 38px rgba(0, 0, 0, 0.34));
 }
 
 .heroActions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.72rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  max-width: 26rem;
 }
 
-.heroAction {
-  display: grid;
-  gap: 0.34rem;
-  min-height: 5rem;
-  padding: 0.88rem 0.92rem;
-  border-radius: 1.1rem;
+.heroActionLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.3rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
   text-decoration: none;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1;
   color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px);
   transition:
     transform 180ms ease,
-    box-shadow 180ms ease,
+    background 180ms ease,
     border-color 180ms ease,
-    background 180ms ease;
+    box-shadow 180ms ease;
 }
 
-.heroAction:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.18);
-}
-
-.heroActionPrimary {
-  background: linear-gradient(180deg, rgba(28, 97, 71, 0.96) 0%, rgba(16, 58, 44, 0.96) 100%);
-  border-color: rgba(28, 97, 71, 0.92);
-  box-shadow: 0 16px 28px rgba(7, 24, 18, 0.22);
-}
-
-.heroActionPrimary:hover {
-  background: linear-gradient(180deg, rgba(33, 111, 81, 0.98) 0%, rgba(19, 68, 51, 0.98) 100%);
-  border-color: rgba(33, 111, 81, 0.96);
-}
-
-.heroActionLabel {
-  font-size: 0.69rem;
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.heroActionTitle {
-  font-size: 0.98rem;
-  line-height: 1.2;
-  font-weight: 800;
-  color: #ffffff;
+.heroActionLink:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 16px 28px rgba(9, 24, 19, 0.2);
 }
 
 .workflowSection {
@@ -340,9 +242,9 @@
 }
 
 .workflowWrap {
-  padding: clamp(2.5rem, 4vw, 3.4rem);
-  border-radius: 2.15rem;
-  background: linear-gradient(180deg, #edf1ef 0%, #e8edeb 100%);
+  padding: clamp(2.7rem, 4vw, 3.4rem);
+  border-radius: 2.2rem;
+  background: #ebefed;
   border: 1px solid rgba(18, 45, 37, 0.07);
 }
 
@@ -350,7 +252,7 @@
   display: grid;
   justify-items: center;
   gap: 1rem;
-  margin: 0 auto 2.25rem;
+  margin: 0 auto 2.35rem;
   text-align: center;
 }
 
@@ -362,96 +264,66 @@
 
 .workflowTitle {
   margin: 0;
-  font-size: clamp(2.4rem, 3.8vw, 4.1rem);
-  line-height: 0.98;
-  letter-spacing: -0.075em;
+  max-width: none;
+  font-size: clamp(2.4rem, 3.9vw, 4.15rem);
+  line-height: 1;
+  letter-spacing: -0.07em;
   font-weight: 800;
-  color: #18362d;
+  color: #17352c;
+  white-space: nowrap;
 }
 
 .workflowText {
   margin: 0;
-  max-width: 60rem;
-  font-size: 1.03rem;
-  line-height: 1.72;
+  max-width: 68rem;
+  font-size: 1.05rem;
+  line-height: 1.75;
   color: #66716c;
 }
 
 .stepsGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.15rem;
 }
 
 .stepCard {
   display: flex;
   flex-direction: column;
-  min-height: 16.9rem;
-  padding: 1.45rem;
+  min-height: 14.75rem;
+  padding: 1.6rem 1.5rem 1.45rem;
   border-radius: 1.55rem;
-  background: rgba(255, 255, 255, 0.9);
+  background: #ffffff;
   border: 1px solid rgba(18, 45, 37, 0.07);
   box-shadow: 0 16px 30px rgba(18, 45, 37, 0.05);
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
-    border-color 180ms ease,
-    background 180ms ease;
+    border-color 180ms ease;
 }
 
 .stepCard:hover {
-  box-shadow: 0 20px 36px rgba(18, 45, 37, 0.07);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 34px rgba(18, 45, 37, 0.07);
   border-color: rgba(24, 77, 61, 0.12);
-}
-
-.stepCardFeatured {
-  background: linear-gradient(180deg, #173f32 0%, #112d24 100%);
-  border-color: rgba(17, 45, 36, 0.95);
-  box-shadow: 0 22px 40px rgba(17, 45, 36, 0.18);
-}
-
-.stepTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
 }
 
 .stepBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3rem;
-  height: 3rem;
+  width: 3.2rem;
+  height: 3.2rem;
   border-radius: 999px;
   background: #edf5f1;
   color: #184d3d;
-  font-size: 0.94rem;
+  font-size: 0.98rem;
   font-weight: 800;
   letter-spacing: 0.08em;
 }
 
-.stepCardFeatured .stepBadge {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-}
-
-.stepNote {
-  margin: 0;
-  font-size: 0.73rem;
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #5d6b65;
-}
-
-.stepCardFeatured .stepNote {
-  color: rgba(255, 255, 255, 0.66);
-}
-
 .stepTitle {
-  margin: 1.15rem 0 0;
+  margin: 1.2rem 0 0;
   font-size: 1.34rem;
   line-height: 1.16;
   font-weight: 800;
@@ -459,41 +331,26 @@
   color: #1c3930;
 }
 
-.stepCardFeatured .stepTitle {
-  color: #ffffff;
-}
-
 .stepText {
-  margin: 0.95rem 0 0;
-  max-width: 30ch;
-  font-size: 0.98rem;
-  line-height: 1.7;
+  margin: 1rem 0 0;
+  max-width: 28ch;
+  font-size: 0.99rem;
+  line-height: 1.72;
   color: #66716c;
 }
 
-.stepCardFeatured .stepText {
-  color: rgba(244, 248, 246, 0.84);
-}
-
-.primaryCta:focus-visible,
-.secondaryCta:focus-visible,
-.heroAction:focus-visible {
-  outline: 3px solid rgba(23, 77, 62, 0.18);
+.heroActionLink:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.24);
   outline-offset: 3px;
 }
 
 @media (max-width: 1180px) {
   .heroGrid {
-    grid-template-columns: minmax(0, 1fr) minmax(21rem, 27rem);
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.9fr);
   }
 
   .heroTitle {
-    font-size: clamp(3rem, 5.1vw, 5.2rem);
-  }
-
-  .pathItems,
-  .heroActions {
-    grid-template-columns: 1fr;
+    font-size: clamp(3rem, 5.2vw, 5.2rem);
   }
 }
 
@@ -501,7 +358,7 @@
   .heroGrid {
     grid-template-columns: 1fr;
     align-items: end;
-    gap: 1.6rem;
+    gap: 1.8rem;
     padding: 2.1rem 0 2.5rem;
   }
 
@@ -510,22 +367,21 @@
   }
 
   .heroVisual {
-    width: 100%;
     justify-items: start;
+    gap: 0.95rem;
   }
 
-  .logoStage,
-  .heroActionsWrap {
-    max-width: 36rem;
+  .heroLogoWrap {
+    width: min(100%, 24rem);
+    min-height: 15rem;
   }
 
-  .heroActionsHeader {
-    align-items: start;
-    flex-direction: column;
+  .heroActions {
+    justify-content: flex-start;
   }
 
-  .heroActionsText {
-    text-align: left;
+  .workflowTitle {
+    white-space: normal;
   }
 
   .workflowText {
@@ -534,6 +390,11 @@
 
   .stepsGrid {
     grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .stepCard {
+    min-height: 13.25rem;
   }
 
   .stepText {
@@ -552,43 +413,51 @@
   }
 
   .heroGrid {
-    padding: 1.65rem 0 1.9rem;
+    padding: 1.65rem 0 1.85rem;
   }
 
   .heroTitle {
-    max-width: 8.4ch;
-    font-size: clamp(2.45rem, 12vw, 3.95rem);
+    max-width: 8.5ch;
+    font-size: clamp(2.45rem, 12vw, 3.9rem);
   }
 
-  .heroText,
-  .workflowText {
+  .heroText {
     font-size: 0.98rem;
   }
 
-  .heroCtas {
-    flex-direction: column;
-    align-items: stretch;
+  .heroPrimaryActions {
+    margin-top: 1.25rem;
   }
 
-  .primaryCta,
-  .secondaryCta {
-    width: 100%;
+  .heroPrimaryCta {
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    font-size: 0.86rem;
   }
 
-  .pathRail,
-  .heroActionsWrap {
-    padding: 1rem;
-    border-radius: 1.25rem;
+  .heroMeta {
+    gap: 0.55rem;
   }
 
-  .logoStage {
-    min-height: 17rem;
-    padding: 1.8rem;
-    border-radius: 1.4rem;
+  .heroMetaItem {
+    min-height: 2.2rem;
+    font-size: 0.84rem;
   }
 
-  .heroLogo {
-    width: min(100%, 13.5rem);
+  .heroLogoWrap {
+    width: min(100%, 18rem);
+    min-height: 12rem;
+  }
+
+  .heroActions {
+    gap: 0.5rem;
+    max-width: 100%;
+  }
+
+  .heroActionLink {
+    min-height: 2.15rem;
+    padding: 0 0.8rem;
+    font-size: 0.78rem;
   }
 
   .workflowWrap {
@@ -601,12 +470,27 @@
   }
 
   .workflowTitle {
-    font-size: clamp(2.05rem, 10vw, 3.05rem);
+    font-size: clamp(2.1rem, 10vw, 3.1rem);
+    white-space: normal;
+  }
+
+  .workflowText {
+    max-width: 100%;
+    font-size: 0.97rem;
+    line-height: 1.68;
   }
 
   .stepCard {
-    min-height: 14.2rem;
-    padding: 1.25rem;
+    min-height: 12.75rem;
+    padding: 1.35rem 1.2rem 1.25rem;
     border-radius: 1.2rem;
+  }
+
+  .stepTitle {
+    margin-top: 1rem;
+  }
+
+  .stepText {
+    margin-top: 0.85rem;
   }
 }
