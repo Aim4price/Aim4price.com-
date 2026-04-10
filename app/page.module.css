@@ -16,7 +16,7 @@
   align-items: center;
   width: fit-content;
   min-height: 2.1rem;
-  padding: 0 0.92rem;
+  padding: 0 0.94rem;
   border-radius: 999px;
   font-size: 0.78rem;
   line-height: 1;
@@ -31,7 +31,7 @@
 
 .heroMedia {
   position: relative;
-  min-height: clamp(38rem, 49vw, 46rem);
+  min-height: clamp(37rem, 48vw, 45rem);
   overflow: hidden;
   background: #0f261f;
 }
@@ -50,191 +50,119 @@
   background:
     linear-gradient(
       90deg,
-      rgba(8, 21, 17, 0.82) 0%,
-      rgba(8, 21, 17, 0.58) 34%,
-      rgba(8, 21, 17, 0.22) 66%,
-      rgba(8, 21, 17, 0.14) 100%
+      rgba(8, 21, 17, 0.76) 0%,
+      rgba(8, 21, 17, 0.52) 36%,
+      rgba(8, 21, 17, 0.2) 68%,
+      rgba(8, 21, 17, 0.1) 100%
     ),
     linear-gradient(
       180deg,
-      rgba(8, 18, 15, 0.14) 0%,
-      rgba(8, 18, 15, 0.38) 100%
+      rgba(8, 18, 15, 0.1) 0%,
+      rgba(8, 18, 15, 0.34) 100%
     );
 }
 
 .heroGrid {
   position: relative;
   z-index: 2;
-  min-height: clamp(38rem, 49vw, 46rem);
+  min-height: clamp(37rem, 48vw, 45rem);
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 1fr);
+  grid-template-columns: minmax(0, 1.03fr) minmax(18rem, 0.97fr);
   align-items: center;
-  gap: clamp(2rem, 4vw, 4.5rem);
-  padding: clamp(2.6rem, 4vw, 3.8rem) 0;
+  gap: clamp(2rem, 4vw, 4.2rem);
+  padding: clamp(2.6rem, 4vw, 3.7rem) 0;
 }
 
 .heroCopy {
-  max-width: 42rem;
+  max-width: 41rem;
   color: #ffffff;
 }
 
 .eyebrow {
   color: rgba(255, 255, 255, 0.96);
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.16);
   backdrop-filter: blur(10px);
 }
 
 .heroTitle {
-  margin: 1.1rem 0 0;
-  max-width: 7.4ch;
-  font-size: clamp(3.35rem, 5.8vw, 5.95rem);
+  margin: 1.08rem 0 0;
+  max-width: 7.2ch;
+  font-size: clamp(3.4rem, 5.7vw, 5.9rem);
   line-height: 0.92;
-  letter-spacing: -0.085em;
+  letter-spacing: -0.09em;
   font-weight: 800;
   text-wrap: balance;
 }
 
 .heroText {
-  margin: 1.3rem 0 0;
+  margin: 1.35rem 0 0;
   max-width: 35rem;
-  font-size: clamp(1.02rem, 1.35vw, 1.14rem);
-  line-height: 1.68;
+  font-size: clamp(1.01rem, 1.34vw, 1.14rem);
+  line-height: 1.7;
   color: rgba(245, 248, 246, 0.92);
 }
 
-.heroPrimaryActions {
+.heroActions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 1.55rem;
 }
 
-.heroPrimaryCta {
+.primaryCta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3rem;
-  padding: 0 1.2rem;
+  min-height: 3.2rem;
+  padding: 0 1.28rem;
   border-radius: 999px;
   text-decoration: none;
-  font-size: 0.94rem;
+  font-size: 0.95rem;
   font-weight: 800;
-  letter-spacing: -0.01em;
   line-height: 1;
-  color: #17352c;
-  background: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  box-shadow: 0 16px 34px rgba(7, 17, 14, 0.22);
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  background: linear-gradient(180deg, #1b614a 0%, #134436 100%);
+  border: 1px solid rgba(19, 68, 54, 0.34);
+  box-shadow:
+    0 18px 34px rgba(8, 21, 17, 0.24),
+    0 8px 18px rgba(10, 38, 30, 0.18);
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
     background 180ms ease,
-    color 180ms ease;
+    border-color 180ms ease;
 }
 
-.heroPrimaryCta:hover {
+.primaryCta:hover {
   transform: translateY(-2px);
-  box-shadow: 0 18px 38px rgba(7, 17, 14, 0.28);
-  background: rgba(255, 255, 255, 0.94);
+  background: linear-gradient(180deg, #1f6c52 0%, #154b3b 100%);
+  border-color: rgba(19, 68, 54, 0.42);
+  box-shadow:
+    0 22px 40px rgba(8, 21, 17, 0.28),
+    0 10px 20px rgba(10, 38, 30, 0.22);
 }
 
-.heroPrimaryCta:focus-visible {
-  outline: 3px solid rgba(255, 255, 255, 0.28);
+.primaryCta:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.26);
   outline-offset: 3px;
 }
 
-.heroMeta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.7rem;
-  margin-top: 1rem;
-}
-
-.heroMetaItem {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.45rem;
-  padding: 0 0.95rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.96);
-  font-size: 0.9rem;
-  font-weight: 700;
-  line-height: 1;
-  backdrop-filter: blur(8px);
-}
-
 .heroVisual {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 1.15rem;
-  padding: 1.5rem 0;
-}
-
-.heroLogoWrap {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: min(100%, 34rem);
-  min-height: 20rem;
-}
-
-.heroLogoGlow {
-  position: absolute;
-  width: min(26rem, 78%);
-  aspect-ratio: 1;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 38%, rgba(255, 255, 255, 0) 72%);
-  filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 1.25rem 0 0;
 }
 
 .heroLogo {
-  position: relative;
-  z-index: 1;
-  width: min(100%, 23rem);
+  width: min(100%, 19.75rem);
   height: auto;
   object-fit: contain;
-  filter: drop-shadow(0 18px 38px rgba(0, 0, 0, 0.34));
-}
-
-.heroActions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.6rem;
-  max-width: 26rem;
-}
-
-.heroActionLink {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.3rem;
-  padding: 0 0.9rem;
-  border-radius: 999px;
-  text-decoration: none;
-  font-size: 0.84rem;
-  font-weight: 800;
-  line-height: 1;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(10px);
-  transition:
-    transform 180ms ease,
-    background 180ms ease,
-    border-color 180ms ease,
-    box-shadow 180ms ease;
-}
-
-.heroActionLink:hover {
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.24);
-  box-shadow: 0 16px 28px rgba(9, 24, 19, 0.2);
+  opacity: 0.98;
+  filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.24));
 }
 
 .workflowSection {
@@ -333,24 +261,19 @@
 
 .stepText {
   margin: 1rem 0 0;
-  max-width: 28ch;
+  max-width: 29ch;
   font-size: 0.99rem;
   line-height: 1.72;
   color: #66716c;
 }
 
-.heroActionLink:focus-visible {
-  outline: 3px solid rgba(255, 255, 255, 0.24);
-  outline-offset: 3px;
-}
-
 @media (max-width: 1180px) {
-  .heroGrid {
-    grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.9fr);
+  .heroTitle {
+    font-size: clamp(3rem, 5.25vw, 5.3rem);
   }
 
-  .heroTitle {
-    font-size: clamp(3rem, 5.2vw, 5.2rem);
+  .heroLogo {
+    width: min(100%, 18.6rem);
   }
 }
 
@@ -358,8 +281,8 @@
   .heroGrid {
     grid-template-columns: 1fr;
     align-items: end;
-    gap: 1.8rem;
-    padding: 2.1rem 0 2.5rem;
+    gap: 1.75rem;
+    padding: 2.15rem 0 2.5rem;
   }
 
   .heroCopy {
@@ -367,17 +290,12 @@
   }
 
   .heroVisual {
-    justify-items: start;
-    gap: 0.95rem;
-  }
-
-  .heroLogoWrap {
-    width: min(100%, 24rem);
-    min-height: 15rem;
-  }
-
-  .heroActions {
     justify-content: flex-start;
+    padding-top: 0;
+  }
+
+  .heroLogo {
+    width: min(100%, 16.25rem);
   }
 
   .workflowTitle {
@@ -394,7 +312,7 @@
   }
 
   .stepCard {
-    min-height: 13.25rem;
+    min-height: 15rem;
   }
 
   .stepText {
@@ -413,51 +331,26 @@
   }
 
   .heroGrid {
-    padding: 1.65rem 0 1.85rem;
+    padding: 1.65rem 0 1.95rem;
   }
 
   .heroTitle {
-    max-width: 8.5ch;
-    font-size: clamp(2.45rem, 12vw, 3.9rem);
+    max-width: 8.4ch;
+    font-size: clamp(2.45rem, 12vw, 3.95rem);
   }
 
   .heroText {
     font-size: 0.98rem;
   }
 
-  .heroPrimaryActions {
-    margin-top: 1.25rem;
+  .primaryCta {
+    min-height: 3rem;
+    padding: 0 1.12rem;
+    font-size: 0.92rem;
   }
 
-  .heroPrimaryCta {
-    min-height: 2.75rem;
-    padding: 0 1rem;
-    font-size: 0.86rem;
-  }
-
-  .heroMeta {
-    gap: 0.55rem;
-  }
-
-  .heroMetaItem {
-    min-height: 2.2rem;
-    font-size: 0.84rem;
-  }
-
-  .heroLogoWrap {
-    width: min(100%, 18rem);
-    min-height: 12rem;
-  }
-
-  .heroActions {
-    gap: 0.5rem;
-    max-width: 100%;
-  }
-
-  .heroActionLink {
-    min-height: 2.15rem;
-    padding: 0 0.8rem;
-    font-size: 0.78rem;
+  .heroLogo {
+    width: min(100%, 13.75rem);
   }
 
   .workflowWrap {
@@ -481,7 +374,7 @@
   }
 
   .stepCard {
-    min-height: 12.75rem;
+    min-height: 14.5rem;
     padding: 1.35rem 1.2rem 1.25rem;
     border-radius: 1.2rem;
   }
