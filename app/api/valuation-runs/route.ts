@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { saveValuationRun, type RunValuationInput, type SaveValuationRunInput } from '../../../lib/valuation-runs';
 import { getServerSession } from '../../../lib/auth-session';
-import { saveValuationRun, type MethodKey, type SaveValuationRunInput } from '../../../lib/valuation-runs';
-import type { ConditionKey } from '../../../lib/tractor-data';
-import type { GpsType, RunValuationInput } from '../../../lib/tractor-logic';
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'rough';
+type MethodKey = 'aim4price' | 'market' | 'department';
+type GpsType = 'full-autosteer' | 'guidance-only';
 
 type SaveValuationRunApiResponse = {
   ok: boolean;
@@ -16,7 +15,13 @@ type SaveValuationRunApiResponse = {
 };
 
 function parseBoolean(value: unknown): boolean {
-  return value === true || value === 'true' || value === 1 || value === '1';
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === 'true' || normalized === '1' || normalized === 'yes';
+  }
+  if (typeof value === 'number') return value === 1;
+  return false;
 }
 
 function normalizeCondition(value: unknown): ConditionKey | null {
@@ -27,7 +32,7 @@ function normalizeCondition(value: unknown): ConditionKey | null {
     normalized === 'good' ||
     normalized === 'fair' ||
     normalized === 'used' ||
-    normalized === 'serious'
+    normalized === 'rough'
   ) {
     return normalized;
   }
@@ -98,6 +103,16 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
 
+    if (!session) {
+      return NextResponse.json<SaveValuationRunApiResponse>(
+        {
+          ok: false,
+          error: 'You must be signed in to save valuations.',
+        },
+        { status: 401 },
+      );
+    }
+
     const body = (await request.json()) as Partial<RunValuationInput> & {
       selectedMethod?: unknown;
       valuationVersion?: unknown;
@@ -110,7 +125,7 @@ export async function POST(request: NextRequest) {
 
     const saved = await saveValuationRun({
       ...input,
-      userId: session?.user?.id ?? null,
+      userId: session.user.id,
     });
 
     return NextResponse.json<SaveValuationRunApiResponse>({
