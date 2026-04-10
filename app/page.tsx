@@ -3,37 +3,17 @@ import Link from 'next/link';
 import AppHeader from '../components/AppHeader';
 import styles from './page.module.css';
 
-type HeroAction = {
-  href: string;
-  label: string;
-};
-
 type WorkflowStep = {
   number: string;
   title: string;
   text: string;
 };
 
-const heroActions: HeroAction[] = [
-  {
-    href: '/valuation',
-    label: 'Free valuation',
-  },
-  {
-    href: '/asset-register',
-    label: 'Asset register',
-  },
-  {
-    href: '/marketplace',
-    label: 'Marketplace',
-  },
-];
-
 const workflowSteps: WorkflowStep[] = [
   {
     number: '01',
     title: 'Start with a free valuation',
-    text: 'Select the machinery type, enter the core details, and get a clean value output.',
+    text: 'Select the machinery type, enter the key details, and get a clean value output in a guided flow.',
   },
   {
     number: '02',
@@ -43,16 +23,9 @@ const workflowSteps: WorkflowStep[] = [
   {
     number: '03',
     title: 'Move equipment to market',
-    text: 'When the time is right, move from internal records to active buying or selling.',
+    text: 'When the time is right, take the next commercial step with more clarity and structure.',
   },
 ];
-
-const heroPoints = ['Free valuation', 'Asset register', 'Marketplace tools'];
-
-const primaryHeroCta = {
-  href: '/valuation',
-  label: 'Start free valuation',
-};
 
 export default function HomePage() {
   return (
@@ -86,42 +59,23 @@ export default function HomePage() {
                   taking the next commercial step with more clarity.
                 </p>
 
-                <div className={styles.heroPrimaryActions}>
-                  <Link href={primaryHeroCta.href} className={styles.heroPrimaryCta}>
-                    {primaryHeroCta.label}
+                <div className={styles.heroActions}>
+                  <Link href="/valuation" className={styles.primaryCta}>
+                    Get free valuation
                   </Link>
-                </div>
-
-                <div className={styles.heroMeta}>
-                  {heroPoints.map((point) => (
-                    <span key={point} className={styles.heroMetaItem}>
-                      {point}
-                    </span>
-                  ))}
                 </div>
               </div>
 
-              <aside className={styles.heroVisual} aria-label="Aim4price platform shortcuts">
-                <div className={styles.heroLogoWrap}>
-                  <div className={styles.heroLogoGlow} />
-                  <Image
-                    src="/brand/aim4price-mark-white.png"
-                    alt="Aim4price mark"
-                    width={660}
-                    height={515}
-                    priority
-                    className={styles.heroLogo}
-                  />
-                </div>
-
-                <div className={styles.heroActions}>
-                  {heroActions.map((item) => (
-                    <Link key={item.href} href={item.href} className={styles.heroActionLink}>
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              </aside>
+              <div className={styles.heroVisual} aria-hidden="true">
+                <Image
+                  src="/brand/aim4price-mark-white.png"
+                  alt=""
+                  width={660}
+                  height={515}
+                  priority
+                  className={styles.heroLogo}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -134,7 +88,7 @@ export default function HomePage() {
               <p className={styles.workflowEyebrow}>How Aim4price works</p>
               <h2 className={styles.workflowTitle}>A clean path from value to action.</h2>
               <p className={styles.workflowText}>
-                Users should understand the platform in seconds: value machinery, save records,
+                Users should understand the platform quickly: value machinery first, save records,
                 then move to market when the time is right.
               </p>
             </div>
