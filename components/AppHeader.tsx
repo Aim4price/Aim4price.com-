@@ -1,5 +1,8 @@
-import type { ReactNode } from 'react';
+'use client';
+
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import styles from './AppHeader.module.css';
 
 type ActivePage = 'home' | 'valuation' | 'asset-register' | 'marketplace';
@@ -10,6 +13,16 @@ type AppHeaderProps = {
   loginHref?: string;
   ctaHref?: string;
   ctaLabel?: string;
+};
+
+type SessionResponse = {
+  ok: boolean;
+  signedIn: boolean;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
 };
 
 const navItems: Array<{ key: ActivePage; href: string; label: string }> = [
@@ -56,6 +69,62 @@ export default function AppHeader({
   ctaLabel = 'Create Account',
 }: AppHeaderProps) {
   const primaryHref = ctaHref ?? signupHref;
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [isLoadingSession, setIsLoadingSession] = useState(true);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadSession() {
+      try {
+        setIsLoadingSession(true);
+
+        const response = await fetch('/api/me', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+
+        const data = (await response.json()) as SessionResponse;
+
+        if (!mounted) return;
+        setIsSignedIn(Boolean(data?.signedIn));
+      } catch {
+        if (!mounted) return;
+        setIsSignedIn(false);
+      } finally {
+        if (mounted) {
+          setIsLoadingSession(false);
+        }
+      }
+    }
+
+    void loadSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, [pathname]);
+
+  async function handleSignOut() {
+    try {
+      setIsSigningOut(true);
+
+      await fetch('/api/auth/sign-out', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      setIsSignedIn(false);
+      router.refresh();
+      router.push('/');
+    } finally {
+      setIsSigningOut(false);
+    }
+  }
 
   return (
     <header className={styles.header}>
@@ -85,17 +154,30 @@ export default function AppHeader({
 
         <div className={styles.actions}>
           <div className={styles.actionsRail}>
-            <SmartLink href={loginHref} className={styles.loginButton}>
-              Login
-            </SmartLink>
+            {isLoadingSession ? null : isSignedIn ? (
+              <button
+                type="button"
+                className={styles.signupButton}
+                onClick={handleSignOut}
+                disabled={isSigningOut}
+              >
+                {isSigningOut ? 'Signing out...' : 'Sign out'}
+              </button>
+            ) : (
+              <>
+                <SmartLink href={loginHref} className={styles.loginButton}>
+                  Login
+                </SmartLink>
 
-            <span className={styles.actionDivider} aria-hidden="true">
-              |
-            </span>
+                <span className={styles.actionDivider} aria-hidden="true">
+                  |
+                </span>
 
-            <SmartLink href={primaryHref} className={styles.signupButton}>
-              {ctaLabel}
-            </SmartLink>
+                <SmartLink href={primaryHref} className={styles.signupButton}>
+                  {ctaLabel}
+                </SmartLink>
+              </>
+            )}
           </div>
         </div>
       </div>
