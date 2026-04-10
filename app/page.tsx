@@ -3,69 +3,47 @@ import Link from 'next/link';
 import AppHeader from '../components/AppHeader';
 import styles from './page.module.css';
 
-type QuickAction = {
+type HeroAction = {
   href: string;
-  title: string;
-  text: string;
-  action: string;
-  note: string;
-  primary?: boolean;
+  label: string;
 };
 
 type WorkflowStep = {
   number: string;
-  href: string;
   title: string;
   text: string;
-  action: string;
 };
 
-const quickActions: QuickAction[] = [
+const heroActions: HeroAction[] = [
   {
     href: '/valuation',
-    title: 'Free valuation',
-    text: 'Get a fast machinery value estimate in a clean guided flow.',
-    action: 'Start free valuation',
-    note: 'Recommended first step',
-    primary: true,
+    label: 'Free valuation',
   },
   {
     href: '/asset-register',
-    title: 'Asset register',
-    text: 'Store important machinery records and return anytime to update values.',
-    action: 'Open asset register',
-    note: 'Track and organise assets',
+    label: 'Asset register',
   },
   {
     href: '/marketplace',
-    title: 'Marketplace',
-    text: 'Move equipment to market when you are ready to buy or sell.',
-    action: 'Open marketplace',
-    note: 'Take the next commercial step',
+    label: 'Marketplace',
   },
 ];
 
 const workflowSteps: WorkflowStep[] = [
   {
     number: '01',
-    href: '/valuation',
     title: 'Start with a free valuation',
     text: 'Select the machinery type, enter the core details, and get a clean value output.',
-    action: 'Open valuation',
   },
   {
     number: '02',
-    href: '/asset-register',
     title: 'Save and manage assets',
     text: 'Keep machinery records organised in one place and return whenever you need updated values.',
-    action: 'Open asset register',
   },
   {
     number: '03',
-    href: '/marketplace',
     title: 'Move equipment to market',
     text: 'When the time is right, move from internal records to active buying or selling.',
-    action: 'Open marketplace',
   },
 ];
 
@@ -94,18 +72,6 @@ export default function HomePage() {
           <div className={styles.shell}>
             <div className={styles.heroGrid}>
               <div className={styles.heroCopy}>
-                <div className={styles.heroBrand}>
-                  <Image
-                    src="/brand/aim4price-mark-white.png"
-                    alt="Aim4price logo"
-                    width={58}
-                    height={58}
-                    priority
-                    className={styles.heroBrandMark}
-                  />
-                  <span className={styles.heroBrandName}>Aim4price</span>
-                </div>
-
                 <p className={styles.eyebrow}>Agricultural &amp; industrial machinery pricing</p>
 
                 <h1 className={styles.heroTitle}>Know what your machinery is worth.</h1>
@@ -124,36 +90,23 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <aside className={styles.heroCard}>
-                <p className={styles.cardEyebrow}>Start here</p>
+              <aside className={styles.heroVisual} aria-label="Aim4price platform shortcuts">
+                <div className={styles.heroLogoWrap}>
+                  <div className={styles.heroLogoGlow} />
+                  <Image
+                    src="/brand/aim4price-mark-white.png"
+                    alt="Aim4price mark"
+                    width={660}
+                    height={515}
+                    priority
+                    className={styles.heroLogo}
+                  />
+                </div>
 
-                <h2 className={styles.cardTitle}>Choose your next action.</h2>
-
-                <p className={styles.cardText}>
-                  Most users should start with a free valuation, then save key machinery to the
-                  asset register or move equipment to market when ready.
-                </p>
-
-                <p className={styles.cardSupport}>Clear workflow. Immediate next steps.</p>
-
-                <div className={styles.quickActions}>
-                  {quickActions.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`${styles.quickAction} ${
-                        item.primary ? styles.quickActionPrimary : ''
-                      }`}
-                    >
-                      <span className={styles.quickActionMeta}>{item.note}</span>
-
-                      <span className={styles.quickActionTop}>
-                        <span className={styles.quickActionTitle}>{item.title}</span>
-                        <span className={styles.quickActionArrow}>→</span>
-                      </span>
-
-                      <span className={styles.quickActionText}>{item.text}</span>
-                      <span className={styles.quickActionButton}>{item.action}</span>
+                <div className={styles.heroActions}>
+                  {heroActions.map((item) => (
+                    <Link key={item.href} href={item.href} className={styles.heroActionLink}>
+                      {item.label}
                     </Link>
                   ))}
                 </div>
@@ -181,10 +134,6 @@ export default function HomePage() {
                   <div className={styles.stepBadge}>{step.number}</div>
                   <h3 className={styles.stepTitle}>{step.title}</h3>
                   <p className={styles.stepText}>{step.text}</p>
-
-                  <Link href={step.href} className={styles.stepAction}>
-                    {step.action}
-                  </Link>
                 </div>
               ))}
             </div>
