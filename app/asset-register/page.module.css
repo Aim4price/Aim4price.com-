@@ -219,6 +219,8 @@
   grid-column: 1 / -1;
   display: flex;
   justify-content: flex-start;
+  gap: 0.65rem;
+  flex-wrap: wrap;
 }
 
 .primaryButton,
@@ -384,9 +386,44 @@
   line-height: 1.6;
 }
 
+.helperText {
+  grid-column: 1 / -1;
+  margin: -0.25rem 0 0;
+  color: #62706a;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.photoGrid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.photoThumb {
+  position: relative;
+  overflow: hidden;
+  min-height: 112px;
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background: rgba(23, 77, 62, 0.06);
+}
+
+.photoThumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 112px;
+  object-fit: cover;
+}
+
 .assetActions {
   display: flex;
   justify-content: flex-end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
   margin-top: 0.9rem;
 }
 
@@ -397,7 +434,8 @@
 
   .heroStats,
   .detailGrid,
-  .form {
+  .form,
+  .photoGrid {
     grid-template-columns: 1fr;
   }
 
