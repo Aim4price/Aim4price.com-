@@ -59,6 +59,7 @@ type SaveValuationRunApiResponse = {
   assetId?: number;
   createdAtIso?: string;
   selectedValueExVat?: number;
+  warning?: string;
   error?: string;
 };
 
@@ -995,7 +996,7 @@ export default function ValuationClient() {
     }
 
     if (!isSignedIn) {
-      setMessage('Please create an account or log in to save valuations.');
+      setMessage('Please create an account or log in to save to your asset register.');
       router.push('/auth#signup');
       return;
     }
@@ -1032,18 +1033,20 @@ export default function ValuationClient() {
 
       const data = (await response.json()) as SaveValuationRunApiResponse;
 
-      if (!response.ok || !data.ok || !data.runId) {
-        throw new Error(data.error ?? 'Failed to save valuation run.');
+      if (!response.ok || !data.ok || !data.assetId) {
+        throw new Error(data.error ?? 'Failed to save to asset register.');
       }
 
       setMessage(
-        data.assetId
-          ? `Valuation saved. Asset register item #${data.assetId} was created from run #${data.runId}.`
-          : `Valuation saved. Run ID: ${data.runId}.`,
+        data.warning
+          ? `Saved to asset register. Asset #${data.assetId} was created. ${data.warning}`
+          : `Saved to asset register. Asset #${data.assetId} was created.`,
       );
+
+      router.push('/asset-register');
     } catch (error) {
       console.error('Failed to save valuation run to /api/valuation-runs', error);
-      setMessage(error instanceof Error ? error.message : 'Failed to save valuation run.');
+      setMessage(error instanceof Error ? error.message : 'Failed to save to asset register.');
     } finally {
       setSaveLoading(false);
     }
@@ -2256,9 +2259,9 @@ export default function ValuationClient() {
                 <article className={styles.assetCard}>
                   <div className={styles.actionHeader}>
                     <div>
-                      <h2 className={styles.assetTitle}>Save Valuation</h2>
+                      <h2 className={styles.assetTitle}>Save to Asset Register</h2>
                       <p className={styles.assetText}>
-                        Save this valuation now and create an asset register item automatically for the signed-in user.
+                        Save this valuation to the asset register and create a linked equipment item for the signed-in user.
                       </p>
                     </div>
                     <span className={styles.actionBadge}>Quick actions</span>
@@ -2271,7 +2274,7 @@ export default function ValuationClient() {
                       onClick={handleSave}
                       disabled={saveLoading}
                     >
-                      {saveLoading ? 'Saving...' : 'Save Valuation'}
+                      {saveLoading ? 'Saving...' : 'Save to Asset Register'}
                     </button>
 
                     <button type="button" className={styles.secondaryButton} onClick={handlePrint}>
