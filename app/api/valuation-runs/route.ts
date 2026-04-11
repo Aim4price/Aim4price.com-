@@ -187,13 +187,6 @@ export async function POST(request: NextRequest) {
         valuationResult,
       );
     } catch (historyError) {
-      if (
-        historyError instanceof Error &&
-        (historyError.message === 'MODEL_NOT_FOUND' || historyError.message === 'SELECTED_METHOD_NOT_AVAILABLE')
-      ) {
-        throw historyError;
-      }
-
       console.error('valuation history save failed; continuing with asset register save', historyError);
       warning = 'Valuation history could not be stored, but the asset was saved successfully.';
     }
