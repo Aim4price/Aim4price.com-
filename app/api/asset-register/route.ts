@@ -190,12 +190,22 @@ export async function DELETE(request: NextRequest) {
 
   const uploadIds = listInternalAssetRegisterUploadIds(existing.photos);
 
-  await deleteAssetRegisterItem(session.user.id, assetId);
-  await deleteUnreferencedAssetRegisterUploads({
-    userId: session.user.id,
-    uploadIds,
-    excludeAssetId: assetId,
-  });
+  try {
+    await deleteAssetRegisterItem(session.user.id, assetId);
+  } catch (error) {
+    console.error('asset register delete failed', error);
+    return NextResponse.json({ ok: false, error: 'Failed to delete asset.' }, { status: 500 });
+  }
+
+  try {
+    await deleteUnreferencedAssetRegisterUploads({
+      userId: session.user.id,
+      uploadIds,
+      excludeAssetId: assetId,
+    });
+  } catch (error) {
+    console.error('asset register upload cleanup failed after delete', error);
+  }
 
   return NextResponse.json({ ok: true });
 }
