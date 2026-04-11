@@ -393,7 +393,8 @@ function marketSnapshot(model: TractorCatalogRow, year: number, hours: number, s
 
   const low = Math.min(...prices);
   const high = Math.max(...prices);
-  const mid = roundMoney((low + high) / 2);
+  const total = prices.reduce((sum, price) => sum + price, 0);
+  const mid = roundMoney(total / prices.length);
 
   return {
     low: roundMoney(low),
@@ -590,7 +591,7 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
     availableValues.length >= 3 ? 'green' : availableValues.length === 2 ? 'amber' : 'red';
 
   let previewValueExVat = marketMid;
-  let previewLabel: Result['previewLabel'] = 'Market midpoint';
+  let previewLabel: Result['previewLabel'] = 'Market average';
 
   if (previewValueExVat === null && aim4priceValueExVat !== null) {
     previewValueExVat = aim4priceValueExVat;
