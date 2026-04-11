@@ -53,7 +53,7 @@ function parseGpsYear(value: number | string | null | undefined): number | null 
   return parsed;
 }
 
-function getMethodValue(result: Result, method: MethodKey): number | null {
+export function getSelectedMethodValue(result: Result, method: MethodKey): number | null {
   if (method === 'aim4price') return result.aim4priceValueExVat;
   if (method === 'market') return result.marketMid;
   return result.departmentValueExVat;
@@ -134,9 +134,11 @@ function buildValuationPayload(input: SaveValuationRunInput, result: Result, sel
   };
 }
 
-export async function saveValuationRun(input: SaveValuationRunInput): Promise<SaveValuationRunResult> {
-  const result = await runServerValuation(input);
-  const selectedValueExVat = getMethodValue(result, input.selectedMethod);
+export async function saveValuationRunFromResult(
+  input: SaveValuationRunInput,
+  result: Result,
+): Promise<SaveValuationRunResult> {
+  const selectedValueExVat = getSelectedMethodValue(result, input.selectedMethod);
 
   if (selectedValueExVat === null) {
     throw new Error('SELECTED_METHOD_NOT_AVAILABLE');
@@ -253,4 +255,9 @@ export async function saveValuationRun(input: SaveValuationRunInput): Promise<Sa
     selectedValueExVat: roundMoney(selectedValueExVat),
     result,
   };
+}
+
+export async function saveValuationRun(input: SaveValuationRunInput): Promise<SaveValuationRunResult> {
+  const result = await runServerValuation(input);
+  return saveValuationRunFromResult(input, result);
 }
