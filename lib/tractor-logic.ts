@@ -34,7 +34,7 @@ export type Result = {
   departmentBand: DepartmentAgBand | null;
   coverageBand: 'green' | 'amber' | 'red';
   previewValueExVat: number | null;
-  previewLabel: 'Market midpoint' | 'Aim4price Value' | 'Department Guideline';
+  previewLabel: 'Market average' | 'Aim4price Value' | 'Department Guideline';
   baseAim4priceValueExVat: number | null;
   baseMarketLow: number | null;
   baseMarketHigh: number | null;
@@ -442,7 +442,7 @@ export function runValuation(input: RunValuationInput): Result {
     availableValues.length >= 3 ? 'green' : availableValues.length === 2 ? 'amber' : 'red';
 
   let previewValueExVat = marketMid;
-  let previewLabel: Result['previewLabel'] = 'Market midpoint';
+  let previewLabel: Result['previewLabel'] = 'Market average';
 
   if (previewValueExVat === null && aim4priceValueExVat !== null) {
     previewValueExVat = aim4priceValueExVat;
