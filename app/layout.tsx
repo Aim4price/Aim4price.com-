@@ -1,18 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { Inter, Montserrat } from 'next/font/google';
 import AppFooter from '../components/AppFooter';
 import './globals.css';
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-body',
-});
-
-const montserrat = Montserrat({
-  subsets: ['latin'],
-  variable: '--font-heading',
-});
 
 export const metadata: Metadata = {
   title: {
@@ -25,7 +14,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${montserrat.variable}`}>
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Montserrat:wght@100..900&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>
         <div className="appRoot">
           {children}
