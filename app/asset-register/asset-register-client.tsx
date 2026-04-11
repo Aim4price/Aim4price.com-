@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
@@ -57,6 +57,7 @@ type AssetDraft = {
   serialNumber: string;
   isFinanced: boolean;
   financeNote: string;
+  photosText: string;
 };
 
 const initialAssetDraft: AssetDraft = {
@@ -67,6 +68,7 @@ const initialAssetDraft: AssetDraft = {
   serialNumber: '',
   isFinanced: false,
   financeNote: '',
+  photosText: '',
 };
 
 function money(value: number): string {
@@ -111,13 +113,43 @@ function kindLabel(value: AssetKind): string {
   );
 }
 
+function parsePhotoList(value: string): string[] {
+  const seen = new Set<string>();
+
+  return value
+    .split(/\r?\n/)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .filter((entry) => {
+      if (seen.has(entry)) return false;
+      seen.add(entry);
+      return true;
+    })
+    .slice(0, 12);
+}
+
+function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
+  return {
+    kind: asset.kind,
+    title: asset.title,
+    value: String(asset.value || ''),
+    note: asset.note,
+    serialNumber: asset.serialNumber,
+    isFinanced: asset.isFinanced,
+    financeNote: asset.financeNote,
+    photosText: asset.photos.join('\n'),
+  };
+}
+
 export default function AssetRegisterClient() {
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
+  const [editingAssetId, setEditingAssetId] = useState<number | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [busyDeleteId, setBusyDeleteId] = useState<number | null>(null);
+  const formCardRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -180,10 +212,29 @@ export default function AssetRegisterClient() {
     return assets.filter((asset) => asset.kind === 'tractor').length;
   }, [assets]);
 
+  const photoCount = useMemo(() => parsePhotoList(assetDraft.photosText).length, [assetDraft.photosText]);
+
+  const editingAsset = useMemo(() => {
+    return editingAssetId === null ? null : assets.find((asset) => asset.id === editingAssetId) ?? null;
+  }, [assets, editingAssetId]);
+
+  function resetEditor() {
+    setEditingAssetId(null);
+    setAssetDraft(initialAssetDraft);
+  }
+
+  function openEditor(asset: RegisterAsset) {
+    setEditingAssetId(asset.id);
+    setAssetDraft(buildDraftFromAsset(asset));
+    formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   async function handleAssetSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const value = Math.round(Number(assetDraft.value) || 0);
+    const photos = parsePhotoList(assetDraft.photosText);
+
     if (!assetDraft.title.trim() || value <= 0) {
       setNotice({ tone: 'error', message: 'Asset title and value are required.' });
       return;
@@ -192,31 +243,63 @@ export default function AssetRegisterClient() {
     setIsSavingAsset(true);
 
     try {
-      const response = await fetch('/api/asset-register', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...assetDraft,
-          value,
-        }),
-      });
+      if (editingAssetId !== null) {
+        const response = await fetch('/api/asset-register', {
+          method: 'PUT',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            assetId: editingAssetId,
+            kind: editingAsset?.valuationRunId ? editingAsset.kind : assetDraft.kind,
+            title: assetDraft.title,
+            value,
+            note: assetDraft.note,
+            serialNumber: assetDraft.serialNumber,
+            isFinanced: assetDraft.isFinanced,
+            financeNote: assetDraft.financeNote,
+            photos,
+          }),
+        });
 
-      const data = (await response.json()) as AssetRegisterApiResponse;
+        const data = (await response.json()) as AssetRegisterApiResponse;
 
-      if (!response.ok || !data.ok || !data.item) {
-        throw new Error(data.error ?? 'Failed to add asset.');
+        if (!response.ok || !data.ok || !data.item) {
+          throw new Error(data.error ?? 'Failed to update asset.');
+        }
+
+        setAssets((current) => current.map((asset) => (asset.id === data.item!.id ? data.item! : asset)));
+        setNotice({ tone: 'success', message: 'Asset updated.' });
+        resetEditor();
+      } else {
+        const response = await fetch('/api/asset-register', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...assetDraft,
+            value,
+            photos,
+          }),
+        });
+
+        const data = (await response.json()) as AssetRegisterApiResponse;
+
+        if (!response.ok || !data.ok || !data.item) {
+          throw new Error(data.error ?? 'Failed to add asset.');
+        }
+
+        setAssets((current) => [data.item as RegisterAsset, ...current]);
+        setNotice({ tone: 'success', message: 'Asset added to the register.' });
+        resetEditor();
       }
-
-      setAssets((current) => [data.item as RegisterAsset, ...current]);
-      setAssetDraft(initialAssetDraft);
-      setNotice({ tone: 'success', message: 'Asset added to the register.' });
     } catch (error) {
       setNotice({
         tone: 'error',
-        message: error instanceof Error ? error.message : 'Failed to add asset.',
+        message: error instanceof Error ? error.message : 'Failed to save asset.',
       });
     } finally {
       setIsSavingAsset(false);
@@ -239,6 +322,9 @@ export default function AssetRegisterClient() {
       }
 
       setAssets((current) => current.filter((asset) => asset.id !== assetId));
+      if (editingAssetId === assetId) {
+        resetEditor();
+      }
       setNotice({ tone: 'success', message: 'Asset removed.' });
     } catch (error) {
       setNotice({
@@ -260,9 +346,9 @@ export default function AssetRegisterClient() {
             <span className={styles.eyebrow}>Asset Register</span>
             <h1>Keep your saved machinery in one place.</h1>
             <p>
-              This workspace now focuses on saved assets, valuation history and manual additions.
-              Account, contact and future PDF settings have been separated into a dedicated account
-              page.
+              This next step improves the register with asset editing and photo groundwork. You can
+              now update saved assets and attach photo URLs, which sets up the structure for proper
+              file uploads later.
             </p>
           </div>
 
@@ -295,7 +381,7 @@ export default function AssetRegisterClient() {
                 <span className={styles.kicker}>Account</span>
                 <h2>Account, PDFs and contact settings</h2>
                 <p>
-                  This setup has been moved out of the register so saved assets can stay cleaner and
+                  This setup remains separate from the register so saved assets can stay cleaner and
                   easier to scale. Use the account page for profile, contact and report details.
                 </p>
               </div>
@@ -316,13 +402,13 @@ export default function AssetRegisterClient() {
 
               <article className={styles.assetCard}>
                 <div className={styles.badgeRow}>
-                  <span className={styles.badge}>Reports</span>
-                  <span className={styles.badge}>PDFs</span>
+                  <span className={styles.badge}>Photos</span>
+                  <span className={styles.badge}>Groundwork</span>
                 </div>
-                <h3>Correct base for exports</h3>
+                <h3>Structured photo support</h3>
                 <p className={styles.note}>
-                  This separation prepares Aim4price for proper branded PDF reports, contact blocks
-                  and future marketplace seller defaults.
+                  The register now supports photo lists per asset. This is groundwork for proper drag
+                  and drop uploads once storage is connected.
                 </p>
               </article>
             </div>
@@ -337,12 +423,16 @@ export default function AssetRegisterClient() {
             </div>
           </section>
 
-          <section className={styles.card}>
+          <section className={styles.card} ref={formCardRef}>
             <div className={styles.cardHeader}>
               <div>
-                <span className={styles.kicker}>Add manually</span>
-                <h2>Add another asset</h2>
-                <p>Use this for property or manual records that did not come from the valuation workflow.</p>
+                <span className={styles.kicker}>{editingAsset ? 'Edit asset' : 'Add manually'}</span>
+                <h2>{editingAsset ? 'Update saved asset' : 'Add another asset'}</h2>
+                <p>
+                  {editingAsset
+                    ? 'Update title, value, finance notes and photo URLs. Valuation-linked tractor type stays locked.'
+                    : 'Use this for property or manual records that did not come from the valuation workflow.'}
+                </p>
               </div>
             </div>
 
@@ -350,7 +440,8 @@ export default function AssetRegisterClient() {
               <label className={styles.field}>
                 <span>Asset type</span>
                 <select
-                  value={assetDraft.kind}
+                  value={editingAsset?.valuationRunId ? editingAsset.kind : assetDraft.kind}
+                  disabled={Boolean(editingAsset?.valuationRunId)}
                   onChange={(event) => setAssetDraft((current) => ({ ...current, kind: event.target.value as AssetKind }))}
                 >
                   <option value="manual">Manual asset</option>
@@ -419,10 +510,41 @@ export default function AssetRegisterClient() {
                 />
               </label>
 
+              <label className={`${styles.field} ${styles.fullWidth}`}>
+                <span>Photo URLs</span>
+                <textarea
+                  rows={5}
+                  value={assetDraft.photosText}
+                  onChange={(event) => setAssetDraft((current) => ({ ...current, photosText: event.target.value }))}
+                  placeholder={['https://example.com/tractor-front.jpg', 'https://example.com/tractor-side.jpg'].join('\n')}
+                />
+              </label>
+
+              <p className={styles.helperText}>
+                Use one full HTTPS image URL per line. This is the groundwork stage before real file
+                upload storage is added.
+              </p>
+
+              {photoCount ? (
+                <div className={styles.photoGrid}>
+                  {parsePhotoList(assetDraft.photosText).slice(0, 4).map((photo, index) => (
+                    <div className={styles.photoThumb} key={`${photo}-${index}`}>
+                      <img src={photo} alt={`Asset photo ${index + 1}`} />
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
               <div className={styles.actionsRow}>
                 <button type="submit" className={styles.primaryButton} disabled={isSavingAsset}>
-                  {isSavingAsset ? 'Saving...' : 'Add asset'}
+                  {isSavingAsset ? 'Saving...' : editingAsset ? 'Update asset' : 'Add asset'}
                 </button>
+
+                {editingAsset ? (
+                  <button type="button" className={styles.secondaryButton} onClick={resetEditor}>
+                    Cancel edit
+                  </button>
+                ) : null}
               </div>
             </form>
           </section>
@@ -458,6 +580,7 @@ export default function AssetRegisterClient() {
                         <span className={styles.badge}>{kindLabel(asset.kind)}</span>
                         <span className={styles.badge}>{methodLabel(asset.selectedMethod)}</span>
                         {asset.valuationRunId ? <span className={styles.badge}>Saved valuation</span> : null}
+                        {asset.photos.length ? <span className={styles.badge}>{asset.photos.length} photo{asset.photos.length === 1 ? '' : 's'}</span> : null}
                       </div>
                       <h3>{asset.title}</h3>
                       <p>
@@ -477,6 +600,16 @@ export default function AssetRegisterClient() {
                       <span>Updated {formatDate(asset.updatedAtIso)}</span>
                     </div>
                   </div>
+
+                  {asset.photos.length ? (
+                    <div className={styles.photoGrid}>
+                      {asset.photos.slice(0, 4).map((photo, index) => (
+                        <div className={styles.photoThumb} key={`${asset.id}-${photo}-${index}`}>
+                          <img src={photo} alt={`${asset.title} photo ${index + 1}`} />
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
 
                   <div className={styles.detailGrid}>
                     <div>
@@ -501,6 +634,13 @@ export default function AssetRegisterClient() {
                   {asset.financeNote ? <p className={styles.note}>Finance: {asset.financeNote}</p> : null}
 
                   <div className={styles.assetActions}>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => openEditor(asset)}
+                    >
+                      Edit
+                    </button>
                     <button
                       type="button"
                       className={styles.dangerButton}
