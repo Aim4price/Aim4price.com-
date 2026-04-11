@@ -1,6 +1,7 @@
 import { getDb } from './db';
 import type { CabType, DriveType, TractorType } from './tractor-data';
-import type { MethodKey, SaveValuationRunResult } from './valuation-runs';
+import type { MethodKey } from './valuation-runs';
+import type { Result } from './tractor-logic';
 
 export type AssetRegisterItemKind = 'tractor' | 'manual' | 'property';
 export type AssetRegisterItemMethod = MethodKey | 'manual';
@@ -414,14 +415,16 @@ export async function deleteAssetRegisterItem(userId: string, assetId: number): 
 
 export async function createAssetRegisterItemFromValuation(input: {
   userId: string;
-  valuationRun: SaveValuationRunResult;
+  valuationRunId?: number | null;
+  result: Result;
   selectedMethod: MethodKey;
+  selectedValueExVat: number;
   year: number;
   hours: number;
   note?: string | null;
 }): Promise<AssetRegisterItem> {
   const db = getDb();
-  const result = input.valuationRun.result;
+  const result = input.result;
   const model = result.model;
   const title = `${model.brandName} ${model.modelName}`.trim();
 
@@ -485,9 +488,9 @@ export async function createAssetRegisterItemFromValuation(input: {
     `,
     [
       input.userId,
-      input.valuationRun.runId,
+      input.valuationRunId ?? null,
       title,
-      Math.round(input.valuationRun.selectedValueExVat),
+      Math.round(input.selectedValueExVat),
       input.selectedMethod,
       model.brandName,
       model.modelName,
