@@ -236,7 +236,7 @@ export default function AppHeader({
                       Asset Register
                     </Link>
 
-                    <Link href="/asset-register" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                    <Link href="/account" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
                       Account details
                     </Link>
 
