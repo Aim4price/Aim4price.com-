@@ -1,655 +1,529 @@
-import { randomUUID } from 'node:crypto';
-import {
-  DeleteObjectCommand,
-  GetObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { getDb } from './db';
+import type { CabType, DriveType, TractorType } from './tractor-data';
+import type { MethodKey } from './valuation-runs';
+import type { Result } from './tractor-logic';
 
-export const MAX_ASSET_REGISTER_PHOTOS = 12;
-export const MAX_ASSET_REGISTER_UPLOADS = MAX_ASSET_REGISTER_PHOTOS;
-export const MAX_ASSET_REGISTER_UPLOAD_BYTES = 5 * 1024 * 1024;
-export const ALLOWED_ASSET_REGISTER_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+export type AssetRegisterItemKind = 'tractor' | 'manual' | 'property';
+export type AssetRegisterItemMethod = MethodKey | 'manual';
 
-const ASSET_REGISTER_OBJECT_PREFIX = 'asset-register';
-const ASSET_REGISTER_SIGNED_GET_SECONDS = 60 * 10;
-
-export type AssetRegisterUploadInput = {
-  fileName: string;
-  mimeType: string;
-  sizeBytes: number;
-  data: Buffer;
-};
-
-export type AssetRegisterUpload = {
-  id: string;
+export type AssetRegisterItem = {
+  id: number;
   userId: string;
-  fileName: string;
-  contentType: string;
-  byteSize: number;
+  valuationRunId: number | null;
+  kind: AssetRegisterItemKind;
+  title: string;
+  value: number;
+  selectedMethod: AssetRegisterItemMethod;
+  selectedValueExVat: number;
+  brandName: string;
+  modelName: string;
+  drive: DriveType | '';
+  tractorType: TractorType | '';
+  cab: CabType | '';
+  powerKw: number | null;
+  yearModel: number | null;
+  hours: number | null;
+  aim4priceValueExVat: number | null;
+  marketMidExVat: number | null;
+  departmentValueExVat: number | null;
+  note: string;
+  serialNumber: string;
+  isFinanced: boolean;
+  financeNote: string;
+  photos: string[];
   createdAtIso: string;
+  updatedAtIso: string;
 };
 
-type NormalizedLegacyUploadRow = {
-  id: string;
-  user_id: string;
-  file_name: string;
-  content_type: string;
-  byte_size: string | number;
-  file_bytes: Buffer | Uint8Array | string;
-  created_at: string;
+export type CreateManualAssetInput = {
+  kind: AssetRegisterItemKind;
+  title: string;
+  value: number;
+  note?: string | null;
+  serialNumber?: string | null;
+  isFinanced?: boolean;
+  financeNote?: string | null;
+  photos?: string[];
 };
 
-declare global {
-  // eslint-disable-next-line no-var
-  var aim4priceAssetRegisterS3Client: S3Client | undefined;
-}
+export type UpdateAssetRegisterItemInput = {
+  assetId: number;
+  kind: AssetRegisterItemKind;
+  title: string;
+  value: number;
+  note?: string | null;
+  serialNumber?: string | null;
+  isFinanced?: boolean;
+  financeNote?: string | null;
+  photos?: string[];
+};
 
-let hasEnsuredLegacyAssetRegisterUploadsTable = false;
+type AssetRegisterRow = {
+  id: string | number;
+  user_id: string | null;
+  valuation_run_id: string | number | null;
+  kind: string | null;
+  title: string | null;
+  value: string | number | null;
+  selected_method: string | null;
+  selected_value_ex_vat: string | number | null;
+  brand_name: string | null;
+  model_name: string | null;
+  drive_type: string | null;
+  tractor_type: string | null;
+  cab_type: string | null;
+  power_kw: string | number | null;
+  year_model: string | number | null;
+  hours: string | number | null;
+  aim4price_value_ex_vat: string | number | null;
+  market_mid_ex_vat: string | number | null;
+  department_value_ex_vat: string | number | null;
+  note: string | null;
+  serial_number: string | null;
+  is_financed: boolean | null;
+  finance_note: string | null;
+  photos: unknown;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+type ColumnRow = {
+  column_name: string;
+};
+
+type SqlField = {
+  column: string;
+  value: unknown;
+  cast?: string;
+};
+
+let assetRegisterColumnsPromise: Promise<Set<string>> | null = null;
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function asNumber(value: unknown): number {
+function asNumber(value: unknown): number | null {
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
-function asBuffer(value: Buffer | Uint8Array | string): Buffer {
-  if (Buffer.isBuffer(value)) {
-    return value;
+function asStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((entry) => asText(entry)).filter(Boolean);
   }
 
-  if (value instanceof Uint8Array) {
-    return Buffer.from(value);
-  }
-
-  return Buffer.from(String(value ?? ''), 'binary');
-}
-
-function isPgErrorCode(error: unknown, code: string): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === code;
-}
-
-function parseBoolean(value: string, fallback = false): boolean {
-  const normalized = value.trim().toLowerCase();
-
-  if (!normalized) {
-    return fallback;
-  }
-
-  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
-    return true;
-  }
-
-  if (['0', 'false', 'no', 'off'].includes(normalized)) {
-    return false;
-  }
-
-  return fallback;
-}
-
-function firstDefined(...values: Array<string | undefined>): string {
-  for (const value of values) {
-    const normalized = asText(value);
-    if (normalized) {
-      return normalized;
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return Array.isArray(parsed) ? parsed.map((entry) => asText(entry)).filter(Boolean) : [];
+    } catch {
+      return [];
     }
   }
 
+  return [];
+}
+
+function normalizePhotoArray(value: unknown): string[] {
+  const seen = new Set<string>();
+  const entries = asStringArray(value).slice(0, 12);
+
+  return entries.filter((entry) => {
+    if (!entry) return false;
+    if (seen.has(entry)) return false;
+    seen.add(entry);
+    return true;
+  });
+}
+
+function normalizeKind(value: unknown): AssetRegisterItemKind {
+  return value === 'tractor' || value === 'manual' || value === 'property' ? value : 'manual';
+}
+
+function normalizeMethod(value: unknown): AssetRegisterItemMethod {
+  return value === 'aim4price' || value === 'market' || value === 'department' || value === 'manual'
+    ? value
+    : 'manual';
+}
+
+function mapDrive(value: unknown): DriveType | '' {
+  return value === '2wd' || value === '4wd' || value === 'tracks' ? value : '';
+}
+
+function mapTractorType(value: unknown): TractorType | '' {
+  return value === 'field' || value === 'orchard' ? value : '';
+}
+
+function mapCab(value: unknown): CabType | '' {
+  if (value === 'cab') return 'cab';
+  if (value === 'open-station' || value === 'open station') return 'open-station';
   return '';
 }
 
-function sanitizeFileName(value: string): string {
-  const normalized = value
-    .trim()
-    .replace(/[^a-zA-Z0-9._-]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-
-  return normalized || 'asset-photo';
+function buildIsoDate(value: unknown): string {
+  const text = asText(value);
+  return text || new Date().toISOString();
 }
 
-function buildAssetRegisterObjectKey(uploadId: string): string {
-  return `${ASSET_REGISTER_OBJECT_PREFIX}/${uploadId}`;
-}
-
-function getAssetRegisterStorageConfig() {
-  const bucket = firstDefined(
-    process.env.ASSET_STORAGE_S3_BUCKET,
-    process.env.BUCKET,
-    process.env.S3_BUCKET,
-  );
-
-  const endpoint = firstDefined(
-    process.env.ASSET_STORAGE_S3_ENDPOINT,
-    process.env.ENDPOINT,
-    process.env.S3_ENDPOINT,
-    process.env.AWS_ENDPOINT_URL_S3,
-  );
-
-  const region = firstDefined(
-    process.env.ASSET_STORAGE_S3_REGION,
-    process.env.REGION,
-    process.env.AWS_REGION,
-    process.env.AWS_DEFAULT_REGION,
-    'auto',
-  );
-
-  const accessKeyId = firstDefined(
-    process.env.ASSET_STORAGE_S3_ACCESS_KEY_ID,
-    process.env.ACCESS_KEY_ID,
-    process.env.AWS_ACCESS_KEY_ID,
-  );
-
-  const secretAccessKey = firstDefined(
-    process.env.ASSET_STORAGE_S3_SECRET_ACCESS_KEY,
-    process.env.SECRET_ACCESS_KEY,
-    process.env.AWS_SECRET_ACCESS_KEY,
-  );
-
-  const forcePathStyle = parseBoolean(
-    firstDefined(
-      process.env.ASSET_STORAGE_S3_FORCE_PATH_STYLE,
-      process.env.S3_FORCE_PATH_STYLE,
-    ),
-    false,
-  );
+function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
+  const selectedValueExVat = Math.round(asNumber(row.selected_value_ex_vat) ?? asNumber(row.value) ?? 0);
 
   return {
-    bucket,
-    endpoint,
-    region,
-    accessKeyId,
-    secretAccessKey,
-    forcePathStyle,
+    id: Number(row.id),
+    userId: asText(row.user_id),
+    valuationRunId: asNumber(row.valuation_run_id),
+    kind: normalizeKind(row.kind),
+    title: asText(row.title),
+    value: Math.round(asNumber(row.value) ?? selectedValueExVat),
+    selectedMethod: normalizeMethod(row.selected_method),
+    selectedValueExVat,
+    brandName: asText(row.brand_name),
+    modelName: asText(row.model_name),
+    drive: mapDrive(row.drive_type),
+    tractorType: mapTractorType(row.tractor_type),
+    cab: mapCab(row.cab_type),
+    powerKw: asNumber(row.power_kw),
+    yearModel: asNumber(row.year_model),
+    hours: asNumber(row.hours),
+    aim4priceValueExVat: asNumber(row.aim4price_value_ex_vat),
+    marketMidExVat: asNumber(row.market_mid_ex_vat),
+    departmentValueExVat: asNumber(row.department_value_ex_vat),
+    note: asText(row.note),
+    serialNumber: asText(row.serial_number),
+    isFinanced: Boolean(row.is_financed),
+    financeNote: asText(row.finance_note),
+    photos: normalizePhotoArray(row.photos),
+    createdAtIso: buildIsoDate(row.created_at),
+    updatedAtIso: buildIsoDate(row.updated_at ?? row.created_at),
   };
 }
 
-export function hasAssetRegisterObjectStorageConfig(): boolean {
-  const config = getAssetRegisterStorageConfig();
+async function getAssetRegisterColumns(): Promise<Set<string>> {
+  if (!assetRegisterColumnsPromise) {
+    const db = getDb();
 
-  return Boolean(
-    config.bucket &&
-      config.endpoint &&
-      config.region &&
-      config.accessKeyId &&
-      config.secretAccessKey,
-  );
-}
-
-function getAssetRegisterS3Client(): S3Client {
-  if (global.aim4priceAssetRegisterS3Client) {
-    return global.aim4priceAssetRegisterS3Client;
+    assetRegisterColumnsPromise = db
+      .query<ColumnRow>(
+        `
+          select column_name
+          from information_schema.columns
+          where table_name = 'asset_register_items'
+            and table_schema = any(current_schemas(false))
+        `,
+      )
+      .then((result) => new Set(result.rows.map((row) => row.column_name)));
   }
 
-  const config = getAssetRegisterStorageConfig();
+  const columns = await assetRegisterColumnsPromise;
 
-  if (!hasAssetRegisterObjectStorageConfig()) {
-    throw new Error(
-      'Asset object storage variables are missing. Add ASSET_STORAGE_S3_BUCKET, ASSET_STORAGE_S3_ENDPOINT, ASSET_STORAGE_S3_REGION, ASSET_STORAGE_S3_ACCESS_KEY_ID and ASSET_STORAGE_S3_SECRET_ACCESS_KEY to the app service.',
-    );
+  if (!columns.size) {
+    throw new Error('ASSET_REGISTER_TABLE_NOT_FOUND');
   }
 
-  global.aim4priceAssetRegisterS3Client = new S3Client({
-    region: config.region,
-    endpoint: config.endpoint,
-    forcePathStyle: config.forcePathStyle,
-    credentials: {
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-    },
-  });
-
-  return global.aim4priceAssetRegisterS3Client;
+  return columns;
 }
 
-function getAssetRegisterBucketName(): string {
-  const { bucket } = getAssetRegisterStorageConfig();
-
-  if (!bucket) {
-    throw new Error('Asset object storage bucket is missing. Add ASSET_STORAGE_S3_BUCKET to the app service.');
-  }
-
-  return bucket;
-}
-
-async function ensureLegacyAssetRegisterUploadsTable(): Promise<void> {
-  if (hasEnsuredLegacyAssetRegisterUploadsTable) {
-    return;
-  }
-
-  const db = getDb();
-
-  await db.query(`
-    create table if not exists asset_register_uploads (
-      id text primary key,
-      user_id text not null,
-      file_name text not null,
-      mime_type text not null,
-      size_bytes integer not null,
-      data bytea not null,
-      created_at timestamptz not null default now()
-    )
-  `);
-
-  await db.query(`
-    create index if not exists asset_register_uploads_user_id_created_at_idx
-      on asset_register_uploads (user_id, created_at desc)
-  `);
-
-  hasEnsuredLegacyAssetRegisterUploadsTable = true;
-}
-
-function mapLegacyRowToUpload(row: NormalizedLegacyUploadRow): AssetRegisterUpload {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    fileName: row.file_name,
-    contentType: row.content_type,
-    byteSize: asNumber(row.byte_size),
-    createdAtIso: row.created_at,
-  };
-}
-
-export function buildAssetRegisterUploadUrl(uploadId: string): string {
-  return `/api/asset-register/uploads/${encodeURIComponent(uploadId)}`;
-}
-
-export function extractAssetRegisterUploadIdFromUrl(value: string): string | null {
-  const raw = asText(value);
-
-  if (!raw) {
-    return null;
-  }
-
-  const pattern = /^\/api\/asset-register\/uploads\/([^/?#]+)$/;
-
-  try {
-    const url =
-      raw.startsWith('http://') || raw.startsWith('https://')
-        ? new URL(raw)
-        : new URL(raw, 'http://localhost');
-
-    const match = url.pathname.match(pattern);
-    return match ? decodeURIComponent(match[1]) : null;
-  } catch {
-    const match = raw.match(pattern);
-    return match ? decodeURIComponent(match[1]) : null;
-  }
-}
-
-export function listInternalAssetRegisterUploadIds(photos: string[]): string[] {
-  const seen = new Set<string>();
-
-  return photos
-    .map((photo) => extractAssetRegisterUploadIdFromUrl(photo))
-    .filter((uploadId): uploadId is string => Boolean(uploadId))
-    .filter((uploadId) => {
-      if (seen.has(uploadId)) {
-        return false;
-      }
-
-      seen.add(uploadId);
-      return true;
-    });
-}
-
-async function insertLegacyAssetRegisterUpload(input: {
-  id: string;
-  userId: string;
-  fileName: string;
-  contentType: string;
-  byteSize: number;
-  fileBytes: Buffer;
-}): Promise<void> {
-  await ensureLegacyAssetRegisterUploadsTable();
-
-  const db = getDb();
-
-  try {
-    await db.query(
-      `
-        insert into asset_register_uploads (
-          id,
-          user_id,
-          file_name,
-          mime_type,
-          size_bytes,
-          data
-        )
-        values ($1, $2, $3, $4, $5, $6)
-      `,
-      [input.id, input.userId, input.fileName, input.contentType, input.byteSize, input.fileBytes],
-    );
-    return;
-  } catch (error) {
-    if (!isPgErrorCode(error, '42703')) {
-      throw error;
+function resolveColumn(columns: Set<string>, ...candidates: string[]): string | null {
+  for (const candidate of candidates) {
+    if (columns.has(candidate)) {
+      return candidate;
     }
   }
+
+  return null;
+}
+
+function buildSelectList(columns: Set<string>): string {
+  const valueColumn = resolveColumn(columns, 'value', 'selected_value_ex_vat');
+  const selectedValueColumn = resolveColumn(columns, 'selected_value_ex_vat', 'value');
+  const selectedMethodColumn = resolveColumn(columns, 'selected_method');
+  const driveColumn = resolveColumn(columns, 'drive_type', 'drive');
+  const tractorTypeColumn = resolveColumn(columns, 'tractor_type');
+  const cabColumn = resolveColumn(columns, 'cab_type', 'cab');
+  const noteColumn = resolveColumn(columns, 'note', 'notes');
+  const photosColumn = resolveColumn(columns, 'photos');
+  const createdAtColumn = resolveColumn(columns, 'created_at');
+  const updatedAtColumn = resolveColumn(columns, 'updated_at', 'created_at');
+
+  const selectParts = [
+    'id',
+    columns.has('user_id') ? 'user_id' : `''::text as user_id`,
+    columns.has('valuation_run_id') ? 'valuation_run_id' : 'null::bigint as valuation_run_id',
+    columns.has('kind') ? 'kind' : `'manual'::text as kind`,
+    columns.has('title') ? 'title' : `''::text as title`,
+    valueColumn ? `${valueColumn} as value` : '0::numeric as value',
+    selectedMethodColumn ? `${selectedMethodColumn} as selected_method` : `'manual'::text as selected_method`,
+    selectedValueColumn ? `${selectedValueColumn} as selected_value_ex_vat` : '0::numeric as selected_value_ex_vat',
+    columns.has('brand_name') ? 'brand_name' : 'null::text as brand_name',
+    columns.has('model_name') ? 'model_name' : 'null::text as model_name',
+    driveColumn ? `${driveColumn} as drive_type` : 'null::text as drive_type',
+    tractorTypeColumn ? `${tractorTypeColumn} as tractor_type` : 'null::text as tractor_type',
+    cabColumn ? `${cabColumn} as cab_type` : 'null::text as cab_type',
+    columns.has('power_kw') ? 'power_kw' : 'null::numeric as power_kw',
+    columns.has('year_model') ? 'year_model' : 'null::integer as year_model',
+    columns.has('hours') ? 'hours' : 'null::integer as hours',
+    columns.has('aim4price_value_ex_vat') ? 'aim4price_value_ex_vat' : 'null::numeric as aim4price_value_ex_vat',
+    columns.has('market_mid_ex_vat') ? 'market_mid_ex_vat' : 'null::numeric as market_mid_ex_vat',
+    columns.has('department_value_ex_vat') ? 'department_value_ex_vat' : 'null::numeric as department_value_ex_vat',
+    noteColumn ? `${noteColumn} as note` : 'null::text as note',
+    columns.has('serial_number') ? 'serial_number' : 'null::text as serial_number',
+    columns.has('is_financed') ? 'is_financed' : 'false as is_financed',
+    columns.has('finance_note') ? 'finance_note' : 'null::text as finance_note',
+    photosColumn ? `${photosColumn} as photos` : `'[]'::jsonb as photos`,
+    createdAtColumn ? `${createdAtColumn} as created_at` : 'now() as created_at',
+    updatedAtColumn ? `${updatedAtColumn} as updated_at` : 'now() as updated_at',
+  ];
+
+  return selectParts.join(',\n        ');
+}
+
+function pushField(
+  fields: SqlField[],
+  columns: Set<string>,
+  candidates: string[],
+  value: unknown,
+  cast?: string,
+): void {
+  const column = resolveColumn(columns, ...candidates);
+
+  if (!column) {
+    return;
+  }
+
+  fields.push({ column, value, cast });
+}
+
+function buildInsertQuery(columns: Set<string>, fields: SqlField[]): { sql: string; values: unknown[] } {
+  if (!fields.length) {
+    throw new Error('ASSET_CREATE_FAILED');
+  }
+
+  const values: unknown[] = [];
+  const placeholders = fields.map((field, index) => {
+    values.push(field.value);
+    return `$${index + 1}${field.cast ?? ''}`;
+  });
+
+  return {
+    sql: `
+      insert into asset_register_items (
+        ${fields.map((field) => field.column).join(',\n        ')}
+      )
+      values (
+        ${placeholders.join(', ')}
+      )
+      returning
+        ${buildSelectList(columns)}
+    `,
+    values,
+  };
+}
+
+function buildUpdateSetClause(fields: SqlField[]): { clause: string; values: unknown[] } {
+  const values: unknown[] = [];
+  const clauses = fields.map((field, index) => {
+    values.push(field.value);
+    return `${field.column} = $${index + 3}${field.cast ?? ''}`;
+  });
+
+  return {
+    clause: clauses.join(',\n        '),
+    values,
+  };
+}
+
+export async function getAssetRegisterItemById(userId: string, assetId: number): Promise<AssetRegisterItem | null> {
+  const db = getDb();
+  const columns = await getAssetRegisterColumns();
+  const result = await db.query<AssetRegisterRow>(
+    `
+      select
+        ${buildSelectList(columns)}
+      from asset_register_items
+      where user_id = $1 and id = $2
+      limit 1
+    `,
+    [userId, assetId],
+  );
+
+  const row = result.rows[0];
+  return row ? mapAssetRegisterRow(row) : null;
+}
+
+export async function listAssetRegisterItems(userId: string): Promise<AssetRegisterItem[]> {
+  const db = getDb();
+  const columns = await getAssetRegisterColumns();
+
+  const orderColumn = resolveColumn(columns, 'updated_at', 'created_at', 'id') ?? 'id';
+  const result = await db.query<AssetRegisterRow>(
+    `
+      select
+        ${buildSelectList(columns)}
+      from asset_register_items
+      where user_id = $1
+      order by ${orderColumn} desc, id desc
+    `,
+    [userId],
+  );
+
+  return result.rows.map(mapAssetRegisterRow);
+}
+
+export async function createManualAssetRegisterItem(
+  userId: string,
+  input: CreateManualAssetInput,
+): Promise<AssetRegisterItem> {
+  const db = getDb();
+  const columns = await getAssetRegisterColumns();
+  const now = new Date();
+  const nextValue = Math.round(Number(input.value) || 0);
+  const fields: SqlField[] = [];
+
+  pushField(fields, columns, ['user_id'], userId);
+  pushField(fields, columns, ['valuation_run_id'], null);
+  pushField(fields, columns, ['kind'], normalizeKind(input.kind));
+  pushField(fields, columns, ['title'], asText(input.title));
+  pushField(fields, columns, ['value'], nextValue);
+  pushField(fields, columns, ['selected_method'], 'manual');
+  pushField(fields, columns, ['selected_value_ex_vat'], nextValue);
+  pushField(fields, columns, ['note', 'notes'], asText(input.note) || null);
+  pushField(fields, columns, ['serial_number'], asText(input.serialNumber) || null);
+  pushField(fields, columns, ['is_financed'], Boolean(input.isFinanced));
+  pushField(fields, columns, ['finance_note'], asText(input.financeNote) || null);
+  pushField(fields, columns, ['photos'], JSON.stringify(normalizePhotoArray(input.photos ?? [])), '::jsonb');
+  pushField(fields, columns, ['created_at'], now);
+  pushField(fields, columns, ['updated_at'], now);
+
+  const query = buildInsertQuery(columns, fields);
+  const result = await db.query<AssetRegisterRow>(query.sql, query.values);
+  const row = result.rows[0];
+
+  if (!row) {
+    throw new Error('ASSET_CREATE_FAILED');
+  }
+
+  return mapAssetRegisterRow(row);
+}
+
+export async function updateAssetRegisterItem(
+  userId: string,
+  input: UpdateAssetRegisterItemInput,
+): Promise<AssetRegisterItem> {
+  const db = getDb();
+  const columns = await getAssetRegisterColumns();
+  const existing = await getAssetRegisterItemById(userId, input.assetId);
+
+  if (!existing) {
+    throw new Error('ASSET_NOT_FOUND');
+  }
+
+  const now = new Date();
+  const nextKind = existing.valuationRunId ? existing.kind : normalizeKind(input.kind);
+  const nextValue = Math.round(Number(input.value) || 0);
+  const fields: SqlField[] = [];
+
+  pushField(fields, columns, ['kind'], nextKind);
+  pushField(fields, columns, ['title'], asText(input.title));
+  pushField(fields, columns, ['value'], nextValue);
+  pushField(fields, columns, ['selected_value_ex_vat'], nextValue);
+  pushField(fields, columns, ['note', 'notes'], asText(input.note) || null);
+  pushField(fields, columns, ['serial_number'], asText(input.serialNumber) || null);
+  pushField(fields, columns, ['is_financed'], Boolean(input.isFinanced));
+  pushField(fields, columns, ['finance_note'], asText(input.financeNote) || null);
+  pushField(fields, columns, ['photos'], JSON.stringify(normalizePhotoArray(input.photos ?? [])), '::jsonb');
+  pushField(fields, columns, ['updated_at'], now);
+
+  if (!fields.length) {
+    return existing;
+  }
+
+  const update = buildUpdateSetClause(fields);
+  const result = await db.query<AssetRegisterRow>(
+    `
+      update asset_register_items
+      set
+        ${update.clause}
+      where user_id = $1 and id = $2
+      returning
+        ${buildSelectList(columns)}
+    `,
+    [userId, input.assetId, ...update.values],
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    throw new Error('ASSET_UPDATE_FAILED');
+  }
+
+  return mapAssetRegisterRow(row);
+}
+
+export async function deleteAssetRegisterItem(userId: string, assetId: number): Promise<void> {
+  const db = getDb();
 
   await db.query(
     `
-      insert into asset_register_uploads (
-        id,
-        user_id,
-        file_name,
-        content_type,
-        byte_size,
-        file_bytes
-      )
-      values ($1, $2, $3, $4, $5, $6)
+      delete from asset_register_items
+      where user_id = $1 and id = $2
     `,
-    [input.id, input.userId, input.fileName, input.contentType, input.byteSize, input.fileBytes],
+    [userId, assetId],
   );
 }
 
-async function createAssetRegisterUploadFromBuffer(input: {
+export async function createAssetRegisterItemFromValuation(input: {
   userId: string;
-  fileName: string;
-  contentType: string;
-  fileBytes: Buffer;
-}): Promise<AssetRegisterUpload> {
-  const id = randomUUID();
-  const safeFileName = sanitizeFileName(input.fileName || `${id}.bin`);
-  const byteSize = input.fileBytes.byteLength;
-
-  if (hasAssetRegisterObjectStorageConfig()) {
-    const client = getAssetRegisterS3Client();
-    const bucket = getAssetRegisterBucketName();
-
-    await client.send(
-      new PutObjectCommand({
-        Bucket: bucket,
-        Key: buildAssetRegisterObjectKey(id),
-        Body: input.fileBytes,
-        ContentType: input.contentType,
-        ContentDisposition: `inline; filename="${safeFileName}"`,
-        CacheControl: 'public, max-age=31536000, immutable',
-        Metadata: {
-          userId: input.userId.slice(0, 128),
-          originalFileName: safeFileName.slice(0, 240),
-        },
-      }),
-    );
-
-    return {
-      id,
-      userId: input.userId,
-      fileName: safeFileName,
-      contentType: input.contentType,
-      byteSize,
-      createdAtIso: new Date().toISOString(),
-    };
-  }
-
-  await insertLegacyAssetRegisterUpload({
-    id,
-    userId: input.userId,
-    fileName: safeFileName,
-    contentType: input.contentType,
-    byteSize,
-    fileBytes: input.fileBytes,
-  });
-
-  return {
-    id,
-    userId: input.userId,
-    fileName: safeFileName,
-    contentType: input.contentType,
-    byteSize,
-    createdAtIso: new Date().toISOString(),
-  };
-}
-
-export async function createAssetRegisterUpload(input: {
-  userId: string;
-  file: File;
-}): Promise<AssetRegisterUpload> {
-  const contentType = asText(input.file.type).toLowerCase();
-  const fileName = asText(input.file.name) || 'asset-photo';
-  const fileBytes = Buffer.from(await input.file.arrayBuffer());
-
-  return createAssetRegisterUploadFromBuffer({
-    userId: input.userId,
-    fileName,
-    contentType,
-    fileBytes,
-  });
-}
-
-export async function saveAssetRegisterUploads(
-  userId: string,
-  uploads: AssetRegisterUploadInput[],
-): Promise<string[]> {
-  if (!uploads.length) {
-    return [];
-  }
-
-  const urls: string[] = [];
-
-  for (const upload of uploads.slice(0, MAX_ASSET_REGISTER_UPLOADS)) {
-    const saved = await createAssetRegisterUploadFromBuffer({
-      userId,
-      fileName: upload.fileName,
-      contentType: upload.mimeType,
-      fileBytes: upload.data,
-    });
-
-    urls.push(buildAssetRegisterUploadUrl(saved.id));
-  }
-
-  return urls;
-}
-
-export async function createAssetRegisterSignedGetUrl(uploadId: string): Promise<string | null> {
-  if (!uploadId || !hasAssetRegisterObjectStorageConfig()) {
-    return null;
-  }
-
-  const client = getAssetRegisterS3Client();
-  const bucket = getAssetRegisterBucketName();
-
-  try {
-    return await getSignedUrl(
-      client,
-      new GetObjectCommand({
-        Bucket: bucket,
-        Key: buildAssetRegisterObjectKey(uploadId),
-      }),
-      { expiresIn: ASSET_REGISTER_SIGNED_GET_SECONDS },
-    );
-  } catch (error) {
-    if (error instanceof Error && error.name === 'NoSuchKey') {
-      return null;
-    }
-
-    throw error;
-  }
-}
-
-async function deleteAssetRegisterObject(uploadId: string): Promise<void> {
-  if (!uploadId || !hasAssetRegisterObjectStorageConfig()) {
-    return;
-  }
-
-  const client = getAssetRegisterS3Client();
-  const bucket = getAssetRegisterBucketName();
-
-  try {
-    await client.send(
-      new DeleteObjectCommand({
-        Bucket: bucket,
-        Key: buildAssetRegisterObjectKey(uploadId),
-      }),
-    );
-  } catch (error) {
-    if (error instanceof Error && error.name === 'NoSuchKey') {
-      return;
-    }
-
-    throw error;
-  }
-}
-
-async function getLegacyAssetRegisterUploadById(uploadId: string): Promise<NormalizedLegacyUploadRow | null> {
+  valuationRunId?: number | null;
+  result: Result;
+  selectedMethod: MethodKey;
+  selectedValueExVat: number;
+  year: number;
+  hours: number;
+  note?: string | null;
+}): Promise<AssetRegisterItem> {
   const db = getDb();
+  const columns = await getAssetRegisterColumns();
+  const result = input.result;
+  const model = result.model;
+  const title = `${model.brandName} ${model.modelName}`.trim();
+  const now = new Date();
+  const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const fields: SqlField[] = [];
 
-  try {
-    const result = await db.query<NormalizedLegacyUploadRow>(
-      `
-        select
-          id,
-          user_id,
-          file_name,
-          mime_type as content_type,
-          size_bytes as byte_size,
-          data as file_bytes,
-          created_at
-        from asset_register_uploads
-        where id = $1
-        limit 1
-      `,
-      [uploadId],
-    );
+  pushField(fields, columns, ['user_id'], input.userId);
+  pushField(fields, columns, ['valuation_run_id'], input.valuationRunId ?? null);
+  pushField(fields, columns, ['kind'], 'tractor');
+  pushField(fields, columns, ['title'], title);
+  pushField(fields, columns, ['value'], selectedValueExVat);
+  pushField(fields, columns, ['selected_method'], input.selectedMethod);
+  pushField(fields, columns, ['selected_value_ex_vat'], selectedValueExVat);
+  pushField(fields, columns, ['brand_name'], model.brandName);
+  pushField(fields, columns, ['model_name'], model.modelName);
+  pushField(fields, columns, ['drive_type', 'drive'], model.drive);
+  pushField(fields, columns, ['tractor_type'], model.tractorType);
+  pushField(fields, columns, ['cab_type', 'cab'], model.cab);
+  pushField(fields, columns, ['power_kw'], model.powerKw);
+  pushField(fields, columns, ['year_model'], Math.round(input.year));
+  pushField(fields, columns, ['hours'], Math.max(0, Math.round(input.hours)));
+  pushField(fields, columns, ['aim4price_value_ex_vat'], toRoundedNumber(result.aim4priceValueExVat));
+  pushField(fields, columns, ['market_mid_ex_vat'], toRoundedNumber(result.marketMid));
+  pushField(fields, columns, ['department_value_ex_vat'], toRoundedNumber(result.departmentValueExVat));
+  pushField(fields, columns, ['note', 'notes'], asText(input.note) || null);
+  pushField(fields, columns, ['photos'], JSON.stringify([]), '::jsonb');
+  pushField(fields, columns, ['created_at'], now);
+  pushField(fields, columns, ['updated_at'], now);
 
-    return result.rows[0] ?? null;
-  } catch (error) {
-    if (isPgErrorCode(error, '42P01')) {
-      return null;
-    }
+  const query = buildInsertQuery(columns, fields);
+  const inserted = await db.query<AssetRegisterRow>(query.sql, query.values);
+  const row = inserted.rows[0];
 
-    if (!isPgErrorCode(error, '42703')) {
-      throw error;
-    }
+  if (!row) {
+    throw new Error('ASSET_CREATE_FAILED');
   }
 
-  const dbFallback = getDb();
-
-  try {
-    const result = await dbFallback.query<NormalizedLegacyUploadRow>(
-      `
-        select
-          id,
-          user_id,
-          file_name,
-          content_type,
-          byte_size,
-          file_bytes,
-          created_at
-        from asset_register_uploads
-        where id = $1
-        limit 1
-      `,
-      [uploadId],
-    );
-
-    return result.rows[0] ?? null;
-  } catch (error) {
-    if (isPgErrorCode(error, '42P01')) {
-      return null;
-    }
-
-    throw error;
-  }
+  return mapAssetRegisterRow(row);
 }
 
-async function deleteLegacyAssetRegisterUploadById(userId: string, uploadId: string): Promise<void> {
-  const db = getDb();
-
-  try {
-    await db.query(
-      `
-        delete from asset_register_uploads
-        where id = $1 and user_id = $2
-      `,
-      [uploadId, userId],
-    );
-  } catch (error) {
-    if (isPgErrorCode(error, '42P01')) {
-      return;
-    }
-
-    throw error;
-  }
-}
-
-export async function getLegacyAssetRegisterUploadResponse(uploadId: string): Promise<{
-  data: Buffer;
-  mimeType: string;
-  sizeBytes: number;
-  fileName: string;
-} | null> {
-  const legacyUpload = await getLegacyAssetRegisterUploadById(uploadId);
-
-  if (!legacyUpload) {
-    return null;
-  }
-
-  return {
-    data: asBuffer(legacyUpload.file_bytes),
-    mimeType: legacyUpload.content_type,
-    sizeBytes: asNumber(legacyUpload.byte_size),
-    fileName: legacyUpload.file_name,
-  };
-}
-
-export async function deleteUnusedAssetRegisterUploads(
-  userId: string,
-  photoUrls: string[],
-  excludeAssetId?: number,
-): Promise<void> {
-  const uploadIds = listInternalAssetRegisterUploadIds(photoUrls);
-
-  if (!uploadIds.length) {
-    return;
-  }
-
-  const db = getDb();
-
-  for (const uploadId of uploadIds) {
-    const usage = await db.query<{ id: string }>(
-      `
-        select id
-        from asset_register_items
-        where user_id = $1
-          and ($2::integer is null or id <> $2)
-          and photos ? $3
-        limit 1
-      `,
-      [userId, excludeAssetId ?? null, buildAssetRegisterUploadUrl(uploadId)],
-    );
-
-    if (usage.rowCount) {
-      continue;
-    }
-
-    await deleteAssetRegisterObject(uploadId);
-    await deleteLegacyAssetRegisterUploadById(userId, uploadId);
-  }
-}
-
-export async function deleteUnreferencedAssetRegisterUploads(input: {
-  userId: string;
-  uploadIds: string[];
-  excludeAssetId?: number | null;
-}): Promise<void> {
-  if (!input.uploadIds.length) {
-    return;
-  }
-
-  await deleteUnusedAssetRegisterUploads(
-    input.userId,
-    input.uploadIds.map((uploadId) => buildAssetRegisterUploadUrl(uploadId)),
-    input.excludeAssetId ?? undefined,
-  );
-}
-
-export async function getAssetRegisterUploadById(uploadId: string): Promise<AssetRegisterUpload | null> {
-  const legacyUpload = await getLegacyAssetRegisterUploadById(uploadId);
-  return legacyUpload ? mapLegacyRowToUpload(legacyUpload) : null;
+function toRoundedNumber(value: number | null): number | null {
+  return value === null || !Number.isFinite(value) ? null : Math.round(value);
 }
