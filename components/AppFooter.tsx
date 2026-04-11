@@ -23,6 +23,7 @@ export default function AppFooter() {
               <Link href="/valuation">Valuation</Link>
               <Link href="/asset-register">Asset Register</Link>
               <Link href="/marketplace">Marketplace</Link>
+              <Link href="/account">Account</Link>
             </div>
 
             <div className={styles.linkColumn}>
@@ -37,7 +38,7 @@ export default function AppFooter() {
       <div className={styles.metaRow}>
         <div className={styles.shell}>
           <span>© {year} Aim4price</span>
-          <span>Built for clearer machinery decisions.</span>
+          <span>Indicative valuations should be confirmed for formal insurance, finance, or transactional use.</span>
         </div>
       </div>
     </footer>
