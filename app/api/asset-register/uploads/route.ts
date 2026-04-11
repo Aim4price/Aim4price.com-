@@ -4,7 +4,6 @@ import {
   ALLOWED_ASSET_REGISTER_IMAGE_TYPES,
   MAX_ASSET_REGISTER_PHOTOS,
   MAX_ASSET_REGISTER_UPLOAD_BYTES,
-  buildAssetRegisterUploadUrl,
   createAssetRegisterUpload,
 } from '../../../../lib/asset-register-uploads';
 
@@ -89,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     uploads.push({
       uploadId: saved.id,
-      url: buildAssetRegisterUploadUrl(saved.id),
+      url: saved.url,
       fileName: saved.fileName,
       contentType: saved.contentType,
       byteSize: saved.byteSize,
