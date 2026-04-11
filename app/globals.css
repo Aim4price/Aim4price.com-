@@ -35,7 +35,7 @@ html {
 }
 
 body {
-  font-family: var(--font-body), Inter, ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
   background: linear-gradient(180deg, var(--surface) 0%, var(--surface-soft) 100%);
   color: var(--text-strong);
   -webkit-font-smoothing: antialiased;
@@ -96,7 +96,7 @@ h4,
 .statementTitle,
 .ctaTitle,
 .footerHeading {
-  font-family: var(--font-heading), Montserrat, Inter, sans-serif;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
 }
 
 :focus-visible {
