@@ -8,9 +8,11 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { getDb } from './db';
 
-export const MAX_ASSET_REGISTER_UPLOADS = 12;
+export const MAX_ASSET_REGISTER_PHOTOS = 12;
+export const MAX_ASSET_REGISTER_UPLOADS = MAX_ASSET_REGISTER_PHOTOS;
 export const MAX_ASSET_REGISTER_UPLOAD_BYTES = 5 * 1024 * 1024;
 export const ALLOWED_ASSET_REGISTER_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
 const ASSET_REGISTER_OBJECT_PREFIX = 'asset-register';
 const ASSET_REGISTER_SIGNED_GET_SECONDS = 60 * 10;
 
@@ -21,30 +23,31 @@ export type AssetRegisterUploadInput = {
   data: Buffer;
 };
 
-type LegacyAssetRegisterUploadRow = {
-  id: string;
-  user_id: string;
-  file_name: string;
-  mime_type: string;
-  size_bytes: string | number;
-  data: Buffer | Uint8Array | string;
-  created_at: string;
-};
-
-type LegacyAssetRegisterUpload = {
+export type AssetRegisterUpload = {
   id: string;
   userId: string;
   fileName: string;
-  mimeType: string;
-  sizeBytes: number;
-  data: Buffer;
+  contentType: string;
+  byteSize: number;
   createdAtIso: string;
+};
+
+type NormalizedLegacyUploadRow = {
+  id: string;
+  user_id: string;
+  file_name: string;
+  content_type: string;
+  byte_size: string | number;
+  file_bytes: Buffer | Uint8Array | string;
+  created_at: string;
 };
 
 declare global {
   // eslint-disable-next-line no-var
   var aim4priceAssetRegisterS3Client: S3Client | undefined;
 }
+
+let hasEnsuredLegacyAssetRegisterUploadsTable = false;
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -60,11 +63,15 @@ function asBuffer(value: Buffer | Uint8Array | string): Buffer {
     return value;
   }
 
-  if (typeof value !== 'string') {
+  if (value instanceof Uint8Array) {
     return Buffer.from(value);
   }
 
   return Buffer.from(String(value ?? ''), 'binary');
+}
+
+function isPgErrorCode(error: unknown, code: string): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === code;
 }
 
 function parseBoolean(value: string, fallback = false): boolean {
@@ -116,12 +123,14 @@ function getAssetRegisterStorageConfig() {
     process.env.BUCKET,
     process.env.S3_BUCKET,
   );
+
   const endpoint = firstDefined(
     process.env.ASSET_STORAGE_S3_ENDPOINT,
     process.env.ENDPOINT,
     process.env.S3_ENDPOINT,
     process.env.AWS_ENDPOINT_URL_S3,
   );
+
   const region = firstDefined(
     process.env.ASSET_STORAGE_S3_REGION,
     process.env.REGION,
@@ -129,16 +138,19 @@ function getAssetRegisterStorageConfig() {
     process.env.AWS_DEFAULT_REGION,
     'auto',
   );
+
   const accessKeyId = firstDefined(
     process.env.ASSET_STORAGE_S3_ACCESS_KEY_ID,
     process.env.ACCESS_KEY_ID,
     process.env.AWS_ACCESS_KEY_ID,
   );
+
   const secretAccessKey = firstDefined(
     process.env.ASSET_STORAGE_S3_SECRET_ACCESS_KEY,
     process.env.SECRET_ACCESS_KEY,
     process.env.AWS_SECRET_ACCESS_KEY,
   );
+
   const forcePathStyle = parseBoolean(
     firstDefined(
       process.env.ASSET_STORAGE_S3_FORCE_PATH_STYLE,
@@ -160,7 +172,13 @@ function getAssetRegisterStorageConfig() {
 export function hasAssetRegisterObjectStorageConfig(): boolean {
   const config = getAssetRegisterStorageConfig();
 
-  return Boolean(config.bucket && config.endpoint && config.region && config.accessKeyId && config.secretAccessKey);
+  return Boolean(
+    config.bucket &&
+      config.endpoint &&
+      config.region &&
+      config.accessKeyId &&
+      config.secretAccessKey,
+  );
 }
 
 function getAssetRegisterS3Client(): S3Client {
@@ -193,20 +211,215 @@ function getAssetRegisterBucketName(): string {
   const { bucket } = getAssetRegisterStorageConfig();
 
   if (!bucket) {
-    throw new Error(
-      'Asset object storage bucket is missing. Add ASSET_STORAGE_S3_BUCKET to the app service.',
-    );
+    throw new Error('Asset object storage bucket is missing. Add ASSET_STORAGE_S3_BUCKET to the app service.');
   }
 
   return bucket;
 }
 
-export function extractAssetRegisterUploadIdFromUrl(value: string): string | null {
-  const match = String(value ?? '')
-    .trim()
-    .match(/\/api\/asset-register\/uploads\/([a-zA-Z0-9-]+)$/);
+async function ensureLegacyAssetRegisterUploadsTable(): Promise<void> {
+  if (hasEnsuredLegacyAssetRegisterUploadsTable) {
+    return;
+  }
 
-  return match?.[1] ?? null;
+  const db = getDb();
+
+  await db.query(`
+    create table if not exists asset_register_uploads (
+      id text primary key,
+      user_id text not null,
+      file_name text not null,
+      mime_type text not null,
+      size_bytes integer not null,
+      data bytea not null,
+      created_at timestamptz not null default now()
+    )
+  `);
+
+  await db.query(`
+    create index if not exists asset_register_uploads_user_id_created_at_idx
+      on asset_register_uploads (user_id, created_at desc)
+  `);
+
+  hasEnsuredLegacyAssetRegisterUploadsTable = true;
+}
+
+function mapLegacyRowToUpload(row: NormalizedLegacyUploadRow): AssetRegisterUpload {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    fileName: row.file_name,
+    contentType: row.content_type,
+    byteSize: asNumber(row.byte_size),
+    createdAtIso: row.created_at,
+  };
+}
+
+export function buildAssetRegisterUploadUrl(uploadId: string): string {
+  return `/api/asset-register/uploads/${encodeURIComponent(uploadId)}`;
+}
+
+export function extractAssetRegisterUploadIdFromUrl(value: string): string | null {
+  const raw = asText(value);
+
+  if (!raw) {
+    return null;
+  }
+
+  const pattern = /^\/api\/asset-register\/uploads\/([^/?#]+)$/;
+
+  try {
+    const url =
+      raw.startsWith('http://') || raw.startsWith('https://')
+        ? new URL(raw)
+        : new URL(raw, 'http://localhost');
+
+    const match = url.pathname.match(pattern);
+    return match ? decodeURIComponent(match[1]) : null;
+  } catch {
+    const match = raw.match(pattern);
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+}
+
+export function listInternalAssetRegisterUploadIds(photos: string[]): string[] {
+  const seen = new Set<string>();
+
+  return photos
+    .map((photo) => extractAssetRegisterUploadIdFromUrl(photo))
+    .filter((uploadId): uploadId is string => Boolean(uploadId))
+    .filter((uploadId) => {
+      if (seen.has(uploadId)) {
+        return false;
+      }
+
+      seen.add(uploadId);
+      return true;
+    });
+}
+
+async function insertLegacyAssetRegisterUpload(input: {
+  id: string;
+  userId: string;
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+  fileBytes: Buffer;
+}): Promise<void> {
+  await ensureLegacyAssetRegisterUploadsTable();
+
+  const db = getDb();
+
+  try {
+    await db.query(
+      `
+        insert into asset_register_uploads (
+          id,
+          user_id,
+          file_name,
+          mime_type,
+          size_bytes,
+          data
+        )
+        values ($1, $2, $3, $4, $5, $6)
+      `,
+      [input.id, input.userId, input.fileName, input.contentType, input.byteSize, input.fileBytes],
+    );
+    return;
+  } catch (error) {
+    if (!isPgErrorCode(error, '42703')) {
+      throw error;
+    }
+  }
+
+  await db.query(
+    `
+      insert into asset_register_uploads (
+        id,
+        user_id,
+        file_name,
+        content_type,
+        byte_size,
+        file_bytes
+      )
+      values ($1, $2, $3, $4, $5, $6)
+    `,
+    [input.id, input.userId, input.fileName, input.contentType, input.byteSize, input.fileBytes],
+  );
+}
+
+async function createAssetRegisterUploadFromBuffer(input: {
+  userId: string;
+  fileName: string;
+  contentType: string;
+  fileBytes: Buffer;
+}): Promise<AssetRegisterUpload> {
+  const id = randomUUID();
+  const safeFileName = sanitizeFileName(input.fileName || `${id}.bin`);
+  const byteSize = input.fileBytes.byteLength;
+
+  if (hasAssetRegisterObjectStorageConfig()) {
+    const client = getAssetRegisterS3Client();
+    const bucket = getAssetRegisterBucketName();
+
+    await client.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: buildAssetRegisterObjectKey(id),
+        Body: input.fileBytes,
+        ContentType: input.contentType,
+        ContentDisposition: `inline; filename="${safeFileName}"`,
+        CacheControl: 'public, max-age=31536000, immutable',
+        Metadata: {
+          userId: input.userId.slice(0, 128),
+          originalFileName: safeFileName.slice(0, 240),
+        },
+      }),
+    );
+
+    return {
+      id,
+      userId: input.userId,
+      fileName: safeFileName,
+      contentType: input.contentType,
+      byteSize,
+      createdAtIso: new Date().toISOString(),
+    };
+  }
+
+  await insertLegacyAssetRegisterUpload({
+    id,
+    userId: input.userId,
+    fileName: safeFileName,
+    contentType: input.contentType,
+    byteSize,
+    fileBytes: input.fileBytes,
+  });
+
+  return {
+    id,
+    userId: input.userId,
+    fileName: safeFileName,
+    contentType: input.contentType,
+    byteSize,
+    createdAtIso: new Date().toISOString(),
+  };
+}
+
+export async function createAssetRegisterUpload(input: {
+  userId: string;
+  file: File;
+}): Promise<AssetRegisterUpload> {
+  const contentType = asText(input.file.type).toLowerCase();
+  const fileName = asText(input.file.name) || 'asset-photo';
+  const fileBytes = Buffer.from(await input.file.arrayBuffer());
+
+  return createAssetRegisterUploadFromBuffer({
+    userId: input.userId,
+    fileName,
+    contentType,
+    fileBytes,
+  });
 }
 
 export async function saveAssetRegisterUploads(
@@ -217,31 +430,17 @@ export async function saveAssetRegisterUploads(
     return [];
   }
 
-  const client = getAssetRegisterS3Client();
-  const bucket = getAssetRegisterBucketName();
   const urls: string[] = [];
 
   for (const upload of uploads.slice(0, MAX_ASSET_REGISTER_UPLOADS)) {
-    const uploadId = randomUUID();
-    const objectKey = buildAssetRegisterObjectKey(uploadId);
-    const safeFileName = sanitizeFileName(upload.fileName);
+    const saved = await createAssetRegisterUploadFromBuffer({
+      userId,
+      fileName: upload.fileName,
+      contentType: upload.mimeType,
+      fileBytes: upload.data,
+    });
 
-    await client.send(
-      new PutObjectCommand({
-        Bucket: bucket,
-        Key: objectKey,
-        Body: upload.data,
-        ContentType: upload.mimeType,
-        ContentDisposition: `inline; filename="${safeFileName}"`,
-        CacheControl: 'public, max-age=31536000, immutable',
-        Metadata: {
-          userId: userId.slice(0, 128),
-          originalFileName: safeFileName.slice(0, 240),
-        },
-      }),
-    );
-
-    urls.push(`/api/asset-register/uploads/${uploadId}`);
+    urls.push(buildAssetRegisterUploadUrl(saved.id));
   }
 
   return urls;
@@ -254,14 +453,13 @@ export async function createAssetRegisterSignedGetUrl(uploadId: string): Promise
 
   const client = getAssetRegisterS3Client();
   const bucket = getAssetRegisterBucketName();
-  const objectKey = buildAssetRegisterObjectKey(uploadId);
 
   try {
     return await getSignedUrl(
       client,
       new GetObjectCommand({
         Bucket: bucket,
-        Key: objectKey,
+        Key: buildAssetRegisterObjectKey(uploadId),
       }),
       { expiresIn: ASSET_REGISTER_SIGNED_GET_SECONDS },
     );
@@ -298,31 +496,19 @@ async function deleteAssetRegisterObject(uploadId: string): Promise<void> {
   }
 }
 
-function mapLegacyUploadRow(row: LegacyAssetRegisterUploadRow): LegacyAssetRegisterUpload {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    fileName: row.file_name,
-    mimeType: row.mime_type,
-    sizeBytes: asNumber(row.size_bytes),
-    data: asBuffer(row.data),
-    createdAtIso: row.created_at,
-  };
-}
-
-async function getLegacyAssetRegisterUploadById(uploadId: string): Promise<LegacyAssetRegisterUpload | null> {
+async function getLegacyAssetRegisterUploadById(uploadId: string): Promise<NormalizedLegacyUploadRow | null> {
   const db = getDb();
 
   try {
-    const result = await db.query<LegacyAssetRegisterUploadRow>(
+    const result = await db.query<NormalizedLegacyUploadRow>(
       `
         select
           id,
           user_id,
           file_name,
-          mime_type,
-          size_bytes,
-          data,
+          mime_type as content_type,
+          size_bytes as byte_size,
+          data as file_bytes,
           created_at
         from asset_register_uploads
         where id = $1
@@ -331,10 +517,40 @@ async function getLegacyAssetRegisterUploadById(uploadId: string): Promise<Legac
       [uploadId],
     );
 
-    const row = result.rows[0];
-    return row ? mapLegacyUploadRow(row) : null;
+    return result.rows[0] ?? null;
   } catch (error) {
-    if (typeof error === 'object' && error && 'code' in error && error.code === '42P01') {
+    if (isPgErrorCode(error, '42P01')) {
+      return null;
+    }
+
+    if (!isPgErrorCode(error, '42703')) {
+      throw error;
+    }
+  }
+
+  const dbFallback = getDb();
+
+  try {
+    const result = await dbFallback.query<NormalizedLegacyUploadRow>(
+      `
+        select
+          id,
+          user_id,
+          file_name,
+          content_type,
+          byte_size,
+          file_bytes,
+          created_at
+        from asset_register_uploads
+        where id = $1
+        limit 1
+      `,
+      [uploadId],
+    );
+
+    return result.rows[0] ?? null;
+  } catch (error) {
+    if (isPgErrorCode(error, '42P01')) {
       return null;
     }
 
@@ -354,7 +570,7 @@ async function deleteLegacyAssetRegisterUploadById(userId: string, uploadId: str
       [uploadId, userId],
     );
   } catch (error) {
-    if (typeof error === 'object' && error && 'code' in error && error.code === '42P01') {
+    if (isPgErrorCode(error, '42P01')) {
       return;
     }
 
@@ -375,10 +591,10 @@ export async function getLegacyAssetRegisterUploadResponse(uploadId: string): Pr
   }
 
   return {
-    data: legacyUpload.data,
-    mimeType: legacyUpload.mimeType,
-    sizeBytes: legacyUpload.sizeBytes,
-    fileName: legacyUpload.fileName,
+    data: asBuffer(legacyUpload.file_bytes),
+    mimeType: legacyUpload.content_type,
+    sizeBytes: asNumber(legacyUpload.byte_size),
+    fileName: legacyUpload.file_name,
   };
 }
 
@@ -387,13 +603,7 @@ export async function deleteUnusedAssetRegisterUploads(
   photoUrls: string[],
   excludeAssetId?: number,
 ): Promise<void> {
-  const uploadIds = Array.from(
-    new Set(
-      photoUrls
-        .map((photoUrl) => extractAssetRegisterUploadIdFromUrl(photoUrl))
-        .filter((value): value is string => Boolean(value)),
-    ),
-  );
+  const uploadIds = listInternalAssetRegisterUploadIds(photoUrls);
 
   if (!uploadIds.length) {
     return;
@@ -411,7 +621,7 @@ export async function deleteUnusedAssetRegisterUploads(
           and photos ? $3
         limit 1
       `,
-      [userId, excludeAssetId ?? null, `/api/asset-register/uploads/${uploadId}`],
+      [userId, excludeAssetId ?? null, buildAssetRegisterUploadUrl(uploadId)],
     );
 
     if (usage.rowCount) {
@@ -421,4 +631,25 @@ export async function deleteUnusedAssetRegisterUploads(
     await deleteAssetRegisterObject(uploadId);
     await deleteLegacyAssetRegisterUploadById(userId, uploadId);
   }
+}
+
+export async function deleteUnreferencedAssetRegisterUploads(input: {
+  userId: string;
+  uploadIds: string[];
+  excludeAssetId?: number | null;
+}): Promise<void> {
+  if (!input.uploadIds.length) {
+    return;
+  }
+
+  await deleteUnusedAssetRegisterUploads(
+    input.userId,
+    input.uploadIds.map((uploadId) => buildAssetRegisterUploadUrl(uploadId)),
+    input.excludeAssetId ?? undefined,
+  );
+}
+
+export async function getAssetRegisterUploadById(uploadId: string): Promise<AssetRegisterUpload | null> {
+  const legacyUpload = await getLegacyAssetRegisterUploadById(uploadId);
+  return legacyUpload ? mapLegacyRowToUpload(legacyUpload) : null;
 }
