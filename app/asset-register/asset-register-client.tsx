@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
+import { hasMarketplaceListingForAsset, publishRegisterItemToMarketplace } from '../../lib/marketplace';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
@@ -154,6 +155,37 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     isFinanced: asset.isFinanced,
     financeNote: asset.financeNote,
     photos: normalizePhotos(asset.photos),
+  };
+}
+
+function buildSavedItemFromAsset(asset: RegisterAsset) {
+  return {
+    id: String(asset.id),
+    valuationRunId: asset.valuationRunId ?? undefined,
+    kind: asset.kind,
+    title: asset.title,
+    value: asset.value,
+    selectedMethod: asset.selectedMethod,
+    method: asset.selectedMethod,
+    selectedValueExVat: asset.selectedValueExVat,
+    brandName: asset.brandName || undefined,
+    modelName: asset.modelName || undefined,
+    drive: asset.drive || undefined,
+    tractorType: asset.tractorType || undefined,
+    cab: asset.cab || undefined,
+    powerKw: asset.powerKw ?? undefined,
+    yearModel: asset.yearModel ?? undefined,
+    hours: asset.hours ?? undefined,
+    aim4priceValueExVat: asset.aim4priceValueExVat,
+    marketMidExVat: asset.marketMidExVat,
+    departmentValueExVat: asset.departmentValueExVat,
+    note: asset.note || undefined,
+    createdAtIso: asset.createdAtIso,
+    updatedAtIso: asset.updatedAtIso,
+    serialNumber: asset.serialNumber || undefined,
+    isFinanced: asset.isFinanced,
+    financeNote: asset.financeNote || undefined,
+    photos: asset.photos,
   };
 }
 
@@ -418,6 +450,26 @@ export default function AssetRegisterClient() {
       });
     } finally {
       setBusyDeleteId(null);
+    }
+  }
+
+  function handlePublishAsset(asset: RegisterAsset) {
+    try {
+      publishRegisterItemToMarketplace(buildSavedItemFromAsset(asset), {
+        askingPriceExVat: asset.selectedValueExVat || asset.value,
+        imageUrls: asset.photos,
+        imageSrc: asset.photos[0],
+      });
+
+      setNotice({
+        tone: 'success',
+        message: `${asset.title} was sent to the marketplace.`,
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to send asset to marketplace.',
+      });
     }
   }
 
@@ -757,6 +809,15 @@ export default function AssetRegisterClient() {
                     >
                       Edit
                     </button>
+                    {asset.kind === 'tractor' ? (
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={() => handlePublishAsset(asset)}
+                      >
+                        {hasMarketplaceListingForAsset(String(asset.id)) ? 'Update marketplace' : 'Send to marketplace'}
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       className={styles.dangerButton}
