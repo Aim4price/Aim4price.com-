@@ -195,13 +195,15 @@ export async function saveValuationRunFromResult(
         selected_method,
         selected_value_ex_vat,
         valuation_version,
-        valuation_payload
+        valuation_payload,
+        created_at,
+        updated_at
       )
       values (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
         $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-        $31, $32, $33, $34, $35::jsonb
+        $31, $32, $33, $34, $35::jsonb, now(), now()
       )
       returning id, created_at
     `,
