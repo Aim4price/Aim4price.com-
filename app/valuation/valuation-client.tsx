@@ -310,6 +310,8 @@ export default function ValuationClient() {
   const [modelsLoading, setModelsLoading] = useState(false);
   const [valuationLoading, setValuationLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [saveChoiceOpen, setSaveChoiceOpen] = useState(false);
+  const [saveChoiceMethod, setSaveChoiceMethod] = useState<MethodKey | null>(null);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [guestValuationCount, setGuestValuationCount] = useState(0);
 
@@ -989,9 +991,9 @@ export default function ValuationClient() {
     setStep(nextStep(step));
   }
 
-  async function handleSave() {
-    if (!result || !selectedMethod || !condition) {
-      setMessage('Choose which number should be saved first.');
+  function handleSave() {
+    if (!result || !condition) {
+      setMessage('Run a valuation before saving to the asset register.');
       return;
     }
 
@@ -1001,7 +1003,18 @@ export default function ValuationClient() {
       return;
     }
 
-    const value = getMethodValue(result, selectedMethod);
+    setSaveChoiceMethod(null);
+    setSaveChoiceOpen(true);
+    setMessage('');
+  }
+
+  async function handleConfirmSave() {
+    if (!result || !saveChoiceMethod || !condition) {
+      setMessage('Choose which number should be saved first.');
+      return;
+    }
+
+    const value = getMethodValue(result, saveChoiceMethod);
 
     if (value === null) {
       setMessage('That method is not available for this tractor profile.');
@@ -1026,7 +1039,7 @@ export default function ValuationClient() {
           gpsEnabled,
           gpsType,
           gpsYear,
-          selectedMethod,
+          selectedMethod: saveChoiceMethod,
           valuationVersion: 'v1',
         }),
       });
@@ -1037,6 +1050,8 @@ export default function ValuationClient() {
         throw new Error(data.error ?? 'Failed to save to asset register.');
       }
 
+      setSelectedMethod(saveChoiceMethod);
+      setSaveChoiceOpen(false);
       setMessage(
         data.warning
           ? `Saved to asset register. Asset #${data.assetId} was created. ${data.warning}`
@@ -2490,6 +2505,78 @@ export default function ValuationClient() {
           ) : null}
         </div>
       </main>
+
+      {saveChoiceOpen && result ? (
+        <div className={styles.saveModalOverlay} role="presentation">
+          <div className={styles.saveModalBackdrop} onClick={() => (!saveLoading ? setSaveChoiceOpen(false) : undefined)} />
+          <div
+            className={styles.saveModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="save-valuation-title"
+          >
+            <div className={styles.saveModalHeader}>
+              <div>
+                <h2 id="save-valuation-title" className={styles.saveModalTitle}>
+                  Choose which price to save
+                </h2>
+                <p className={styles.saveModalText}>
+                  Select one valuation method below. The asset will only be saved after you confirm a single price.
+                </p>
+              </div>
+              <button
+                type="button"
+                className={styles.saveModalClose}
+                onClick={() => setSaveChoiceOpen(false)}
+                disabled={saveLoading}
+                aria-label="Close save dialog"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.saveMethodGrid}>
+              {methodCards.filter((card) => card.available).map((card) => {
+                const active = saveChoiceMethod === card.key;
+
+                return (
+                  <button
+                    key={card.key}
+                    type="button"
+                    className={`${styles.saveMethodButton} ${active ? styles.saveMethodButtonActive : ''}`}
+                    onClick={() => setSaveChoiceMethod(card.key)}
+                  >
+                    <span className={styles.saveMethodLabel}>{card.label}</span>
+                    <strong className={styles.saveMethodValue}>
+                      {card.key === 'market' ? getMethodDisplay(result, 'market') : money(card.value)}
+                    </strong>
+                    <span className={styles.saveMethodNote}>{card.note}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className={styles.saveModalActions}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => setSaveChoiceOpen(false)}
+                disabled={saveLoading}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={handleConfirmSave}
+                disabled={!saveChoiceMethod || saveLoading}
+              >
+                {saveLoading ? 'Saving...' : 'Confirm and Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
