@@ -161,7 +161,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
   };
 }
 
-async function getAssetRegisterItemById(userId: string, assetId: number): Promise<AssetRegisterItem | null> {
+export async function getAssetRegisterItemById(userId: string, assetId: number): Promise<AssetRegisterItem | null> {
   const db = getDb();
   const result = await db.query<AssetRegisterRow>(
     `
