@@ -45,6 +45,18 @@ export type CreateManualAssetInput = {
   photos?: string[];
 };
 
+export type UpdateAssetRegisterItemInput = {
+  assetId: number;
+  kind: AssetRegisterItemKind;
+  title: string;
+  value: number;
+  note?: string | null;
+  serialNumber?: string | null;
+  isFinanced?: boolean;
+  financeNote?: string | null;
+  photos?: string[];
+};
+
 type AssetRegisterRow = {
   id: string | number;
   user_id: string;
@@ -100,6 +112,18 @@ function asStringArray(value: unknown): string[] {
   return [];
 }
 
+function normalizePhotoArray(value: unknown): string[] {
+  const seen = new Set<string>();
+  const entries = asStringArray(value).slice(0, 12);
+
+  return entries.filter((entry) => {
+    if (!entry) return false;
+    if (seen.has(entry)) return false;
+    seen.add(entry);
+    return true;
+  });
+}
+
 function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
   return {
     id: Number(row.id),
@@ -131,10 +155,52 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     serialNumber: asText(row.serial_number),
     isFinanced: Boolean(row.is_financed),
     financeNote: asText(row.finance_note),
-    photos: asStringArray(row.photos),
+    photos: normalizePhotoArray(row.photos),
     createdAtIso: row.created_at,
     updatedAtIso: row.updated_at,
   };
+}
+
+async function getAssetRegisterItemById(userId: string, assetId: number): Promise<AssetRegisterItem | null> {
+  const db = getDb();
+  const result = await db.query<AssetRegisterRow>(
+    `
+      select
+        id,
+        user_id,
+        valuation_run_id,
+        kind,
+        title,
+        value,
+        selected_method,
+        selected_value_ex_vat,
+        brand_name,
+        model_name,
+        drive_type,
+        tractor_type,
+        cab_type,
+        power_kw,
+        year_model,
+        hours,
+        aim4price_value_ex_vat,
+        market_mid_ex_vat,
+        department_value_ex_vat,
+        note,
+        serial_number,
+        is_financed,
+        finance_note,
+        photos,
+        created_at,
+        updated_at
+      from asset_register_items
+      where user_id = $1 and id = $2
+      limit 1
+    `,
+    [userId, assetId],
+  );
+
+  const row = result.rows[0];
+  return row ? mapAssetRegisterRow(row) : null;
 }
 
 export async function listAssetRegisterItems(userId: string): Promise<AssetRegisterItem[]> {
@@ -243,13 +309,92 @@ export async function createManualAssetRegisterItem(
       asText(input.serialNumber) || null,
       Boolean(input.isFinanced),
       asText(input.financeNote) || null,
-      JSON.stringify((input.photos ?? []).map((entry) => asText(entry)).filter(Boolean)),
+      JSON.stringify(normalizePhotoArray(input.photos ?? [])),
     ],
   );
 
   const row = result.rows[0];
   if (!row) {
     throw new Error('ASSET_CREATE_FAILED');
+  }
+
+  return mapAssetRegisterRow(row);
+}
+
+export async function updateAssetRegisterItem(
+  userId: string,
+  input: UpdateAssetRegisterItemInput,
+): Promise<AssetRegisterItem> {
+  const db = getDb();
+  const existing = await getAssetRegisterItemById(userId, input.assetId);
+
+  if (!existing) {
+    throw new Error('ASSET_NOT_FOUND');
+  }
+
+  const nextKind = existing.valuationRunId ? existing.kind : input.kind;
+  const nextValue = Math.round(Number(input.value) || 0);
+
+  const result = await db.query<AssetRegisterRow>(
+    `
+      update asset_register_items
+      set
+        kind = $3,
+        title = $4,
+        value = $5,
+        selected_value_ex_vat = $5,
+        note = $6,
+        serial_number = $7,
+        is_financed = $8,
+        finance_note = $9,
+        photos = $10::jsonb,
+        updated_at = now()
+      where user_id = $1 and id = $2
+      returning
+        id,
+        user_id,
+        valuation_run_id,
+        kind,
+        title,
+        value,
+        selected_method,
+        selected_value_ex_vat,
+        brand_name,
+        model_name,
+        drive_type,
+        tractor_type,
+        cab_type,
+        power_kw,
+        year_model,
+        hours,
+        aim4price_value_ex_vat,
+        market_mid_ex_vat,
+        department_value_ex_vat,
+        note,
+        serial_number,
+        is_financed,
+        finance_note,
+        photos,
+        created_at,
+        updated_at
+    `,
+    [
+      userId,
+      input.assetId,
+      nextKind,
+      asText(input.title),
+      nextValue,
+      asText(input.note) || null,
+      asText(input.serialNumber) || null,
+      Boolean(input.isFinanced),
+      asText(input.financeNote) || null,
+      JSON.stringify(normalizePhotoArray(input.photos ?? [])),
+    ],
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    throw new Error('ASSET_UPDATE_FAILED');
   }
 
   return mapAssetRegisterRow(row);
