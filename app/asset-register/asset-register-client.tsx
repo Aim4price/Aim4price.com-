@@ -9,23 +9,6 @@ type NoticeTone = 'success' | 'error';
 type AssetKind = 'tractor' | 'manual' | 'property';
 type AssetMethod = 'aim4price' | 'market' | 'department' | 'manual';
 
-type AccountProfile = {
-  userId: string;
-  name: string;
-  email: string;
-  businessName: string;
-  phone: string;
-  accountType: string;
-  vatNumber: string;
-  province: string;
-  townCity: string;
-  addressLine1: string;
-  addressLine2: string;
-  notes: string;
-  createdAtIso: string | null;
-  updatedAtIso: string | null;
-};
-
 type RegisterAsset = {
   id: number;
   userId: string;
@@ -55,12 +38,6 @@ type RegisterAsset = {
   updatedAtIso: string;
 };
 
-type ProfileApiResponse = {
-  ok: boolean;
-  profile?: AccountProfile;
-  error?: string;
-};
-
 type AssetRegisterApiResponse = {
   ok: boolean;
   items?: RegisterAsset[];
@@ -72,18 +49,6 @@ type AssetRegisterApiResponse = {
   error?: string;
 };
 
-type ProfileDraft = {
-  businessName: string;
-  phone: string;
-  accountType: string;
-  vatNumber: string;
-  province: string;
-  townCity: string;
-  addressLine1: string;
-  addressLine2: string;
-  notes: string;
-};
-
 type AssetDraft = {
   kind: AssetKind;
   title: string;
@@ -92,18 +57,6 @@ type AssetDraft = {
   serialNumber: string;
   isFinanced: boolean;
   financeNote: string;
-};
-
-const initialProfileDraft: ProfileDraft = {
-  businessName: '',
-  phone: '',
-  accountType: 'owner',
-  vatNumber: '',
-  province: '',
-  townCity: '',
-  addressLine1: '',
-  addressLine2: '',
-  notes: '',
 };
 
 const initialAssetDraft: AssetDraft = {
@@ -158,68 +111,58 @@ function kindLabel(value: AssetKind): string {
   );
 }
 
-function buildProfileDraft(profile: AccountProfile | null): ProfileDraft {
-  if (!profile) return initialProfileDraft;
-
-  return {
-    businessName: profile.businessName,
-    phone: profile.phone,
-    accountType: profile.accountType || 'owner',
-    vatNumber: profile.vatNumber,
-    province: profile.province,
-    townCity: profile.townCity,
-    addressLine1: profile.addressLine1,
-    addressLine2: profile.addressLine2,
-    notes: profile.notes,
-  };
-}
-
 export default function AssetRegisterClient() {
-  const [profile, setProfile] = useState<AccountProfile | null>(null);
-  const [profileDraft, setProfileDraft] = useState<ProfileDraft>(initialProfileDraft);
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [busyDeleteId, setBusyDeleteId] = useState<number | null>(null);
 
-  async function loadPageData() {
-    setIsLoading(true);
-
-    try {
-      const [profileResponse, assetsResponse] = await Promise.all([
-        fetch('/api/account-profile', { cache: 'no-store', credentials: 'include' }),
-        fetch('/api/asset-register', { cache: 'no-store', credentials: 'include' }),
-      ]);
-
-      const profileData = (await profileResponse.json()) as ProfileApiResponse;
-      const assetsData = (await assetsResponse.json()) as AssetRegisterApiResponse;
-
-      if (!profileResponse.ok || !profileData.ok || !profileData.profile) {
-        throw new Error(profileData.error ?? 'Failed to load account profile.');
-      }
-
-      if (!assetsResponse.ok || !assetsData.ok) {
-        throw new Error(assetsData.error ?? 'Failed to load asset register.');
-      }
-
-      setProfile(profileData.profile);
-      setProfileDraft(buildProfileDraft(profileData.profile));
-      setAssets(Array.isArray(assetsData.items) ? assetsData.items : []);
-    } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Failed to load your account.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   useEffect(() => {
-    void loadPageData();
+    let mounted = true;
+
+    async function loadAssets() {
+      setIsLoading(true);
+
+      try {
+        const assetsResponse = await fetch('/api/asset-register', {
+          cache: 'no-store',
+          credentials: 'include',
+        });
+
+        const assetsData = (await assetsResponse.json()) as AssetRegisterApiResponse;
+
+        if (!assetsResponse.ok || !assetsData.ok) {
+          throw new Error(assetsData.error ?? 'Failed to load asset register.');
+        }
+
+        if (!mounted) {
+          return;
+        }
+
+        setAssets(Array.isArray(assetsData.items) ? assetsData.items : []);
+      } catch (error) {
+        if (!mounted) {
+          return;
+        }
+
+        setNotice({
+          tone: 'error',
+          message: error instanceof Error ? error.message : 'Failed to load your asset register.',
+        });
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadAssets();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -236,39 +179,6 @@ export default function AssetRegisterClient() {
   const equipmentCount = useMemo(() => {
     return assets.filter((asset) => asset.kind === 'tractor').length;
   }, [assets]);
-
-  async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsSavingProfile(true);
-
-    try {
-      const response = await fetch('/api/account-profile', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(profileDraft),
-      });
-
-      const data = (await response.json()) as ProfileApiResponse;
-
-      if (!response.ok || !data.ok || !data.profile) {
-        throw new Error(data.error ?? 'Failed to save account details.');
-      }
-
-      setProfile(data.profile);
-      setProfileDraft(buildProfileDraft(data.profile));
-      setNotice({ tone: 'success', message: 'Account details saved.' });
-    } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Failed to save account details.',
-      });
-    } finally {
-      setIsSavingProfile(false);
-    }
-  }
 
   async function handleAssetSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -348,10 +258,11 @@ export default function AssetRegisterClient() {
         <div className={styles.hero}>
           <div>
             <span className={styles.eyebrow}>Asset Register</span>
-            <h1>Keep your saved machinery and account details in one place.</h1>
+            <h1>Keep your saved machinery in one place.</h1>
             <p>
-              Valuations saved from the valuation wizard now create register assets automatically. Use this page to
-              manage account details and add extra assets manually.
+              This workspace now focuses on saved assets, valuation history and manual additions.
+              Account, contact and future PDF settings have been separated into a dedicated account
+              page.
             </p>
           </div>
 
@@ -382,129 +293,48 @@ export default function AssetRegisterClient() {
             <div className={styles.cardHeader}>
               <div>
                 <span className={styles.kicker}>Account</span>
-                <h2>Account details</h2>
-                <p>These details can later flow into reports, exports, and marketplace workflows.</p>
+                <h2>Account, PDFs and contact settings</h2>
+                <p>
+                  This setup has been moved out of the register so saved assets can stay cleaner and
+                  easier to scale. Use the account page for profile, contact and report details.
+                </p>
               </div>
             </div>
 
-            {isLoading ? (
-              <p className={styles.loading}>Loading account details...</p>
-            ) : (
-              <form className={styles.form} onSubmit={handleProfileSubmit}>
-                <label className={styles.field}>
-                  <span>Full name</span>
-                  <input value={profile?.name ?? ''} disabled />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Email</span>
-                  <input value={profile?.email ?? ''} disabled />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Business / farm / dealership</span>
-                  <input
-                    value={profileDraft.businessName}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({ ...current, businessName: event.target.value }))
-                    }
-                    placeholder="Business name"
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Phone</span>
-                  <input
-                    value={profileDraft.phone}
-                    onChange={(event) => setProfileDraft((current) => ({ ...current, phone: event.target.value }))}
-                    placeholder="Phone number"
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Account type</span>
-                  <select
-                    value={profileDraft.accountType}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({ ...current, accountType: event.target.value }))
-                    }
-                  >
-                    <option value="owner">Owner / Farmer</option>
-                    <option value="dealer">Dealer</option>
-                    <option value="broker">Broker</option>
-                    <option value="insurer">Insurer</option>
-                    <option value="bank">Bank</option>
-                  </select>
-                </label>
-
-                <label className={styles.field}>
-                  <span>VAT number</span>
-                  <input
-                    value={profileDraft.vatNumber}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({ ...current, vatNumber: event.target.value }))
-                    }
-                    placeholder="VAT number"
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Province</span>
-                  <input
-                    value={profileDraft.province}
-                    onChange={(event) => setProfileDraft((current) => ({ ...current, province: event.target.value }))}
-                    placeholder="Province"
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Town / city</span>
-                  <input
-                    value={profileDraft.townCity}
-                    onChange={(event) => setProfileDraft((current) => ({ ...current, townCity: event.target.value }))}
-                    placeholder="Town or city"
-                  />
-                </label>
-
-                <label className={`${styles.field} ${styles.fullWidth}`}>
-                  <span>Address line 1</span>
-                  <input
-                    value={profileDraft.addressLine1}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({ ...current, addressLine1: event.target.value }))
-                    }
-                    placeholder="Address line 1"
-                  />
-                </label>
-
-                <label className={`${styles.field} ${styles.fullWidth}`}>
-                  <span>Address line 2</span>
-                  <input
-                    value={profileDraft.addressLine2}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({ ...current, addressLine2: event.target.value }))
-                    }
-                    placeholder="Address line 2"
-                  />
-                </label>
-
-                <label className={`${styles.field} ${styles.fullWidth}`}>
-                  <span>Notes</span>
-                  <textarea
-                    rows={4}
-                    value={profileDraft.notes}
-                    onChange={(event) => setProfileDraft((current) => ({ ...current, notes: event.target.value }))}
-                    placeholder="Any extra account details"
-                  />
-                </label>
-
-                <div className={styles.actionsRow}>
-                  <button type="submit" className={styles.primaryButton} disabled={isSavingProfile}>
-                    {isSavingProfile ? 'Saving...' : 'Save account details'}
-                  </button>
+            <div className={styles.assetList}>
+              <article className={styles.assetCard}>
+                <div className={styles.badgeRow}>
+                  <span className={styles.badge}>Profile</span>
+                  <span className={styles.badge}>Contact</span>
                 </div>
-              </form>
-            )}
+                <h3>Dedicated account workspace</h3>
+                <p className={styles.note}>
+                  Business name, address, VAT number and phone details now belong in a separate
+                  account route instead of being mixed into the register screen.
+                </p>
+              </article>
+
+              <article className={styles.assetCard}>
+                <div className={styles.badgeRow}>
+                  <span className={styles.badge}>Reports</span>
+                  <span className={styles.badge}>PDFs</span>
+                </div>
+                <h3>Correct base for exports</h3>
+                <p className={styles.note}>
+                  This separation prepares Aim4price for proper branded PDF reports, contact blocks
+                  and future marketplace seller defaults.
+                </p>
+              </article>
+            </div>
+
+            <div className={styles.inlineLinks}>
+              <Link href="/account" className={styles.primaryButton}>
+                Open account page
+              </Link>
+              <Link href="/valuation" className={styles.secondaryButton}>
+                Open valuation
+              </Link>
+            </div>
           </section>
 
           <section className={styles.card}>
