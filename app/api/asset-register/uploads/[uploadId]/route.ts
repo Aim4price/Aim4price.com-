@@ -1,5 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAssetRegisterUploadById } from '../../../../../lib/asset-register-uploads';
+import { NextResponse } from 'next/server';
+import {
+  createAssetRegisterSignedGetUrl,
+  getLegacyAssetRegisterUploadResponse,
+} from '../../../../../lib/asset-register-uploads';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,25 +13,38 @@ type RouteContext = {
   };
 };
 
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(_request: Request, context: RouteContext) {
   const uploadId = String(context.params?.uploadId ?? '').trim();
 
   if (!uploadId) {
-    return new NextResponse('Not found.', { status: 404 });
+    return new NextResponse('Not found', { status: 404 });
   }
 
-  const upload = await getAssetRegisterUploadById(uploadId);
+  const signedUrl = await createAssetRegisterSignedGetUrl(uploadId);
 
-  if (!upload?.fileBytes?.length) {
-    return new NextResponse('Not found.', { status: 404 });
+  if (signedUrl) {
+    return NextResponse.redirect(signedUrl, {
+      status: 302,
+      headers: {
+        'Cache-Control': 'private, no-store',
+      },
+    });
   }
 
-  return new NextResponse(upload.fileBytes, {
+  const legacyUpload = await getLegacyAssetRegisterUploadResponse(uploadId);
+
+  if (!legacyUpload) {
+    return new NextResponse('Not found', { status: 404 });
+  }
+
+  return new NextResponse(legacyUpload.data, {
     status: 200,
     headers: {
-      'Content-Type': upload.contentType || 'application/octet-stream',
-      'Content-Length': String(upload.byteSize || upload.fileBytes.length),
+      'Content-Type': legacyUpload.mimeType || 'application/octet-stream',
+      'Content-Length': String(legacyUpload.sizeBytes),
       'Cache-Control': 'public, max-age=31536000, immutable',
+      'Content-Disposition': `inline; filename="${encodeURIComponent(legacyUpload.fileName)}"`,
+      'X-Content-Type-Options': 'nosniff',
     },
   });
 }
