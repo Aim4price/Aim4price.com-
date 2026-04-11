@@ -2938,3 +2938,128 @@
   border: 1px solid rgba(33, 129, 85, 0.18);
   background: rgba(33, 129, 85, 0.12);
 }
+
+
+.saveModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.saveModalBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 24, 19, 0.56);
+  backdrop-filter: blur(4px);
+}
+
+.saveModal {
+  position: relative;
+  width: min(100%, 760px);
+  border-radius: 28px;
+  border: 1px solid rgba(20, 62, 50, 0.14);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 32px 80px rgba(13, 37, 29, 0.24);
+  padding: 1.4rem;
+}
+
+.saveModalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.saveModalTitle {
+  margin: 0;
+  font-size: 1.4rem;
+  line-height: 1.15;
+  color: #173e33;
+}
+
+.saveModalText {
+  margin: 0.45rem 0 0;
+  color: #5a6962;
+  line-height: 1.6;
+}
+
+.saveModalClose {
+  appearance: none;
+  border: 1px solid rgba(20, 62, 50, 0.12);
+  background: rgba(244, 248, 246, 0.96);
+  color: #173e33;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.saveMethodGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.saveMethodButton {
+  appearance: none;
+  border: 1px solid rgba(20, 62, 50, 0.12);
+  border-radius: 22px;
+  background: #f8fbf9;
+  padding: 1rem;
+  text-align: left;
+  display: grid;
+  gap: 0.45rem;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.saveMethodButton:hover {
+  transform: translateY(-1px);
+  border-color: rgba(20, 62, 50, 0.22);
+  box-shadow: 0 16px 32px rgba(16, 42, 34, 0.08);
+}
+
+.saveMethodButtonActive {
+  border-color: rgba(24, 77, 61, 0.34);
+  background: linear-gradient(180deg, rgba(232, 242, 238, 0.98), rgba(245, 250, 248, 0.98));
+  box-shadow: 0 18px 34px rgba(18, 57, 45, 0.1);
+}
+
+.saveMethodLabel {
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #577166;
+}
+
+.saveMethodValue {
+  font-size: 1.18rem;
+  color: #173e33;
+}
+
+.saveMethodNote {
+  color: #62736b;
+  line-height: 1.5;
+}
+
+.saveModalActions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+@media (max-width: 860px) {
+  .saveMethodGrid {
+    grid-template-columns: 1fr;
+  }
+}
