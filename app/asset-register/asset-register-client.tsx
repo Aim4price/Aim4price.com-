@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
@@ -49,6 +49,18 @@ type AssetRegisterApiResponse = {
   error?: string;
 };
 
+type AssetUploadApiResponse = {
+  ok: boolean;
+  uploads?: Array<{
+    uploadId: string;
+    url: string;
+    fileName: string;
+    contentType: string;
+    byteSize: number;
+  }>;
+  error?: string;
+};
+
 type AssetDraft = {
   kind: AssetKind;
   title: string;
@@ -57,8 +69,10 @@ type AssetDraft = {
   serialNumber: string;
   isFinanced: boolean;
   financeNote: string;
-  photosText: string;
+  photos: string[];
 };
+
+const MAX_PHOTOS = 12;
 
 const initialAssetDraft: AssetDraft = {
   kind: 'manual',
@@ -68,7 +82,7 @@ const initialAssetDraft: AssetDraft = {
   serialNumber: '',
   isFinanced: false,
   financeNote: '',
-  photosText: '',
+  photos: [],
 };
 
 function money(value: number): string {
@@ -113,19 +127,21 @@ function kindLabel(value: AssetKind): string {
   );
 }
 
-function parsePhotoList(value: string): string[] {
+function normalizePhotos(value: string[]): string[] {
   const seen = new Set<string>();
 
   return value
-    .split(/\r?\n/)
-    .map((entry) => entry.trim())
+    .map((entry) => String(entry ?? '').trim())
     .filter(Boolean)
     .filter((entry) => {
-      if (seen.has(entry)) return false;
+      if (seen.has(entry)) {
+        return false;
+      }
+
       seen.add(entry);
       return true;
     })
-    .slice(0, 12);
+    .slice(0, MAX_PHOTOS);
 }
 
 function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
@@ -137,7 +153,7 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     serialNumber: asset.serialNumber,
     isFinanced: asset.isFinanced,
     financeNote: asset.financeNote,
-    photosText: asset.photos.join('\n'),
+    photos: normalizePhotos(asset.photos),
   };
 }
 
@@ -148,8 +164,10 @@ export default function AssetRegisterClient() {
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [busyDeleteId, setBusyDeleteId] = useState<number | null>(null);
   const formCardRef = useRef<HTMLElement | null>(null);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -212,8 +230,6 @@ export default function AssetRegisterClient() {
     return assets.filter((asset) => asset.kind === 'tractor').length;
   }, [assets]);
 
-  const photoCount = useMemo(() => parsePhotoList(assetDraft.photosText).length, [assetDraft.photosText]);
-
   const editingAsset = useMemo(() => {
     return editingAssetId === null ? null : assets.find((asset) => asset.id === editingAssetId) ?? null;
   }, [assets, editingAssetId]);
@@ -221,6 +237,10 @@ export default function AssetRegisterClient() {
   function resetEditor() {
     setEditingAssetId(null);
     setAssetDraft(initialAssetDraft);
+
+    if (photoInputRef.current) {
+      photoInputRef.current.value = '';
+    }
   }
 
   function openEditor(asset: RegisterAsset) {
@@ -229,11 +249,76 @@ export default function AssetRegisterClient() {
     formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  async function handlePhotoFilesSelected(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    event.target.value = '';
+
+    if (!selectedFiles.length) {
+      return;
+    }
+
+    const remainingSlots = MAX_PHOTOS - assetDraft.photos.length;
+
+    if (remainingSlots <= 0) {
+      setNotice({ tone: 'error', message: `You can upload a maximum of ${MAX_PHOTOS} photos per asset.` });
+      return;
+    }
+
+    const filesToUpload = selectedFiles.slice(0, remainingSlots);
+    const formData = new FormData();
+
+    filesToUpload.forEach((file) => {
+      formData.append('files', file);
+    });
+
+    setIsUploadingPhotos(true);
+
+    try {
+      const response = await fetch('/api/asset-register/uploads', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      const data = (await response.json()) as AssetUploadApiResponse;
+
+      if (!response.ok || !data.ok || !data.uploads?.length) {
+        throw new Error(data.error ?? 'Failed to upload images.');
+      }
+
+      const uploadedUrls = data.uploads.map((entry) => entry.url);
+
+      setAssetDraft((current) => ({
+        ...current,
+        photos: normalizePhotos([...current.photos, ...uploadedUrls]),
+      }));
+
+      setNotice({
+        tone: 'success',
+        message: `${data.uploads.length} photo${data.uploads.length === 1 ? '' : 's'} uploaded.`,
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to upload images.',
+      });
+    } finally {
+      setIsUploadingPhotos(false);
+    }
+  }
+
+  function removeDraftPhoto(photoUrl: string) {
+    setAssetDraft((current) => ({
+      ...current,
+      photos: current.photos.filter((photo) => photo !== photoUrl),
+    }));
+  }
+
   async function handleAssetSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const value = Math.round(Number(assetDraft.value) || 0);
-    const photos = parsePhotoList(assetDraft.photosText);
+    const photos = normalizePhotos(assetDraft.photos);
 
     if (!assetDraft.title.trim() || value <= 0) {
       setNotice({ tone: 'error', message: 'Asset title and value are required.' });
@@ -346,9 +431,8 @@ export default function AssetRegisterClient() {
             <span className={styles.eyebrow}>Asset Register</span>
             <h1>Keep your saved machinery in one place.</h1>
             <p>
-              This next step improves the register with asset editing and photo groundwork. You can
-              now update saved assets and attach photo URLs, which sets up the structure for proper
-              file uploads later.
+              You can now edit saved assets, upload image files straight into a gallery, preview them
+              before saving, and keep valuation-linked equipment locked to the correct type.
             </p>
           </div>
 
@@ -402,13 +486,13 @@ export default function AssetRegisterClient() {
 
               <article className={styles.assetCard}>
                 <div className={styles.badgeRow}>
-                  <span className={styles.badge}>Photos</span>
-                  <span className={styles.badge}>Groundwork</span>
+                  <span className={styles.badge}>Gallery upload</span>
+                  <span className={styles.badge}>Files</span>
                 </div>
-                <h3>Structured photo support</h3>
+                <h3>Photo uploads are now file-based</h3>
                 <p className={styles.note}>
-                  The register now supports photo lists per asset. This is groundwork for proper drag
-                  and drop uploads once storage is connected.
+                  The register now uploads actual image files into an asset gallery instead of asking
+                  for pasted image URLs.
                 </p>
               </article>
             </div>
@@ -430,7 +514,7 @@ export default function AssetRegisterClient() {
                 <h2>{editingAsset ? 'Update saved asset' : 'Add another asset'}</h2>
                 <p>
                   {editingAsset
-                    ? 'Update title, value, finance notes and photo URLs. Valuation-linked tractor type stays locked.'
+                    ? 'Update title, value, finance notes and photo gallery. Valuation-linked tractor type stays locked.'
                     : 'Use this for property or manual records that did not come from the valuation workflow.'}
                 </p>
               </div>
@@ -510,33 +594,61 @@ export default function AssetRegisterClient() {
                 />
               </label>
 
-              <label className={`${styles.field} ${styles.fullWidth}`}>
-                <span>Photo URLs</span>
-                <textarea
-                  rows={5}
-                  value={assetDraft.photosText}
-                  onChange={(event) => setAssetDraft((current) => ({ ...current, photosText: event.target.value }))}
-                  placeholder={['https://example.com/tractor-front.jpg', 'https://example.com/tractor-side.jpg'].join('\n')}
-                />
-              </label>
+              <div className={`${styles.field} ${styles.fullWidth}`}>
+                <span>Photo gallery</span>
 
-              <p className={styles.helperText}>
-                Use one full HTTPS image URL per line. This is the groundwork stage before real file
-                upload storage is added.
-              </p>
+                <div className={styles.uploadPanel}>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    className={styles.fileInput}
+                    onChange={handlePhotoFilesSelected}
+                    disabled={isUploadingPhotos || assetDraft.photos.length >= MAX_PHOTOS}
+                  />
 
-              {photoCount ? (
+                  <div className={styles.uploadActions}>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => photoInputRef.current?.click()}
+                      disabled={isUploadingPhotos || assetDraft.photos.length >= MAX_PHOTOS}
+                    >
+                      {isUploadingPhotos ? 'Uploading...' : 'Choose image files'}
+                    </button>
+
+                    <span className={styles.uploadSummary}>
+                      {assetDraft.photos.length} / {MAX_PHOTOS} photos
+                    </span>
+                  </div>
+
+                  <p className={styles.helperText}>
+                    Upload JPG, PNG or WEBP files. Max 5 MB per image. The first image is used as the
+                    preview image in the register for now.
+                  </p>
+                </div>
+              </div>
+
+              {assetDraft.photos.length ? (
                 <div className={styles.photoGrid}>
-                  {parsePhotoList(assetDraft.photosText).slice(0, 4).map((photo, index) => (
+                  {assetDraft.photos.map((photo, index) => (
                     <div className={styles.photoThumb} key={`${photo}-${index}`}>
                       <img src={photo} alt={`Asset photo ${index + 1}`} />
+                      <button
+                        type="button"
+                        className={styles.photoRemoveButton}
+                        onClick={() => removeDraftPhoto(photo)}
+                      >
+                        Remove
+                      </button>
                     </div>
                   ))}
                 </div>
               ) : null}
 
               <div className={styles.actionsRow}>
-                <button type="submit" className={styles.primaryButton} disabled={isSavingAsset}>
+                <button type="submit" className={styles.primaryButton} disabled={isSavingAsset || isUploadingPhotos}>
                   {isSavingAsset ? 'Saving...' : editingAsset ? 'Update asset' : 'Add asset'}
                 </button>
 
@@ -580,7 +692,11 @@ export default function AssetRegisterClient() {
                         <span className={styles.badge}>{kindLabel(asset.kind)}</span>
                         <span className={styles.badge}>{methodLabel(asset.selectedMethod)}</span>
                         {asset.valuationRunId ? <span className={styles.badge}>Saved valuation</span> : null}
-                        {asset.photos.length ? <span className={styles.badge}>{asset.photos.length} photo{asset.photos.length === 1 ? '' : 's'}</span> : null}
+                        {asset.photos.length ? (
+                          <span className={styles.badge}>
+                            {asset.photos.length} photo{asset.photos.length === 1 ? '' : 's'}
+                          </span>
+                        ) : null}
                       </div>
                       <h3>{asset.title}</h3>
                       <p>
