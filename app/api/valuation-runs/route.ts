@@ -25,6 +25,17 @@ type SaveValuationRunApiResponse = {
   error?: string;
 };
 
+type ErrorLike = {
+  message?: unknown;
+  detail?: unknown;
+  hint?: unknown;
+  code?: unknown;
+  table?: unknown;
+  column?: unknown;
+  constraint?: unknown;
+  schema?: unknown;
+};
+
 function parseBoolean(value: unknown): boolean {
   if (typeof value === 'boolean') return value;
   if (typeof value === 'string') {
@@ -110,31 +121,62 @@ function badRequest(message: string) {
   );
 }
 
+function formatUnknownError(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    const details = error as ErrorLike;
+    const parts = [
+      error.message,
+      typeof details.detail === 'string' ? details.detail : '',
+      typeof details.hint === 'string' ? `hint: ${details.hint}` : '',
+      typeof details.column === 'string' ? `column: ${details.column}` : '',
+      typeof details.table === 'string' ? `table: ${details.table}` : '',
+      typeof details.constraint === 'string' ? `constraint: ${details.constraint}` : '',
+      typeof details.code === 'string' ? `code: ${details.code}` : '',
+    ].filter(Boolean);
+
+    return parts.join(' | ');
+  }
+
+  if (typeof error === 'object' && error !== null) {
+    const details = error as ErrorLike;
+    const parts = [
+      typeof details.message === 'string' ? details.message : '',
+      typeof details.detail === 'string' ? details.detail : '',
+      typeof details.hint === 'string' ? `hint: ${details.hint}` : '',
+      typeof details.column === 'string' ? `column: ${details.column}` : '',
+      typeof details.table === 'string' ? `table: ${details.table}` : '',
+      typeof details.constraint === 'string' ? `constraint: ${details.constraint}` : '',
+      typeof details.code === 'string' ? `code: ${details.code}` : '',
+    ].filter(Boolean);
+
+    if (parts.length) {
+      return parts.join(' | ');
+    }
+  }
+
+  return 'Failed to save to asset register.';
+}
+
 function buildFriendlyError(error: unknown): { status: number; message: string } {
-  if (error instanceof Error) {
-    if (error.message === 'MODEL_NOT_FOUND') {
-      return {
-        status: 404,
-        message: 'Selected tractor model was not found in the database.',
-      };
-    }
+  const message = formatUnknownError(error);
 
-    if (error.message === 'SELECTED_METHOD_NOT_AVAILABLE') {
-      return {
-        status: 400,
-        message: 'The selected valuation method is not available for this tractor profile.',
-      };
-    }
-
+  if (message.includes('MODEL_NOT_FOUND')) {
     return {
-      status: 500,
-      message: error.message || 'Failed to save to asset register.',
+      status: 404,
+      message: 'Selected tractor model was not found in the database.',
+    };
+  }
+
+  if (message.includes('SELECTED_METHOD_NOT_AVAILABLE')) {
+    return {
+      status: 400,
+      message: 'The selected valuation method is not available for this tractor profile.',
     };
   }
 
   return {
     status: 500,
-    message: 'Failed to save to asset register.',
+    message,
   };
 }
 
@@ -188,7 +230,7 @@ export async function POST(request: NextRequest) {
       );
     } catch (historyError) {
       console.error('valuation history save failed; continuing with asset register save', historyError);
-      warning = 'Valuation history could not be stored, but the asset was saved successfully.';
+      warning = `Valuation history could not be stored, but asset save will continue. ${formatUnknownError(historyError)}`;
     }
 
     const asset = await createAssetRegisterItemFromValuation({
