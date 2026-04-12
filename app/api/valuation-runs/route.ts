@@ -4,6 +4,7 @@ import { createAssetRegisterItemFromValuation } from '../../../lib/asset-registe
 import { runServerValuation } from '../../../lib/server-valuation';
 import {
   getSelectedMethodValue,
+  deleteValuationRunById,
   saveValuationRunFromResult,
   type MethodKey,
   type SaveValuationRunInput,
@@ -233,25 +234,37 @@ export async function POST(request: NextRequest) {
       warning = `Valuation history could not be stored, but asset save will continue. ${formatUnknownError(historyError)}`;
     }
 
-    const asset = await createAssetRegisterItemFromValuation({
-      userId: session.user.id,
-      valuationRunId: savedRun?.runId ?? null,
-      result: valuationResult,
-      selectedMethod: input.selectedMethod,
-      selectedValueExVat,
-      year: input.year,
-      hours: input.hours,
-      note: '',
-    });
+    try {
+      const asset = await createAssetRegisterItemFromValuation({
+        userId: session.user.id,
+        valuationRunId: savedRun?.runId ?? null,
+        result: valuationResult,
+        selectedMethod: input.selectedMethod,
+        selectedValueExVat,
+        year: input.year,
+        hours: input.hours,
+        note: '',
+      });
 
-    return NextResponse.json<SaveValuationRunApiResponse>({
-      ok: true,
-      runId: savedRun?.runId,
-      assetId: asset.id,
-      createdAtIso: savedRun?.createdAtIso ?? asset.createdAtIso,
-      selectedValueExVat,
-      warning,
-    });
+      return NextResponse.json<SaveValuationRunApiResponse>({
+        ok: true,
+        runId: savedRun?.runId,
+        assetId: asset.id,
+        createdAtIso: savedRun?.createdAtIso ?? asset.createdAtIso,
+        selectedValueExVat,
+        warning,
+      });
+    } catch (assetSaveError) {
+      if (savedRun?.runId) {
+        try {
+          await deleteValuationRunById(session.user.id, savedRun.runId);
+        } catch (rollbackError) {
+          console.error('valuation run rollback failed after asset save failure', rollbackError);
+        }
+      }
+
+      throw assetSaveError;
+    }
   } catch (error) {
     console.error('valuation-runs route failed', error);
 
