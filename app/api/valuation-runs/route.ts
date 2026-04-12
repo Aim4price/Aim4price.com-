@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic';
 type SaveValuationRunApiResponse = {
   ok: boolean;
   runId?: number;
-  assetId?: number;
+  assetId?: string;
   createdAtIso?: string;
   selectedValueExVat?: number;
   warning?: string;
