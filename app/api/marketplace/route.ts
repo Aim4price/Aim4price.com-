@@ -93,17 +93,29 @@ export async function POST(request: NextRequest) {
     return unauthorized();
   }
 
-  const body = (await request.json()) as { assetId?: unknown };
+  const body = (await request.json()) as {
+    assetId?: unknown;
+    askingPriceExVat?: unknown;
+    marketplaceNotes?: unknown;
+    sellerPhone?: unknown;
+  };
   const assetId = String(body.assetId ?? '').trim();
 
   if (!assetId) {
     return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
   }
 
+  const askingPriceExVat = Math.round(Number(body.askingPriceExVat) || 0);
+  const marketplaceNotes = String(body.marketplaceNotes ?? '').trim();
+  const sellerPhone = String(body.sellerPhone ?? '').trim();
+
   try {
     const listing = await publishAssetRegisterItemToMarketplace({
       userId: session.user.id,
       assetId,
+      askingPriceExVat: askingPriceExVat > 0 ? askingPriceExVat : null,
+      marketplaceNotes: marketplaceNotes || null,
+      sellerPhone: sellerPhone || null,
     });
 
     return NextResponse.json({
