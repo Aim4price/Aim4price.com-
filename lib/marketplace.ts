@@ -48,6 +48,7 @@ export type MarketplaceListing = {
   imageSrc: string;
   imageUrls: string[];
   publishedBy: 'seed' | 'asset-register';
+  canManage?: boolean;
 };
 
 export type PublishMarketplaceInput = {
