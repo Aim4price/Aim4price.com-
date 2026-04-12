@@ -106,7 +106,9 @@ type SqlField = {
   cast?: string;
 };
 
-let assetRegisterSchemaPromise: Promise<TableSchema> | null = null;
+let assetRegisterSchemaPromises = new Map<string, Promise<TableSchema>>();
+
+type GenericDbRow = Record<string, unknown>;
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -219,11 +221,13 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
   };
 }
 
-async function getAssetRegisterSchema(): Promise<TableSchema> {
-  if (!assetRegisterSchemaPromise) {
+async function getTableSchema(tableName: string): Promise<TableSchema> {
+  let schemaPromise = assetRegisterSchemaPromises.get(tableName);
+
+  if (!schemaPromise) {
     const db = getDb();
 
-    assetRegisterSchemaPromise = db
+    schemaPromise = db
       .query<ColumnMetaRow>(
         `
           select
@@ -233,23 +237,34 @@ async function getAssetRegisterSchema(): Promise<TableSchema> {
             is_nullable,
             column_default
           from information_schema.columns
-          where table_name = 'asset_register_items'
+          where table_name = $1
             and table_schema = any(current_schemas(false))
         `,
+        [tableName],
       )
       .then((result) => ({
         columnNames: new Set(result.rows.map((row) => row.column_name)),
         columns: new Map(result.rows.map((row) => [row.column_name, row])),
       }));
+
+    assetRegisterSchemaPromises.set(tableName, schemaPromise);
   }
 
-  const schema = await assetRegisterSchemaPromise;
+  const schema = await schemaPromise;
 
   if (!schema.columnNames.size) {
-    throw new Error('ASSET_REGISTER_TABLE_NOT_FOUND');
+    throw new Error(`${tableName.toUpperCase()}_TABLE_NOT_FOUND`);
   }
 
   return schema;
+}
+
+async function getAssetRegisterSchema(): Promise<TableSchema> {
+  return getTableSchema('asset_register_items');
+}
+
+async function getValuationRunsSchema(): Promise<TableSchema> {
+  return getTableSchema('valuation_runs');
 }
 
 function resolveColumn(schema: TableSchema, ...candidates: string[]): string | null {
@@ -351,6 +366,54 @@ function buildSelectList(schema: TableSchema): string {
   return selectParts.join(',\n        ');
 }
 
+function setField(fields: SqlField[], nextField: SqlField): void {
+  const existingIndex = fields.findIndex((field) => field.column === nextField.column);
+
+  if (existingIndex >= 0) {
+    fields[existingIndex] = nextField;
+    return;
+  }
+
+  fields.push(nextField);
+}
+
+function resolveArrayCast(meta: ColumnMetaRow): string {
+  const map: Record<string, string> = {
+    _text: '::text[]',
+    _varchar: '::text[]',
+    _bpchar: '::text[]',
+    _int2: '::smallint[]',
+    _int4: '::integer[]',
+    _int8: '::bigint[]',
+    _numeric: '::numeric[]',
+    _float4: '::real[]',
+    _float8: '::double precision[]',
+    _bool: '::boolean[]',
+  };
+
+  return map[meta.udt_name] ?? '::text[]';
+}
+
+function buildFieldFromMeta(meta: ColumnMetaRow, value: unknown): SqlField {
+  if (isArrayColumn(meta)) {
+    return {
+      column: meta.column_name,
+      value: Array.isArray(value) ? value : [],
+      cast: resolveArrayCast(meta),
+    };
+  }
+
+  if (isJsonColumn(meta)) {
+    return {
+      column: meta.column_name,
+      value: typeof value === 'string' ? value : JSON.stringify(value ?? null),
+      cast: meta.data_type === 'jsonb' ? '::jsonb' : '::json',
+    };
+  }
+
+  return { column: meta.column_name, value };
+}
+
 function pushField(
   fields: SqlField[],
   schema: TableSchema,
@@ -364,15 +427,17 @@ function pushField(
     return;
   }
 
-  const nextField: SqlField = { column, value, cast };
-  const existingIndex = fields.findIndex((field) => field.column === column);
+  setField(fields, { column, value, cast });
+}
 
-  if (existingIndex >= 0) {
-    fields[existingIndex] = nextField;
+function pushExactField(fields: SqlField[], schema: TableSchema, column: string, value: unknown): void {
+  const meta = schema.columns.get(column);
+
+  if (!meta) {
     return;
   }
 
-  fields.push(nextField);
+  setField(fields, buildFieldFromMeta(meta, value));
 }
 
 function pushPhotoField(fields: SqlField[], schema: TableSchema, photos: string[]): void {
@@ -382,22 +447,226 @@ function pushPhotoField(fields: SqlField[], schema: TableSchema, photos: string[
   }
 
   const normalized = normalizePhotoArray(photos);
+  setField(fields, buildFieldFromMeta(meta, normalized));
+}
+
+type RequiredFieldContext = {
+  userId: string;
+  valuationRunId?: number | null;
+  title: string;
+  kind: AssetRegisterItemKind;
+  selectedMethod: AssetRegisterItemMethod;
+  selectedValueExVat: number;
+  note?: string | null;
+  brandName?: string | null;
+  modelName?: string | null;
+  drive?: string | null;
+  tractorType?: string | null;
+  cab?: string | null;
+  powerKw?: number | null;
+  year?: number | null;
+  hours?: number | null;
+  condition?: string | null;
+  now: Date;
+};
+
+function buildRequiredFallbackField(meta: ColumnMetaRow, context: RequiredFieldContext): SqlField | null {
+  const column = meta.column_name;
+
+  if (meta.is_nullable === 'YES' || meta.column_default) {
+    return null;
+  }
+
+  if (column === 'id') {
+    return null;
+  }
+
+  if (column === 'user_id') {
+    return buildFieldFromMeta(meta, context.userId);
+  }
+
+  if (column === 'valuation_run_id' || column === 'run_id') {
+    return context.valuationRunId === null || context.valuationRunId === undefined
+      ? null
+      : buildFieldFromMeta(meta, context.valuationRunId);
+  }
+
+  if (column === 'kind' || column === 'equipment_type' || column === 'asset_type' || column === 'item_type') {
+    return buildFieldFromMeta(meta, context.kind === 'tractor' ? 'tractor' : context.kind);
+  }
+
+  if (column === 'title' || column === 'name' || column === 'asset_name') {
+    return buildFieldFromMeta(meta, context.title);
+  }
+
+  if (column === 'selected_method' || column === 'method' || column === 'valuation_method') {
+    return buildFieldFromMeta(meta, context.selectedMethod);
+  }
+
+  if (
+    column === 'value' ||
+    column === 'selected_value_ex_vat' ||
+    column === 'selected_value' ||
+    column === 'saved_value_ex_vat'
+  ) {
+    return buildFieldFromMeta(meta, context.selectedValueExVat);
+  }
+
+  if (column === 'note' || column === 'notes' || column === 'description') {
+    return buildFieldFromMeta(meta, asText(context.note) || '');
+  }
+
+  if (column === 'brand_name' || column === 'brand') {
+    return buildFieldFromMeta(meta, asText(context.brandName) || '');
+  }
+
+  if (column === 'model_name' || column === 'model') {
+    return buildFieldFromMeta(meta, asText(context.modelName) || '');
+  }
+
+  if (column === 'drive_type' || column === 'drive' || column === 'drivetrain') {
+    return buildFieldFromMeta(meta, asText(context.drive) || '');
+  }
+
+  if (column === 'tractor_type' || column === 'tractor_category') {
+    return buildFieldFromMeta(meta, asText(context.tractorType) || '');
+  }
+
+  if (column === 'cab_type' || column === 'cab') {
+    return buildFieldFromMeta(meta, asText(context.cab) || '');
+  }
+
+  if (column === 'power_kw' || column === 'kw' || column === 'power') {
+    return buildFieldFromMeta(meta, context.powerKw ?? 0);
+  }
+
+  if (column === 'year_model' || column === 'year') {
+    return buildFieldFromMeta(meta, context.year ?? new Date().getFullYear());
+  }
+
+  if (column === 'hours' || column === 'engine_hours') {
+    return buildFieldFromMeta(meta, context.hours ?? 0);
+  }
+
+  if (column === 'condition') {
+    return buildFieldFromMeta(meta, asText(context.condition) || 'good');
+  }
+
+  if (column === 'created_at' || column === 'createdon' || column === 'created') {
+    return buildFieldFromMeta(meta, context.now);
+  }
+
+  if (column === 'updated_at' || column === 'modified_at' || column === 'updatedon') {
+    return buildFieldFromMeta(meta, context.now);
+  }
+
+  if (column === 'photos' || column === 'photo_urls' || column === 'image_urls' || column === 'images') {
+    return buildFieldFromMeta(meta, []);
+  }
 
   if (isArrayColumn(meta)) {
-    fields.push({ column: meta.column_name, value: normalized, cast: '::text[]' });
-    return;
+    return buildFieldFromMeta(meta, []);
   }
 
   if (isJsonColumn(meta)) {
-    fields.push({
-      column: meta.column_name,
-      value: JSON.stringify(normalized),
-      cast: meta.data_type === 'jsonb' ? '::jsonb' : '::json',
-    });
-    return;
+    const emptyValue = column.includes('photo') || column.includes('image') || column.includes('listing') ? [] : {};
+    return buildFieldFromMeta(meta, emptyValue);
   }
 
-  fields.push({ column: meta.column_name, value: JSON.stringify(normalized) });
+  if (
+    meta.data_type === 'smallint' ||
+    meta.data_type === 'integer' ||
+    meta.data_type === 'bigint' ||
+    meta.data_type === 'numeric' ||
+    meta.data_type === 'real' ||
+    meta.data_type === 'double precision' ||
+    meta.data_type === 'decimal'
+  ) {
+    return buildFieldFromMeta(meta, 0);
+  }
+
+  if (meta.data_type === 'boolean') {
+    return buildFieldFromMeta(meta, false);
+  }
+
+  if (
+    meta.data_type === 'date' ||
+    meta.data_type.includes('timestamp') ||
+    meta.udt_name.includes('timestamp')
+  ) {
+    return buildFieldFromMeta(meta, context.now);
+  }
+
+  return buildFieldFromMeta(meta, '');
+}
+
+function ensureRequiredFields(fields: SqlField[], schema: TableSchema, context: RequiredFieldContext): void {
+  for (const meta of schema.columns.values()) {
+    if (fields.some((field) => field.column === meta.column_name)) {
+      continue;
+    }
+
+    const fallback = buildRequiredFallbackField(meta, context);
+    if (fallback) {
+      setField(fields, fallback);
+    }
+  }
+}
+
+async function fetchValuationRunRowById(userId: string, runId: number): Promise<GenericDbRow | null> {
+  const db = getDb();
+  const result = await db.query<GenericDbRow>(
+    `
+      select *
+      from valuation_runs
+      where id = $1 and user_id = $2
+      limit 1
+    `,
+    [runId, userId],
+  );
+
+  return result.rows[0] ?? null;
+}
+
+function copySharedFieldsFromValuationRun(
+  fields: SqlField[],
+  assetSchema: TableSchema,
+  valuationSchema: TableSchema,
+  valuationRow: GenericDbRow,
+): void {
+  const excludedColumns = new Set([
+    'id',
+    'created_at',
+    'updated_at',
+    'createdon',
+    'updatedon',
+    'modified_at',
+    'photos',
+    'photo_urls',
+    'image_urls',
+    'images',
+  ]);
+
+  for (const [columnName, meta] of assetSchema.columns.entries()) {
+    if (excludedColumns.has(columnName)) {
+      continue;
+    }
+
+    if (!valuationSchema.columnNames.has(columnName)) {
+      continue;
+    }
+
+    if (!(columnName in valuationRow)) {
+      continue;
+    }
+
+    const value = valuationRow[columnName];
+    if (typeof value === 'undefined') {
+      continue;
+    }
+
+    setField(fields, buildFieldFromMeta(meta, value));
+  }
 }
 
 function buildInsertQuery(schema: TableSchema, fields: SqlField[]): { sql: string; values: unknown[] } {
@@ -501,6 +770,16 @@ export async function createManualAssetRegisterItem(
   pushPhotoField(fields, schema, input.photos ?? []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
+  ensureRequiredFields(fields, schema, {
+    userId,
+    valuationRunId: null,
+    title: asText(input.title),
+    kind: normalizeKind(input.kind),
+    selectedMethod: 'manual',
+    selectedValueExVat: nextValue,
+    note: input.note ?? null,
+    now,
+  });
 
   const query = buildInsertQuery(schema, fields);
   const result = await db.query<AssetRegisterRow>(query.sql, query.values);
@@ -580,7 +859,7 @@ export async function deleteAssetRegisterItem(userId: string, assetId: number): 
 
 export async function createAssetRegisterItemFromValuation(input: {
   userId: string;
-  valuationRunId?: number | null;
+  valuationRunId: number;
   result: Result;
   selectedMethod: MethodKey;
   selectedValueExVat: number;
@@ -590,6 +869,13 @@ export async function createAssetRegisterItemFromValuation(input: {
 }): Promise<AssetRegisterItem> {
   const db = getDb();
   const schema = await getAssetRegisterSchema();
+  const valuationSchema = await getValuationRunsSchema();
+  const valuationRow = await fetchValuationRunRowById(input.userId, input.valuationRunId);
+
+  if (!valuationRow) {
+    throw new Error('VALUATION_RUN_NOT_FOUND');
+  }
+
   const valuationResult = input.result;
   const model = valuationResult.model;
   const title = `${model.brandName} ${model.modelName}`.trim();
@@ -597,8 +883,10 @@ export async function createAssetRegisterItemFromValuation(input: {
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
   const fields: SqlField[] = [];
 
+  copySharedFieldsFromValuationRun(fields, schema, valuationSchema, valuationRow);
+
   pushField(fields, schema, ['user_id'], input.userId);
-  pushField(fields, schema, ['valuation_run_id', 'run_id'], input.valuationRunId ?? null);
+  pushField(fields, schema, ['valuation_run_id', 'run_id'], input.valuationRunId);
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], 'tractor');
   pushField(fields, schema, ['title', 'name', 'asset_name'], title);
   pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], selectedValueExVat);
@@ -620,6 +908,26 @@ export async function createAssetRegisterItemFromValuation(input: {
   pushPhotoField(fields, schema, []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
+
+  ensureRequiredFields(fields, schema, {
+    userId: input.userId,
+    valuationRunId: input.valuationRunId,
+    title,
+    kind: 'tractor',
+    selectedMethod: input.selectedMethod,
+    selectedValueExVat,
+    note: input.note ?? null,
+    brandName: model.brandName,
+    modelName: model.modelName,
+    drive: model.drive,
+    tractorType: model.tractorType,
+    cab: model.cab,
+    powerKw: model.powerKw,
+    year: Math.round(input.year),
+    hours: Math.max(0, Math.round(input.hours)),
+    condition: typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good',
+    now,
+  });
 
   const query = buildInsertQuery(schema, fields);
   const inserted = await db.query<AssetRegisterRow>(query.sql, query.values);
