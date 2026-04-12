@@ -56,7 +56,7 @@ type TractorValuationApiResponse = {
 type SaveValuationRunApiResponse = {
   ok: boolean;
   runId?: number;
-  assetId?: number;
+  assetId?: string;
   createdAtIso?: string;
   selectedValueExVat?: number;
   warning?: string;
@@ -1046,16 +1046,14 @@ export default function ValuationClient() {
 
       const data = (await response.json()) as SaveValuationRunApiResponse;
 
-      if (!response.ok || !data.ok || !data.assetId) {
+      if (!response.ok || !data.ok) {
         throw new Error(data.error ?? 'Failed to save to asset register.');
       }
 
       setSelectedMethod(saveChoiceMethod);
       setSaveChoiceOpen(false);
       setMessage(
-        data.warning
-          ? `Saved to asset register. Asset #${data.assetId} was created. ${data.warning}`
-          : `Saved to asset register. Asset #${data.assetId} was created.`,
+        data.warning ? `Saved to asset register. ${data.warning}` : 'Saved to asset register.',
       );
 
       router.push('/asset-register');
