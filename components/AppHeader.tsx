@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import styles from './AppHeader.module.css';
 
-type ActivePage = 'home' | 'valuation' | 'asset-register' | 'marketplace';
+type ActivePage = 'home' | 'valuation' | 'asset-register' | 'marketplace' | 'none';
 
 type AppHeaderProps = {
   active: ActivePage;
