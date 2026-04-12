@@ -3,11 +3,15 @@ import type { MarketplaceListing } from './marketplace';
 
 const FALLBACK_MARKETPLACE_IMAGE = '/brand/Tractor.png';
 
+let marketplaceColumnsEnsured = false;
+
 type MarketplaceAssetRow = Record<string, unknown> & {
   profile_business_name?: unknown;
   profile_phone?: unknown;
   profile_province?: unknown;
   profile_town_city?: unknown;
+  profile_name?: unknown;
+  profile_email?: unknown;
 };
 
 function asText(value: unknown): string {
@@ -111,6 +115,24 @@ function deriveBrandAndModel(row: Record<string, unknown>): { brandName: string;
   };
 }
 
+async function ensureMarketplaceColumns(): Promise<void> {
+  if (marketplaceColumnsEnsured) {
+    return;
+  }
+
+  const db = getDb();
+
+  await db.query(`
+    alter table asset_register_items
+      add column if not exists seller_phone text,
+      add column if not exists marketplace_notes text,
+      add column if not exists marketplace_status text,
+      add column if not exists marketplace_price_ex_vat numeric(14,2)
+  `);
+
+  marketplaceColumnsEnsured = true;
+}
+
 function buildMarketplaceListing(
   row: MarketplaceAssetRow,
   options: { viewerUserId?: string | null; exposeContact: boolean },
@@ -125,12 +147,22 @@ function buildMarketplaceListing(
   const publishedAtIso =
     asText(pick(row, ['updated_at', 'published_at', 'created_at'])) || new Date().toISOString();
   const askingPriceExVat = Math.round(
-    asNumber(pick(row, ['selected_value_ex_vat', 'value', 'saved_value_ex_vat']), 0),
+    asNumber(
+      pick(row, [
+        'marketplace_price_ex_vat',
+        'asking_price_ex_vat',
+        'listing_price_ex_vat',
+        'selected_value_ex_vat',
+        'value',
+        'saved_value_ex_vat',
+      ]),
+      0,
+    ),
   );
   const province = titleCase(asText(row.profile_province) || 'South Africa');
   const area = titleCase(asText(row.profile_town_city) || 'Undisclosed');
   const sellerCompany = asText(row.profile_business_name) || undefined;
-  const sellerName = sellerCompany || 'Aim4price seller';
+  const sellerName = sellerCompany || asText(row.profile_name) || 'Aim4price seller';
   const sellerPhone = options.exposeContact
     ? asText(pick(row, ['seller_phone'])) || asText(row.profile_phone)
     : '';
@@ -164,7 +196,7 @@ function buildMarketplaceListing(
     sellerName,
     sellerCompany,
     sellerPhone,
-    sellerEmail: undefined,
+    sellerEmail: asText(row.profile_email) || undefined,
     dateAdvertised: publishedAtIso.slice(0, 10),
     publishedAtIso,
     askingPriceExVat,
@@ -190,8 +222,9 @@ export async function listPublishedMarketplaceAssetListings(options: {
   viewerUserId?: string | null;
   exposeContact: boolean;
 }): Promise<MarketplaceListing[]> {
-  const db = getDb();
+  await ensureMarketplaceColumns();
 
+  const db = getDb();
   const result = await db.query<MarketplaceAssetRow>(
     `
       select
@@ -199,7 +232,9 @@ export async function listPublishedMarketplaceAssetListings(options: {
         p.business_name as profile_business_name,
         p.phone as profile_phone,
         p.province as profile_province,
-        p.town_city as profile_town_city
+        p.town_city as profile_town_city,
+        null::text as profile_name,
+        null::text as profile_email
       from asset_register_items a
       left join account_profiles p on p.user_id = a.user_id
       where coalesce(a.marketplace_status, 'draft') = 'live'
@@ -213,9 +248,13 @@ export async function listPublishedMarketplaceAssetListings(options: {
 export async function publishAssetRegisterItemToMarketplace(input: {
   userId: string;
   assetId: string;
+  askingPriceExVat?: number | null;
+  marketplaceNotes?: string | null;
+  sellerPhone?: string | null;
 }): Promise<MarketplaceListing> {
-  const db = getDb();
+  await ensureMarketplaceColumns();
 
+  const db = getDb();
   const current = await db.query<MarketplaceAssetRow>(
     `
       select
@@ -223,7 +262,9 @@ export async function publishAssetRegisterItemToMarketplace(input: {
         p.business_name as profile_business_name,
         p.phone as profile_phone,
         p.province as profile_province,
-        p.town_city as profile_town_city
+        p.town_city as profile_town_city,
+        null::text as profile_name,
+        null::text as profile_email
       from asset_register_items a
       left join account_profiles p on p.user_id = a.user_id
       where a.user_id = $1 and a.id = $2
@@ -242,19 +283,40 @@ export async function publishAssetRegisterItemToMarketplace(input: {
     throw new Error('Only tractor assets can be sent to the marketplace.');
   }
 
-  const askingPriceExVat = Math.round(
-    asNumber(pick(row, ['selected_value_ex_vat', 'value', 'saved_value_ex_vat']), 0),
+  const currentAskingPrice = Math.round(
+    asNumber(
+      pick(row, [
+        'marketplace_price_ex_vat',
+        'asking_price_ex_vat',
+        'listing_price_ex_vat',
+        'selected_value_ex_vat',
+        'value',
+        'saved_value_ex_vat',
+      ]),
+      0,
+    ),
+  );
+  const askingPriceExVat = Math.max(
+    0,
+    Math.round(Number(input.askingPriceExVat ?? currentAskingPrice) || 0),
   );
 
   if (askingPriceExVat <= 0) {
-    throw new Error('Asset needs a value before it can be sent to marketplace.');
+    throw new Error('Add a valid selling price before publishing to marketplace.');
   }
 
-  const sellerPhone = asText(pick(row, ['seller_phone'])) || asText(row.profile_phone);
+  const sellerPhone =
+    asText(input.sellerPhone) || asText(pick(row, ['seller_phone'])) || asText(row.profile_phone);
 
   if (!sellerPhone) {
-    throw new Error('Add a phone number under Account before publishing to marketplace.');
+    throw new Error('Add a phone number under Account or in the marketplace popup before publishing.');
   }
+
+  const title = asText(pick(row, ['title', 'name', 'asset_name'])) || 'Saved asset';
+  const nextNotes =
+    asText(input.marketplaceNotes) ||
+    asText(pick(row, ['marketplace_notes', 'note', 'notes', 'description'])) ||
+    title;
 
   const updated = await db.query<MarketplaceAssetRow>(
     `
@@ -262,12 +324,13 @@ export async function publishAssetRegisterItemToMarketplace(input: {
       set
         marketplace_status = 'live',
         seller_phone = $3,
-        marketplace_notes = coalesce(nullif(trim(marketplace_notes), ''), nullif(trim(note), ''), title),
+        marketplace_notes = $4,
+        marketplace_price_ex_vat = $5,
         updated_at = now()
       where user_id = $1 and id = $2
       returning *
     `,
-    [input.userId, input.assetId, sellerPhone],
+    [input.userId, input.assetId, sellerPhone, nextNotes, askingPriceExVat],
   );
 
   const updatedRow = updated.rows[0];
@@ -282,6 +345,8 @@ export async function publishAssetRegisterItemToMarketplace(input: {
     profile_phone: row.profile_phone,
     profile_province: row.profile_province,
     profile_town_city: row.profile_town_city,
+    profile_name: row.profile_name,
+    profile_email: row.profile_email,
   };
 
   return buildMarketplaceListing(listingRow, {
@@ -294,8 +359,9 @@ export async function removeAssetRegisterItemFromMarketplace(input: {
   userId: string;
   assetId: string;
 }): Promise<void> {
-  const db = getDb();
+  await ensureMarketplaceColumns();
 
+  const db = getDb();
   const result = await db.query(
     `
       update asset_register_items
