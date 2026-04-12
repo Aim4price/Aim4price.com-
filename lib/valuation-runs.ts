@@ -263,3 +263,16 @@ export async function saveValuationRun(input: SaveValuationRunInput): Promise<Sa
   const result = await runServerValuation(input);
   return saveValuationRunFromResult(input, result);
 }
+
+
+export async function deleteValuationRunById(userId: string, runId: number): Promise<void> {
+  const db = getDb();
+
+  await db.query(
+    `
+      delete from valuation_runs
+      where id = $1 and user_id = $2
+    `,
+    [runId, userId],
+  );
+}
