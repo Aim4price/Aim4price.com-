@@ -500,6 +500,7 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
   pushPhotoField(fields, schema, input.photos ?? []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
+  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
   const query = buildInsertQuery(schema, fields);
   const result = await db.query<AssetRegisterRow>(query.sql, query.values);
@@ -538,6 +539,7 @@ export async function updateAssetRegisterItem(
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
   pushPhotoField(fields, schema, input.photos ?? []);
+  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
   if (!fields.length) {
     return existing;
@@ -617,6 +619,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['note', 'notes', 'description'], asText(input.note) || null);
   pushPhotoField(fields, schema, []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
+  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
   const query = buildInsertQuery(schema, fields);
   const inserted = await db.query<AssetRegisterRow>(query.sql, query.values);
