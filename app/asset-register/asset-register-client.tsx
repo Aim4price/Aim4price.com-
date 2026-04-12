@@ -850,7 +850,7 @@ export default function AssetRegisterClient() {
                       disabled={busyDeleteId === asset.id}
                       onClick={() => handleDeleteAsset(asset.id)}
                     >
-                      {busyDeleteId === asset.id ? 'Removing...' : 'Delete'}
+                      {busyDeleteId === asset.id ? 'Removing...' : 'Delete asset'}
                     </button>
                   </div>
                 </article>
