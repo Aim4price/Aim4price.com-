@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import AppHeader from '../../components/AppHeader';
-import styles from '../asset-register/page.module.css';
+import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
 
@@ -99,12 +99,55 @@ function countCompletedFields(profile: ProfileDraft): number {
   ].filter((value) => String(value ?? '').trim()).length;
 }
 
+function buildAddressLines(profile: ProfileDraft): string[] {
+  return [profile.addressLine1, profile.addressLine2, profile.townCity, profile.province]
+    .map((value) => String(value ?? '').trim())
+    .filter(Boolean);
+}
+
+async function readResponsePayload(response: Response): Promise<unknown> {
+  const contentType = response.headers.get('content-type') ?? '';
+
+  if (contentType.includes('application/json')) {
+    return response.json().catch(() => null);
+  }
+
+  const text = await response.text().catch(() => '');
+  return text.trim() ? { message: text } : null;
+}
+
+function extractErrorMessage(payload: unknown, fallback: string): string {
+  if (!payload || typeof payload !== 'object') {
+    return fallback;
+  }
+
+  const record = payload as Record<string, unknown>;
+  const errorRecord =
+    typeof record.error === 'object' && record.error !== null
+      ? (record.error as Record<string, unknown>)
+      : null;
+
+  const candidates = [record.message, record.error, record.reason, errorRecord?.message, errorRecord?.error];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate;
+    }
+  }
+
+  return fallback;
+}
+
 export default function AccountClient() {
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(initialProfileDraft);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -160,7 +203,33 @@ export default function AccountClient() {
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
+  useEffect(() => {
+    if (!isDeleteDialogOpen) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isDeletingAccount) {
+        setIsDeleteDialogOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isDeleteDialogOpen, isDeletingAccount]);
+
   const completedFields = useMemo(() => countCompletedFields(profileDraft), [profileDraft]);
+  const addressLines = useMemo(() => buildAddressLines(profileDraft), [profileDraft]);
+  const marketplaceSellerName = useMemo(() => {
+    return profileDraft.businessName.trim() || profile?.name || 'No seller name saved yet';
+  }, [profile?.name, profileDraft.businessName]);
 
   async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -195,31 +264,96 @@ export default function AccountClient() {
     }
   }
 
+  function closeDeleteDialog() {
+    if (isDeletingAccount) {
+      return;
+    }
+
+    setIsDeleteDialogOpen(false);
+    setDeletePassword('');
+    setDeleteConfirmText('');
+  }
+
+  async function handleDeleteAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!deletePassword.trim()) {
+      setNotice({ tone: 'error', message: 'Enter your password to delete this account.' });
+      return;
+    }
+
+    if (deleteConfirmText.trim().toUpperCase() !== 'DELETE') {
+      setNotice({ tone: 'error', message: 'Type DELETE to confirm account removal.' });
+      return;
+    }
+
+    setIsDeletingAccount(true);
+
+    try {
+      const response = await fetch('/api/auth/delete-user', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          password: deletePassword,
+          callbackURL: '/',
+        }),
+      });
+
+      const payload = await readResponsePayload(response);
+
+      if (!response.ok) {
+        throw new Error(extractErrorMessage(payload, 'Failed to delete account.'));
+      }
+
+      setNotice({
+        tone: 'success',
+        message: 'Your account and saved workspace data were deleted. Redirecting…',
+      });
+      setIsDeleteDialogOpen(false);
+      setDeletePassword('');
+      setDeleteConfirmText('');
+
+      window.setTimeout(() => {
+        window.location.assign('/');
+      }, 700);
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to delete account.',
+      });
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  }
+
   return (
     <main className={styles.page}>
-      <AppHeader active="asset-register" />
+      <AppHeader active="none" />
 
       <section className={styles.shell}>
         <div className={styles.hero}>
-          <div>
-            <span className={styles.eyebrow}>Account</span>
-            <h1>Manage the details used across Aim4price.</h1>
+          <div className={styles.heroContent}>
+            <span className={styles.eyebrow}>Profile</span>
+            <h1>Account details</h1>
             <p>
-              Keep your business profile, contact details and report-ready information in one place.
-              This page is the right home for future PDF, export and marketplace defaults.
+              Keep your business, contact and document details in one clean workspace. This is the
+              seller profile that feeds the rest of Aim4price.
             </p>
           </div>
 
-          <div className={styles.heroStats}>
-            <div className={styles.statCard}>
-              <span>Profile fields completed</span>
+          <div className={styles.heroAside}>
+            <div className={styles.heroStat}>
+              <span>Profile completion</span>
               <strong>{completedFields}/9</strong>
             </div>
-            <div className={styles.statCard}>
+            <div className={styles.heroStat}>
               <span>Account type</span>
               <strong>{profileDraft.accountType || 'owner'}</strong>
             </div>
-            <div className={styles.statCard}>
+            <div className={styles.heroStat}>
               <span>Last updated</span>
               <strong>{formatDate(profile?.updatedAtIso)}</strong>
             </div>
@@ -232,16 +366,13 @@ export default function AccountClient() {
           </div>
         ) : null}
 
-        <div className={styles.grid}>
+        <div className={styles.layout}>
           <section className={styles.card}>
             <div className={styles.cardHeader}>
               <div>
-                <span className={styles.kicker}>Profile</span>
-                <h2>Account details</h2>
-                <p>
-                  These details can flow into valuation PDFs, portfolio exports, contact blocks and
-                  future marketplace seller defaults.
-                </p>
+                <span className={styles.kicker}>Account profile</span>
+                <h2>Business and contact details</h2>
+                <p>Use this page for the information you want tied to reports, exports and seller contact details.</p>
               </div>
             </div>
 
@@ -352,7 +483,7 @@ export default function AccountClient() {
                     rows={4}
                     value={profileDraft.notes}
                     onChange={(event) => setProfileDraft((current) => ({ ...current, notes: event.target.value }))}
-                    placeholder="Extra account, PDF or contact details"
+                    placeholder="Extra account, PDF or seller notes"
                   />
                 </label>
 
@@ -360,72 +491,127 @@ export default function AccountClient() {
                   <button type="submit" className={styles.primaryButton} disabled={isSavingProfile}>
                     {isSavingProfile ? 'Saving...' : 'Save account details'}
                   </button>
+                  <Link href="/asset-register" className={styles.secondaryButton}>
+                    Open asset register
+                  </Link>
                 </div>
               </form>
             )}
           </section>
 
-          <section className={styles.card}>
-            <div className={styles.cardHeader}>
+          <aside className={styles.sidebar}>
+            <section className={styles.sidebarCard}>
+              <div className={styles.cardHeader}>
+                <div>
+                  <span className={styles.kicker}>Seller preview</span>
+                  <h2>Marketplace contact</h2>
+                  <p>This is the contact footprint buyers will rely on when you publish equipment.</p>
+                </div>
+              </div>
+
+              <div className={styles.summaryStack}>
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Seller</span>
+                  <div className={styles.summaryList}>
+                    <strong>{marketplaceSellerName}</strong>
+                    <span>{profile?.email || 'No email found'}</span>
+                  </div>
+                </div>
+
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Phone</span>
+                  <span className={styles.summaryValue}>{profileDraft.phone.trim() || 'No phone saved yet'}</span>
+                </div>
+
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Location</span>
+                  <span className={styles.summaryValue}>
+                    {addressLines.length ? addressLines.join(', ') : 'No address saved yet'}
+                  </span>
+                </div>
+
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Quick links</span>
+                  <div className={styles.inlineActions}>
+                    <Link href="/valuation" className={styles.secondaryButton}>
+                      Open valuation
+                    </Link>
+                    <Link href="/marketplace" className={styles.secondaryButton}>
+                      Open marketplace
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className={`${styles.sidebarCard} ${styles.dangerCard}`}>
               <div>
-                <span className={styles.kicker}>Next layer</span>
-                <h2>How this page will be used</h2>
+                <span className={styles.dangerKicker}>Danger zone</span>
+                <h2>Delete account</h2>
                 <p>
-                  This route is now separated from the asset register so profile settings can grow
-                  without cluttering the saved-assets workflow.
+                  Permanently remove your login, saved valuations, asset register items and account
+                  profile from Aim4price.
                 </p>
               </div>
-            </div>
 
-            <div className={styles.assetList}>
-              <article className={styles.assetCard}>
-                <div className={styles.badgeRow}>
-                  <span className={styles.badge}>PDFs</span>
-                  <span className={styles.badge}>Reports</span>
-                </div>
-                <h3>Report-ready details</h3>
-                <p className={styles.note}>
-                  Business name, address, VAT and contact details are now anchored in one page,
-                  which is the correct base for branded PDF exports.
-                </p>
-              </article>
-
-              <article className={styles.assetCard}>
-                <div className={styles.badgeRow}>
-                  <span className={styles.badge}>Marketplace</span>
-                  <span className={styles.badge}>Seller defaults</span>
-                </div>
-                <h3>Seller profile groundwork</h3>
-                <p className={styles.note}>
-                  The next marketplace upgrade can pull default seller contact information from this
-                  account layer instead of duplicating it listing by listing.
-                </p>
-              </article>
-
-              <article className={styles.assetCard}>
-                <div className={styles.badgeRow}>
-                  <span className={styles.badge}>Workspace</span>
-                  <span className={styles.badge}>Navigation</span>
-                </div>
-                <h3>Cleaner product structure</h3>
-                <p className={styles.note}>
-                  Asset Register can now focus on saved machinery, while Account owns profile,
-                  contact, export and settings workflows.
-                </p>
-              </article>
-            </div>
-
-            <div className={styles.inlineLinks}>
-              <Link href="/asset-register" className={styles.secondaryButton}>
-                Open asset register
-              </Link>
-              <Link href="/valuation" className={styles.secondaryButton}>
-                Open valuation
-              </Link>
-            </div>
-          </section>
+              <button type="button" className={styles.dangerButton} onClick={() => setIsDeleteDialogOpen(true)}>
+                Delete my account
+              </button>
+            </section>
+          </aside>
         </div>
       </section>
+
+      {isDeleteDialogOpen ? (
+        <div className={styles.modalBackdrop} onClick={closeDeleteDialog}>
+          <section className={styles.modalCard} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <span className={styles.dangerKicker}>Delete account</span>
+              <h2>Confirm permanent removal</h2>
+              <p>
+                This removes your full Aim4price workspace, including saved valuations, asset register
+                items and account details.
+              </p>
+            </div>
+
+            <form className={styles.modalForm} onSubmit={handleDeleteAccount}>
+              <div className={styles.confirmBox}>
+                <strong>This action cannot be undone.</strong>
+                <p>Enter your password and type DELETE below to confirm.</p>
+              </div>
+
+              <label className={styles.modalField}>
+                <span>Password</span>
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={deletePassword}
+                  onChange={(event) => setDeletePassword(event.target.value)}
+                  placeholder="Enter your password"
+                />
+              </label>
+
+              <label className={styles.modalField}>
+                <span>Type DELETE to confirm</span>
+                <input
+                  value={deleteConfirmText}
+                  onChange={(event) => setDeleteConfirmText(event.target.value)}
+                  placeholder="DELETE"
+                />
+              </label>
+
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.ghostButton} onClick={closeDeleteDialog}>
+                  Cancel
+                </button>
+                <button type="submit" className={styles.dangerButton} disabled={isDeletingAccount}>
+                  {isDeletingAccount ? 'Deleting account...' : 'Delete account'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }
