@@ -11,8 +11,6 @@ import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 import {
   FALLBACK_MARKETPLACE_IMAGE,
-  loadMarketplaceListings,
-  removeMarketplaceListing,
   seedMarketplaceListings,
   type MarketplaceListing,
 } from '../../lib/marketplace';
@@ -31,6 +29,12 @@ type MarketplaceClientProps = {
 };
 
 type SortValue = 'newest' | 'price-low' | 'price-high' | 'hours-low' | 'hours-high' | 'year-new';
+
+type MarketplaceApiResponse = {
+  ok: boolean;
+  listings?: MarketplaceListing[];
+  error?: string;
+};
 
 const LISTINGS_PER_PAGE = 9;
 
@@ -164,17 +168,40 @@ export default function MarketplaceClient({
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    const refresh = () => {
-      setItems(loadMarketplaceListings());
-    };
+    let mounted = true;
 
-    refresh();
+    async function refresh() {
+      try {
+        const response = await fetch('/api/marketplace', {
+          cache: 'no-store',
+          credentials: 'include',
+        });
+
+        const data = (await response.json()) as MarketplaceApiResponse;
+
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error ?? 'Failed to load marketplace.');
+        }
+
+        if (!mounted) {
+          return;
+        }
+
+        const publishedListings = Array.isArray(data.listings) ? data.listings : [];
+        setItems([...publishedListings, ...seedMarketplaceListings]);
+      } catch {
+        if (mounted) {
+          setItems(seedMarketplaceListings);
+        }
+      }
+    }
+
+    void refresh();
     window.addEventListener('focus', refresh);
-    window.addEventListener('storage', refresh);
 
     return () => {
+      mounted = false;
       window.removeEventListener('focus', refresh);
-      window.removeEventListener('storage', refresh);
     };
   }, []);
 
@@ -334,7 +361,7 @@ export default function MarketplaceClient({
     provinceFilter ? `Province: ${provinceFilter}` : '',
   ].filter(Boolean);
 
-  const canDeleteActiveListing = activeListing?.publishedBy === 'asset-register';
+  const canDeleteActiveListing = Boolean(activeListing?.canManage && activeListing?.sourceAssetId);
 
   function clearFilters() {
     setQuery('');
@@ -375,8 +402,8 @@ export default function MarketplaceClient({
     }
   }
 
-  function handleDeleteActiveListing() {
-    if (!activeListing || activeListing.publishedBy !== 'asset-register') {
+  async function handleDeleteActiveListing() {
+    if (!activeListing?.sourceAssetId || !activeListing.canManage) {
       return;
     }
 
@@ -387,9 +414,25 @@ export default function MarketplaceClient({
       return;
     }
 
-    removeMarketplaceListing(activeListing.id);
-    setItems(loadMarketplaceListings());
-    closeListing();
+    try {
+      const response = await fetch(`/api/marketplace?assetId=${encodeURIComponent(activeListing.sourceAssetId)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      const data = (await response.json()) as { ok: boolean; error?: string };
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? 'Failed to delete listing.');
+      }
+
+      setItems((current) =>
+        current.filter((listing) => listing.sourceAssetId !== activeListing.sourceAssetId),
+      );
+      closeListing();
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Failed to delete listing.');
+    }
   }
 
   return (
@@ -818,7 +861,7 @@ export default function MarketplaceClient({
                     <button
                       type="button"
                       className={styles.deleteAction}
-                      onClick={handleDeleteActiveListing}
+                      onClick={() => void handleDeleteActiveListing()}
                     >
                       Delete listing
                     </button>
