@@ -7,7 +7,7 @@ export type AssetRegisterItemKind = 'tractor' | 'manual' | 'property';
 export type AssetRegisterItemMethod = MethodKey | 'manual';
 
 export type AssetRegisterItem = {
-  id: number;
+  id: string;
   userId: string;
   valuationRunId: number | null;
   kind: AssetRegisterItemKind;
@@ -47,7 +47,7 @@ export type CreateManualAssetInput = {
 };
 
 export type UpdateAssetRegisterItemInput = {
-  assetId: number;
+  assetId: string;
   kind: AssetRegisterItemKind;
   title: string;
   value: number;
@@ -112,6 +112,13 @@ type GenericDbRow = Record<string, unknown>;
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function asIdText(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (typeof value === 'bigint') return value.toString();
+  return '';
 }
 
 function asNumber(value: unknown): number | null {
@@ -192,7 +199,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
   );
 
   return {
-    id: Number(row.id),
+    id: asIdText(row.id),
     userId: asText(row.user_id),
     valuationRunId: asNumber(row.valuation_run_id),
     kind: normalizeKind(row.kind),
@@ -708,7 +715,7 @@ function buildUpdateSetClause(fields: SqlField[]): { clause: string; values: unk
   };
 }
 
-export async function getAssetRegisterItemById(userId: string, assetId: number): Promise<AssetRegisterItem | null> {
+export async function getAssetRegisterItemById(userId: string, assetId: string): Promise<AssetRegisterItem | null> {
   const db = getDb();
   const schema = await getAssetRegisterSchema();
   const result = await db.query<AssetRegisterRow>(
@@ -762,7 +769,7 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], nextValue);
   pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], 'manual');
   pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], nextValue);
-  pushField(fields, schema, ['source', 'origin', 'entry_source'], 'manual');
+  pushField(fields, schema, ['source_type', 'source', 'origin', 'entry_source'], 'manual');
   pushField(fields, schema, ['note', 'notes', 'description'], asText(input.note) || null);
   pushField(fields, schema, ['serial_number', 'serial', 'vin'], asText(input.serialNumber) || null);
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
@@ -845,7 +852,7 @@ export async function updateAssetRegisterItem(
   return mapAssetRegisterRow(row);
 }
 
-export async function deleteAssetRegisterItem(userId: string, assetId: number): Promise<void> {
+export async function deleteAssetRegisterItem(userId: string, assetId: string): Promise<void> {
   const db = getDb();
 
   await db.query(
@@ -892,7 +899,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], selectedValueExVat);
   pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], input.selectedMethod);
   pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], selectedValueExVat);
-  pushField(fields, schema, ['source', 'origin', 'entry_source'], 'valuation');
+  pushField(fields, schema, ['source_type', 'source', 'origin', 'entry_source'], 'valuation');
   pushField(fields, schema, ['brand_name', 'brand'], model.brandName);
   pushField(fields, schema, ['model_name', 'model'], model.modelName);
   pushField(fields, schema, ['drive_type', 'drive', 'drivetrain'], model.drive);
