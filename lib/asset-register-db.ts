@@ -30,6 +30,9 @@ export type AssetRegisterItem = {
   serialNumber: string;
   isFinanced: boolean;
   financeNote: string;
+  sellerPhone: string;
+  marketplaceNotes: string;
+  marketplaceStatus: string;
   photos: string[];
   createdAtIso: string;
   updatedAtIso: string;
@@ -82,6 +85,9 @@ type AssetRegisterRow = {
   serial_number: string | null;
   is_financed: boolean | null;
   finance_note: string | null;
+  seller_phone: string | null;
+  marketplace_notes: string | null;
+  marketplace_status: string | null;
   photos: unknown;
   created_at: string | null;
   updated_at: string | null;
@@ -222,6 +228,9 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     serialNumber: asText(row.serial_number),
     isFinanced: Boolean(row.is_financed),
     financeNote: asText(row.finance_note),
+    sellerPhone: asText(row.seller_phone),
+    marketplaceNotes: asText(row.marketplace_notes),
+    marketplaceStatus: asText(row.marketplace_status) || 'draft',
     photos: normalizePhotoArray(row.photos),
     createdAtIso: buildIsoDate(row.created_at),
     updatedAtIso: buildIsoDate(row.updated_at ?? row.created_at),
@@ -337,6 +346,9 @@ function buildSelectList(schema: TableSchema): string {
   const serialColumn = resolveColumn(schema, 'serial_number', 'serial', 'vin');
   const financedColumn = resolveColumn(schema, 'is_financed', 'financed');
   const financeNoteColumn = resolveColumn(schema, 'finance_note', 'finance_notes', 'finance_status');
+  const sellerPhoneColumn = resolveColumn(schema, 'seller_phone', 'phone', 'contact_phone');
+  const marketplaceNotesColumn = resolveColumn(schema, 'marketplace_notes', 'listing_notes');
+  const marketplaceStatusColumn = resolveColumn(schema, 'marketplace_status', 'listing_status', 'status');
   const photosColumn = resolveColumn(schema, 'photos', 'photo_urls', 'image_urls', 'images');
   const createdAtColumn = resolveColumn(schema, 'created_at', 'createdon', 'created');
   const updatedAtColumn = resolveColumn(schema, 'updated_at', 'modified_at', 'updatedon', 'created_at');
@@ -365,6 +377,9 @@ function buildSelectList(schema: TableSchema): string {
     serialColumn ? `${serialColumn} as serial_number` : 'null::text as serial_number',
     financedColumn ? `${financedColumn} as is_financed` : 'false as is_financed',
     financeNoteColumn ? `${financeNoteColumn} as finance_note` : 'null::text as finance_note',
+    sellerPhoneColumn ? `${sellerPhoneColumn} as seller_phone` : 'null::text as seller_phone',
+    marketplaceNotesColumn ? `${marketplaceNotesColumn} as marketplace_notes` : 'null::text as marketplace_notes',
+    marketplaceStatusColumn ? `${marketplaceStatusColumn} as marketplace_status` : `'draft'::text as marketplace_status`,
     photosColumn ? `${photosColumn} as photos` : `'[]'::jsonb as photos`,
     createdAtColumn ? `${createdAtColumn} as created_at` : 'now() as created_at',
     updatedAtColumn ? `${updatedAtColumn} as updated_at` : 'now() as updated_at',
@@ -557,6 +572,18 @@ function buildRequiredFallbackField(meta: ColumnMetaRow, context: RequiredFieldC
 
   if (column === 'condition') {
     return buildFieldFromMeta(meta, asText(context.condition) || 'good');
+  }
+
+  if (column === 'seller_phone' || column === 'phone' || column === 'contact_phone') {
+    return buildFieldFromMeta(meta, '');
+  }
+
+  if (column === 'marketplace_notes' || column === 'listing_notes') {
+    return buildFieldFromMeta(meta, '');
+  }
+
+  if (column === 'marketplace_status' || column === 'listing_status' || column === 'status') {
+    return buildFieldFromMeta(meta, 'draft');
   }
 
   if (column === 'created_at' || column === 'createdon' || column === 'created') {
