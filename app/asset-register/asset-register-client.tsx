@@ -107,6 +107,23 @@ function formatDate(value?: string | null): string {
   }).format(parsed);
 }
 
+function wasUpdatedAfterCreate(asset: RegisterAsset): boolean {
+  const createdAt = new Date(asset.createdAtIso).getTime();
+  const updatedAt = new Date(asset.updatedAtIso).getTime();
+
+  if (!Number.isFinite(createdAt) || !Number.isFinite(updatedAt)) {
+    return false;
+  }
+
+  return updatedAt - createdAt > 1000;
+}
+
+function assetStatusDateLabel(asset: RegisterAsset): string {
+  return wasUpdatedAfterCreate(asset)
+    ? `Edited ${formatDate(asset.updatedAtIso)}`
+    : `Saved ${formatDate(asset.createdAtIso)}`;
+}
+
 function methodLabel(value: AssetMethod): string {
   return (
     {
@@ -728,7 +745,7 @@ export default function AssetRegisterClient() {
             <div>
               <span className={styles.kicker}>Saved assets</span>
               <h2>Your register</h2>
-              <p>Valuations saved from the valuation page now appear here automatically.</p>
+              <p>Saved valuations appear here as fixed snapshots. They only change when you edit that item.</p>
             </div>
 
             <div className={styles.inlineLinks}>
@@ -774,7 +791,7 @@ export default function AssetRegisterClient() {
 
                     <div className={styles.priceBlock}>
                       <strong>{money(asset.value)}</strong>
-                      <span>Updated {formatDate(asset.updatedAtIso)}</span>
+                      <span>{assetStatusDateLabel(asset)}</span>
                     </div>
                   </div>
 
