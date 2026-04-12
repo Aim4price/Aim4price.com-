@@ -1,23 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
+import { createAssetRegisterItemFromValuation } from '../../../lib/asset-register-db';
+import { runServerValuation } from '../../../lib/server-valuation';
 import {
-  deleteUnreferencedAssetRegisterUploads,
-  listInternalAssetRegisterUploadIds,
-  MAX_ASSET_REGISTER_PHOTOS,
-} from '../../../lib/asset-register-uploads';
-import {
-  createManualAssetRegisterItem,
-  deleteAssetRegisterItem,
-  getAssetRegisterItemById,
-  listAssetRegisterItems,
-  updateAssetRegisterItem,
-  type AssetRegisterItemKind,
-  type CreateManualAssetInput,
-  type UpdateAssetRegisterItemInput,
-} from '../../../lib/asset-register-db';
+  getSelectedMethodValue,
+  deleteValuationRunById,
+  saveValuationRunFromResult,
+  type MethodKey,
+  type SaveValuationRunInput,
+  type SaveValuationRunResult,
+} from '../../../lib/valuation-runs';
+import type { ConditionKey } from '../../../lib/tractor-data';
+import type { GpsType, RunValuationInput } from '../../../lib/tractor-logic';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+type SaveValuationRunApiResponse = {
+  ok: boolean;
+  runId?: number;
+  assetId?: number;
+  createdAtIso?: string;
+  selectedValueExVat?: number;
+  warning?: string;
+  error?: string;
+};
 
 type ErrorLike = {
   message?: unknown;
@@ -27,44 +34,98 @@ type ErrorLike = {
   table?: unknown;
   column?: unknown;
   constraint?: unknown;
+  schema?: unknown;
 };
 
-function unauthorized() {
-  return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
+function parseBoolean(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === 'true' || normalized === '1' || normalized === 'yes';
+  }
+  if (typeof value === 'number') return value === 1;
+  return false;
 }
 
-function normalizeKind(value: unknown): AssetRegisterItemKind {
+function normalizeCondition(value: unknown): ConditionKey | null {
   const normalized = String(value ?? '').trim().toLowerCase();
-  if (normalized === 'tractor' || normalized === 'equipment') return 'tractor';
-  if (normalized === 'property') return 'property';
-  return 'manual';
-}
 
-function normalizePhotos(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
+  if (
+    normalized === 'excellent' ||
+    normalized === 'good' ||
+    normalized === 'fair' ||
+    normalized === 'used' ||
+    normalized === 'serious'
+  ) {
+    return normalized;
   }
 
-  const seen = new Set<string>();
-
-  return value
-    .map((entry) => String(entry ?? '').trim())
-    .filter(Boolean)
-    .filter((entry) => {
-      if (seen.has(entry)) {
-        return false;
-      }
-
-      seen.add(entry);
-      return true;
-    })
-    .slice(0, MAX_ASSET_REGISTER_PHOTOS);
+  return null;
 }
 
-function formatUnknownError(error: unknown, fallback: string): string {
+function normalizeMethod(value: unknown): MethodKey | null {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (normalized === 'aim4price' || normalized === 'market' || normalized === 'department') {
+    return normalized;
+  }
+
+  return null;
+}
+
+function normalizeGpsType(value: unknown): GpsType | null {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (normalized === 'full-autosteer' || normalized === 'guidance-only') {
+    return normalized;
+  }
+
+  return null;
+}
+
+function buildInput(
+  body: Partial<RunValuationInput> & { selectedMethod?: unknown; valuationVersion?: unknown },
+): SaveValuationRunInput | null {
+  const modelId = String(body.modelId ?? '').trim();
+  const year = Number(body.year);
+  const hours = Number(body.hours);
+  const condition = normalizeCondition(body.condition);
+  const selectedMethod = normalizeMethod(body.selectedMethod);
+
+  if (!modelId || !Number.isFinite(year) || !Number.isFinite(hours) || !condition || !selectedMethod) {
+    return null;
+  }
+
+  return {
+    modelId,
+    year,
+    hours,
+    condition,
+    frontPto: parseBoolean(body.frontPto),
+    frontLoader: parseBoolean(body.frontLoader),
+    gpsEnabled: parseBoolean(body.gpsEnabled),
+    gpsType: normalizeGpsType(body.gpsType),
+    gpsYear: body.gpsYear ?? null,
+    selectedMethod,
+    valuationVersion: String(body.valuationVersion ?? 'v1').trim() || 'v1',
+    userId: null,
+  };
+}
+
+function badRequest(message: string) {
+  return NextResponse.json<SaveValuationRunApiResponse>(
+    {
+      ok: false,
+      error: message,
+    },
+    { status: 400 },
+  );
+}
+
+function formatUnknownError(error: unknown): string {
   if (error instanceof Error && error.message) {
     const details = error as ErrorLike;
-    return [
+    const parts = [
       error.message,
       typeof details.detail === 'string' ? details.detail : '',
       typeof details.hint === 'string' ? `hint: ${details.hint}` : '',
@@ -72,9 +133,9 @@ function formatUnknownError(error: unknown, fallback: string): string {
       typeof details.table === 'string' ? `table: ${details.table}` : '',
       typeof details.constraint === 'string' ? `constraint: ${details.constraint}` : '',
       typeof details.code === 'string' ? `code: ${details.code}` : '',
-    ]
-      .filter(Boolean)
-      .join(' | ');
+    ].filter(Boolean);
+
+    return parts.join(' | ');
   }
 
   if (typeof error === 'object' && error !== null) {
@@ -94,190 +155,127 @@ function formatUnknownError(error: unknown, fallback: string): string {
     }
   }
 
-  return fallback;
+  return 'Failed to save to asset register.';
 }
 
-export async function GET() {
-  const session = await getServerSession();
+function buildFriendlyError(error: unknown): { status: number; message: string } {
+  const message = formatUnknownError(error);
 
-  if (!session?.user?.id) {
-    return unauthorized();
+  if (message.includes('MODEL_NOT_FOUND')) {
+    return {
+      status: 404,
+      message: 'Selected tractor model was not found in the database.',
+    };
   }
 
-  try {
-    const items = await listAssetRegisterItems(session.user.id);
-
-    return NextResponse.json({
-      ok: true,
-      items,
-      summary: {
-        count: items.length,
-        totalValue: items.reduce((sum, item) => sum + Number(item.value || 0), 0),
-      },
-    });
-  } catch (error) {
-    console.error('asset register GET failed', error);
-    return NextResponse.json(
-      { ok: false, error: formatUnknownError(error, 'Failed to load asset register.') },
-      { status: 500 },
-    );
+  if (message.includes('SELECTED_METHOD_NOT_AVAILABLE')) {
+    return {
+      status: 400,
+      message: 'The selected valuation method is not available for this tractor profile.',
+    };
   }
+
+  return {
+    status: 500,
+    message,
+  };
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession();
-
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
-
-  const body = (await request.json()) as Partial<CreateManualAssetInput>;
-  const title = String(body.title ?? '').trim();
-  const value = Math.round(Number(body.value) || 0);
-
-  if (!title || value <= 0) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: 'title and value are required.',
-      },
-      { status: 400 },
-    );
-  }
-
   try {
-    const item = await createManualAssetRegisterItem(session.user.id, {
-      kind: normalizeKind(body.kind),
-      title,
-      value,
-      note: body.note ?? null,
-      serialNumber: body.serialNumber ?? null,
-      isFinanced: Boolean(body.isFinanced),
-      financeNote: body.financeNote ?? null,
-      photos: normalizePhotos(body.photos),
-    });
+    const session = await getServerSession();
 
-    return NextResponse.json({ ok: true, item });
-  } catch (error) {
-    console.error('asset register POST failed', error);
-    return NextResponse.json(
-      { ok: false, error: formatUnknownError(error, 'Failed to create asset.') },
-      { status: 500 },
-    );
-  }
-}
-
-export async function PUT(request: NextRequest) {
-  const session = await getServerSession();
-
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
-
-  const body = (await request.json()) as Partial<UpdateAssetRegisterItemInput>;
-  const assetId = Math.round(Number(body.assetId) || 0);
-  const title = String(body.title ?? '').trim();
-  const value = Math.round(Number(body.value) || 0);
-
-  if (assetId <= 0) {
-    return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
-  }
-
-  if (!title || value <= 0) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: 'title and value are required.',
-      },
-      { status: 400 },
-    );
-  }
-
-  const existing = await getAssetRegisterItemById(session.user.id, assetId);
-
-  if (!existing) {
-    return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
-  }
-
-  const nextPhotos = normalizePhotos(body.photos);
-  const removedUploadIds = listInternalAssetRegisterUploadIds(
-    existing.photos.filter((photo) => !nextPhotos.includes(photo)),
-  );
-
-  try {
-    const item = await updateAssetRegisterItem(session.user.id, {
-      assetId,
-      kind: normalizeKind(body.kind),
-      title,
-      value,
-      note: body.note ?? null,
-      serialNumber: body.serialNumber ?? null,
-      isFinanced: Boolean(body.isFinanced),
-      financeNote: body.financeNote ?? null,
-      photos: nextPhotos,
-    });
-
-    await deleteUnreferencedAssetRegisterUploads({
-      userId: session.user.id,
-      uploadIds: removedUploadIds,
-      excludeAssetId: assetId,
-    });
-
-    return NextResponse.json({ ok: true, item });
-  } catch (error) {
-    if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
-      return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
+    if (!session?.user?.id) {
+      return NextResponse.json<SaveValuationRunApiResponse>(
+        {
+          ok: false,
+          error: 'You must be signed in to save to your asset register.',
+        },
+        { status: 401 },
+      );
     }
 
-    console.error('asset register PUT failed', error);
-    return NextResponse.json(
-      { ok: false, error: formatUnknownError(error, 'Failed to update asset.') },
-      { status: 500 },
+    const body = (await request.json()) as Partial<RunValuationInput> & {
+      selectedMethod?: unknown;
+      valuationVersion?: unknown;
+    };
+
+    const input = buildInput(body);
+    if (!input) {
+      return badRequest('modelId, year, hours, condition and selectedMethod are required.');
+    }
+
+    const valuationResult = await runServerValuation(input);
+    const selectedValueExVat = getSelectedMethodValue(valuationResult, input.selectedMethod);
+
+    if (selectedValueExVat === null) {
+      return NextResponse.json<SaveValuationRunApiResponse>(
+        {
+          ok: false,
+          error: 'The selected valuation method is not available for this tractor profile.',
+        },
+        { status: 400 },
+      );
+    }
+
+    let savedRun: SaveValuationRunResult | null = null;
+    let warning: string | undefined;
+
+    try {
+      savedRun = await saveValuationRunFromResult(
+        {
+          ...input,
+          userId: session.user.id,
+        },
+        valuationResult,
+      );
+    } catch (historyError) {
+      console.error('valuation history save failed; continuing with asset register save', historyError);
+      warning = `Valuation history could not be stored, but asset save will continue. ${formatUnknownError(historyError)}`;
+    }
+
+    try {
+      const asset = await createAssetRegisterItemFromValuation({
+        userId: session.user.id,
+        valuationRunId: savedRun?.runId ?? null,
+        result: valuationResult,
+        selectedMethod: input.selectedMethod,
+        selectedValueExVat,
+        year: input.year,
+        hours: input.hours,
+        note: '',
+      });
+
+      return NextResponse.json<SaveValuationRunApiResponse>({
+        ok: true,
+        runId: savedRun?.runId,
+        assetId: asset.id,
+        createdAtIso: savedRun?.createdAtIso ?? asset.createdAtIso,
+        selectedValueExVat,
+        warning,
+      });
+    } catch (assetSaveError) {
+      if (savedRun?.runId) {
+        try {
+          await deleteValuationRunById(session.user.id, savedRun.runId);
+        } catch (rollbackError) {
+          console.error('valuation run rollback failed after asset save failure', rollbackError);
+        }
+      }
+
+      throw assetSaveError;
+    }
+  } catch (error) {
+    console.error('valuation-runs route failed', error);
+
+    const friendly = buildFriendlyError(error);
+
+    return NextResponse.json<SaveValuationRunApiResponse>(
+      {
+        ok: false,
+        error: friendly.message,
+      },
+      { status: friendly.status },
     );
   }
-}
-
-export async function DELETE(request: NextRequest) {
-  const session = await getServerSession();
-
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
-
-  const { searchParams } = new URL(request.url);
-  const assetId = Number(searchParams.get('id'));
-
-  if (!Number.isFinite(assetId) || assetId <= 0) {
-    return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
-  }
-
-  const existing = await getAssetRegisterItemById(session.user.id, assetId);
-
-  if (!existing) {
-    return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
-  }
-
-  const uploadIds = listInternalAssetRegisterUploadIds(existing.photos);
-
-  try {
-    await deleteAssetRegisterItem(session.user.id, assetId);
-  } catch (error) {
-    console.error('asset register delete failed', error);
-    return NextResponse.json(
-      { ok: false, error: formatUnknownError(error, 'Failed to delete asset.') },
-      { status: 500 },
-    );
-  }
-
-  try {
-    await deleteUnreferencedAssetRegisterUploads({
-      userId: session.user.id,
-      uploadIds,
-      excludeAssetId: assetId,
-    });
-  } catch (error) {
-    console.error('asset register upload cleanup failed after delete', error);
-  }
-
-  return NextResponse.json({ ok: true });
 }
