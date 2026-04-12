@@ -82,7 +82,7 @@ export function listInternalAssetRegisterUploadIds(photos: string[]): string[] {
 export async function deleteUnreferencedAssetRegisterUploads(_input: {
   userId: string;
   uploadIds: string[];
-  excludeAssetId?: number | null;
+  excludeAssetId?: string | null;
 }): Promise<void> {
   return;
 }
