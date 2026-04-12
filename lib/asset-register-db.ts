@@ -364,7 +364,15 @@ function pushField(
     return;
   }
 
-  fields.push({ column, value, cast });
+  const nextField: SqlField = { column, value, cast };
+  const existingIndex = fields.findIndex((field) => field.column === column);
+
+  if (existingIndex >= 0) {
+    fields[existingIndex] = nextField;
+    return;
+  }
+
+  fields.push(nextField);
 }
 
 function pushPhotoField(fields: SqlField[], schema: TableSchema, photos: string[]): void {
@@ -453,7 +461,7 @@ export async function listAssetRegisterItems(userId: string): Promise<AssetRegis
   const db = getDb();
   const schema = await getAssetRegisterSchema();
 
-  const orderColumn = resolveColumn(schema, 'updated_at', 'created_at', 'id') ?? 'id';
+  const orderColumn = resolveColumn(schema, 'created_at', 'id') ?? 'id';
   const result = await db.query<AssetRegisterRow>(
     `
       select
@@ -492,7 +500,6 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
   pushPhotoField(fields, schema, input.photos ?? []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
-  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
   const query = buildInsertQuery(schema, fields);
   const result = await db.query<AssetRegisterRow>(query.sql, query.values);
@@ -531,7 +538,6 @@ export async function updateAssetRegisterItem(
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
   pushPhotoField(fields, schema, input.photos ?? []);
-  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
   if (!fields.length) {
     return existing;
@@ -611,7 +617,6 @@ export async function createAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['note', 'notes', 'description'], asText(input.note) || null);
   pushPhotoField(fields, schema, []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
-  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
   const query = buildInsertQuery(schema, fields);
   const inserted = await db.query<AssetRegisterRow>(query.sql, query.values);
