@@ -145,6 +145,10 @@ function normalizePhotos(value: string[]): string[] {
     .slice(0, MAX_PHOTOS);
 }
 
+function isTractorAsset(asset: RegisterAsset): boolean {
+  return asset.kind === 'tractor' || Boolean(asset.brandName && asset.modelName && asset.yearModel);
+}
+
 function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
   return {
     kind: asset.kind,
@@ -259,7 +263,7 @@ export default function AssetRegisterClient() {
   }, [assets]);
 
   const equipmentCount = useMemo(() => {
-    return assets.filter((asset) => asset.kind === 'tractor').length;
+    return assets.filter((asset) => isTractorAsset(asset)).length;
   }, [assets]);
 
   const editingAsset = useMemo(() => {
@@ -455,7 +459,12 @@ export default function AssetRegisterClient() {
 
   function handlePublishAsset(asset: RegisterAsset) {
     try {
-      publishRegisterItemToMarketplace(buildSavedItemFromAsset(asset), {
+      const normalizedAsset = buildSavedItemFromAsset(asset);
+      const publishableAsset = isTractorAsset(asset)
+        ? { ...normalizedAsset, kind: 'tractor' as const }
+        : normalizedAsset;
+
+      publishRegisterItemToMarketplace(publishableAsset, {
         askingPriceExVat: asset.selectedValueExVat || asset.value,
         imageUrls: asset.photos,
         imageSrc: asset.photos[0],
@@ -741,7 +750,7 @@ export default function AssetRegisterClient() {
                   <div className={styles.assetTop}>
                     <div>
                       <div className={styles.badgeRow}>
-                        <span className={styles.badge}>{kindLabel(asset.kind)}</span>
+                        <span className={styles.badge}>{kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind)}</span>
                         <span className={styles.badge}>{methodLabel(asset.selectedMethod)}</span>
                         {asset.valuationRunId ? <span className={styles.badge}>Saved valuation</span> : null}
                         {asset.photos.length ? (
@@ -809,7 +818,7 @@ export default function AssetRegisterClient() {
                     >
                       Edit
                     </button>
-                    {asset.kind === 'tractor' ? (
+                    {isTractorAsset(asset) ? (
                       <button
                         type="button"
                         className={styles.secondaryButton}
