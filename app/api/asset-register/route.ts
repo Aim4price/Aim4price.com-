@@ -175,11 +175,11 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = (await request.json()) as Partial<UpdateAssetRegisterItemInput>;
-  const assetId = Math.round(Number(body.assetId) || 0);
+  const assetId = String(body.assetId ?? '').trim();
   const title = String(body.title ?? '').trim();
   const value = Math.round(Number(body.value) || 0);
 
-  if (assetId <= 0) {
+  if (!assetId) {
     return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
   }
 
@@ -245,9 +245,9 @@ export async function DELETE(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const assetId = Number(searchParams.get('id'));
+  const assetId = String(searchParams.get('id') ?? '').trim();
 
-  if (!Number.isFinite(assetId) || assetId <= 0) {
+  if (!assetId) {
     return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
   }
 
