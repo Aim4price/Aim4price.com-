@@ -19,12 +19,25 @@ import {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+type ErrorLike = {
+  message?: unknown;
+  detail?: unknown;
+  hint?: unknown;
+  code?: unknown;
+  table?: unknown;
+  column?: unknown;
+  constraint?: unknown;
+};
+
 function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
 }
 
 function normalizeKind(value: unknown): AssetRegisterItemKind {
-  return value === 'tractor' || value === 'manual' || value === 'property' ? value : 'manual';
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === 'tractor' || normalized === 'equipment') return 'tractor';
+  if (normalized === 'property') return 'property';
+  return 'manual';
 }
 
 function normalizePhotos(value: unknown): string[] {
@@ -48,6 +61,42 @@ function normalizePhotos(value: unknown): string[] {
     .slice(0, MAX_ASSET_REGISTER_PHOTOS);
 }
 
+function formatUnknownError(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) {
+    const details = error as ErrorLike;
+    return [
+      error.message,
+      typeof details.detail === 'string' ? details.detail : '',
+      typeof details.hint === 'string' ? `hint: ${details.hint}` : '',
+      typeof details.column === 'string' ? `column: ${details.column}` : '',
+      typeof details.table === 'string' ? `table: ${details.table}` : '',
+      typeof details.constraint === 'string' ? `constraint: ${details.constraint}` : '',
+      typeof details.code === 'string' ? `code: ${details.code}` : '',
+    ]
+      .filter(Boolean)
+      .join(' | ');
+  }
+
+  if (typeof error === 'object' && error !== null) {
+    const details = error as ErrorLike;
+    const parts = [
+      typeof details.message === 'string' ? details.message : '',
+      typeof details.detail === 'string' ? details.detail : '',
+      typeof details.hint === 'string' ? `hint: ${details.hint}` : '',
+      typeof details.column === 'string' ? `column: ${details.column}` : '',
+      typeof details.table === 'string' ? `table: ${details.table}` : '',
+      typeof details.constraint === 'string' ? `constraint: ${details.constraint}` : '',
+      typeof details.code === 'string' ? `code: ${details.code}` : '',
+    ].filter(Boolean);
+
+    if (parts.length) {
+      return parts.join(' | ');
+    }
+  }
+
+  return fallback;
+}
+
 export async function GET() {
   const session = await getServerSession();
 
@@ -55,16 +104,24 @@ export async function GET() {
     return unauthorized();
   }
 
-  const items = await listAssetRegisterItems(session.user.id);
+  try {
+    const items = await listAssetRegisterItems(session.user.id);
 
-  return NextResponse.json({
-    ok: true,
-    items,
-    summary: {
-      count: items.length,
-      totalValue: items.reduce((sum, item) => sum + Number(item.value || 0), 0),
-    },
-  });
+    return NextResponse.json({
+      ok: true,
+      items,
+      summary: {
+        count: items.length,
+        totalValue: items.reduce((sum, item) => sum + Number(item.value || 0), 0),
+      },
+    });
+  } catch (error) {
+    console.error('asset register GET failed', error);
+    return NextResponse.json(
+      { ok: false, error: formatUnknownError(error, 'Failed to load asset register.') },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -88,18 +145,26 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const item = await createManualAssetRegisterItem(session.user.id, {
-    kind: normalizeKind(body.kind),
-    title,
-    value,
-    note: body.note ?? null,
-    serialNumber: body.serialNumber ?? null,
-    isFinanced: Boolean(body.isFinanced),
-    financeNote: body.financeNote ?? null,
-    photos: normalizePhotos(body.photos),
-  });
+  try {
+    const item = await createManualAssetRegisterItem(session.user.id, {
+      kind: normalizeKind(body.kind),
+      title,
+      value,
+      note: body.note ?? null,
+      serialNumber: body.serialNumber ?? null,
+      isFinanced: Boolean(body.isFinanced),
+      financeNote: body.financeNote ?? null,
+      photos: normalizePhotos(body.photos),
+    });
 
-  return NextResponse.json({ ok: true, item });
+    return NextResponse.json({ ok: true, item });
+  } catch (error) {
+    console.error('asset register POST failed', error);
+    return NextResponse.json(
+      { ok: false, error: formatUnknownError(error, 'Failed to create asset.') },
+      { status: 500 },
+    );
+  }
 }
 
 export async function PUT(request: NextRequest) {
@@ -164,7 +229,11 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
     }
 
-    return NextResponse.json({ ok: false, error: 'Failed to update asset.' }, { status: 500 });
+    console.error('asset register PUT failed', error);
+    return NextResponse.json(
+      { ok: false, error: formatUnknownError(error, 'Failed to update asset.') },
+      { status: 500 },
+    );
   }
 }
 
@@ -194,7 +263,10 @@ export async function DELETE(request: NextRequest) {
     await deleteAssetRegisterItem(session.user.id, assetId);
   } catch (error) {
     console.error('asset register delete failed', error);
-    return NextResponse.json({ ok: false, error: 'Failed to delete asset.' }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: formatUnknownError(error, 'Failed to delete asset.') },
+      { status: 500 },
+    );
   }
 
   try {
