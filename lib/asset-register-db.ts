@@ -87,8 +87,17 @@ type AssetRegisterRow = {
   updated_at: string | null;
 };
 
-type ColumnRow = {
+type ColumnMetaRow = {
   column_name: string;
+  data_type: string;
+  udt_name: string;
+  is_nullable: 'YES' | 'NO';
+  column_default: string | null;
+};
+
+type TableSchema = {
+  columnNames: Set<string>;
+  columns: Map<string, ColumnMetaRow>;
 };
 
 type SqlField = {
@@ -97,7 +106,7 @@ type SqlField = {
   cast?: string;
 };
 
-let assetRegisterColumnsPromise: Promise<Set<string>> | null = null;
+let assetRegisterSchemaPromise: Promise<TableSchema> | null = null;
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -138,12 +147,21 @@ function normalizePhotoArray(value: unknown): string[] {
 }
 
 function normalizeKind(value: unknown): AssetRegisterItemKind {
-  return value === 'tractor' || value === 'manual' || value === 'property' ? value : 'manual';
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (normalized === 'tractor' || normalized === 'equipment') return 'tractor';
+  if (normalized === 'property') return 'property';
+  return 'manual';
 }
 
 function normalizeMethod(value: unknown): AssetRegisterItemMethod {
-  return value === 'aim4price' || value === 'market' || value === 'department' || value === 'manual'
-    ? value
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  return normalized === 'aim4price' ||
+    normalized === 'market' ||
+    normalized === 'department' ||
+    normalized === 'manual'
+    ? normalized
     : 'manual';
 }
 
@@ -167,7 +185,9 @@ function buildIsoDate(value: unknown): string {
 }
 
 function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
-  const selectedValueExVat = Math.round(asNumber(row.selected_value_ex_vat) ?? asNumber(row.value) ?? 0);
+  const selectedValueExVat = Math.round(
+    asNumber(row.selected_value_ex_vat) ?? asNumber(row.value) ?? 0,
+  );
 
   return {
     id: Number(row.id),
@@ -199,34 +219,42 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
   };
 }
 
-async function getAssetRegisterColumns(): Promise<Set<string>> {
-  if (!assetRegisterColumnsPromise) {
+async function getAssetRegisterSchema(): Promise<TableSchema> {
+  if (!assetRegisterSchemaPromise) {
     const db = getDb();
 
-    assetRegisterColumnsPromise = db
-      .query<ColumnRow>(
+    assetRegisterSchemaPromise = db
+      .query<ColumnMetaRow>(
         `
-          select column_name
+          select
+            column_name,
+            data_type,
+            udt_name,
+            is_nullable,
+            column_default
           from information_schema.columns
           where table_name = 'asset_register_items'
             and table_schema = any(current_schemas(false))
         `,
       )
-      .then((result) => new Set(result.rows.map((row) => row.column_name)));
+      .then((result) => ({
+        columnNames: new Set(result.rows.map((row) => row.column_name)),
+        columns: new Map(result.rows.map((row) => [row.column_name, row])),
+      }));
   }
 
-  const columns = await assetRegisterColumnsPromise;
+  const schema = await assetRegisterSchemaPromise;
 
-  if (!columns.size) {
+  if (!schema.columnNames.size) {
     throw new Error('ASSET_REGISTER_TABLE_NOT_FOUND');
   }
 
-  return columns;
+  return schema;
 }
 
-function resolveColumn(columns: Set<string>, ...candidates: string[]): string | null {
+function resolveColumn(schema: TableSchema, ...candidates: string[]): string | null {
   for (const candidate of candidates) {
-    if (columns.has(candidate)) {
+    if (schema.columnNames.has(candidate)) {
       return candidate;
     }
   }
@@ -234,42 +262,87 @@ function resolveColumn(columns: Set<string>, ...candidates: string[]): string | 
   return null;
 }
 
-function buildSelectList(columns: Set<string>): string {
-  const valueColumn = resolveColumn(columns, 'value', 'selected_value_ex_vat');
-  const selectedValueColumn = resolveColumn(columns, 'selected_value_ex_vat', 'value');
-  const selectedMethodColumn = resolveColumn(columns, 'selected_method');
-  const driveColumn = resolveColumn(columns, 'drive_type', 'drive');
-  const tractorTypeColumn = resolveColumn(columns, 'tractor_type');
-  const cabColumn = resolveColumn(columns, 'cab_type', 'cab');
-  const noteColumn = resolveColumn(columns, 'note', 'notes');
-  const photosColumn = resolveColumn(columns, 'photos');
-  const createdAtColumn = resolveColumn(columns, 'created_at');
-  const updatedAtColumn = resolveColumn(columns, 'updated_at', 'created_at');
+function getColumnMeta(schema: TableSchema, ...candidates: string[]): ColumnMetaRow | null {
+  const column = resolveColumn(schema, ...candidates);
+  return column ? schema.columns.get(column) ?? null : null;
+}
+
+function isArrayColumn(meta: ColumnMetaRow | null): boolean {
+  return Boolean(meta && (meta.data_type === 'ARRAY' || meta.udt_name.startsWith('_')));
+}
+
+function isJsonColumn(meta: ColumnMetaRow | null): boolean {
+  return Boolean(meta && (meta.data_type === 'json' || meta.data_type === 'jsonb'));
+}
+
+function buildSelectList(schema: TableSchema): string {
+  const userIdColumn = resolveColumn(schema, 'user_id');
+  const valuationRunIdColumn = resolveColumn(schema, 'valuation_run_id', 'run_id');
+  const kindColumn = resolveColumn(schema, 'kind', 'equipment_type', 'asset_type', 'item_type');
+  const titleColumn = resolveColumn(schema, 'title', 'name', 'asset_name');
+  const valueColumn = resolveColumn(
+    schema,
+    'value',
+    'selected_value_ex_vat',
+    'selected_value',
+    'saved_value_ex_vat',
+  );
+  const selectedMethodColumn = resolveColumn(schema, 'selected_method', 'method', 'valuation_method');
+  const selectedValueColumn = resolveColumn(
+    schema,
+    'selected_value_ex_vat',
+    'selected_value',
+    'value',
+    'saved_value_ex_vat',
+  );
+  const brandColumn = resolveColumn(schema, 'brand_name', 'brand');
+  const modelColumn = resolveColumn(schema, 'model_name', 'model');
+  const driveColumn = resolveColumn(schema, 'drive_type', 'drive', 'drivetrain');
+  const tractorTypeColumn = resolveColumn(schema, 'tractor_type', 'tractor_category');
+  const cabColumn = resolveColumn(schema, 'cab_type', 'cab');
+  const powerColumn = resolveColumn(schema, 'power_kw', 'kw', 'power');
+  const yearColumn = resolveColumn(schema, 'year_model', 'year');
+  const hoursColumn = resolveColumn(schema, 'hours', 'engine_hours');
+  const aim4priceColumn = resolveColumn(schema, 'aim4price_value_ex_vat', 'aim4price_value');
+  const marketColumn = resolveColumn(schema, 'market_mid_ex_vat', 'market_value_ex_vat', 'market_value');
+  const departmentColumn = resolveColumn(
+    schema,
+    'department_value_ex_vat',
+    'department_value',
+    'dalrrd_value_ex_vat',
+  );
+  const noteColumn = resolveColumn(schema, 'note', 'notes', 'description');
+  const serialColumn = resolveColumn(schema, 'serial_number', 'serial', 'vin');
+  const financedColumn = resolveColumn(schema, 'is_financed', 'financed');
+  const financeNoteColumn = resolveColumn(schema, 'finance_note', 'finance_notes', 'finance_status');
+  const photosColumn = resolveColumn(schema, 'photos', 'photo_urls', 'image_urls', 'images');
+  const createdAtColumn = resolveColumn(schema, 'created_at', 'createdon', 'created');
+  const updatedAtColumn = resolveColumn(schema, 'updated_at', 'modified_at', 'updatedon', 'created_at');
 
   const selectParts = [
     'id',
-    columns.has('user_id') ? 'user_id' : `''::text as user_id`,
-    columns.has('valuation_run_id') ? 'valuation_run_id' : 'null::bigint as valuation_run_id',
-    columns.has('kind') ? 'kind' : `'manual'::text as kind`,
-    columns.has('title') ? 'title' : `''::text as title`,
+    userIdColumn ? `${userIdColumn} as user_id` : `''::text as user_id`,
+    valuationRunIdColumn ? `${valuationRunIdColumn} as valuation_run_id` : 'null::bigint as valuation_run_id',
+    kindColumn ? `${kindColumn} as kind` : `'manual'::text as kind`,
+    titleColumn ? `${titleColumn} as title` : `''::text as title`,
     valueColumn ? `${valueColumn} as value` : '0::numeric as value',
     selectedMethodColumn ? `${selectedMethodColumn} as selected_method` : `'manual'::text as selected_method`,
     selectedValueColumn ? `${selectedValueColumn} as selected_value_ex_vat` : '0::numeric as selected_value_ex_vat',
-    columns.has('brand_name') ? 'brand_name' : 'null::text as brand_name',
-    columns.has('model_name') ? 'model_name' : 'null::text as model_name',
+    brandColumn ? `${brandColumn} as brand_name` : 'null::text as brand_name',
+    modelColumn ? `${modelColumn} as model_name` : 'null::text as model_name',
     driveColumn ? `${driveColumn} as drive_type` : 'null::text as drive_type',
     tractorTypeColumn ? `${tractorTypeColumn} as tractor_type` : 'null::text as tractor_type',
     cabColumn ? `${cabColumn} as cab_type` : 'null::text as cab_type',
-    columns.has('power_kw') ? 'power_kw' : 'null::numeric as power_kw',
-    columns.has('year_model') ? 'year_model' : 'null::integer as year_model',
-    columns.has('hours') ? 'hours' : 'null::integer as hours',
-    columns.has('aim4price_value_ex_vat') ? 'aim4price_value_ex_vat' : 'null::numeric as aim4price_value_ex_vat',
-    columns.has('market_mid_ex_vat') ? 'market_mid_ex_vat' : 'null::numeric as market_mid_ex_vat',
-    columns.has('department_value_ex_vat') ? 'department_value_ex_vat' : 'null::numeric as department_value_ex_vat',
+    powerColumn ? `${powerColumn} as power_kw` : 'null::numeric as power_kw',
+    yearColumn ? `${yearColumn} as year_model` : 'null::integer as year_model',
+    hoursColumn ? `${hoursColumn} as hours` : 'null::integer as hours',
+    aim4priceColumn ? `${aim4priceColumn} as aim4price_value_ex_vat` : 'null::numeric as aim4price_value_ex_vat',
+    marketColumn ? `${marketColumn} as market_mid_ex_vat` : 'null::numeric as market_mid_ex_vat',
+    departmentColumn ? `${departmentColumn} as department_value_ex_vat` : 'null::numeric as department_value_ex_vat',
     noteColumn ? `${noteColumn} as note` : 'null::text as note',
-    columns.has('serial_number') ? 'serial_number' : 'null::text as serial_number',
-    columns.has('is_financed') ? 'is_financed' : 'false as is_financed',
-    columns.has('finance_note') ? 'finance_note' : 'null::text as finance_note',
+    serialColumn ? `${serialColumn} as serial_number` : 'null::text as serial_number',
+    financedColumn ? `${financedColumn} as is_financed` : 'false as is_financed',
+    financeNoteColumn ? `${financeNoteColumn} as finance_note` : 'null::text as finance_note',
     photosColumn ? `${photosColumn} as photos` : `'[]'::jsonb as photos`,
     createdAtColumn ? `${createdAtColumn} as created_at` : 'now() as created_at',
     updatedAtColumn ? `${updatedAtColumn} as updated_at` : 'now() as updated_at',
@@ -280,12 +353,12 @@ function buildSelectList(columns: Set<string>): string {
 
 function pushField(
   fields: SqlField[],
-  columns: Set<string>,
+  schema: TableSchema,
   candidates: string[],
   value: unknown,
   cast?: string,
 ): void {
-  const column = resolveColumn(columns, ...candidates);
+  const column = resolveColumn(schema, ...candidates);
 
   if (!column) {
     return;
@@ -294,7 +367,32 @@ function pushField(
   fields.push({ column, value, cast });
 }
 
-function buildInsertQuery(columns: Set<string>, fields: SqlField[]): { sql: string; values: unknown[] } {
+function pushPhotoField(fields: SqlField[], schema: TableSchema, photos: string[]): void {
+  const meta = getColumnMeta(schema, 'photos', 'photo_urls', 'image_urls', 'images');
+  if (!meta) {
+    return;
+  }
+
+  const normalized = normalizePhotoArray(photos);
+
+  if (isArrayColumn(meta)) {
+    fields.push({ column: meta.column_name, value: normalized, cast: '::text[]' });
+    return;
+  }
+
+  if (isJsonColumn(meta)) {
+    fields.push({
+      column: meta.column_name,
+      value: JSON.stringify(normalized),
+      cast: meta.data_type === 'jsonb' ? '::jsonb' : '::json',
+    });
+    return;
+  }
+
+  fields.push({ column: meta.column_name, value: JSON.stringify(normalized) });
+}
+
+function buildInsertQuery(schema: TableSchema, fields: SqlField[]): { sql: string; values: unknown[] } {
   if (!fields.length) {
     throw new Error('ASSET_CREATE_FAILED');
   }
@@ -314,7 +412,7 @@ function buildInsertQuery(columns: Set<string>, fields: SqlField[]): { sql: stri
         ${placeholders.join(', ')}
       )
       returning
-        ${buildSelectList(columns)}
+        ${buildSelectList(schema)}
     `,
     values,
   };
@@ -335,11 +433,11 @@ function buildUpdateSetClause(fields: SqlField[]): { clause: string; values: unk
 
 export async function getAssetRegisterItemById(userId: string, assetId: number): Promise<AssetRegisterItem | null> {
   const db = getDb();
-  const columns = await getAssetRegisterColumns();
+  const schema = await getAssetRegisterSchema();
   const result = await db.query<AssetRegisterRow>(
     `
       select
-        ${buildSelectList(columns)}
+        ${buildSelectList(schema)}
       from asset_register_items
       where user_id = $1 and id = $2
       limit 1
@@ -353,13 +451,13 @@ export async function getAssetRegisterItemById(userId: string, assetId: number):
 
 export async function listAssetRegisterItems(userId: string): Promise<AssetRegisterItem[]> {
   const db = getDb();
-  const columns = await getAssetRegisterColumns();
+  const schema = await getAssetRegisterSchema();
 
-  const orderColumn = resolveColumn(columns, 'updated_at', 'created_at', 'id') ?? 'id';
+  const orderColumn = resolveColumn(schema, 'updated_at', 'created_at', 'id') ?? 'id';
   const result = await db.query<AssetRegisterRow>(
     `
       select
-        ${buildSelectList(columns)}
+        ${buildSelectList(schema)}
       from asset_register_items
       where user_id = $1
       order by ${orderColumn} desc, id desc
@@ -375,27 +473,28 @@ export async function createManualAssetRegisterItem(
   input: CreateManualAssetInput,
 ): Promise<AssetRegisterItem> {
   const db = getDb();
-  const columns = await getAssetRegisterColumns();
+  const schema = await getAssetRegisterSchema();
   const now = new Date();
   const nextValue = Math.round(Number(input.value) || 0);
   const fields: SqlField[] = [];
 
-  pushField(fields, columns, ['user_id'], userId);
-  pushField(fields, columns, ['valuation_run_id'], null);
-  pushField(fields, columns, ['kind'], normalizeKind(input.kind));
-  pushField(fields, columns, ['title'], asText(input.title));
-  pushField(fields, columns, ['value'], nextValue);
-  pushField(fields, columns, ['selected_method'], 'manual');
-  pushField(fields, columns, ['selected_value_ex_vat'], nextValue);
-  pushField(fields, columns, ['note', 'notes'], asText(input.note) || null);
-  pushField(fields, columns, ['serial_number'], asText(input.serialNumber) || null);
-  pushField(fields, columns, ['is_financed'], Boolean(input.isFinanced));
-  pushField(fields, columns, ['finance_note'], asText(input.financeNote) || null);
-  pushField(fields, columns, ['photos'], JSON.stringify(normalizePhotoArray(input.photos ?? [])), '::jsonb');
-  pushField(fields, columns, ['created_at'], now);
-  pushField(fields, columns, ['updated_at'], now);
+  pushField(fields, schema, ['user_id'], userId);
+  pushField(fields, schema, ['valuation_run_id', 'run_id'], null);
+  pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], normalizeKind(input.kind));
+  pushField(fields, schema, ['title', 'name', 'asset_name'], asText(input.title));
+  pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], nextValue);
+  pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], 'manual');
+  pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], nextValue);
+  pushField(fields, schema, ['source', 'origin', 'entry_source'], 'manual');
+  pushField(fields, schema, ['note', 'notes', 'description'], asText(input.note) || null);
+  pushField(fields, schema, ['serial_number', 'serial', 'vin'], asText(input.serialNumber) || null);
+  pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
+  pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
+  pushPhotoField(fields, schema, input.photos ?? []);
+  pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
+  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
-  const query = buildInsertQuery(columns, fields);
+  const query = buildInsertQuery(schema, fields);
   const result = await db.query<AssetRegisterRow>(query.sql, query.values);
   const row = result.rows[0];
 
@@ -411,7 +510,7 @@ export async function updateAssetRegisterItem(
   input: UpdateAssetRegisterItemInput,
 ): Promise<AssetRegisterItem> {
   const db = getDb();
-  const columns = await getAssetRegisterColumns();
+  const schema = await getAssetRegisterSchema();
   const existing = await getAssetRegisterItemById(userId, input.assetId);
 
   if (!existing) {
@@ -423,16 +522,16 @@ export async function updateAssetRegisterItem(
   const nextValue = Math.round(Number(input.value) || 0);
   const fields: SqlField[] = [];
 
-  pushField(fields, columns, ['kind'], nextKind);
-  pushField(fields, columns, ['title'], asText(input.title));
-  pushField(fields, columns, ['value'], nextValue);
-  pushField(fields, columns, ['selected_value_ex_vat'], nextValue);
-  pushField(fields, columns, ['note', 'notes'], asText(input.note) || null);
-  pushField(fields, columns, ['serial_number'], asText(input.serialNumber) || null);
-  pushField(fields, columns, ['is_financed'], Boolean(input.isFinanced));
-  pushField(fields, columns, ['finance_note'], asText(input.financeNote) || null);
-  pushField(fields, columns, ['photos'], JSON.stringify(normalizePhotoArray(input.photos ?? [])), '::jsonb');
-  pushField(fields, columns, ['updated_at'], now);
+  pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
+  pushField(fields, schema, ['title', 'name', 'asset_name'], asText(input.title));
+  pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], nextValue);
+  pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], nextValue);
+  pushField(fields, schema, ['note', 'notes', 'description'], asText(input.note) || null);
+  pushField(fields, schema, ['serial_number', 'serial', 'vin'], asText(input.serialNumber) || null);
+  pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
+  pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
+  pushPhotoField(fields, schema, input.photos ?? []);
+  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
   if (!fields.length) {
     return existing;
@@ -446,7 +545,7 @@ export async function updateAssetRegisterItem(
         ${update.clause}
       where user_id = $1 and id = $2
       returning
-        ${buildSelectList(columns)}
+        ${buildSelectList(schema)}
     `,
     [userId, input.assetId, ...update.values],
   );
@@ -482,38 +581,39 @@ export async function createAssetRegisterItemFromValuation(input: {
   note?: string | null;
 }): Promise<AssetRegisterItem> {
   const db = getDb();
-  const columns = await getAssetRegisterColumns();
-  const result = input.result;
-  const model = result.model;
+  const schema = await getAssetRegisterSchema();
+  const valuationResult = input.result;
+  const model = valuationResult.model;
   const title = `${model.brandName} ${model.modelName}`.trim();
   const now = new Date();
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
   const fields: SqlField[] = [];
 
-  pushField(fields, columns, ['user_id'], input.userId);
-  pushField(fields, columns, ['valuation_run_id'], input.valuationRunId ?? null);
-  pushField(fields, columns, ['kind'], 'tractor');
-  pushField(fields, columns, ['title'], title);
-  pushField(fields, columns, ['value'], selectedValueExVat);
-  pushField(fields, columns, ['selected_method'], input.selectedMethod);
-  pushField(fields, columns, ['selected_value_ex_vat'], selectedValueExVat);
-  pushField(fields, columns, ['brand_name'], model.brandName);
-  pushField(fields, columns, ['model_name'], model.modelName);
-  pushField(fields, columns, ['drive_type', 'drive'], model.drive);
-  pushField(fields, columns, ['tractor_type'], model.tractorType);
-  pushField(fields, columns, ['cab_type', 'cab'], model.cab);
-  pushField(fields, columns, ['power_kw'], model.powerKw);
-  pushField(fields, columns, ['year_model'], Math.round(input.year));
-  pushField(fields, columns, ['hours'], Math.max(0, Math.round(input.hours)));
-  pushField(fields, columns, ['aim4price_value_ex_vat'], toRoundedNumber(result.aim4priceValueExVat));
-  pushField(fields, columns, ['market_mid_ex_vat'], toRoundedNumber(result.marketMid));
-  pushField(fields, columns, ['department_value_ex_vat'], toRoundedNumber(result.departmentValueExVat));
-  pushField(fields, columns, ['note', 'notes'], asText(input.note) || null);
-  pushField(fields, columns, ['photos'], JSON.stringify([]), '::jsonb');
-  pushField(fields, columns, ['created_at'], now);
-  pushField(fields, columns, ['updated_at'], now);
+  pushField(fields, schema, ['user_id'], input.userId);
+  pushField(fields, schema, ['valuation_run_id', 'run_id'], input.valuationRunId ?? null);
+  pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], 'tractor');
+  pushField(fields, schema, ['title', 'name', 'asset_name'], title);
+  pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], selectedValueExVat);
+  pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], input.selectedMethod);
+  pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], selectedValueExVat);
+  pushField(fields, schema, ['source', 'origin', 'entry_source'], 'valuation');
+  pushField(fields, schema, ['brand_name', 'brand'], model.brandName);
+  pushField(fields, schema, ['model_name', 'model'], model.modelName);
+  pushField(fields, schema, ['drive_type', 'drive', 'drivetrain'], model.drive);
+  pushField(fields, schema, ['tractor_type', 'tractor_category'], model.tractorType);
+  pushField(fields, schema, ['cab_type', 'cab'], model.cab);
+  pushField(fields, schema, ['power_kw', 'kw', 'power'], model.powerKw);
+  pushField(fields, schema, ['year_model', 'year'], Math.round(input.year));
+  pushField(fields, schema, ['hours', 'engine_hours'], Math.max(0, Math.round(input.hours)));
+  pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
+  pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(valuationResult.marketMid));
+  pushField(fields, schema, ['department_value_ex_vat', 'department_value', 'dalrrd_value_ex_vat'], toRoundedNumber(valuationResult.departmentValueExVat));
+  pushField(fields, schema, ['note', 'notes', 'description'], asText(input.note) || null);
+  pushPhotoField(fields, schema, []);
+  pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
+  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
-  const query = buildInsertQuery(columns, fields);
+  const query = buildInsertQuery(schema, fields);
   const inserted = await db.query<AssetRegisterRow>(query.sql, query.values);
   const row = inserted.rows[0];
 
