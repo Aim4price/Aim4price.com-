@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
-import { hasMarketplaceListingForAsset, publishRegisterItemToMarketplace } from '../../lib/marketplace';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
@@ -34,6 +33,9 @@ type RegisterAsset = {
   serialNumber: string;
   isFinanced: boolean;
   financeNote: string;
+  sellerPhone: string;
+  marketplaceNotes: string;
+  marketplaceStatus: string;
   photos: string[];
   createdAtIso: string;
   updatedAtIso: string;
@@ -179,37 +181,6 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
   };
 }
 
-function buildSavedItemFromAsset(asset: RegisterAsset) {
-  return {
-    id: String(asset.id),
-    valuationRunId: asset.valuationRunId ?? undefined,
-    kind: asset.kind,
-    title: asset.title,
-    value: asset.value,
-    selectedMethod: asset.selectedMethod,
-    method: asset.selectedMethod,
-    selectedValueExVat: asset.selectedValueExVat,
-    brandName: asset.brandName || undefined,
-    modelName: asset.modelName || undefined,
-    drive: asset.drive || undefined,
-    tractorType: asset.tractorType || undefined,
-    cab: asset.cab || undefined,
-    powerKw: asset.powerKw ?? undefined,
-    yearModel: asset.yearModel ?? undefined,
-    hours: asset.hours ?? undefined,
-    aim4priceValueExVat: asset.aim4priceValueExVat,
-    marketMidExVat: asset.marketMidExVat,
-    departmentValueExVat: asset.departmentValueExVat,
-    note: asset.note || undefined,
-    createdAtIso: asset.createdAtIso,
-    updatedAtIso: asset.updatedAtIso,
-    serialNumber: asset.serialNumber || undefined,
-    isFinanced: asset.isFinanced,
-    financeNote: asset.financeNote || undefined,
-    photos: asset.photos,
-  };
-}
-
 export default function AssetRegisterClient() {
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
@@ -218,6 +189,7 @@ export default function AssetRegisterClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
+  const [isPublishingAssetId, setIsPublishingAssetId] = useState<string | null>(null);
   const [busyDeleteId, setBusyDeleteId] = useState<string | null>(null);
   const formCardRef = useRef<HTMLElement | null>(null);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
@@ -474,28 +446,54 @@ export default function AssetRegisterClient() {
     }
   }
 
-  function handlePublishAsset(asset: RegisterAsset) {
-    try {
-      const normalizedAsset = buildSavedItemFromAsset(asset);
-      const publishableAsset = isTractorAsset(asset)
-        ? { ...normalizedAsset, kind: 'tractor' as const }
-        : normalizedAsset;
+  async function handlePublishAsset(asset: RegisterAsset) {
+    setIsPublishingAssetId(asset.id);
 
-      publishRegisterItemToMarketplace(publishableAsset, {
-        askingPriceExVat: asset.selectedValueExVat || asset.value,
-        imageUrls: asset.photos,
-        imageSrc: asset.photos[0],
+    try {
+      const response = await fetch('/api/marketplace', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ assetId: asset.id }),
       });
 
+      const data = (await response.json()) as {
+        ok: boolean;
+        assetId?: string;
+        marketplaceStatus?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? 'Failed to send asset to marketplace.');
+      }
+
+      setAssets((current) =>
+        current.map((entry) =>
+          entry.id === asset.id
+            ? {
+                ...entry,
+                marketplaceStatus: data.marketplaceStatus || 'live',
+              }
+            : entry,
+        ),
+      );
       setNotice({
         tone: 'success',
-        message: `${asset.title} was sent to the marketplace.`,
+        message:
+          asset.marketplaceStatus === 'live'
+            ? `${asset.title} marketplace listing was updated.`
+            : `${asset.title} was sent to the marketplace.`,
       });
     } catch (error) {
       setNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'Failed to send asset to marketplace.',
       });
+    } finally {
+      setIsPublishingAssetId(null);
     }
   }
 
@@ -839,9 +837,14 @@ export default function AssetRegisterClient() {
                       <button
                         type="button"
                         className={styles.secondaryButton}
-                        onClick={() => handlePublishAsset(asset)}
+                        disabled={isPublishingAssetId === asset.id}
+                        onClick={() => void handlePublishAsset(asset)}
                       >
-                        {hasMarketplaceListingForAsset(String(asset.id)) ? 'Update marketplace' : 'Send to marketplace'}
+                        {isPublishingAssetId === asset.id
+                          ? 'Publishing...'
+                          : asset.marketplaceStatus === 'live'
+                            ? 'Update marketplace'
+                            : 'Send to marketplace'}
                       </button>
                     ) : null}
                     <button
