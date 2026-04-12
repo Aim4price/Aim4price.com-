@@ -11,7 +11,7 @@ type AssetKind = 'tractor' | 'manual' | 'property';
 type AssetMethod = 'aim4price' | 'market' | 'department' | 'manual';
 
 type RegisterAsset = {
-  id: number;
+  id: string;
   userId: string;
   valuationRunId: number | null;
   kind: AssetKind;
@@ -213,12 +213,12 @@ function buildSavedItemFromAsset(asset: RegisterAsset) {
 export default function AssetRegisterClient() {
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
-  const [editingAssetId, setEditingAssetId] = useState<number | null>(null);
+  const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
-  const [busyDeleteId, setBusyDeleteId] = useState<number | null>(null);
+  const [busyDeleteId, setBusyDeleteId] = useState<string | null>(null);
   const formCardRef = useRef<HTMLElement | null>(null);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -444,7 +444,7 @@ export default function AssetRegisterClient() {
     }
   }
 
-  async function handleDeleteAsset(assetId: number) {
+  async function handleDeleteAsset(assetId: string) {
     setBusyDeleteId(assetId);
 
     try {
