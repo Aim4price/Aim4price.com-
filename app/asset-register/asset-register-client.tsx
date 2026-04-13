@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
+import { openAssetRegisterSummaryPrint, openAssetSheetPrint } from '../../lib/report-print';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
@@ -217,6 +218,45 @@ function buildContactLocation(profile: AccountProfilePreview | null): string {
 
 function buildSellerName(profile: AccountProfilePreview | null): string {
   return profile?.businessName?.trim() || profile?.name?.trim() || 'No seller name saved yet';
+}
+
+function tractorTypeLabel(value: string): string {
+  if (value === 'orchard') return 'Orchard';
+  if (value === 'field') return 'Field';
+  return '';
+}
+
+function driveLabel(value: string): string {
+  if (value === 'tracks') return 'Tracks';
+  return value ? value.toUpperCase() : '';
+}
+
+function cabLabel(value: string): string {
+  if (value === 'cab') return 'Cab';
+  if (value === 'open-station') return 'Open station';
+  return '';
+}
+
+function buildAssetSummaryLine(asset: RegisterAsset): string {
+  const parts = [
+    asset.brandName,
+    asset.modelName,
+    tractorTypeLabel(asset.tractorType) ? `${tractorTypeLabel(asset.tractorType)} tractor` : '',
+    driveLabel(asset.drive),
+    cabLabel(asset.cab),
+    asset.powerKw ? `${asset.powerKw} kW` : '',
+    asset.yearModel ? `${asset.yearModel} model` : '',
+    asset.hours ? `${asset.hours.toLocaleString('en-ZA')} hours` : '',
+  ].filter(Boolean);
+
+  return parts.join(' • ') || 'Manual asset entry';
+}
+
+function buildAssetStatusLabel(asset: RegisterAsset): string {
+  if (asset.marketplaceStatus === 'live') return 'Live on marketplace';
+  if (asset.valuationRunId) return 'Saved valuation asset';
+  if (asset.kind === 'property') return 'Property asset';
+  return 'Manual register asset';
 }
 
 export default function AssetRegisterClient() {
@@ -697,6 +737,147 @@ export default function AssetRegisterClient() {
     }
   }
 
+  function handleOpenRegisterSummaryPdf() {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const logoUrl = new URL('/brand/Aim4price%20Logo.png', window.location.origin).toString();
+    const generatedAt = new Intl.DateTimeFormat('en-ZA', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date());
+
+    const ownerMeta = [profile?.email, profile?.phone, contactLocation].filter(Boolean).join(' • ') || 'No account contact details saved yet';
+
+    const reportOpened = openAssetRegisterSummaryPrint({
+      logoUrl,
+      generatedAt,
+      ownerName: sellerName,
+      ownerMeta,
+      intro: 'Short summary of the current Aim4price asset register. All values shown are VAT excluded.',
+      stats: [
+        {
+          label: 'Total register value',
+          value: money(totalValue),
+          note: 'Excl. VAT',
+        },
+        {
+          label: 'Total assets',
+          value: String(assets.length),
+        },
+        {
+          label: 'Equipment assets',
+          value: String(equipmentCount),
+        },
+        {
+          label: 'Live listings',
+          value: String(liveCount),
+        },
+      ],
+      rows: assets.map((asset) => ({
+        asset: asset.title,
+        type: kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind),
+        method: methodLabel(asset.selectedMethod),
+        detail: buildAssetSummaryLine(asset),
+        value: `${money(asset.value)} excl. VAT`,
+        status: buildAssetStatusLabel(asset),
+      })),
+      footerNote: 'Aim4price asset register summary. All values shown in this document exclude VAT.',
+    });
+
+    if (!reportOpened) {
+      setNotice({ tone: 'error', message: 'Allow pop-ups in your browser to generate the register summary PDF.' });
+    }
+  }
+
+  function handleOpenAssetSheet(asset: RegisterAsset) {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const logoUrl = new URL('/brand/Aim4price%20Logo.png', window.location.origin).toString();
+    const generatedAt = new Intl.DateTimeFormat('en-ZA', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date());
+
+    const valuationMethods = [
+      asset.aim4priceValueExVat !== null
+        ? {
+            label: 'Aim4price Value',
+            value: money(asset.aim4priceValueExVat),
+            note: 'Saved Aim4price valuation snapshot.',
+            selected: asset.selectedMethod === 'aim4price',
+          }
+        : null,
+      asset.marketMidExVat !== null
+        ? {
+            label: 'Market Range Midpoint',
+            value: money(asset.marketMidExVat),
+            note: 'Saved comparable market midpoint snapshot.',
+            selected: asset.selectedMethod === 'market',
+          }
+        : null,
+      asset.departmentValueExVat !== null
+        ? {
+            label: 'DALRRD Reference',
+            value: money(asset.departmentValueExVat),
+            note: 'Saved department reference snapshot.',
+            selected: asset.selectedMethod === 'department',
+          }
+        : null,
+    ].filter((entry): entry is { label: string; value: string; note: string; selected: boolean } => Boolean(entry));
+
+    const notes = [
+      asset.note ? { label: 'Asset note', value: asset.note } : null,
+      asset.financeNote ? { label: 'Finance note', value: asset.financeNote } : null,
+      asset.marketplaceNotes ? { label: 'Marketplace note', value: asset.marketplaceNotes } : null,
+    ].filter((entry): entry is { label: string; value: string } => Boolean(entry));
+
+    const contactRows = [
+      { label: 'Seller', value: sellerName },
+      profile?.email ? { label: 'Email', value: profile.email } : null,
+      asset.sellerPhone || profile?.phone
+        ? { label: 'Phone', value: asset.sellerPhone || profile?.phone || '' }
+        : null,
+      contactLocation ? { label: 'Location', value: contactLocation } : null,
+    ].filter((entry): entry is { label: string; value: string } => Boolean(entry));
+
+    const reportOpened = openAssetSheetPrint({
+      logoUrl,
+      generatedAt,
+      assetBadge: kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind),
+      heroTitle: asset.title,
+      heroMeta: buildAssetSummaryLine(asset),
+      valueLabel: 'Register value',
+      value: money(asset.value),
+      valueNote: `${assetStatusDateLabel(asset)} • All values shown exclude VAT.`,
+      statusLabel: buildAssetStatusLabel(asset),
+      photoUrl: asset.photos[0] || null,
+      facts: [
+        { label: 'Valuation method', value: methodLabel(asset.selectedMethod) },
+        { label: 'Year model', value: asset.yearModel ? String(asset.yearModel) : '—' },
+        { label: 'Engine hours', value: asset.hours ? `${asset.hours.toLocaleString('en-ZA')} hours` : '—' },
+        { label: 'Power', value: asset.powerKw ? `${asset.powerKw} kW` : '—' },
+        { label: 'Serial / reference', value: asset.serialNumber || '—' },
+        { label: 'Finance status', value: asset.isFinanced ? 'Financed' : 'Not financed' },
+        { label: 'Marketplace status', value: asset.marketplaceStatus === 'live' ? 'Live' : 'Not live' },
+        { label: 'Saved', value: formatDate(asset.createdAtIso) },
+      ],
+      notes,
+      methodCards: valuationMethods,
+      contactRows,
+      footerNote: 'Aim4price asset sheet. This snapshot is intended for simple internal sharing and all values shown exclude VAT.',
+    });
+
+    if (!reportOpened) {
+      setNotice({ tone: 'error', message: 'Allow pop-ups in your browser to generate the asset sheet PDF.' });
+    }
+  }
+
   return (
     <main className={styles.page}>
       <AppHeader active="asset-register" />
@@ -707,8 +888,9 @@ export default function AssetRegisterClient() {
             <span className={styles.eyebrow}>Asset Register</span>
             <h1>Keep every saved asset in one clean register.</h1>
             <p>
-              Manage valuation-linked machinery, add manual records only when you need them, and send
-              equipment to marketplace from the same workflow.
+              Manage valuation-linked machinery, add manual records only when you need them, send
+              equipment to marketplace from the same workflow, and keep every register value clearly
+              shown excl. VAT.
             </p>
           </div>
 
@@ -716,6 +898,7 @@ export default function AssetRegisterClient() {
             <div className={styles.statCard}>
               <span>Total register value</span>
               <strong>{money(totalValue)}</strong>
+              <small className={styles.statMeta}>Excl. VAT</small>
             </div>
             <div className={styles.statCard}>
               <span>Total assets</span>
@@ -740,17 +923,20 @@ export default function AssetRegisterClient() {
 
         <section className={styles.toolbarCard}>
           <div className={styles.toolbarCopy}>
-            <span className={styles.kicker}>Manual records</span>
-            <h2>Add another asset only when you need one</h2>
+            <span className={styles.kicker}>Manual records & PDF exports</span>
+            <h2>Keep the register clean, then export what you need</h2>
             <p>
-              Property and manual assets now live behind a popup so your register stays cleaner and more
-              focused on saved equipment.
+              Add manual records only when needed, create a short register summary PDF, or generate a
+              one-page asset sheet for any saved item. All register values are shown excl. VAT.
             </p>
           </div>
 
           <div className={styles.inlineActions}>
             <button type="button" className={styles.primaryButton} onClick={openCreateModal}>
               Add another asset
+            </button>
+            <button type="button" className={styles.secondaryButton} onClick={handleOpenRegisterSummaryPdf}>
+              Register summary PDF
             </button>
             <Link href="/valuation" className={styles.secondaryButton}>
               Open valuation
@@ -766,7 +952,7 @@ export default function AssetRegisterClient() {
             <div>
               <span className={styles.kicker}>Saved assets</span>
               <h2>Your register</h2>
-              <p>Saved valuations stay as fixed snapshots. They only change when you edit that item.</p>
+              <p>Saved valuations stay as fixed snapshots. They only change when you edit that item, and every value below is shown excl. VAT.</p>
             </div>
 
             <div className={styles.inlineActions}>
@@ -796,21 +982,13 @@ export default function AssetRegisterClient() {
                         ) : null}
                       </div>
                       <h3>{asset.title}</h3>
-                      <p>
-                        {[
-                          asset.brandName,
-                          asset.modelName,
-                          asset.yearModel ? String(asset.yearModel) : '',
-                          asset.hours ? `${asset.hours.toLocaleString('en-ZA')} hours` : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' · ') || 'Manual asset'}
-                      </p>
+                      <p>{buildAssetSummaryLine(asset)}</p>
                     </div>
 
                     <div className={styles.priceBlock}>
+                      <span className={styles.valueLabel}>Register value</span>
                       <strong>{money(asset.value)}</strong>
-                      <span>{assetStatusDateLabel(asset)}</span>
+                      <span>Excl. VAT • {assetStatusDateLabel(asset)}</span>
                     </div>
                   </div>
 
@@ -847,6 +1025,9 @@ export default function AssetRegisterClient() {
                   {asset.financeNote ? <p className={styles.note}>Finance: {asset.financeNote}</p> : null}
 
                   <div className={styles.assetActions}>
+                    <button type="button" className={styles.secondaryButton} onClick={() => handleOpenAssetSheet(asset)}>
+                      Asset sheet PDF
+                    </button>
                     <button type="button" className={styles.secondaryButton} onClick={() => openEditorModal(asset)}>
                       Edit
                     </button>
@@ -940,7 +1121,7 @@ export default function AssetRegisterClient() {
               </label>
 
               <label className={styles.field}>
-                <span>Value</span>
+                <span>Value (excl. VAT)</span>
                 <input
                   type="number"
                   min="0"
@@ -1059,12 +1240,12 @@ export default function AssetRegisterClient() {
             <div className={styles.modalHeader}>
               <span className={styles.kicker}>Marketplace</span>
               <h2>Send {marketplaceDraft.assetTitle} to marketplace</h2>
-              <p>Choose the selling price, add seller notes and confirm the contact details before publishing.</p>
+              <p>Choose the selling price excl. VAT, add seller notes and confirm the contact details before publishing.</p>
             </div>
 
             <form className={styles.form} onSubmit={handleMarketplaceSubmit}>
               <label className={styles.field}>
-                <span>Asking price</span>
+                <span>Asking price (excl. VAT)</span>
                 <input
                   type="number"
                   min="0"
