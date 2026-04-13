@@ -1085,39 +1085,20 @@ export default function ValuationClient() {
       headlineValue: money(headlineValue),
       confidenceLabel: getConfidenceLabel(result),
       confidenceTone: confidenceLevel,
-      inputRows: [
+      summaryRows: [
         { label: 'Equipment type', value: 'Tractor' },
-        { label: 'Configuration', value: `${getTractorTypeLabel(result.model.tractorType)} • ${getDriveDisplay(result.model.drive)} • ${getCabDisplay(result.model.cab)}` },
+        {
+          label: 'Configuration',
+          value: `${getTractorTypeLabel(result.model.tractorType)} • ${getDriveDisplay(result.model.drive)} • ${getCabDisplay(result.model.cab)}`,
+        },
         { label: 'Year model', value: String(activeYear) },
+        { label: 'Power rating', value: `${result.model.powerKw} kW` },
         { label: 'Engine hours', value: `${Number(hours).toLocaleString('en-ZA')} hours` },
         { label: 'Condition', value: selectedConditionDisplay },
         { label: 'Fitted extras', value: extrasSummaryText },
-        { label: 'Extras added to value', value: money(result.extrasValueExVat) },
       ],
-      methodCards: methodCards.map((card) => ({
-        label: card.label,
-        value: card.key === 'market' ? getMethodDisplay(result, 'market') : money(card.value),
-        note: card.note,
-        selected: selectedMethod === card.key,
-      })),
-      marketRange: range(result.marketLow, result.marketHigh),
-      marketEvidenceLabel: `${result.marketCount} provable comparable listing${result.marketCount === 1 ? '' : 's'}`,
-      selectedComparableTitle: selectedComparable ? `${selectedComparable.sourceName} comparable` : 'Comparable snapshot',
-      selectedComparableValue: money(selectedComparableValue),
-      selectedComparableMeta: selectedComparable
-        ? `${selectedComparable.yearModel} model • ${selectedComparable.hours.toLocaleString('en-ZA')} engine hours • ${selectedComparable.area}, ${selectedComparable.province}`
-        : 'No individual comparable was selected for this report.',
-      selectedComparableUrl: selectedComparableSourceUrl || null,
-      comparableRows: comparableListings.slice(0, 6).map((listing) => ({
-        value: money(getListingComparablePrice(listing, result.extrasValueExVat)),
-        sourceName: listing.sourceName,
-        detail: `${listing.yearModel} model • ${listing.hours.toLocaleString('en-ZA')} hours`,
-        location: [listing.area, listing.province].filter(Boolean).join(', ') || 'South Africa',
-        advertised: formatListingDate(listing.dateAdvertised),
-        sourceUrl: listing.sourceUrl || null,
-      })),
       footerNote:
-        'Aim4price valuation report. This document is based on the current saved input set and all values shown exclude VAT.',
+        'Aim4price valuation report. This document is based on the selected machine profile and saved input set. All values shown exclude VAT.',
     });
 
     if (!reportOpened) {
@@ -2322,37 +2303,6 @@ export default function ValuationClient() {
                         );
                       })}
                     </div>
-
-                    <div className={styles.valueHighlightGrid}>
-                      <div className={styles.valueHighlightCard}>
-                        <span className={styles.valueHighlightLabel}>Selected method</span>
-                        <strong className={styles.valueHighlightValue}>{headlineLabel}</strong>
-                        <span className={styles.valueHighlightNote}>This is the value currently shown above.</span>
-                      </div>
-
-                      <div className={styles.valueHighlightCard}>
-                        <span className={styles.valueHighlightLabel}>Market range</span>
-                        <strong className={styles.valueHighlightValue}>{range(result.marketLow, result.marketHigh)}</strong>
-                        <span className={styles.valueHighlightNote}>
-                          {result.marketCount
-                            ? `${result.marketCount} provable comparable${result.marketCount === 1 ? '' : 's'} matched.`
-                            : 'No provable comparable listings matched yet.'}
-                        </span>
-                      </div>
-
-                      <div className={styles.valueHighlightCard}>
-                        <span className={styles.valueHighlightLabel}>Input summary</span>
-                        <strong className={styles.valueHighlightValue}>{selectedConditionDisplay}</strong>
-                        <span className={styles.valueHighlightNote}>
-                          {activeYear} model • {Number(hours).toLocaleString('en-ZA')} engine hours
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className={styles.valueSupportText}>
-                      Compare the methods, then save the price that best fits your sale, internal register, or reporting
-                      need.
-                    </p>
                   </div>
                 </article>
 
@@ -2511,7 +2461,7 @@ export default function ValuationClient() {
 
                   <div className={styles.marketListingsBlock}>
                     <div className={styles.marketListingsHead}>
-                      <h3 className={styles.marketListingsTitle}>Provable Market Listings</h3>
+                      <h3 className={styles.marketListingsTitle}>Proveable Market Listings</h3>
                       {comparableListings.length ? (
                         <span className={styles.marketListingsCount}>
                           {safeComparableIndex + 1} / {comparableListings.length}
