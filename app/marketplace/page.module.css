@@ -44,7 +44,7 @@
 .heroTop,
 .modalHeader,
 .cardHead,
-.filtersHeader,
+.browseHeader,
 .resultsTop {
   display: flex;
   justify-content: space-between;
@@ -116,14 +116,15 @@
 .totalCard,
 .heroStat,
 .card,
-.filtersShell,
+.browseShell,
 .emptyState,
 .modal,
 .statCard,
 .resultsMeta,
 .priceBlock,
 .modalPriceBlock,
-.paginationShell {
+.paginationShell,
+.filterDrawer {
   border: 1px solid rgba(16, 42, 34, 0.08);
   box-shadow:
     0 18px 38px rgba(16, 42, 34, 0.06),
@@ -216,23 +217,23 @@
   line-height: 1.45;
 }
 
-.filtersShell {
+.browseShell {
   margin-top: 1.35rem;
-  padding: 1.7rem;
-  border-radius: 1.95rem;
+  padding: 1.35rem 1.45rem;
+  border-radius: 1.75rem;
   background: rgba(255, 255, 255, 0.97);
 }
 
-.filtersHeader {
+.browseHeader {
   align-items: flex-start;
-  gap: 1.2rem 1.6rem;
+  gap: 1rem 1.4rem;
 }
 
-.filtersHeader > div {
-  max-width: 42rem;
+.browseCopy {
+  max-width: 44rem;
 }
 
-.filtersHeader h2,
+.browseHeader h2,
 .resultsTop h2,
 .modalHeader h2 {
   margin: 0.6rem 0 0;
@@ -241,12 +242,14 @@
   letter-spacing: -0.05em;
 }
 
-.filtersHeader p,
+.browseHeader p,
 .modalHeader p,
 .modalSection p,
 .lockCard p,
 .ownerCard p,
-.emptyState p {
+.emptyState p,
+.filterDrawerHeader p,
+.drawerSectionHead p {
   margin: 0.42rem 0 0;
   color: var(--text-muted);
   line-height: 1.72;
@@ -260,7 +263,12 @@
 .closeButton,
 .pageButton,
 .pageNavButton,
-.deleteAction {
+.deleteAction,
+.filterToggle,
+.drawerCloseButton,
+.applyButton,
+.clearInlineButton,
+.resetTextButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -299,6 +307,225 @@
 .pageNavButton:hover,
 .deleteAction:hover {
   transform: translateY(-1px);
+}
+
+.browseActions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.toolbarSelect {
+  display: grid;
+  gap: 0.48rem;
+  min-width: 15rem;
+  padding: 0.82rem 0.88rem 0.9rem;
+  border-radius: 1.16rem;
+  border: 1px solid rgba(20, 55, 99, 0.08);
+  background: linear-gradient(180deg, #fbfdff 0%, #f4f8fc 100%);
+}
+
+.toolbarSelect span {
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b84a0;
+}
+
+.toolbarSelect select {
+  width: 100%;
+  min-height: 3.1rem;
+  padding: 0.84rem 0.95rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(20, 55, 99, 0.12);
+  background: #ffffff;
+  color: var(--text-strong);
+  outline: none;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.toolbarSelect select:focus {
+  border-color: rgba(43, 98, 166, 0.34);
+  box-shadow: 0 0 0 4px rgba(43, 98, 166, 0.1);
+}
+
+.filterToggle {
+  min-height: 4.1rem;
+  padding: 0 1.1rem;
+  border-radius: 1.16rem;
+  border: 1px solid rgba(31, 90, 159, 0.14);
+  background: linear-gradient(180deg, #f6fbff 0%, #edf5ff 100%);
+  color: var(--text-strong);
+  font-weight: 800;
+  gap: 0.8rem;
+  box-shadow: 0 14px 28px rgba(17, 43, 78, 0.08);
+}
+
+.filterToggleCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.95rem;
+  height: 1.95rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2f6fb8 0%, #1d4f88 100%);
+  color: #ffffff;
+  font-size: 0.84rem;
+  line-height: 1;
+  box-shadow: 0 10px 18px rgba(29, 79, 136, 0.16);
+}
+
+.activeFilterBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(20, 55, 99, 0.08);
+}
+
+.clearInlineButton,
+.resetTextButton {
+  min-height: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #275183;
+  font-weight: 800;
+}
+
+.browseHint {
+  margin: 0.95rem 0 0;
+  color: var(--text-muted);
+  line-height: 1.68;
+}
+
+.filterOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 115;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(7, 20, 40, 0.34);
+  backdrop-filter: blur(6px);
+}
+
+.filterDrawer {
+  width: min(460px, 100%);
+  height: 100%;
+  padding: 1.15rem 1rem 1rem;
+  border-left: 1px solid rgba(20, 55, 99, 0.08);
+  background: #ffffff;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 1rem;
+  animation: filterDrawerIn 180ms ease-out;
+}
+
+.filterDrawerHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.9rem;
+  align-items: flex-start;
+  padding: 0.1rem 0.1rem 0 0.1rem;
+}
+
+.filterDrawerHeader h2 {
+  margin: 0.6rem 0 0;
+  font-size: clamp(1.55rem, 3vw, 1.95rem);
+  line-height: 1.04;
+  letter-spacing: -0.05em;
+}
+
+.drawerCloseButton {
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 42, 34, 0.08);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--text-strong);
+  box-shadow: 0 10px 18px rgba(16, 42, 34, 0.08);
+  font-size: 1.25rem;
+}
+
+.filterDrawerBody {
+  overflow: auto;
+  padding: 0 0.1rem 0.25rem;
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+}
+
+.drawerSection {
+  padding: 1rem;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(20, 55, 99, 0.08);
+  background: linear-gradient(180deg, #fbfdff 0%, #f5f9ff 100%);
+}
+
+.drawerSectionHead h3 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+}
+
+.drawerSectionHead p {
+  margin: 0.38rem 0 0.9rem;
+  font-size: 0.94rem;
+}
+
+.drawerGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.drawerSearchField {
+  background: #ffffff;
+}
+
+.filterDrawerFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0.1rem 0.1rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #ffffff 24%, #ffffff 100%);
+}
+
+.applyButton {
+  min-height: 3.35rem;
+  padding: 0 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid transparent;
+  background: linear-gradient(180deg, #2f6fb8 0%, #1d4f88 100%);
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 12px 24px rgba(29, 79, 136, 0.18);
+  white-space: nowrap;
+}
+
+@keyframes filterDrawerIn {
+  from {
+    transform: translateX(28px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .filterGrid {
@@ -851,6 +1078,23 @@
   white-space: nowrap;
 }
 
+@media (max-width: 1024px) {
+  .browseActions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .toolbarSelect {
+    flex: 1 1 16rem;
+    min-width: 0;
+  }
+
+  .filterToggle {
+    flex: 1 1 14rem;
+    justify-content: space-between;
+  }
+}
+
 @media (max-width: 1180px) {
   .filterGrid {
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -884,7 +1128,8 @@
 
 @media (max-width: 900px) {
   .statsRow,
-  .modalStats {
+  .modalStats,
+  .drawerGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -896,7 +1141,7 @@
 
 @media (max-width: 720px) {
   .hero,
-  .filtersShell,
+  .browseShell,
   .emptyState,
   .modal,
   .paginationShell {
@@ -916,7 +1161,8 @@
   .filterGrid,
   .grid,
   .compactStats,
-  .modalStats {
+  .modalStats,
+  .drawerGrid {
     grid-template-columns: 1fr;
   }
 
@@ -928,6 +1174,24 @@
   .provinceField,
   .sortField {
     grid-column: auto;
+  }
+
+  .browseActions,
+  .activeFilterBar,
+  .filterDrawerFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbarSelect,
+  .filterToggle,
+  .applyButton {
+    width: 100%;
+  }
+
+  .filterDrawer {
+    width: min(100%, 31rem);
+    padding: 1rem 0.8rem 0.85rem;
   }
 
   .cardHead,
