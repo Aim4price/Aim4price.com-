@@ -231,11 +231,6 @@ export default function AppHeader({
                         <p className={styles.accountEmail}>{session.email}</p>
                       </div>
                     </div>
-
-                    <Link href="/asset-register" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                      Asset Register
-                    </Link>
-
                     <Link href="/account" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
                       Account details
                     </Link>
