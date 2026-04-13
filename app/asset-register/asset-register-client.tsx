@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
-import { openAssetRegisterSummaryPrint, openAssetSheetPrint } from '../../lib/report-print';
+import { hasMarketplaceListingForAsset, publishRegisterItemToMarketplace } from '../../lib/marketplace';
+import { openAssetSheetPrint, type ReportMethodCard } from '../../lib/report-print';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
@@ -11,7 +12,7 @@ type AssetKind = 'tractor' | 'manual' | 'property';
 type AssetMethod = 'aim4price' | 'market' | 'department' | 'manual';
 
 type RegisterAsset = {
-  id: string;
+  id: number;
   userId: string;
   valuationRunId: number | null;
   kind: AssetKind;
@@ -34,9 +35,6 @@ type RegisterAsset = {
   serialNumber: string;
   isFinanced: boolean;
   financeNote: string;
-  sellerPhone: string;
-  marketplaceNotes: string;
-  marketplaceStatus: string;
   photos: string[];
   createdAtIso: string;
   updatedAtIso: string;
@@ -65,24 +63,6 @@ type AssetUploadApiResponse = {
   error?: string;
 };
 
-type AccountProfilePreview = {
-  userId: string;
-  name: string;
-  email: string;
-  businessName: string;
-  phone: string;
-  province: string;
-  townCity: string;
-  addressLine1: string;
-  addressLine2: string;
-};
-
-type ProfileApiResponse = {
-  ok: boolean;
-  profile?: AccountProfilePreview;
-  error?: string;
-};
-
 type AssetDraft = {
   kind: AssetKind;
   title: string;
@@ -92,15 +72,6 @@ type AssetDraft = {
   isFinanced: boolean;
   financeNote: string;
   photos: string[];
-};
-
-type MarketplaceDraft = {
-  assetId: string;
-  assetTitle: string;
-  askingPrice: string;
-  sellerPhone: string;
-  notes: string;
-  confirmContact: boolean;
 };
 
 const MAX_PHOTOS = 12;
@@ -209,91 +180,144 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
   };
 }
 
-function buildContactLocation(profile: AccountProfilePreview | null): string {
-  return [profile?.addressLine1, profile?.addressLine2, profile?.townCity, profile?.province]
-    .map((value) => String(value ?? '').trim())
-    .filter(Boolean)
-    .join(', ');
+function buildSavedItemFromAsset(asset: RegisterAsset) {
+  return {
+    id: String(asset.id),
+    valuationRunId: asset.valuationRunId ?? undefined,
+    kind: asset.kind,
+    title: asset.title,
+    value: asset.value,
+    selectedMethod: asset.selectedMethod,
+    method: asset.selectedMethod,
+    selectedValueExVat: asset.selectedValueExVat,
+    brandName: asset.brandName || undefined,
+    modelName: asset.modelName || undefined,
+    drive: asset.drive || undefined,
+    tractorType: asset.tractorType || undefined,
+    cab: asset.cab || undefined,
+    powerKw: asset.powerKw ?? undefined,
+    yearModel: asset.yearModel ?? undefined,
+    hours: asset.hours ?? undefined,
+    aim4priceValueExVat: asset.aim4priceValueExVat,
+    marketMidExVat: asset.marketMidExVat,
+    departmentValueExVat: asset.departmentValueExVat,
+    note: asset.note || undefined,
+    createdAtIso: asset.createdAtIso,
+    updatedAtIso: asset.updatedAtIso,
+    serialNumber: asset.serialNumber || undefined,
+    isFinanced: asset.isFinanced,
+    financeNote: asset.financeNote || undefined,
+    photos: asset.photos,
+  };
 }
 
-function buildSellerName(profile: AccountProfilePreview | null): string {
-  return profile?.businessName?.trim() || profile?.name?.trim() || 'No seller name saved yet';
-}
-
-function tractorTypeLabel(value: string): string {
-  if (value === 'orchard') return 'Orchard';
-  if (value === 'field') return 'Field';
-  return '';
-}
-
-function driveLabel(value: string): string {
-  if (value === 'tracks') return 'Tracks';
-  return value ? value.toUpperCase() : '';
-}
-
-function cabLabel(value: string): string {
-  if (value === 'cab') return 'Cab';
-  if (value === 'open-station') return 'Open station';
-  return '';
-}
-
-function buildAssetSummaryLine(asset: RegisterAsset): string {
+function buildAssetMeta(asset: RegisterAsset): string {
   const parts = [
-    asset.brandName,
-    asset.modelName,
-    tractorTypeLabel(asset.tractorType) ? `${tractorTypeLabel(asset.tractorType)} tractor` : '',
-    driveLabel(asset.drive),
-    cabLabel(asset.cab),
+    asset.tractorType,
+    asset.drive,
+    asset.cab,
     asset.powerKw ? `${asset.powerKw} kW` : '',
     asset.yearModel ? `${asset.yearModel} model` : '',
     asset.hours ? `${asset.hours.toLocaleString('en-ZA')} hours` : '',
   ].filter(Boolean);
 
-  return parts.join(' • ') || 'Manual asset entry';
+  if (parts.length) {
+    return parts.join(' • ');
+  }
+
+  return [asset.brandName, asset.modelName].filter(Boolean).join(' • ') || 'Manual asset';
 }
 
-function buildAssetStatusLabel(asset: RegisterAsset): string {
-  if (asset.marketplaceStatus === 'live') return 'Live on marketplace';
-  if (asset.valuationRunId) return 'Saved valuation asset';
-  if (asset.kind === 'property') return 'Property asset';
-  return 'Manual register asset';
+function toAbsoluteUrl(value?: string | null): string | null {
+  const text = String(value ?? '').trim();
+
+  if (!text) {
+    return null;
+  }
+
+  if (/^(https?:|data:|blob:)/i.test(text)) {
+    return text;
+  }
+
+  if (typeof window === 'undefined') {
+    return text;
+  }
+
+  try {
+    return new URL(text, window.location.origin).toString();
+  } catch {
+    return text;
+  }
+}
+
+function buildAssetSheetMethodCards(asset: RegisterAsset): ReportMethodCard[] {
+  const cards: ReportMethodCard[] = [];
+
+  if (asset.aim4priceValueExVat !== null) {
+    cards.push({
+      label: 'Aim4price',
+      value: money(asset.aim4priceValueExVat),
+      note: 'Pricing engine output.',
+      selected: asset.selectedMethod === 'aim4price',
+    });
+  }
+
+  if (asset.marketMidExVat !== null) {
+    cards.push({
+      label: 'Market',
+      value: money(asset.marketMidExVat),
+      note: 'Saved market midpoint.',
+      selected: asset.selectedMethod === 'market',
+    });
+  }
+
+  if (asset.departmentValueExVat !== null) {
+    cards.push({
+      label: 'DALRRD',
+      value: money(asset.departmentValueExVat),
+      note: 'Reference guide value.',
+      selected: asset.selectedMethod === 'department',
+    });
+  }
+
+  if (!cards.length || asset.selectedMethod === 'manual') {
+    cards.unshift({
+      label: 'Register',
+      value: money(asset.value),
+      note: 'Saved register value.',
+      selected: asset.selectedMethod === 'manual' || !cards.length,
+    });
+  }
+
+  return cards;
 }
 
 export default function AssetRegisterClient() {
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
-  const [profile, setProfile] = useState<AccountProfilePreview | null>(null);
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
-  const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplaceDraft | null>(null);
+  const [editingAssetId, setEditingAssetId] = useState<number | null>(null);
+  const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
-  const [busyMarketplaceAssetId, setBusyMarketplaceAssetId] = useState<string | null>(null);
-  const [busyDeleteId, setBusyDeleteId] = useState<string | null>(null);
+  const [busyDeleteId, setBusyDeleteId] = useState<number | null>(null);
+  const formCardRef = useRef<HTMLElement | null>(null);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
-    async function loadData() {
+    async function loadAssets() {
       setIsLoading(true);
 
       try {
-        const [assetsResponse, profileResponse] = await Promise.all([
-          fetch('/api/asset-register', {
-            cache: 'no-store',
-            credentials: 'include',
-          }),
-          fetch('/api/account-profile', {
-            cache: 'no-store',
-            credentials: 'include',
-          }),
-        ]);
+        const assetsResponse = await fetch('/api/asset-register', {
+          cache: 'no-store',
+          credentials: 'include',
+        });
 
         const assetsData = (await assetsResponse.json()) as AssetRegisterApiResponse;
-        const profileData = (await profileResponse.json()) as ProfileApiResponse;
 
         if (!assetsResponse.ok || !assetsData.ok) {
           throw new Error(assetsData.error ?? 'Failed to load asset register.');
@@ -304,10 +328,6 @@ export default function AssetRegisterClient() {
         }
 
         setAssets(Array.isArray(assetsData.items) ? assetsData.items : []);
-
-        if (profileResponse.ok && profileData.ok && profileData.profile) {
-          setProfile(profileData.profile);
-        }
       } catch (error) {
         if (!mounted) {
           return;
@@ -324,7 +344,7 @@ export default function AssetRegisterClient() {
       }
     }
 
-    void loadData();
+    void loadAssets();
 
     return () => {
       mounted = false;
@@ -338,58 +358,41 @@ export default function AssetRegisterClient() {
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
-  const hasModalOpen = isEditorOpen || Boolean(marketplaceDraft);
-
   useEffect(() => {
-    if (!hasModalOpen) {
+    if (!activeAsset) {
       return undefined;
     }
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [hasModalOpen]);
-
-  useEffect(() => {
-    if (!hasModalOpen) {
-      return undefined;
-    }
-
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') {
-        return;
-      }
-
-      if (!isSavingAsset && !isUploadingPhotos) {
-        setIsEditorOpen(false);
-      }
-
-      if (!busyMarketplaceAssetId) {
-        setMarketplaceDraft(null);
+      if (event.key === 'Escape') {
+        setActiveAsset(null);
       }
     };
 
     document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [busyMarketplaceAssetId, hasModalOpen, isSavingAsset, isUploadingPhotos]);
 
-  const totalValue = useMemo(() => assets.reduce((sum, asset) => sum + Number(asset.value || 0), 0), [assets]);
-  const equipmentCount = useMemo(() => assets.filter((asset) => isTractorAsset(asset)).length, [assets]);
-  const liveCount = useMemo(
-    () => assets.filter((asset) => asset.marketplaceStatus === 'live').length,
-    [assets],
-  );
-  const editingAsset = useMemo(
-    () => (editingAssetId === null ? null : assets.find((asset) => asset.id === editingAssetId) ?? null),
-    [assets, editingAssetId],
-  );
-  const contactLocation = useMemo(() => buildContactLocation(profile), [profile]);
-  const sellerName = useMemo(() => buildSellerName(profile), [profile]);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [activeAsset]);
 
-  function resetEditorDraft() {
+  const totalValue = useMemo(() => {
+    return assets.reduce((sum, asset) => sum + Number(asset.value || 0), 0);
+  }, [assets]);
+
+  const equipmentCount = useMemo(() => {
+    return assets.filter((asset) => isTractorAsset(asset)).length;
+  }, [assets]);
+
+  const editingAsset = useMemo(() => {
+    return editingAssetId === null ? null : assets.find((asset) => asset.id === editingAssetId) ?? null;
+  }, [assets, editingAssetId]);
+
+  function resetEditor() {
     setEditingAssetId(null);
     setAssetDraft(initialAssetDraft);
 
@@ -398,24 +401,23 @@ export default function AssetRegisterClient() {
     }
   }
 
-  function closeEditorModal() {
-    if (isSavingAsset || isUploadingPhotos) {
-      return;
-    }
-
-    setIsEditorOpen(false);
-    resetEditorDraft();
-  }
-
-  function openCreateModal() {
-    resetEditorDraft();
-    setIsEditorOpen(true);
-  }
-
-  function openEditorModal(asset: RegisterAsset) {
+  function openEditor(asset: RegisterAsset) {
     setEditingAssetId(asset.id);
     setAssetDraft(buildDraftFromAsset(asset));
-    setIsEditorOpen(true);
+    formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function openActionDialog(asset: RegisterAsset) {
+    setActiveAsset(asset);
+  }
+
+  function closeActionDialog() {
+    setActiveAsset(null);
+  }
+
+  function handleOpenEditorFromDialog(asset: RegisterAsset) {
+    closeActionDialog();
+    openEditor(asset);
   }
 
   async function handlePhotoFilesSelected(event: ChangeEvent<HTMLInputElement>) {
@@ -525,6 +527,11 @@ export default function AssetRegisterClient() {
 
         setAssets((current) => current.map((asset) => (asset.id === data.item!.id ? data.item! : asset)));
         setNotice({ tone: 'success', message: 'Asset updated.' });
+        resetEditor();
+
+        if (activeAsset?.id === data.item.id) {
+          setActiveAsset(data.item);
+        }
       } else {
         const response = await fetch('/api/asset-register', {
           method: 'POST',
@@ -547,10 +554,8 @@ export default function AssetRegisterClient() {
 
         setAssets((current) => [data.item as RegisterAsset, ...current]);
         setNotice({ tone: 'success', message: 'Asset added to the register.' });
+        resetEditor();
       }
-
-      setIsEditorOpen(false);
-      resetEditorDraft();
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -561,11 +566,7 @@ export default function AssetRegisterClient() {
     }
   }
 
-  async function handleDeleteAsset(assetId: string) {
-    if (!window.confirm('Delete this asset from your register?')) {
-      return;
-    }
-
+  async function handleDeleteAsset(assetId: number) {
     setBusyDeleteId(assetId);
 
     try {
@@ -581,9 +582,15 @@ export default function AssetRegisterClient() {
       }
 
       setAssets((current) => current.filter((asset) => asset.id !== assetId));
+
       if (editingAssetId === assetId) {
-        closeEditorModal();
+        resetEditor();
       }
+
+      if (activeAsset?.id === assetId) {
+        setActiveAsset(null);
+      }
+
       setNotice({ tone: 'success', message: 'Asset removed.' });
     } catch (error) {
       setNotice({
@@ -595,287 +602,84 @@ export default function AssetRegisterClient() {
     }
   }
 
-  function openMarketplaceModal(asset: RegisterAsset) {
-    setMarketplaceDraft({
-      assetId: asset.id,
-      assetTitle: asset.title,
-      askingPrice: String(Math.round(asset.value || asset.selectedValueExVat || 0)),
-      sellerPhone: asset.sellerPhone || profile?.phone || '',
-      notes: asset.marketplaceNotes || asset.note || '',
-      confirmContact: false,
-    });
+  function handleDeleteFromDialog(asset: RegisterAsset) {
+    closeActionDialog();
+    void handleDeleteAsset(asset.id);
   }
 
-  function closeMarketplaceModal() {
-    if (busyMarketplaceAssetId) {
-      return;
-    }
-
-    setMarketplaceDraft(null);
-  }
-
-  async function handleMarketplaceSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!marketplaceDraft) {
-      return;
-    }
-
-    const askingPriceExVat = Math.round(Number(marketplaceDraft.askingPrice) || 0);
-
-    if (askingPriceExVat <= 0) {
-      setNotice({ tone: 'error', message: 'Enter a valid asking price before sending to marketplace.' });
-      return;
-    }
-
-    if (!marketplaceDraft.sellerPhone.trim()) {
-      setNotice({ tone: 'error', message: 'Add a seller phone number before publishing.' });
-      return;
-    }
-
-    if (!marketplaceDraft.confirmContact) {
-      setNotice({ tone: 'error', message: 'Confirm that the contact details are correct before publishing.' });
-      return;
-    }
-
-    setBusyMarketplaceAssetId(marketplaceDraft.assetId);
-
+  function handlePublishAsset(asset: RegisterAsset) {
     try {
-      const response = await fetch('/api/marketplace', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          assetId: marketplaceDraft.assetId,
-          askingPriceExVat,
-          marketplaceNotes: marketplaceDraft.notes,
-          sellerPhone: marketplaceDraft.sellerPhone,
-        }),
+      const normalizedAsset = buildSavedItemFromAsset(asset);
+      const publishableAsset = isTractorAsset(asset)
+        ? { ...normalizedAsset, kind: 'tractor' as const }
+        : normalizedAsset;
+
+      publishRegisterItemToMarketplace(publishableAsset, {
+        askingPriceExVat: asset.selectedValueExVat || asset.value,
+        imageUrls: asset.photos,
+        imageSrc: asset.photos[0],
       });
 
-      const data = (await response.json()) as {
-        ok: boolean;
-        assetId?: string;
-        marketplaceStatus?: string;
-        error?: string;
-      };
-
-      if (!response.ok || !data.ok) {
-        throw new Error(data.error ?? 'Failed to send asset to marketplace.');
-      }
-
-      setAssets((current) =>
-        current.map((entry) =>
-          entry.id === marketplaceDraft.assetId
-            ? {
-                ...entry,
-                marketplaceStatus: data.marketplaceStatus || 'live',
-                sellerPhone: marketplaceDraft.sellerPhone.trim(),
-                marketplaceNotes: marketplaceDraft.notes.trim(),
-              }
-            : entry,
-        ),
-      );
       setNotice({
         tone: 'success',
-        message: `${marketplaceDraft.assetTitle} was sent to the marketplace.`,
+        message: `${asset.title} was sent to the marketplace.`,
       });
-      setMarketplaceDraft(null);
     } catch (error) {
       setNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'Failed to send asset to marketplace.',
       });
-    } finally {
-      setBusyMarketplaceAssetId(null);
     }
   }
 
-  async function handleRemoveMarketplace(asset: RegisterAsset) {
-    if (!window.confirm(`Remove ${asset.title} from the marketplace?`)) {
-      return;
-    }
-
-    setBusyMarketplaceAssetId(asset.id);
-
-    try {
-      const response = await fetch(`/api/marketplace?assetId=${asset.id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-
-      const data = (await response.json()) as {
-        ok: boolean;
-        marketplaceStatus?: string;
-        error?: string;
-      };
-
-      if (!response.ok || !data.ok) {
-        throw new Error(data.error ?? 'Failed to remove marketplace listing.');
-      }
-
-      setAssets((current) =>
-        current.map((entry) =>
-          entry.id === asset.id
-            ? {
-                ...entry,
-                marketplaceStatus: data.marketplaceStatus || 'draft',
-              }
-            : entry,
-        ),
-      );
-      setNotice({ tone: 'success', message: `${asset.title} was removed from the marketplace.` });
-    } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Failed to remove marketplace listing.',
-      });
-    } finally {
-      setBusyMarketplaceAssetId(null);
-    }
+  function handlePublishFromDialog(asset: RegisterAsset) {
+    handlePublishAsset(asset);
+    closeActionDialog();
   }
 
-  function handleOpenRegisterSummaryPdf() {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const logoUrl = new URL('/brand/Aim4price%20Logo.png', window.location.origin).toString();
-    const generatedAt = new Intl.DateTimeFormat('en-ZA', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }).format(new Date());
-
-    const ownerMeta = [profile?.email, profile?.phone, contactLocation].filter(Boolean).join(' • ') || 'No account contact details saved yet';
-
-    const reportOpened = openAssetRegisterSummaryPrint({
-      logoUrl,
-      generatedAt,
-      ownerName: sellerName,
-      ownerMeta,
-      intro: 'Short summary of the current Aim4price asset register. All values shown are VAT excluded.',
-      stats: [
-        {
-          label: 'Total register value',
-          value: money(totalValue),
-          note: 'Excl. VAT',
-        },
-        {
-          label: 'Total assets',
-          value: String(assets.length),
-        },
-        {
-          label: 'Equipment assets',
-          value: String(equipmentCount),
-        },
-        {
-          label: 'Live listings',
-          value: String(liveCount),
-        },
-      ],
-      rows: assets.map((asset) => ({
-        asset: asset.title,
-        type: kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind),
-        method: methodLabel(asset.selectedMethod),
-        detail: buildAssetSummaryLine(asset),
-        value: `${money(asset.value)} excl. VAT`,
-        status: buildAssetStatusLabel(asset),
-      })),
-      footerNote: 'Aim4price asset register summary. All values shown in this document exclude VAT.',
-    });
-
-    if (!reportOpened) {
-      setNotice({ tone: 'error', message: 'Allow pop-ups in your browser to generate the register summary PDF.' });
-    }
-  }
-
-  function handleOpenAssetSheet(asset: RegisterAsset) {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const logoUrl = new URL('/brand/Aim4price%20Logo.png', window.location.origin).toString();
-    const generatedAt = new Intl.DateTimeFormat('en-ZA', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }).format(new Date());
-
-    const valuationMethods = [
-      asset.aim4priceValueExVat !== null
-        ? {
-            label: 'Aim4price Value',
-            value: money(asset.aim4priceValueExVat),
-            note: 'Saved Aim4price valuation snapshot.',
-            selected: asset.selectedMethod === 'aim4price',
-          }
-        : null,
-      asset.marketMidExVat !== null
-        ? {
-            label: 'Market Range Midpoint',
-            value: money(asset.marketMidExVat),
-            note: 'Saved comparable market midpoint snapshot.',
-            selected: asset.selectedMethod === 'market',
-          }
-        : null,
-      asset.departmentValueExVat !== null
-        ? {
-            label: 'DALRRD Reference',
-            value: money(asset.departmentValueExVat),
-            note: 'Saved department reference snapshot.',
-            selected: asset.selectedMethod === 'department',
-          }
-        : null,
-    ].filter((entry): entry is { label: string; value: string; note: string; selected: boolean } => Boolean(entry));
-
-    const notes = [
-      asset.note ? { label: 'Asset note', value: asset.note } : null,
-      asset.financeNote ? { label: 'Finance note', value: asset.financeNote } : null,
-      asset.marketplaceNotes ? { label: 'Marketplace note', value: asset.marketplaceNotes } : null,
-    ].filter((entry): entry is { label: string; value: string } => Boolean(entry));
-
-    const contactRows = [
-      { label: 'Seller', value: sellerName },
-      profile?.email ? { label: 'Email', value: profile.email } : null,
-      asset.sellerPhone || profile?.phone
-        ? { label: 'Phone', value: asset.sellerPhone || profile?.phone || '' }
-        : null,
-      contactLocation ? { label: 'Location', value: contactLocation } : null,
-    ].filter((entry): entry is { label: string; value: string } => Boolean(entry));
-
-    const reportOpened = openAssetSheetPrint({
-      logoUrl,
-      generatedAt,
+  function handlePrintAssetSheet(asset: RegisterAsset) {
+    const didOpen = openAssetSheetPrint({
+      logoUrl: toAbsoluteUrl('/brand/aim4price-mark-white.png') ?? '',
+      generatedAt: formatDate(new Date().toISOString()),
       assetBadge: kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind),
       heroTitle: asset.title,
-      heroMeta: buildAssetSummaryLine(asset),
-      valueLabel: 'Register value',
+      heroMeta: buildAssetMeta(asset),
+      valueLabel: `${methodLabel(asset.selectedMethod)} value`,
       value: money(asset.value),
-      valueNote: `${assetStatusDateLabel(asset)} • All values shown exclude VAT.`,
-      statusLabel: buildAssetStatusLabel(asset),
-      photoUrl: asset.photos[0] || null,
+      valueNote: 'Saved asset register snapshot.',
+      statusLabel: assetStatusDateLabel(asset),
+      photoUrl: toAbsoluteUrl(asset.photos[0]) ?? null,
       facts: [
-        { label: 'Valuation method', value: methodLabel(asset.selectedMethod) },
-        { label: 'Year model', value: asset.yearModel ? String(asset.yearModel) : '—' },
-        { label: 'Engine hours', value: asset.hours ? `${asset.hours.toLocaleString('en-ZA')} hours` : '—' },
+        { label: 'Asset type', value: kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind) },
+        { label: 'Method', value: methodLabel(asset.selectedMethod) },
+        { label: 'Brand', value: asset.brandName || '—' },
+        { label: 'Model', value: asset.modelName || '—' },
+        { label: 'Drive', value: asset.drive || '—' },
+        { label: 'Cab', value: asset.cab || '—' },
         { label: 'Power', value: asset.powerKw ? `${asset.powerKw} kW` : '—' },
-        { label: 'Serial / reference', value: asset.serialNumber || '—' },
-        { label: 'Finance status', value: asset.isFinanced ? 'Financed' : 'Not financed' },
-        { label: 'Marketplace status', value: asset.marketplaceStatus === 'live' ? 'Live' : 'Not live' },
+        { label: 'Year', value: asset.yearModel ? String(asset.yearModel) : '—' },
+        { label: 'Hours', value: asset.hours ? asset.hours.toLocaleString('en-ZA') : '—' },
+        { label: 'Serial', value: asset.serialNumber || '—' },
+        { label: 'Finance', value: asset.isFinanced ? 'Financed' : 'Not financed' },
         { label: 'Saved', value: formatDate(asset.createdAtIso) },
       ],
-      notes,
-      methodCards: valuationMethods,
-      contactRows,
-      footerNote: 'Aim4price asset sheet. This snapshot is intended for simple internal sharing and all values shown exclude VAT.',
+      notes: [
+        ...(asset.note ? [{ label: 'Notes', value: asset.note }] : []),
+        ...(asset.financeNote ? [{ label: 'Finance note', value: asset.financeNote }] : []),
+      ],
+      methodCards: buildAssetSheetMethodCards(asset),
+      footerNote: 'Aim4price asset sheet. All register values shown exclude VAT.',
     });
 
-    if (!reportOpened) {
-      setNotice({ tone: 'error', message: 'Allow pop-ups in your browser to generate the asset sheet PDF.' });
+    if (!didOpen) {
+      setNotice({
+        tone: 'error',
+        message: 'Unable to open the asset sheet PDF window. Please allow pop-ups and try again.',
+      });
+      return;
     }
+
+    closeActionDialog();
   }
 
   return (
@@ -886,11 +690,10 @@ export default function AssetRegisterClient() {
         <div className={styles.hero}>
           <div>
             <span className={styles.eyebrow}>Asset Register</span>
-            <h1>Keep every saved asset in one clean register.</h1>
+            <h1>Keep your saved machinery in one place.</h1>
             <p>
-              Manage valuation-linked machinery, add manual records only when you need them, send
-              equipment to marketplace from the same workflow, and keep every register value clearly
-              shown excl. VAT.
+              Save important machines, keep the cards clean, and use one simple options panel when
+              you need to edit, print, publish, or remove an asset.
             </p>
           </div>
 
@@ -898,7 +701,6 @@ export default function AssetRegisterClient() {
             <div className={styles.statCard}>
               <span>Total register value</span>
               <strong>{money(totalValue)}</strong>
-              <small className={styles.statMeta}>Excl. VAT</small>
             </div>
             <div className={styles.statCard}>
               <span>Total assets</span>
@@ -907,10 +709,6 @@ export default function AssetRegisterClient() {
             <div className={styles.statCard}>
               <span>Equipment assets</span>
               <strong>{equipmentCount}</strong>
-            </div>
-            <div className={styles.statCard}>
-              <span>Live listings</span>
-              <strong>{liveCount}</strong>
             </div>
           </div>
         </div>
@@ -921,180 +719,40 @@ export default function AssetRegisterClient() {
           </div>
         ) : null}
 
-        <section className={styles.toolbarCard}>
-          <div className={styles.toolbarCopy}>
-            <span className={styles.kicker}>Manual records & PDF exports</span>
-            <h2>Keep the register clean, then export what you need</h2>
-            <p>
-              Add manual records only when needed, create a short register summary PDF, or generate a
-              one-page asset sheet for any saved item. All register values are shown excl. VAT.
-            </p>
-          </div>
-
-          <div className={styles.inlineActions}>
-            <button type="button" className={styles.primaryButton} onClick={openCreateModal}>
-              Add another asset
-            </button>
-            <button type="button" className={styles.secondaryButton} onClick={handleOpenRegisterSummaryPdf}>
-              Register summary PDF
-            </button>
-            <Link href="/valuation" className={styles.secondaryButton}>
-              Open valuation
-            </Link>
-            <Link href="/account" className={styles.secondaryButton}>
-              Account details
-            </Link>
-          </div>
-        </section>
-
-        <section className={styles.card}>
-          <div className={styles.cardHeader}>
-            <div>
-              <span className={styles.kicker}>Saved assets</span>
-              <h2>Your register</h2>
-              <p>Saved valuations stay as fixed snapshots. They only change when you edit that item, and every value below is shown excl. VAT.</p>
-            </div>
-
-            <div className={styles.inlineActions}>
-              <Link href="/marketplace" className={styles.secondaryButton}>
-                Open marketplace
-              </Link>
-            </div>
-          </div>
-
-          {isLoading ? (
-            <p className={styles.loading}>Loading assets...</p>
-          ) : assets.length ? (
-            <div className={styles.assetList}>
-              {assets.map((asset) => (
-                <article className={styles.assetCard} key={asset.id}>
-                  <div className={styles.assetTop}>
-                    <div>
-                      <div className={styles.badgeRow}>
-                        <span className={styles.badge}>{kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind)}</span>
-                        <span className={styles.badge}>{methodLabel(asset.selectedMethod)}</span>
-                        {asset.valuationRunId ? <span className={styles.badge}>Saved valuation</span> : null}
-                        {asset.marketplaceStatus === 'live' ? <span className={styles.badgeLive}>Live on marketplace</span> : null}
-                        {asset.photos.length ? (
-                          <span className={styles.badge}>
-                            {asset.photos.length} photo{asset.photos.length === 1 ? '' : 's'}
-                          </span>
-                        ) : null}
-                      </div>
-                      <h3>{asset.title}</h3>
-                      <p>{buildAssetSummaryLine(asset)}</p>
-                    </div>
-
-                    <div className={styles.priceBlock}>
-                      <span className={styles.valueLabel}>Register value</span>
-                      <strong>{money(asset.value)}</strong>
-                      <span>Excl. VAT • {assetStatusDateLabel(asset)}</span>
-                    </div>
-                  </div>
-
-                  {asset.photos.length ? (
-                    <div className={styles.photoGrid}>
-                      {asset.photos.slice(0, 4).map((photo, index) => (
-                        <div className={styles.photoThumb} key={`${asset.id}-${photo}-${index}`}>
-                          <img src={photo} alt={`${asset.title} photo ${index + 1}`} />
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-
-                  <div className={styles.detailGrid}>
-                    <div>
-                      <span>Serial</span>
-                      <strong>{asset.serialNumber || '—'}</strong>
-                    </div>
-                    <div>
-                      <span>Finance</span>
-                      <strong>{asset.isFinanced ? 'Financed' : 'Not financed'}</strong>
-                    </div>
-                    <div>
-                      <span>Hours</span>
-                      <strong>{asset.hours ? asset.hours.toLocaleString('en-ZA') : '—'}</strong>
-                    </div>
-                    <div>
-                      <span>Saved</span>
-                      <strong>{formatDate(asset.createdAtIso)}</strong>
-                    </div>
-                  </div>
-
-                  {asset.note ? <p className={styles.note}>{asset.note}</p> : null}
-                  {asset.financeNote ? <p className={styles.note}>Finance: {asset.financeNote}</p> : null}
-
-                  <div className={styles.assetActions}>
-                    <button type="button" className={styles.secondaryButton} onClick={() => handleOpenAssetSheet(asset)}>
-                      Asset sheet PDF
-                    </button>
-                    <button type="button" className={styles.secondaryButton} onClick={() => openEditorModal(asset)}>
-                      Edit
-                    </button>
-                    {isTractorAsset(asset) ? (
-                      <button
-                        type="button"
-                        className={styles.secondaryButton}
-                        disabled={busyMarketplaceAssetId === asset.id}
-                        onClick={() => openMarketplaceModal(asset)}
-                      >
-                        {busyMarketplaceAssetId === asset.id
-                          ? 'Working...'
-                          : asset.marketplaceStatus === 'live'
-                            ? 'Update marketplace'
-                            : 'Send to marketplace'}
-                      </button>
-                    ) : null}
-                    {asset.marketplaceStatus === 'live' ? (
-                      <button
-                        type="button"
-                        className={styles.secondaryButton}
-                        disabled={busyMarketplaceAssetId === asset.id}
-                        onClick={() => void handleRemoveMarketplace(asset)}
-                      >
-                        Remove listing
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      className={styles.dangerButton}
-                      disabled={busyDeleteId === asset.id}
-                      onClick={() => void handleDeleteAsset(asset.id)}
-                    >
-                      {busyDeleteId === asset.id ? 'Removing...' : 'Delete asset'}
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className={styles.emptyState}>
-              <h3>No assets saved yet</h3>
-              <p>Start with a valuation or add a manual asset to begin your register.</p>
-              <div className={styles.inlineActions}>
-                <button type="button" className={styles.primaryButton} onClick={openCreateModal}>
-                  Add first asset
-                </button>
-                <Link href="/valuation" className={styles.secondaryButton}>
-                  Open valuation
-                </Link>
+        <div className={styles.grid}>
+          <section className={styles.card}>
+            <div className={styles.cardHeader}>
+              <div>
+                <span className={styles.kicker}>Account</span>
+                <h2>Account and contact workspace</h2>
+                <p>
+                  Keep business profile and contact details in the account page so the register stays
+                  focused on saved assets.
+                </p>
               </div>
             </div>
-          )}
-        </section>
-      </section>
 
-      {isEditorOpen ? (
-        <div className={styles.modalBackdrop} onClick={closeEditorModal}>
-          <section className={styles.modalCard} onClick={(event) => event.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <span className={styles.kicker}>{editingAsset ? 'Edit asset' : 'Add manually'}</span>
-              <h2>{editingAsset ? 'Update saved asset' : 'Add another asset'}</h2>
-              <p>
-                {editingAsset
-                  ? 'Update title, value, finance notes and photo gallery. Valuation-linked tractor type stays locked.'
-                  : 'Use this popup for property or manual records that did not come from the valuation workflow.'}
-              </p>
+            <div className={styles.inlineLinks}>
+              <Link href="/account" className={styles.primaryButton}>
+                Open account page
+              </Link>
+              <Link href="/valuation" className={styles.secondaryButton}>
+                Open valuation
+              </Link>
+            </div>
+          </section>
+
+          <section className={styles.card} ref={formCardRef}>
+            <div className={styles.cardHeader}>
+              <div>
+                <span className={styles.kicker}>{editingAsset ? 'Edit asset' : 'Add manually'}</span>
+                <h2>{editingAsset ? 'Update saved asset' : 'Add another asset'}</h2>
+                <p>
+                  {editingAsset
+                    ? 'Update title, value, finance notes and photo gallery. Valuation-linked tractor type stays locked.'
+                    : 'Use this for property or manual records that did not come from the valuation workflow.'}
+                </p>
+              </div>
             </div>
 
             <form className={styles.form} onSubmit={handleAssetSubmit}>
@@ -1121,7 +779,7 @@ export default function AssetRegisterClient() {
               </label>
 
               <label className={styles.field}>
-                <span>Value (excl. VAT)</span>
+                <span>Value</span>
                 <input
                   type="number"
                   min="0"
@@ -1155,7 +813,9 @@ export default function AssetRegisterClient() {
                 <input
                   type="checkbox"
                   checked={assetDraft.isFinanced}
-                  onChange={(event) => setAssetDraft((current) => ({ ...current, isFinanced: event.target.checked }))}
+                  onChange={(event) =>
+                    setAssetDraft((current) => ({ ...current, isFinanced: event.target.checked }))
+                  }
                 />
                 <span>This asset is financed</span>
               </label>
@@ -1199,18 +859,22 @@ export default function AssetRegisterClient() {
                   </div>
 
                   <p className={styles.helperText}>
-                    Upload JPG, PNG or WEBP files. Max 5 MB per image. The first image is used as the
-                    preview image in the register for now.
+                    Upload JPG, PNG or WEBP files. Max 5 MB per image. The first image becomes the
+                    card preview in the register.
                   </p>
                 </div>
               </div>
 
               {assetDraft.photos.length ? (
-                <div className={`${styles.photoGrid} ${styles.fullWidth}`}>
+                <div className={styles.photoGrid}>
                   {assetDraft.photos.map((photo, index) => (
                     <div className={styles.photoThumb} key={`${photo}-${index}`}>
                       <img src={photo} alt={`Asset photo ${index + 1}`} />
-                      <button type="button" className={styles.photoRemoveButton} onClick={() => removeDraftPhoto(photo)}>
+                      <button
+                        type="button"
+                        className={styles.photoRemoveButton}
+                        onClick={() => removeDraftPhoto(photo)}
+                      >
                         Remove
                       </button>
                     </div>
@@ -1218,126 +882,250 @@ export default function AssetRegisterClient() {
                 </div>
               ) : null}
 
-              <div className={styles.modalActions}>
-                <button type="button" className={styles.ghostButton} onClick={closeEditorModal}>
-                  Cancel
-                </button>
+              <div className={styles.actionsRow}>
                 <button type="submit" className={styles.primaryButton} disabled={isSavingAsset || isUploadingPhotos}>
                   {isSavingAsset ? 'Saving...' : editingAsset ? 'Update asset' : 'Add asset'}
                 </button>
+
+                {editingAsset ? (
+                  <button type="button" className={styles.secondaryButton} onClick={resetEditor}>
+                    Cancel edit
+                  </button>
+                ) : null}
               </div>
             </form>
           </section>
         </div>
-      ) : null}
 
-      {marketplaceDraft ? (
-        <div className={styles.modalBackdrop} onClick={closeMarketplaceModal}>
-          <section
-            className={`${styles.modalCard} ${styles.marketplaceModalCard}`}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className={styles.modalHeader}>
-              <span className={styles.kicker}>Marketplace</span>
-              <h2>Send {marketplaceDraft.assetTitle} to marketplace</h2>
-              <p>Choose the selling price excl. VAT, add seller notes and confirm the contact details before publishing.</p>
+        <section className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div>
+              <span className={styles.kicker}>Saved assets</span>
+              <h2>Your register</h2>
+              <p>Each asset now stays clean on the page, with all actions moved into one options modal.</p>
             </div>
 
-            <form className={styles.form} onSubmit={handleMarketplaceSubmit}>
-              <label className={styles.field}>
-                <span>Asking price (excl. VAT)</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={marketplaceDraft.askingPrice}
-                  onChange={(event) =>
-                    setMarketplaceDraft((current) =>
-                      current ? { ...current, askingPrice: event.target.value } : current,
-                    )
-                  }
-                  placeholder="0"
-                />
-              </label>
+            <div className={styles.inlineLinks}>
+              <Link href="/valuation" className={styles.secondaryButton}>
+                Open valuation
+              </Link>
+              <Link href="/marketplace" className={styles.secondaryButton}>
+                Open marketplace
+              </Link>
+            </div>
+          </div>
 
-              <label className={styles.field}>
-                <span>Seller phone</span>
-                <input
-                  value={marketplaceDraft.sellerPhone}
-                  onChange={(event) =>
-                    setMarketplaceDraft((current) =>
-                      current ? { ...current, sellerPhone: event.target.value } : current,
-                    )
-                  }
-                  placeholder="Phone number"
-                />
-              </label>
+          {isLoading ? (
+            <p className={styles.loading}>Loading assets...</p>
+          ) : assets.length ? (
+            <div className={styles.assetList}>
+              {assets.map((asset) => {
+                const previewPhoto = asset.photos[0];
+                const displayKind = kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind);
 
-              <label className={`${styles.field} ${styles.fullWidth}`}>
-                <span>Marketplace notes</span>
-                <textarea
-                  rows={4}
-                  value={marketplaceDraft.notes}
-                  onChange={(event) =>
-                    setMarketplaceDraft((current) =>
-                      current ? { ...current, notes: event.target.value } : current,
-                    )
-                  }
-                  placeholder="What should buyers know about this asset?"
-                />
-              </label>
+                return (
+                  <article className={styles.assetCard} key={asset.id}>
+                    <div className={styles.assetTop}>
+                      <div className={styles.assetIdentity}>
+                        <div className={styles.badgeRow}>
+                          <span className={styles.badge}>{displayKind}</span>
+                          <span className={styles.badge}>{methodLabel(asset.selectedMethod)}</span>
+                          {asset.valuationRunId ? <span className={styles.badge}>Saved valuation</span> : null}
+                          {asset.photos.length ? (
+                            <span className={styles.badge}>
+                              {asset.photos.length} photo{asset.photos.length === 1 ? '' : 's'}
+                            </span>
+                          ) : null}
+                          {isTractorAsset(asset) && hasMarketplaceListingForAsset(String(asset.id)) ? (
+                            <span className={styles.badge}>Live on marketplace</span>
+                          ) : null}
+                        </div>
 
-              <div className={`${styles.contactPanel} ${styles.fullWidth}`}>
-                <div className={styles.inlineActions}>
-                  <span className={styles.badge}>Contact details</span>
-                  <Link href="/account" className={styles.inlineLink}>
-                    Edit account details
-                  </Link>
-                </div>
+                        <h3>{asset.title}</h3>
+                        <p>{buildAssetMeta(asset)}</p>
+                      </div>
 
-                <div className={styles.contactSummary}>
-                  <div className={styles.contactRow}>
-                    <span>Seller</span>
-                    <strong>{sellerName}</strong>
-                  </div>
-                  <div className={styles.contactRow}>
-                    <span>Email</span>
-                    <strong>{profile?.email || 'No email saved yet'}</strong>
-                  </div>
-                  <div className={styles.contactRow}>
-                    <span>Phone</span>
-                    <strong>{marketplaceDraft.sellerPhone.trim() || 'No phone saved yet'}</strong>
-                  </div>
-                  <div className={styles.contactRow}>
-                    <span>Location</span>
-                    <strong>{contactLocation || 'No address saved yet'}</strong>
-                  </div>
-                </div>
+                      <div className={styles.assetTopRight}>
+                        <div className={styles.priceBlock}>
+                          <small>{methodLabel(asset.selectedMethod)} value</small>
+                          <strong>{money(asset.value)}</strong>
+                          <span>{assetStatusDateLabel(asset)}</span>
+                        </div>
 
-                <label className={styles.checkboxField}>
-                  <input
-                    type="checkbox"
-                    checked={marketplaceDraft.confirmContact}
-                    onChange={(event) =>
-                      setMarketplaceDraft((current) =>
-                        current ? { ...current, confirmContact: event.target.checked } : current,
-                      )
-                    }
+                        <button
+                          type="button"
+                          className={styles.optionsButton}
+                          onClick={() => openActionDialog(asset)}
+                        >
+                          Options
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className={styles.assetMainRow}>
+                      <div className={styles.assetPreview}>
+                        {previewPhoto ? (
+                          <img
+                            src={previewPhoto}
+                            alt={`${asset.title} preview`}
+                            className={styles.assetPreviewImage}
+                          />
+                        ) : (
+                          <div className={styles.assetPreviewPlaceholder}>No photo</div>
+                        )}
+
+                        {asset.photos.length > 1 ? (
+                          <span className={styles.photoCountPill}>
+                            {asset.photos.length} photos
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className={styles.assetInfoStack}>
+                        <div className={styles.detailGrid}>
+                          <div>
+                            <span>Serial</span>
+                            <strong>{asset.serialNumber || '—'}</strong>
+                          </div>
+                          <div>
+                            <span>Finance</span>
+                            <strong>{asset.isFinanced ? 'Financed' : 'Not financed'}</strong>
+                          </div>
+                          <div>
+                            <span>Hours</span>
+                            <strong>{asset.hours ? asset.hours.toLocaleString('en-ZA') : '—'}</strong>
+                          </div>
+                          <div>
+                            <span>Saved</span>
+                            <strong>{formatDate(asset.createdAtIso)}</strong>
+                          </div>
+                        </div>
+
+                        {asset.note ? <p className={styles.note}>{asset.note}</p> : null}
+                        {asset.financeNote ? <p className={styles.note}>Finance: {asset.financeNote}</p> : null}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={styles.emptyState}>
+              <h3>No assets saved yet</h3>
+              <p>Start with a valuation or add a manual asset to begin your register.</p>
+            </div>
+          )}
+        </section>
+      </section>
+
+      {activeAsset ? (
+        <div className={styles.dialogOverlay}>
+          <div className={styles.dialogBackdrop} onClick={closeActionDialog} />
+
+          <div
+            className={styles.dialogCard}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="asset-options-title"
+          >
+            <div className={styles.dialogHeader}>
+              <div>
+                <span className={styles.dialogKicker}>Asset options</span>
+                <h3 id="asset-options-title">{activeAsset.title}</h3>
+                <p>{buildAssetMeta(activeAsset)}</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.dialogCloseButton}
+                onClick={closeActionDialog}
+                aria-label="Close asset options"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.dialogBody}>
+              <div className={styles.dialogPreview}>
+                {activeAsset.photos[0] ? (
+                  <img
+                    src={activeAsset.photos[0]}
+                    alt={`${activeAsset.title} preview`}
+                    className={styles.dialogPreviewImage}
                   />
-                  <span>The contact details above are correct for this listing.</span>
-                </label>
+                ) : (
+                  <div className={styles.dialogPreviewPlaceholder}>No photo uploaded</div>
+                )}
               </div>
 
-              <div className={styles.modalActions}>
-                <button type="button" className={styles.ghostButton} onClick={closeMarketplaceModal}>
-                  Cancel
-                </button>
-                <button type="submit" className={styles.primaryButton} disabled={busyMarketplaceAssetId === marketplaceDraft.assetId}>
-                  {busyMarketplaceAssetId === marketplaceDraft.assetId ? 'Publishing...' : 'Send to marketplace'}
-                </button>
+              <div className={styles.dialogSummaryGrid}>
+                <article className={styles.dialogMetric}>
+                  <span>Register value</span>
+                  <strong>{money(activeAsset.value)}</strong>
+                </article>
+
+                <article className={styles.dialogMetric}>
+                  <span>Method</span>
+                  <strong>{methodLabel(activeAsset.selectedMethod)}</strong>
+                </article>
+
+                <article className={styles.dialogMetric}>
+                  <span>Status</span>
+                  <strong>{assetStatusDateLabel(activeAsset)}</strong>
+                </article>
+
+                <article className={styles.dialogMetric}>
+                  <span>Finance</span>
+                  <strong>{activeAsset.isFinanced ? 'Financed' : 'Not financed'}</strong>
+                </article>
               </div>
-            </form>
-          </section>
+            </div>
+
+            <div className={styles.dialogActionGrid}>
+              <button
+                type="button"
+                className={styles.dialogActionButton}
+                onClick={() => handleOpenEditorFromDialog(activeAsset)}
+              >
+                Edit asset
+              </button>
+
+              <button
+                type="button"
+                className={styles.dialogActionButton}
+                onClick={() => handlePrintAssetSheet(activeAsset)}
+              >
+                Asset sheet PDF
+              </button>
+
+              {isTractorAsset(activeAsset) ? (
+                <button
+                  type="button"
+                  className={styles.dialogActionButton}
+                  onClick={() => handlePublishFromDialog(activeAsset)}
+                >
+                  {hasMarketplaceListingForAsset(String(activeAsset.id))
+                    ? 'Update marketplace'
+                    : 'Send to marketplace'}
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                className={`${styles.dialogActionButton} ${styles.dialogDangerAction}`}
+                disabled={busyDeleteId === activeAsset.id}
+                onClick={() => handleDeleteFromDialog(activeAsset)}
+              >
+                {busyDeleteId === activeAsset.id ? 'Removing...' : 'Delete asset'}
+              </button>
+            </div>
+
+            <div className={styles.dialogFooter}>
+              <button type="button" className={styles.secondaryButton} onClick={closeActionDialog}>
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
     </main>
