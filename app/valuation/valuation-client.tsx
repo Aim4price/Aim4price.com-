@@ -17,6 +17,7 @@ import {
 } from '../../lib/tractor-data';
 import { conditionLabel, money, range, type Result } from '../../lib/tractor-logic';
 import { getGuestValuationCount, incrementGuestValuationCount } from '../../lib/guest-valuation-limit';
+import { openValuationReportPrint } from '../../lib/report-print';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 type MethodKey = 'aim4price' | 'market' | 'department';
@@ -1067,7 +1068,61 @@ export default function ValuationClient() {
 
   function handlePrint() {
     if (!result || typeof window === 'undefined') return;
-    window.print();
+
+    const logoUrl = new URL('/brand/Aim4price%20Logo.png', window.location.origin).toString();
+    const generatedAt = new Intl.DateTimeFormat('en-ZA', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date());
+
+    const reportOpened = openValuationReportPrint({
+      logoUrl,
+      generatedAt,
+      heroTitle: `${result.model.brandName} ${result.model.modelName}`.trim(),
+      heroMeta: `${getTractorTypeLabel(result.model.tractorType)} tractor • ${getDriveDisplay(result.model.drive)} • ${getCabDisplay(result.model.cab)} • ${activeYear} model • ${result.model.powerKw} kW • ${Number(hours).toLocaleString('en-ZA')} engine hours`,
+      selectedLabel: headlineLabel,
+      headlineValue: money(headlineValue),
+      confidenceLabel: getConfidenceLabel(result),
+      confidenceTone: confidenceLevel,
+      inputRows: [
+        { label: 'Equipment type', value: 'Tractor' },
+        { label: 'Configuration', value: `${getTractorTypeLabel(result.model.tractorType)} • ${getDriveDisplay(result.model.drive)} • ${getCabDisplay(result.model.cab)}` },
+        { label: 'Year model', value: String(activeYear) },
+        { label: 'Engine hours', value: `${Number(hours).toLocaleString('en-ZA')} hours` },
+        { label: 'Condition', value: selectedConditionDisplay },
+        { label: 'Fitted extras', value: extrasSummaryText },
+        { label: 'Extras added to value', value: money(result.extrasValueExVat) },
+      ],
+      methodCards: methodCards.map((card) => ({
+        label: card.label,
+        value: card.key === 'market' ? getMethodDisplay(result, 'market') : money(card.value),
+        note: card.note,
+        selected: selectedMethod === card.key,
+      })),
+      marketRange: range(result.marketLow, result.marketHigh),
+      marketEvidenceLabel: `${result.marketCount} provable comparable listing${result.marketCount === 1 ? '' : 's'}`,
+      selectedComparableTitle: selectedComparable ? `${selectedComparable.sourceName} comparable` : 'Comparable snapshot',
+      selectedComparableValue: money(selectedComparableValue),
+      selectedComparableMeta: selectedComparable
+        ? `${selectedComparable.yearModel} model • ${selectedComparable.hours.toLocaleString('en-ZA')} engine hours • ${selectedComparable.area}, ${selectedComparable.province}`
+        : 'No individual comparable was selected for this report.',
+      selectedComparableUrl: selectedComparableSourceUrl || null,
+      comparableRows: comparableListings.slice(0, 6).map((listing) => ({
+        value: money(getListingComparablePrice(listing, result.extrasValueExVat)),
+        sourceName: listing.sourceName,
+        detail: `${listing.yearModel} model • ${listing.hours.toLocaleString('en-ZA')} hours`,
+        location: [listing.area, listing.province].filter(Boolean).join(', ') || 'South Africa',
+        advertised: formatListingDate(listing.dateAdvertised),
+        sourceUrl: listing.sourceUrl || null,
+      })),
+      footerNote:
+        'Aim4price valuation report. This document is based on the current saved input set and all values shown exclude VAT.',
+    });
+
+    if (!reportOpened) {
+      setMessage('Allow pop-ups in your browser to generate the PDF report.');
+    }
   }
 
   function handleMethodSelect(method: MethodKey) {
@@ -2456,7 +2511,7 @@ export default function ValuationClient() {
 
                   <div className={styles.marketListingsBlock}>
                     <div className={styles.marketListingsHead}>
-                      <h3 className={styles.marketListingsTitle}>Proveable Market Listings</h3>
+                      <h3 className={styles.marketListingsTitle}>Provable Market Listings</h3>
                       {comparableListings.length ? (
                         <span className={styles.marketListingsCount}>
                           {safeComparableIndex + 1} / {comparableListings.length}
