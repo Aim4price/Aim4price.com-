@@ -296,13 +296,13 @@ export default function AssetRegisterClient() {
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
   const [editingAssetId, setEditingAssetId] = useState<number | null>(null);
+  const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [busyDeleteId, setBusyDeleteId] = useState<number | null>(null);
-  const formCardRef = useRef<HTMLElement | null>(null);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -323,15 +323,11 @@ export default function AssetRegisterClient() {
           throw new Error(assetsData.error ?? 'Failed to load asset register.');
         }
 
-        if (!mounted) {
-          return;
-        }
+        if (!mounted) return;
 
         setAssets(Array.isArray(assetsData.items) ? assetsData.items : []);
       } catch (error) {
-        if (!mounted) {
-          return;
-        }
+        if (!mounted) return;
 
         setNotice({
           tone: 'error',
@@ -359,7 +355,8 @@ export default function AssetRegisterClient() {
   }, [notice]);
 
   useEffect(() => {
-    if (!activeAsset) {
+    const anyModalOpen = isAssetModalOpen || Boolean(activeAsset);
+    if (!anyModalOpen) {
       return undefined;
     }
 
@@ -367,9 +364,16 @@ export default function AssetRegisterClient() {
     document.body.style.overflow = 'hidden';
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key !== 'Escape') return;
+
+      if (activeAsset) {
         setActiveAsset(null);
+        return;
       }
+
+      setIsAssetModalOpen(false);
+      setEditingAssetId(null);
+      setAssetDraft(initialAssetDraft);
     };
 
     document.addEventListener('keydown', handleEscape);
@@ -378,7 +382,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset]);
+  }, [activeAsset, isAssetModalOpen]);
 
   const totalValue = useMemo(() => {
     return assets.reduce((sum, asset) => sum + Number(asset.value || 0), 0);
@@ -401,10 +405,20 @@ export default function AssetRegisterClient() {
     }
   }
 
+  function openCreateModal() {
+    resetEditor();
+    setIsAssetModalOpen(true);
+  }
+
+  function closeAssetModal() {
+    setIsAssetModalOpen(false);
+    resetEditor();
+  }
+
   function openEditor(asset: RegisterAsset) {
     setEditingAssetId(asset.id);
     setAssetDraft(buildDraftFromAsset(asset));
-    formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setIsAssetModalOpen(true);
   }
 
   function openActionDialog(asset: RegisterAsset) {
@@ -526,12 +540,12 @@ export default function AssetRegisterClient() {
         }
 
         setAssets((current) => current.map((asset) => (asset.id === data.item!.id ? data.item! : asset)));
-        setNotice({ tone: 'success', message: 'Asset updated.' });
-        resetEditor();
 
         if (activeAsset?.id === data.item.id) {
           setActiveAsset(data.item);
         }
+
+        setNotice({ tone: 'success', message: 'Asset updated.' });
       } else {
         const response = await fetch('/api/asset-register', {
           method: 'POST',
@@ -554,8 +568,9 @@ export default function AssetRegisterClient() {
 
         setAssets((current) => [data.item as RegisterAsset, ...current]);
         setNotice({ tone: 'success', message: 'Asset added to the register.' });
-        resetEditor();
       }
+
+      closeAssetModal();
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -687,81 +702,200 @@ export default function AssetRegisterClient() {
       <AppHeader active="asset-register" />
 
       <section className={styles.shell}>
-        <div className={styles.hero}>
-          <div>
-            <span className={styles.eyebrow}>Asset Register</span>
-            <h1>Keep your saved machinery in one place.</h1>
-            <p>
-              Save important machines, keep the cards clean, and use one simple options panel when
-              you need to edit, print, publish, or remove an asset.
-            </p>
-          </div>
-
-          <div className={styles.heroStats}>
-            <div className={styles.statCard}>
-              <span>Total register value</span>
-              <strong>{money(totalValue)}</strong>
-            </div>
-            <div className={styles.statCard}>
-              <span>Total assets</span>
-              <strong>{assets.length}</strong>
-            </div>
-            <div className={styles.statCard}>
-              <span>Equipment assets</span>
-              <strong>{equipmentCount}</strong>
-            </div>
-          </div>
-        </div>
-
         {notice ? (
           <div className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`}>
             {notice.message}
           </div>
         ) : null}
 
-        <div className={styles.grid}>
-          <section className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div>
-                <span className={styles.kicker}>Account</span>
-                <h2>Account and contact workspace</h2>
-                <p>
-                  Keep business profile and contact details in the account page so the register stays
-                  focused on saved assets.
-                </p>
-              </div>
+        <section className={styles.registerPanel}>
+          <div className={styles.registerHeader}>
+            <div className={styles.registerTitleBlock}>
+              <span className={styles.eyebrow}>Asset Register</span>
+              <h1>Saved assets</h1>
+              <p>Clean register view with actions tucked away in a single options modal.</p>
             </div>
 
-            <div className={styles.inlineLinks}>
-              <Link href="/account" className={styles.primaryButton}>
-                Open account page
-              </Link>
+            <div className={styles.headerActions}>
               <Link href="/valuation" className={styles.secondaryButton}>
-                Open valuation
+                Valuation
               </Link>
-            </div>
-          </section>
 
-          <section className={styles.card} ref={formCardRef}>
-            <div className={styles.cardHeader}>
+              <button type="button" className={styles.primaryButton} onClick={openCreateModal}>
+                Add manual asset
+              </button>
+            </div>
+          </div>
+
+          <div className={styles.summaryRow}>
+            <div className={styles.summaryTile}>
+              <span>Register value</span>
+              <strong>{money(totalValue)}</strong>
+            </div>
+
+            <div className={styles.summaryTile}>
+              <span>Total assets</span>
+              <strong>{assets.length}</strong>
+            </div>
+
+            <div className={styles.summaryTile}>
+              <span>Equipment assets</span>
+              <strong>{equipmentCount}</strong>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className={styles.emptyState}>Loading assets...</div>
+          ) : assets.length ? (
+            <div className={styles.assetList}>
+              {assets.map((asset) => {
+                const previewPhoto = asset.photos[0];
+                const displayKind = kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind);
+                const isLive = isTractorAsset(asset) && hasMarketplaceListingForAsset(String(asset.id));
+
+                return (
+                  <article className={styles.assetCard} key={asset.id}>
+                    <div className={styles.assetHeader}>
+                      <div className={styles.assetTitleBlock}>
+                        <div className={styles.badgeRow}>
+                          <span className={`${styles.badge} ${styles.badgeNeutral}`}>{displayKind}</span>
+                          <span className={`${styles.badge} ${styles.badgeNeutral}`}>
+                            {methodLabel(asset.selectedMethod)}
+                          </span>
+                          {asset.valuationRunId ? (
+                            <span className={`${styles.badge} ${styles.badgeNeutral}`}>Saved valuation</span>
+                          ) : null}
+                          {isLive ? (
+                            <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span>
+                          ) : null}
+                          {asset.photos.length ? (
+                            <span className={`${styles.badge} ${styles.badgeNeutral}`}>
+                              {asset.photos.length} photo{asset.photos.length === 1 ? '' : 's'}
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <h2>{asset.title}</h2>
+                        <p>{buildAssetMeta(asset)}</p>
+                      </div>
+
+                      <div className={styles.valueBlock}>
+                        <small>Register value</small>
+                        <strong>{money(asset.value)}</strong>
+                        <span>Excl. VAT • {formatDate(asset.createdAtIso)}</span>
+                      </div>
+                    </div>
+
+                    <div className={styles.assetBody}>
+                      <div className={styles.previewWrap}>
+                        {previewPhoto ? (
+                          <img
+                            src={previewPhoto}
+                            alt={`${asset.title} preview`}
+                            className={styles.previewImage}
+                          />
+                        ) : (
+                          <div className={styles.previewFallback}>No photo</div>
+                        )}
+                      </div>
+
+                      <div className={styles.assetContent}>
+                        <div className={styles.infoGrid}>
+                          <div className={styles.infoTile}>
+                            <span>Serial</span>
+                            <strong>{asset.serialNumber || '—'}</strong>
+                          </div>
+
+                          <div className={styles.infoTile}>
+                            <span>Finance</span>
+                            <strong>{asset.isFinanced ? 'Financed' : 'Not financed'}</strong>
+                          </div>
+
+                          <div className={styles.infoTile}>
+                            <span>Hours</span>
+                            <strong>{asset.hours ? asset.hours.toLocaleString('en-ZA') : '—'}</strong>
+                          </div>
+
+                          <div className={styles.infoTile}>
+                            <span>Saved</span>
+                            <strong>{formatDate(asset.createdAtIso)}</strong>
+                          </div>
+                        </div>
+
+                        {asset.note ? <p className={styles.note}>{asset.note}</p> : null}
+                        {asset.financeNote ? <p className={styles.note}>Finance: {asset.financeNote}</p> : null}
+
+                        <div className={styles.assetFooter}>
+                          <button
+                            type="button"
+                            className={styles.optionsButton}
+                            onClick={() => openActionDialog(asset)}
+                          >
+                            Options
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={styles.emptyState}>
+              <h3>No assets saved yet</h3>
+              <p>Run a valuation or add a manual asset to start your register.</p>
+            </div>
+          )}
+        </section>
+      </section>
+
+      {isAssetModalOpen ? (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBackdrop} onClick={closeAssetModal} />
+
+          <div
+            className={styles.modalCard}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="asset-form-title"
+          >
+            <div className={styles.modalHeader}>
               <div>
-                <span className={styles.kicker}>{editingAsset ? 'Edit asset' : 'Add manually'}</span>
-                <h2>{editingAsset ? 'Update saved asset' : 'Add another asset'}</h2>
+                <span className={styles.modalEyebrow}>
+                  {editingAsset ? 'Edit asset' : 'Add manual asset'}
+                </span>
+                <h3 id="asset-form-title">
+                  {editingAsset ? 'Update asset details' : 'Add another asset'}
+                </h3>
                 <p>
                   {editingAsset
-                    ? 'Update title, value, finance notes and photo gallery. Valuation-linked tractor type stays locked.'
-                    : 'Use this for property or manual records that did not come from the valuation workflow.'}
+                    ? 'Update the saved asset without cluttering the register screen.'
+                    : 'Add a manual asset through a modal, so the main asset register stays clean.'}
                 </p>
               </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={closeAssetModal}
+                aria-label="Close asset form"
+              >
+                ×
+              </button>
             </div>
 
-            <form className={styles.form} onSubmit={handleAssetSubmit}>
+            <form className={styles.modalForm} onSubmit={handleAssetSubmit}>
               <label className={styles.field}>
                 <span>Asset type</span>
                 <select
                   value={editingAsset?.valuationRunId ? editingAsset.kind : assetDraft.kind}
                   disabled={Boolean(editingAsset?.valuationRunId)}
-                  onChange={(event) => setAssetDraft((current) => ({ ...current, kind: event.target.value as AssetKind }))}
+                  onChange={(event) =>
+                    setAssetDraft((current) => ({
+                      ...current,
+                      kind: event.target.value as AssetKind,
+                    }))
+                  }
                 >
                   <option value="manual">Manual asset</option>
                   <option value="property">Property</option>
@@ -773,8 +907,13 @@ export default function AssetRegisterClient() {
                 <span>Title</span>
                 <input
                   value={assetDraft.title}
-                  onChange={(event) => setAssetDraft((current) => ({ ...current, title: event.target.value }))}
-                  placeholder="Example: Main workshop or JD 6830 loader tractor"
+                  onChange={(event) =>
+                    setAssetDraft((current) => ({
+                      ...current,
+                      title: event.target.value,
+                    }))
+                  }
+                  placeholder="Example: Main workshop"
                 />
               </label>
 
@@ -785,7 +924,12 @@ export default function AssetRegisterClient() {
                   min="0"
                   step="1"
                   value={assetDraft.value}
-                  onChange={(event) => setAssetDraft((current) => ({ ...current, value: event.target.value }))}
+                  onChange={(event) =>
+                    setAssetDraft((current) => ({
+                      ...current,
+                      value: event.target.value,
+                    }))
+                  }
                   placeholder="0"
                 />
               </label>
@@ -794,7 +938,12 @@ export default function AssetRegisterClient() {
                 <span>Serial / reference</span>
                 <input
                   value={assetDraft.serialNumber}
-                  onChange={(event) => setAssetDraft((current) => ({ ...current, serialNumber: event.target.value }))}
+                  onChange={(event) =>
+                    setAssetDraft((current) => ({
+                      ...current,
+                      serialNumber: event.target.value,
+                    }))
+                  }
                   placeholder="Serial number or internal reference"
                 />
               </label>
@@ -804,17 +953,25 @@ export default function AssetRegisterClient() {
                 <textarea
                   rows={4}
                   value={assetDraft.note}
-                  onChange={(event) => setAssetDraft((current) => ({ ...current, note: event.target.value }))}
+                  onChange={(event) =>
+                    setAssetDraft((current) => ({
+                      ...current,
+                      note: event.target.value,
+                    }))
+                  }
                   placeholder="Extra details about the asset"
                 />
               </label>
 
-              <label className={styles.checkboxField}>
+              <label className={styles.checkboxRow}>
                 <input
                   type="checkbox"
                   checked={assetDraft.isFinanced}
                   onChange={(event) =>
-                    setAssetDraft((current) => ({ ...current, isFinanced: event.target.checked }))
+                    setAssetDraft((current) => ({
+                      ...current,
+                      isFinanced: event.target.checked,
+                    }))
                   }
                 />
                 <span>This asset is financed</span>
@@ -824,7 +981,12 @@ export default function AssetRegisterClient() {
                 <span>Finance note</span>
                 <input
                   value={assetDraft.financeNote}
-                  onChange={(event) => setAssetDraft((current) => ({ ...current, financeNote: event.target.value }))}
+                  onChange={(event) =>
+                    setAssetDraft((current) => ({
+                      ...current,
+                      financeNote: event.target.value,
+                    }))
+                  }
                   placeholder="Bank or finance reference"
                 />
               </label>
@@ -843,7 +1005,7 @@ export default function AssetRegisterClient() {
                     disabled={isUploadingPhotos || assetDraft.photos.length >= MAX_PHOTOS}
                   />
 
-                  <div className={styles.uploadActions}>
+                  <div className={styles.uploadRow}>
                     <button
                       type="button"
                       className={styles.secondaryButton}
@@ -853,15 +1015,10 @@ export default function AssetRegisterClient() {
                       {isUploadingPhotos ? 'Uploading...' : 'Choose image files'}
                     </button>
 
-                    <span className={styles.uploadSummary}>
+                    <span className={styles.uploadCount}>
                       {assetDraft.photos.length} / {MAX_PHOTOS} photos
                     </span>
                   </div>
-
-                  <p className={styles.helperText}>
-                    Upload JPG, PNG or WEBP files. Max 5 MB per image. The first image becomes the
-                    card preview in the register.
-                  </p>
                 </div>
               </div>
 
@@ -882,162 +1039,44 @@ export default function AssetRegisterClient() {
                 </div>
               ) : null}
 
-              <div className={styles.actionsRow}>
-                <button type="submit" className={styles.primaryButton} disabled={isSavingAsset || isUploadingPhotos}>
+              <div className={styles.formActions}>
+                <button
+                  type="submit"
+                  className={styles.primaryButton}
+                  disabled={isSavingAsset || isUploadingPhotos}
+                >
                   {isSavingAsset ? 'Saving...' : editingAsset ? 'Update asset' : 'Add asset'}
                 </button>
 
-                {editingAsset ? (
-                  <button type="button" className={styles.secondaryButton} onClick={resetEditor}>
-                    Cancel edit
-                  </button>
-                ) : null}
+                <button type="button" className={styles.secondaryButton} onClick={closeAssetModal}>
+                  Cancel
+                </button>
               </div>
             </form>
-          </section>
-        </div>
-
-        <section className={styles.card}>
-          <div className={styles.cardHeader}>
-            <div>
-              <span className={styles.kicker}>Saved assets</span>
-              <h2>Your register</h2>
-              <p>Each asset now stays clean on the page, with all actions moved into one options modal.</p>
-            </div>
-
-            <div className={styles.inlineLinks}>
-              <Link href="/valuation" className={styles.secondaryButton}>
-                Open valuation
-              </Link>
-              <Link href="/marketplace" className={styles.secondaryButton}>
-                Open marketplace
-              </Link>
-            </div>
           </div>
-
-          {isLoading ? (
-            <p className={styles.loading}>Loading assets...</p>
-          ) : assets.length ? (
-            <div className={styles.assetList}>
-              {assets.map((asset) => {
-                const previewPhoto = asset.photos[0];
-                const displayKind = kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind);
-
-                return (
-                  <article className={styles.assetCard} key={asset.id}>
-                    <div className={styles.assetTop}>
-                      <div className={styles.assetIdentity}>
-                        <div className={styles.badgeRow}>
-                          <span className={styles.badge}>{displayKind}</span>
-                          <span className={styles.badge}>{methodLabel(asset.selectedMethod)}</span>
-                          {asset.valuationRunId ? <span className={styles.badge}>Saved valuation</span> : null}
-                          {asset.photos.length ? (
-                            <span className={styles.badge}>
-                              {asset.photos.length} photo{asset.photos.length === 1 ? '' : 's'}
-                            </span>
-                          ) : null}
-                          {isTractorAsset(asset) && hasMarketplaceListingForAsset(String(asset.id)) ? (
-                            <span className={styles.badge}>Live on marketplace</span>
-                          ) : null}
-                        </div>
-
-                        <h3>{asset.title}</h3>
-                        <p>{buildAssetMeta(asset)}</p>
-                      </div>
-
-                      <div className={styles.assetTopRight}>
-                        <div className={styles.priceBlock}>
-                          <small>{methodLabel(asset.selectedMethod)} value</small>
-                          <strong>{money(asset.value)}</strong>
-                          <span>{assetStatusDateLabel(asset)}</span>
-                        </div>
-
-                        <button
-                          type="button"
-                          className={styles.optionsButton}
-                          onClick={() => openActionDialog(asset)}
-                        >
-                          Options
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className={styles.assetMainRow}>
-                      <div className={styles.assetPreview}>
-                        {previewPhoto ? (
-                          <img
-                            src={previewPhoto}
-                            alt={`${asset.title} preview`}
-                            className={styles.assetPreviewImage}
-                          />
-                        ) : (
-                          <div className={styles.assetPreviewPlaceholder}>No photo</div>
-                        )}
-
-                        {asset.photos.length > 1 ? (
-                          <span className={styles.photoCountPill}>
-                            {asset.photos.length} photos
-                          </span>
-                        ) : null}
-                      </div>
-
-                      <div className={styles.assetInfoStack}>
-                        <div className={styles.detailGrid}>
-                          <div>
-                            <span>Serial</span>
-                            <strong>{asset.serialNumber || '—'}</strong>
-                          </div>
-                          <div>
-                            <span>Finance</span>
-                            <strong>{asset.isFinanced ? 'Financed' : 'Not financed'}</strong>
-                          </div>
-                          <div>
-                            <span>Hours</span>
-                            <strong>{asset.hours ? asset.hours.toLocaleString('en-ZA') : '—'}</strong>
-                          </div>
-                          <div>
-                            <span>Saved</span>
-                            <strong>{formatDate(asset.createdAtIso)}</strong>
-                          </div>
-                        </div>
-
-                        {asset.note ? <p className={styles.note}>{asset.note}</p> : null}
-                        {asset.financeNote ? <p className={styles.note}>Finance: {asset.financeNote}</p> : null}
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          ) : (
-            <div className={styles.emptyState}>
-              <h3>No assets saved yet</h3>
-              <p>Start with a valuation or add a manual asset to begin your register.</p>
-            </div>
-          )}
-        </section>
-      </section>
+        </div>
+      ) : null}
 
       {activeAsset ? (
-        <div className={styles.dialogOverlay}>
-          <div className={styles.dialogBackdrop} onClick={closeActionDialog} />
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBackdrop} onClick={closeActionDialog} />
 
           <div
-            className={styles.dialogCard}
+            className={styles.optionsModal}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-options-title"
           >
-            <div className={styles.dialogHeader}>
+            <div className={styles.modalHeader}>
               <div>
-                <span className={styles.dialogKicker}>Asset options</span>
+                <span className={styles.modalEyebrow}>Asset options</span>
                 <h3 id="asset-options-title">{activeAsset.title}</h3>
                 <p>{buildAssetMeta(activeAsset)}</p>
               </div>
 
               <button
                 type="button"
-                className={styles.dialogCloseButton}
+                className={styles.modalCloseButton}
                 onClick={closeActionDialog}
                 aria-label="Close asset options"
               >
@@ -1045,46 +1084,22 @@ export default function AssetRegisterClient() {
               </button>
             </div>
 
-            <div className={styles.dialogBody}>
-              <div className={styles.dialogPreview}>
-                {activeAsset.photos[0] ? (
-                  <img
-                    src={activeAsset.photos[0]}
-                    alt={`${activeAsset.title} preview`}
-                    className={styles.dialogPreviewImage}
-                  />
-                ) : (
-                  <div className={styles.dialogPreviewPlaceholder}>No photo uploaded</div>
-                )}
+            <div className={styles.optionsMeta}>
+              <div className={styles.optionMetaTile}>
+                <span>Value</span>
+                <strong>{money(activeAsset.value)}</strong>
               </div>
 
-              <div className={styles.dialogSummaryGrid}>
-                <article className={styles.dialogMetric}>
-                  <span>Register value</span>
-                  <strong>{money(activeAsset.value)}</strong>
-                </article>
-
-                <article className={styles.dialogMetric}>
-                  <span>Method</span>
-                  <strong>{methodLabel(activeAsset.selectedMethod)}</strong>
-                </article>
-
-                <article className={styles.dialogMetric}>
-                  <span>Status</span>
-                  <strong>{assetStatusDateLabel(activeAsset)}</strong>
-                </article>
-
-                <article className={styles.dialogMetric}>
-                  <span>Finance</span>
-                  <strong>{activeAsset.isFinanced ? 'Financed' : 'Not financed'}</strong>
-                </article>
+              <div className={styles.optionMetaTile}>
+                <span>Status</span>
+                <strong>{assetStatusDateLabel(activeAsset)}</strong>
               </div>
             </div>
 
-            <div className={styles.dialogActionGrid}>
+            <div className={styles.optionsGrid}>
               <button
                 type="button"
-                className={styles.dialogActionButton}
+                className={styles.optionActionButton}
                 onClick={() => handleOpenEditorFromDialog(activeAsset)}
               >
                 Edit asset
@@ -1092,7 +1107,7 @@ export default function AssetRegisterClient() {
 
               <button
                 type="button"
-                className={styles.dialogActionButton}
+                className={styles.optionActionButton}
                 onClick={() => handlePrintAssetSheet(activeAsset)}
               >
                 Asset sheet PDF
@@ -1101,7 +1116,7 @@ export default function AssetRegisterClient() {
               {isTractorAsset(activeAsset) ? (
                 <button
                   type="button"
-                  className={styles.dialogActionButton}
+                  className={styles.optionActionButton}
                   onClick={() => handlePublishFromDialog(activeAsset)}
                 >
                   {hasMarketplaceListingForAsset(String(activeAsset.id))
@@ -1112,17 +1127,11 @@ export default function AssetRegisterClient() {
 
               <button
                 type="button"
-                className={`${styles.dialogActionButton} ${styles.dialogDangerAction}`}
+                className={`${styles.optionActionButton} ${styles.optionDangerButton}`}
                 disabled={busyDeleteId === activeAsset.id}
                 onClick={() => handleDeleteFromDialog(activeAsset)}
               >
                 {busyDeleteId === activeAsset.id ? 'Removing...' : 'Delete asset'}
-              </button>
-            </div>
-
-            <div className={styles.dialogFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={closeActionDialog}>
-                Close
               </button>
             </div>
           </div>
