@@ -94,13 +94,11 @@ function countCompletedFields(profile: ProfileDraft): number {
     profile.province,
     profile.townCity,
     profile.addressLine1,
-    profile.addressLine2,
-    profile.notes,
   ].filter((value) => String(value ?? '').trim()).length;
 }
 
 function buildAddressLines(profile: ProfileDraft): string[] {
-  return [profile.addressLine1, profile.addressLine2, profile.townCity, profile.province]
+  return [profile.addressLine1, profile.townCity, profile.province]
     .map((value) => String(value ?? '').trim())
     .filter(Boolean);
 }
@@ -339,7 +337,7 @@ export default function AccountClient() {
             <span className={styles.eyebrow}>Profile</span>
             <h1>Account details</h1>
             <p>
-              Keep your business, contact and document details in one clean workspace. This is the
+              Keep your business and contact details in one clean workspace. This is the
               seller profile that feeds the rest of Aim4price.
             </p>
           </div>
@@ -347,7 +345,7 @@ export default function AccountClient() {
           <div className={styles.heroAside}>
             <div className={styles.heroStat}>
               <span>Profile completion</span>
-              <strong>{completedFields}/9</strong>
+              <strong>{completedFields}/7</strong>
             </div>
             <div className={styles.heroStat}>
               <span>Account type</span>
@@ -465,28 +463,6 @@ export default function AccountClient() {
                     placeholder="Address line 1"
                   />
                 </label>
-
-                <label className={`${styles.field} ${styles.fullWidth}`}>
-                  <span>Address line 2</span>
-                  <input
-                    value={profileDraft.addressLine2}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({ ...current, addressLine2: event.target.value }))
-                    }
-                    placeholder="Address line 2"
-                  />
-                </label>
-
-                <label className={`${styles.field} ${styles.fullWidth}`}>
-                  <span>Notes</span>
-                  <textarea
-                    rows={4}
-                    value={profileDraft.notes}
-                    onChange={(event) => setProfileDraft((current) => ({ ...current, notes: event.target.value }))}
-                    placeholder="Extra account, PDF or seller notes"
-                  />
-                </label>
-
                 <div className={styles.actionsRow}>
                   <button type="submit" className={styles.primaryButton} disabled={isSavingProfile}>
                     {isSavingProfile ? 'Saving...' : 'Save account details'}
@@ -529,23 +505,11 @@ export default function AccountClient() {
                     {addressLines.length ? addressLines.join(', ') : 'No address saved yet'}
                   </span>
                 </div>
-
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Quick links</span>
-                  <div className={styles.inlineActions}>
-                    <Link href="/valuation" className={styles.secondaryButton}>
-                      Open valuation
-                    </Link>
-                    <Link href="/marketplace" className={styles.secondaryButton}>
-                      Open marketplace
-                    </Link>
-                  </div>
-                </div>
               </div>
             </section>
 
             <section className={`${styles.sidebarCard} ${styles.dangerCard}`}>
-              <div>
+              <div className={styles.dangerCopy}>
                 <span className={styles.dangerKicker}>Danger zone</span>
                 <h2>Delete account</h2>
                 <p>
