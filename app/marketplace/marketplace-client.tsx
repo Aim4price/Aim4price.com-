@@ -256,14 +256,24 @@ export default function MarketplaceClient({
       }
 
       return [
+        listing.title,
         listing.brandName,
         listing.modelName,
         listing.area,
         listing.province,
+        listing.location,
         listing.description,
         listing.yearModel,
         listing.drive,
         listing.tractorType,
+        listing.cab,
+        listing.powerKw,
+        listing.powerHp,
+        listing.horsepowerHp,
+        listing.sellerName,
+        listing.sellerCompany,
+        listing.sourceName,
+        listing.sourceUrl,
       ]
         .join(' ')
         .toLowerCase()
@@ -354,10 +364,11 @@ export default function MarketplaceClient({
   }, [brands.length, items, provinces.length]);
 
   const activePills = [
+    query.trim() ? `Search: ${query.trim()}` : '',
     brandFilter ? `Brand: ${brandFilter}` : '',
     modelFilter ? `Model: ${modelFilter}` : '',
     driveFilter ? `Drive: ${driveFilter.toUpperCase()}` : '',
-    typeFilter ? `Type: ${formatTypeLabel(typeFilter)}` : '',
+    typeFilter ? `Category: ${formatTypeLabel(typeFilter)}` : '',
     provinceFilter ? `Province: ${provinceFilter}` : '',
   ].filter(Boolean);
 
@@ -489,8 +500,8 @@ export default function MarketplaceClient({
           <div className={styles.filtersHeader}>
             <div>
               <span className={styles.sectionEyebrow}>Find faster</span>
-              <h2>Keep browsing simple.</h2>
-              <p>Use the filters that matter, then move through the listing pages.</p>
+              <h2>Filter live listings faster.</h2>
+              <p>Search by brand, model, keyword, area, province or listing notes, then refine the results below.</p>
             </div>
 
             <button type="button" className={styles.clearButton} onClick={clearFilters}>
@@ -505,7 +516,7 @@ export default function MarketplaceClient({
                 id="marketplace-search"
                 value={query}
                 onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
-                placeholder="Brand, model, area or province"
+                placeholder="Brand, model, keyword, area or province"
               />
             </label>
 
@@ -526,7 +537,7 @@ export default function MarketplaceClient({
               <input
                 value={modelFilter}
                 onChange={(event: ChangeEvent<HTMLInputElement>) => setModelFilter(event.target.value)}
-                placeholder="Type a model"
+                placeholder="Enter model or series"
               />
             </label>
 
@@ -536,11 +547,12 @@ export default function MarketplaceClient({
                 <option value="">All drive types</option>
                 <option value="2wd">2WD</option>
                 <option value="4wd">4WD</option>
+                <option value="tracks">Tracks</option>
               </select>
             </label>
 
             <label className={`${styles.field} ${styles.typeField}`}>
-              <span>Type</span>
+              <span>Category</span>
               <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
                 <option value="">All types</option>
                 <option value="field">Field</option>
@@ -678,7 +690,7 @@ export default function MarketplaceClient({
           ) : (
             <article className={styles.emptyState}>
               <h2>No listings found</h2>
-              <p>Try a different brand, drive type, province, or search phrase.</p>
+              <p>Try a different search phrase, brand, province or category.</p>
               <button type="button" className={styles.emptyButton} onClick={clearFilters}>
                 Reset filters
               </button>
