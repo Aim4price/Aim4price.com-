@@ -217,14 +217,19 @@
 }
 
 .filtersShell {
-  margin-top: 1.25rem;
-  padding: 1.45rem;
-  border-radius: 1.8rem;
-  background: rgba(255, 255, 255, 0.96);
+  margin-top: 1.35rem;
+  padding: 1.7rem;
+  border-radius: 1.95rem;
+  background: rgba(255, 255, 255, 0.97);
 }
 
 .filtersHeader {
-  align-items: flex-end;
+  align-items: flex-start;
+  gap: 1.2rem 1.6rem;
+}
+
+.filtersHeader > div {
+  max-width: 42rem;
 }
 
 .filtersHeader h2,
@@ -274,9 +279,9 @@
 .emptyButton,
 .pageButton,
 .pageNavButton {
-  min-height: 3rem;
-  padding: 0 1rem;
-  border-radius: 0.95rem;
+  min-height: 3.1rem;
+  padding: 0 1.05rem;
+  border-radius: 0.98rem;
   border: 1px solid rgba(20, 55, 99, 0.12);
   background: #ffffff;
   color: #274c7d;
@@ -300,55 +305,50 @@
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 1rem;
-  margin-top: 1.3rem;
-  align-items: end;
+  margin-top: 1.55rem;
+  align-items: start;
 }
 
 .searchField {
+  grid-column: 1 / -1;
+}
+
+.brandField,
+.modelField,
+.provinceField {
+  grid-column: span 4;
+}
+
+.driveField,
+.typeField {
   grid-column: span 3;
 }
 
-.brandField {
-  grid-column: span 2;
-}
-
-.modelField {
-  grid-column: span 2;
-}
-
-.driveField {
-  grid-column: span 1;
-}
-
-.typeField {
-  grid-column: span 1;
-}
-
-.provinceField {
-  grid-column: span 1;
-}
-
 .sortField {
-  grid-column: span 2;
+  grid-column: span 6;
 }
 
 .field {
   display: grid;
-  gap: 0.46rem;
+  gap: 0.58rem;
+  padding: 0.88rem 0.92rem 0.96rem;
+  border-radius: 1.22rem;
+  border: 1px solid rgba(20, 55, 99, 0.08);
+  background: linear-gradient(180deg, #fbfdff 0%, #f4f8fc 100%);
 }
 
 .field span,
 .statLabel {
   font-size: 0.76rem;
   font-weight: 800;
-  color: #70869f;
+  color: #6b84a0;
 }
 
 .field input,
 .field select {
   width: 100%;
-  min-height: 3.3rem;
-  padding: 0.92rem 1rem;
+  min-height: 3.35rem;
+  padding: 0.94rem 1rem;
   border-radius: 1rem;
   border: 1px solid rgba(20, 55, 99, 0.12);
   background: #ffffff;
@@ -361,7 +361,12 @@
 }
 
 .field input::placeholder {
-  color: #90a0b2;
+  color: #8ca0b6;
+}
+
+.searchField input {
+  min-height: 3.55rem;
+  font-size: 1rem;
 }
 
 .field input:focus,
@@ -374,7 +379,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
-  margin-top: 0.95rem;
+  margin-top: 1.15rem;
+  padding-top: 0.1rem;
 }
 
 .pill {
@@ -850,17 +856,17 @@
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
-  .searchField,
-  .modelField,
-  .sortField {
-    grid-column: span 3;
+  .searchField {
+    grid-column: 1 / -1;
   }
 
   .brandField,
+  .modelField,
+  .provinceField,
   .driveField,
   .typeField,
-  .provinceField {
-    grid-column: span 2;
+  .sortField {
+    grid-column: span 3;
   }
 
   .grid {
