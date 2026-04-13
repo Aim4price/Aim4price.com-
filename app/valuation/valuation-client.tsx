@@ -719,7 +719,7 @@ export default function ValuationClient() {
       {
         key: 'market',
         label: 'Market Range',
-        note: `${result.marketCount} proveable market listing${result.marketCount === 1 ? '' : 's'} linked below.`,
+        note: `${result.marketCount} provable market listing${result.marketCount === 1 ? '' : 's'} linked below.`,
         value: result.marketMid,
         available: result.marketMid !== null,
       },
@@ -2112,7 +2112,7 @@ export default function ValuationClient() {
                   <span className={styles.heroBadge}>Valuation</span>
                   <h1 className={styles.heroIntroTitle}>Know what your machinery is worth.</h1>
                   <p className={styles.heroIntroText}>
-                    Move from tractor setup to a clean value output with a simple guided flow.
+                    Move from equipment setup to a clean, data-backed value output with a simple guided flow.
                   </p>
                   {!isSignedIn ? (
                     <p className={styles.heroIntroText}>
@@ -2262,10 +2262,42 @@ export default function ValuationClient() {
                               {card.key === 'market' ? getMethodDisplay(result, 'market') : money(card.value)}
                             </strong>
                             <span className={styles.methodNote}>{card.note}</span>
+                            {active ? <span className={styles.methodState}>Currently displayed</span> : null}
                           </button>
                         );
                       })}
                     </div>
+
+                    <div className={styles.valueHighlightGrid}>
+                      <div className={styles.valueHighlightCard}>
+                        <span className={styles.valueHighlightLabel}>Selected method</span>
+                        <strong className={styles.valueHighlightValue}>{headlineLabel}</strong>
+                        <span className={styles.valueHighlightNote}>This is the value currently shown above.</span>
+                      </div>
+
+                      <div className={styles.valueHighlightCard}>
+                        <span className={styles.valueHighlightLabel}>Market range</span>
+                        <strong className={styles.valueHighlightValue}>{range(result.marketLow, result.marketHigh)}</strong>
+                        <span className={styles.valueHighlightNote}>
+                          {result.marketCount
+                            ? `${result.marketCount} provable comparable${result.marketCount === 1 ? '' : 's'} matched.`
+                            : 'No provable comparable listings matched yet.'}
+                        </span>
+                      </div>
+
+                      <div className={styles.valueHighlightCard}>
+                        <span className={styles.valueHighlightLabel}>Input summary</span>
+                        <strong className={styles.valueHighlightValue}>{selectedConditionDisplay}</strong>
+                        <span className={styles.valueHighlightNote}>
+                          {activeYear} model • {Number(hours).toLocaleString('en-ZA')} engine hours
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className={styles.valueSupportText}>
+                      Compare the methods, then save the price that best fits your sale, internal register, or reporting
+                      need.
+                    </p>
                   </div>
                 </article>
 
@@ -2349,13 +2381,17 @@ export default function ValuationClient() {
                       </span>
                     </div>
                   </div>
+
+                  <div className={styles.summaryTip}>
+                    Adjust the year, hours, condition, or fitted extras at any time to fine-tune this result.
+                  </div>
                 </article>
 
                 <article className={`${styles.sideCard} ${styles.marketCard}`}>
                   <div className={styles.rangeCardHead}>
                     <h2 className={styles.sideTitle}>Market Range</h2>
                     <span className={styles.rangeBadge}>
-                      {result.marketCount} proveable listing{result.marketCount === 1 ? '' : 's'}
+                      {result.marketCount} provable listing{result.marketCount === 1 ? '' : 's'}
                     </span>
                   </div>
 
@@ -2408,7 +2444,7 @@ export default function ValuationClient() {
                           setSelectedComparableIndex(Number(event.target.value))
                         }
                         className={styles.rangeSliderInput}
-                        aria-label="Browse proveable market listings"
+                        aria-label="Browse provable market listings"
                       />
                     ) : null}
                   </div>
@@ -2492,7 +2528,7 @@ export default function ValuationClient() {
                       </div>
                     ) : (
                       <p className={styles.rangeNote}>
-                        No proveable market listings matched this tractor yet. Add more market listings to improve
+                        No provable market listings matched this tractor yet. Add more market listings to improve
                         confidence and range quality.
                       </p>
                     )}
