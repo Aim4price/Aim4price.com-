@@ -166,6 +166,7 @@ export default function MarketplaceClient({
   const [provinceFilter, setProvinceFilter] = useState('');
   const [sortBy, setSortBy] = useState<SortValue>('newest');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isFilterPanelOpen, setFilterPanelOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -295,6 +296,28 @@ export default function MarketplaceClient({
     }
   }, [currentPage, totalPages]);
 
+  useEffect(() => {
+    if (!isFilterPanelOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setFilterPanelOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isFilterPanelOpen]);
+
   const pageStart = visible.length ? (currentPage - 1) * LISTINGS_PER_PAGE : 0;
   const pageEnd = Math.min(pageStart + LISTINGS_PER_PAGE, visible.length);
   const pagedVisible = visible.slice(pageStart, pageEnd);
@@ -372,7 +395,17 @@ export default function MarketplaceClient({
     provinceFilter ? `Province: ${provinceFilter}` : '',
   ].filter(Boolean);
 
+  const activeFilterCount = activePills.length;
+
   const canDeleteActiveListing = Boolean(activeListing?.canManage && activeListing?.sourceAssetId);
+
+  function openFilterPanel() {
+    setFilterPanelOpen(true);
+  }
+
+  function closeFilterPanel() {
+    setFilterPanelOpen(false);
+  }
 
   function clearFilters() {
     setQuery('');
@@ -386,6 +419,7 @@ export default function MarketplaceClient({
   }
 
   function openListing(listing: MarketplaceListing) {
+    setFilterPanelOpen(false);
     setActiveListing(listing);
     setActiveImageIndex(0);
   }
@@ -496,110 +530,64 @@ export default function MarketplaceClient({
           </div>
         </section>
 
-        <section className={styles.filtersShell}>
-          <div className={styles.filtersHeader}>
-            <div>
+        <section className={styles.browseShell}>
+          <div className={styles.browseHeader}>
+            <div className={styles.browseCopy}>
               <span className={styles.sectionEyebrow}>Find faster</span>
-              <h2>Filter live listings faster.</h2>
-              <p>Search by brand, model, keyword, area, province or listing notes, then refine the results below.</p>
+              <h2>Keep the marketplace clean and easy to scan.</h2>
+              <p>Open the filter search drawer only when you need it, instead of keeping a full filter block on the page.</p>
             </div>
 
-            <button type="button" className={styles.clearButton} onClick={clearFilters}>
-              Clear filters
-            </button>
-          </div>
+            <div className={styles.browseActions}>
+              <label className={styles.toolbarSelect}>
+                <span>Sort</span>
+                <select
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value as SortValue)}
+                >
+                  <option value="newest">Newest listed</option>
+                  <option value="price-low">Price: low to high</option>
+                  <option value="price-high">Price: high to low</option>
+                  <option value="hours-low">Hours: low to high</option>
+                  <option value="hours-high">Hours: high to low</option>
+                  <option value="year-new">Year: newest first</option>
+                </select>
+              </label>
 
-          <div className={styles.filterGrid}>
-            <label className={`${styles.field} ${styles.searchField}`}>
-              <span>Search</span>
-              <input
-                id="marketplace-search"
-                value={query}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
-                placeholder="Brand, model, keyword, area or province"
-              />
-            </label>
-
-            <label className={`${styles.field} ${styles.brandField}`}>
-              <span>Brand</span>
-              <select value={brandFilter} onChange={(event) => setBrandFilter(event.target.value)}>
-                <option value="">All brands</option>
-                {brands.map((brand) => (
-                  <option key={brand} value={brand}>
-                    {brand}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className={`${styles.field} ${styles.modelField}`}>
-              <span>Model</span>
-              <input
-                value={modelFilter}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => setModelFilter(event.target.value)}
-                placeholder="Enter model or series"
-              />
-            </label>
-
-            <label className={`${styles.field} ${styles.driveField}`}>
-              <span>Drive</span>
-              <select value={driveFilter} onChange={(event) => setDriveFilter(event.target.value)}>
-                <option value="">All drive types</option>
-                <option value="2wd">2WD</option>
-                <option value="4wd">4WD</option>
-                <option value="tracks">Tracks</option>
-              </select>
-            </label>
-
-            <label className={`${styles.field} ${styles.typeField}`}>
-              <span>Category</span>
-              <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
-                <option value="">All types</option>
-                <option value="field">Field</option>
-                <option value="orchard">Orchard</option>
-              </select>
-            </label>
-
-            <label className={`${styles.field} ${styles.provinceField}`}>
-              <span>Province</span>
-              <select
-                value={provinceFilter}
-                onChange={(event) => setProvinceFilter(event.target.value)}
+              <button
+                type="button"
+                className={styles.filterToggle}
+                onClick={openFilterPanel}
+                aria-expanded={isFilterPanelOpen}
+                aria-controls="marketplace-filter-drawer"
               >
-                <option value="">All provinces</option>
-                {provinces.map((province) => (
-                  <option key={province} value={province}>
-                    {province}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className={`${styles.field} ${styles.sortField}`}>
-              <span>Sort</span>
-              <select
-                value={sortBy}
-                onChange={(event) => setSortBy(event.target.value as SortValue)}
-              >
-                <option value="newest">Newest listed</option>
-                <option value="price-low">Price: low to high</option>
-                <option value="price-high">Price: high to low</option>
-                <option value="hours-low">Hours: low to high</option>
-                <option value="hours-high">Hours: high to low</option>
-                <option value="year-new">Year: newest first</option>
-              </select>
-            </label>
+                <span>Filter search</span>
+                {activeFilterCount ? (
+                  <strong className={styles.filterToggleCount}>{activeFilterCount}</strong>
+                ) : null}
+              </button>
+            </div>
           </div>
 
           {activePills.length ? (
-            <div className={styles.pillRow}>
-              {activePills.map((pill) => (
-                <span key={pill} className={styles.pill}>
-                  {pill}
-                </span>
-              ))}
+            <div className={styles.activeFilterBar}>
+              <div className={styles.pillRow}>
+                {activePills.map((pill) => (
+                  <span key={pill} className={styles.pill}>
+                    {pill}
+                  </span>
+                ))}
+              </div>
+
+              <button type="button" className={styles.clearInlineButton} onClick={clearFilters}>
+                Reset all
+              </button>
             </div>
-          ) : null}
+          ) : (
+            <p className={styles.browseHint}>
+              Search, brand, model, drive, category and province filters now sit inside the drawer on the right.
+            </p>
+          )}
         </section>
 
         <section className={styles.resultsTop}>
@@ -746,6 +734,138 @@ export default function MarketplaceClient({
           </div>
         ) : null}
       </div>
+
+      {isFilterPanelOpen ? (
+        <div className={styles.filterOverlay} onClick={closeFilterPanel}>
+          <aside
+            id="marketplace-filter-drawer"
+            className={styles.filterDrawer}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="marketplace-filter-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.filterDrawerHeader}>
+              <div>
+                <span className={styles.sectionEyebrow}>Filter search</span>
+                <h2 id="marketplace-filter-title">Refine live marketplace results.</h2>
+                <p>Use the drawer below to narrow the listings without taking up permanent page space.</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.drawerCloseButton}
+                onClick={closeFilterPanel}
+                aria-label="Close filter search"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.filterDrawerBody}>
+              <section className={styles.drawerSection}>
+                <div className={styles.drawerSectionHead}>
+                  <h3>Keyword search</h3>
+                  <p>Search brand, model, area, province, seller or listing notes.</p>
+                </div>
+
+                <label className={`${styles.field} ${styles.drawerSearchField}`}>
+                  <span>Search</span>
+                  <input
+                    id="marketplace-search"
+                    value={query}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
+                    placeholder="Brand, model, keyword, area or province"
+                  />
+                </label>
+              </section>
+
+              <section className={styles.drawerSection}>
+                <div className={styles.drawerSectionHead}>
+                  <h3>Machinery details</h3>
+                  <p>Use these fields to narrow the listing type, brand and model.</p>
+                </div>
+
+                <div className={styles.drawerGrid}>
+                  <label className={styles.field}>
+                    <span>Brand</span>
+                    <select value={brandFilter} onChange={(event) => setBrandFilter(event.target.value)}>
+                      <option value="">All brands</option>
+                      {brands.map((brand) => (
+                        <option key={brand} value={brand}>
+                          {brand}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className={styles.field}>
+                    <span>Model</span>
+                    <input
+                      value={modelFilter}
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => setModelFilter(event.target.value)}
+                      placeholder="Enter model or series"
+                    />
+                  </label>
+
+                  <label className={styles.field}>
+                    <span>Drive</span>
+                    <select value={driveFilter} onChange={(event) => setDriveFilter(event.target.value)}>
+                      <option value="">All drive types</option>
+                      <option value="2wd">2WD</option>
+                      <option value="4wd">4WD</option>
+                      <option value="tracks">Tracks</option>
+                    </select>
+                  </label>
+
+                  <label className={styles.field}>
+                    <span>Category</span>
+                    <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+                      <option value="">All types</option>
+                      <option value="field">Field</option>
+                      <option value="orchard">Orchard</option>
+                    </select>
+                  </label>
+                </div>
+              </section>
+
+              <section className={styles.drawerSection}>
+                <div className={styles.drawerSectionHead}>
+                  <h3>Seller area</h3>
+                  <p>Focus the results to one province or leave the whole marketplace open.</p>
+                </div>
+
+                <div className={styles.drawerGrid}>
+                  <label className={styles.field}>
+                    <span>Province</span>
+                    <select
+                      value={provinceFilter}
+                      onChange={(event) => setProvinceFilter(event.target.value)}
+                    >
+                      <option value="">All provinces</option>
+                      {provinces.map((province) => (
+                        <option key={province} value={province}>
+                          {province}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </section>
+            </div>
+
+            <div className={styles.filterDrawerFooter}>
+              <button type="button" className={styles.resetTextButton} onClick={clearFilters}>
+                Reset all
+              </button>
+
+              <button type="button" className={styles.applyButton} onClick={closeFilterPanel}>
+                Show {visible.length} listing{visible.length === 1 ? '' : 's'}
+              </button>
+            </div>
+          </aside>
+        </div>
+      ) : null}
 
       {activeListing ? (
         <div className={styles.modalOverlay} onClick={closeListing}>
