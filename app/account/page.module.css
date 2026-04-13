@@ -144,7 +144,7 @@
 }
 
 .sidebarCard {
-  padding: 1.2rem;
+  padding: 1.28rem;
 }
 
 .cardHeader {
@@ -360,11 +360,27 @@
 
 .dangerCard {
   display: grid;
-  gap: 0.85rem;
+  gap: 1.15rem;
+}
+
+.dangerCopy {
+  display: grid;
+  gap: 0.65rem;
 }
 
 .dangerCard h2 {
   margin-top: 0;
+}
+
+.dangerCard p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.dangerCard .dangerButton {
+  width: 100%;
+  min-height: 3.15rem;
+  margin-top: 0.15rem;
 }
 
 .loading {
