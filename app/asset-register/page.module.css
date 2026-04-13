@@ -101,6 +101,12 @@
   letter-spacing: -0.04em;
 }
 
+.statMeta {
+  color: rgba(226, 237, 251, 0.74);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
 .notice {
   min-height: 3rem;
   padding: 0.95rem 1rem;
@@ -128,8 +134,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  padding: 1.2rem;
+  gap: 1.2rem 1rem;
+  padding: 1.25rem;
   flex-wrap: wrap;
 }
 
@@ -270,7 +276,7 @@
 }
 
 .assetCard {
-  padding: 1rem;
+  padding: 1.05rem;
   border-radius: 1.25rem;
   border: 1px solid rgba(18, 45, 37, 0.08);
   background: linear-gradient(180deg, #ffffff 0%, #f8fbfe 100%);
@@ -319,6 +325,14 @@
 .priceBlock span {
   color: #697771;
   font-size: 0.88rem;
+}
+
+.valueLabel {
+  color: #6b7a74;
+  font-size: 0.72rem !important;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .detailGrid {
@@ -395,8 +409,8 @@
 }
 
 .assetActions {
-  justify-content: flex-end;
-  margin-top: 0.9rem;
+  justify-content: flex-start;
+  margin-top: 1rem;
 }
 
 .modalBackdrop {
