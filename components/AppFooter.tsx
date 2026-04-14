@@ -34,15 +34,16 @@ export default function AppFooter() {
       <div className={styles.shell}>
         <div className={styles.topRow}>
           <div className={styles.brandBlock}>
-            <Image
-              src="/brand/aim4price-mark-white.png"
-              alt="Aim4price logo mark"
-              width={48}
-              height={48}
-              className={styles.brandMark}
-            />
-
-            <div className={styles.brandName}>Aim4price</div>
+            <div className={styles.brandHeader}>
+              <div className={styles.brandName}>Aim4price</div>
+              <Image
+                src="/brand/aim4price-mark-white.png"
+                alt="Aim4price logo mark"
+                width={38}
+                height={38}
+                className={styles.brandMark}
+              />
+            </div>
 
             <p className={styles.brandText}>
               Agricultural and industrial machinery pricing, asset register, and marketplace tools
