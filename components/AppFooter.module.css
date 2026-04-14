@@ -1,8 +1,19 @@
 .footer {
-  margin-top: clamp(4rem, 6vw, 5.5rem);
-  border-top: 0;
+  position: relative;
+  margin-top: clamp(4rem, 6vw, 5.4rem);
   color: #ffffff;
-  background: linear-gradient(180deg, #165243 0%, #103a2e 100%);
+  background:
+    radial-gradient(circle at 18% 24%, rgba(49, 121, 92, 0.18) 0%, rgba(49, 121, 92, 0) 32%),
+    linear-gradient(180deg, #165243 0%, #103a2e 100%);
+  overflow: hidden;
+}
+
+.footer::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .shell {
@@ -12,42 +23,42 @@
 
 .topRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1.08fr) minmax(500px, auto);
   align-items: start;
-  gap: clamp(3rem, 5vw, 6.5rem);
-  padding: clamp(3.1rem, 4.8vw, 4rem) 0 clamp(2.45rem, 4vw, 3rem);
+  gap: clamp(2.6rem, 5vw, 5.4rem);
+  padding: clamp(2.9rem, 4.6vw, 3.85rem) 0 clamp(2.35rem, 4vw, 2.95rem);
 }
 
 .brandBlock {
   display: grid;
   align-content: start;
-  max-width: 35rem;
   min-width: 0;
+  max-width: 34rem;
+  padding-top: 0.1rem;
 }
 
-.brandHeader {
+.brandIdentity {
   display: inline-flex;
-  align-items: flex-start;
-  gap: 0.85rem;
+  align-items: center;
+  gap: 0.72rem;
   width: fit-content;
-  padding-top: 0.28rem;
 }
 
 .brandName {
-  margin: 0;
   color: #ffffff;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(2.05rem, 3.55vw, 3.05rem);
-  font-weight: 800;
+  font-size: clamp(1.95rem, 2.9vw, 2.55rem);
   line-height: 0.94;
-  letter-spacing: -0.065em;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  white-space: nowrap;
 }
 
 .brandMark {
-  width: 2.35rem;
+  width: clamp(1.5rem, 1.75vw, 1.9rem);
   height: auto;
   flex: 0 0 auto;
-  margin-top: 0.22rem;
+  transform: translateY(0.02rem);
   opacity: 0.98;
 }
 
@@ -62,7 +73,7 @@
 .socialGroup {
   display: grid;
   align-content: start;
-  gap: 0.82rem;
+  gap: 0.8rem;
   margin-top: 1.55rem;
 }
 
@@ -71,7 +82,7 @@
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: 0.8rem;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
@@ -79,55 +90,46 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.7rem;
 }
 
 .socialIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.7rem;
-  height: 2.7rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  width: 2.6rem;
+  height: 2.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  transition:
-    transform 0.18s ease,
-    background-color 0.18s ease,
-    border-color 0.18s ease;
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .socialIcon svg {
-  width: 1rem;
-  height: 1rem;
+  width: 0.98rem;
+  height: 0.98rem;
   fill: #ffffff;
-}
-
-.socialIcon:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  opacity: 0.96;
 }
 
 .linksGrid {
   display: grid;
-  grid-template-columns: repeat(3, max-content);
+  grid-template-columns: repeat(3, minmax(0, max-content));
   justify-content: start;
   align-items: start;
-  column-gap: clamp(2.8rem, 4.2vw, 5.5rem);
+  column-gap: clamp(2.4rem, 4vw, 4.8rem);
   row-gap: 1.2rem;
-  padding-top: 0.28rem;
+  padding-top: 0.18rem;
 }
 
 .linkColumn {
   display: grid;
   align-content: start;
-  gap: 0.9rem;
+  gap: 0.86rem;
   min-width: max-content;
 }
 
 .linkColumn h3 {
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.38rem;
   color: rgba(214, 231, 223, 0.72);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: 0.82rem;
@@ -142,11 +144,11 @@
   text-decoration: none;
   font-size: 1rem;
   font-weight: 600;
-  line-height: 1.5;
+  line-height: 1.48;
   white-space: nowrap;
   transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
+    opacity 180ms ease,
+    transform 180ms ease;
 }
 
 .linkColumn a:hover {
@@ -154,8 +156,7 @@
   transform: translateX(2px);
 }
 
-.linkColumn a:focus-visible,
-.socialIcon:focus-visible {
+.linkColumn a:focus-visible {
   outline: 3px solid rgba(255, 255, 255, 0.18);
   outline-offset: 3px;
 }
@@ -171,7 +172,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.85rem 1.4rem;
-  padding: 1rem 0 1.18rem;
+  padding: 0.96rem 0 1.14rem;
   color: rgba(232, 242, 237, 0.78);
   font-size: 0.92rem;
 }
@@ -183,19 +184,19 @@
 @media (max-width: 1080px) {
   .topRow {
     grid-template-columns: 1fr;
-    gap: 2.4rem;
+    gap: 2.5rem;
   }
 
   .linksGrid {
-    column-gap: 3.2rem;
+    column-gap: 3rem;
   }
 }
 
 @media (max-width: 760px) {
   .linksGrid {
-    grid-template-columns: repeat(2, max-content);
-    column-gap: 2.4rem;
-    row-gap: 1.5rem;
+    grid-template-columns: repeat(2, minmax(0, max-content));
+    column-gap: 2.5rem;
+    row-gap: 1.45rem;
   }
 }
 
@@ -206,17 +207,15 @@
 
   .topRow {
     gap: 2rem;
-    padding: 2.45rem 0 2rem;
+    padding: 2.35rem 0 2rem;
   }
 
-  .brandHeader {
-    gap: 0.72rem;
-    padding-top: 0;
+  .brandName {
+    font-size: clamp(1.85rem, 11vw, 2.35rem);
   }
 
   .brandMark {
-    width: 2rem;
-    margin-top: 0.15rem;
+    width: 1.45rem;
   }
 
   .brandText {
@@ -230,8 +229,8 @@
   }
 
   .socialIcon {
-    width: 2.55rem;
-    height: 2.55rem;
+    width: 2.5rem;
+    height: 2.5rem;
   }
 
   .linksGrid {
