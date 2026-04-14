@@ -33,14 +33,14 @@ export default function AppFooter() {
     <footer className={styles.footer}>
       <div className={styles.shell}>
         <div className={styles.topRow}>
-          <div className={styles.brandBlock}>
-            <div className={styles.brandHeader}>
-              <div className={styles.brandName}>Aim4price</div>
+          <section className={styles.brandBlock} aria-label="Aim4price footer overview">
+            <div className={styles.brandIdentity}>
+              <span className={styles.brandName}>Aim4price</span>
               <Image
                 src="/brand/aim4price-mark-white.png"
                 alt="Aim4price logo mark"
-                width={38}
-                height={38}
+                width={34}
+                height={34}
                 className={styles.brandMark}
               />
             </div>
@@ -52,7 +52,6 @@ export default function AppFooter() {
 
             <div className={styles.socialGroup} aria-label="Aim4price social channels">
               <span className={styles.socialLabel}>Social</span>
-
               <div className={styles.socialRow}>
                 <span className={styles.socialIcon} aria-label="Facebook">
                   <FacebookIcon />
@@ -65,7 +64,7 @@ export default function AppFooter() {
                 </span>
               </div>
             </div>
-          </div>
+          </section>
 
           <div className={styles.linksGrid}>
             <nav className={styles.linkColumn} aria-label="Explore footer links">
