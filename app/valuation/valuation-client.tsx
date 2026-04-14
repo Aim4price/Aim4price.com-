@@ -88,6 +88,23 @@ const DETAILS_STEPS: Array<{ key: DetailsStepKey; label: string }> = [
   { key: 'extras', label: 'Extras' },
 ];
 
+const HERO_PILLS = ['5 guided steps', 'Aim4price + market + reference', 'Clean, simple flow'];
+
+const HERO_GUIDE_ITEMS = [
+  {
+    title: 'Choose the machine',
+    text: 'Select the equipment type, brand, and exact model.',
+  },
+  {
+    title: 'Add the working details',
+    text: 'Enter the year, hours, condition, and fitted extras.',
+  },
+  {
+    title: 'Review the value output',
+    text: 'Compare Aim4price, market, and reference values in one place.',
+  },
+] as const;
+
 function nextStep(step: Step): Step {
   return step === 1 ? 2 : step === 2 ? 3 : step === 3 ? 4 : 5;
 }
@@ -128,28 +145,28 @@ function getStepMeta(step: Step) {
   switch (step) {
     case 1:
       return {
-        title: 'Choose Equipment Type',
-        body: 'Select your equipment type to continue.',
+        title: 'Equipment Type',
+        body: 'Start by choosing the machine category you want to value.',
       };
     case 2:
       return {
-        title: 'Choose Brand',
-        body: 'Select a tractor brand from the dropdown list.',
+        title: 'Brand',
+        body: 'Choose the equipment brand to continue.',
       };
     case 3:
       return {
-        title: 'Choose Tractor Model',
-        body: 'Four quick choices. One at a time.',
+        title: 'Model',
+        body: 'Set the tractor type, drive, cab, and exact model.',
       };
     case 4:
       return {
-        title: 'Enter Tractor Details',
-        body: 'Four quick details. One at a time.',
+        title: 'Machine Details',
+        body: 'Add the year, hours, condition, and fitted extras.',
       };
     default:
       return {
         title: 'Valuation Results',
-        body: 'Review the calculated values and next actions.',
+        body: 'Review the calculated values and choose your next action.',
       };
   }
 }
@@ -318,20 +335,10 @@ export default function ValuationClient() {
 
   const freeGuestValuationsRemaining = Math.max(0, 3 - guestValuationCount);
   const stepMeta = getStepMeta(step);
-  const activeStepLabel = WIZARD_STEPS.find((item) => item.step === step)?.label ?? '';
-  const heroSummaryItems = useMemo(
-    () => [
-      { label: 'Flow', value: 'Guided in 5 clear steps' },
-      { label: 'Output', value: 'Aim4price, market and reference values' },
-      {
-        label: isSignedIn ? 'Account' : 'Guest access',
-        value: isSignedIn
-          ? 'Signed in and ready to save valuations to your asset register'
-          : `${freeGuestValuationsRemaining} free guest valuations remaining`,
-      },
-    ],
-    [freeGuestValuationsRemaining, isSignedIn],
-  );
+  const heroAccessLabel = isSignedIn ? 'Account ready' : 'Guest access';
+  const heroAccessText = isSignedIn
+    ? 'Signed in valuations can be saved straight to your asset register.'
+    : `${freeGuestValuationsRemaining} of 3 free guest valuations still available.`;
   const brandDropdownRef = useRef<HTMLDivElement | null>(null);
   const brandSearchInputRef = useRef<HTMLInputElement | null>(null);
   const yearDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -2160,22 +2167,39 @@ export default function ValuationClient() {
               <section className={styles.heroIntro}>
                 <div className={styles.heroIntroGrid}>
                   <div className={styles.heroIntroContent}>
-                    <p className={styles.heroEyebrow}>Simple guided valuation</p>
-                    <h1 className={styles.heroIntroTitle}>Know what your machinery is worth.</h1>
+                    <p className={styles.heroEyebrow}>Guided valuation</p>
+                    <h1 className={styles.heroIntroTitle}>Value your machinery.</h1>
                     <p className={styles.heroIntroText}>
-                      Set up the machine, enter the working details, and review a cleaner data-backed value output in one guided flow.
+                      Choose the machine, add the working details, and review the value output in one clean guided flow.
                     </p>
+
+                    <div className={styles.heroPills} aria-label="Valuation flow highlights">
+                      {HERO_PILLS.map((item) => (
+                        <span key={item} className={styles.heroPill}>
+                          {item}
+                        </span>
+                      ))}
+                    </div>
                   </div>
 
-                  <aside className={styles.heroPanel} aria-label="Valuation overview">
-                    <p className={styles.heroPanelTitle}>What this flow gives you</p>
-                    <div className={styles.heroStatList}>
-                      {heroSummaryItems.map((item) => (
-                        <div key={item.label} className={styles.heroStatItem}>
-                          <span className={styles.heroStatLabel}>{item.label}</span>
-                          <strong className={styles.heroStatValue}>{item.value}</strong>
+                  <aside className={styles.heroGuide} aria-label="How the valuation works">
+                    <p className={styles.heroGuideTitle}>How it works</p>
+
+                    <div className={styles.heroGuideList}>
+                      {HERO_GUIDE_ITEMS.map((item, index) => (
+                        <div key={item.title} className={styles.heroGuideItem}>
+                          <span className={styles.heroGuideNumber}>{index + 1}</span>
+                          <div className={styles.heroGuideTextWrap}>
+                            <p className={styles.heroGuideHeading}>{item.title}</p>
+                            <p className={styles.heroGuideText}>{item.text}</p>
+                          </div>
                         </div>
                       ))}
+                    </div>
+
+                    <div className={styles.heroAccessCard}>
+                      <p className={styles.heroAccessLabel}>{heroAccessLabel}</p>
+                      <p className={styles.heroAccessText}>{heroAccessText}</p>
                     </div>
                   </aside>
                 </div>
@@ -2224,7 +2248,6 @@ export default function ValuationClient() {
                   <div className={styles.stepContent}>
                     <div className={styles.stepMetaRow}>
                       <span className={styles.stepMetaBadge}>Step {step} of {WIZARD_STEPS.length}</span>
-                      <span className={styles.stepMetaHint}>{activeStepLabel}</span>
                     </div>
                     <h1 className={styles.stepTitle}>{stepMeta.title}</h1>
                     <p className={styles.stepText}>{stepMeta.body}</p>
