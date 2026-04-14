@@ -31,25 +31,20 @@ type LoginFormState = {
 const AUTH_BASE_PATH = '/api/auth';
 const POST_LOGIN_REDIRECT = '/asset-register';
 
-const showcaseSteps = [
+const showcaseHighlights = [
   {
-    number: '01',
-    title: 'Save valuations',
-    text: 'Keep every machinery result tied to your account and ready to revisit.',
+    title: 'Valuations',
+    text: 'Save every pricing result and return to it later.',
   },
   {
-    number: '02',
-    title: 'Build a cleaner register',
-    text: 'Organise equipment records once and return to a structured workspace later.',
+    title: 'Asset register',
+    text: 'Keep machinery records structured under one account.',
   },
   {
-    number: '03',
-    title: 'Move to market faster',
-    text: 'Carry saved machinery into future sale activity without restarting the process.',
+    title: 'Marketplace',
+    text: 'Move selected assets into sale activity faster.',
   },
 ] as const;
-
-const showcaseModules = ['Valuations', 'Asset register', 'Marketplace'] as const;
 
 const initialSignupState: SignupFormState = {
   name: '',
@@ -382,16 +377,14 @@ export default function AuthPage() {
       <div className={styles.shell}>
         <div className={styles.topBar}>
           <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
-            <span className={styles.brandBadge}>
-              <Image
-                src="/brand/aim4price-mark-black.png"
-                alt="Aim4price"
-                width={56}
-                height={46}
-                className={styles.brandMark}
-                priority
-              />
-            </span>
+            <Image
+              src="/brand/aim4price-mark-black.png"
+              alt=""
+              width={56}
+              height={46}
+              className={styles.brandMark}
+              priority
+            />
 
             <span className={styles.brandCopy}>
               <span className={styles.brandTitle}>Aim4price</span>
@@ -408,62 +401,52 @@ export default function AuthPage() {
           <aside className={styles.showcase}>
             <div className={styles.showcaseHeader}>
               <span className={styles.eyebrow}>Secure account access</span>
-              <h2 className={styles.showcaseTitle}>One secure workspace for every machinery decision.</h2>
+              <h2 className={styles.showcaseTitle}>A cleaner home for your machinery workflow.</h2>
               <p className={styles.showcaseText}>
-                Create an account to keep valuations, asset records, and marketplace activity connected in one calm,
-                professional workflow.
+                Save valuations, organise asset records, and prepare marketplace activity from one secure
+                account built to feel calm, structured, and professional.
               </p>
             </div>
 
-            <div className={styles.visualPanel}>
-              <div className={styles.visualTopRow}>
-                <span className={styles.visualKicker}>Aim4price workspace</span>
-                <span className={styles.visualStatus}>
-                  <span className={styles.statusDot} aria-hidden="true" />
-                  Professional workflow
-                </span>
+            <div className={styles.workspaceCard}>
+              <div className={styles.workspaceTopRow}>
+                <div className={styles.workspaceMeta}>
+                  <span className={styles.workspaceKicker}>Aim4price workspace</span>
+                  <strong className={styles.workspaceMetaTitle}>One login. One connected workspace.</strong>
+                </div>
+
+                <span className={styles.workspaceBadge}>Secure cloud access</span>
               </div>
 
-              <div className={styles.visualMedia}>
+              <div className={styles.workspaceMedia}>
                 <Image
                   src="/brand/Home-page.png"
                   alt="Aim4price machinery platform preview"
                   fill
                   priority
                   sizes="(max-width: 1080px) 100vw, 48vw"
-                  className={styles.visualImage}
+                  className={styles.workspaceImage}
                 />
 
-                <div className={styles.visualShade} aria-hidden="true" />
+                <div className={styles.workspaceShade} aria-hidden="true" />
+                <span className={styles.mediaBadge}>Valuations · Register · Marketplace</span>
               </div>
 
-              <div className={styles.visualCard}>
-                <span className={styles.visualCardEyebrow}>One sign in</span>
-                <strong className={styles.visualCardTitle}>
-                  Keep your values, records, and sale-ready machinery activity under the same account.
+              <div className={styles.workspaceSummary}>
+                <strong className={styles.workspaceSummaryTitle}>
+                  Keep pricing history, equipment records, and future sale activity linked to the same
+                  account.
                 </strong>
-
-                <div className={styles.visualChipRail}>
-                  {showcaseModules.map((module) => (
-                    <span key={module} className={styles.visualChip}>
-                      {module}
-                    </span>
-                  ))}
-                </div>
               </div>
-            </div>
 
-            <div className={styles.signalRail}>
-              {showcaseSteps.map((step) => (
-                <article key={step.number} className={styles.signalItem}>
-                  <span className={styles.signalNumber}>{step.number}</span>
-
-                  <div className={styles.signalCopy}>
-                    <strong className={styles.signalTitle}>{step.title}</strong>
-                    <span className={styles.signalText}>{step.text}</span>
-                  </div>
-                </article>
-              ))}
+              <div className={styles.workspaceGrid}>
+                {showcaseHighlights.map((item) => (
+                  <article key={item.title} className={styles.workspaceItem}>
+                    <span className={styles.workspaceItemTitle}>{item.title}</span>
+                    <p className={styles.workspaceItemText}>{item.text}</p>
+                  </article>
+                ))}
+              </div>
             </div>
           </aside>
 
