@@ -492,6 +492,7 @@ export default function MarketplaceClient({
   const pageStart = visible.length ? (currentPage - 1) * LISTINGS_PER_PAGE : 0;
   const pageEnd = Math.min(pageStart + LISTINGS_PER_PAGE, visible.length);
   const pagedVisible = visible.slice(pageStart, pageEnd);
+  const isSingleResultLayout = pagedVisible.length === 1;
 
   const paginationItems = useMemo(
     () => buildPagination(currentPage, totalPages),
@@ -891,6 +892,16 @@ export default function MarketplaceClient({
                   onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
                   placeholder="Search brand, model, province, area or keyword"
                 />
+                {query ? (
+                  <button
+                    type="button"
+                    className={styles.searchClearButton}
+                    onClick={() => setQuery('')}
+                    aria-label="Clear search"
+                  >
+                    ×
+                  </button>
+                ) : null}
               </div>
             </label>
 
@@ -998,6 +1009,9 @@ export default function MarketplaceClient({
             <h2>
               {visible.length} listing{visible.length === 1 ? '' : 's'} ready to open
             </h2>
+            <p className={styles.resultsLead}>
+              Open a card for photos, seller area, protected contact details and quick share tools.
+            </p>
           </div>
 
           <div className={styles.resultsMeta}>
@@ -1008,7 +1022,7 @@ export default function MarketplaceClient({
           </div>
         </section>
 
-        <section className={styles.grid}>
+        <section className={`${styles.grid} ${isSingleResultLayout ? styles.gridSingle : ''}`}>
           {pagedVisible.length > 0 ? (
             pagedVisible.map((listing) => {
               const cardImages = getImages(listing);
@@ -1016,7 +1030,7 @@ export default function MarketplaceClient({
               return (
                 <article
                   key={listing.id}
-                  className={styles.card}
+                  className={`${styles.card} ${isSingleResultLayout ? styles.cardSingle : ''}`}
                   role="button"
                   tabIndex={0}
                   onClick={() => openListing(listing)}
@@ -1407,6 +1421,18 @@ export default function MarketplaceClient({
                 </div>
 
                 <div className={styles.modalActionStrip}>
+                  <div className={styles.modalActionCopy}>
+                    <span className={styles.sectionLabel}>Share this listing</span>
+                    <p className={styles.modalActionHint}>
+                      Open one clean panel for WhatsApp, Facebook, copy link and device share.
+                    </p>
+                    <div className={styles.inlineChannelRow}>
+                      <span className={styles.channelPill}>WhatsApp</span>
+                      <span className={styles.channelPill}>Facebook</span>
+                      <span className={styles.channelPill}>Copy link</span>
+                    </div>
+                  </div>
+
                   <button
                     type="button"
                     className={styles.sharePrimaryButton}
@@ -1415,12 +1441,8 @@ export default function MarketplaceClient({
                     <span className={styles.buttonIcon} aria-hidden="true">
                       <IconShare />
                     </span>
-                    Share listing
+                    Open share options
                   </button>
-
-                  <span className={styles.modalActionHint}>
-                    Send the advert straight to WhatsApp or Facebook.
-                  </span>
                 </div>
 
                 <div className={styles.modalStats}>
@@ -1547,28 +1569,37 @@ export default function MarketplaceClient({
 
             <div className={styles.shareHeader}>
               <span className={styles.sectionEyebrow}>Share listing</span>
-              <h2 id="share-listing-title">Push this advert out in seconds.</h2>
+              <h2 id="share-listing-title">Share this advert in seconds.</h2>
               <p>
-                Use the two main channels first, or copy the direct link for anywhere else.
+                Start with WhatsApp or Facebook, then copy the direct link when you need it anywhere
+                else.
               </p>
             </div>
 
             <div className={styles.sharePreviewCard}>
-              <img
-                src={getImages(shareListing)[0] ?? FALLBACK_MARKETPLACE_IMAGE}
-                alt={`${shareListing.brandName} ${shareListing.modelName}`}
-                className={styles.sharePreviewImage}
-                onError={(event) => {
-                  event.currentTarget.src = FALLBACK_MARKETPLACE_IMAGE;
-                }}
-              />
+              <div className={styles.sharePreviewMedia}>
+                <img
+                  src={getImages(shareListing)[0] ?? FALLBACK_MARKETPLACE_IMAGE}
+                  alt={`${shareListing.brandName} ${shareListing.modelName}`}
+                  className={styles.sharePreviewImage}
+                  onError={(event) => {
+                    event.currentTarget.src = FALLBACK_MARKETPLACE_IMAGE;
+                  }}
+                />
+                <span className={styles.sharePreviewTag}>{getListingTag(shareListing)}</span>
+              </div>
 
               <div className={styles.sharePreviewCopy}>
                 <strong>
                   {shareListing.brandName} {shareListing.modelName}
                 </strong>
-                <span>{money(shareListing.askingPriceExVat)} excl. VAT</span>
-                <small>{formatLocation(shareListing)}</small>
+                <div className={styles.sharePreviewMeta}>
+                  <span>{money(shareListing.askingPriceExVat)} excl. VAT</span>
+                  <small>{formatLocation(shareListing)}</small>
+                </div>
+                <p className={styles.sharePreviewHint}>
+                  The shared link opens straight to this listing inside Aim4price.
+                </p>
               </div>
             </div>
 
@@ -1581,7 +1612,10 @@ export default function MarketplaceClient({
                 <span className={styles.shareActionIcon} aria-hidden="true">
                   <IconWhatsApp />
                 </span>
-                WhatsApp
+                <span className={styles.shareActionText}>
+                  <strong>WhatsApp</strong>
+                  <small>Best for buyer groups and direct chats</small>
+                </span>
               </button>
 
               <button
@@ -1592,12 +1626,38 @@ export default function MarketplaceClient({
                 <span className={styles.shareActionIcon} aria-hidden="true">
                   <IconFacebook />
                 </span>
-                Facebook
+                <span className={styles.shareActionText}>
+                  <strong>Facebook</strong>
+                  <small>Share to your feed, page or buyer audience</small>
+                </span>
               </button>
+
+              {canUseSystemShare() ? (
+                <button
+                  type="button"
+                  className={`${styles.shareActionButton} ${styles.shareActionWide}`}
+                  onClick={() => void handleShareAction('system')}
+                >
+                  <span className={styles.shareActionIcon} aria-hidden="true">
+                    <IconMore />
+                  </span>
+                  <span className={styles.shareActionText}>
+                    <strong>More options</strong>
+                    <small>Open your device share menu for other apps</small>
+                  </span>
+                </button>
+              ) : null}
+            </div>
+
+            <div className={styles.shareLinkRow}>
+              <label className={styles.shareLinkField}>
+                <span>Direct listing link</span>
+                <input value={shareUrl} readOnly aria-label="Direct listing link" />
+              </label>
 
               <button
                 type="button"
-                className={styles.shareActionButton}
+                className={styles.shareLinkCopyButton}
                 onClick={() => void handleShareAction('copy')}
               >
                 <span className={styles.shareActionIcon} aria-hidden="true">
@@ -1605,25 +1665,7 @@ export default function MarketplaceClient({
                 </span>
                 Copy link
               </button>
-
-              {canUseSystemShare() ? (
-                <button
-                  type="button"
-                  className={styles.shareActionButton}
-                  onClick={() => void handleShareAction('system')}
-                >
-                  <span className={styles.shareActionIcon} aria-hidden="true">
-                    <IconMore />
-                  </span>
-                  More options
-                </button>
-              ) : null}
             </div>
-
-            <label className={styles.shareLinkField}>
-              <span>Direct listing link</span>
-              <input value={shareUrl} readOnly aria-label="Direct listing link" />
-            </label>
 
             {shareFeedback ? <p className={styles.shareFeedback}>{shareFeedback}</p> : null}
 
