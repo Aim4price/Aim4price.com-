@@ -318,6 +318,20 @@ export default function ValuationClient() {
 
   const freeGuestValuationsRemaining = Math.max(0, 3 - guestValuationCount);
   const stepMeta = getStepMeta(step);
+  const activeStepLabel = WIZARD_STEPS.find((item) => item.step === step)?.label ?? '';
+  const heroSummaryItems = useMemo(
+    () => [
+      { label: 'Flow', value: 'Guided in 5 clear steps' },
+      { label: 'Output', value: 'Aim4price, market and reference values' },
+      {
+        label: isSignedIn ? 'Account' : 'Guest access',
+        value: isSignedIn
+          ? 'Signed in and ready to save valuations to your asset register'
+          : `${freeGuestValuationsRemaining} free guest valuations remaining`,
+      },
+    ],
+    [freeGuestValuationsRemaining, isSignedIn],
+  );
   const brandDropdownRef = useRef<HTMLDivElement | null>(null);
   const brandSearchInputRef = useRef<HTMLInputElement | null>(null);
   const yearDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -2144,17 +2158,26 @@ export default function ValuationClient() {
           {step !== 5 ? (
             <>
               <section className={styles.heroIntro}>
-                <div className={styles.heroIntroContent}>
-                  <span className={styles.heroBadge}>Valuation</span>
-                  <h1 className={styles.heroIntroTitle}>Know what your machinery is worth.</h1>
-                  <p className={styles.heroIntroText}>
-                    Move from equipment setup to a clean, data-backed value output with a simple guided flow.
-                  </p>
-                  {!isSignedIn ? (
+                <div className={styles.heroIntroGrid}>
+                  <div className={styles.heroIntroContent}>
+                    <p className={styles.heroEyebrow}>Simple guided valuation</p>
+                    <h1 className={styles.heroIntroTitle}>Know what your machinery is worth.</h1>
                     <p className={styles.heroIntroText}>
-                      Free guest valuations remaining: {freeGuestValuationsRemaining} / 3
+                      Set up the machine, enter the working details, and review a cleaner data-backed value output in one guided flow.
                     </p>
-                  ) : null}
+                  </div>
+
+                  <aside className={styles.heroPanel} aria-label="Valuation overview">
+                    <p className={styles.heroPanelTitle}>What this flow gives you</p>
+                    <div className={styles.heroStatList}>
+                      {heroSummaryItems.map((item) => (
+                        <div key={item.label} className={styles.heroStatItem}>
+                          <span className={styles.heroStatLabel}>{item.label}</span>
+                          <strong className={styles.heroStatValue}>{item.value}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </aside>
                 </div>
               </section>
 
@@ -2199,6 +2222,10 @@ export default function ValuationClient() {
                   </div>
 
                   <div className={styles.stepContent}>
+                    <div className={styles.stepMetaRow}>
+                      <span className={styles.stepMetaBadge}>Step {step} of {WIZARD_STEPS.length}</span>
+                      <span className={styles.stepMetaHint}>{activeStepLabel}</span>
+                    </div>
                     <h1 className={styles.stepTitle}>{stepMeta.title}</h1>
                     <p className={styles.stepText}>{stepMeta.body}</p>
 
