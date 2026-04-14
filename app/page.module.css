@@ -37,7 +37,11 @@
   isolation: isolate;
 }
 
-.heroBackground {
+.heroVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: center center;
   transform: scale(1.015);
@@ -49,16 +53,16 @@
   background:
     linear-gradient(
       90deg,
-      rgba(8, 18, 15, 0.82) 0%,
-      rgba(8, 18, 15, 0.68) 18%,
-      rgba(8, 18, 15, 0.44) 38%,
-      rgba(8, 18, 15, 0.2) 62%,
-      rgba(8, 18, 15, 0.08) 100%
+      rgba(8, 18, 15, 0.84) 0%,
+      rgba(8, 18, 15, 0.7) 18%,
+      rgba(8, 18, 15, 0.46) 38%,
+      rgba(8, 18, 15, 0.22) 62%,
+      rgba(8, 18, 15, 0.1) 100%
     ),
     linear-gradient(
       180deg,
       rgba(8, 18, 15, 0.12) 0%,
-      rgba(8, 18, 15, 0.32) 100%
+      rgba(8, 18, 15, 0.34) 100%
     );
 }
 
@@ -67,10 +71,10 @@
   z-index: 2;
   min-height: clamp(39rem, 49vw, 47rem);
   display: grid;
-  grid-template-columns: minmax(0, 42rem) minmax(18rem, 1fr);
+  grid-template-columns: minmax(0, 42rem) minmax(16rem, 1fr);
   align-items: center;
   justify-content: space-between;
-  gap: clamp(1.5rem, 3vw, 3.6rem);
+  gap: clamp(1.5rem, 3vw, 3.4rem);
   padding: clamp(3rem, 4.6vw, 4.4rem) 0;
 }
 
@@ -91,7 +95,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  font-size: clamp(3.95rem, 6.15vw, 6.7rem);
+  font-size: clamp(3.95rem, 6.15vw, 6.55rem);
   line-height: 0.86;
   letter-spacing: -0.095em;
   font-weight: 800;
@@ -108,7 +112,7 @@
 
 .heroText {
   margin: 1.65rem 0 0;
-  max-width: 48rem;
+  max-width: 50rem;
   font-size: clamp(1rem, 1.22vw, 1.14rem);
   line-height: 1.58;
   color: rgba(245, 248, 246, 0.92);
@@ -116,6 +120,7 @@
 
 .heroTextLine {
   display: block;
+  white-space: nowrap;
 }
 
 .heroActions {
@@ -185,13 +190,13 @@
   align-items: center;
   justify-content: center;
   min-height: 100%;
-  padding-left: clamp(0.75rem, 3vw, 2.2rem);
+  padding-left: clamp(0.5rem, 2.4vw, 1.6rem);
 }
 
 .heroVisual::before {
   content: '';
   position: absolute;
-  width: min(31rem, 100%);
+  width: min(28rem, 100%);
   aspect-ratio: 1;
   border-radius: 50%;
   background: radial-gradient(
@@ -201,7 +206,7 @@
     rgba(255, 255, 255, 0.016) 44%,
     rgba(255, 255, 255, 0) 74%
   );
-  opacity: 0.72;
+  opacity: 0.68;
   filter: blur(18px);
 }
 
@@ -209,14 +214,14 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: min(100%, 28rem);
+  width: min(100%, 24rem);
   aspect-ratio: 1;
 }
 
 .heroLogo {
   position: relative;
   z-index: 1;
-  width: min(100%, 25rem);
+  width: min(100%, 21rem);
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 22px 30px rgba(0, 0, 0, 0.2));
@@ -259,45 +264,41 @@
 }
 
 .workflowEyebrow {
-  color: #2f5f4d;
-  background: rgba(24, 77, 61, 0.08);
-  border: 1px solid rgba(24, 77, 61, 0.1);
+  color: #245948;
+  background: rgba(31, 108, 83, 0.08);
+  border: 1px solid rgba(31, 108, 83, 0.12);
 }
 
 .workflowTitle {
   margin: 0;
-  max-width: none;
-  font-size: clamp(2.35rem, 3.85vw, 4rem);
+  font-size: clamp(2.1rem, 3.3vw, 3rem);
   line-height: 0.98;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.055em;
   font-weight: 800;
-  color: #17352c;
-  white-space: nowrap;
+  color: #16362c;
 }
 
 .workflowText {
   margin: 0;
-  max-width: 63rem;
-  font-size: 1.03rem;
-  line-height: 1.72;
-  color: #66716c;
+  max-width: 42rem;
+  font-size: 1rem;
+  line-height: 1.68;
+  color: #5f6f69;
 }
 
 .stepsGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.05rem;
+  gap: 1.15rem;
 }
 
 .stepCard {
-  display: flex;
-  flex-direction: column;
-  min-height: 14.75rem;
-  padding: 1.6rem 1.45rem 1.4rem;
+  min-height: 15.2rem;
+  padding: 1.5rem 1.4rem 1.35rem;
   border-radius: 1.45rem;
-  background: #ffffff;
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  box-shadow: 0 16px 30px rgba(18, 45, 37, 0.05);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  box-shadow: 0 10px 20px rgba(18, 45, 37, 0.04);
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -305,93 +306,84 @@
 }
 
 .stepCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 20px 34px rgba(18, 45, 37, 0.07);
-  border-color: rgba(24, 77, 61, 0.12);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 28px rgba(18, 45, 37, 0.06);
+  border-color: rgba(31, 108, 83, 0.12);
 }
 
 .stepBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3.05rem;
-  height: 3.05rem;
+  min-width: 3rem;
+  min-height: 3rem;
+  padding: 0 0.85rem;
   border-radius: 999px;
-  background: #edf5f1;
-  color: #184d3d;
+  background: #173c31;
+  color: #ffffff;
   font-size: 0.95rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: -0.04em;
 }
 
 .stepTitle {
   margin: 1.15rem 0 0;
-  font-size: 1.28rem;
-  line-height: 1.18;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: #1c3930;
+  font-size: 1.24rem;
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+  font-weight: 750;
+  color: #17362d;
 }
 
 .stepText {
   margin: 0.92rem 0 0;
-  max-width: 29ch;
-  font-size: 0.98rem;
-  line-height: 1.68;
-  color: #66716c;
+  font-size: 0.97rem;
+  line-height: 1.7;
+  color: #64756f;
 }
 
 @media (max-width: 1180px) {
+  .heroMedia,
   .heroGrid {
-    grid-template-columns: minmax(0, 36rem) minmax(16rem, 1fr);
-    gap: clamp(1rem, 2vw, 2rem);
+    min-height: clamp(37rem, 58vw, 44rem);
   }
 
-  .heroTitle {
-    font-size: clamp(3.55rem, 5.4vw, 5.7rem);
+  .heroGrid {
+    grid-template-columns: minmax(0, 1fr) minmax(13rem, 0.78fr);
+    gap: 1.5rem;
+  }
+
+  .heroTextLine {
+    white-space: normal;
   }
 
   .heroMarkStage {
-    width: min(100%, 23rem);
+    width: min(100%, 20rem);
   }
 
   .heroLogo {
-    width: min(100%, 20rem);
+    width: min(100%, 17.5rem);
   }
 }
 
 @media (max-width: 980px) {
   .heroGrid {
     grid-template-columns: 1fr;
-    justify-content: stretch;
-    gap: 2rem;
-    padding: 2.5rem 0 2.85rem;
+    justify-items: start;
   }
 
   .heroCopy {
     max-width: 100%;
   }
 
-  .heroTitleLine {
-    white-space: normal;
-  }
-
-  .heroTextLine {
-    display: inline;
-  }
-
-  .heroTextLine + .heroTextLine::before {
-    content: ' ';
+  .heroText {
+    max-width: 34rem;
   }
 
   .heroVisual {
+    width: 100%;
     justify-content: flex-start;
     padding-left: 0;
-  }
-
-  .heroVisual::before {
-    width: min(20rem, 88%);
-    filter: blur(14px);
   }
 
   .heroMarkStage {
@@ -445,6 +437,10 @@
     line-height: 1.6;
   }
 
+  .heroTextLine {
+    white-space: normal;
+  }
+
   .heroActions {
     margin-top: 1.35rem;
   }
@@ -460,7 +456,7 @@
   }
 
   .heroLogo {
-    width: min(100%, 12rem);
+    width: min(100%, 11rem);
   }
 
   .workflowWrap {
