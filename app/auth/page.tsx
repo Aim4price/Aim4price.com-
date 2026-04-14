@@ -31,23 +31,25 @@ type LoginFormState = {
 const AUTH_BASE_PATH = '/api/auth';
 const POST_LOGIN_REDIRECT = '/asset-register';
 
-const showcaseCards = [
+const showcaseSteps = [
   {
-    label: 'Valuation',
-    title: 'Save each result',
-    text: 'Keep important machinery values linked to your account.',
+    number: '01',
+    title: 'Save valuations',
+    text: 'Keep every machinery result tied to your account and ready to revisit.',
   },
   {
-    label: 'Asset register',
-    title: 'Organise records',
-    text: 'Manage key equipment without rebuilding lists every time.',
+    number: '02',
+    title: 'Build a cleaner register',
+    text: 'Organise equipment records once and return to a structured workspace later.',
   },
   {
-    label: 'Marketplace',
-    title: 'Move faster later',
-    text: 'Bring saved equipment into future sale workflows more easily.',
+    number: '03',
+    title: 'Move to market faster',
+    text: 'Carry saved machinery into future sale activity without restarting the process.',
   },
 ] as const;
+
+const showcaseModules = ['Valuations', 'Asset register', 'Marketplace'] as const;
 
 const initialSignupState: SignupFormState = {
   name: '',
@@ -380,14 +382,16 @@ export default function AuthPage() {
       <div className={styles.shell}>
         <div className={styles.topBar}>
           <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
-            <Image
-              src="/brand/aim4price-mark-black.png"
-              alt="Aim4price"
-              width={56}
-              height={46}
-              className={styles.brandMark}
-              priority
-            />
+            <span className={styles.brandBadge}>
+              <Image
+                src="/brand/aim4price-mark-black.png"
+                alt="Aim4price"
+                width={56}
+                height={46}
+                className={styles.brandMark}
+                priority
+              />
+            </span>
 
             <span className={styles.brandCopy}>
               <span className={styles.brandTitle}>Aim4price</span>
@@ -404,33 +408,60 @@ export default function AuthPage() {
           <aside className={styles.showcase}>
             <div className={styles.showcaseHeader}>
               <span className={styles.eyebrow}>Secure account access</span>
-              <h2 className={styles.showcaseTitle}>A cleaner place to manage machinery decisions.</h2>
+              <h2 className={styles.showcaseTitle}>One secure workspace for every machinery decision.</h2>
               <p className={styles.showcaseText}>
-                Create an account to keep valuations, asset records, and future sale activity tied to one clean workflow.
+                Create an account to keep valuations, asset records, and marketplace activity connected in one calm,
+                professional workflow.
               </p>
             </div>
 
             <div className={styles.visualPanel}>
-              <div className={styles.visualBadge}>One clear platform</div>
+              <div className={styles.visualTopRow}>
+                <span className={styles.visualKicker}>Aim4price workspace</span>
+                <span className={styles.visualStatus}>
+                  <span className={styles.statusDot} aria-hidden="true" />
+                  Professional workflow
+                </span>
+              </div>
 
-              <Image
-                src="/brand/Home-page.png"
-                alt="Aim4price machinery platform preview"
-                fill
-                priority
-                sizes="(max-width: 1080px) 100vw, 48vw"
-                className={styles.visualImage}
-              />
+              <div className={styles.visualMedia}>
+                <Image
+                  src="/brand/Home-page.png"
+                  alt="Aim4price machinery platform preview"
+                  fill
+                  priority
+                  sizes="(max-width: 1080px) 100vw, 48vw"
+                  className={styles.visualImage}
+                />
 
-              <div className={styles.visualShade} aria-hidden="true" />
+                <div className={styles.visualShade} aria-hidden="true" />
+              </div>
+
+              <div className={styles.visualCard}>
+                <span className={styles.visualCardEyebrow}>One sign in</span>
+                <strong className={styles.visualCardTitle}>
+                  Keep your values, records, and sale-ready machinery activity under the same account.
+                </strong>
+
+                <div className={styles.visualChipRail}>
+                  {showcaseModules.map((module) => (
+                    <span key={module} className={styles.visualChip}>
+                      {module}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            <div className={styles.signalGrid}>
-              {showcaseCards.map((card) => (
-                <article key={card.label} className={styles.signalCard}>
-                  <span className={styles.signalLabel}>{card.label}</span>
-                  <strong className={styles.signalTitle}>{card.title}</strong>
-                  <span className={styles.signalText}>{card.text}</span>
+            <div className={styles.signalRail}>
+              {showcaseSteps.map((step) => (
+                <article key={step.number} className={styles.signalItem}>
+                  <span className={styles.signalNumber}>{step.number}</span>
+
+                  <div className={styles.signalCopy}>
+                    <strong className={styles.signalTitle}>{step.title}</strong>
+                    <span className={styles.signalText}>{step.text}</span>
+                  </div>
                 </article>
               ))}
             </div>
