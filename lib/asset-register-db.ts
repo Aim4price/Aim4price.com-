@@ -1,10 +1,11 @@
 import { getDb } from './db';
-import type { CabType, DriveType, TractorType } from './tractor-data';
+import type { CabType, ConditionKey, DriveType, TractorType } from './tractor-data';
 import type { MethodKey } from './valuation-runs';
 import type { Result } from './tractor-logic';
 
 export type AssetRegisterItemKind = 'tractor' | 'manual' | 'property';
 export type AssetRegisterItemMethod = MethodKey | 'manual';
+export type AssetRegisterItemCondition = ConditionKey | '';
 
 export type AssetRegisterItem = {
   id: string;
@@ -23,6 +24,7 @@ export type AssetRegisterItem = {
   powerKw: number | null;
   yearModel: number | null;
   hours: number | null;
+  condition: AssetRegisterItemCondition;
   aim4priceValueExVat: number | null;
   marketMidExVat: number | null;
   departmentValueExVat: number | null;
@@ -47,6 +49,8 @@ export type CreateManualAssetInput = {
   isFinanced?: boolean;
   financeNote?: string | null;
   photos?: string[];
+  hours?: number | null;
+  condition?: ConditionKey | null;
 };
 
 export type UpdateAssetRegisterItemInput = {
@@ -59,6 +63,8 @@ export type UpdateAssetRegisterItemInput = {
   isFinanced?: boolean;
   financeNote?: string | null;
   photos?: string[];
+  hours?: number | null;
+  condition?: ConditionKey | null;
 };
 
 type AssetRegisterRow = {
@@ -78,6 +84,7 @@ type AssetRegisterRow = {
   power_kw: string | number | null;
   year_model: string | number | null;
   hours: string | number | null;
+  condition: string | null;
   aim4price_value_ex_vat: string | number | null;
   market_mid_ex_vat: string | number | null;
   department_value_ex_vat: string | number | null;
@@ -180,6 +187,20 @@ function normalizeMethod(value: unknown): AssetRegisterItemMethod {
     : 'manual';
 }
 
+function normalizeCondition(value: unknown): AssetRegisterItemCondition {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (normalized === 'excellent') return 'excellent';
+  if (normalized === 'fair') return 'fair';
+  if (normalized === 'used') return 'used';
+  if (normalized === 'serious' || normalized === 'requires attention' || normalized === 'requires serious attention') {
+    return 'serious';
+  }
+
+  if (normalized === 'good') return 'good';
+  return '';
+}
+
 function mapDrive(value: unknown): DriveType | '' {
   return value === '2wd' || value === '4wd' || value === 'tracks' ? value : '';
 }
@@ -221,6 +242,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     powerKw: asNumber(row.power_kw),
     yearModel: asNumber(row.year_model),
     hours: asNumber(row.hours),
+    condition: normalizeCondition(row.condition),
     aim4priceValueExVat: asNumber(row.aim4price_value_ex_vat),
     marketMidExVat: asNumber(row.market_mid_ex_vat),
     departmentValueExVat: asNumber(row.department_value_ex_vat),
@@ -334,6 +356,7 @@ function buildSelectList(schema: TableSchema): string {
   const powerColumn = resolveColumn(schema, 'power_kw', 'kw', 'power');
   const yearColumn = resolveColumn(schema, 'year_model', 'year');
   const hoursColumn = resolveColumn(schema, 'hours', 'engine_hours');
+  const conditionColumn = resolveColumn(schema, 'condition');
   const aim4priceColumn = resolveColumn(schema, 'aim4price_value_ex_vat', 'aim4price_value');
   const marketColumn = resolveColumn(schema, 'market_mid_ex_vat', 'market_value_ex_vat', 'market_value');
   const departmentColumn = resolveColumn(
@@ -370,6 +393,7 @@ function buildSelectList(schema: TableSchema): string {
     powerColumn ? `${powerColumn} as power_kw` : 'null::numeric as power_kw',
     yearColumn ? `${yearColumn} as year_model` : 'null::integer as year_model',
     hoursColumn ? `${hoursColumn} as hours` : 'null::integer as hours',
+    conditionColumn ? `${conditionColumn} as condition` : 'null::text as condition',
     aim4priceColumn ? `${aim4priceColumn} as aim4price_value_ex_vat` : 'null::numeric as aim4price_value_ex_vat',
     marketColumn ? `${marketColumn} as market_mid_ex_vat` : 'null::numeric as market_mid_ex_vat',
     departmentColumn ? `${departmentColumn} as department_value_ex_vat` : 'null::numeric as department_value_ex_vat',
@@ -801,6 +825,8 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['serial_number', 'serial', 'vin'], asText(input.serialNumber) || null);
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
+  pushField(fields, schema, ['hours', 'engine_hours'], input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours)));
+  pushField(fields, schema, ['condition'], input.condition ?? null);
   pushPhotoField(fields, schema, input.photos ?? []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
@@ -812,6 +838,8 @@ export async function createManualAssetRegisterItem(
     selectedMethod: 'manual',
     selectedValueExVat: nextValue,
     note: input.note ?? null,
+    hours: input.hours ?? null,
+    condition: input.condition ?? null,
     now,
   });
 
@@ -851,6 +879,13 @@ export async function updateAssetRegisterItem(
   pushField(fields, schema, ['serial_number', 'serial', 'vin'], asText(input.serialNumber) || null);
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
+  pushField(
+    fields,
+    schema,
+    ['hours', 'engine_hours'],
+    input.hours === null || input.hours === undefined ? existing.hours : Math.max(0, Math.round(input.hours)),
+  );
+  pushField(fields, schema, ['condition'], input.condition ?? existing.condition ?? null);
   pushPhotoField(fields, schema, input.photos ?? []);
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
@@ -935,6 +970,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['power_kw', 'kw', 'power'], model.powerKw);
   pushField(fields, schema, ['year_model', 'year'], Math.round(input.year));
   pushField(fields, schema, ['hours', 'engine_hours'], Math.max(0, Math.round(input.hours)));
+  pushField(fields, schema, ['condition'], typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good');
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(valuationResult.marketMid));
   pushField(fields, schema, ['department_value_ex_vat', 'department_value', 'dalrrd_value_ex_vat'], toRoundedNumber(valuationResult.departmentValueExVat));
