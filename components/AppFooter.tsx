@@ -34,16 +34,13 @@ export default function AppFooter() {
       <div className={styles.shell}>
         <div className={styles.topRow}>
           <div className={styles.brandBlock}>
-            <div className={styles.brandMarkWrap}>
-              <Image
-                src="/brand/aim4price-mark-white.png"
-                alt="Aim4price logo mark"
-                width={64}
-                height={64}
-                className={styles.brandMark}
-                priority={false}
-              />
-            </div>
+            <Image
+              src="/brand/aim4price-mark-white.png"
+              alt="Aim4price logo mark"
+              width={48}
+              height={48}
+              className={styles.brandMark}
+            />
 
             <div className={styles.brandName}>Aim4price</div>
 
@@ -70,26 +67,26 @@ export default function AppFooter() {
           </div>
 
           <div className={styles.linksGrid}>
-            <div className={styles.linkColumn}>
+            <nav className={styles.linkColumn} aria-label="Explore footer links">
               <h3>Explore</h3>
               <Link href="/">Home</Link>
               <Link href="/valuation">Valuation</Link>
               <Link href="/asset-register">Asset Register</Link>
               <Link href="/marketplace">Marketplace</Link>
               <Link href="/account">Account</Link>
-            </div>
+            </nav>
 
-            <div className={styles.linkColumn}>
+            <nav className={styles.linkColumn} aria-label="Company footer links">
               <h3>Company</h3>
               <Link href="/about-us">About Us</Link>
               <Link href="/contact-us">Contact Us</Link>
-            </div>
+            </nav>
 
-            <div className={styles.linkColumn}>
+            <nav className={styles.linkColumn} aria-label="Legal footer links">
               <h3>Legal</h3>
               <Link href="/privacy-policy">Privacy Policy</Link>
               <Link href="/terms-of-service">Terms of Service</Link>
-            </div>
+            </nav>
           </div>
         </div>
       </div>
@@ -97,7 +94,7 @@ export default function AppFooter() {
       <div className={styles.metaRow}>
         <div className={styles.shell}>
           <span>© {year} Aim4price</span>
-          <span>
+          <span className={styles.metaNote}>
             Indicative valuations should be confirmed for formal insurance, finance, or
             transactional use.
           </span>
