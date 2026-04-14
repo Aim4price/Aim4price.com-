@@ -1,9 +1,8 @@
 .footer {
-  margin-top: clamp(4.5rem, 6vw, 6rem);
+  margin-top: clamp(4rem, 6vw, 5.5rem);
   border-top: 0;
-  background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent 28%),
-    linear-gradient(180deg, #174d3d 0%, #103729 100%);
+  color: #ffffff;
+  background: linear-gradient(180deg, #165243 0%, #103a2e 100%);
 }
 
 .shell {
@@ -13,125 +12,131 @@
 
 .topRow {
   display: grid;
-  grid-template-columns: minmax(0, 1.18fr) minmax(420px, 0.82fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
-  gap: clamp(2.5rem, 5vw, 6rem);
-  padding: clamp(3.4rem, 5.5vw, 4.9rem) 0 clamp(2.5rem, 4vw, 3.2rem);
+  gap: clamp(3rem, 5vw, 6.5rem);
+  padding: clamp(3.2rem, 5vw, 4.3rem) 0 clamp(2.45rem, 4vw, 3rem);
 }
 
 .brandBlock {
   display: grid;
   align-content: start;
-  gap: 0;
+  max-width: 34rem;
   min-width: 0;
 }
 
-.brandMarkWrap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 4.75rem;
-  height: 4.75rem;
-  margin-bottom: 1.1rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 1.45rem;
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 20px 36px rgba(7, 20, 16, 0.18);
-}
-
 .brandMark {
-  width: 2.8rem;
+  width: 3.15rem;
   height: auto;
+  margin: 0 0 0.95rem;
 }
 
 .brandName {
-  font-size: clamp(2rem, 3.5vw, 3rem);
-  line-height: 0.95;
-  font-weight: 800;
-  letter-spacing: -0.06em;
+  margin: 0;
   color: #ffffff;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(2.05rem, 3.55vw, 3.1rem);
+  font-weight: 800;
+  line-height: 0.94;
+  letter-spacing: -0.065em;
 }
 
 .brandText {
-  margin: 1.15rem 0 0;
-  max-width: 36rem;
-  color: rgba(233, 243, 238, 0.88);
+  margin: 1.05rem 0 0;
+  max-width: 31rem;
+  color: rgba(232, 242, 237, 0.88);
   font-size: 1rem;
-  line-height: 1.8;
+  line-height: 1.72;
 }
 
 .socialGroup {
   display: grid;
   align-content: start;
-  gap: 0.9rem;
-  margin-top: 1.65rem;
+  gap: 0.82rem;
+  margin-top: 1.55rem;
 }
 
 .socialLabel {
+  color: rgba(214, 231, 223, 0.72);
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(214, 231, 223, 0.7);
 }
 
 .socialRow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.75rem;
 }
 
 .socialIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.9rem;
-  height: 2.9rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  width: 2.7rem;
+  height: 2.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 12px 26px rgba(7, 20, 16, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  transition:
+    transform 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease;
 }
 
 .socialIcon svg {
-  width: 1.08rem;
-  height: 1.08rem;
+  width: 1rem;
+  height: 1rem;
   fill: #ffffff;
+}
+
+.socialIcon:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .linksGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(1.5rem, 3vw, 2.8rem);
-  padding-top: 0.35rem;
+  grid-template-columns: repeat(3, max-content);
+  justify-content: start;
+  align-items: start;
+  column-gap: clamp(2.8rem, 4.2vw, 5.5rem);
+  row-gap: 1.2rem;
+  padding-top: 0.3rem;
 }
 
 .linkColumn {
   display: grid;
   align-content: start;
-  gap: 0.95rem;
+  gap: 0.9rem;
+  min-width: max-content;
 }
 
 .linkColumn h3 {
-  margin: 0 0 0.38rem;
+  margin: 0 0 0.35rem;
+  color: rgba(214, 231, 223, 0.72);
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: 0.82rem;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(214, 231, 223, 0.72);
 }
 
 .linkColumn a {
   width: fit-content;
-  text-decoration: none;
   color: #ffffff;
+  text-decoration: none;
+  font-size: 1rem;
   font-weight: 600;
-  line-height: 1.55;
+  line-height: 1.5;
+  white-space: nowrap;
   transition:
-    color 0.18s ease,
-    transform 0.18s ease,
-    opacity 0.18s ease;
+    opacity 0.18s ease,
+    transform 0.18s ease;
 }
 
 .linkColumn a:hover {
@@ -139,79 +144,99 @@
   transform: translateX(2px);
 }
 
-.linkColumn a:focus-visible {
+.linkColumn a:focus-visible,
+.socialIcon:focus-visible {
   outline: 3px solid rgba(255, 255, 255, 0.18);
   outline-offset: 3px;
 }
 
 .metaRow {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(7, 20, 16, 0.16);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 15, 11, 0.12);
 }
 
 .metaRow .shell {
-  padding: 1.08rem 0 1.28rem;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.85rem 1.2rem;
+  gap: 0.85rem 1.4rem;
+  padding: 1rem 0 1.18rem;
   color: rgba(232, 242, 237, 0.78);
   font-size: 0.92rem;
 }
 
-@media (max-width: 1024px) {
+.metaNote {
+  text-align: right;
+}
+
+@media (max-width: 1080px) {
   .topRow {
     grid-template-columns: 1fr;
+    gap: 2.4rem;
   }
 
   .linksGrid {
-    max-width: 42rem;
+    column-gap: 3.2rem;
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 760px) {
   .linksGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.45rem 1.8rem;
+    grid-template-columns: repeat(2, max-content);
+    column-gap: 2.4rem;
+    row-gap: 1.5rem;
   }
 }
 
 @media (max-width: 640px) {
   .footer {
-    margin-top: 3.85rem;
+    margin-top: 3.55rem;
   }
 
   .topRow {
-    padding: 2.55rem 0 2.05rem;
     gap: 2rem;
-  }
-
-  .brandMarkWrap {
-    width: 4.15rem;
-    height: 4.15rem;
-    margin-bottom: 1rem;
-    border-radius: 1.2rem;
+    padding: 2.45rem 0 2rem;
   }
 
   .brandMark {
-    width: 2.45rem;
+    width: 2.85rem;
+    margin-bottom: 0.82rem;
   }
 
   .brandText {
-    margin-top: 1rem;
+    margin-top: 0.95rem;
+    font-size: 0.97rem;
+    line-height: 1.66;
   }
 
   .socialGroup {
-    margin-top: 1.4rem;
+    margin-top: 1.35rem;
+  }
+
+  .socialIcon {
+    width: 2.55rem;
+    height: 2.55rem;
   }
 
   .linksGrid {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1.45rem;
+  }
+
+  .linkColumn {
+    min-width: 0;
+  }
+
+  .linkColumn a {
+    white-space: normal;
   }
 
   .metaRow .shell {
     justify-content: flex-start;
+  }
+
+  .metaNote {
+    text-align: left;
   }
 }
