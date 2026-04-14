@@ -1,9 +1,9 @@
 .page {
   width: 100%;
   min-height: 100vh;
-  padding: 0 0 4.2rem;
+  padding: 0 0 4.25rem;
   background:
-    radial-gradient(circle at top right, rgba(47, 116, 189, 0.16), transparent 24%),
+    radial-gradient(circle at top right, rgba(62, 110, 213, 0.12), transparent 26%),
     linear-gradient(180deg, #f6f9fd 0%, #fbfdff 100%);
 }
 
@@ -24,20 +24,20 @@
   padding: 1.6rem;
   border-radius: 2rem;
   background: linear-gradient(135deg, #0f2745 0%, #173a67 56%, #2b62a6 100%);
-  border: 1px solid rgba(11, 31, 58, 0.18);
+  border: 1px solid rgba(11, 31, 58, 0.16);
   box-shadow:
-    0 28px 56px rgba(12, 30, 57, 0.2),
-    0 10px 24px rgba(12, 30, 57, 0.12);
+    0 28px 56px rgba(12, 30, 57, 0.18),
+    0 10px 24px rgba(12, 30, 57, 0.11);
 }
 
 .heroBackdrop {
   position: absolute;
-  inset: auto -10% -25% auto;
-  width: 24rem;
-  height: 24rem;
+  inset: auto -10% -28% auto;
+  width: 28rem;
+  height: 28rem;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(121, 184, 255, 0.38) 0%, rgba(121, 184, 255, 0) 72%);
-  filter: blur(18px);
+  background: radial-gradient(circle, rgba(121, 184, 255, 0.35) 0%, rgba(121, 184, 255, 0) 72%);
+  filter: blur(20px);
   pointer-events: none;
 }
 
@@ -45,7 +45,9 @@
 .modalHeader,
 .cardHead,
 .browseHeader,
-.resultsTop {
+.resultsTop,
+.sharePreviewCard,
+.filterDrawerHeader {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -55,7 +57,8 @@
 
 .heroCopy,
 .titleBlock,
-.modalTitleBlock {
+.modalTitleBlock,
+.browseCopy {
   min-width: 0;
 }
 
@@ -64,7 +67,10 @@
 .sectionEyebrow,
 .sectionLabel,
 .field span,
-.statLabel {
+.statLabel,
+.toolbarSearch span,
+.toolbarSelect span,
+.shareLinkField span {
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -97,19 +103,33 @@
 }
 
 .heroCopy h1 {
-  margin: 0.8rem 0 0.55rem;
-  max-width: 11ch;
-  font-size: clamp(2.8rem, 5.4vw, 4.2rem);
+  margin: 0.82rem 0 0.55rem;
+  max-width: 12ch;
+  font-size: clamp(2.8rem, 5.4vw, 4.25rem);
   line-height: 0.96;
   letter-spacing: -0.065em;
   color: #ffffff;
 }
 
-.heroCopy p {
-  margin: 0;
-  max-width: 40rem;
-  color: rgba(230, 239, 250, 0.86);
+.heroCopy p,
+.modalHeader p,
+.modalSection p,
+.lockCard p,
+.ownerCard p,
+.emptyState p,
+.filterDrawerHeader p,
+.drawerSectionHead p,
+.shareHeader p,
+.viewerMetaCard small,
+.modalActionHint {
+  margin: 0.42rem 0 0;
   line-height: 1.72;
+  color: var(--text-muted);
+}
+
+.heroCopy p {
+  max-width: 42rem;
+  color: rgba(230, 239, 250, 0.86);
   font-size: 1.02rem;
 }
 
@@ -124,7 +144,14 @@
 .priceBlock,
 .modalPriceBlock,
 .paginationShell,
-.filterDrawer {
+.filterDrawer,
+.shareDialog,
+.viewerMetaCard,
+.sharePreviewCard,
+.modalSection,
+.lockCard,
+.ownerCard,
+.shareLinkField {
   border: 1px solid rgba(16, 42, 34, 0.08);
   box-shadow:
     0 18px 38px rgba(16, 42, 34, 0.06),
@@ -132,7 +159,7 @@
 }
 
 .totalCard {
-  min-width: 13.75rem;
+  min-width: 13.9rem;
   padding: 1rem 1.1rem;
   border-radius: 1.45rem;
   background: rgba(255, 255, 255, 0.12);
@@ -149,7 +176,9 @@
 .titleBlock h3,
 .emptyState h2,
 .resultsTop h2,
-.resultsMeta strong {
+.resultsMeta strong,
+.viewerMetaCard strong,
+.sharePreviewCopy strong {
   color: var(--text-strong);
 }
 
@@ -230,45 +259,148 @@
 }
 
 .browseCopy {
-  max-width: 44rem;
+  max-width: 45rem;
 }
 
 .browseHeader h2,
 .resultsTop h2,
-.modalHeader h2 {
+.modalHeader h2,
+.filterDrawerHeader h2,
+.shareHeader h2 {
   margin: 0.6rem 0 0;
   font-size: clamp(1.6rem, 3vw, 2rem);
   line-height: 1.03;
   letter-spacing: -0.05em;
 }
 
-.browseHeader p,
-.modalHeader p,
-.modalSection p,
-.lockCard p,
-.ownerCard p,
-.emptyState p,
-.filterDrawerHeader p,
-.drawerSectionHead p {
-  margin: 0.42rem 0 0;
-  color: var(--text-muted);
-  line-height: 1.72;
+.toolbarRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) auto;
+  gap: 0.95rem;
+  margin-top: 1.1rem;
+  align-items: end;
 }
 
-.clearButton,
-.emptyButton,
+.toolbarSearch,
+.toolbarSelect,
+.field,
+.shareLinkField {
+  display: grid;
+  gap: 0.56rem;
+  padding: 0.88rem 0.92rem 0.96rem;
+  border-radius: 1.22rem;
+  border: 1px solid rgba(20, 55, 99, 0.08);
+  background: linear-gradient(180deg, #fbfdff 0%, #f4f8fc 100%);
+}
+
+.toolbarSearch span,
+.toolbarSelect span,
+.field span,
+.statLabel,
+.shareLinkField span {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #6b84a0;
+}
+
+.toolbarSearchInputWrap {
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  left: 1rem;
+  transform: translateY(-50%);
+  color: #6885a6;
+  pointer-events: none;
+}
+
+.searchIcon svg,
+.buttonIcon svg,
+.galleryArrow svg,
+.shareActionIcon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.toolbarSearch input,
+.toolbarSelect select,
+.field input,
+.field select,
+.shareLinkField input {
+  width: 100%;
+  min-height: 3.35rem;
+  padding: 0.94rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(20, 55, 99, 0.12);
+  background: #ffffff;
+  color: var(--text-strong);
+  outline: none;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.toolbarSearch input {
+  min-height: 4rem;
+  padding-left: 3rem;
+  font-size: 1rem;
+}
+
+.toolbarSearch input::placeholder,
+.field input::placeholder,
+.shareLinkField input::placeholder {
+  color: #8ca0b6;
+}
+
+.toolbarSearch input:focus,
+.toolbarSelect select:focus,
+.field input:focus,
+.field select:focus,
+.shareLinkField input:focus {
+  border-color: rgba(43, 98, 166, 0.34);
+  box-shadow: 0 0 0 4px rgba(43, 98, 166, 0.1);
+}
+
+.browseActions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.toolbarSelect {
+  min-width: 15rem;
+}
+
+.filterToggle,
+.cardSecondaryButton,
+.sharePrimaryButton,
+.applyButton,
 .primaryAction,
 .secondaryAction,
-.galleryArrow,
-.closeButton,
+.emptyButton,
 .pageButton,
 .pageNavButton,
 .deleteAction,
-.filterToggle,
 .drawerCloseButton,
-.applyButton,
+.closeButton,
+.shareCloseButton,
+.galleryArrow,
 .clearInlineButton,
-.resetTextButton {
+.resetTextButton,
+.quickFilterButton,
+.pill,
+.cardPrimaryButton,
+.shareActionButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -282,87 +414,58 @@
     opacity 180ms ease;
 }
 
-.clearButton,
+.filterToggle:hover,
+.card:hover,
+.cardSecondaryButton:hover,
+.sharePrimaryButton:hover,
+.applyButton:hover,
+.primaryAction:hover,
+.secondaryAction:hover,
+.emptyButton:hover,
+.pageButton:hover,
+.pageNavButton:hover,
+.deleteAction:hover,
+.drawerCloseButton:hover,
+.closeButton:hover,
+.shareCloseButton:hover,
+.galleryArrow:hover,
+.quickFilterButton:hover,
+.cardPrimaryButton:hover,
+.shareActionButton:hover,
+.pill:hover {
+  transform: translateY(-1px);
+}
+
+.filterToggle,
+.cardSecondaryButton,
 .secondaryAction,
 .emptyButton,
 .pageButton,
-.pageNavButton {
+.pageNavButton,
+.quickFilterButton,
+.cardPrimaryButton,
+.shareActionButton,
+.drawerCloseButton,
+.shareCloseButton,
+.closeButton,
+.galleryArrow,
+.deleteAction {
   min-height: 3.1rem;
   padding: 0 1.05rem;
-  border-radius: 0.98rem;
+  border-radius: 1rem;
   border: 1px solid rgba(20, 55, 99, 0.12);
   background: #ffffff;
   color: #274c7d;
   font-weight: 700;
 }
 
-.clearButton:hover,
-.secondaryAction:hover,
-.emptyButton:hover,
-.primaryAction:hover,
-.card:hover,
-.galleryArrow:hover,
-.closeButton:hover,
-.pageButton:hover,
-.pageNavButton:hover,
-.deleteAction:hover {
-  transform: translateY(-1px);
-}
-
-.browseActions {
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.toolbarSelect {
-  display: grid;
-  gap: 0.48rem;
-  min-width: 15rem;
-  padding: 0.82rem 0.88rem 0.9rem;
-  border-radius: 1.16rem;
-  border: 1px solid rgba(20, 55, 99, 0.08);
-  background: linear-gradient(180deg, #fbfdff 0%, #f4f8fc 100%);
-}
-
-.toolbarSelect span {
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #6b84a0;
-}
-
-.toolbarSelect select {
-  width: 100%;
-  min-height: 3.1rem;
-  padding: 0.84rem 0.95rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(20, 55, 99, 0.12);
-  background: #ffffff;
-  color: var(--text-strong);
-  outline: none;
-  transition:
-    border-color 180ms ease,
-    box-shadow 180ms ease,
-    background 180ms ease;
-}
-
-.toolbarSelect select:focus {
-  border-color: rgba(43, 98, 166, 0.34);
-  box-shadow: 0 0 0 4px rgba(43, 98, 166, 0.1);
-}
-
 .filterToggle {
-  min-height: 4.1rem;
+  min-height: 4.15rem;
   padding: 0 1.1rem;
   border-radius: 1.16rem;
-  border: 1px solid rgba(31, 90, 159, 0.14);
+  border-color: rgba(31, 90, 159, 0.14);
   background: linear-gradient(180deg, #f6fbff 0%, #edf5ff 100%);
   color: var(--text-strong);
-  font-weight: 800;
   gap: 0.8rem;
   box-shadow: 0 14px 28px rgba(17, 43, 78, 0.08);
 }
@@ -380,6 +483,58 @@
   font-size: 0.84rem;
   line-height: 1;
   box-shadow: 0 10px 18px rgba(29, 79, 136, 0.16);
+}
+
+.quickFilterRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.95rem;
+}
+
+.quickFilterButton {
+  min-height: 2.75rem;
+  padding: 0 0.95rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.quickFilterButtonActive,
+.pageButtonActive,
+.primaryAction,
+.applyButton,
+.cardPrimaryButton,
+.sharePrimaryButton,
+.shareActionPrimary {
+  background: linear-gradient(180deg, #2f6fb8 0%, #1d4f88 100%);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(29, 79, 136, 0.18);
+}
+
+.cardPrimaryButton,
+.sharePrimaryButton,
+.primaryAction {
+  gap: 0.55rem;
+}
+
+.sharePrimaryButton {
+  min-height: 3.35rem;
+  padding: 0 1.1rem;
+}
+
+.shareActionSecondary {
+  background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%);
+  border-color: rgba(62, 110, 213, 0.18);
+  color: #24508a;
+}
+
+.buttonIcon,
+.shareActionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .activeFilterBar {
@@ -404,213 +559,20 @@
 }
 
 .browseHint {
-  margin: 0.95rem 0 0;
+  margin: 1rem 0 0;
   color: var(--text-muted);
   line-height: 1.68;
 }
 
-.filterOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 115;
-  display: flex;
-  justify-content: flex-end;
-  background: rgba(7, 20, 40, 0.34);
-  backdrop-filter: blur(6px);
-}
-
-.filterDrawer {
-  width: min(460px, 100%);
-  height: 100%;
-  padding: 1.15rem 1rem 1rem;
-  border-left: 1px solid rgba(20, 55, 99, 0.08);
-  background: #ffffff;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 1rem;
-  animation: filterDrawerIn 180ms ease-out;
-}
-
-.filterDrawerHeader {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.9rem;
-  align-items: flex-start;
-  padding: 0.1rem 0.1rem 0 0.1rem;
-}
-
-.filterDrawerHeader h2 {
-  margin: 0.6rem 0 0;
-  font-size: clamp(1.55rem, 3vw, 1.95rem);
-  line-height: 1.04;
-  letter-spacing: -0.05em;
-}
-
-.drawerCloseButton {
-  width: 2.7rem;
-  height: 2.7rem;
-  border-radius: 999px;
-  border: 1px solid rgba(16, 42, 34, 0.08);
-  background: rgba(255, 255, 255, 0.94);
-  color: var(--text-strong);
-  box-shadow: 0 10px 18px rgba(16, 42, 34, 0.08);
-  font-size: 1.25rem;
-}
-
-.filterDrawerBody {
-  overflow: auto;
-  padding: 0 0.1rem 0.25rem;
-  display: grid;
-  align-content: start;
-  gap: 0.9rem;
-}
-
-.drawerSection {
-  padding: 1rem;
-  border-radius: 1.35rem;
-  border: 1px solid rgba(20, 55, 99, 0.08);
-  background: linear-gradient(180deg, #fbfdff 0%, #f5f9ff 100%);
-}
-
-.drawerSectionHead h3 {
-  margin: 0;
-  font-size: 1rem;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  color: var(--text-strong);
-}
-
-.drawerSectionHead p {
-  margin: 0.38rem 0 0.9rem;
-  font-size: 0.94rem;
-}
-
-.drawerGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
-}
-
-.drawerSearchField {
-  background: #ffffff;
-}
-
-.filterDrawerFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.85rem 0.1rem 0.1rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #ffffff 24%, #ffffff 100%);
-}
-
-.applyButton {
-  min-height: 3.35rem;
-  padding: 0 1.1rem;
-  border-radius: 1rem;
-  border: 1px solid transparent;
-  background: linear-gradient(180deg, #2f6fb8 0%, #1d4f88 100%);
-  color: #ffffff;
-  font-weight: 800;
-  box-shadow: 0 12px 24px rgba(29, 79, 136, 0.18);
-  white-space: nowrap;
-}
-
-@keyframes filterDrawerIn {
-  from {
-    transform: translateX(28px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-.filterGrid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 1rem;
-  margin-top: 1.55rem;
-  align-items: start;
-}
-
-.searchField {
-  grid-column: 1 / -1;
-}
-
-.brandField,
-.modelField,
-.provinceField {
-  grid-column: span 4;
-}
-
-.driveField,
-.typeField {
-  grid-column: span 3;
-}
-
-.sortField {
-  grid-column: span 6;
-}
-
-.field {
-  display: grid;
-  gap: 0.58rem;
-  padding: 0.88rem 0.92rem 0.96rem;
-  border-radius: 1.22rem;
-  border: 1px solid rgba(20, 55, 99, 0.08);
-  background: linear-gradient(180deg, #fbfdff 0%, #f4f8fc 100%);
-}
-
-.field span,
-.statLabel {
-  font-size: 0.76rem;
-  font-weight: 800;
-  color: #6b84a0;
-}
-
-.field input,
-.field select {
-  width: 100%;
-  min-height: 3.35rem;
-  padding: 0.94rem 1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(20, 55, 99, 0.12);
-  background: #ffffff;
-  color: var(--text-strong);
-  outline: none;
-  transition:
-    border-color 180ms ease,
-    box-shadow 180ms ease,
-    background 180ms ease;
-}
-
-.field input::placeholder {
-  color: #8ca0b6;
-}
-
-.searchField input {
-  min-height: 3.55rem;
-  font-size: 1rem;
-}
-
-.field input:focus,
-.field select:focus {
-  border-color: rgba(43, 98, 166, 0.34);
-  box-shadow: 0 0 0 4px rgba(43, 98, 166, 0.1);
-}
-
-.pillRow {
+.pillRow,
+.modalMetaRow {
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
-  margin-top: 1.15rem;
-  padding-top: 0.1rem;
 }
 
-.pill {
+.pill,
+.metaPill {
   display: inline-flex;
   align-items: center;
   min-height: 2.15rem;
@@ -621,6 +583,22 @@
   color: #204d84;
   font-size: 0.88rem;
   font-weight: 700;
+}
+
+.pill {
+  gap: 0.52rem;
+}
+
+.pill strong {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.metaPill {
+  min-height: 2rem;
+  background: rgba(20, 55, 99, 0.05);
+  border-color: rgba(20, 55, 99, 0.08);
+  color: #4a6482;
 }
 
 .resultsTop {
@@ -644,11 +622,23 @@
   letter-spacing: -0.04em;
 }
 
-.resultsMeta small {
+.resultsMeta small,
+.priceBlock small,
+.modalPriceBlock small,
+.modalPriceBlock span,
+.sharePreviewCopy span,
+.sharePreviewCopy small,
+.shareCaption,
+.shareFeedback,
+.paginationCopy,
+.cardDate {
   display: block;
-  margin-top: 0.25rem;
   color: var(--text-muted);
   line-height: 1.45;
+}
+
+.resultsMeta small {
+  margin-top: 0.25rem;
 }
 
 .grid {
@@ -660,7 +650,7 @@
 .card {
   display: grid;
   align-content: start;
-  gap: 1rem;
+  gap: 0.95rem;
   padding: 1.1rem;
   border-radius: 1.6rem;
   background: rgba(255, 255, 255, 0.98);
@@ -676,10 +666,11 @@
 
 .card:focus-visible {
   outline: none;
-  border-color: rgba(43, 98, 166, 0.28);
+  border-color: rgba(43, 98, 166, 0.26);
   box-shadow:
     0 0 0 4px rgba(43, 98, 166, 0.1),
-    0 22px 42px rgba(16, 42, 34, 0.08);
+    0 22px 42px rgba(16, 42, 34, 0.08),
+    0 10px 20px rgba(16, 42, 34, 0.04);
 }
 
 .imageFrame,
@@ -698,22 +689,42 @@
 
 .modalImageFrame {
   aspect-ratio: 4 / 3;
-  min-height: 100%;
 }
 
 .image,
-.modalImage {
+.modalImage,
+.thumbImage,
+.sharePreviewImage {
   width: 100%;
   height: 100%;
   display: block;
   object-fit: contain;
+}
+
+.image,
+.modalImage {
   padding: 1.05rem;
+}
+
+.thumbImage,
+.sharePreviewImage {
+  object-fit: cover;
+}
+
+.imageTopRow {
+  position: absolute;
+  top: 0.85rem;
+  left: 0.85rem;
+  right: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.65rem;
+  align-items: flex-start;
 }
 
 .imageTag,
 .photoCount,
 .modalBadge {
-  position: absolute;
   display: inline-flex;
   align-items: center;
   min-height: 2rem;
@@ -726,13 +737,13 @@
   font-weight: 800;
 }
 
-.imageTag {
-  top: 0.85rem;
-  left: 0.85rem;
-}
-
 .photoCount,
 .modalBadge {
+  margin-left: auto;
+}
+
+.modalBadge {
+  position: absolute;
   right: 0.85rem;
   bottom: 0.85rem;
 }
@@ -792,15 +803,6 @@
   font-size: 1.55rem;
 }
 
-.priceBlock small,
-.modalPriceBlock small,
-.modalPriceBlock span,
-.cardDate {
-  display: block;
-  color: var(--text-muted);
-  line-height: 1.45;
-}
-
 .priceBlock small {
   margin-top: 0.26rem;
 }
@@ -818,15 +820,40 @@
   font-size: 0.88rem;
 }
 
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.summaryLine {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.65;
+  font-size: 0.94rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .compactStats,
-.modalStats {
+.modalStats,
+.modalInfoGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.8rem;
 }
 
+.compactStats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .modalStats {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.modalInfoGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .statCard {
@@ -846,21 +873,19 @@
 .cardFooter {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
 }
 
-.clickHint {
-  color: #275183;
-  font-size: 0.92rem;
-  font-weight: 800;
-  line-height: 1.35;
+.cardPrimaryButton,
+.cardSecondaryButton {
+  flex: 1 1 0;
 }
 
-.cardDate {
-  margin-top: 0;
-  text-align: right;
-  white-space: nowrap;
+.cardSecondaryButton,
+.shareActionButton {
+  gap: 0.55rem;
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .emptyState {
@@ -893,7 +918,6 @@
 }
 
 .paginationCopy {
-  color: var(--text-muted);
   font-size: 0.95rem;
   font-weight: 700;
 }
@@ -908,13 +932,6 @@
 .pageButton,
 .pageNavButton {
   min-width: 3rem;
-}
-
-.pageButtonActive {
-  background: linear-gradient(180deg, #2f6fb8 0%, #1d4f88 100%);
-  border-color: transparent;
-  color: #ffffff;
-  box-shadow: 0 12px 24px rgba(29, 79, 136, 0.18);
 }
 
 .pageNavButton:disabled,
@@ -933,82 +950,177 @@
   font-weight: 700;
 }
 
-.modalOverlay {
+.filterOverlay,
+.modalOverlay,
+.shareOverlay {
   position: fixed;
   inset: 0;
-  z-index: 120;
-  display: grid;
-  place-items: center;
-  padding: 1rem;
-  background: rgba(7, 20, 40, 0.58);
+  display: flex;
+  background: rgba(7, 20, 40, 0.46);
   backdrop-filter: blur(10px);
 }
 
-.modal {
-  position: relative;
-  width: min(1120px, 100%);
-  max-height: min(92vh, 980px);
-  overflow: auto;
-  border-radius: 1.9rem;
-  background: #ffffff;
+.filterOverlay {
+  z-index: 115;
+  justify-content: flex-end;
 }
 
+.modalOverlay {
+  z-index: 120;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.shareOverlay {
+  z-index: 125;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.filterDrawer {
+  width: min(470px, 100%);
+  height: 100%;
+  padding: 1.15rem 1rem 1rem;
+  border-left: 1px solid rgba(20, 55, 99, 0.08);
+  background: #ffffff;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 1rem;
+  animation: filterDrawerIn 180ms ease-out;
+}
+
+.filterDrawerHeader {
+  padding: 0.1rem 0.1rem 0 0.1rem;
+}
+
+.drawerCloseButton,
+.shareCloseButton,
 .closeButton,
 .galleryArrow {
-  border: 1px solid rgba(16, 42, 34, 0.08);
-  background: rgba(255, 255, 255, 0.94);
-  color: var(--text-strong);
-}
-
-.closeButton {
-  position: absolute;
-  top: 0.95rem;
-  right: 0.95rem;
-  z-index: 4;
   width: 2.75rem;
+  min-width: 2.75rem;
   height: 2.75rem;
+  padding: 0;
   border-radius: 999px;
   font-size: 1.35rem;
   box-shadow: 0 10px 18px rgba(16, 42, 34, 0.08);
 }
 
+.filterDrawerBody {
+  overflow: auto;
+  padding: 0 0.1rem 0.25rem;
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+}
+
+.drawerSection {
+  padding: 1rem;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(20, 55, 99, 0.08);
+  background: linear-gradient(180deg, #fbfdff 0%, #f5f9ff 100%);
+}
+
+.drawerSectionHead h3 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+}
+
+.drawerSectionHead p {
+  margin: 0.38rem 0 0.9rem;
+  font-size: 0.94rem;
+}
+
+.drawerGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.drawerGridSingle {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.filterDrawerFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0.1rem 0.1rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #ffffff 24%, #ffffff 100%);
+}
+
+.applyButton {
+  min-height: 3.35rem;
+  padding: 0 1.1rem;
+  border-radius: 1rem;
+  white-space: nowrap;
+}
+
+@keyframes filterDrawerIn {
+  from {
+    transform: translateX(28px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.modal {
+  position: relative;
+  width: min(1120px, 100%);
+  max-height: min(88vh, 900px);
+  border-radius: 1.9rem;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.closeButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 6;
+}
+
 .modalLayout {
   display: grid;
-  grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
-  gap: 1.15rem;
-  padding: 1rem;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  min-height: min(88vh, 900px);
 }
 
-.viewer,
+.viewer {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+  padding: 1rem;
+  background: linear-gradient(180deg, #fbfdff 0%, #f5f8fc 100%);
+  border-right: 1px solid rgba(20, 55, 99, 0.08);
+}
+
 .modalContent {
   min-width: 0;
-}
-
-.modalContent {
   display: grid;
   align-content: start;
   gap: 0.95rem;
-  padding: 0.25rem 0.15rem 0.25rem 0;
-}
-
-.modalHeader {
-  padding-right: 4.1rem;
-  align-items: flex-start;
-}
-
-.modalHeader h2 {
-  max-width: 14ch;
+  padding: 1.1rem 1.15rem 1.15rem 0.2rem;
+  overflow: auto;
 }
 
 .galleryArrow {
   position: absolute;
   top: 50%;
   z-index: 3;
-  width: 2.7rem;
-  height: 2.7rem;
-  border-radius: 999px;
   transform: translateY(-50%);
-  box-shadow: 0 10px 18px rgba(16, 42, 34, 0.08);
 }
 
 .leftArrow {
@@ -1019,12 +1131,85 @@
   right: 0.85rem;
 }
 
-.modalSection,
-.lockCard,
-.ownerCard {
+.thumbRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+  gap: 0.55rem;
+}
+
+.thumbButton {
+  padding: 0.22rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(20, 55, 99, 0.1);
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.thumbButton:hover {
+  transform: translateY(-1px);
+  border-color: rgba(31, 90, 159, 0.18);
+}
+
+.thumbButtonActive {
+  border-color: rgba(43, 98, 166, 0.28);
+  box-shadow: 0 0 0 4px rgba(43, 98, 166, 0.08);
+}
+
+.thumbImage {
+  aspect-ratio: 1 / 1;
+  border-radius: 0.72rem;
+}
+
+.viewerMetaCard {
   padding: 1rem;
   border-radius: 1.2rem;
-  border: 1px solid rgba(31, 90, 159, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.viewerMetaCard strong {
+  display: block;
+  margin-top: 0.38rem;
+  font-size: 1.1rem;
+  letter-spacing: -0.03em;
+}
+
+.modalHeader {
+  padding-right: 4.15rem;
+  align-items: flex-start;
+}
+
+.modalHeader h2 {
+  max-width: 15ch;
+}
+
+.modalActionStrip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1rem;
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, #fbfdff 0%, #f3f8ff 100%);
+  border: 1px solid rgba(31, 90, 159, 0.1);
+}
+
+.modalActionHint {
+  margin: 0;
+  font-weight: 600;
+}
+
+.modalSection,
+.lockCard,
+.ownerCard,
+.sharePreviewCard,
+.shareLinkField {
+  padding: 1rem;
+  border-radius: 1.2rem;
 }
 
 .modalSection {
@@ -1052,33 +1237,109 @@
   gap: 0.7rem;
 }
 
-.primaryAction {
-  min-height: 3rem;
-  padding: 0 1rem;
-  border-radius: 0.95rem;
-  border: 1px solid transparent;
-  background: linear-gradient(180deg, #2f6fb8 0%, #1d4f88 100%);
-  color: #ffffff;
-  font-weight: 800;
-  box-shadow: 0 12px 24px rgba(29, 79, 136, 0.18);
-}
-
-.secondaryAction {
-  background: rgba(255, 255, 255, 0.92);
-}
-
 .deleteAction {
-  min-height: 3rem;
-  padding: 0 1rem;
-  border-radius: 0.95rem;
-  border: 1px solid rgba(177, 50, 50, 0.18);
-  background: #ffffff;
   color: #b13232;
-  font-weight: 800;
-  white-space: nowrap;
+  border-color: rgba(177, 50, 50, 0.18);
 }
 
-@media (max-width: 1024px) {
+.shareDialog {
+  position: relative;
+  width: min(640px, 100%);
+  max-height: min(88vh, 820px);
+  overflow: auto;
+  padding: 1.15rem;
+  border-radius: 1.75rem;
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.shareHeader {
+  padding-right: 3.4rem;
+}
+
+.shareCloseButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 3;
+}
+
+.sharePreviewCard {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  gap: 0.95rem;
+  align-items: center;
+  margin-top: 1rem;
+  background: linear-gradient(180deg, #fbfdff 0%, #f3f8ff 100%);
+}
+
+.sharePreviewImage {
+  width: 104px;
+  height: 104px;
+  border-radius: 1rem;
+  border: 1px solid rgba(20, 55, 99, 0.08);
+  background: #eef4fb;
+}
+
+.sharePreviewCopy strong {
+  display: block;
+  font-size: 1.08rem;
+  letter-spacing: -0.03em;
+}
+
+.sharePreviewCopy span {
+  margin-top: 0.35rem;
+  font-weight: 700;
+}
+
+.sharePreviewCopy small {
+  margin-top: 0.26rem;
+}
+
+.shareGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.shareActionButton {
+  min-height: 3.3rem;
+  justify-content: flex-start;
+  padding: 0 1rem;
+}
+
+.shareActionIcon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.shareLinkField {
+  margin-top: 1rem;
+}
+
+.shareLinkField input {
+  font-size: 0.95rem;
+}
+
+.shareFeedback {
+  margin: 0.7rem 0 0;
+  color: #24508a;
+  font-weight: 700;
+}
+
+.shareCaption {
+  margin: 0.75rem 0 0;
+}
+
+@media (max-width: 1180px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .toolbarRow {
+    grid-template-columns: 1fr;
+  }
+
   .browseActions {
     width: 100%;
     justify-content: stretch;
@@ -1093,43 +1354,30 @@
     flex: 1 1 14rem;
     justify-content: space-between;
   }
-}
-
-@media (max-width: 1180px) {
-  .filterGrid {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
-  .searchField {
-    grid-column: 1 / -1;
-  }
-
-  .brandField,
-  .modelField,
-  .provinceField,
-  .driveField,
-  .typeField,
-  .sortField {
-    grid-column: span 3;
-  }
-
-  .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 
   .modalLayout {
     grid-template-columns: 1fr;
   }
 
+  .viewer {
+    border-right: 0;
+    border-bottom: 1px solid rgba(20, 55, 99, 0.08);
+  }
+
   .modalContent {
-    padding: 0 0.15rem 0.2rem;
+    padding: 0 1rem 1rem;
+  }
+
+  .modalHeader h2 {
+    max-width: none;
   }
 }
 
 @media (max-width: 900px) {
   .statsRow,
+  .drawerGrid,
   .modalStats,
-  .drawerGrid {
+  .modalInfoGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1144,12 +1392,13 @@
   .browseShell,
   .emptyState,
   .modal,
-  .paginationShell {
+  .paginationShell,
+  .shareDialog {
     border-radius: 1.45rem;
   }
 
   .hero {
-    padding: 1.1rem;
+    padding: 1.15rem;
   }
 
   .heroCopy h1 {
@@ -1158,34 +1407,37 @@
   }
 
   .statsRow,
-  .filterGrid,
   .grid,
   .compactStats,
   .modalStats,
-  .drawerGrid {
+  .modalInfoGrid,
+  .drawerGrid,
+  .shareGrid {
     grid-template-columns: 1fr;
   }
 
-  .searchField,
-  .brandField,
-  .modelField,
-  .driveField,
-  .typeField,
-  .provinceField,
-  .sortField {
-    grid-column: auto;
-  }
-
+  .toolbarRow,
   .browseActions,
   .activeFilterBar,
-  .filterDrawerFooter {
+  .filterDrawerFooter,
+  .cardFooter,
+  .resultsTop,
+  .modalHeader,
+  .modalActionStrip,
+  .paginationShell,
+  .sharePreviewCard {
+    display: flex;
     flex-direction: column;
     align-items: stretch;
   }
 
   .toolbarSelect,
   .filterToggle,
-  .applyButton {
+  .applyButton,
+  .sharePrimaryButton,
+  .cardPrimaryButton,
+  .cardSecondaryButton,
+  .shareActionButton {
     width: 100%;
   }
 
@@ -1194,46 +1446,44 @@
     padding: 1rem 0.8rem 0.85rem;
   }
 
-  .cardHead,
-  .cardFooter,
-  .resultsTop,
-  .modalHeader,
-  .paginationShell {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
+  .resultsMeta,
   .priceBlock,
   .modalPriceBlock,
-  .resultsMeta,
   .cardDate {
     text-align: left;
   }
 
-  .modalOverlay {
+  .modalOverlay,
+  .shareOverlay {
     padding: 0.55rem;
   }
 
   .modal {
     max-height: calc(100vh - 1.1rem);
-  }
-
-  .closeButton {
-    top: 0.7rem;
-    right: 0.7rem;
+    overflow: auto;
   }
 
   .modalLayout {
-    gap: 0.9rem;
+    min-height: auto;
+  }
+
+  .viewer {
     padding: 0.8rem;
   }
 
-  .modalImageFrame {
-    aspect-ratio: 4 / 3;
+  .modalContent {
+    overflow: visible;
+    padding: 0 0.8rem 0.8rem;
   }
 
   .modalHeader {
     padding-right: 0;
+  }
+
+  .closeButton,
+  .shareCloseButton {
+    top: 0.7rem;
+    right: 0.7rem;
   }
 
   .paginationControls {
