@@ -15,34 +15,44 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
   gap: clamp(3rem, 5vw, 6.5rem);
-  padding: clamp(3.2rem, 5vw, 4.3rem) 0 clamp(2.45rem, 4vw, 3rem);
+  padding: clamp(3.1rem, 4.8vw, 4rem) 0 clamp(2.45rem, 4vw, 3rem);
 }
 
 .brandBlock {
   display: grid;
   align-content: start;
-  max-width: 34rem;
+  max-width: 35rem;
   min-width: 0;
 }
 
-.brandMark {
-  width: 3.15rem;
-  height: auto;
-  margin: 0 0 0.95rem;
+.brandHeader {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  width: fit-content;
+  padding-top: 0.28rem;
 }
 
 .brandName {
   margin: 0;
   color: #ffffff;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(2.05rem, 3.55vw, 3.1rem);
+  font-size: clamp(2.05rem, 3.55vw, 3.05rem);
   font-weight: 800;
   line-height: 0.94;
   letter-spacing: -0.065em;
 }
 
+.brandMark {
+  width: 2.35rem;
+  height: auto;
+  flex: 0 0 auto;
+  margin-top: 0.22rem;
+  opacity: 0.98;
+}
+
 .brandText {
-  margin: 1.05rem 0 0;
+  margin: 1.08rem 0 0;
   max-width: 31rem;
   color: rgba(232, 242, 237, 0.88);
   font-size: 1rem;
@@ -106,7 +116,7 @@
   align-items: start;
   column-gap: clamp(2.8rem, 4.2vw, 5.5rem);
   row-gap: 1.2rem;
-  padding-top: 0.3rem;
+  padding-top: 0.28rem;
 }
 
 .linkColumn {
@@ -199,9 +209,14 @@
     padding: 2.45rem 0 2rem;
   }
 
+  .brandHeader {
+    gap: 0.72rem;
+    padding-top: 0;
+  }
+
   .brandMark {
-    width: 2.85rem;
-    margin-bottom: 0.82rem;
+    width: 2rem;
+    margin-top: 0.15rem;
   }
 
   .brandText {
@@ -222,6 +237,7 @@
   .linksGrid {
     grid-template-columns: 1fr;
     gap: 1.45rem;
+    padding-top: 0;
   }
 
   .linkColumn {
