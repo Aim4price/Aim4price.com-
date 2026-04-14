@@ -100,8 +100,6 @@ export default function HomePage() {
               <p className={styles.workflowEyebrow}>How Aim4price works</p>
               <h2 className={styles.workflowTitle}>A clean path from value to action.</h2>
               <p className={styles.workflowText}>
-                Users should understand the platform quickly: value machinery first, save records,
-                then move to market when the time is right.
               </p>
             </div>
 
