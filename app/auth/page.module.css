@@ -2,15 +2,15 @@
   min-height: 100vh;
   color: var(--text-strong);
   background:
-    radial-gradient(circle at 0% 0%, rgba(24, 77, 61, 0.09), transparent 28%),
-    radial-gradient(circle at 100% 0%, rgba(43, 98, 156, 0.055), transparent 24%),
+    radial-gradient(circle at 0% 0%, rgba(24, 77, 61, 0.08), transparent 28%),
+    radial-gradient(circle at 100% 0%, rgba(43, 98, 156, 0.045), transparent 24%),
     linear-gradient(180deg, #fbfcfb 0%, #f2f5f3 100%);
 }
 
 .shell {
   width: var(--shell-width);
   margin: 0 auto;
-  padding: 1.38rem 0 3.2rem;
+  padding: 1.45rem 0 3.2rem;
 }
 
 .topBar {
@@ -18,57 +18,44 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.2rem;
+  margin-bottom: 1.28rem;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.92rem;
+  gap: 0.88rem;
   min-width: 0;
   text-decoration: none;
   color: var(--text-strong);
 }
 
-.brandBadge {
-  width: 3.2rem;
-  height: 3.2rem;
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 auto;
-  border-radius: 1rem;
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 10px 20px rgba(18, 45, 37, 0.05);
-}
-
 .brandMark {
-  width: 2.3rem;
+  width: 2.95rem;
   height: auto;
+  flex: 0 0 auto;
   object-fit: contain;
 }
 
 .brandCopy {
   display: grid;
-  gap: 0.18rem;
+  gap: 0.2rem;
   min-width: 0;
 }
 
 .brandTitle {
-  font-size: 1.72rem;
-  line-height: 0.98;
+  font-size: 2rem;
+  line-height: 0.94;
   font-weight: 800;
-  letter-spacing: -0.05em;
-  color: #1d3b31;
+  letter-spacing: -0.06em;
+  color: #17362c;
 }
 
 .brandSubtext {
-  font-size: 0.69rem;
-  line-height: 1.38;
+  font-size: 0.71rem;
+  line-height: 1.32;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   color: #6d7a74;
 }
@@ -78,7 +65,7 @@
   align-items: center;
   justify-content: center;
   min-height: 3.05rem;
-  padding: 0 1.14rem;
+  padding: 0 1.16rem;
   border-radius: 999px;
   border: 1px solid rgba(18, 45, 37, 0.1);
   background: rgba(255, 255, 255, 0.92);
@@ -104,7 +91,7 @@
 
 .frame {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.92fr);
+  grid-template-columns: minmax(0, 1.06fr) minmax(22rem, 0.94fr);
   gap: 1.08rem;
   padding: 1.05rem;
   border-radius: 2.15rem;
@@ -127,24 +114,24 @@
   position: relative;
   display: grid;
   align-content: start;
-  gap: 1rem;
-  padding: 1.45rem;
+  gap: 1.08rem;
+  padding: 1.52rem;
   border: 1px solid rgba(18, 45, 37, 0.07);
   background:
-    radial-gradient(circle at top left, rgba(24, 77, 61, 0.08), transparent 30%),
-    linear-gradient(180deg, #f6faf7 0%, #edf3ef 100%);
+    radial-gradient(circle at top left, rgba(24, 77, 61, 0.075), transparent 31%),
+    linear-gradient(180deg, #f7faf8 0%, #edf3ef 100%);
   overflow: hidden;
 }
 
 .showcase::before {
   content: '';
   position: absolute;
-  left: -5rem;
+  left: -6rem;
   bottom: -7rem;
   width: 18rem;
   height: 18rem;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(24, 77, 61, 0.08) 0%, rgba(24, 77, 61, 0) 72%);
+  background: radial-gradient(circle, rgba(24, 77, 61, 0.065) 0%, rgba(24, 77, 61, 0) 72%);
   pointer-events: none;
 }
 
@@ -152,7 +139,7 @@
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 0.84rem;
+  gap: 0.78rem;
 }
 
 .eyebrow,
@@ -179,11 +166,11 @@
 
 .showcaseTitle {
   margin: 0;
-  max-width: 12ch;
-  font-size: clamp(2.75rem, 4.1vw, 4.55rem);
-  line-height: 0.92;
+  max-width: 11ch;
+  font-size: clamp(2.65rem, 3.75vw, 4.15rem);
+  line-height: 0.94;
   font-weight: 800;
-  letter-spacing: -0.065em;
+  letter-spacing: -0.068em;
   color: #1f3831;
   text-wrap: balance;
 }
@@ -196,30 +183,35 @@
   color: #62706b;
 }
 
-.visualPanel {
+.workspaceCard {
   position: relative;
   z-index: 1;
   display: grid;
   gap: 1rem;
-  padding: 1.05rem;
-  border-radius: 1.5rem;
+  padding: 1.08rem;
+  border-radius: 1.52rem;
   border: 1px solid rgba(18, 45, 37, 0.08);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.76) 0%, rgba(244, 248, 245, 0.96) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(245, 249, 246, 0.96) 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.78),
-    0 18px 34px rgba(16, 42, 34, 0.07),
-    0 8px 20px rgba(16, 42, 34, 0.04);
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 18px 34px rgba(16, 42, 34, 0.06),
+    0 8px 20px rgba(16, 42, 34, 0.035);
 }
 
-.visualTopRow {
+.workspaceTopRow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.9rem;
   flex-wrap: wrap;
 }
 
-.visualKicker {
+.workspaceMeta {
+  display: grid;
+  gap: 0.24rem;
+}
+
+.workspaceKicker {
   font-size: 0.76rem;
   line-height: 1.2;
   font-weight: 800;
@@ -228,10 +220,16 @@
   color: #6a7770;
 }
 
-.visualStatus {
+.workspaceMetaTitle {
+  font-size: 1rem;
+  line-height: 1.35;
+  font-weight: 800;
+  color: #203932;
+}
+
+.workspaceBadge {
   display: inline-flex;
   align-items: center;
-  gap: 0.46rem;
   min-height: 2rem;
   padding: 0 0.82rem;
   border-radius: 999px;
@@ -240,139 +238,105 @@
   color: #244338;
   font-size: 0.78rem;
   font-weight: 700;
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.05);
+  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.045);
 }
 
-.statusDot {
-  width: 0.48rem;
-  height: 0.48rem;
-  border-radius: 50%;
-  background: #1c6048;
-  box-shadow: 0 0 0 6px rgba(28, 96, 72, 0.12);
-}
-
-.visualMedia {
+.workspaceMedia {
   position: relative;
-  min-height: 16rem;
+  min-height: 15.5rem;
   border-radius: 1.28rem;
   overflow: hidden;
   border: 1px solid rgba(18, 45, 37, 0.08);
   background: linear-gradient(135deg, #dce6e1 0%, #eef3f0 100%);
   box-shadow:
-    0 22px 40px rgba(16, 42, 34, 0.08),
+    0 20px 38px rgba(16, 42, 34, 0.075),
     0 8px 22px rgba(16, 42, 34, 0.04);
 }
 
-.visualImage {
+.workspaceImage {
   object-fit: cover;
   object-position: center 24%;
 }
 
-.visualShade {
+.workspaceShade {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 28%),
-    linear-gradient(0deg, rgba(9, 25, 20, 0.2) 0%, rgba(9, 25, 20, 0.02) 42%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 26%),
+    linear-gradient(0deg, rgba(9, 25, 20, 0.24) 0%, rgba(9, 25, 20, 0.04) 44%);
   pointer-events: none;
 }
 
-.visualCard {
-  display: grid;
-  gap: 0.7rem;
-  padding: 1rem 1.05rem;
-  border-radius: 1.2rem;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  box-shadow: 0 14px 26px rgba(12, 36, 28, 0.05);
-}
-
-.visualCardEyebrow {
-  font-size: 0.74rem;
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #68756f;
-}
-
-.visualCardTitle {
-  font-size: 1.03rem;
-  line-height: 1.45;
-  font-weight: 800;
-  color: #1b372e;
-}
-
-.visualChipRail {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.56rem;
-}
-
-.visualChip {
+.mediaBadge {
+  position: absolute;
+  left: 0.9rem;
+  bottom: 0.9rem;
   display: inline-flex;
   align-items: center;
-  min-height: 2.12rem;
-  padding: 0 0.92rem;
+  min-height: 2.15rem;
+  padding: 0 0.95rem;
   border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(18, 45, 37, 0.08);
-  background: #f8fbf8;
-  color: #244438;
-  font-size: 0.81rem;
-  font-weight: 700;
-}
-
-.signalRail {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-radius: 1.28rem;
-  overflow: hidden;
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  background: rgba(255, 255, 255, 0.84);
-  box-shadow: 0 14px 26px rgba(12, 36, 28, 0.04);
-}
-
-.signalItem {
-  display: grid;
-  gap: 0.78rem;
-  padding: 1.06rem 1.1rem 1.14rem;
-}
-
-.signalItem + .signalItem {
-  border-left: 1px solid rgba(18, 45, 37, 0.08);
-}
-
-.signalNumber {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  border-radius: 999px;
-  background: rgba(24, 77, 61, 0.08);
-  color: #1b5944;
+  color: #1e3c33;
   font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
+  box-shadow: 0 10px 24px rgba(12, 36, 28, 0.08);
 }
 
-.signalCopy {
+.workspaceSummary {
   display: grid;
-  gap: 0.34rem;
+  gap: 0.3rem;
+  padding: 0.06rem 0.08rem 0;
 }
 
-.signalTitle {
-  font-size: 0.98rem;
-  line-height: 1.32;
+.workspaceSummaryTitle {
+  font-size: 1.05rem;
+  line-height: 1.5;
   font-weight: 800;
   color: #1b372e;
 }
 
-.signalText {
-  font-size: 0.88rem;
-  line-height: 1.58;
+.workspaceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.72rem;
+}
+
+.workspaceItem {
+  display: grid;
+  gap: 0.34rem;
+  padding: 0.95rem 0.92rem 1rem;
+  border-radius: 1.08rem;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.workspaceItemTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.94rem;
+  line-height: 1.28;
+  font-weight: 800;
+  color: #1d382f;
+}
+
+.workspaceItemTitle::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #1b6048;
+  box-shadow: 0 0 0 6px rgba(27, 96, 72, 0.11);
+  flex: 0 0 auto;
+}
+
+.workspaceItemText {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
   color: #66746f;
 }
 
@@ -673,13 +637,8 @@
 }
 
 @media (max-width: 1180px) {
-  .signalRail {
+  .workspaceGrid {
     grid-template-columns: 1fr;
-  }
-
-  .signalItem + .signalItem {
-    border-left: 0;
-    border-top: 1px solid rgba(18, 45, 37, 0.08);
   }
 }
 
@@ -702,17 +661,12 @@
     max-width: none;
   }
 
-  .visualMedia {
+  .workspaceMedia {
     min-height: 18rem;
   }
 
-  .signalRail {
+  .workspaceGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .signalItem + .signalItem {
-    border-top: 0;
-    border-left: 1px solid rgba(18, 45, 37, 0.08);
   }
 }
 
@@ -742,48 +696,37 @@
   }
 
   .brandTitle {
-    font-size: 1.5rem;
+    font-size: 1.72rem;
   }
 
   .showcaseTitle {
-    font-size: clamp(2.3rem, 9vw, 3.18rem);
+    font-size: clamp(2.2rem, 8.9vw, 3.1rem);
   }
 
   .authTitle {
     font-size: clamp(2rem, 8.2vw, 2.72rem);
   }
 
-  .visualPanel {
-    padding: 0.88rem;
+  .workspaceCard {
+    padding: 0.9rem;
   }
 
-  .visualMedia {
-    min-height: 15.5rem;
+  .workspaceMedia {
+    min-height: 15.4rem;
   }
 
-  .signalRail {
+  .workspaceGrid {
     grid-template-columns: 1fr;
-  }
-
-  .signalItem + .signalItem {
-    border-left: 0;
-    border-top: 1px solid rgba(18, 45, 37, 0.08);
   }
 }
 
 @media (max-width: 540px) {
   .brand {
-    gap: 0.74rem;
-  }
-
-  .brandBadge {
-    width: 2.9rem;
-    height: 2.9rem;
-    border-radius: 0.9rem;
+    gap: 0.68rem;
   }
 
   .brandMark {
-    width: 2.05rem;
+    width: 2.45rem;
   }
 
   .brandSubtext {
@@ -803,5 +746,14 @@
 
   .checkboxRow {
     font-size: 0.88rem;
+  }
+
+  .mediaBadge {
+    left: 0.72rem;
+    right: 0.72rem;
+    justify-content: center;
+    text-align: center;
+    min-height: 2rem;
+    padding: 0.35rem 0.8rem;
   }
 }
