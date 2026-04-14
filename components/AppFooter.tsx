@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import styles from './AppFooter.module.css';
 
@@ -36,13 +35,6 @@ export default function AppFooter() {
           <section className={styles.brandBlock} aria-label="Aim4price footer overview">
             <div className={styles.brandIdentity}>
               <span className={styles.brandName}>Aim4price</span>
-              <Image
-                src="/brand/aim4price-mark-white.png"
-                alt="Aim4price logo mark"
-                width={34}
-                height={34}
-                className={styles.brandMark}
-              />
             </div>
 
             <p className={styles.brandText}>
