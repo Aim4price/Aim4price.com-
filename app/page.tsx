@@ -34,14 +34,17 @@ export default function HomePage() {
 
       <section className={styles.heroSection}>
         <div className={styles.heroMedia}>
-          <Image
-            src="/brand/Home-page.png"
-            alt="Aim4price agricultural and industrial machinery pricing background"
-            fill
-            priority
-            sizes="100vw"
-            className={styles.heroBackground}
-          />
+          <video
+            className={styles.heroVideo}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            poster="/brand/Home-page.png"
+          >
+            <source src="/brand/AIM4PRICE.mp4" type="video/mp4" />
+          </video>
 
           <div className={styles.heroOverlay} />
 
@@ -59,10 +62,10 @@ export default function HomePage() {
 
                 <p className={styles.heroText}>
                   <span className={styles.heroTextLine}>
-                    Professional tools for valuing equipment, managing machinery
+                    Professional tools for valuing equipment, managing machinery records,
                   </span>
                   <span className={styles.heroTextLine}>
-                    records, and taking the next commercial step with more clarity.
+                    and taking the next commercial step with more clarity.
                   </span>
                 </p>
 
@@ -78,8 +81,8 @@ export default function HomePage() {
                   <Image
                     src="/brand/aim4price-mark-white.png"
                     alt=""
-                    width={760}
-                    height={760}
+                    width={640}
+                    height={640}
                     priority
                     className={styles.heroLogo}
                   />
