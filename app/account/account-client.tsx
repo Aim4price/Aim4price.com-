@@ -54,6 +54,8 @@ const initialProfileDraft: ProfileDraft = {
   notes: '',
 };
 
+const PROFILE_COMPLETION_TOTAL = 6;
+
 function buildProfileDraft(profile: AccountProfile | null): ProfileDraft {
   if (!profile) {
     return initialProfileDraft;
@@ -90,7 +92,6 @@ function countCompletedFields(profile: ProfileDraft): number {
     profile.businessName,
     profile.phone,
     profile.accountType,
-    profile.vatNumber,
     profile.province,
     profile.townCity,
     profile.addressLine1,
@@ -345,7 +346,7 @@ export default function AccountClient() {
           <div className={styles.heroAside}>
             <div className={styles.heroStat}>
               <span>Profile completion</span>
-              <strong>{completedFields}/7</strong>
+              <strong>{completedFields}/{PROFILE_COMPLETION_TOTAL}</strong>
             </div>
             <div className={styles.heroStat}>
               <span>Account type</span>
@@ -378,17 +379,17 @@ export default function AccountClient() {
               <p className={styles.loading}>Loading account details...</p>
             ) : (
               <form className={styles.form} onSubmit={handleProfileSubmit}>
-                <label className={styles.field}>
+                <label className={`${styles.field} ${styles.halfField}`}>
                   <span>Full name</span>
                   <input value={profile?.name ?? ''} disabled />
                 </label>
 
-                <label className={styles.field}>
+                <label className={`${styles.field} ${styles.halfField}`}>
                   <span>Email</span>
                   <input value={profile?.email ?? ''} disabled />
                 </label>
 
-                <label className={styles.field}>
+                <label className={`${styles.field} ${styles.halfField}`}>
                   <span>Business / farm / dealership</span>
                   <input
                     value={profileDraft.businessName}
@@ -399,16 +400,17 @@ export default function AccountClient() {
                   />
                 </label>
 
-                <label className={styles.field}>
+                <label className={`${styles.field} ${styles.halfField}`}>
                   <span>Phone</span>
                   <input
+                    type="tel"
                     value={profileDraft.phone}
                     onChange={(event) => setProfileDraft((current) => ({ ...current, phone: event.target.value }))}
                     placeholder="Phone number"
                   />
                 </label>
 
-                <label className={styles.field}>
+                <label className={`${styles.field} ${styles.thirdField}`}>
                   <span>Account type</span>
                   <select
                     value={profileDraft.accountType}
@@ -424,18 +426,7 @@ export default function AccountClient() {
                   </select>
                 </label>
 
-                <label className={styles.field}>
-                  <span>VAT number</span>
-                  <input
-                    value={profileDraft.vatNumber}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({ ...current, vatNumber: event.target.value }))
-                    }
-                    placeholder="VAT number"
-                  />
-                </label>
-
-                <label className={styles.field}>
+                <label className={`${styles.field} ${styles.thirdField}`}>
                   <span>Province</span>
                   <input
                     value={profileDraft.province}
@@ -444,7 +435,7 @@ export default function AccountClient() {
                   />
                 </label>
 
-                <label className={styles.field}>
+                <label className={`${styles.field} ${styles.thirdField}`}>
                   <span>Town / city</span>
                   <input
                     value={profileDraft.townCity}
