@@ -38,9 +38,7 @@
 }
 
 .brandIdentity {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.72rem;
+  display: inline-block;
   width: fit-content;
 }
 
@@ -52,14 +50,6 @@
   font-weight: 800;
   letter-spacing: -0.06em;
   white-space: nowrap;
-}
-
-.brandMark {
-  width: clamp(1.5rem, 1.75vw, 1.9rem);
-  height: auto;
-  flex: 0 0 auto;
-  transform: translateY(0.02rem);
-  opacity: 0.98;
 }
 
 .brandText {
@@ -212,10 +202,6 @@
 
   .brandName {
     font-size: clamp(1.85rem, 11vw, 2.35rem);
-  }
-
-  .brandMark {
-    width: 1.45rem;
   }
 
   .brandText {
