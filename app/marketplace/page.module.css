@@ -351,7 +351,42 @@
 .toolbarSearch input {
   min-height: 4rem;
   padding-left: 3rem;
+  padding-right: 3rem;
   font-size: 1rem;
+}
+
+.searchClearButton {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(20, 55, 99, 0.06);
+  color: #4f6b8b;
+  font-size: 1.2rem;
+  line-height: 1;
+  transform: translateY(-50%);
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.searchClearButton:hover {
+  background: rgba(20, 55, 99, 0.1);
+  color: #234b81;
+}
+
+.searchClearButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(43, 98, 166, 0.12);
 }
 
 .toolbarSearch input::placeholder,
@@ -524,11 +559,6 @@
   padding: 0 1.1rem;
 }
 
-.shareActionSecondary {
-  background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%);
-  border-color: rgba(62, 110, 213, 0.18);
-  color: #24508a;
-}
 
 .buttonIcon,
 .shareActionIcon {
@@ -607,6 +637,13 @@
   align-items: flex-end;
 }
 
+.resultsLead {
+  margin: 0.42rem 0 0;
+  max-width: 42rem;
+  color: var(--text-muted);
+  line-height: 1.62;
+}
+
 .resultsMeta {
   min-width: 10rem;
   padding: 0.85rem 1rem;
@@ -655,6 +692,57 @@
   border-radius: 1.6rem;
   background: rgba(255, 255, 255, 0.98);
   cursor: pointer;
+}
+
+.gridSingle {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.cardSingle {
+  grid-template-columns: minmax(290px, 360px) minmax(0, 1fr);
+  grid-template-areas:
+    'media head'
+    'media meta'
+    'media summary'
+    'media stats'
+    'media footer';
+  column-gap: 1.15rem;
+  align-items: start;
+}
+
+.cardSingle .imageFrame {
+  grid-area: media;
+  align-self: stretch;
+  min-height: 100%;
+  aspect-ratio: auto;
+}
+
+.cardSingle .image {
+  min-height: 100%;
+}
+
+.cardSingle .cardHead {
+  grid-area: head;
+}
+
+.cardSingle .metaRow {
+  grid-area: meta;
+}
+
+.cardSingle .summaryLine {
+  grid-area: summary;
+  -webkit-line-clamp: 4;
+}
+
+.cardSingle .compactStats {
+  grid-area: stats;
+  max-width: 30rem;
+}
+
+.cardSingle .cardFooter {
+  grid-area: footer;
+  justify-content: flex-start;
+  max-width: 30rem;
 }
 
 .card:hover {
@@ -882,10 +970,30 @@
   flex: 1 1 0;
 }
 
-.cardSecondaryButton,
-.shareActionButton {
+.cardSecondaryButton {
   gap: 0.55rem;
   background: rgba(255, 255, 255, 0.96);
+}
+
+.shareActionButton {
+  gap: 0.8rem;
+  align-items: flex-start;
+  min-height: 4.9rem;
+  padding: 0.95rem 1rem;
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.shareActionButton.shareActionPrimary {
+  background: linear-gradient(180deg, #2f6fb8 0%, #1d4f88 100%);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(29, 79, 136, 0.18);
+}
+
+.shareActionButton.shareActionSecondary {
+  background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%);
+  border-color: rgba(62, 110, 213, 0.18);
+  color: #24508a;
 }
 
 .emptyState {
@@ -1187,20 +1295,43 @@
 }
 
 .modalActionStrip {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.9rem;
-  flex-wrap: wrap;
-  padding: 0.9rem 1rem;
-  border-radius: 1.2rem;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 1.25rem;
   background: linear-gradient(180deg, #fbfdff 0%, #f3f8ff 100%);
   border: 1px solid rgba(31, 90, 159, 0.1);
 }
 
+.modalActionCopy {
+  min-width: 0;
+}
+
 .modalActionHint {
-  margin: 0;
+  margin: 0.42rem 0 0;
   font-weight: 600;
+}
+
+.inlineChannelRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.channelPill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.95rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  background: rgba(20, 55, 99, 0.06);
+  border: 1px solid rgba(20, 55, 99, 0.08);
+  color: #365679;
+  font-size: 0.83rem;
+  font-weight: 700;
 }
 
 .modalSection,
@@ -1244,11 +1375,11 @@
 
 .shareDialog {
   position: relative;
-  width: min(640px, 100%);
-  max-height: min(88vh, 820px);
+  width: min(620px, 100%);
+  max-height: min(84vh, 760px);
   overflow: auto;
-  padding: 1.15rem;
-  border-radius: 1.75rem;
+  padding: 1rem;
+  border-radius: 1.65rem;
   background: rgba(255, 255, 255, 0.98);
 }
 
@@ -1265,34 +1396,68 @@
 
 .sharePreviewCard {
   display: grid;
-  grid-template-columns: 104px 1fr;
+  grid-template-columns: 112px 1fr;
   gap: 0.95rem;
   align-items: center;
   margin-top: 1rem;
   background: linear-gradient(180deg, #fbfdff 0%, #f3f8ff 100%);
 }
 
+.sharePreviewMedia {
+  position: relative;
+}
+
+.sharePreviewTag {
+  position: absolute;
+  left: 0.45rem;
+  right: 0.45rem;
+  bottom: 0.45rem;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 1.7rem;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(20, 55, 99, 0.08);
+  color: #294c79;
+  font-size: 0.73rem;
+  font-weight: 800;
+}
+
 .sharePreviewImage {
-  width: 104px;
-  height: 104px;
+  width: 112px;
+  height: 112px;
   border-radius: 1rem;
   border: 1px solid rgba(20, 55, 99, 0.08);
   background: #eef4fb;
 }
 
+.sharePreviewCopy {
+  min-width: 0;
+}
+
 .sharePreviewCopy strong {
   display: block;
-  font-size: 1.08rem;
+  font-size: 1.1rem;
   letter-spacing: -0.03em;
 }
 
+.sharePreviewMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.45rem;
+}
+
 .sharePreviewCopy span {
-  margin-top: 0.35rem;
   font-weight: 700;
 }
 
-.sharePreviewCopy small {
-  margin-top: 0.26rem;
+.sharePreviewHint {
+  margin: 0.55rem 0 0;
+  color: var(--text-muted);
+  line-height: 1.58;
 }
 
 .shareGrid {
@@ -1302,23 +1467,76 @@
   margin-top: 1rem;
 }
 
-.shareActionButton {
-  min-height: 3.3rem;
-  justify-content: flex-start;
-  padding: 0 1rem;
+.shareActionWide {
+  grid-column: 1 / -1;
 }
 
 .shareActionIcon {
   width: 1.1rem;
   height: 1.1rem;
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+}
+
+.shareActionText {
+  display: grid;
+  gap: 0.22rem;
+  text-align: left;
+}
+
+.shareActionText strong {
+  display: block;
+  font-size: 0.98rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.shareActionText small {
+  display: block;
+  color: inherit;
+  opacity: 0.78;
+  line-height: 1.45;
+}
+
+.shareLinkRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+  margin-top: 1rem;
 }
 
 .shareLinkField {
-  margin-top: 1rem;
+  margin-top: 0;
 }
 
 .shareLinkField input {
   font-size: 0.95rem;
+}
+
+.shareLinkCopyButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 4.9rem;
+  padding: 0 1rem;
+  border-radius: 1.15rem;
+  border: 1px solid rgba(20, 55, 99, 0.12);
+  background: #ffffff;
+  color: #274c7d;
+  font-weight: 700;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    opacity 180ms ease;
+}
+
+.shareLinkCopyButton:hover {
+  transform: translateY(-1px);
 }
 
 .shareFeedback {
@@ -1381,6 +1599,22 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .cardSingle {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'media'
+      'head'
+      'meta'
+      'summary'
+      'stats'
+      'footer';
+  }
+
+  .cardSingle .compactStats,
+  .cardSingle .cardFooter {
+    max-width: none;
+  }
+
   .ownerCard {
     flex-direction: column;
     align-items: stretch;
@@ -1423,12 +1657,16 @@
   .cardFooter,
   .resultsTop,
   .modalHeader,
-  .modalActionStrip,
   .paginationShell,
   .sharePreviewCard {
     display: flex;
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .modalActionStrip,
+  .shareLinkRow {
+    grid-template-columns: 1fr;
   }
 
   .toolbarSelect,
@@ -1437,13 +1675,20 @@
   .sharePrimaryButton,
   .cardPrimaryButton,
   .cardSecondaryButton,
-  .shareActionButton {
+  .shareActionButton,
+  .shareLinkCopyButton {
     width: 100%;
   }
 
   .filterDrawer {
     width: min(100%, 31rem);
     padding: 1rem 0.8rem 0.85rem;
+  }
+
+  .sharePreviewTag {
+    position: static;
+    margin-top: 0.55rem;
+    width: fit-content;
   }
 
   .resultsMeta,
