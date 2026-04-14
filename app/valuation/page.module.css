@@ -3403,3 +3403,340 @@
     padding: 1.1rem;
   }
 }
+
+
+/* April 2026 — softer valuation hero and wizard refinements */
+.heroIntro {
+  border-radius: 1.9rem;
+  border: 1px solid rgba(16, 53, 42, 0.12);
+  padding: 1.55rem;
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 30%),
+    linear-gradient(135deg, #10392e 0%, #155042 48%, #3a836b 100%);
+  box-shadow:
+    0 32px 72px rgba(12, 40, 32, 0.18),
+    0 12px 26px rgba(12, 40, 32, 0.08);
+}
+
+.heroIntro::after {
+  inset: auto -10% -56% auto;
+  width: 24rem;
+  height: 24rem;
+}
+
+.heroIntroGrid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.8fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.heroIntroContent {
+  max-width: 38rem;
+  align-content: center;
+}
+
+.heroEyebrow {
+  margin: 0;
+  color: rgba(233, 247, 240, 0.82);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.heroIntroTitle {
+  max-width: 11ch;
+  margin: 0.18rem 0 0;
+  font-size: clamp(2.8rem, 5.1vw, 4.35rem);
+  line-height: 0.94;
+  letter-spacing: -0.07em;
+}
+
+.heroIntroText {
+  max-width: 34rem;
+  margin-top: 0.9rem;
+  color: rgba(238, 248, 242, 0.92);
+  font-size: 1.03rem;
+  line-height: 1.72;
+}
+
+.heroPanel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-content: start;
+  gap: 0.85rem;
+  padding: 1rem;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(236, 249, 243, 0.16);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.08) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px);
+}
+
+.heroPanelTitle {
+  margin: 0;
+  color: rgba(231, 246, 239, 0.78);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.heroStatList {
+  display: grid;
+  gap: 0.72rem;
+}
+
+.heroStatItem {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.92rem 0.95rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(236, 249, 243, 0.12);
+  background: rgba(6, 23, 18, 0.12);
+}
+
+.heroStatLabel {
+  color: rgba(233, 247, 240, 0.74);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.heroStatValue {
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.42;
+}
+
+.wizardCard {
+  border-radius: 1.72rem;
+  border-color: rgba(16, 53, 42, 0.1);
+  box-shadow:
+    0 28px 62px rgba(12, 40, 32, 0.11),
+    0 10px 22px rgba(12, 40, 32, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.wizardHeader {
+  padding: 1rem 1.2rem 0.95rem;
+  border-bottom-color: rgba(16, 53, 42, 0.08);
+  background: linear-gradient(180deg, rgba(247, 250, 248, 0.98) 0%, rgba(239, 244, 241, 0.96) 100%);
+}
+
+.stepper {
+  gap: 0.65rem;
+}
+
+.stepperItem {
+  min-height: 3.2rem;
+  padding: 0.45rem 0.72rem;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.stepperItemActive {
+  border-color: rgba(26, 89, 68, 0.16);
+  background: linear-gradient(180deg, rgba(244, 249, 246, 0.98) 0%, rgba(233, 244, 238, 0.96) 100%);
+  box-shadow:
+    0 12px 24px rgba(15, 53, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.stepperItemComplete {
+  border-color: rgba(16, 53, 42, 0.08);
+  background: rgba(231, 239, 235, 0.78);
+}
+
+.stepperBullet {
+  width: 1.95rem;
+  height: 1.95rem;
+  font-size: 0.8rem;
+}
+
+.stepContent {
+  padding: 1.95rem 1.6rem 1.45rem;
+}
+
+.stepMetaRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-bottom: 0.65rem;
+}
+
+.stepMetaBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0 0.78rem;
+  border-radius: 999px;
+  border: 1px solid rgba(17, 56, 45, 0.08);
+  background: rgba(234, 243, 238, 0.96);
+  color: #194a3c;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stepMetaHint {
+  color: #64726b;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.stepTitle {
+  max-width: 16ch;
+  margin-inline: auto;
+}
+
+.stepText {
+  max-width: 38rem;
+  margin-top: 0.78rem;
+}
+
+.message {
+  border-radius: 1.05rem;
+  border: 1px solid rgba(29, 107, 70, 0.16);
+  background: linear-gradient(180deg, rgba(232, 245, 238, 0.92) 0%, rgba(240, 248, 244, 0.92) 100%);
+  color: #18543d;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.wizardFooter {
+  padding: 1rem 1.55rem 1.25rem;
+  border-top-color: rgba(16, 53, 42, 0.08);
+  background: linear-gradient(180deg, rgba(250, 251, 250, 0.92) 0%, rgba(244, 247, 245, 0.96) 100%);
+}
+
+.secondaryButton,
+.primaryButton,
+.assetButton {
+  min-height: 3.25rem;
+  padding: 0 1.2rem;
+  border-radius: 1.05rem;
+  font-weight: 800;
+}
+
+.secondaryButton {
+  border: 1px solid rgba(17, 56, 45, 0.12);
+  background: linear-gradient(180deg, #ffffff 0%, #f2f7f4 100%);
+  color: #223932;
+  box-shadow:
+    0 12px 24px rgba(15, 53, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.primaryButton,
+.assetButton {
+  border: 1px solid rgba(16, 53, 42, 0.14);
+  background: linear-gradient(180deg, #edf7f2 0%, #d5eade 100%);
+  color: #15372e;
+  box-shadow:
+    0 16px 30px rgba(15, 53, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.primaryButton:hover,
+.assetButton:hover {
+  border-color: rgba(16, 53, 42, 0.22);
+  background: linear-gradient(180deg, #f3faf6 0%, #deeee5 100%);
+}
+
+.secondaryButton:hover {
+  border-color: rgba(16, 53, 42, 0.18);
+  background: linear-gradient(180deg, #ffffff 0%, #eef5f1 100%);
+}
+
+.typeCard,
+.brandCard,
+.dropdownTrigger,
+.dropdownOption,
+.modelRow,
+.inputPanel,
+.filterGroup,
+.selectionPrompt,
+.emptyState,
+.conditionCard {
+  border-radius: 1.2rem;
+  border-color: rgba(16, 53, 42, 0.08);
+  box-shadow:
+    0 16px 30px rgba(15, 53, 42, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.dropdownMenu {
+  border-radius: 1.2rem;
+}
+
+.filterGroupUnlocked,
+.inputPanel,
+.selectionPrompt,
+.emptyState {
+  background: linear-gradient(180deg, rgba(249, 251, 250, 0.98) 0%, rgba(244, 248, 246, 0.96) 100%);
+}
+
+.filterGroupLocked {
+  background: linear-gradient(180deg, rgba(245, 247, 246, 0.94) 0%, rgba(240, 243, 241, 0.94) 100%);
+}
+
+@media (max-width: 980px) {
+  .heroIntroGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .heroPanel {
+    max-width: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .heroIntro {
+    padding: 1.25rem 1.05rem;
+    border-radius: 1.55rem;
+  }
+
+  .heroIntroTitle {
+    max-width: 10ch;
+    font-size: clamp(2.3rem, 8vw, 3.35rem);
+  }
+
+  .heroIntroText {
+    max-width: 100%;
+    font-size: 0.97rem;
+  }
+
+  .heroPanel {
+    padding: 0.92rem;
+  }
+
+  .stepMetaRow {
+    justify-content: flex-start;
+  }
+
+  .stepTitle,
+  .stepText {
+    text-align: left;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .stepContent {
+    padding: 1.55rem 1rem 1.2rem;
+  }
+
+  .wizardFooter {
+    padding: 1rem;
+  }
+}
