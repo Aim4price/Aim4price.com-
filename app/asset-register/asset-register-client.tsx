@@ -4,15 +4,22 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
 import { hasMarketplaceListingForAsset, publishRegisterItemToMarketplace } from '../../lib/marketplace';
-import { openAssetSheetPrint, type ReportMethodCard } from '../../lib/report-print';
+import {
+  openAssetRegisterSummaryPrint,
+  openAssetSheetPrint,
+  type ReportMethodCard,
+} from '../../lib/report-print';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
 type AssetKind = 'tractor' | 'manual' | 'property';
 type AssetMethod = 'aim4price' | 'market' | 'department' | 'manual';
+type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
+type AssetConditionValue = ConditionKey | '';
+type ExportFormat = 'pdf' | 'xlsx';
 
 type RegisterAsset = {
-  id: number;
+  id: string;
   userId: string;
   valuationRunId: number | null;
   kind: AssetKind;
@@ -28,6 +35,7 @@ type RegisterAsset = {
   powerKw: number | null;
   yearModel: number | null;
   hours: number | null;
+  condition: AssetConditionValue;
   aim4priceValueExVat: number | null;
   marketMidExVat: number | null;
   departmentValueExVat: number | null;
@@ -63,6 +71,69 @@ type AssetUploadApiResponse = {
   error?: string;
 };
 
+type AccountProfile = {
+  userId: string;
+  name: string;
+  email: string;
+  businessName: string;
+  phone: string;
+  accountType: string;
+  vatNumber: string;
+  province: string;
+  townCity: string;
+  addressLine1: string;
+  addressLine2: string;
+  notes: string;
+  createdAtIso: string | null;
+  updatedAtIso: string | null;
+};
+
+type AccountProfileApiResponse = {
+  ok: boolean;
+  profile?: AccountProfile;
+  error?: string;
+};
+
+type ProjectionSnapshot = {
+  retailExVat: number;
+  tradeInExVat: number;
+  tradeInPercent: number;
+  hours: number;
+  tractorExVat: number;
+  loaderExVat: number;
+  gpsExVat: number;
+};
+
+type AssetFutureProjection = {
+  assetId: string;
+  assetTitle: string;
+  selectedMethod: AssetMethod;
+  currentRegisterValueExVat: number;
+  baseYear: number;
+  targetYear: number;
+  inflationRatePct: number;
+  yearsForward: number;
+  extraHours: number;
+  condition: ConditionKey;
+  current: ProjectionSnapshot;
+  projected: ProjectionSnapshot;
+  breakdown: {
+    inflationFactor: number;
+    replacementBaseExVat: number;
+    projectedReplacementBaseExVat: number;
+    ageDepPct: number;
+    usageDepPct: number;
+    averageDepPct: number;
+    conditionFactor: number;
+  };
+};
+
+type ProjectionApiResponse = {
+  ok: boolean;
+  projection?: AssetFutureProjection;
+  error?: string;
+};
+
 type AssetDraft = {
   kind: AssetKind;
   title: string;
@@ -72,9 +143,32 @@ type AssetDraft = {
   isFinanced: boolean;
   financeNote: string;
   photos: string[];
+  hours: string;
+  condition: AssetConditionValue;
+};
+
+type ProjectionFormState = {
+  targetYear: string;
+  inflationRatePct: string;
+  extraHours: string;
+};
+
+type PageItem = number | 'ellipsis';
+
+type IconProps = {
+  className?: string;
 };
 
 const MAX_PHOTOS = 12;
+const PAGE_SIZE = 6;
+const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = [
+  { value: '', label: 'Select condition' },
+  { value: 'excellent', label: 'Excellent' },
+  { value: 'good', label: 'Good' },
+  { value: 'fair', label: 'Fair' },
+  { value: 'used', label: 'Used' },
+  { value: 'serious', label: 'Requires attention' },
+];
 
 const initialAssetDraft: AssetDraft = {
   kind: 'manual',
@@ -85,7 +179,158 @@ const initialAssetDraft: AssetDraft = {
   isFinanced: false,
   financeNote: '',
   photos: [],
+  hours: '',
+  condition: '',
 };
+
+function createDefaultProjectionForm(): ProjectionFormState {
+  const nextYear = new Date().getFullYear() + 1;
+
+  return {
+    targetYear: String(nextYear),
+    inflationRatePct: '5',
+    extraHours: '',
+  };
+}
+
+function SearchIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  );
+}
+
+function OptionsIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M4 7h16" />
+      <path d="M4 12h16" />
+      <path d="M4 17h16" />
+      <circle cx="8" cy="7" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="12" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="17" r="1.5" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function DownloadIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M12 3v10" />
+      <path d="m8 9 4 4 4-4" />
+      <path d="M4 20h16" />
+    </svg>
+  );
+}
+
+function SpreadsheetIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M8 7h8" />
+      <path d="M8 11h8" />
+      <path d="M8 15h8" />
+      <path d="M12 7v8" />
+    </svg>
+  );
+}
+
+function PdfIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M7 3h7l5 5v13H7z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 15h6" />
+      <path d="M9 18h5" />
+    </svg>
+  );
+}
+
+function TrendIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M3 17 9 11l4 4 8-8" />
+      <path d="M14 7h7v7" />
+    </svg>
+  );
+}
+
+function EditIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M12 20h9" />
+      <path d="m16.5 3.5 4 4L8 20l-5 1 1-5z" />
+    </svg>
+  );
+}
+
+function PrintIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M7 8V3h10v5" />
+      <path d="M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" />
+      <path d="M7 14h10v7H7z" />
+    </svg>
+  );
+}
+
+function StoreIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M3 9 5 4h14l2 5" />
+      <path d="M4 9h16v3a3 3 0 0 1-3 3h-1a3 3 0 0 1-2-1 3 3 0 0 1-4 0 3 3 0 0 1-2 1H7a3 3 0 0 1-3-3z" />
+      <path d="M5 15v5h14v-5" />
+    </svg>
+  );
+}
+
+function TrashIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="m6 6 1 14h10l1-14" />
+      <path d="M10 10v6" />
+      <path d="M14 10v6" />
+    </svg>
+  );
+}
+
+function PlusIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
+function CloseIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="m6 6 12 12" />
+      <path d="m18 6-12 12" />
+    </svg>
+  );
+}
+
+function ChevronLeftIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
 
 function money(value: number): string {
   return new Intl.NumberFormat('en-ZA', {
@@ -93,6 +338,16 @@ function money(value: number): string {
     currency: 'ZAR',
     maximumFractionDigits: 0,
   }).format(value || 0);
+}
+
+function formatPercent(value: number): string {
+  const normalized = Number(value || 0);
+  return `${normalized.toFixed(normalized % 1 === 0 ? 0 : 1)}%`;
+}
+
+function formatRatioPercent(value: number): string {
+  const normalized = Number(value || 0) * 100;
+  return `${normalized.toFixed(normalized % 1 === 0 ? 0 : 1)}%`;
 }
 
 function formatDate(value?: string | null): string {
@@ -121,7 +376,7 @@ function wasUpdatedAfterCreate(asset: RegisterAsset): boolean {
 
 function assetStatusDateLabel(asset: RegisterAsset): string {
   return wasUpdatedAfterCreate(asset)
-    ? `Edited ${formatDate(asset.updatedAtIso)}`
+    ? `Updated ${formatDate(asset.updatedAtIso)}`
     : `Saved ${formatDate(asset.createdAtIso)}`;
 }
 
@@ -146,6 +401,38 @@ function kindLabel(value: AssetKind): string {
   );
 }
 
+function conditionLabel(value: AssetConditionValue): string {
+  return (
+    {
+      excellent: 'Excellent',
+      good: 'Good',
+      fair: 'Fair',
+      used: 'Used',
+      serious: 'Requires attention',
+      '': '—',
+    }[value] ?? '—'
+  );
+}
+
+function formatDrive(value: string): string {
+  if (value === '4wd') return '4WD';
+  if (value === '2wd') return '2WD';
+  if (value === 'tracks') return 'Tracks';
+  return value || '—';
+}
+
+function formatCab(value: string): string {
+  if (value === 'cab') return 'Cab';
+  if (value === 'open-station') return 'Open station';
+  return value || '—';
+}
+
+function formatTractorType(value: string): string {
+  if (value === 'field') return 'Field';
+  if (value === 'orchard') return 'Orchard';
+  return value || '—';
+}
+
 function normalizePhotos(value: string[]): string[] {
   const seen = new Set<string>();
 
@@ -167,6 +454,16 @@ function isTractorAsset(asset: RegisterAsset): boolean {
   return asset.kind === 'tractor' || Boolean(asset.brandName && asset.modelName && asset.yearModel);
 }
 
+function canProjectFuturePrice(asset: RegisterAsset): boolean {
+  return Boolean(
+    isTractorAsset(asset) &&
+      asset.valuationRunId !== null &&
+      asset.yearModel !== null &&
+      asset.powerKw !== null &&
+      asset.tractorType,
+  );
+}
+
 function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
   return {
     kind: asset.kind,
@@ -177,12 +474,14 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     isFinanced: asset.isFinanced,
     financeNote: asset.financeNote,
     photos: normalizePhotos(asset.photos),
+    hours: asset.hours === null || typeof asset.hours === 'undefined' ? '' : String(asset.hours),
+    condition: asset.condition,
   };
 }
 
 function buildSavedItemFromAsset(asset: RegisterAsset) {
   return {
-    id: String(asset.id),
+    id: asset.id,
     valuationRunId: asset.valuationRunId ?? undefined,
     kind: asset.kind,
     title: asset.title,
@@ -213,12 +512,14 @@ function buildSavedItemFromAsset(asset: RegisterAsset) {
 
 function buildAssetMeta(asset: RegisterAsset): string {
   const parts = [
-    asset.tractorType,
-    asset.drive,
-    asset.cab,
-    asset.powerKw ? `${asset.powerKw} kW` : '',
+    asset.tractorType ? formatTractorType(asset.tractorType) : '',
+    asset.drive ? formatDrive(asset.drive) : '',
+    asset.cab ? formatCab(asset.cab) : '',
+    asset.powerKw !== null && typeof asset.powerKw !== 'undefined' ? `${asset.powerKw} kW` : '',
     asset.yearModel ? `${asset.yearModel} model` : '',
-    asset.hours ? `${asset.hours.toLocaleString('en-ZA')} hours` : '',
+    asset.hours !== null && typeof asset.hours !== 'undefined'
+      ? `${asset.hours.toLocaleString('en-ZA')} hours`
+      : '',
   ].filter(Boolean);
 
   if (parts.length) {
@@ -226,6 +527,53 @@ function buildAssetMeta(asset: RegisterAsset): string {
   }
 
   return [asset.brandName, asset.modelName].filter(Boolean).join(' • ') || 'Manual asset';
+}
+
+function buildSearchableText(asset: RegisterAsset): string {
+  return [
+    asset.title,
+    asset.brandName,
+    asset.modelName,
+    asset.serialNumber,
+    asset.note,
+    asset.financeNote,
+    asset.tractorType,
+    asset.drive,
+    asset.cab,
+    asset.yearModel ? String(asset.yearModel) : '',
+    asset.hours !== null && typeof asset.hours !== 'undefined' ? String(asset.hours) : '',
+    conditionLabel(asset.condition),
+    kindLabel(asset.kind),
+    methodLabel(asset.selectedMethod),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function buildExportDetail(asset: RegisterAsset): string {
+  const parts = [
+    buildAssetMeta(asset),
+    asset.condition ? `Condition: ${conditionLabel(asset.condition)}` : '',
+    asset.serialNumber ? `Serial: ${asset.serialNumber}` : '',
+  ].filter(Boolean);
+
+  return parts.join(' • ');
+}
+
+function buildOwnerName(profile: AccountProfile | null): string {
+  if (!profile) return 'Aim4price account';
+  return profile.businessName || profile.name || 'Aim4price account';
+}
+
+function buildOwnerMeta(profile: AccountProfile | null): string {
+  if (!profile) return 'Aim4price asset register summary';
+
+  const location = [profile.townCity, profile.province].filter(Boolean).join(', ');
+  const address = [profile.addressLine1, profile.addressLine2].filter(Boolean).join(', ');
+  const parts = [profile.email, profile.phone, location, address].filter(Boolean);
+
+  return parts.join(' • ') || 'Aim4price asset register summary';
 }
 
 function toAbsoluteUrl(value?: string | null): string | null {
@@ -292,30 +640,88 @@ function buildAssetSheetMethodCards(asset: RegisterAsset): ReportMethodCard[] {
   return cards;
 }
 
+function buildPaginationItems(currentPage: number, pageCount: number): PageItem[] {
+  if (pageCount <= 1) return [1];
+
+  const pages = new Set<number>([1, pageCount, currentPage - 1, currentPage, currentPage + 1]);
+  const sorted = Array.from(pages)
+    .filter((page) => page >= 1 && page <= pageCount)
+    .sort((left, right) => left - right);
+
+  const result: PageItem[] = [];
+
+  sorted.forEach((page, index) => {
+    if (index > 0 && page - sorted[index - 1] > 1) {
+      result.push('ellipsis');
+    }
+
+    result.push(page);
+  });
+
+  return result;
+}
+
+function parseDownloadFileName(response: Response, fallback: string): string {
+  const disposition = response.headers.get('content-disposition') || '';
+  const quotedMatch = /filename="([^"]+)"/i.exec(disposition);
+  const plainMatch = /filename=([^;]+)/i.exec(disposition);
+
+  return (quotedMatch?.[1] || plainMatch?.[1] || fallback).trim();
+}
+
+function downloadBlob(blob: Blob, fileName: string) {
+  const objectUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(objectUrl);
+}
+
 export default function AssetRegisterClient() {
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
+  const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
-  const [editingAssetId, setEditingAssetId] = useState<number | null>(null);
+  const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
-  const [busyDeleteId, setBusyDeleteId] = useState<number | null>(null);
+  const [busyDeleteId, setBusyDeleteId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
+  const [isExporting, setIsExporting] = useState(false);
+  const [projectionAsset, setProjectionAsset] = useState<RegisterAsset | null>(null);
+  const [projectionForm, setProjectionForm] = useState<ProjectionFormState>(createDefaultProjectionForm());
+  const [projectionResult, setProjectionResult] = useState<AssetFutureProjection | null>(null);
+  const [projectionError, setProjectionError] = useState<string | null>(null);
+  const [isLoadingProjection, setIsLoadingProjection] = useState(false);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const projectionRequestRef = useRef(0);
 
   useEffect(() => {
     let mounted = true;
 
-    async function loadAssets() {
+    async function loadAssetRegister() {
       setIsLoading(true);
 
       try {
-        const assetsResponse = await fetch('/api/asset-register', {
-          cache: 'no-store',
-          credentials: 'include',
-        });
+        const [assetsResponse, profileResponse] = await Promise.all([
+          fetch('/api/asset-register', {
+            cache: 'no-store',
+            credentials: 'include',
+          }),
+          fetch('/api/account-profile', {
+            cache: 'no-store',
+            credentials: 'include',
+          }).catch(() => null),
+        ]);
 
         const assetsData = (await assetsResponse.json()) as AssetRegisterApiResponse;
 
@@ -326,6 +732,17 @@ export default function AssetRegisterClient() {
         if (!mounted) return;
 
         setAssets(Array.isArray(assetsData.items) ? assetsData.items : []);
+
+        if (profileResponse) {
+          try {
+            const profileData = (await profileResponse.json()) as AccountProfileApiResponse;
+            if (profileResponse.ok && profileData.ok && profileData.profile) {
+              setAccountProfile(profileData.profile);
+            }
+          } catch {
+            // no-op
+          }
+        }
       } catch (error) {
         if (!mounted) return;
 
@@ -340,7 +757,7 @@ export default function AssetRegisterClient() {
       }
     }
 
-    void loadAssets();
+    void loadAssetRegister();
 
     return () => {
       mounted = false;
@@ -350,12 +767,17 @@ export default function AssetRegisterClient() {
   useEffect(() => {
     if (!notice) return undefined;
 
-    const timeout = window.setTimeout(() => setNotice(null), 3200);
+    const timeout = window.setTimeout(() => setNotice(null), 3600);
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
   useEffect(() => {
-    const anyModalOpen = isAssetModalOpen || Boolean(activeAsset);
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const anyModalOpen = isAssetModalOpen || Boolean(activeAsset) || isExportModalOpen || Boolean(projectionAsset);
+
+  useEffect(() => {
     if (!anyModalOpen) {
       return undefined;
     }
@@ -366,14 +788,24 @@ export default function AssetRegisterClient() {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
 
-      if (activeAsset) {
-        setActiveAsset(null);
+      if (projectionAsset) {
+        closeProjectionModal();
         return;
       }
 
-      setIsAssetModalOpen(false);
-      setEditingAssetId(null);
-      setAssetDraft(initialAssetDraft);
+      if (activeAsset) {
+        closeActionDialog();
+        return;
+      }
+
+      if (isExportModalOpen) {
+        closeExportModal();
+        return;
+      }
+
+      if (isAssetModalOpen) {
+        closeAssetModal();
+      }
     };
 
     document.addEventListener('keydown', handleEscape);
@@ -382,10 +814,10 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, isAssetModalOpen]);
+  }, [activeAsset, anyModalOpen, isAssetModalOpen, isExportModalOpen, projectionAsset]);
 
   const totalValue = useMemo(() => {
-    return assets.reduce((sum, asset) => sum + Number(asset.value || 0), 0);
+    return assets.reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
   }, [assets]);
 
   const equipmentCount = useMemo(() => {
@@ -395,6 +827,33 @@ export default function AssetRegisterClient() {
   const editingAsset = useMemo(() => {
     return editingAssetId === null ? null : assets.find((asset) => asset.id === editingAssetId) ?? null;
   }, [assets, editingAssetId]);
+
+  const showMachineFields = useMemo(() => {
+    return assetDraft.kind === 'tractor' || Boolean(editingAsset && isTractorAsset(editingAsset));
+  }, [assetDraft.kind, editingAsset]);
+
+  const filteredAssets = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    if (!normalizedSearch) {
+      return assets;
+    }
+
+    return assets.filter((asset) => buildSearchableText(asset).includes(normalizedSearch));
+  }, [assets, searchTerm]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredAssets.length / PAGE_SIZE));
+
+  useEffect(() => {
+    if (currentPage > pageCount) {
+      setCurrentPage(pageCount);
+    }
+  }, [currentPage, pageCount]);
+
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageEnd = Math.min(filteredAssets.length, pageStart + PAGE_SIZE);
+  const visibleAssets = filteredAssets.slice(pageStart, pageStart + PAGE_SIZE);
+  const paginationItems = useMemo(() => buildPaginationItems(currentPage, pageCount), [currentPage, pageCount]);
 
   function resetEditor() {
     setEditingAssetId(null);
@@ -415,7 +874,7 @@ export default function AssetRegisterClient() {
     resetEditor();
   }
 
-  function openEditor(asset: RegisterAsset) {
+  function openUpdater(asset: RegisterAsset) {
     setEditingAssetId(asset.id);
     setAssetDraft(buildDraftFromAsset(asset));
     setIsAssetModalOpen(true);
@@ -429,9 +888,28 @@ export default function AssetRegisterClient() {
     setActiveAsset(null);
   }
 
-  function handleOpenEditorFromDialog(asset: RegisterAsset) {
-    closeActionDialog();
-    openEditor(asset);
+  async function ensureAccountProfile(): Promise<AccountProfile | null> {
+    if (accountProfile) {
+      return accountProfile;
+    }
+
+    try {
+      const response = await fetch('/api/account-profile', {
+        cache: 'no-store',
+        credentials: 'include',
+      });
+
+      const data = (await response.json()) as AccountProfileApiResponse;
+
+      if (!response.ok || !data.ok || !data.profile) {
+        return null;
+      }
+
+      setAccountProfile(data.profile);
+      return data.profile;
+    } catch {
+      return null;
+    }
   }
 
   async function handlePhotoFilesSelected(event: ChangeEvent<HTMLInputElement>) {
@@ -504,13 +982,33 @@ export default function AssetRegisterClient() {
 
     const value = Math.round(Number(assetDraft.value) || 0);
     const photos = normalizePhotos(assetDraft.photos);
+    const hasHours = assetDraft.hours.trim() !== '';
+    const hours = hasHours ? Number(assetDraft.hours) : null;
 
     if (!assetDraft.title.trim() || value <= 0) {
       setNotice({ tone: 'error', message: 'Asset title and value are required.' });
       return;
     }
 
+    if (hasHours && (!Number.isFinite(hours) || Number(hours) < 0)) {
+      setNotice({ tone: 'error', message: 'Machine hours must be zero or greater.' });
+      return;
+    }
+
     setIsSavingAsset(true);
+
+    const payload = {
+      kind: editingAsset?.valuationRunId ? editingAsset.kind : assetDraft.kind,
+      title: assetDraft.title,
+      value,
+      note: assetDraft.note,
+      serialNumber: assetDraft.serialNumber,
+      isFinanced: assetDraft.isFinanced,
+      financeNote: assetDraft.financeNote,
+      photos,
+      hours: showMachineFields && hasHours ? Math.round(Number(hours)) : null,
+      condition: showMachineFields ? assetDraft.condition || null : null,
+    };
 
     try {
       if (editingAssetId !== null) {
@@ -522,14 +1020,7 @@ export default function AssetRegisterClient() {
           },
           body: JSON.stringify({
             assetId: editingAssetId,
-            kind: editingAsset?.valuationRunId ? editingAsset.kind : assetDraft.kind,
-            title: assetDraft.title,
-            value,
-            note: assetDraft.note,
-            serialNumber: assetDraft.serialNumber,
-            isFinanced: assetDraft.isFinanced,
-            financeNote: assetDraft.financeNote,
-            photos,
+            ...payload,
           }),
         });
 
@@ -545,6 +1036,10 @@ export default function AssetRegisterClient() {
           setActiveAsset(data.item);
         }
 
+        if (projectionAsset?.id === data.item.id) {
+          setProjectionAsset(data.item);
+        }
+
         setNotice({ tone: 'success', message: 'Asset updated.' });
       } else {
         const response = await fetch('/api/asset-register', {
@@ -553,11 +1048,7 @@ export default function AssetRegisterClient() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            ...assetDraft,
-            value,
-            photos,
-          }),
+          body: JSON.stringify(payload),
         });
 
         const data = (await response.json()) as AssetRegisterApiResponse;
@@ -581,7 +1072,7 @@ export default function AssetRegisterClient() {
     }
   }
 
-  async function handleDeleteAsset(assetId: number) {
+  async function handleDeleteAsset(assetId: string) {
     setBusyDeleteId(assetId);
 
     try {
@@ -604,6 +1095,10 @@ export default function AssetRegisterClient() {
 
       if (activeAsset?.id === assetId) {
         setActiveAsset(null);
+      }
+
+      if (projectionAsset?.id === assetId) {
+        closeProjectionModal();
       }
 
       setNotice({ tone: 'success', message: 'Asset removed.' });
@@ -669,14 +1164,21 @@ export default function AssetRegisterClient() {
         { label: 'Method', value: methodLabel(asset.selectedMethod) },
         { label: 'Brand', value: asset.brandName || '—' },
         { label: 'Model', value: asset.modelName || '—' },
-        { label: 'Drive', value: asset.drive || '—' },
-        { label: 'Cab', value: asset.cab || '—' },
-        { label: 'Power', value: asset.powerKw ? `${asset.powerKw} kW` : '—' },
+        { label: 'Drive', value: asset.drive ? formatDrive(asset.drive) : '—' },
+        { label: 'Cab', value: asset.cab ? formatCab(asset.cab) : '—' },
+        { label: 'Power', value: asset.powerKw !== null && typeof asset.powerKw !== 'undefined' ? `${asset.powerKw} kW` : '—' },
         { label: 'Year', value: asset.yearModel ? String(asset.yearModel) : '—' },
-        { label: 'Hours', value: asset.hours ? asset.hours.toLocaleString('en-ZA') : '—' },
+        {
+          label: 'Hours',
+          value:
+            asset.hours !== null && typeof asset.hours !== 'undefined'
+              ? asset.hours.toLocaleString('en-ZA')
+              : '—',
+        },
+        { label: 'Condition', value: conditionLabel(asset.condition) },
         { label: 'Serial', value: asset.serialNumber || '—' },
         { label: 'Finance', value: asset.isFinanced ? 'Financed' : 'Not financed' },
-        { label: 'Saved', value: formatDate(asset.createdAtIso) },
+        { label: 'Updated', value: assetStatusDateLabel(asset) },
       ],
       notes: [
         ...(asset.note ? [{ label: 'Notes', value: asset.note }] : []),
@@ -697,6 +1199,207 @@ export default function AssetRegisterClient() {
     closeActionDialog();
   }
 
+  function openExportModal() {
+    if (!assets.length) {
+      return;
+    }
+
+    setExportFormat('pdf');
+    setIsExportModalOpen(true);
+  }
+
+  function closeExportModal() {
+    if (isExporting) return;
+    setIsExportModalOpen(false);
+  }
+
+  async function handleExportPdf() {
+    const profile = await ensureAccountProfile();
+    const didOpen = openAssetRegisterSummaryPrint({
+      logoUrl: toAbsoluteUrl('/brand/aim4price-mark-white.png') ?? '',
+      generatedAt: formatDate(new Date().toISOString()),
+      ownerName: buildOwnerName(profile),
+      ownerMeta: buildOwnerMeta(profile),
+      intro: 'Complete asset register snapshot for sharing, printing or record keeping.',
+      stats: [
+        { label: 'Register value', value: money(totalValue), note: 'Saved values exclude VAT.' },
+        { label: 'Total assets', value: String(assets.length), note: 'Full saved register count.' },
+        { label: 'Equipment assets', value: String(equipmentCount), note: 'Saved valuation equipment items.' },
+      ],
+      rows: assets.map((asset) => ({
+        asset: asset.title,
+        type: kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind),
+        method: methodLabel(asset.selectedMethod),
+        detail: buildExportDetail(asset),
+        value: money(asset.value),
+        status: assetStatusDateLabel(asset),
+      })),
+      footerNote: 'Aim4price asset register. All register values shown exclude VAT.',
+    });
+
+    if (!didOpen) {
+      throw new Error('Unable to open the full asset register PDF. Please allow pop-ups and try again.');
+    }
+  }
+
+  async function handleExportXlsx() {
+    const response = await fetch('/api/asset-register/export?format=xlsx', {
+      credentials: 'include',
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      try {
+        const data = (await response.json()) as { error?: string };
+        throw new Error(data.error ?? 'Failed to export the asset register XLSX file.');
+      } catch (error) {
+        if (error instanceof Error) {
+          throw error;
+        }
+
+        throw new Error('Failed to export the asset register XLSX file.');
+      }
+    }
+
+    const blob = await response.blob();
+    const fallbackName = `aim4price-asset-register-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const fileName = parseDownloadFileName(response, fallbackName);
+    downloadBlob(blob, fileName);
+  }
+
+  async function handleConfirmExport() {
+    if (!assets.length) {
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      if (exportFormat === 'xlsx') {
+        await handleExportXlsx();
+      } else {
+        await handleExportPdf();
+      }
+
+      setIsExportModalOpen(false);
+      setNotice({
+        tone: 'success',
+        message: exportFormat === 'xlsx' ? 'Asset register XLSX downloaded.' : 'Asset register PDF opened.',
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to export the asset register.',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function requestProjection(asset: RegisterAsset, formState: ProjectionFormState) {
+    const targetYear = Math.round(Number(formState.targetYear));
+    const inflationRatePct = Number(formState.inflationRatePct);
+    const extraHours = formState.extraHours.trim() ? Number(formState.extraHours) : 0;
+
+    if (!Number.isFinite(targetYear)) {
+      setProjectionError('Select a valid target year.');
+      return;
+    }
+
+    if (!Number.isFinite(inflationRatePct)) {
+      setProjectionError('Enter a valid inflation rate.');
+      return;
+    }
+
+    if (!Number.isFinite(extraHours) || extraHours < 0) {
+      setProjectionError('Extra hours must be zero or greater.');
+      return;
+    }
+
+    const requestId = projectionRequestRef.current + 1;
+    projectionRequestRef.current = requestId;
+
+    setIsLoadingProjection(true);
+    setProjectionError(null);
+
+    try {
+      const response = await fetch('/api/asset-register/projection', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          assetId: asset.id,
+          targetYear,
+          inflationRatePct,
+          extraHours,
+        }),
+      });
+
+      const data = (await response.json()) as ProjectionApiResponse;
+
+      if (projectionRequestRef.current !== requestId) {
+        return;
+      }
+
+      if (!response.ok || !data.ok || !data.projection) {
+        throw new Error(data.error ?? 'Failed to calculate future price.');
+      }
+
+      setProjectionResult(data.projection);
+    } catch (error) {
+      if (projectionRequestRef.current !== requestId) {
+        return;
+      }
+
+      setProjectionResult(null);
+      setProjectionError(error instanceof Error ? error.message : 'Failed to calculate future price.');
+    } finally {
+      if (projectionRequestRef.current === requestId) {
+        setIsLoadingProjection(false);
+      }
+    }
+  }
+
+  function closeProjectionModal() {
+    projectionRequestRef.current += 1;
+    setProjectionAsset(null);
+    setProjectionResult(null);
+    setProjectionError(null);
+    setProjectionForm(createDefaultProjectionForm());
+    setIsLoadingProjection(false);
+  }
+
+  function openProjectionModal(asset: RegisterAsset) {
+    const defaults = createDefaultProjectionForm();
+    closeActionDialog();
+    setProjectionAsset(asset);
+    setProjectionForm(defaults);
+    setProjectionResult(null);
+    setProjectionError(null);
+    void requestProjection(asset, defaults);
+  }
+
+  function handleProjectionPreset(nextState: Partial<ProjectionFormState>) {
+    setProjectionForm((current) => ({
+      ...current,
+      ...nextState,
+    }));
+  }
+
+  function handleProjectionSubmit() {
+    if (!projectionAsset) {
+      return;
+    }
+
+    void requestProjection(projectionAsset, projectionForm);
+  }
+
+  const searchDescription = searchTerm.trim()
+    ? `${filteredAssets.length} result${filteredAssets.length === 1 ? '' : 's'} for “${searchTerm.trim()}”`
+    : `${assets.length} saved asset${assets.length === 1 ? '' : 's'} in your register`;
+
   return (
     <main className={styles.page}>
       <AppHeader active="asset-register" />
@@ -713,7 +1416,7 @@ export default function AssetRegisterClient() {
             <div className={styles.registerTitleBlock}>
               <span className={styles.eyebrow}>Asset Register</span>
               <h1>Saved assets</h1>
-              <p>Clean register view with actions tucked away in a single options modal.</p>
+              <p>Sleek register view with search, pagination, export tools and asset actions kept neatly inside a single options modal.</p>
             </div>
 
             <div className={styles.headerActions}>
@@ -721,8 +1424,19 @@ export default function AssetRegisterClient() {
                 Valuation
               </Link>
 
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={openExportModal}
+                disabled={!assets.length || isLoading}
+              >
+                <DownloadIcon className={styles.buttonIcon} />
+                <span>Download full Asset Register</span>
+              </button>
+
               <button type="button" className={styles.primaryButton} onClick={openCreateModal}>
-                Add manual asset
+                <PlusIcon className={styles.buttonIcon} />
+                <span>Add manual asset</span>
               </button>
             </div>
           </div>
@@ -744,106 +1458,219 @@ export default function AssetRegisterClient() {
             </div>
           </div>
 
+          <div className={styles.toolbar}>
+            <label className={styles.searchWrap}>
+              <SearchIcon className={styles.searchIcon} />
+              <input
+                className={styles.searchInput}
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search by asset, brand, model, serial or note"
+                aria-label="Search asset register"
+              />
+
+              {searchTerm ? (
+                <button
+                  type="button"
+                  className={styles.clearSearchButton}
+                  onClick={() => setSearchTerm('')}
+                  aria-label="Clear search"
+                >
+                  <CloseIcon className={styles.buttonIcon} />
+                </button>
+              ) : null}
+            </label>
+
+            <div className={styles.toolbarMeta}>
+              <strong className={styles.toolbarMetaTitle}>{searchDescription}</strong>
+              <span className={styles.toolbarMetaSub}>
+                {filteredAssets.length
+                  ? `Showing ${pageStart + 1}-${pageEnd} of ${filteredAssets.length}`
+                  : searchTerm.trim()
+                    ? 'No assets match the current search.'
+                    : 'No saved assets yet.'}
+              </span>
+            </div>
+          </div>
+
           {isLoading ? (
             <div className={styles.emptyState}>Loading assets...</div>
           ) : assets.length ? (
-            <div className={styles.assetList}>
-              {assets.map((asset) => {
-                const previewPhoto = asset.photos[0];
-                const displayKind = kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind);
-                const isLive = isTractorAsset(asset) && hasMarketplaceListingForAsset(String(asset.id));
+            filteredAssets.length ? (
+              <>
+                <div className={styles.assetList}>
+                  {visibleAssets.map((asset) => {
+                    const previewPhoto = asset.photos[0];
+                    const displayKind = kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind);
+                    const isLive = isTractorAsset(asset) && hasMarketplaceListingForAsset(String(asset.id));
 
-                return (
-                  <article className={styles.assetCard} key={asset.id}>
-                    <div className={styles.assetHeader}>
-                      <div className={styles.assetTitleBlock}>
-                        <div className={styles.badgeRow}>
-                          <span className={`${styles.badge} ${styles.badgeNeutral}`}>{displayKind}</span>
-                          <span className={`${styles.badge} ${styles.badgeNeutral}`}>
-                            {methodLabel(asset.selectedMethod)}
-                          </span>
-                          {asset.valuationRunId ? (
-                            <span className={`${styles.badge} ${styles.badgeNeutral}`}>Saved valuation</span>
-                          ) : null}
-                          {isLive ? (
-                            <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span>
-                          ) : null}
-                          {asset.photos.length ? (
-                            <span className={`${styles.badge} ${styles.badgeNeutral}`}>
-                              {asset.photos.length} photo{asset.photos.length === 1 ? '' : 's'}
-                            </span>
-                          ) : null}
+                    return (
+                      <article className={styles.assetCard} key={asset.id}>
+                        <div className={styles.assetHeader}>
+                          <div className={styles.assetTitleBlock}>
+                            <div className={styles.badgeRow}>
+                              <span className={`${styles.badge} ${styles.badgeNeutral}`}>{displayKind}</span>
+                              <span className={`${styles.badge} ${styles.badgeNeutral}`}>{methodLabel(asset.selectedMethod)}</span>
+                              {asset.valuationRunId ? (
+                                <span className={`${styles.badge} ${styles.badgeNeutral}`}>Saved valuation</span>
+                              ) : null}
+                              {asset.condition ? (
+                                <span className={`${styles.badge} ${styles.badgeNeutral}`}>{conditionLabel(asset.condition)}</span>
+                              ) : null}
+                              {isLive ? (
+                                <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span>
+                              ) : null}
+                              {asset.photos.length ? (
+                                <span className={`${styles.badge} ${styles.badgeNeutral}`}>
+                                  {asset.photos.length} photo{asset.photos.length === 1 ? '' : 's'}
+                                </span>
+                              ) : null}
+                            </div>
+
+                            <h2>{asset.title}</h2>
+                            <p>{buildAssetMeta(asset)}</p>
+                          </div>
+
+                          <div className={styles.valueBlock}>
+                            <small>Register value</small>
+                            <strong>{money(asset.value)}</strong>
+                            <span>Excl. VAT • {assetStatusDateLabel(asset)}</span>
+                          </div>
                         </div>
 
-                        <h2>{asset.title}</h2>
-                        <p>{buildAssetMeta(asset)}</p>
-                      </div>
+                        <div className={styles.assetBody}>
+                          <div className={styles.previewWrap}>
+                            {previewPhoto ? (
+                              <img src={previewPhoto} alt={`${asset.title} preview`} className={styles.previewImage} />
+                            ) : (
+                              <div className={styles.previewFallback}>No photo</div>
+                            )}
+                          </div>
 
-                      <div className={styles.valueBlock}>
-                        <small>Register value</small>
-                        <strong>{money(asset.value)}</strong>
-                        <span>Excl. VAT • {formatDate(asset.createdAtIso)}</span>
-                      </div>
+                          <div className={styles.assetContent}>
+                            <div className={styles.infoGrid}>
+                              <div className={styles.infoTile}>
+                                <span>Serial</span>
+                                <strong>{asset.serialNumber || '—'}</strong>
+                              </div>
+
+                              <div className={styles.infoTile}>
+                                <span>Finance</span>
+                                <strong>{asset.isFinanced ? 'Financed' : 'Not financed'}</strong>
+                              </div>
+
+                              <div className={styles.infoTile}>
+                                <span>Hours</span>
+                                <strong>
+                                  {asset.hours !== null && typeof asset.hours !== 'undefined'
+                                    ? asset.hours.toLocaleString('en-ZA')
+                                    : '—'}
+                                </strong>
+                              </div>
+
+                              <div className={styles.infoTile}>
+                                <span>Condition</span>
+                                <strong>{conditionLabel(asset.condition)}</strong>
+                              </div>
+                            </div>
+
+                            {asset.note || asset.financeNote ? (
+                              <div className={styles.noteStack}>
+                                {asset.note ? <p className={styles.note}>{asset.note}</p> : null}
+                                {asset.financeNote ? <p className={styles.note}>Finance: {asset.financeNote}</p> : null}
+                              </div>
+                            ) : null}
+
+                            <div className={styles.assetFooter}>
+                              <span className={styles.assetFooterStatus}>{assetStatusDateLabel(asset)}</span>
+
+                              <button
+                                type="button"
+                                className={styles.optionsButton}
+                                onClick={() => openActionDialog(asset)}
+                              >
+                                <OptionsIcon className={styles.buttonIcon} />
+                                <span>Options</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+
+                {pageCount > 1 ? (
+                  <div className={styles.paginationBar}>
+                    <div className={styles.paginationMeta}>
+                      Page {currentPage} of {pageCount}
                     </div>
 
-                    <div className={styles.assetBody}>
-                      <div className={styles.previewWrap}>
-                        {previewPhoto ? (
-                          <img
-                            src={previewPhoto}
-                            alt={`${asset.title} preview`}
-                            className={styles.previewImage}
-                          />
+                    <div className={styles.paginationActions}>
+                      <button
+                        type="button"
+                        className={styles.paginationButton}
+                        onClick={() => setCurrentPage((current) => Math.max(1, current - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeftIcon className={styles.buttonIcon} />
+                        <span>Previous</span>
+                      </button>
+
+                      {paginationItems.map((item, index) =>
+                        item === 'ellipsis' ? (
+                          <span className={styles.paginationEllipsis} key={`ellipsis-${index}`}>
+                            …
+                          </span>
                         ) : (
-                          <div className={styles.previewFallback}>No photo</div>
-                        )}
-                      </div>
-
-                      <div className={styles.assetContent}>
-                        <div className={styles.infoGrid}>
-                          <div className={styles.infoTile}>
-                            <span>Serial</span>
-                            <strong>{asset.serialNumber || '—'}</strong>
-                          </div>
-
-                          <div className={styles.infoTile}>
-                            <span>Finance</span>
-                            <strong>{asset.isFinanced ? 'Financed' : 'Not financed'}</strong>
-                          </div>
-
-                          <div className={styles.infoTile}>
-                            <span>Hours</span>
-                            <strong>{asset.hours ? asset.hours.toLocaleString('en-ZA') : '—'}</strong>
-                          </div>
-
-                          <div className={styles.infoTile}>
-                            <span>Saved</span>
-                            <strong>{formatDate(asset.createdAtIso)}</strong>
-                          </div>
-                        </div>
-
-                        {asset.note ? <p className={styles.note}>{asset.note}</p> : null}
-                        {asset.financeNote ? <p className={styles.note}>Finance: {asset.financeNote}</p> : null}
-
-                        <div className={styles.assetFooter}>
                           <button
                             type="button"
-                            className={styles.optionsButton}
-                            onClick={() => openActionDialog(asset)}
+                            key={item}
+                            className={`${styles.paginationButton} ${item === currentPage ? styles.paginationButtonActive : ''}`}
+                            onClick={() => setCurrentPage(item)}
                           >
-                            Options
+                            {item}
                           </button>
-                        </div>
-                      </div>
+                        ),
+                      )}
+
+                      <button
+                        type="button"
+                        className={styles.paginationButton}
+                        onClick={() => setCurrentPage((current) => Math.min(pageCount, current + 1))}
+                        disabled={currentPage === pageCount}
+                      >
+                        <span>Next</span>
+                        <ChevronRightIcon className={styles.buttonIcon} />
+                      </button>
                     </div>
-                  </article>
-                );
-              })}
-            </div>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <div className={styles.emptyState}>
+                <h3>No assets match your search</h3>
+                <p>Try a broader term, or clear the search to see the full register again.</p>
+                <div className={styles.emptyStateActions}>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setSearchTerm('')}>
+                    Clear search
+                  </button>
+                </div>
+              </div>
+            )
           ) : (
             <div className={styles.emptyState}>
               <h3>No assets saved yet</h3>
-              <p>Run a valuation or add a manual asset to start your register.</p>
+              <p>Run a valuation or add a manual asset to start building your register.</p>
+              <div className={styles.emptyStateActions}>
+                <Link href="/valuation" className={styles.secondaryButton}>
+                  Go to valuation
+                </Link>
+                <button type="button" className={styles.primaryButton} onClick={openCreateModal}>
+                  <PlusIcon className={styles.buttonIcon} />
+                  <span>Add manual asset</span>
+                </button>
+              </div>
             </div>
           )}
         </section>
@@ -853,24 +1680,15 @@ export default function AssetRegisterClient() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeAssetModal} />
 
-          <div
-            className={styles.modalCard}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="asset-form-title"
-          >
+          <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="asset-form-title">
             <div className={styles.modalHeader}>
-              <div>
-                <span className={styles.modalEyebrow}>
-                  {editingAsset ? 'Edit asset' : 'Add manual asset'}
-                </span>
-                <h3 id="asset-form-title">
-                  {editingAsset ? 'Update asset details' : 'Add another asset'}
-                </h3>
+              <div className={styles.modalHeaderText}>
+                <span className={styles.modalEyebrow}>{editingAsset ? 'Update asset' : 'Add manual asset'}</span>
+                <h3 id="asset-form-title">{editingAsset ? 'Update asset details' : 'Add another asset'}</h3>
                 <p>
                   {editingAsset
-                    ? 'Update the saved asset without cluttering the register screen.'
-                    : 'Add a manual asset through a modal, so the main asset register stays clean.'}
+                    ? 'Update the saved asset, including machine hours and condition, without leaving the register screen.'
+                    : 'Add a manual asset through a clean modal so the main register stays simple and easy to scan.'}
                 </p>
               </div>
 
@@ -880,7 +1698,7 @@ export default function AssetRegisterClient() {
                 onClick={closeAssetModal}
                 aria-label="Close asset form"
               >
-                ×
+                <CloseIcon className={styles.buttonIcon} />
               </button>
             </div>
 
@@ -890,12 +1708,15 @@ export default function AssetRegisterClient() {
                 <select
                   value={editingAsset?.valuationRunId ? editingAsset.kind : assetDraft.kind}
                   disabled={Boolean(editingAsset?.valuationRunId)}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const nextKind = event.target.value as AssetKind;
                     setAssetDraft((current) => ({
                       ...current,
-                      kind: event.target.value as AssetKind,
-                    }))
-                  }
+                      kind: nextKind,
+                      hours: nextKind === 'tractor' ? current.hours : '',
+                      condition: nextKind === 'tractor' ? current.condition : '',
+                    }));
+                  }}
                 >
                   <option value="manual">Manual asset</option>
                   <option value="property">Property</option>
@@ -948,6 +1769,48 @@ export default function AssetRegisterClient() {
                 />
               </label>
 
+              {showMachineFields ? (
+                <>
+                  <label className={styles.field}>
+                    <span>Machine hours</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={assetDraft.hours}
+                      onChange={(event) =>
+                        setAssetDraft((current) => ({
+                          ...current,
+                          hours: event.target.value,
+                        }))
+                      }
+                      placeholder="Enter machine hours"
+                    />
+                    <small className={styles.fieldHint}>This can be updated later whenever the machine hours change.</small>
+                  </label>
+
+                  <label className={styles.field}>
+                    <span>Condition</span>
+                    <select
+                      value={assetDraft.condition}
+                      onChange={(event) =>
+                        setAssetDraft((current) => ({
+                          ...current,
+                          condition: event.target.value as AssetConditionValue,
+                        }))
+                      }
+                    >
+                      {CONDITION_OPTIONS.map((option) => (
+                        <option key={option.value || 'blank'} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <small className={styles.fieldHint}>Condition feeds through to future-price calculations and cleaner asset sheets.</small>
+                  </label>
+                </>
+              ) : null}
+
               <label className={`${styles.field} ${styles.fullWidth}`}>
                 <span>Notes</span>
                 <textarea
@@ -987,7 +1850,7 @@ export default function AssetRegisterClient() {
                       financeNote: event.target.value,
                     }))
                   }
-                  placeholder="Bank or finance reference"
+                  placeholder="Bank, lender or finance reference"
                 />
               </label>
 
@@ -1040,11 +1903,7 @@ export default function AssetRegisterClient() {
               ) : null}
 
               <div className={styles.formActions}>
-                <button
-                  type="submit"
-                  className={styles.primaryButton}
-                  disabled={isSavingAsset || isUploadingPhotos}
-                >
+                <button type="submit" className={styles.primaryButton} disabled={isSavingAsset || isUploadingPhotos}>
                   {isSavingAsset ? 'Saving...' : editingAsset ? 'Update asset' : 'Add asset'}
                 </button>
 
@@ -1061,14 +1920,9 @@ export default function AssetRegisterClient() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeActionDialog} />
 
-          <div
-            className={styles.optionsModal}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="asset-options-title"
-          >
+          <div className={styles.optionsModal} role="dialog" aria-modal="true" aria-labelledby="asset-options-title">
             <div className={styles.modalHeader}>
-              <div>
+              <div className={styles.modalHeaderText}>
                 <span className={styles.modalEyebrow}>Asset options</span>
                 <h3 id="asset-options-title">{activeAsset.title}</h3>
                 <p>{buildAssetMeta(activeAsset)}</p>
@@ -1080,7 +1934,7 @@ export default function AssetRegisterClient() {
                 onClick={closeActionDialog}
                 aria-label="Close asset options"
               >
-                ×
+                <CloseIcon className={styles.buttonIcon} />
               </button>
             </div>
 
@@ -1097,31 +1951,29 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={styles.optionsGrid}>
-              <button
-                type="button"
-                className={styles.optionActionButton}
-                onClick={() => handleOpenEditorFromDialog(activeAsset)}
-              >
-                Edit asset
+              <button type="button" className={styles.optionActionButton} onClick={() => { closeActionDialog(); openUpdater(activeAsset); }}>
+                <EditIcon className={styles.buttonIcon} />
+                <span>Update asset</span>
               </button>
 
-              <button
-                type="button"
-                className={styles.optionActionButton}
-                onClick={() => handlePrintAssetSheet(activeAsset)}
-              >
-                Asset sheet PDF
+              {canProjectFuturePrice(activeAsset) ? (
+                <button type="button" className={styles.optionActionButton} onClick={() => openProjectionModal(activeAsset)}>
+                  <TrendIcon className={styles.buttonIcon} />
+                  <span>Calculate future price</span>
+                </button>
+              ) : null}
+
+              <button type="button" className={styles.optionActionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
+                <PrintIcon className={styles.buttonIcon} />
+                <span>Asset sheet PDF</span>
               </button>
 
               {isTractorAsset(activeAsset) ? (
-                <button
-                  type="button"
-                  className={styles.optionActionButton}
-                  onClick={() => handlePublishFromDialog(activeAsset)}
-                >
-                  {hasMarketplaceListingForAsset(String(activeAsset.id))
-                    ? 'Update marketplace'
-                    : 'Send to marketplace'}
+                <button type="button" className={styles.optionActionButton} onClick={() => handlePublishFromDialog(activeAsset)}>
+                  <StoreIcon className={styles.buttonIcon} />
+                  <span>
+                    {hasMarketplaceListingForAsset(String(activeAsset.id)) ? 'Update marketplace' : 'Send to marketplace'}
+                  </span>
                 </button>
               ) : null}
 
@@ -1131,8 +1983,279 @@ export default function AssetRegisterClient() {
                 disabled={busyDeleteId === activeAsset.id}
                 onClick={() => handleDeleteFromDialog(activeAsset)}
               >
-                {busyDeleteId === activeAsset.id ? 'Removing...' : 'Delete asset'}
+                <TrashIcon className={styles.buttonIcon} />
+                <span>{busyDeleteId === activeAsset.id ? 'Removing...' : 'Delete asset'}</span>
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isExportModalOpen ? (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBackdrop} onClick={closeExportModal} />
+
+          <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="export-title">
+            <div className={styles.modalHeader}>
+              <div className={styles.modalHeaderText}>
+                <span className={styles.modalEyebrow}>Download full Asset Register</span>
+                <h3 id="export-title">Choose an export format</h3>
+                <p>Export the full saved register as a polished PDF summary or a detailed XLSX workbook.</p>
+              </div>
+
+              <button type="button" className={styles.modalCloseButton} onClick={closeExportModal} aria-label="Close export options">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.exportChoices}>
+                <button
+                  type="button"
+                  className={`${styles.exportOption} ${exportFormat === 'pdf' ? styles.exportOptionActive : ''}`}
+                  onClick={() => setExportFormat('pdf')}
+                >
+                  <PdfIcon className={styles.exportOptionIcon} />
+                  <div>
+                    <strong>PDF summary</strong>
+                    <span>Sleek printable overview styled to match Aim4price reporting.</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.exportOption} ${exportFormat === 'xlsx' ? styles.exportOptionActive : ''}`}
+                  onClick={() => setExportFormat('xlsx')}
+                >
+                  <SpreadsheetIcon className={styles.exportOptionIcon} />
+                  <div>
+                    <strong>XLSX workbook</strong>
+                    <span>Detailed register sheet for Excel, DBeaver handover or admin workflows.</span>
+                  </div>
+                </button>
+              </div>
+
+              <div className={styles.exportHelp}>
+                <strong>{assets.length} assets will be included.</strong>
+                <span>All values remain ex VAT. The export always includes the full saved register, not just the current search page.</span>
+              </div>
+            </div>
+
+            <div className={styles.formActions}>
+              <button type="button" className={styles.primaryButton} onClick={handleConfirmExport} disabled={isExporting}>
+                {isExporting ? 'Preparing export...' : exportFormat === 'xlsx' ? 'Download XLSX' : 'Open PDF summary'}
+              </button>
+
+              <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {projectionAsset ? (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBackdrop} onClick={closeProjectionModal} />
+
+          <div className={`${styles.modalCard} ${styles.projectionModal}`} role="dialog" aria-modal="true" aria-labelledby="projection-title">
+            <div className={styles.modalHeader}>
+              <div className={styles.modalHeaderText}>
+                <span className={styles.modalEyebrow}>Calculate future price</span>
+                <h3 id="projection-title">{projectionAsset.title}</h3>
+                <p>Project a future value using compound inflation, updated machine hours and the same saved condition.</p>
+              </div>
+
+              <button type="button" className={styles.modalCloseButton} onClick={closeProjectionModal} aria-label="Close future price modal">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.projectionIntro}>
+                <div>
+                  <span>Current register value</span>
+                  <strong>{money(projectionAsset.value)}</strong>
+                </div>
+                <div>
+                  <span>Saved condition</span>
+                  <strong>{conditionLabel(projectionAsset.condition)}</strong>
+                </div>
+                <div>
+                  <span>Current hours</span>
+                  <strong>
+                    {projectionAsset.hours !== null && typeof projectionAsset.hours !== 'undefined'
+                      ? projectionAsset.hours.toLocaleString('en-ZA')
+                      : '—'}
+                  </strong>
+                </div>
+              </div>
+
+              <div className={styles.projectionInputRow}>
+                <label className={styles.field}>
+                  <span>Target year</span>
+                  <input
+                    type="number"
+                    min={new Date().getFullYear()}
+                    max={new Date().getFullYear() + 15}
+                    value={projectionForm.targetYear}
+                    onChange={(event) =>
+                      setProjectionForm((current) => ({
+                        ...current,
+                        targetYear: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Inflation % p.a.</span>
+                  <input
+                    type="number"
+                    min="-50"
+                    max="200"
+                    step="0.1"
+                    value={projectionForm.inflationRatePct}
+                    onChange={(event) =>
+                      setProjectionForm((current) => ({
+                        ...current,
+                        inflationRatePct: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Extra hours</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="50"
+                    value={projectionForm.extraHours}
+                    onChange={(event) =>
+                      setProjectionForm((current) => ({
+                        ...current,
+                        extraHours: event.target.value,
+                      }))
+                    }
+                    placeholder="Optional"
+                  />
+                </label>
+              </div>
+
+              <div className={styles.projectionPresetRow}>
+                <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ inflationRatePct: '5' })}>
+                  5%
+                </button>
+                <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ inflationRatePct: '8' })}>
+                  8%
+                </button>
+                <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ inflationRatePct: '10' })}>
+                  10%
+                </button>
+                <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ extraHours: '0' })}>
+                  +0 hrs
+                </button>
+                <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ extraHours: '1000' })}>
+                  +1 000 hrs
+                </button>
+                <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ extraHours: '2000' })}>
+                  +2 000 hrs
+                </button>
+              </div>
+
+              <div className={styles.formActions}>
+                <button type="button" className={styles.primaryButton} onClick={handleProjectionSubmit} disabled={isLoadingProjection}>
+                  {isLoadingProjection ? 'Calculating...' : 'Update future price'}
+                </button>
+              </div>
+
+              {projectionError ? <div className={styles.projectionError}>{projectionError}</div> : null}
+
+              {projectionResult ? (
+                <>
+                  <div className={styles.projectionStatsGrid}>
+                    <div className={styles.projectionStatCard}>
+                      <span className={styles.projectionStatLabel}>Current register</span>
+                      <strong className={styles.projectionStatValue}>{money(projectionResult.currentRegisterValueExVat)}</strong>
+                    </div>
+
+                    <div className={styles.projectionStatCard}>
+                      <span className={styles.projectionStatLabel}>Today retail</span>
+                      <strong className={styles.projectionStatValue}>{money(projectionResult.current.retailExVat)}</strong>
+                    </div>
+
+                    <div className={styles.projectionStatCard}>
+                      <span className={styles.projectionStatLabel}>Today trade-in</span>
+                      <strong className={styles.projectionStatValue}>{money(projectionResult.current.tradeInExVat)}</strong>
+                    </div>
+
+                    <div className={styles.projectionStatCard}>
+                      <span className={styles.projectionStatLabel}>Projected retail</span>
+                      <strong className={styles.projectionStatValue}>{money(projectionResult.projected.retailExVat)}</strong>
+                    </div>
+
+                    <div className={styles.projectionStatCard}>
+                      <span className={styles.projectionStatLabel}>Projected trade-in</span>
+                      <strong className={styles.projectionStatValue}>{money(projectionResult.projected.tradeInExVat)}</strong>
+                    </div>
+                  </div>
+
+                  <div className={styles.projectionBreakdown}>
+                    <div className={styles.projectionBreakdownRow}>
+                      <span>Base year → target year</span>
+                      <strong>
+                        {projectionResult.baseYear} → {projectionResult.targetYear}
+                      </strong>
+                    </div>
+                    <div className={styles.projectionBreakdownRow}>
+                      <span>Hours</span>
+                      <strong>
+                        {projectionResult.current.hours.toLocaleString('en-ZA')} → {projectionResult.projected.hours.toLocaleString('en-ZA')}
+                      </strong>
+                    </div>
+                    <div className={styles.projectionBreakdownRow}>
+                      <span>Inflation factor</span>
+                      <strong>{projectionResult.breakdown.inflationFactor.toFixed(3)}×</strong>
+                    </div>
+                    <div className={styles.projectionBreakdownRow}>
+                      <span>Replacement base</span>
+                      <strong>{money(projectionResult.breakdown.replacementBaseExVat)}</strong>
+                    </div>
+                    <div className={styles.projectionBreakdownRow}>
+                      <span>Projected replacement base</span>
+                      <strong>{money(projectionResult.breakdown.projectedReplacementBaseExVat)}</strong>
+                    </div>
+                    <div className={styles.projectionBreakdownRow}>
+                      <span>Age depreciation</span>
+                      <strong>{formatPercent(projectionResult.breakdown.ageDepPct)}</strong>
+                    </div>
+                    <div className={styles.projectionBreakdownRow}>
+                      <span>Usage depreciation</span>
+                      <strong>{formatPercent(projectionResult.breakdown.usageDepPct)}</strong>
+                    </div>
+                    <div className={styles.projectionBreakdownRow}>
+                      <span>Average depreciation</span>
+                      <strong>{formatPercent(projectionResult.breakdown.averageDepPct)}</strong>
+                    </div>
+                    <div className={styles.projectionBreakdownRow}>
+                      <span>Condition factor</span>
+                      <strong>{formatRatioPercent(projectionResult.breakdown.conditionFactor)}</strong>
+                    </div>
+                    <div className={styles.projectionBreakdownRow}>
+                      <span>Trade-in margin used</span>
+                      <strong>{formatRatioPercent(projectionResult.projected.tradeInPercent)}</strong>
+                    </div>
+                  </div>
+
+                  <div className={styles.exportHelp}>
+                    <strong>Projection note</strong>
+                    <span>Future price assumes the same condition and uses compound inflation plus extra-hour depreciation, based on the original saved valuation profile.</span>
+                  </div>
+                </>
+              ) : isLoadingProjection ? (
+                <div className={styles.projectionLoading}>Calculating future price...</div>
+              ) : null}
             </div>
           </div>
         </div>
