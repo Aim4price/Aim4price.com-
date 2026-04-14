@@ -36,7 +36,86 @@ type MarketplaceApiResponse = {
   error?: string;
 };
 
+type ActiveFilterChip = {
+  id: string;
+  label: string;
+  onRemove: () => void;
+};
+
 const LISTINGS_PER_PAGE = 9;
+
+function IconSearch() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M21 21l-4.35-4.35" />
+      <circle cx="11" cy="11" r="6.25" />
+    </svg>
+  );
+}
+
+function IconShare() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M15 8a3 3 0 1 0-2.82-4" />
+      <path d="M7 14a3 3 0 1 0 2.82 4" />
+      <path d="M17 16a3 3 0 1 0 2.82 4" />
+      <path d="M8.9 13.1 15.1 9.9" />
+      <path d="M8.9 14.9 15.1 18.1" />
+    </svg>
+  );
+}
+
+function IconWhatsApp() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20 11.9c0 4.52-3.67 8.18-8.2 8.18-1.42 0-2.76-.36-3.93-1l-4.05 1.02 1.08-3.95a8.14 8.14 0 0 1-1.29-4.36C3.61 7.37 7.28 3.7 11.8 3.7S20 7.37 20 11.9Z" />
+      <path d="M9.07 8.46c-.19-.42-.39-.43-.57-.44h-.49c-.17 0-.44.07-.67.32-.23.25-.89.87-.89 2.12s.92 2.45 1.05 2.62c.12.17 1.77 2.83 4.37 3.85 2.15.84 2.6.67 3.06.63.47-.04 1.5-.61 1.71-1.2.21-.59.21-1.1.15-1.2-.06-.1-.23-.17-.48-.3-.26-.13-1.5-.75-1.73-.84-.23-.08-.4-.13-.57.13-.17.25-.65.84-.79 1.01-.15.17-.29.19-.55.06-.25-.13-1.06-.4-2.02-1.29-.75-.69-1.25-1.55-1.39-1.81-.15-.25-.02-.39.11-.52.12-.12.25-.3.38-.44.12-.15.17-.25.25-.42.09-.17.04-.32-.02-.44-.06-.13-.55-1.42-.76-1.94Z" />
+    </svg>
+  );
+}
+
+function IconFacebook() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M13.5 21v-7h2.55l.4-3h-2.95V9.09c0-.87.24-1.46 1.48-1.46h1.58V4.95c-.27-.04-1.19-.12-2.26-.12-2.24 0-3.77 1.36-3.77 3.87V11H8v3h2.51v7h2.99Z" />
+    </svg>
+  );
+}
+
+function IconCopy() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="9" y="9" width="10" height="10" rx="2" />
+      <path d="M6.5 15.5H6A2 2 0 0 1 4 13.5V6a2 2 0 0 1 2-2h7.5a2 2 0 0 1 2 2v.5" />
+    </svg>
+  );
+}
+
+function IconMore() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="5" r="1.6" />
+      <circle cx="12" cy="12" r="1.6" />
+      <circle cx="12" cy="19" r="1.6" />
+    </svg>
+  );
+}
+
+function IconArrowLeft() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m14.5 6.5-5 5 5 5" />
+    </svg>
+  );
+}
+
+function IconArrowRight() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m9.5 6.5 5 5-5 5" />
+    </svg>
+  );
+}
 
 function normalize(value: string | undefined): string {
   return String(value ?? '').trim().toLowerCase();
@@ -95,6 +174,10 @@ function formatPublishedDate(value: string): string {
   }).format(parsed);
 }
 
+function formatLocation(listing: MarketplaceListing): string {
+  return `${listing.area}, ${listing.province}`;
+}
+
 function sortListings(items: MarketplaceListing[], sortBy: SortValue): MarketplaceListing[] {
   const next = [...items];
 
@@ -150,6 +233,56 @@ function buildPagination(currentPage: number, totalPages: number): Array<number 
   return pages;
 }
 
+function listingMatchesReference(listing: MarketplaceListing, value: string): boolean {
+  const normalizedValue = String(value).trim();
+
+  return normalizedValue === listing.id || normalizedValue === String(listing.sourceAssetId ?? '').trim();
+}
+
+function buildListingShareUrl(listing: MarketplaceListing): string {
+  if (typeof window === 'undefined') {
+    return `/marketplace?listing=${encodeURIComponent(listing.id)}`;
+  }
+
+  const url = new URL('/marketplace', window.location.origin);
+  url.searchParams.set('listing', listing.id);
+  return url.toString();
+}
+
+function buildListingShareText(listing: MarketplaceListing): string {
+  return [
+    `${listing.brandName} ${listing.modelName}`,
+    `${money(listing.askingPriceExVat)} excl. VAT`,
+    formatLocation(listing),
+    'View this listing on Aim4price.',
+  ].join(' • ');
+}
+
+function canUseSystemShare(): boolean {
+  return typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+}
+
+async function copyTextToClipboard(value: string): Promise<void> {
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  if (typeof document === 'undefined') {
+    throw new Error('Clipboard is not available.');
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.setAttribute('readonly', 'true');
+  textarea.style.position = 'absolute';
+  textarea.style.left = '-9999px';
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textarea);
+}
+
 export default function MarketplaceClient({
   initialFilters,
   isSignedIn,
@@ -158,6 +291,9 @@ export default function MarketplaceClient({
   const [items, setItems] = useState<MarketplaceListing[]>(seedMarketplaceListings);
   const [activeListing, setActiveListing] = useState<MarketplaceListing | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [shareListing, setShareListing] = useState<MarketplaceListing | null>(null);
+  const [shareFeedback, setShareFeedback] = useState('');
+  const [listingQueryId, setListingQueryId] = useState('');
 
   const [brandFilter, setBrandFilter] = useState(initialFilters.brand || '');
   const [modelFilter, setModelFilter] = useState(initialFilters.model || '');
@@ -206,6 +342,24 @@ export default function MarketplaceClient({
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const syncListingFromUrl = () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      setListingQueryId(String(searchParams.get('listing') ?? '').trim());
+    };
+
+    syncListingFromUrl();
+    window.addEventListener('popstate', syncListingFromUrl);
+
+    return () => {
+      window.removeEventListener('popstate', syncListingFromUrl);
+    };
+  }, []);
+
   const brands = useMemo(
     () => Array.from(new Set(items.map((item) => item.brandName))).sort((a, b) => a.localeCompare(b)),
     [items],
@@ -218,6 +372,8 @@ export default function MarketplaceClient({
       ),
     [items],
   );
+
+  const featuredBrands = useMemo(() => brands.slice(0, 4), [brands]);
 
   const filtered = useMemo(() => {
     const search = normalize(query);
@@ -280,7 +436,7 @@ export default function MarketplaceClient({
         .toLowerCase()
         .includes(search);
     });
-  }, [brandFilter, driveFilter, items, provinceFilter, query, typeFilter, modelFilter]);
+  }, [brandFilter, driveFilter, items, modelFilter, provinceFilter, query, typeFilter]);
 
   const visible = useMemo(() => sortListings(filtered, sortBy), [filtered, sortBy]);
 
@@ -295,6 +451,21 @@ export default function MarketplaceClient({
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    if (!listingQueryId) {
+      return;
+    }
+
+    const matchedListing = items.find((listing) => listingMatchesReference(listing, listingQueryId));
+
+    if (!matchedListing) {
+      return;
+    }
+
+    setActiveListing((current) => (current?.id === matchedListing.id ? current : matchedListing));
+    setActiveImageIndex(0);
+  }, [items, listingQueryId]);
 
   useEffect(() => {
     if (!isFilterPanelOpen) {
@@ -330,6 +501,16 @@ export default function MarketplaceClient({
   const activeImages = useMemo(
     () => (activeListing ? getImages(activeListing) : [FALLBACK_MARKETPLACE_IMAGE]),
     [activeListing],
+  );
+
+  const shareUrl = useMemo(
+    () => (shareListing ? buildListingShareUrl(shareListing) : ''),
+    [shareListing],
+  );
+
+  const shareText = useMemo(
+    () => (shareListing ? buildListingShareText(shareListing) : ''),
+    [shareListing],
   );
 
   useEffect(() => {
@@ -368,6 +549,29 @@ export default function MarketplaceClient({
     };
   }, [activeImages.length, activeListing]);
 
+  useEffect(() => {
+    if (!shareListing) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShareListing(null);
+        setShareFeedback('');
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [shareListing]);
+
   const stats = useMemo(() => {
     if (!items.length) {
       return {
@@ -386,18 +590,70 @@ export default function MarketplaceClient({
     };
   }, [brands.length, items, provinces.length]);
 
-  const activePills = [
-    query.trim() ? `Search: ${query.trim()}` : '',
-    brandFilter ? `Brand: ${brandFilter}` : '',
-    modelFilter ? `Model: ${modelFilter}` : '',
-    driveFilter ? `Drive: ${driveFilter.toUpperCase()}` : '',
-    typeFilter ? `Category: ${formatTypeLabel(typeFilter)}` : '',
-    provinceFilter ? `Province: ${provinceFilter}` : '',
-  ].filter(Boolean);
+  const activeFilterChips: ActiveFilterChip[] = [
+    query.trim()
+      ? {
+          id: 'query',
+          label: `Search: ${query.trim()}`,
+          onRemove: () => setQuery(''),
+        }
+      : null,
+    brandFilter
+      ? {
+          id: 'brand',
+          label: `Brand: ${brandFilter}`,
+          onRemove: () => setBrandFilter(''),
+        }
+      : null,
+    modelFilter
+      ? {
+          id: 'model',
+          label: `Model: ${modelFilter}`,
+          onRemove: () => setModelFilter(''),
+        }
+      : null,
+    driveFilter
+      ? {
+          id: 'drive',
+          label: `Drive: ${driveFilter.toUpperCase()}`,
+          onRemove: () => setDriveFilter(''),
+        }
+      : null,
+    typeFilter
+      ? {
+          id: 'type',
+          label: `Category: ${formatTypeLabel(typeFilter)}`,
+          onRemove: () => setTypeFilter(''),
+        }
+      : null,
+    provinceFilter
+      ? {
+          id: 'province',
+          label: `Province: ${provinceFilter}`,
+          onRemove: () => setProvinceFilter(''),
+        }
+      : null,
+  ].filter(Boolean) as ActiveFilterChip[];
 
-  const activeFilterCount = activePills.length;
-
+  const activeFilterCount = activeFilterChips.length;
   const canDeleteActiveListing = Boolean(activeListing?.canManage && activeListing?.sourceAssetId);
+
+  function updateListingUrl(nextListingId: string | null) {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+
+    if (nextListingId) {
+      url.searchParams.set('listing', nextListingId);
+    } else {
+      url.searchParams.delete('listing');
+    }
+
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    setListingQueryId(nextListingId ?? '');
+  }
 
   function openFilterPanel() {
     setFilterPanelOpen(true);
@@ -422,11 +678,23 @@ export default function MarketplaceClient({
     setFilterPanelOpen(false);
     setActiveListing(listing);
     setActiveImageIndex(0);
+    updateListingUrl(listing.id);
   }
 
   function closeListing() {
     setActiveListing(null);
     setActiveImageIndex(0);
+    updateListingUrl(null);
+  }
+
+  function openShareSheet(listing: MarketplaceListing) {
+    setShareListing(listing);
+    setShareFeedback('');
+  }
+
+  function closeShareSheet() {
+    setShareListing(null);
+    setShareFeedback('');
   }
 
   function showPreviousImage() {
@@ -447,6 +715,71 @@ export default function MarketplaceClient({
     }
   }
 
+  function toggleFeaturedBrand(brand: string) {
+    setBrandFilter((current) => (normalize(current) === normalize(brand) ? '' : brand));
+  }
+
+  function toggleDriveFilter(value: string) {
+    setDriveFilter((current) => (normalize(current) === normalize(value) ? '' : value));
+  }
+
+  function toggleTypeFilter(value: string) {
+    setTypeFilter((current) => (normalize(current) === normalize(value) ? '' : value));
+  }
+
+  function openShareWindow(url: string) {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  async function handleShareAction(channel: 'whatsapp' | 'facebook' | 'copy' | 'system') {
+    if (!shareListing) {
+      return;
+    }
+
+    const nextShareUrl = buildListingShareUrl(shareListing);
+    const nextShareText = buildListingShareText(shareListing);
+
+    try {
+      if (channel === 'copy') {
+        await copyTextToClipboard(nextShareUrl);
+        setShareFeedback('Listing link copied to clipboard.');
+        return;
+      }
+
+      if (channel === 'system') {
+        if (!canUseSystemShare()) {
+          setShareFeedback('This browser does not support the native share sheet.');
+          return;
+        }
+
+        await navigator.share({
+          title: `${shareListing.brandName} ${shareListing.modelName}`,
+          text: nextShareText,
+          url: nextShareUrl,
+        });
+        closeShareSheet();
+        return;
+      }
+
+      if (channel === 'whatsapp') {
+        openShareWindow(`https://wa.me/?text=${encodeURIComponent(`${nextShareText} ${nextShareUrl}`)}`);
+        closeShareSheet();
+        return;
+      }
+
+      openShareWindow(
+        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(nextShareUrl)}&quote=${encodeURIComponent(nextShareText)}`,
+      );
+      closeShareSheet();
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
+
+      setShareFeedback('Sharing did not complete. Please try again.');
+    }
+  }
+
   async function handleDeleteActiveListing() {
     if (!activeListing?.sourceAssetId || !activeListing.canManage) {
       return;
@@ -460,10 +793,13 @@ export default function MarketplaceClient({
     }
 
     try {
-      const response = await fetch(`/api/marketplace?assetId=${encodeURIComponent(activeListing.sourceAssetId)}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `/api/marketplace?assetId=${encodeURIComponent(activeListing.sourceAssetId)}`,
+        {
+          method: 'DELETE',
+          credentials: 'include',
+        },
+      );
 
       const data = (await response.json()) as { ok: boolean; error?: string };
 
@@ -493,10 +829,10 @@ export default function MarketplaceClient({
           <div className={styles.heroTop}>
             <div className={styles.heroCopy}>
               <span className={styles.eyebrow}>Aim4price marketplace</span>
-              <h1>Browse live machinery listings.</h1>
+              <h1>Browse, compare and share live machinery listings.</h1>
               <p>
-                Open any listing for notes, photo gallery, seller area and sign-in gated contact
-                details.
+                Search quickly, open cleaner listing details, and push adverts straight to WhatsApp
+                or Facebook from one place.
               </p>
             </div>
 
@@ -534,17 +870,34 @@ export default function MarketplaceClient({
           <div className={styles.browseHeader}>
             <div className={styles.browseCopy}>
               <span className={styles.sectionEyebrow}>Find faster</span>
-              <h2>Keep the marketplace clean and easy to scan.</h2>
-              <p>Open the filter search drawer only when you need it, instead of keeping a full filter block on the page.</p>
+              <h2>Make the main view effortless to scan.</h2>
+              <p>
+                Keep the primary search visible, move secondary filters into a clean drawer, and
+                make every card obvious to act on.
+              </p>
             </div>
+          </div>
+
+          <div className={styles.toolbarRow}>
+            <label className={styles.toolbarSearch}>
+              <span>Search marketplace</span>
+              <div className={styles.toolbarSearchInputWrap}>
+                <span className={styles.searchIcon} aria-hidden="true">
+                  <IconSearch />
+                </span>
+                <input
+                  id="marketplace-search"
+                  value={query}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
+                  placeholder="Search brand, model, province, area or keyword"
+                />
+              </div>
+            </label>
 
             <div className={styles.browseActions}>
               <label className={styles.toolbarSelect}>
                 <span>Sort</span>
-                <select
-                  value={sortBy}
-                  onChange={(event) => setSortBy(event.target.value as SortValue)}
-                >
+                <select value={sortBy} onChange={(event) => setSortBy(event.target.value as SortValue)}>
                   <option value="newest">Newest listed</option>
                   <option value="price-low">Price: low to high</option>
                   <option value="price-high">Price: high to low</option>
@@ -569,13 +922,62 @@ export default function MarketplaceClient({
             </div>
           </div>
 
-          {activePills.length ? (
+          <div className={styles.quickFilterRow}>
+            <button
+              type="button"
+              className={`${styles.quickFilterButton} ${activeFilterCount === 0 ? styles.quickFilterButtonActive : ''}`}
+              onClick={clearFilters}
+            >
+              All listings
+            </button>
+
+            {featuredBrands.map((brand) => (
+              <button
+                key={brand}
+                type="button"
+                className={`${styles.quickFilterButton} ${
+                  normalize(brandFilter) === normalize(brand) ? styles.quickFilterButtonActive : ''
+                }`}
+                onClick={() => toggleFeaturedBrand(brand)}
+              >
+                {brand}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              className={`${styles.quickFilterButton} ${
+                normalize(driveFilter) === '4wd' ? styles.quickFilterButtonActive : ''
+              }`}
+              onClick={() => toggleDriveFilter('4wd')}
+            >
+              4WD
+            </button>
+
+            <button
+              type="button"
+              className={`${styles.quickFilterButton} ${
+                normalize(typeFilter) === 'field' ? styles.quickFilterButtonActive : ''
+              }`}
+              onClick={() => toggleTypeFilter('field')}
+            >
+              Field
+            </button>
+          </div>
+
+          {activeFilterChips.length ? (
             <div className={styles.activeFilterBar}>
               <div className={styles.pillRow}>
-                {activePills.map((pill) => (
-                  <span key={pill} className={styles.pill}>
-                    {pill}
-                  </span>
+                {activeFilterChips.map((chip) => (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    className={styles.pill}
+                    onClick={chip.onRemove}
+                  >
+                    <span>{chip.label}</span>
+                    <strong aria-hidden="true">×</strong>
+                  </button>
                 ))}
               </div>
 
@@ -585,7 +987,7 @@ export default function MarketplaceClient({
             </div>
           ) : (
             <p className={styles.browseHint}>
-              Search, brand, model, drive, category and province filters now sit inside the drawer on the right.
+              Start with search, then open filters only when you need a tighter result set.
             </p>
           )}
         </section>
@@ -630,11 +1032,12 @@ export default function MarketplaceClient({
                       }}
                     />
 
-                    <span className={styles.imageTag}>{getListingTag(listing)}</span>
-
-                    {cardImages.length > 1 ? (
-                      <span className={styles.photoCount}>{cardImages.length} photos</span>
-                    ) : null}
+                    <div className={styles.imageTopRow}>
+                      <span className={styles.imageTag}>{getListingTag(listing)}</span>
+                      {cardImages.length > 1 ? (
+                        <span className={styles.photoCount}>{cardImages.length} photos</span>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className={styles.cardHead}>
@@ -643,8 +1046,9 @@ export default function MarketplaceClient({
                         {listing.brandName} {listing.modelName}
                       </h3>
                       <p className={styles.specLine}>
-                        {formatTypeLabel(listing.tractorType)} tractor • {listing.drive.toUpperCase()} •{' '}
-                        {formatCabLabel(listing.cab)} • {listing.powerKw} kW
+                        {formatTypeLabel(listing.tractorType)} tractor •{' '}
+                        {listing.drive.toUpperCase()} • {formatCabLabel(listing.cab)} •{' '}
+                        {listing.powerKw} kW
                       </p>
                     </div>
 
@@ -653,6 +1057,15 @@ export default function MarketplaceClient({
                       <small>VAT excluded</small>
                     </div>
                   </div>
+
+                  <div className={styles.metaRow}>
+                    <span className={styles.metaPill}>{formatLocation(listing)}</span>
+                    <span className={styles.metaPill}>
+                      Listed {formatPublishedDate(listing.publishedAtIso)}
+                    </span>
+                  </div>
+
+                  <p className={styles.summaryLine}>{getListingNote(listing)}</p>
 
                   <div className={styles.compactStats}>
                     <div className={styles.statCard}>
@@ -669,8 +1082,30 @@ export default function MarketplaceClient({
                   </div>
 
                   <div className={styles.cardFooter}>
-                    <span className={styles.clickHint}>Open listing details</span>
-                    <span className={styles.cardDate}>{formatPublishedDate(listing.publishedAtIso)}</span>
+                    <button
+                      type="button"
+                      className={styles.cardPrimaryButton}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openListing(listing);
+                      }}
+                    >
+                      View details
+                    </button>
+
+                    <button
+                      type="button"
+                      className={styles.cardSecondaryButton}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openShareSheet(listing);
+                      }}
+                    >
+                      <span className={styles.buttonIcon} aria-hidden="true">
+                        <IconShare />
+                      </span>
+                      Share
+                    </button>
                   </div>
                 </article>
               );
@@ -748,8 +1183,11 @@ export default function MarketplaceClient({
             <div className={styles.filterDrawerHeader}>
               <div>
                 <span className={styles.sectionEyebrow}>Filter search</span>
-                <h2 id="marketplace-filter-title">Refine live marketplace results.</h2>
-                <p>Use the drawer below to narrow the listings without taking up permanent page space.</p>
+                <h2 id="marketplace-filter-title">Refine the listings without clutter.</h2>
+                <p>
+                  Search stays on the page. Use the drawer for the narrower machinery and seller area
+                  filters only when you need them.
+                </p>
               </div>
 
               <button
@@ -765,25 +1203,8 @@ export default function MarketplaceClient({
             <div className={styles.filterDrawerBody}>
               <section className={styles.drawerSection}>
                 <div className={styles.drawerSectionHead}>
-                  <h3>Keyword search</h3>
-                  <p>Search brand, model, area, province, seller or listing notes.</p>
-                </div>
-
-                <label className={`${styles.field} ${styles.drawerSearchField}`}>
-                  <span>Search</span>
-                  <input
-                    id="marketplace-search"
-                    value={query}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
-                    placeholder="Brand, model, keyword, area or province"
-                  />
-                </label>
-              </section>
-
-              <section className={styles.drawerSection}>
-                <div className={styles.drawerSectionHead}>
                   <h3>Machinery details</h3>
-                  <p>Use these fields to narrow the listing type, brand and model.</p>
+                  <p>Use these fields to narrow the listing type, brand, model and drive layout.</p>
                 </div>
 
                 <div className={styles.drawerGrid}>
@@ -835,7 +1256,7 @@ export default function MarketplaceClient({
                   <p>Focus the results to one province or leave the whole marketplace open.</p>
                 </div>
 
-                <div className={styles.drawerGrid}>
+                <div className={styles.drawerGridSingle}>
                   <label className={styles.field}>
                     <span>Province</span>
                     <select
@@ -905,7 +1326,7 @@ export default function MarketplaceClient({
                         onClick={showPreviousImage}
                         aria-label="Previous photo"
                       >
-                        ‹
+                        <IconArrowLeft />
                       </button>
 
                       <button
@@ -914,7 +1335,7 @@ export default function MarketplaceClient({
                         onClick={showNextImage}
                         aria-label="Next photo"
                       >
-                        ›
+                        <IconArrowRight />
                       </button>
                     </>
                   ) : null}
@@ -922,6 +1343,39 @@ export default function MarketplaceClient({
                   <span className={styles.modalBadge}>
                     Photo {activeImageIndex + 1} of {activeImages.length}
                   </span>
+                </div>
+
+                {activeImages.length > 1 ? (
+                  <div className={styles.thumbRow}>
+                    {activeImages.map((imageSrc, index) => (
+                      <button
+                        key={`${imageSrc}-${index}`}
+                        type="button"
+                        className={`${styles.thumbButton} ${
+                          index === activeImageIndex ? styles.thumbButtonActive : ''
+                        }`}
+                        onClick={() => setActiveImageIndex(index)}
+                        aria-label={`Show photo ${index + 1}`}
+                      >
+                        <img
+                          src={imageSrc}
+                          alt=""
+                          className={styles.thumbImage}
+                          onError={(event) => {
+                            event.currentTarget.src = FALLBACK_MARKETPLACE_IMAGE;
+                          }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
+                <div className={styles.viewerMetaCard}>
+                  <span className={styles.sectionLabel}>Seller area</span>
+                  <strong>{formatLocation(activeListing)}</strong>
+                  <small>
+                    Listed {formatPublishedDate(activeListing.dateAdvertised || activeListing.publishedAtIso)}
+                  </small>
                 </div>
               </div>
 
@@ -937,6 +1391,12 @@ export default function MarketplaceClient({
                       {activeListing.drive.toUpperCase()} • {formatCabLabel(activeListing.cab)} •{' '}
                       {activeListing.powerKw} kW
                     </p>
+                    <div className={styles.modalMetaRow}>
+                      <span className={styles.metaPill}>{formatLocation(activeListing)}</span>
+                      <span className={styles.metaPill}>
+                        Listed {formatPublishedDate(activeListing.dateAdvertised || activeListing.publishedAtIso)}
+                      </span>
+                    </div>
                   </div>
 
                   <div className={styles.modalPriceBlock}>
@@ -944,6 +1404,23 @@ export default function MarketplaceClient({
                     <strong>{money(activeListing.askingPriceExVat)}</strong>
                     <span>VAT excluded</span>
                   </div>
+                </div>
+
+                <div className={styles.modalActionStrip}>
+                  <button
+                    type="button"
+                    className={styles.sharePrimaryButton}
+                    onClick={() => openShareSheet(activeListing)}
+                  >
+                    <span className={styles.buttonIcon} aria-hidden="true">
+                      <IconShare />
+                    </span>
+                    Share listing
+                  </button>
+
+                  <span className={styles.modalActionHint}>
+                    Send the advert straight to WhatsApp or Facebook.
+                  </span>
                 </div>
 
                 <div className={styles.modalStats}>
@@ -960,27 +1437,42 @@ export default function MarketplaceClient({
                   </div>
 
                   <div className={styles.statCard}>
-                    <span className={styles.statLabel}>Province</span>
-                    <strong className={styles.statValue}>{activeListing.province}</strong>
+                    <span className={styles.statLabel}>Drive</span>
+                    <strong className={styles.statValue}>{activeListing.drive.toUpperCase()}</strong>
                   </div>
 
                   <div className={styles.statCard}>
-                    <span className={styles.statLabel}>Area</span>
-                    <strong className={styles.statValue}>{activeListing.area}</strong>
+                    <span className={styles.statLabel}>Category</span>
+                    <strong className={styles.statValue}>{formatTypeLabel(activeListing.tractorType)}</strong>
+                  </div>
+
+                  <div className={styles.statCard}>
+                    <span className={styles.statLabel}>Cab</span>
+                    <strong className={styles.statValue}>{formatCabLabel(activeListing.cab)}</strong>
+                  </div>
+
+                  <div className={styles.statCard}>
+                    <span className={styles.statLabel}>Power</span>
+                    <strong className={styles.statValue}>
+                      {activeListing.powerKw} kW / {activeListing.horsepowerHp} hp
+                    </strong>
                   </div>
                 </div>
 
-                <div className={styles.modalSection}>
-                  <span className={styles.sectionLabel}>Listing notes</span>
-                  <p>{getListingNote(activeListing)}</p>
-                </div>
+                <div className={styles.modalInfoGrid}>
+                  <div className={styles.modalSection}>
+                    <span className={styles.sectionLabel}>Listing notes</span>
+                    <p>{getListingNote(activeListing)}</p>
+                  </div>
 
-                <div className={styles.modalSection}>
-                  <span className={styles.sectionLabel}>Listing information</span>
-                  <p>
-                    Located in {activeListing.area}, {activeListing.province}. Listed on{' '}
-                    {formatPublishedDate(activeListing.dateAdvertised || activeListing.publishedAtIso)}.
-                  </p>
+                  <div className={styles.modalSection}>
+                    <span className={styles.sectionLabel}>Listing information</span>
+                    <p>
+                      Located in {activeListing.area}, {activeListing.province}. Listed on{' '}
+                      {formatPublishedDate(activeListing.dateAdvertised || activeListing.publishedAtIso)}.
+                      {activeListing.sourceName ? ` Source: ${activeListing.sourceName}.` : ''}
+                    </p>
+                  </div>
                 </div>
 
                 {canDeleteActiveListing ? (
@@ -1005,13 +1497,15 @@ export default function MarketplaceClient({
                     <span className={styles.sectionLabel}>Seller contact</span>
                     {isSignedIn ? (
                       <p>
-                        {activeListing.sellerName} • {activeListing.sellerPhone}
+                        {activeListing.sellerName}
+                        {activeListing.sellerCompany ? ` • ${activeListing.sellerCompany}` : ''}
+                        {activeListing.sellerPhone ? ` • ${activeListing.sellerPhone}` : ''}
                         {activeListing.sellerEmail ? ` • ${activeListing.sellerEmail}` : ''}
                       </p>
                     ) : (
                       <p>
-                        View seller phone number and email after sign-in. Browsing stays open before
-                        account creation.
+                        View the seller phone number and email after sign-in. Browsing and sharing
+                        stay open before account creation.
                       </p>
                     )}
                   </div>
@@ -1029,6 +1523,111 @@ export default function MarketplaceClient({
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {shareListing ? (
+        <div className={styles.shareOverlay} onClick={closeShareSheet}>
+          <div
+            className={styles.shareDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="share-listing-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.shareCloseButton}
+              onClick={closeShareSheet}
+              aria-label="Close share dialog"
+            >
+              ×
+            </button>
+
+            <div className={styles.shareHeader}>
+              <span className={styles.sectionEyebrow}>Share listing</span>
+              <h2 id="share-listing-title">Push this advert out in seconds.</h2>
+              <p>
+                Use the two main channels first, or copy the direct link for anywhere else.
+              </p>
+            </div>
+
+            <div className={styles.sharePreviewCard}>
+              <img
+                src={getImages(shareListing)[0] ?? FALLBACK_MARKETPLACE_IMAGE}
+                alt={`${shareListing.brandName} ${shareListing.modelName}`}
+                className={styles.sharePreviewImage}
+                onError={(event) => {
+                  event.currentTarget.src = FALLBACK_MARKETPLACE_IMAGE;
+                }}
+              />
+
+              <div className={styles.sharePreviewCopy}>
+                <strong>
+                  {shareListing.brandName} {shareListing.modelName}
+                </strong>
+                <span>{money(shareListing.askingPriceExVat)} excl. VAT</span>
+                <small>{formatLocation(shareListing)}</small>
+              </div>
+            </div>
+
+            <div className={styles.shareGrid}>
+              <button
+                type="button"
+                className={`${styles.shareActionButton} ${styles.shareActionPrimary}`}
+                onClick={() => void handleShareAction('whatsapp')}
+              >
+                <span className={styles.shareActionIcon} aria-hidden="true">
+                  <IconWhatsApp />
+                </span>
+                WhatsApp
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.shareActionButton} ${styles.shareActionSecondary}`}
+                onClick={() => void handleShareAction('facebook')}
+              >
+                <span className={styles.shareActionIcon} aria-hidden="true">
+                  <IconFacebook />
+                </span>
+                Facebook
+              </button>
+
+              <button
+                type="button"
+                className={styles.shareActionButton}
+                onClick={() => void handleShareAction('copy')}
+              >
+                <span className={styles.shareActionIcon} aria-hidden="true">
+                  <IconCopy />
+                </span>
+                Copy link
+              </button>
+
+              {canUseSystemShare() ? (
+                <button
+                  type="button"
+                  className={styles.shareActionButton}
+                  onClick={() => void handleShareAction('system')}
+                >
+                  <span className={styles.shareActionIcon} aria-hidden="true">
+                    <IconMore />
+                  </span>
+                  More options
+                </button>
+              ) : null}
+            </div>
+
+            <label className={styles.shareLinkField}>
+              <span>Direct listing link</span>
+              <input value={shareUrl} readOnly aria-label="Direct listing link" />
+            </label>
+
+            {shareFeedback ? <p className={styles.shareFeedback}>{shareFeedback}</p> : null}
+
+            <p className={styles.shareCaption}>{shareText}</p>
           </div>
         </div>
       ) : null}
