@@ -34,16 +34,14 @@ export default function HomePage() {
 
       <section className={styles.heroSection}>
         <div className={styles.heroMedia}>
-          <video
-            className={styles.heroVideo}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-          >
-            <source src="/brand/AIM4PRICE.mp4" type="video/mp4" />
-          </video>
+          <Image
+            src="/brand/Home-page.png"
+            alt="Aim4price agricultural and industrial machinery pricing background"
+            fill
+            priority
+            sizes="100vw"
+            className={styles.heroBackground}
+          />
 
           <div className={styles.heroOverlay} />
 
@@ -53,14 +51,19 @@ export default function HomePage() {
                 <p className={styles.eyebrow}>Agricultural &amp; industrial machinery pricing</p>
 
                 <h1 className={styles.heroTitle}>
-                  <span className={styles.heroTitleLine}>Know what</span>
-                  <span className={styles.heroTitleLine}>your machinery</span>
+                  <span className={styles.heroTitleLine}>Know</span>
+                  <span className={styles.heroTitleLine}>what your</span>
+                  <span className={styles.heroTitleLine}>machinery</span>
                   <span className={styles.heroTitleLine}>is worth.</span>
                 </h1>
 
                 <p className={styles.heroText}>
-                  Professional tools for valuing equipment, managing machinery records, and
-                  taking the next commercial step with more clarity.
+                  <span className={styles.heroTextLine}>
+                    Professional tools for valuing equipment, managing machinery
+                  </span>
+                  <span className={styles.heroTextLine}>
+                    records, and taking the next commercial step with more clarity.
+                  </span>
                 </p>
 
                 <div className={styles.heroActions}>
@@ -75,8 +78,8 @@ export default function HomePage() {
                   <Image
                     src="/brand/aim4price-mark-white.png"
                     alt=""
-                    width={660}
-                    height={515}
+                    width={760}
+                    height={760}
                     priority
                     className={styles.heroLogo}
                   />
