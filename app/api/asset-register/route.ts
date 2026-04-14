@@ -40,6 +40,39 @@ function normalizeKind(value: unknown): AssetRegisterItemKind {
   return 'manual';
 }
 
+function normalizeHours(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined') {
+    return null;
+  }
+
+  const text = String(value).trim();
+  if (!text) {
+    return null;
+  }
+
+  const numeric = Number(text);
+
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    return null;
+  }
+
+  return Math.round(numeric);
+}
+
+function normalizeCondition(value: unknown): UpdateAssetRegisterItemInput['condition'] {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (normalized === 'excellent') return 'excellent';
+  if (normalized === 'fair') return 'fair';
+  if (normalized === 'used') return 'used';
+  if (normalized === 'serious' || normalized === 'requires attention' || normalized === 'requires serious attention') {
+    return 'serious';
+  }
+
+  if (normalized === 'good') return 'good';
+  return null;
+}
+
 function normalizePhotos(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -155,6 +188,8 @@ export async function POST(request: NextRequest) {
       isFinanced: Boolean(body.isFinanced),
       financeNote: body.financeNote ?? null,
       photos: normalizePhotos(body.photos),
+      hours: normalizeHours(body.hours),
+      condition: normalizeCondition(body.condition),
     });
 
     return NextResponse.json({ ok: true, item });
@@ -215,6 +250,8 @@ export async function PUT(request: NextRequest) {
       isFinanced: Boolean(body.isFinanced),
       financeNote: body.financeNote ?? null,
       photos: nextPhotos,
+      hours: normalizeHours(body.hours),
+      condition: normalizeCondition(body.condition),
     });
 
     await deleteUnreferencedAssetRegisterUploads({
