@@ -16,56 +16,26 @@
 .topBar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
   margin-bottom: 1.28rem;
-}
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-  text-decoration: none;
-  color: var(--text-strong);
-}
-
-.brandCopy {
-  display: grid;
-  gap: 0.2rem;
-  min-width: 0;
-}
-
-.brandTitle {
-  font-size: 2rem;
-  line-height: 0.94;
-  font-weight: 800;
-  letter-spacing: -0.06em;
-  color: #17362c;
-}
-
-.brandSubtext {
-  font-size: 0.71rem;
-  line-height: 1.32;
-  font-weight: 800;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: #6d7a74;
 }
 
 .homeLink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.65rem;
-  padding: 0 1.45rem;
+  min-width: 11rem;
+  min-height: 3.7rem;
+  padding: 0 1.7rem;
   border-radius: 999px;
-  border: 1px solid rgba(18, 45, 37, 0.12);
-  background: rgba(255, 255, 255, 0.96);
-  color: #233932;
+  border: 1px solid rgba(18, 45, 37, 0.1);
+  background: rgba(255, 255, 255, 0.92);
+  color: #31423c;
   text-decoration: none;
   font-size: 1rem;
   font-weight: 800;
-  box-shadow: 0 14px 26px rgba(18, 45, 37, 0.06);
+  box-shadow: 0 10px 20px rgba(18, 45, 37, 0.04);
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -76,10 +46,9 @@
 
 .homeLink:hover {
   transform: translateY(-1px);
-  border-color: rgba(18, 45, 37, 0.2);
+  border-color: rgba(18, 45, 37, 0.16);
   background: #ffffff;
   color: #18382f;
-  box-shadow: 0 16px 30px rgba(18, 45, 37, 0.08);
 }
 
 .frame {
@@ -618,7 +587,6 @@
   cursor: pointer;
 }
 
-.brand:focus-visible,
 .homeLink:focus-visible,
 .modeButton:focus-visible,
 .input:focus-visible,
@@ -688,10 +656,6 @@
     border-radius: 1.32rem;
   }
 
-  .brandTitle {
-    font-size: 1.72rem;
-  }
-
   .showcaseTitle {
     font-size: clamp(2.2rem, 8.9vw, 3.1rem);
   }
@@ -714,11 +678,6 @@
 }
 
 @media (max-width: 540px) {
-  .brandSubtext {
-    font-size: 0.64rem;
-    letter-spacing: 0.09em;
-  }
-
   .modeButton {
     min-height: 2.94rem;
   }
