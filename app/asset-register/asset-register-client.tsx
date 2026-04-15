@@ -96,8 +96,6 @@ type AccountProfileApiResponse = {
 
 type ProjectionSnapshot = {
   retailExVat: number;
-  tradeInExVat: number;
-  tradeInPercent: number;
   hours: number;
   tractorExVat: number;
   loaderExVat: number;
@@ -117,21 +115,23 @@ type AssetFutureProjection = {
   condition: ConditionKey;
   current: ProjectionSnapshot;
   projected: ProjectionSnapshot;
-  breakdown: {
-    inflationFactor: number;
-    replacementBaseExVat: number;
-    projectedReplacementBaseExVat: number;
-    ageDepPct: number;
-    usageDepPct: number;
-    averageDepPct: number;
-    conditionFactor: number;
-  };
 };
 
 type ProjectionApiResponse = {
   ok: boolean;
   projection?: AssetFutureProjection;
   error?: string;
+};
+
+type MarketplacePublishDraft = {
+  sellerName: string;
+  sellerCompany: string;
+  sellerPhone: string;
+  sellerEmail: string;
+  province: string;
+  area: string;
+  askingPriceExVat: string;
+  description: string;
 };
 
 type AssetDraft = {
@@ -161,6 +161,7 @@ type IconProps = {
 
 const MAX_PHOTOS = 12;
 const PAGE_SIZE = 6;
+const FALLBACK_ASSET_IMAGE = '/brand/Tractor.png';
 const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = [
   { value: '', label: 'Select condition' },
   { value: 'excellent', label: 'Excellent' },
@@ -330,6 +331,38 @@ function ChevronRightIcon({ className }: IconProps) {
       <path d="m9 18 6-6-6-6" />
     </svg>
   );
+}
+
+function ChevronDownIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function ChevronUpIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="m18 15-6-6-6 6" />
+    </svg>
+  );
+}
+
+type ExportGraphicProps = {
+  src: string;
+  alt: string;
+  icon: JSX.Element;
+};
+
+function ExportGraphic({ src, alt, icon }: ExportGraphicProps) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return <span className={styles.exportGraphicFallback}>{icon}</span>;
+  }
+
+  return <img src={src} alt={alt} className={styles.exportGraphicImage} onError={() => setHasError(true)} />;
 }
 
 function money(value: number): string {
@@ -508,6 +541,23 @@ function buildSavedItemFromAsset(asset: RegisterAsset) {
     financeNote: asset.financeNote || undefined,
     photos: asset.photos,
   };
+}
+
+function createMarketplaceDraft(asset: RegisterAsset, profile: AccountProfile | null): MarketplacePublishDraft {
+  return {
+    sellerName: profile?.name?.trim() || profile?.businessName?.trim() || 'Aim4price seller',
+    sellerCompany: profile?.businessName?.trim() || '',
+    sellerPhone: profile?.phone?.trim() || '',
+    sellerEmail: profile?.email?.trim() || '',
+    province: profile?.province?.trim() || '',
+    area: profile?.townCity?.trim() || '',
+    askingPriceExVat: String(Math.round(asset.selectedValueExVat || asset.value || 0)),
+    description: (asset.note || `Clean ${asset.title} listing from the Aim4price asset register.`).trim(),
+  };
+}
+
+function assetImage(asset: RegisterAsset): string {
+  return asset.photos[0] || FALLBACK_ASSET_IMAGE;
 }
 
 function buildAssetMeta(asset: RegisterAsset): string {
@@ -691,7 +741,11 @@ export default function AssetRegisterClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
+  const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
   const [busyDeleteId, setBusyDeleteId] = useState<string | null>(null);
+  const [marketplaceAsset, setMarketplaceAsset] = useState<RegisterAsset | null>(null);
+  const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
+  const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -775,7 +829,7 @@ export default function AssetRegisterClient() {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  const anyModalOpen = isAssetModalOpen || Boolean(activeAsset) || isExportModalOpen || Boolean(projectionAsset);
+  const anyModalOpen = isAssetModalOpen || Boolean(activeAsset) || isExportModalOpen || Boolean(projectionAsset) || Boolean(marketplaceAsset);
 
   useEffect(() => {
     if (!anyModalOpen) {
@@ -790,6 +844,11 @@ export default function AssetRegisterClient() {
 
       if (projectionAsset) {
         closeProjectionModal();
+        return;
+      }
+
+      if (marketplaceAsset) {
+        closeMarketplaceModal();
         return;
       }
 
@@ -814,7 +873,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, isAssetModalOpen, isExportModalOpen, projectionAsset]);
+  }, [activeAsset, anyModalOpen, isAssetModalOpen, isExportModalOpen, marketplaceAsset, projectionAsset]);
 
   const totalValue = useMemo(() => {
     return assets.reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
@@ -849,6 +908,13 @@ export default function AssetRegisterClient() {
       setCurrentPage(pageCount);
     }
   }, [currentPage, pageCount]);
+
+  useEffect(() => {
+    if (!expandedAssetId) return;
+    if (!visibleAssets.some((asset) => asset.id === expandedAssetId)) {
+      setExpandedAssetId(null);
+    }
+  }, [expandedAssetId, visibleAssets]);
 
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const pageEnd = Math.min(filteredAssets.length, pageStart + PAGE_SIZE);
@@ -886,6 +952,20 @@ export default function AssetRegisterClient() {
 
   function closeActionDialog() {
     setActiveAsset(null);
+  }
+
+  async function openMarketplaceModal(asset: RegisterAsset) {
+    closeActionDialog();
+    const profile = await ensureAccountProfile();
+    setMarketplaceAsset(asset);
+    setMarketplaceDraft(createMarketplaceDraft(asset, profile));
+    setIsPublishingMarketplace(false);
+  }
+
+  function closeMarketplaceModal() {
+    setMarketplaceAsset(null);
+    setMarketplaceDraft(null);
+    setIsPublishingMarketplace(false);
   }
 
   async function ensureAccountProfile(): Promise<AccountProfile | null> {
@@ -1117,34 +1197,62 @@ export default function AssetRegisterClient() {
     void handleDeleteAsset(asset.id);
   }
 
-  function handlePublishAsset(asset: RegisterAsset) {
+  async function handleConfirmMarketplacePublish(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!marketplaceAsset || !marketplaceDraft) {
+      return;
+    }
+
+    const askingPriceExVat = Math.round(Number(marketplaceDraft.askingPriceExVat || 0));
+
+    if (!Number.isFinite(askingPriceExVat) || askingPriceExVat <= 0) {
+      setNotice({ tone: 'error', message: 'Enter a valid marketplace price before continuing.' });
+      return;
+    }
+
+    if (!marketplaceDraft.sellerName.trim() || !marketplaceDraft.sellerPhone.trim()) {
+      setNotice({ tone: 'error', message: 'Add at least a contact name and phone number before sending to marketplace.' });
+      return;
+    }
+
+    setIsPublishingMarketplace(true);
+
     try {
-      const normalizedAsset = buildSavedItemFromAsset(asset);
-      const publishableAsset = isTractorAsset(asset)
+      const normalizedAsset = buildSavedItemFromAsset(marketplaceAsset);
+      const publishableAsset = isTractorAsset(marketplaceAsset)
         ? { ...normalizedAsset, kind: 'tractor' as const }
         : normalizedAsset;
 
       publishRegisterItemToMarketplace(publishableAsset, {
-        askingPriceExVat: asset.selectedValueExVat || asset.value,
-        imageUrls: asset.photos,
-        imageSrc: asset.photos[0],
+        askingPriceExVat,
+        description: marketplaceDraft.description.trim(),
+        sellerName: marketplaceDraft.sellerName.trim(),
+        sellerCompany: marketplaceDraft.sellerCompany.trim(),
+        sellerPhone: marketplaceDraft.sellerPhone.trim(),
+        sellerEmail: marketplaceDraft.sellerEmail.trim(),
+        province: marketplaceDraft.province.trim(),
+        area: marketplaceDraft.area.trim(),
+        imageUrls: marketplaceAsset.photos.length ? marketplaceAsset.photos : [FALLBACK_ASSET_IMAGE],
+        imageSrc: assetImage(marketplaceAsset),
       });
 
       setNotice({
         tone: 'success',
-        message: `${asset.title} was sent to the marketplace.`,
+        message: `${marketplaceAsset.title} is ready on the marketplace.`,
       });
+      closeMarketplaceModal();
     } catch (error) {
       setNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'Failed to send asset to marketplace.',
       });
+      setIsPublishingMarketplace(false);
     }
   }
 
   function handlePublishFromDialog(asset: RegisterAsset) {
-    handlePublishAsset(asset);
-    closeActionDialog();
+    void openMarketplaceModal(asset);
   }
 
   function handlePrintAssetSheet(asset: RegisterAsset) {
@@ -1158,7 +1266,7 @@ export default function AssetRegisterClient() {
       value: money(asset.value),
       valueNote: 'Saved asset register snapshot.',
       statusLabel: assetStatusDateLabel(asset),
-      photoUrl: toAbsoluteUrl(asset.photos[0]) ?? null,
+      photoUrl: toAbsoluteUrl(asset.photos[0] || FALLBACK_ASSET_IMAGE) ?? null,
       facts: [
         { label: 'Asset type', value: kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind) },
         { label: 'Method', value: methodLabel(asset.selectedMethod) },
@@ -1420,10 +1528,6 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={styles.headerActions}>
-              <Link href="/valuation" className={styles.secondaryButton}>
-                Valuation
-              </Link>
-
               <button
                 type="button"
                 className={styles.secondaryButton}
@@ -1436,7 +1540,7 @@ export default function AssetRegisterClient() {
 
               <button type="button" className={styles.primaryButton} onClick={openCreateModal}>
                 <PlusIcon className={styles.buttonIcon} />
-                <span>Add manual asset</span>
+                <span>Manually add asset</span>
               </button>
             </div>
           </div>
@@ -1500,89 +1604,42 @@ export default function AssetRegisterClient() {
               <>
                 <div className={styles.assetList}>
                   {visibleAssets.map((asset) => {
-                    const previewPhoto = asset.photos[0];
-                    const displayKind = kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind);
+                    const previewPhoto = assetImage(asset);
                     const isLive = isTractorAsset(asset) && hasMarketplaceListingForAsset(String(asset.id));
+                    const isExpanded = expandedAssetId === asset.id;
 
                     return (
-                      <article className={styles.assetCard} key={asset.id}>
+                      <article className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''}`} key={asset.id}>
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
-                            <div className={styles.badgeRow}>
-                              <span className={`${styles.badge} ${styles.badgeNeutral}`}>{displayKind}</span>
-                              <span className={`${styles.badge} ${styles.badgeNeutral}`}>{methodLabel(asset.selectedMethod)}</span>
-                              {asset.valuationRunId ? (
-                                <span className={`${styles.badge} ${styles.badgeNeutral}`}>Saved valuation</span>
-                              ) : null}
-                              {asset.condition ? (
-                                <span className={`${styles.badge} ${styles.badgeNeutral}`}>{conditionLabel(asset.condition)}</span>
-                              ) : null}
-                              {isLive ? (
-                                <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span>
-                              ) : null}
-                              {asset.photos.length ? (
-                                <span className={`${styles.badge} ${styles.badgeNeutral}`}>
-                                  {asset.photos.length} photo{asset.photos.length === 1 ? '' : 's'}
-                                </span>
-                              ) : null}
-                            </div>
-
                             <h2>{asset.title}</h2>
                             <p>{buildAssetMeta(asset)}</p>
+                            <div className={styles.assetMetaRow}>
+                              <span>{methodLabel(asset.selectedMethod)} value</span>
+                              <span>{conditionLabel(asset.condition)}</span>
+                              <span>{assetStatusDateLabel(asset)}</span>
+                              {isLive ? <span className={styles.assetLiveText}>Live on marketplace</span> : null}
+                            </div>
                           </div>
 
-                          <div className={styles.valueBlock}>
-                            <small>Register value</small>
-                            <strong>{money(asset.value)}</strong>
-                            <span>Excl. VAT • {assetStatusDateLabel(asset)}</span>
-                          </div>
-                        </div>
-
-                        <div className={styles.assetBody}>
-                          <div className={styles.previewWrap}>
-                            {previewPhoto ? (
-                              <img src={previewPhoto} alt={`${asset.title} preview`} className={styles.previewImage} />
-                            ) : (
-                              <div className={styles.previewFallback}>No photo</div>
-                            )}
-                          </div>
-
-                          <div className={styles.assetContent}>
-                            <div className={styles.infoGrid}>
-                              <div className={styles.infoTile}>
-                                <span>Serial</span>
-                                <strong>{asset.serialNumber || '—'}</strong>
-                              </div>
-
-                              <div className={styles.infoTile}>
-                                <span>Finance</span>
-                                <strong>{asset.isFinanced ? 'Financed' : 'Not financed'}</strong>
-                              </div>
-
-                              <div className={styles.infoTile}>
-                                <span>Hours</span>
-                                <strong>
-                                  {asset.hours !== null && typeof asset.hours !== 'undefined'
-                                    ? asset.hours.toLocaleString('en-ZA')
-                                    : '—'}
-                                </strong>
-                              </div>
-
-                              <div className={styles.infoTile}>
-                                <span>Condition</span>
-                                <strong>{conditionLabel(asset.condition)}</strong>
-                              </div>
+                          <div className={styles.assetHeaderAside}>
+                            <div className={styles.valueBlock}>
+                              <small>Register value</small>
+                              <strong>{money(asset.value)}</strong>
+                              <span>Excl. VAT • {assetStatusDateLabel(asset)}</span>
                             </div>
 
-                            {asset.note || asset.financeNote ? (
-                              <div className={styles.noteStack}>
-                                {asset.note ? <p className={styles.note}>{asset.note}</p> : null}
-                                {asset.financeNote ? <p className={styles.note}>Finance: {asset.financeNote}</p> : null}
-                              </div>
-                            ) : null}
-
-                            <div className={styles.assetFooter}>
-                              <span className={styles.assetFooterStatus}>{assetStatusDateLabel(asset)}</span>
+                            <div className={styles.assetHeaderActions}>
+                              <button
+                                type="button"
+                                className={styles.expandButton}
+                                onClick={() => setExpandedAssetId((current) => (current === asset.id ? null : asset.id))}
+                                aria-expanded={isExpanded}
+                                aria-controls={`asset-panel-${asset.id}`}
+                              >
+                                {isExpanded ? <ChevronUpIcon className={styles.buttonIcon} /> : <ChevronDownIcon className={styles.buttonIcon} />}
+                                <span>{isExpanded ? 'Hide details' : 'View details'}</span>
+                              </button>
 
                               <button
                                 type="button"
@@ -1595,6 +1652,49 @@ export default function AssetRegisterClient() {
                             </div>
                           </div>
                         </div>
+
+                        {isExpanded ? (
+                          <div className={styles.assetBody} id={`asset-panel-${asset.id}`}>
+                            <div className={styles.previewWrap}>
+                              <img src={previewPhoto} alt={`${asset.title} preview`} className={styles.previewImage} />
+                            </div>
+
+                            <div className={styles.assetContent}>
+                              <div className={styles.infoGrid}>
+                                <div className={styles.infoTile}>
+                                  <span>Serial</span>
+                                  <strong>{asset.serialNumber || '—'}</strong>
+                                </div>
+
+                                <div className={styles.infoTile}>
+                                  <span>Finance</span>
+                                  <strong>{asset.isFinanced ? 'Financed' : 'Not financed'}</strong>
+                                </div>
+
+                                <div className={styles.infoTile}>
+                                  <span>Hours</span>
+                                  <strong>
+                                    {asset.hours !== null && typeof asset.hours !== 'undefined'
+                                      ? asset.hours.toLocaleString('en-ZA')
+                                      : '—'}
+                                  </strong>
+                                </div>
+
+                                <div className={styles.infoTile}>
+                                  <span>Condition</span>
+                                  <strong>{conditionLabel(asset.condition)}</strong>
+                                </div>
+                              </div>
+
+                              {asset.note || asset.financeNote ? (
+                                <div className={styles.noteStack}>
+                                  {asset.note ? <p className={styles.note}>{asset.note}</p> : null}
+                                  {asset.financeNote ? <p className={styles.note}>Finance: {asset.financeNote}</p> : null}
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+                        ) : null}
                       </article>
                     );
                   })}
@@ -1668,7 +1768,7 @@ export default function AssetRegisterClient() {
                 </Link>
                 <button type="button" className={styles.primaryButton} onClick={openCreateModal}>
                   <PlusIcon className={styles.buttonIcon} />
-                  <span>Add manual asset</span>
+                  <span>Manually add asset</span>
                 </button>
               </div>
             </div>
@@ -1683,7 +1783,7 @@ export default function AssetRegisterClient() {
           <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="asset-form-title">
             <div className={styles.modalHeader}>
               <div className={styles.modalHeaderText}>
-                <span className={styles.modalEyebrow}>{editingAsset ? 'Update asset' : 'Add manual asset'}</span>
+                <span className={styles.modalEyebrow}>{editingAsset ? 'Update asset' : 'Manually add asset'}</span>
                 <h3 id="asset-form-title">{editingAsset ? 'Update asset details' : 'Add another asset'}</h3>
                 <p>
                   {editingAsset
@@ -1965,7 +2065,7 @@ export default function AssetRegisterClient() {
 
               <button type="button" className={styles.optionActionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
                 <PrintIcon className={styles.buttonIcon} />
-                <span>Asset sheet PDF</span>
+                <span>Download Asset PDF</span>
               </button>
 
               {isTractorAsset(activeAsset) ? (
@@ -2015,10 +2115,12 @@ export default function AssetRegisterClient() {
                   className={`${styles.exportOption} ${exportFormat === 'pdf' ? styles.exportOptionActive : ''}`}
                   onClick={() => setExportFormat('pdf')}
                 >
-                  <PdfIcon className={styles.exportOptionIcon} />
-                  <div>
+                  <span className={styles.exportGraphic}>
+                    <ExportGraphic src="/brand/pdf.png" alt="PDF export" icon={<PdfIcon className={styles.exportOptionIcon} />} />
+                  </span>
+                  <div className={styles.exportCopy}>
                     <strong>PDF summary</strong>
-                    <span>Sleek printable overview styled to match Aim4price reporting.</span>
+                    <span>Clean printable overview styled to match the latest Aim4price asset reporting look.</span>
                   </div>
                 </button>
 
@@ -2027,8 +2129,10 @@ export default function AssetRegisterClient() {
                   className={`${styles.exportOption} ${exportFormat === 'xlsx' ? styles.exportOptionActive : ''}`}
                   onClick={() => setExportFormat('xlsx')}
                 >
-                  <SpreadsheetIcon className={styles.exportOptionIcon} />
-                  <div>
+                  <span className={styles.exportGraphic}>
+                    <ExportGraphic src="/brand/sheet.png" alt="Spreadsheet export" icon={<SpreadsheetIcon className={styles.exportOptionIcon} />} />
+                  </span>
+                  <div className={styles.exportCopy}>
                     <strong>XLSX workbook</strong>
                     <span>Detailed register sheet for Excel, DBeaver handover or admin workflows.</span>
                   </div>
@@ -2049,6 +2153,131 @@ export default function AssetRegisterClient() {
               <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {marketplaceAsset && marketplaceDraft ? (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBackdrop} onClick={closeMarketplaceModal} />
+
+          <div className={`${styles.modalCard} ${styles.marketplaceModal}`} role="dialog" aria-modal="true" aria-labelledby="marketplace-confirm-title">
+            <div className={styles.modalHeader}>
+              <div className={styles.modalHeaderText}>
+                <span className={styles.modalEyebrow}>Send to marketplace</span>
+                <h3 id="marketplace-confirm-title">Confirm listing details</h3>
+                <p>Review the contact details, machinery price and listing notes before the asset goes live on the marketplace.</p>
+              </div>
+
+              <button type="button" className={styles.modalCloseButton} onClick={closeMarketplaceModal} aria-label="Close marketplace modal">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.optionsMeta}>
+                <div className={styles.optionMetaTile}>
+                  <span>Asset</span>
+                  <strong>{marketplaceAsset.title}</strong>
+                </div>
+                <div className={styles.optionMetaTile}>
+                  <span>Saved register value</span>
+                  <strong>{money(marketplaceAsset.value)}</strong>
+                </div>
+              </div>
+
+              <form className={styles.modalForm} onSubmit={handleConfirmMarketplacePublish}>
+                <label className={styles.field}>
+                  <span>Contact name</span>
+                  <input
+                    value={marketplaceDraft.sellerName}
+                    onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerName: event.target.value } : current))}
+                    placeholder="Seller or contact name"
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Company</span>
+                  <input
+                    value={marketplaceDraft.sellerCompany}
+                    onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerCompany: event.target.value } : current))}
+                    placeholder="Business name"
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Phone</span>
+                  <input
+                    value={marketplaceDraft.sellerPhone}
+                    onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerPhone: event.target.value } : current))}
+                    placeholder="Contact phone"
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    value={marketplaceDraft.sellerEmail}
+                    onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerEmail: event.target.value } : current))}
+                    placeholder="Contact email"
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Province</span>
+                  <input
+                    value={marketplaceDraft.province}
+                    onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, province: event.target.value } : current))}
+                    placeholder="Province"
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Area / town</span>
+                  <input
+                    value={marketplaceDraft.area}
+                    onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, area: event.target.value } : current))}
+                    placeholder="Area or town"
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Marketplace price (excl. VAT)</span>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={marketplaceDraft.askingPriceExVat}
+                    onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, askingPriceExVat: event.target.value } : current))}
+                    placeholder="Listing price"
+                  />
+                </label>
+
+                <label className={`${styles.field} ${styles.fullWidth}`}>
+                  <span>Listing notes</span>
+                  <textarea
+                    value={marketplaceDraft.description}
+                    onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, description: event.target.value } : current))}
+                    placeholder="Short marketplace description"
+                  />
+                </label>
+
+                <div className={styles.formActions}>
+                  <button type="submit" className={styles.primaryButton} disabled={isPublishingMarketplace}>
+                    {isPublishingMarketplace
+                      ? 'Publishing...'
+                      : hasMarketplaceListingForAsset(String(marketplaceAsset.id))
+                        ? 'Update marketplace listing'
+                        : 'Confirm and send'}
+                  </button>
+
+                  <button type="button" className={styles.secondaryButton} onClick={closeMarketplaceModal} disabled={isPublishingMarketplace}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -2185,72 +2414,30 @@ export default function AssetRegisterClient() {
                       <strong className={styles.projectionStatValue}>{money(projectionResult.current.retailExVat)}</strong>
                     </div>
 
-                    <div className={styles.projectionStatCard}>
-                      <span className={styles.projectionStatLabel}>Today trade-in</span>
-                      <strong className={styles.projectionStatValue}>{money(projectionResult.current.tradeInExVat)}</strong>
-                    </div>
-
-                    <div className={styles.projectionStatCard}>
-                      <span className={styles.projectionStatLabel}>Projected retail</span>
+                    <div className={`${styles.projectionStatCard} ${styles.projectionStatCardHighlight}`}>
+                      <span className={styles.projectionStatLabel}>Projected future price</span>
                       <strong className={styles.projectionStatValue}>{money(projectionResult.projected.retailExVat)}</strong>
-                    </div>
-
-                    <div className={styles.projectionStatCard}>
-                      <span className={styles.projectionStatLabel}>Projected trade-in</span>
-                      <strong className={styles.projectionStatValue}>{money(projectionResult.projected.tradeInExVat)}</strong>
                     </div>
                   </div>
 
-                  <div className={styles.projectionBreakdown}>
-                    <div className={styles.projectionBreakdownRow}>
-                      <span>Base year → target year</span>
-                      <strong>
-                        {projectionResult.baseYear} → {projectionResult.targetYear}
-                      </strong>
+                  <div className={styles.projectionSummaryCard}>
+                    <div>
+                      <span className={styles.projectionSummaryLabel}>Year move</span>
+                      <strong>{projectionResult.baseYear} → {projectionResult.targetYear}</strong>
                     </div>
-                    <div className={styles.projectionBreakdownRow}>
-                      <span>Hours</span>
-                      <strong>
-                        {projectionResult.current.hours.toLocaleString('en-ZA')} → {projectionResult.projected.hours.toLocaleString('en-ZA')}
-                      </strong>
+                    <div>
+                      <span className={styles.projectionSummaryLabel}>Hours move</span>
+                      <strong>{projectionResult.current.hours.toLocaleString('en-ZA')} → {projectionResult.projected.hours.toLocaleString('en-ZA')}</strong>
                     </div>
-                    <div className={styles.projectionBreakdownRow}>
-                      <span>Inflation factor</span>
-                      <strong>{projectionResult.breakdown.inflationFactor.toFixed(3)}×</strong>
-                    </div>
-                    <div className={styles.projectionBreakdownRow}>
-                      <span>Replacement base</span>
-                      <strong>{money(projectionResult.breakdown.replacementBaseExVat)}</strong>
-                    </div>
-                    <div className={styles.projectionBreakdownRow}>
-                      <span>Projected replacement base</span>
-                      <strong>{money(projectionResult.breakdown.projectedReplacementBaseExVat)}</strong>
-                    </div>
-                    <div className={styles.projectionBreakdownRow}>
-                      <span>Age depreciation</span>
-                      <strong>{formatPercent(projectionResult.breakdown.ageDepPct)}</strong>
-                    </div>
-                    <div className={styles.projectionBreakdownRow}>
-                      <span>Usage depreciation</span>
-                      <strong>{formatPercent(projectionResult.breakdown.usageDepPct)}</strong>
-                    </div>
-                    <div className={styles.projectionBreakdownRow}>
-                      <span>Average depreciation</span>
-                      <strong>{formatPercent(projectionResult.breakdown.averageDepPct)}</strong>
-                    </div>
-                    <div className={styles.projectionBreakdownRow}>
-                      <span>Condition factor</span>
-                      <strong>{formatRatioPercent(projectionResult.breakdown.conditionFactor)}</strong>
-                    </div>
-                    <div className={styles.projectionBreakdownRow}>
-                      <span>Trade-in margin used</span>
-                      <strong>{formatRatioPercent(projectionResult.projected.tradeInPercent)}</strong>
+                    <div>
+                      <span className={styles.projectionSummaryLabel}>Inflation used</span>
+                      <strong>{formatPercent(projectionResult.inflationRatePct)} p.a.</strong>
                     </div>
                   </div>
 
                   <div className={styles.exportHelp}>
                     <strong>Projection note</strong>
-                    <span>Future price assumes the same condition and uses compound inflation plus extra-hour depreciation, based on the original saved valuation profile.</span>
+                    <span>Future price keeps the same saved condition and updates the value using compound inflation plus extra machine hours.</span>
                   </div>
                 </>
               ) : isLoadingProjection ? (
