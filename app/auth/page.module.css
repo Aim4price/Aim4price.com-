@@ -24,17 +24,9 @@
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.88rem;
   min-width: 0;
   text-decoration: none;
   color: var(--text-strong);
-}
-
-.brandMark {
-  width: 2.95rem;
-  height: auto;
-  flex: 0 0 auto;
-  object-fit: contain;
 }
 
 .brandCopy {
@@ -64,16 +56,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.05rem;
-  padding: 0 1.16rem;
+  min-height: 3.65rem;
+  padding: 0 1.45rem;
   border-radius: 999px;
-  border: 1px solid rgba(18, 45, 37, 0.1);
-  background: rgba(255, 255, 255, 0.92);
-  color: #31423c;
+  border: 1px solid rgba(18, 45, 37, 0.12);
+  background: rgba(255, 255, 255, 0.96);
+  color: #233932;
   text-decoration: none;
-  font-size: 0.95rem;
-  font-weight: 700;
-  box-shadow: 0 10px 20px rgba(18, 45, 37, 0.04);
+  font-size: 1rem;
+  font-weight: 800;
+  box-shadow: 0 14px 26px rgba(18, 45, 37, 0.06);
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -84,9 +76,10 @@
 
 .homeLink:hover {
   transform: translateY(-1px);
-  border-color: rgba(18, 45, 37, 0.16);
+  border-color: rgba(18, 45, 37, 0.2);
   background: #ffffff;
   color: #18382f;
+  box-shadow: 0 16px 30px rgba(18, 45, 37, 0.08);
 }
 
 .frame {
@@ -721,14 +714,6 @@
 }
 
 @media (max-width: 540px) {
-  .brand {
-    gap: 0.68rem;
-  }
-
-  .brandMark {
-    width: 2.45rem;
-  }
-
   .brandSubtext {
     font-size: 0.64rem;
     letter-spacing: 0.09em;
