@@ -53,8 +53,44 @@ function IconSearch() {
   );
 }
 
-function BrandIcon({ src }: { src: string }) {
-  return <img src={src} alt="" aria-hidden="true" className={styles.brandIcon} />;
+function IconShare() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M15 8a3 3 0 1 0-2.82-4" />
+      <path d="M7 14a3 3 0 1 0 2.82 4" />
+      <path d="M17 16a3 3 0 1 0 2.82 4" />
+      <path d="M8.9 13.1 15.1 9.9" />
+      <path d="M8.9 14.9 15.1 18.1" />
+    </svg>
+  );
+}
+
+function IconWhatsApp() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20 11.9c0 4.52-3.67 8.18-8.2 8.18-1.42 0-2.76-.36-3.93-1l-4.05 1.02 1.08-3.95a8.14 8.14 0 0 1-1.29-4.36C3.61 7.37 7.28 3.7 11.8 3.7S20 7.37 20 11.9Z" />
+      <path d="M9.07 8.46c-.19-.42-.39-.43-.57-.44h-.49c-.17 0-.44.07-.67.32-.23.25-.89.87-.89 2.12s.92 2.45 1.05 2.62c.12.17 1.77 2.83 4.37 3.85 2.15.84 2.6.67 3.06.63.47-.04 1.5-.61 1.71-1.2.21-.59.21-1.1.15-1.2-.06-.1-.23-.17-.48-.3-.26-.13-1.5-.75-1.73-.84-.23-.08-.4-.13-.57.13-.17.25-.65.84-.79 1.01-.15.17-.29.19-.55.06-.25-.13-1.06-.4-2.02-1.29-.75-.69-1.25-1.55-1.39-1.81-.15-.25-.02-.39.11-.52.12-.12.25-.3.38-.44.12-.15.17-.25.25-.42.09-.17.04-.32-.02-.44-.06-.13-.55-1.42-.76-1.94Z" />
+    </svg>
+  );
+}
+
+function IconFacebook() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M13.5 21v-7h2.55l.4-3h-2.95V9.09c0-.87.24-1.46 1.48-1.46h1.58V4.95c-.27-.04-1.19-.12-2.26-.12-2.24 0-3.77 1.36-3.77 3.87V11H8v3h2.51v7h2.99Z" />
+    </svg>
+  );
+}
+
+
+function IconMore() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="5" r="1.6" />
+      <circle cx="12" cy="12" r="1.6" />
+      <circle cx="12" cy="19" r="1.6" />
+    </svg>
+  );
 }
 
 function IconArrowLeft() {
@@ -214,6 +250,10 @@ function buildListingShareText(listing: MarketplaceListing): string {
   ].join(' • ');
 }
 
+function canUseSystemShare(): boolean {
+  return typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+}
+
 async function copyTextToClipboard(value: string): Promise<void> {
   if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(value);
@@ -325,6 +365,7 @@ export default function MarketplaceClient({
     [items],
   );
 
+  const featuredBrands = useMemo(() => brands.slice(0, 4), [brands]);
 
   const filtered = useMemo(() => {
     const search = normalize(query);
@@ -460,6 +501,10 @@ export default function MarketplaceClient({
     [shareListing],
   );
 
+  const shareText = useMemo(
+    () => (shareListing ? buildListingShareText(shareListing) : ''),
+    [shareListing],
+  );
 
   useEffect(() => {
     if (!activeListing) {
@@ -663,12 +708,23 @@ export default function MarketplaceClient({
     }
   }
 
+  function toggleFeaturedBrand(brand: string) {
+    setBrandFilter((current) => (normalize(current) === normalize(brand) ? '' : brand));
+  }
+
+  function toggleDriveFilter(value: string) {
+    setDriveFilter((current) => (normalize(current) === normalize(value) ? '' : value));
+  }
+
+  function toggleTypeFilter(value: string) {
+    setTypeFilter((current) => (normalize(current) === normalize(value) ? '' : value));
+  }
 
   function openShareWindow(url: string) {
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
-  async function handleShareAction(channel: 'whatsapp' | 'facebook' | 'copy') {
+  async function handleShareAction(channel: 'whatsapp' | 'facebook' | 'copy' | 'system') {
     if (!shareListing) {
       return;
     }
@@ -683,6 +739,21 @@ export default function MarketplaceClient({
         return;
       }
 
+      if (channel === 'system') {
+        if (!canUseSystemShare()) {
+          setShareFeedback('This browser does not support the native share sheet.');
+          return;
+        }
+
+        await navigator.share({
+          title: `${shareListing.brandName} ${shareListing.modelName}`,
+          text: nextShareText,
+          url: nextShareUrl,
+        });
+        closeShareSheet();
+        return;
+      }
+
       if (channel === 'whatsapp') {
         openShareWindow(`https://wa.me/?text=${encodeURIComponent(`${nextShareText} ${nextShareUrl}`)}`);
         closeShareSheet();
@@ -693,7 +764,11 @@ export default function MarketplaceClient({
         `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(nextShareUrl)}&quote=${encodeURIComponent(nextShareText)}`,
       );
       closeShareSheet();
-    } catch {
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
+
       setShareFeedback('Sharing did not complete. Please try again.');
     }
   }
@@ -741,33 +816,45 @@ export default function MarketplaceClient({
       </div>
 
       <div className={styles.inner}>
-        <section className={styles.summaryStrip}>
-          <div className={styles.summaryCopy}>
-            <span className={styles.eyebrow}>Aim4price marketplace</span>
-            <h1>Find live machinery listings faster.</h1>
-            <p>
-              The marketplace now keeps search first, details cleaner, and sharing easy without a
-              large header getting in the way.
-            </p>
+        <section className={styles.hero}>
+          <div className={styles.heroBackdrop} />
+
+          <div className={styles.heroTop}>
+            <div className={styles.heroCopy}>
+              <span className={styles.eyebrow}>Aim4price marketplace</span>
+              <h1>Browse, compare and share live machinery listings.</h1>
+              <p>
+                Search quickly, open cleaner listing details, and push adverts straight to WhatsApp
+                or Facebook from one place.
+              </p>
+            </div>
+
+            <aside className={styles.totalCard}>
+              <strong>{stats.live}</strong>
+              <span>Live listings</span>
+              <small>
+                {brands.length} brands across {stats.provinces} provinces
+              </small>
+            </aside>
           </div>
 
-          <div className={styles.summaryStats}>
-            <div className={styles.summaryStat}>
-              <span className={styles.summaryStatLabel}>Live listings</span>
-              <strong className={styles.summaryStatValue}>{stats.live}</strong>
-              <small className={styles.summaryStatNote}>ready to browse now</small>
+          <div className={styles.statsRow}>
+            <div className={styles.heroStat}>
+              <span>Browse</span>
+              <strong>{stats.live}</strong>
+              <small>currently listed</small>
             </div>
 
-            <div className={styles.summaryStat}>
-              <span className={styles.summaryStatLabel}>Brands</span>
-              <strong className={styles.summaryStatValue}>{stats.brands}</strong>
-              <small className={styles.summaryStatNote}>seeded + register</small>
+            <div className={styles.heroStat}>
+              <span>Brands</span>
+              <strong>{stats.brands}</strong>
+              <small>seeded + register</small>
             </div>
 
-            <div className={styles.summaryStat}>
-              <span className={styles.summaryStatLabel}>Newest year</span>
-              <strong className={styles.summaryStatValue}>{stats.newestYear}</strong>
-              <small className={styles.summaryStatNote}>{stats.provinces} provinces covered</small>
+            <div className={styles.heroStat}>
+              <span>Newest year</span>
+              <strong>{stats.newestYear}</strong>
+              <small>in current stock</small>
             </div>
           </div>
         </section>
@@ -838,6 +925,48 @@ export default function MarketplaceClient({
             </div>
           </div>
 
+          <div className={styles.quickFilterRow}>
+            <button
+              type="button"
+              className={`${styles.quickFilterButton} ${activeFilterCount === 0 ? styles.quickFilterButtonActive : ''}`}
+              onClick={clearFilters}
+            >
+              All listings
+            </button>
+
+            {featuredBrands.map((brand) => (
+              <button
+                key={brand}
+                type="button"
+                className={`${styles.quickFilterButton} ${
+                  normalize(brandFilter) === normalize(brand) ? styles.quickFilterButtonActive : ''
+                }`}
+                onClick={() => toggleFeaturedBrand(brand)}
+              >
+                {brand}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              className={`${styles.quickFilterButton} ${
+                normalize(driveFilter) === '4wd' ? styles.quickFilterButtonActive : ''
+              }`}
+              onClick={() => toggleDriveFilter('4wd')}
+            >
+              4WD
+            </button>
+
+            <button
+              type="button"
+              className={`${styles.quickFilterButton} ${
+                normalize(typeFilter) === 'field' ? styles.quickFilterButtonActive : ''
+              }`}
+              onClick={() => toggleTypeFilter('field')}
+            >
+              Field
+            </button>
+          </div>
 
           {activeFilterChips.length ? (
             <div className={styles.activeFilterBar}>
@@ -979,7 +1108,7 @@ export default function MarketplaceClient({
                       }}
                     >
                       <span className={styles.buttonIcon} aria-hidden="true">
-                        <BrandIcon src="/brand/share.png" />
+                        <IconShare />
                       </span>
                       Share
                     </button>
@@ -1283,6 +1412,31 @@ export default function MarketplaceClient({
                   </div>
                 </div>
 
+                <div className={styles.modalActionStrip}>
+                  <div className={styles.modalActionCopy}>
+                    <span className={styles.sectionLabel}>Share this listing</span>
+                    <p className={styles.modalActionHint}>
+                      Open one clean panel for WhatsApp, Facebook, copy link and device share.
+                    </p>
+                    <div className={styles.inlineChannelRow}>
+                      <span className={styles.channelPill}>WhatsApp</span>
+                      <span className={styles.channelPill}>Facebook</span>
+                      <span className={styles.channelPill}>Copy link</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={styles.sharePrimaryButton}
+                    onClick={() => openShareSheet(activeListing)}
+                  >
+                    <span className={styles.buttonIcon} aria-hidden="true">
+                      <IconShare />
+                    </span>
+                    Open share options
+                  </button>
+                </div>
+
                 <div className={styles.modalStats}>
                   <div className={styles.statCard}>
                     <span className={styles.statLabel}>Year</span>
@@ -1325,59 +1479,13 @@ export default function MarketplaceClient({
                     <p>{getListingNote(activeListing)}</p>
                   </div>
 
-                  <div className={`${styles.modalSection} ${styles.contactSection}`}>
-                    <span className={styles.sectionLabel}>Contact details</span>
-
-                    {isSignedIn ? (
-                      <div className={styles.contactRows}>
-                        <div className={styles.contactRow}>
-                          <span className={styles.contactLabel}>Seller</span>
-                          <strong className={styles.contactValue}>{activeListing.sellerName}</strong>
-                        </div>
-
-                        {activeListing.sellerCompany ? (
-                          <div className={styles.contactRow}>
-                            <span className={styles.contactLabel}>Company</span>
-                            <strong className={styles.contactValue}>{activeListing.sellerCompany}</strong>
-                          </div>
-                        ) : null}
-
-                        <div className={styles.contactRow}>
-                          <span className={styles.contactLabel}>Phone</span>
-                          <strong className={styles.contactValue}>
-                            <a href={`tel:${activeListing.sellerPhone}`}>{activeListing.sellerPhone}</a>
-                          </strong>
-                        </div>
-
-                        {activeListing.sellerEmail ? (
-                          <div className={styles.contactRow}>
-                            <span className={styles.contactLabel}>Email</span>
-                            <strong className={styles.contactValue}>
-                              <a href={`mailto:${activeListing.sellerEmail}`}>{activeListing.sellerEmail}</a>
-                            </strong>
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : (
-                      <div className={styles.contactLocked}>
-                        <p>
-                          Sign in to reveal the seller phone number and email. You can still browse
-                          and share the listing before account creation.
-                        </p>
-                        <div className={styles.lockActions}>
-                          <a href="/auth#signup" className={styles.primaryAction}>
-                            Create account
-                          </a>
-                          <a href="/auth#login" className={styles.secondaryAction}>
-                            Login
-                          </a>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeListing.sourceName ? (
-                      <p className={styles.contactFootnote}>Source: {activeListing.sourceName}</p>
-                    ) : null}
+                  <div className={styles.modalSection}>
+                    <span className={styles.sectionLabel}>Listing information</span>
+                    <p>
+                      Located in {activeListing.area}, {activeListing.province}. Listed on{' '}
+                      {formatPublishedDate(activeListing.dateAdvertised || activeListing.publishedAtIso)}.
+                      {activeListing.sourceName ? ` Source: ${activeListing.sourceName}.` : ''}
+                    </p>
                   </div>
                 </div>
 
@@ -1398,39 +1506,34 @@ export default function MarketplaceClient({
                   </div>
                 ) : null}
 
-                <div className={`${styles.modalActionStrip} ${styles.modalActionStripBottom}`}>
-                  <div className={styles.modalActionCopy}>
-                    <span className={styles.sectionLabel}>Share this listing</span>
-                    <p className={styles.modalActionHint}>
-                      Send it straight to WhatsApp or Facebook, or copy the direct Aim4price link.
-                    </p>
-                    <div className={styles.inlineChannelRow}>
-                      <span className={styles.channelPill}>
-                        <span className={styles.channelPillIcon} aria-hidden="true">
-                          <BrandIcon src="/brand/whatsapp.png" />
-                        </span>
-                        WhatsApp
-                      </span>
-                      <span className={styles.channelPill}>
-                        <span className={styles.channelPillIcon} aria-hidden="true">
-                          <BrandIcon src="/brand/facebook.png" />
-                        </span>
-                        Facebook
-                      </span>
-                      <span className={styles.channelPill}>Direct link</span>
-                    </div>
+                <div className={styles.lockCard}>
+                  <div>
+                    <span className={styles.sectionLabel}>Seller contact</span>
+                    {isSignedIn ? (
+                      <p>
+                        {activeListing.sellerName}
+                        {activeListing.sellerCompany ? ` • ${activeListing.sellerCompany}` : ''}
+                        {activeListing.sellerPhone ? ` • ${activeListing.sellerPhone}` : ''}
+                        {activeListing.sellerEmail ? ` • ${activeListing.sellerEmail}` : ''}
+                      </p>
+                    ) : (
+                      <p>
+                        View the seller phone number and email after sign-in. Browsing and sharing
+                        stay open before account creation.
+                      </p>
+                    )}
                   </div>
 
-                  <button
-                    type="button"
-                    className={styles.sharePrimaryButton}
-                    onClick={() => openShareSheet(activeListing)}
-                  >
-                    <span className={styles.buttonIcon} aria-hidden="true">
-                      <BrandIcon src="/brand/share.png" />
-                    </span>
-                    Open share options
-                  </button>
+                  {!isSignedIn ? (
+                    <div className={styles.lockActions}>
+                      <a href="/auth#signup" className={styles.primaryAction}>
+                        Create account
+                      </a>
+                      <a href="/auth#login" className={styles.secondaryAction}>
+                        Login
+                      </a>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -1458,10 +1561,10 @@ export default function MarketplaceClient({
 
             <div className={styles.shareHeader}>
               <span className={styles.sectionEyebrow}>Share listing</span>
-              <h2 id="share-listing-title">Push this listing out in seconds.</h2>
+              <h2 id="share-listing-title">Share this advert in seconds.</h2>
               <p>
-                Use the two main channels first, then copy the direct listing link anywhere else you
-                need it.
+                Start with WhatsApp or Facebook, then copy the direct link when you need it anywhere
+                else.
               </p>
             </div>
 
@@ -1487,7 +1590,7 @@ export default function MarketplaceClient({
                   <small>{formatLocation(shareListing)}</small>
                 </div>
                 <p className={styles.sharePreviewHint}>
-                  The link opens straight to this listing inside Aim4price.
+                  The shared link opens straight to this listing inside Aim4price.
                 </p>
               </div>
             </div>
@@ -1499,7 +1602,7 @@ export default function MarketplaceClient({
                 onClick={() => void handleShareAction('whatsapp')}
               >
                 <span className={styles.shareActionIcon} aria-hidden="true">
-                  <BrandIcon src="/brand/whatsapp.png" />
+                  <IconWhatsApp />
                 </span>
                 <span className={styles.shareActionText}>
                   <strong>WhatsApp</strong>
@@ -1513,7 +1616,7 @@ export default function MarketplaceClient({
                 onClick={() => void handleShareAction('facebook')}
               >
                 <span className={styles.shareActionIcon} aria-hidden="true">
-                  <BrandIcon src="/brand/facebook.png" />
+                  <IconFacebook />
                 </span>
                 <span className={styles.shareActionText}>
                   <strong>Facebook</strong>
@@ -1521,6 +1624,21 @@ export default function MarketplaceClient({
                 </span>
               </button>
 
+              {canUseSystemShare() ? (
+                <button
+                  type="button"
+                  className={`${styles.shareActionButton} ${styles.shareActionWide}`}
+                  onClick={() => void handleShareAction('system')}
+                >
+                  <span className={styles.shareActionIcon} aria-hidden="true">
+                    <IconMore />
+                  </span>
+                  <span className={styles.shareActionText}>
+                    <strong>More options</strong>
+                    <small>Open your device share menu for other apps</small>
+                  </span>
+                </button>
+              ) : null}
             </div>
 
             <div className={styles.shareLinkRow}>
@@ -1535,7 +1653,10 @@ export default function MarketplaceClient({
                 onClick={() => void handleShareAction('copy')}
               >
                 <span className={styles.shareActionIcon} aria-hidden="true">
-                  <IconCopy />
+                  <svg viewBox="0 0 24 24">
+                    <rect x="9" y="9" width="10" height="10" rx="2" />
+                    <path d="M6.5 15.5H6A2 2 0 0 1 4 13.5V6a2 2 0 0 1 2-2h7.5a2 2 0 0 1 2 2v.5" />
+                  </svg>
                 </span>
                 Copy link
               </button>
@@ -1543,6 +1664,7 @@ export default function MarketplaceClient({
 
             {shareFeedback ? <p className={styles.shareFeedback}>{shareFeedback}</p> : null}
 
+            <p className={styles.shareCaption}>{shareText}</p>
           </div>
         </div>
       ) : null}
