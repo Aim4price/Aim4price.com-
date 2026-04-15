@@ -118,11 +118,14 @@
   gap: 0.7rem;
   flex-wrap: wrap;
   align-items: stretch;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
 .primaryButton,
 .secondaryButton,
 .optionsButton,
+.expandButton,
 .modalCloseButton,
 .optionActionButton,
 .paginationButton,
@@ -153,6 +156,7 @@
 .primaryButton:hover,
 .secondaryButton:hover,
 .optionsButton:hover,
+.expandButton:hover,
 .modalCloseButton:hover,
 .optionActionButton:hover,
 .paginationButton:hover,
@@ -165,6 +169,7 @@
 .primaryButton:disabled,
 .secondaryButton:disabled,
 .optionsButton:disabled,
+.expandButton:disabled,
 .modalCloseButton:disabled,
 .optionActionButton:disabled,
 .paginationButton:disabled,
@@ -184,7 +189,8 @@
 .secondaryButton,
 .paginationButton,
 .clearSearchButton,
-.optionActionButton {
+.optionActionButton,
+.expandButton {
   color: var(--blue-text);
   background: var(--blue-soft);
   border-color: var(--blue-soft-border);
@@ -319,7 +325,21 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
-  margin-bottom: 1rem;
+}
+
+.assetHeaderAside {
+  display: grid;
+  gap: 0.8rem;
+  min-width: min(100%, 280px);
+  justify-items: end;
+}
+
+.assetHeaderActions {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .assetTitleBlock {
@@ -327,11 +347,28 @@
   flex: 1 1 auto;
 }
 
-.badgeRow {
+.assetMetaRow {
   display: flex;
   flex-wrap: wrap;
+  gap: 0.55rem 0.8rem;
+  margin-top: 0.7rem;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.assetMetaRow span {
+  display: inline-flex;
+  align-items: center;
   gap: 0.45rem;
-  margin-bottom: 0.65rem;
+}
+
+.assetLiveText {
+  color: var(--success-text);
+}
+
+.badgeRow {
+  display: none;
 }
 
 .badgeNeutral {
@@ -361,7 +398,8 @@
 }
 
 .valueBlock {
-  min-width: 205px;
+  min-width: 220px;
+  width: 100%;
   text-align: right;
   padding-left: 0.5rem;
 }
@@ -396,6 +434,9 @@
   grid-template-columns: 250px minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(224, 232, 239, 0.9);
 }
 
 .previewWrap {
@@ -481,12 +522,20 @@
   font-weight: 700;
 }
 
-.optionsButton {
+.optionsButton,
+.expandButton {
   color: var(--blue-text);
   background: var(--blue-soft);
   border-color: var(--blue-soft-border);
   min-width: 144px;
-  margin-left: auto;
+}
+
+.expandButton {
+  min-width: 150px;
+}
+
+.assetCardExpanded {
+  box-shadow: 0 18px 34px rgba(20, 36, 33, 0.06);
 }
 
 .emptyState {
@@ -562,11 +611,12 @@
 .modalOverlay {
   position: fixed;
   inset: 0;
-  z-index: 80;
+  z-index: 160;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: clamp(1rem, 3vh, 2rem);
+  overflow-y: auto;
 }
 
 .modalBackdrop {
@@ -580,13 +630,15 @@
 .optionsModal {
   position: relative;
   width: min(100%, 840px);
-  max-height: min(92vh, 920px);
+  max-height: min(88vh, calc(100dvh - 3rem));
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: #ffffff;
   border: 1px solid var(--line);
   border-radius: 1.85rem;
-  box-shadow: 0 28px 70px rgba(16, 28, 45, 0.18);
+  box-shadow: 0 28px 70px rgba(16, 28, 45, 0.22);
   padding: 1.2rem;
+  margin: auto;
 }
 
 .optionsModal {
@@ -594,7 +646,11 @@
 }
 
 .projectionModal {
-  width: min(100%, 900px);
+  width: min(100%, 860px);
+}
+
+.marketplaceModal {
+  width: min(100%, 760px);
 }
 
 .modalHeader {
@@ -842,47 +898,77 @@
 .exportChoices {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
+  gap: 1rem;
 }
 
 .exportOption {
-  min-height: 8rem;
-  align-items: flex-start;
+  min-height: 11.5rem;
+  align-items: stretch;
   justify-content: flex-start;
   padding: 1rem;
-  border-radius: 1.2rem;
+  border-radius: 1.35rem;
   text-align: left;
-  background: linear-gradient(180deg, #f9fbfc 0%, #f4f7fa 100%);
+  background: linear-gradient(180deg, #fbfcfd 0%, #f3f7fa 100%);
   border-color: var(--line);
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 1rem;
 }
 
-.exportOption > div {
+.exportGraphic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  min-width: 88px;
+  height: 88px;
+  border-radius: 1rem;
+  background: #ffffff;
+  border: 1px solid rgba(220, 228, 236, 0.95);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.exportGraphicImage {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+
+.exportGraphicFallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+}
+
+.exportCopy {
   display: grid;
-  gap: 0.25rem;
+  align-content: center;
+  gap: 0.3rem;
 }
 
 .exportOption strong {
   color: var(--text);
-  font-size: 1rem;
+  font-size: 1.05rem;
 }
 
 .exportOption span {
   color: var(--text-muted);
-  line-height: 1.5;
-  font-size: 0.9rem;
+  line-height: 1.55;
+  font-size: 0.92rem;
 }
 
 .exportOptionActive {
   border-color: var(--brand-soft-border);
-  background: linear-gradient(180deg, #f2faf5 0%, #ebf5ef 100%);
-  box-shadow: 0 14px 28px rgba(18, 66, 51, 0.08);
+  background: linear-gradient(180deg, #f1faf4 0%, #eaf5ee 100%);
+  box-shadow: 0 18px 34px rgba(18, 66, 51, 0.1);
 }
 
 .exportOptionIcon {
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 2rem;
+  height: 2rem;
   color: var(--brand-mid);
-  margin-top: 0.1rem;
 }
 
 .exportHelp {
@@ -927,45 +1013,52 @@
 
 .projectionStatsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.projectionStatCardHighlight {
+  background: linear-gradient(180deg, #f1faf4 0%, #e9f5ee 100%);
+  border-color: var(--brand-soft-border);
 }
 
 .projectionStatValue {
-  font-size: 1.15rem;
-  letter-spacing: -0.03em;
+  font-size: 1.28rem;
+  letter-spacing: -0.04em;
 }
 
-.projectionBreakdown {
+.projectionSummaryCard {
   display: grid;
-  gap: 0.55rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
   padding: 1rem;
   border-radius: 1.2rem;
   background: #f9fbfc;
   border: 1px solid var(--line);
 }
 
-.projectionBreakdownRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding-bottom: 0.55rem;
-  border-bottom: 1px solid rgba(224, 232, 239, 0.8);
+.projectionSummaryCard > div {
+  display: grid;
+  gap: 0.35rem;
 }
 
-.projectionBreakdownRow:last-child {
-  padding-bottom: 0;
-  border-bottom: 0;
+.projectionSummaryLabel {
+  color: #708092;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.projectionBreakdownRow span {
-  color: var(--text-muted);
-}
-
-.projectionBreakdownRow strong {
+.projectionSummaryCard strong {
   color: var(--text);
-  text-align: right;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.projectionBreakdown,
+.projectionBreakdownRow {
+  display: none;
 }
 
 .projectionError {
@@ -1010,7 +1103,9 @@
   .toolbar,
   .projectionIntro,
   .projectionInputRow,
-  .exportChoices {
+  .exportChoices,
+  .projectionStatsGrid,
+  .projectionSummaryCard {
     grid-template-columns: 1fr;
   }
 
@@ -1021,6 +1116,13 @@
 
   .assetHeader {
     flex-direction: column;
+  }
+
+  .assetHeaderAside,
+  .assetHeaderActions {
+    width: 100%;
+    justify-items: stretch;
+    justify-content: stretch;
   }
 
   .valueBlock {
@@ -1066,7 +1168,8 @@
   .emptyStateActions > :is(a, button),
   .paginationActions,
   .paginationButton,
-  .optionsButton {
+  .optionsButton,
+  .expandButton {
     width: 100%;
   }
 
