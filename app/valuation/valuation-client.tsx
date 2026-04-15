@@ -332,6 +332,7 @@ export default function ValuationClient() {
   const [saveChoiceMethod, setSaveChoiceMethod] = useState<MethodKey | null>(null);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [guestValuationCount, setGuestValuationCount] = useState(0);
+  const [howItWorksOpen, setHowItWorksOpen] = useState(false);
 
   const freeGuestValuationsRemaining = Math.max(0, 3 - guestValuationCount);
   const stepMeta = getStepMeta(step);
@@ -902,6 +903,7 @@ export default function ValuationClient() {
     setSelectedMethod(null);
     setValuationLoading(false);
     setSaveLoading(false);
+    setHowItWorksOpen(false);
     setMessage('');
     resetDetailState();
   }
@@ -2165,8 +2167,8 @@ export default function ValuationClient() {
           {step !== 5 ? (
             <>
               <section className={styles.heroIntro}>
-                <div className={styles.heroIntroGrid}>
-                  <div className={styles.heroIntroContent}>
+                <div className={styles.heroIntroStack}>
+                  <div className={`${styles.heroIntroContent} ${styles.heroIntroContentWide}`}>
                     <p className={styles.heroEyebrow}>Guided valuation</p>
                     <h1 className={styles.heroIntroTitle}>Value your machinery.</h1>
                     <p className={styles.heroIntroText}>
@@ -2182,26 +2184,52 @@ export default function ValuationClient() {
                     </div>
                   </div>
 
-                  <aside className={styles.heroGuide} aria-label="How the valuation works">
-                    <p className={styles.heroGuideTitle}>How it works</p>
+                  <div className={styles.heroGuideToggleRow}>
+                    <button
+                      id="valuation-how-it-works-toggle"
+                      type="button"
+                      className={`${styles.secondaryButton} ${styles.heroGuideToggle}`}
+                      onClick={() => setHowItWorksOpen((open) => !open)}
+                      aria-expanded={howItWorksOpen}
+                      aria-controls="valuation-how-it-works"
+                    >
+                      <span>How it works</span>
+                      <span className={styles.heroGuideToggleIcon} aria-hidden="true">
+                        ▾
+                      </span>
+                    </button>
+                  </div>
 
-                    <div className={styles.heroGuideList}>
-                      {HERO_GUIDE_ITEMS.map((item, index) => (
-                        <div key={item.title} className={styles.heroGuideItem}>
-                          <span className={styles.heroGuideNumber}>{index + 1}</span>
-                          <div className={styles.heroGuideTextWrap}>
-                            <p className={styles.heroGuideHeading}>{item.title}</p>
-                            <p className={styles.heroGuideText}>{item.text}</p>
-                          </div>
+                  <div
+                    id="valuation-how-it-works"
+                    role="region"
+                    aria-labelledby="valuation-how-it-works-toggle"
+                    aria-hidden={!howItWorksOpen}
+                    className={`${styles.heroGuidePanel} ${howItWorksOpen ? styles.heroGuidePanelOpen : ''}`}
+                  >
+                    <div className={styles.heroGuidePanelInner}>
+                      <aside className={styles.heroGuide} aria-label="How the valuation works">
+                        <p className={styles.heroGuideTitle}>How it works</p>
+
+                        <div className={styles.heroGuideList}>
+                          {HERO_GUIDE_ITEMS.map((item, index) => (
+                            <div key={item.title} className={styles.heroGuideItem}>
+                              <span className={styles.heroGuideNumber}>{index + 1}</span>
+                              <div className={styles.heroGuideTextWrap}>
+                                <p className={styles.heroGuideHeading}>{item.title}</p>
+                                <p className={styles.heroGuideText}>{item.text}</p>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
 
-                    <div className={styles.heroAccessCard}>
-                      <p className={styles.heroAccessLabel}>{heroAccessLabel}</p>
-                      <p className={styles.heroAccessText}>{heroAccessText}</p>
+                        <div className={styles.heroAccessCard}>
+                          <p className={styles.heroAccessLabel}>{heroAccessLabel}</p>
+                          <p className={styles.heroAccessText}>{heroAccessText}</p>
+                        </div>
+                      </aside>
                     </div>
-                  </aside>
+                  </div>
                 </div>
               </section>
 
