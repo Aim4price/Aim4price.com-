@@ -17,8 +17,6 @@ const GPS_GUIDANCE_REPLACEMENT_EX_VAT = 100_000;
 
 type ProjectionSnapshot = {
   retailExVat: number;
-  tradeInExVat: number;
-  tradeInPercent: number;
   hours: number;
   tractorExVat: number;
   loaderExVat: number;
@@ -38,15 +36,6 @@ export type AssetFutureProjection = {
   condition: ConditionKey;
   current: ProjectionSnapshot;
   projected: ProjectionSnapshot;
-  breakdown: {
-    inflationFactor: number;
-    replacementBaseExVat: number;
-    projectedReplacementBaseExVat: number;
-    ageDepPct: number;
-    usageDepPct: number;
-    averageDepPct: number;
-    conditionFactor: number;
-  };
 };
 
 type GenericDbRow = Record<string, unknown>;
@@ -183,25 +172,6 @@ function loaderReplacementPrice(powerKw: number): number {
   return 340_000;
 }
 
-function tradeInPercent(retailValueExVat: number, condition: ConditionKey): number {
-  const lowerBand: Record<ConditionKey, number> = {
-    excellent: 0.1,
-    good: 0.125,
-    fair: 0.15,
-    used: 0.175,
-    serious: 0.2,
-  };
-
-  const upperBand: Record<ConditionKey, number> = {
-    excellent: 0.075,
-    good: 0.1,
-    fair: 0.125,
-    used: 0.15,
-    serious: 0.175,
-  };
-
-  return retailValueExVat < 1_000_000 ? lowerBand[condition] : upperBand[condition];
-}
 
 function inflationFactor(ratePct: number, yearsForward: number): number {
   const safeRate = Number.isFinite(ratePct) ? ratePct / 100 : 0;
@@ -242,7 +212,7 @@ function calculateSnapshot(input: {
   gpsType: GpsType;
   gpsYear: number;
   inflationRatePct: number;
-}): { snapshot: ProjectionSnapshot; breakdown: AssetFutureProjection['breakdown'] } {
+}): { snapshot: ProjectionSnapshot } {
   const yearsForward = Math.max(0, input.targetYear - input.baseYear);
   const inflator = inflationFactor(input.inflationRatePct, yearsForward);
   const hours = Math.max(0, input.hoursStart + input.extraHours);
@@ -265,27 +235,14 @@ function calculateSnapshot(input: {
   const gpsExVat = input.gpsEnabled ? gpsValueAtYear(input.gpsType, input.gpsYear, input.targetYear, inflator) : 0;
 
   const retailExVat = tractorExVat + loaderExVat + gpsExVat;
-  const tradeInPct = tradeInPercent(retailExVat, input.condition);
-  const tradeInExVat = roundMoney(retailExVat * (1 - tradeInPct));
 
   return {
     snapshot: {
       retailExVat,
-      tradeInExVat,
-      tradeInPercent: tradeInPct,
       hours,
       tractorExVat,
       loaderExVat,
       gpsExVat,
-    },
-    breakdown: {
-      inflationFactor: inflator,
-      replacementBaseExVat: roundMoney(replacementBaseExVat),
-      projectedReplacementBaseExVat: roundMoney(projectedReplacementBaseExVat),
-      ageDepPct,
-      usageDepPct,
-      averageDepPct,
-      conditionFactor: CONDITION_FACTORS[input.condition],
     },
   };
 }
@@ -442,6 +399,5 @@ export async function calculateFuturePriceForAsset(input: {
     condition,
     current: currentResult.snapshot,
     projected: projectedResult.snapshot,
-    breakdown: projectedResult.breakdown,
   };
 }
