@@ -2166,48 +2166,51 @@ export default function ValuationClient() {
         <div className={styles.container}>
           {step !== 5 ? (
             <>
-              <section className={styles.heroIntro}>
-                <div className={styles.heroIntroStack}>
-                  <div className={`${styles.heroIntroContent} ${styles.heroIntroContentWide}`}>
-                    <p className={styles.heroEyebrow}>Guided valuation</p>
-                    <h1 className={styles.heroIntroTitle}>Value your machinery.</h1>
-                    <p className={styles.heroIntroText}>
-                      Choose the machine, add the working details, and review the value output in one clean guided flow.
-                    </p>
-
-                    <div className={styles.heroPills} aria-label="Valuation flow highlights">
-                      {HERO_PILLS.map((item) => (
-                        <span key={item} className={styles.heroPill}>
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className={styles.heroGuideToggleRow}>
-                    <button
-                      id="valuation-how-it-works-toggle"
-                      type="button"
-                      className={`${styles.secondaryButton} ${styles.heroGuideToggle}`}
-                      onClick={() => setHowItWorksOpen((open) => !open)}
-                      aria-expanded={howItWorksOpen}
-                      aria-controls="valuation-how-it-works"
-                    >
-                      <span>How it works</span>
-                      <span className={styles.heroGuideToggleIcon} aria-hidden="true">
-                        ▾
-                      </span>
-                    </button>
-                  </div>
-
-                  <div
-                    id="valuation-how-it-works"
-                    role="region"
-                    aria-labelledby="valuation-how-it-works-toggle"
-                    aria-hidden={!howItWorksOpen}
-                    className={`${styles.heroGuidePanel} ${howItWorksOpen ? styles.heroGuidePanelOpen : ''}`}
+              <div className={styles.heroToggleRow}>
+                <button
+                  id="valuation-how-it-works-toggle"
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.howItWorksButton}`}
+                  onClick={() => setHowItWorksOpen((open) => !open)}
+                  aria-expanded={howItWorksOpen}
+                  aria-controls="valuation-how-it-works-panel"
+                >
+                  <span>How it works</span>
+                  <span
+                    aria-hidden="true"
+                    className={`${styles.howItWorksChevron} ${howItWorksOpen ? styles.howItWorksChevronOpen : ''}`}
                   >
-                    <div className={styles.heroGuidePanelInner}>
+                    ▾
+                  </span>
+                </button>
+              </div>
+
+              <div
+                id="valuation-how-it-works-panel"
+                className={`${styles.heroIntroCollapse} ${howItWorksOpen ? styles.heroIntroCollapseOpen : ''}`}
+                role="region"
+                aria-labelledby="valuation-how-it-works-toggle"
+                aria-hidden={!howItWorksOpen}
+              >
+                <div className={styles.heroIntroCollapseInner}>
+                  <section className={styles.heroIntro}>
+                    <div className={styles.heroIntroGrid}>
+                      <div className={styles.heroIntroContent}>
+                        <p className={styles.heroEyebrow}>Guided valuation</p>
+                        <h1 className={styles.heroIntroTitle}>Value your machinery.</h1>
+                        <p className={styles.heroIntroText}>
+                          Choose the machine, add the working details, and review the value output in one clean guided flow.
+                        </p>
+
+                        <div className={styles.heroPills} aria-label="Valuation flow highlights">
+                          {HERO_PILLS.map((item) => (
+                            <span key={item} className={styles.heroPill}>
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
                       <aside className={styles.heroGuide} aria-label="How the valuation works">
                         <p className={styles.heroGuideTitle}>How it works</p>
 
@@ -2229,9 +2232,9 @@ export default function ValuationClient() {
                         </div>
                       </aside>
                     </div>
-                  </div>
+                  </section>
                 </div>
-              </section>
+              </div>
 
               <section className={styles.wizardShell}>
                 <article className={styles.wizardCard}>
