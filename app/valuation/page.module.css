@@ -3073,7 +3073,7 @@
 .heroIntro {
   position: relative;
   overflow: hidden;
-  margin-bottom: 1.45rem;
+  margin-bottom: 0;
   padding: 1.75rem 1.85rem;
   background:
     radial-gradient(circle at top right, rgba(255, 255, 255, 0.14), transparent 28%),
@@ -3949,6 +3949,61 @@
   line-height: 1.48;
 }
 
+.heroToggleRow {
+  display: flex;
+  justify-content: flex-end;
+  width: min(100%, 1116px);
+  margin: 0 0 1rem;
+}
+
+.howItWorksButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 2.95rem;
+  padding-inline: 1rem;
+  white-space: nowrap;
+}
+
+.howItWorksChevron {
+  display: inline-flex;
+  transition: transform 180ms ease;
+}
+
+.howItWorksChevronOpen {
+  transform: rotate(180deg);
+}
+
+.heroIntroCollapse {
+  width: min(100%, 1116px);
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-0.5rem);
+  transform-origin: top;
+  transition:
+    grid-template-rows 220ms ease,
+    opacity 180ms ease,
+    transform 220ms ease,
+    margin-bottom 220ms ease;
+  margin-bottom: 0;
+  pointer-events: none;
+}
+
+.heroIntroCollapseOpen {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0);
+  margin-bottom: 1.45rem;
+  pointer-events: auto;
+}
+
+.heroIntroCollapseInner {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .wizardCard {
   border-radius: 1.6rem;
 }
@@ -4005,6 +4060,14 @@
 }
 
 @media (max-width: 860px) {
+  .heroToggleRow {
+    margin-bottom: 0.85rem;
+  }
+
+  .howItWorksButton {
+    width: 100%;
+  }
+
   .heroIntro {
     padding: 1rem;
     border-radius: 1.45rem;
@@ -4051,81 +4114,5 @@
     grid-template-columns: 1.85rem minmax(0, 1fr);
     gap: 0.6rem;
     padding: 0.72rem;
-  }
-}
-
-
-.heroIntroStack {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  gap: 1rem;
-}
-
-.heroIntroContentWide {
-  max-width: 100%;
-}
-
-.heroGuideToggleRow {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.heroGuideToggle {
-  width: fit-content;
-  min-height: 2.85rem;
-  padding-inline: 1rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.55rem;
-}
-
-.heroGuideToggleIcon {
-  display: inline-flex;
-  transform: rotate(0deg);
-  transition: transform 180ms ease;
-}
-
-.heroGuideToggle[aria-expanded='true'] .heroGuideToggleIcon {
-  transform: rotate(180deg);
-}
-
-.heroGuidePanel {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transform: translateY(-0.35rem);
-  transition:
-    max-height 220ms ease,
-    opacity 220ms ease,
-    transform 220ms ease;
-  pointer-events: none;
-}
-
-.heroGuidePanelOpen {
-  max-height: 1600px;
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-.heroGuidePanelInner {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 1rem;
-}
-
-.heroGuidePanelInner .heroGuide {
-  width: min(100%, 24.5rem);
-}
-
-@media (max-width: 1120px) {
-  .heroGuidePanelInner {
-    justify-content: stretch;
-  }
-
-  .heroGuidePanelInner .heroGuide {
-    width: 100%;
   }
 }
