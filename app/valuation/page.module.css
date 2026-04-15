@@ -4053,3 +4053,79 @@
     padding: 0.72rem;
   }
 }
+
+
+.heroIntroStack {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 1rem;
+}
+
+.heroIntroContentWide {
+  max-width: 100%;
+}
+
+.heroGuideToggleRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.heroGuideToggle {
+  width: fit-content;
+  min-height: 2.85rem;
+  padding-inline: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.heroGuideToggleIcon {
+  display: inline-flex;
+  transform: rotate(0deg);
+  transition: transform 180ms ease;
+}
+
+.heroGuideToggle[aria-expanded='true'] .heroGuideToggleIcon {
+  transform: rotate(180deg);
+}
+
+.heroGuidePanel {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateY(-0.35rem);
+  transition:
+    max-height 220ms ease,
+    opacity 220ms ease,
+    transform 220ms ease;
+  pointer-events: none;
+}
+
+.heroGuidePanelOpen {
+  max-height: 1600px;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.heroGuidePanelInner {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 1rem;
+}
+
+.heroGuidePanelInner .heroGuide {
+  width: min(100%, 24.5rem);
+}
+
+@media (max-width: 1120px) {
+  .heroGuidePanelInner {
+    justify-content: stretch;
+  }
+
+  .heroGuidePanelInner .heroGuide {
+    width: 100%;
+  }
+}
