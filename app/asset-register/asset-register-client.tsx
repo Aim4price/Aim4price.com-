@@ -902,6 +902,10 @@ export default function AssetRegisterClient() {
   }, [assets, searchTerm]);
 
   const pageCount = Math.max(1, Math.ceil(filteredAssets.length / PAGE_SIZE));
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageEnd = Math.min(filteredAssets.length, pageStart + PAGE_SIZE);
+  const visibleAssets = filteredAssets.slice(pageStart, pageStart + PAGE_SIZE);
+  const paginationItems = useMemo(() => buildPaginationItems(currentPage, pageCount), [currentPage, pageCount]);
 
   useEffect(() => {
     if (currentPage > pageCount) {
@@ -911,15 +915,13 @@ export default function AssetRegisterClient() {
 
   useEffect(() => {
     if (!expandedAssetId) return;
-    if (!visibleAssets.some((asset) => asset.id === expandedAssetId)) {
+
+    const currentPageAssets = filteredAssets.slice(pageStart, pageStart + PAGE_SIZE);
+
+    if (!currentPageAssets.some((asset) => asset.id === expandedAssetId)) {
       setExpandedAssetId(null);
     }
-  }, [expandedAssetId, visibleAssets]);
-
-  const pageStart = (currentPage - 1) * PAGE_SIZE;
-  const pageEnd = Math.min(filteredAssets.length, pageStart + PAGE_SIZE);
-  const visibleAssets = filteredAssets.slice(pageStart, pageStart + PAGE_SIZE);
-  const paginationItems = useMemo(() => buildPaginationItems(currentPage, pageCount), [currentPage, pageCount]);
+  }, [expandedAssetId, filteredAssets, pageStart]);
 
   function resetEditor() {
     setEditingAssetId(null);
