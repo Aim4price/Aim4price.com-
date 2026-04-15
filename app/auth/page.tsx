@@ -377,15 +377,6 @@ export default function AuthPage() {
       <div className={styles.shell}>
         <div className={styles.topBar}>
           <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
-            <Image
-              src="/brand/aim4price-mark-black.png"
-              alt=""
-              width={56}
-              height={46}
-              className={styles.brandMark}
-              priority
-            />
-
             <span className={styles.brandCopy}>
               <span className={styles.brandTitle}>Aim4price</span>
               <span className={styles.brandSubtext}>Agricultural &amp; industrial machinery pricing</span>
