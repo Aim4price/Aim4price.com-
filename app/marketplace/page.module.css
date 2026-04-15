@@ -17,6 +17,98 @@
   margin: 0 auto;
 }
 
+.summaryStrip {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: 1rem 1.2rem;
+  align-items: center;
+  margin-top: 1.15rem;
+  padding: 1.35rem 1.45rem;
+  border-radius: 1.7rem;
+  background: linear-gradient(135deg, #0f2745 0%, #173a67 56%, #2b62a6 100%);
+  border: 1px solid rgba(11, 31, 58, 0.16);
+  box-shadow:
+    0 22px 44px rgba(12, 30, 57, 0.16),
+    0 8px 18px rgba(12, 30, 57, 0.09);
+}
+
+.summaryStrip::after {
+  content: '';
+  position: absolute;
+  inset: auto -6rem -9rem auto;
+  width: 18rem;
+  height: 18rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(121, 184, 255, 0.35) 0%, rgba(121, 184, 255, 0) 72%);
+  filter: blur(14px);
+  pointer-events: none;
+}
+
+.summaryCopy,
+.summaryStats {
+  position: relative;
+  z-index: 1;
+}
+
+.summaryCopy h1 {
+  margin: 0.72rem 0 0.3rem;
+  max-width: 13ch;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+  color: #ffffff;
+}
+
+.summaryCopy p {
+  max-width: 40rem;
+  margin: 0.45rem 0 0;
+  color: rgba(230, 239, 250, 0.86);
+  font-size: 0.98rem;
+  line-height: 1.66;
+}
+
+.summaryStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.summaryStat {
+  min-height: 8.6rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1.3rem;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.summaryStatLabel {
+  display: block;
+  color: rgba(226, 237, 251, 0.82);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.summaryStatValue {
+  display: block;
+  margin-top: 0.55rem;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: #ffffff;
+}
+
+.summaryStatNote {
+  display: block;
+  margin-top: 0.38rem;
+  color: rgba(226, 237, 251, 0.76);
+  line-height: 1.45;
+}
+
 .hero {
   position: relative;
   overflow: hidden;
@@ -329,6 +421,13 @@
   fill: none;
 }
 
+.brandIcon {
+  width: 1rem;
+  height: 1rem;
+  display: block;
+  object-fit: contain;
+}
+
 .toolbarSearch input,
 .toolbarSelect select,
 .field input,
@@ -353,6 +452,10 @@
   padding-left: 3rem;
   padding-right: 3rem;
   font-size: 1rem;
+}
+
+.toolbarSelect select {
+  min-height: 4rem;
 }
 
 .searchClearButton {
@@ -406,7 +509,7 @@
 
 .browseActions {
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   justify-content: flex-end;
   gap: 0.75rem;
   flex-wrap: wrap;
@@ -495,7 +598,7 @@
 }
 
 .filterToggle {
-  min-height: 4.15rem;
+  min-height: 4rem;
   padding: 0 1.1rem;
   border-radius: 1.16rem;
   border-color: rgba(31, 90, 159, 0.14);
@@ -838,14 +941,14 @@
 
 .cardHead {
   align-items: flex-start;
-  gap: 0.95rem;
+  gap: 1.1rem;
 }
 
 .titleBlock h3 {
   margin: 0;
-  font-size: 1.22rem;
-  line-height: 1.08;
-  letter-spacing: -0.03em;
+  font-size: clamp(1.55rem, 2vw, 1.95rem);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
 }
 
 .specLine {
@@ -864,9 +967,10 @@
 }
 
 .priceBlock {
-  min-width: 8.6rem;
-  padding: 0.7rem 0.8rem;
-  border-radius: 1rem;
+  min-width: 11rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1.2rem;
+  box-shadow: 0 14px 24px rgba(31, 90, 159, 0.08);
 }
 
 .modalPriceBlock {
@@ -883,7 +987,7 @@
 }
 
 .priceBlock strong {
-  font-size: 1.16rem;
+  font-size: clamp(1.5rem, 2vw, 1.9rem);
 }
 
 .modalPriceBlock strong {
@@ -977,9 +1081,9 @@
 
 .shareActionButton {
   gap: 0.8rem;
-  align-items: flex-start;
-  min-height: 4.9rem;
-  padding: 0.95rem 1rem;
+  align-items: center;
+  min-height: 4.65rem;
+  padding: 0.9rem 1rem;
   background: rgba(255, 255, 255, 0.98);
 }
 
@@ -1186,7 +1290,8 @@
 .modal {
   position: relative;
   width: min(1120px, 100%);
-  max-height: min(88vh, 900px);
+  height: min(90vh, 900px);
+  max-height: calc(100vh - 2rem);
   border-radius: 1.9rem;
   background: #ffffff;
   overflow: hidden;
@@ -1202,11 +1307,13 @@
 .modalLayout {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  min-height: min(88vh, 900px);
+  height: 100%;
+  min-height: 0;
 }
 
 .viewer {
   min-width: 0;
+  min-height: 0;
   display: grid;
   align-content: start;
   gap: 0.9rem;
@@ -1217,11 +1324,30 @@
 
 .modalContent {
   min-width: 0;
+  min-height: 0;
   display: grid;
   align-content: start;
   gap: 0.95rem;
-  padding: 1.1rem 1.15rem 1.15rem 0.2rem;
-  overflow: auto;
+  padding: 1.1rem 1.25rem 1.25rem 0.35rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(43, 98, 166, 0.3) transparent;
+}
+
+.modalContent::-webkit-scrollbar,
+.filterDrawerBody::-webkit-scrollbar,
+.shareDialog::-webkit-scrollbar {
+  width: 10px;
+}
+
+.modalContent::-webkit-scrollbar-thumb,
+.filterDrawerBody::-webkit-scrollbar-thumb,
+.shareDialog::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(43, 98, 166, 0.26);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 .galleryArrow {
@@ -1305,6 +1431,10 @@
   border: 1px solid rgba(31, 90, 159, 0.1);
 }
 
+.modalActionStripBottom {
+  margin-top: 0.1rem;
+}
+
 .modalActionCopy {
   min-width: 0;
 }
@@ -1324,6 +1454,7 @@
 .channelPill {
   display: inline-flex;
   align-items: center;
+  gap: 0.5rem;
   min-height: 1.95rem;
   padding: 0 0.75rem;
   border-radius: 999px;
@@ -1332,6 +1463,19 @@
   color: #365679;
   font-size: 0.83rem;
   font-weight: 700;
+}
+
+.channelPillIcon {
+  width: 0.95rem;
+  height: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.channelPillIcon .brandIcon {
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .modalSection,
@@ -1368,6 +1512,61 @@
   gap: 0.7rem;
 }
 
+.contactSection {
+  display: grid;
+  align-content: start;
+  gap: 0.85rem;
+}
+
+.contactRows {
+  display: grid;
+  gap: 0.72rem;
+}
+
+.contactRow {
+  display: grid;
+  gap: 0.24rem;
+}
+
+.contactLabel {
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b84a0;
+}
+
+.contactValue {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text-strong);
+}
+
+.contactValue a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.contactValue a:hover {
+  text-decoration: underline;
+}
+
+.contactLocked {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.contactLocked p,
+.contactFootnote {
+  margin: 0;
+}
+
+.contactFootnote {
+  color: #597492;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
 .deleteAction {
   color: #b13232;
   border-color: rgba(177, 50, 50, 0.18);
@@ -1375,12 +1574,12 @@
 
 .shareDialog {
   position: relative;
-  width: min(620px, 100%);
-  max-height: min(84vh, 760px);
+  width: min(560px, 100%);
+  max-height: min(82vh, 720px);
   overflow: auto;
-  padding: 1rem;
-  border-radius: 1.65rem;
-  background: rgba(255, 255, 255, 0.98);
+  padding: 1.05rem;
+  border-radius: 1.55rem;
+  background: rgba(255, 255, 255, 0.985);
 }
 
 .shareHeader {
@@ -1396,8 +1595,8 @@
 
 .sharePreviewCard {
   display: grid;
-  grid-template-columns: 112px 1fr;
-  gap: 0.95rem;
+  grid-template-columns: 104px 1fr;
+  gap: 0.9rem;
   align-items: center;
   margin-top: 1rem;
   background: linear-gradient(180deg, #fbfdff 0%, #f3f8ff 100%);
@@ -1426,8 +1625,8 @@
 }
 
 .sharePreviewImage {
-  width: 112px;
-  height: 112px;
+  width: 104px;
+  height: 104px;
   border-radius: 1rem;
   border: 1px solid rgba(20, 55, 99, 0.08);
   background: #eef4fb;
@@ -1472,10 +1671,17 @@
 }
 
 .shareActionIcon {
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 1.2rem;
+  height: 1.2rem;
   flex: 0 0 auto;
-  margin-top: 0.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shareActionIcon .brandIcon {
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 .shareActionText {
@@ -1486,7 +1692,7 @@
 
 .shareActionText strong {
   display: block;
-  font-size: 0.98rem;
+  font-size: 1rem;
   line-height: 1.15;
   letter-spacing: -0.02em;
 }
@@ -1519,7 +1725,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
-  min-height: 4.9rem;
+  min-height: 4rem;
   padding: 0 1rem;
   border-radius: 1.15rem;
   border: 1px solid rgba(20, 55, 99, 0.12);
@@ -1733,5 +1939,32 @@
 
   .paginationControls {
     width: 100%;
+  }
+}
+
+
+@media (max-width: 1180px) {
+  .summaryStrip {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryStats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .summaryStrip {
+    padding: 1.15rem;
+    border-radius: 1.45rem;
+  }
+
+  .summaryCopy h1 {
+    max-width: none;
+    font-size: clamp(2rem, 10vw, 2.65rem);
+  }
+
+  .summaryStats {
+    grid-template-columns: 1fr;
   }
 }
