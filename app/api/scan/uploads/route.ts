@@ -1,1 +1,86 @@
-1
+import { NextRequest, NextResponse } from 'next/server';
+import { authorizeScanUpload } from '../../../../lib/scan-auth';
+import {
+  ALLOWED_ASSET_REGISTER_IMAGE_TYPES,
+  MAX_ASSET_REGISTER_PHOTOS,
+  MAX_ASSET_REGISTER_UPLOAD_BYTES,
+  createAssetRegisterUpload,
+} from '../../../../lib/asset-register-uploads';
+import { normalizePublicAssetCode } from '../../../../lib/scan-assets';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+function isFile(value: FormDataEntryValue): value is File {
+  return typeof value !== 'string';
+}
+
+function typeLabel(): string {
+  return 'JPG, PNG and WEBP';
+}
+
+export async function POST(request: NextRequest) {
+  const formData = await request.formData();
+  const publicAssetCode = normalizePublicAssetCode(formData.get('publicAssetCode'));
+  const access = await authorizeScanUpload(request, publicAssetCode);
+
+  if (!access.ok) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: access.error,
+        pinRequired: access.pinRequired,
+      },
+      { status: access.status },
+    );
+  }
+
+  const files = formData.getAll('files').filter(isFile);
+
+  if (!files.length) {
+    return NextResponse.json({ ok: false, error: 'Select at least one image file.' }, { status: 400 });
+  }
+
+  if (files.length > MAX_ASSET_REGISTER_PHOTOS) {
+    return NextResponse.json(
+      { ok: false, error: `You can upload a maximum of ${MAX_ASSET_REGISTER_PHOTOS} photos at a time.` },
+      { status: 400 },
+    );
+  }
+
+  const uploads: Array<{ uploadId: string; url: string; fileName: string; contentType: string; byteSize: number }> = [];
+
+  for (const file of files) {
+    const contentType = String(file.type ?? '').trim().toLowerCase();
+
+    if (!ALLOWED_ASSET_REGISTER_IMAGE_TYPES.has(contentType)) {
+      return NextResponse.json({ ok: false, error: `Only ${typeLabel()} files are allowed.` }, { status: 400 });
+    }
+
+    if (!file.size) {
+      return NextResponse.json({ ok: false, error: 'One of the files is empty.' }, { status: 400 });
+    }
+
+    if (file.size > MAX_ASSET_REGISTER_UPLOAD_BYTES) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `Each image must be ${Math.round(MAX_ASSET_REGISTER_UPLOAD_BYTES / (1024 * 1024))} MB or smaller.`,
+        },
+        { status: 400 },
+      );
+    }
+
+    const saved = await createAssetRegisterUpload({ userId: access.ownerUserId, file });
+
+    uploads.push({
+      uploadId: saved.id,
+      url: saved.url,
+      fileName: saved.fileName,
+      contentType: saved.contentType,
+      byteSize: saved.byteSize,
+    });
+  }
+
+  return NextResponse.json({ ok: true, uploads });
+}
