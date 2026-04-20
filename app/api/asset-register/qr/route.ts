@@ -38,6 +38,90 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
+function normalizeOriginCandidate(value?: string | null): string | null {
+  const text = asText(value);
+
+  if (!text) {
+    return null;
+  }
+
+  try {
+    const url = text.includes('://') ? new URL(text) : new URL(`https://${text}`);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return null;
+  }
+}
+
+function isInternalRuntimeHost(value?: string | null): boolean {
+  const text = asText(value).toLowerCase();
+
+  return (
+    text === '0.0.0.0:8080' ||
+    text === '0.0.0.0' ||
+    text === '127.0.0.1:8080' ||
+    text === '127.0.0.1' ||
+    text === 'localhost:8080'
+  );
+}
+
+function isLocalHost(value?: string | null): boolean {
+  const text = asText(value).toLowerCase();
+  return text.startsWith('localhost') || text.startsWith('127.0.0.1') || text.startsWith('0.0.0.0');
+}
+
+function resolvePublicOrigin(request: NextRequest): string {
+  const forwardedHost = asText(request.headers.get('x-forwarded-host')).split(',')[0]?.trim() ?? '';
+  const forwardedProto = asText(request.headers.get('x-forwarded-proto')).split(',')[0]?.trim() ?? '';
+
+  if (forwardedHost && !isInternalRuntimeHost(forwardedHost)) {
+    const forwardedOrigin = normalizeOriginCandidate(`${forwardedProto || 'https'}://${forwardedHost}`);
+
+    if (forwardedOrigin) {
+      return forwardedOrigin;
+    }
+  }
+
+  const envOrigin =
+    normalizeOriginCandidate(process.env.NEXT_PUBLIC_APP_URL) ||
+    normalizeOriginCandidate(process.env.APP_URL) ||
+    normalizeOriginCandidate(process.env.BETTER_AUTH_URL) ||
+    normalizeOriginCandidate(
+      process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '',
+    );
+
+  if (envOrigin) {
+    return envOrigin;
+  }
+
+  const host = asText(request.headers.get('host')).split(',')[0]?.trim() ?? '';
+
+  if (host && !isInternalRuntimeHost(host)) {
+    const scheme = forwardedProto || (isLocalHost(host) ? 'http' : 'https');
+    const hostOrigin = normalizeOriginCandidate(`${scheme}://${host}`);
+
+    if (hostOrigin) {
+      return hostOrigin;
+    }
+  }
+
+  const requestOrigin = normalizeOriginCandidate(request.nextUrl.origin);
+
+  if (requestOrigin) {
+    try {
+      const requestHost = new URL(requestOrigin).host;
+
+      if (!isInternalRuntimeHost(requestHost)) {
+        return requestOrigin;
+      }
+    } catch {
+      // ignore and fall through to the hard fallback
+    }
+  }
+
+  return 'https://aim4pricecom-production.up.railway.app';
+}
+
 function buildScanUrl(origin: string, publicAssetCode: string): string {
   return new URL(`/scan/${encodeURIComponent(publicAssetCode)}`, origin).toString();
 }
@@ -315,7 +399,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'This asset does not have a QR code yet.' }, { status: 409 });
   }
 
-  const scanUrl = buildScanUrl(request.nextUrl.origin, publicAssetCode);
+  const scanOrigin = resolvePublicOrigin(request);
+  const scanUrl = buildScanUrl(scanOrigin, publicAssetCode);
   const qrImageUrl = buildExternalQrSvgUrl(scanUrl, format === 'print' ? 920 : 840);
 
   if (format === 'print') {
