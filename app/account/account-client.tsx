@@ -24,9 +24,21 @@ type AccountProfile = {
   updatedAtIso: string | null;
 };
 
+type AccountScanPinStatus = {
+  enabled: boolean;
+  hasPin: boolean;
+  updatedAtIso: string | null;
+};
+
 type ProfileApiResponse = {
   ok: boolean;
   profile?: AccountProfile;
+  error?: string;
+};
+
+type ScanPinApiResponse = {
+  ok: boolean;
+  scanPin?: AccountScanPinStatus;
   error?: string;
 };
 
@@ -52,6 +64,12 @@ const initialProfileDraft: ProfileDraft = {
   addressLine1: '',
   addressLine2: '',
   notes: '',
+};
+
+const initialScanPinStatus: AccountScanPinStatus = {
+  enabled: false,
+  hasPin: false,
+  updatedAtIso: null,
 };
 
 const PROFILE_COMPLETION_TOTAL = 6;
@@ -104,6 +122,10 @@ function buildAddressLines(profile: ProfileDraft): string[] {
     .filter(Boolean);
 }
 
+function normalizePinInput(value: string): string {
+  return value.replace(/\D+/g, '').slice(0, 8);
+}
+
 async function readResponsePayload(response: Response): Promise<unknown> {
   const contentType = response.headers.get('content-type') ?? '';
 
@@ -140,9 +162,15 @@ function extractErrorMessage(payload: unknown, fallback: string): string {
 export default function AccountClient() {
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(initialProfileDraft);
+  const [scanPinStatus, setScanPinStatus] = useState<AccountScanPinStatus>(initialScanPinStatus);
+  const [scanPinDraft, setScanPinDraft] = useState('');
+  const [scanPinConfirmDraft, setScanPinConfirmDraft] = useState('');
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingScanPin, setIsLoadingScanPin] = useState(true);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSavingScanPin, setIsSavingScanPin] = useState(false);
+  const [isDisablingScanPin, setIsDisablingScanPin] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -188,7 +216,44 @@ export default function AccountClient() {
       }
     }
 
+    async function loadScanPin() {
+      setIsLoadingScanPin(true);
+
+      try {
+        const response = await fetch('/api/account-profile/scan-pin', {
+          cache: 'no-store',
+          credentials: 'include',
+        });
+
+        const data = (await response.json()) as ScanPinApiResponse;
+
+        if (!response.ok || !data.ok || !data.scanPin) {
+          throw new Error(data.error ?? 'Failed to load scan PIN settings.');
+        }
+
+        if (!mounted) {
+          return;
+        }
+
+        setScanPinStatus(data.scanPin);
+      } catch (error) {
+        if (!mounted) {
+          return;
+        }
+
+        setNotice({
+          tone: 'error',
+          message: error instanceof Error ? error.message : 'Failed to load scan PIN settings.',
+        });
+      } finally {
+        if (mounted) {
+          setIsLoadingScanPin(false);
+        }
+      }
+    }
+
     void loadProfile();
+    void loadScanPin();
 
     return () => {
       mounted = false;
@@ -229,6 +294,10 @@ export default function AccountClient() {
   const marketplaceSellerName = useMemo(() => {
     return profileDraft.businessName.trim() || profile?.name || 'No seller name saved yet';
   }, [profile?.name, profileDraft.businessName]);
+  const scanPinStatusLabel = scanPinStatus.enabled ? 'Active' : 'Disabled';
+  const scanPinSummary = scanPinStatus.enabled
+    ? 'QR scan access is on. Anyone with the farm PIN can open the scan page.'
+    : 'QR scan access is off until a scan PIN is saved.';
 
   async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -260,6 +329,93 @@ export default function AccountClient() {
       });
     } finally {
       setIsSavingProfile(false);
+    }
+  }
+
+  async function handleScanPinSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const normalizedPin = normalizePinInput(scanPinDraft);
+    const normalizedConfirmPin = normalizePinInput(scanPinConfirmDraft);
+
+    if (!normalizedPin) {
+      setNotice({ tone: 'error', message: 'Enter a scan PIN.' });
+      return;
+    }
+
+    if (normalizedPin.length < 4 || normalizedPin.length > 8) {
+      setNotice({ tone: 'error', message: 'Scan PIN must be 4 to 8 digits.' });
+      return;
+    }
+
+    if (normalizedPin !== normalizedConfirmPin) {
+      setNotice({ tone: 'error', message: 'Scan PINs do not match.' });
+      return;
+    }
+
+    setIsSavingScanPin(true);
+
+    try {
+      const response = await fetch('/api/account-profile/scan-pin', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pin: normalizedPin,
+          confirmPin: normalizedConfirmPin,
+        }),
+      });
+
+      const payload = await readResponsePayload(response);
+      const data = (payload ?? null) as ScanPinApiResponse | null;
+
+      if (!response.ok || !data?.ok || !data.scanPin) {
+        throw new Error(extractErrorMessage(payload, 'Failed to save scan PIN.'));
+      }
+
+      setScanPinStatus(data.scanPin);
+      setScanPinDraft('');
+      setScanPinConfirmDraft('');
+      setNotice({ tone: 'success', message: 'Scan PIN saved. QR scan access is now active.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to save scan PIN.',
+      });
+    } finally {
+      setIsSavingScanPin(false);
+    }
+  }
+
+  async function handleDisableScanPin() {
+    setIsDisablingScanPin(true);
+
+    try {
+      const response = await fetch('/api/account-profile/scan-pin', {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      const payload = await readResponsePayload(response);
+      const data = (payload ?? null) as ScanPinApiResponse | null;
+
+      if (!response.ok || !data?.ok || !data.scanPin) {
+        throw new Error(extractErrorMessage(payload, 'Failed to disable scan PIN.'));
+      }
+
+      setScanPinStatus(data.scanPin);
+      setScanPinDraft('');
+      setScanPinConfirmDraft('');
+      setNotice({ tone: 'success', message: 'Scan PIN disabled.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to disable scan PIN.',
+      });
+    } finally {
+      setIsDisablingScanPin(false);
     }
   }
 
@@ -467,6 +623,83 @@ export default function AccountClient() {
           </section>
 
           <aside className={styles.sidebar}>
+            <section className={styles.sidebarCard}>
+              <div className={styles.cardHeader}>
+                <div>
+                  <span className={styles.kicker}>Scan access</span>
+                  <h2>QR scan PIN</h2>
+                  <p>This PIN is used on scanned asset pages. It keeps the operational side separate from valuations.</p>
+                </div>
+              </div>
+
+              {isLoadingScanPin ? (
+                <p className={styles.loading}>Loading scan PIN...</p>
+              ) : (
+                <>
+                  <div className={styles.summaryStack}>
+                    <div className={styles.summaryRow}>
+                      <span className={styles.summaryLabel}>Status</span>
+                      <div className={styles.summaryList}>
+                        <strong>{scanPinStatusLabel}</strong>
+                        <span>{scanPinSummary}</span>
+                      </div>
+                    </div>
+
+                    <div className={styles.summaryRow}>
+                      <span className={styles.summaryLabel}>Last changed</span>
+                      <span className={styles.summaryValue}>{formatDate(scanPinStatus.updatedAtIso)}</span>
+                    </div>
+                  </div>
+
+                  <form className={styles.pinForm} onSubmit={handleScanPinSubmit}>
+                    <div className={styles.pinGrid}>
+                      <label className={styles.field}>
+                        <span>New scan PIN</span>
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          autoComplete="new-password"
+                          value={scanPinDraft}
+                          onChange={(event) => setScanPinDraft(normalizePinInput(event.target.value))}
+                          placeholder="4 to 8 digits"
+                        />
+                      </label>
+
+                      <label className={styles.field}>
+                        <span>Confirm scan PIN</span>
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          autoComplete="new-password"
+                          value={scanPinConfirmDraft}
+                          onChange={(event) => setScanPinConfirmDraft(normalizePinInput(event.target.value))}
+                          placeholder="Repeat PIN"
+                        />
+                      </label>
+                    </div>
+
+                    <p className={styles.helperText}>
+                      Use a simple farm PIN that trusted staff can use when scanning a metal QR tag in the field.
+                    </p>
+
+                    <div className={styles.inlineActions}>
+                      <button type="submit" className={styles.primaryButton} disabled={isSavingScanPin}>
+                        {isSavingScanPin ? 'Saving scan PIN...' : scanPinStatus.hasPin ? 'Update scan PIN' : 'Save scan PIN'}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={handleDisableScanPin}
+                        disabled={isDisablingScanPin || !scanPinStatus.hasPin}
+                      >
+                        {isDisablingScanPin ? 'Disabling...' : 'Disable scan PIN'}
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
+            </section>
+
             <section className={styles.sidebarCard}>
               <div className={styles.cardHeader}>
                 <div>
