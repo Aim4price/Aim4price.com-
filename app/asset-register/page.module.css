@@ -642,7 +642,7 @@
 }
 
 .optionsModal {
-  width: min(100%, 580px);
+  width: min(100%, 760px);
 }
 
 .projectionModal {
@@ -882,6 +882,108 @@
   gap: 0.75rem;
 }
 
+.qrPanel {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 0.85rem;
+  margin-bottom: 0.95rem;
+}
+
+.qrPreviewCard,
+.qrDetailsCard {
+  padding: 1rem;
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, #f7fafb 0%, #f2f5f8 100%);
+  border: 1px solid var(--line);
+}
+
+.qrPreviewCard {
+  display: grid;
+  gap: 0.8rem;
+  align-content: start;
+}
+
+.qrPreviewEyebrow {
+  display: inline-flex;
+  color: #708092;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.qrPreviewFrame {
+  min-height: 220px;
+  padding: 0.9rem;
+  border-radius: 1rem;
+  background: #ffffff;
+  border: 1px solid rgba(220, 228, 236, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qrPreviewFrame img {
+  width: 100%;
+  max-width: 210px;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+}
+
+.qrPreviewFallback {
+  margin: 0;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.55;
+}
+
+.qrDetailsCard {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+}
+
+.qrDetailRow {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.9rem 0.95rem;
+  border-radius: 1rem;
+  background: #ffffff;
+  border: 1px solid rgba(220, 228, 236, 0.95);
+}
+
+.qrDetailRow span {
+  color: #708092;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.qrDetailRow strong {
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.codeValue {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.92rem !important;
+}
+
+.scanLinkText {
+  color: var(--blue-text);
+  font-weight: 700;
+  line-height: 1.55;
+  word-break: break-all;
+  text-decoration: none;
+}
+
+.scanLinkText:hover {
+  text-decoration: underline;
+}
+
 .optionActionButton {
   width: 100%;
   justify-content: flex-start;
@@ -1105,7 +1207,8 @@
   .projectionInputRow,
   .exportChoices,
   .projectionStatsGrid,
-  .projectionSummaryCard {
+  .projectionSummaryCard,
+  .qrPanel {
     grid-template-columns: 1fr;
   }
 
@@ -1142,6 +1245,10 @@
   .modalCard,
   .optionsModal {
     border-radius: 1.4rem;
+  }
+
+  .qrPreviewFrame {
+    min-height: 200px;
   }
 
   .registerHeader,
