@@ -44,6 +44,14 @@ type RegisterAsset = {
   isFinanced: boolean;
   financeNote: string;
   photos: string[];
+  publicAssetCode: string;
+  plateLabel: string;
+  qrStatus: string;
+  lastScannedAtIso: string | null;
+  lastKnownLat: number | null;
+  lastKnownLng: number | null;
+  lastKnownLocationText: string;
+  fuelPercent: number | null;
   createdAtIso: string;
   updatedAtIso: string;
 };
@@ -222,6 +230,42 @@ function DownloadIcon({ className }: IconProps) {
       <path d="M12 3v10" />
       <path d="m8 9 4 4 4-4" />
       <path d="M4 20h16" />
+    </svg>
+  );
+}
+
+function CopyIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
+}
+
+function ExternalLinkIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M14 4h6v6" />
+      <path d="M10 14 20 4" />
+      <path d="M20 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4" />
+    </svg>
+  );
+}
+
+function QrIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <rect x="3" y="3" width="6" height="6" rx="1" />
+      <rect x="15" y="3" width="6" height="6" rx="1" />
+      <rect x="3" y="15" width="6" height="6" rx="1" />
+      <path d="M15 15h3v3" />
+      <path d="M21 15v6h-3" />
+      <path d="M15 21v-3" />
+      <path d="M12 7h1" />
+      <path d="M12 12h1" />
+      <path d="M7 12h1" />
+      <path d="M12 17h1" />
     </svg>
   );
 }
@@ -646,6 +690,34 @@ function toAbsoluteUrl(value?: string | null): string | null {
   } catch {
     return text;
   }
+}
+
+function buildAssetScanUrl(asset: RegisterAsset): string | null {
+  const publicAssetCode = String(asset.publicAssetCode ?? '').trim();
+
+  if (!publicAssetCode) {
+    return null;
+  }
+
+  return toAbsoluteUrl(`/scan/${encodeURIComponent(publicAssetCode)}`);
+}
+
+function buildAssetQrSvgUrl(asset: RegisterAsset): string {
+  return `/api/asset-register/qr?assetId=${encodeURIComponent(asset.id)}&format=svg`;
+}
+
+function buildAssetQrPrintUrl(asset: RegisterAsset): string {
+  return `/api/asset-register/qr?assetId=${encodeURIComponent(asset.id)}&format=print`;
+}
+
+function formatQrStatus(value?: string | null): string {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (normalized === 'transferred') return 'Transferred';
+  if (normalized === 'retired') return 'Retired';
+  if (normalized === 'deleted') return 'Inactive';
+  if (normalized === 'active') return 'Active';
+  return 'Pending';
 }
 
 function buildAssetSheetMethodCards(asset: RegisterAsset): ReportMethodCard[] {
@@ -1307,6 +1379,93 @@ export default function AssetRegisterClient() {
     }
 
     closeActionDialog();
+  }
+
+  async function handleCopyScanLink(asset: RegisterAsset) {
+    const scanUrl = buildAssetScanUrl(asset);
+
+    if (!scanUrl) {
+      setNotice({ tone: 'error', message: 'This asset does not have a scan link yet.' });
+      return;
+    }
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(scanUrl);
+        setNotice({ tone: 'success', message: 'Scan link copied.' });
+        return;
+      }
+
+      window.prompt('Copy this asset scan link', scanUrl);
+      setNotice({ tone: 'success', message: 'Scan link ready to copy.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to copy the scan link.',
+      });
+    }
+  }
+
+  function handleOpenScanPage(asset: RegisterAsset) {
+    const scanUrl = buildAssetScanUrl(asset);
+
+    if (!scanUrl) {
+      setNotice({ tone: 'error', message: 'This asset does not have a scan link yet.' });
+      return;
+    }
+
+    const opened = window.open(scanUrl, '_blank', 'noopener,noreferrer');
+
+    if (!opened) {
+      setNotice({ tone: 'error', message: 'Unable to open the scan page. Please allow pop-ups and try again.' });
+      return;
+    }
+
+    setNotice({ tone: 'success', message: 'Operational scan page opened in a new tab.' });
+  }
+
+  async function handleDownloadQr(asset: RegisterAsset) {
+    try {
+      const response = await fetch(`/api/asset-register/qr?assetId=${encodeURIComponent(asset.id)}&format=svg&download=1`, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        try {
+          const data = (await response.json()) as { error?: string };
+          throw new Error(data.error ?? 'Failed to download the asset QR code.');
+        } catch (error) {
+          if (error instanceof Error) {
+            throw error;
+          }
+
+          throw new Error('Failed to download the asset QR code.');
+        }
+      }
+
+      const blob = await response.blob();
+      const fallbackName = `${asset.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'asset'}-qr.svg`;
+      const fileName = parseDownloadFileName(response, fallbackName);
+      downloadBlob(blob, fileName);
+      setNotice({ tone: 'success', message: 'Asset QR SVG downloaded.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to download the asset QR code.',
+      });
+    }
+  }
+
+  function handlePrintQrSheet(asset: RegisterAsset) {
+    const opened = window.open(buildAssetQrPrintUrl(asset), '_blank', 'noopener,noreferrer');
+
+    if (!opened) {
+      setNotice({ tone: 'error', message: 'Unable to open the QR print page. Please allow pop-ups and try again.' });
+      return;
+    }
+
+    setNotice({ tone: 'success', message: 'QR print sheet opened in a new tab.' });
   }
 
   function openExportModal() {
@@ -2050,6 +2209,54 @@ export default function AssetRegisterClient() {
                 <span>Status</span>
                 <strong>{assetStatusDateLabel(activeAsset)}</strong>
               </div>
+
+              <div className={styles.optionMetaTile}>
+                <span>Plate label</span>
+                <strong>{activeAsset.plateLabel || 'Pending'}</strong>
+              </div>
+
+              <div className={styles.optionMetaTile}>
+                <span>Scan status</span>
+                <strong>{formatQrStatus(activeAsset.qrStatus)}</strong>
+              </div>
+            </div>
+
+            <div className={styles.qrPanel}>
+              <div className={styles.qrPreviewCard}>
+                <span className={styles.qrPreviewEyebrow}>Permanent asset QR</span>
+                <div className={styles.qrPreviewFrame}>
+                  {activeAsset.publicAssetCode ? (
+                    <img src={buildAssetQrSvgUrl(activeAsset)} alt={`QR code for ${activeAsset.title}`} />
+                  ) : (
+                    <p className={styles.qrPreviewFallback}>QR artwork is not ready for this asset yet.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.qrDetailsCard}>
+                <span className={styles.qrPreviewEyebrow}>Scan details</span>
+
+                <div className={styles.qrDetailRow}>
+                  <span>Plate label</span>
+                  <strong>{activeAsset.plateLabel || 'Pending'}</strong>
+                </div>
+
+                <div className={styles.qrDetailRow}>
+                  <span>Public asset code</span>
+                  <strong className={styles.codeValue}>{activeAsset.publicAssetCode || 'Pending'}</strong>
+                </div>
+
+                <div className={styles.qrDetailRow}>
+                  <span>Scan page</span>
+                  {buildAssetScanUrl(activeAsset) ? (
+                    <a className={styles.scanLinkText} href={buildAssetScanUrl(activeAsset) ?? '#'} target="_blank" rel="noreferrer">
+                      {buildAssetScanUrl(activeAsset)}
+                    </a>
+                  ) : (
+                    <strong>Not available yet</strong>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className={styles.optionsGrid}>
@@ -2065,8 +2272,28 @@ export default function AssetRegisterClient() {
                 </button>
               ) : null}
 
-              <button type="button" className={styles.optionActionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
+              <button type="button" className={styles.optionActionButton} onClick={() => void handleCopyScanLink(activeAsset)}>
+                <CopyIcon className={styles.buttonIcon} />
+                <span>Copy scan link</span>
+              </button>
+
+              <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanPage(activeAsset)}>
+                <ExternalLinkIcon className={styles.buttonIcon} />
+                <span>Open scan page</span>
+              </button>
+
+              <button type="button" className={styles.optionActionButton} onClick={() => void handleDownloadQr(activeAsset)}>
+                <QrIcon className={styles.buttonIcon} />
+                <span>Download QR SVG</span>
+              </button>
+
+              <button type="button" className={styles.optionActionButton} onClick={() => handlePrintQrSheet(activeAsset)}>
                 <PrintIcon className={styles.buttonIcon} />
+                <span>Print QR sheet</span>
+              </button>
+
+              <button type="button" className={styles.optionActionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
+                <DownloadIcon className={styles.buttonIcon} />
                 <span>Download Asset PDF</span>
               </button>
 
