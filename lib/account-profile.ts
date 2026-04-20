@@ -17,6 +17,12 @@ export type AccountProfile = {
   updatedAtIso: string | null;
 };
 
+export type AccountScanPinStatus = {
+  enabled: boolean;
+  hasPin: boolean;
+  updatedAtIso: string | null;
+};
+
 export type UpsertAccountProfileInput = {
   businessName?: string | null;
   phone?: string | null;
@@ -44,6 +50,12 @@ type AccountProfileRow = {
   updated_at: string | null;
 };
 
+type AccountScanPinRow = {
+  scan_pin_hash: string | null;
+  scan_pin_enabled: boolean | null;
+  scan_pin_updated_at: string | null;
+};
+
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -67,6 +79,17 @@ function mapAccountProfileRow(
     notes: asText(row?.notes),
     createdAtIso: row?.created_at ?? null,
     updatedAtIso: row?.updated_at ?? null,
+  };
+}
+
+function mapAccountScanPinRow(row?: AccountScanPinRow): AccountScanPinStatus {
+  const hasPin = Boolean(asText(row?.scan_pin_hash));
+  const enabled = Boolean(row?.scan_pin_enabled) && hasPin;
+
+  return {
+    enabled,
+    hasPin,
+    updatedAtIso: row?.scan_pin_updated_at ?? null,
   };
 }
 
@@ -168,4 +191,89 @@ export async function upsertAccountProfile(
   );
 
   return mapAccountProfileRow(result.rows[0], user);
+}
+
+export async function getAccountScanPinStatus(userId: string): Promise<AccountScanPinStatus> {
+  const db = getDb();
+
+  const result = await db.query<AccountScanPinRow>(
+    `
+      select
+        scan_pin_hash,
+        scan_pin_enabled,
+        scan_pin_updated_at
+      from account_profiles
+      where user_id = $1
+      limit 1
+    `,
+    [userId],
+  );
+
+  return mapAccountScanPinRow(result.rows[0]);
+}
+
+export async function saveAccountScanPin(userId: string, scanPinHash: string): Promise<AccountScanPinStatus> {
+  const db = getDb();
+
+  const result = await db.query<AccountScanPinRow>(
+    `
+      insert into account_profiles (
+        user_id,
+        scan_pin_hash,
+        scan_pin_enabled,
+        scan_pin_updated_at,
+        created_at,
+        updated_at
+      )
+      values (
+        $1, $2, true, now(), now(), now()
+      )
+      on conflict (user_id)
+      do update set
+        scan_pin_hash = excluded.scan_pin_hash,
+        scan_pin_enabled = true,
+        scan_pin_updated_at = now(),
+        updated_at = now()
+      returning
+        scan_pin_hash,
+        scan_pin_enabled,
+        scan_pin_updated_at
+    `,
+    [userId, scanPinHash],
+  );
+
+  return mapAccountScanPinRow(result.rows[0]);
+}
+
+export async function disableAccountScanPin(userId: string): Promise<AccountScanPinStatus> {
+  const db = getDb();
+
+  const result = await db.query<AccountScanPinRow>(
+    `
+      insert into account_profiles (
+        user_id,
+        scan_pin_hash,
+        scan_pin_enabled,
+        scan_pin_updated_at,
+        created_at,
+        updated_at
+      )
+      values (
+        $1, null, false, now(), now(), now()
+      )
+      on conflict (user_id)
+      do update set
+        scan_pin_hash = null,
+        scan_pin_enabled = false,
+        scan_pin_updated_at = now(),
+        updated_at = now()
+      returning
+        scan_pin_hash,
+        scan_pin_enabled,
+        scan_pin_updated_at
+    `,
+    [userId],
+  );
+
+  return mapAccountScanPinRow(result.rows[0]);
 }
