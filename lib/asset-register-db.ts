@@ -6,6 +6,7 @@ import type { Result } from './tractor-logic';
 export type AssetRegisterItemKind = 'tractor' | 'manual' | 'property';
 export type AssetRegisterItemMethod = MethodKey | 'manual';
 export type AssetRegisterItemCondition = ConditionKey | '';
+export type AssetRegisterQrStatus = 'active' | 'transferred' | 'retired' | 'deleted' | '';
 
 export type AssetRegisterItem = {
   id: string;
@@ -36,6 +37,14 @@ export type AssetRegisterItem = {
   marketplaceNotes: string;
   marketplaceStatus: string;
   photos: string[];
+  publicAssetCode: string;
+  plateLabel: string;
+  qrStatus: AssetRegisterQrStatus;
+  lastScannedAtIso: string | null;
+  lastKnownLat: number | null;
+  lastKnownLng: number | null;
+  lastKnownLocationText: string;
+  fuelPercent: number | null;
   createdAtIso: string;
   updatedAtIso: string;
 };
@@ -96,6 +105,14 @@ type AssetRegisterRow = {
   marketplace_notes: string | null;
   marketplace_status: string | null;
   photos: unknown;
+  public_asset_code: string | null;
+  plate_label: string | null;
+  qr_status: string | null;
+  last_scanned_at: string | null;
+  last_known_lat: string | number | null;
+  last_known_lng: string | number | null;
+  last_known_location_text: string | null;
+  fuel_percent: string | number | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -201,6 +218,31 @@ function normalizeCondition(value: unknown): AssetRegisterItemCondition {
   return '';
 }
 
+function normalizeQrStatus(value: unknown): AssetRegisterQrStatus {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (
+    normalized === 'active' ||
+    normalized === 'transferred' ||
+    normalized === 'retired' ||
+    normalized === 'deleted'
+  ) {
+    return normalized;
+  }
+
+  return '';
+}
+
+function normalizeFuelPercent(value: unknown): number | null {
+  const parsed = asNumber(value);
+
+  if (parsed === null) {
+    return null;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(parsed)));
+}
+
 function mapDrive(value: unknown): DriveType | '' {
   return value === '2wd' || value === '4wd' || value === 'tracks' ? value : '';
 }
@@ -218,6 +260,11 @@ function mapCab(value: unknown): CabType | '' {
 function buildIsoDate(value: unknown): string {
   const text = asText(value);
   return text || new Date().toISOString();
+}
+
+function buildNullableIsoDate(value: unknown): string | null {
+  const text = asText(value);
+  return text || null;
 }
 
 function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
@@ -254,6 +301,14 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     marketplaceNotes: asText(row.marketplace_notes),
     marketplaceStatus: asText(row.marketplace_status) || 'draft',
     photos: normalizePhotoArray(row.photos),
+    publicAssetCode: asText(row.public_asset_code),
+    plateLabel: asText(row.plate_label),
+    qrStatus: normalizeQrStatus(row.qr_status),
+    lastScannedAtIso: buildNullableIsoDate(row.last_scanned_at),
+    lastKnownLat: asNumber(row.last_known_lat),
+    lastKnownLng: asNumber(row.last_known_lng),
+    lastKnownLocationText: asText(row.last_known_location_text),
+    fuelPercent: normalizeFuelPercent(row.fuel_percent),
     createdAtIso: buildIsoDate(row.created_at),
     updatedAtIso: buildIsoDate(row.updated_at ?? row.created_at),
   };
@@ -373,6 +428,14 @@ function buildSelectList(schema: TableSchema): string {
   const marketplaceNotesColumn = resolveColumn(schema, 'marketplace_notes', 'listing_notes');
   const marketplaceStatusColumn = resolveColumn(schema, 'marketplace_status', 'listing_status', 'status');
   const photosColumn = resolveColumn(schema, 'photos', 'photo_urls', 'image_urls', 'images');
+  const publicAssetCodeColumn = resolveColumn(schema, 'public_asset_code');
+  const plateLabelColumn = resolveColumn(schema, 'plate_label');
+  const qrStatusColumn = resolveColumn(schema, 'qr_status');
+  const lastScannedAtColumn = resolveColumn(schema, 'last_scanned_at');
+  const lastKnownLatColumn = resolveColumn(schema, 'last_known_lat');
+  const lastKnownLngColumn = resolveColumn(schema, 'last_known_lng');
+  const lastKnownLocationTextColumn = resolveColumn(schema, 'last_known_location_text');
+  const fuelPercentColumn = resolveColumn(schema, 'fuel_percent');
   const createdAtColumn = resolveColumn(schema, 'created_at', 'createdon', 'created');
   const updatedAtColumn = resolveColumn(schema, 'updated_at', 'modified_at', 'updatedon', 'created_at');
 
@@ -405,6 +468,14 @@ function buildSelectList(schema: TableSchema): string {
     marketplaceNotesColumn ? `${marketplaceNotesColumn} as marketplace_notes` : 'null::text as marketplace_notes',
     marketplaceStatusColumn ? `${marketplaceStatusColumn} as marketplace_status` : `'draft'::text as marketplace_status`,
     photosColumn ? `${photosColumn} as photos` : `'[]'::jsonb as photos`,
+    publicAssetCodeColumn ? `${publicAssetCodeColumn} as public_asset_code` : `''::text as public_asset_code`,
+    plateLabelColumn ? `${plateLabelColumn} as plate_label` : `''::text as plate_label`,
+    qrStatusColumn ? `${qrStatusColumn} as qr_status` : `'active'::text as qr_status`,
+    lastScannedAtColumn ? `${lastScannedAtColumn} as last_scanned_at` : 'null::timestamptz as last_scanned_at',
+    lastKnownLatColumn ? `${lastKnownLatColumn} as last_known_lat` : 'null::numeric as last_known_lat',
+    lastKnownLngColumn ? `${lastKnownLngColumn} as last_known_lng` : 'null::numeric as last_known_lng',
+    lastKnownLocationTextColumn ? `${lastKnownLocationTextColumn} as last_known_location_text` : 'null::text as last_known_location_text',
+    fuelPercentColumn ? `${fuelPercentColumn} as fuel_percent` : 'null::integer as fuel_percent',
     createdAtColumn ? `${createdAtColumn} as created_at` : 'now() as created_at',
     updatedAtColumn ? `${updatedAtColumn} as updated_at` : 'now() as updated_at',
   ];
