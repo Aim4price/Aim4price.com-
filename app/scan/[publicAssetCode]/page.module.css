@@ -1,0 +1,461 @@
+.page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, rgba(77, 115, 217, 0.1), transparent 24%),
+    radial-gradient(circle at top left, rgba(17, 52, 46, 0.08), transparent 28%),
+    linear-gradient(180deg, #f5f7fb 0%, #eef2f6 100%);
+}
+
+.shell {
+  width: min(calc(100% - 2rem), 1180px);
+  margin: 0 auto;
+  padding: 1.6rem 0 4rem;
+  display: grid;
+  gap: 1.15rem;
+}
+
+.hero,
+.mainCard,
+.sidebarCard,
+.pinCard,
+.unavailableCard,
+.historyCard,
+.loadingCard {
+  border-radius: 1.65rem;
+  border: 1px solid rgba(19, 39, 64, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 18px 38px rgba(16, 30, 49, 0.08), 0 6px 14px rgba(16, 30, 49, 0.03);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+  gap: 1rem;
+  padding: 1.55rem;
+  background: linear-gradient(135deg, #12312b 0%, #183745 58%, #234681 100%);
+}
+
+.eyebrow,
+.kicker,
+.historyBadge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 2rem;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  color: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.heroContent h1,
+.cardHeader h2,
+.pinCard h2,
+.unavailableCard h2 {
+  margin: 0.8rem 0 0.55rem;
+  letter-spacing: -0.05em;
+  line-height: 0.98;
+}
+
+.heroContent h1 {
+  color: #ffffff;
+  font-size: clamp(2.2rem, 4vw, 3.45rem);
+  max-width: 12ch;
+}
+
+.heroContent p,
+.cardHeader p,
+.sidebarCard p,
+.pinCard p,
+.unavailableCard p,
+.helperText,
+.metaText {
+  margin: 0;
+  line-height: 1.68;
+  color: #627072;
+}
+
+.heroContent p {
+  color: rgba(228, 237, 251, 0.9);
+  max-width: 42rem;
+}
+
+.heroAside {
+  display: grid;
+  gap: 0.85rem;
+  align-content: stretch;
+}
+
+.heroStat,
+.summaryTile {
+  display: grid;
+  gap: 0.32rem;
+  padding: 1rem;
+  border-radius: 1.15rem;
+}
+
+.heroStat {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.heroStat span,
+.summaryTile span,
+.field span,
+.fieldActionWrap span {
+  color: rgba(230, 239, 251, 0.82);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.heroStat strong {
+  color: #ffffff;
+  font-size: clamp(1.2rem, 2vw, 1.7rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.notice {
+  min-height: 3rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(19, 39, 64, 0.08);
+  font-weight: 700;
+}
+
+.noticeSuccess {
+  background: rgba(52, 211, 153, 0.12);
+  color: #156f4c;
+}
+
+.noticeError {
+  background: rgba(198, 75, 75, 0.12);
+  color: #8f3333;
+}
+
+.loadingCard,
+.pinCard,
+.unavailableCard,
+.mainCard,
+.sidebarCard,
+.historyCard {
+  background: rgba(255, 255, 255, 0.96);
+  padding: 1.45rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  gap: 1.15rem;
+  align-items: start;
+}
+
+.sidebar {
+  display: grid;
+  gap: 1rem;
+}
+
+.kicker,
+.historyBadge {
+  color: #516178;
+  background: rgba(81, 97, 120, 0.08);
+  border: 1px solid rgba(81, 97, 120, 0.12);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.cardHeader h2,
+.pinCard h2,
+.unavailableCard h2,
+.sidebarCard h3 {
+  color: #183033;
+}
+
+.cardHeader h2 {
+  font-size: clamp(1.5rem, 2.5vw, 1.95rem);
+}
+
+.sidebarCard h3 {
+  margin: 0.45rem 0 0.55rem;
+  font-size: 1.15rem;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.summaryTile {
+  background: rgba(81, 97, 120, 0.06);
+  border: 1px solid rgba(81, 97, 120, 0.08);
+}
+
+.summaryTile span,
+.field span,
+.fieldActionWrap span,
+.helperText,
+.metaText {
+  color: #627072;
+}
+
+.summaryTile strong {
+  color: #183033;
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.form,
+.pinForm {
+  display: grid;
+  gap: 1rem;
+}
+
+.field,
+.fieldActionWrap {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 3.15rem;
+  padding: 0.84rem 0.95rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(19, 39, 64, 0.12);
+  background: #ffffff;
+  color: #183033;
+  font: inherit;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.field textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: rgba(35, 70, 129, 0.45);
+  box-shadow: 0 0 0 4px rgba(35, 70, 129, 0.12);
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.fieldActionWrap {
+  align-content: end;
+}
+
+.primaryButton,
+.secondaryButton,
+.uploadButton,
+.removePhotoButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0 1.1rem;
+  border-radius: 1rem;
+  font-weight: 800;
+  font-size: 0.98rem;
+  text-decoration: none;
+  border: 1px solid rgba(19, 39, 64, 0.1);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, color 160ms ease, border-color 160ms ease;
+  cursor: pointer;
+}
+
+.primaryButton {
+  color: #ffffff;
+  background: linear-gradient(135deg, #12312b 0%, #16463b 100%);
+  box-shadow: 0 16px 30px rgba(18, 49, 43, 0.16);
+}
+
+.secondaryButton,
+.uploadButton,
+.removePhotoButton {
+  color: #234681;
+  background: rgba(92, 126, 197, 0.1);
+}
+
+.primaryButton:hover,
+.secondaryButton:hover,
+.uploadButton:hover,
+.removePhotoButton:hover {
+  transform: translateY(-1px);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.uploadButton:disabled,
+.removePhotoButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pinActions,
+.formActions,
+.uploadRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.uploadButton input {
+  display: none;
+}
+
+.photoGrid,
+.sidebarPhotoGrid,
+.historyPhotoRow {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.photoGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.photoCard {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.65rem;
+  border-radius: 1rem;
+  background: rgba(81, 97, 120, 0.05);
+  border: 1px solid rgba(81, 97, 120, 0.08);
+}
+
+.photoImage,
+.sidebarPhoto,
+.historyPhoto {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  border-radius: 0.85rem;
+}
+
+.sidebarPhotoGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sidebarPhoto {
+  aspect-ratio: 1 / 1;
+}
+
+.historyCard {
+  display: grid;
+  gap: 1rem;
+}
+
+.historyList {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.historyItem {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 1.1rem;
+  background: rgba(81, 97, 120, 0.06);
+  border: 1px solid rgba(81, 97, 120, 0.08);
+}
+
+.historyTopRow,
+.historyMetaGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.historyMetaGrid {
+  justify-content: flex-start;
+  color: #516178;
+  font-weight: 600;
+}
+
+.historyText {
+  margin: 0;
+  color: #314248;
+  line-height: 1.6;
+}
+
+.historyPhotoRow {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+@media (max-width: 960px) {
+  .hero,
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryGrid,
+  .fieldRow,
+  .photoGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .shell {
+    width: min(calc(100% - 1rem), 1180px);
+    padding-top: 1rem;
+  }
+
+  .hero,
+  .mainCard,
+  .sidebarCard,
+  .pinCard,
+  .historyCard,
+  .unavailableCard,
+  .loadingCard {
+    padding: 1rem;
+    border-radius: 1.2rem;
+  }
+
+  .summaryGrid,
+  .fieldRow,
+  .photoGrid,
+  .sidebarPhotoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .cardHeader,
+  .pinActions,
+  .formActions,
+  .uploadRow,
+  .historyTopRow,
+  .historyMetaGrid {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
