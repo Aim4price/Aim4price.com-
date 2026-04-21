@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
@@ -252,6 +252,8 @@ export default function AssetMapClient() {
   const [summary, setSummary] = useState<AssetMapResponse['summary'] | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastLoadedAtIso, setLastLoadedAtIso] = useState<string | null>(null);
 
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
@@ -272,48 +274,43 @@ export default function AssetMapClient() {
     }
   }, []);
 
-  useEffect(() => {
-    let mounted = true;
+  const fetchMapData = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
+    const initialLoad = mode === 'initial';
 
-    async function loadData() {
+    if (initialLoad) {
       setIsLoading(true);
-
-      try {
-        const response = await fetch('/api/asset-map', {
-          credentials: 'include',
-          cache: 'no-store',
-        });
-        const data = (await response.json().catch(() => null)) as AssetMapResponse | null;
-
-        if (!response.ok || !data?.ok || !Array.isArray(data.assets)) {
-          throw new Error(data?.error ?? 'Failed to load the asset map.');
-        }
-
-        if (!mounted) {
-          return;
-        }
-
-        setAssets(data.assets);
-        setSummary(data.summary ?? null);
-      } catch (error) {
-        if (!mounted) {
-          return;
-        }
-
-        setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load the asset map.' });
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
+    } else {
+      setIsRefreshing(true);
     }
 
-    void loadData();
+    try {
+      const response = await fetch('/api/asset-map', {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const data = (await response.json().catch(() => null)) as AssetMapResponse | null;
 
-    return () => {
-      mounted = false;
-    };
+      if (!response.ok || !data?.ok || !Array.isArray(data.assets)) {
+        throw new Error(data?.error ?? 'Failed to load the asset map.');
+      }
+
+      setAssets(data.assets);
+      setSummary(data.summary ?? null);
+      setLastLoadedAtIso(new Date().toISOString());
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load the asset map.' });
+    } finally {
+      if (initialLoad) {
+        setIsLoading(false);
+      } else {
+        setIsRefreshing(false);
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    void fetchMapData('initial');
+  }, [fetchMapData]);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -321,6 +318,20 @@ export default function AssetMapClient() {
     const timeout = window.setTimeout(() => setNotice(null), 3600);
     return () => window.clearTimeout(timeout);
   }, [notice]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void fetchMapData('refresh');
+      }
+    }, 45000);
+
+    return () => window.clearInterval(interval);
+  }, [fetchMapData]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -576,17 +587,26 @@ export default function AssetMapClient() {
             />
           </label>
 
-          <div className={styles.filterRail}>
-            {RECENCY_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={`${styles.filterChip} ${recencyFilter === option.value ? styles.filterChipActive : ''}`}
-                onClick={() => setRecencyFilter(option.value)}
-              >
-                {option.label}
+          <div className={styles.toolbarAside}>
+            <div className={styles.filterRail}>
+              {RECENCY_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`${styles.filterChip} ${recencyFilter === option.value ? styles.filterChipActive : ''}`}
+                  onClick={() => setRecencyFilter(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            <div className={styles.toolbarStatus}>
+              <span>{lastLoadedAtIso ? `Updated ${formatDate(lastLoadedAtIso)}` : 'Waiting for the first refresh'}</span>
+              <button type="button" className={styles.secondaryButton} onClick={() => void fetchMapData('refresh')} disabled={isRefreshing || isLoading}>
+                {isRefreshing ? 'Refreshing…' : 'Refresh map'}
               </button>
-            ))}
+            </div>
           </div>
         </div>
 
