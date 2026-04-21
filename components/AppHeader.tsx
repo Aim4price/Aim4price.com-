@@ -234,6 +234,9 @@ export default function AppHeader({
                     <Link href="/account" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
                       Account details
                     </Link>
+                    <Link href="/asset-map" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                      Asset map
+                    </Link>
 
                     <button
                       type="button"
