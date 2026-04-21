@@ -201,18 +201,6 @@ export async function authorizeScanAccess(
   if (context.asset.qrStatus === 'deleted') {
     return { ok: false, status: 404, error: 'This asset QR code is inactive.', pinRequired: false };
   }
-
-  const session = await getServerSession();
-
-  if (session?.user?.id && session.user.id === context.asset.userId) {
-    return {
-      ok: true,
-      accessMode: 'owner_session',
-      asset: context.asset,
-      ownerUserId: context.asset.userId,
-    };
-  }
-
   const claims = getScanSessionFromRequest(request);
 
   if (!claims) {
