@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from './auth-session';
-import { getScanAssetAccessContext, type ScanAccessMode, type ScanSafeAsset } from './scan-assets';
+import { getScanAssetAccessContext, normalizePublicAssetCode, type ScanAccessMode, type ScanSafeAsset } from './scan-assets';
 import { getDb } from './db';
 import { verifyScanPin } from './scan-pin';
 
@@ -10,6 +10,7 @@ export const SCAN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
 
 type ScanSessionClaims = {
   ownerUserId: string;
+  publicAssetCode: string;
   pinUpdatedAtMs: number;
   issuedAtMs: number;
   expiresAtMs: number;
@@ -79,16 +80,18 @@ function readScanSessionToken(token: string): ScanSessionClaims | null {
   try {
     const parsed = JSON.parse(fromBase64Url(payloadSegment).toString('utf8')) as Partial<ScanSessionClaims>;
     const ownerUserId = asText(parsed.ownerUserId);
+    const publicAssetCode = normalizePublicAssetCode(parsed.publicAssetCode);
     const pinUpdatedAtMs = Number(parsed.pinUpdatedAtMs);
     const issuedAtMs = Number(parsed.issuedAtMs);
     const expiresAtMs = Number(parsed.expiresAtMs);
 
-    if (!ownerUserId || !Number.isFinite(pinUpdatedAtMs) || !Number.isFinite(issuedAtMs) || !Number.isFinite(expiresAtMs)) {
+    if (!ownerUserId || !publicAssetCode || !Number.isFinite(pinUpdatedAtMs) || !Number.isFinite(issuedAtMs) || !Number.isFinite(expiresAtMs)) {
       return null;
     }
 
     return {
       ownerUserId,
+      publicAssetCode,
       pinUpdatedAtMs,
       issuedAtMs,
       expiresAtMs,
@@ -104,10 +107,11 @@ function parseScanPinUpdatedAtMs(value: string | null): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function applyScanSessionCookie(response: NextResponse, claims: { ownerUserId: string; pinUpdatedAtIso: string }): void {
+export function applyScanSessionCookie(response: NextResponse, claims: { ownerUserId: string; publicAssetCode: string; pinUpdatedAtIso: string }): void {
   const now = Date.now();
   const token = buildScanSessionToken({
     ownerUserId: claims.ownerUserId,
+    publicAssetCode: normalizePublicAssetCode(claims.publicAssetCode),
     pinUpdatedAtMs: parseScanPinUpdatedAtMs(claims.pinUpdatedAtIso) ?? now,
     issuedAtMs: now,
     expiresAtMs: now + SCAN_SESSION_MAX_AGE_SECONDS * 1000,
@@ -136,12 +140,19 @@ export function clearScanSessionCookie(response: NextResponse): void {
   });
 }
 
-function getScanSessionFromRequest(request: NextRequest): ScanSessionClaims | null {
+function getScanSessionFromRequest(request: NextRequest, expectedPublicAssetCode?: string): ScanSessionClaims | null {
   const rawCookie = request.cookies.get(SCAN_SESSION_COOKIE_NAME)?.value;
   const claims = rawCookie ? readScanSessionToken(rawCookie) : null;
 
   if (!claims) {
     return null;
+  }
+
+  if (expectedPublicAssetCode) {
+    const normalizedExpectedCode = normalizePublicAssetCode(expectedPublicAssetCode);
+    if (!normalizedExpectedCode || claims.publicAssetCode !== normalizedExpectedCode) {
+      return null;
+    }
   }
 
   if (claims.expiresAtMs <= Date.now()) {
@@ -192,7 +203,8 @@ export async function authorizeScanAccess(
   request: NextRequest,
   publicAssetCode: string,
 ): Promise<AuthorizedScanAccess | UnauthorizedScanAccess> {
-  const context = await getScanAssetAccessContext(publicAssetCode);
+  const normalizedCode = normalizePublicAssetCode(publicAssetCode);
+  const context = await getScanAssetAccessContext(normalizedCode);
 
   if (!context || !context.asset.id) {
     return { ok: false, status: 404, error: 'Asset not found.', pinRequired: false };
@@ -201,7 +213,7 @@ export async function authorizeScanAccess(
   if (context.asset.qrStatus === 'deleted') {
     return { ok: false, status: 404, error: 'This asset QR code is inactive.', pinRequired: false };
   }
-  const claims = getScanSessionFromRequest(request);
+  const claims = getScanSessionFromRequest(request, normalizedCode);
 
   if (!claims) {
     return {
@@ -218,6 +230,7 @@ export async function authorizeScanAccess(
 
   if (
     claims.ownerUserId !== context.asset.userId ||
+    claims.publicAssetCode !== normalizedCode ||
     !context.scanPinEnabled ||
     !context.scanPinHash ||
     currentPinUpdatedAtMs === null ||
@@ -275,6 +288,7 @@ export async function hasOwnerOrValidScanSession(request: NextRequest): Promise<
 
   return Boolean(
     row &&
+      claims.publicAssetCode &&
       row.scan_pin_enabled &&
       asText(row.scan_pin_hash) &&
       currentPinUpdatedAtMs !== null &&

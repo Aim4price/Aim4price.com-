@@ -257,14 +257,31 @@ function mapCab(value: unknown): CabType | '' {
   return '';
 }
 
+function normalizeIsoLikeValue(value: unknown): string | null {
+  if (value instanceof Date) {
+    const time = value.getTime();
+    return Number.isFinite(time) ? value.toISOString() : null;
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const parsed = new Date(value);
+    return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed || null;
+  }
+
+  return null;
+}
+
 function buildIsoDate(value: unknown): string {
-  const text = asText(value);
-  return text || new Date().toISOString();
+  return normalizeIsoLikeValue(value) || new Date().toISOString();
 }
 
 function buildNullableIsoDate(value: unknown): string | null {
-  const text = asText(value);
-  return text || null;
+  return normalizeIsoLikeValue(value);
 }
 
 function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
