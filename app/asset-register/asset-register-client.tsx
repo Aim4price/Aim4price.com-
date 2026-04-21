@@ -600,8 +600,13 @@ function createMarketplaceDraft(asset: RegisterAsset, profile: AccountProfile | 
   };
 }
 
+function assetPhotos(asset: RegisterAsset): string[] {
+  const photos = normalizePhotos(asset.photos);
+  return photos.length ? photos : [FALLBACK_ASSET_IMAGE];
+}
+
 function assetImage(asset: RegisterAsset): string {
-  return asset.photos[0] || FALLBACK_ASSET_IMAGE;
+  return assetPhotos(asset)[0] || FALLBACK_ASSET_IMAGE;
 }
 
 function buildAssetMeta(asset: RegisterAsset): string {
@@ -815,6 +820,8 @@ export default function AssetRegisterClient() {
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
+  const [detailPhotoIndexByAsset, setDetailPhotoIndexByAsset] = useState<Record<string, number>>({});
+  const detailTouchStartXRef = useRef<number | null>(null);
   const [busyDeleteId, setBusyDeleteId] = useState<string | null>(null);
   const [marketplaceAsset, setMarketplaceAsset] = useState<RegisterAsset | null>(null);
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
@@ -831,6 +838,46 @@ export default function AssetRegisterClient() {
   const [isLoadingProjection, setIsLoadingProjection] = useState(false);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const projectionRequestRef = useRef(0);
+
+  function getDetailPhotos(asset: RegisterAsset): string[] {
+    return assetPhotos(asset);
+  }
+
+  function getDetailPhotoIndex(asset: RegisterAsset): number {
+    const photos = getDetailPhotos(asset);
+    const currentIndex = detailPhotoIndexByAsset[asset.id] ?? 0;
+    return Math.max(0, Math.min(currentIndex, photos.length - 1));
+  }
+
+  function setDetailPhotoIndex(assetId: string, nextIndex: number) {
+    setDetailPhotoIndexByAsset((current) => ({
+      ...current,
+      [assetId]: Math.max(0, nextIndex),
+    }));
+  }
+
+  function cycleDetailPhoto(asset: RegisterAsset, direction: 1 | -1) {
+    const photos = getDetailPhotos(asset);
+    const currentIndex = getDetailPhotoIndex(asset);
+    const nextIndex = (currentIndex + direction + photos.length) % photos.length;
+    setDetailPhotoIndex(asset.id, nextIndex);
+  }
+
+  function handleDetailPhotoTouchStart(clientX: number) {
+    detailTouchStartXRef.current = clientX;
+  }
+
+  function handleDetailPhotoTouchEnd(asset: RegisterAsset, clientX: number) {
+    if (detailTouchStartXRef.current === null) return;
+    const delta = clientX - detailTouchStartXRef.current;
+    detailTouchStartXRef.current = null;
+
+    if (Math.abs(delta) < 42) {
+      return;
+    }
+
+    cycleDetailPhoto(asset, delta < 0 ? 1 : -1);
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -1831,44 +1878,106 @@ export default function AssetRegisterClient() {
 
                         {isExpanded ? (
                           <div className={styles.assetBody} id={`asset-panel-${asset.id}`}>
-                            <div className={styles.previewWrap}>
-                              <img src={previewPhoto} alt={`${asset.title} preview`} className={styles.previewImage} />
-                            </div>
+                            {(() => {
+                              const detailPhotos = getDetailPhotos(asset);
+                              const detailPhotoIndex = getDetailPhotoIndex(asset);
+                              const detailPhoto = detailPhotos[detailPhotoIndex] || previewPhoto;
+                              const hasMultiplePhotos = detailPhotos.length > 1;
 
-                            <div className={styles.assetContent}>
-                              <div className={styles.infoGrid}>
-                                <div className={styles.infoTile}>
-                                  <span>Serial</span>
-                                  <strong>{asset.serialNumber || '—'}</strong>
-                                </div>
+                              return (
+                                <>
+                                  <div className={styles.previewWrap}>
+                                    <div
+                                      className={styles.previewStage}
+                                      onTouchStart={(event) => handleDetailPhotoTouchStart(event.changedTouches[0]?.clientX ?? 0)}
+                                      onTouchEnd={(event) => handleDetailPhotoTouchEnd(asset, event.changedTouches[0]?.clientX ?? 0)}
+                                    >
+                                      <img src={detailPhoto} alt={`${asset.title} photo ${detailPhotoIndex + 1}`} className={styles.previewImage} />
 
-                                <div className={styles.infoTile}>
-                                  <span>Finance</span>
-                                  <strong>{asset.isFinanced ? 'Financed' : 'Not financed'}</strong>
-                                </div>
+                                      {hasMultiplePhotos ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            className={`${styles.previewNavButton} ${styles.previewNavPrev}`}
+                                            onClick={() => cycleDetailPhoto(asset, -1)}
+                                            aria-label="Show previous photo"
+                                          >
+                                            <ChevronLeftIcon className={styles.buttonIcon} />
+                                          </button>
 
-                                <div className={styles.infoTile}>
-                                  <span>Hours</span>
-                                  <strong>
-                                    {asset.hours !== null && typeof asset.hours !== 'undefined'
-                                      ? asset.hours.toLocaleString('en-ZA')
-                                      : '—'}
-                                  </strong>
-                                </div>
+                                          <button
+                                            type="button"
+                                            className={`${styles.previewNavButton} ${styles.previewNavNext}`}
+                                            onClick={() => cycleDetailPhoto(asset, 1)}
+                                            aria-label="Show next photo"
+                                          >
+                                            <ChevronRightIcon className={styles.buttonIcon} />
+                                          </button>
 
-                                <div className={styles.infoTile}>
-                                  <span>Condition</span>
-                                  <strong>{conditionLabel(asset.condition)}</strong>
-                                </div>
-                              </div>
+                                          <div className={styles.previewCounter}>
+                                            {detailPhotoIndex + 1} / {detailPhotos.length}
+                                          </div>
+                                        </>
+                                      ) : null}
+                                    </div>
 
-                              {asset.note || asset.financeNote ? (
-                                <div className={styles.noteStack}>
-                                  {asset.note ? <p className={styles.note}>{asset.note}</p> : null}
-                                  {asset.financeNote ? <p className={styles.note}>Finance: {asset.financeNote}</p> : null}
-                                </div>
-                              ) : null}
-                            </div>
+                                    {hasMultiplePhotos ? (
+                                      <div className={styles.previewThumbRow}>
+                                        {detailPhotos.map((photo, index) => {
+                                          const isActivePhoto = index === detailPhotoIndex;
+                                          return (
+                                            <button
+                                              type="button"
+                                              key={`${asset.id}-detail-photo-${index}`}
+                                              className={`${styles.previewThumbButton} ${isActivePhoto ? styles.previewThumbButtonActive : ''}`}
+                                              onClick={() => setDetailPhotoIndex(asset.id, index)}
+                                              aria-label={`View photo ${index + 1}`}
+                                            >
+                                              <img src={photo} alt={`${asset.title} thumbnail ${index + 1}`} className={styles.previewThumbImage} />
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : null}
+                                  </div>
+
+                                  <div className={styles.assetContent}>
+                                    <div className={styles.infoGrid}>
+                                      <div className={styles.infoTile}>
+                                        <span>Serial</span>
+                                        <strong>{asset.serialNumber || '—'}</strong>
+                                      </div>
+
+                                      <div className={styles.infoTile}>
+                                        <span>Finance</span>
+                                        <strong>{asset.isFinanced ? 'Financed' : 'Not financed'}</strong>
+                                      </div>
+
+                                      <div className={styles.infoTile}>
+                                        <span>Hours</span>
+                                        <strong>
+                                          {asset.hours !== null && typeof asset.hours !== 'undefined'
+                                            ? asset.hours.toLocaleString('en-ZA')
+                                            : '—'}
+                                        </strong>
+                                      </div>
+
+                                      <div className={styles.infoTile}>
+                                        <span>Condition</span>
+                                        <strong>{conditionLabel(asset.condition)}</strong>
+                                      </div>
+                                    </div>
+
+                                    {asset.note || asset.financeNote ? (
+                                      <div className={styles.noteStack}>
+                                        {asset.note ? <p className={styles.note}>{asset.note}</p> : null}
+                                        {asset.financeNote ? <p className={styles.note}>Finance: {asset.financeNote}</p> : null}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </div>
                         ) : null}
                       </article>
