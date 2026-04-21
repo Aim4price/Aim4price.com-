@@ -617,6 +617,9 @@ export default function AccountClient() {
                   <Link href="/asset-register" className={styles.secondaryButton}>
                     Open asset register
                   </Link>
+                  <Link href="/asset-map" className={styles.secondaryButton}>
+                    Open asset map
+                  </Link>
                 </div>
               </form>
             )}
