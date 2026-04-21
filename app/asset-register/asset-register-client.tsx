@@ -711,6 +711,10 @@ function buildAssetQrSvgUrl(asset: RegisterAsset): string {
   return `/api/asset-register/qr?assetId=${encodeURIComponent(asset.id)}&format=svg`;
 }
 
+function buildAssetScanReportUrl(asset: RegisterAsset): string {
+  return `/api/asset-register/scan-report?assetId=${encodeURIComponent(asset.id)}`;
+}
+
 function buildAssetQrPrintUrl(asset: RegisterAsset): string {
   return `/api/asset-register/qr?assetId=${encodeURIComponent(asset.id)}&format=print`;
 }
@@ -1484,6 +1488,24 @@ export default function AssetRegisterClient() {
     }
 
     setNotice({ tone: 'success', message: 'Operational scan page opened in a new tab.' });
+  }
+
+  function handleOpenScanReport(asset: RegisterAsset) {
+    const reportUrl = buildAssetScanReportUrl(asset);
+    const opened = window.open(reportUrl, '_blank', 'noopener,noreferrer');
+
+    if (!opened) {
+      setNotice({
+        tone: 'error',
+        message: 'Unable to open the QR scan report. Please allow pop-ups and try again.',
+      });
+      return;
+    }
+
+    setNotice({
+      tone: 'success',
+      message: 'QR scan report opened in a new tab. Use Print to save it as a PDF.',
+    });
   }
 
   async function handleDownloadQr(asset: RegisterAsset) {
@@ -2660,6 +2682,16 @@ export default function AssetRegisterClient() {
                 </div>
 
                 <div className={styles.qrDetailRow}>
+                  <span>Last scanned</span>
+                  <strong>{activeAsset.lastScannedAtIso ? formatDate(activeAsset.lastScannedAtIso) : 'No QR updates yet'}</strong>
+                </div>
+
+                <div className={styles.qrDetailRow}>
+                  <span>Last known location</span>
+                  <strong>{activeAsset.lastKnownLocationText || 'Captured automatically after each QR update'}</strong>
+                </div>
+
+                <div className={styles.qrDetailRow}>
                   <span>Scan page</span>
                   {buildAssetScanUrl(activeAsset) ? (
                     <a className={styles.scanLinkText} href={buildAssetScanUrl(activeAsset) ?? '#'} target="_blank" rel="noreferrer">
@@ -2673,6 +2705,11 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={styles.optionsGrid}>
+              <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanReport(activeAsset)}>
+                <PdfIcon className={styles.buttonIcon} />
+                <span>QR scan report</span>
+              </button>
+
               <button type="button" className={styles.optionActionButton} onClick={() => void handleCopyScanLink(activeAsset)}>
                 <CopyIcon className={styles.buttonIcon} />
                 <span>Copy scan link</span>
