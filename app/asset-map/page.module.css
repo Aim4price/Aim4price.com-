@@ -158,6 +158,23 @@
   flex-wrap: wrap;
 }
 
+.toolbarAside {
+  display: grid;
+  gap: 0.7rem;
+  justify-items: end;
+}
+
+.toolbarStatus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+  justify-content: flex-end;
+  color: #627072;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
 .filterChip {
   min-height: 2.8rem;
   padding: 0 0.95rem;
@@ -490,6 +507,14 @@
   .layout,
   .toolbar {
     grid-template-columns: 1fr;
+  }
+
+  .toolbarAside {
+    justify-items: start;
+  }
+
+  .toolbarStatus {
+    justify-content: flex-start;
   }
 
   .legend {
