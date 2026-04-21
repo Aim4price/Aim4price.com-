@@ -13,15 +13,12 @@ type RouteContext = {
 };
 
 type ScanEventRequest = {
-  operatorName?: unknown;
   hours?: unknown;
   fuelPercent?: unknown;
-  condition?: unknown;
   note?: unknown;
   photoUrls?: unknown;
   latitude?: unknown;
   longitude?: unknown;
-  locationText?: unknown;
 };
 
 function asText(value: unknown): string {
@@ -40,18 +37,6 @@ function normalizeFuelPercent(value: unknown): number | null {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return null;
   return Math.max(0, Math.min(100, Math.round(parsed)));
-}
-
-function normalizeCondition(value: unknown): string | null {
-  const normalized = String(value ?? '').trim().toLowerCase();
-  if (normalized === 'excellent') return 'excellent';
-  if (normalized === 'good') return 'good';
-  if (normalized === 'fair') return 'fair';
-  if (normalized === 'used') return 'used';
-  if (normalized === 'serious' || normalized === 'requires attention' || normalized === 'requires serious attention') {
-    return 'serious';
-  }
-  return null;
 }
 
 function normalizeCoordinates(value: unknown, maxAbsolute: number): number | null {
@@ -79,23 +64,10 @@ function normalizePhotoUrls(value: unknown): string[] {
 function hasMeaningfulUpdate(body: {
   hours: number | null;
   fuelPercent: number | null;
-  condition: string | null;
   note: string;
   photoUrls: string[];
-  latitude: number | null;
-  longitude: number | null;
-  locationText: string;
 }): boolean {
-  return Boolean(
-    body.hours !== null ||
-      body.fuelPercent !== null ||
-      body.condition ||
-      body.note ||
-      body.photoUrls.length ||
-      body.latitude !== null ||
-      body.longitude !== null ||
-      body.locationText,
-  );
+  return Boolean(body.hours !== null || body.fuelPercent !== null || body.note || body.photoUrls.length);
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
@@ -121,34 +93,40 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   const payload = {
-    operatorName: asText(body.operatorName),
     hours: normalizeHours(body.hours),
     fuelPercent: normalizeFuelPercent(body.fuelPercent),
-    condition: normalizeCondition(body.condition),
     note: asText(body.note),
     photoUrls: normalizePhotoUrls(body.photoUrls),
     latitude: normalizeCoordinates(body.latitude, 90),
     longitude: normalizeCoordinates(body.longitude, 180),
-    locationText: asText(body.locationText),
   };
 
   if (!hasMeaningfulUpdate(payload)) {
-    return NextResponse.json({ ok: false, error: 'Add at least one update before saving.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Add at least one QR update before saving.' }, { status: 400 });
   }
+
+  if (payload.latitude === null || payload.longitude === null) {
+    return NextResponse.json(
+      { ok: false, error: 'Location is required. Allow GPS access to save this QR update.' },
+      { status: 400 },
+    );
+  }
+
+  const locationText = `GPS ${payload.latitude.toFixed(6)}, ${payload.longitude.toFixed(6)}`;
 
   try {
     const saved = await saveScanAssetEvent({
       publicAssetCode,
       actorType: access.accessMode,
-      operatorName: payload.operatorName || null,
+      operatorName: null,
       hours: payload.hours,
       fuelPercent: payload.fuelPercent,
-      condition: payload.condition,
+      condition: null,
       note: payload.note || null,
       photoUrls: payload.photoUrls,
       latitude: payload.latitude,
       longitude: payload.longitude,
-      locationText: payload.locationText || null,
+      locationText,
     });
 
     const recentEvents = await listRecentScanEvents(saved.asset.id, 8);
