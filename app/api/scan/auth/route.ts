@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
   const verified = await verifyScanPinForAsset(publicAssetCode, pin);
 
-  if (!verified.ok) {
+  if (verified.ok !== true) {
     return NextResponse.json(
       {
         ok: false,
@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
 
   applyScanSessionCookie(response, {
     ownerUserId: verified.ownerUserId,
+    publicAssetCode,
     pinUpdatedAtIso: verified.pinUpdatedAtIso,
   });
 
