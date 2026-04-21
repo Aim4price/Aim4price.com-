@@ -809,6 +809,7 @@ export default function AssetRegisterClient() {
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
@@ -901,7 +902,7 @@ export default function AssetRegisterClient() {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  const anyModalOpen = isAssetModalOpen || Boolean(activeAsset) || isExportModalOpen || Boolean(projectionAsset) || Boolean(marketplaceAsset);
+  const anyModalOpen = isAssetModalOpen || Boolean(activeAsset) || isQrModalOpen || isExportModalOpen || Boolean(projectionAsset) || Boolean(marketplaceAsset);
 
   useEffect(() => {
     if (!anyModalOpen) {
@@ -913,6 +914,11 @@ export default function AssetRegisterClient() {
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
+
+      if (isQrModalOpen) {
+        closeQrDialog();
+        return;
+      }
 
       if (projectionAsset) {
         closeProjectionModal();
@@ -945,7 +951,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, isAssetModalOpen, isExportModalOpen, marketplaceAsset, projectionAsset]);
+  }, [activeAsset, anyModalOpen, isAssetModalOpen, isExportModalOpen, isQrModalOpen, marketplaceAsset, projectionAsset]);
 
   const totalValue = useMemo(() => {
     return assets.reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
@@ -1025,7 +1031,16 @@ export default function AssetRegisterClient() {
   }
 
   function closeActionDialog() {
+    setIsQrModalOpen(false);
     setActiveAsset(null);
+  }
+
+  function openQrDialog() {
+    setIsQrModalOpen(true);
+  }
+
+  function closeQrDialog() {
+    setIsQrModalOpen(false);
   }
 
   async function openMarketplaceModal(asset: RegisterAsset) {
@@ -2221,10 +2236,10 @@ export default function AssetRegisterClient() {
               </div>
             </div>
 
-            <div className={styles.qrPanel}>
-              <div className={styles.qrPreviewCard}>
-                <span className={styles.qrPreviewEyebrow}>Permanent asset QR</span>
-                <div className={styles.qrPreviewFrame}>
+            <div className={styles.scanAccessPanel}>
+              <div className={styles.scanAccessPreview}>
+                <span className={styles.qrPreviewEyebrow}>QR code</span>
+                <div className={styles.scanAccessQrFrame}>
                   {activeAsset.publicAssetCode ? (
                     <img src={buildAssetQrSvgUrl(activeAsset)} alt={`QR code for ${activeAsset.title}`} />
                   ) : (
@@ -2233,33 +2248,33 @@ export default function AssetRegisterClient() {
                 </div>
               </div>
 
-              <div className={styles.qrDetailsCard}>
-                <span className={styles.qrPreviewEyebrow}>Scan details</span>
+              <div className={styles.scanAccessSummary}>
+                <span className={styles.qrPreviewEyebrow}>Scan access</span>
+                <h4>Permanent scanner access</h4>
+                <p>
+                  Keep the fixed QR linked to this asset. Open the QR code modal for the scan link, SVG download and print-ready label.
+                  Public QR scans always ask for the farm PIN.
+                </p>
 
-                <div className={styles.qrDetailRow}>
-                  <span>Plate label</span>
-                  <strong>{activeAsset.plateLabel || 'Pending'}</strong>
-                </div>
-
-                <div className={styles.qrDetailRow}>
-                  <span>Public asset code</span>
-                  <strong className={styles.codeValue}>{activeAsset.publicAssetCode || 'Pending'}</strong>
-                </div>
-
-                <div className={styles.qrDetailRow}>
-                  <span>Scan page</span>
-                  {buildAssetScanUrl(activeAsset) ? (
-                    <a className={styles.scanLinkText} href={buildAssetScanUrl(activeAsset) ?? '#'} target="_blank" rel="noreferrer">
-                      {buildAssetScanUrl(activeAsset)}
-                    </a>
-                  ) : (
-                    <strong>Not available yet</strong>
-                  )}
+                <div className={styles.scanAccessFacts}>
+                  <div className={styles.scanFact}>
+                    <span>Plate label</span>
+                    <strong>{activeAsset.plateLabel || 'Pending'}</strong>
+                  </div>
+                  <div className={styles.scanFact}>
+                    <span>Scan status</span>
+                    <strong>{formatQrStatus(activeAsset.qrStatus)}</strong>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className={styles.optionsGrid}>
+              <button type="button" className={styles.optionActionButton} onClick={openQrDialog}>
+                <QrIcon className={styles.buttonIcon} />
+                <span>QR code</span>
+              </button>
+
               <button type="button" className={styles.optionActionButton} onClick={() => { closeActionDialog(); openUpdater(activeAsset); }}>
                 <EditIcon className={styles.buttonIcon} />
                 <span>Update asset</span>
@@ -2272,29 +2287,9 @@ export default function AssetRegisterClient() {
                 </button>
               ) : null}
 
-              <button type="button" className={styles.optionActionButton} onClick={() => void handleCopyScanLink(activeAsset)}>
-                <CopyIcon className={styles.buttonIcon} />
-                <span>Copy scan link</span>
-              </button>
-
-              <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanPage(activeAsset)}>
-                <ExternalLinkIcon className={styles.buttonIcon} />
-                <span>Open scan page</span>
-              </button>
-
-              <button type="button" className={styles.optionActionButton} onClick={() => void handleDownloadQr(activeAsset)}>
-                <QrIcon className={styles.buttonIcon} />
-                <span>Download QR SVG</span>
-              </button>
-
-              <button type="button" className={styles.optionActionButton} onClick={() => handlePrintQrSheet(activeAsset)}>
-                <PrintIcon className={styles.buttonIcon} />
-                <span>Print QR sheet</span>
-              </button>
-
               <button type="button" className={styles.optionActionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
                 <DownloadIcon className={styles.buttonIcon} />
-                <span>Download Asset PDF</span>
+                <span>Download asset PDF</span>
               </button>
 
               {isTractorAsset(activeAsset) ? (
@@ -2507,6 +2502,87 @@ export default function AssetRegisterClient() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+
+      {activeAsset && isQrModalOpen ? (
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={closeQrDialog} />
+
+          <div className={`${styles.modalCard} ${styles.qrModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-qr-title">
+            <div className={styles.modalHeader}>
+              <div className={styles.modalHeaderText}>
+                <span className={styles.modalEyebrow}>QR code</span>
+                <h3 id="asset-qr-title">{activeAsset.title}</h3>
+                <p>Use this permanent QR for scan access. Public QR scans always ask for the farm PIN.</p>
+              </div>
+
+              <button type="button" className={styles.modalCloseButton} onClick={closeQrDialog} aria-label="Close QR code">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={styles.qrModalBody}>
+              <div className={styles.qrPreviewCard}>
+                <span className={styles.qrPreviewEyebrow}>Permanent asset QR</span>
+                <div className={styles.qrPreviewFrame}>
+                  {activeAsset.publicAssetCode ? (
+                    <img src={buildAssetQrSvgUrl(activeAsset)} alt={`QR code for ${activeAsset.title}`} />
+                  ) : (
+                    <p className={styles.qrPreviewFallback}>QR artwork is not ready for this asset yet.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.qrDetailsCard}>
+                <span className={styles.qrPreviewEyebrow}>Scan access</span>
+
+                <div className={styles.qrDetailRow}>
+                  <span>Plate label</span>
+                  <strong>{activeAsset.plateLabel || 'Pending'}</strong>
+                </div>
+
+                <div className={styles.qrDetailRow}>
+                  <span>Scan status</span>
+                  <strong>{formatQrStatus(activeAsset.qrStatus)}</strong>
+                </div>
+
+                <div className={styles.qrDetailRow}>
+                  <span>Scan page</span>
+                  {buildAssetScanUrl(activeAsset) ? (
+                    <a className={styles.scanLinkText} href={buildAssetScanUrl(activeAsset) ?? '#'} target="_blank" rel="noreferrer">
+                      {buildAssetScanUrl(activeAsset)}
+                    </a>
+                  ) : (
+                    <strong>Not available yet</strong>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.optionsGrid}>
+              <button type="button" className={styles.optionActionButton} onClick={() => void handleCopyScanLink(activeAsset)}>
+                <CopyIcon className={styles.buttonIcon} />
+                <span>Copy scan link</span>
+              </button>
+
+              <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanPage(activeAsset)}>
+                <ExternalLinkIcon className={styles.buttonIcon} />
+                <span>Open scanner page</span>
+              </button>
+
+              <button type="button" className={styles.optionActionButton} onClick={() => void handleDownloadQr(activeAsset)}>
+                <QrIcon className={styles.buttonIcon} />
+                <span>Download QR SVG</span>
+              </button>
+
+              <button type="button" className={styles.optionActionButton} onClick={() => handlePrintQrSheet(activeAsset)}>
+                <PrintIcon className={styles.buttonIcon} />
+                <span>Print QR label</span>
+              </button>
             </div>
           </div>
         </div>
