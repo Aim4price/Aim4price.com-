@@ -7,6 +7,7 @@ import styles from './page.module.css';
 
 type NoticeTone = 'error';
 type RecencyFilter = 'all' | '7' | '30' | '90';
+type BasemapMode = 'road' | 'satellite';
 
 type AssetMapItem = {
   id: string;
@@ -38,6 +39,11 @@ type AssetMapResponse = {
   error?: string;
 };
 
+type LeafletTileLayerSet = {
+  road: any | null;
+  satellite: any | null;
+};
+
 declare global {
   interface Window {
     L?: any;
@@ -50,11 +56,16 @@ const LEAFLET_SCRIPT_ID = 'aim4price-leaflet-script';
 const LEAFLET_CSS_ID = 'aim4price-leaflet-css';
 const DEFAULT_CENTER: [number, number] = [-29.0, 24.0];
 const DEFAULT_ZOOM = 5;
+const BASEMAP_STORAGE_KEY = 'aim4price-asset-map-basemap';
 const RECENCY_OPTIONS: Array<{ value: RecencyFilter; label: string }> = [
   { value: 'all', label: 'All mapped' },
   { value: '7', label: '7 days' },
   { value: '30', label: '30 days' },
   { value: '90', label: '90 days' },
+];
+const BASEMAP_OPTIONS: Array<{ value: BasemapMode; label: string }> = [
+  { value: 'road', label: 'Map' },
+  { value: 'satellite', label: 'Satellite' },
 ];
 
 function loadLeaflet(): Promise<any> {
@@ -214,7 +225,7 @@ function buildPopupHtml(asset: AssetMapItem): string {
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      .replace(/\"/g, '&quot;')
+      .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
 
   const title = escape(asset.title || 'Saved asset');
@@ -236,6 +247,7 @@ export default function AssetMapClient() {
   const [assets, setAssets] = useState<AssetMapItem[]>([]);
   const [search, setSearch] = useState('');
   const [recencyFilter, setRecencyFilter] = useState<RecencyFilter>('all');
+  const [basemapMode, setBasemapMode] = useState<BasemapMode>('road');
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [summary, setSummary] = useState<AssetMapResponse['summary'] | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
@@ -245,8 +257,20 @@ export default function AssetMapClient() {
   const mapRef = useRef<any>(null);
   const leafletRef = useRef<any>(null);
   const markerLayerRef = useRef<any>(null);
+  const baseLayersRef = useRef<LeafletTileLayerSet>({ road: null, satellite: null });
   const markersByCodeRef = useRef<Map<string, any>>(new Map());
   const lastBoundsSignatureRef = useRef('');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const savedMode = window.localStorage.getItem(BASEMAP_STORAGE_KEY);
+    if (savedMode === 'road' || savedMode === 'satellite') {
+      setBasemapMode(savedMode);
+    }
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -297,6 +321,14 @@ export default function AssetMapClient() {
     const timeout = window.setTimeout(() => setNotice(null), 3600);
     return () => window.clearTimeout(timeout);
   }, [notice]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(BASEMAP_STORAGE_KEY, basemapMode);
+  }, [basemapMode]);
 
   const mappedAssets = useMemo(() => assets.filter(hasCoordinates), [assets]);
 
@@ -353,11 +385,24 @@ export default function AssetMapClient() {
         attributionControl: true,
       });
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18,
-        attribution: '&copy; OpenStreetMap contributors',
-      }).addTo(map);
+      const roadLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      });
+      const satelliteLayer = L.tileLayer(
+        'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+          maxZoom: 19,
+          attribution: 'Tiles &copy; Esri',
+        },
+      );
 
+      baseLayersRef.current = {
+        road: roadLayer,
+        satellite: satelliteLayer,
+      };
+
+      roadLayer.addTo(map);
       map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
       mapRef.current = map;
       markerLayerRef.current = L.layerGroup().addTo(map);
@@ -374,6 +419,26 @@ export default function AssetMapClient() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const baseLayers = baseLayersRef.current;
+
+    if (!map || !baseLayers.road || !baseLayers.satellite) {
+      return;
+    }
+
+    const activeLayer = basemapMode === 'satellite' ? baseLayers.satellite : baseLayers.road;
+    const inactiveLayer = basemapMode === 'satellite' ? baseLayers.road : baseLayers.satellite;
+
+    if (inactiveLayer && map.hasLayer(inactiveLayer)) {
+      map.removeLayer(inactiveLayer);
+    }
+
+    if (activeLayer && !map.hasLayer(activeLayer)) {
+      activeLayer.addTo(map);
+    }
+  }, [basemapMode]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -456,6 +521,7 @@ export default function AssetMapClient() {
       map.remove();
       mapRef.current = null;
       markerLayerRef.current = null;
+      baseLayersRef.current = { road: null, satellite: null };
       markersByCodeRef.current.clear();
       lastBoundsSignatureRef.current = '';
     };
@@ -533,10 +599,25 @@ export default function AssetMapClient() {
                 <p>Markers are based on the most recent saved latitude and longitude for each asset.</p>
               </div>
 
-              <div className={styles.legend}>
-                <span><i className={styles.legendRecent} /> 7 days</span>
-                <span><i className={styles.legendWarm} /> 30 days</span>
-                <span><i className={styles.legendOlder} /> Older</span>
+              <div className={styles.mapControlRail}>
+                <div className={styles.basemapToggle} role="group" aria-label="Map layer toggle">
+                  {BASEMAP_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`${styles.basemapButton} ${basemapMode === option.value ? styles.basemapButtonActive : ''}`}
+                      onClick={() => setBasemapMode(option.value)}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className={styles.legend}>
+                  <span><i className={styles.legendRecent} /> 7 days</span>
+                  <span><i className={styles.legendWarm} /> 30 days</span>
+                  <span><i className={styles.legendOlder} /> Older</span>
+                </div>
               </div>
             </div>
 
