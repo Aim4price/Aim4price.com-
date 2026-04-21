@@ -5,7 +5,6 @@ import Link from 'next/link';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
-type AccessMode = 'owner_session' | 'scan_pin';
 type EditorKey = 'hours' | 'fuel' | 'notes' | 'photos';
 type LocationState = 'idle' | 'capturing' | 'ready' | 'error';
 
@@ -30,26 +29,9 @@ type ScanSafeAsset = {
   updatedAtIso: string | null;
 };
 
-type ScanEventRecord = {
-  id: string;
-  actorType: string;
-  operatorName: string;
-  hours: number | null;
-  fuelPercent: number | null;
-  condition: string;
-  note: string;
-  photoUrls: string[];
-  latitude: number | null;
-  longitude: number | null;
-  locationText: string;
-  createdAtIso: string;
-};
-
 type ScanAssetResponse = {
   ok: boolean;
-  accessMode?: AccessMode;
   asset?: ScanSafeAsset;
-  recentEvents?: ScanEventRecord[];
   pinRequired?: boolean;
   error?: string;
 };
@@ -75,8 +57,6 @@ type ScanUploadResponse = {
 type SaveScanEventResponse = {
   ok: boolean;
   asset?: ScanSafeAsset;
-  event?: ScanEventRecord;
-  recentEvents?: ScanEventRecord[];
   error?: string;
   pinRequired?: boolean;
 };
@@ -129,7 +109,7 @@ function normalizeIntegerInput(value: string): string {
 }
 
 function hasMeaningfulDraftValue(draft: DraftState): boolean {
-  return Boolean(draft.hours || draft.fuelPercent || draft.note.trim() || draft.photoUrls.length);
+  return Boolean(draft.hours.trim() !== '' || draft.fuelPercent.trim() !== '' || draft.note.trim() || draft.photoUrls.length);
 }
 
 function hasLocationCaptured(draft: DraftState): boolean {
@@ -141,8 +121,67 @@ function formatCoordinate(value: string): string {
   return Number.isFinite(parsed) ? parsed.toFixed(6) : value;
 }
 
+function formatHours(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return '—';
+  return new Intl.NumberFormat('en-ZA').format(Math.round(value));
+}
+
+function formatFuel(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return '—';
+  return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
+}
+
 function assetPreview(asset: ScanSafeAsset | null): string {
   return asset?.photos?.[0] || FALLBACK_ASSET_IMAGE;
+}
+
+function countPendingDraftSections(draft: DraftState): number {
+  let total = 0;
+  if (draft.hours.trim() !== '') total += 1;
+  if (draft.fuelPercent.trim() !== '') total += 1;
+  if (draft.note.trim()) total += 1;
+  if (draft.photoUrls.length) total += 1;
+  return total;
+}
+
+function buildEditorSummary(editor: EditorKey, draft: DraftState, asset: ScanSafeAsset | null, isUploading = false): string {
+  if (editor === 'hours') {
+    return draft.hours.trim() !== ''
+      ? `${new Intl.NumberFormat('en-ZA').format(Number(draft.hours))} ready to save`
+      : asset?.hours !== null && typeof asset?.hours !== 'undefined'
+        ? `${formatHours(asset.hours)} saved now`
+        : 'Tap to capture the hour meter';
+  }
+
+  if (editor === 'fuel') {
+    return draft.fuelPercent.trim() !== ''
+      ? `${draft.fuelPercent}% ready to save`
+      : asset?.fuelPercent !== null && typeof asset?.fuelPercent !== 'undefined'
+        ? `${formatFuel(asset.fuelPercent)} saved now`
+        : 'Tap to capture the fuel level';
+  }
+
+  if (editor === 'notes') {
+    return draft.note.trim()
+      ? `${draft.note.trim().length} characters ready`
+      : asset?.note
+        ? 'Asset already has notes saved'
+        : 'Tap to add a short note';
+  }
+
+  if (isUploading) {
+    return 'Uploading photos…';
+  }
+
+  if (draft.photoUrls.length) {
+    return `${draft.photoUrls.length} new photo${draft.photoUrls.length === 1 ? '' : 's'} ready`;
+  }
+
+  if (asset?.photos.length) {
+    return `${asset.photos.length} photo${asset.photos.length === 1 ? '' : 's'} already saved`;
+  }
+
+  return 'Tap to add fresh photos';
 }
 
 type IconProps = { className?: string };
@@ -195,15 +234,6 @@ function LocationIcon({ className }: IconProps) {
   );
 }
 
-function LockIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <rect x="4" y="11" width="16" height="10" rx="2" />
-      <path d="M8 11V8a4 4 0 1 1 8 0v3" />
-    </svg>
-  );
-}
-
 function ChevronRightIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
@@ -212,33 +242,76 @@ function ChevronRightIcon({ className }: IconProps) {
   );
 }
 
-function PhotoCountLabel(count: number): string {
-  if (!count) return 'No new photos yet';
-  return `${count} photo${count === 1 ? '' : 's'} ready`;
+function CloseIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M6 6l12 12" />
+      <path d="M18 6L6 18" />
+    </svg>
+  );
+}
+
+function getModalCopy(editor: EditorKey | null): { eyebrow: string; title: string; description: string } {
+  if (editor === 'hours') {
+    return {
+      eyebrow: 'Hour meter',
+      title: 'Capture the latest hours',
+      description: 'Use the current reading from the machine’s hour meter only.',
+    };
+  }
+
+  if (editor === 'fuel') {
+    return {
+      eyebrow: 'Fuel',
+      title: 'Capture the tank level',
+      description: 'Choose the percentage that best matches the tank right now.',
+    };
+  }
+
+  if (editor === 'notes') {
+    return {
+      eyebrow: 'Notes',
+      title: 'Add a short operational note',
+      description: 'Keep it short and useful for the owner or manager.',
+    };
+  }
+
+  return {
+    eyebrow: 'Photos',
+    title: 'Add fresh photos',
+    description: 'Use clear photos that show the machine or the issue quickly.',
+  };
 }
 
 export default function ScanClient({ publicAssetCode }: { publicAssetCode: string }) {
   const normalizedCode = useMemo(() => normalizePublicAssetCode(publicAssetCode), [publicAssetCode]);
   const [asset, setAsset] = useState<ScanSafeAsset | null>(null);
-  const [recentEvents, setRecentEvents] = useState<ScanEventRecord[]>([]);
   const [draft, setDraft] = useState<DraftState>(initialDraft);
   const [pin, setPin] = useState('');
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
-  const [accessMode, setAccessMode] = useState<AccessMode | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmittingPin, setIsSubmittingPin] = useState(false);
+  const [isLoadingAsset, setIsLoadingAsset] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [locationState, setLocationState] = useState<LocationState>('idle');
-  const [locationMessage, setLocationMessage] = useState('Location will be captured automatically once this asset opens.');
-  const [needsPin, setNeedsPin] = useState(false);
+  const [locationMessage, setLocationMessage] = useState('Location will be captured automatically once the asset is unlocked.');
   const [isUnavailable, setIsUnavailable] = useState(false);
-  const [activeEditor, setActiveEditor] = useState<EditorKey>('hours');
+  const [activeEditor, setActiveEditor] = useState<EditorKey | null>(null);
   const autoLocationKeyRef = useRef<string>('');
 
   useEffect(() => {
-    void loadAsset();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setAsset(null);
+    setDraft(initialDraft);
+    setPin('');
+    setIsUnavailable(false);
+    setIsSubmittingPin(false);
+    setIsLoadingAsset(false);
+    setIsSaving(false);
+    setIsUploading(false);
+    setActiveEditor(null);
+    setLocationState('idle');
+    setLocationMessage('Location will be captured automatically once the asset is unlocked.');
+    autoLocationKeyRef.current = '';
   }, [normalizedCode]);
 
   useEffect(() => {
@@ -248,6 +321,15 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
   }, [notice]);
 
   useEffect(() => {
+    if (!activeEditor) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [activeEditor]);
+
+  useEffect(() => {
     if (!asset?.id) return;
     if (autoLocationKeyRef.current === asset.id) return;
     autoLocationKeyRef.current = asset.id;
@@ -255,8 +337,8 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asset?.id]);
 
-  async function loadAsset() {
-    setIsLoading(true);
+  async function loadUnlockedAsset() {
+    setIsLoadingAsset(true);
     setIsUnavailable(false);
 
     try {
@@ -267,50 +349,38 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
       const data = (await response.json().catch(() => null)) as ScanAssetResponse | null;
 
       if (response.status === 401) {
-        setNeedsPin(Boolean(data?.pinRequired ?? true));
-        setAsset(null);
-        setRecentEvents([]);
-        setAccessMode(null);
-        return;
+        throw new Error(data?.error ?? 'Enter the farm scan PIN again.');
       }
 
       if (response.status === 403 || response.status === 404) {
-        setNeedsPin(false);
-        setIsUnavailable(true);
         setAsset(null);
-        setRecentEvents([]);
-        setAccessMode(null);
-        setNotice({ tone: 'error', message: data?.error ?? (response.status === 404 ? 'Asset not found.' : 'Scan access is not enabled yet.') });
-        return;
+        setIsUnavailable(true);
+        throw new Error(data?.error ?? (response.status === 404 ? 'Asset not found.' : 'Scan access is not enabled yet.'));
       }
 
       if (!response.ok || !data?.ok || !data.asset) {
-        throw new Error(data?.error ?? 'Failed to load the scan page.');
+        throw new Error(data?.error ?? 'Failed to open this asset.');
       }
 
       setAsset(data.asset);
-      setRecentEvents(data.recentEvents ?? []);
-      setAccessMode(data.accessMode ?? null);
-      setNeedsPin(false);
+      setDraft(initialDraft);
       setLocationState('idle');
-      setLocationMessage('Location will be captured automatically for this QR update.');
-      setDraft((current) => ({
-        ...current,
-        latitude: '',
-        longitude: '',
-      }));
-    } catch (error) {
-      setNeedsPin(false);
-      setIsUnavailable(true);
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load the scan page.' });
+      setLocationMessage('Capturing the scan location automatically…');
     } finally {
-      setIsLoading(false);
+      setIsLoadingAsset(false);
     }
   }
 
   async function handlePinSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (pin.length < 4) {
+      setNotice({ tone: 'error', message: 'Enter the farm scan PIN.' });
+      return;
+    }
+
     setIsSubmittingPin(true);
+    setIsUnavailable(false);
 
     try {
       const response = await fetch('/api/scan/auth', {
@@ -326,10 +396,10 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
       }
 
       setPin('');
-      setNotice({ tone: 'success', message: 'Scan access unlocked.' });
-      autoLocationKeyRef.current = '';
-      await loadAsset();
+      await loadUnlockedAsset();
+      setNotice({ tone: 'success', message: 'Asset unlocked. Tap a block to update it.' });
     } catch (error) {
+      setAsset(null);
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Incorrect scan PIN.' });
     } finally {
       setIsSubmittingPin(false);
@@ -337,7 +407,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
   }
 
   async function handleUploadChange(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []);
+    const files = Array.from(event.target.files ?? []) as File[];
     if (!files.length) return;
 
     setIsUploading(true);
@@ -362,7 +432,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
         ...current,
         photoUrls: Array.from(new Set([...current.photoUrls, ...data.uploads!.map((entry) => entry.url)])).slice(0, 12),
       }));
-      setNotice({ tone: 'success', message: `${data.uploads.length} photo${data.uploads.length === 1 ? '' : 's'} added to this update.` });
+      setNotice({ tone: 'success', message: `${data.uploads.length} photo${data.uploads.length === 1 ? '' : 's'} added.` });
       setActiveEditor('photos');
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to upload photos.' });
@@ -390,7 +460,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
     }
 
     setLocationState('capturing');
-    setLocationMessage(isAutomatic ? 'Capturing this asset’s location automatically…' : 'Capturing your current location…');
+    setLocationMessage(isAutomatic ? 'Capturing the asset location automatically…' : 'Capturing your current location…');
 
     await new Promise<void>((resolve) => {
       navigator.geolocation.getCurrentPosition(
@@ -403,7 +473,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
             longitude,
           }));
           setLocationState('ready');
-          setLocationMessage('Location captured. This update will save the asset exactly where it was scanned.');
+          setLocationMessage('Location captured. This QR update will place the asset exactly where it was scanned.');
           if (!isAutomatic) {
             setNotice({ tone: 'success', message: 'Location captured.' });
           }
@@ -422,16 +492,14 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
     });
   }
 
-  async function handleSaveUpdate(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  async function handleSaveUpdate() {
     if (!hasMeaningfulDraftValue(draft)) {
-      setNotice({ tone: 'error', message: 'Choose at least one update card and add something before saving.' });
+      setNotice({ tone: 'error', message: 'Tap one of the four blocks and add something before saving.' });
       return;
     }
 
     if (!hasLocationCaptured(draft)) {
-      setNotice({ tone: 'error', message: 'Location is required for every QR update. Tap “Capture location” and try again.' });
+      setNotice({ tone: 'error', message: 'Location is required for every QR update. Allow GPS and try again.' });
       return;
     }
 
@@ -454,48 +522,28 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
       const data = (await response.json().catch(() => null)) as SaveScanEventResponse | null;
 
       if (!response.ok || !data?.ok || !data.asset) {
-        throw new Error(data?.error ?? 'Failed to save the scan update.');
+        throw new Error(data?.error ?? 'Failed to save the QR update.');
       }
 
-      const preservedLatitude = draft.latitude;
-      const preservedLongitude = draft.longitude;
       setAsset(data.asset);
-      setRecentEvents(data.recentEvents ?? []);
-      setDraft({
-        ...initialDraft,
-        latitude: preservedLatitude,
-        longitude: preservedLongitude,
-      });
-      setNotice({ tone: 'success', message: 'Scan update saved.' });
-      setActiveEditor('hours');
-      setLocationState('ready');
-      setLocationMessage('Location is still ready for the next update on this asset.');
+      setDraft(initialDraft);
+      setActiveEditor(null);
+      setNotice({ tone: 'success', message: 'QR update saved.' });
+      setLocationState('idle');
+      setLocationMessage('Capturing the next scan location automatically…');
+      void captureLocation(true);
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save the scan update.' });
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save the QR update.' });
     } finally {
       setIsSaving(false);
-    }
-  }
-
-  async function handleLockAccess() {
-    try {
-      await fetch('/api/scan/logout', { method: 'POST', credentials: 'include' });
-      setNeedsPin(true);
-      setAsset(null);
-      setRecentEvents([]);
-      setAccessMode(null);
-      setDraft(initialDraft);
-      setLocationState('idle');
-      setLocationMessage('Location will be captured automatically once this asset opens.');
-      setNotice({ tone: 'success', message: 'Scan access locked.' });
-    } catch {
-      setNotice({ tone: 'error', message: 'Failed to lock scan access.' });
     }
   }
 
   const locationReady = hasLocationCaptured(draft);
   const canSave = locationReady && hasMeaningfulDraftValue(draft) && !isSaving;
   const assetPhoto = assetPreview(asset);
+  const pendingCount = countPendingDraftSections(draft);
+  const modalCopy = getModalCopy(activeEditor);
 
   return (
     <main className={styles.page}>
@@ -503,31 +551,38 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
         <header className={styles.hero}>
           <div className={styles.heroContent}>
             <span className={styles.eyebrow}>Aim4price QR update</span>
-            <h1>{asset?.title || 'Asset scan'}</h1>
-            <p>Keep QR updates fast: tap a card, change what matters, and save the machine’s live location automatically.</p>
+            <h1>{asset?.title || 'Unlock this asset'}</h1>
+            <p>
+              Every public QR scan asks for the farm PIN first. After that, the page stays simple: tap one block,
+              update it, and save the live GPS location automatically.
+            </p>
           </div>
+
           <div className={styles.heroAside}>
             <div className={styles.heroStat}>
-              <span>Plate label</span>
+              <span>Asset code</span>
               <strong>{asset?.plateLabel || normalizedCode || '—'}</strong>
             </div>
             <div className={styles.heroStat}>
-              <span>Last scan</span>
-              <strong>{asset ? formatDate(asset.lastScannedAtIso) : 'Locked'}</strong>
+              <span>Location rule</span>
+              <strong>GPS required</strong>
             </div>
           </div>
         </header>
 
-        {notice ? <div className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`}>{notice.message}</div> : null}
+        {notice ? (
+          <div className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`}>{notice.message}</div>
+        ) : null}
 
-        {isLoading ? <div className={styles.loadingCard}>Loading scan page…</div> : null}
-
-        {!isLoading && needsPin ? (
+        {!asset && !isUnavailable ? (
           <section className={styles.pinCard}>
-            <div>
-              <span className={styles.kicker}>Scan access</span>
-              <h2>Enter the farm PIN</h2>
-              <p>Every public QR scan uses the farm PIN. This page never opens the finance or valuation side.</p>
+            <div className={styles.pinCardCopy}>
+              <span className={styles.kicker}>Farm PIN required</span>
+              <h2>Enter the farm scan PIN</h2>
+              <p>
+                This public QR page never opens the finance side. Unlock the asset, then tap one of the four update
+                blocks below.
+              </p>
             </div>
 
             <form className={styles.pinForm} onSubmit={handlePinSubmit}>
@@ -539,13 +594,13 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
                   placeholder="4 to 8 digits"
                   value={pin}
                   onChange={(event) => setPin(normalizePinInput(event.target.value))}
-                  disabled={isSubmittingPin}
+                  disabled={isSubmittingPin || isLoadingAsset}
                 />
               </label>
 
               <div className={styles.pinActions}>
-                <button type="submit" className={styles.primaryButton} disabled={isSubmittingPin || pin.length < 4}>
-                  {isSubmittingPin ? 'Unlocking…' : 'Unlock asset'}
+                <button type="submit" className={styles.primaryButton} disabled={isSubmittingPin || isLoadingAsset || pin.length < 4}>
+                  {isSubmittingPin || isLoadingAsset ? 'Opening asset…' : 'Open asset'}
                 </button>
                 <Link href="/" className={styles.secondaryButton}>Back to Aim4price</Link>
               </div>
@@ -553,15 +608,15 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
           </section>
         ) : null}
 
-        {!isLoading && isUnavailable ? (
+        {isUnavailable ? (
           <section className={styles.unavailableCard}>
             <span className={styles.kicker}>Unavailable</span>
             <h2>This asset could not be opened</h2>
-            <p>Check the QR code, or ask the owner to confirm that scan PIN access is enabled for this account.</p>
+            <p>Check the QR code, or ask the owner to confirm that the farm scan PIN is enabled for this account.</p>
           </section>
         ) : null}
 
-        {!isLoading && asset ? (
+        {asset ? (
           <>
             <section className={styles.assetCard}>
               <div className={styles.assetTopRow}>
@@ -570,317 +625,256 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
                 </div>
 
                 <div className={styles.assetSummary}>
-                  <div className={styles.assetSummaryHeader}>
-                    <div>
-                      <span className={styles.kicker}>Operational asset</span>
-                      <h2>{asset.title}</h2>
-                      <p>{asset.serialNumber ? `Serial ${asset.serialNumber}` : 'Serial number not saved yet.'}</p>
-                    </div>
-                    {accessMode === 'scan_pin' ? (
-                      <button type="button" className={styles.secondaryButton} onClick={handleLockAccess}>
-                        <LockIcon className={styles.buttonIcon} />
-                        <span>Lock</span>
-                      </button>
-                    ) : null}
+                  <div>
+                    <span className={styles.kicker}>Operational asset</span>
+                    <h2>{asset.title}</h2>
+                    <p>{asset.serialNumber ? `Serial ${asset.serialNumber}` : 'Serial number not saved yet.'}</p>
                   </div>
 
                   <div className={styles.summaryGrid}>
                     <article className={styles.summaryTile}>
-                      <span>Current hours</span>
-                      <strong>{asset.hours !== null ? asset.hours.toLocaleString('en-ZA') : '—'}</strong>
+                      <span>Plate label</span>
+                      <strong>{asset.plateLabel || 'Pending'}</strong>
                     </article>
                     <article className={styles.summaryTile}>
-                      <span>Fuel level</span>
-                      <strong>{asset.fuelPercent !== null ? `${asset.fuelPercent}%` : '—'}</strong>
-                    </article>
-                    <article className={styles.summaryTile}>
-                      <span>Saved photos</span>
-                      <strong>{asset.photos.length}</strong>
-                    </article>
-                    <article className={styles.summaryTile}>
-                      <span>Last scanned</span>
+                      <span>Last scan</span>
                       <strong>{formatDate(asset.lastScannedAtIso)}</strong>
+                    </article>
+                    <article className={styles.summaryTile}>
+                      <span>Saved hours</span>
+                      <strong>{formatHours(asset.hours)}</strong>
+                    </article>
+                    <article className={styles.summaryTile}>
+                      <span>Saved fuel</span>
+                      <strong>{formatFuel(asset.fuelPercent)}</strong>
                     </article>
                   </div>
                 </div>
               </div>
             </section>
 
-            <form className={styles.form} onSubmit={handleSaveUpdate}>
-              <section className={styles.locationCard}>
-                <div className={styles.locationCopy}>
-                  <div className={`${styles.locationPill} ${locationState === 'ready' ? styles.locationPillReady : locationState === 'capturing' ? styles.locationPillLoading : styles.locationPillError}`}>
-                    <LocationIcon className={styles.locationPillIcon} />
-                    <span>
-                      {locationState === 'ready'
-                        ? 'Location ready'
-                        : locationState === 'capturing'
-                          ? 'Capturing location'
-                          : locationState === 'error'
-                            ? 'Location required'
-                            : 'Waiting for location'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className={styles.kicker}>Required GPS</span>
-                    <h3>Every QR update saves where the asset was scanned</h3>
-                    <p>{locationMessage}</p>
-                    {locationReady ? (
-                      <p className={styles.metaText}>
-                        {formatCoordinate(draft.latitude)}, {formatCoordinate(draft.longitude)}
-                      </p>
-                    ) : null}
-                  </div>
+            <section className={styles.locationCard}>
+              <div className={styles.locationCopy}>
+                <div className={`${styles.locationPill} ${locationState === 'ready' ? styles.locationPillReady : locationState === 'capturing' ? styles.locationPillLoading : locationState === 'error' ? styles.locationPillError : ''}`}>
+                  <LocationIcon className={styles.locationPillIcon} />
+                  <span>
+                    {locationState === 'ready'
+                      ? 'GPS ready'
+                      : locationState === 'capturing'
+                        ? 'Capturing GPS'
+                        : locationState === 'error'
+                          ? 'Location required'
+                          : 'Waiting for GPS'}
+                  </span>
                 </div>
+                <div>
+                  <span className={styles.kicker}>Required location</span>
+                  <h3>Every QR update must save where the machine was scanned</h3>
+                  <p>{locationMessage}</p>
+                  {locationReady ? (
+                    <p className={styles.metaText}>
+                      {formatCoordinate(draft.latitude)}, {formatCoordinate(draft.longitude)}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
 
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => void captureLocation(false)}
+                disabled={locationState === 'capturing' || isSaving}
+              >
+                {locationState === 'capturing' ? 'Capturing…' : 'Retry GPS'}
+              </button>
+            </section>
+
+            <section className={styles.quickActionGrid}>
+              <button type="button" className={styles.quickActionCard} onClick={() => setActiveEditor('hours')}>
+                <div className={styles.quickActionIconWrap}>
+                  <MeterIcon className={styles.quickActionIcon} />
+                </div>
+                <div className={styles.quickActionCopy}>
+                  <strong>Hour Meter</strong>
+                  <span>{buildEditorSummary('hours', draft, asset)}</span>
+                </div>
+                <ChevronRightIcon className={styles.quickActionChevron} />
+              </button>
+
+              <button type="button" className={styles.quickActionCard} onClick={() => setActiveEditor('fuel')}>
+                <div className={styles.quickActionIconWrap}>
+                  <FuelIcon className={styles.quickActionIcon} />
+                </div>
+                <div className={styles.quickActionCopy}>
+                  <strong>Fuel</strong>
+                  <span>{buildEditorSummary('fuel', draft, asset)}</span>
+                </div>
+                <ChevronRightIcon className={styles.quickActionChevron} />
+              </button>
+
+              <button type="button" className={styles.quickActionCard} onClick={() => setActiveEditor('notes')}>
+                <div className={styles.quickActionIconWrap}>
+                  <NotesIcon className={styles.quickActionIcon} />
+                </div>
+                <div className={styles.quickActionCopy}>
+                  <strong>Notes</strong>
+                  <span>{buildEditorSummary('notes', draft, asset)}</span>
+                </div>
+                <ChevronRightIcon className={styles.quickActionChevron} />
+              </button>
+
+              <button type="button" className={styles.quickActionCard} onClick={() => setActiveEditor('photos')}>
+                <div className={styles.quickActionIconWrap}>
+                  <CameraIcon className={styles.quickActionIcon} />
+                </div>
+                <div className={styles.quickActionCopy}>
+                  <strong>Photos</strong>
+                  <span>{buildEditorSummary('photos', draft, asset, isUploading)}</span>
+                </div>
+                <ChevronRightIcon className={styles.quickActionChevron} />
+              </button>
+            </section>
+
+            <section className={styles.saveBar}>
+              <div className={styles.saveBarCopy}>
+                <strong>
+                  {pendingCount
+                    ? `${pendingCount} block${pendingCount === 1 ? '' : 's'} ready to save`
+                    : 'Choose one of the four blocks above'}
+                </strong>
+                <span>
+                  {locationReady
+                    ? 'When you save, Aim4price stores the update and the live GPS scan point together.'
+                    : 'GPS must be captured before any QR update can be saved.'}
+                </span>
+              </div>
+
+              <div className={styles.saveBarActions}>
+                <button type="button" className={styles.primaryButton} disabled={!canSave} onClick={() => void handleSaveUpdate()}>
+                  {isSaving ? 'Saving update…' : 'Save QR update'}
+                </button>
                 <button
                   type="button"
                   className={styles.secondaryButton}
-                  onClick={() => void captureLocation(false)}
-                  disabled={locationState === 'capturing' || isSaving}
+                  onClick={() => setDraft((current) => ({ ...initialDraft, latitude: current.latitude, longitude: current.longitude }))}
+                  disabled={isSaving || !hasMeaningfulDraftValue(draft)}
                 >
-                  {locationState === 'capturing' ? 'Capturing…' : 'Capture location'}
+                  Clear changes
                 </button>
-              </section>
-
-              <section className={styles.quickActionGrid}>
-                <button
-                  type="button"
-                  className={`${styles.quickActionCard} ${activeEditor === 'hours' ? styles.quickActionCardActive : ''}`}
-                  onClick={() => setActiveEditor('hours')}
-                >
-                  <MeterIcon className={styles.quickActionIcon} />
-                  <div>
-                    <strong>Hour Meter</strong>
-                    <span>{draft.hours ? `${draft.hours} ready to save` : asset.hours !== null ? `${asset.hours.toLocaleString('en-ZA')} currently saved` : 'Tap to update hours'}</span>
-                  </div>
-                  <ChevronRightIcon className={styles.quickActionChevron} />
-                </button>
-
-                <button
-                  type="button"
-                  className={`${styles.quickActionCard} ${activeEditor === 'fuel' ? styles.quickActionCardActive : ''}`}
-                  onClick={() => setActiveEditor('fuel')}
-                >
-                  <FuelIcon className={styles.quickActionIcon} />
-                  <div>
-                    <strong>Fuel</strong>
-                    <span>{draft.fuelPercent ? `${draft.fuelPercent}% ready to save` : asset.fuelPercent !== null ? `${asset.fuelPercent}% currently saved` : 'Tap to update fuel'}</span>
-                  </div>
-                  <ChevronRightIcon className={styles.quickActionChevron} />
-                </button>
-
-                <button
-                  type="button"
-                  className={`${styles.quickActionCard} ${activeEditor === 'notes' ? styles.quickActionCardActive : ''}`}
-                  onClick={() => setActiveEditor('notes')}
-                >
-                  <NotesIcon className={styles.quickActionIcon} />
-                  <div>
-                    <strong>Notes</strong>
-                    <span>{draft.note.trim() ? `${draft.note.trim().length} characters ready to save` : 'Tap to add a simple note'}</span>
-                  </div>
-                  <ChevronRightIcon className={styles.quickActionChevron} />
-                </button>
-
-                <button
-                  type="button"
-                  className={`${styles.quickActionCard} ${activeEditor === 'photos' ? styles.quickActionCardActive : ''}`}
-                  onClick={() => setActiveEditor('photos')}
-                >
-                  <CameraIcon className={styles.quickActionIcon} />
-                  <div>
-                    <strong>Photos</strong>
-                    <span>{PhotoCountLabel(draft.photoUrls.length)}</span>
-                  </div>
-                  <ChevronRightIcon className={styles.quickActionChevron} />
-                </button>
-              </section>
-
-              <section className={styles.editorCard}>
-                {activeEditor === 'hours' ? (
-                  <div className={styles.editorSection}>
-                    <div className={styles.editorHeader}>
-                      <div>
-                        <span className={styles.kicker}>Hour meter</span>
-                        <h3>Update the latest machine hours</h3>
-                        <p>Only enter the latest visible reading from the hour meter.</p>
-                      </div>
-                    </div>
-                    <label className={styles.field}>
-                      <span>Hours</span>
-                      <input
-                        inputMode="numeric"
-                        placeholder={asset.hours !== null ? String(asset.hours) : 'Enter hours'}
-                        value={draft.hours}
-                        onChange={(event) => setDraft((current) => ({ ...current, hours: normalizeIntegerInput(event.target.value) }))}
-                        disabled={isSaving}
-                      />
-                    </label>
-                  </div>
-                ) : null}
-
-                {activeEditor === 'fuel' ? (
-                  <div className={styles.editorSection}>
-                    <div className={styles.editorHeader}>
-                      <div>
-                        <span className={styles.kicker}>Fuel</span>
-                        <h3>Update the fuel level</h3>
-                        <p>Use the percentage that best matches the tank level right now.</p>
-                      </div>
-                    </div>
-                    <label className={styles.field}>
-                      <span>Fuel %</span>
-                      <input
-                        inputMode="numeric"
-                        placeholder={asset.fuelPercent !== null ? String(asset.fuelPercent) : '0 to 100'}
-                        value={draft.fuelPercent}
-                        onChange={(event) => setDraft((current) => ({ ...current, fuelPercent: normalizeIntegerInput(event.target.value).slice(0, 3) }))}
-                        disabled={isSaving}
-                      />
-                    </label>
-                    <div className={styles.quickOptionRow}>
-                      {QUICK_FUEL_OPTIONS.map((option) => (
-                        <button
-                          type="button"
-                          key={option}
-                          className={`${styles.quickOptionButton} ${draft.fuelPercent === String(option) ? styles.quickOptionButtonActive : ''}`}
-                          onClick={() => setDraft((current) => ({ ...current, fuelPercent: String(option) }))}
-                        >
-                          {option}%
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                {activeEditor === 'notes' ? (
-                  <div className={styles.editorSection}>
-                    <div className={styles.editorHeader}>
-                      <div>
-                        <span className={styles.kicker}>Notes</span>
-                        <h3>Add a short update note</h3>
-                        <p>Keep it simple: moved field, delivered, repaired, service due, fuel topped up, and so on.</p>
-                      </div>
-                    </div>
-                    <label className={styles.field}>
-                      <span>Note</span>
-                      <textarea
-                        placeholder="Add a short update note"
-                        value={draft.note}
-                        onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
-                        disabled={isSaving}
-                      />
-                    </label>
-                  </div>
-                ) : null}
-
-                {activeEditor === 'photos' ? (
-                  <div className={styles.editorSection}>
-                    <div className={styles.editorHeader}>
-                      <div>
-                        <span className={styles.kicker}>Photos</span>
-                        <h3>Add clear new photos</h3>
-                        <p>These photos are attached to this scan update and merged into the asset record.</p>
-                      </div>
-                    </div>
-
-                    <div className={styles.uploadRow}>
-                      <label className={styles.uploadButton}>
-                        <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleUploadChange} disabled={isUploading || isSaving} />
-                        {isUploading ? 'Uploading…' : 'Add photos'}
-                      </label>
-                      <p className={styles.helperText}>Use good light and capture the machine clearly.</p>
-                    </div>
-
-                    {draft.photoUrls.length ? (
-                      <div className={styles.photoGrid}>
-                        {draft.photoUrls.map((url, index) => (
-                          <article key={`${url}-${index}`} className={styles.photoCard}>
-                            <img src={url} alt={`Scan upload ${index + 1}`} className={styles.photoImage} />
-                            <button type="button" className={styles.removePhotoButton} onClick={() => handleRemovePhoto(url)}>
-                              Remove
-                            </button>
-                          </article>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </section>
-
-              <div className={styles.saveBar}>
-                <div className={styles.saveBarCopy}>
-                  <strong>{locationReady ? 'Ready to save' : 'Location required before saving'}</strong>
-                  <span>
-                    {locationReady
-                      ? 'This QR update will store the asset where it was scanned.'
-                      : 'Allow GPS access so Aim4price can place this machine correctly on the asset map.'}
-                  </span>
-                </div>
-                <div className={styles.saveBarActions}>
-                  <button type="submit" className={styles.primaryButton} disabled={!canSave}>
-                    {isSaving ? 'Saving update…' : 'Save QR update'}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.secondaryButton}
-                    onClick={() =>
-                      setDraft((current) => ({
-                        ...initialDraft,
-                        latitude: current.latitude,
-                        longitude: current.longitude,
-                      }))
-                    }
-                    disabled={isSaving}
-                  >
-                    Clear changes
-                  </button>
-                </div>
               </div>
-            </form>
-
-            <section className={styles.historyCard}>
-              <div className={styles.cardHeader}>
-                <div>
-                  <span className={styles.kicker}>Recent activity</span>
-                  <h2>Scan history</h2>
-                  <p>The latest QR updates saved for this asset.</p>
-                </div>
-              </div>
-              {recentEvents.length ? (
-                <div className={styles.historyList}>
-                  {recentEvents.map((entry) => (
-                    <article key={entry.id} className={styles.historyItem}>
-                      <div className={styles.historyTopRow}>
-                        <strong>{formatDate(entry.createdAtIso)}</strong>
-                        <span className={styles.historyBadge}>{entry.actorType === 'scan_pin' ? 'Farm PIN' : 'Owner session'}</span>
-                      </div>
-                      <div className={styles.historyMetaGrid}>
-                        <span>Hours: {entry.hours ?? '—'}</span>
-                        <span>Fuel: {entry.fuelPercent !== null ? `${entry.fuelPercent}%` : '—'}</span>
-                        <span>
-                          GPS: {entry.latitude !== null && entry.longitude !== null ? `${entry.latitude.toFixed(5)}, ${entry.longitude.toFixed(5)}` : '—'}
-                        </span>
-                      </div>
-                      {entry.note ? <p className={styles.historyText}>{entry.note}</p> : null}
-                      {entry.photoUrls.length ? (
-                        <div className={styles.historyPhotoRow}>
-                          {entry.photoUrls.map((url, index) => (
-                            <img key={`${entry.id}-${index}`} src={url} alt={`History photo ${index + 1}`} className={styles.historyPhoto} />
-                          ))}
-                        </div>
-                      ) : null}
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <p className={styles.helperText}>No scan history yet. The first QR update will appear here.</p>
-              )}
             </section>
           </>
         ) : null}
       </div>
+
+      {asset && activeEditor ? (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBackdrop} onClick={() => setActiveEditor(null)} />
+
+          <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="scan-editor-title">
+            <div className={styles.modalHeader}>
+              <div>
+                <span className={styles.modalEyebrow}>{modalCopy.eyebrow}</span>
+                <h3 id="scan-editor-title">{modalCopy.title}</h3>
+                <p>{modalCopy.description}</p>
+              </div>
+
+              <button type="button" className={styles.modalCloseButton} onClick={() => setActiveEditor(null)} aria-label="Close editor">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              {activeEditor === 'hours' ? (
+                <label className={styles.field}>
+                  <span>Hour meter reading</span>
+                  <input
+                    inputMode="numeric"
+                    placeholder={asset.hours !== null ? String(asset.hours) : 'Enter current hours'}
+                    value={draft.hours}
+                    onChange={(event) => setDraft((current) => ({ ...current, hours: normalizeIntegerInput(event.target.value) }))}
+                    disabled={isSaving}
+                  />
+                </label>
+              ) : null}
+
+              {activeEditor === 'fuel' ? (
+                <div className={styles.modalStack}>
+                  <div className={styles.fuelReadout}>{draft.fuelPercent || (asset.fuelPercent !== null ? String(asset.fuelPercent) : '0')}%</div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    className={styles.rangeInput}
+                    value={draft.fuelPercent || (asset.fuelPercent !== null ? String(asset.fuelPercent) : '0')}
+                    onChange={(event) => setDraft((current) => ({ ...current, fuelPercent: normalizeIntegerInput(event.target.value).slice(0, 3) }))}
+                    disabled={isSaving}
+                  />
+                  <div className={styles.quickOptionRow}>
+                    {QUICK_FUEL_OPTIONS.map((option) => (
+                      <button
+                        type="button"
+                        key={option}
+                        className={`${styles.quickOptionButton} ${draft.fuelPercent === String(option) ? styles.quickOptionButtonActive : ''}`}
+                        onClick={() => setDraft((current) => ({ ...current, fuelPercent: String(option) }))}
+                        disabled={isSaving}
+                      >
+                        {option}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {activeEditor === 'notes' ? (
+                <label className={styles.field}>
+                  <span>Short note</span>
+                  <textarea
+                    placeholder="Moved to north field, serviced, delivered, washed, fuel topped up…"
+                    value={draft.note}
+                    onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
+                    disabled={isSaving}
+                  />
+                </label>
+              ) : null}
+
+              {activeEditor === 'photos' ? (
+                <div className={styles.modalStack}>
+                  <div className={styles.uploadRow}>
+                    <label className={styles.uploadButton}>
+                      <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleUploadChange} disabled={isUploading || isSaving} />
+                      {isUploading ? 'Uploading…' : 'Add photos'}
+                    </label>
+                    <p className={styles.helperText}>Use clear light and make the machine easy to identify.</p>
+                  </div>
+
+                  {draft.photoUrls.length ? (
+                    <div className={styles.photoGrid}>
+                      {draft.photoUrls.map((url, index) => (
+                        <article key={`${url}-${index}`} className={styles.photoCard}>
+                          <img src={url} alt={`Scan upload ${index + 1}`} className={styles.photoImage} />
+                          <button type="button" className={styles.removePhotoButton} onClick={() => handleRemovePhoto(url)}>
+                            Remove
+                          </button>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className={styles.helperText}>No new photos added for this update yet.</p>
+                  )}
+                </div>
+              ) : null}
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.secondaryButton} onClick={() => setActiveEditor(null)}>
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
