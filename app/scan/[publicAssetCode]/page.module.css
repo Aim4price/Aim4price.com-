@@ -7,36 +7,40 @@
 }
 
 .shell {
-  width: min(calc(100% - 2rem), 1180px);
+  width: min(calc(100% - 1rem), 940px);
   margin: 0 auto;
-  padding: 1.6rem 0 4rem;
+  padding: 1rem 0 4rem;
   display: grid;
-  gap: 1.15rem;
+  gap: 1rem;
 }
 
 .hero,
-.mainCard,
-.sidebarCard,
+.assetCard,
+.locationCard,
+.editorCard,
 .pinCard,
 .unavailableCard,
 .historyCard,
-.loadingCard {
-  border-radius: 1.65rem;
+.loadingCard,
+.quickActionCard,
+.saveBar {
+  border-radius: 1.4rem;
   border: 1px solid rgba(19, 39, 64, 0.08);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 18px 38px rgba(16, 30, 49, 0.08), 0 6px 14px rgba(16, 30, 49, 0.03);
 }
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(250px, 0.85fr);
   gap: 1rem;
-  padding: 1.55rem;
+  padding: 1.3rem;
   background: linear-gradient(135deg, #12312b 0%, #183745 58%, #234681 100%);
 }
 
 .eyebrow,
 .kicker,
-.historyBadge {
+.historyBadge,
+.locationPill {
   display: inline-flex;
   align-items: center;
   width: fit-content;
@@ -58,27 +62,33 @@
 .heroContent h1,
 .cardHeader h2,
 .pinCard h2,
-.unavailableCard h2 {
-  margin: 0.8rem 0 0.55rem;
+.unavailableCard h2,
+.assetSummaryHeader h2,
+.editorHeader h3,
+.locationCopy h3 {
+  margin: 0.75rem 0 0.5rem;
   letter-spacing: -0.05em;
   line-height: 0.98;
 }
 
 .heroContent h1 {
   color: #ffffff;
-  font-size: clamp(2.2rem, 4vw, 3.45rem);
+  font-size: clamp(2rem, 4vw, 3rem);
   max-width: 12ch;
 }
 
 .heroContent p,
 .cardHeader p,
-.sidebarCard p,
 .pinCard p,
 .unavailableCard p,
+.assetSummaryHeader p,
+.editorHeader p,
+.locationCopy p,
 .helperText,
-.metaText {
+.metaText,
+.saveBarCopy span {
   margin: 0;
-  line-height: 1.68;
+  line-height: 1.65;
   color: #627072;
 }
 
@@ -90,7 +100,6 @@
 .heroAside {
   display: grid;
   gap: 0.85rem;
-  align-content: stretch;
 }
 
 .heroStat,
@@ -98,7 +107,7 @@
   display: grid;
   gap: 0.32rem;
   padding: 1rem;
-  border-radius: 1.15rem;
+  border-radius: 1.05rem;
 }
 
 .heroStat {
@@ -108,8 +117,7 @@
 
 .heroStat span,
 .summaryTile span,
-.field span,
-.fieldActionWrap span {
+.field span {
   color: rgba(230, 239, 251, 0.82);
   font-size: 0.8rem;
   font-weight: 700;
@@ -117,14 +125,14 @@
 
 .heroStat strong {
   color: #ffffff;
-  font-size: clamp(1.2rem, 2vw, 1.7rem);
-  line-height: 1.05;
+  font-size: clamp(1.15rem, 2vw, 1.55rem);
+  line-height: 1.08;
   letter-spacing: -0.04em;
 }
 
 .notice {
   min-height: 3rem;
-  padding: 0.95rem 1rem;
+  padding: 0.9rem 1rem;
   border-radius: 1rem;
   border: 1px solid rgba(19, 39, 64, 0.08);
   font-weight: 700;
@@ -143,63 +151,82 @@
 .loadingCard,
 .pinCard,
 .unavailableCard,
-.mainCard,
-.sidebarCard,
-.historyCard {
+.assetCard,
+.locationCard,
+.editorCard,
+.historyCard,
+.saveBar {
   background: rgba(255, 255, 255, 0.96);
-  padding: 1.45rem;
+  padding: 1.2rem;
 }
 
-.layout {
+.pinForm,
+.form {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
-  gap: 1.15rem;
+  gap: 1rem;
+}
+
+.pinActions,
+.saveBarActions,
+.uploadRow,
+.quickOptionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.assetTopRow {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 1rem;
   align-items: start;
 }
 
-.sidebar {
+.assetMediaWrap {
+  overflow: hidden;
+  border-radius: 1.1rem;
+  background: #edf2f6;
+  border: 1px solid rgba(81, 97, 120, 0.08);
+}
+
+.assetPhoto {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+.assetSummary {
   display: grid;
   gap: 1rem;
 }
 
-.kicker,
-.historyBadge {
-  color: #516178;
-  background: rgba(81, 97, 120, 0.08);
-  border: 1px solid rgba(81, 97, 120, 0.12);
-}
-
-.cardHeader {
+.assetSummaryHeader {
   display: flex;
   justify-content: space-between;
+  gap: 0.9rem;
   align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 1.2rem;
 }
 
-.cardHeader h2,
+.assetSummaryHeader h2,
 .pinCard h2,
 .unavailableCard h2,
-.sidebarCard h3 {
+.cardHeader h2,
+.editorHeader h3,
+.locationCopy h3 {
   color: #183033;
 }
 
+.assetSummaryHeader h2,
 .cardHeader h2 {
-  font-size: clamp(1.5rem, 2.5vw, 1.95rem);
-}
-
-.sidebarCard h3 {
-  margin: 0.45rem 0 0.55rem;
-  font-size: 1.15rem;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
+  font-size: clamp(1.35rem, 2.5vw, 1.85rem);
 }
 
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
-  margin-bottom: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
 .summaryTile {
@@ -209,32 +236,143 @@
 
 .summaryTile span,
 .field span,
-.fieldActionWrap span,
 .helperText,
-.metaText {
+.metaText,
+.saveBarCopy span {
   color: #627072;
 }
 
-.summaryTile strong {
+.summaryTile strong,
+.saveBarCopy strong {
   color: #183033;
-  font-size: 1.15rem;
-  line-height: 1.2;
+  font-size: 1.02rem;
+  line-height: 1.25;
 }
 
-.form,
-.pinForm {
+.locationCard {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.locationCopy {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.locationPill {
+  gap: 0.45rem;
+  border: 1px solid rgba(81, 97, 120, 0.12);
+  color: #516178;
+  background: rgba(81, 97, 120, 0.08);
+}
+
+.locationPillReady {
+  color: #156f4c;
+  background: rgba(52, 211, 153, 0.12);
+  border-color: rgba(52, 211, 153, 0.22);
+}
+
+.locationPillLoading {
+  color: #234681;
+  background: rgba(92, 126, 197, 0.12);
+  border-color: rgba(92, 126, 197, 0.2);
+}
+
+.locationPillError {
+  color: #8f3333;
+  background: rgba(198, 75, 75, 0.12);
+  border-color: rgba(198, 75, 75, 0.2);
+}
+
+.locationPillIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.quickActionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.quickActionCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.96);
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.quickActionCard:hover {
+  transform: translateY(-1px);
+}
+
+.quickActionCardActive {
+  border-color: rgba(22, 70, 59, 0.24);
+  box-shadow: 0 0 0 4px rgba(22, 70, 59, 0.08), 0 18px 32px rgba(16, 30, 49, 0.07);
+}
+
+.quickActionCard strong {
+  display: block;
+  color: #183033;
+  font-size: 1rem;
+}
+
+.quickActionCard span {
+  display: block;
+  margin-top: 0.2rem;
+  color: #627072;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.quickActionIcon,
+.quickActionChevron,
+.buttonIcon {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex-shrink: 0;
+}
+
+.quickActionIcon {
+  width: 1.35rem;
+  height: 1.35rem;
+  color: #234681;
+}
+
+.quickActionChevron {
+  color: #7a8897;
+}
+
+.editorCard,
+.historyCard {
   display: grid;
   gap: 1rem;
 }
 
-.field,
-.fieldActionWrap {
+.editorSection {
+  display: grid;
+  gap: 1rem;
+}
+
+.editorHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.field {
   display: grid;
   gap: 0.5rem;
 }
 
 .field input,
-.field select,
 .field textarea {
   width: 100%;
   min-height: 3.15rem;
@@ -253,23 +391,13 @@
 }
 
 .field input:focus,
-.field select:focus,
 .field textarea:focus {
   outline: none;
   border-color: rgba(35, 70, 129, 0.45);
   box-shadow: 0 0 0 4px rgba(35, 70, 129, 0.12);
 }
 
-.fieldRow {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
-}
-
-.fieldActionWrap {
-  align-content: end;
-}
-
+.quickOptionButton,
 .primaryButton,
 .secondaryButton,
 .uploadButton,
@@ -277,11 +405,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.45rem;
   min-height: 3rem;
-  padding: 0 1.1rem;
+  padding: 0 1rem;
   border-radius: 1rem;
   font-weight: 800;
-  font-size: 0.98rem;
+  font-size: 0.96rem;
   text-decoration: none;
   border: 1px solid rgba(19, 39, 64, 0.1);
   transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, color 160ms ease, border-color 160ms ease;
@@ -296,34 +425,33 @@
 
 .secondaryButton,
 .uploadButton,
-.removePhotoButton {
+.removePhotoButton,
+.quickOptionButton {
   color: #234681;
   background: rgba(92, 126, 197, 0.1);
+}
+
+.quickOptionButtonActive {
+  border-color: rgba(35, 70, 129, 0.25);
+  background: rgba(35, 70, 129, 0.16);
 }
 
 .primaryButton:hover,
 .secondaryButton:hover,
 .uploadButton:hover,
-.removePhotoButton:hover {
+.removePhotoButton:hover,
+.quickOptionButton:hover {
   transform: translateY(-1px);
 }
 
 .primaryButton:disabled,
 .secondaryButton:disabled,
 .uploadButton:disabled,
-.removePhotoButton:disabled {
-  opacity: 0.6;
+.removePhotoButton:disabled,
+.quickOptionButton:disabled {
+  opacity: 0.62;
   cursor: not-allowed;
   transform: none;
-}
-
-.pinActions,
-.formActions,
-.uploadRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.85rem;
-  align-items: center;
 }
 
 .uploadButton input {
@@ -331,14 +459,13 @@
 }
 
 .photoGrid,
-.sidebarPhotoGrid,
 .historyPhotoRow {
   display: grid;
   gap: 0.75rem;
 }
 
 .photoGrid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .photoCard {
@@ -351,7 +478,6 @@
 }
 
 .photoImage,
-.sidebarPhoto,
 .historyPhoto {
   width: 100%;
   height: auto;
@@ -360,17 +486,33 @@
   border-radius: 0.85rem;
 }
 
-.sidebarPhotoGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.sidebarPhoto {
-  aspect-ratio: 1 / 1;
-}
-
-.historyCard {
-  display: grid;
+.saveBar {
+  position: sticky;
+  bottom: 0.75rem;
+  display: flex;
+  justify-content: space-between;
   gap: 1rem;
+  align-items: center;
+  z-index: 5;
+}
+
+.saveBarCopy {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.kicker,
+.historyBadge {
+  color: #516178;
+  background: rgba(81, 97, 120, 0.08);
+  border: 1px solid rgba(81, 97, 120, 0.12);
 }
 
 .historyList {
@@ -412,50 +554,66 @@
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
 }
 
-@media (max-width: 960px) {
+@media (max-width: 820px) {
   .hero,
-  .layout {
-    grid-template-columns: 1fr;
-  }
-
+  .assetTopRow,
   .summaryGrid,
-  .fieldRow,
+  .quickActionGrid,
   .photoGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .shell {
-    width: min(calc(100% - 1rem), 1180px);
-    padding-top: 1rem;
-  }
-
-  .hero,
-  .mainCard,
-  .sidebarCard,
-  .pinCard,
-  .historyCard,
-  .unavailableCard,
-  .loadingCard {
-    padding: 1rem;
-    border-radius: 1.2rem;
-  }
-
-  .summaryGrid,
-  .fieldRow,
-  .photoGrid,
-  .sidebarPhotoGrid {
     grid-template-columns: 1fr;
   }
 
+  .locationCard,
+  .saveBar,
+  .assetSummaryHeader,
   .cardHeader,
   .pinActions,
-  .formActions,
+  .saveBarActions,
   .uploadRow,
+  .quickOptionRow,
   .historyTopRow,
   .historyMetaGrid {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .heroStat strong {
+    font-size: 1.2rem;
+  }
+
+  .assetMediaWrap {
+    max-width: 220px;
+  }
+}
+
+@media (max-width: 560px) {
+  .shell {
+    width: min(calc(100% - 0.75rem), 940px);
+    padding-top: 0.75rem;
+  }
+
+  .hero,
+  .assetCard,
+  .locationCard,
+  .editorCard,
+  .pinCard,
+  .unavailableCard,
+  .historyCard,
+  .loadingCard,
+  .saveBar {
+    padding: 1rem;
+    border-radius: 1.2rem;
+  }
+
+  .quickActionCard {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .quickActionChevron {
+    display: none;
+  }
+
+  .assetMediaWrap {
+    max-width: none;
   }
 }
