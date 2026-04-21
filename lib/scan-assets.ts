@@ -304,9 +304,9 @@ export async function getScanAssetAccessContext(publicAssetCode: string): Promis
   };
 }
 
-export async function listRecentScanEvents(assetId: string, limit = 10): Promise<ScanEventRecord[]> {
+export async function listScanEventsForAsset(assetId: string, limit = 250): Promise<ScanEventRecord[]> {
   const db = getDb();
-  const safeLimit = Math.max(1, Math.min(25, Math.round(limit || 10)));
+  const safeLimit = Math.max(1, Math.min(500, Math.round(limit || 250)));
 
   const result = await db.query<ScanEventRow>(
     `
@@ -332,6 +332,10 @@ export async function listRecentScanEvents(assetId: string, limit = 10): Promise
   );
 
   return result.rows.map(mapScanEventRow);
+}
+
+export async function listRecentScanEvents(assetId: string, limit = 10): Promise<ScanEventRecord[]> {
+  return listScanEventsForAsset(assetId, Math.max(1, Math.min(25, Math.round(limit || 10))));
 }
 
 export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promise<{
