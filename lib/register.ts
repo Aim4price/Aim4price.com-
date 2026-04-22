@@ -1,7 +1,7 @@
 import type { CabType, DriveType, TractorType } from './tractor-data';
 
 export type SavedItemKind = 'tractor' | 'manual' | 'property';
-export type SavedItemMethod = 'aim4price' | 'market' | 'department' | 'manual';
+export type SavedItemMethod = 'aim4price' | 'market' | 'manual';
 
 export type SavedItem = {
   id: string;
@@ -22,7 +22,6 @@ export type SavedItem = {
   hours?: number;
   aim4priceValueExVat?: number | null;
   marketMidExVat?: number | null;
-  departmentValueExVat?: number | null;
   note?: string;
   createdAtIso: string;
   updatedAtIso?: string;
@@ -95,12 +94,7 @@ function asKind(value: unknown): SavedItemKind {
 }
 
 function asMethod(value: unknown): SavedItemMethod {
-  return value === 'aim4price' ||
-    value === 'market' ||
-    value === 'department' ||
-    value === 'manual'
-    ? value
-    : 'manual';
+  return value === 'aim4price' || value === 'market' || value === 'manual' ? value : 'manual';
 }
 
 function normalizeCab(value: unknown): SavedItem['cab'] {
@@ -148,7 +142,6 @@ export function normalizeSavedItem(value: unknown): SavedItem | null {
     hours: asOptionalNumber(value.hours),
     aim4priceValueExVat: asNullableNumber(value.aim4priceValueExVat),
     marketMidExVat: asNullableNumber(value.marketMidExVat),
-    departmentValueExVat: asNullableNumber(value.departmentValueExVat),
     note: asOptionalText(value.note),
     createdAtIso,
     updatedAtIso,

@@ -1,9 +1,8 @@
 import { getDb } from './db';
 import { runServerValuation } from './server-valuation';
-import type { ConditionKey } from './tractor-data';
-import type { GpsType, Result, RunValuationInput } from './tractor-logic';
+import type { Result, RunValuationInput } from './tractor-logic';
 
-export type MethodKey = 'aim4price' | 'market' | 'department';
+export type MethodKey = 'aim4price' | 'market';
 
 export type SaveValuationRunInput = RunValuationInput & {
   selectedMethod: MethodKey;
@@ -54,26 +53,8 @@ function parseGpsYear(value: number | string | null | undefined): number | null 
 }
 
 export function getSelectedMethodValue(result: Result, method: MethodKey): number | null {
-  if (method === 'aim4price') return result.aim4priceValueExVat;
   if (method === 'market') return result.marketMid;
-  return result.departmentValueExVat;
-}
-
-function getDepartmentReplacementPrice(result: Result): number | null {
-  return (
-    toNumberOrNull(result.departmentBand?.replacementPriceExVat) ??
-    toNumberOrNull(result.departmentBand?.replacementExVat) ??
-    null
-  );
-}
-
-function getDepartmentDepreciationPerHour(result: Result): number | null {
-  return (
-    toNumberOrNull(result.departmentBand?.depreciationPerHourExVat) ??
-    toNumberOrNull(result.departmentBand?.hourlyDepreciationExVat) ??
-    toNumberOrNull(result.departmentBand?.hourlyDepreciation) ??
-    null
-  );
+  return result.aim4priceValueExVat;
 }
 
 function getMarketListingIds(result: Result): number[] {
@@ -120,14 +101,12 @@ function buildValuationPayload(input: SaveValuationRunInput, result: Result, sel
       marketLowExVat: result.marketLow,
       marketMidExVat: result.marketMid,
       marketHighExVat: result.marketHigh,
-      departmentValueExVat: result.departmentValueExVat,
       extrasValueExVat: result.extrasValueExVat,
       frontPtoValueExVat: result.frontPtoValueExVat,
       frontLoaderValueExVat: result.frontLoaderValueExVat,
       gpsValueExVat: result.gpsValueExVat,
       marketCount: result.marketCount,
       marketListingIds: getMarketListingIds(result),
-      departmentBandId: toIntegerOrNull(result.departmentBand?.id),
       selectedMethod: input.selectedMethod,
       selectedValueExVat,
     },
@@ -150,11 +129,10 @@ export async function saveValuationRunFromResult(
   }
 
   const db = getDb();
-  const departmentBandId = toIntegerOrNull(result.departmentBand?.id);
   const marketListingIds = getMarketListingIds(result);
   const valuationVersion = String(input.valuationVersion ?? 'v1').trim() || 'v1';
   const gpsEnabled = Boolean(input.gpsEnabled);
-  const gpsType: GpsType | null = gpsEnabled ? input.gpsType ?? null : null;
+  const gpsType = gpsEnabled ? input.gpsType ?? null : null;
   const gpsYear = gpsEnabled ? parseGpsYear(input.gpsYear) : null;
   const valuationPayload = buildValuationPayload(input, result, roundMoney(selectedValueExVat));
 
@@ -164,7 +142,6 @@ export async function saveValuationRunFromResult(
         user_id,
         model_id,
         brand_id,
-        department_band_id,
         equipment_type,
         brand_slug,
         brand_name,
@@ -182,14 +159,11 @@ export async function saveValuationRunFromResult(
         gps_type,
         gps_year,
         catalog_replacement_price_ex_vat,
-        department_replacement_price_ex_vat,
-        department_depreciation_cost_per_hour_ex_vat,
         extras_value_ex_vat,
         aim4price_value_ex_vat,
         market_low_ex_vat,
         market_mid_ex_vat,
         market_high_ex_vat,
-        department_value_ex_vat,
         market_count,
         market_listing_ids,
         selected_method,
@@ -203,7 +177,7 @@ export async function saveValuationRunFromResult(
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
         $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-        $31, $32, $33, $34, $35::jsonb, now(), now()
+        $31::jsonb, now(), now()
       )
       returning id, created_at
     `,
@@ -211,7 +185,6 @@ export async function saveValuationRunFromResult(
       input.userId ?? null,
       catalogLink.model_id,
       catalogLink.brand_id,
-      departmentBandId,
       'tractor',
       result.model.brandSlug,
       result.model.brandName,
@@ -229,14 +202,11 @@ export async function saveValuationRunFromResult(
       gpsType,
       gpsYear,
       toNumberOrNull(result.model.aim4priceReplacementExVat),
-      getDepartmentReplacementPrice(result),
-      getDepartmentDepreciationPerHour(result),
       roundMoney(result.extrasValueExVat),
       result.aim4priceValueExVat,
       result.marketLow,
       result.marketMid,
       result.marketHigh,
-      result.departmentValueExVat,
       result.marketCount,
       marketListingIds,
       input.selectedMethod,
@@ -263,7 +233,6 @@ export async function saveValuationRun(input: SaveValuationRunInput): Promise<Sa
   const result = await runServerValuation(input);
   return saveValuationRunFromResult(input, result);
 }
-
 
 export async function deleteValuationRunById(userId: string, runId: number): Promise<void> {
   const db = getDb();

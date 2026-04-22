@@ -1,9 +1,8 @@
 import {
-  departmentBands,
   listings,
   tractors,
   type ConditionKey,
-  type DepartmentAgBand,
+  type MarketplaceListing,
   type TractorCatalogRow,
   type TractorType,
 } from './tractor-data';
@@ -29,17 +28,14 @@ export type Result = {
   marketHigh: number | null;
   marketMid: number | null;
   marketCount: number;
-  marketSources: typeof listings;
-  departmentValueExVat: number | null;
-  departmentBand: DepartmentAgBand | null;
+  marketSources: MarketplaceListing[];
   coverageBand: 'green' | 'amber' | 'red';
   previewValueExVat: number | null;
-  previewLabel: 'Market average' | 'Aim4price Value' | 'Department Guideline';
+  previewLabel: 'Market average' | 'Aim4price Value';
   baseAim4priceValueExVat: number | null;
   baseMarketLow: number | null;
   baseMarketHigh: number | null;
   baseMarketMid: number | null;
-  baseDepartmentValueExVat: number | null;
   extrasValueExVat: number;
   frontPtoValueExVat: number;
   frontLoaderValueExVat: number;
@@ -55,7 +51,6 @@ const CONDITION_FACTORS: Record<ConditionKey, number> = {
 };
 
 const FALLBACK_TRACTOR_FLOOR_PERCENT = 0.05;
-const FALLBACK_DEPARTMENT_FLOOR_PERCENT = 0.10;
 const FRONT_PTO_REPLACEMENT_EX_VAT = 250_000;
 const GPS_FULL_AUTOSTEER_REPLACEMENT_EX_VAT = 250_000;
 const GPS_GUIDANCE_REPLACEMENT_EX_VAT = 100_000;
@@ -114,19 +109,6 @@ function toPositiveNumber(value: unknown): number | null {
   return numeric;
 }
 
-function normalizePercent(value: unknown, fallback: number): number {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric) || numeric <= 0) {
-    return fallback;
-  }
-
-  if (numeric <= 1) {
-    return numeric;
-  }
-
-  return numeric / 100;
-}
-
 function lifetime(type: TractorType, kw: number): number {
   if (type === 'orchard') return 10_000;
   if (kw <= 25) return 8_000;
@@ -177,103 +159,12 @@ function aim4BaseValue(
   return roundMoney(applyFloor(afterCondition, model.aim4priceReplacementExVat, FALLBACK_TRACTOR_FLOOR_PERCENT));
 }
 
-function getBandMinKw(band: DepartmentAgBand): number {
-  const min = toPositiveNumber(band.minPowerKw) ?? toPositiveNumber(band.minKw) ?? toPositiveNumber(band.powerKw) ?? 0;
-  return min;
-}
-
-function getBandMaxKw(band: DepartmentAgBand): number {
-  const max = toPositiveNumber(band.maxPowerKw) ?? toPositiveNumber(band.maxKw) ?? toPositiveNumber(band.powerKw) ?? 0;
-  return max;
-}
-
-function getBandCentreKw(band: DepartmentAgBand): number {
-  const min = getBandMinKw(band);
-  const max = getBandMaxKw(band);
-  if (max >= min && max > 0) {
-    return (min + max) / 2;
-  }
-
-  return toPositiveNumber(band.powerKw) ?? 0;
-}
-
-function bandDistance(band: DepartmentAgBand, kw: number): number {
-  const min = getBandMinKw(band);
-  const max = getBandMaxKw(band);
-
-  if (kw < min) return min - kw;
-  if (kw > max) return kw - max;
-  return 0;
-}
-
-function deptBand(model: TractorCatalogRow): DepartmentAgBand | null {
-  const family = departmentBands.filter(
-    (band) => band.tractorType === model.tractorType && band.drive === model.drive,
-  );
-
-  if (!family.length) {
-    return null;
-  }
-
-  const containing = family.filter((band) => {
-    const min = getBandMinKw(band);
-    const max = getBandMaxKw(band);
-    return model.powerKw >= min && model.powerKw <= max;
-  });
-
-  const source = containing.length ? containing : family;
-
-  return (
-    [...source].sort((left, right) => {
-      const distanceDelta = bandDistance(left, model.powerKw) - bandDistance(right, model.powerKw);
-      if (distanceDelta !== 0) return distanceDelta;
-
-      return Math.abs(getBandCentreKw(left) - model.powerKw) - Math.abs(getBandCentreKw(right) - model.powerKw);
-    })[0] ?? null
-  );
-}
-
-function deptValue(model: TractorCatalogRow, hours: number): { value: number | null; band: DepartmentAgBand | null } {
-  const band = deptBand(model);
-  if (!band) {
-    return { value: null, band: null };
-  }
-
-  const replacementPrice =
-    toPositiveNumber(band.replacementPriceExVat) ??
-    toPositiveNumber(band.replacementExVat) ??
-    toPositiveNumber(model.departmentReplacementExVat) ??
-    toPositiveNumber(model.replacementPriceExVat) ??
-    toPositiveNumber(model.aim4priceReplacementExVat) ??
-    0;
-
-  const depreciationPerHour =
-    toPositiveNumber(band.depreciationPerHourExVat) ??
-    toPositiveNumber(band.hourlyDepreciationExVat) ??
-    toPositiveNumber(band.hourlyDepreciation) ??
-    0;
-
-  const safeHours = Math.max(0, Number(hours) || 0);
-  const salvageFloorPercent = normalizePercent(
-    band.minimumValuePercent ?? band.salvageFloorPct ?? band.salvageFloorPercent,
-    FALLBACK_DEPARTMENT_FLOOR_PERCENT,
-  );
-
-  const rawValue = replacementPrice - safeHours * depreciationPerHour;
-  const flooredValue = Math.max(rawValue, replacementPrice * salvageFloorPercent);
-
-  return {
-    value: roundMoney(flooredValue),
-    band,
-  };
-}
-
 type MarketSnapshot = {
   low: number | null;
   high: number | null;
   mid: number | null;
   count: number;
-  source: typeof listings;
+  source: MarketplaceListing[];
 };
 
 function market(model: TractorCatalogRow, year: number, hours: number): MarketSnapshot {
@@ -300,7 +191,7 @@ function market(model: TractorCatalogRow, year: number, hours: number): MarketSn
     (listing) => Math.abs(listing.yearModel - year) <= 2 && Math.abs(listing.hours - hours) <= 1_000,
   );
 
-  const source = (tightMatches.length ? tightMatches : exactWithoutCab) as typeof listings;
+  const source = tightMatches.length ? tightMatches : exactWithoutCab;
   if (!source.length) {
     return { low: null, high: null, mid: null, count: 0, source };
   }
@@ -320,11 +211,12 @@ function market(model: TractorCatalogRow, year: number, hours: number): MarketSn
 
   const low = Math.min(...prices);
   const high = Math.max(...prices);
-  const mid = roundMoney((low + high) / 2);
+  const total = prices.reduce((sum, value) => sum + value, 0);
+  const mid = Math.round(total / prices.length);
 
   return {
-    low: roundMoney(low),
-    high: roundMoney(high),
+    low: Math.round(low),
+    high: Math.round(high),
     mid,
     count: source.length,
     source,
@@ -346,7 +238,7 @@ function frontPtoValue(
   const afterDep = FRONT_PTO_REPLACEMENT_EX_VAT * (1 - depreciation / 100);
   const afterCondition = applyCondition(afterDep, condition);
 
-  return roundMoney(applyFloor(afterCondition, FRONT_PTO_REPLACEMENT_EX_VAT, FALLBACK_TRACTOR_FLOOR_PERCENT));
+  return Math.round(applyFloor(afterCondition, FRONT_PTO_REPLACEMENT_EX_VAT, FALLBACK_TRACTOR_FLOOR_PERCENT));
 }
 
 function loaderReplacementPrice(kw: number): number {
@@ -365,7 +257,7 @@ function loaderValue(model: TractorCatalogRow, year: number, enabled: boolean): 
   const depreciation = clamp(age * 10, 0, 75);
   const currentValue = replacementPrice * (1 - depreciation / 100);
 
-  return roundMoney(applyFloor(currentValue, replacementPrice, 0.25));
+  return Math.round(applyFloor(currentValue, replacementPrice, 0.25));
 }
 
 function parseGpsYear(value: number | string | null | undefined, fallbackYear: number): number {
@@ -399,7 +291,7 @@ function gpsValue(
   const depreciation = clamp(age * 10, 0, 80);
   const currentValue = replacementPrice * (1 - depreciation / 100);
 
-  return roundMoney(applyFloor(currentValue, replacementPrice, 0.20));
+  return Math.round(applyFloor(currentValue, replacementPrice, 0.2));
 }
 
 function addExtras(value: number | null, extrasValue: number): number | null {
@@ -407,7 +299,13 @@ function addExtras(value: number | null, extrasValue: number): number | null {
     return null;
   }
 
-  return roundMoney(value + extrasValue);
+  return Math.round(value + extrasValue);
+}
+
+function getCoverageBand(marketCount: number): Result['coverageBand'] {
+  if (marketCount >= 5) return 'green';
+  if (marketCount >= 2) return 'amber';
+  return 'red';
 }
 
 export function runValuation(input: RunValuationInput): Result {
@@ -421,7 +319,6 @@ export function runValuation(input: RunValuationInput): Result {
 
   const baseAim4priceValueExVat = aim4BaseValue(model, safeYear, safeHours, input.condition);
   const baseMarket = market(model, safeYear, safeHours);
-  const baseDepartment = deptValue(model, safeHours);
 
   const frontPtoValueExVat = frontPtoValue(model, safeYear, safeHours, input.condition, Boolean(input.frontPto));
   const frontLoaderValueExVat = loaderValue(model, safeYear, Boolean(input.frontLoader));
@@ -432,27 +329,9 @@ export function runValuation(input: RunValuationInput): Result {
   const marketLow = addExtras(baseMarket.low, extrasValueExVat);
   const marketHigh = addExtras(baseMarket.high, extrasValueExVat);
   const marketMid = addExtras(baseMarket.mid, extrasValueExVat);
-  const departmentValueExVat = addExtras(baseDepartment.value, extrasValueExVat);
 
-  const availableValues = [aim4priceValueExVat, marketMid, departmentValueExVat].filter(
-    (value): value is number => value !== null,
-  );
-
-  const coverageBand: Result['coverageBand'] =
-    availableValues.length >= 3 ? 'green' : availableValues.length === 2 ? 'amber' : 'red';
-
-  let previewValueExVat = marketMid;
-  let previewLabel: Result['previewLabel'] = 'Market average';
-
-  if (previewValueExVat === null && aim4priceValueExVat !== null) {
-    previewValueExVat = aim4priceValueExVat;
-    previewLabel = 'Aim4price Value';
-  }
-
-  if (previewValueExVat === null && departmentValueExVat !== null) {
-    previewValueExVat = departmentValueExVat;
-    previewLabel = 'Department Guideline';
-  }
+  const previewValueExVat = marketMid ?? aim4priceValueExVat;
+  const previewLabel: Result['previewLabel'] = marketMid !== null ? 'Market average' : 'Aim4price Value';
 
   return {
     model,
@@ -462,16 +341,13 @@ export function runValuation(input: RunValuationInput): Result {
     marketMid,
     marketCount: baseMarket.count,
     marketSources: baseMarket.source,
-    departmentValueExVat,
-    departmentBand: baseDepartment.band,
-    coverageBand,
+    coverageBand: getCoverageBand(baseMarket.count),
     previewValueExVat,
     previewLabel,
     baseAim4priceValueExVat,
     baseMarketLow: baseMarket.low,
     baseMarketHigh: baseMarket.high,
     baseMarketMid: baseMarket.mid,
-    baseDepartmentValueExVat: baseDepartment.value,
     extrasValueExVat,
     frontPtoValueExVat,
     frontLoaderValueExVat,

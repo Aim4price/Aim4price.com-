@@ -2,7 +2,6 @@ import { getDb } from './db';
 import type {
   CabType,
   ConditionKey,
-  DepartmentAgBand,
   DriveType,
   MarketplaceListing,
   TractorCatalogRow,
@@ -33,16 +32,6 @@ type TractorCatalogDbRow = {
   gps_supported: boolean | string | number | null;
 };
 
-type DepartmentBandDbRow = {
-  id: string | number;
-  tractor_type: string;
-  drive_type: string;
-  power_kw: string | number;
-  replacement_price_ex_vat: string | number;
-  depreciation_cost_per_hour_ex_vat: string | number;
-  source_name?: string | null;
-};
-
 type MarketListingDbRow = {
   id: string | number;
   equipment_type: string | null;
@@ -71,7 +60,6 @@ const CONDITION_FACTORS: Record<ConditionKey, number> = {
 };
 
 const FALLBACK_TRACTOR_FLOOR_PERCENT = 0.05;
-const FALLBACK_DEPARTMENT_FLOOR_PERCENT = 0.1;
 const FRONT_PTO_REPLACEMENT_EX_VAT = 250_000;
 const GPS_FULL_AUTOSTEER_REPLACEMENT_EX_VAT = 250_000;
 const GPS_GUIDANCE_REPLACEMENT_EX_VAT = 100_000;
@@ -121,16 +109,6 @@ function normalizeCabTypeNullable(value: unknown): CabType | null {
   const text = normalizeText(value);
   if (!text) return null;
   return normalizeCabType(text);
-}
-
-function titleCaseTractorType(value: TractorType): string {
-  return value === 'orchard' ? 'Orchard' : 'Field';
-}
-
-function driveLabel(value: DriveType): string {
-  if (value === '2wd') return '2WD';
-  if (value === 'tracks') return 'Tracks';
-  return '4WD';
 }
 
 function toNumber(value: unknown): number {
@@ -251,39 +229,10 @@ function mapModelRow(row: TractorCatalogDbRow): DbTractorCatalogRow {
     endYear: toNumber(row.year_end),
     aim4priceReplacementExVat: replacement,
     replacementPriceExVat: replacement,
-    departmentReplacementExVat: replacement,
     imageSrc: '/brand/Tractor.png',
     frontPtoSupported: toBoolean(row.front_pto_supported),
     frontLoaderSupported: toBoolean(row.front_loader_supported),
     gpsSupported: toBoolean(row.gps_supported),
-  };
-}
-
-function mapDepartmentBandRow(row: DepartmentBandDbRow): DepartmentAgBand {
-  const tractorType = normalizeTractorType(row.tractor_type);
-  const drive = normalizeDriveType(row.drive_type);
-  const powerKw = toNumber(row.power_kw);
-  const replacement = toNumber(row.replacement_price_ex_vat);
-  const depreciationPerHour = toNumber(row.depreciation_cost_per_hour_ex_vat);
-
-  return {
-    id: String(row.id),
-    label: `${titleCaseTractorType(tractorType)} tractors ${powerKw} kW • ${driveLabel(drive)}`,
-    tractorType,
-    minPowerKw: powerKw,
-    maxPowerKw: powerKw,
-    minKw: powerKw,
-    maxKw: powerKw,
-    powerKw,
-    drive,
-    replacementPriceExVat: replacement,
-    replacementExVat: replacement,
-    hourlyDepreciationExVat: depreciationPerHour,
-    hourlyDepreciation: depreciationPerHour,
-    depreciationPerHourExVat: depreciationPerHour,
-    salvageFloorPercent: FALLBACK_DEPARTMENT_FLOOR_PERCENT,
-    salvageFloorPct: FALLBACK_DEPARTMENT_FLOOR_PERCENT,
-    minimumValuePercent: FALLBACK_DEPARTMENT_FLOOR_PERCENT,
   };
 }
 
@@ -337,39 +286,6 @@ function aim4BaseValue(
   return roundMoney(applyFloor(afterCondition, model.aim4priceReplacementExVat, FALLBACK_TRACTOR_FLOOR_PERCENT));
 }
 
-function deptValue(
-  model: TractorCatalogRow,
-  hours: number,
-  band: DepartmentAgBand | null,
-): { value: number | null; band: DepartmentAgBand | null } {
-  if (!band) {
-    return { value: null, band: null };
-  }
-
-  const replacementPrice =
-    toPositiveNumber(band.replacementPriceExVat) ??
-    toPositiveNumber(band.replacementExVat) ??
-    toPositiveNumber(model.departmentReplacementExVat) ??
-    toPositiveNumber(model.replacementPriceExVat) ??
-    toPositiveNumber(model.aim4priceReplacementExVat) ??
-    0;
-
-  const depreciationPerHour =
-    toPositiveNumber(band.depreciationPerHourExVat) ??
-    toPositiveNumber(band.hourlyDepreciationExVat) ??
-    toPositiveNumber(band.hourlyDepreciation) ??
-    0;
-
-  const safeHours = Math.max(0, Number(hours) || 0);
-  const rawValue = replacementPrice - safeHours * depreciationPerHour;
-  const flooredValue = Math.max(rawValue, replacementPrice * FALLBACK_DEPARTMENT_FLOOR_PERCENT);
-
-  return {
-    value: roundMoney(flooredValue),
-    band,
-  };
-}
-
 function marketSnapshot(model: TractorCatalogRow, year: number, hours: number, sourceRows: MarketplaceListing[]) {
   const exactWithCab = sourceRows.filter((listing) => listing.cab === model.cab);
   const exactWithoutCab = exactWithCab.length ? exactWithCab : sourceRows;
@@ -403,6 +319,12 @@ function marketSnapshot(model: TractorCatalogRow, year: number, hours: number, s
     count: source.length,
     source,
   };
+}
+
+function getCoverageBand(marketCount: number): Result['coverageBand'] {
+  if (marketCount >= 5) return 'green';
+  if (marketCount >= 2) return 'amber';
+  return 'red';
 }
 
 function frontPtoValue(
@@ -492,32 +414,6 @@ async function fetchModel(modelId: string): Promise<DbTractorCatalogRow | null> 
   return row ? mapModelRow(row) : null;
 }
 
-async function fetchDepartmentBand(model: TractorCatalogRow): Promise<DepartmentAgBand | null> {
-  const db = getDb();
-  const result = await db.query<DepartmentBandDbRow>(
-    `
-      select
-        id,
-        tractor_type,
-        drive_type,
-        power_kw,
-        replacement_price_ex_vat,
-        depreciation_cost_per_hour_ex_vat,
-        source_name
-      from department_ag_bands
-      where coalesce(is_active, true) = true
-        and lower(trim(tractor_type)) = $1
-        and lower(replace(trim(drive_type), ' ', '')) = $2
-      order by abs(power_kw - $3), power_kw asc
-      limit 1
-    `,
-    [model.tractorType, model.drive, model.powerKw],
-  );
-
-  const row = result.rows[0];
-  return row ? mapDepartmentBandRow(row) : null;
-}
-
 async function fetchMarketListings(model: TractorCatalogRow): Promise<MarketplaceListing[]> {
   const db = getDb();
   const result = await db.query<MarketListingDbRow>(
@@ -563,14 +459,10 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
   const safeYear = Math.round(input.year);
   const safeHours = Math.max(0, Number(input.hours) || 0);
 
-  const [departmentBand, marketListings] = await Promise.all([
-    fetchDepartmentBand(model),
-    fetchMarketListings(model),
-  ]);
+  const marketListings = await fetchMarketListings(model);
 
   const baseAim4priceValueExVat = aim4BaseValue(model, safeYear, safeHours, input.condition);
   const baseMarket = marketSnapshot(model, safeYear, safeHours, marketListings);
-  const baseDepartment = deptValue(model, safeHours, departmentBand);
 
   const frontPtoValueExVat = frontPtoValue(model, safeYear, safeHours, input.condition, Boolean(input.frontPto));
   const frontLoaderValueExVat = loaderValue(model, safeYear, Boolean(input.frontLoader));
@@ -581,27 +473,9 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
   const marketLow = addExtras(baseMarket.low, extrasValueExVat);
   const marketHigh = addExtras(baseMarket.high, extrasValueExVat);
   const marketMid = addExtras(baseMarket.mid, extrasValueExVat);
-  const departmentValueExVat = addExtras(baseDepartment.value, extrasValueExVat);
 
-  const availableValues = [aim4priceValueExVat, marketMid, departmentValueExVat].filter(
-    (value): value is number => value !== null,
-  );
-
-  const coverageBand: Result['coverageBand'] =
-    availableValues.length >= 3 ? 'green' : availableValues.length === 2 ? 'amber' : 'red';
-
-  let previewValueExVat = marketMid;
-  let previewLabel: Result['previewLabel'] = 'Market average';
-
-  if (previewValueExVat === null && aim4priceValueExVat !== null) {
-    previewValueExVat = aim4priceValueExVat;
-    previewLabel = 'Aim4price Value';
-  }
-
-  if (previewValueExVat === null && departmentValueExVat !== null) {
-    previewValueExVat = departmentValueExVat;
-    previewLabel = 'Department Guideline';
-  }
+  const previewValueExVat = marketMid ?? aim4priceValueExVat;
+  const previewLabel: Result['previewLabel'] = marketMid !== null ? 'Market average' : 'Aim4price Value';
 
   return {
     model,
@@ -611,16 +485,13 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
     marketMid,
     marketCount: baseMarket.count,
     marketSources: baseMarket.source,
-    departmentValueExVat,
-    departmentBand: baseDepartment.band,
-    coverageBand,
+    coverageBand: getCoverageBand(baseMarket.count),
     previewValueExVat,
     previewLabel,
     baseAim4priceValueExVat,
     baseMarketLow: baseMarket.low,
     baseMarketHigh: baseMarket.high,
     baseMarketMid: baseMarket.mid,
-    baseDepartmentValueExVat: baseDepartment.value,
     extrasValueExVat,
     frontPtoValueExVat,
     frontLoaderValueExVat,

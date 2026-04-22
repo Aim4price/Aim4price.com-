@@ -28,7 +28,6 @@ export type AssetRegisterItem = {
   condition: AssetRegisterItemCondition;
   aim4priceValueExVat: number | null;
   marketMidExVat: number | null;
-  departmentValueExVat: number | null;
   note: string;
   serialNumber: string;
   isFinanced: boolean;
@@ -96,7 +95,6 @@ type AssetRegisterRow = {
   condition: string | null;
   aim4price_value_ex_vat: string | number | null;
   market_mid_ex_vat: string | number | null;
-  department_value_ex_vat: string | number | null;
   note: string | null;
   serial_number: string | null;
   is_financed: boolean | null;
@@ -196,10 +194,7 @@ function normalizeKind(value: unknown): AssetRegisterItemKind {
 function normalizeMethod(value: unknown): AssetRegisterItemMethod {
   const normalized = String(value ?? '').trim().toLowerCase();
 
-  return normalized === 'aim4price' ||
-    normalized === 'market' ||
-    normalized === 'department' ||
-    normalized === 'manual'
+  return normalized === 'aim4price' || normalized === 'market' || normalized === 'manual'
     ? normalized
     : 'manual';
 }
@@ -309,7 +304,6 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     condition: normalizeCondition(row.condition),
     aim4priceValueExVat: asNumber(row.aim4price_value_ex_vat),
     marketMidExVat: asNumber(row.market_mid_ex_vat),
-    departmentValueExVat: asNumber(row.department_value_ex_vat),
     note: asText(row.note),
     serialNumber: asText(row.serial_number),
     isFinanced: Boolean(row.is_financed),
@@ -431,12 +425,6 @@ function buildSelectList(schema: TableSchema): string {
   const conditionColumn = resolveColumn(schema, 'condition');
   const aim4priceColumn = resolveColumn(schema, 'aim4price_value_ex_vat', 'aim4price_value');
   const marketColumn = resolveColumn(schema, 'market_mid_ex_vat', 'market_value_ex_vat', 'market_value');
-  const departmentColumn = resolveColumn(
-    schema,
-    'department_value_ex_vat',
-    'department_value',
-    'dalrrd_value_ex_vat',
-  );
   const noteColumn = resolveColumn(schema, 'note', 'notes', 'description');
   const serialColumn = resolveColumn(schema, 'serial_number', 'serial', 'vin');
   const financedColumn = resolveColumn(schema, 'is_financed', 'financed');
@@ -476,7 +464,6 @@ function buildSelectList(schema: TableSchema): string {
     conditionColumn ? `${conditionColumn} as condition` : 'null::text as condition',
     aim4priceColumn ? `${aim4priceColumn} as aim4price_value_ex_vat` : 'null::numeric as aim4price_value_ex_vat',
     marketColumn ? `${marketColumn} as market_mid_ex_vat` : 'null::numeric as market_mid_ex_vat',
-    departmentColumn ? `${departmentColumn} as department_value_ex_vat` : 'null::numeric as department_value_ex_vat',
     noteColumn ? `${noteColumn} as note` : 'null::text as note',
     serialColumn ? `${serialColumn} as serial_number` : 'null::text as serial_number',
     financedColumn ? `${financedColumn} as is_financed` : 'false as is_financed',
@@ -791,6 +778,12 @@ function copySharedFieldsFromValuationRun(
     'photo_urls',
     'image_urls',
     'images',
+    'department_band_id',
+    'department_replacement_price_ex_vat',
+    'department_depreciation_cost_per_hour_ex_vat',
+    'department_value_ex_vat',
+    'department_value',
+    'dalrrd_value_ex_vat',
   ]);
 
   for (const [columnName, meta] of assetSchema.columns.entries()) {
@@ -1061,7 +1054,6 @@ export async function createAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['condition'], typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good');
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(valuationResult.marketMid));
-  pushField(fields, schema, ['department_value_ex_vat', 'department_value', 'dalrrd_value_ex_vat'], toRoundedNumber(valuationResult.departmentValueExVat));
   pushField(fields, schema, ['note', 'notes', 'description'], asText(input.note) || null);
   pushPhotoField(fields, schema, []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);

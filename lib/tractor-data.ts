@@ -2,8 +2,8 @@
 // Postgres-first shared types and lightweight constants.
 //
 // Important:
-// - This file no longer holds prototype tractor, department, or market seed data.
-// - Live machinery, bands, and listings must come from Postgres.
+// - This file no longer holds prototype tractor or market seed data.
+// - Live machinery and listings must come from Postgres.
 // - We keep the exported types and a few compatibility helpers so the rest of the
 //   codebase can be migrated step-by-step without breaking TypeScript imports.
 
@@ -44,31 +44,8 @@ export type TractorCatalogRow = {
   endYear: number;
   aim4priceReplacementExVat: number;
   replacementPriceExVat: number;
-  departmentReplacementExVat: number;
   imageSrc: string;
 };
-
-export type DepartmentAgBand = {
-  id: string;
-  label: string;
-  tractorType: TractorType;
-  minPowerKw: number;
-  maxPowerKw: number;
-  minKw: number;
-  maxKw: number;
-  powerKw: number;
-  drive: DriveType;
-  replacementPriceExVat: number;
-  replacementExVat: number;
-  hourlyDepreciationExVat: number;
-  hourlyDepreciation: number;
-  depreciationPerHourExVat: number;
-  salvageFloorPercent: number;
-  salvageFloorPct: number;
-  minimumValuePercent: number;
-};
-
-export type DepartmentBand = DepartmentAgBand;
 
 export type MarketplaceListing = {
   id: string;
@@ -109,14 +86,12 @@ export type EquipmentTypeOption = {
 export type CalculatedValuation = {
   selectedModel: TractorCatalogRow;
   selectedCondition: ConditionOption;
-  departmentBand: DepartmentBand;
   comparableListings: MarketplaceListing[];
   selectedComparable: MarketplaceListing | null;
   aim4priceValueExVat: number;
   marketRangeLowExVat: number;
   marketRangeHighExVat: number;
   marketAverageExVat: number;
-  dalrrdReferenceExVat: number;
   selectedValueExVat: number;
   confidence: 'high' | 'medium' | 'low';
 };
@@ -138,13 +113,8 @@ export const equipmentTypeOptions: EquipmentTypeOption[] = [
   { key: 'sprayer', label: 'Sprayer', imageSrc: '/brand/Valuations.png', active: false },
 ];
 
-// Postgres-first migration:
-// these are intentionally empty now.
-// Pages still depending on them will continue compiling, but they are no longer
-// the source of truth for live product data.
 export const brands: BrandRow[] = [];
 export const tractors: TractorCatalogRow[] = [];
-export const departmentBands: DepartmentBand[] = [];
 export const listings: MarketplaceListing[] = [];
 
 function slugify(value: string): string {
@@ -162,45 +132,6 @@ function titleCase(value: string): string {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join(' ');
-}
-
-function driveLabel(value: DriveType): string {
-  if (value === '2wd') return '2WD';
-  if (value === 'tracks') return 'Tracks';
-  return '4WD';
-}
-
-function createFallbackDepartmentBand(input: {
-  powerKw: number;
-  drive: DriveType;
-  tractorType: TractorType;
-}): DepartmentBand {
-  const safePowerKw = Number.isFinite(input.powerKw) && input.powerKw > 0 ? Math.round(input.powerKw) : 80;
-  const minKw = Math.max(1, safePowerKw - 10);
-  const maxKw = safePowerKw + 10;
-  const replacementExVat = 0;
-  const depreciationPerHourExVat = 0;
-  const tractorTypeLabel = input.tractorType === 'orchard' ? 'Orchard' : 'Field';
-
-  return {
-    id: `fallback-${input.tractorType}-${input.drive}-${safePowerKw}`,
-    label: `${tractorTypeLabel} tractors ${safePowerKw} kW • ${driveLabel(input.drive)}`,
-    tractorType: input.tractorType,
-    minPowerKw: minKw,
-    maxPowerKw: maxKw,
-    minKw,
-    maxKw,
-    powerKw: safePowerKw,
-    drive: input.drive,
-    replacementPriceExVat: replacementExVat,
-    replacementExVat,
-    hourlyDepreciationExVat: depreciationPerHourExVat,
-    hourlyDepreciation: depreciationPerHourExVat,
-    depreciationPerHourExVat,
-    salvageFloorPercent: 0.1,
-    salvageFloorPct: 0.1,
-    minimumValuePercent: 0.1,
-  };
 }
 
 export function getBrandBySlug(slug: string): BrandRow | undefined {
@@ -228,24 +159,6 @@ export function getModelById(id: string): TractorCatalogRow | undefined {
 
 export function getConditionByKey(key: ConditionKey): ConditionOption {
   return conditionOptions.find((option) => option.key === key) ?? conditionOptions[1] ?? conditionOptions[0];
-}
-
-export function findDepartmentBand(
-  powerKw: number,
-  drive: DriveType,
-  tractorType: TractorType,
-): DepartmentBand {
-  return (
-    departmentBands.find(
-      (band) =>
-        band.tractorType === tractorType &&
-        band.drive === drive &&
-        powerKw >= band.minKw &&
-        powerKw <= band.maxKw,
-    ) ??
-    departmentBands.find((band) => band.tractorType === tractorType && band.drive === drive) ??
-    createFallbackDepartmentBand({ powerKw, drive, tractorType })
-  );
 }
 
 export function getComparableListings(input: {
@@ -287,18 +200,11 @@ export function calculateValuation(input: {
   }
 
   const selectedCondition = getConditionByKey(input.conditionKey);
-  const departmentBand = findDepartmentBand(
-    selectedModel.powerKw,
-    selectedModel.drive,
-    selectedModel.tractorType,
-  );
-
   const comparableListings = getComparableListings({
     modelId: selectedModel.id,
     yearModel: input.yearModel,
     hours: input.hours,
   });
-
   const selectedComparable = comparableListings[0] ?? null;
 
   const age = Math.max(0, new Date().getFullYear() - input.yearModel);
@@ -316,14 +222,6 @@ export function calculateValuation(input: {
     ? Math.round(marketPrices.reduce((sum, value) => sum + value, 0) / marketPrices.length)
     : aim4priceValueExVat;
 
-  const dalrrdReferenceExVat = Math.max(
-    Math.round(
-      departmentBand.replacementExVat -
-        input.hours * departmentBand.depreciationPerHourExVat,
-    ),
-    Math.round(departmentBand.replacementExVat * departmentBand.salvageFloorPct),
-  );
-
   const selectedValueExVat = marketPrices.length ? marketAverageExVat : aim4priceValueExVat;
 
   const confidence: 'high' | 'medium' | 'low' =
@@ -332,20 +230,17 @@ export function calculateValuation(input: {
   return {
     selectedModel,
     selectedCondition,
-    departmentBand,
     comparableListings,
     selectedComparable,
     aim4priceValueExVat,
     marketRangeLowExVat,
     marketRangeHighExVat,
     marketAverageExVat,
-    dalrrdReferenceExVat,
     selectedValueExVat,
     confidence,
   };
 }
 
-// Optional small shared builders for future DB mappers.
 export function buildCatalogTitle(brandName: string, modelName: string): string {
   return `${brandName} ${modelName}`.trim();
 }
@@ -390,7 +285,6 @@ export function buildCatalogRow(input: {
     endYear: input.yearEnd,
     aim4priceReplacementExVat: input.replacementPriceExVat,
     replacementPriceExVat: input.replacementPriceExVat,
-    departmentReplacementExVat: input.replacementPriceExVat,
     imageSrc,
   };
 }
