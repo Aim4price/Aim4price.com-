@@ -65,7 +65,7 @@ function normalizeCondition(value: unknown): ConditionKey | null {
 function normalizeMethod(value: unknown): MethodKey | null {
   const normalized = String(value ?? '').trim().toLowerCase();
 
-  if (normalized === 'aim4price' || normalized === 'market' || normalized === 'department') {
+  if (normalized === 'aim4price' || normalized === 'market') {
     return normalized;
   }
 
