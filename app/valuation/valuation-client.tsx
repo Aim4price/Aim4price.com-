@@ -383,6 +383,7 @@ export default function ValuationClient() {
   const brandDropdownRef = useRef<HTMLDivElement | null>(null);
   const brandSearchInputRef = useRef<HTMLInputElement | null>(null);
   const yearDropdownRef = useRef<HTMLDivElement | null>(null);
+  const familyRailRef = useRef<HTMLDivElement | null>(null);
 
   const sortedBrands = useMemo(
     () => [...availableBrands].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
@@ -1203,6 +1204,21 @@ export default function ValuationClient() {
     setMessage('');
   }
 
+  function scrollFamilyRail(direction: 'prev' | 'next') {
+    const rail = familyRailRef.current;
+    if (!rail) return;
+
+    const firstCard = rail.querySelector<HTMLElement>('[data-family-card="true"]');
+    const gap = 14;
+    const fallbackAmount = Math.max(rail.clientWidth * 0.84, 260);
+    const amount = firstCard ? firstCard.offsetWidth + gap : fallbackAmount;
+
+    rail.scrollBy({
+      left: direction === 'next' ? amount : -amount,
+      behavior: 'smooth',
+    });
+  }
+
   function renderWizardBody() {
     if (step === 1) {
       return (
@@ -1279,49 +1295,70 @@ export default function ValuationClient() {
               Tractors stay live first. The remaining agricultural families are staged so the structure is ready for the next data build.
             </p>
 
-            <div className={styles.choiceGrid}>
-              {AGRICULTURAL_FAMILY_OPTIONS.map((family) => {
-                const active = selectedFamily === family.key;
-                const disabled = selectedSector !== 'agricultural' || !family.active;
+            <div className={styles.choiceRailShell}>
+              <button
+                type="button"
+                className={styles.choiceRailButton}
+                onClick={() => scrollFamilyRail('prev')}
+                aria-label="Show previous machinery families"
+              >
+                <span aria-hidden="true">‹</span>
+              </button>
 
-                return (
-                  <button
-                    key={family.key}
-                    type="button"
-                    className={`${styles.choiceCard} ${active ? styles.choiceCardActive : ''} ${
-                      disabled ? styles.choiceCardDisabled : ''
-                    }`}
-                    onClick={() => {
-                      const changed = selectedFamily !== family.key;
-                      setSelectedSector('agricultural');
-                      setSelectedFamily(family.key);
+              <div className={styles.choiceRail} ref={familyRailRef}>
+                {AGRICULTURAL_FAMILY_OPTIONS.map((family) => {
+                  const active = selectedFamily === family.key;
+                  const disabled = selectedSector !== 'agricultural' || !family.active;
 
-                      if (changed) {
-                        setSelectedType(family.key === 'tractors' ? 'tractor' : null);
-                        resetMachineFlowFromBrandDown();
-                      }
+                  return (
+                    <button
+                      key={family.key}
+                      type="button"
+                      data-family-card="true"
+                      className={`${styles.choiceCard} ${styles.choiceRailCard} ${active ? styles.choiceCardActive : ''} ${
+                        disabled ? styles.choiceCardDisabled : ''
+                      }`}
+                      onClick={() => {
+                        const changed = selectedFamily !== family.key;
+                        setSelectedSector('agricultural');
+                        setSelectedFamily(family.key);
 
-                      setMessage(
-                        family.active
-                          ? ''
-                          : `${family.label} is staged in the structure and will be activated after the first data import pass.`,
-                      );
-                    }}
-                    aria-pressed={active}
-                    disabled={disabled}
-                  >
-                    <span className={`${styles.choiceCardTag} ${family.active ? styles.choiceCardTagLive : styles.choiceCardTagSoon}`}>
-                      {family.note}
-                    </span>
-                    <strong>{family.label}</strong>
-                    <span className={styles.choiceCardNote}>
-                      {family.active
-                        ? 'Live valuation family for the current Aim4price flow.'
-                        : 'Structure created now. Live valuation to follow after model data is loaded.'}
-                    </span>
-                  </button>
-                );
-              })}
+                        if (changed) {
+                          setSelectedType(family.key === 'tractors' ? 'tractor' : null);
+                          resetMachineFlowFromBrandDown();
+                        }
+
+                        setMessage(
+                          family.active
+                            ? ''
+                            : `${family.label} is staged in the structure and will be activated after the first data import pass.`,
+                        );
+                      }}
+                      aria-pressed={active}
+                      disabled={disabled}
+                    >
+                      <span className={`${styles.choiceCardTag} ${family.active ? styles.choiceCardTagLive : styles.choiceCardTagSoon}`}>
+                        {family.note}
+                      </span>
+                      <strong>{family.label}</strong>
+                      <span className={styles.choiceCardNote}>
+                        {family.active
+                          ? 'Live valuation family for the current Aim4price flow.'
+                          : 'Structure created now. Live valuation to follow after model data is loaded.'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                className={styles.choiceRailButton}
+                onClick={() => scrollFamilyRail('next')}
+                aria-label="Show next machinery families"
+              >
+                <span aria-hidden="true">›</span>
+              </button>
             </div>
           </div>
         </div>
