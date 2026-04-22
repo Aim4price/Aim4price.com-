@@ -469,7 +469,7 @@ function methodLabel(value: AssetMethod): string {
 function kindLabel(value: AssetKind): string {
   return (
     {
-      tractor: 'Equipment',
+      tractor: 'Tractor',
       manual: 'Manual asset',
       property: 'Property',
     }[value] ?? 'Manual asset'
@@ -604,6 +604,23 @@ function assetPhotos(asset: RegisterAsset): string[] {
 
 function assetImage(asset: RegisterAsset): string {
   return assetPhotos(asset)[0] || FALLBACK_ASSET_IMAGE;
+}
+
+function assetPreviewImage(asset: RegisterAsset): string | null {
+  const photos = normalizePhotos(asset.photos);
+  return photos.length ? photos[0] : null;
+}
+
+function assetSectorLabel(asset: RegisterAsset): string {
+  if (isTractorAsset(asset)) return 'Agricultural';
+  if (asset.kind === 'property') return 'Property';
+  return 'Manual';
+}
+
+function assetFamilyLabel(asset: RegisterAsset): string {
+  if (isTractorAsset(asset)) return 'Tractor';
+  if (asset.kind === 'property') return 'Property';
+  return 'Manual asset';
 }
 
 function buildAssetMeta(asset: RegisterAsset): string {
@@ -832,7 +849,7 @@ export default function AssetRegisterClient() {
   const projectionRequestRef = useRef(0);
 
   function getDetailPhotos(asset: RegisterAsset): string[] {
-    return assetPhotos(asset);
+    return normalizePhotos(asset.photos);
   }
 
   function getDetailPhotoIndex(asset: RegisterAsset): number {
@@ -1837,7 +1854,7 @@ export default function AssetRegisterClient() {
               <>
                 <div className={styles.assetList}>
                   {visibleAssets.map((asset) => {
-                    const previewPhoto = assetImage(asset);
+                    const previewPhoto = assetPreviewImage(asset);
                     const isLive = isTractorAsset(asset) && hasMarketplaceListingForAsset(String(asset.id));
                     const isExpanded = expandedAssetId === asset.id;
 
@@ -1845,13 +1862,17 @@ export default function AssetRegisterClient() {
                       <article className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''}`} key={asset.id}>
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
+                            <div className={styles.badgeRow}>
+                              <span className={`${styles.badge} ${styles.badgeNeutral}`}>{assetSectorLabel(asset)}</span>
+                              <span className={`${styles.badge} ${styles.badgeNeutral}`}>{assetFamilyLabel(asset)}</span>
+                              {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
+                            </div>
                             <h2>{asset.title}</h2>
                             <p>{buildAssetMeta(asset)}</p>
                             <div className={styles.assetMetaRow}>
                               <span>{methodLabel(asset.selectedMethod)} value</span>
                               <span>{conditionLabel(asset.condition)}</span>
                               <span>{assetStatusDateLabel(asset)}</span>
-                              {isLive ? <span className={styles.assetLiveText}>Live on marketplace</span> : null}
                             </div>
                           </div>
 
@@ -1893,6 +1914,7 @@ export default function AssetRegisterClient() {
                               const detailPhotoIndex = getDetailPhotoIndex(asset);
                               const detailPhoto = detailPhotos[detailPhotoIndex] || previewPhoto;
                               const hasMultiplePhotos = detailPhotos.length > 1;
+                              const hasRealPhotos = detailPhotos.length > 0;
 
                               return (
                                 <>
@@ -1902,33 +1924,47 @@ export default function AssetRegisterClient() {
                                       onTouchStart={(event) => handleDetailPhotoTouchStart(event.changedTouches[0]?.clientX ?? 0)}
                                       onTouchEnd={(event) => handleDetailPhotoTouchEnd(asset, event.changedTouches[0]?.clientX ?? 0)}
                                     >
-                                      <img src={detailPhoto} alt={`${asset.title} photo ${detailPhotoIndex + 1}`} className={styles.previewImage} />
-
-                                      {hasMultiplePhotos ? (
+                                      {hasRealPhotos && detailPhoto ? (
                                         <>
-                                          <button
-                                            type="button"
-                                            className={`${styles.previewNavButton} ${styles.previewNavPrev}`}
-                                            onClick={() => cycleDetailPhoto(asset, -1)}
-                                            aria-label="Show previous photo"
-                                          >
-                                            <ChevronLeftIcon className={styles.buttonIcon} />
-                                          </button>
+                                          <img src={detailPhoto} alt={`${asset.title} photo ${detailPhotoIndex + 1}`} className={styles.previewImage} />
 
-                                          <button
-                                            type="button"
-                                            className={`${styles.previewNavButton} ${styles.previewNavNext}`}
-                                            onClick={() => cycleDetailPhoto(asset, 1)}
-                                            aria-label="Show next photo"
-                                          >
-                                            <ChevronRightIcon className={styles.buttonIcon} />
-                                          </button>
+                                          {hasMultiplePhotos ? (
+                                            <>
+                                              <button
+                                                type="button"
+                                                className={`${styles.previewNavButton} ${styles.previewNavPrev}`}
+                                                onClick={() => cycleDetailPhoto(asset, -1)}
+                                                aria-label="Show previous photo"
+                                              >
+                                                <ChevronLeftIcon className={styles.buttonIcon} />
+                                              </button>
 
-                                          <div className={styles.previewCounter}>
-                                            {detailPhotoIndex + 1} / {detailPhotos.length}
-                                          </div>
+                                              <button
+                                                type="button"
+                                                className={`${styles.previewNavButton} ${styles.previewNavNext}`}
+                                                onClick={() => cycleDetailPhoto(asset, 1)}
+                                                aria-label="Show next photo"
+                                              >
+                                                <ChevronRightIcon className={styles.buttonIcon} />
+                                              </button>
+
+                                              <div className={styles.previewCounter}>
+                                                {detailPhotoIndex + 1} / {detailPhotos.length}
+                                              </div>
+                                            </>
+                                          ) : null}
                                         </>
-                                      ) : null}
+                                      ) : (
+                                        <div className={styles.previewPlaceholder}>
+                                          <div className={styles.previewPlaceholderBadges}>
+                                            <span className={`${styles.badge} ${styles.badgeNeutral}`}>{assetSectorLabel(asset)}</span>
+                                            <span className={`${styles.badge} ${styles.badgeNeutral}`}>{assetFamilyLabel(asset)}</span>
+                                          </div>
+                                          <strong>{assetFamilyLabel(asset)}</strong>
+                                          <span>{asset.title}</span>
+                                          <small>{buildAssetMeta(asset)}</small>
+                                        </div>
+                                      )}
                                     </div>
 
                                     {hasMultiplePhotos ? (
