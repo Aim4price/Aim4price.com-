@@ -4849,3 +4849,70 @@
     padding: 0.9rem 0.95rem;
   }
 }
+
+
+/* Step 1 flow refinement */
+.slideTabComplete {
+  background: linear-gradient(180deg, rgba(232, 243, 237, 0.98) 0%, rgba(244, 250, 247, 0.99) 100%);
+  border-color: rgba(24, 77, 61, 0.16);
+  color: #1d4336;
+}
+
+.slideTabDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.slideTabDisabled:hover {
+  transform: none;
+  border-color: rgba(18, 45, 37, 0.09);
+  box-shadow: none;
+}
+
+.setupStageCard {
+  gap: 1.1rem;
+}
+
+.setupSelectionSummary {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background: linear-gradient(180deg, rgba(247, 250, 249, 0.96) 0%, rgba(241, 246, 243, 0.96) 100%);
+}
+
+.setupSelectionSummary .selectionChipRow {
+  margin: 0;
+}
+
+.carouselSummary {
+  align-items: flex-start;
+}
+
+.carouselSummaryText {
+  max-width: 42rem;
+}
+
+.carouselSummaryText strong {
+  color: #17392f;
+}
+
+.carouselSummaryText span:last-child {
+  line-height: 1.55;
+}
+
+.carouselCardCurrent .carouselCardNote {
+  color: #4c645c;
+}
+
+@media (max-width: 900px) {
+  .setupStageCard {
+    gap: 0.95rem;
+  }
+
+  .setupSelectionSummary {
+    padding: 0.9rem 0.95rem;
+  }
+}
