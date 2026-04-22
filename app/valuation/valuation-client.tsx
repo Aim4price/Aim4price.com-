@@ -32,6 +32,7 @@ type EquipmentType = 'tractor';
 type GpsType = 'full-autosteer' | 'guidance-only';
 type ConfigStepKey = 'type' | 'drive' | 'cab' | 'model';
 type DetailsStepKey = 'year' | 'hours' | 'condition' | 'extras';
+type SetupSlide = 'sector' | 'equipmentType';
 
 type MethodCard = {
   key: MethodKey;
@@ -100,7 +101,7 @@ const HERO_PILLS = ['Agricultural first', 'Aim4price + market value', 'Wording-f
 const HERO_GUIDE_ITEMS = [
   {
     title: 'Choose the machine',
-    text: 'Start with the sector and machine family, then continue to the brand and exact model.',
+    text: 'Start with the sector and equipment type, then continue to the brand and exact model.',
   },
   {
     title: 'Add the working details',
@@ -179,17 +180,22 @@ function getRangePercent(low: number | null, high: number | null, value: number 
   return Math.min(100, Math.max(0, percent));
 }
 
-function getStepMeta(step: Step) {
+function getStepMeta(step: Step, setupSlide: SetupSlide) {
   switch (step) {
     case 1:
-      return {
-        title: 'Sector & Family',
-        body: 'Start by choosing the sector and machine family you want to value.',
-      };
+      return setupSlide === 'sector'
+        ? {
+            title: 'Choose the Sector',
+            body: 'Move the cards left or right and keep the selected sector in the middle.',
+          }
+        : {
+            title: 'Choose the Equipment Type',
+            body: 'Move through the equipment types and keep the selected card in the middle.',
+          };
     case 2:
       return {
         title: 'Brand',
-        body: 'Choose the manufacturer linked to this machine family.',
+        body: 'Choose the manufacturer linked to this equipment type.',
       };
     case 3:
       return {
@@ -331,6 +337,9 @@ export default function ValuationClient() {
   const router = useRouter();
 
   const [step, setStep] = useState<Step>(1);
+  const [setupSlide, setSetupSlide] = useState<SetupSlide>('sector');
+  const [sectorCarouselIndex, setSectorCarouselIndex] = useState(0);
+  const [equipmentTypeCarouselIndex, setEquipmentTypeCarouselIndex] = useState(0);
   const [selectedSector, setSelectedSector] = useState<SectorKey | null>(null);
   const [selectedFamily, setSelectedFamily] = useState<EquipmentFamilyKey | null>(null);
   const [selectedType, setSelectedType] = useState<EquipmentType | null>(null);
@@ -375,7 +384,7 @@ export default function ValuationClient() {
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
 
   const freeGuestValuationsRemaining = Math.max(0, 3 - guestValuationCount);
-  const stepMeta = getStepMeta(step);
+  const stepMeta = getStepMeta(step, setupSlide);
   const heroAccessLabel = isSignedIn ? 'Account ready' : 'Guest access';
   const heroAccessText = isSignedIn
     ? 'Signed in valuations can be saved straight to your asset register.'
@@ -383,8 +392,8 @@ export default function ValuationClient() {
   const brandDropdownRef = useRef<HTMLDivElement | null>(null);
   const brandSearchInputRef = useRef<HTMLInputElement | null>(null);
   const yearDropdownRef = useRef<HTMLDivElement | null>(null);
-  const familyUnlockCardRef = useRef<HTMLDivElement | null>(null);
-  const lastUnlockedSectorRef = useRef<SectorKey | null>(null);
+  const sectorCardRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const equipmentTypeCardRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const sortedBrands = useMemo(
     () => [...availableBrands].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
@@ -756,16 +765,32 @@ export default function ValuationClient() {
   }, [brandDropdownOpen, yearDropdownOpen]);
 
   useEffect(() => {
-    const justUnlocked = step === 1 && selectedSector === 'agricultural' && lastUnlockedSectorRef.current !== 'agricultural';
+    if (step !== 1 || setupSlide !== 'sector') return;
 
-    if (justUnlocked) {
-      window.requestAnimationFrame(() => {
-        familyUnlockCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      });
-    }
+    const target = sectorCardRefs.current[sectorCarouselIndex];
+    if (!target) return;
 
-    lastUnlockedSectorRef.current = selectedSector;
-  }, [selectedSector, step]);
+    target.scrollIntoView({
+      behavior: 'smooth',
+      inline: 'center',
+      block: 'nearest',
+    });
+  }, [sectorCarouselIndex, setupSlide, step]);
+
+  useEffect(() => {
+    if (step !== 1 || setupSlide !== 'equipmentType') return;
+
+    const target = equipmentTypeCardRefs.current[equipmentTypeCarouselIndex];
+    if (!target) return;
+
+    target.scrollIntoView({
+      behavior: 'smooth',
+      inline: 'center',
+      block: 'nearest',
+    });
+  }, [equipmentTypeCarouselIndex, setupSlide, step]);
+
+
 
   const years = useMemo(
     () =>
@@ -778,12 +803,17 @@ export default function ValuationClient() {
     [selectedModel],
   );
 
+
+  const activeSectorOption = SECTOR_OPTIONS[sectorCarouselIndex] ?? SECTOR_OPTIONS[0];
+  const activeEquipmentTypeOption =
+    AGRICULTURAL_FAMILY_OPTIONS[equipmentTypeCarouselIndex] ?? AGRICULTURAL_FAMILY_OPTIONS[0];
+
   const selectedBrandName = useMemo(
     () => availableBrands.find((brand) => brand.slug === brandSlug)?.name ?? '—',
     [availableBrands, brandSlug],
   );
   const selectedSectorLabel = selectedSector ? SECTOR_LABELS[selectedSector] : 'Choose sector';
-  const selectedFamilyLabel = selectedFamily ? EQUIPMENT_FAMILY_META[selectedFamily].label : 'Choose family';
+  const selectedFamilyLabel = selectedFamily ? EQUIPMENT_FAMILY_META[selectedFamily].label : 'Choose equipment type';
 
   const filteredBrandOptions = useMemo(() => {
     const normalizedQuery = brandSearch.trim().toLowerCase();
@@ -957,7 +987,9 @@ export default function ValuationClient() {
   const nextLabel = valuationLoading
     ? 'Calculating...'
     : step === 1
-      ? 'Choose Brand'
+      ? setupSlide === 'sector'
+        ? 'Choose Equipment Type'
+        : 'Choose Brand'
       : step === 2
         ? 'Choose Model'
         : step === 3
@@ -966,6 +998,9 @@ export default function ValuationClient() {
 
   function resetWizard() {
     setStep(1);
+    setSetupSlide('sector');
+    setSectorCarouselIndex(0);
+    setEquipmentTypeCarouselIndex(0);
     setSelectedSector(null);
     setSelectedFamily(null);
     setSelectedType(null);
@@ -995,15 +1030,63 @@ export default function ValuationClient() {
     setMessage('');
 
     if (step === 1) {
+      if (setupSlide === 'equipmentType') {
+        setSetupSlide('sector');
+        return;
+      }
+
       router.push('/');
       return;
     }
 
-    setStep(previousStep(step));
+    const previous = previousStep(step);
+    if (previous === 1) {
+      setSetupSlide('equipmentType');
+    }
+
+    setStep(previous);
   }
 
   async function handleNext() {
     setMessage('');
+
+    if (step === 1) {
+      if (setupSlide === 'sector') {
+        if (!activeSectorOption.active) {
+          setMessage(`${activeSectorOption.label} will open in a later Aim4price pass.`);
+          return;
+        }
+
+        const changed = selectedSector !== activeSectorOption.key;
+        setSelectedSector(activeSectorOption.key);
+
+        if (changed) {
+          setSelectedFamily(null);
+          setSelectedType(null);
+          resetMachineFlowFromBrandDown();
+        }
+
+        setSetupSlide('equipmentType');
+        return;
+      }
+
+      if (!activeEquipmentTypeOption.active) {
+        setMessage(`${activeEquipmentTypeOption.label} is staged and will open after the next data import pass.`);
+        return;
+      }
+
+      const changed = selectedFamily !== activeEquipmentTypeOption.key || selectedSector !== 'agricultural';
+      setSelectedSector('agricultural');
+      setSelectedFamily(activeEquipmentTypeOption.key);
+      setSelectedType(activeEquipmentTypeOption.key === 'tractors' ? 'tractor' : null);
+
+      if (changed) {
+        resetMachineFlowFromBrandDown();
+      }
+
+      setStep(2);
+      return;
+    }
 
     if (step === 3 && !selectedModel) {
       setMessage('Choose a model first.');
@@ -1219,144 +1302,247 @@ export default function ValuationClient() {
 
   function renderWizardBody() {
     if (step === 1) {
-      const familyStepUnlocked = selectedSector === 'agricultural';
+      const setupStageNumber = setupSlide === 'sector' ? 1 : 2;
+      const canMoveSectorPrev = sectorCarouselIndex > 0;
+      const canMoveSectorNext = sectorCarouselIndex < SECTOR_OPTIONS.length - 1;
+      const canMoveEquipmentTypePrev = equipmentTypeCarouselIndex > 0;
+      const canMoveEquipmentTypeNext = equipmentTypeCarouselIndex < AGRICULTURAL_FAMILY_OPTIONS.length - 1;
 
       return (
-        <div className={styles.flowShell}>
-          <div className={styles.currentCard}>
-            <div className={styles.currentCardHead}>
-              <div>
-                <span className={styles.currentEyebrow}>Step 1</span>
-                <h2 className={styles.currentTitle}>Choose the sector</h2>
-              </div>
-              <span className={styles.currentIndex}>1 / 2</span>
-            </div>
+        <div className={styles.slideDeck}>
+          <div className={styles.slideTabs}>
+            <button
+              type="button"
+              className={`${styles.slideTab} ${setupSlide === 'sector' ? styles.slideTabActive : ''}`}
+              onClick={() => {
+                setSetupSlide('sector');
+                setMessage('');
+              }}
+            >
+              <span className={styles.slideTabStep}>1</span>
+              <span className={styles.slideTabLabel}>Sector</span>
+            </button>
 
-            <p className={styles.currentHint}>
-              Aim4price is expanding into Agricultural, Industrial, and Construction machinery. Agricultural is live now.
-            </p>
-
-            <div className={styles.choiceGrid}>
-              {SECTOR_OPTIONS.map((sector) => {
-                const active = selectedSector === sector.key;
-                const disabled = !sector.active;
-
-                return (
-                  <button
-                    key={sector.key}
-                    type="button"
-                    className={`${styles.choiceCard} ${active ? styles.choiceCardActive : ''} ${
-                      disabled ? styles.choiceCardDisabled : ''
-                    }`}
-                    onClick={() => {
-                      const changed = selectedSector !== sector.key;
-                      setSelectedSector(sector.key);
-
-                      if (changed) {
-                        setSelectedFamily(null);
-                        setSelectedType(null);
-                        resetMachineFlowFromBrandDown();
-                      }
-
-                      setMessage(disabled ? `${sector.label} will open in a later Aim4price pass.` : '');
-                    }}
-                    aria-pressed={active}
-                    disabled={disabled}
-                  >
-                    <span className={`${styles.choiceCardTag} ${disabled ? styles.choiceCardTagSoon : styles.choiceCardTagLive}`}>
-                      {sector.note}
-                    </span>
-                    <strong>{sector.label}</strong>
-                    <span className={styles.choiceCardNote}>
-                      {sector.key === 'agricultural'
-                        ? 'Start with farm machinery families and exact model matching.'
-                        : 'Planned next after Agricultural is fully structured.'}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <button
+              type="button"
+              className={`${styles.slideTab} ${setupSlide === 'equipmentType' ? styles.slideTabActive : ''}`}
+              onClick={() => {
+                if (selectedSector === 'agricultural' || activeSectorOption.key === 'agricultural') {
+                  setSetupSlide('equipmentType');
+                  setMessage('');
+                }
+              }}
+            >
+              <span className={styles.slideTabStep}>2</span>
+              <span className={styles.slideTabLabel}>Equipment Type</span>
+            </button>
           </div>
 
-          <div
-            ref={familyUnlockCardRef}
-            className={`${styles.currentCard} ${!familyStepUnlocked ? styles.currentCardLocked : ''} ${
-              familyStepUnlocked ? styles.currentCardUnlocked : ''
-            }`}
-          >
-            <div className={styles.currentCardHead}>
-              <div>
-                <span className={styles.currentEyebrow}>Step 1</span>
-                <h2 className={styles.currentTitle}>Choose the family</h2>
-              </div>
-              <span className={`${styles.currentIndex} ${!familyStepUnlocked ? styles.currentIndexLocked : ''}`}>2 / 2</span>
-            </div>
+          <div className={styles.slideViewport}>
+            <div className={`${styles.slideTrack} ${setupSlide === 'equipmentType' ? styles.slideTrackShifted : ''}`}>
+              <section className={styles.slidePane}>
+                <article className={styles.currentCard}>
+                  <div className={styles.currentCardHead}>
+                    <div>
+                      <span className={styles.currentEyebrow}>Step 1</span>
+                      <h2 className={styles.currentTitle}>Choose 1 of 3 sectors</h2>
+                    </div>
+                    <span className={styles.currentIndex}>{setupStageNumber} / 2</span>
+                  </div>
 
-            <div className={styles.selectionChipRow} style={{ marginBottom: '0.95rem' }}>
-              <span className={`${styles.modelChip} ${!familyStepUnlocked ? styles.modelChipMuted : ''}`}>
-                {familyStepUnlocked ? selectedSectorLabel : 'Select Agricultural first'}
-              </span>
-            </div>
+                  <p className={styles.currentHint}>
+                    Use the arrows to move the cards. The selected sector always stays in the middle.
+                  </p>
 
-            <p className={styles.currentHint}>
-              {familyStepUnlocked
-                ? 'Tractors stay live first. The remaining agricultural families are staged so the structure is ready for the next data build.'
-                : 'Pick the live sector above and this family step unlocks immediately.'}
-            </p>
+                  <div className={styles.carouselShell}>
+                    <button
+                      type="button"
+                      className={styles.carouselArrow}
+                      onClick={() => {
+                        setSectorCarouselIndex((current) => Math.max(0, current - 1));
+                        setMessage('');
+                      }}
+                      disabled={!canMoveSectorPrev}
+                      aria-label="Show previous sector"
+                    >
+                      ‹
+                    </button>
 
-            {!familyStepUnlocked ? (
-              <div className={styles.lockedFamilyCallout}>
-                <span className={styles.lockedFamilyBadge}>1</span>
-                <div>
-                  <strong>Choose Agricultural above</strong>
-                  <span>Once selected, this section opens and the next click is Tractor.</span>
-                </div>
-              </div>
-            ) : null}
+                    <div className={styles.carouselViewportRail}>
+                      <div className={styles.carouselRail}>
+                        {SECTOR_OPTIONS.map((sector, index) => {
+                          const isCurrent = index === sectorCarouselIndex;
 
-            <div className={`${styles.choiceGrid} ${!familyStepUnlocked ? styles.choiceGridLocked : ''}`}>
-              {AGRICULTURAL_FAMILY_OPTIONS.map((family) => {
-                const active = selectedFamily === family.key;
-                const disabled = !familyStepUnlocked || !family.active;
+                          return (
+                            <button
+                              key={sector.key}
+                              type="button"
+                              ref={(node) => {
+                                sectorCardRefs.current[index] = node;
+                              }}
+                              className={`${styles.carouselCard} ${isCurrent ? styles.carouselCardCurrent : ''} ${
+                                !sector.active ? styles.carouselCardDisabled : ''
+                              }`}
+                              onClick={() => {
+                                setSectorCarouselIndex(index);
+                                setMessage('');
+                              }}
+                              aria-pressed={isCurrent}
+                            >
+                              <span className={`${styles.choiceCardTag} ${sector.active ? styles.choiceCardTagLive : styles.choiceCardTagSoon}`}>
+                                {sector.note}
+                              </span>
+                              <strong>{sector.label}</strong>
+                              <span className={styles.carouselCardNote}>
+                                {sector.key === 'agricultural'
+                                  ? 'Farm machinery starts here and is live now.'
+                                  : 'Structured next, after Agricultural is fully built out.'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                return (
-                  <button
-                    key={family.key}
-                    type="button"
-                    className={`${styles.choiceCard} ${active ? styles.choiceCardActive : ''} ${
-                      disabled ? styles.choiceCardDisabled : ''
-                    } ${!familyStepUnlocked ? styles.choiceCardSoftLocked : ''}`}
-                    onClick={() => {
-                      const changed = selectedFamily !== family.key;
-                      setSelectedSector('agricultural');
-                      setSelectedFamily(family.key);
+                    <button
+                      type="button"
+                      className={styles.carouselArrow}
+                      onClick={() => {
+                        setSectorCarouselIndex((current) => Math.min(SECTOR_OPTIONS.length - 1, current + 1));
+                        setMessage('');
+                      }}
+                      disabled={!canMoveSectorNext}
+                      aria-label="Show next sector"
+                    >
+                      ›
+                    </button>
+                  </div>
 
-                      if (changed) {
-                        setSelectedType(family.key === 'tractors' ? 'tractor' : null);
-                        resetMachineFlowFromBrandDown();
-                      }
+                  <div className={styles.carouselSummary}>
+                    <div className={styles.carouselSummaryText}>
+                      <span className={styles.carouselSummaryLabel}>Selected sector</span>
+                      <strong>{activeSectorOption.label}</strong>
+                      <span>
+                        {activeSectorOption.active
+                          ? 'Click continue to move to equipment type.'
+                          : 'This sector is staged for a later Aim4price release.'}
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              </section>
 
-                      setMessage(
-                        family.active
-                          ? ''
-                          : `${family.label} is staged in the structure and will be activated after the first data import pass.`,
-                      );
-                    }}
-                    aria-pressed={active}
-                    disabled={disabled}
-                  >
-                    <span className={`${styles.choiceCardTag} ${family.active ? styles.choiceCardTagLive : styles.choiceCardTagSoon}`}>
-                      {family.note}
-                    </span>
-                    <strong>{family.label}</strong>
-                    <span className={styles.choiceCardNote}>
-                      {family.active
-                        ? 'Live valuation family for the current Aim4price flow.'
-                        : 'Structure created now. Live valuation to follow after model data is loaded.'}
-                    </span>
-                  </button>
-                );
-              })}
+              <section className={styles.slidePane}>
+                <article className={styles.currentCard}>
+                  <div className={styles.currentCardHead}>
+                    <div>
+                      <span className={styles.currentEyebrow}>Step 1</span>
+                      <h2 className={styles.currentTitle}>Choose the equipment type</h2>
+                    </div>
+                    <span className={styles.currentIndex}>{setupStageNumber} / 2</span>
+                  </div>
+
+                  <div className={styles.slideMetaRow}>
+                    <span className={styles.modelChip}>{selectedSector === 'agricultural' ? selectedSectorLabel : 'Agricultural'}</span>
+                    <button
+                      type="button"
+                      className={styles.slideMetaAction}
+                      onClick={() => {
+                        setSetupSlide('sector');
+                        setMessage('');
+                      }}
+                    >
+                      Change sector
+                    </button>
+                  </div>
+
+                  <p className={styles.currentHint}>
+                    Keep the chosen equipment type in the middle. Tractors are live now. The rest are staged for the next data build.
+                  </p>
+
+                  <div className={styles.carouselShell}>
+                    <button
+                      type="button"
+                      className={styles.carouselArrow}
+                      onClick={() => {
+                        setEquipmentTypeCarouselIndex((current) => Math.max(0, current - 1));
+                        setMessage('');
+                      }}
+                      disabled={!canMoveEquipmentTypePrev}
+                      aria-label="Show previous equipment type"
+                    >
+                      ‹
+                    </button>
+
+                    <div className={styles.carouselViewportRail}>
+                      <div className={styles.carouselRail}>
+                        {AGRICULTURAL_FAMILY_OPTIONS.map((equipmentType, index) => {
+                          const isCurrent = index === equipmentTypeCarouselIndex;
+
+                          return (
+                            <button
+                              key={equipmentType.key}
+                              type="button"
+                              ref={(node) => {
+                                equipmentTypeCardRefs.current[index] = node;
+                              }}
+                              className={`${styles.carouselCard} ${isCurrent ? styles.carouselCardCurrent : ''} ${
+                                !equipmentType.active ? styles.carouselCardDisabled : ''
+                              }`}
+                              onClick={() => {
+                                setEquipmentTypeCarouselIndex(index);
+                                setMessage('');
+                              }}
+                              aria-pressed={isCurrent}
+                            >
+                              <span
+                                className={`${styles.choiceCardTag} ${
+                                  equipmentType.active ? styles.choiceCardTagLive : styles.choiceCardTagSoon
+                                }`}
+                              >
+                                {equipmentType.note}
+                              </span>
+                              <strong>{equipmentType.label}</strong>
+                              <span className={styles.carouselCardNote}>
+                                {equipmentType.active
+                                  ? 'Live first in the current Aim4price valuation flow.'
+                                  : 'Ready in the structure. Live valuation follows after model data is loaded.'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className={styles.carouselArrow}
+                      onClick={() => {
+                        setEquipmentTypeCarouselIndex((current) =>
+                          Math.min(AGRICULTURAL_FAMILY_OPTIONS.length - 1, current + 1),
+                        );
+                        setMessage('');
+                      }}
+                      disabled={!canMoveEquipmentTypeNext}
+                      aria-label="Show next equipment type"
+                    >
+                      ›
+                    </button>
+                  </div>
+
+                  <div className={styles.carouselSummary}>
+                    <div className={styles.carouselSummaryText}>
+                      <span className={styles.carouselSummaryLabel}>Selected equipment type</span>
+                      <strong>{activeEquipmentTypeOption.label}</strong>
+                      <span>
+                        {activeEquipmentTypeOption.active
+                          ? 'Click continue to move to brands.'
+                          : 'This equipment type is staged and will open after the first import pass.'}
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              </section>
             </div>
           </div>
         </div>
@@ -2485,7 +2671,7 @@ export default function ValuationClient() {
 
                   <div className={styles.wizardFooter}>
                     <button type="button" className={styles.secondaryButton} onClick={handleBack}>
-                      {step === 1 ? 'Back Home' : 'Back'}
+                      {step === 1 && setupSlide === 'sector' ? 'Back Home' : 'Back'}
                     </button>
 
                     <button
