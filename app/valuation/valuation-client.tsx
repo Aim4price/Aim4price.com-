@@ -2528,7 +2528,7 @@ export default function ValuationClient() {
 
                   <div className={styles.marketListingsBlock}>
                     <div className={styles.marketListingsHead}>
-                      <h3 className={styles.marketListingsTitle}>Proveable Market Listings</h3>
+                      <h3 className={styles.marketListingsTitle}>Provable Market Listings</h3>
                       {comparableListings.length ? (
                         <span className={styles.marketListingsCount}>
                           {safeComparableIndex + 1} / {comparableListings.length}
