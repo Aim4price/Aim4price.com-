@@ -13,7 +13,7 @@ import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
 type AssetKind = 'tractor' | 'manual' | 'property';
-type AssetMethod = 'aim4price' | 'market' | 'department' | 'manual';
+type AssetMethod = 'aim4price' | 'market' | 'manual';
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
 type ExportFormat = 'pdf' | 'xlsx';
@@ -38,7 +38,6 @@ type RegisterAsset = {
   condition: AssetConditionValue;
   aim4priceValueExVat: number | null;
   marketMidExVat: number | null;
-  departmentValueExVat: number | null;
   note: string;
   serialNumber: string;
   isFinanced: boolean;
@@ -462,7 +461,6 @@ function methodLabel(value: AssetMethod): string {
     {
       aim4price: 'Aim4price',
       market: 'Market',
-      department: 'DALRRD',
       manual: 'Manual',
     }[value] ?? 'Manual'
   );
@@ -576,7 +574,6 @@ function buildSavedItemFromAsset(asset: RegisterAsset) {
     hours: asset.hours ?? undefined,
     aim4priceValueExVat: asset.aim4priceValueExVat,
     marketMidExVat: asset.marketMidExVat,
-    departmentValueExVat: asset.departmentValueExVat,
     note: asset.note || undefined,
     createdAtIso: asset.createdAtIso,
     updatedAtIso: asset.updatedAtIso,
@@ -747,15 +744,6 @@ function buildAssetSheetMethodCards(asset: RegisterAsset): ReportMethodCard[] {
       value: money(asset.marketMidExVat),
       note: 'Saved market midpoint.',
       selected: asset.selectedMethod === 'market',
-    });
-  }
-
-  if (asset.departmentValueExVat !== null) {
-    cards.push({
-      label: 'DALRRD',
-      value: money(asset.departmentValueExVat),
-      note: 'Reference guide value.',
-      selected: asset.selectedMethod === 'department',
     });
   }
 
