@@ -20,7 +20,7 @@ import { getGuestValuationCount, incrementGuestValuationCount } from '../../lib/
 import { openValuationReportPrint } from '../../lib/report-print';
 
 type Step = 1 | 2 | 3 | 4 | 5;
-type MethodKey = 'aim4price' | 'market' | 'department';
+type MethodKey = 'aim4price' | 'market';
 type EquipmentType = 'tractor';
 type GpsType = 'full-autosteer' | 'guidance-only';
 type ConfigStepKey = 'type' | 'drive' | 'cab' | 'model';
@@ -88,7 +88,7 @@ const DETAILS_STEPS: Array<{ key: DetailsStepKey; label: string }> = [
   { key: 'extras', label: 'Extras' },
 ];
 
-const HERO_PILLS = ['5 guided steps', 'Aim4price + market + reference', 'Clean, simple flow'];
+const HERO_PILLS = ['5 guided steps', 'Aim4price + market value', 'Clean, simple flow'];
 
 const HERO_GUIDE_ITEMS = [
   {
@@ -101,7 +101,7 @@ const HERO_GUIDE_ITEMS = [
   },
   {
     title: 'Review the value output',
-    text: 'Compare Aim4price, market, and reference values in one place.',
+    text: 'Compare Aim4price and market values in one place.',
   },
 ] as const;
 
@@ -114,15 +114,13 @@ function previousStep(step: Step): Step {
 }
 
 function getMethodValue(result: Result, method: MethodKey): number | null {
-  if (method === 'aim4price') return result.aim4priceValueExVat;
   if (method === 'market') return result.marketMid;
-  return result.departmentValueExVat;
+  return result.aim4priceValueExVat;
 }
 
 function getMethodLabel(method: MethodKey): string {
-  if (method === 'aim4price') return 'Aim4price Value';
   if (method === 'market') return 'Estimated Market Value';
-  return 'DALRRD Reference';
+  return 'Aim4price Value';
 }
 
 function getMethodDisplay(result: Result, method: MethodKey): string {
@@ -746,13 +744,6 @@ export default function ValuationClient() {
         value: result.marketMid,
         available: result.marketMid !== null,
       },
-      {
-        key: 'department',
-        label: 'DALRRD Reference',
-        note: 'Guide reference based on kW band and drive type.',
-        value: result.departmentValueExVat,
-        available: result.departmentValueExVat !== null,
-      },
     ];
   }, [result]);
 
@@ -993,12 +984,7 @@ export default function ValuationClient() {
           setGuestValuationCount(nextCount);
         }
 
-        const defaultMethod: MethodKey =
-          nextResult.marketMid !== null
-            ? 'market'
-            : nextResult.aim4priceValueExVat !== null
-              ? 'aim4price'
-              : 'department';
+        const defaultMethod: MethodKey = nextResult.marketMid !== null ? 'market' : 'aim4price';
 
         setSelectedMethod(defaultMethod);
         setStep(5);
