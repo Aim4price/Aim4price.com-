@@ -1961,8 +1961,6 @@ export default function AssetRegisterClient() {
                                             <span className={`${styles.badge} ${styles.badgeNeutral}`}>{assetFamilyLabel(asset)}</span>
                                           </div>
                                           <strong>{assetFamilyLabel(asset)}</strong>
-                                          <span>{asset.title}</span>
-                                          <small>{buildAssetMeta(asset)}</small>
                                         </div>
                                       )}
                                     </div>
