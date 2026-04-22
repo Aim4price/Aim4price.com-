@@ -1546,30 +1546,23 @@
   min-height: 232px;
   display: grid;
   align-content: center;
+  justify-items: center;
   gap: 0.68rem;
   padding: 1.35rem;
   background: linear-gradient(180deg, rgba(249, 252, 253, 0.98) 0%, rgba(236, 242, 246, 0.98) 100%);
   color: var(--text);
 }
 
-.previewPlaceholder strong {
-  font-size: 1.12rem;
-  line-height: 1.12;
-}
-
-.previewPlaceholder span {
-  color: var(--text);
-  font-weight: 700;
-  line-height: 1.45;
-}
-
-.previewPlaceholder small {
-  color: var(--text-muted);
-  line-height: 1.55;
-}
-
 .previewPlaceholderBadges {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.45rem;
+}
+
+.previewPlaceholderBadge {
+  min-height: 2.35rem;
+  padding: 0 1rem;
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
 }
