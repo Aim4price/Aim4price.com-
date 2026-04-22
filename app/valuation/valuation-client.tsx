@@ -383,7 +383,8 @@ export default function ValuationClient() {
   const brandDropdownRef = useRef<HTMLDivElement | null>(null);
   const brandSearchInputRef = useRef<HTMLInputElement | null>(null);
   const yearDropdownRef = useRef<HTMLDivElement | null>(null);
-  const familyRailRef = useRef<HTMLDivElement | null>(null);
+  const familyUnlockCardRef = useRef<HTMLDivElement | null>(null);
+  const lastUnlockedSectorRef = useRef<SectorKey | null>(null);
 
   const sortedBrands = useMemo(
     () => [...availableBrands].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
@@ -753,6 +754,18 @@ export default function ValuationClient() {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [brandDropdownOpen, yearDropdownOpen]);
+
+  useEffect(() => {
+    const justUnlocked = step === 1 && selectedSector === 'agricultural' && lastUnlockedSectorRef.current !== 'agricultural';
+
+    if (justUnlocked) {
+      window.requestAnimationFrame(() => {
+        familyUnlockCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    }
+
+    lastUnlockedSectorRef.current = selectedSector;
+  }, [selectedSector, step]);
 
   const years = useMemo(
     () =>
@@ -1204,23 +1217,10 @@ export default function ValuationClient() {
     setMessage('');
   }
 
-  function scrollFamilyRail(direction: 'prev' | 'next') {
-    const rail = familyRailRef.current;
-    if (!rail) return;
-
-    const firstCard = rail.querySelector<HTMLElement>('[data-family-card="true"]');
-    const gap = 14;
-    const fallbackAmount = Math.max(rail.clientWidth * 0.84, 260);
-    const amount = firstCard ? firstCard.offsetWidth + gap : fallbackAmount;
-
-    rail.scrollBy({
-      left: direction === 'next' ? amount : -amount,
-      behavior: 'smooth',
-    });
-  }
-
   function renderWizardBody() {
     if (step === 1) {
+      const familyStepUnlocked = selectedSector === 'agricultural';
+
       return (
         <div className={styles.flowShell}>
           <div className={styles.currentCard}>
@@ -1278,87 +1278,85 @@ export default function ValuationClient() {
             </div>
           </div>
 
-          <div className={styles.currentCard}>
+          <div
+            ref={familyUnlockCardRef}
+            className={`${styles.currentCard} ${!familyStepUnlocked ? styles.currentCardLocked : ''} ${
+              familyStepUnlocked ? styles.currentCardUnlocked : ''
+            }`}
+          >
             <div className={styles.currentCardHead}>
               <div>
                 <span className={styles.currentEyebrow}>Step 1</span>
                 <h2 className={styles.currentTitle}>Choose the family</h2>
               </div>
-              <span className={styles.currentIndex}>2 / 2</span>
+              <span className={`${styles.currentIndex} ${!familyStepUnlocked ? styles.currentIndexLocked : ''}`}>2 / 2</span>
             </div>
 
             <div className={styles.selectionChipRow} style={{ marginBottom: '0.95rem' }}>
-              <span className={styles.modelChip}>{selectedSectorLabel}</span>
+              <span className={`${styles.modelChip} ${!familyStepUnlocked ? styles.modelChipMuted : ''}`}>
+                {familyStepUnlocked ? selectedSectorLabel : 'Select Agricultural first'}
+              </span>
             </div>
 
             <p className={styles.currentHint}>
-              Tractors stay live first. The remaining agricultural families are staged so the structure is ready for the next data build.
+              {familyStepUnlocked
+                ? 'Tractors stay live first. The remaining agricultural families are staged so the structure is ready for the next data build.'
+                : 'Pick the live sector above and this family step unlocks immediately.'}
             </p>
 
-            <div className={styles.choiceRailShell}>
-              <button
-                type="button"
-                className={styles.choiceRailButton}
-                onClick={() => scrollFamilyRail('prev')}
-                aria-label="Show previous machinery families"
-              >
-                <span aria-hidden="true">‹</span>
-              </button>
-
-              <div className={styles.choiceRail} ref={familyRailRef}>
-                {AGRICULTURAL_FAMILY_OPTIONS.map((family) => {
-                  const active = selectedFamily === family.key;
-                  const disabled = selectedSector !== 'agricultural' || !family.active;
-
-                  return (
-                    <button
-                      key={family.key}
-                      type="button"
-                      data-family-card="true"
-                      className={`${styles.choiceCard} ${styles.choiceRailCard} ${active ? styles.choiceCardActive : ''} ${
-                        disabled ? styles.choiceCardDisabled : ''
-                      }`}
-                      onClick={() => {
-                        const changed = selectedFamily !== family.key;
-                        setSelectedSector('agricultural');
-                        setSelectedFamily(family.key);
-
-                        if (changed) {
-                          setSelectedType(family.key === 'tractors' ? 'tractor' : null);
-                          resetMachineFlowFromBrandDown();
-                        }
-
-                        setMessage(
-                          family.active
-                            ? ''
-                            : `${family.label} is staged in the structure and will be activated after the first data import pass.`,
-                        );
-                      }}
-                      aria-pressed={active}
-                      disabled={disabled}
-                    >
-                      <span className={`${styles.choiceCardTag} ${family.active ? styles.choiceCardTagLive : styles.choiceCardTagSoon}`}>
-                        {family.note}
-                      </span>
-                      <strong>{family.label}</strong>
-                      <span className={styles.choiceCardNote}>
-                        {family.active
-                          ? 'Live valuation family for the current Aim4price flow.'
-                          : 'Structure created now. Live valuation to follow after model data is loaded.'}
-                      </span>
-                    </button>
-                  );
-                })}
+            {!familyStepUnlocked ? (
+              <div className={styles.lockedFamilyCallout}>
+                <span className={styles.lockedFamilyBadge}>1</span>
+                <div>
+                  <strong>Choose Agricultural above</strong>
+                  <span>Once selected, this section opens and the next click is Tractor.</span>
+                </div>
               </div>
+            ) : null}
 
-              <button
-                type="button"
-                className={styles.choiceRailButton}
-                onClick={() => scrollFamilyRail('next')}
-                aria-label="Show next machinery families"
-              >
-                <span aria-hidden="true">›</span>
-              </button>
+            <div className={`${styles.choiceGrid} ${!familyStepUnlocked ? styles.choiceGridLocked : ''}`}>
+              {AGRICULTURAL_FAMILY_OPTIONS.map((family) => {
+                const active = selectedFamily === family.key;
+                const disabled = !familyStepUnlocked || !family.active;
+
+                return (
+                  <button
+                    key={family.key}
+                    type="button"
+                    className={`${styles.choiceCard} ${active ? styles.choiceCardActive : ''} ${
+                      disabled ? styles.choiceCardDisabled : ''
+                    } ${!familyStepUnlocked ? styles.choiceCardSoftLocked : ''}`}
+                    onClick={() => {
+                      const changed = selectedFamily !== family.key;
+                      setSelectedSector('agricultural');
+                      setSelectedFamily(family.key);
+
+                      if (changed) {
+                        setSelectedType(family.key === 'tractors' ? 'tractor' : null);
+                        resetMachineFlowFromBrandDown();
+                      }
+
+                      setMessage(
+                        family.active
+                          ? ''
+                          : `${family.label} is staged in the structure and will be activated after the first data import pass.`,
+                      );
+                    }}
+                    aria-pressed={active}
+                    disabled={disabled}
+                  >
+                    <span className={`${styles.choiceCardTag} ${family.active ? styles.choiceCardTagLive : styles.choiceCardTagSoon}`}>
+                      {family.note}
+                    </span>
+                    <strong>{family.label}</strong>
+                    <span className={styles.choiceCardNote}>
+                      {family.active
+                        ? 'Live valuation family for the current Aim4price flow.'
+                        : 'Structure created now. Live valuation to follow after model data is loaded.'}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
