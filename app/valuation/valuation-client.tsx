@@ -15,6 +15,13 @@ import {
   type TractorCatalogRow,
   type TractorType,
 } from '../../lib/tractor-data';
+import {
+  AGRICULTURAL_FAMILY_ORDER,
+  EQUIPMENT_FAMILY_META,
+  SECTOR_LABELS,
+  type EquipmentFamilyKey,
+  type SectorKey,
+} from '../../lib/equipment-types';
 import { conditionLabel, money, range, type Result } from '../../lib/tractor-logic';
 import { getGuestValuationCount, incrementGuestValuationCount } from '../../lib/guest-valuation-limit';
 import { openValuationReportPrint } from '../../lib/report-print';
@@ -67,7 +74,7 @@ type SaveValuationRunApiResponse = {
 const CURRENT_YEAR = new Date().getFullYear() + 1;
 
 const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
-  { step: 1, label: 'Type' },
+  { step: 1, label: 'Machine' },
   { step: 2, label: 'Brand' },
   { step: 3, label: 'Model' },
   { step: 4, label: 'Details' },
@@ -88,12 +95,12 @@ const DETAILS_STEPS: Array<{ key: DetailsStepKey; label: string }> = [
   { key: 'extras', label: 'Extras' },
 ];
 
-const HERO_PILLS = ['5 guided steps', 'Aim4price + market value', 'Clean, simple flow'];
+const HERO_PILLS = ['Agricultural first', 'Aim4price + market value', 'Wording-first flow'];
 
 const HERO_GUIDE_ITEMS = [
   {
     title: 'Choose the machine',
-    text: 'Select the equipment type, brand, and exact model.',
+    text: 'Start with the sector and machine family, then continue to the brand and exact model.',
   },
   {
     title: 'Add the working details',
@@ -104,6 +111,39 @@ const HERO_GUIDE_ITEMS = [
     text: 'Compare Aim4price and market values in one place.',
   },
 ] as const;
+
+const SECTOR_OPTIONS: Array<{
+  key: SectorKey;
+  label: string;
+  note: string;
+  active: boolean;
+}> = [
+  {
+    key: 'agricultural',
+    label: SECTOR_LABELS.agricultural,
+    note: 'Live now',
+    active: true,
+  },
+  {
+    key: 'industrial',
+    label: SECTOR_LABELS.industrial,
+    note: 'Coming soon',
+    active: false,
+  },
+  {
+    key: 'construction',
+    label: SECTOR_LABELS.construction,
+    note: 'Coming soon',
+    active: false,
+  },
+];
+
+const AGRICULTURAL_FAMILY_OPTIONS = AGRICULTURAL_FAMILY_ORDER.map((familyKey) => ({
+  key: familyKey,
+  label: EQUIPMENT_FAMILY_META[familyKey].label,
+  active: EQUIPMENT_FAMILY_META[familyKey].active,
+  note: EQUIPMENT_FAMILY_META[familyKey].active ? 'Live now' : 'Coming soon',
+}));
 
 function nextStep(step: Step): Step {
   return step === 1 ? 2 : step === 2 ? 3 : step === 3 ? 4 : 5;
@@ -143,18 +183,18 @@ function getStepMeta(step: Step) {
   switch (step) {
     case 1:
       return {
-        title: 'Equipment Type',
-        body: 'Start by choosing the machine category you want to value.',
+        title: 'Sector & Family',
+        body: 'Start by choosing the sector and machine family you want to value.',
       };
     case 2:
       return {
         title: 'Brand',
-        body: 'Choose the equipment brand to continue.',
+        body: 'Choose the manufacturer linked to this machine family.',
       };
     case 3:
       return {
         title: 'Model',
-        body: 'Set the tractor type, drive, cab, and exact model.',
+        body: 'Set the tractor configuration and exact model.',
       };
     case 4:
       return {
@@ -291,6 +331,8 @@ export default function ValuationClient() {
   const router = useRouter();
 
   const [step, setStep] = useState<Step>(1);
+  const [selectedSector, setSelectedSector] = useState<SectorKey | null>(null);
+  const [selectedFamily, setSelectedFamily] = useState<EquipmentFamilyKey | null>(null);
   const [selectedType, setSelectedType] = useState<EquipmentType | null>(null);
   const [modelQuery, setModelQuery] = useState('');
   const [brandSlug, setBrandSlug] = useState('');
@@ -398,6 +440,19 @@ export default function ValuationClient() {
     invalidateResult();
   }
 
+  function resetMachineFlowFromBrandDown() {
+    setBrandSlug('');
+    setBrandDropdownOpen(false);
+    setBrandSearch('');
+    setTractorType(null);
+    setDrive(null);
+    setCab(null);
+    setModelId('');
+    setModelQuery('');
+    setConfigFocus(null);
+    resetDetailState();
+  }
+
   function markExtrasDirty() {
     setExtrasReviewed(false);
     invalidateResult();
@@ -482,8 +537,23 @@ export default function ValuationClient() {
     let ignore = false;
 
     async function loadBrands() {
+      if (selectedSector !== 'agricultural' || selectedFamily !== 'tractors') {
+        if (!ignore) {
+          setAvailableBrands([]);
+          setBrandsLoading(false);
+        }
+        return;
+      }
+
+      setBrandsLoading(true);
+
       try {
-        const response = await fetch('/api/brands', {
+        const params = new URLSearchParams({
+          sectorKey: selectedSector,
+          familyKey: selectedFamily,
+        });
+
+        const response = await fetch(`/api/brands?${params.toString()}`, {
           cache: 'no-store',
         });
 
@@ -509,12 +579,12 @@ export default function ValuationClient() {
       }
     }
 
-    loadBrands();
+    void loadBrands();
 
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [selectedSector, selectedFamily]);
 
   useEffect(() => {
     let ignore = false;
@@ -698,6 +768,8 @@ export default function ValuationClient() {
     () => availableBrands.find((brand) => brand.slug === brandSlug)?.name ?? '—',
     [availableBrands, brandSlug],
   );
+  const selectedSectorLabel = selectedSector ? SECTOR_LABELS[selectedSector] : 'Choose sector';
+  const selectedFamilyLabel = selectedFamily ? EQUIPMENT_FAMILY_META[selectedFamily].label : 'Choose family';
 
   const filteredBrandOptions = useMemo(() => {
     const normalizedQuery = brandSearch.trim().toLowerCase();
@@ -837,7 +909,9 @@ export default function ValuationClient() {
   const activeDetailsStepNumber = DETAILS_STEPS.findIndex((item) => item.key === activeDetailsStep) + 1;
 
   const canContinue = useMemo(() => {
-    if (step === 1) return selectedType === 'tractor';
+    if (step === 1) {
+      return selectedSector === 'agricultural' && selectedFamily === 'tractors' && selectedType === 'tractor';
+    }
     if (step === 3) return configComplete;
     if (step === 4) {
       return Boolean(
@@ -853,6 +927,8 @@ export default function ValuationClient() {
     return true;
   }, [
     step,
+    selectedSector,
+    selectedFamily,
     selectedType,
     configComplete,
     selectedModel,
@@ -876,6 +952,8 @@ export default function ValuationClient() {
 
   function resetWizard() {
     setStep(1);
+    setSelectedSector(null);
+    setSelectedFamily(null);
     setSelectedType(null);
     setModelQuery('');
     setBrandSlug('');
@@ -1089,13 +1167,13 @@ export default function ValuationClient() {
       logoUrl,
       generatedAt,
       heroTitle: `${result.model.brandName} ${result.model.modelName}`.trim(),
-      heroMeta: `${getTractorTypeLabel(result.model.tractorType)} tractor • ${getDriveDisplay(result.model.drive)} • ${getCabDisplay(result.model.cab)} • ${activeYear} model • ${result.model.powerKw} kW • ${Number(hours).toLocaleString('en-ZA')} engine hours`,
+      heroMeta: `Agricultural • Tractor • ${getTractorTypeLabel(result.model.tractorType)} • ${getDriveDisplay(result.model.drive)} • ${getCabDisplay(result.model.cab)} • ${activeYear} model • ${result.model.powerKw} kW • ${Number(hours).toLocaleString('en-ZA')} engine hours`,
       selectedLabel: headlineLabel,
       headlineValue: money(headlineValue),
       confidenceLabel: getConfidenceLabel(result),
       confidenceTone: confidenceLevel,
       summaryRows: [
-        { label: 'Equipment type', value: 'Tractor' },
+        { label: 'Equipment type', value: 'Agricultural • Tractor' },
         {
           label: 'Configuration',
           value: `${getTractorTypeLabel(result.model.tractorType)} • ${getDriveDisplay(result.model.drive)} • ${getCabDisplay(result.model.cab)}`,
@@ -1127,40 +1205,125 @@ export default function ValuationClient() {
 
   function renderWizardBody() {
     if (step === 1) {
-      const isTractorSelected = selectedType === 'tractor';
-
       return (
-        <div className={styles.typePicker}>
-          <button type="button" className={styles.typeArrow} aria-label="Previous equipment type" disabled>
-            ‹
-          </button>
-
-          <button
-            type="button"
-            className={`${styles.typeCard} ${styles.typePickerCard} ${
-              isTractorSelected ? styles.typeCardActive : ''
-            }`}
-            onClick={() => {
-              setSelectedType('tractor');
-              setMessage('');
-            }}
-            aria-pressed={isTractorSelected}
-          >
-            <div className={styles.typeImageBox}>
-              <Image
-                src="/brand/Tractor.png"
-                alt="Tractor equipment type"
-                fill
-                className={styles.typeImage}
-                sizes="220px"
-              />
+        <div className={styles.flowShell}>
+          <div className={styles.currentCard}>
+            <div className={styles.currentCardHead}>
+              <div>
+                <span className={styles.currentEyebrow}>Step 1</span>
+                <h2 className={styles.currentTitle}>Choose the sector</h2>
+              </div>
+              <span className={styles.currentIndex}>1 / 2</span>
             </div>
-            <strong>Tractor</strong>
-          </button>
 
-          <button type="button" className={styles.typeArrow} aria-label="Next equipment type" disabled>
-            ›
-          </button>
+            <p className={styles.currentHint}>
+              Aim4price is expanding into Agricultural, Industrial, and Construction machinery. Agricultural is live now.
+            </p>
+
+            <div className={styles.choiceGrid}>
+              {SECTOR_OPTIONS.map((sector) => {
+                const active = selectedSector === sector.key;
+                const disabled = !sector.active;
+
+                return (
+                  <button
+                    key={sector.key}
+                    type="button"
+                    className={`${styles.choiceCard} ${active ? styles.choiceCardActive : ''} ${
+                      disabled ? styles.choiceCardDisabled : ''
+                    }`}
+                    onClick={() => {
+                      const changed = selectedSector !== sector.key;
+                      setSelectedSector(sector.key);
+
+                      if (changed) {
+                        setSelectedFamily(null);
+                        setSelectedType(null);
+                        resetMachineFlowFromBrandDown();
+                      }
+
+                      setMessage(disabled ? `${sector.label} will open in a later Aim4price pass.` : '');
+                    }}
+                    aria-pressed={active}
+                    disabled={disabled}
+                  >
+                    <span className={`${styles.choiceCardTag} ${disabled ? styles.choiceCardTagSoon : styles.choiceCardTagLive}`}>
+                      {sector.note}
+                    </span>
+                    <strong>{sector.label}</strong>
+                    <span className={styles.choiceCardNote}>
+                      {sector.key === 'agricultural'
+                        ? 'Start with farm machinery families and exact model matching.'
+                        : 'Planned next after Agricultural is fully structured.'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className={styles.currentCard}>
+            <div className={styles.currentCardHead}>
+              <div>
+                <span className={styles.currentEyebrow}>Step 1</span>
+                <h2 className={styles.currentTitle}>Choose the family</h2>
+              </div>
+              <span className={styles.currentIndex}>2 / 2</span>
+            </div>
+
+            <div className={styles.selectionChipRow} style={{ marginBottom: '0.95rem' }}>
+              <span className={styles.modelChip}>{selectedSectorLabel}</span>
+            </div>
+
+            <p className={styles.currentHint}>
+              Tractors stay live first. The remaining agricultural families are staged so the structure is ready for the next data build.
+            </p>
+
+            <div className={styles.choiceGrid}>
+              {AGRICULTURAL_FAMILY_OPTIONS.map((family) => {
+                const active = selectedFamily === family.key;
+                const disabled = selectedSector !== 'agricultural' || !family.active;
+
+                return (
+                  <button
+                    key={family.key}
+                    type="button"
+                    className={`${styles.choiceCard} ${active ? styles.choiceCardActive : ''} ${
+                      disabled ? styles.choiceCardDisabled : ''
+                    }`}
+                    onClick={() => {
+                      const changed = selectedFamily !== family.key;
+                      setSelectedSector('agricultural');
+                      setSelectedFamily(family.key);
+
+                      if (changed) {
+                        setSelectedType(family.key === 'tractors' ? 'tractor' : null);
+                        resetMachineFlowFromBrandDown();
+                      }
+
+                      setMessage(
+                        family.active
+                          ? ''
+                          : `${family.label} is staged in the structure and will be activated after the first data import pass.`,
+                      );
+                    }}
+                    aria-pressed={active}
+                    disabled={disabled}
+                  >
+                    <span className={`${styles.choiceCardTag} ${family.active ? styles.choiceCardTagLive : styles.choiceCardTagSoon}`}>
+                      {family.note}
+                    </span>
+                    <strong>{family.label}</strong>
+                    <span className={styles.choiceCardNote}>
+                      {family.active
+                        ? 'Live valuation family for the current Aim4price flow.'
+                        : 'Structure created now. Live valuation to follow after model data is loaded.'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       );
     }
@@ -1168,6 +1331,11 @@ export default function ValuationClient() {
     if (step === 2) {
       return (
         <div className={styles.searchWrap}>
+          <div className={styles.selectionChipRow} style={{ marginBottom: '0.95rem' }}>
+            <span className={styles.modelChip}>{selectedSectorLabel}</span>
+            <span className={styles.modelChip}>{selectedFamilyLabel}</span>
+          </div>
+
           <div className={styles.field}>
             <span className={styles.fieldLabel}>Choose Brand</span>
 
@@ -1181,7 +1349,7 @@ export default function ValuationClient() {
                 }}
                 aria-haspopup="listbox"
                 aria-expanded={brandDropdownOpen}
-                aria-label="Choose tractor brand"
+                aria-label="Choose equipment brand"
                 disabled={brandsLoading || !sortedBrands.length}
               >
                 <span className={styles.dropdownTriggerText}>
@@ -1205,7 +1373,7 @@ export default function ValuationClient() {
                     />
                   </div>
 
-                  <div className={styles.dropdownList} role="listbox" aria-label="Available tractor brands">
+                  <div className={styles.dropdownList} role="listbox" aria-label="Available equipment brands">
                     {brandsLoading ? (
                       <div className={styles.dropdownEmpty}>Loading brands...</div>
                     ) : filteredBrandOptions.length ? (
@@ -1291,8 +1459,14 @@ export default function ValuationClient() {
       return (
         <div className={styles.flowShell}>
           <div className={styles.flowTopline}>
-            <span className={styles.flowToplineLabel}>Brand</span>
-            <strong className={styles.flowToplineValue}>{selectedBrandName}</strong>
+            <span className={styles.flowToplineLabel}>Family</span>
+            <strong className={styles.flowToplineValue}>{selectedFamilyLabel}</strong>
+          </div>
+
+          <div className={styles.selectionChipRow} style={{ marginBottom: '0.95rem' }}>
+            <span className={styles.modelChip}>{selectedSectorLabel}</span>
+            <span className={styles.modelChip}>{selectedFamilyLabel}</span>
+            <span className={styles.modelChip}>{selectedBrandName}</span>
           </div>
 
           <div className={styles.miniStepper} aria-label="Model setup progress">
