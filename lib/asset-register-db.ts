@@ -12,6 +12,9 @@ export type AssetRegisterItem = {
   id: string;
   userId: string;
   valuationRunId: number | null;
+  sectorId: number | null;
+  equipmentFamilyId: number | null;
+  equipmentModelId: number | null;
   kind: AssetRegisterItemKind;
   title: string;
   value: number;
@@ -79,6 +82,9 @@ type AssetRegisterRow = {
   id: string | number;
   user_id: string | null;
   valuation_run_id: string | number | null;
+  sector_id: string | number | null;
+  equipment_family_id: string | number | null;
+  equipment_model_id: string | number | null;
   kind: string | null;
   title: string | null;
   value: string | number | null;
@@ -288,6 +294,9 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     id: asIdText(row.id),
     userId: asText(row.user_id),
     valuationRunId: asNumber(row.valuation_run_id),
+    sectorId: asNumber(row.sector_id),
+    equipmentFamilyId: asNumber(row.equipment_family_id),
+    equipmentModelId: asNumber(row.equipment_model_id),
     kind: normalizeKind(row.kind),
     title: asText(row.title),
     value: Math.round(asNumber(row.value) ?? selectedValueExVat),
@@ -397,6 +406,9 @@ function isJsonColumn(meta: ColumnMetaRow | null): boolean {
 function buildSelectList(schema: TableSchema): string {
   const userIdColumn = resolveColumn(schema, 'user_id');
   const valuationRunIdColumn = resolveColumn(schema, 'valuation_run_id', 'run_id');
+  const sectorIdColumn = resolveColumn(schema, 'sector_id');
+  const equipmentFamilyIdColumn = resolveColumn(schema, 'equipment_family_id');
+  const equipmentModelIdColumn = resolveColumn(schema, 'equipment_model_id');
   const kindColumn = resolveColumn(schema, 'kind', 'equipment_type', 'asset_type', 'item_type');
   const titleColumn = resolveColumn(schema, 'title', 'name', 'asset_name');
   const valueColumn = resolveColumn(
@@ -448,6 +460,9 @@ function buildSelectList(schema: TableSchema): string {
     'id',
     userIdColumn ? `${userIdColumn} as user_id` : `''::text as user_id`,
     valuationRunIdColumn ? `${valuationRunIdColumn} as valuation_run_id` : 'null::bigint as valuation_run_id',
+    sectorIdColumn ? `${sectorIdColumn} as sector_id` : 'null::bigint as sector_id',
+    equipmentFamilyIdColumn ? `${equipmentFamilyIdColumn} as equipment_family_id` : 'null::bigint as equipment_family_id',
+    equipmentModelIdColumn ? `${equipmentModelIdColumn} as equipment_model_id` : 'null::bigint as equipment_model_id',
     kindColumn ? `${kindColumn} as kind` : `'manual'::text as kind`,
     titleColumn ? `${titleColumn} as title` : `''::text as title`,
     valueColumn ? `${valueColumn} as value` : '0::numeric as value',
