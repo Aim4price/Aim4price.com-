@@ -4421,3 +4421,42 @@
     max-height: none;
   }
 }
+
+
+.choiceCardDisabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.choiceCardDisabled:hover {
+  transform: none;
+  border-color: rgba(18, 45, 37, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.choiceCardTag {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 1.8rem;
+  padding: 0 0.68rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.choiceCardTagLive {
+  color: #1d6b46;
+  background: rgba(33, 129, 85, 0.1);
+  border: 1px solid rgba(33, 129, 85, 0.14);
+}
+
+.choiceCardTagSoon {
+  color: #7a6951;
+  background: rgba(165, 127, 64, 0.1);
+  border: 1px solid rgba(165, 127, 64, 0.14);
+}
