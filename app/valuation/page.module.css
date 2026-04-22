@@ -4116,3 +4116,308 @@
     padding: 0.72rem;
   }
 }
+
+
+/* === valuation results polish pass === */
+.resultsLayout {
+  grid-template-columns: minmax(0, 1.14fr) minmax(340px, 0.86fr);
+  gap: 1.15rem;
+}
+
+.resultsMain,
+.resultsSide {
+  gap: 1.1rem;
+}
+
+.resultsTopbar {
+  padding-inline: 0.1rem;
+  padding-bottom: 0.1rem;
+}
+
+.backLink {
+  font-size: 0.96rem;
+  letter-spacing: -0.01em;
+}
+
+.statusBadge {
+  border: 1px solid rgba(23, 77, 62, 0.08);
+  background: rgba(23, 77, 62, 0.07);
+}
+
+.heroCard,
+.assetCard,
+.sideCard {
+  padding: 1.25rem 1.25rem 1.2rem;
+  border-radius: 1.45rem;
+}
+
+.heroTop {
+  margin-bottom: 0.15rem;
+}
+
+.heroIdentity {
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.heroImageBox {
+  width: 128px;
+  min-width: 128px;
+  height: 104px;
+  background: linear-gradient(180deg, #f7f9f8 0%, #eff4f1 100%);
+}
+
+.heroInfo {
+  gap: 0.5rem;
+}
+
+.resultTitle {
+  font-size: clamp(2rem, 3vw, 2.65rem);
+  line-height: 1.02;
+}
+
+.heroMeta {
+  max-width: 42rem;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.inlineButton {
+  margin-top: 0.1rem;
+}
+
+.valuePanel {
+  margin-top: 1.1rem;
+  padding: 1.2rem;
+  border-radius: 1.2rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 14px 28px rgba(17, 63, 50, 0.06);
+}
+
+.valuePanelHigh {
+  --value-panel-bg-start: #f5fbf8;
+  --value-panel-bg-end: #eef6f1;
+  --value-panel-border: rgba(23, 77, 62, 0.12);
+  --value-label-color: #295948;
+  --value-amount-color: #0d5a3c;
+  --value-meta-color: #617069;
+}
+
+.valuePanelMedium {
+  --value-panel-bg-start: #fffaf0;
+  --value-panel-bg-end: #fff3d7;
+  --value-panel-border: rgba(160, 121, 10, 0.14);
+  --value-label-color: #7a5800;
+  --value-amount-color: #7a5800;
+  --value-meta-color: #7a6b45;
+}
+
+.valuePanelLow {
+  --value-panel-bg-start: #fff9f8;
+  --value-panel-bg-end: #fdecea;
+  --value-panel-border: rgba(163, 39, 27, 0.14);
+  --value-label-color: #8f2d22;
+  --value-amount-color: #8f2d22;
+  --value-meta-color: #8a5e59;
+}
+
+.valuePanelTop {
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.valuePanelIntro {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.valueAmount {
+  font-size: clamp(2.6rem, 4.5vw, 3.55rem);
+}
+
+.valueMeta {
+  margin-top: 0;
+}
+
+.confidenceBadge {
+  align-self: flex-start;
+}
+
+.methodGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 1.05rem;
+}
+
+.methodButton {
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+  min-height: 10.7rem;
+  padding: 1rem 1rem 0.95rem;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 8px 18px rgba(17, 63, 50, 0.04);
+}
+
+.methodButtonActive {
+  border-color: rgba(17, 56, 45, 0.16);
+  background: linear-gradient(180deg, rgba(239, 248, 244, 0.98) 0%, rgba(248, 251, 249, 0.98) 100%);
+  box-shadow:
+    0 14px 26px rgba(17, 63, 50, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.methodValue {
+  font-size: 1.28rem;
+}
+
+.methodNote {
+  min-height: 0;
+}
+
+.methodState {
+  margin-top: 0.55rem;
+  background: rgba(24, 89, 71, 0.08);
+}
+
+.actionHeader {
+  align-items: center;
+}
+
+.actionGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.actionPrimary {
+  grid-column: 1 / -1;
+}
+
+.secondaryButton,
+.primaryButton,
+.assetButton {
+  min-height: 3.1rem;
+}
+
+.sideTitle {
+  font-size: 1.18rem;
+}
+
+.summaryCard,
+.marketCard {
+  gap: 0.95rem;
+}
+
+.breakdownList {
+  gap: 0.68rem;
+}
+
+.breakdownRow {
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 0.95rem;
+  padding-bottom: 0.8rem;
+}
+
+.breakdownValue {
+  line-height: 1.5;
+}
+
+.summaryTip {
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(247, 250, 248, 0.98) 0%, rgba(242, 246, 244, 0.98) 100%);
+  border: 1px solid rgba(18, 45, 37, 0.06);
+}
+
+.rangeCardHead {
+  align-items: flex-start;
+}
+
+.rangeCurrentWrap {
+  padding: 1.05rem 1.05rem 1rem;
+}
+
+.rangeCurrent {
+  font-size: 1.9rem;
+}
+
+.rangeInteractive {
+  margin-top: 0.15rem;
+}
+
+.marketListingsBlock {
+  gap: 0.9rem;
+}
+
+.listingList {
+  gap: 0.85rem;
+  max-height: 400px;
+}
+
+.listingCard {
+  border-radius: 1rem;
+}
+
+.listingCardFooter {
+  gap: 0.7rem;
+}
+
+@media (max-width: 1180px) {
+  .resultsLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .actionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .resultsTopbar,
+  .heroIdentity,
+  .valuePanelTop,
+  .actionHeader,
+  .rangeCardHead,
+  .marketListingsHead,
+  .listingCardTop {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .heroCard,
+  .assetCard,
+  .sideCard {
+    padding: 1rem;
+  }
+
+  .heroImageBox {
+    width: 100%;
+    min-width: 0;
+    height: 180px;
+  }
+
+  .methodGrid,
+  .actionGrid,
+  .breakdownRow {
+    grid-template-columns: 1fr;
+  }
+
+  .actionPrimary {
+    grid-column: auto;
+  }
+
+  .breakdownValue {
+    text-align: left;
+  }
+
+  .summaryConfidenceBadge {
+    margin-left: 0;
+  }
+
+  .listingList {
+    max-height: none;
+  }
+}
