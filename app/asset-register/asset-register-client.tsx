@@ -1863,7 +1863,6 @@ export default function AssetRegisterClient() {
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
                             <div className={styles.badgeRow}>
-                              <span className={`${styles.badge} ${styles.badgeNeutral}`}>{assetSectorLabel(asset)}</span>
                               <span className={`${styles.badge} ${styles.badgeNeutral}`}>{assetFamilyLabel(asset)}</span>
                               {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
                             </div>
@@ -1957,10 +1956,10 @@ export default function AssetRegisterClient() {
                                       ) : (
                                         <div className={styles.previewPlaceholder}>
                                           <div className={styles.previewPlaceholderBadges}>
-                                            <span className={`${styles.badge} ${styles.badgeNeutral}`}>{assetSectorLabel(asset)}</span>
-                                            <span className={`${styles.badge} ${styles.badgeNeutral}`}>{assetFamilyLabel(asset)}</span>
+                                            <span className={`${styles.badge} ${styles.badgeNeutral} ${styles.previewPlaceholderBadge}`}>
+                                              {assetFamilyLabel(asset)}
+                                            </span>
                                           </div>
-                                          <strong>{assetFamilyLabel(asset)}</strong>
                                         </div>
                                       )}
                                     </div>
