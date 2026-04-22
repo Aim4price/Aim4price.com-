@@ -778,12 +778,6 @@ function copySharedFieldsFromValuationRun(
     'photo_urls',
     'image_urls',
     'images',
-    'department_band_id',
-    'department_replacement_price_ex_vat',
-    'department_depreciation_cost_per_hour_ex_vat',
-    'department_value_ex_vat',
-    'department_value',
-    'dalrrd_value_ex_vat',
   ]);
 
   for (const [columnName, meta] of assetSchema.columns.entries()) {
