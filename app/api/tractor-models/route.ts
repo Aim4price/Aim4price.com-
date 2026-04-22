@@ -88,7 +88,6 @@ function mapTractorRow(row: TractorCatalogDbRow): TractorCatalogRow {
     endYear: toNumber(row.year_end),
     aim4priceReplacementExVat: replacement,
     replacementPriceExVat: replacement,
-    departmentReplacementExVat: replacement,
     imageSrc: '/brand/Tractor.png',
   };
 }
