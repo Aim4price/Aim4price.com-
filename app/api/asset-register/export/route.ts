@@ -46,7 +46,6 @@ function methodLabel(value: AssetRegisterItem['selectedMethod']): string {
     {
       aim4price: 'Aim4price',
       market: 'Market',
-      department: 'DALRRD',
       manual: 'Manual',
     }[value] ?? 'Manual'
   );
@@ -146,7 +145,6 @@ function buildRows(items: AssetRegisterItem[], ownerName: string, ownerMeta: str
       'Register value ex VAT',
       'Aim4price ex VAT',
       'Market ex VAT',
-      'DALRRD ex VAT',
       'Notes',
       'Status',
       'Created',
@@ -174,7 +172,6 @@ function buildRows(items: AssetRegisterItem[], ownerName: string, ownerMeta: str
       Math.round(Number(item.value || 0)),
       item.aim4priceValueExVat ?? '—',
       item.marketMidExVat ?? '—',
-      item.departmentValueExVat ?? '—',
       item.note || '—',
       assetStatusDateLabel(item),
       item.createdAtIso,
