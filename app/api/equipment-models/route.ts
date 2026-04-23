@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listEquipmentModels } from '../../../lib/equipment-catalog';
-import { isEquipmentFamilyKey, isSectorKey, type EquipmentFamilyKey, type SectorKey } from '../../../lib/equipment-types';
+import {
+  isEquipmentFamilyKey,
+  isSectorKey,
+  type EquipmentFamilyKey,
+  type SectorKey,
+} from '../../../lib/equipment-types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,11 +18,13 @@ export async function GET(request: NextRequest) {
     const brandSlug = searchParams.get('brandSlug');
     const search = searchParams.get('search');
     const includeInactive = searchParams.get('includeInactive') === 'true';
+    const includeGenericFallback = searchParams.get('includeGenericFallback') === 'true';
     const limit = searchParams.get('limit');
 
     if (sectorKeyParam && !isSectorKey(sectorKeyParam)) {
       return NextResponse.json({ ok: false, error: 'Invalid sectorKey.' }, { status: 400 });
     }
+
     if (familyKeyParam && !isEquipmentFamilyKey(familyKeyParam)) {
       return NextResponse.json({ ok: false, error: 'Invalid familyKey.' }, { status: 400 });
     }
@@ -28,12 +35,19 @@ export async function GET(request: NextRequest) {
       brandSlug,
       search,
       includeInactive,
+      includeGenericFallback,
       limit: limit ? Number(limit) : null,
     });
 
     return NextResponse.json({ ok: true, count: models.length, models });
   } catch (error) {
     console.error('equipment-models route failed', error);
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Failed to load equipment models.' }, { status: 500 });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Failed to load equipment models.',
+      },
+      { status: 500 },
+    );
   }
 }
