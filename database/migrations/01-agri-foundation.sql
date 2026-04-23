@@ -1,236 +1,154 @@
 BEGIN;
 
--- 1) New generic foundation tables
-create table if not exists public.sectors (
-  id bigserial primary key,
-  sector_key text not null unique,
-  sector_label text not null,
-  is_active boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+-- =========================================================
+-- OPTION B V2
+-- Step 1: Normalize sectors to fixed IDs and add simple schema
+-- Target sector IDs:
+--   1 = agricultural
+--   2 = industrial
+--   3 = construction
+-- =========================================================
+
+-- 1) Create temporary sector rows at IDs 1,2,3 if they do not already exist.
+insert into public.sectors (id, sector_key, sector_label, is_active, created_at, updated_at)
+values
+  (1, 'agricultural_tmp', 'Agricultural', true, now(), now()),
+  (2, 'industrial_tmp',   'Industrial',   false, now(), now()),
+  (3, 'construction_tmp', 'Construction', false, now(), now())
+on conflict (id) do nothing;
+
+-- 2) Move existing foreign-key references from the old sector rows (4,5,6) to 1,2,3.
+update public.equipment_families ef
+set sector_id = case s.sector_key
+  when 'agricultural' then 1
+  when 'industrial' then 2
+  when 'construction' then 3
+  else ef.sector_id
+end
+from public.sectors s
+where ef.sector_id = s.id
+  and s.sector_key in ('agricultural', 'industrial', 'construction')
+  and ef.sector_id not in (1, 2, 3);
+
+update public.market_vault_listings m
+set sector_id = case s.sector_key
+  when 'agricultural' then 1
+  when 'industrial' then 2
+  when 'construction' then 3
+  else m.sector_id
+end
+from public.sectors s
+where m.sector_id = s.id
+  and s.sector_key in ('agricultural', 'industrial', 'construction')
+  and m.sector_id not in (1, 2, 3);
+
+update public.valuation_runs v
+set sector_id = case s.sector_key
+  when 'agricultural' then 1
+  when 'industrial' then 2
+  when 'construction' then 3
+  else v.sector_id
+end
+from public.sectors s
+where v.sector_id = s.id
+  and s.sector_key in ('agricultural', 'industrial', 'construction')
+  and v.sector_id not in (1, 2, 3);
+
+update public.asset_register_items a
+set sector_id = case s.sector_key
+  when 'agricultural' then 1
+  when 'industrial' then 2
+  when 'construction' then 3
+  else a.sector_id
+end
+from public.sectors s
+where a.sector_id = s.id
+  and s.sector_key in ('agricultural', 'industrial', 'construction')
+  and a.sector_id not in (1, 2, 3);
+
+-- 3) Remove the old sector rows with IDs 4,5,6.
+delete from public.sectors
+where id not in (1, 2, 3)
+  and sector_key in ('agricultural', 'industrial', 'construction');
+
+-- 4) Finalize the fixed sector rows.
+update public.sectors
+set sector_key = 'agricultural',
+    sector_label = 'Agricultural',
+    is_active = true,
+    updated_at = now()
+where id = 1;
+
+update public.sectors
+set sector_key = 'industrial',
+    sector_label = 'Industrial',
+    is_active = false,
+    updated_at = now()
+where id = 2;
+
+update public.sectors
+set sector_key = 'construction',
+    sector_label = 'Construction',
+    is_active = false,
+    updated_at = now()
+where id = 3;
+
+-- 5) Keep the sectors id sequence correct.
+select setval(
+  pg_get_serial_sequence('public.sectors', 'id'),
+  coalesce((select max(id) from public.sectors), 1),
+  true
 );
 
-create table if not exists public.equipment_families (
-  id bigserial primary key,
-  sector_id bigint not null references public.sectors(id) on delete restrict,
-  family_key text not null,
-  family_label text not null,
-  is_propelled boolean not null default true,
-  usage_metric_type text not null default 'hours',
-  sort_order integer not null default 100,
-  is_active boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (sector_id, family_key)
-);
+-- 6) Add the simple Option B fields.
+alter table if exists public.equipment_families
+  add column if not exists valuation_mode text;
 
-create table if not exists public.equipment_models (
-  id bigserial primary key,
-  equipment_family_id bigint not null references public.equipment_families(id) on delete restrict,
-  brand_id integer references public.brands(id) on delete restrict,
-  legacy_tractor_catalog_id integer unique,
-  model_name text not null,
-  variant_name text,
-  normalized_model_name text not null,
-  display_name text not null,
-  year_start integer,
-  year_end integer,
-  power_kw integer,
-  tractor_type text,
-  drive_type text,
-  cab_type text,
-  working_width_m numeric(10,2),
-  rows_count integer,
-  tank_capacity_l integer,
-  specs_json jsonb not null default '{}'::jsonb,
-  is_active boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+alter table if exists public.equipment_models
+  add column if not exists aim4price_replacement_price_ex_vat numeric(14,2),
+  add column if not exists replacement_price_year integer,
+  add column if not exists is_generic_fallback boolean not null default false;
 
-create index if not exists idx_equipment_models_family_brand_name
-  on public.equipment_models(equipment_family_id, brand_id, normalized_model_name);
+-- 7) Add / refresh simple check constraints.
+do $$
+begin
+  if exists (
+    select 1
+    from pg_constraint
+    where conname = 'chk_equipment_families_valuation_mode'
+  ) then
+    alter table public.equipment_families
+      drop constraint chk_equipment_families_valuation_mode;
+  end if;
+end $$;
 
-create index if not exists idx_equipment_models_legacy_tractor_catalog_id
-  on public.equipment_models(legacy_tractor_catalog_id)
-  where legacy_tractor_catalog_id is not null;
+alter table public.equipment_families
+  add constraint chk_equipment_families_valuation_mode
+  check (valuation_mode in ('engine_hours', 'year_condition', 'percent_used'));
 
-create table if not exists public.equipment_model_aliases (
-  id bigserial primary key,
-  equipment_model_id bigint not null references public.equipment_models(id) on delete cascade,
-  alias_text text not null,
-  normalized_alias text not null,
-  created_at timestamptz not null default now(),
-  unique (equipment_model_id, normalized_alias)
-);
+do $$
+begin
+  if exists (
+    select 1
+    from pg_constraint
+    where conname = 'chk_equipment_models_replacement_price_year'
+  ) then
+    alter table public.equipment_models
+      drop constraint chk_equipment_models_replacement_price_year;
+  end if;
+end $$;
 
-create index if not exists idx_equipment_model_aliases_normalized_alias
-  on public.equipment_model_aliases(normalized_alias);
+alter table public.equipment_models
+  add constraint chk_equipment_models_replacement_price_year
+  check (
+    replacement_price_year is null
+    or (replacement_price_year between 1950 and 2100)
+  );
 
-create table if not exists public.replacement_price_references (
-  id bigserial primary key,
-  equipment_model_id bigint not null references public.equipment_models(id) on delete cascade,
-  reference_year integer not null,
-  replacement_price_ex_vat numeric(14,2) not null,
-  currency_code text not null default 'ZAR',
-  source_name text not null,
-  source_url text,
-  confidence_score numeric(5,2),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (equipment_model_id, reference_year, source_name)
-);
+create index if not exists idx_equipment_models_is_generic_fallback
+  on public.equipment_models(is_generic_fallback);
 
-create index if not exists idx_replacement_price_references_model_year
-  on public.replacement_price_references(equipment_model_id, reference_year desc);
-
-create table if not exists public.valuation_profiles (
-  id bigserial primary key,
-  equipment_family_id bigint not null references public.equipment_families(id) on delete cascade,
-  profile_key text not null unique,
-  is_propelled boolean not null default true,
-  usage_metric_type text not null default 'hours',
-  max_use_hours integer,
-  age_curve jsonb not null default '{}'::jsonb,
-  usage_curve jsonb not null default '{}'::jsonb,
-  condition_curve jsonb not null default '{}'::jsonb,
-  floor_percent numeric(5,2) not null default 20,
-  notes text,
-  is_active boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (equipment_family_id)
-);
-
-create table if not exists public.fallback_price_bands (
-  id bigserial primary key,
-  equipment_family_id bigint not null references public.equipment_families(id) on delete cascade,
-  band_label text not null,
-  spec_type text not null,
-  spec_min numeric(14,2),
-  spec_max numeric(14,2),
-  year_from integer,
-  year_to integer,
-  replacement_price_ex_vat numeric(14,2) not null,
-  currency_code text not null default 'ZAR',
-  confidence_score numeric(5,2),
-  notes text,
-  is_active boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create index if not exists idx_fallback_price_bands_family_spec
-  on public.fallback_price_bands(equipment_family_id, spec_type, year_from, year_to);
-
--- 2) Add generic link columns to existing live tables
-alter table if exists public.market_vault_listings
-  add column if not exists sector_id bigint,
-  add column if not exists equipment_family_id bigint,
-  add column if not exists equipment_model_id bigint;
-
-alter table if exists public.valuation_runs
-  add column if not exists sector_id bigint,
-  add column if not exists equipment_family_id bigint,
-  add column if not exists equipment_model_id bigint;
-
-alter table if exists public.asset_register_items
-  add column if not exists sector_id bigint,
-  add column if not exists equipment_family_id bigint,
-  add column if not exists equipment_model_id bigint;
-
-create index if not exists idx_market_vault_listings_sector_id on public.market_vault_listings(sector_id);
-create index if not exists idx_market_vault_listings_equipment_family_id on public.market_vault_listings(equipment_family_id);
-create index if not exists idx_market_vault_listings_equipment_model_id on public.market_vault_listings(equipment_model_id);
-
-create index if not exists idx_valuation_runs_sector_id on public.valuation_runs(sector_id);
-create index if not exists idx_valuation_runs_equipment_family_id on public.valuation_runs(equipment_family_id);
-create index if not exists idx_valuation_runs_equipment_model_id on public.valuation_runs(equipment_model_id);
-
-create index if not exists idx_asset_register_items_sector_id on public.asset_register_items(sector_id);
-create index if not exists idx_asset_register_items_equipment_family_id on public.asset_register_items(equipment_family_id);
-create index if not exists idx_asset_register_items_equipment_model_id on public.asset_register_items(equipment_model_id);
-
--- 3) Foreign keys on the new nullable link columns
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_market_vault_listings_sector_id') THEN
-    ALTER TABLE public.market_vault_listings
-      ADD CONSTRAINT fk_market_vault_listings_sector_id
-      FOREIGN KEY (sector_id) REFERENCES public.sectors(id) ON DELETE SET NULL;
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_market_vault_listings_equipment_family_id') THEN
-    ALTER TABLE public.market_vault_listings
-      ADD CONSTRAINT fk_market_vault_listings_equipment_family_id
-      FOREIGN KEY (equipment_family_id) REFERENCES public.equipment_families(id) ON DELETE SET NULL;
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_market_vault_listings_equipment_model_id') THEN
-    ALTER TABLE public.market_vault_listings
-      ADD CONSTRAINT fk_market_vault_listings_equipment_model_id
-      FOREIGN KEY (equipment_model_id) REFERENCES public.equipment_models(id) ON DELETE SET NULL;
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_valuation_runs_sector_id') THEN
-    ALTER TABLE public.valuation_runs
-      ADD CONSTRAINT fk_valuation_runs_sector_id
-      FOREIGN KEY (sector_id) REFERENCES public.sectors(id) ON DELETE SET NULL;
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_valuation_runs_equipment_family_id') THEN
-    ALTER TABLE public.valuation_runs
-      ADD CONSTRAINT fk_valuation_runs_equipment_family_id
-      FOREIGN KEY (equipment_family_id) REFERENCES public.equipment_families(id) ON DELETE SET NULL;
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_valuation_runs_equipment_model_id') THEN
-    ALTER TABLE public.valuation_runs
-      ADD CONSTRAINT fk_valuation_runs_equipment_model_id
-      FOREIGN KEY (equipment_model_id) REFERENCES public.equipment_models(id) ON DELETE SET NULL;
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_asset_register_items_sector_id') THEN
-    ALTER TABLE public.asset_register_items
-      ADD CONSTRAINT fk_asset_register_items_sector_id
-      FOREIGN KEY (sector_id) REFERENCES public.sectors(id) ON DELETE SET NULL;
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_asset_register_items_equipment_family_id') THEN
-    ALTER TABLE public.asset_register_items
-      ADD CONSTRAINT fk_asset_register_items_equipment_family_id
-      FOREIGN KEY (equipment_family_id) REFERENCES public.equipment_families(id) ON DELETE SET NULL;
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_asset_register_items_equipment_model_id') THEN
-    ALTER TABLE public.asset_register_items
-      ADD CONSTRAINT fk_asset_register_items_equipment_model_id
-      FOREIGN KEY (equipment_model_id) REFERENCES public.equipment_models(id) ON DELETE SET NULL;
-  END IF;
-END $$;
+create index if not exists idx_equipment_models_family_fallback
+  on public.equipment_models(equipment_family_id, is_generic_fallback, brand_id);
 
 COMMIT;

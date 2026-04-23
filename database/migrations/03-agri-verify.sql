@@ -1,101 +1,96 @@
--- 1) New generic tables should exist
-select table_name
-from information_schema.tables
-where table_schema = 'public'
-  and table_name in (
-    'sectors',
-    'equipment_families',
-    'equipment_models',
-    'equipment_model_aliases',
-    'replacement_price_references',
-    'valuation_profiles',
-    'fallback_price_bands'
-  )
-order by table_name;
+-- =========================================================
+-- OPTION B V2
+-- Step 3: Verify
+-- =========================================================
 
--- 2) Seeded sectors and families
-select s.sector_key, s.sector_label, s.is_active
-from public.sectors s
-order by s.id;
-
+-- A) Sectors must now be 1,2,3 exactly.
 select
-  s.sector_key,
+  id,
+  sector_key,
+  sector_label,
+  is_active
+from public.sectors
+order by id;
+
+-- B) There should be no old sector IDs left in the linked tables.
+select 'equipment_families_old_sector_refs' as check_name, count(*)::bigint as result
+from public.equipment_families
+where sector_id not in (1, 2, 3)
+
+union all
+select 'market_vault_listings_old_sector_refs', count(*)::bigint
+from public.market_vault_listings
+where sector_id is not null
+  and sector_id not in (1, 2, 3)
+
+union all
+select 'valuation_runs_old_sector_refs', count(*)::bigint
+from public.valuation_runs
+where sector_id is not null
+  and sector_id not in (1, 2, 3)
+
+union all
+select 'asset_register_items_old_sector_refs', count(*)::bigint
+from public.asset_register_items
+where sector_id is not null
+  and sector_id not in (1, 2, 3);
+
+-- C) Equipment family setup.
+select
+  ef.id,
+  ef.sector_id,
   ef.family_key,
   ef.family_label,
   ef.is_propelled,
   ef.usage_metric_type,
+  ef.valuation_mode,
+  ef.sort_order,
   ef.is_active
 from public.equipment_families ef
-join public.sectors s on s.id = ef.sector_id
-order by s.sector_key, ef.sort_order, ef.family_key;
+where ef.sector_id = 1
+order by ef.sort_order, ef.family_key;
 
--- 3) Tractor backfill count should match current tractor_catalog count
+-- D) Tractor model backfill count.
 select
   (select count(*) from public.tractor_catalog) as tractor_catalog_count,
-  (select count(*)
-   from public.equipment_models em
+  (select count(*) from public.equipment_models em
    join public.equipment_families ef on ef.id = em.equipment_family_id
-   join public.sectors s on s.id = ef.sector_id
-   where s.sector_key = 'agricultural'
-     and ef.family_key = 'tractors') as equipment_models_tractor_count;
+   where ef.sector_id = 1 and ef.family_key = 'tractors' and em.is_generic_fallback = false
+  ) as equipment_models_tractor_count;
 
--- 4) Model linkage coverage
+-- E) Direct replacement price fields now stored on equipment_models.
 select
-  'market_vault_listings_linked' as check_name,
-  count(*)::bigint as result
-from public.market_vault_listings
-where lower(trim(coalesce(equipment_type, 'tractor'))) = 'tractor'
-  and equipment_model_id is not null
-union all
-select
-  'market_vault_listings_unmatched',
-  count(*)::bigint
-from public.market_vault_listings
-where lower(trim(coalesce(equipment_type, 'tractor'))) = 'tractor'
-  and equipment_model_id is null
-union all
-select
-  'valuation_runs_linked',
-  count(*)::bigint
-from public.valuation_runs
-where lower(trim(coalesce(equipment_type, 'tractor'))) = 'tractor'
-  and equipment_model_id is not null
-union all
-select
-  'asset_register_items_family_linked',
-  count(*)::bigint
-from public.asset_register_items
-where equipment_family_id is not null;
+  count(*) filter (where aim4price_replacement_price_ex_vat is not null) as models_with_replacement_price,
+  count(*) filter (where replacement_price_year is not null) as models_with_replacement_year,
+  count(*) filter (where is_generic_fallback = true) as generic_fallback_rows
+from public.equipment_models;
 
--- 5) Sample tractor models in the new generic table
+-- F) Show sample tractor rows with direct replacement price.
 select
   em.id,
   b.name as brand_name,
   em.model_name,
   em.display_name,
-  em.year_start,
-  em.year_end,
-  em.power_kw,
-  em.legacy_tractor_catalog_id
+  em.aim4price_replacement_price_ex_vat,
+  em.replacement_price_year,
+  em.is_generic_fallback
 from public.equipment_models em
-left join public.brands b on b.id = em.brand_id
-join public.equipment_families ef on ef.id = em.equipment_family_id
-join public.sectors s on s.id = ef.sector_id
-where s.sector_key = 'agricultural'
+left join public.brands b
+  on b.id = em.brand_id
+join public.equipment_families ef
+  on ef.id = em.equipment_family_id
+where ef.sector_id = 1
   and ef.family_key = 'tractors'
-order by b.name, em.model_name
+order by em.is_generic_fallback desc, b.name nulls last, em.model_name
 limit 20;
 
--- 6) Sample seeded valuation profiles
+-- G) Alias count.
 select
-  s.sector_key,
-  ef.family_key,
-  vp.profile_key,
-  vp.is_propelled,
-  vp.usage_metric_type,
-  vp.max_use_hours,
-  vp.floor_percent
-from public.valuation_profiles vp
-join public.equipment_families ef on ef.id = vp.equipment_family_id
-join public.sectors s on s.id = ef.sector_id
-order by s.sector_key, ef.sort_order;
+  count(*) as alias_count
+from public.equipment_model_aliases;
+
+-- H) The old Option A tables should now be gone.
+select
+  to_regclass('public.replacement_price_references') as replacement_price_references_should_be_null,
+  to_regclass('public.valuation_profiles') as valuation_profiles_should_be_null,
+  to_regclass('public.fallback_price_bands') as fallback_price_bands_should_be_null;
