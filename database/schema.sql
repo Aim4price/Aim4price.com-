@@ -1,9 +1,27 @@
 -- Aim4price database note
 --
--- This file is no longer the live source of truth for the Railway database.
--- Use the files in database/migrations/ for all live database changes.
+-- This file is not the live source of truth for Railway.
+-- Use the SQL files in database/migrations/ instead.
 --
--- Agricultural foundation migration order:
--- 01-agri-foundation.sql
--- 02-agri-seed-and-backfill.sql
--- 03-agri-verify.sql
+-- Current database direction: Option B (simple / practical)
+--
+-- Keep live tables:
+--   brands
+--   sectors
+--   equipment_families
+--   equipment_models
+--   equipment_model_aliases
+--   market_vault_listings
+--   valuation_runs
+--   asset_register_items
+--   tractor_catalog (temporary tractor bridge while the product is still tractor-first)
+--
+-- Core idea:
+--   - replacement prices live directly on equipment_models
+--   - detailed depreciation logic lives in GitHub code, not in the database
+--   - generic fallback rows live inside equipment_models
+--
+-- Current migration order:
+--   01-agri-foundation.sql
+--   02-agri-seed-and-backfill.sql
+--   03-agri-verify.sql
