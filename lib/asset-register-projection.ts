@@ -2,18 +2,12 @@ import { getDb } from './db';
 import { getAssetRegisterItemById, type AssetRegisterItem, type AssetRegisterItemMethod } from './asset-register-db';
 import type { ConditionKey, TractorType } from './tractor-data';
 import type { GpsType } from './tractor-logic';
-
-const CONDITION_FACTORS: Record<ConditionKey, number> = {
-  excellent: 0.95,
-  good: 0.85,
-  fair: 0.75,
-  used: 0.65,
-  serious: 0.55,
-};
-
-const FRONT_PTO_REPLACEMENT_EX_VAT = 250_000;
-const GPS_FULL_AUTOSTEER_REPLACEMENT_EX_VAT = 250_000;
-const GPS_GUIDANCE_REPLACEMENT_EX_VAT = 100_000;
+import { calculateEngineHoursValue, tractorLifetimeHours, applyFloor, clamp, currentBaseYear, roundMoney } from './valuation/shared';
+import {
+  FRONT_PTO_REPLACEMENT_EX_VAT,
+  GPS_FULL_AUTOSTEER_REPLACEMENT_EX_VAT,
+  GPS_GUIDANCE_REPLACEMENT_EX_VAT,
+} from './valuation/tractors';
 
 type ProjectionSnapshot = {
   retailExVat: number;
@@ -73,19 +67,13 @@ function asObject(value: unknown): Record<string, unknown> {
 function parseValuationPayload(value: unknown): ParsedValuationPayload {
   if (value && typeof value === 'object') {
     const parsed = value as Record<string, unknown>;
-    return {
-      input: asObject(parsed.input),
-      output: asObject(parsed.output),
-    };
+    return { input: asObject(parsed.input), output: asObject(parsed.output) };
   }
 
   if (typeof value === 'string' && value.trim()) {
     try {
       const parsed = JSON.parse(value) as Record<string, unknown>;
-      return {
-        input: asObject(parsed.input),
-        output: asObject(parsed.output),
-      };
+      return { input: asObject(parsed.input), output: asObject(parsed.output) };
     } catch {
       return { input: {}, output: {} };
     }
@@ -106,14 +94,12 @@ function pick(row: GenericDbRow, candidates: string[]): unknown {
 
 function normalizeCondition(value: unknown): ConditionKey {
   const normalized = asText(value).toLowerCase();
-
   if (normalized === 'excellent') return 'excellent';
   if (normalized === 'fair') return 'fair';
   if (normalized === 'used') return 'used';
   if (normalized === 'serious' || normalized === 'requires attention' || normalized === 'requires serious attention') {
     return 'serious';
   }
-
   return 'good';
 }
 
@@ -125,53 +111,11 @@ function normalizeGpsType(value: unknown): GpsType {
   return asText(value).toLowerCase() === 'full-autosteer' ? 'full-autosteer' : 'guidance-only';
 }
 
-function roundMoney(value: number): number {
-  return Math.round(value);
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-function lifetime(type: TractorType, powerKw: number): number {
-  if (type === 'orchard') return 10_000;
-  if (powerKw <= 25) return 8_000;
-  if (powerKw <= 75) return 12_000;
-  return 14_000;
-}
-
-function ageDepAtYear(yearModel: number, targetYear: number): number {
-  const age = Math.max(0, targetYear - yearModel);
-
-  let depreciation = 0;
-  if (age >= 1) depreciation += 20;
-  if (age >= 2) depreciation += 15;
-  if (age >= 3) depreciation += 10;
-  if (age >= 4) depreciation += (age - 3) * 2.5;
-
-  return clamp(Number(depreciation.toFixed(1)), 0, 100);
-}
-
-function usageDep(type: TractorType, hours: number, powerKw: number): number {
-  const safeHours = Math.max(0, Number(hours) || 0);
-  const usagePct = (safeHours / lifetime(type, powerKw)) * 100;
-  return clamp(Number(usagePct.toFixed(1)), 0, 100);
-}
-
-function applyCondition(value: number, condition: ConditionKey): number {
-  return value * CONDITION_FACTORS[condition];
-}
-
-function applyFloor(value: number, replacementBase: number, floorPercent: number): number {
-  return Math.max(value, replacementBase * floorPercent);
-}
-
 function loaderReplacementPrice(powerKw: number): number {
   if (powerKw < 80) return 175_000;
   if (powerKw <= 120) return 225_000;
   return 340_000;
 }
-
 
 function inflationFactor(ratePct: number, yearsForward: number): number {
   const safeRate = Number.isFinite(ratePct) ? ratePct / 100 : 0;
@@ -187,8 +131,9 @@ function loaderValueAtYear(powerKw: number, yearModel: number, targetYear: numbe
 }
 
 function gpsValueAtYear(gpsType: GpsType, gpsYear: number, targetYear: number, inflation: number): number {
-  const baseReplacement =
-    gpsType === 'full-autosteer' ? GPS_FULL_AUTOSTEER_REPLACEMENT_EX_VAT : GPS_GUIDANCE_REPLACEMENT_EX_VAT;
+  const baseReplacement = gpsType === 'full-autosteer'
+    ? GPS_FULL_AUTOSTEER_REPLACEMENT_EX_VAT
+    : GPS_GUIDANCE_REPLACEMENT_EX_VAT;
   const replacementPrice = baseReplacement * inflation;
   const age = Math.max(0, targetYear - gpsYear);
   const depreciation = clamp(age * 10, 0, 80);
@@ -220,19 +165,22 @@ function calculateSnapshot(input: {
     input.replacementPriceExVat + (input.frontPtoEnabled && input.powerKw >= 70 ? FRONT_PTO_REPLACEMENT_EX_VAT : 0);
   const projectedReplacementBaseExVat = replacementBaseExVat * inflator;
 
-  const ageDepPct = ageDepAtYear(input.yearModel, input.targetYear);
-  const usageDepPct = usageDep(input.tractorType, hours, input.powerKw);
-  const averageDepPct = Math.round((ageDepPct + usageDepPct) / 2);
-
-  const tractorBeforeCondition = projectedReplacementBaseExVat * (1 - averageDepPct / 100);
-  const tractorAfterCondition = applyCondition(tractorBeforeCondition, input.condition);
-  const tractorExVat = roundMoney(applyFloor(tractorAfterCondition, projectedReplacementBaseExVat, 0.05));
+  const tractorExVat = calculateEngineHoursValue({
+    replacementPriceExVat: projectedReplacementBaseExVat,
+    yearModel: input.yearModel,
+    hours,
+    condition: input.condition,
+    maxLifetimeHours: tractorLifetimeHours(input.tractorType, input.powerKw),
+    baseYear: input.targetYear,
+  }).finalValueExVat;
 
   const loaderExVat = input.frontLoaderEnabled
     ? loaderValueAtYear(input.powerKw, input.yearModel, input.targetYear, inflator)
     : 0;
 
-  const gpsExVat = input.gpsEnabled ? gpsValueAtYear(input.gpsType, input.gpsYear, input.targetYear, inflator) : 0;
+  const gpsExVat = input.gpsEnabled
+    ? gpsValueAtYear(input.gpsType, input.gpsYear, input.targetYear, inflator)
+    : 0;
 
   const retailExVat = tractorExVat + loaderExVat + gpsExVat;
 
@@ -339,43 +287,56 @@ export async function calculateFuturePriceForAsset(input: {
     throw new Error('VALUATION_RUN_NOT_FOUND');
   }
 
-  const payload = parseValuationPayload(pick(valuationRow, ['valuation_payload']));
-  const payloadInput = payload.input;
+  const valuationPayload = parseValuationPayload(pick(valuationRow, ['valuation_payload', 'payload']));
+  const valuationInput = valuationPayload.input;
 
-  const replacementPriceExVat =
-    asNumber(pick(valuationRow, ['catalog_replacement_price_ex_vat'])) ??
-    (await fetchCatalogReplacementPrice({
-      equipmentModelId: pick(valuationRow, ['equipment_model_id']),
-      legacyModelId: pick(valuationRow, ['model_id']),
-    }));
+  const selectedMethod = asset.selectedMethod;
+  const currentRegisterValueExVat = Math.round(asset.selectedValueExVat ?? asset.value);
+  const baseYear = new Date().getFullYear();
+  const targetYear = Math.max(baseYear, Math.round(input.targetYear));
+  const yearsForward = Math.max(0, targetYear - baseYear);
+  const inflationRatePct = Number.isFinite(input.inflationRatePct) ? Number(input.inflationRatePct) : 0;
+  const extraHours = Math.max(0, Math.round(Number(input.extraHours ?? 0) || 0));
+
+  const yearModel = Math.round(
+    asNumber(asset.yearModel) ?? asNumber(pick(valuationRow, ['year_model'])) ?? asNumber(valuationInput.year) ?? baseYear,
+  );
+  const hoursStart = Math.max(
+    0,
+    Math.round(
+      asNumber(asset.hours) ?? asNumber(pick(valuationRow, ['hours'])) ?? asNumber(valuationInput.hours) ?? 0,
+    ),
+  );
+  const condition = normalizeCondition(
+    asset.condition ?? pick(valuationRow, ['condition']) ?? valuationInput.condition,
+  );
+  const tractorType = normalizeTractorType(asset.tractorType ?? pick(valuationRow, ['tractor_type']));
+  const powerKw = Math.max(
+    0,
+    Math.round(asNumber(asset.powerKw) ?? asNumber(pick(valuationRow, ['power_kw'])) ?? 0),
+  );
+
+  const frontPtoEnabled = asBoolean(pick(valuationRow, ['front_pto'])) || asBoolean(valuationInput.frontPto);
+  const frontLoaderEnabled = asBoolean(pick(valuationRow, ['front_loader'])) || asBoolean(valuationInput.frontLoader);
+  const gpsEnabled = asBoolean(pick(valuationRow, ['gps_enabled'])) || asBoolean(valuationInput.gpsEnabled);
+  const gpsType = normalizeGpsType(pick(valuationRow, ['gps_type']) ?? valuationInput.gpsType);
+  const gpsYear = Math.max(
+    1950,
+    Math.round(
+      asNumber(pick(valuationRow, ['gps_year'])) ?? asNumber(valuationInput.gpsYear) ?? yearModel,
+    ),
+  );
+
+  const replacementPriceExVat = await fetchCatalogReplacementPrice({
+    equipmentModelId: asset.equipmentModelId ?? pick(valuationRow, ['equipment_model_id']),
+    legacyModelId: pick(valuationRow, ['model_id']),
+  });
 
   if (!replacementPriceExVat || replacementPriceExVat <= 0) {
     throw new Error('REPLACEMENT_PRICE_NOT_AVAILABLE');
   }
 
-  const baseYear = new Date().getFullYear();
-  const targetYear = Math.max(baseYear, Math.round(input.targetYear || baseYear));
-  const inflationRatePct = clamp(Number(input.inflationRatePct) || 0, -50, 200);
-  const extraHours = Math.max(0, Math.round(Number(input.extraHours) || 0));
-
-  const yearModel = asset.yearModel ?? Math.round(asNumber(pick(valuationRow, ['year_model'])) ?? baseYear);
-  const powerKw = asset.powerKw ?? Math.round(asNumber(pick(valuationRow, ['power_kw'])) ?? 0);
-  const tractorType = normalizeTractorType(asset.tractorType || pick(valuationRow, ['tractor_type']) || payloadInput.tractorType);
-  const hoursStart = Math.max(
-    0,
-    Math.round(asset.hours ?? asNumber(pick(valuationRow, ['hours'])) ?? asNumber(payloadInput.hours) ?? 0),
-  );
-
-  const condition = normalizeCondition(asset.condition || pick(valuationRow, ['condition']) || payloadInput.condition);
-  const frontPtoEnabled = asBoolean(pick(valuationRow, ['front_pto'])) || asBoolean(payloadInput.frontPto);
-  const frontLoaderEnabled = asBoolean(pick(valuationRow, ['front_loader'])) || asBoolean(payloadInput.frontLoader);
-  const gpsEnabled = asBoolean(pick(valuationRow, ['gps_enabled'])) || asBoolean(payloadInput.gpsEnabled);
-  const gpsType = normalizeGpsType(pick(valuationRow, ['gps_type']) ?? payloadInput.gpsType);
-  const gpsYear = Math.round(
-    asNumber(pick(valuationRow, ['gps_year'])) ?? asNumber(payloadInput.gpsYear) ?? yearModel,
-  );
-
-  const currentResult = calculateSnapshot({
+  const current = calculateSnapshot({
     targetYear: baseYear,
     baseYear,
     replacementPriceExVat,
@@ -391,9 +352,9 @@ export async function calculateFuturePriceForAsset(input: {
     gpsType,
     gpsYear,
     inflationRatePct: 0,
-  });
+  }).snapshot;
 
-  const projectedResult = calculateSnapshot({
+  const projected = calculateSnapshot({
     targetYear,
     baseYear,
     replacementPriceExVat,
@@ -409,20 +370,20 @@ export async function calculateFuturePriceForAsset(input: {
     gpsType,
     gpsYear,
     inflationRatePct,
-  });
+  }).snapshot;
 
   return {
     assetId: asset.id,
     assetTitle: asset.title,
-    selectedMethod: asset.selectedMethod,
-    currentRegisterValueExVat: Math.round(asset.value || 0),
+    selectedMethod,
+    currentRegisterValueExVat,
     baseYear,
     targetYear,
     inflationRatePct,
-    yearsForward: Math.max(0, targetYear - baseYear),
+    yearsForward,
     extraHours,
     condition,
-    current: currentResult.snapshot,
-    projected: projectedResult.snapshot,
+    current,
+    projected,
   };
 }
