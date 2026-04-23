@@ -23,6 +23,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, count: families.length, families });
   } catch (error) {
     console.error('equipment-families route failed', error);
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Failed to load equipment families.' }, { status: 500 });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Failed to load equipment families.',
+      },
+      { status: 500 },
+    );
   }
 }
