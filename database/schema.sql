@@ -5,7 +5,7 @@
 --
 -- Current database direction: Option B (simple / practical)
 --
--- Keep live tables:
+-- Core live tables:
 --   brands
 --   sectors
 --   equipment_families
@@ -14,12 +14,13 @@
 --   market_vault_listings
 --   valuation_runs
 --   asset_register_items
---   tractor_catalog (temporary tractor bridge while the product is still tractor-first)
+--   tractor_catalog (temporary tractor bridge while tractors remain the first live family)
 --
 -- Core idea:
 --   - replacement prices live directly on equipment_models
---   - detailed depreciation logic lives in GitHub code, not in the database
+--   - depreciation logic lives in GitHub code
 --   - generic fallback rows live inside equipment_models
+--   - sectors are fixed to 1=agricultural, 2=industrial, 3=construction
 --
 -- Current migration order:
 --   01-agri-foundation.sql
