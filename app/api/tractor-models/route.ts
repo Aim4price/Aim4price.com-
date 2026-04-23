@@ -2,38 +2,45 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '../../../lib/db';
 import type { CabType, DriveType, TractorCatalogRow, TractorType } from '../../../lib/tractor-data';
 
+type EquipmentModelDbRow = {
+  id: string | number;
+  legacy_tractor_catalog_id: string | number | null;
+  brand_slug: string | null;
+  brand_name: string | null;
+  model_name: string;
+  tractor_type: string | null;
+  drive_type: string | null;
+  cab_type: string | null;
+  power_kw: number | string | null;
+  year_start: number | string | null;
+  year_end: number | string | null;
+  aim4price_replacement_price_ex_vat: string | number | null;
+  is_generic_fallback: boolean | string | number | null;
+};
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type TractorCatalogDbRow = {
-  id: string | number;
-  brand_slug: string;
-  brand_name: string;
-  model_name: string;
-  tractor_type: string;
-  drive_type: string;
-  cab_type: string;
-  power_kw: number | string;
-  year_start: number | string;
-  year_end: number | string;
-  aim4price_replacement_price_ex_vat: string | number | null;
-};
+function normalizeText(value: unknown): string {
+  return String(value ?? '').trim();
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/\./g, '')
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
 function normalizeTractorType(value: unknown): TractorType {
-  const normalized = String(value ?? '').trim().toLowerCase();
-
-  if (normalized === 'orchard' || normalized === 'vineyard') {
-    return 'orchard';
-  }
-
-  return 'field';
+  const normalized = normalizeText(value).toLowerCase();
+  return normalized === 'orchard' || normalized === 'vineyard' ? 'orchard' : 'field';
 }
 
 function normalizeDriveType(value: unknown): DriveType {
-  const normalized = String(value ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '');
+  const normalized = normalizeText(value).toLowerCase().replace(/\s+/g, '');
 
   if (normalized === '2wd' || normalized === '2x4' || normalized === '2-wheel-drive') {
     return '2wd';
@@ -47,16 +54,10 @@ function normalizeDriveType(value: unknown): DriveType {
 }
 
 function normalizeCabType(value: unknown): CabType {
-  const normalized = String(value ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/[_\s]+/g, '-');
-
-  if (normalized === 'open-station' || normalized === 'openstation' || normalized === 'open') {
-    return 'open-station';
-  }
-
-  return 'cab';
+  const normalized = normalizeText(value).toLowerCase().replace(/[\s_]+/g, '-');
+  return normalized === 'open-station' || normalized === 'openstation' || normalized === 'open'
+    ? 'open-station'
+    : 'cab';
 }
 
 function toNumber(value: unknown): number {
@@ -64,18 +65,28 @@ function toNumber(value: unknown): number {
   return Number.isFinite(numeric) ? numeric : 0;
 }
 
-function mapTractorRow(row: TractorCatalogDbRow): TractorCatalogRow {
+function toBoolean(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+
+  const normalized = normalizeText(value).toLowerCase();
+  return ['true', 't', '1', 'yes'].includes(normalized);
+}
+
+function mapTractorRow(row: EquipmentModelDbRow): TractorCatalogRow {
   const powerKw = toNumber(row.power_kw);
   const powerHp = Math.round(powerKw * 1.341);
   const replacement = toNumber(row.aim4price_replacement_price_ex_vat);
+  const brandName = normalizeText(row.brand_name);
+  const modelName = normalizeText(row.model_name);
 
   return {
     id: String(row.id),
-    title: `${row.brand_name} ${row.model_name}`,
-    name: `${row.brand_name} ${row.model_name}`,
-    brandName: row.brand_name,
-    brandSlug: row.brand_slug,
-    modelName: row.model_name,
+    title: `${brandName} ${modelName}`.trim(),
+    name: `${brandName} ${modelName}`.trim(),
+    brandName,
+    brandSlug: normalizeText(row.brand_slug) || slugify(brandName),
+    modelName,
     tractorType: normalizeTractorType(row.tractor_type),
     drive: normalizeDriveType(row.drive_type),
     cab: normalizeCabType(row.cab_type),
@@ -114,91 +125,85 @@ export async function GET(request: NextRequest) {
     const cab = searchParams.get('cab');
 
     if (!brandSlug) {
-      return NextResponse.json(
-        { ok: false, error: 'brandSlug is required' },
-        { status: 400 },
-      );
+      return NextResponse.json({ ok: false, error: 'brandSlug is required' }, { status: 400 });
     }
 
     if (tractorType && !isValidTractorType(tractorType)) {
-      return NextResponse.json(
-        { ok: false, error: 'Invalid tractorType' },
-        { status: 400 },
-      );
+      return NextResponse.json({ ok: false, error: 'Invalid tractorType' }, { status: 400 });
     }
 
     if (drive && !isValidDriveType(drive)) {
-      return NextResponse.json(
-        { ok: false, error: 'Invalid drive' },
-        { status: 400 },
-      );
+      return NextResponse.json({ ok: false, error: 'Invalid drive' }, { status: 400 });
     }
 
     if (cab && !isValidCabType(cab)) {
-      return NextResponse.json(
-        { ok: false, error: 'Invalid cab' },
-        { status: 400 },
-      );
+      return NextResponse.json({ ok: false, error: 'Invalid cab' }, { status: 400 });
     }
 
     const db = getDb();
-
-    const values: Array<string> = [brandSlug];
+    const values: string[] = [brandSlug];
     const conditions: string[] = [
+      `s.sector_key = 'agricultural'`,
+      `ef.family_key = 'tractors'`,
       'b.slug = $1',
       'b.is_active = true',
-      'tc.is_active = true',
+      'em.is_active = true',
+      'coalesce(em.is_generic_fallback, false) = false',
     ];
 
     if (tractorType) {
       values.push(tractorType);
-      conditions.push(`tc.tractor_type = $${values.length}`);
+      conditions.push(`em.tractor_type = $${values.length}`);
     }
 
     if (drive) {
       values.push(drive);
-      conditions.push(`tc.drive_type = $${values.length}`);
+      conditions.push(`em.drive_type = $${values.length}`);
     }
 
     if (cab) {
       values.push(cab);
-      conditions.push(`tc.cab_type = $${values.length}`);
+      conditions.push(`em.cab_type = $${values.length}`);
     }
 
-    const result = await db.query<TractorCatalogDbRow>(
+    const result = await db.query<EquipmentModelDbRow>(
       `
         select
-          tc.id,
+          em.id,
+          em.legacy_tractor_catalog_id,
           b.slug as brand_slug,
           b.name as brand_name,
-          tc.model_name,
-          tc.tractor_type,
-          tc.drive_type,
-          tc.cab_type,
-          tc.power_kw,
-          tc.year_start,
-          tc.year_end,
-          tc.aim4price_replacement_price_ex_vat
-        from tractor_catalog tc
-        inner join brands b
-          on b.id = tc.brand_id
-        where ${conditions.join('\n          and ')}
+          em.model_name,
+          em.tractor_type,
+          em.drive_type,
+          em.cab_type,
+          em.power_kw,
+          em.year_start,
+          em.year_end,
+          em.aim4price_replacement_price_ex_vat,
+          em.is_generic_fallback
+        from public.equipment_models em
+        inner join public.equipment_families ef
+          on ef.id = em.equipment_family_id
+        inner join public.sectors s
+          on s.id = ef.sector_id
+        inner join public.brands b
+          on b.id = em.brand_id
+        where ${conditions.join(' and ')}
         order by
-          tc.model_name asc,
-          tc.year_start asc,
-          tc.year_end asc,
-          tc.id asc
+          em.model_name asc,
+          em.year_start asc nulls last,
+          em.year_end asc nulls last,
+          em.id asc
       `,
       values,
     );
 
-    const models = result.rows.map(mapTractorRow);
+    const models = result.rows
+      .filter((row) => !toBoolean(row.is_generic_fallback))
+      .map(mapTractorRow);
 
-    return NextResponse.json({
-      ok: true,
-      count: models.length,
-      models,
-    });
+    return NextResponse.json({ ok: true, count: models.length, models });
   } catch (error) {
     console.error('tractor-models route failed', error);
 
