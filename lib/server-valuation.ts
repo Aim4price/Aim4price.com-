@@ -10,43 +10,49 @@ import type {
 import type { GpsType, Result, RunValuationInput } from './tractor-logic';
 
 type DbTractorCatalogRow = TractorCatalogRow & {
+  equipmentModelId: number;
+  legacyTractorCatalogId: number | null;
   frontPtoSupported: boolean;
   frontLoaderSupported: boolean;
   gpsSupported: boolean;
+  isGenericFallback: boolean;
 };
 
-type TractorCatalogDbRow = {
+type EquipmentModelDbRow = {
   id: string | number;
-  brand_slug: string;
-  brand_name: string;
+  legacy_tractor_catalog_id: string | number | null;
+  brand_slug: string | null;
+  brand_name: string | null;
   model_name: string;
-  tractor_type: string;
-  drive_type: string;
-  cab_type: string;
-  power_kw: string | number;
-  year_start: string | number;
-  year_end: string | number;
-  aim4price_replacement_price_ex_vat: string | number;
-  front_pto_supported: boolean | string | number | null;
-  front_loader_supported: boolean | string | number | null;
-  gps_supported: boolean | string | number | null;
+  tractor_type: string | null;
+  drive_type: string | null;
+  cab_type: string | null;
+  power_kw: string | number | null;
+  year_start: string | number | null;
+  year_end: string | number | null;
+  aim4price_replacement_price_ex_vat: string | number | null;
+  replacement_price_year: string | number | null;
+  is_generic_fallback: boolean | string | number | null;
+  specs_json: Record<string, unknown> | null;
 };
 
 type MarketListingDbRow = {
   id: string | number;
   equipment_type: string | null;
+  equipment_model_id: string | number | null;
   brand_name: string;
   model_name: string;
-  tractor_type: string;
-  drive_type: string;
+  tractor_type: string | null;
+  drive_type: string | null;
   cab_type: string | null;
-  power_kw: string | number;
-  year_model: string | number;
-  hours: string | number;
+  power_kw: string | number | null;
+  year_model: string | number | null;
+  hours: string | number | null;
   advertised_price_ex_vat: string | number | null;
   source_name: string;
   source_url: string | null;
   province: string | null;
+  area: string | null;
   date_advertised: string | null;
   is_sold: boolean | string | number | null;
 };
@@ -133,6 +139,13 @@ function toBoolean(value: unknown): boolean {
   return normalized === 'true' || normalized === 't' || normalized === '1' || normalized === 'yes';
 }
 
+function asObject(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
 function roundMoney(value: number): number {
   return Math.round(value);
 }
@@ -150,6 +163,10 @@ function lifetime(type: TractorType, kw: number): number {
   if (kw <= 25) return 8_000;
   if (kw <= 75) return 12_000;
   return 14_000;
+}
+
+function fallbackHours(type: TractorType, kw: number): number {
+  return Math.round(lifetime(type, kw) * 0.65);
 }
 
 function ageDep(year: number, baseYear = currentBaseYear()): number {
@@ -204,19 +221,21 @@ function loaderReplacementPrice(kw: number): number {
   return 340_000;
 }
 
-function mapModelRow(row: TractorCatalogDbRow): DbTractorCatalogRow {
+function mapModelRow(row: EquipmentModelDbRow): DbTractorCatalogRow {
   const powerKw = toNumber(row.power_kw);
   const powerHp = Math.round(powerKw * 1.341);
   const replacement = toNumber(row.aim4price_replacement_price_ex_vat);
   const brandName = normalizeText(row.brand_name);
+  const modelName = normalizeText(row.model_name);
+  const specs = asObject(row.specs_json);
 
   return {
     id: String(row.id),
-    title: `${brandName} ${normalizeText(row.model_name)}`,
-    name: `${brandName} ${normalizeText(row.model_name)}`,
+    title: `${brandName} ${modelName}`.trim(),
+    name: `${brandName} ${modelName}`.trim(),
     brandName,
     brandSlug: normalizeText(row.brand_slug) || slugify(brandName),
-    modelName: normalizeText(row.model_name),
+    modelName,
     tractorType: normalizeTractorType(row.tractor_type),
     drive: normalizeDriveType(row.drive_type),
     cab: normalizeCabType(row.cab_type),
@@ -230,29 +249,33 @@ function mapModelRow(row: TractorCatalogDbRow): DbTractorCatalogRow {
     aim4priceReplacementExVat: replacement,
     replacementPriceExVat: replacement,
     imageSrc: '/brand/Tractor.png',
-    frontPtoSupported: toBoolean(row.front_pto_supported),
-    frontLoaderSupported: toBoolean(row.front_loader_supported),
-    gpsSupported: toBoolean(row.gps_supported),
+    equipmentModelId: toNumber(row.id),
+    legacyTractorCatalogId: toPositiveNumber(row.legacy_tractor_catalog_id),
+    frontPtoSupported: toBoolean(specs.front_pto_supported),
+    frontLoaderSupported: toBoolean(specs.front_loader_supported),
+    gpsSupported: toBoolean(specs.gps_supported),
+    isGenericFallback: toBoolean(row.is_generic_fallback),
   };
 }
 
 function mapListingRow(row: MarketListingDbRow, model: TractorCatalogRow): MarketplaceListing {
-  const brandName = normalizeText(row.brand_name);
-  const modelName = normalizeText(row.model_name);
-  const powerKw = toNumber(row.power_kw);
+  const brandName = normalizeText(row.brand_name) || model.brandName;
+  const modelName = normalizeText(row.model_name) || model.modelName;
+  const powerKw = toNumber(row.power_kw) || model.powerKw;
   const powerHp = Math.round(powerKw * 1.341);
   const province = normalizeText(row.province) || 'Unknown';
+  const area = normalizeText(row.area) || province;
   const cab = normalizeCabTypeNullable(row.cab_type) ?? model.cab;
 
   return {
     id: String(row.id),
     modelId: model.id,
-    title: `${brandName} ${modelName}`,
+    title: `${brandName} ${modelName}`.trim(),
     brandName,
     brandSlug: slugify(brandName),
     modelName,
-    tractorType: normalizeTractorType(row.tractor_type),
-    drive: normalizeDriveType(row.drive_type),
+    tractorType: normalizeTractorType(row.tractor_type || model.tractorType),
+    drive: normalizeDriveType(row.drive_type || model.drive),
     cab,
     powerKw,
     powerHp,
@@ -261,8 +284,8 @@ function mapListingRow(row: MarketListingDbRow, model: TractorCatalogRow): Marke
     year: toNumber(row.year_model),
     hours: toNumber(row.hours),
     province,
-    area: province,
-    location: province,
+    area,
+    location: `${area}, ${province}`,
     sourceName: normalizeText(row.source_name),
     sourceUrl: normalizeText(row.source_url),
     dateAdvertised: normalizeText(row.date_advertised),
@@ -280,10 +303,12 @@ function aim4BaseValue(
   hours: number,
   condition: ConditionKey,
 ): number {
-  const depreciation = averageDep(model, year, hours);
-  const afterDep = model.aim4priceReplacementExVat * (1 - depreciation / 100);
+  const replacementBase = Math.max(0, model.aim4priceReplacementExVat);
+  const hoursToUse = hours > 0 ? hours : fallbackHours(model.tractorType, model.powerKw);
+  const depreciation = averageDep(model, year, hoursToUse);
+  const afterDep = replacementBase * (1 - depreciation / 100);
   const afterCondition = applyCondition(afterDep, condition);
-  return roundMoney(applyFloor(afterCondition, model.aim4priceReplacementExVat, FALLBACK_TRACTOR_FLOOR_PERCENT));
+  return roundMoney(applyFloor(afterCondition, replacementBase, FALLBACK_TRACTOR_FLOOR_PERCENT));
 }
 
 function marketSnapshot(model: TractorCatalogRow, year: number, hours: number, sourceRows: MarketplaceListing[]) {
@@ -338,7 +363,8 @@ function frontPtoValue(
     return 0;
   }
 
-  const depreciation = averageDep(model, year, hours);
+  const hoursToUse = hours > 0 ? hours : fallbackHours(model.tractorType, model.powerKw);
+  const depreciation = averageDep(model, year, hoursToUse);
   const afterDep = FRONT_PTO_REPLACEMENT_EX_VAT * (1 - depreciation / 100);
   const afterCondition = applyCondition(afterDep, condition);
 
@@ -385,26 +411,37 @@ function gpsValue(
 
 async function fetchModel(modelId: string): Promise<DbTractorCatalogRow | null> {
   const db = getDb();
-  const result = await db.query<TractorCatalogDbRow>(
+  const result = await db.query<EquipmentModelDbRow>(
     `
       select
-        tc.id,
+        em.id,
+        em.legacy_tractor_catalog_id,
         b.slug as brand_slug,
         b.name as brand_name,
-        tc.model_name,
-        tc.tractor_type,
-        tc.drive_type,
-        tc.cab_type,
-        tc.power_kw,
-        tc.year_start,
-        tc.year_end,
-        tc.aim4price_replacement_price_ex_vat,
-        tc.front_pto_supported,
-        tc.front_loader_supported,
-        tc.gps_supported
-      from tractor_catalog tc
-      join brands b on b.id = tc.brand_id
-      where tc.id::text = $1
+        em.model_name,
+        em.tractor_type,
+        em.drive_type,
+        em.cab_type,
+        em.power_kw,
+        em.year_start,
+        em.year_end,
+        em.aim4price_replacement_price_ex_vat,
+        em.replacement_price_year,
+        em.is_generic_fallback,
+        em.specs_json
+      from public.equipment_models em
+      join public.equipment_families ef
+        on ef.id = em.equipment_family_id
+      join public.sectors s
+        on s.id = ef.sector_id
+      left join public.brands b
+        on b.id = em.brand_id
+      where s.sector_key = 'agricultural'
+        and ef.family_key = 'tractors'
+        and em.is_active = true
+        and coalesce(em.is_generic_fallback, false) = false
+        and (em.id::text = $1 or em.legacy_tractor_catalog_id::text = $1)
+      order by case when em.id::text = $1 then 0 else 1 end, em.id asc
       limit 1
     `,
     [modelId],
@@ -414,13 +451,22 @@ async function fetchModel(modelId: string): Promise<DbTractorCatalogRow | null> 
   return row ? mapModelRow(row) : null;
 }
 
-async function fetchMarketListings(model: TractorCatalogRow): Promise<MarketplaceListing[]> {
+async function fetchMarketListings(model: DbTractorCatalogRow): Promise<MarketplaceListing[]> {
   const db = getDb();
+  const values: Array<string | number> = [
+    model.equipmentModelId,
+    model.brandName.toLowerCase(),
+    model.modelName.toLowerCase(),
+    model.tractorType,
+    model.drive,
+  ];
+
   const result = await db.query<MarketListingDbRow>(
     `
       select
         id,
         equipment_type,
+        equipment_model_id,
         brand_name,
         model_name,
         tractor_type,
@@ -433,18 +479,24 @@ async function fetchMarketListings(model: TractorCatalogRow): Promise<Marketplac
         source_name,
         source_url,
         province,
+        area,
         date_advertised,
         is_sold
-      from market_vault_listings
+      from public.market_vault_listings
       where lower(trim(coalesce(equipment_type, 'tractor'))) = 'tractor'
-        and lower(trim(brand_name)) = $1
-        and lower(trim(model_name)) = $2
-        and lower(trim(tractor_type)) = $3
-        and lower(replace(trim(drive_type), ' ', '')) = $4
         and coalesce(is_sold, false) = false
-      order by date_advertised desc nulls last, year_model desc, hours asc
+        and (
+          equipment_model_id = $1
+          or (
+            lower(trim(brand_name)) = $2
+            and lower(trim(model_name)) = $3
+            and lower(trim(tractor_type)) = $4
+            and lower(replace(trim(drive_type), ' ', '')) = $5
+          )
+        )
+      order by date_advertised desc nulls last, year_model desc nulls last, hours asc nulls last
     `,
-    [model.brandName.toLowerCase(), model.modelName.toLowerCase(), model.tractorType, model.drive],
+    values,
   );
 
   return result.rows.map((row) => mapListingRow(row, model));

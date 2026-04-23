@@ -1,5 +1,6 @@
 export type SectorKey = 'agricultural' | 'industrial' | 'construction';
 export type UsageMetricType = 'hours' | 'wear_class';
+export type ValuationMode = 'engine_hours' | 'year_condition' | 'percent_used';
 
 export type EquipmentFamilyKey =
   | 'tractors'
@@ -23,6 +24,7 @@ export type EquipmentFamilyMeta = {
   sectorKey: SectorKey;
   isPropelled: boolean;
   usageMetricType: UsageMetricType;
+  valuationMode: ValuationMode;
   active: boolean;
   assetKind: EquipmentKind;
 };
@@ -40,6 +42,7 @@ export const EQUIPMENT_FAMILY_META: Record<EquipmentFamilyKey, EquipmentFamilyMe
     sectorKey: 'agricultural',
     isPropelled: true,
     usageMetricType: 'hours',
+    valuationMode: 'engine_hours',
     active: true,
     assetKind: 'tractor',
   },
@@ -49,6 +52,7 @@ export const EQUIPMENT_FAMILY_META: Record<EquipmentFamilyKey, EquipmentFamilyMe
     sectorKey: 'agricultural',
     isPropelled: true,
     usageMetricType: 'hours',
+    valuationMode: 'engine_hours',
     active: false,
     assetKind: 'manual',
   },
@@ -58,6 +62,7 @@ export const EQUIPMENT_FAMILY_META: Record<EquipmentFamilyKey, EquipmentFamilyMe
     sectorKey: 'agricultural',
     isPropelled: true,
     usageMetricType: 'hours',
+    valuationMode: 'engine_hours',
     active: false,
     assetKind: 'manual',
   },
@@ -67,6 +72,7 @@ export const EQUIPMENT_FAMILY_META: Record<EquipmentFamilyKey, EquipmentFamilyMe
     sectorKey: 'agricultural',
     isPropelled: true,
     usageMetricType: 'hours',
+    valuationMode: 'engine_hours',
     active: false,
     assetKind: 'manual',
   },
@@ -76,6 +82,7 @@ export const EQUIPMENT_FAMILY_META: Record<EquipmentFamilyKey, EquipmentFamilyMe
     sectorKey: 'agricultural',
     isPropelled: false,
     usageMetricType: 'wear_class',
+    valuationMode: 'year_condition',
     active: false,
     assetKind: 'manual',
   },
@@ -85,6 +92,7 @@ export const EQUIPMENT_FAMILY_META: Record<EquipmentFamilyKey, EquipmentFamilyMe
     sectorKey: 'agricultural',
     isPropelled: false,
     usageMetricType: 'wear_class',
+    valuationMode: 'year_condition',
     active: false,
     assetKind: 'manual',
   },
@@ -94,6 +102,7 @@ export const EQUIPMENT_FAMILY_META: Record<EquipmentFamilyKey, EquipmentFamilyMe
     sectorKey: 'agricultural',
     isPropelled: false,
     usageMetricType: 'wear_class',
+    valuationMode: 'year_condition',
     active: false,
     assetKind: 'manual',
   },
@@ -103,6 +112,7 @@ export const EQUIPMENT_FAMILY_META: Record<EquipmentFamilyKey, EquipmentFamilyMe
     sectorKey: 'agricultural',
     isPropelled: false,
     usageMetricType: 'wear_class',
+    valuationMode: 'year_condition',
     active: false,
     assetKind: 'manual',
   },
@@ -112,6 +122,7 @@ export const EQUIPMENT_FAMILY_META: Record<EquipmentFamilyKey, EquipmentFamilyMe
     sectorKey: 'agricultural',
     isPropelled: false,
     usageMetricType: 'wear_class',
+    valuationMode: 'year_condition',
     active: false,
     assetKind: 'manual',
   },
@@ -121,6 +132,7 @@ export const EQUIPMENT_FAMILY_META: Record<EquipmentFamilyKey, EquipmentFamilyMe
     sectorKey: 'agricultural',
     isPropelled: false,
     usageMetricType: 'wear_class',
+    valuationMode: 'year_condition',
     active: false,
     assetKind: 'manual',
   },
@@ -130,6 +142,7 @@ export const EQUIPMENT_FAMILY_META: Record<EquipmentFamilyKey, EquipmentFamilyMe
     sectorKey: 'agricultural',
     isPropelled: false,
     usageMetricType: 'wear_class',
+    valuationMode: 'year_condition',
     active: false,
     assetKind: 'manual',
   },
@@ -139,6 +152,7 @@ export const EQUIPMENT_FAMILY_META: Record<EquipmentFamilyKey, EquipmentFamilyMe
     sectorKey: 'agricultural',
     isPropelled: true,
     usageMetricType: 'hours',
+    valuationMode: 'engine_hours',
     active: false,
     assetKind: 'manual',
   },
@@ -165,6 +179,10 @@ export function isSectorKey(value: unknown): value is SectorKey {
 
 export function isUsageMetricType(value: unknown): value is UsageMetricType {
   return value === 'hours' || value === 'wear_class';
+}
+
+export function isValuationMode(value: unknown): value is ValuationMode {
+  return value === 'engine_hours' || value === 'year_condition' || value === 'percent_used';
 }
 
 export function isEquipmentFamilyKey(value: unknown): value is EquipmentFamilyKey {

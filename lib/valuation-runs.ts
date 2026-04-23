@@ -1,5 +1,5 @@
 import { getDb } from './db';
-import { fetchEquipmentLinkForLegacyTractorCatalogId } from './equipment-catalog';
+import { fetchEquipmentLinkForModelSelection } from './equipment-catalog';
 import { runServerValuation } from './server-valuation';
 import type { Result, RunValuationInput } from './tractor-logic';
 
@@ -58,25 +58,24 @@ export function getSelectedMethodValue(result: Result, method: MethodKey): numbe
 }
 
 function getMarketListingIds(result: Result): number[] {
-  return result.marketSources.map((listing) => toIntegerOrNull(listing.id)).filter((value): value is number => value !== null);
+  return result.marketSources
+    .map((listing) => toIntegerOrNull(listing.id))
+    .filter((value): value is number => value !== null);
 }
 
 async function fetchCatalogLink(modelId: string): Promise<CatalogLinkRow | null> {
-  const genericLink = await fetchEquipmentLinkForLegacyTractorCatalogId(modelId);
-  if (genericLink?.legacyTractorCatalogId) {
-    return {
-      modelId: genericLink.legacyTractorCatalogId,
-      brandId: genericLink.brandId,
-      sectorId: genericLink.sectorId,
-      equipmentFamilyId: genericLink.equipmentFamilyId,
-      equipmentModelId: genericLink.equipmentModelId,
-    };
+  const genericLink = await fetchEquipmentLinkForModelSelection(modelId);
+  if (!genericLink?.equipmentModelId) {
+    return null;
   }
-  const db = getDb();
-  const query = await db.query<{ model_id: number; brand_id: number | null }>(`select tc.id as model_id, tc.brand_id from tractor_catalog tc where tc.id::text = $1 limit 1`, [modelId]);
-  const row = query.rows[0];
-  if (!row) return null;
-  return { modelId: row.model_id, brandId: row.brand_id, sectorId: null, equipmentFamilyId: null, equipmentModelId: null };
+
+  return {
+    modelId: genericLink.legacyTractorCatalogId ?? genericLink.equipmentModelId,
+    brandId: genericLink.brandId,
+    sectorId: genericLink.sectorId,
+    equipmentFamilyId: genericLink.equipmentFamilyId,
+    equipmentModelId: genericLink.equipmentModelId,
+  };
 }
 
 function buildValuationPayload(input: SaveValuationRunInput, result: Result, selectedValueExVat: number) {
@@ -112,11 +111,16 @@ function buildValuationPayload(input: SaveValuationRunInput, result: Result, sel
   };
 }
 
-export async function saveValuationRunFromResult(input: SaveValuationRunInput, result: Result): Promise<SaveValuationRunResult> {
+export async function saveValuationRunFromResult(
+  input: SaveValuationRunInput,
+  result: Result,
+): Promise<SaveValuationRunResult> {
   const selectedValueExVat = getSelectedMethodValue(result, input.selectedMethod);
   if (selectedValueExVat === null) throw new Error('SELECTED_METHOD_NOT_AVAILABLE');
+
   const catalogLink = await fetchCatalogLink(String(result.model.id));
   if (!catalogLink) throw new Error('MODEL_NOT_FOUND');
+
   const db = getDb();
   const marketListingIds = getMarketListingIds(result);
   const valuationVersion = String(input.valuationVersion ?? 'v1').trim() || 'v1';
@@ -125,62 +129,71 @@ export async function saveValuationRunFromResult(input: SaveValuationRunInput, r
   const gpsYear = gpsEnabled ? parseGpsYear(input.gpsYear) : null;
   const valuationPayload = buildValuationPayload(input, result, roundMoney(selectedValueExVat));
 
-  const inserted = await db.query<InsertedValuationRunRow>(`
-    insert into valuation_runs (
-      user_id, model_id, brand_id, sector_id, equipment_family_id, equipment_model_id,
-      equipment_type, brand_slug, brand_name, model_name, tractor_type, drive_type, cab_type,
-      power_kw, year_model, hours, condition, front_pto, front_loader, gps_enabled, gps_type,
-      gps_year, catalog_replacement_price_ex_vat, extras_value_ex_vat, aim4price_value_ex_vat,
-      market_low_ex_vat, market_mid_ex_vat, market_high_ex_vat, market_count, market_listing_ids,
-      selected_method, selected_value_ex_vat, valuation_version, valuation_payload, created_at, updated_at
-    )
-    values (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-      $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-      $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-      $31, $32, $33, $34::jsonb, now(), now()
-    )
-    returning id, created_at
-  `, [
-    input.userId ?? null,
-    catalogLink.modelId,
-    catalogLink.brandId,
-    catalogLink.sectorId,
-    catalogLink.equipmentFamilyId,
-    catalogLink.equipmentModelId,
-    'tractor',
-    result.model.brandSlug,
-    result.model.brandName,
-    result.model.modelName,
-    result.model.tractorType,
-    result.model.drive,
-    result.model.cab,
-    result.model.powerKw,
-    Math.round(input.year),
-    Math.max(0, Number(input.hours) || 0),
-    input.condition,
-    Boolean(input.frontPto),
-    Boolean(input.frontLoader),
-    gpsEnabled,
-    gpsType,
-    gpsYear,
-    toNumberOrNull(result.model.aim4priceReplacementExVat),
-    roundMoney(result.extrasValueExVat),
-    result.aim4priceValueExVat,
-    result.marketLow,
-    result.marketMid,
-    result.marketHigh,
-    result.marketCount,
-    marketListingIds,
-    input.selectedMethod,
-    roundMoney(selectedValueExVat),
-    valuationVersion,
-    JSON.stringify(valuationPayload),
-  ]);
+  const inserted = await db.query<InsertedValuationRunRow>(
+    `
+      insert into valuation_runs (
+        user_id, model_id, brand_id, sector_id, equipment_family_id, equipment_model_id,
+        equipment_type, brand_slug, brand_name, model_name, tractor_type, drive_type, cab_type,
+        power_kw, year_model, hours, condition, front_pto, front_loader, gps_enabled, gps_type,
+        gps_year, catalog_replacement_price_ex_vat, extras_value_ex_vat, aim4price_value_ex_vat,
+        market_low_ex_vat, market_mid_ex_vat, market_high_ex_vat, market_count, market_listing_ids,
+        selected_method, selected_value_ex_vat, valuation_version, valuation_payload, created_at, updated_at
+      )
+      values (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+        $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+        $31, $32, $33, $34::jsonb, now(), now()
+      )
+      returning id, created_at
+    `,
+    [
+      input.userId ?? null,
+      catalogLink.modelId,
+      catalogLink.brandId,
+      catalogLink.sectorId,
+      catalogLink.equipmentFamilyId,
+      catalogLink.equipmentModelId,
+      'tractor',
+      result.model.brandSlug,
+      result.model.brandName,
+      result.model.modelName,
+      result.model.tractorType,
+      result.model.drive,
+      result.model.cab,
+      result.model.powerKw,
+      Math.round(input.year),
+      Math.max(0, Number(input.hours) || 0),
+      input.condition,
+      Boolean(input.frontPto),
+      Boolean(input.frontLoader),
+      gpsEnabled,
+      gpsType,
+      gpsYear,
+      toNumberOrNull(result.model.aim4priceReplacementExVat),
+      roundMoney(result.extrasValueExVat),
+      result.aim4priceValueExVat,
+      result.marketLow,
+      result.marketMid,
+      result.marketHigh,
+      result.marketCount,
+      marketListingIds,
+      input.selectedMethod,
+      roundMoney(selectedValueExVat),
+      valuationVersion,
+      JSON.stringify(valuationPayload),
+    ],
+  );
 
   const row = inserted.rows[0];
   if (!row) throw new Error('SAVE_FAILED');
-  return { runId: Number(row.id), createdAtIso: row.created_at, selectedValueExVat: roundMoney(selectedValueExVat), result };
+
+  return {
+    runId: Number(row.id),
+    createdAtIso: row.created_at,
+    selectedValueExVat: roundMoney(selectedValueExVat),
+    result,
+  };
 }
 
 export async function saveValuationRun(input: SaveValuationRunInput): Promise<SaveValuationRunResult> {

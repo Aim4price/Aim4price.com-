@@ -262,21 +262,43 @@ async function fetchValuationRunRow(userId: string, runId: number): Promise<Gene
   return result.rows[0] ?? null;
 }
 
-async function fetchCatalogReplacementPrice(modelId: unknown): Promise<number | null> {
-  const modelKey = asText(modelId);
-  if (!modelKey) {
+async function fetchCatalogReplacementPrice(input: {
+  equipmentModelId?: unknown;
+  legacyModelId?: unknown;
+}): Promise<number | null> {
+  const equipmentModelKey = asText(input.equipmentModelId);
+  const legacyModelKey = asText(input.legacyModelId);
+  const db = getDb();
+
+  if (equipmentModelKey) {
+    const modelResult = await db.query<{ aim4price_replacement_price_ex_vat: unknown }>(
+      `
+        select aim4price_replacement_price_ex_vat
+        from public.equipment_models
+        where id::text = $1
+        limit 1
+      `,
+      [equipmentModelKey],
+    );
+
+    const replacement = asNumber(modelResult.rows[0]?.aim4price_replacement_price_ex_vat);
+    if (replacement && replacement > 0) {
+      return replacement;
+    }
+  }
+
+  if (!legacyModelKey) {
     return null;
   }
 
-  const db = getDb();
   const result = await db.query<{ aim4price_replacement_price_ex_vat: unknown }>(
     `
       select aim4price_replacement_price_ex_vat
-      from tractor_catalog
+      from public.tractor_catalog
       where id::text = $1
       limit 1
     `,
-    [modelKey],
+    [legacyModelKey],
   );
 
   return asNumber(result.rows[0]?.aim4price_replacement_price_ex_vat);
@@ -322,7 +344,10 @@ export async function calculateFuturePriceForAsset(input: {
 
   const replacementPriceExVat =
     asNumber(pick(valuationRow, ['catalog_replacement_price_ex_vat'])) ??
-    (await fetchCatalogReplacementPrice(pick(valuationRow, ['model_id'])));
+    (await fetchCatalogReplacementPrice({
+      equipmentModelId: pick(valuationRow, ['equipment_model_id']),
+      legacyModelId: pick(valuationRow, ['model_id']),
+    }));
 
   if (!replacementPriceExVat || replacementPriceExVat <= 0) {
     throw new Error('REPLACEMENT_PRICE_NOT_AVAILABLE');
