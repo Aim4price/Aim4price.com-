@@ -1,13 +1,13 @@
 BEGIN;
 
 -- =========================================================
--- OPTION B V2
--- Step 2: Seed simple valuation modes, backfill tractors,
---         generate aliases, create generic fallback rows,
---         and remove old unused pricing/valuation tables.
+-- OPTION B FINAL
+-- Step 2: Seed equipment families, set simple valuation modes,
+--         backfill tractors into equipment_models,
+--         generate simple aliases,
+--         and create one generic fallback row per agricultural family.
 -- =========================================================
 
--- 1) Seed / normalize the agricultural families you already use in the product.
 insert into public.equipment_families (
   sector_id,
   family_key,
@@ -18,18 +18,18 @@ insert into public.equipment_families (
   is_active
 )
 values
-  (1, 'tractors',                'Tractors',                 true,  'hours',      10, true),
-  (1, 'combines',                'Combines',                 true,  'hours',      20, false),
-  (1, 'forage_harvesters',       'Forage Harvesters',        true,  'hours',      30, false),
-  (1, 'self_propelled_sprayers', 'Self-Propelled Sprayers',  true,  'hours',      40, false),
-  (1, 'balers',                  'Balers',                   false, 'wear_class', 50, false),
-  (1, 'planters',                'Planters',                 false, 'wear_class', 60, false),
-  (1, 'mowers',                  'Mowers',                   false, 'wear_class', 70, false),
-  (1, 'seed_drills',             'Seed Drills',              false, 'wear_class', 80, false),
-  (1, 'fertilizer_spreaders',    'Fertilizer Spreaders',     false, 'wear_class', 90, false),
-  (1, 'tillage_implements',      'Tillage Implements',       false, 'wear_class', 100, false),
-  (1, 'trailers',                'Trailers',                 false, 'wear_class', 110, false),
-  (1, 'telehandlers',            'Telehandlers',             true,  'hours',      120, false)
+  (1, 'tractors',                'Tractors',                true,  'hours',      10, true),
+  (1, 'combines',                'Combines',                true,  'hours',      20, false),
+  (1, 'forage_harvesters',       'Forage Harvesters',       true,  'hours',      30, false),
+  (1, 'self_propelled_sprayers', 'Self-Propelled Sprayers', true,  'hours',      40, false),
+  (1, 'balers',                  'Balers',                  false, 'wear_class', 50, false),
+  (1, 'planters',                'Planters',                false, 'wear_class', 60, false),
+  (1, 'mowers',                  'Mowers',                  false, 'wear_class', 70, false),
+  (1, 'seed_drills',             'Seed Drills',             false, 'wear_class', 80, false),
+  (1, 'fertilizer_spreaders',    'Fertilizer Spreaders',    false, 'wear_class', 90, false),
+  (1, 'tillage_implements',      'Tillage Implements',      false, 'wear_class', 100, false),
+  (1, 'trailers',                'Trailers',                false, 'wear_class', 110, false),
+  (1, 'telehandlers',            'Telehandlers',            true,  'hours',      120, false)
 on conflict (sector_id, family_key)
 do update set
   family_label = excluded.family_label,
@@ -39,45 +39,20 @@ do update set
   is_active = excluded.is_active,
   updated_at = now();
 
--- 2) Set the simple Option B valuation mode.
 update public.equipment_families
 set valuation_mode = case
   when family_key in ('tractors', 'combines', 'forage_harvesters', 'self_propelled_sprayers', 'telehandlers')
     then 'engine_hours'
-  when family_key in ('balers', 'planters', 'mowers', 'seed_drills', 'fertilizer_spreaders', 'tillage_implements', 'trailers')
-    then 'year_condition'
-  else coalesce(valuation_mode, 'year_condition')
+  else 'year_condition'
 end,
-updated_at = now()
-where sector_id = 1;
-
--- 3) Keep usage_metric_type aligned with the simple mode, but preserve the field for current code compatibility.
-update public.equipment_families
-set usage_metric_type = case
-  when valuation_mode = 'engine_hours' then 'hours'
+usage_metric_type = case
+  when family_key in ('tractors', 'combines', 'forage_harvesters', 'self_propelled_sprayers', 'telehandlers')
+    then 'hours'
   else 'wear_class'
 end,
 updated_at = now()
 where sector_id = 1;
 
--- 4) If old replacement_price_references rows exist, copy the latest price onto equipment_models first.
-with latest_ref as (
-  select distinct on (r.equipment_model_id)
-    r.equipment_model_id,
-    r.reference_year,
-    r.replacement_price_ex_vat
-  from public.replacement_price_references r
-  order by r.equipment_model_id, r.reference_year desc, r.id desc
-)
-update public.equipment_models em
-set
-  aim4price_replacement_price_ex_vat = coalesce(em.aim4price_replacement_price_ex_vat, latest_ref.replacement_price_ex_vat),
-  replacement_price_year = coalesce(em.replacement_price_year, latest_ref.reference_year),
-  updated_at = now()
-from latest_ref
-where em.id = latest_ref.equipment_model_id;
-
--- 5) Upsert the live tractor catalog into equipment_models, now with direct replacement prices.
 with tractor_family as (
   select id as family_id
   from public.equipment_families
@@ -156,7 +131,6 @@ do update set
   is_active = excluded.is_active,
   updated_at = now();
 
--- 6) Auto-generate simple aliases for tractors.
 insert into public.equipment_model_aliases (
   equipment_model_id,
   alias_text,
@@ -167,31 +141,22 @@ select distinct
   x.alias_text,
   lower(regexp_replace(coalesce(x.alias_text, ''), '[^a-z0-9]+', '', 'g')) as normalized_alias
 from (
-  select
-    em.id as equipment_model_id,
-    em.model_name as alias_text
+  select em.id as equipment_model_id, em.model_name as alias_text
   from public.equipment_models em
-  join public.equipment_families ef
-    on ef.id = em.equipment_family_id
-  where ef.sector_id = 1
-    and ef.family_key = 'tractors'
+  join public.equipment_families ef on ef.id = em.equipment_family_id
+  where ef.sector_id = 1 and ef.family_key = 'tractors' and coalesce(em.is_generic_fallback, false) = false
 
   union all
 
-  select
-    em.id as equipment_model_id,
-    em.display_name as alias_text
+  select em.id as equipment_model_id, em.display_name as alias_text
   from public.equipment_models em
-  join public.equipment_families ef
-    on ef.id = em.equipment_family_id
-  where ef.sector_id = 1
-    and ef.family_key = 'tractors'
+  join public.equipment_families ef on ef.id = em.equipment_family_id
+  where ef.sector_id = 1 and ef.family_key = 'tractors' and coalesce(em.is_generic_fallback, false) = false
 ) x
 where coalesce(trim(x.alias_text), '') <> ''
 on conflict (equipment_model_id, normalized_alias)
 do nothing;
 
--- 7) Create one simple generic fallback row per agricultural family if it does not exist yet.
 insert into public.equipment_models (
   equipment_family_id,
   brand_id,
@@ -218,7 +183,7 @@ select
   null,
   'Unknown / Generic',
   null,
-  'unknowngeneric',
+  lower(regexp_replace(concat('generic', ef.family_key), '[^a-z0-9]+', '', 'g')),
   'Generic ' || ef.family_label,
   null,
   null,
@@ -247,12 +212,7 @@ where ef.sector_id = 1
     select 1
     from public.equipment_models em
     where em.equipment_family_id = ef.id
-      and em.is_generic_fallback = true
+      and coalesce(em.is_generic_fallback, false) = true
   );
-
--- 8) Clean up the old Option A tables because you do not want to use them.
-drop table if exists public.replacement_price_references cascade;
-drop table if exists public.valuation_profiles cascade;
-drop table if exists public.fallback_price_bands cascade;
 
 COMMIT;
