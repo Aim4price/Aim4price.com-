@@ -1,7 +1,6 @@
 'use client';
 
-import Image from 'next/image';
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
@@ -11,47 +10,137 @@ import {
   type CabType,
   type ConditionKey,
   type DriveType,
-  type MarketplaceListing,
   type TractorCatalogRow,
   type TractorType,
 } from '../../lib/tractor-data';
-import {
-  AGRICULTURAL_FAMILY_ORDER,
-  EQUIPMENT_FAMILY_META,
-  SECTOR_LABELS,
-  type EquipmentFamilyKey,
-  type SectorKey,
-} from '../../lib/equipment-types';
+import { SECTOR_LABELS, type CatalogMode, type SectorKey, type UsageMetricType } from '../../lib/equipment-types';
 import { conditionLabel, money, range, type Result } from '../../lib/tractor-logic';
 import { getGuestValuationCount, incrementGuestValuationCount } from '../../lib/guest-valuation-limit';
-import { openValuationReportPrint } from '../../lib/report-print';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 type MethodKey = 'aim4price' | 'market';
-type EquipmentType = 'tractor';
+type FlowMode = 'exact_model' | 'generic_specs';
 type GpsType = 'full-autosteer' | 'guidance-only';
-type ConfigStepKey = 'type' | 'drive' | 'cab' | 'model';
-type DetailsStepKey = 'year' | 'hours' | 'condition' | 'extras';
-type SetupSlide = 'sector' | 'equipmentType';
 
-type MethodCard = {
-  key: MethodKey;
+type EquipmentFamilyRecord = {
+  id: number;
+  sectorId: number;
+  sectorKey: SectorKey;
+  sectorLabel: string;
+  familyKey: string;
+  familyLabel: string;
+  isPropelled: boolean;
+  usageMetricType: UsageMetricType;
+  valuationMode: string;
+  catalogMode: CatalogMode;
+  sortOrder: number;
+  isActive: boolean;
+};
+
+type SpecOption = {
+  id: number;
+  specQuestionId: number;
+  optionValue: string;
+  optionLabel: string;
+  sortOrder: number;
+};
+
+type SpecQuestion = {
+  id: number;
+  sectorId: number;
+  sectorKey: SectorKey;
+  familyId: number;
+  familyKey: string;
+  specKey: string;
   label: string;
-  note: string;
-  value: number | null;
-  available: boolean;
+  inputType: 'number' | 'select' | 'boolean' | 'text' | 'money';
+  unit: string | null;
+  isRequired: boolean;
+  affectsValue: boolean;
+  useForMarketMatching: boolean;
+  sortOrder: number;
+  helpText: string | null;
+  options: SpecOption[];
+};
+
+type MarketMatch = {
+  id: number;
+  title: string;
+  brandName: string;
+  modelName: string;
+  advertisedPriceExVat: number;
+  yearModel: number | null;
+  usageAmount: number | null;
+  condition: string | null;
+  sourceName: string;
+  sourceUrl: string;
+  dateAdvertised: string | null;
+  matchReason: string;
+};
+
+type GenericValuationResult = {
+  catalogModeUsed: CatalogMode;
+  sector: { id: number; key: SectorKey; label: string };
+  family: {
+    id: number;
+    key: string;
+    label: string;
+    usageMetricType: UsageMetricType;
+    valuationMode: string;
+    isPropelled: boolean;
+    catalogMode: CatalogMode;
+  };
+  brand: { id: number; slug: string; name: string };
+  typedModelName: string | null;
+  normalizedTypedModelName: string | null;
+  specsJson: Record<string, unknown>;
+  year: number;
+  usageAmount: number | null;
+  condition: ConditionKey;
+  replacementPriceBand: { id: number; bandLabel: string } | null;
+  replacementPriceMinExVat: number | null;
+  replacementPriceMaxExVat: number | null;
+  replacementPriceUsedExVat: number | null;
+  userReplacementPriceExVat: number | null;
+  userReplacementPriceYear: number | null;
+  genericEstimateExVat: number | null;
+  aim4priceValueExVat: number | null;
+  marketAverageExVat: number | null;
+  marketAverageCount: number;
+  marketMatchStrategy: 'exact_model' | 'typed_model' | 'brand_specs' | 'family_specs' | 'none';
+  marketSources: MarketMatch[];
+  valuationLowExVat: number | null;
+  valuationMidExVat: number | null;
+  valuationHighExVat: number | null;
+  confidenceScore: number;
+  confidenceLabel: 'High' | 'Medium' | 'Low';
+  notes: string[];
+};
+
+type ValuationResultState =
+  | { kind: 'tractor'; result: Result }
+  | { kind: 'generic'; result: GenericValuationResult };
+
+type FamiliesApiResponse = {
+  ok: boolean;
+  families?: EquipmentFamilyRecord[];
+  error?: string;
 };
 
 type BrandsApiResponse = {
   ok: boolean;
-  count?: number;
   brands?: BrandRow[];
+  error?: string;
+};
+
+type SpecQuestionsApiResponse = {
+  ok: boolean;
+  questions?: SpecQuestion[];
   error?: string;
 };
 
 type TractorModelsApiResponse = {
   ok: boolean;
-  count?: number;
   models?: TractorCatalogRow[];
   error?: string;
 };
@@ -62,13 +151,17 @@ type TractorValuationApiResponse = {
   error?: string;
 };
 
+type GenericValuationApiResponse = {
+  ok: boolean;
+  result?: GenericValuationResult;
+  error?: string;
+};
+
 type SaveValuationRunApiResponse = {
   ok: boolean;
   runId?: number;
   assetId?: string;
-  createdAtIso?: string;
   selectedValueExVat?: number;
-  warning?: string;
   error?: string;
 };
 
@@ -77,74 +170,16 @@ const CURRENT_YEAR = new Date().getFullYear() + 1;
 const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
   { step: 1, label: 'Machine' },
   { step: 2, label: 'Brand' },
-  { step: 3, label: 'Model' },
-  { step: 4, label: 'Details' },
+  { step: 3, label: 'Path' },
+  { step: 4, label: 'Specs' },
   { step: 5, label: 'Value' },
 ];
 
-const CONFIG_STEPS: Array<{ key: ConfigStepKey; label: string }> = [
-  { key: 'type', label: 'Type' },
-  { key: 'drive', label: 'Drive' },
-  { key: 'cab', label: 'Cab' },
-  { key: 'model', label: 'Model' },
+const SECTOR_OPTIONS: Array<{ key: SectorKey; label: string; note: string }> = [
+  { key: 'agricultural', label: SECTOR_LABELS.agricultural, note: 'Agricultural families live first' },
+  { key: 'construction', label: SECTOR_LABELS.construction, note: 'Uses the same generic spec engine' },
+  { key: 'industrial', label: SECTOR_LABELS.industrial, note: 'Uses the same generic spec engine' },
 ];
-
-const DETAILS_STEPS: Array<{ key: DetailsStepKey; label: string }> = [
-  { key: 'year', label: 'Year' },
-  { key: 'hours', label: 'Hours' },
-  { key: 'condition', label: 'Condition' },
-  { key: 'extras', label: 'Extras' },
-];
-
-const HERO_PILLS = ['Agricultural first', 'Aim4price + market value', 'Wording-first flow'];
-
-const HERO_GUIDE_ITEMS = [
-  {
-    title: 'Choose the machine',
-    text: 'Start with the sector and equipment type, then continue to the brand and exact model.',
-  },
-  {
-    title: 'Add the working details',
-    text: 'Enter the year, hours, condition, and fitted extras.',
-  },
-  {
-    title: 'Review the value output',
-    text: 'Compare Aim4price and market values in one place.',
-  },
-] as const;
-
-const SECTOR_OPTIONS: Array<{
-  key: SectorKey;
-  label: string;
-  note: string;
-  active: boolean;
-}> = [
-  {
-    key: 'agricultural',
-    label: SECTOR_LABELS.agricultural,
-    note: 'Live now',
-    active: true,
-  },
-  {
-    key: 'industrial',
-    label: SECTOR_LABELS.industrial,
-    note: 'Coming soon',
-    active: false,
-  },
-  {
-    key: 'construction',
-    label: SECTOR_LABELS.construction,
-    note: 'Coming soon',
-    active: false,
-  },
-];
-
-const AGRICULTURAL_FAMILY_OPTIONS = AGRICULTURAL_FAMILY_ORDER.map((familyKey) => ({
-  key: familyKey,
-  label: EQUIPMENT_FAMILY_META[familyKey].label,
-  active: EQUIPMENT_FAMILY_META[familyKey].active,
-  note: EQUIPMENT_FAMILY_META[familyKey].active ? 'Live now' : 'Coming soon',
-}));
 
 function nextStep(step: Step): Step {
   return step === 1 ? 2 : step === 2 ? 3 : step === 3 ? 4 : 5;
@@ -154,391 +189,161 @@ function previousStep(step: Step): Step {
   return step === 5 ? 4 : step === 4 ? 3 : step === 3 ? 2 : 1;
 }
 
-function getMethodValue(result: Result, method: MethodKey): number | null {
+function normalizeText(value: unknown): string {
+  return String(value ?? '').trim();
+}
+
+function toNumberOrNull(value: unknown): number | null {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+}
+
+function formatPercent(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+function displayMarketStrategy(strategy: GenericValuationResult['marketMatchStrategy']): string {
+  if (strategy === 'exact_model') return 'Exact model match';
+  if (strategy === 'typed_model') return 'Typed model match';
+  if (strategy === 'brand_specs') return 'Brand + spec match';
+  if (strategy === 'family_specs') return 'Family + spec match';
+  return 'No marketplace average';
+}
+
+function getTractorValue(result: Result, method: MethodKey): number | null {
   if (method === 'market') return result.marketMid;
   return result.aim4priceValueExVat;
 }
 
-function getMethodLabel(method: MethodKey): string {
-  if (method === 'market') return 'Estimated Market Value';
-  return 'Aim4price Value';
+function getGenericValue(result: GenericValuationResult, method: MethodKey): number | null {
+  if (method === 'market') return result.marketAverageExVat;
+  return result.valuationMidExVat ?? result.aim4priceValueExVat;
 }
 
-function getMethodDisplay(result: Result, method: MethodKey): string {
-  if (method === 'market') {
-    return range(result.marketLow, result.marketHigh);
-  }
-
-  return money(getMethodValue(result, method));
+function getHeadlineValue(state: ValuationResultState | null, selectedMethod: MethodKey): number | null {
+  if (!state) return null;
+  return state.kind === 'tractor' ? getTractorValue(state.result, selectedMethod) : getGenericValue(state.result, selectedMethod);
 }
 
-function getRangePercent(low: number | null, high: number | null, value: number | null): number {
-  if (low === null || high === null || value === null) return 50;
-  if (high <= low) return 50;
-
-  const percent = ((value - low) / (high - low)) * 100;
-  return Math.min(100, Math.max(0, percent));
-}
-
-function getStepMeta(step: Step, setupSlide: SetupSlide) {
-  switch (step) {
-    case 1:
-      return setupSlide === 'sector'
-        ? {
-            title: 'Choose the Sector',
-            body: 'Use the arrows or tap the centred card. Agricultural moves straight into equipment type.',
-          }
-        : {
-            title: 'Choose the Equipment Type',
-            body: 'Choose the equipment type the same way. Tractors move straight into the brand step.',
-          };
-    case 2:
-      return {
-        title: 'Brand',
-        body: 'Choose the manufacturer linked to this equipment type.',
-      };
-    case 3:
-      return {
-        title: 'Model',
-        body: 'Set the tractor configuration and exact model.',
-      };
-    case 4:
-      return {
-        title: 'Machine Details',
-        body: 'Add the year, hours, condition, and fitted extras.',
-      };
-    default:
-      return {
-        title: 'Valuation Results',
-        body: 'Review the calculated values and choose your next action.',
-      };
-  }
-}
-
-function getConditionHint(condition: ConditionKey): string {
-  if (condition === 'excellent') return 'Best kept condition';
-  if (condition === 'good') return 'Well maintained working tractor';
-  if (condition === 'fair') return 'Average wear for age';
-  if (condition === 'used') return 'Heavy general use visible';
-  return 'Requires attention before sale';
-}
-
-function getConfidenceLevel(result: Result): 'high' | 'medium' | 'low' {
-  if (result.marketCount >= 5) return 'high';
-  if (result.marketCount >= 2) return 'medium';
-  return 'low';
-}
-
-function getConfidenceLabel(result: Result): string {
-  const level = getConfidenceLevel(result);
-
-  if (level === 'high') return 'Confidence: High';
-  if (level === 'medium') return 'Confidence: Medium';
+function getConfidenceLabel(state: ValuationResultState | null): string {
+  if (!state) return 'Confidence: Low';
+  if (state.kind === 'generic') return `Confidence: ${state.result.confidenceLabel}`;
+  if (state.result.marketCount >= 5) return 'Confidence: High';
+  if (state.result.marketCount >= 2) return 'Confidence: Medium';
   return 'Confidence: Low';
 }
 
-function getTractorTypeLabel(type: TractorType): string {
-  return type === 'orchard' ? 'Orchard' : 'Field';
+function getConfidenceClass(state: ValuationResultState | null): string {
+  if (!state) return styles.confidenceLow;
+  const label = getConfidenceLabel(state).toLowerCase();
+  if (label.includes('high')) return styles.confidenceHigh;
+  if (label.includes('medium')) return styles.confidenceMedium;
+  return styles.confidenceLow;
 }
 
-function getDriveDisplay(driveValue: DriveType): string {
-  return driveValue === 'tracks' ? 'Tracks' : driveValue.toUpperCase();
-}
+function buildSpecPayload(specQuestions: SpecQuestion[], specAnswers: Record<string, string>): Record<string, unknown> {
+  const output: Record<string, unknown> = {};
 
-function getCabDisplay(cabValue: CabType): string {
-  return cabValue === 'cab' ? 'Cab' : 'Open station';
-}
+  for (const question of specQuestions) {
+    const raw = specAnswers[question.specKey];
+    if (raw === undefined || raw === '') continue;
 
-function getGpsTypeLabel(type: GpsType): string {
-  return type === 'full-autosteer' ? 'Full Autosteer' : 'Guidance Only';
-}
-
-function buildExtrasSummaryChips(
-  frontPto: boolean,
-  frontLoader: boolean,
-  gpsEnabled: boolean,
-  gpsType: GpsType | null,
-  gpsYear: string,
-): string[] {
-  const chips: string[] = [];
-
-  if (frontPto) {
-    chips.push('Front Hitch & Front PTO');
-  }
-
-  if (frontLoader) {
-    chips.push('Front Loader');
-  }
-
-  if (gpsEnabled) {
-    let gpsLabel = 'GPS';
-
-    if (gpsType) {
-      gpsLabel = `${gpsLabel} • ${getGpsTypeLabel(gpsType)}`;
+    if (question.inputType === 'number' || question.inputType === 'money') {
+      const numberValue = Number(raw);
+      if (Number.isFinite(numberValue)) output[question.specKey] = numberValue;
+      continue;
     }
 
-    if (gpsYear.trim()) {
-      gpsLabel = `${gpsLabel} • ${gpsYear.trim()}`;
+    if (question.inputType === 'boolean') {
+      output[question.specKey] = raw === 'true';
+      continue;
     }
 
-    chips.push(gpsLabel);
+    output[question.specKey] = raw;
   }
 
-  if (!chips.length) {
-    chips.push('No fitted extras selected');
-  }
-
-  return chips;
-}
-
-function buildExtrasSummaryText(
-  frontPto: boolean,
-  frontLoader: boolean,
-  gpsEnabled: boolean,
-  gpsType: GpsType | null,
-  gpsYear: string,
-): string {
-  return buildExtrasSummaryChips(frontPto, frontLoader, gpsEnabled, gpsType, gpsYear).join(' · ');
-}
-
-function getListingBasePrice(listing: MarketplaceListing): number {
-  const candidates = [
-    Number(listing.advertisedPriceExVat),
-    Number(listing.askingPriceExVat),
-    Number(listing.priceExVat),
-    Number(listing.price),
-  ].filter((value) => Number.isFinite(value) && value > 0);
-
-  return candidates[0] ?? 0;
-}
-
-function getListingComparablePrice(listing: MarketplaceListing, extrasValueExVat: number): number {
-  return Math.round(getListingBasePrice(listing) + Math.max(0, Number(extrasValueExVat) || 0));
-}
-
-function formatListingDate(value: string): string {
-  if (!value.trim()) return 'Date not supplied';
-
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return value;
-
-  return new Intl.DateTimeFormat('en-ZA', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(parsed);
-}
-
-function getSourceLinkLabel(value: string): string {
-  return value.trim();
+  return output;
 }
 
 export default function ValuationClient() {
   const router = useRouter();
-
   const [step, setStep] = useState<Step>(1);
-  const [setupSlide, setSetupSlide] = useState<SetupSlide>('sector');
-  const [sectorCarouselIndex, setSectorCarouselIndex] = useState(0);
-  const [equipmentTypeCarouselIndex, setEquipmentTypeCarouselIndex] = useState(0);
-  const [selectedSector, setSelectedSector] = useState<SectorKey | null>(null);
-  const [selectedFamily, setSelectedFamily] = useState<EquipmentFamilyKey | null>(null);
-  const [selectedType, setSelectedType] = useState<EquipmentType | null>(null);
-  const [modelQuery, setModelQuery] = useState('');
+  const [selectedSector, setSelectedSector] = useState<SectorKey>('agricultural');
+  const [families, setFamilies] = useState<EquipmentFamilyRecord[]>([]);
+  const [familiesLoading, setFamiliesLoading] = useState(false);
+  const [familyKey, setFamilyKey] = useState('');
+  const [brands, setBrands] = useState<BrandRow[]>([]);
+  const [brandsLoading, setBrandsLoading] = useState(false);
   const [brandSlug, setBrandSlug] = useState('');
-  const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
-  const [brandSearch, setBrandSearch] = useState('');
-  const [tractorType, setTractorType] = useState<TractorType | null>(null);
-  const [drive, setDrive] = useState<DriveType | null>(null);
-  const [cab, setCab] = useState<CabType | null>(null);
+  const [flowMode, setFlowMode] = useState<FlowMode>('generic_specs');
+  const [tractorType, setTractorType] = useState<TractorType>('field');
+  const [drive, setDrive] = useState<DriveType>('4wd');
+  const [cab, setCab] = useState<CabType>('cab');
+  const [tractorModels, setTractorModels] = useState<TractorCatalogRow[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [modelQuery, setModelQuery] = useState('');
   const [modelId, setModelId] = useState('');
-  const [yearMode, setYearMode] = useState<'guided' | 'manual'>('guided');
-  const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
-  const [year, setYear] = useState<number | null>(null);
-  const [manualYear, setManualYear] = useState('');
-  const [hours, setHours] = useState('');
-  const [condition, setCondition] = useState<ConditionKey | null>(null);
-  const [configFocus, setConfigFocus] = useState<ConfigStepKey | null>(null);
-  const [detailsFocus, setDetailsFocus] = useState<DetailsStepKey | null>(null);
-  const [yearConfirmed, setYearConfirmed] = useState(false);
-  const [hoursConfirmed, setHoursConfirmed] = useState(false);
-  const [extrasReviewed, setExtrasReviewed] = useState(false);
+  const [specQuestions, setSpecQuestions] = useState<SpecQuestion[]>([]);
+  const [specAnswers, setSpecAnswers] = useState<Record<string, string>>({});
+  const [typedModelName, setTypedModelName] = useState('');
+  const [year, setYear] = useState(String(new Date().getFullYear()));
+  const [usageAmount, setUsageAmount] = useState('');
+  const [condition, setCondition] = useState<ConditionKey>('good');
   const [frontPto, setFrontPto] = useState(false);
   const [frontLoader, setFrontLoader] = useState(false);
   const [gpsEnabled, setGpsEnabled] = useState(false);
-  const [gpsType, setGpsType] = useState<GpsType | null>(null);
+  const [gpsType, setGpsType] = useState<GpsType>('guidance-only');
   const [gpsYear, setGpsYear] = useState('');
-  const [result, setResult] = useState<Result | null>(null);
-  const [selectedMethod, setSelectedMethod] = useState<MethodKey | null>(null);
-  const [selectedComparableIndex, setSelectedComparableIndex] = useState(0);
+  const [userReplacementPrice, setUserReplacementPrice] = useState('');
+  const [resultState, setResultState] = useState<ValuationResultState | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<MethodKey>('aim4price');
   const [message, setMessage] = useState('');
-  const [availableBrands, setAvailableBrands] = useState<BrandRow[]>([]);
-  const [brandsLoading, setBrandsLoading] = useState(true);
-  const [availableModels, setAvailableModels] = useState<TractorCatalogRow[]>([]);
-  const [modelsLoading, setModelsLoading] = useState(false);
   const [valuationLoading, setValuationLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
-  const [saveChoiceOpen, setSaveChoiceOpen] = useState(false);
-  const [saveChoiceMethod, setSaveChoiceMethod] = useState<MethodKey | null>(null);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [guestValuationCount, setGuestValuationCount] = useState(0);
-  const [howItWorksOpen, setHowItWorksOpen] = useState(false);
 
-  const freeGuestValuationsRemaining = Math.max(0, 3 - guestValuationCount);
-  const stepMeta = getStepMeta(step, setupSlide);
-  const heroAccessLabel = isSignedIn ? 'Account ready' : 'Guest access';
-  const heroAccessText = isSignedIn
-    ? 'Signed in valuations can be saved straight to your asset register.'
-    : `${freeGuestValuationsRemaining} of 3 free guest valuations still available.`;
-  const brandDropdownRef = useRef<HTMLDivElement | null>(null);
-  const brandSearchInputRef = useRef<HTMLInputElement | null>(null);
-  const yearDropdownRef = useRef<HTMLDivElement | null>(null);
-  const sectorCardRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const equipmentTypeCardRefs = useRef<Array<HTMLButtonElement | null>>([]);
-
-  const sortedBrands = useMemo(
-    () => [...availableBrands].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
-    [availableBrands],
+  const selectedFamily = useMemo(
+    () => families.find((family) => family.familyKey === familyKey) ?? null,
+    [families, familyKey],
+  );
+  const selectedBrand = useMemo(() => brands.find((brand) => brand.slug === brandSlug) ?? null, [brands, brandSlug]);
+  const selectedModel = useMemo(
+    () => tractorModels.find((model) => model.id === modelId) ?? null,
+    [tractorModels, modelId],
   );
 
-  const matchingModels = useMemo(() => availableModels, [availableModels]);
-
+  const exactTractorAvailable = selectedFamily?.familyKey === 'tractors' && selectedFamily.catalogMode === 'hybrid';
   const filteredModels = useMemo(() => {
-    const normalizedQuery = modelQuery.trim().toLowerCase();
+    const query = modelQuery.trim().toLowerCase();
+    if (!query) return tractorModels;
+    return tractorModels.filter((model) => `${model.brandName} ${model.modelName} ${model.powerKw}`.toLowerCase().includes(query));
+  }, [modelQuery, tractorModels]);
 
-    if (!normalizedQuery) {
-      return matchingModels;
-    }
-
-    return matchingModels.filter((tractor) =>
-      `${tractor.brandName} ${tractor.modelName} ${tractor.tractorType} ${tractor.drive} ${tractor.cab} ${tractor.powerKw}`
-        .toLowerCase()
-        .includes(normalizedQuery),
-    );
-  }, [matchingModels, modelQuery]);
-
-  const selectedModel = useMemo<TractorCatalogRow | null>(
-    () => matchingModels.find((model) => model.id === modelId) ?? null,
-    [matchingModels, modelId],
-  );
-
-  function invalidateResult() {
-    setResult(null);
-    setSelectedMethod(null);
-  }
-
-  function resetExtrasState() {
-    setFrontPto(false);
-    setFrontLoader(false);
-    setGpsEnabled(false);
-    setGpsType(null);
-    setGpsYear('');
-    setExtrasReviewed(false);
-  }
-
-  function resetDetailState(options?: { keepYearMode?: boolean }) {
-    if (!options?.keepYearMode) {
-      setYearMode('guided');
-    }
-    setYearDropdownOpen(false);
-    setYear(null);
-    setManualYear('');
-    setHours('');
-    setCondition(null);
-    setYearConfirmed(false);
-    setHoursConfirmed(false);
-    setDetailsFocus(null);
-    resetExtrasState();
-    invalidateResult();
-  }
-
-  function resetMachineFlowFromBrandDown() {
-    setBrandSlug('');
-    setBrandDropdownOpen(false);
-    setBrandSearch('');
-    setTractorType(null);
-    setDrive(null);
-    setCab(null);
-    setModelId('');
-    setModelQuery('');
-    setConfigFocus(null);
-    resetDetailState();
-  }
-
-  function markExtrasDirty() {
-    setExtrasReviewed(false);
-    invalidateResult();
-  }
-
-  function confirmYearSelection() {
-    if (!selectedModel || !isYearValid) {
-      setMessage('Enter a valid year first.');
-      return;
-    }
-
-    setYearConfirmed(true);
-    setDetailsFocus(null);
-    setMessage('');
-  }
-
-  function confirmHoursSelection() {
-    if (!isHoursValid) {
-      setMessage('Enter engine hours first.');
-      return;
-    }
-
-    setHoursConfirmed(true);
-    setDetailsFocus(null);
-    setMessage('');
-  }
-
-  function applyExtrasSelection() {
-    setExtrasReviewed(true);
-    setDetailsFocus(null);
-    setMessage('');
-  }
-
-  function clearExtrasSelection() {
-    setFrontPto(false);
-    setFrontLoader(false);
-    setGpsEnabled(false);
-    setGpsType(null);
-    setGpsYear('');
-    setExtrasReviewed(true);
-    setDetailsFocus(null);
-    setMessage('');
-    invalidateResult();
-  }
+  const yearNumber = Number(year);
+  const usageNumber = toNumberOrNull(usageAmount);
+  const specsJson = useMemo(() => buildSpecPayload(specQuestions, specAnswers), [specQuestions, specAnswers]);
+  const headlineValue = getHeadlineValue(resultState, selectedMethod);
+  const freeGuestValuationsRemaining = Math.max(0, 3 - guestValuationCount);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadAccessState() {
       try {
-        const response = await fetch('/api/me', {
-          credentials: 'include',
-          cache: 'no-store',
-        });
-
-        const data = (await response.json()) as {
-          ok: boolean;
-          signedIn: boolean;
-          user: { id: string; name: string; email: string } | null;
-        };
-
+        const response = await fetch('/api/me', { credentials: 'include', cache: 'no-store' });
+        const data = (await response.json()) as { ok: boolean; signedIn: boolean };
         if (!mounted) return;
-
         setIsSignedIn(Boolean(data?.signedIn));
-        setGuestValuationCount(getGuestValuationCount());
       } catch {
         if (!mounted) return;
-
         setIsSignedIn(false);
-        setGuestValuationCount(getGuestValuationCount());
+      } finally {
+        if (mounted) setGuestValuationCount(getGuestValuationCount());
       }
     }
 
     void loadAccessState();
-
     return () => {
       mounted = false;
     };
@@ -546,628 +351,184 @@ export default function ValuationClient() {
 
   useEffect(() => {
     let ignore = false;
+    setFamiliesLoading(true);
+    setFamilies([]);
+    setFamilyKey('');
+
+    async function loadFamilies() {
+      try {
+        const params = new URLSearchParams({ sectorKey: selectedSector, includeInactive: 'true' });
+        const response = await fetch(`/api/equipment-families?${params.toString()}`, { cache: 'no-store' });
+        const data = (await response.json()) as FamiliesApiResponse;
+        if (!response.ok || !data.ok || !Array.isArray(data.families)) throw new Error(data.error ?? 'Failed to load families.');
+        if (ignore) return;
+        setFamilies(data.families);
+        setFamilyKey(data.families[0]?.familyKey ?? '');
+      } catch (error) {
+        console.error(error);
+        if (!ignore) setMessage(error instanceof Error ? error.message : 'Failed to load families.');
+      } finally {
+        if (!ignore) setFamiliesLoading(false);
+      }
+    }
+
+    void loadFamilies();
+    return () => {
+      ignore = true;
+    };
+  }, [selectedSector]);
+
+  useEffect(() => {
+    if (!selectedFamily) return;
+    setResultState(null);
+    setSelectedMethod('aim4price');
+    setBrandSlug('');
+    setBrands([]);
+    setFlowMode(selectedFamily.familyKey === 'tractors' && selectedFamily.catalogMode === 'hybrid' ? 'exact_model' : 'generic_specs');
+
+    let ignore = false;
+    setBrandsLoading(true);
 
     async function loadBrands() {
-      if (selectedSector !== 'agricultural' || selectedFamily !== 'tractors') {
-        if (!ignore) {
-          setAvailableBrands([]);
-          setBrandsLoading(false);
-        }
-        return;
-      }
-
-      setBrandsLoading(true);
-
       try {
         const params = new URLSearchParams({
           sectorKey: selectedSector,
-          familyKey: selectedFamily,
+          familyKey: selectedFamily.familyKey,
+          includeInactive: 'true',
         });
-
-        const response = await fetch(`/api/brands?${params.toString()}`, {
-          cache: 'no-store',
-        });
-
+        const response = await fetch(`/api/brands?${params.toString()}`, { cache: 'no-store' });
         const data = (await response.json()) as BrandsApiResponse;
-
-        if (!response.ok || !data.ok || !Array.isArray(data.brands)) {
-          throw new Error(data.error ?? 'Failed to load brands from the database.');
-        }
-
-        if (!ignore) {
-          setAvailableBrands(data.brands);
-        }
+        if (!response.ok || !data.ok || !Array.isArray(data.brands)) throw new Error(data.error ?? 'Failed to load brands.');
+        if (ignore) return;
+        setBrands(data.brands);
+        setBrandSlug(data.brands[0]?.slug ?? '');
       } catch (error) {
-        console.error('Failed to load brands from /api/brands', error);
-
-        if (!ignore) {
-          setAvailableBrands([]);
-        }
+        console.error(error);
+        if (!ignore) setMessage(error instanceof Error ? error.message : 'Failed to load brands.');
       } finally {
-        if (!ignore) {
-          setBrandsLoading(false);
-        }
+        if (!ignore) setBrandsLoading(false);
       }
     }
 
     void loadBrands();
-
     return () => {
       ignore = true;
     };
-  }, [selectedSector, selectedFamily]);
+  }, [selectedFamily, selectedSector]);
 
   useEffect(() => {
+    if (!selectedFamily) return;
     let ignore = false;
+    setSpecQuestions([]);
+    setSpecAnswers({});
 
-    if (!brandSlug || !tractorType || !drive || !cab) {
-      setAvailableModels([]);
-      setModelsLoading(false);
-      return () => {
-        ignore = true;
-      };
+    async function loadSpecQuestions() {
+      try {
+        const params = new URLSearchParams({
+          sectorKey: selectedSector,
+          familyKey: selectedFamily.familyKey,
+          includeInactive: 'true',
+        });
+        const response = await fetch(`/api/equipment-family-spec-questions?${params.toString()}`, { cache: 'no-store' });
+        const data = (await response.json()) as SpecQuestionsApiResponse;
+        if (!response.ok || !data.ok || !Array.isArray(data.questions)) throw new Error(data.error ?? 'Failed to load questions.');
+        if (!ignore) setSpecQuestions(data.questions);
+      } catch (error) {
+        console.error(error);
+        if (!ignore) setSpecQuestions([]);
+      }
     }
 
-    const currentBrandSlug = brandSlug;
-    const currentTractorType = tractorType;
-    const currentDrive = drive;
-    const currentCab = cab;
+    void loadSpecQuestions();
+    return () => {
+      ignore = true;
+    };
+  }, [selectedFamily, selectedSector]);
+
+  useEffect(() => {
+    if (!brandSlug || flowMode !== 'exact_model') {
+      setTractorModels([]);
+      setModelId('');
+      return;
+    }
+
+    let ignore = false;
+    setModelsLoading(true);
 
     async function loadModels() {
-      setModelsLoading(true);
-
       try {
-        const params = new URLSearchParams();
-        params.set('brandSlug', currentBrandSlug);
-        params.set('tractorType', currentTractorType);
-        params.set('drive', currentDrive);
-        params.set('cab', currentCab);
-
-        const response = await fetch(`/api/tractor-models?${params.toString()}`, {
-          cache: 'no-store',
-        });
-
+        const params = new URLSearchParams({ brandSlug, tractorType, drive, cab });
+        const response = await fetch(`/api/tractor-models?${params.toString()}`, { cache: 'no-store' });
         const data = (await response.json()) as TractorModelsApiResponse;
-
-        if (!response.ok || !data.ok || !Array.isArray(data.models)) {
-          throw new Error(data.error ?? 'Failed to load models from the database.');
-        }
-
-        if (!ignore) {
-          setAvailableModels(data.models);
-        }
+        if (!response.ok || !data.ok || !Array.isArray(data.models)) throw new Error(data.error ?? 'Failed to load models.');
+        if (ignore) return;
+        setTractorModels(data.models);
+        setModelId(data.models[0]?.id ?? '');
       } catch (error) {
-        console.error('Failed to load models from /api/tractor-models', error);
-
-        if (!ignore) {
-          setAvailableModels([]);
-        }
+        console.error(error);
+        if (!ignore) setTractorModels([]);
       } finally {
-        if (!ignore) {
-          setModelsLoading(false);
-        }
+        if (!ignore) setModelsLoading(false);
       }
     }
 
-    loadModels();
-
+    void loadModels();
     return () => {
       ignore = true;
     };
-  }, [brandSlug, tractorType, drive, cab]);
+  }, [brandSlug, flowMode, tractorType, drive, cab]);
 
-  useEffect(() => {
-    if (!availableBrands.length) return;
-
-    if (!availableBrands.some((brand) => brand.slug === brandSlug)) {
-      setBrandSlug(availableBrands[0].slug);
-    }
-  }, [availableBrands, brandSlug]);
-
-  useEffect(() => {
-    if (!matchingModels.length) {
-      if (modelId !== '') {
-        setModelId('');
-      }
-      return;
-    }
-
-    if (modelId && !matchingModels.some((model) => model.id === modelId)) {
-      setModelId('');
-    }
-  }, [matchingModels, modelId]);
-
-  useEffect(() => {
-    if (!selectedModel) {
-      setYear(null);
-      setYearConfirmed(false);
-      setHoursConfirmed(false);
-      setCondition(null);
-      setExtrasReviewed(false);
-      return;
-    }
-
-    if (yearMode === 'guided' && year !== null) {
-      if (year < selectedModel.yearStart || year > selectedModel.yearEnd) {
-        setYear(null);
-        setYearConfirmed(false);
-      }
-    }
-  }, [selectedModel, yearMode, year]);
-
-  useEffect(() => {
-    if (step !== 2) {
-      setBrandDropdownOpen(false);
-      setBrandSearch('');
-    }
-
-    if (step !== 3) {
-      setConfigFocus(null);
-    }
-
-    if (step !== 4) {
-      setDetailsFocus(null);
-      setYearDropdownOpen(false);
-    }
-  }, [step]);
-
-  useEffect(() => {
-    if (!brandDropdownOpen) {
-      setBrandSearch('');
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      brandSearchInputRef.current?.focus();
-    }, 0);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [brandDropdownOpen]);
-
-  useEffect(() => {
-    if (!gpsEnabled) {
-      setGpsType(null);
-      setGpsYear('');
-    }
-  }, [gpsEnabled]);
-
-  useEffect(() => {
-    if (!brandDropdownOpen && !yearDropdownOpen) return;
-
-    function handlePointerDown(event: MouseEvent | TouchEvent) {
-      const target = event.target;
-      if (!(target instanceof Node)) return;
-
-      if (brandDropdownOpen && brandDropdownRef.current && !brandDropdownRef.current.contains(target)) {
-        setBrandDropdownOpen(false);
-      }
-
-      if (yearDropdownOpen && yearDropdownRef.current && !yearDropdownRef.current.contains(target)) {
-        setYearDropdownOpen(false);
-      }
-    }
-
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return;
-      setBrandDropdownOpen(false);
-      setYearDropdownOpen(false);
-    }
-
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('touchstart', handlePointerDown);
-    document.addEventListener('keydown', handleEscape);
-
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('touchstart', handlePointerDown);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [brandDropdownOpen, yearDropdownOpen]);
-
-  useEffect(() => {
-    if (step !== 1 || setupSlide !== 'sector') return;
-
-    const target = sectorCardRefs.current[sectorCarouselIndex];
-    if (!target) return;
-
-    target.scrollIntoView({
-      behavior: 'smooth',
-      inline: 'center',
-      block: 'nearest',
-    });
-  }, [sectorCarouselIndex, setupSlide, step]);
-
-  useEffect(() => {
-    if (step !== 1 || setupSlide !== 'equipmentType') return;
-
-    const target = equipmentTypeCardRefs.current[equipmentTypeCarouselIndex];
-    if (!target) return;
-
-    target.scrollIntoView({
-      behavior: 'smooth',
-      inline: 'center',
-      block: 'nearest',
-    });
-  }, [equipmentTypeCarouselIndex, setupSlide, step]);
-
-
-
-  const years = useMemo(
-    () =>
-      selectedModel
-        ? Array.from(
-            { length: selectedModel.yearEnd - selectedModel.yearStart + 1 },
-            (_, index) => selectedModel.yearEnd - index,
-          )
-        : [],
-    [selectedModel],
-  );
-
-
-  const activeSectorOption = SECTOR_OPTIONS[sectorCarouselIndex] ?? SECTOR_OPTIONS[0];
-  const activeEquipmentTypeOption =
-    AGRICULTURAL_FAMILY_OPTIONS[equipmentTypeCarouselIndex] ?? AGRICULTURAL_FAMILY_OPTIONS[0];
-
-  const selectedBrandName = useMemo(
-    () => availableBrands.find((brand) => brand.slug === brandSlug)?.name ?? '—',
-    [availableBrands, brandSlug],
-  );
-  const selectedSectorLabel = selectedSector ? SECTOR_LABELS[selectedSector] : 'Choose sector';
-  const selectedFamilyLabel = selectedFamily ? EQUIPMENT_FAMILY_META[selectedFamily].label : 'Choose equipment type';
-
-  const filteredBrandOptions = useMemo(() => {
-    const normalizedQuery = brandSearch.trim().toLowerCase();
-
-    if (!normalizedQuery) return sortedBrands;
-
-    return sortedBrands.filter((brand) => brand.name.toLowerCase().includes(normalizedQuery));
-  }, [brandSearch, sortedBrands]);
-
-  const activeYear = yearMode === 'manual' ? Number(manualYear) : year ?? Number.NaN;
-  const isYearValid =
-    yearMode === 'guided'
-      ? Number.isInteger(year)
-      : Number.isInteger(activeYear) && activeYear >= 1950 && activeYear <= CURRENT_YEAR;
-  const selectedYearDisplay = isYearValid ? String(activeYear) : 'Choose year';
-  const enteredHours = Number(hours);
-  const isHoursValid = Number.isFinite(enteredHours) && enteredHours > 0;
-  const enteredHoursDisplay = isHoursValid ? `${enteredHours.toLocaleString('en-ZA')} hrs` : 'Type hours';
-  const selectedConditionDisplay = condition ? conditionLabel(condition) : 'Choose condition';
-  const extrasSummaryChips = useMemo(
-    () => buildExtrasSummaryChips(frontPto, frontLoader, gpsEnabled, gpsType, gpsYear),
-    [frontPto, frontLoader, gpsEnabled, gpsType, gpsYear],
-  );
-  const extrasSummaryText = useMemo(
-    () => buildExtrasSummaryText(frontPto, frontLoader, gpsEnabled, gpsType, gpsYear),
-    [frontPto, frontLoader, gpsEnabled, gpsType, gpsYear],
-  );
-
-  const methodCards = useMemo<MethodCard[]>(() => {
-    if (!result) return [];
-
-    return [
-      {
-        key: 'aim4price',
-        label: 'Aim4price Value',
-        note: 'Based on our pricing engine and comparable market trends.',
-        value: result.aim4priceValueExVat,
-        available: result.aim4priceValueExVat !== null,
-      },
-      {
-        key: 'market',
-        label: 'Market Range',
-        note: `${result.marketCount} provable market listing${result.marketCount === 1 ? '' : 's'} linked below.`,
-        value: result.marketMid,
-        available: result.marketMid !== null,
-      },
-    ];
-  }, [result]);
-
-  const selectedMethodValue = result && selectedMethod ? getMethodValue(result, selectedMethod) : null;
-  const headlineValue = selectedMethodValue ?? result?.previewValueExVat ?? null;
-  const headlineLabel = selectedMethod ? getMethodLabel(selectedMethod) : 'Estimated Market Value';
-  const confidenceLevel = result ? getConfidenceLevel(result) : 'low';
-  const confidenceClassName =
-    confidenceLevel === 'high'
-      ? styles.confidenceHigh
-      : confidenceLevel === 'medium'
-        ? styles.confidenceMedium
-        : styles.confidenceLow;
-  const confidencePanelClassName =
-    confidenceLevel === 'high'
-      ? styles.valuePanelHigh
-      : confidenceLevel === 'medium'
-        ? styles.valuePanelMedium
-        : styles.valuePanelLow;
-
-  const comparableListings = useMemo<MarketplaceListing[]>(() => {
-    if (!result) return [];
-
-    return [...result.marketSources].sort((left, right) => {
-      const priceDelta =
-        getListingComparablePrice(left, result.extrasValueExVat) -
-        getListingComparablePrice(right, result.extrasValueExVat);
-
-      if (priceDelta !== 0) return priceDelta;
-      if (left.yearModel !== right.yearModel) return left.yearModel - right.yearModel;
-
-      return left.hours - right.hours;
-    });
-  }, [result]);
-
-  useEffect(() => {
-    if (!result || !comparableListings.length) {
-      setSelectedComparableIndex(0);
-      return;
-    }
-
-    const fallbackIndex = Math.floor(comparableListings.length / 2);
-    const targetValue =
-      result.marketMid ??
-      getListingComparablePrice(comparableListings[fallbackIndex], result.extrasValueExVat);
-
-    let bestIndex = fallbackIndex;
-    let bestDelta = Number.POSITIVE_INFINITY;
-
-    comparableListings.forEach((listing, index) => {
-      const delta = Math.abs(getListingComparablePrice(listing, result.extrasValueExVat) - targetValue);
-
-      if (delta < bestDelta) {
-        bestDelta = delta;
-        bestIndex = index;
-      }
-    });
-
-    setSelectedComparableIndex(bestIndex);
-  }, [comparableListings, result]);
-
-  const safeComparableIndex = comparableListings.length
-    ? Math.min(selectedComparableIndex, comparableListings.length - 1)
-    : 0;
-  const selectedComparable = comparableListings[safeComparableIndex] ?? null;
-  const selectedComparableSourceUrl = selectedComparable?.sourceUrl?.trim() ?? '';
-  const selectedComparableValue =
-    selectedComparable && result
-      ? getListingComparablePrice(selectedComparable, result.extrasValueExVat)
-      : result?.marketMid ?? null;
-  const selectedComparablePercent = getRangePercent(
-    result?.marketLow ?? null,
-    result?.marketHigh ?? null,
-    selectedComparableValue,
-  );
-
-  const configComplete = Boolean(tractorType && drive && cab && selectedModel);
-  const configAutoStep: ConfigStepKey = !tractorType ? 'type' : !drive ? 'drive' : !cab ? 'cab' : 'model';
-  const activeConfigStep = configFocus ?? configAutoStep;
-  const configStepNumber = CONFIG_STEPS.findIndex((item) => item.key === activeConfigStep) + 1;
-
-  const detailsComplete = Boolean(yearConfirmed && hoursConfirmed && condition !== null && extrasReviewed);
-  const detailsAutoStep: DetailsStepKey = !yearConfirmed
-    ? 'year'
-    : !hoursConfirmed
-      ? 'hours'
-      : !condition
-        ? 'condition'
-        : 'extras';
-  const activeDetailsStep = detailsFocus ?? detailsAutoStep;
-  const activeDetailsStepNumber = DETAILS_STEPS.findIndex((item) => item.key === activeDetailsStep) + 1;
-
-  const canContinue = useMemo(() => {
-    if (step === 1) {
-      return setupSlide === 'sector' ? activeSectorOption.active : activeEquipmentTypeOption.active;
-    }
-    if (step === 3) return configComplete;
-    if (step === 4) {
-      return Boolean(
-        selectedModel &&
-          isYearValid &&
-          isHoursValid &&
-          yearConfirmed &&
-          hoursConfirmed &&
-          condition &&
-          extrasReviewed,
-      );
-    }
-    return true;
-  }, [
-    step,
-    setupSlide,
-    activeSectorOption.active,
-    activeEquipmentTypeOption.active,
-    configComplete,
-    selectedModel,
-    isYearValid,
-    isHoursValid,
-    yearConfirmed,
-    hoursConfirmed,
-    condition,
-    extrasReviewed,
-  ]);
-
-  const nextLabel = valuationLoading
-    ? 'Calculating...'
-    : step === 1
-      ? setupSlide === 'sector'
-        ? activeSectorOption.active
-          ? `Use ${activeSectorOption.label}`
-          : `${activeSectorOption.label} coming soon`
-        : activeEquipmentTypeOption.active
-          ? `Use ${activeEquipmentTypeOption.label}`
-          : `${activeEquipmentTypeOption.label} coming soon`
-      : step === 2
-        ? 'Choose Model'
-        : step === 3
-          ? 'Enter Details'
-          : 'Get Valuation';
-
-  function resetWizard() {
-    setStep(1);
-    setSetupSlide('sector');
-    setSectorCarouselIndex(0);
-    setEquipmentTypeCarouselIndex(0);
-    setSelectedSector(null);
-    setSelectedFamily(null);
-    setSelectedType(null);
-    setModelQuery('');
-    setBrandSlug('');
-    setBrandDropdownOpen(false);
-    setBrandSearch('');
-    setTractorType(null);
-    setDrive(null);
-    setCab(null);
-    setModelId('');
-    setConfigFocus(null);
-    setDetailsFocus(null);
-    setYearConfirmed(false);
-    setHoursConfirmed(false);
-    setExtrasReviewed(false);
-    setResult(null);
-    setSelectedMethod(null);
-    setValuationLoading(false);
-    setSaveLoading(false);
-    setHowItWorksOpen(false);
-    setMessage('');
-    resetDetailState();
+  function resetResult() {
+    setResultState(null);
+    setSelectedMethod('aim4price');
   }
 
-  function handleBack() {
-    setMessage('');
-
-    if (step === 1) {
-      if (setupSlide === 'equipmentType') {
-        setSetupSlide('sector');
-        return;
-      }
-
-      router.push('/');
-      return;
-    }
-
-    const previous = previousStep(step);
-    if (previous === 1) {
-      setSetupSlide('equipmentType');
-    }
-
-    setStep(previous);
+  function setSpecAnswer(key: string, value: string) {
+    setSpecAnswers((current) => ({ ...current, [key]: value }));
+    resetResult();
   }
 
+  function validateDetails(): string | null {
+    if (!selectedFamily) return 'Choose an equipment family first.';
+    if (!selectedBrand) return 'Choose a brand first.';
+    if (!Number.isInteger(yearNumber) || yearNumber < 1950 || yearNumber > CURRENT_YEAR) return 'Enter a valid year model.';
+    if (!condition) return 'Choose the condition.';
+    if (flowMode === 'exact_model' && !selectedModel) return 'Choose the exact tractor model or use machine specs.';
 
-  function commitSectorSelection(index = sectorCarouselIndex, options: { autoAdvance?: boolean } = {}) {
-    const option = SECTOR_OPTIONS[index] ?? SECTOR_OPTIONS[0];
-
-    setSectorCarouselIndex(index);
-
-    if (!option.active) {
-      setMessage(`${option.label} will open in a later Aim4price pass.`);
-      return;
+    for (const question of specQuestions) {
+      if (question.isRequired && !normalizeText(specAnswers[question.specKey])) {
+        return `Answer: ${question.label}.`;
+      }
     }
 
-    const changed = selectedSector !== option.key;
-    setSelectedSector(option.key);
-
-    if (changed) {
-      setSelectedFamily(null);
-      setSelectedType(null);
-      setEquipmentTypeCarouselIndex(0);
-      resetMachineFlowFromBrandDown();
-    }
-
-    setMessage('');
-
-    if (options.autoAdvance) {
-      setSetupSlide('equipmentType');
-    }
+    return null;
   }
 
-  function commitEquipmentTypeSelection(
-    index = equipmentTypeCarouselIndex,
-    options: { autoAdvance?: boolean } = {},
-  ) {
-    const option = AGRICULTURAL_FAMILY_OPTIONS[index] ?? AGRICULTURAL_FAMILY_OPTIONS[0];
-
-    setEquipmentTypeCarouselIndex(index);
-
-    if (!option.active) {
-      setMessage(`${option.label} is staged and will open after the next data import pass.`);
+  async function calculateValuation() {
+    const validationMessage = validateDetails();
+    if (validationMessage) {
+      setMessage(validationMessage);
       return;
     }
 
-    const changed = selectedFamily !== option.key || selectedSector !== 'agricultural';
-    setSelectedSector('agricultural');
-    setSelectedFamily(option.key);
-    setSelectedType(option.key === 'tractors' ? 'tractor' : null);
-
-    if (changed) {
-      resetMachineFlowFromBrandDown();
+    if (!isSignedIn && guestValuationCount >= 3) {
+      setMessage('You have used your 3 free valuations. Please create an account or log in to continue.');
+      router.push('/auth#signup');
+      return;
     }
 
     setMessage('');
+    setValuationLoading(true);
 
-    if (options.autoAdvance) {
-      setStep(2);
-    }
-  }
-
-  async function handleNext() {
-    setMessage('');
-
-    if (step === 1) {
-      if (setupSlide === 'sector') {
-        commitSectorSelection(sectorCarouselIndex, { autoAdvance: true });
-        return;
-      }
-
-      commitEquipmentTypeSelection(equipmentTypeCarouselIndex, { autoAdvance: true });
-      return;
-    }
-
-    if (step === 3 && !selectedModel) {
-      setMessage('Choose a model first.');
-      return;
-    }
-
-    if (step === 4) {
-      const parsedHours = Number(hours);
-      const parsedYear = activeYear;
-
-      if (!selectedModel || !isYearValid || !yearConfirmed) {
-        setMessage('Confirm the year first.');
-        return;
-      }
-
-      if (!Number.isFinite(parsedHours) || parsedHours <= 0 || !hoursConfirmed) {
-        setMessage('Confirm the engine hours first.');
-        return;
-      }
-
-      if (!condition) {
-        setMessage('Choose the condition first.');
-        return;
-      }
-
-      if (!extrasReviewed) {
-        setMessage('Review the extras first.');
-        return;
-      }
-
-      if (!isSignedIn && guestValuationCount >= 3) {
-        setMessage('You have used your 3 free valuations. Please create an account or log in to continue.');
-        router.push('/auth#signup');
-        return;
-      }
-
-      setValuationLoading(true);
-
-      try {
+    try {
+      if (flowMode === 'exact_model' && selectedModel) {
         const response = await fetch('/api/tractor-valuations', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             modelId: selectedModel.id,
-            year: parsedYear,
-            hours: parsedHours,
+            year: yearNumber,
+            hours: usageNumber ?? 0,
             condition,
             frontPto,
             frontLoader,
@@ -1176,42 +537,48 @@ export default function ValuationClient() {
             gpsYear,
           }),
         });
-
         const data = (await response.json()) as TractorValuationApiResponse;
-
-        if (!response.ok || !data.ok || !data.result) {
-          throw new Error(data.error ?? 'Failed to calculate valuation.');
-        }
-
-        const nextResult = data.result;
-
-        setResult(nextResult);
-
-        if (!isSignedIn) {
-          const nextCount = incrementGuestValuationCount();
-          setGuestValuationCount(nextCount);
-        }
-
-        const defaultMethod: MethodKey = nextResult.marketMid !== null ? 'market' : 'aim4price';
-
-        setSelectedMethod(defaultMethod);
-        setStep(5);
-      } catch (error) {
-        console.error('Failed to calculate valuation from /api/tractor-valuations', error);
-        setMessage(error instanceof Error ? error.message : 'Failed to calculate valuation.');
-      } finally {
-        setValuationLoading(false);
+        if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to calculate tractor valuation.');
+        setResultState({ kind: 'tractor', result: data.result });
+        setSelectedMethod(data.result.marketMid !== null ? 'market' : 'aim4price');
+      } else if (selectedFamily && selectedBrand) {
+        const response = await fetch('/api/generic-valuations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sectorKey: selectedSector,
+            familyKey: selectedFamily.familyKey,
+            brandSlug: selectedBrand.slug,
+            typedModelName,
+            specsJson,
+            year: yearNumber,
+            usageAmount: usageNumber,
+            condition,
+            userReplacementPriceExVat: toNumberOrNull(userReplacementPrice),
+            userReplacementPriceYear: toNumberOrNull(userReplacementPrice) ? CURRENT_YEAR : null,
+          }),
+        });
+        const data = (await response.json()) as GenericValuationApiResponse;
+        if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to calculate generic valuation.');
+        setResultState({ kind: 'generic', result: data.result });
+        setSelectedMethod(data.result.marketAverageExVat !== null ? 'market' : 'aim4price');
       }
 
-      return;
+      if (!isSignedIn) {
+        setGuestValuationCount(incrementGuestValuationCount());
+      }
+      setStep(5);
+    } catch (error) {
+      console.error(error);
+      setMessage(error instanceof Error ? error.message : 'Failed to calculate valuation.');
+    } finally {
+      setValuationLoading(false);
     }
-
-    setStep(nextStep(step));
   }
 
-  function handleSave() {
-    if (!result || !condition) {
-      setMessage('Run a valuation before saving to the asset register.');
+  async function saveToAssetRegister() {
+    if (!resultState) {
+      setMessage('Run a valuation before saving.');
       return;
     }
 
@@ -1221,1848 +588,600 @@ export default function ValuationClient() {
       return;
     }
 
-    setSaveChoiceMethod(null);
-    setSaveChoiceOpen(true);
-    setMessage('');
-  }
-
-  async function handleConfirmSave() {
-    if (!result || !saveChoiceMethod || !condition) {
-      setMessage('Choose which number should be saved first.');
-      return;
-    }
-
-    const value = getMethodValue(result, saveChoiceMethod);
-
-    if (value === null) {
-      setMessage('That method is not available for this tractor profile.');
+    const selectedValue = getHeadlineValue(resultState, selectedMethod);
+    if (selectedValue === null) {
+      setMessage('Choose an available valuation method first.');
       return;
     }
 
     setSaveLoading(true);
+    setMessage('');
 
     try {
+      const payload =
+        resultState.kind === 'tractor'
+          ? {
+              modelId: resultState.result.model.id,
+              year: yearNumber,
+              hours: usageNumber ?? 0,
+              condition,
+              frontPto,
+              frontLoader,
+              gpsEnabled,
+              gpsType,
+              gpsYear,
+              selectedMethod,
+              valuationVersion: 'v1',
+            }
+          : {
+              catalogModeUsed: 'generic_specs',
+              sectorKey: resultState.result.sector.key,
+              familyKey: resultState.result.family.key,
+              brandSlug: resultState.result.brand.slug,
+              typedModelName: resultState.result.typedModelName,
+              specsJson: resultState.result.specsJson,
+              year: resultState.result.year,
+              usageAmount: resultState.result.usageAmount,
+              condition: resultState.result.condition,
+              userReplacementPriceExVat: toNumberOrNull(userReplacementPrice),
+              userReplacementPriceYear: toNumberOrNull(userReplacementPrice) ? CURRENT_YEAR : null,
+              selectedMethod,
+              valuationVersion: 'generic-v1',
+            };
+
       const response = await fetch('/api/valuation-runs', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          modelId: result.model.id,
-          year: activeYear,
-          hours: Number(hours),
-          condition,
-          frontPto,
-          frontLoader,
-          gpsEnabled,
-          gpsType,
-          gpsYear,
-          selectedMethod: saveChoiceMethod,
-          valuationVersion: 'v1',
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
-
       const data = (await response.json()) as SaveValuationRunApiResponse;
-
-      if (!response.ok || !data.ok) {
-        throw new Error(data.error ?? 'Failed to save to asset register.');
-      }
-
-      setSelectedMethod(saveChoiceMethod);
-      setSaveChoiceOpen(false);
-      setMessage(
-        data.warning ? `Saved to asset register. ${data.warning}` : 'Saved to asset register.',
-      );
-
+      if (!response.ok || !data.ok) throw new Error(data.error ?? 'Failed to save valuation.');
       router.push('/asset-register');
     } catch (error) {
-      console.error('Failed to save valuation run to /api/valuation-runs', error);
-      setMessage(error instanceof Error ? error.message : 'Failed to save to asset register.');
+      console.error(error);
+      setMessage(error instanceof Error ? error.message : 'Failed to save valuation.');
     } finally {
       setSaveLoading(false);
     }
   }
 
-  function handlePrint() {
-    if (!result || typeof window === 'undefined') return;
-
-    const logoUrl = new URL('/brand/Aim4price%20Logo.png', window.location.origin).toString();
-    const generatedAt = new Intl.DateTimeFormat('en-ZA', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }).format(new Date());
-
-    const reportOpened = openValuationReportPrint({
-      logoUrl,
-      generatedAt,
-      heroTitle: `${result.model.brandName} ${result.model.modelName}`.trim(),
-      heroMeta: `Agricultural • Tractor • ${getTractorTypeLabel(result.model.tractorType)} • ${getDriveDisplay(result.model.drive)} • ${getCabDisplay(result.model.cab)} • ${activeYear} model • ${result.model.powerKw} kW • ${Number(hours).toLocaleString('en-ZA')} engine hours`,
-      selectedLabel: headlineLabel,
-      headlineValue: money(headlineValue),
-      confidenceLabel: getConfidenceLabel(result),
-      confidenceTone: confidenceLevel,
-      summaryRows: [
-        { label: 'Equipment type', value: 'Agricultural • Tractor' },
-        {
-          label: 'Configuration',
-          value: `${getTractorTypeLabel(result.model.tractorType)} • ${getDriveDisplay(result.model.drive)} • ${getCabDisplay(result.model.cab)}`,
-        },
-        { label: 'Year model', value: String(activeYear) },
-        { label: 'Power rating', value: `${result.model.powerKw} kW` },
-        { label: 'Engine hours', value: `${Number(hours).toLocaleString('en-ZA')} hours` },
-        { label: 'Condition', value: selectedConditionDisplay },
-        { label: 'Fitted extras', value: extrasSummaryText },
-      ],
-      footerNote:
-        'Aim4price valuation report. This document is based on the selected machine profile and saved input set. All values shown exclude VAT.',
-    });
-
-    if (!reportOpened) {
-      setMessage('Allow pop-ups in your browser to generate the PDF report.');
-    }
-  }
-
-  function handleMethodSelect(method: MethodKey) {
-    if (!result) return;
-
-    const value = getMethodValue(result, method);
-    if (value === null) return;
-
-    setSelectedMethod(method);
+  function handleNext() {
     setMessage('');
+    if (step === 1 && !selectedFamily) {
+      setMessage('Choose an equipment family first.');
+      return;
+    }
+    if (step === 2 && !selectedBrand) {
+      setMessage('Choose a brand first.');
+      return;
+    }
+    if (step === 3) {
+      if (flowMode === 'exact_model' && !selectedModel) {
+        setMessage('Choose a model or continue using machine specs.');
+        return;
+      }
+    }
+    if (step === 4) {
+      void calculateValuation();
+      return;
+    }
+    setStep(nextStep(step));
   }
 
-  function renderWizardBody() {
+  function handleBack() {
+    setMessage('');
     if (step === 1) {
-      const setupStageNumber = setupSlide === 'sector' ? 1 : 2;
-      const canMoveSectorPrev = sectorCarouselIndex > 0;
-      const canMoveSectorNext = sectorCarouselIndex < SECTOR_OPTIONS.length - 1;
-      const canMoveEquipmentTypePrev = equipmentTypeCarouselIndex > 0;
-      const canMoveEquipmentTypeNext = equipmentTypeCarouselIndex < AGRICULTURAL_FAMILY_OPTIONS.length - 1;
-      const sectorCommitted = selectedSector !== null;
-      const equipmentTypeCommitted = selectedFamily !== null;
+      router.push('/');
+      return;
+    }
+    setStep(previousStep(step));
+  }
 
-      return (
-        <div className={styles.slideDeck}>
-          <div className={styles.slideTabs}>
+  function renderMachineStep() {
+    return (
+      <div>
+        <h2 className={styles.stepTitle}>Choose the machine</h2>
+        <p className={styles.stepText}>The database is now the source of truth. Families can grow without changing TypeScript lists.</p>
+
+        <div className={styles.choiceGrid}>
+          {SECTOR_OPTIONS.map((sector) => (
             <button
+              key={sector.key}
               type="button"
-              className={`${styles.slideTab} ${setupSlide === 'sector' ? styles.slideTabActive : ''} ${
-                setupSlide === 'equipmentType' && sectorCommitted ? styles.slideTabComplete : ''
-              }`}
+              className={`${styles.choiceCard} ${selectedSector === sector.key ? styles.choiceCardActive : ''}`}
               onClick={() => {
-                setSetupSlide('sector');
-                setMessage('');
+                setSelectedSector(sector.key);
+                resetResult();
               }}
             >
-              <span className={styles.slideTabStep}>{setupSlide === 'equipmentType' && sectorCommitted ? '✓' : '1'}</span>
-              <span className={styles.slideTabLabel}>Sector</span>
+              <strong>{sector.label}</strong>
+              <span className={styles.choiceCardNote}>{sector.note}</span>
             </button>
+          ))}
+        </div>
 
-            <button
-              type="button"
-              className={`${styles.slideTab} ${setupSlide === 'equipmentType' ? styles.slideTabActive : ''} ${
-                equipmentTypeCommitted ? styles.slideTabComplete : ''
-              } ${!sectorCommitted ? styles.slideTabDisabled : ''}`}
-              onClick={() => {
-                if (!sectorCommitted) return;
-                setSetupSlide('equipmentType');
-                setMessage('');
-              }}
-              disabled={!sectorCommitted}
-            >
-              <span className={styles.slideTabStep}>{equipmentTypeCommitted ? '✓' : '2'}</span>
-              <span className={styles.slideTabLabel}>Equipment Type</span>
-            </button>
+        <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
+          <h3 className={styles.currentTitle}>Equipment Type</h3>
+          {familiesLoading ? <p className={styles.stepText}>Loading equipment families...</p> : null}
+          <div className={styles.inputGrid}>
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Family</span>
+              <select
+                value={familyKey}
+                onChange={(event) => {
+                  setFamilyKey(event.target.value);
+                  resetResult();
+                }}
+              >
+                {families.map((family) => (
+                  <option key={family.familyKey} value={family.familyKey}>
+                    {family.familyLabel} • {family.catalogMode === 'hybrid' ? 'Hybrid' : 'Specs'}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
-
-          <article className={`${styles.currentCard} ${styles.setupStageCard}`}>
-            <div className={styles.currentCardHead}>
-              <div>
-                <span className={styles.currentEyebrow}>Step 1</span>
-                <h2 className={styles.currentTitle}>
-                  {setupSlide === 'sector' ? 'Choose 1 of 3 sectors' : 'Choose the equipment type'}
-                </h2>
-              </div>
-              <span className={styles.currentIndex}>{setupStageNumber} / 2</span>
-            </div>
-
-            <p className={styles.currentHint}>
-              {setupSlide === 'sector'
-                ? 'Use the arrows to move the cards. When the right sector is in the middle, tap that card and the flow moves straight on.'
-                : 'Now do the same for equipment type. Keep the chosen card in the middle, then tap it to move straight into brands.'}
+          {selectedFamily ? (
+            <p className={styles.fieldHint}>
+              Current mode: <strong>{selectedFamily.catalogMode === 'hybrid' ? 'Hybrid' : 'Generic specs'}</strong>. Tractors can use exact models; other families continue with machine specs.
             </p>
-
-            {setupSlide === 'equipmentType' ? (
-              <div className={styles.setupSelectionSummary}>
-                <span className={styles.carouselSummaryLabel}>Chosen sector</span>
-                <div className={styles.selectionChipRow}>
-                  <span className={styles.modelChip}>{selectedSectorLabel}</span>
-                  <span className={`${styles.modelChip} ${styles.modelChipMuted}`}>Equipment type is now unlocked</span>
-                </div>
-              </div>
-            ) : null}
-
-            <div className={styles.carouselShell}>
-              <button
-                type="button"
-                className={styles.carouselArrow}
-                onClick={() => {
-                  if (setupSlide === 'sector') {
-                    setSectorCarouselIndex((current) => Math.max(0, current - 1));
-                  } else {
-                    setEquipmentTypeCarouselIndex((current) => Math.max(0, current - 1));
-                  }
-                  setMessage('');
-                }}
-                disabled={setupSlide === 'sector' ? !canMoveSectorPrev : !canMoveEquipmentTypePrev}
-                aria-label={setupSlide === 'sector' ? 'Show previous sector' : 'Show previous equipment type'}
-              >
-                ‹
-              </button>
-
-              <div className={styles.carouselViewportRail}>
-                <div className={styles.carouselRail}>
-                  {(setupSlide === 'sector' ? SECTOR_OPTIONS : AGRICULTURAL_FAMILY_OPTIONS).map((item, index) => {
-                    const isSectorStage = setupSlide === 'sector';
-                    const isCurrent = isSectorStage ? index === sectorCarouselIndex : index === equipmentTypeCarouselIndex;
-                    const isActive = item.active;
-                    const cardLabel = item.label;
-                    const cardNote = isSectorStage
-                      ? item.key === 'agricultural'
-                        ? isCurrent
-                          ? 'Farm machinery starts here and is live now. Tap the centred card to continue.'
-                          : 'Farm machinery starts here and is live now.'
-                        : 'Structured next, after Agricultural is fully built out.'
-                      : item.active
-                        ? isCurrent
-                          ? 'Live first in the current Aim4price valuation flow. Tap the centred card to continue.'
-                          : 'Live first in the current Aim4price valuation flow.'
-                        : 'Ready in the structure. Live valuation follows after model data is loaded.';
-
-                    return (
-                      <button
-                        key={String(item.key)}
-                        type="button"
-                        ref={(node) => {
-                          if (isSectorStage) {
-                            sectorCardRefs.current[index] = node;
-                          } else {
-                            equipmentTypeCardRefs.current[index] = node;
-                          }
-                        }}
-                        className={`${styles.carouselCard} ${isCurrent ? styles.carouselCardCurrent : ''} ${
-                          !isActive ? styles.carouselCardDisabled : ''
-                        }`}
-                        onClick={() => {
-                          if (isSectorStage) {
-                            if (!isCurrent) {
-                              setSectorCarouselIndex(index);
-                              setMessage('');
-                              return;
-                            }
-
-                            commitSectorSelection(index, { autoAdvance: true });
-                            return;
-                          }
-
-                          if (!isCurrent) {
-                            setEquipmentTypeCarouselIndex(index);
-                            setMessage('');
-                            return;
-                          }
-
-                          commitEquipmentTypeSelection(index, { autoAdvance: true });
-                        }}
-                        aria-pressed={isCurrent}
-                      >
-                        <span
-                          className={`${styles.choiceCardTag} ${
-                            isActive ? styles.choiceCardTagLive : styles.choiceCardTagSoon
-                          }`}
-                        >
-                          {item.note}
-                        </span>
-                        <strong>{cardLabel}</strong>
-                        <span className={styles.carouselCardNote}>{cardNote}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className={styles.carouselArrow}
-                onClick={() => {
-                  if (setupSlide === 'sector') {
-                    setSectorCarouselIndex((current) => Math.min(SECTOR_OPTIONS.length - 1, current + 1));
-                  } else {
-                    setEquipmentTypeCarouselIndex((current) =>
-                      Math.min(AGRICULTURAL_FAMILY_OPTIONS.length - 1, current + 1),
-                    );
-                  }
-                  setMessage('');
-                }}
-                disabled={setupSlide === 'sector' ? !canMoveSectorNext : !canMoveEquipmentTypeNext}
-                aria-label={setupSlide === 'sector' ? 'Show next sector' : 'Show next equipment type'}
-              >
-                ›
-              </button>
-            </div>
-
-            <div className={styles.carouselSummary}>
-              <div className={styles.carouselSummaryText}>
-                <span className={styles.carouselSummaryLabel}>
-                  {setupSlide === 'sector' ? 'Current sector' : 'Current equipment type'}
-                </span>
-                <strong>{setupSlide === 'sector' ? activeSectorOption.label : activeEquipmentTypeOption.label}</strong>
-                <span>
-                  {setupSlide === 'sector'
-                    ? activeSectorOption.active
-                      ? 'Tap the centred card or use the button below to move straight into equipment type.'
-                      : 'This sector is planned next and is not live yet.'
-                    : activeEquipmentTypeOption.active
-                      ? 'Tap the centred card or use the button below to move straight into brands.'
-                      : 'This equipment type is structured now and will open after the next data build.'}
-                </span>
-              </div>
-            </div>
-          </article>
+          ) : null}
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
-    if (step === 2) {
-      return (
-        <div className={styles.searchWrap}>
-          <div className={styles.selectionChipRow} style={{ marginBottom: '0.95rem' }}>
-            <span className={styles.modelChip}>{selectedSectorLabel}</span>
-            <span className={styles.modelChip}>{selectedFamilyLabel}</span>
-          </div>
+  function renderBrandStep() {
+    return (
+      <div>
+        <h2 className={styles.stepTitle}>Choose the brand</h2>
+        <p className={styles.stepText}>Brands now come from equipment_family_brands, so they can show even before models exist.</p>
 
-          <div className={styles.field}>
-            <span className={styles.fieldLabel}>Choose Brand</span>
-
-            <div className={styles.dropdownField} ref={brandDropdownRef}>
-              <button
-                type="button"
-                className={`${styles.dropdownTrigger} ${brandDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
-                onClick={() => {
-                  setBrandDropdownOpen((open) => !open);
-                  setMessage('');
+        <div className={styles.currentCard}>
+          {brandsLoading ? <p className={styles.stepText}>Loading brands...</p> : null}
+          <div className={styles.inputGrid}>
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Brand</span>
+              <select
+                value={brandSlug}
+                onChange={(event) => {
+                  setBrandSlug(event.target.value);
+                  resetResult();
                 }}
-                aria-haspopup="listbox"
-                aria-expanded={brandDropdownOpen}
-                aria-label="Choose equipment brand"
-                disabled={brandsLoading || !sortedBrands.length}
               >
-                <span className={styles.dropdownTriggerText}>
-                  {brandsLoading ? 'Loading brands...' : selectedBrandName}
-                </span>
-                <span className={styles.dropdownTriggerIcon} aria-hidden="true">
-                  {brandDropdownOpen ? '▴' : '▾'}
-                </span>
-              </button>
-
-              {brandDropdownOpen ? (
-                <div className={styles.dropdownMenu}>
-                  <div className={styles.dropdownSearchWrap}>
-                    <input
-                      ref={brandSearchInputRef}
-                      value={brandSearch}
-                      onChange={(event: ChangeEvent<HTMLInputElement>) => setBrandSearch(event.target.value)}
-                      placeholder="Search brand..."
-                      aria-label="Search brands"
-                      className={styles.dropdownSearchInput}
-                    />
-                  </div>
-
-                  <div className={styles.dropdownList} role="listbox" aria-label="Available equipment brands">
-                    {brandsLoading ? (
-                      <div className={styles.dropdownEmpty}>Loading brands...</div>
-                    ) : filteredBrandOptions.length ? (
-                      filteredBrandOptions.map((brand) => {
-                        const active = brand.slug === brandSlug;
-
-                        return (
-                          <button
-                            key={brand.slug}
-                            type="button"
-                            role="option"
-                            aria-selected={active}
-                            className={`${styles.dropdownOption} ${active ? styles.dropdownOptionActive : ''}`}
-                            onClick={() => {
-                              const brandChanged = brand.slug !== brandSlug;
-
-                              setBrandSlug(brand.slug);
-
-                              if (brandChanged) {
-                                setTractorType(null);
-                                setDrive(null);
-                                setCab(null);
-                                setModelId('');
-                                setModelQuery('');
-                                resetDetailState();
-                              }
-
-                              setBrandDropdownOpen(false);
-                              setBrandSearch('');
-                              setMessage('');
-                            }}
-                          >
-                            <span className={styles.dropdownOptionText}>{brand.name}</span>
-                            {active ? <span className={styles.dropdownOptionBadge}>Selected</span> : null}
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <div className={styles.dropdownEmpty}>
-                        {sortedBrands.length ? `No brands matched “${brandSearch.trim()}”.` : 'No brands loaded yet.'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : null}
-            </div>
+                {brands.map((brand) => (
+                  <option key={brand.slug} value={brand.slug}>
+                    {brand.name}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
+          {!brands.length && !brandsLoading ? (
+            <p className={styles.message}>No brands are linked to this family yet. Import equipment_family_brands.csv first.</p>
+          ) : null}
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
-    if (step === 3) {
-      const configRows = [
-        tractorType
-          ? { key: 'type' as ConfigStepKey, label: 'Type', value: getTractorTypeLabel(tractorType) }
-          : null,
-        drive ? { key: 'drive' as ConfigStepKey, label: 'Drive', value: getDriveDisplay(drive) } : null,
-        cab ? { key: 'cab' as ConfigStepKey, label: 'Cab', value: getCabDisplay(cab) } : null,
-        selectedModel
-          ? {
-              key: 'model' as ConfigStepKey,
-              label: 'Model',
-              value: `${selectedModel.brandName} ${selectedModel.modelName}`,
-            }
-          : null,
-      ].filter(
-        (
-          row,
-        ): row is {
-          key: ConfigStepKey;
-          label: string;
-          value: string;
-        } => Boolean(row),
-      );
+  function renderPathStep() {
+    return (
+      <div>
+        <h2 className={styles.stepTitle}>Choose the valuation path</h2>
+        <p className={styles.stepText}>Model is helpful, but specs must be enough to get an answer.</p>
 
-      const configReviewMode = configComplete && configFocus === null;
-      const emptySearchMessage = matchingModels.length
-        ? `No models match “${modelQuery.trim()}”.`
-        : drive === 'tracks'
-          ? `No ${selectedBrandName} track models are loaded yet.`
-          : 'No models are loaded for this setup yet.';
-
-      return (
-        <div className={styles.flowShell}>
-          <div className={styles.flowTopline}>
-            <span className={styles.flowToplineLabel}>Family</span>
-            <strong className={styles.flowToplineValue}>{selectedFamilyLabel}</strong>
-          </div>
-
-          <div className={styles.selectionChipRow} style={{ marginBottom: '0.95rem' }}>
-            <span className={styles.modelChip}>{selectedSectorLabel}</span>
-            <span className={styles.modelChip}>{selectedFamilyLabel}</span>
-            <span className={styles.modelChip}>{selectedBrandName}</span>
-          </div>
-
-          <div className={styles.miniStepper} aria-label="Model setup progress">
-            {CONFIG_STEPS.map((item) => {
-              const complete =
-                item.key === 'type'
-                  ? Boolean(tractorType)
-                  : item.key === 'drive'
-                    ? Boolean(drive)
-                    : item.key === 'cab'
-                      ? Boolean(cab)
-                      : Boolean(selectedModel);
-              const active = !configReviewMode && activeConfigStep === item.key;
-
-              return (
-                <div
-                  key={item.key}
-                  className={`${styles.miniStep} ${active ? styles.miniStepActive : ''} ${
-                    complete ? styles.miniStepComplete : ''
-                  }`}
-                >
-                  <span className={styles.miniStepNumber}>
-                    {complete ? '✓' : CONFIG_STEPS.findIndex((stepItem) => stepItem.key === item.key) + 1}
-                  </span>
-                  <span className={styles.miniStepLabel}>{item.label}</span>
-                </div>
-              );
-            })}
-          </div>
-
-          {configRows.length ? (
-            <div className={styles.answerStack}>
-              {configRows.map((row) => (
-                <div key={row.key} className={styles.answerRow}>
-                  <div className={styles.answerRowText}>
-                    <span className={styles.answerRowLabel}>{row.label}</span>
-                    <strong className={styles.answerRowValue}>{row.value}</strong>
-                  </div>
-
-                  <button
-                    type="button"
-                    className={styles.answerEdit}
-                    onClick={() => {
-                      setConfigFocus(row.key);
-                      setMessage('');
-                    }}
-                  >
-                    Edit
-                  </button>
-                </div>
-              ))}
-            </div>
+        <div className={styles.choiceGrid}>
+          {exactTractorAvailable ? (
+            <button
+              type="button"
+              className={`${styles.choiceCard} ${flowMode === 'exact_model' ? styles.choiceCardActive : ''}`}
+              onClick={() => {
+                setFlowMode('exact_model');
+                resetResult();
+              }}
+            >
+              <strong>Use exact tractor model</strong>
+              <span className={styles.choiceCardNote}>Best confidence for tractors with approved model data.</span>
+            </button>
           ) : null}
 
-          {configReviewMode ? (
-            <div className={`${styles.currentCard} ${styles.readyCard}`}>
-              <div className={styles.currentCardHead}>
-                <div>
-                  <span className={styles.currentEyebrow}>Ready</span>
-                  <h2 className={styles.currentTitle}>Model selected</h2>
-                </div>
-                <span className={styles.currentIndex}>4 / 4</span>
-              </div>
-
-              {selectedModel ? (
-                <div className={styles.readyModelBlock}>
-                  <strong className={styles.readyModelTitle}>
-                    {selectedModel.brandName} {selectedModel.modelName}
-                  </strong>
-
-                  <div className={styles.selectionChipRow}>
-                    <span className={styles.modelChip}>{getTractorTypeLabel(selectedModel.tractorType)}</span>
-                    <span className={styles.modelChip}>{getDriveDisplay(selectedModel.drive)}</span>
-                    <span className={styles.modelChip}>{getCabDisplay(selectedModel.cab)}</span>
-                    <span className={styles.modelChip}>{selectedModel.powerKw} kW</span>
-                    <span className={styles.modelChip}>
-                      {selectedModel.yearStart}–{selectedModel.yearEnd}
-                    </span>
-                  </div>
-                </div>
-              ) : null}
-
-              <p className={styles.currentHint}>Continue to enter year, hours, condition and extras.</p>
-            </div>
-          ) : activeConfigStep === 'type' ? (
-            <div className={styles.currentCard}>
-              <div className={styles.currentCardHead}>
-                <div>
-                  <span className={styles.currentEyebrow}>Now</span>
-                  <h2 className={styles.currentTitle}>Field or orchard?</h2>
-                </div>
-                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
-              </div>
-
-              <div className={styles.choiceGrid}>
-                {([
-                  { key: 'field' as TractorType, title: 'Field', note: 'Broad-acre / row crop' },
-                  { key: 'orchard' as TractorType, title: 'Orchard', note: 'Orchard / vineyard' },
-                ]).map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className={`${styles.choiceCard} ${tractorType === item.key ? styles.choiceCardActive : ''}`}
-                    onClick={() => {
-                      const changed = tractorType !== item.key;
-
-                      setTractorType(item.key);
-                      setMessage('');
-
-                      if (changed) {
-                        setDrive(null);
-                        setCab(null);
-                        setModelId('');
-                        setModelQuery('');
-                        resetDetailState();
-                      }
-
-                      setConfigFocus('drive');
-                    }}
-                    aria-pressed={tractorType === item.key}
-                  >
-                    <strong>{item.title}</strong>
-                    <span className={styles.choiceCardNote}>{item.note}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : activeConfigStep === 'drive' ? (
-            <div className={styles.currentCard}>
-              <div className={styles.currentCardHead}>
-                <div>
-                  <span className={styles.currentEyebrow}>Now</span>
-                  <h2 className={styles.currentTitle}>Choose drive</h2>
-                </div>
-                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
-              </div>
-
-              <div className={styles.choiceGrid}>
-                {([
-                  { key: '2wd' as DriveType, title: '2WD', note: 'Two-wheel drive' },
-                  { key: '4wd' as DriveType, title: '4WD', note: 'Four-wheel drive' },
-                  { key: 'tracks' as DriveType, title: 'Tracks', note: 'Tracked tractor' },
-                ]).map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className={`${styles.choiceCard} ${drive === item.key ? styles.choiceCardActive : ''}`}
-                    onClick={() => {
-                      const changed = drive !== item.key;
-
-                      setDrive(item.key);
-                      setMessage('');
-
-                      if (changed) {
-                        setCab(null);
-                        setModelId('');
-                        setModelQuery('');
-                        resetDetailState();
-                      }
-
-                      setConfigFocus('cab');
-                    }}
-                    aria-pressed={drive === item.key}
-                  >
-                    <strong>{item.title}</strong>
-                    <span className={styles.choiceCardNote}>{item.note}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : activeConfigStep === 'cab' ? (
-            <div className={styles.currentCard}>
-              <div className={styles.currentCardHead}>
-                <div>
-                  <span className={styles.currentEyebrow}>Now</span>
-                  <h2 className={styles.currentTitle}>Choose cab</h2>
-                </div>
-                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
-              </div>
-
-              <div className={styles.choiceGrid}>
-                {([
-                  { key: 'cab' as CabType, title: 'Cab', note: 'Enclosed operator cab' },
-                  { key: 'open-station' as CabType, title: 'Open station', note: 'No enclosed cab' },
-                ]).map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className={`${styles.choiceCard} ${cab === item.key ? styles.choiceCardActive : ''}`}
-                    onClick={() => {
-                      const changed = cab !== item.key;
-
-                      setCab(item.key);
-                      setMessage('');
-
-                      if (changed) {
-                        setModelId('');
-                        setModelQuery('');
-                        resetDetailState();
-                      }
-
-                      setConfigFocus('model');
-                    }}
-                    aria-pressed={cab === item.key}
-                  >
-                    <strong>{item.title}</strong>
-                    <span className={styles.choiceCardNote}>{item.note}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className={styles.currentCard}>
-              <div className={styles.currentCardHead}>
-                <div>
-                  <span className={styles.currentEyebrow}>Now</span>
-                  <h2 className={styles.currentTitle}>Choose model</h2>
-                </div>
-                <span className={styles.currentIndex}>{configStepNumber} / 4</span>
-              </div>
-
-              <div className={styles.selectionChipRow} style={{ marginBottom: '0.95rem' }}>
-                {tractorType ? <span className={styles.modelChip}>{getTractorTypeLabel(tractorType)}</span> : null}
-                {drive ? <span className={styles.modelChip}>{getDriveDisplay(drive)}</span> : null}
-                {cab ? <span className={styles.modelChip}>{getCabDisplay(cab)}</span> : null}
-              </div>
-
-              <div className={styles.searchWrap}>
-                <input
-                  value={modelQuery}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                    setModelQuery(event.target.value);
-                    setMessage('');
-                  }}
-                  placeholder={`Search ${selectedBrandName} models`}
-                  aria-label="Search tractor models"
-                  className={styles.searchInput}
-                  disabled={modelsLoading}
-                />
-              </div>
-
-              {selectedModel ? (
-                <div className={styles.selectedCallout}>
-                  <span className={styles.currentEyebrow}>Selected</span>
-                  <strong className={styles.selectedCalloutTitle}>
-                    {selectedModel.brandName} {selectedModel.modelName}
-                  </strong>
-                  <span className={styles.selectedCalloutBody}>Choose a different model below if needed.</span>
-                </div>
-              ) : null}
-
-              {modelsLoading ? (
-                <div className={styles.emptyState}>
-                  <p>Loading models...</p>
-                </div>
-              ) : filteredModels.length ? (
-                <>
-                  <div className={styles.currentCount}>
-                    {filteredModels.length} model{filteredModels.length === 1 ? '' : 's'} found
-                  </div>
-
-                  <div className={styles.modelList}>
-                    {filteredModels.map((model) => {
-                      const active = selectedModel?.id === model.id;
-
-                      return (
-                        <button
-                          key={model.id}
-                          type="button"
-                          className={`${styles.modelRow} ${active ? styles.modelRowActive : ''}`}
-                          onClick={() => {
-                            const changed = model.id !== modelId;
-
-                            if (changed) {
-                              setModelId(model.id);
-                              resetDetailState();
-                            }
-
-                            setConfigFocus(null);
-                            setMessage('');
-                          }}
-                          aria-pressed={active}
-                        >
-                          <div className={styles.modelRowBody}>
-                            <div className={styles.modelRowHeader}>
-                              <strong>
-                                {model.brandName} {model.modelName}
-                              </strong>
-                              {active ? <span className={styles.modelRowSelectedBadge}>Selected</span> : null}
-                            </div>
-
-                            <div className={styles.modelChipRow}>
-                              <span className={styles.modelChip}>{getTractorTypeLabel(model.tractorType)}</span>
-                              <span className={styles.modelChip}>{getDriveDisplay(model.drive)}</span>
-                              <span className={styles.modelChip}>{getCabDisplay(model.cab)}</span>
-                              <span className={styles.modelChip}>{model.powerKw} kW</span>
-                            </div>
-                          </div>
-
-                          <span className={styles.modelRowYear}>
-                            {model.yearStart}–{model.yearEnd}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                <div className={styles.emptyState}>
-                  <p>{emptySearchMessage}</p>
-                  {modelQuery.trim() ? (
-                    <div className={styles.emptyStateActions}>
-                      <button
-                        type="button"
-                        className={styles.secondaryButton}
-                        onClick={() => setModelQuery('')}
-                      >
-                        Clear search
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              )}
-            </div>
-          )}
+          <button
+            type="button"
+            className={`${styles.choiceCard} ${flowMode === 'generic_specs' ? styles.choiceCardActive : ''}`}
+            onClick={() => {
+              setFlowMode('generic_specs');
+              resetResult();
+            }}
+          >
+            <strong>Continue using machine specs</strong>
+            <span className={styles.choiceCardNote}>Works for all families. The user can still type the model name if known.</span>
+          </button>
         </div>
+
+        {flowMode === 'exact_model' ? renderTractorModelPicker() : renderTypedModelBox()}
+      </div>
+    );
+  }
+
+  function renderTractorModelPicker() {
+    return (
+      <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
+        <h3 className={styles.currentTitle}>Tractor setup</h3>
+        <div className={styles.inputGrid}>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Type</span>
+            <select value={tractorType} onChange={(event) => setTractorType(event.target.value as TractorType)}>
+              <option value="field">Field</option>
+              <option value="orchard">Orchard</option>
+            </select>
+          </label>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Drive</span>
+            <select value={drive} onChange={(event) => setDrive(event.target.value as DriveType)}>
+              <option value="2wd">2WD</option>
+              <option value="4wd">4WD</option>
+              <option value="tracks">Tracks</option>
+            </select>
+          </label>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Cab</span>
+            <select value={cab} onChange={(event) => setCab(event.target.value as CabType)}>
+              <option value="cab">Cab</option>
+              <option value="open-station">Open station</option>
+            </select>
+          </label>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Search model</span>
+            <input value={modelQuery} onChange={(event) => setModelQuery(event.target.value)} placeholder="6155M, 7610, etc." />
+          </label>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Model</span>
+            <select value={modelId} onChange={(event) => setModelId(event.target.value)}>
+              {filteredModels.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.brandName} {model.modelName} • {model.powerKw} kW • {model.yearStart}-{model.yearEnd}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {modelsLoading ? <p className={styles.fieldHint}>Loading tractor models...</p> : null}
+        {!filteredModels.length && !modelsLoading ? <p className={styles.message}>No exact models found for this setup. Use machine specs instead.</p> : null}
+      </div>
+    );
+  }
+
+  function renderTypedModelBox() {
+    return (
+      <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
+        <h3 className={styles.currentTitle}>Model is optional</h3>
+        <p className={styles.currentHint}>If the user types a model name, Aim4price saves it as a model candidate and searches Market Vault for similar listings.</p>
+        <div className={styles.inputGrid}>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Model name, if known</span>
+            <input
+              value={typedModelName}
+              onChange={(event) => {
+                setTypedModelName(event.target.value);
+                resetResult();
+              }}
+              placeholder="e.g. Verti-Mix 1251"
+            />
+          </label>
+        </div>
+      </div>
+    );
+  }
+
+  function renderSpecInput(question: SpecQuestion) {
+    const value = specAnswers[question.specKey] ?? '';
+    const label = `${question.label}${question.unit ? ` (${question.unit})` : ''}${question.isRequired ? ' *' : ''}`;
+
+    if (question.inputType === 'select') {
+      return (
+        <label key={question.specKey} className={styles.field}>
+          <span className={styles.fieldLabel}>{label}</span>
+          <select value={value} onChange={(event) => setSpecAnswer(question.specKey, event.target.value)}>
+            <option value="">Choose...</option>
+            {question.options.map((option) => (
+              <option key={option.optionValue} value={option.optionValue}>
+                {option.optionLabel}
+              </option>
+            ))}
+          </select>
+          {question.helpText ? <span className={styles.fieldHint}>{question.helpText}</span> : null}
+        </label>
       );
     }
 
-    const detailRows = [
-      yearConfirmed ? { key: 'year' as DetailsStepKey, label: 'Year', value: selectedYearDisplay } : null,
-      hoursConfirmed ? { key: 'hours' as DetailsStepKey, label: 'Hours', value: enteredHoursDisplay } : null,
-      condition ? { key: 'condition' as DetailsStepKey, label: 'Condition', value: conditionLabel(condition) } : null,
-      extrasReviewed ? { key: 'extras' as DetailsStepKey, label: 'Extras', value: extrasSummaryText } : null,
-    ].filter(
-      (
-        row,
-      ): row is {
-        key: DetailsStepKey;
-        label: string;
-        value: string;
-      } => Boolean(row),
-    );
-
-    const detailsReviewMode = detailsComplete && detailsFocus === null;
+    if (question.inputType === 'boolean') {
+      return (
+        <label key={question.specKey} className={styles.field}>
+          <span className={styles.fieldLabel}>{label}</span>
+          <select value={value} onChange={(event) => setSpecAnswer(question.specKey, event.target.value)}>
+            <option value="">Choose...</option>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+          {question.helpText ? <span className={styles.fieldHint}>{question.helpText}</span> : null}
+        </label>
+      );
+    }
 
     return (
-      <div className={styles.flowShell}>
-        {selectedModel ? (
-          <div className={styles.focusContext}>
-            <span className={styles.flowToplineLabel}>Model</span>
-            <strong className={styles.flowToplineValue}>
-              {selectedModel.brandName} {selectedModel.modelName}
-            </strong>
-            <div className={styles.selectionChipRow}>
-              <span className={styles.modelChip}>{getTractorTypeLabel(selectedModel.tractorType)}</span>
-              <span className={styles.modelChip}>{getDriveDisplay(selectedModel.drive)}</span>
-              <span className={styles.modelChip}>{getCabDisplay(selectedModel.cab)}</span>
-              <span className={styles.modelChip}>{selectedModel.powerKw} kW</span>
-              <span className={styles.modelChip}>
-                {selectedModel.yearStart}–{selectedModel.yearEnd}
-              </span>
-            </div>
+      <label key={question.specKey} className={styles.field}>
+        <span className={styles.fieldLabel}>{label}</span>
+        <input
+          type={question.inputType === 'number' || question.inputType === 'money' ? 'number' : 'text'}
+          value={value}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => setSpecAnswer(question.specKey, event.target.value)}
+          placeholder={question.helpText ?? question.label}
+        />
+      </label>
+    );
+  }
+
+  function renderDetailsStep() {
+    const genericPath = flowMode === 'generic_specs';
+    const usageLabel = selectedFamily?.usageMetricType === 'hours' ? 'Hours' : 'Usage / wear amount (optional)';
+
+    return (
+      <div>
+        <h2 className={styles.stepTitle}>{genericPath ? 'Machine specs' : 'Tractor details'}</h2>
+        <p className={styles.stepText}>These details drive depreciation, replacement price band matching and market matching.</p>
+
+        <div className={styles.currentCard}>
+          <div className={styles.inputGrid}>
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Year model *</span>
+              <input type="number" value={year} min={1950} max={CURRENT_YEAR} onChange={(event) => setYear(event.target.value)} />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>{usageLabel}</span>
+              <input type="number" value={usageAmount} onChange={(event) => setUsageAmount(event.target.value)} placeholder="Optional" />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Condition *</span>
+              <select value={condition} onChange={(event) => setCondition(event.target.value as ConditionKey)}>
+                {conditionOptions.map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
-        ) : null}
-
-        <div className={styles.miniStepper} aria-label="Details progress">
-          {DETAILS_STEPS.map((item) => {
-            const complete =
-              item.key === 'year'
-                ? yearConfirmed
-                : item.key === 'hours'
-                  ? hoursConfirmed
-                  : item.key === 'condition'
-                    ? Boolean(condition)
-                    : extrasReviewed;
-            const active = !detailsReviewMode && activeDetailsStep === item.key;
-
-            return (
-              <div
-                key={item.key}
-                className={`${styles.miniStep} ${active ? styles.miniStepActive : ''} ${
-                  complete ? styles.miniStepComplete : ''
-                }`}
-              >
-                <span className={styles.miniStepNumber}>
-                  {complete ? '✓' : DETAILS_STEPS.findIndex((stepItem) => stepItem.key === item.key) + 1}
-                </span>
-                <span className={styles.miniStepLabel}>{item.label}</span>
-              </div>
-            );
-          })}
         </div>
 
-        {detailRows.length ? (
-          <div className={styles.answerStack}>
-            {detailRows.map((row) => (
-              <div key={row.key} className={styles.answerRow}>
-                <div className={styles.answerRowText}>
-                  <span className={styles.answerRowLabel}>{row.label}</span>
-                  <strong className={styles.answerRowValue}>{row.value}</strong>
-                </div>
-
-                <button
-                  type="button"
-                  className={styles.answerEdit}
-                  onClick={() => {
-                    setDetailsFocus(row.key);
-                    setMessage('');
-                  }}
-                >
-                  Edit
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : null}
-
-        {detailsReviewMode ? (
-          <div className={`${styles.currentCard} ${styles.readyCard}`}>
-            <div className={styles.currentCardHead}>
-              <div>
-                <span className={styles.currentEyebrow}>Ready</span>
-                <h2 className={styles.currentTitle}>Get valuation</h2>
-              </div>
-              <span className={styles.currentIndex}>4 / 4</span>
-            </div>
-
-            <div className={styles.selectionFacts}>
-              <div className={styles.selectionFact}>
-                <span>Year</span>
-                <strong>{selectedYearDisplay}</strong>
-              </div>
-
-              <div className={styles.selectionFact}>
-                <span>Hours</span>
-                <strong>{enteredHoursDisplay}</strong>
-              </div>
-
-              <div className={styles.selectionFact}>
-                <span>Condition</span>
-                <strong>{selectedConditionDisplay}</strong>
-              </div>
-
-              <div className={styles.selectionFact}>
-                <span>Extras</span>
-                <strong>{extrasSummaryText}</strong>
-              </div>
-            </div>
-          </div>
-        ) : activeDetailsStep === 'year' ? (
-          <div className={styles.currentCard}>
-            <div className={styles.currentCardHead}>
-              <div>
-                <span className={styles.currentEyebrow}>Now</span>
-                <h2 className={styles.currentTitle}>Choose year</h2>
-              </div>
-              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
-            </div>
-
-            <div className={styles.segmentRail}>
-              <button
-                type="button"
-                className={`${styles.pillButton} ${yearMode === 'guided' ? styles.pillButtonActive : ''}`}
-                onClick={() => {
-                  setYearMode('guided');
-                  setYearDropdownOpen(false);
-                  setYearConfirmed(false);
-                  setMessage('');
-                  invalidateResult();
-                }}
-                aria-pressed={yearMode === 'guided'}
-              >
-                Guided years
-              </button>
-              <button
-                type="button"
-                className={`${styles.pillButton} ${yearMode === 'manual' ? styles.pillButtonActive : ''}`}
-                onClick={() => {
-                  setYearMode('manual');
-                  if (year !== null) {
-                    setManualYear(String(year));
-                  }
-                  setYearDropdownOpen(false);
-                  setYearConfirmed(false);
-                  setMessage('');
-                  invalidateResult();
-                }}
-                aria-pressed={yearMode === 'manual'}
-              >
-                Other year
-              </button>
-            </div>
-
-            {yearMode === 'guided' ? (
-              <div className={styles.inlineFieldRow}>
-                <div className={styles.dropdownField} ref={yearDropdownRef}>
-                  <button
-                    type="button"
-                    className={`${styles.dropdownTrigger} ${yearDropdownOpen ? styles.dropdownTriggerOpen : ''}`}
-                    onClick={() => {
-                      if (!selectedModel) return;
-                      setYearDropdownOpen((open) => !open);
-                      setMessage('');
-                    }}
-                    aria-haspopup="listbox"
-                    aria-expanded={yearDropdownOpen}
-                    aria-label="Choose guided year model"
-                  >
-                    <span className={styles.dropdownTriggerText}>{selectedYearDisplay}</span>
-                    <span className={styles.dropdownTriggerIcon} aria-hidden="true">
-                      {yearDropdownOpen ? '▴' : '▾'}
-                    </span>
-                  </button>
-
-                  {yearDropdownOpen ? (
-                    <div className={styles.dropdownMenu}>
-                      <div className={styles.dropdownList} role="listbox" aria-label="Available guided years">
-                        {years.length ? (
-                          years.map((availableYear) => {
-                            const active = year === availableYear;
-
-                            return (
-                              <button
-                                key={availableYear}
-                                type="button"
-                                role="option"
-                                aria-selected={active}
-                                className={`${styles.dropdownOption} ${active ? styles.dropdownOptionActive : ''}`}
-                                onClick={() => {
-                                  setYear(availableYear);
-                                  setYearDropdownOpen(false);
-                                  setYearConfirmed(false);
-                                  setMessage('');
-                                  invalidateResult();
-                                }}
-                              >
-                                <span className={styles.dropdownOptionText}>{availableYear}</span>
-                                {active ? <span className={styles.dropdownOptionBadge}>Selected</span> : null}
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <div className={styles.dropdownEmpty}>No guided years loaded for this model yet.</div>
-                        )}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={confirmYearSelection}
-                  disabled={!isYearValid}
-                >
-                  Next: Hours
-                </button>
-              </div>
+        {genericPath ? (
+          <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
+            <h3 className={styles.currentTitle}>Family questions</h3>
+            {specQuestions.length ? (
+              <div className={styles.inputGrid}>{specQuestions.map(renderSpecInput)}</div>
             ) : (
-              <div className={styles.inlineFieldRow}>
-                <input
-                  value={manualYear}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                    setManualYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4));
-                    setYearConfirmed(false);
-                    setMessage('');
-                    invalidateResult();
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      confirmYearSelection();
-                    }
-                  }}
-                  placeholder="Type year"
-                  inputMode="numeric"
-                  aria-label="Enter year model manually"
-                  className={styles.controlInput}
-                />
-
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={confirmYearSelection}
-                  disabled={!isYearValid}
-                >
-                  Next: Hours
-                </button>
-              </div>
+              <p className={styles.message}>No family-specific questions imported yet. Aim4price will use year, condition, brand and replacement bands if available.</p>
             )}
-
-            {selectedModel ? (
-              <p className={styles.currentHint}>Guided range: {selectedModel.yearStart}–{selectedModel.yearEnd}</p>
-            ) : null}
-          </div>
-        ) : activeDetailsStep === 'hours' ? (
-          <div className={styles.currentCard}>
-            <div className={styles.currentCardHead}>
-              <div>
-                <span className={styles.currentEyebrow}>Now</span>
-                <h2 className={styles.currentTitle}>Enter engine hours</h2>
-              </div>
-              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
-            </div>
-
-            <div className={styles.inlineFieldRow}>
-              <div className={styles.inlineFieldInputWrap}>
-                <input
-                  value={hours}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                    setHours(event.target.value.replace(/[^0-9]/g, ''));
-                    setHoursConfirmed(false);
-                    setMessage('');
-                    invalidateResult();
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      confirmHoursSelection();
-                    }
-                  }}
-                  placeholder="Type hours"
-                  inputMode="numeric"
-                  aria-label="Enter engine hours"
-                  className={styles.controlInput}
-                />
-                <span className={styles.inlineFieldSuffix}>hrs</span>
-              </div>
-
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={confirmHoursSelection}
-                disabled={!isHoursValid}
-              >
-                Next: Condition
-              </button>
-            </div>
-
-            <p className={styles.currentHint}>Use the meter reading.</p>
-          </div>
-        ) : activeDetailsStep === 'condition' ? (
-          <div className={styles.currentCard}>
-            <div className={styles.currentCardHead}>
-              <div>
-                <span className={styles.currentEyebrow}>Now</span>
-                <h2 className={styles.currentTitle}>Choose condition</h2>
-              </div>
-              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
-            </div>
-
-            <div className={styles.conditionGrid}>
-              {conditionOptions.map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  className={`${styles.conditionCard} ${condition === option.key ? styles.conditionCardActive : ''}`}
-                  onClick={() => {
-                    setCondition(option.key);
-                    setDetailsFocus(null);
-                    setMessage('');
-                    invalidateResult();
-                  }}
-                >
-                  <strong>{option.label}</strong>
-                  <span>{getConditionHint(option.key)}</span>
-                </button>
-              ))}
-            </div>
           </div>
         ) : (
-          <div className={styles.currentCard}>
-            <div className={styles.currentCardHead}>
-              <div>
-                <span className={styles.currentEyebrow}>Now</span>
-                <h2 className={styles.currentTitle}>Review extras</h2>
-              </div>
-              <span className={styles.currentIndex}>{activeDetailsStepNumber} / 4</span>
+          <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
+            <h3 className={styles.currentTitle}>Tractor extras</h3>
+            <div className={styles.choiceGrid}>
+              <button type="button" className={`${styles.choiceCard} ${frontPto ? styles.choiceCardActive : ''}`} onClick={() => setFrontPto((value) => !value)}>
+                <strong>Front PTO</strong>
+                <span className={styles.choiceCardNote}>Front hitch / PTO fitted</span>
+              </button>
+              <button type="button" className={`${styles.choiceCard} ${frontLoader ? styles.choiceCardActive : ''}`} onClick={() => setFrontLoader((value) => !value)}>
+                <strong>Front Loader</strong>
+                <span className={styles.choiceCardNote}>Loader fitted</span>
+              </button>
+              <button type="button" className={`${styles.choiceCard} ${gpsEnabled ? styles.choiceCardActive : ''}`} onClick={() => setGpsEnabled((value) => !value)}>
+                <strong>GPS</strong>
+                <span className={styles.choiceCardNote}>Guidance or autosteer</span>
+              </button>
             </div>
-
-            <div className={styles.togglePanelGrid}>
-              <div className={styles.togglePanel}>
-                <div className={styles.togglePanelCopy}>
-                  <strong className={styles.togglePanelTitle}>Front Hitch & Front PTO</strong>
-                  <span className={styles.togglePanelNote}>Installed?</span>
-                </div>
-                <div className={styles.pillRow}>
-                  <button
-                    type="button"
-                    className={`${styles.pillButton} ${frontPto ? styles.pillButtonActive : ''}`}
-                    onClick={() => {
-                      setFrontPto(true);
-                      setMessage('');
-                      markExtrasDirty();
-                    }}
-                    aria-pressed={frontPto}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.pillButton} ${!frontPto ? styles.pillButtonActive : ''}`}
-                    onClick={() => {
-                      setFrontPto(false);
-                      setMessage('');
-                      markExtrasDirty();
-                    }}
-                    aria-pressed={!frontPto}
-                  >
-                    No
-                  </button>
-                </div>
-              </div>
-
-              <div className={styles.togglePanel}>
-                <div className={styles.togglePanelCopy}>
-                  <strong className={styles.togglePanelTitle}>Front Loader</strong>
-                  <span className={styles.togglePanelNote}>Installed?</span>
-                </div>
-                <div className={styles.pillRow}>
-                  <button
-                    type="button"
-                    className={`${styles.pillButton} ${frontLoader ? styles.pillButtonActive : ''}`}
-                    onClick={() => {
-                      setFrontLoader(true);
-                      setMessage('');
-                      markExtrasDirty();
-                    }}
-                    aria-pressed={frontLoader}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.pillButton} ${!frontLoader ? styles.pillButtonActive : ''}`}
-                    onClick={() => {
-                      setFrontLoader(false);
-                      setMessage('');
-                      markExtrasDirty();
-                    }}
-                    aria-pressed={!frontLoader}
-                  >
-                    No
-                  </button>
-                </div>
-              </div>
-
-              <div className={styles.togglePanel}>
-                <div className={styles.togglePanelCopy}>
-                  <strong className={styles.togglePanelTitle}>GPS</strong>
-                  <span className={styles.togglePanelNote}>Installed?</span>
-                </div>
-                <div className={styles.pillRow}>
-                  <button
-                    type="button"
-                    className={`${styles.pillButton} ${gpsEnabled ? styles.pillButtonActive : ''}`}
-                    onClick={() => {
-                      setGpsEnabled(true);
-                      setMessage('');
-                      markExtrasDirty();
-                    }}
-                    aria-pressed={gpsEnabled}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.pillButton} ${!gpsEnabled ? styles.pillButtonActive : ''}`}
-                    onClick={() => {
-                      setGpsEnabled(false);
-                      setMessage('');
-                      markExtrasDirty();
-                    }}
-                    aria-pressed={!gpsEnabled}
-                  >
-                    No
-                  </button>
-                </div>
-              </div>
-            </div>
-
             {gpsEnabled ? (
-              <div className={styles.gpsDetailGrid}>
-                <div className={styles.togglePanel}>
-                  <div className={styles.togglePanelCopy}>
-                    <strong className={styles.togglePanelTitle}>GPS type</strong>
-                    <span className={styles.togglePanelNote}>Optional</span>
-                  </div>
-                  <div className={styles.pillRow}>
-                    {(['full-autosteer', 'guidance-only'] as GpsType[]).map((value) => (
-                      <button
-                        key={value}
-                        type="button"
-                        className={`${styles.pillButton} ${gpsType === value ? styles.pillButtonActive : ''}`}
-                        onClick={() => {
-                          setGpsType(value);
-                          setMessage('');
-                          markExtrasDirty();
-                        }}
-                        aria-pressed={gpsType === value}
-                      >
-                        {getGpsTypeLabel(value)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className={styles.togglePanel}>
-                  <div className={styles.togglePanelCopy}>
-                    <strong className={styles.togglePanelTitle}>GPS year</strong>
-                    <span className={styles.togglePanelNote}>Optional</span>
-                  </div>
-                  <input
-                    value={gpsYear}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                      setGpsYear(event.target.value.replace(/[^0-9]/g, '').slice(0, 4));
-                      setMessage('');
-                      markExtrasDirty();
-                    }}
-                    placeholder="Type year"
-                    inputMode="numeric"
-                    aria-label="Enter GPS year"
-                    className={styles.controlInput}
-                  />
-                </div>
+              <div className={styles.inputGrid} style={{ marginTop: '1rem' }}>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>GPS type</span>
+                  <select value={gpsType} onChange={(event) => setGpsType(event.target.value as GpsType)}>
+                    <option value="guidance-only">Guidance only</option>
+                    <option value="full-autosteer">Full autosteer</option>
+                  </select>
+                </label>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>GPS year</span>
+                  <input value={gpsYear} onChange={(event) => setGpsYear(event.target.value)} placeholder="Optional" />
+                </label>
               </div>
             ) : null}
-
-            <div className={styles.selectionChipRow} style={{ marginTop: '1rem' }}>
-              {extrasSummaryChips.map((chip) => (
-                <span key={chip} className={styles.modelChip}>
-                  {chip}
-                </span>
-              ))}
-            </div>
-
-            <div className={styles.currentCardActions}>
-              <button type="button" className={styles.secondaryButton} onClick={clearExtrasSelection}>
-                No fitted extras
-              </button>
-              <button type="button" className={styles.primaryButton} onClick={applyExtrasSelection}>
-                Save extras
-              </button>
-            </div>
           </div>
         )}
       </div>
     );
   }
 
-  return (
-    <>
-      <main className={styles.page}>
-        <AppHeader active="valuation" ctaHref="/asset-register" ctaLabel="Asset Register" />
+  function renderResultStep() {
+    if (!resultState) {
+      return (
+        <div>
+          <h2 className={styles.stepTitle}>No valuation yet</h2>
+          <p className={styles.stepText}>Go back and calculate a valuation first.</p>
+        </div>
+      );
+    }
 
-        <div className={styles.container}>
-          {step !== 5 ? (
-            <>
-              <div className={styles.heroToggleRow}>
-                <button
-                  id="valuation-how-it-works-toggle"
-                  type="button"
-                  className={`${styles.secondaryButton} ${styles.howItWorksButton}`}
-                  onClick={() => setHowItWorksOpen((open) => !open)}
-                  aria-expanded={howItWorksOpen}
-                  aria-controls="valuation-how-it-works-panel"
-                >
-                  <span>How it works</span>
-                  <span
-                    aria-hidden="true"
-                    className={`${styles.howItWorksChevron} ${howItWorksOpen ? styles.howItWorksChevronOpen : ''}`}
-                  >
-                    ▾
-                  </span>
-                </button>
+    const isGeneric = resultState.kind === 'generic';
+    const genericResult = isGeneric ? resultState.result : null;
+    const tractorResult = resultState.kind === 'tractor' ? resultState.result : null;
+    const marketValue = isGeneric ? genericResult?.marketAverageExVat ?? null : tractorResult?.marketMid ?? null;
+    const aimValue = isGeneric ? genericResult?.valuationMidExVat ?? genericResult?.aim4priceValueExVat ?? null : tractorResult?.aim4priceValueExVat ?? null;
+    const marketCount = isGeneric ? genericResult?.marketAverageCount ?? 0 : tractorResult?.marketCount ?? 0;
+
+    return (
+      <div className={styles.resultsLayout}>
+        <div className={styles.resultsMain}>
+          <div className={`${styles.valuePanel} ${getConfidenceClass(resultState)}`}>
+            <div className={styles.valuePanelTop}>
+              <span className={styles.valueLabel}>{selectedMethod === 'market' ? 'Market value' : 'Aim4price value'}</span>
+              <span className={styles.valueMeta}>{getConfidenceLabel(resultState)}</span>
+            </div>
+            <strong className={styles.valueAmount}>{money(headlineValue)}</strong>
+            <p className={styles.valueMeta}>
+              {isGeneric
+                ? `${genericResult?.family.label ?? ''} • ${genericResult?.brand.name ?? ''} • ${displayMarketStrategy(genericResult?.marketMatchStrategy ?? 'none')}`
+                : `${tractorResult?.model.brandName ?? ''} ${tractorResult?.model.modelName ?? ''}`}
+            </p>
+          </div>
+
+          <div className={styles.choiceGrid} style={{ marginTop: '1rem' }}>
+            <button
+              type="button"
+              className={`${styles.choiceCard} ${selectedMethod === 'aim4price' ? styles.choiceCardActive : ''}`}
+              onClick={() => setSelectedMethod('aim4price')}
+            >
+              <strong>{money(aimValue)}</strong>
+              <span className={styles.choiceCardNote}>Aim4price calculated value</span>
+            </button>
+            <button
+              type="button"
+              className={`${styles.choiceCard} ${selectedMethod === 'market' ? styles.choiceCardActive : ''}`}
+              onClick={() => marketValue !== null && setSelectedMethod('market')}
+              disabled={marketValue === null}
+            >
+              <strong>{money(marketValue)}</strong>
+              <span className={styles.choiceCardNote}>{marketCount} market listing{marketCount === 1 ? '' : 's'} matched</span>
+            </button>
+          </div>
+
+          {isGeneric && genericResult ? (
+            <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
+              <h3 className={styles.currentTitle}>Replacement price feedback</h3>
+              <p className={styles.currentHint}>Help Aim4price improve: what would this machine cost new today?</p>
+              <div className={styles.inputGrid}>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Current new replacement price</span>
+                  <input
+                    type="number"
+                    value={userReplacementPrice}
+                    onChange={(event) => setUserReplacementPrice(event.target.value)}
+                    placeholder="Optional, ex VAT"
+                  />
+                </label>
               </div>
-
-              <div
-                id="valuation-how-it-works-panel"
-                className={`${styles.heroIntroCollapse} ${howItWorksOpen ? styles.heroIntroCollapseOpen : ''}`}
-                role="region"
-                aria-labelledby="valuation-how-it-works-toggle"
-                aria-hidden={!howItWorksOpen}
-              >
-                <div className={styles.heroIntroCollapseInner}>
-                  <section className={styles.heroIntro}>
-                    <div className={styles.heroIntroGrid}>
-                      <div className={styles.heroIntroContent}>
-                        <p className={styles.heroEyebrow}>Guided valuation</p>
-                        <h1 className={styles.heroIntroTitle}>Value your machinery.</h1>
-                        <p className={styles.heroIntroText}>
-                          Choose the machine, add the working details, and review the value output in one clean guided flow.
-                        </p>
-
-                        <div className={styles.heroPills} aria-label="Valuation flow highlights">
-                          {HERO_PILLS.map((item) => (
-                            <span key={item} className={styles.heroPill}>
-                              {item}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <aside className={styles.heroGuide} aria-label="How the valuation works">
-                        <p className={styles.heroGuideTitle}>How it works</p>
-
-                        <div className={styles.heroGuideList}>
-                          {HERO_GUIDE_ITEMS.map((item, index) => (
-                            <div key={item.title} className={styles.heroGuideItem}>
-                              <span className={styles.heroGuideNumber}>{index + 1}</span>
-                              <div className={styles.heroGuideTextWrap}>
-                                <p className={styles.heroGuideHeading}>{item.title}</p>
-                                <p className={styles.heroGuideText}>{item.text}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className={styles.heroAccessCard}>
-                          <p className={styles.heroAccessLabel}>{heroAccessLabel}</p>
-                          <p className={styles.heroAccessText}>{heroAccessText}</p>
-                        </div>
-                      </aside>
-                    </div>
-                  </section>
-                </div>
-              </div>
-
-              <section className={styles.wizardShell}>
-                <article className={styles.wizardCard}>
-                  <div className={styles.wizardHeader}>
-                    <div className={styles.stepper}>
-                      {WIZARD_STEPS.map((item, index) => {
-                        const isActive = step === item.step;
-                        const isComplete = step > item.step;
-
-                        return (
-                          <div
-                            key={item.step}
-                            className={`${styles.stepperItem} ${isActive ? styles.stepperItemActive : ''} ${
-                              isComplete ? styles.stepperItemComplete : ''
-                            }`}
-                          >
-                            <span
-                              className={`${styles.stepperBullet} ${
-                                isActive ? styles.stepperBulletActive : ''
-                              } ${isComplete ? styles.stepperBulletComplete : ''}`}
-                            >
-                              {isComplete ? '✓' : item.step}
-                            </span>
-                            <span
-                              className={`${styles.stepperLabel} ${isActive ? styles.stepperLabelActive : ''} ${
-                                isComplete ? styles.stepperLabelComplete : ''
-                              }`}
-                            >
-                              {item.label}
-                            </span>
-                            {index < WIZARD_STEPS.length - 1 ? (
-                              <span
-                                className={`${styles.stepperLine} ${step > item.step ? styles.stepperLineComplete : ''}`}
-                              />
-                            ) : null}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className={styles.stepContent}>
-                    <div className={styles.stepMetaRow}>
-                      <span className={styles.stepMetaBadge}>Step {step} of {WIZARD_STEPS.length}</span>
-                    </div>
-                    <h1 className={styles.stepTitle}>{stepMeta.title}</h1>
-                    <p className={styles.stepText}>{stepMeta.body}</p>
-
-                    {message ? <div className={styles.message}>{message}</div> : null}
-
-                    {renderWizardBody()}
-                  </div>
-
-                  <div className={styles.wizardFooter}>
-                    <button type="button" className={styles.secondaryButton} onClick={handleBack}>
-                      {step === 1 && setupSlide === 'sector' ? 'Back Home' : 'Back'}
-                    </button>
-
-                    <button
-                      type="button"
-                      className={styles.primaryButton}
-                      onClick={handleNext}
-                      disabled={!canContinue || valuationLoading}
-                    >
-                      {nextLabel}
-                    </button>
-                  </div>
-                </article>
-              </section>
-            </>
-          ) : result ? (
-            <section className={styles.resultsLayout}>
-              <div className={styles.resultsMain}>
-                <div className={styles.resultsTopbar}>
-                  <button type="button" className={styles.backLink} onClick={() => setStep(4)}>
-                    ← Back to search
-                  </button>
-                  <span className={styles.statusBadge}>Valuation complete</span>
-                </div>
-
-                {message ? <div className={styles.message}>{message}</div> : null}
-
-                <article className={styles.heroCard}>
-                  <div className={styles.heroTop}>
-                    <div className={styles.heroIdentity}>
-                      <div className={styles.heroImageBox}>
-                        <Image
-                          src="/brand/Tractor.png"
-                          alt="Valuation result tractor"
-                          fill
-                          className={styles.typeImage}
-                          sizes="132px"
-                        />
-                      </div>
-
-                      <div className={styles.heroInfo}>
-                        <h1 className={styles.resultTitle}>
-                          {result.model.brandName} {result.model.modelName}
-                        </h1>
-                        <p className={styles.heroMeta}>
-                          {getTractorTypeLabel(result.model.tractorType)} tractor • {getDriveDisplay(result.model.drive)} •{' '}
-                          {getCabDisplay(result.model.cab)} • {activeYear} • {result.model.powerKw} kW •{' '}
-                          {Number(hours).toLocaleString('en-ZA')} engine hours
-                        </p>
-                        <button type="button" className={styles.inlineButton} onClick={() => setStep(4)}>
-                          Edit Details
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={`${styles.valuePanel} ${confidencePanelClassName}`}>
-                    <div className={styles.valuePanelTop}>
-                      <div className={styles.valuePanelIntro}>
-                        <span className={styles.valueLabel}>{headlineLabel}</span>
-                        <div className={styles.valueAmount}>{money(headlineValue)}</div>
-                        <p className={styles.valueMeta}>ZAR • South Africa • Excl. VAT (indicative)</p>
-                      </div>
-
-                      <span className={`${styles.confidenceBadge} ${confidenceClassName}`}>
-                        {getConfidenceLabel(result)}
-                      </span>
-                    </div>
-
-                    <div className={styles.methodGrid}>
-                      {methodCards.map((card) => {
-                        const active = selectedMethod === card.key;
-                        const unavailable = !card.available;
-
-                        return (
-                          <button
-                            key={card.key}
-                            type="button"
-                            className={`${styles.methodButton} ${
-                              active ? styles.methodButtonActive : ''
-                            } ${unavailable ? styles.methodButtonDisabled : ''}`}
-                            onClick={() => handleMethodSelect(card.key)}
-                            disabled={unavailable}
-                          >
-                            <span className={styles.methodTitle}>{card.label}</span>
-                            <strong className={styles.methodValue}>
-                              {card.key === 'market' ? getMethodDisplay(result, 'market') : money(card.value)}
-                            </strong>
-                            <span className={styles.methodNote}>{card.note}</span>
-                            {active ? <span className={styles.methodState}>Currently displayed</span> : null}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </article>
-
-                <article className={styles.assetCard}>
-                  <div className={styles.actionHeader}>
-                    <div>
-                      <h2 className={styles.assetTitle}>Save to Asset Register</h2>
-                      <p className={styles.assetText}>
-                        Save this valuation to the asset register and create a linked equipment item for the signed-in user.
-                      </p>
-                    </div>
-                    <span className={styles.actionBadge}>Quick actions</span>
-                  </div>
-
-                  <div className={styles.actionGrid}>
-                    <button
-                      type="button"
-                      className={`${styles.assetButton} ${styles.actionPrimary}`}
-                      onClick={handleSave}
-                      disabled={saveLoading}
-                    >
-                      {saveLoading ? 'Saving...' : 'Save to Asset Register'}
-                    </button>
-
-                    <button type="button" className={styles.secondaryButton} onClick={handlePrint}>
-                      Download PDF Report
-                    </button>
-
-                    <button type="button" className={styles.secondaryButton} onClick={() => setStep(4)}>
-                      Refine Inputs
-                    </button>
-
-                    <button type="button" className={styles.secondaryButton} onClick={resetWizard}>
-                      Start New Valuation
-                    </button>
-                  </div>
-                </article>
-              </div>
-
-              <aside className={styles.resultsSide}>
-                <article className={`${styles.sideCard} ${styles.summaryCard}`}>
-                  <h2 className={styles.sideTitle}>Summary</h2>
-
-                  <div className={styles.breakdownList}>
-                    <div className={styles.breakdownRow}>
-                      <span className={styles.breakdownKey}>Specification</span>
-                      <span className={styles.breakdownValue}>
-                        {getTractorTypeLabel(result.model.tractorType)} • {getDriveDisplay(result.model.drive)} •{' '}
-                        {getCabDisplay(result.model.cab)}
-                      </span>
-                    </div>
-
-                    <div className={styles.breakdownRow}>
-                      <span className={styles.breakdownKey}>Condition</span>
-                      <span className={styles.breakdownValue}>{selectedConditionDisplay}</span>
-                    </div>
-
-                    <div className={styles.breakdownRow}>
-                      <span className={styles.breakdownKey}>Engine hours</span>
-                      <span className={styles.breakdownValue}>
-                        {Number(hours).toLocaleString('en-ZA')} engine hours
-                      </span>
-                    </div>
-
-                    <div className={styles.breakdownRow}>
-                      <span className={styles.breakdownKey}>Extras</span>
-                      <span className={styles.breakdownValue}>{extrasSummaryText}</span>
-                    </div>
-
-                    <div className={styles.breakdownRow}>
-                      <span className={styles.breakdownKey}>Displayed value</span>
-                      <span className={styles.breakdownValue}>{headlineLabel}</span>
-                    </div>
-
-                    <div className={styles.breakdownRow}>
-                      <span className={styles.breakdownKey}>Confidence</span>
-                      <span className={styles.breakdownValue}>
-                        <span className={`${styles.summaryConfidenceBadge} ${confidenceClassName}`}>
-                          {getConfidenceLabel(result)}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className={styles.summaryTip}>
-                    Adjust the year, hours, condition, or fitted extras at any time to fine-tune this result.
-                  </div>
-                </article>
-
-                <article className={`${styles.sideCard} ${styles.marketCard}`}>
-                  <div className={styles.rangeCardHead}>
-                    <h2 className={styles.sideTitle}>Market Range</h2>
-                    <span className={styles.rangeBadge}>
-                      {result.marketCount} provable listing{result.marketCount === 1 ? '' : 's'}
-                    </span>
-                  </div>
-
-                  <div className={styles.rangeCurrentWrap}>
-                    <div className={styles.rangeCurrentLabel}>Selected comparable</div>
-                    <div className={styles.rangeCurrent}>{money(selectedComparableValue)}</div>
-                    <p className={styles.rangeCurrentMeta}>
-                      {selectedComparable
-                        ? `${selectedComparable.yearModel} • ${selectedComparable.hours.toLocaleString('en-ZA')} engine hours • ${selectedComparable.sourceName}`
-                        : `Based on comparable ${activeYear} market listings.`}
-                    </p>
-
-                    {selectedComparable ? (
-                      selectedComparableSourceUrl ? (
-                        <div className={styles.rangeCurrentLinkBlock}>
-                          <span className={styles.rangeCurrentLinkLabel}>Selected source URL</span>
-                          <a
-                            href={selectedComparableSourceUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={styles.rangeCurrentLink}
-                            title={selectedComparableSourceUrl}
-                          >
-                            {getSourceLinkLabel(selectedComparableSourceUrl)}
-                          </a>
-                        </div>
-                      ) : (
-                        <p className={styles.rangeCurrentLinkEmpty}>
-                          Attach a source URL to this comparable in the market listing library to show the live
-                          listing here.
-                        </p>
-                      )
-                    ) : null}
-                  </div>
-
-                  <div className={styles.rangeInteractive}>
-                    <div className={styles.rangeTrack}>
-                      <div className={styles.rangeFill} style={{ width: `${selectedComparablePercent}%` }} />
-                      <div className={styles.rangePin} style={{ left: `${selectedComparablePercent}%` }} />
-                    </div>
-
-                    {comparableListings.length > 1 ? (
-                      <input
-                        type="range"
-                        min={0}
-                        max={Math.max(0, comparableListings.length - 1)}
-                        step={1}
-                        value={safeComparableIndex}
-                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                          setSelectedComparableIndex(Number(event.target.value))
-                        }
-                        className={styles.rangeSliderInput}
-                        aria-label="Browse provable market listings"
-                      />
-                    ) : null}
-                  </div>
-
-                  <div className={styles.rangeLabels}>
-                    <span>{money(result.marketLow)}</span>
-                    <span>{money(result.marketHigh)}</span>
-                  </div>
-
-                  <div className={styles.marketListingsBlock}>
-                    <div className={styles.marketListingsHead}>
-                      <h3 className={styles.marketListingsTitle}>Provable Market Listings</h3>
-                      {comparableListings.length ? (
-                        <span className={styles.marketListingsCount}>
-                          {safeComparableIndex + 1} / {comparableListings.length}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    {comparableListings.length ? (
-                      <div className={styles.listingList}>
-                        {comparableListings.map((listing, index) => {
-                          const isActive = index === safeComparableIndex;
-                          const comparableValue = getListingComparablePrice(listing, result.extrasValueExVat);
-
-                          return (
-                            <article
-                              key={listing.id}
-                              className={`${styles.listingCard} ${isActive ? styles.listingCardActive : ''}`}
-                            >
-                              <button
-                                type="button"
-                                className={styles.listingSelectButton}
-                                onClick={() => setSelectedComparableIndex(index)}
-                              >
-                                <div className={styles.listingCardTop}>
-                                  <strong className={styles.listingCardValue}>{money(comparableValue)}</strong>
-                                  <span className={styles.listingCardSource}>{listing.sourceName}</span>
-                                </div>
-
-                                <div className={styles.listingCardMeta}>
-                                  <span className={styles.listingMetaChip}>{listing.yearModel} model</span>
-                                  <span className={styles.listingMetaChip}>
-                                    {listing.hours.toLocaleString('en-ZA')} engine hours
-                                  </span>
-                                  <span className={styles.listingMetaChip}>
-                                    {listing.area}, {listing.province}
-                                  </span>
-                                </div>
-
-                                {result.extrasValueExVat > 0 ? (
-                                  <div className={styles.listingAdjustmentNote}>
-                                    Raw listing {money(getListingBasePrice(listing))} • adjusted for selected extras
-                                  </div>
-                                ) : null}
-                              </button>
-
-                              <div className={styles.listingCardFooter}>
-                                <div className={styles.listingCardFooterMeta}>
-                                  <span className={styles.listingCardDateLabel}>Advertised</span>
-                                  <span className={styles.listingCardDate}>{formatListingDate(listing.dateAdvertised)}</span>
-                                </div>
-
-                                {listing.sourceUrl ? (
-                                  <a
-                                    href={listing.sourceUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className={styles.listingLink}
-                                    title={listing.sourceUrl}
-                                  >
-                                    {getSourceLinkLabel(listing.sourceUrl)}
-                                  </a>
-                                ) : (
-                                  <span className={styles.listingLinkMuted}>Source URL not yet attached</span>
-                                )}
-                              </div>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className={styles.rangeNote}>
-                        No provable market listings matched this tractor yet. Add more market listings to improve
-                        confidence and range quality.
-                      </p>
-                    )}
-                  </div>
-                </article>
-              </aside>
-            </section>
+              {genericResult.replacementPriceBand ? (
+                <p className={styles.fieldHint}>Matched band: {genericResult.replacementPriceBand.bandLabel} • {range(genericResult.replacementPriceMinExVat, genericResult.replacementPriceMaxExVat)}</p>
+              ) : null}
+              {genericResult.notes.length ? (
+                <div className={styles.message}>{genericResult.notes.join(' ')}</div>
+              ) : null}
+            </div>
           ) : null}
         </div>
-      </main>
 
-      {saveChoiceOpen && result ? (
-        <div className={styles.saveModalOverlay} role="presentation">
-          <div className={styles.saveModalBackdrop} onClick={() => (!saveLoading ? setSaveChoiceOpen(false) : undefined)} />
-          <div
-            className={styles.saveModal}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="save-valuation-title"
-          >
-            <div className={styles.saveModalHeader}>
-              <div>
-                <h2 id="save-valuation-title" className={styles.saveModalTitle}>
-                  Choose which price to save
-                </h2>
-                <p className={styles.saveModalText}>
-                  Select one valuation method below. The asset will only be saved after you confirm a single price.
-                </p>
+        <aside className={styles.resultsSide}>
+          <div className={styles.sideCard}>
+            <h3>Market evidence</h3>
+            {isGeneric && genericResult?.marketSources.length ? (
+              genericResult.marketSources.slice(0, 6).map((listing) => (
+                <div key={listing.id} className={styles.answerRow}>
+                  <div className={styles.answerRowText}>
+                    <span className={styles.answerRowLabel}>{listing.matchReason}</span>
+                    <strong className={styles.answerRowValue}>{listing.title}</strong>
+                    <span className={styles.fieldHint}>{money(listing.advertisedPriceExVat)}</span>
+                  </div>
+                </div>
+              ))
+            ) : tractorResult?.marketSources.length ? (
+              tractorResult.marketSources.slice(0, 6).map((listing) => (
+                <div key={listing.id} className={styles.answerRow}>
+                  <div className={styles.answerRowText}>
+                    <span className={styles.answerRowLabel}>{listing.sourceName}</span>
+                    <strong className={styles.answerRowValue}>{listing.title}</strong>
+                    <span className={styles.fieldHint}>{money(listing.advertisedPriceExVat)}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className={styles.fieldHint}>No exact marketplace average yet. Aim4price used replacement price and depreciation.</p>
+            )}
+          </div>
+        </aside>
+      </div>
+    );
+  }
+
+  function renderStepBody() {
+    if (step === 1) return renderMachineStep();
+    if (step === 2) return renderBrandStep();
+    if (step === 3) return renderPathStep();
+    if (step === 4) return renderDetailsStep();
+    return renderResultStep();
+  }
+
+  return (
+    <main className={styles.page}>
+      <AppHeader />
+      <div className={styles.container}>
+        <section className={styles.heroIntro}>
+          <div className={styles.heroIntroContent}>
+            <span className={styles.heroBadge}>Aim4price V1 hybrid system</span>
+            <h1 className={styles.heroIntroTitle}>Value any machine.</h1>
+            <p className={styles.heroIntroText}>
+              Tractors can use exact model data. Every other family starts with brand, specs, replacement bands, and market evidence.
+            </p>
+            <p className={styles.heroIntroText}>
+              {isSignedIn ? 'Signed in valuations can be saved to your asset register.' : `${freeGuestValuationsRemaining} of 3 free guest valuations available.`}
+            </p>
+          </div>
+        </section>
+
+        <section className={styles.wizardShell}>
+          <div className={styles.wizardCard}>
+            <div className={styles.wizardHeader}>
+              <div className={styles.stepper}>
+                {WIZARD_STEPS.map((item) => {
+                  const active = item.step === step;
+                  const complete = item.step < step;
+                  return (
+                    <div key={item.step} className={`${styles.stepperItem} ${active ? styles.stepperItemActive : ''} ${complete ? styles.stepperItemComplete : ''}`}>
+                      <span className={`${styles.stepperBullet} ${active ? styles.stepperBulletActive : ''} ${complete ? styles.stepperBulletComplete : ''}`}>
+                        {complete ? '✓' : item.step}
+                      </span>
+                      <span className={`${styles.stepperLabel} ${active ? styles.stepperLabelActive : ''} ${complete ? styles.stepperLabelComplete : ''}`}>{item.label}</span>
+                    </div>
+                  );
+                })}
               </div>
-              <button
-                type="button"
-                className={styles.saveModalClose}
-                onClick={() => setSaveChoiceOpen(false)}
-                disabled={saveLoading}
-                aria-label="Close save dialog"
-              >
-                ×
-              </button>
             </div>
 
-            <div className={styles.saveMethodGrid}>
-              {methodCards.filter((card) => card.available).map((card) => {
-                const active = saveChoiceMethod === card.key;
+            <div className={styles.stepContent}>
+              {renderStepBody()}
+              {message ? <div className={styles.message}>{message}</div> : null}
+            </div>
 
-                return (
-                  <button
-                    key={card.key}
-                    type="button"
-                    className={`${styles.saveMethodButton} ${active ? styles.saveMethodButtonActive : ''}`}
-                    onClick={() => setSaveChoiceMethod(card.key)}
-                  >
-                    <span className={styles.saveMethodLabel}>{card.label}</span>
-                    <strong className={styles.saveMethodValue}>
-                      {card.key === 'market' ? getMethodDisplay(result, 'market') : money(card.value)}
-                    </strong>
-                    <span className={styles.saveMethodNote}>{card.note}</span>
+            <div className={styles.wizardFooter}>
+              <button type="button" className={styles.secondaryButton} onClick={handleBack} disabled={valuationLoading || saveLoading}>
+                Back
+              </button>
+              {step === 5 ? (
+                <>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setStep(1)} disabled={saveLoading}>
+                    New valuation
                   </button>
-                );
-              })}
-            </div>
-
-            <div className={styles.saveModalActions}>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={() => setSaveChoiceOpen(false)}
-                disabled={saveLoading}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={handleConfirmSave}
-                disabled={!saveChoiceMethod || saveLoading}
-              >
-                {saveLoading ? 'Saving...' : 'Confirm and Save'}
-              </button>
+                  <button type="button" className={styles.primaryButton} onClick={saveToAssetRegister} disabled={saveLoading || !resultState}>
+                    {saveLoading ? 'Saving...' : 'Save to Asset Register'}
+                  </button>
+                </>
+              ) : (
+                <button type="button" className={styles.primaryButton} onClick={handleNext} disabled={valuationLoading || (step === 2 && !brands.length)}>
+                  {valuationLoading ? 'Calculating...' : step === 4 ? 'Get Valuation' : 'Continue'}
+                </button>
+              )}
             </div>
           </div>
-        </div>
-      ) : null}
-    </>
+        </section>
+      </div>
+    </main>
   );
 }
