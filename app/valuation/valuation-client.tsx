@@ -21,6 +21,8 @@ type Step = 1 | 2 | 3 | 4 | 5;
 type MethodKey = 'aim4price' | 'market';
 type FlowMode = 'exact_model' | 'generic_specs';
 type GpsType = 'full-autosteer' | 'guidance-only';
+type ReplacementPriceBasis = 'aim4price' | 'user';
+type DepreciationMethodUsed = 'full_depreciation' | 'semi_depreciation' | 'percentage_depreciation';
 
 type EquipmentFamilyRecord = {
   id: number;
@@ -63,6 +65,26 @@ type SpecQuestion = {
   options: SpecOption[];
 };
 
+
+type GenericValuationCalculation = {
+  replacementPriceBasis: ReplacementPriceBasis;
+  replacementPriceExVat: number | null;
+  depreciationMethodUsed: DepreciationMethodUsed;
+  depreciationBaseValueExVat: number | null;
+  aim4priceValueExVat: number | null;
+  valuationLowExVat: number | null;
+  valuationMidExVat: number | null;
+  valuationHighExVat: number | null;
+  marketWeight: number;
+  lifeWorkedPercent: number | null;
+  lifeRemainingPercent: number | null;
+  estimatedHours: number | null;
+  maxLifetimeHours: number | null;
+  ageDepPct: number | null;
+  usageDepPct: number | null;
+  averageDepPct: number | null;
+};
+
 type MarketMatch = {
   id: number;
   title: string;
@@ -103,6 +125,15 @@ type GenericValuationResult = {
   replacementPriceUsedExVat: number | null;
   userReplacementPriceExVat: number | null;
   userReplacementPriceYear: number | null;
+  replacementPriceBasis: ReplacementPriceBasis;
+  depreciationMethodUsed: DepreciationMethodUsed;
+  lifeWorkedPercent: number | null;
+  lifeRemainingPercent: number | null;
+  estimatedHours: number | null;
+  maxLifetimeHours: number | null;
+  aim4priceReplacementCalculation: GenericValuationCalculation | null;
+  userReplacementCalculation: GenericValuationCalculation | null;
+  selectedCalculation: GenericValuationCalculation | null;
   genericEstimateExVat: number | null;
   aim4priceValueExVat: number | null;
   marketAverageExVat: number | null;
@@ -198,8 +229,35 @@ function toNumberOrNull(value: unknown): number | null {
   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 }
 
-function formatPercent(value: number): string {
-  return `${Math.round(value * 100)}%`;
+function toPercentOrNull(value: unknown): number | null {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  return Math.max(0, Math.min(100, Math.round(numeric)));
+}
+
+function formatPercent(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return 'N/A';
+  return `${Math.round(value)}%`;
+}
+
+function tractorLifetimeHoursFromModel(model: TractorCatalogRow | null): number {
+  if (!model) return 12_000;
+  if (model.tractorType === 'orchard') return 10_000;
+  if (model.powerKw <= 25) return 8_000;
+  if (model.powerKw <= 75) return 12_000;
+  return 14_000;
+}
+
+function estimateHoursFromWorkedPercent(model: TractorCatalogRow | null, workedPercent: number | null): number | null {
+  if (workedPercent === null) return null;
+  return Math.round(tractorLifetimeHoursFromModel(model) * (workedPercent / 100));
+}
+
+function depreciationMethodLabel(method: DepreciationMethodUsed | null | undefined): string {
+  if (method === 'full_depreciation') return 'Full depreciation';
+  if (method === 'semi_depreciation') return 'Semi depreciation';
+  if (method === 'percentage_depreciation') return 'Percentage depreciation';
+  return 'Depreciation';
 }
 
 function displayMarketStrategy(strategy: GenericValuationResult['marketMatchStrategy']): string {
@@ -215,14 +273,20 @@ function getTractorValue(result: Result, method: MethodKey): number | null {
   return result.aim4priceValueExVat;
 }
 
-function getGenericValue(result: GenericValuationResult, method: MethodKey): number | null {
-  if (method === 'market') return result.marketAverageExVat;
-  return result.valuationMidExVat ?? result.aim4priceValueExVat;
+function getGenericCalculation(result: GenericValuationResult, basis: ReplacementPriceBasis): GenericValuationCalculation | null {
+  if (basis === 'user') return result.userReplacementCalculation ?? result.selectedCalculation ?? result.aim4priceReplacementCalculation;
+  return result.aim4priceReplacementCalculation ?? result.selectedCalculation;
 }
 
-function getHeadlineValue(state: ValuationResultState | null, selectedMethod: MethodKey): number | null {
+function getGenericValue(result: GenericValuationResult, method: MethodKey, basis: ReplacementPriceBasis): number | null {
+  if (method === 'market') return result.marketAverageExVat;
+  const calculation = getGenericCalculation(result, basis);
+  return calculation?.valuationMidExVat ?? result.valuationMidExVat ?? result.aim4priceValueExVat;
+}
+
+function getHeadlineValue(state: ValuationResultState | null, selectedMethod: MethodKey, replacementBasis: ReplacementPriceBasis): number | null {
   if (!state) return null;
-  return state.kind === 'tractor' ? getTractorValue(state.result, selectedMethod) : getGenericValue(state.result, selectedMethod);
+  return state.kind === 'tractor' ? getTractorValue(state.result, selectedMethod) : getGenericValue(state.result, selectedMethod, replacementBasis);
 }
 
 function getConfidenceLabel(state: ValuationResultState | null): string {
@@ -295,10 +359,14 @@ export default function ValuationClient() {
   const [gpsType, setGpsType] = useState<GpsType>('guidance-only');
   const [gpsYear, setGpsYear] = useState('');
   const [userReplacementPrice, setUserReplacementPrice] = useState('');
+  const [replacementPriceBasis, setReplacementPriceBasis] = useState<ReplacementPriceBasis>('aim4price');
+  const [yearModelUnknown, setYearModelUnknown] = useState(false);
+  const [lifeWorkedPercent, setLifeWorkedPercent] = useState('');
   const [resultState, setResultState] = useState<ValuationResultState | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<MethodKey>('aim4price');
   const [message, setMessage] = useState('');
   const [valuationLoading, setValuationLoading] = useState(false);
+  const [replacementRecalculateLoading, setReplacementRecalculateLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [guestValuationCount, setGuestValuationCount] = useState(0);
@@ -322,8 +390,17 @@ export default function ValuationClient() {
 
   const yearNumber = Number(year);
   const usageNumber = toNumberOrNull(usageAmount);
+  const lifeWorkedPercentNumber = toPercentOrNull(lifeWorkedPercent);
   const specsJson = useMemo(() => buildSpecPayload(specQuestions, specAnswers), [specQuestions, specAnswers]);
-  const headlineValue = getHeadlineValue(resultState, selectedMethod);
+  const enrichedSpecsJson = useMemo(
+    () => ({
+      ...specsJson,
+      ...(lifeWorkedPercentNumber !== null ? { life_worked_percent: lifeWorkedPercentNumber } : {}),
+      ...(yearModelUnknown ? { year_model_unknown: true } : {}),
+    }),
+    [specsJson, lifeWorkedPercentNumber, yearModelUnknown],
+  );
+  const headlineValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
   const freeGuestValuationsRemaining = Math.max(0, 3 - guestValuationCount);
 
   useEffect(() => {
@@ -489,6 +566,7 @@ export default function ValuationClient() {
   function resetResult() {
     setResultState(null);
     setSelectedMethod('aim4price');
+    setReplacementPriceBasis('aim4price');
   }
 
   function setSpecAnswer(key: string, value: string) {
@@ -499,9 +577,24 @@ export default function ValuationClient() {
   function validateDetails(): string | null {
     if (!selectedFamily) return 'Choose an equipment family first.';
     if (!selectedBrand) return 'Choose a brand first.';
-    if (!Number.isInteger(yearNumber) || yearNumber < 1950 || yearNumber > CURRENT_YEAR) return 'Enter a valid year model.';
+
+    const genericPath = flowMode === 'generic_specs';
+    if (!genericPath || !yearModelUnknown) {
+      if (!Number.isInteger(yearNumber) || yearNumber < 1950 || yearNumber > CURRENT_YEAR) return 'Enter a valid year model or mark the year as unknown.';
+    }
+
     if (!condition) return 'Choose the condition.';
     if (flowMode === 'exact_model' && !selectedModel) return 'Choose the exact tractor model or use machine specs.';
+
+    if (flowMode === 'exact_model' && !usageNumber && lifeWorkedPercentNumber === null) {
+      return 'Enter engine hours or estimate how much the tractor has worked.';
+    }
+
+    if (genericPath) {
+      if (lifeWorkedPercentNumber === null) {
+        return 'Estimate how much the machine has worked as a percentage.';
+      }
+    }
 
     for (const question of specQuestions) {
       if (question.isRequired && !normalizeText(specAnswers[question.specKey])) {
@@ -510,6 +603,54 @@ export default function ValuationClient() {
     }
 
     return null;
+  }
+
+
+  async function calculateGenericWithReplacementPrice(priceExVat: number) {
+    if (!selectedFamily || !selectedBrand) {
+      setMessage('Choose a family and brand first.');
+      return;
+    }
+
+    const validationMessage = validateDetails();
+    if (validationMessage) {
+      setMessage(validationMessage);
+      return;
+    }
+
+    setReplacementRecalculateLoading(true);
+    setMessage('');
+
+    try {
+      const response = await fetch('/api/generic-valuations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sectorKey: selectedSector,
+          familyKey: selectedFamily.familyKey,
+          brandSlug: selectedBrand.slug,
+          typedModelName,
+          specsJson: enrichedSpecsJson,
+          year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
+          yearModelUnknown,
+          usageAmount: usageNumber,
+          lifeWorkedPercent: lifeWorkedPercentNumber,
+          condition,
+          userReplacementPriceExVat: priceExVat,
+          userReplacementPriceYear: CURRENT_YEAR,
+        }),
+      });
+      const data = (await response.json()) as GenericValuationApiResponse;
+      if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to recalculate with user replacement price.');
+      setResultState({ kind: 'generic', result: data.result });
+      setReplacementPriceBasis('user');
+      setSelectedMethod('aim4price');
+    } catch (error) {
+      console.error(error);
+      setMessage(error instanceof Error ? error.message : 'Failed to recalculate with user replacement price.');
+    } finally {
+      setReplacementRecalculateLoading(false);
+    }
   }
 
   async function calculateValuation() {
@@ -536,7 +677,7 @@ export default function ValuationClient() {
           body: JSON.stringify({
             modelId: selectedModel.id,
             year: yearNumber,
-            hours: usageNumber ?? 0,
+            hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
             condition,
             frontPto,
             frontLoader,
@@ -558,9 +699,11 @@ export default function ValuationClient() {
             familyKey: selectedFamily.familyKey,
             brandSlug: selectedBrand.slug,
             typedModelName,
-            specsJson,
-            year: yearNumber,
+            specsJson: enrichedSpecsJson,
+            year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
+            yearModelUnknown,
             usageAmount: usageNumber,
+            lifeWorkedPercent: lifeWorkedPercentNumber,
             condition,
             userReplacementPriceExVat: toNumberOrNull(userReplacementPrice),
             userReplacementPriceYear: toNumberOrNull(userReplacementPrice) ? CURRENT_YEAR : null,
@@ -569,6 +712,7 @@ export default function ValuationClient() {
         const data = (await response.json()) as GenericValuationApiResponse;
         if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to calculate generic valuation.');
         setResultState({ kind: 'generic', result: data.result });
+        setReplacementPriceBasis(data.result.userReplacementCalculation ? 'user' : 'aim4price');
         setSelectedMethod(data.result.marketAverageExVat !== null ? 'market' : 'aim4price');
       }
 
@@ -596,7 +740,7 @@ export default function ValuationClient() {
       return;
     }
 
-    const selectedValue = getHeadlineValue(resultState, selectedMethod);
+    const selectedValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
     if (selectedValue === null) {
       setMessage('Choose an available valuation method first.');
       return;
@@ -611,7 +755,7 @@ export default function ValuationClient() {
           ? {
               modelId: resultState.result.model.id,
               year: yearNumber,
-              hours: usageNumber ?? 0,
+              hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
               condition,
               frontPto,
               frontLoader,
@@ -629,10 +773,14 @@ export default function ValuationClient() {
               typedModelName: resultState.result.typedModelName,
               specsJson: resultState.result.specsJson,
               year: resultState.result.year,
+              yearModelUnknown,
               usageAmount: resultState.result.usageAmount,
+              lifeWorkedPercent: resultState.result.lifeWorkedPercent,
               condition: resultState.result.condition,
-              userReplacementPriceExVat: toNumberOrNull(userReplacementPrice),
-              userReplacementPriceYear: toNumberOrNull(userReplacementPrice) ? CURRENT_YEAR : null,
+              userReplacementPriceExVat:
+                replacementPriceBasis === 'user' && selectedMethod === 'aim4price' ? resultState.result.userReplacementPriceExVat : null,
+              userReplacementPriceYear:
+                replacementPriceBasis === 'user' && selectedMethod === 'aim4price' ? resultState.result.userReplacementPriceYear : null,
               selectedMethod,
               valuationVersion: 'generic-v1',
             };
@@ -932,23 +1080,84 @@ export default function ValuationClient() {
 
   function renderDetailsStep() {
     const genericPath = flowMode === 'generic_specs';
-    const usageLabel = selectedFamily?.usageMetricType === 'hours' ? 'Hours' : 'Usage / wear amount (optional)';
+    const selfPropelled = selectedFamily?.isPropelled || selectedFamily?.usageMetricType === 'hours';
+    const showHoursInput = !genericPath || selfPropelled;
+    const workedPercentLabel = showHoursInput
+      ? 'If hours are unknown, how much has it worked? (%)'
+      : 'How much has it worked? (%) *';
 
     return (
       <div>
         <h2 className={styles.stepTitle}>{genericPath ? 'Machine specs' : 'Tractor details'}</h2>
-        <p className={styles.stepText}>These details drive depreciation, replacement price band matching and market matching.</p>
+        <p className={styles.stepText}>
+          These details drive the depreciation method. Aim4price uses full depreciation when hours are known, semi depreciation when hours are estimated, and percentage depreciation for implements.
+        </p>
 
         <div className={styles.currentCard}>
           <div className={styles.inputGrid}>
             <label className={styles.field}>
-              <span className={styles.fieldLabel}>Year model *</span>
-              <input type="number" value={year} min={1950} max={CURRENT_YEAR} onChange={(event) => setYear(event.target.value)} />
+              <span className={styles.fieldLabel}>{genericPath ? 'Year model' : 'Year model *'}</span>
+              <input
+                type="number"
+                value={yearModelUnknown ? '' : year}
+                min={1950}
+                max={CURRENT_YEAR}
+                disabled={genericPath && yearModelUnknown}
+                onChange={(event) => {
+                  setYear(event.target.value);
+                  resetResult();
+                }}
+                placeholder={genericPath && yearModelUnknown ? 'Unknown' : 'e.g. 2018'}
+              />
+              {genericPath ? <span className={styles.fieldHint}>Used for records and market matching. For implements, the worked percentage carries the valuation.</span> : null}
             </label>
+
+            {genericPath ? (
+              <button
+                type="button"
+                className={`${styles.choiceCard} ${yearModelUnknown ? styles.choiceCardActive : ''}`}
+                onClick={() => {
+                  setYearModelUnknown((value) => !value);
+                  resetResult();
+                }}
+              >
+                <strong>I do not know the year</strong>
+                <span className={styles.choiceCardNote}>Continue without blocking the valuation.</span>
+              </button>
+            ) : null}
+
+            {showHoursInput ? (
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>Engine hours, if known</span>
+                <input
+                  type="number"
+                  value={usageAmount}
+                  onChange={(event) => {
+                    setUsageAmount(event.target.value);
+                    resetResult();
+                  }}
+                  placeholder="Leave blank if unknown"
+                />
+                <span className={styles.fieldHint}>If this is filled in, Aim4price uses full depreciation.</span>
+              </label>
+            ) : null}
+
             <label className={styles.field}>
-              <span className={styles.fieldLabel}>{usageLabel}</span>
-              <input type="number" value={usageAmount} onChange={(event) => setUsageAmount(event.target.value)} placeholder="Optional" />
+              <span className={styles.fieldLabel}>{workedPercentLabel}</span>
+              <input
+                type="number"
+                value={lifeWorkedPercent}
+                min={0}
+                max={100}
+                onChange={(event) => {
+                  setLifeWorkedPercent(event.target.value);
+                  resetResult();
+                }}
+                placeholder="e.g. 50"
+              />
+              <span className={styles.fieldHint}>0% = almost new. 50% = worked about half its life. 100% = fully worked out.</span>
             </label>
+
             <label className={styles.field}>
               <span className={styles.fieldLabel}>Condition *</span>
               <select value={condition} onChange={(event) => setCondition(event.target.value as ConditionKey)}>
@@ -968,7 +1177,7 @@ export default function ValuationClient() {
             {specQuestions.length ? (
               <div className={styles.inputGrid}>{specQuestions.map(renderSpecInput)}</div>
             ) : (
-              <p className={styles.message}>No family-specific questions imported yet. Aim4price will use year, condition, brand and replacement bands if available.</p>
+              <p className={styles.message}>No family-specific questions imported yet. Aim4price will use year, condition, worked percentage, brand and replacement bands if available.</p>
             )}
           </div>
         ) : (
@@ -1023,15 +1232,25 @@ export default function ValuationClient() {
     const genericResult = isGeneric ? resultState.result : null;
     const tractorResult = resultState.kind === 'tractor' ? resultState.result : null;
     const marketValue = isGeneric ? genericResult?.marketAverageExVat ?? null : tractorResult?.marketMid ?? null;
-    const aimValue = isGeneric ? genericResult?.valuationMidExVat ?? genericResult?.aim4priceValueExVat ?? null : tractorResult?.aim4priceValueExVat ?? null;
+    const genericSelectedCalculation = genericResult ? getGenericCalculation(genericResult, replacementPriceBasis) : null;
+    const aimValue = isGeneric
+      ? genericSelectedCalculation?.valuationMidExVat ?? null
+      : tractorResult?.aim4priceValueExVat ?? null;
     const marketCount = isGeneric ? genericResult?.marketAverageCount ?? 0 : tractorResult?.marketCount ?? 0;
+    const userPriceInput = toNumberOrNull(userReplacementPrice);
 
     return (
       <div className={styles.resultsLayout}>
         <div className={styles.resultsMain}>
           <div className={`${styles.valuePanel} ${getConfidenceClass(resultState)}`}>
             <div className={styles.valuePanelTop}>
-              <span className={styles.valueLabel}>{selectedMethod === 'market' ? 'Market value' : 'Aim4price value'}</span>
+              <span className={styles.valueLabel}>
+                {selectedMethod === 'market'
+                  ? 'Market value'
+                  : isGeneric && replacementPriceBasis === 'user'
+                    ? 'Aim4price value using your replacement price'
+                    : 'Aim4price value'}
+              </span>
               <span className={styles.valueMeta}>{getConfidenceLabel(resultState)}</span>
             </div>
             <strong className={styles.valueAmount}>{money(headlineValue)}</strong>
@@ -1040,6 +1259,12 @@ export default function ValuationClient() {
                 ? `${genericResult?.family.label ?? ''} • ${genericResult?.brand.name ?? ''} • ${displayMarketStrategy(genericResult?.marketMatchStrategy ?? 'none')}`
                 : `${tractorResult?.model.brandName ?? ''} ${tractorResult?.model.modelName ?? ''}`}
             </p>
+            {isGeneric && genericSelectedCalculation ? (
+              <p className={styles.valueMeta}>
+                {depreciationMethodLabel(genericSelectedCalculation.depreciationMethodUsed)} • worked {formatPercent(genericSelectedCalculation.lifeWorkedPercent)}
+                {genericSelectedCalculation.estimatedHours ? ` • estimated ${genericSelectedCalculation.estimatedHours.toLocaleString('en-ZA')} hours` : ''}
+              </p>
+            ) : null}
           </div>
 
           <div className={styles.choiceGrid} style={{ marginTop: '1rem' }}>
@@ -1049,7 +1274,9 @@ export default function ValuationClient() {
               onClick={() => setSelectedMethod('aim4price')}
             >
               <strong>{money(aimValue)}</strong>
-              <span className={styles.choiceCardNote}>Aim4price calculated value</span>
+              <span className={styles.choiceCardNote}>
+                {isGeneric && replacementPriceBasis === 'user' ? 'Using user replacement price' : 'Aim4price calculated value'}
+              </span>
             </button>
             <button
               type="button"
@@ -1064,19 +1291,64 @@ export default function ValuationClient() {
 
           {isGeneric && genericResult ? (
             <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
-              <h3 className={styles.currentTitle}>Replacement price feedback</h3>
-              <p className={styles.currentHint}>Help Aim4price improve: what would this machine cost new today?</p>
+              <h3 className={styles.currentTitle}>Replacement price comparison</h3>
+              <p className={styles.currentHint}>First compare Aim4price's replacement estimate with what the user believes this machine costs new today.</p>
+
+              <div className={styles.choiceGrid} style={{ marginTop: '1rem' }}>
+                <button
+                  type="button"
+                  className={`${styles.choiceCard} ${replacementPriceBasis === 'aim4price' ? styles.choiceCardActive : ''}`}
+                  onClick={() => {
+                    setReplacementPriceBasis('aim4price');
+                    setSelectedMethod('aim4price');
+                  }}
+                >
+                  <strong>{money(genericResult.aim4priceReplacementCalculation?.valuationMidExVat ?? null)}</strong>
+                  <span className={styles.choiceCardNote}>
+                    Aim4price replacement: {money(genericResult.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.choiceCard} ${replacementPriceBasis === 'user' ? styles.choiceCardActive : ''}`}
+                  onClick={() => {
+                    if (genericResult.userReplacementCalculation) {
+                      setReplacementPriceBasis('user');
+                      setSelectedMethod('aim4price');
+                    }
+                  }}
+                  disabled={!genericResult.userReplacementCalculation}
+                >
+                  <strong>{money(genericResult.userReplacementCalculation?.valuationMidExVat ?? null)}</strong>
+                  <span className={styles.choiceCardNote}>
+                    User replacement: {money(genericResult.userReplacementCalculation?.replacementPriceExVat ?? null)}
+                  </span>
+                </button>
+              </div>
+
               <div className={styles.inputGrid}>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Current new replacement price</span>
+                  <span className={styles.fieldLabel}>What does this cost new today?</span>
                   <input
                     type="number"
                     value={userReplacementPrice}
                     onChange={(event) => setUserReplacementPrice(event.target.value)}
                     placeholder="Optional, ex VAT"
                   />
+                  <span className={styles.fieldHint}>This recalculates the valuation and can be saved into the Asset Register.</span>
                 </label>
+                <button
+                  type="button"
+                  className={styles.assetButton}
+                  style={{ alignSelf: 'end' }}
+                  disabled={!userPriceInput || replacementRecalculateLoading}
+                  onClick={() => userPriceInput && calculateGenericWithReplacementPrice(userPriceInput)}
+                >
+                  {replacementRecalculateLoading ? 'Recalculating...' : 'Recalculate using my replacement price'}
+                </button>
               </div>
+
               {genericResult.replacementPriceBand ? (
                 <p className={styles.fieldHint}>Matched band: {genericResult.replacementPriceBand.bandLabel} • {range(genericResult.replacementPriceMinExVat, genericResult.replacementPriceMaxExVat)}</p>
               ) : null}
