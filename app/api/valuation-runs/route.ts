@@ -231,7 +231,9 @@ export async function POST(request: NextRequest) {
       brandSlug?: unknown;
       typedModelName?: unknown;
       specsJson?: unknown;
+      yearModelUnknown?: unknown;
       usageAmount?: unknown;
+      lifeWorkedPercent?: unknown;
       userReplacementPriceExVat?: unknown;
       userReplacementPriceYear?: unknown;
     };
@@ -243,6 +245,7 @@ export async function POST(request: NextRequest) {
       const familyKey = String(body.familyKey ?? '').trim();
       const brandSlug = String(body.brandSlug ?? '').trim();
       const year = Number(body.year);
+      const yearModelUnknown = parseBoolean(body.yearModelUnknown);
       const condition = normalizeGenericCondition(body.condition);
       const selectedMethod = normalizeGenericSelectedMethod(body.selectedMethod);
 
@@ -257,7 +260,12 @@ export async function POST(request: NextRequest) {
         typedModelName: String(body.typedModelName ?? '').trim() || null,
         specsJson: body.specsJson && typeof body.specsJson === 'object' ? (body.specsJson as Record<string, unknown>) : {},
         year,
+        yearModelUnknown,
         usageAmount: body.usageAmount === null || typeof body.usageAmount === 'undefined' ? null : Number(body.usageAmount),
+        lifeWorkedPercent:
+          body.lifeWorkedPercent === null || typeof body.lifeWorkedPercent === 'undefined'
+            ? null
+            : Number(body.lifeWorkedPercent),
         condition,
         userReplacementPriceExVat:
           body.userReplacementPriceExVat === null || typeof body.userReplacementPriceExVat === 'undefined'
