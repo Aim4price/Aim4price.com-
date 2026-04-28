@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
-import { createAssetRegisterItemFromValuation } from '../../../lib/asset-register-db';
+import {
+  createAssetRegisterItemFromGenericValuation,
+  createAssetRegisterItemFromValuation,
+} from '../../../lib/asset-register-db';
 import { runServerValuation } from '../../../lib/server-valuation';
 import {
   getSelectedMethodValue,
   deleteValuationRunById,
+  saveGenericValuationRunFromResult,
   saveValuationRunFromResult,
   type MethodKey,
   type SaveValuationRunInput,
 } from '../../../lib/valuation-runs';
 import type { ConditionKey } from '../../../lib/tractor-data';
 import type { GpsType, RunValuationInput } from '../../../lib/tractor-logic';
+import { isSectorKey, type SectorKey } from '../../../lib/equipment-types';
+import { runGenericValuation, type GenericCondition, type GenericSelectedMethod } from '../../../lib/generic-valuation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -69,6 +75,28 @@ function normalizeMethod(value: unknown): MethodKey | null {
     return normalized;
   }
 
+  return null;
+}
+
+function normalizeGenericCondition(value: unknown): GenericCondition | null {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (
+    normalized === 'excellent' ||
+    normalized === 'good' ||
+    normalized === 'fair' ||
+    normalized === 'used' ||
+    normalized === 'serious'
+  ) {
+    return normalized;
+  }
+
+  return null;
+}
+
+function normalizeGenericSelectedMethod(value: unknown): GenericSelectedMethod | null {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === 'aim4price' || normalized === 'market') return normalized;
   return null;
 }
 
@@ -197,7 +225,88 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as Partial<RunValuationInput> & {
       selectedMethod?: unknown;
       valuationVersion?: unknown;
+      catalogModeUsed?: unknown;
+      sectorKey?: unknown;
+      familyKey?: unknown;
+      brandSlug?: unknown;
+      typedModelName?: unknown;
+      specsJson?: unknown;
+      usageAmount?: unknown;
+      userReplacementPriceExVat?: unknown;
+      userReplacementPriceYear?: unknown;
     };
+
+    const catalogModeUsed = String(body.catalogModeUsed ?? '').trim();
+
+    if (catalogModeUsed === 'generic_specs' || catalogModeUsed === 'hybrid_generic') {
+      const sectorKey = String(body.sectorKey ?? '').trim();
+      const familyKey = String(body.familyKey ?? '').trim();
+      const brandSlug = String(body.brandSlug ?? '').trim();
+      const year = Number(body.year);
+      const condition = normalizeGenericCondition(body.condition);
+      const selectedMethod = normalizeGenericSelectedMethod(body.selectedMethod);
+
+      if (!isSectorKey(sectorKey) || !familyKey || !brandSlug || !Number.isInteger(year) || !condition || !selectedMethod) {
+        return badRequest('sectorKey, familyKey, brandSlug, year, condition and selectedMethod are required.');
+      }
+
+      const genericResult = await runGenericValuation({
+        sectorKey: sectorKey as SectorKey,
+        familyKey,
+        brandSlug,
+        typedModelName: String(body.typedModelName ?? '').trim() || null,
+        specsJson: body.specsJson && typeof body.specsJson === 'object' ? (body.specsJson as Record<string, unknown>) : {},
+        year,
+        usageAmount: body.usageAmount === null || typeof body.usageAmount === 'undefined' ? null : Number(body.usageAmount),
+        condition,
+        userReplacementPriceExVat:
+          body.userReplacementPriceExVat === null || typeof body.userReplacementPriceExVat === 'undefined'
+            ? null
+            : Number(body.userReplacementPriceExVat),
+        userReplacementPriceYear:
+          body.userReplacementPriceYear === null || typeof body.userReplacementPriceYear === 'undefined'
+            ? null
+            : Number(body.userReplacementPriceYear),
+      });
+
+      const savedRun = await saveGenericValuationRunFromResult({
+        userId: session.user.id,
+        result: genericResult,
+        selectedMethod,
+        valuationVersion: String(body.valuationVersion ?? 'generic-v1').trim() || 'generic-v1',
+      });
+
+      try {
+        const asset = await createAssetRegisterItemFromGenericValuation({
+          userId: session.user.id,
+          valuationRunId: savedRun.runId,
+          result: genericResult,
+          selectedMethod,
+          selectedValueExVat: savedRun.selectedValueExVat,
+          note: '',
+        });
+
+        return NextResponse.json<SaveValuationRunApiResponse>({
+          ok: true,
+          runId: savedRun.runId,
+          assetId: asset.id,
+          createdAtIso: savedRun.createdAtIso,
+          selectedValueExVat: savedRun.selectedValueExVat,
+        });
+      } catch (assetSaveError) {
+        console.error('generic asset register save failed after valuation run save', assetSaveError);
+
+        try {
+          await deleteValuationRunById(session.user.id, savedRun.runId);
+        } catch (rollbackError) {
+          console.error('generic valuation run rollback failed after asset save failure', rollbackError);
+        }
+
+        throw assetSaveError instanceof Error
+          ? assetSaveError
+          : new Error(formatUnknownError(assetSaveError));
+      }
+    }
 
     const input = buildInput(body);
     if (!input) {
