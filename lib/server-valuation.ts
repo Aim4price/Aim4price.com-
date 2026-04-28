@@ -290,7 +290,7 @@ async function fetchModel(modelId: string): Promise<DbTractorCatalogRow | null> 
         on s.id = ef.sector_id
       left join public.brands b
         on b.id = em.brand_id
-      where s.sector_id = 1
+      where s.id = 1
         and ef.family_key = 'tractors'
         and em.is_active = true
         and coalesce(em.is_generic_fallback, false) = false

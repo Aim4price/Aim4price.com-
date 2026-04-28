@@ -4,6 +4,7 @@ import type {
   SectorKey,
   UsageMetricType,
   ValuationMode,
+  CatalogMode,
 } from './equipment-types';
 
 export type EquipmentFamilyRecord = {
@@ -16,6 +17,7 @@ export type EquipmentFamilyRecord = {
   isPropelled: boolean;
   usageMetricType: UsageMetricType;
   valuationMode: ValuationMode;
+  catalogMode: CatalogMode;
   sortOrder: number;
   isActive: boolean;
 };
@@ -36,6 +38,7 @@ export type EquipmentModelRecord = {
   familyLabel: string;
   usageMetricType: UsageMetricType;
   valuationMode: ValuationMode;
+  catalogMode: CatalogMode;
   isPropelled: boolean;
   brandId: number | null;
   brandSlug: string;
@@ -141,6 +144,7 @@ export async function listEquipmentFamilies(input?: {
         ef.is_propelled,
         ef.usage_metric_type,
         ef.valuation_mode,
+        coalesce(ef.catalog_mode, 'generic_specs') as catalog_mode,
         ef.sort_order,
         ef.is_active
       from public.equipment_families ef
@@ -162,6 +166,7 @@ export async function listEquipmentFamilies(input?: {
     isPropelled: toBoolean(row.is_propelled, true),
     usageMetricType: (toText(row.usage_metric_type) || 'hours') as UsageMetricType,
     valuationMode: (toText(row.valuation_mode) || 'year_condition') as ValuationMode,
+    catalogMode: (toText(row.catalog_mode) || 'generic_specs') as CatalogMode,
     sortOrder: toInteger(row.sort_order) ?? 100,
     isActive: toBoolean(row.is_active, true),
   }));
@@ -174,7 +179,7 @@ export async function listEquipmentBrands(input?: {
 }): Promise<EquipmentBrandRecord[]> {
   const db = getDb();
   const values: string[] = [];
-  const conditions: string[] = ['b.id = em.brand_id', 'coalesce(em.is_generic_fallback, false) = false'];
+  const conditions: string[] = ['efb.equipment_family_id = ef.id', 'efb.brand_id = b.id'];
 
   if (input?.sectorKey) {
     values.push(input.sectorKey);
@@ -188,7 +193,7 @@ export async function listEquipmentBrands(input?: {
 
   if (!input?.includeInactive) {
     conditions.push('b.is_active = true');
-    conditions.push('em.is_active = true');
+    conditions.push('efb.is_active = true');
     conditions.push('ef.is_active = true');
     conditions.push('s.is_active = true');
   }
@@ -199,18 +204,70 @@ export async function listEquipmentBrands(input?: {
         b.id,
         b.slug,
         b.name,
-        b.is_active
-      from public.equipment_models em
+        b.is_active,
+        min(efb.sort_order) as family_brand_sort_order
+      from public.equipment_family_brands efb
       join public.equipment_families ef
-        on ef.id = em.equipment_family_id
+        on efb.equipment_family_id = ef.id
       join public.sectors s
         on s.id = ef.sector_id
       join public.brands b
-        on ${'CONDITIONS'}
-      order by b.name asc
-    `.replace('CONDITIONS', conditions.join(' and ')),
+        on efb.brand_id = b.id
+      where ${conditions.join(' and ')}
+      group by b.id, b.slug, b.name, b.is_active
+      order by min(efb.sort_order) asc, b.name asc
+    `,
     values,
   );
+
+  if (!result.rows.length) {
+    const fallbackValues: string[] = [];
+    const fallbackConditions: string[] = ['b.id = em.brand_id', 'coalesce(em.is_generic_fallback, false) = false'];
+
+    if (input?.sectorKey) {
+      fallbackValues.push(input.sectorKey);
+      fallbackConditions.push(`s.sector_key = $${fallbackValues.length}`);
+    }
+
+    if (input?.familyKey) {
+      fallbackValues.push(input.familyKey);
+      fallbackConditions.push(`ef.family_key = $${fallbackValues.length}`);
+    }
+
+    if (!input?.includeInactive) {
+      fallbackConditions.push('b.is_active = true');
+      fallbackConditions.push('em.is_active = true');
+      fallbackConditions.push('ef.is_active = true');
+      fallbackConditions.push('s.is_active = true');
+    }
+
+    const fallback = await db.query(
+      `
+        select distinct
+          b.id,
+          b.slug,
+          b.name,
+          b.is_active
+        from public.equipment_models em
+        join public.equipment_families ef
+          on ef.id = em.equipment_family_id
+        join public.sectors s
+          on s.id = ef.sector_id
+        join public.brands b
+          on b.id = em.brand_id
+        where ${fallbackConditions.join(' and ')}
+        order by b.name asc
+      `,
+      fallbackValues,
+    );
+
+    return fallback.rows.map((row) => ({
+      id: toInteger(row.id) ?? 0,
+      slug: toText(row.slug),
+      name: toText(row.name),
+      isActive: toBoolean(row.is_active, true),
+    }));
+  }
 
   return result.rows.map((row) => ({
     id: toInteger(row.id) ?? 0,
@@ -277,6 +334,7 @@ export async function listEquipmentModels(input?: ListEquipmentModelsInput): Pro
         ef.family_label,
         ef.usage_metric_type,
         ef.valuation_mode,
+        coalesce(ef.catalog_mode, 'generic_specs') as catalog_mode,
         ef.is_propelled,
         em.brand_id,
         b.slug as brand_slug,
@@ -327,6 +385,7 @@ export async function listEquipmentModels(input?: ListEquipmentModelsInput): Pro
     familyLabel: toText(row.family_label),
     usageMetricType: (toText(row.usage_metric_type) || 'hours') as UsageMetricType,
     valuationMode: (toText(row.valuation_mode) || 'year_condition') as ValuationMode,
+    catalogMode: (toText(row.catalog_mode) || 'generic_specs') as CatalogMode,
     isPropelled: toBoolean(row.is_propelled, true),
     brandId: toInteger(row.brand_id),
     brandSlug: toText(row.brand_slug),

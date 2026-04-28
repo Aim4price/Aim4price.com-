@@ -1,20 +1,11 @@
 export type SectorKey = 'agricultural' | 'industrial' | 'construction';
 export type UsageMetricType = 'hours' | 'wear_class';
 export type ValuationMode = 'engine_hours' | 'year_condition' | 'percent_used';
+export type CatalogMode = 'generic_specs' | 'hybrid' | 'exact_model';
 
-export type EquipmentFamilyKey =
-  | 'tractors'
-  | 'combines'
-  | 'forage_harvesters'
-  | 'self_propelled_sprayers'
-  | 'balers'
-  | 'planters'
-  | 'mowers'
-  | 'seed_drills'
-  | 'fertilizer_spreaders'
-  | 'tillage_implements'
-  | 'trailers'
-  | 'telehandlers';
+// Important: equipment family keys now come from Postgres.
+// Keep this type as string so the app does not reject newly imported families.
+export type EquipmentFamilyKey = string;
 
 export type EquipmentKind = 'tractor' | 'manual' | 'property';
 
@@ -25,6 +16,7 @@ export type EquipmentFamilyMeta = {
   isPropelled: boolean;
   usageMetricType: UsageMetricType;
   valuationMode: ValuationMode;
+  catalogMode: CatalogMode;
   active: boolean;
   assetKind: EquipmentKind;
 };
@@ -35,7 +27,9 @@ export const SECTOR_LABELS: Record<SectorKey, string> = {
   construction: 'Construction',
 };
 
-export const EQUIPMENT_FAMILY_META: Record<EquipmentFamilyKey, EquipmentFamilyMeta> = {
+// Backward-compatible fallback metadata only.
+// Runtime family data must come from public.equipment_families.
+export const EQUIPMENT_FAMILY_META: Record<string, EquipmentFamilyMeta> = {
   tractors: {
     key: 'tractors',
     label: 'Tractors',
@@ -43,135 +37,14 @@ export const EQUIPMENT_FAMILY_META: Record<EquipmentFamilyKey, EquipmentFamilyMe
     isPropelled: true,
     usageMetricType: 'hours',
     valuationMode: 'engine_hours',
+    catalogMode: 'hybrid',
     active: true,
     assetKind: 'tractor',
   },
-  combines: {
-    key: 'combines',
-    label: 'Combines',
-    sectorKey: 'agricultural',
-    isPropelled: true,
-    usageMetricType: 'hours',
-    valuationMode: 'engine_hours',
-    active: false,
-    assetKind: 'manual',
-  },
-  forage_harvesters: {
-    key: 'forage_harvesters',
-    label: 'Forage Harvesters',
-    sectorKey: 'agricultural',
-    isPropelled: true,
-    usageMetricType: 'hours',
-    valuationMode: 'engine_hours',
-    active: false,
-    assetKind: 'manual',
-  },
-  self_propelled_sprayers: {
-    key: 'self_propelled_sprayers',
-    label: 'Self-Propelled Sprayers',
-    sectorKey: 'agricultural',
-    isPropelled: true,
-    usageMetricType: 'hours',
-    valuationMode: 'engine_hours',
-    active: false,
-    assetKind: 'manual',
-  },
-  balers: {
-    key: 'balers',
-    label: 'Balers',
-    sectorKey: 'agricultural',
-    isPropelled: false,
-    usageMetricType: 'wear_class',
-    valuationMode: 'year_condition',
-    active: false,
-    assetKind: 'manual',
-  },
-  planters: {
-    key: 'planters',
-    label: 'Planters',
-    sectorKey: 'agricultural',
-    isPropelled: false,
-    usageMetricType: 'wear_class',
-    valuationMode: 'year_condition',
-    active: false,
-    assetKind: 'manual',
-  },
-  mowers: {
-    key: 'mowers',
-    label: 'Mowers',
-    sectorKey: 'agricultural',
-    isPropelled: false,
-    usageMetricType: 'wear_class',
-    valuationMode: 'year_condition',
-    active: false,
-    assetKind: 'manual',
-  },
-  seed_drills: {
-    key: 'seed_drills',
-    label: 'Seed Drills',
-    sectorKey: 'agricultural',
-    isPropelled: false,
-    usageMetricType: 'wear_class',
-    valuationMode: 'year_condition',
-    active: false,
-    assetKind: 'manual',
-  },
-  fertilizer_spreaders: {
-    key: 'fertilizer_spreaders',
-    label: 'Fertilizer Spreaders',
-    sectorKey: 'agricultural',
-    isPropelled: false,
-    usageMetricType: 'wear_class',
-    valuationMode: 'year_condition',
-    active: false,
-    assetKind: 'manual',
-  },
-  tillage_implements: {
-    key: 'tillage_implements',
-    label: 'Tillage Implements',
-    sectorKey: 'agricultural',
-    isPropelled: false,
-    usageMetricType: 'wear_class',
-    valuationMode: 'year_condition',
-    active: false,
-    assetKind: 'manual',
-  },
-  trailers: {
-    key: 'trailers',
-    label: 'Trailers',
-    sectorKey: 'agricultural',
-    isPropelled: false,
-    usageMetricType: 'wear_class',
-    valuationMode: 'year_condition',
-    active: false,
-    assetKind: 'manual',
-  },
-  telehandlers: {
-    key: 'telehandlers',
-    label: 'Telehandlers',
-    sectorKey: 'agricultural',
-    isPropelled: true,
-    usageMetricType: 'hours',
-    valuationMode: 'engine_hours',
-    active: false,
-    assetKind: 'manual',
-  },
 };
 
-export const AGRICULTURAL_FAMILY_ORDER: EquipmentFamilyKey[] = [
-  'tractors',
-  'combines',
-  'forage_harvesters',
-  'self_propelled_sprayers',
-  'balers',
-  'planters',
-  'mowers',
-  'seed_drills',
-  'fertilizer_spreaders',
-  'tillage_implements',
-  'trailers',
-  'telehandlers',
-];
+// Fallback only. The valuation page now loads families from Postgres.
+export const AGRICULTURAL_FAMILY_ORDER: EquipmentFamilyKey[] = ['tractors'];
 
 export function isSectorKey(value: unknown): value is SectorKey {
   return value === 'agricultural' || value === 'industrial' || value === 'construction';
@@ -185,8 +58,12 @@ export function isValuationMode(value: unknown): value is ValuationMode {
   return value === 'engine_hours' || value === 'year_condition' || value === 'percent_used';
 }
 
+export function isCatalogMode(value: unknown): value is CatalogMode {
+  return value === 'generic_specs' || value === 'hybrid' || value === 'exact_model';
+}
+
 export function isEquipmentFamilyKey(value: unknown): value is EquipmentFamilyKey {
-  return typeof value === 'string' && value in EQUIPMENT_FAMILY_META;
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 export function getSectorLabel(sectorKey: SectorKey): string {
@@ -194,9 +71,9 @@ export function getSectorLabel(sectorKey: SectorKey): string {
 }
 
 export function getEquipmentFamilyLabel(familyKey: EquipmentFamilyKey): string {
-  return EQUIPMENT_FAMILY_META[familyKey]?.label ?? familyKey;
+  return EQUIPMENT_FAMILY_META[familyKey]?.label ?? familyKey.replace(/_/g, ' ');
 }
 
 export function isAgriculturalFamily(familyKey: EquipmentFamilyKey): boolean {
-  return EQUIPMENT_FAMILY_META[familyKey]?.sectorKey === 'agricultural';
+  return EQUIPMENT_FAMILY_META[familyKey]?.sectorKey === 'agricultural' || familyKey === 'tractors';
 }

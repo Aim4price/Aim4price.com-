@@ -2,6 +2,7 @@ import { getDb } from './db';
 import type { CabType, ConditionKey, DriveType, TractorType } from './tractor-data';
 import type { MethodKey } from './valuation-runs';
 import type { Result } from './tractor-logic';
+import type { GenericSelectedMethod, GenericValuationResult } from './generic-valuation';
 
 export type AssetRegisterItemKind = 'tractor' | 'manual' | 'property';
 export type AssetRegisterItemMethod = MethodKey | 'manual';
@@ -1085,6 +1086,82 @@ export async function createAssetRegisterItemFromValuation(input: {
     year: Math.round(input.year),
     hours: Math.max(0, Math.round(input.hours)),
     condition: typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good',
+    now,
+  });
+
+  const query = buildInsertQuery(schema, fields);
+  const inserted = await db.query<AssetRegisterRow>(query.sql, query.values);
+  const row = inserted.rows[0];
+
+  if (!row) {
+    throw new Error('ASSET_CREATE_FAILED');
+  }
+
+  return mapAssetRegisterRow(row);
+}
+
+export async function createAssetRegisterItemFromGenericValuation(input: {
+  userId: string;
+  valuationRunId: number;
+  result: GenericValuationResult;
+  selectedMethod: GenericSelectedMethod;
+  selectedValueExVat: number;
+  note?: string | null;
+}): Promise<AssetRegisterItem> {
+  const db = getDb();
+  const schema = await getAssetRegisterSchema();
+  const valuationSchema = await getValuationRunsSchema();
+  const valuationRow = await fetchValuationRunRowById(input.userId, input.valuationRunId);
+
+  if (!valuationRow) {
+    throw new Error('VALUATION_RUN_NOT_FOUND');
+  }
+
+  const valuationResult = input.result;
+  const title = [valuationResult.brand.name, valuationResult.typedModelName || valuationResult.family.label]
+    .map((part) => asText(part))
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  const now = new Date();
+  const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const fields: SqlField[] = [];
+
+  copySharedFieldsFromValuationRun(fields, schema, valuationSchema, valuationRow);
+
+  pushField(fields, schema, ['user_id'], input.userId);
+  pushField(fields, schema, ['valuation_run_id', 'run_id'], input.valuationRunId);
+  pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], 'manual');
+  pushField(fields, schema, ['title', 'name', 'asset_name'], title);
+  pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], selectedValueExVat);
+  pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], input.selectedMethod);
+  pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], selectedValueExVat);
+  pushField(fields, schema, ['source_type', 'source', 'origin', 'entry_source'], 'valuation');
+  pushField(fields, schema, ['brand_name', 'brand'], valuationResult.brand.name);
+  pushField(fields, schema, ['model_name', 'model'], valuationResult.typedModelName || 'Specs-based valuation');
+  pushField(fields, schema, ['year_model', 'year'], valuationResult.year);
+  pushField(fields, schema, ['hours', 'engine_hours'], valuationResult.usageAmount ?? null);
+  pushField(fields, schema, ['condition'], valuationResult.condition);
+  pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
+  pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(valuationResult.marketAverageExVat));
+  pushField(fields, schema, ['note', 'notes', 'description'], asText(input.note) || null);
+  pushPhotoField(fields, schema, []);
+  pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
+  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
+
+  ensureRequiredFields(fields, schema, {
+    userId: input.userId,
+    valuationRunId: input.valuationRunId,
+    title,
+    kind: 'manual',
+    selectedMethod: input.selectedMethod,
+    selectedValueExVat,
+    note: input.note ?? null,
+    brandName: valuationResult.brand.name,
+    modelName: valuationResult.typedModelName || 'Specs-based valuation',
+    year: valuationResult.year,
+    hours: valuationResult.usageAmount ?? null,
+    condition: valuationResult.condition,
     now,
   });
 

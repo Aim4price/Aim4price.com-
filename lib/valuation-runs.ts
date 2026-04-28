@@ -2,6 +2,7 @@ import { getDb } from './db';
 import { fetchEquipmentLinkForModelSelection } from './equipment-catalog';
 import { runServerValuation } from './server-valuation';
 import type { Result, RunValuationInput } from './tractor-logic';
+import { getGenericSelectedMethodValue, type GenericSelectedMethod, type GenericValuationResult } from './generic-valuation';
 
 export type MethodKey = 'aim4price' | 'market';
 
@@ -204,4 +205,148 @@ export async function saveValuationRun(input: SaveValuationRunInput): Promise<Sa
 export async function deleteValuationRunById(userId: string, runId: number): Promise<void> {
   const db = getDb();
   await db.query(`delete from valuation_runs where id = $1 and user_id = $2`, [runId, userId]);
+}
+
+export type SaveGenericValuationRunInput = {
+  userId?: string | null;
+  result: GenericValuationResult;
+  selectedMethod: GenericSelectedMethod;
+  valuationVersion?: string | null;
+};
+
+export type SaveGenericValuationRunResult = {
+  runId: number;
+  createdAtIso: string;
+  selectedValueExVat: number;
+  result: GenericValuationResult;
+};
+
+function getGenericMarketListingIds(result: GenericValuationResult): number[] {
+  return result.marketSources
+    .map((listing) => toIntegerOrNull(listing.id))
+    .filter((value): value is number => value !== null);
+}
+
+export async function saveGenericValuationRunFromResult(
+  input: SaveGenericValuationRunInput,
+): Promise<SaveGenericValuationRunResult> {
+  const selectedValueExVat = getGenericSelectedMethodValue(input.result, input.selectedMethod);
+  if (selectedValueExVat === null) throw new Error('SELECTED_METHOD_NOT_AVAILABLE');
+
+  const db = getDb();
+  const result = input.result;
+  const marketListingIds = getGenericMarketListingIds(result);
+  const valuationVersion = String(input.valuationVersion ?? 'generic-v1').trim() || 'generic-v1';
+  const selectedValue = roundMoney(selectedValueExVat);
+
+  const valuationPayload = {
+    input: {
+      sectorKey: result.sector.key,
+      familyKey: result.family.key,
+      brandSlug: result.brand.slug,
+      typedModelName: result.typedModelName,
+      normalizedTypedModelName: result.normalizedTypedModelName,
+      specsJson: result.specsJson,
+      year: result.year,
+      usageAmount: result.usageAmount,
+      condition: result.condition,
+      userReplacementPriceExVat: result.userReplacementPriceExVat,
+      userReplacementPriceYear: result.userReplacementPriceYear,
+    },
+    output: result,
+    selectedMethod: input.selectedMethod,
+    selectedValueExVat: selectedValue,
+  };
+
+  const inserted = await db.query<InsertedValuationRunRow>(
+    `
+      insert into valuation_runs (
+        user_id, model_id, brand_id, sector_id, equipment_family_id, equipment_model_id,
+        equipment_type, brand_slug, brand_name, model_name, tractor_type, drive_type, cab_type,
+        power_kw, year_model, hours, condition, front_pto, front_loader, gps_enabled, gps_type,
+        gps_year, catalog_replacement_price_ex_vat, extras_value_ex_vat, aim4price_value_ex_vat,
+        market_low_ex_vat, market_mid_ex_vat, market_high_ex_vat, market_count, market_listing_ids,
+        selected_method, selected_value_ex_vat, valuation_version, valuation_payload,
+        catalog_mode_used, typed_model_name, normalized_typed_model_name, specs_json,
+        replacement_price_band_id, replacement_price_min_ex_vat, replacement_price_max_ex_vat,
+        replacement_price_used_ex_vat, user_replacement_price_ex_vat, user_replacement_price_year,
+        market_match_strategy, market_average_ex_vat, market_average_count,
+        valuation_low_ex_vat, valuation_mid_ex_vat, valuation_high_ex_vat,
+        confidence_score, confidence_label, created_at, updated_at
+      )
+      values (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+        $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+        $31, $32, $33, $34::jsonb, $35, $36, $37, $38::jsonb,
+        $39, $40, $41, $42, $43, $44, $45, $46, $47,
+        $48, $49, $50, $51, $52, now(), now()
+      )
+      returning id, created_at
+    `,
+    [
+      input.userId ?? null,
+      0,
+      result.brand.id,
+      result.sector.id,
+      result.family.id,
+      null,
+      result.family.key,
+      result.brand.slug,
+      result.brand.name,
+      result.typedModelName || 'Specs-based valuation',
+      '',
+      '',
+      '',
+      0,
+      result.year,
+      result.usageAmount ?? 0,
+      result.condition,
+      false,
+      false,
+      false,
+      null,
+      null,
+      result.replacementPriceUsedExVat,
+      0,
+      result.aim4priceValueExVat,
+      null,
+      result.marketAverageExVat,
+      null,
+      result.marketAverageCount,
+      marketListingIds,
+      input.selectedMethod,
+      selectedValue,
+      valuationVersion,
+      JSON.stringify(valuationPayload),
+      result.catalogModeUsed,
+      result.typedModelName,
+      result.normalizedTypedModelName,
+      JSON.stringify(result.specsJson),
+      result.replacementPriceBand?.id ?? null,
+      result.replacementPriceMinExVat,
+      result.replacementPriceMaxExVat,
+      result.replacementPriceUsedExVat,
+      result.userReplacementPriceExVat,
+      result.userReplacementPriceYear,
+      result.marketMatchStrategy,
+      result.marketAverageExVat,
+      result.marketAverageCount,
+      result.valuationLowExVat,
+      result.valuationMidExVat,
+      result.valuationHighExVat,
+      result.confidenceScore,
+      result.confidenceLabel,
+    ],
+  );
+
+  const row = inserted.rows[0];
+  if (!row) throw new Error('SAVE_FAILED');
+
+  return {
+    runId: Number(row.id),
+    createdAtIso: row.created_at,
+    selectedValueExVat: selectedValue,
+    result,
+  };
 }
