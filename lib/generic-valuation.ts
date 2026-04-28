@@ -1,8 +1,39 @@
 import { getDb } from './db';
+import {
+  DEFAULT_ENGINE_FLOOR_PERCENT,
+  DEFAULT_FALLBACK_LIFETIME_USED_PERCENT,
+  DEFAULT_NON_PROPELLED_FLOOR_PERCENT,
+  calculateEngineHoursValue,
+  calculatePercentUsedValue,
+  clamp,
+  currentBaseYear,
+  tractorLifetimeHours,
+} from './valuation/shared';
 import type { CatalogMode, EquipmentFamilyKey, SectorKey, UsageMetricType, ValuationMode } from './equipment-types';
 
 export type GenericCondition = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 export type GenericSelectedMethod = 'aim4price' | 'market';
+export type DepreciationMethodUsed = 'full_depreciation' | 'semi_depreciation' | 'percentage_depreciation';
+export type ReplacementPriceBasis = 'aim4price' | 'user';
+
+export type GenericValuationCalculation = {
+  replacementPriceBasis: ReplacementPriceBasis;
+  replacementPriceExVat: number | null;
+  depreciationMethodUsed: DepreciationMethodUsed;
+  depreciationBaseValueExVat: number | null;
+  aim4priceValueExVat: number | null;
+  valuationLowExVat: number | null;
+  valuationMidExVat: number | null;
+  valuationHighExVat: number | null;
+  marketWeight: number;
+  lifeWorkedPercent: number | null;
+  lifeRemainingPercent: number | null;
+  estimatedHours: number | null;
+  maxLifetimeHours: number | null;
+  ageDepPct: number | null;
+  usageDepPct: number | null;
+  averageDepPct: number | null;
+};
 
 export type SpecQuestion = {
   id: number;
@@ -75,7 +106,9 @@ export type GenericValuationInput = {
   typedModelName?: string | null;
   specsJson?: Record<string, unknown> | null;
   year: number;
+  yearModelUnknown?: boolean | null;
   usageAmount?: number | null;
+  lifeWorkedPercent?: number | null;
   condition: GenericCondition;
   userReplacementPriceExVat?: number | null;
   userReplacementPriceYear?: number | null;
@@ -106,6 +139,15 @@ export type GenericValuationResult = {
   replacementPriceUsedExVat: number | null;
   userReplacementPriceExVat: number | null;
   userReplacementPriceYear: number | null;
+  replacementPriceBasis: ReplacementPriceBasis;
+  depreciationMethodUsed: DepreciationMethodUsed;
+  lifeWorkedPercent: number | null;
+  lifeRemainingPercent: number | null;
+  estimatedHours: number | null;
+  maxLifetimeHours: number | null;
+  aim4priceReplacementCalculation: GenericValuationCalculation | null;
+  userReplacementCalculation: GenericValuationCalculation | null;
+  selectedCalculation: GenericValuationCalculation | null;
   genericEstimateExVat: number | null;
   aim4priceValueExVat: number | null;
   marketAverageExVat: number | null;
@@ -192,13 +234,6 @@ function normalizeCondition(value: unknown): GenericCondition {
   return 'good';
 }
 
-function conditionMultiplier(condition: GenericCondition): number {
-  if (condition === 'excellent') return 0.98;
-  if (condition === 'good') return 0.90;
-  if (condition === 'fair') return 0.78;
-  if (condition === 'used') return 0.65;
-  return 0.45;
-}
 
 function coerceSpecValue(value: unknown): unknown {
   if (typeof value === 'string') {
@@ -271,29 +306,231 @@ function scoreBand(band: ReplacementPriceBand): number {
   return Object.keys(band.specMatchJson).length * 10 + (band.brandId ? 5 : 0) + band.confidence;
 }
 
-function computeGenericEstimate(input: {
+type DepreciationInput = {
   replacementPrice: number | null;
   year: number;
+  yearModelUnknown?: boolean | null;
   usageAmount: number | null;
+  lifeWorkedPercent: number | null;
   usageMetricType: UsageMetricType;
   condition: GenericCondition;
   isPropelled: boolean;
-}): number | null {
-  if (!input.replacementPrice || input.replacementPrice <= 0) return null;
+  familyKey: EquipmentFamilyKey;
+  specsJson: Record<string, unknown>;
+};
 
-  const currentYear = new Date().getFullYear();
-  const age = Math.max(0, currentYear - Math.round(input.year));
-  const annualDepreciation = input.usageMetricType === 'hours' || input.isPropelled ? 0.075 : 0.065;
-  const ageRetained = Math.max(0.22, 1 - age * annualDepreciation);
+function positivePercent(value: unknown): number | null {
+  const numeric = toNumber(value);
+  if (numeric === null || numeric < 0) return null;
+  return clamp(numeric, 0, 100);
+}
 
-  let usageRetained = ageRetained;
-  if (input.usageMetricType === 'hours' && input.usageAmount !== null && input.usageAmount > 0) {
-    const expectedLifeHours = input.isPropelled ? 12_000 : 8_000;
-    usageRetained = Math.max(0.22, 1 - Math.min(0.78, input.usageAmount / expectedLifeHours));
+function positiveHours(value: unknown): number | null {
+  const numeric = toNumber(value);
+  if (numeric === null || numeric <= 0) return null;
+  return Math.round(numeric);
+}
+
+function resolveLifeWorkedPercent(input: DepreciationInput, fallbackPercent: number): number {
+  const direct = positivePercent(input.lifeWorkedPercent);
+  if (direct !== null) return direct;
+
+  const specs = input.specsJson;
+  const specPercent =
+    positivePercent(specs.life_worked_percent) ??
+    positivePercent(specs.worked_percent) ??
+    positivePercent(specs.lifetime_worked_percent) ??
+    positivePercent(specs.percent_worked) ??
+    positivePercent(specs.lifetime_used_percent);
+
+  if (specPercent !== null) return specPercent;
+  return clamp(fallbackPercent, 0, 100);
+}
+
+function resolveMaxLifetimeHours(input: DepreciationInput): number {
+  const specs = input.specsJson;
+  const explicit =
+    positiveHours(specs.max_lifetime_hours) ??
+    positiveHours(specs.expected_lifetime_hours) ??
+    positiveHours(specs.lifetime_hours) ??
+    positiveHours(specs.design_life_hours);
+
+  if (explicit !== null) return explicit;
+
+  if (input.familyKey === 'tractors') {
+    const powerKw = toNumber(specs.power_kw) ?? 75;
+    const tractorType = cleanText(specs.tractor_type).toLowerCase() === 'orchard' ? 'orchard' : 'field';
+    return tractorLifetimeHours(tractorType, powerKw);
   }
 
-  const retained = input.usageMetricType === 'hours' ? Math.min(ageRetained, usageRetained) : ageRetained;
-  return roundMoney(input.replacementPrice * retained * conditionMultiplier(input.condition));
+  if (cleanText(input.familyKey).includes('harvester')) return 8_000;
+  if (cleanText(input.familyKey).includes('sprayer')) return 8_000;
+  if (cleanText(input.familyKey).includes('loader')) return 10_000;
+  if (cleanText(input.familyKey).includes('excavator')) return 12_000;
+  if (cleanText(input.familyKey).includes('forklift')) return 12_000;
+
+  return 12_000;
+}
+
+function spreadForMarketCount(marketAverageCount: number): number {
+  if (marketAverageCount >= 3) return 0.12;
+  if (marketAverageCount >= 1) return 0.17;
+  return 0.22;
+}
+
+function marketWeightFor(strategy: GenericValuationResult['marketMatchStrategy'], marketAverageCount: number): number {
+  if (marketAverageCount <= 0) return 0;
+  if (strategy === 'exact_model') return 0.55;
+  if (strategy === 'typed_model') return 0.50;
+  if (strategy === 'brand_specs') return 0.42;
+  if (strategy === 'family_specs') return 0.28;
+  return 0;
+}
+
+function resolveDepreciation(input: DepreciationInput): {
+  method: DepreciationMethodUsed;
+  depreciationBaseValueExVat: number | null;
+  lifeWorkedPercent: number | null;
+  lifeRemainingPercent: number | null;
+  estimatedHours: number | null;
+  maxLifetimeHours: number | null;
+  ageDepPct: number | null;
+  usageDepPct: number | null;
+  averageDepPct: number | null;
+} {
+  if (!input.replacementPrice || input.replacementPrice <= 0) {
+    const fallbackMethod: DepreciationMethodUsed = input.isPropelled || input.usageMetricType === 'hours'
+      ? 'semi_depreciation'
+      : 'percentage_depreciation';
+
+    return {
+      method: fallbackMethod,
+      depreciationBaseValueExVat: null,
+      lifeWorkedPercent: null,
+      lifeRemainingPercent: null,
+      estimatedHours: null,
+      maxLifetimeHours: input.isPropelled || input.usageMetricType === 'hours' ? resolveMaxLifetimeHours(input) : null,
+      ageDepPct: null,
+      usageDepPct: null,
+      averageDepPct: null,
+    };
+  }
+
+  const yearForDepreciation = input.yearModelUnknown ? currentBaseYear() : Math.round(input.year);
+
+  if (input.isPropelled || input.usageMetricType === 'hours') {
+    const maxLifetimeHours = resolveMaxLifetimeHours(input);
+    const knownHours = positiveHours(input.usageAmount);
+
+    if (knownHours !== null) {
+      const calculated = calculateEngineHoursValue({
+        replacementPriceExVat: input.replacementPrice,
+        yearModel: yearForDepreciation,
+        hours: knownHours,
+        condition: input.condition,
+        maxLifetimeHours,
+        floorPercent: DEFAULT_ENGINE_FLOOR_PERCENT,
+      });
+      const lifeWorkedPercent = clamp(Math.round((knownHours / maxLifetimeHours) * 100), 0, 100);
+
+      return {
+        method: 'full_depreciation',
+        depreciationBaseValueExVat: calculated.finalValueExVat,
+        lifeWorkedPercent,
+        lifeRemainingPercent: 100 - lifeWorkedPercent,
+        estimatedHours: knownHours,
+        maxLifetimeHours,
+        ageDepPct: calculated.ageDepPct,
+        usageDepPct: calculated.usageDepPct,
+        averageDepPct: calculated.averageDepPct,
+      };
+    }
+
+    const lifeWorkedPercent = resolveLifeWorkedPercent(input, DEFAULT_FALLBACK_LIFETIME_USED_PERCENT * 100);
+    const estimatedHours = Math.round(maxLifetimeHours * (lifeWorkedPercent / 100));
+    const calculated = calculateEngineHoursValue({
+      replacementPriceExVat: input.replacementPrice,
+      yearModel: yearForDepreciation,
+      hours: estimatedHours,
+      condition: input.condition,
+      maxLifetimeHours,
+      floorPercent: DEFAULT_ENGINE_FLOOR_PERCENT,
+    });
+
+    return {
+      method: 'semi_depreciation',
+      depreciationBaseValueExVat: calculated.finalValueExVat,
+      lifeWorkedPercent,
+      lifeRemainingPercent: 100 - lifeWorkedPercent,
+      estimatedHours,
+      maxLifetimeHours,
+      ageDepPct: calculated.ageDepPct,
+      usageDepPct: calculated.usageDepPct,
+      averageDepPct: calculated.averageDepPct,
+    };
+  }
+
+  const lifeWorkedPercent = resolveLifeWorkedPercent(input, 50);
+  const calculated = calculatePercentUsedValue({
+    replacementPriceExVat: input.replacementPrice,
+    percentUsed: lifeWorkedPercent,
+    condition: input.condition,
+    floorPercent: DEFAULT_NON_PROPELLED_FLOOR_PERCENT,
+  });
+
+  return {
+    method: 'percentage_depreciation',
+    depreciationBaseValueExVat: calculated.finalValueExVat,
+    lifeWorkedPercent: calculated.percentUsed,
+    lifeRemainingPercent: calculated.remainingPercent,
+    estimatedHours: null,
+    maxLifetimeHours: null,
+    ageDepPct: null,
+    usageDepPct: calculated.percentUsed,
+    averageDepPct: calculated.percentUsed,
+  };
+}
+
+function buildCalculation(input: DepreciationInput & {
+  replacementPriceBasis: ReplacementPriceBasis;
+  marketAverageExVat: number | null;
+  marketAverageCount: number;
+  marketMatchStrategy: GenericValuationResult['marketMatchStrategy'];
+}): GenericValuationCalculation {
+  const depreciation = resolveDepreciation(input);
+  const marketWeight = marketWeightFor(input.marketMatchStrategy, input.marketAverageCount);
+  let aim4priceValueExVat = depreciation.depreciationBaseValueExVat;
+
+  if (depreciation.depreciationBaseValueExVat !== null && input.marketAverageExVat !== null && marketWeight > 0) {
+    aim4priceValueExVat = roundMoney(
+      depreciation.depreciationBaseValueExVat * (1 - marketWeight) + input.marketAverageExVat * marketWeight,
+    );
+  } else if (depreciation.depreciationBaseValueExVat === null && input.marketAverageExVat !== null) {
+    aim4priceValueExVat = input.marketAverageExVat;
+  }
+
+  const spread = spreadForMarketCount(input.marketAverageCount);
+  const valuationLowExVat = aim4priceValueExVat === null ? null : roundMoney(aim4priceValueExVat * (1 - spread));
+  const valuationHighExVat = aim4priceValueExVat === null ? null : roundMoney(aim4priceValueExVat * (1 + spread));
+
+  return {
+    replacementPriceBasis: input.replacementPriceBasis,
+    replacementPriceExVat: input.replacementPrice,
+    depreciationMethodUsed: depreciation.method,
+    depreciationBaseValueExVat: depreciation.depreciationBaseValueExVat,
+    aim4priceValueExVat,
+    valuationLowExVat,
+    valuationMidExVat: aim4priceValueExVat,
+    valuationHighExVat,
+    marketWeight,
+    lifeWorkedPercent: depreciation.lifeWorkedPercent,
+    lifeRemainingPercent: depreciation.lifeRemainingPercent,
+    estimatedHours: depreciation.estimatedHours,
+    maxLifetimeHours: depreciation.maxLifetimeHours,
+    ageDepPct: depreciation.ageDepPct,
+    usageDepPct: depreciation.usageDepPct,
+    averageDepPct: depreciation.averageDepPct,
+  };
 }
 
 function marketAverage(matches: MarketMatch[]): number | null {
@@ -906,7 +1143,14 @@ function mapMarketRow(row: DbRecord, matchScore: number, matchReason: string): M
 }
 
 export async function runGenericValuation(input: GenericValuationInput): Promise<GenericValuationResult> {
-  const specsJson = normalizeSpecsJson(input.specsJson);
+  const rawSpecsJson = normalizeSpecsJson(input.specsJson);
+  const lifeWorkedPercent = positivePercent(input.lifeWorkedPercent);
+  const specsJson = {
+    ...rawSpecsJson,
+    ...(lifeWorkedPercent !== null ? { life_worked_percent: lifeWorkedPercent } : {}),
+    ...(input.yearModelUnknown ? { year_model_unknown: true } : {}),
+  };
+
   const family = await fetchFamilyContext(input.sectorKey, input.familyKey);
   if (!family) throw new Error('FAMILY_NOT_FOUND');
 
@@ -915,7 +1159,8 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
 
   const typedModelName = cleanText(input.typedModelName) || null;
   const normalizedTypedModelName = typedModelName ? normalizeModelKey(typedModelName) : null;
-  const userReplacementPriceExVat = toNumber(input.userReplacementPriceExVat);
+  const userReplacementPriceExVatRaw = toNumber(input.userReplacementPriceExVat);
+  const userReplacementPriceExVat = userReplacementPriceExVatRaw && userReplacementPriceExVatRaw > 0 ? userReplacementPriceExVatRaw : null;
   const userReplacementPriceYear = toInteger(input.userReplacementPriceYear) ?? null;
   const replacementBand = await findReplacementBand({
     sectorKey: input.sectorKey,
@@ -930,18 +1175,6 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     replacementPriceMinExVat !== null && replacementPriceMaxExVat !== null
       ? Math.round((replacementPriceMinExVat + replacementPriceMaxExVat) / 2)
       : null;
-  const replacementPriceUsedExVat = roundMoney(
-    userReplacementPriceExVat && userReplacementPriceExVat > 0 ? userReplacementPriceExVat : bandMid,
-  );
-
-  const genericEstimateExVat = computeGenericEstimate({
-    replacementPrice: replacementPriceUsedExVat,
-    year: input.year,
-    usageAmount: toNumber(input.usageAmount),
-    usageMetricType: family.usageMetricType,
-    condition: normalizeCondition(input.condition),
-    isPropelled: family.isPropelled,
-  });
 
   const questions = await listFamilySpecQuestions({ sectorKey: input.sectorKey, familyKey: input.familyKey, includeInactive: true });
   const market = await findMarketVaultMatches({
@@ -956,18 +1189,42 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const marketAverageExVat = marketAverage(market.matches);
   const marketAverageCount = market.matches.length;
 
-  let aim4priceValueExVat = genericEstimateExVat;
-  if (genericEstimateExVat !== null && marketAverageExVat !== null) {
-    const marketWeight = market.strategy === 'exact_model' ? 0.55 : market.strategy === 'brand_specs' ? 0.42 : 0.28;
-    aim4priceValueExVat = roundMoney(genericEstimateExVat * (1 - marketWeight) + marketAverageExVat * marketWeight);
-  } else if (genericEstimateExVat === null && marketAverageExVat !== null) {
-    aim4priceValueExVat = marketAverageExVat;
-  }
+  const commonCalculationInput = {
+    year: input.year,
+    yearModelUnknown: input.yearModelUnknown,
+    usageAmount: toNumber(input.usageAmount),
+    lifeWorkedPercent,
+    usageMetricType: family.usageMetricType,
+    condition: normalizeCondition(input.condition),
+    isPropelled: family.isPropelled,
+    familyKey: family.key,
+    specsJson,
+    marketAverageExVat,
+    marketAverageCount,
+    marketMatchStrategy: market.strategy,
+  };
 
-  const valuationMidExVat = aim4priceValueExVat;
-  const spread = marketAverageCount >= 3 ? 0.12 : marketAverageCount >= 1 ? 0.17 : 0.22;
-  const valuationLowExVat = valuationMidExVat === null ? null : roundMoney(valuationMidExVat * (1 - spread));
-  const valuationHighExVat = valuationMidExVat === null ? null : roundMoney(valuationMidExVat * (1 + spread));
+  const aim4priceReplacementCalculation = buildCalculation({
+    ...commonCalculationInput,
+    replacementPriceBasis: 'aim4price',
+    replacementPrice: bandMid,
+  });
+  const userReplacementCalculation = userReplacementPriceExVat
+    ? buildCalculation({
+        ...commonCalculationInput,
+        replacementPriceBasis: 'user',
+        replacementPrice: userReplacementPriceExVat,
+      })
+    : null;
+
+  const selectedCalculation = userReplacementCalculation ?? aim4priceReplacementCalculation;
+  const replacementPriceBasis = selectedCalculation.replacementPriceBasis;
+  const replacementPriceUsedExVat = selectedCalculation.replacementPriceExVat;
+  const genericEstimateExVat = selectedCalculation.depreciationBaseValueExVat;
+  const aim4priceValueExVat = selectedCalculation.aim4priceValueExVat;
+  const valuationLowExVat = selectedCalculation.valuationLowExVat;
+  const valuationMidExVat = selectedCalculation.valuationMidExVat;
+  const valuationHighExVat = selectedCalculation.valuationHighExVat;
 
   let confidenceScore = 0.35;
   if (replacementBand) confidenceScore += 0.18 * replacementBand.confidence;
@@ -977,12 +1234,39 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   else if (marketAverageCount === 1) confidenceScore += 0.08;
   if (Object.keys(specsJson).length >= 3) confidenceScore += 0.08;
   if (userReplacementPriceExVat && userReplacementPriceExVat > 0) confidenceScore += 0.05;
+  if (selectedCalculation.depreciationMethodUsed === 'semi_depreciation') confidenceScore -= 0.04;
+  if (selectedCalculation.depreciationMethodUsed === 'percentage_depreciation') confidenceScore -= 0.02;
   confidenceScore = Math.max(0.1, Math.min(0.95, confidenceScore));
 
   const notes: string[] = [];
   if (!replacementBand && !userReplacementPriceExVat) notes.push('No replacement price band matched yet. Add a band or enter a user replacement price.');
   if (typedModelName && market.strategy !== 'exact_model') notes.push('No exact model market match found. Using broader brand/family spec evidence.');
-  if (!marketAverageCount) notes.push('No marketplace average found yet. Valuation uses replacement price and depreciation only.');
+  if (!marketAverageCount) notes.push('No marketplace average found yet. Aim4price used replacement price and depreciation only.');
+
+  if (selectedCalculation.depreciationMethodUsed === 'full_depreciation') {
+    notes.push('Full depreciation used: year, engine hours and condition.');
+  } else if (selectedCalculation.depreciationMethodUsed === 'semi_depreciation') {
+    notes.push(
+      `Semi depreciation used: hours were estimated from ${selectedCalculation.lifeWorkedPercent ?? 0}% worked of ${selectedCalculation.maxLifetimeHours ?? 0} lifetime hours.`,
+    );
+  } else {
+    notes.push('Percentage depreciation used: valuation is based on how much the equipment has worked, then adjusted for condition.');
+  }
+
+  if (input.yearModelUnknown) {
+    notes.push('Year model was marked unknown, so year was not used as the main depreciation driver.');
+  }
+
+  if (userReplacementCalculation && userReplacementPriceExVat) {
+    if (bandMid && bandMid > 0) {
+      const differencePct = Math.round(((userReplacementPriceExVat - bandMid) / bandMid) * 100);
+      notes.push(
+        `User replacement price was used. It is ${Math.abs(differencePct)}% ${differencePct >= 0 ? 'higher' : 'lower'} than the Aim4price replacement estimate.`,
+      );
+    } else {
+      notes.push('User replacement price was used because no Aim4price replacement band was available.');
+    }
+  }
 
   if (typedModelName) {
     await saveModelCandidate({
@@ -1012,8 +1296,17 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     replacementPriceMinExVat,
     replacementPriceMaxExVat,
     replacementPriceUsedExVat,
-    userReplacementPriceExVat: userReplacementPriceExVat && userReplacementPriceExVat > 0 ? userReplacementPriceExVat : null,
+    userReplacementPriceExVat,
     userReplacementPriceYear,
+    replacementPriceBasis,
+    depreciationMethodUsed: selectedCalculation.depreciationMethodUsed,
+    lifeWorkedPercent: selectedCalculation.lifeWorkedPercent,
+    lifeRemainingPercent: selectedCalculation.lifeRemainingPercent,
+    estimatedHours: selectedCalculation.estimatedHours,
+    maxLifetimeHours: selectedCalculation.maxLifetimeHours,
+    aim4priceReplacementCalculation,
+    userReplacementCalculation,
+    selectedCalculation,
     genericEstimateExVat,
     aim4priceValueExVat,
     marketAverageExVat,
@@ -1028,7 +1321,6 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     notes,
   };
 }
-
 export function getGenericSelectedMethodValue(result: GenericValuationResult, method: GenericSelectedMethod): number | null {
   if (method === 'market') return result.marketAverageExVat;
   return result.valuationMidExVat ?? result.aim4priceValueExVat;

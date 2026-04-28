@@ -249,12 +249,18 @@ export async function saveGenericValuationRunFromResult(
       specsJson: result.specsJson,
       year: result.year,
       usageAmount: result.usageAmount,
+      lifeWorkedPercent: result.lifeWorkedPercent,
+      yearModelUnknown: Boolean(result.specsJson.year_model_unknown),
       condition: result.condition,
       userReplacementPriceExVat: result.userReplacementPriceExVat,
       userReplacementPriceYear: result.userReplacementPriceYear,
     },
     output: result,
     selectedMethod: input.selectedMethod,
+    selectedReplacementPriceBasis: result.replacementPriceBasis,
+    selectedDepreciationMethod: result.depreciationMethodUsed,
+    selectedLifeWorkedPercent: result.lifeWorkedPercent,
+    selectedEstimatedHours: result.estimatedHours,
     selectedValueExVat: selectedValue,
   };
 
