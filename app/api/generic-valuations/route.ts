@@ -12,11 +12,23 @@ type Body = {
   typedModelName?: unknown;
   specsJson?: unknown;
   year?: unknown;
+  yearModelUnknown?: unknown;
   usageAmount?: unknown;
+  lifeWorkedPercent?: unknown;
   condition?: unknown;
   userReplacementPriceExVat?: unknown;
   userReplacementPriceYear?: unknown;
 };
+
+function parseBoolean(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === 'true' || normalized === '1' || normalized === 'yes';
+  }
+  return false;
+}
 
 function normalizeCondition(value: unknown): GenericCondition | null {
   const normalized = String(value ?? '').trim().toLowerCase();
@@ -31,6 +43,7 @@ export async function POST(request: NextRequest) {
     const familyKey = String(body.familyKey ?? '').trim();
     const brandSlug = String(body.brandSlug ?? '').trim();
     const year = Number(body.year);
+    const yearModelUnknown = parseBoolean(body.yearModelUnknown);
     const condition = normalizeCondition(body.condition);
 
     if (!isSectorKey(sectorKey)) {
@@ -51,7 +64,12 @@ export async function POST(request: NextRequest) {
       typedModelName: String(body.typedModelName ?? '').trim() || null,
       specsJson: body.specsJson && typeof body.specsJson === 'object' ? (body.specsJson as Record<string, unknown>) : {},
       year,
+      yearModelUnknown,
       usageAmount: body.usageAmount === null || typeof body.usageAmount === 'undefined' ? null : Number(body.usageAmount),
+      lifeWorkedPercent:
+        body.lifeWorkedPercent === null || typeof body.lifeWorkedPercent === 'undefined'
+          ? null
+          : Number(body.lifeWorkedPercent),
       condition,
       userReplacementPriceExVat:
         body.userReplacementPriceExVat === null || typeof body.userReplacementPriceExVat === 'undefined'
