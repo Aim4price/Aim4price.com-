@@ -1129,7 +1129,7 @@ export default function ValuationClient() {
 
   return (
     <main className={styles.page}>
-      <AppHeader />
+      <AppHeader active="valuation" />
       <div className={styles.container}>
         <section className={styles.heroIntro}>
           <div className={styles.heroIntroContent}>
