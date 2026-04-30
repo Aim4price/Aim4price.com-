@@ -487,11 +487,12 @@ export default function ValuationClient() {
       };
     }
 
+    const sectorForRequest = selectedSector;
     setFamiliesLoading(true);
 
     async function loadFamilies() {
       try {
-        const params = new URLSearchParams({ sectorKey: selectedSector, includeInactive: 'true' });
+        const params = new URLSearchParams({ sectorKey: sectorForRequest, includeInactive: 'true' });
         const response = await fetch(`/api/equipment-families?${params.toString()}`, { cache: 'no-store' });
         const data = (await response.json()) as FamiliesApiResponse;
         if (!response.ok || !data.ok || !Array.isArray(data.families)) throw new Error(data.error ?? 'Failed to load families.');
@@ -514,6 +515,7 @@ export default function ValuationClient() {
   useEffect(() => {
     if (!selectedFamily || !selectedSector) return;
 
+    const sectorForRequest = selectedSector;
     const familyForRequest = selectedFamily;
     const familyKeyForRequest = familyForRequest.familyKey;
     const nextFlowMode = familyKeyForRequest === 'tractors' && familyForRequest.catalogMode === 'hybrid' ? 'exact_model' : 'generic_specs';
@@ -540,7 +542,7 @@ export default function ValuationClient() {
     async function loadBrands() {
       try {
         const params = new URLSearchParams({
-          sectorKey: selectedSector,
+          sectorKey: sectorForRequest,
           familyKey: familyKeyForRequest,
           includeInactive: 'true',
         });
@@ -567,6 +569,7 @@ export default function ValuationClient() {
   useEffect(() => {
     if (!selectedFamily || !selectedSector) return;
 
+    const sectorForRequest = selectedSector;
     const familyKeyForRequest = selectedFamily.familyKey;
 
     let ignore = false;
@@ -576,7 +579,7 @@ export default function ValuationClient() {
     async function loadSpecQuestions() {
       try {
         const params = new URLSearchParams({
-          sectorKey: selectedSector,
+          sectorKey: sectorForRequest,
           familyKey: familyKeyForRequest,
           includeInactive: 'true',
         });
