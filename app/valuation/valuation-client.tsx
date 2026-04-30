@@ -212,6 +212,22 @@ const SECTOR_OPTIONS: Array<{ key: SectorKey; label: string; available: boolean 
   { key: 'industrial', label: SECTOR_LABELS.industrial, available: false },
 ];
 
+const TRACTOR_TYPE_OPTIONS: Array<{ value: TractorType; label: string }> = [
+  { value: 'field', label: 'Field' },
+  { value: 'orchard', label: 'Orchard' },
+];
+
+const DRIVE_OPTIONS: Array<{ value: DriveType; label: string }> = [
+  { value: '2wd', label: '2WD' },
+  { value: '4wd', label: '4WD' },
+  { value: 'tracks', label: 'Tracks' },
+];
+
+const CAB_OPTIONS: Array<{ value: CabType; label: string }> = [
+  { value: 'cab', label: 'Cab' },
+  { value: 'open-station', label: 'Open station' },
+];
+
 function nextStep(step: Step): Step {
   return step === 1 ? 2 : step === 2 ? 3 : step === 3 ? 4 : 5;
 }
@@ -292,6 +308,27 @@ function displayMarketStrategy(strategy: GenericValuationResult['marketMatchStra
   return 'No marketplace average';
 }
 
+function getTractorTypeLabel(value: TractorType | ''): string {
+  return TRACTOR_TYPE_OPTIONS.find((option) => option.value === value)?.label ?? 'Choose type';
+}
+
+function getDriveLabel(value: DriveType | ''): string {
+  return DRIVE_OPTIONS.find((option) => option.value === value)?.label ?? 'Choose drive';
+}
+
+function getCabLabel(value: CabType | ''): string {
+  return CAB_OPTIONS.find((option) => option.value === value)?.label ?? 'Choose cab';
+}
+
+function formatTractorModelLabel(model: TractorCatalogRow | null): string {
+  if (!model) return 'Select model...';
+  return `${model.brandName} ${model.modelName}`;
+}
+
+function formatTractorModelDetail(model: TractorCatalogRow): string {
+  return `${model.powerKw} kW • ${model.yearStart}-${model.yearEnd}`;
+}
+
 function getTractorValue(result: Result, method: MethodKey): number | null {
   if (method === 'market') return result.marketMid;
   return result.aim4priceValueExVat;
@@ -368,12 +405,13 @@ export default function ValuationClient() {
   const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
   const [brandSlug, setBrandSlug] = useState('');
   const [flowMode, setFlowMode] = useState<FlowMode>('generic_specs');
-  const [tractorType, setTractorType] = useState<TractorType>('field');
-  const [drive, setDrive] = useState<DriveType>('4wd');
-  const [cab, setCab] = useState<CabType>('cab');
+  const [tractorType, setTractorType] = useState<TractorType | ''>('');
+  const [drive, setDrive] = useState<DriveType | ''>('');
+  const [cab, setCab] = useState<CabType | ''>('');
   const [tractorModels, setTractorModels] = useState<TractorCatalogRow[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelQuery, setModelQuery] = useState('');
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const [modelId, setModelId] = useState('');
   const [specQuestions, setSpecQuestions] = useState<SpecQuestion[]>([]);
   const [specAnswers, setSpecAnswers] = useState<Record<string, string>>({});
@@ -452,10 +490,28 @@ export default function ValuationClient() {
   }, [brands, brandSearch]);
 
   const exactTractorAvailable = selectedFamily?.familyKey === 'tractors' && selectedFamily.catalogMode === 'hybrid';
+  const tractorSetupComplete = Boolean(tractorType && drive && cab);
   const filteredModels = useMemo(() => {
     const query = modelQuery.trim().toLowerCase();
-    if (!query) return tractorModels;
-    return tractorModels.filter((model) => `${model.brandName} ${model.modelName} ${model.powerKw}`.toLowerCase().includes(query));
+    const matches = tractorModels.filter((model) =>
+      searchIncludes(`${model.brandName} ${model.modelName} ${model.powerKw} ${model.yearStart} ${model.yearEnd}`, modelQuery),
+    );
+
+    if (!query) return matches;
+
+    function scoreModel(model: TractorCatalogRow): number {
+      const modelName = model.modelName.toLowerCase();
+      const fullName = `${model.brandName} ${model.modelName}`.toLowerCase();
+
+      if (modelName === query || fullName === query) return 0;
+      if (modelName.startsWith(query)) return 1;
+      if (fullName.startsWith(query)) return 2;
+      if (modelName.includes(query)) return 3;
+      if (fullName.includes(query)) return 4;
+      return 5;
+    }
+
+    return [...matches].sort((a, b) => scoreModel(a) - scoreModel(b) || a.modelName.localeCompare(b.modelName));
   }, [modelQuery, tractorModels]);
 
   const yearNumber = Number(year);
@@ -512,7 +568,11 @@ export default function ValuationClient() {
     setBrandSlug('');
     setTypedModelName('');
     setModelQuery('');
+    setModelDropdownOpen(false);
     setModelId('');
+    setTractorType('');
+    setDrive('');
+    setCab('');
     setTractorModels([]);
     setSpecQuestions([]);
     setSpecAnswers({});
@@ -568,7 +628,11 @@ export default function ValuationClient() {
     setBrandSlug('');
     setBrands([]);
     setModelQuery('');
+    setModelDropdownOpen(false);
     setModelId('');
+    setTractorType('');
+    setDrive('');
+    setCab('');
     setTractorModels([]);
     setTypedModelName('');
     setUsageAmount('');
@@ -640,24 +704,37 @@ export default function ValuationClient() {
   }, [selectedFamily, selectedSector]);
 
   useEffect(() => {
-    if (!brandSlug || flowMode !== 'exact_model') {
+    if (!brandSlug || flowMode !== 'exact_model' || !tractorType || !drive || !cab) {
       setTractorModels([]);
       setModelId('');
+      setModelDropdownOpen(false);
+      setModelsLoading(false);
       return;
     }
 
+    const tractorTypeForRequest = tractorType;
+    const driveForRequest = drive;
+    const cabForRequest = cab;
+
     let ignore = false;
     setModelsLoading(true);
+    setTractorModels([]);
+    setModelId('');
+    setModelDropdownOpen(false);
 
     async function loadModels() {
       try {
-        const params = new URLSearchParams({ brandSlug, tractorType, drive, cab });
+        const params = new URLSearchParams({
+          brandSlug,
+          tractorType: tractorTypeForRequest,
+          drive: driveForRequest,
+          cab: cabForRequest,
+        });
         const response = await fetch(`/api/tractor-models?${params.toString()}`, { cache: 'no-store' });
         const data = (await response.json()) as TractorModelsApiResponse;
         if (!response.ok || !data.ok || !Array.isArray(data.models)) throw new Error(data.error ?? 'Failed to load models.');
         if (ignore) return;
         setTractorModels(data.models);
-        setModelId(data.models[0]?.id ?? '');
       } catch (error) {
         console.error(error);
         if (!ignore) setTractorModels([]);
@@ -693,7 +770,8 @@ export default function ValuationClient() {
     }
 
     if (!condition) return 'Choose the condition.';
-    if (flowMode === 'exact_model' && !selectedModel) return 'Choose the exact tractor model or use machine specs.';
+    if (flowMode === 'exact_model' && !tractorSetupComplete) return 'Complete the type, drive and cab setup first.';
+    if (flowMode === 'exact_model' && !selectedModel) return 'Choose the exact model or use machine specs.';
 
     if (flowMode === 'exact_model' && !usageNumber && lifeWorkedPercentNumber === null) {
       return 'Enter engine hours or estimate how much the tractor has worked.';
@@ -926,8 +1004,12 @@ export default function ValuationClient() {
       return;
     }
     if (step === 3) {
+      if (flowMode === 'exact_model' && !tractorSetupComplete) {
+        setMessage('Complete the type, drive and cab setup first.');
+        return;
+      }
       if (flowMode === 'exact_model' && !selectedModel) {
-        setMessage('Choose a model or continue using machine specs.');
+        setMessage('Choose an exact model or continue using machine specs.');
         return;
       }
     }
@@ -951,7 +1033,11 @@ export default function ValuationClient() {
     setBrandDropdownOpen(false);
     setTypedModelName('');
     setModelQuery('');
+    setModelDropdownOpen(false);
     setModelId('');
+    setTractorType('');
+    setDrive('');
+    setCab('');
     setTractorModels([]);
     setSpecQuestions([]);
     setSpecAnswers({});
@@ -983,7 +1069,12 @@ export default function ValuationClient() {
     setEquipmentDropdownOpen(false);
     setTypedModelName('');
     setModelQuery('');
+    setModelDropdownOpen(false);
     setModelId('');
+    setTractorType('');
+    setDrive('');
+    setCab('');
+    setTractorModels([]);
     setBrandSearch('');
     setBrandDropdownOpen(false);
     setBrandSlug('');
@@ -999,9 +1090,48 @@ export default function ValuationClient() {
     setBrandDropdownOpen(false);
     setTypedModelName('');
     setModelQuery('');
+    setModelDropdownOpen(false);
     setModelId('');
+    setTractorType('');
+    setDrive('');
+    setCab('');
+    setTractorModels([]);
     resetResult();
     setStep(3);
+  }
+
+  function resetExactModelSelection() {
+    setModelQuery('');
+    setModelDropdownOpen(false);
+    setModelId('');
+    setTractorModels([]);
+    resetResult();
+  }
+
+  function handleTractorTypeSelection(value: TractorType) {
+    setTractorType(value);
+    setDrive('');
+    setCab('');
+    resetExactModelSelection();
+  }
+
+  function handleDriveSelection(value: DriveType) {
+    setDrive(value);
+    setCab('');
+    resetExactModelSelection();
+  }
+
+  function handleCabSelection(value: CabType) {
+    setCab(value);
+    resetExactModelSelection();
+  }
+
+  function handleModelSelection(nextModelId: string) {
+    if (!nextModelId) return;
+    setModelId(nextModelId);
+    setModelQuery('');
+    setModelDropdownOpen(false);
+    resetResult();
   }
 
   function handleBack() {
@@ -1206,36 +1336,52 @@ export default function ValuationClient() {
   }
 
   function renderPathStep() {
+    if (!exactTractorAvailable) {
+      return (
+        <div>
+          <h2 className={styles.stepTitle}>Machine specs path</h2>
+          <p className={styles.stepText}>
+            Aim4price is building exact model data across all equipment types. For now, this valuation uses brand, condition, worked percentage and family specs.
+          </p>
+          {renderTypedModelBox()}
+        </div>
+      );
+    }
+
     return (
       <div>
         <h2 className={styles.stepTitle}>Choose valuation path</h2>
-        <p className={styles.stepText}>Use an exact model when the catalogue supports it. Otherwise, the machine specs path gives a valuation from brand, year, condition, worked percentage and family questions.</p>
 
-        <div className={styles.choiceGrid}>
-          {exactTractorAvailable ? (
-            <button
-              type="button"
-              className={`${styles.choiceCard} ${flowMode === 'exact_model' ? styles.choiceCardActive : ''}`}
-              onClick={() => {
-                setFlowMode('exact_model');
-                resetResult();
-              }}
-            >
-              <strong>Use exact tractor model</strong>
-              <span className={styles.choiceCardNote}>Best confidence for tractors with approved model data.</span>
-            </button>
-          ) : null}
+        <div className={`${styles.choiceGrid} ${styles.pathChoiceGrid}`}>
+          <button
+            type="button"
+            className={`${styles.choiceCard} ${flowMode === 'exact_model' ? styles.choiceCardActive : ''}`}
+            onClick={() => {
+              setFlowMode('exact_model');
+              setTypedModelName('');
+              setTractorType('');
+              setDrive('');
+              setCab('');
+              resetExactModelSelection();
+            }}
+          >
+            <strong>Use exact model</strong>
+            <span className={styles.choiceCardNote}>Helps improve confidence and gives a better valuation when the model exists in the catalogue.</span>
+          </button>
 
           <button
             type="button"
             className={`${styles.choiceCard} ${flowMode === 'generic_specs' ? styles.choiceCardActive : ''}`}
             onClick={() => {
               setFlowMode('generic_specs');
-              resetResult();
+              setTractorType('');
+              setDrive('');
+              setCab('');
+              resetExactModelSelection();
             }}
           >
             <strong>Use machine specs</strong>
-            <span className={styles.choiceCardNote}>Recommended for non-tractor equipment and for models not yet in the catalogue.</span>
+            <span className={styles.choiceCardNote}>Use this when exact model data is not available or you are unsure of the exact model.</span>
           </button>
         </div>
 
@@ -1246,48 +1392,137 @@ export default function ValuationClient() {
 
   function renderTractorModelPicker() {
     return (
-      <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
-        <h3 className={styles.currentTitle}>Tractor setup</h3>
-        <div className={styles.inputGrid}>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Type</span>
-            <select value={tractorType} onChange={(event) => setTractorType(event.target.value as TractorType)}>
-              <option value="field">Field</option>
-              <option value="orchard">Orchard</option>
-            </select>
-          </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Drive</span>
-            <select value={drive} onChange={(event) => setDrive(event.target.value as DriveType)}>
-              <option value="2wd">2WD</option>
-              <option value="4wd">4WD</option>
-              <option value="tracks">Tracks</option>
-            </select>
-          </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Cab</span>
-            <select value={cab} onChange={(event) => setCab(event.target.value as CabType)}>
-              <option value="cab">Cab</option>
-              <option value="open-station">Open station</option>
-            </select>
-          </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Search model</span>
-            <input value={modelQuery} onChange={(event) => setModelQuery(event.target.value)} placeholder="6155M, 7610, etc." />
-          </label>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Model</span>
-            <select value={modelId} onChange={(event) => setModelId(event.target.value)}>
-              {filteredModels.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.brandName} {model.modelName} • {model.powerKw} kW • {model.yearStart}-{model.yearEnd}
-                </option>
-              ))}
-            </select>
-          </label>
+      <div className={`${styles.currentCard} ${styles.tractorSetupCard}`} style={{ marginTop: '1rem' }}>
+        <div className={styles.currentCardHead}>
+          <div>
+            <span className={styles.currentEyebrow}>Exact model setup</span>
+            <h3 className={styles.currentTitle}>Find the tractor model</h3>
+            <p className={styles.currentHint}>Choose the basic setup first. The model list appears after type, drive and cab are selected.</p>
+          </div>
         </div>
-        {modelsLoading ? <p className={styles.fieldHint}>Loading tractor models...</p> : null}
-        {!filteredModels.length && !modelsLoading ? <p className={styles.message}>No exact models found for this setup. Use machine specs instead.</p> : null}
+
+        <div className={styles.tractorSetupProgress}>
+          <div className={styles.inlineSetupGroup}>
+            <div className={styles.inlineSetupHeader}>
+              <span className={styles.fieldLabel}>Type</span>
+              <strong>{tractorType ? getTractorTypeLabel(tractorType) : 'Choose first'}</strong>
+            </div>
+            <div className={styles.inlineOptionRow}>
+              {TRACTOR_TYPE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`${styles.inlineOptionButton} ${tractorType === option.value ? styles.inlineOptionButtonActive : ''}`}
+                  onClick={() => handleTractorTypeSelection(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {tractorType ? (
+            <div className={styles.inlineSetupGroup}>
+              <div className={styles.inlineSetupHeader}>
+                <span className={styles.fieldLabel}>Drive</span>
+                <strong>{drive ? getDriveLabel(drive) : 'Choose drive'}</strong>
+              </div>
+              <div className={styles.inlineOptionRow}>
+                {DRIVE_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`${styles.inlineOptionButton} ${drive === option.value ? styles.inlineOptionButtonActive : ''}`}
+                    onClick={() => handleDriveSelection(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {tractorType && drive ? (
+            <div className={styles.inlineSetupGroup}>
+              <div className={styles.inlineSetupHeader}>
+                <span className={styles.fieldLabel}>Cab</span>
+                <strong>{cab ? getCabLabel(cab) : 'Choose cab'}</strong>
+              </div>
+              <div className={styles.inlineOptionRow}>
+                {CAB_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`${styles.inlineOptionButton} ${cab === option.value ? styles.inlineOptionButtonActive : ''}`}
+                    onClick={() => handleCabSelection(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {tractorSetupComplete ? (
+            <div className={`${styles.inlineSetupGroup} ${styles.modelSetupGroup}`}>
+              <div className={styles.inlineSetupHeader}>
+                <span className={styles.fieldLabel}>Model</span>
+                <strong>{selectedModel ? formatTractorModelLabel(selectedModel) : 'Choose model'}</strong>
+              </div>
+
+              <label className={`${styles.field} ${styles.searchPanel}`}>
+                <span className={styles.fieldLabel}>Search model</span>
+                <input
+                  className={styles.searchInput}
+                  value={modelQuery}
+                  onChange={(event) => {
+                    setModelQuery(event.target.value);
+                    setModelDropdownOpen(true);
+                  }}
+                  onFocus={() => setModelDropdownOpen(true)}
+                  placeholder="e.g. 6155M, 7610, 7810"
+                  autoComplete="off"
+                />
+              </label>
+
+              <div className={styles.equipmentDropdownWrap}>
+                <button
+                  type="button"
+                  className={`${styles.equipmentDropdownTrigger} ${modelDropdownOpen || modelQuery ? styles.equipmentDropdownTriggerOpen : ''}`}
+                  onClick={() => setModelDropdownOpen((value) => !value)}
+                  disabled={modelsLoading || !tractorModels.length}
+                >
+                  <span>{formatTractorModelLabel(selectedModel)}</span>
+                  <span className={styles.equipmentDropdownChevron}>⌄</span>
+                </button>
+
+                {modelDropdownOpen || modelQuery ? (
+                  <div className={styles.equipmentDropdownMenu}>
+                    {filteredModels.length ? (
+                      filteredModels.map((model) => (
+                        <button
+                          key={model.id}
+                          type="button"
+                          className={`${styles.equipmentDropdownOption} ${modelId === model.id ? styles.equipmentDropdownOptionActive : ''}`}
+                          onClick={() => handleModelSelection(model.id)}
+                        >
+                          <span className={styles.modelOptionText}>{model.brandName} {model.modelName}</span>
+                          <span className={styles.modelOptionMeta}>{formatTractorModelDetail(model)}</span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className={styles.equipmentDropdownEmpty}>No matching model found.</div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+
+              {modelsLoading ? <p className={styles.fieldHint}>Loading exact models...</p> : null}
+              {!tractorModels.length && !modelsLoading ? <p className={styles.message}>No exact models found for this setup. Use machine specs instead.</p> : null}
+              {tractorModels.length > 0 && !filteredModels.length && !modelsLoading ? <p className={styles.message}>No matching model. Clear the search or choose another setup.</p> : null}
+            </div>
+          ) : null}
+        </div>
       </div>
     );
   }
@@ -1295,8 +1530,8 @@ export default function ValuationClient() {
   function renderTypedModelBox() {
     return (
       <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
-        <h3 className={styles.currentTitle}>Optional model name</h3>
-        <p className={styles.currentHint}>Add the model only when it is known. It improves market matching, but leaving it blank will not block the valuation.</p>
+        <h3 className={styles.currentTitle}>Provide an optional model name</h3>
+        <p className={styles.currentHint}>This improves market matching, but leaving it blank will not block the valuation process.</p>
         <div className={styles.inputGrid}>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Model name, optional</span>
@@ -1306,7 +1541,7 @@ export default function ValuationClient() {
                 setTypedModelName(event.target.value);
                 resetResult();
               }}
-              placeholder="e.g. Verti-Mix 1251"
+              placeholder="Model XYZ"
             />
           </label>
         </div>
