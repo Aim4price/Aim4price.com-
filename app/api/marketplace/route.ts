@@ -98,6 +98,11 @@ export async function POST(request: NextRequest) {
     askingPriceExVat?: unknown;
     marketplaceNotes?: unknown;
     sellerPhone?: unknown;
+    sellerName?: unknown;
+    sellerCompany?: unknown;
+    sellerEmail?: unknown;
+    province?: unknown;
+    area?: unknown;
   };
   const assetId = String(body.assetId ?? '').trim();
 
@@ -108,6 +113,11 @@ export async function POST(request: NextRequest) {
   const askingPriceExVat = Math.round(Number(body.askingPriceExVat) || 0);
   const marketplaceNotes = String(body.marketplaceNotes ?? '').trim();
   const sellerPhone = String(body.sellerPhone ?? '').trim();
+  const sellerName = String(body.sellerName ?? '').trim();
+  const sellerCompany = String(body.sellerCompany ?? '').trim();
+  const sellerEmail = String(body.sellerEmail ?? '').trim();
+  const province = String(body.province ?? '').trim();
+  const area = String(body.area ?? '').trim();
 
   try {
     const listing = await publishAssetRegisterItemToMarketplace({
@@ -116,6 +126,11 @@ export async function POST(request: NextRequest) {
       askingPriceExVat: askingPriceExVat > 0 ? askingPriceExVat : null,
       marketplaceNotes: marketplaceNotes || null,
       sellerPhone: sellerPhone || null,
+      sellerName: sellerName || null,
+      sellerCompany: sellerCompany || null,
+      sellerEmail: sellerEmail || null,
+      province: province || null,
+      area: area || null,
     });
 
     return NextResponse.json({
