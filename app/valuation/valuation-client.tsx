@@ -360,6 +360,7 @@ export default function ValuationClient() {
   const [families, setFamilies] = useState<EquipmentFamilyRecord[]>([]);
   const [familiesLoading, setFamiliesLoading] = useState(false);
   const [familySearch, setFamilySearch] = useState('');
+  const [equipmentDropdownOpen, setEquipmentDropdownOpen] = useState(false);
   const [familyKey, setFamilyKey] = useState('');
   const [brands, setBrands] = useState<BrandRow[]>([]);
   const [brandsLoading, setBrandsLoading] = useState(false);
@@ -407,9 +408,26 @@ export default function ValuationClient() {
     [tractorModels, modelId],
   );
   const filteredFamilies = useMemo(() => {
-    return families.filter((family) =>
+    const query = familySearch.trim().toLowerCase();
+    const matches = families.filter((family) =>
       searchIncludes(`${family.familyLabel} ${family.familyKey} ${family.sectorLabel}`, familySearch),
     );
+
+    if (!query) return matches;
+
+    function scoreFamily(family: EquipmentFamilyRecord): number {
+      const label = family.familyLabel.toLowerCase();
+      const key = family.familyKey.replace(/_/g, ' ').toLowerCase();
+
+      if (label === query || key === query) return 0;
+      if (label.startsWith(query)) return 1;
+      if (key.startsWith(query)) return 2;
+      if (label.includes(query)) return 3;
+      if (key.includes(query)) return 4;
+      return 5;
+    }
+
+    return [...matches].sort((a, b) => scoreFamily(a) - scoreFamily(b) || a.sortOrder - b.sortOrder || a.familyLabel.localeCompare(b.familyLabel));
   }, [families, familySearch]);
   const filteredBrands = useMemo(() => brands.filter((brand) => searchIncludes(`${brand.name} ${brand.slug}`, brandSearch)), [brands, brandSearch]);
 
@@ -467,6 +485,7 @@ export default function ValuationClient() {
     setFamilies([]);
     setFamilyKey('');
     setFamilySearch('');
+    setEquipmentDropdownOpen(false);
     setBrandSearch('');
     setBrands([]);
     setBrandSlug('');
@@ -904,6 +923,7 @@ export default function ValuationClient() {
     setFamilies([]);
     setFamilyKey('');
     setFamilySearch('');
+    setEquipmentDropdownOpen(false);
     setBrands([]);
     setBrandSlug('');
     setBrandSearch('');
@@ -924,7 +944,7 @@ export default function ValuationClient() {
   function handleSectorSelect(sectorKey: SectorKey) {
     const sector = SECTOR_OPTIONS.find((option) => option.key === sectorKey);
     if (!sector?.available) {
-      setMessage(`${SECTOR_LABELS[sectorKey]} is coming soon. Agriculture is live first.`);
+      setMessage(`${SECTOR_LABELS[sectorKey]} is coming soon.`);
       return;
     }
 
@@ -938,6 +958,7 @@ export default function ValuationClient() {
 
     setFamilyKey(nextFamilyKey);
     setFamilySearch('');
+    setEquipmentDropdownOpen(false);
     setTypedModelName('');
     setModelQuery('');
     setModelId('');
@@ -1000,33 +1021,60 @@ export default function ValuationClient() {
         <h2 className={styles.stepTitle}>Choose equipment type</h2>
         <p className={styles.stepText}>Search or choose the machine type. Selecting one moves to the brand step automatically.</p>
 
-        <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
+        <div className={`${styles.currentCard} ${styles.equipmentPickerCard}`} style={{ marginTop: '1rem' }}>
+          <div className={styles.equipmentPickerHead}>
+            <div>
+              <span className={styles.fieldLabel}>Search equipment type</span>
+              <p className={styles.equipmentPickerHint}>Type a normal word, then pick the matching machine from the dropdown.</p>
+            </div>
+            <span className={styles.equipmentCountPill}>{familiesLoading ? 'Loading' : `${filteredFamilies.length} found`}</span>
+          </div>
+
           <label className={`${styles.field} ${styles.searchPanel}`}>
-            <span className={styles.fieldLabel}>Search equipment type</span>
             <input
               className={styles.searchInput}
               value={familySearch}
-              onChange={(event) => setFamilySearch(event.target.value)}
+              onChange={(event) => {
+                setFamilySearch(event.target.value);
+                setEquipmentDropdownOpen(true);
+              }}
+              onFocus={() => setEquipmentDropdownOpen(true)}
               placeholder="e.g. baler, tractor, spreader"
               autoComplete="off"
             />
           </label>
 
-          <label className={`${styles.field} ${styles.equipmentSelectField}`}>
-            <span className={styles.fieldLabel}>Equipment type</span>
-            <select
-              value={familyKey}
-              onChange={(event) => handleFamilySelection(event.target.value)}
+          <div className={styles.equipmentDropdownWrap}>
+            <button
+              type="button"
+              className={`${styles.equipmentDropdownTrigger} ${equipmentDropdownOpen ? styles.equipmentDropdownTriggerOpen : ''}`}
+              onClick={() => setEquipmentDropdownOpen((value) => !value)}
               disabled={familiesLoading || !filteredFamilies.length}
+              aria-expanded={equipmentDropdownOpen}
             >
-              <option value="">{familiesLoading ? 'Loading equipment types...' : 'Select equipment type...'}</option>
-              {filteredFamilies.map((family) => (
-                <option key={family.familyKey} value={family.familyKey}>
-                  {family.familyLabel}
-                </option>
-              ))}
-            </select>
-          </label>
+              <span>{selectedFamily ? selectedFamily.familyLabel : familiesLoading ? 'Loading equipment types...' : 'Select equipment type...'}</span>
+              <span className={styles.equipmentDropdownChevron}>⌄</span>
+            </button>
+
+            {equipmentDropdownOpen ? (
+              <div className={styles.equipmentDropdownMenu}>
+                {filteredFamilies.length ? (
+                  filteredFamilies.map((family) => (
+                    <button
+                      key={family.familyKey}
+                      type="button"
+                      className={`${styles.equipmentDropdownOption} ${familyKey === family.familyKey ? styles.equipmentDropdownOptionActive : ''}`}
+                      onClick={() => handleFamilySelection(family.familyKey)}
+                    >
+                      <span>{family.familyLabel}</span>
+                    </button>
+                  ))
+                ) : (
+                  <div className={styles.equipmentDropdownEmpty}>No matching equipment type found.</div>
+                )}
+              </div>
+            ) : null}
+          </div>
 
           {familiesLoading ? <p className={styles.fieldHint}>Loading equipment types...</p> : null}
 
