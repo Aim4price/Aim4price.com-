@@ -127,7 +127,12 @@ async function ensureMarketplaceColumns(): Promise<void> {
       add column if not exists seller_phone text,
       add column if not exists marketplace_notes text,
       add column if not exists marketplace_status text,
-      add column if not exists marketplace_price_ex_vat numeric(14,2)
+      add column if not exists marketplace_price_ex_vat numeric(14,2),
+      add column if not exists marketplace_seller_name text,
+      add column if not exists marketplace_seller_company text,
+      add column if not exists marketplace_seller_email text,
+      add column if not exists marketplace_province text,
+      add column if not exists marketplace_area text
   `);
 
   marketplaceColumnsEnsured = true;
@@ -159,10 +164,10 @@ function buildMarketplaceListing(
       0,
     ),
   );
-  const province = titleCase(asText(row.profile_province) || 'South Africa');
-  const area = titleCase(asText(row.profile_town_city) || 'Undisclosed');
-  const sellerCompany = asText(row.profile_business_name) || undefined;
-  const sellerName = sellerCompany || asText(row.profile_name) || 'Aim4price seller';
+  const province = titleCase(asText(pick(row, ['marketplace_province'])) || asText(row.profile_province) || 'South Africa');
+  const area = titleCase(asText(pick(row, ['marketplace_area'])) || asText(row.profile_town_city) || 'Undisclosed');
+  const sellerCompany = asText(pick(row, ['marketplace_seller_company'])) || asText(row.profile_business_name) || undefined;
+  const sellerName = asText(pick(row, ['marketplace_seller_name'])) || sellerCompany || asText(row.profile_name) || 'Aim4price seller';
   const sellerPhone = options.exposeContact
     ? asText(pick(row, ['seller_phone'])) || asText(row.profile_phone)
     : '';
@@ -196,7 +201,7 @@ function buildMarketplaceListing(
     sellerName,
     sellerCompany,
     sellerPhone,
-    sellerEmail: asText(row.profile_email) || undefined,
+    sellerEmail: asText(pick(row, ['marketplace_seller_email'])) || asText(row.profile_email) || undefined,
     dateAdvertised: publishedAtIso.slice(0, 10),
     publishedAtIso,
     askingPriceExVat,
@@ -210,12 +215,11 @@ function buildMarketplaceListing(
   };
 }
 
-function isPublishableTractor(row: Record<string, unknown>): boolean {
+function isPublishableEquipment(row: Record<string, unknown>): boolean {
   const kind = asText(pick(row, ['kind', 'equipment_type', 'asset_type', 'item_type'])).toLowerCase();
+  const title = asText(pick(row, ['title', 'name', 'asset_name']));
   const { brandName, modelName } = deriveBrandAndModel(row);
-  const yearModel = Math.round(asNumber(pick(row, ['year_model', 'year']), 0));
-
-  return (kind === 'tractor' || kind === 'equipment' || Boolean(brandName && modelName)) && yearModel > 0;
+  return kind !== 'property' && Boolean(title || brandName || modelName || kind === 'tractor' || kind === 'equipment' || kind === 'manual');
 }
 
 export async function listPublishedMarketplaceAssetListings(options: {
@@ -251,6 +255,11 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   askingPriceExVat?: number | null;
   marketplaceNotes?: string | null;
   sellerPhone?: string | null;
+  sellerName?: string | null;
+  sellerCompany?: string | null;
+  sellerEmail?: string | null;
+  province?: string | null;
+  area?: string | null;
 }): Promise<MarketplaceListing> {
   await ensureMarketplaceColumns();
 
@@ -279,8 +288,8 @@ export async function publishAssetRegisterItemToMarketplace(input: {
     throw new Error('ASSET_NOT_FOUND');
   }
 
-  if (!isPublishableTractor(row)) {
-    throw new Error('Only tractor assets can be sent to the marketplace.');
+  if (!isPublishableEquipment(row)) {
+    throw new Error('Only valued equipment assets can be sent to the marketplace.');
   }
 
   const currentAskingPrice = Math.round(
@@ -317,6 +326,11 @@ export async function publishAssetRegisterItemToMarketplace(input: {
     asText(input.marketplaceNotes) ||
     asText(pick(row, ['marketplace_notes', 'note', 'notes', 'description'])) ||
     title;
+  const sellerName = asText(input.sellerName) || asText(row.profile_name) || asText(row.profile_business_name) || 'Aim4price seller';
+  const sellerCompany = asText(input.sellerCompany) || asText(row.profile_business_name);
+  const sellerEmail = asText(input.sellerEmail) || asText(row.profile_email);
+  const province = asText(input.province) || asText(row.profile_province);
+  const area = asText(input.area) || asText(row.profile_town_city);
 
   const updated = await db.query<MarketplaceAssetRow>(
     `
@@ -326,11 +340,16 @@ export async function publishAssetRegisterItemToMarketplace(input: {
         seller_phone = $3,
         marketplace_notes = $4,
         marketplace_price_ex_vat = $5,
+        marketplace_seller_name = $6,
+        marketplace_seller_company = nullif($7, ''),
+        marketplace_seller_email = nullif($8, ''),
+        marketplace_province = nullif($9, ''),
+        marketplace_area = nullif($10, ''),
         updated_at = now()
       where user_id = $1 and id = $2
       returning *
     `,
-    [input.userId, input.assetId, sellerPhone, nextNotes, askingPriceExVat],
+    [input.userId, input.assetId, sellerPhone, nextNotes, askingPriceExVat, sellerName, sellerCompany, sellerEmail, province, area],
   );
 
   const updatedRow = updated.rows[0];
