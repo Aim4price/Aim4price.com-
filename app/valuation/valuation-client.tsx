@@ -23,6 +23,8 @@ type FlowMode = 'exact_model' | 'generic_specs';
 type GpsType = 'full-autosteer' | 'guidance-only';
 type ReplacementPriceBasis = 'aim4price' | 'user';
 type DepreciationMethodUsed = 'full_depreciation' | 'semi_depreciation' | 'percentage_depreciation';
+type DetailsModal = 'year' | 'usage' | null;
+type UsageModalMode = 'hours' | 'percent';
 
 type EquipmentFamilyRecord = {
   id: number;
@@ -196,7 +198,8 @@ type SaveValuationRunApiResponse = {
   error?: string;
 };
 
-const CURRENT_YEAR = new Date().getFullYear() + 1;
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 1950 + 1 }, (_, index) => CURRENT_YEAR - index);
 
 const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
   { step: 1, label: 'Machine' },
@@ -390,6 +393,32 @@ function buildSpecPayload(specQuestions: SpecQuestion[], specAnswers: Record<str
   return output;
 }
 
+function isSpecQuestionAnswered(question: SpecQuestion, value: string | undefined): boolean {
+  const cleaned = normalizeText(value);
+  if (!cleaned) return false;
+  if (question.inputType === 'number' || question.inputType === 'money') return parseFlexibleNumber(cleaned) !== null;
+  return true;
+}
+
+function getSpecQuestionAnswerLabel(question: SpecQuestion, value: string | undefined): string {
+  const cleaned = normalizeText(value);
+  if (!cleaned) return 'Not answered';
+
+  if (question.inputType === 'select') {
+    return question.options.find((option) => option.optionValue === cleaned)?.optionLabel ?? cleaned;
+  }
+
+  if (question.inputType === 'boolean') {
+    return cleaned === 'true' ? 'Yes' : cleaned === 'false' ? 'No' : cleaned;
+  }
+
+  if ((question.inputType === 'number' || question.inputType === 'money') && question.unit) {
+    return cleaned + ' ' + question.unit;
+  }
+
+  return cleaned;
+}
+
 export default function ValuationClient() {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
@@ -416,7 +445,7 @@ export default function ValuationClient() {
   const [specQuestions, setSpecQuestions] = useState<SpecQuestion[]>([]);
   const [specAnswers, setSpecAnswers] = useState<Record<string, string>>({});
   const [typedModelName, setTypedModelName] = useState('');
-  const [year, setYear] = useState(String(new Date().getFullYear()));
+  const [year, setYear] = useState(String(CURRENT_YEAR));
   const [usageAmount, setUsageAmount] = useState('');
   const [condition, setCondition] = useState<ConditionKey>('good');
   const [frontPto, setFrontPto] = useState(false);
@@ -428,6 +457,11 @@ export default function ValuationClient() {
   const [replacementPriceBasis, setReplacementPriceBasis] = useState<ReplacementPriceBasis>('aim4price');
   const [yearModelUnknown, setYearModelUnknown] = useState(false);
   const [lifeWorkedPercent, setLifeWorkedPercent] = useState('');
+  const [yearStepComplete, setYearStepComplete] = useState(false);
+  const [usageStepComplete, setUsageStepComplete] = useState(false);
+  const [conditionStepComplete, setConditionStepComplete] = useState(false);
+  const [activeDetailsModal, setActiveDetailsModal] = useState<DetailsModal>(null);
+  const [usageModalMode, setUsageModalMode] = useState<UsageModalMode>('hours');
   const [resultState, setResultState] = useState<ValuationResultState | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<MethodKey>('aim4price');
   const [message, setMessage] = useState('');
@@ -576,6 +610,16 @@ export default function ValuationClient() {
     setTractorModels([]);
     setSpecQuestions([]);
     setSpecAnswers({});
+    setYear(String(CURRENT_YEAR));
+    setYearModelUnknown(false);
+    setUsageAmount('');
+    setLifeWorkedPercent('');
+    setCondition('good');
+    setYearStepComplete(false);
+    setUsageStepComplete(false);
+    setConditionStepComplete(false);
+    setActiveDetailsModal(null);
+    setUsageModalMode('hours');
     setResultState(null);
     setSelectedMethod('aim4price');
     setReplacementPriceBasis('aim4price');
@@ -635,10 +679,17 @@ export default function ValuationClient() {
     setCab('');
     setTractorModels([]);
     setTypedModelName('');
+    setYear(String(CURRENT_YEAR));
     setUsageAmount('');
     setLifeWorkedPercent('');
     setUserReplacementPrice('');
     setYearModelUnknown(false);
+    setYearStepComplete(false);
+    setUsageStepComplete(false);
+    setConditionStepComplete(false);
+    setCondition('good');
+    setActiveDetailsModal(null);
+    setUsageModalMode('hours');
     setFlowMode(nextFlowMode);
 
     let ignore = false;
@@ -755,6 +806,21 @@ export default function ValuationClient() {
     setReplacementPriceBasis('aim4price');
   }
 
+  function resetDetailsFlow() {
+    setYear(String(CURRENT_YEAR));
+    setYearModelUnknown(false);
+    setUsageAmount('');
+    setLifeWorkedPercent('');
+    setCondition('good');
+    setSpecAnswers({});
+    setYearStepComplete(false);
+    setUsageStepComplete(false);
+    setConditionStepComplete(false);
+    setActiveDetailsModal(null);
+    setUsageModalMode('hours');
+    resetResult();
+  }
+
   function setSpecAnswer(key: string, value: string) {
     setSpecAnswers((current) => ({ ...current, [key]: value }));
     resetResult();
@@ -765,26 +831,35 @@ export default function ValuationClient() {
     if (!selectedBrand) return 'Choose a brand first.';
 
     const genericPath = flowMode === 'generic_specs';
-    if (!genericPath || !yearModelUnknown) {
-      if (!Number.isInteger(yearNumber) || yearNumber < 1950 || yearNumber > CURRENT_YEAR) return 'Enter a valid year model or mark the year as unknown.';
-    }
+    const selfPropelled = selectedFamily?.isPropelled || selectedFamily?.usageMetricType === 'hours';
+    const showHoursInput = !genericPath || selfPropelled;
 
-    if (!condition) return 'Choose the condition.';
-    if (flowMode === 'exact_model' && !tractorSetupComplete) return 'Complete the type, drive and cab setup first.';
-    if (flowMode === 'exact_model' && !selectedModel) return 'Choose the exact model or use machine specs.';
+    if (!yearStepComplete) return 'Choose the machine manufacturing year or mark it as unknown.';
 
-    if (flowMode === 'exact_model' && !usageNumber && lifeWorkedPercentNumber === null) {
-      return 'Enter engine hours or estimate how much the tractor has worked.';
-    }
-
-    if (genericPath) {
-      if (lifeWorkedPercentNumber === null) {
-        return 'Estimate how much the machine has worked as a percentage.';
+    if (!yearModelUnknown) {
+      if (!Number.isInteger(yearNumber) || yearNumber < 1950 || yearNumber > CURRENT_YEAR) {
+        return 'Enter a valid machine manufacturing year or mark the year as unknown.';
       }
     }
 
+    if (!usageStepComplete) {
+      return showHoursInput ? 'Enter the machine hours or estimate how much it has worked.' : 'Estimate how much the machine has worked.';
+    }
+
+    if (showHoursInput && !usageNumber && lifeWorkedPercentNumber === null) {
+      return 'Enter machine hours or estimate how much the machine has worked.';
+    }
+
+    if (!showHoursInput && lifeWorkedPercentNumber === null) {
+      return 'Estimate how much the machine has worked as a percentage.';
+    }
+
+    if (!conditionStepComplete || !condition) return 'Choose the condition.';
+    if (flowMode === 'exact_model' && !tractorSetupComplete) return 'Complete the type, drive and cab setup first.';
+    if (flowMode === 'exact_model' && !selectedModel) return 'Choose the exact model or use machine specs.';
+
     for (const question of specQuestions) {
-      if (question.isRequired && !normalizeText(specAnswers[question.specKey])) {
+      if (question.isRequired && !isSpecQuestionAnswered(question, specAnswers[question.specKey])) {
         return `Answer: ${question.label}.`;
       }
     }
@@ -868,7 +943,7 @@ export default function ValuationClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             modelId: selectedModel.id,
-            year: yearNumber,
+            year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
             hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
             condition,
             frontPto,
@@ -946,7 +1021,7 @@ export default function ValuationClient() {
         resultState.kind === 'tractor'
           ? {
               modelId: resultState.result.model.id,
-              year: yearNumber,
+              year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
               hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
               condition,
               frontPto,
@@ -1363,6 +1438,7 @@ export default function ValuationClient() {
               setDrive('');
               setCab('');
               resetExactModelSelection();
+              resetDetailsFlow();
             }}
           >
             <strong>Use exact model</strong>
@@ -1378,6 +1454,7 @@ export default function ValuationClient() {
               setDrive('');
               setCab('');
               resetExactModelSelection();
+              resetDetailsFlow();
             }}
           >
             <strong>Use machine specs</strong>
@@ -1594,7 +1671,295 @@ export default function ValuationClient() {
           onChange={(event: ChangeEvent<HTMLInputElement>) => setSpecAnswer(question.specKey, event.target.value)}
           placeholder={question.helpText ?? question.label}
         />
+        {question.helpText ? <span className={styles.fieldHint}>{question.helpText}</span> : null}
       </label>
+    );
+  }
+
+  function getYearAnswerLabel(): string {
+    if (!yearStepComplete) return 'Not answered';
+    if (yearModelUnknown) return 'I do not know the year';
+    return year;
+  }
+
+  function getUsageAnswerLabel(showHoursInput: boolean): string {
+    if (!usageStepComplete) return 'Not answered';
+    const hours = toNumberOrNull(usageAmount);
+    if (showHoursInput && hours !== null) return `${hours.toLocaleString('en-ZA')} hours`;
+    const workedPercent = toPercentOrNull(lifeWorkedPercent);
+    if (workedPercent !== null) return `${workedPercent}% worked`;
+    return 'Not answered';
+  }
+
+  function openUsageModal(showHoursInput: boolean) {
+    setUsageModalMode(showHoursInput ? 'hours' : 'percent');
+    setActiveDetailsModal('usage');
+    setMessage('');
+  }
+
+  function saveYearFromInput() {
+    const parsedYear = Number(year);
+    if (!Number.isInteger(parsedYear) || parsedYear < 1950 || parsedYear > CURRENT_YEAR) {
+      setMessage(`Choose a year between 1950 and ${CURRENT_YEAR}.`);
+      return;
+    }
+
+    setYear(String(parsedYear));
+    setYearModelUnknown(false);
+    setYearStepComplete(true);
+    setActiveDetailsModal(null);
+    setMessage('');
+    resetResult();
+  }
+
+  function saveUnknownYear() {
+    setYear(String(CURRENT_YEAR));
+    setYearModelUnknown(true);
+    setYearStepComplete(true);
+    setActiveDetailsModal(null);
+    setMessage('');
+    resetResult();
+  }
+
+  function saveUsageAnswer(showHoursInput: boolean) {
+    if (usageModalMode === 'hours' && showHoursInput) {
+      const hours = toNumberOrNull(usageAmount);
+      if (hours === null) {
+        setMessage('Enter the machine hours, or choose that you do not know the hours.');
+        return;
+      }
+
+      setUsageAmount(String(Math.round(hours)));
+      setLifeWorkedPercent('');
+      setUsageStepComplete(true);
+      setActiveDetailsModal(null);
+      setMessage('');
+      resetResult();
+      return;
+    }
+
+    const workedPercent = toPercentOrNull(lifeWorkedPercent) ?? 50;
+
+    setLifeWorkedPercent(String(workedPercent));
+    setUsageAmount('');
+    setUsageStepComplete(true);
+    setActiveDetailsModal(null);
+    setMessage('');
+    resetResult();
+  }
+
+  function renderYearModal() {
+    return (
+      <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose machine manufacturing year">
+        <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
+        <div className={styles.detailsModal}>
+          <div className={styles.detailsModalHeader}>
+            <div>
+              <span className={styles.currentEyebrow}>Step 1</span>
+              <h3 className={styles.detailsModalTitle}>Machine manufacturing year</h3>
+              <p className={styles.detailsModalText}>Select the year from the list or type it manually.</p>
+            </div>
+            <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">
+              ×
+            </button>
+          </div>
+
+          <label className={`${styles.field} ${styles.modalInputField}`}>
+            <span className={styles.fieldLabel}>Type year</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={yearModelUnknown ? '' : year}
+              onChange={(event) => {
+                setYear(event.target.value);
+                setYearModelUnknown(false);
+              }}
+              placeholder={`e.g. ${CURRENT_YEAR}`}
+            />
+          </label>
+
+          <button type="button" className={styles.unknownAnswerButton} onClick={saveUnknownYear}>
+            I do not know the year
+          </button>
+
+          <div className={styles.yearOptionGrid}>
+            {YEAR_OPTIONS.map((optionYear) => (
+              <button
+                key={optionYear}
+                type="button"
+                className={`${styles.yearOptionButton} ${!yearModelUnknown && Number(year) === optionYear ? styles.yearOptionButtonActive : ''}`}
+                onClick={() => {
+                  setYear(String(optionYear));
+                  setYearModelUnknown(false);
+                }}
+              >
+                {optionYear}
+              </button>
+            ))}
+          </div>
+
+          {message ? <p className={styles.modalMessage}>{message}</p> : null}
+
+          <div className={styles.detailsModalActions}>
+            <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>
+              Cancel
+            </button>
+            <button type="button" className={styles.primaryButton} onClick={saveYearFromInput}>
+              Use this year
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderUsageModal(showHoursInput: boolean) {
+    const percentageValue = toPercentOrNull(lifeWorkedPercent) ?? 50;
+
+    return (
+      <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Enter machine usage">
+        <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
+        <div className={styles.detailsModal}>
+          <div className={styles.detailsModalHeader}>
+            <div>
+              <span className={styles.currentEyebrow}>Step 2</span>
+              <h3 className={styles.detailsModalTitle}>{usageModalMode === 'hours' && showHoursInput ? 'Machine hours' : 'Worked percentage'}</h3>
+              <p className={styles.detailsModalText}>
+                {usageModalMode === 'hours' && showHoursInput
+                  ? 'Enter the engine or machine hours if they are available.'
+                  : 'Estimate how much of the machine\'s working life has already been used.'}
+              </p>
+            </div>
+            <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">
+              ×
+            </button>
+          </div>
+
+          {usageModalMode === 'hours' && showHoursInput ? (
+            <>
+              <label className={`${styles.field} ${styles.modalInputField}`}>
+                <span className={styles.fieldLabel}>Enter hours</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={usageAmount}
+                  onChange={(event) => setUsageAmount(event.target.value)}
+                  placeholder="e.g. 3500"
+                />
+              </label>
+
+              <button
+                type="button"
+                className={styles.unknownAnswerButton}
+                onClick={() => {
+                  setUsageAmount('');
+                  setUsageModalMode('percent');
+                }}
+              >
+                I do not know the engine hours
+              </button>
+            </>
+          ) : (
+            <>
+              <label className={`${styles.field} ${styles.modalInputField}`}>
+                <span className={styles.fieldLabel}>Worked percentage</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={lifeWorkedPercent}
+                  onChange={(event) => setLifeWorkedPercent(event.target.value)}
+                  placeholder="e.g. 50"
+                />
+              </label>
+
+              <input
+                className={styles.percentSlider}
+                type="range"
+                min="0"
+                max="100"
+                value={percentageValue}
+                onChange={(event) => setLifeWorkedPercent(event.target.value)}
+              />
+              <div className={styles.percentScale}>
+                <span>0% almost new</span>
+                <strong>{percentageValue}%</strong>
+                <span>100% fully used</span>
+              </div>
+
+              {showHoursInput ? (
+                <button type="button" className={styles.unknownAnswerButton} onClick={() => setUsageModalMode('hours')}>
+                  I know the engine hours
+                </button>
+              ) : null}
+            </>
+          )}
+
+          {message ? <p className={styles.modalMessage}>{message}</p> : null}
+
+          <div className={styles.detailsModalActions}>
+            <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>
+              Cancel
+            </button>
+            <button type="button" className={styles.primaryButton} onClick={() => saveUsageAnswer(showHoursInput)}>
+              Save answer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderSpecQuestionsProgress() {
+    if (!conditionStepComplete) return null;
+
+    if (!specQuestions.length) {
+      return (
+        <div className={`${styles.currentCard} ${styles.specProgressCard}`}>
+          <h3 className={styles.currentTitle}>Answer a few simple questions</h3>
+          <p className={styles.message}>No family-specific questions imported yet. Aim4price will use year, condition, worked percentage, brand and replacement bands if available.</p>
+        </div>
+      );
+    }
+
+    const visibleQuestions: SpecQuestion[] = [];
+    for (const question of specQuestions) {
+      visibleQuestions.push(question);
+      if (question.isRequired && !isSpecQuestionAnswered(question, specAnswers[question.specKey])) break;
+    }
+
+    const requiredAnswered = specQuestions.every((question) => !question.isRequired || isSpecQuestionAnswered(question, specAnswers[question.specKey]));
+
+    return (
+      <div className={`${styles.currentCard} ${styles.specProgressCard}`}>
+        <div className={styles.currentCardHead}>
+          <div>
+            <span className={styles.currentEyebrow}>Step 4</span>
+            <h3 className={styles.currentTitle}>Answer a few simple questions</h3>
+            <p className={styles.currentHint}>Answer each question in order. The next question appears underneath once the required answer is captured.</p>
+          </div>
+          <span className={styles.selectedSummaryPill}>{visibleQuestions.length} of {specQuestions.length}</span>
+        </div>
+
+        <div className={styles.progressiveQuestionStack}>
+          {visibleQuestions.map((question, index) => {
+            const answered = isSpecQuestionAnswered(question, specAnswers[question.specKey]);
+            return (
+              <div key={question.specKey} className={`${styles.progressiveQuestionCard} ${answered ? styles.progressiveQuestionCardDone : ''}`}>
+                <div className={styles.progressiveQuestionHeader}>
+                  <span className={`${styles.specStepNumber} ${answered ? styles.specStepNumberDone : ''}`}>{answered ? '✓' : index + 1}</span>
+                  <div className={styles.progressiveQuestionTitleWrap}>
+                    <strong>{question.label}{question.isRequired ? ' *' : ''}</strong>
+                    <span>{answered ? getSpecQuestionAnswerLabel(question, specAnswers[question.specKey]) : question.helpText ?? 'Choose the closest available answer.'}</span>
+                  </div>
+                </div>
+                {renderSpecInput(question)}
+              </div>
+            );
+          })}
+        </div>
+
+        {requiredAnswered ? <p className={styles.completionHint}>Required questions completed. You can now get the valuation.</p> : null}
+      </div>
     );
   }
 
@@ -1602,107 +1967,78 @@ export default function ValuationClient() {
     const genericPath = flowMode === 'generic_specs';
     const selfPropelled = selectedFamily?.isPropelled || selectedFamily?.usageMetricType === 'hours';
     const showHoursInput = !genericPath || selfPropelled;
-    const workedPercentLabel = showHoursInput
-      ? 'If hours are unknown, how much has it worked? (%)'
-      : 'How much has it worked? (%) *';
+    const usageTitle = showHoursInput ? 'Machine hours' : 'Worked percentage';
 
     return (
       <div>
         <h2 className={styles.stepTitle}>{genericPath ? 'Machine specs' : 'Tractor details'}</h2>
-        <p className={styles.stepText}>
-          Enter what is known. The valuation still works when a model or exact hours are missing, provided the required family questions are answered.
-        </p>
+        <p className={styles.stepText}>Answer one step at a time. Aim4price only unlocks the next section once the current answer is captured.</p>
 
-        <div className={styles.currentCard}>
-          <div className={styles.inputGrid}>
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>{genericPath ? 'Year model' : 'Year model *'}</span>
-              <input
-                type="number"
-                value={yearModelUnknown ? '' : year}
-                min={1950}
-                max={CURRENT_YEAR}
-                disabled={genericPath && yearModelUnknown}
-                onChange={(event) => {
-                  setYear(event.target.value);
-                  resetResult();
-                }}
-                placeholder={genericPath && yearModelUnknown ? 'Unknown' : 'e.g. 2018'}
-              />
-              {genericPath ? <span className={styles.fieldHint}>Used for records and market matching. For implements, the worked percentage carries the valuation.</span> : null}
-            </label>
+        <div className={styles.specFlowStack}>
+          <button
+            type="button"
+            className={`${styles.specStepCard} ${yearStepComplete ? styles.specStepCardComplete : styles.specStepCardActive}`}
+            onClick={() => {
+              setActiveDetailsModal('year');
+              setMessage('');
+            }}
+          >
+            <span className={`${styles.specStepNumber} ${yearStepComplete ? styles.specStepNumberDone : ''}`}>{yearStepComplete ? '✓' : 1}</span>
+            <span className={styles.specStepContent}>
+              <strong>Machine manufacturing year</strong>
+              <small>{getYearAnswerLabel()}</small>
+            </span>
+            <span className={styles.specStepAction}>{yearStepComplete ? 'Edit' : 'Choose'}</span>
+          </button>
 
-            {genericPath ? (
-              <button
-                type="button"
-                className={`${styles.choiceCard} ${yearModelUnknown ? styles.choiceCardActive : ''}`}
-                onClick={() => {
-                  setYearModelUnknown((value) => !value);
-                  resetResult();
-                }}
-              >
-                <strong>I do not know the year</strong>
-                <span className={styles.choiceCardNote}>Continue without blocking the valuation.</span>
-              </button>
-            ) : null}
+          <button
+            type="button"
+            className={`${styles.specStepCard} ${usageStepComplete ? styles.specStepCardComplete : yearStepComplete ? styles.specStepCardActive : styles.specStepCardLocked}`}
+            onClick={() => yearStepComplete && openUsageModal(showHoursInput)}
+            disabled={!yearStepComplete}
+          >
+            <span className={`${styles.specStepNumber} ${usageStepComplete ? styles.specStepNumberDone : ''}`}>{usageStepComplete ? '✓' : 2}</span>
+            <span className={styles.specStepContent}>
+              <strong>{usageTitle}</strong>
+              <small>{getUsageAnswerLabel(showHoursInput)}</small>
+            </span>
+            <span className={styles.specStepAction}>{usageStepComplete ? 'Edit' : yearStepComplete ? 'Answer' : 'Locked'}</span>
+          </button>
 
-            {showHoursInput ? (
-              <label className={styles.field}>
-                <span className={styles.fieldLabel}>Engine hours, if known</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={usageAmount}
-                  onChange={(event) => {
-                    setUsageAmount(event.target.value);
-                    resetResult();
-                  }}
-                  placeholder="Leave blank if unknown"
-                />
-                <span className={styles.fieldHint}>If this is filled in, Aim4price uses full depreciation.</span>
-              </label>
-            ) : null}
+          <div className={`${styles.currentCard} ${styles.conditionStepCard} ${usageStepComplete ? '' : styles.lockedStepBlock}`}>
+            <div className={styles.currentCardHead}>
+              <div>
+                <span className={styles.currentEyebrow}>Step 3</span>
+                <h3 className={styles.currentTitle}>Condition</h3>
+                <p className={styles.currentHint}>{usageStepComplete ? 'Choose the closest current condition.' : 'Answer the usage step first.'}</p>
+              </div>
+              {conditionStepComplete ? <span className={styles.selectedSummaryPill}>{conditionLabel(condition)}</span> : null}
+            </div>
 
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>{workedPercentLabel}</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={lifeWorkedPercent}
-                min={0}
-                max={100}
-                onChange={(event) => {
-                  setLifeWorkedPercent(event.target.value);
-                  resetResult();
-                }}
-                placeholder="e.g. 50"
-              />
-              <span className={styles.fieldHint}>0% = almost new. 50% = worked about half its life. 100% = fully worked out.</span>
-            </label>
-
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>Condition *</span>
-              <select value={condition} onChange={(event) => setCondition(event.target.value as ConditionKey)}>
+            {usageStepComplete ? (
+              <div className={styles.conditionButtonGrid}>
                 {conditionOptions.map((option) => (
-                  <option key={option.key} value={option.key}>
+                  <button
+                    key={option.key}
+                    type="button"
+                    className={`${styles.conditionChoiceButton} ${conditionStepComplete && condition === option.key ? styles.conditionChoiceButtonActive : ''}`}
+                    onClick={() => {
+                      setCondition(option.key);
+                      setConditionStepComplete(true);
+                      resetResult();
+                    }}
+                  >
                     {option.label}
-                  </option>
+                  </button>
                 ))}
-              </select>
-            </label>
+              </div>
+            ) : null}
           </div>
+
+          {conditionStepComplete ? renderSpecQuestionsProgress() : null}
         </div>
 
-        {genericPath ? (
-          <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
-            <h3 className={styles.currentTitle}>Family questions</h3>
-            {specQuestions.length ? (
-              <div className={styles.inputGrid}>{specQuestions.map(renderSpecInput)}</div>
-            ) : (
-              <p className={styles.message}>No family-specific questions imported yet. Aim4price will use year, condition, worked percentage, brand and replacement bands if available.</p>
-            )}
-          </div>
-        ) : (
+        {!genericPath && conditionStepComplete ? (
           <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
             <h3 className={styles.currentTitle}>Tractor extras</h3>
             <div className={styles.choiceGrid}>
@@ -1735,7 +2071,10 @@ export default function ValuationClient() {
               </div>
             ) : null}
           </div>
-        )}
+        ) : null}
+
+        {activeDetailsModal === 'year' ? renderYearModal() : null}
+        {activeDetailsModal === 'usage' ? renderUsageModal(showHoursInput) : null}
       </div>
     );
   }
