@@ -365,6 +365,7 @@ export default function ValuationClient() {
   const [brands, setBrands] = useState<BrandRow[]>([]);
   const [brandsLoading, setBrandsLoading] = useState(false);
   const [brandSearch, setBrandSearch] = useState('');
+  const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
   const [brandSlug, setBrandSlug] = useState('');
   const [flowMode, setFlowMode] = useState<FlowMode>('generic_specs');
   const [tractorType, setTractorType] = useState<TractorType>('field');
@@ -429,7 +430,26 @@ export default function ValuationClient() {
 
     return [...matches].sort((a, b) => scoreFamily(a) - scoreFamily(b) || a.sortOrder - b.sortOrder || a.familyLabel.localeCompare(b.familyLabel));
   }, [families, familySearch]);
-  const filteredBrands = useMemo(() => brands.filter((brand) => searchIncludes(`${brand.name} ${brand.slug}`, brandSearch)), [brands, brandSearch]);
+  const filteredBrands = useMemo(() => {
+    const query = brandSearch.trim().toLowerCase();
+    const matches = brands.filter((brand) => searchIncludes(`${brand.name} ${brand.slug}`, brandSearch));
+
+    if (!query) return matches;
+
+    function scoreBrand(brand: BrandRow): number {
+      const name = brand.name.toLowerCase();
+      const slug = brand.slug.replace(/-/g, ' ').toLowerCase();
+
+      if (name === query || slug === query) return 0;
+      if (name.startsWith(query)) return 1;
+      if (slug.startsWith(query)) return 2;
+      if (name.includes(query)) return 3;
+      if (slug.includes(query)) return 4;
+      return 5;
+    }
+
+    return [...matches].sort((a, b) => scoreBrand(a) - scoreBrand(b) || a.name.localeCompare(b.name));
+  }, [brands, brandSearch]);
 
   const exactTractorAvailable = selectedFamily?.familyKey === 'tractors' && selectedFamily.catalogMode === 'hybrid';
   const filteredModels = useMemo(() => {
@@ -487,6 +507,7 @@ export default function ValuationClient() {
     setFamilySearch('');
     setEquipmentDropdownOpen(false);
     setBrandSearch('');
+    setBrandDropdownOpen(false);
     setBrands([]);
     setBrandSlug('');
     setTypedModelName('');
@@ -543,6 +564,7 @@ export default function ValuationClient() {
     setSelectedMethod('aim4price');
     setReplacementPriceBasis('aim4price');
     setBrandSearch('');
+    setBrandDropdownOpen(false);
     setBrandSlug('');
     setBrands([]);
     setModelQuery('');
@@ -570,7 +592,6 @@ export default function ValuationClient() {
         if (!response.ok || !data.ok || !Array.isArray(data.brands)) throw new Error(data.error ?? 'Failed to load brands.');
         if (ignore) return;
         setBrands(data.brands);
-        setBrandSlug(data.brands[0]?.slug ?? '');
       } catch (error) {
         console.error(error);
         if (!ignore) setMessage(error instanceof Error ? error.message : 'Failed to load brands.');
@@ -927,6 +948,7 @@ export default function ValuationClient() {
     setBrands([]);
     setBrandSlug('');
     setBrandSearch('');
+    setBrandDropdownOpen(false);
     setTypedModelName('');
     setModelQuery('');
     setModelId('');
@@ -962,8 +984,24 @@ export default function ValuationClient() {
     setTypedModelName('');
     setModelQuery('');
     setModelId('');
+    setBrandSearch('');
+    setBrandDropdownOpen(false);
+    setBrandSlug('');
     resetResult();
     setStep(2);
+  }
+
+  function handleBrandSelection(nextBrandSlug: string) {
+    if (!nextBrandSlug) return;
+
+    setBrandSlug(nextBrandSlug);
+    setBrandSearch('');
+    setBrandDropdownOpen(false);
+    setTypedModelName('');
+    setModelQuery('');
+    setModelId('');
+    resetResult();
+    setStep(3);
   }
 
   function handleBack() {
@@ -1088,54 +1126,73 @@ export default function ValuationClient() {
 
   function renderBrandStep() {
     return (
-      <div>
-        <h2 className={styles.stepTitle}>Choose brand</h2>
-        <p className={styles.stepText}>Search by brand name or pick from the brands linked to {selectedFamily?.familyLabel ?? 'this machine type'}.</p>
+      <div className={styles.equipmentStage}>
+        <div className={styles.equipmentStageTop}>
+          <button type="button" className={styles.stageBackButton} onClick={() => setStep(1)}>
+            Change equipment type
+          </button>
+          {selectedFamily ? <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span> : null}
+        </div>
 
-        <div className={styles.currentCard}>
-          <div className={styles.currentCardHead}>
+        <h2 className={styles.stepTitle}>Choose brand</h2>
+        <p className={styles.stepText}>Search or choose the brand. Selecting one moves to the next step automatically.</p>
+
+        <div className={`${styles.currentCard} ${styles.equipmentPickerCard}`} style={{ marginTop: '1rem' }}>
+          <div className={styles.equipmentPickerHead}>
             <div>
-              <span className={styles.currentEyebrow}>Step 2</span>
-              <h3 className={styles.currentTitle}>{selectedFamily?.familyLabel ?? 'Machine'} brand</h3>
-              <p className={styles.currentHint}>The selected brand is used for model lookup, market evidence and the saved asset title.</p>
+              <span className={styles.fieldLabel}>Search brand</span>
+              <p className={styles.equipmentPickerHint}>Type the brand name, then pick the matching brand from the dropdown.</p>
             </div>
-            {selectedBrand ? <span className={styles.selectedSummaryPill}>{selectedBrand.name}</span> : null}
+            <span className={styles.equipmentCountPill}>{brandsLoading ? 'Loading' : `${filteredBrands.length} found`}</span>
           </div>
 
           <label className={`${styles.field} ${styles.searchPanel}`}>
-            <span className={styles.fieldLabel}>Search brand</span>
             <input
               className={styles.searchInput}
               value={brandSearch}
-              onChange={(event) => setBrandSearch(event.target.value)}
+              onChange={(event) => {
+                setBrandSearch(event.target.value);
+                setBrandDropdownOpen(true);
+              }}
+              onFocus={() => setBrandDropdownOpen(true)}
               placeholder="e.g. Claas, John Deere, New Holland"
               autoComplete="off"
             />
           </label>
 
-          {brandsLoading ? <p className={styles.fieldHint}>Loading brands...</p> : null}
+          <div className={styles.equipmentDropdownWrap}>
+            <button
+              type="button"
+              className={`${styles.equipmentDropdownTrigger} ${brandDropdownOpen ? styles.equipmentDropdownTriggerOpen : ''}`}
+              onClick={() => setBrandDropdownOpen((value) => !value)}
+              disabled={brandsLoading || !filteredBrands.length}
+              aria-expanded={brandDropdownOpen}
+            >
+              <span>{selectedBrand ? selectedBrand.name : brandsLoading ? 'Loading brands...' : 'Select brand...'}</span>
+              <span className={styles.equipmentDropdownChevron}>⌄</span>
+            </button>
 
-          <div className={`${styles.choiceGrid} ${styles.brandChoiceGrid}`}>
-            {filteredBrands.map((brand) => (
-              <button
-                key={brand.slug}
-                type="button"
-                className={`${styles.choiceCard} ${brandSlug === brand.slug ? styles.choiceCardActive : ''}`}
-                onClick={() => {
-                  setBrandSlug(brand.slug);
-                  setBrandSearch('');
-                  setTypedModelName('');
-                  setModelQuery('');
-                  setModelId('');
-                  resetResult();
-                }}
-              >
-                <span className={styles.choiceCardMeta}>Brand</span>
-                <strong>{brand.name}</strong>
-                <span className={styles.choiceCardNote}>Use for valuation and saved asset record</span>
-              </button>
-            ))}
+            {brandDropdownOpen ? (
+              <div className={styles.equipmentDropdownMenu}>
+                {filteredBrands.length ? (
+                  filteredBrands.map((brand) => (
+                    <button
+                      key={brand.slug}
+                      type="button"
+                      className={`${styles.equipmentDropdownOption} ${brandSlug === brand.slug ? styles.equipmentDropdownOptionActive : ''}`}
+                      onClick={() => handleBrandSelection(brand.slug)}
+                    >
+                      <span>{brand.name}</span>
+                    </button>
+                  ))
+                ) : (
+                  <div className={styles.equipmentDropdownEmpty}>No matching brand found.</div>
+                )}
+              </div>
+            ) : null}
           </div>
+
+          {brandsLoading ? <p className={styles.fieldHint}>Loading brands...</p> : null}
 
           {!brands.length && !brandsLoading ? (
             <p className={styles.message}>No brands are linked to this equipment type yet. Add brands for this family before running valuations.</p>
