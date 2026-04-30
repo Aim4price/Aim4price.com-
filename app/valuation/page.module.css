@@ -5024,3 +5024,236 @@
     justify-self: start;
   }
 }
+
+/* === Aim4price valuation flow reset: sector first, dropdown equipment type === */
+.container {
+  padding-top: 2.4rem;
+}
+
+.wizardShell {
+  width: min(100%, 1116px);
+}
+
+.wizardCard {
+  overflow: hidden;
+}
+
+.sectorStart {
+  display: grid;
+  gap: 1.7rem;
+}
+
+.sectorLargeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 0.2rem;
+}
+
+.sectorBigCard {
+  position: relative;
+  overflow: hidden;
+  min-height: clamp(10.5rem, 18vw, 13.5rem);
+  padding: 1.25rem;
+  border-radius: 1.45rem;
+  border: 1px solid rgba(17, 56, 45, 0.12);
+  background:
+    radial-gradient(circle at top right, rgba(80, 146, 116, 0.12), transparent 35%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(244, 249, 246, 0.98) 100%);
+  color: #16372f;
+  text-align: left;
+  box-shadow:
+    0 22px 44px rgba(15, 53, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease,
+    opacity 180ms ease,
+    filter 180ms ease;
+}
+
+.sectorBigCard::before {
+  content: '';
+  position: absolute;
+  inset: auto -3rem -5rem auto;
+  width: 12rem;
+  height: 12rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(26, 89, 68, 0.1), transparent 70%);
+  pointer-events: none;
+}
+
+.sectorBigCardContent {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 100%;
+  align-items: center;
+}
+
+.sectorBigCard strong {
+  max-width: 8ch;
+  font-size: clamp(1.55rem, 2.4vw, 2.25rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+  color: #16372f;
+}
+
+.sectorBigCardLive:hover {
+  transform: translateY(-2px);
+  border-color: rgba(24, 77, 61, 0.24);
+  background:
+    radial-gradient(circle at top right, rgba(80, 146, 116, 0.18), transparent 36%),
+    linear-gradient(180deg, rgba(248, 253, 250, 0.99) 0%, rgba(232, 243, 237, 0.98) 100%);
+  box-shadow:
+    0 28px 58px rgba(15, 53, 42, 0.12),
+    0 0 0 4px rgba(26, 89, 68, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.sectorBigCardLive:active {
+  transform: translateY(0);
+}
+
+.sectorBigCardSoon {
+  cursor: pointer;
+  background:
+    radial-gradient(circle at top right, rgba(130, 130, 120, 0.08), transparent 35%),
+    linear-gradient(180deg, rgba(250, 251, 250, 0.96) 0%, rgba(239, 242, 240, 0.96) 100%);
+}
+
+.sectorBigCardSoon .sectorBigCardContent {
+  opacity: 0.48;
+  filter: blur(0.45px) saturate(0.72);
+}
+
+.sectorBigCardSoon:hover {
+  border-color: rgba(120, 104, 72, 0.2);
+  box-shadow:
+    0 22px 44px rgba(15, 53, 42, 0.07),
+    0 0 0 4px rgba(165, 127, 64, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.comingSoonBanner {
+  position: absolute;
+  z-index: 2;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%) rotate(-7deg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.4rem;
+  min-width: 11.5rem;
+  padding: 0 1.1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(126, 92, 37, 0.18);
+  background: rgba(255, 246, 224, 0.96);
+  color: #7c5a1e;
+  font-size: 0.92rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow:
+    0 16px 30px rgba(64, 45, 18, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.equipmentStage {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.equipmentStageTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.1rem;
+}
+
+.stageBackButton {
+  min-height: 2.55rem;
+  padding: 0 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgba(17, 56, 45, 0.1);
+  background: linear-gradient(180deg, #ffffff 0%, #f3f7f5 100%);
+  color: #244238;
+  font-size: 0.9rem;
+  font-weight: 800;
+  box-shadow:
+    0 10px 20px rgba(15, 53, 42, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.stageBackButton:hover {
+  transform: translateY(-1px);
+  border-color: rgba(24, 77, 61, 0.18);
+  background: linear-gradient(180deg, #ffffff 0%, #eef5f1 100%);
+  box-shadow: 0 14px 24px rgba(15, 53, 42, 0.08);
+}
+
+.equipmentSelectField {
+  margin-top: 0.35rem;
+}
+
+.equipmentSelectField select {
+  min-height: 3.7rem;
+  font-size: 1.02rem;
+  font-weight: 800;
+}
+
+.wizardFooterSingle {
+  justify-content: flex-start;
+}
+
+.wizardFooterSingle .secondaryButton {
+  min-width: 8.5rem;
+}
+
+@media (max-width: 900px) {
+  .sectorLargeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .sectorBigCard {
+    min-height: 8.8rem;
+  }
+
+  .sectorBigCard strong {
+    max-width: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding-top: 1.4rem;
+  }
+
+  .sectorStart {
+    gap: 1.2rem;
+  }
+
+  .sectorBigCard {
+    min-height: 7.8rem;
+    border-radius: 1.2rem;
+  }
+
+  .comingSoonBanner {
+    min-width: 10rem;
+    min-height: 2.2rem;
+    font-size: 0.8rem;
+  }
+
+  .equipmentStageTop {
+    align-items: flex-start;
+  }
+}
