@@ -6149,3 +6149,433 @@
   font-weight: 800;
   line-height: 1.45;
 }
+
+
+/* Final valuation output polish */
+.resultsLayout {
+  grid-template-columns: minmax(0, 1.22fr) minmax(310px, 0.78fr);
+  gap: 1.15rem;
+  align-items: start;
+}
+
+.resultsMain,
+.resultsSide {
+  gap: 1rem;
+}
+
+.resultHero {
+  display: grid;
+  gap: 0.95rem;
+  padding: 1.28rem;
+  border-radius: 1.45rem;
+  border: 1px solid rgba(17, 56, 45, 0.1);
+  box-shadow:
+    0 24px 44px rgba(13, 40, 32, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.resultHeroHigh {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.7), transparent 34%),
+    linear-gradient(180deg, #f1faf5 0%, #e3f1e8 100%);
+  border-color: rgba(21, 104, 66, 0.14);
+}
+
+.resultHeroMedium {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.76), transparent 36%),
+    linear-gradient(180deg, #fff8df 0%, #ffedb8 100%);
+  border-color: rgba(161, 120, 16, 0.16);
+}
+
+.resultHeroLow {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.78), transparent 36%),
+    linear-gradient(180deg, #fff7f6 0%, #fbe2de 100%);
+  border-color: rgba(154, 51, 41, 0.14);
+}
+
+.resultHeroTopline {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+
+.resultKicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  width: fit-content;
+  padding: 0 0.72rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(17, 56, 45, 0.08);
+  color: #214539;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.resultConfidenceBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  width: fit-content;
+  padding: 0 0.78rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.resultValue {
+  color: #0d5a3c;
+  font-size: clamp(3rem, 5.8vw, 4.6rem);
+  line-height: 0.9;
+  letter-spacing: -0.07em;
+  font-weight: 900;
+}
+
+.resultHeroMedium .resultValue {
+  color: #795700;
+}
+
+.resultHeroLow .resultValue {
+  color: #8f2d22;
+}
+
+.resultMachineTitle {
+  margin: -0.2rem 0 0;
+  color: #334a42;
+  font-size: 1.02rem;
+  line-height: 1.48;
+  font-weight: 700;
+}
+
+.resultFactsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.1rem;
+}
+
+.resultFactCard {
+  display: grid;
+  gap: 0.28rem;
+  min-height: 5.1rem;
+  padding: 0.82rem 0.9rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(17, 56, 45, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.resultFactCard span {
+  color: #64736c;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.resultFactCard strong {
+  color: #17382f;
+  font-size: 0.98rem;
+  line-height: 1.36;
+}
+
+.resultMethodGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.resultMethodCard,
+.replacementOptionCard {
+  position: relative;
+  display: grid;
+  gap: 0.42rem;
+  min-height: 7.6rem;
+  padding: 1rem;
+  border-radius: 1.1rem;
+  border: 1px solid rgba(17, 56, 45, 0.1);
+  background: linear-gradient(180deg, #ffffff 0%, #f6faf8 100%);
+  color: #17382f;
+  text-align: left;
+  font: inherit;
+  box-shadow:
+    0 14px 26px rgba(16, 42, 34, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    opacity 160ms ease;
+}
+
+.resultMethodCard:hover:not(:disabled),
+.replacementOptionCard:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(24, 77, 61, 0.2);
+  box-shadow:
+    0 18px 32px rgba(16, 42, 34, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.resultMethodCard::after,
+.replacementOptionCard::after {
+  content: '';
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  border: 2px solid rgba(17, 56, 45, 0.18);
+  background: #ffffff;
+}
+
+.resultMethodCardActive,
+.replacementOptionCardActive {
+  border-color: rgba(24, 77, 61, 0.32);
+  background: linear-gradient(180deg, rgba(232, 244, 238, 0.98) 0%, rgba(249, 252, 250, 0.99) 100%);
+  box-shadow:
+    0 18px 34px rgba(17, 63, 50, 0.1),
+    0 0 0 4px rgba(26, 89, 68, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.resultMethodCardActive::after,
+.replacementOptionCardActive::after {
+  background: #1a5944;
+  border-color: #1a5944;
+  box-shadow: 0 0 0 5px rgba(26, 89, 68, 0.1);
+}
+
+.resultMethodCard:disabled,
+.replacementOptionCard:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+  transform: none;
+  box-shadow: none;
+}
+
+.resultMethodLabel,
+.replacementOptionCard span {
+  color: #5b6a63;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.resultMethodCard strong,
+.replacementOptionCard strong {
+  color: #15372e;
+  font-size: 1.25rem;
+  line-height: 1.16;
+  letter-spacing: -0.025em;
+}
+
+.resultMethodCard small,
+.replacementOptionCard small {
+  max-width: calc(100% - 1.4rem);
+  color: #64736c;
+  font-size: 0.9rem;
+  line-height: 1.42;
+}
+
+.resultAccordion {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(17, 56, 45, 0.09);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 249, 0.98) 100%);
+  box-shadow:
+    0 18px 34px rgba(16, 42, 34, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  overflow: hidden;
+}
+
+.resultAccordionToggle {
+  width: 100%;
+  min-height: 4.85rem;
+  padding: 1rem 1.1rem;
+  border: 0;
+  background: transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  text-align: left;
+  font: inherit;
+  color: #17382f;
+}
+
+.resultAccordionToggle:hover {
+  background: rgba(239, 247, 243, 0.7);
+}
+
+.resultAccordionTitleGroup {
+  display: grid;
+  gap: 0.24rem;
+  min-width: 0;
+}
+
+.resultAccordionTitleGroup strong {
+  color: #17382f;
+  font-size: 1.12rem;
+  letter-spacing: -0.02em;
+}
+
+.resultAccordionTitleGroup small {
+  color: #65766e;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.resultAccordionAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.35rem;
+  min-width: 5.2rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(17, 56, 45, 0.1);
+  background: #ffffff;
+  color: #1c4d3d;
+  font-size: 0.88rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.resultAccordionBody {
+  display: grid;
+  gap: 1rem;
+  padding: 0 1.1rem 1.1rem;
+  border-top: 1px solid rgba(17, 56, 45, 0.07);
+}
+
+.resultAccordionCopy {
+  margin: 1rem 0 0;
+  color: #5d6d66;
+  font-size: 0.96rem;
+  line-height: 1.62;
+}
+
+.replacementOptionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.replacementInputPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: end;
+  padding: 0.9rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(17, 56, 45, 0.07);
+  background: rgba(247, 250, 249, 0.9);
+}
+
+.replacementInputPanel .assetButton {
+  width: auto;
+  margin: 0;
+  min-width: 12.5rem;
+}
+
+.marketEvidenceCard {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.marketEvidenceCard h3 {
+  margin: 0;
+  color: #17382f;
+  font-size: 1.16rem;
+  letter-spacing: -0.025em;
+}
+
+.marketEvidenceItem,
+.marketEvidenceEmpty {
+  display: grid;
+  gap: 0.26rem;
+  padding: 0.9rem 0.95rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(17, 56, 45, 0.07);
+  background: rgba(247, 250, 249, 0.94);
+}
+
+.marketEvidenceItem span {
+  color: #62726b;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.marketEvidenceItem strong,
+.marketEvidenceEmpty strong {
+  color: #17382f;
+  font-size: 0.96rem;
+  line-height: 1.38;
+}
+
+.marketEvidenceItem small {
+  color: #1d624e;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.marketEvidenceEmpty p {
+  margin: 0;
+  color: #64736c;
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 1180px) {
+  .resultsLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .resultsSide {
+    order: 2;
+  }
+}
+
+@media (max-width: 860px) {
+  .resultHero {
+    padding: 1rem;
+  }
+
+  .resultHeroTopline,
+  .resultAccordionToggle {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .resultValue {
+    font-size: clamp(2.45rem, 14vw, 3.6rem);
+  }
+
+  .resultFactsGrid,
+  .resultMethodGrid,
+  .replacementOptionGrid,
+  .replacementInputPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .replacementInputPanel .assetButton {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .resultAccordionAction {
+    width: 100%;
+  }
+}
