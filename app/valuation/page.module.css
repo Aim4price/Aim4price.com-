@@ -5257,3 +5257,356 @@
     align-items: flex-start;
   }
 }
+
+
+/* === Sector-first valuation polish: minimal, searchable dropdown === */
+.wizardShell {
+  width: min(100%, 1140px);
+}
+
+.wizardCard {
+  border-radius: 1.85rem;
+  border-color: rgba(17, 56, 45, 0.09);
+  background:
+    radial-gradient(circle at 14% 0%, rgba(42, 116, 87, 0.055), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.995) 0%, rgba(248, 251, 249, 0.99) 100%);
+  box-shadow:
+    0 34px 76px rgba(15, 53, 42, 0.115),
+    0 12px 26px rgba(15, 53, 42, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.stepContent {
+  padding: 2.05rem 1.9rem 1.55rem;
+}
+
+.sectorStart {
+  gap: 1.95rem;
+}
+
+.sectorStart .stepTitle {
+  font-size: clamp(2.65rem, 4.2vw, 3.55rem);
+}
+
+.sectorLargeGrid {
+  gap: 1.05rem;
+}
+
+.sectorBigCard {
+  min-height: clamp(11rem, 17vw, 14.4rem);
+  padding: 1.35rem 1.45rem;
+  border-radius: 1.55rem;
+  background:
+    radial-gradient(circle at 82% 18%, rgba(40, 116, 87, 0.105), transparent 34%),
+    radial-gradient(circle at 0% 100%, rgba(40, 116, 87, 0.06), transparent 40%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.995) 0%, rgba(246, 250, 248, 0.99) 100%);
+}
+
+.sectorBigCard::before {
+  width: 10rem;
+  height: 10rem;
+  inset: auto -3.4rem -4.6rem auto;
+  background: radial-gradient(circle, rgba(26, 89, 68, 0.13), transparent 70%);
+}
+
+.sectorBigCard::after {
+  content: '';
+  position: absolute;
+  inset: 1.15rem 1.15rem auto auto;
+  width: 0.86rem;
+  height: 0.86rem;
+  border-radius: 999px;
+  border: 2px solid rgba(17, 56, 45, 0.15);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.sectorBigCardLive::after {
+  border-color: rgba(26, 89, 68, 0.42);
+  background: #1a5944;
+  box-shadow: 0 0 0 5px rgba(26, 89, 68, 0.1);
+}
+
+.sectorBigCardContent {
+  align-items: end;
+}
+
+.sectorBigCard strong {
+  max-width: 9ch;
+  font-size: clamp(1.75rem, 2.65vw, 2.45rem);
+  letter-spacing: -0.055em;
+}
+
+.sectorBigCardLive {
+  cursor: pointer;
+}
+
+.sectorBigCardLive:hover {
+  transform: translateY(-3px);
+}
+
+.sectorBigCardSoon {
+  background:
+    radial-gradient(circle at 82% 18%, rgba(102, 114, 108, 0.075), transparent 34%),
+    linear-gradient(180deg, rgba(251, 252, 251, 0.98) 0%, rgba(239, 243, 241, 0.98) 100%);
+}
+
+.sectorBigCardSoon .sectorBigCardContent {
+  opacity: 0.44;
+  filter: blur(0.55px) saturate(0.62);
+}
+
+.comingSoonBanner {
+  min-width: 10.6rem;
+  min-height: 2.35rem;
+  border-color: rgba(126, 92, 37, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 248, 233, 0.98) 0%, rgba(255, 240, 207, 0.98) 100%);
+  color: #75531b;
+  box-shadow:
+    0 18px 32px rgba(64, 45, 18, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.equipmentStage {
+  gap: 0.85rem;
+}
+
+.equipmentStageTop {
+  margin-bottom: 0.25rem;
+}
+
+.stageBackButton,
+.selectedSummaryPill {
+  min-height: 2.75rem;
+}
+
+.equipmentStage .stepTitle {
+  font-size: clamp(2.55rem, 4vw, 3.45rem);
+}
+
+.equipmentStage .stepText {
+  max-width: 48rem;
+  color: #53645d;
+}
+
+.equipmentPickerCard {
+  padding: 1.35rem;
+  gap: 0.92rem;
+  border-radius: 1.45rem;
+  background:
+    radial-gradient(circle at top right, rgba(40, 116, 87, 0.06), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.995) 0%, rgba(247, 250, 249, 0.99) 100%);
+}
+
+.equipmentPickerHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.equipmentPickerHint {
+  margin: 0.35rem 0 0;
+  color: #65746e;
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+.equipmentCountPill {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.1rem;
+  padding: 0 0.82rem;
+  border-radius: 999px;
+  border: 1px solid rgba(24, 77, 61, 0.13);
+  background: rgba(232, 243, 237, 0.92);
+  color: #1d5645;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.equipmentPickerCard .searchPanel {
+  margin-top: 0;
+}
+
+.equipmentPickerCard .searchInput {
+  min-height: 3.9rem;
+  padding-inline: 1.12rem;
+  border-radius: 1.12rem;
+  font-size: 1.04rem;
+  font-weight: 700;
+}
+
+.equipmentDropdownWrap {
+  position: relative;
+  display: grid;
+  gap: 0.64rem;
+}
+
+.equipmentDropdownTrigger {
+  width: 100%;
+  min-height: 3.95rem;
+  padding: 0 1.1rem 0 1.15rem;
+  border-radius: 1.12rem;
+  border: 1px solid rgba(17, 56, 45, 0.13);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.995) 0%, rgba(244, 248, 246, 0.99) 100%);
+  color: #17372f;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  text-align: left;
+  font: inherit;
+  font-size: 1.04rem;
+  font-weight: 850;
+  box-shadow:
+    0 12px 24px rgba(15, 53, 42, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.equipmentDropdownTrigger:hover:not(:disabled),
+.equipmentDropdownTriggerOpen {
+  border-color: rgba(24, 77, 61, 0.25);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(239, 247, 243, 0.99) 100%);
+  box-shadow:
+    0 16px 30px rgba(15, 53, 42, 0.075),
+    0 0 0 4px rgba(26, 89, 68, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.equipmentDropdownTrigger:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.equipmentDropdownChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: rgba(24, 77, 61, 0.07);
+  color: #1e5b47;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.equipmentDropdownTriggerOpen .equipmentDropdownChevron {
+  transform: rotate(180deg);
+}
+
+.equipmentDropdownMenu {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  gap: 0.48rem;
+  max-height: 19rem;
+  overflow-y: auto;
+  padding: 0.62rem;
+  border-radius: 1.18rem;
+  border: 1px solid rgba(17, 56, 45, 0.11);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.995) 0%, rgba(247, 250, 248, 0.995) 100%);
+  box-shadow:
+    0 20px 40px rgba(15, 53, 42, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(26, 89, 68, 0.25) transparent;
+}
+
+.equipmentDropdownMenu::-webkit-scrollbar {
+  width: 8px;
+}
+
+.equipmentDropdownMenu::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(26, 89, 68, 0.22);
+}
+
+.equipmentDropdownOption {
+  cursor: pointer;
+  min-height: 3.25rem;
+  width: 100%;
+  padding: 0.78rem 0.9rem;
+  border-radius: 0.92rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #213a33;
+  text-align: left;
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 760;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.equipmentDropdownOption:hover {
+  transform: translateY(-1px);
+  border-color: rgba(24, 77, 61, 0.12);
+  background: rgba(239, 247, 243, 0.92);
+}
+
+.equipmentDropdownOptionActive {
+  border-color: rgba(24, 77, 61, 0.18);
+  background: linear-gradient(180deg, rgba(232, 243, 237, 0.96) 0%, rgba(244, 250, 247, 0.98) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.equipmentDropdownEmpty {
+  padding: 1rem;
+  border-radius: 0.95rem;
+  border: 1px dashed rgba(17, 56, 45, 0.14);
+  background: rgba(247, 250, 248, 0.92);
+  color: #65746e;
+  line-height: 1.55;
+}
+
+@media (max-width: 900px) {
+  .sectorStart .stepTitle,
+  .equipmentStage .stepTitle {
+    white-space: normal;
+  }
+
+  .equipmentPickerHead {
+    display: grid;
+  }
+
+  .equipmentCountPill {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .stepContent {
+    padding: 1.35rem 1rem 1.1rem;
+  }
+
+  .sectorBigCard {
+    min-height: 8.4rem;
+  }
+
+  .equipmentPickerCard {
+    padding: 1rem;
+  }
+
+  .equipmentPickerCard .searchInput,
+  .equipmentDropdownTrigger {
+    min-height: 3.55rem;
+  }
+}
