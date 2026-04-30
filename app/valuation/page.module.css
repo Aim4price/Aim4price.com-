@@ -4916,3 +4916,111 @@
     padding: 0.9rem 0.95rem;
   }
 }
+
+/* Valuation usability pass: searchable equipment and brand pickers */
+.sectorChoiceGrid {
+  margin-top: 1.45rem;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.searchPanel {
+  margin-top: 0.3rem;
+}
+
+.compactChoiceGrid,
+.brandChoiceGrid {
+  margin-top: 0.35rem;
+  align-items: stretch;
+}
+
+.compactChoiceGrid {
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+}
+
+.brandChoiceGrid {
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+}
+
+.compactChoiceGrid .choiceCard,
+.brandChoiceGrid .choiceCard {
+  min-height: 6.2rem;
+  align-content: start;
+  padding: 0.92rem 0.95rem;
+}
+
+.choiceCardMeta {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 1.55rem;
+  align-items: center;
+  padding: 0 0.58rem;
+  border-radius: 999px;
+  border: 1px solid rgba(24, 77, 61, 0.1);
+  background: rgba(24, 77, 61, 0.06);
+  color: #356052;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.selectedSummaryPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(24, 77, 61, 0.16);
+  background: linear-gradient(180deg, rgba(232, 244, 237, 0.98) 0%, rgba(245, 250, 247, 0.98) 100%);
+  color: #153c31;
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.choiceCard:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+
+.choiceCard:disabled:hover {
+  transform: none;
+  border-color: rgba(18, 45, 37, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.searchPanel .searchInput {
+  min-height: 3.55rem;
+  border-color: rgba(24, 77, 61, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(249, 251, 250, 0.99) 100%);
+}
+
+@media (max-width: 720px) {
+  .stepTitle {
+    text-align: left;
+  }
+
+  .stepText {
+    text-align: left;
+    margin-inline: 0;
+  }
+
+  .compactChoiceGrid,
+  .brandChoiceGrid,
+  .sectorChoiceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .currentCardHead {
+    display: grid;
+  }
+
+  .selectedSummaryPill {
+    justify-self: start;
+  }
+}

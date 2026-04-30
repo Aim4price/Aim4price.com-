@@ -207,9 +207,9 @@ const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
 ];
 
 const SECTOR_OPTIONS: Array<{ key: SectorKey; label: string; note: string }> = [
-  { key: 'agricultural', label: SECTOR_LABELS.agricultural, note: 'Agricultural families live first' },
-  { key: 'construction', label: SECTOR_LABELS.construction, note: 'Uses the same generic spec engine' },
-  { key: 'industrial', label: SECTOR_LABELS.industrial, note: 'Uses the same generic spec engine' },
+  { key: 'agricultural', label: SECTOR_LABELS.agricultural, note: 'Tractors, balers, implements and farm machinery' },
+  { key: 'construction', label: SECTOR_LABELS.construction, note: 'Construction equipment framework ready' },
+  { key: 'industrial', label: SECTOR_LABELS.industrial, note: 'Industrial equipment framework ready' },
 ];
 
 function nextStep(step: Step): Step {
@@ -224,15 +224,39 @@ function normalizeText(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+function parseFlexibleNumber(value: unknown): number | null {
+  const text = normalizeText(value).replace(/\s/g, '').replace(',', '.');
+  if (!text) return null;
+  const numeric = Number(text);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
 function toNumberOrNull(value: unknown): number | null {
-  const numeric = Number(value);
-  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+  const numeric = parseFlexibleNumber(value);
+  return numeric !== null && numeric > 0 ? numeric : null;
 }
 
 function toPercentOrNull(value: unknown): number | null {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return null;
+  const numeric = parseFlexibleNumber(value);
+  if (numeric === null) return null;
   return Math.max(0, Math.min(100, Math.round(numeric)));
+}
+
+function searchIncludes(value: string, query: string): boolean {
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!terms.length) return true;
+  const haystack = value.toLowerCase();
+  return terms.every((term) => haystack.includes(term));
+}
+
+function formatCatalogModeLabel(mode: CatalogMode): string {
+  if (mode === 'hybrid') return 'Exact model + specs';
+  if (mode === 'exact_model') return 'Exact model data';
+  return 'Specs pathway';
+}
+
+function formatUsageMetricLabel(metric: UsageMetricType): string {
+  return metric === 'hours' ? 'Hours' : 'Worked percentage';
 }
 
 function formatPercent(value: number | null): string {
@@ -313,8 +337,8 @@ function buildSpecPayload(specQuestions: SpecQuestion[], specAnswers: Record<str
     if (raw === undefined || raw === '') continue;
 
     if (question.inputType === 'number' || question.inputType === 'money') {
-      const numberValue = Number(raw);
-      if (Number.isFinite(numberValue)) output[question.specKey] = numberValue;
+      const numberValue = parseFlexibleNumber(raw);
+      if (numberValue !== null) output[question.specKey] = numberValue;
       continue;
     }
 
@@ -335,9 +359,11 @@ export default function ValuationClient() {
   const [selectedSector, setSelectedSector] = useState<SectorKey>('agricultural');
   const [families, setFamilies] = useState<EquipmentFamilyRecord[]>([]);
   const [familiesLoading, setFamiliesLoading] = useState(false);
+  const [familySearch, setFamilySearch] = useState('');
   const [familyKey, setFamilyKey] = useState('');
   const [brands, setBrands] = useState<BrandRow[]>([]);
   const [brandsLoading, setBrandsLoading] = useState(false);
+  const [brandSearch, setBrandSearch] = useState('');
   const [brandSlug, setBrandSlug] = useState('');
   const [flowMode, setFlowMode] = useState<FlowMode>('generic_specs');
   const [tractorType, setTractorType] = useState<TractorType>('field');
@@ -380,6 +406,15 @@ export default function ValuationClient() {
     () => tractorModels.find((model) => model.id === modelId) ?? null,
     [tractorModels, modelId],
   );
+  const filteredFamilies = useMemo(() => {
+    return families.filter((family) =>
+      searchIncludes(
+        `${family.familyLabel} ${family.familyKey} ${family.sectorLabel} ${formatCatalogModeLabel(family.catalogMode)} ${formatUsageMetricLabel(family.usageMetricType)}`,
+        familySearch,
+      ),
+    );
+  }, [families, familySearch]);
+  const filteredBrands = useMemo(() => brands.filter((brand) => searchIncludes(`${brand.name} ${brand.slug}`, brandSearch)), [brands, brandSearch]);
 
   const exactTractorAvailable = selectedFamily?.familyKey === 'tractors' && selectedFamily.catalogMode === 'hybrid';
   const filteredModels = useMemo(() => {
@@ -402,6 +437,11 @@ export default function ValuationClient() {
   );
   const headlineValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
   const freeGuestValuationsRemaining = Math.max(0, 3 - guestValuationCount);
+
+  useEffect(() => {
+    const target = document.getElementById('valuation-wizard-card');
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [step]);
 
   useEffect(() => {
     let mounted = true;
@@ -431,6 +471,17 @@ export default function ValuationClient() {
     setFamiliesLoading(true);
     setFamilies([]);
     setFamilyKey('');
+    setFamilySearch('');
+    setBrandSearch('');
+    setBrands([]);
+    setBrandSlug('');
+    setTypedModelName('');
+    setModelQuery('');
+    setModelId('');
+    setTractorModels([]);
+    setResultState(null);
+    setSelectedMethod('aim4price');
+    setReplacementPriceBasis('aim4price');
 
     async function loadFamilies() {
       try {
@@ -464,8 +515,18 @@ export default function ValuationClient() {
 
     setResultState(null);
     setSelectedMethod('aim4price');
+    setReplacementPriceBasis('aim4price');
+    setBrandSearch('');
     setBrandSlug('');
     setBrands([]);
+    setModelQuery('');
+    setModelId('');
+    setTractorModels([]);
+    setTypedModelName('');
+    setUsageAmount('');
+    setLifeWorkedPercent('');
+    setUserReplacementPrice('');
+    setYearModelUnknown(false);
     setFlowMode(nextFlowMode);
 
     let ignore = false;
@@ -836,10 +897,10 @@ export default function ValuationClient() {
   function renderMachineStep() {
     return (
       <div>
-        <h2 className={styles.stepTitle}>Choose the machine</h2>
-        <p className={styles.stepText}>The database is now the source of truth. Families can grow without changing TypeScript lists.</p>
+        <h2 className={styles.stepTitle}>Choose machine type</h2>
+        <p className={styles.stepText}>Pick the sector, then search or select the machine family. The next steps only show fields that apply to that family.</p>
 
-        <div className={styles.choiceGrid}>
+        <div className={`${styles.choiceGrid} ${styles.sectorChoiceGrid}`}>
           {SECTOR_OPTIONS.map((sector) => (
             <button
               key={sector.key}
@@ -857,30 +918,54 @@ export default function ValuationClient() {
         </div>
 
         <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
-          <h3 className={styles.currentTitle}>Equipment Type</h3>
-          {familiesLoading ? <p className={styles.stepText}>Loading equipment families...</p> : null}
-          <div className={styles.inputGrid}>
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>Family</span>
-              <select
-                value={familyKey}
-                onChange={(event) => {
-                  setFamilyKey(event.target.value);
+          <div className={styles.currentCardHead}>
+            <div>
+              <span className={styles.currentEyebrow}>Step 1</span>
+              <h3 className={styles.currentTitle}>Equipment type</h3>
+              <p className={styles.currentHint}>Search by normal words: tractor, baler, planter, sprayer, trailer.</p>
+            </div>
+            {selectedFamily ? (
+              <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span>
+            ) : null}
+          </div>
+
+          <label className={`${styles.field} ${styles.searchPanel}`}>
+            <span className={styles.fieldLabel}>Search equipment type</span>
+            <input
+              className={styles.searchInput}
+              value={familySearch}
+              onChange={(event) => setFamilySearch(event.target.value)}
+              placeholder="e.g. baler, tractor, spreader"
+              autoComplete="off"
+            />
+          </label>
+
+          {familiesLoading ? <p className={styles.fieldHint}>Loading equipment types...</p> : null}
+
+          <div className={`${styles.choiceGrid} ${styles.compactChoiceGrid}`}>
+            {filteredFamilies.map((family) => (
+              <button
+                key={family.familyKey}
+                type="button"
+                className={`${styles.choiceCard} ${familyKey === family.familyKey ? styles.choiceCardActive : ''}`}
+                onClick={() => {
+                  setFamilyKey(family.familyKey);
+                  setFamilySearch('');
+                  setTypedModelName('');
+                  setModelQuery('');
+                  setModelId('');
                   resetResult();
                 }}
               >
-                {families.map((family) => (
-                  <option key={family.familyKey} value={family.familyKey}>
-                    {family.familyLabel} • {family.catalogMode === 'hybrid' ? 'Hybrid' : 'Specs'}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <span className={styles.choiceCardMeta}>{formatCatalogModeLabel(family.catalogMode)}</span>
+                <strong>{family.familyLabel}</strong>
+                <span className={styles.choiceCardNote}>{formatUsageMetricLabel(family.usageMetricType)} valuation inputs</span>
+              </button>
+            ))}
           </div>
-          {selectedFamily ? (
-            <p className={styles.fieldHint}>
-              Current mode: <strong>{selectedFamily.catalogMode === 'hybrid' ? 'Hybrid' : 'Generic specs'}</strong>. Tractors can use exact models; other families continue with machine specs.
-            </p>
+
+          {!filteredFamilies.length && !familiesLoading ? (
+            <p className={styles.message}>No matching equipment type found. Clear the search or import the family into the equipment catalogue.</p>
           ) : null}
         </div>
       </div>
@@ -890,31 +975,59 @@ export default function ValuationClient() {
   function renderBrandStep() {
     return (
       <div>
-        <h2 className={styles.stepTitle}>Choose the brand</h2>
-        <p className={styles.stepText}>Brands now come from equipment_family_brands, so they can show even before models exist.</p>
+        <h2 className={styles.stepTitle}>Choose brand</h2>
+        <p className={styles.stepText}>Search by brand name or pick from the brands linked to {selectedFamily?.familyLabel ?? 'this machine type'}.</p>
 
         <div className={styles.currentCard}>
-          {brandsLoading ? <p className={styles.stepText}>Loading brands...</p> : null}
-          <div className={styles.inputGrid}>
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>Brand</span>
-              <select
-                value={brandSlug}
-                onChange={(event) => {
-                  setBrandSlug(event.target.value);
+          <div className={styles.currentCardHead}>
+            <div>
+              <span className={styles.currentEyebrow}>Step 2</span>
+              <h3 className={styles.currentTitle}>{selectedFamily?.familyLabel ?? 'Machine'} brand</h3>
+              <p className={styles.currentHint}>The selected brand is used for model lookup, market evidence and the saved asset title.</p>
+            </div>
+            {selectedBrand ? <span className={styles.selectedSummaryPill}>{selectedBrand.name}</span> : null}
+          </div>
+
+          <label className={`${styles.field} ${styles.searchPanel}`}>
+            <span className={styles.fieldLabel}>Search brand</span>
+            <input
+              className={styles.searchInput}
+              value={brandSearch}
+              onChange={(event) => setBrandSearch(event.target.value)}
+              placeholder="e.g. Claas, John Deere, New Holland"
+              autoComplete="off"
+            />
+          </label>
+
+          {brandsLoading ? <p className={styles.fieldHint}>Loading brands...</p> : null}
+
+          <div className={`${styles.choiceGrid} ${styles.brandChoiceGrid}`}>
+            {filteredBrands.map((brand) => (
+              <button
+                key={brand.slug}
+                type="button"
+                className={`${styles.choiceCard} ${brandSlug === brand.slug ? styles.choiceCardActive : ''}`}
+                onClick={() => {
+                  setBrandSlug(brand.slug);
+                  setBrandSearch('');
+                  setTypedModelName('');
+                  setModelQuery('');
+                  setModelId('');
                   resetResult();
                 }}
               >
-                {brands.map((brand) => (
-                  <option key={brand.slug} value={brand.slug}>
-                    {brand.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <span className={styles.choiceCardMeta}>Brand</span>
+                <strong>{brand.name}</strong>
+                <span className={styles.choiceCardNote}>Use for valuation and saved asset record</span>
+              </button>
+            ))}
           </div>
+
           {!brands.length && !brandsLoading ? (
-            <p className={styles.message}>No brands are linked to this family yet. Import equipment_family_brands.csv first.</p>
+            <p className={styles.message}>No brands are linked to this equipment type yet. Add brands for this family before running valuations.</p>
+          ) : null}
+          {brands.length > 0 && !filteredBrands.length && !brandsLoading ? (
+            <p className={styles.message}>No matching brand. Clear the search or choose another machine type.</p>
           ) : null}
         </div>
       </div>
@@ -924,8 +1037,8 @@ export default function ValuationClient() {
   function renderPathStep() {
     return (
       <div>
-        <h2 className={styles.stepTitle}>Choose the valuation path</h2>
-        <p className={styles.stepText}>Model is helpful, but specs must be enough to get an answer.</p>
+        <h2 className={styles.stepTitle}>Choose valuation path</h2>
+        <p className={styles.stepText}>Use an exact model when the catalogue supports it. Otherwise, the machine specs path gives a valuation from brand, year, condition, worked percentage and family questions.</p>
 
         <div className={styles.choiceGrid}>
           {exactTractorAvailable ? (
@@ -950,8 +1063,8 @@ export default function ValuationClient() {
               resetResult();
             }}
           >
-            <strong>Continue using machine specs</strong>
-            <span className={styles.choiceCardNote}>Works for all families. The user can still type the model name if known.</span>
+            <strong>Use machine specs</strong>
+            <span className={styles.choiceCardNote}>Recommended for non-tractor equipment and for models not yet in the catalogue.</span>
           </button>
         </div>
 
@@ -1011,11 +1124,11 @@ export default function ValuationClient() {
   function renderTypedModelBox() {
     return (
       <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
-        <h3 className={styles.currentTitle}>Model is optional</h3>
-        <p className={styles.currentHint}>If the user types a model name, Aim4price saves it as a model candidate and searches Market Vault for similar listings.</p>
+        <h3 className={styles.currentTitle}>Optional model name</h3>
+        <p className={styles.currentHint}>Add the model only when it is known. It improves market matching, but leaving it blank will not block the valuation.</p>
         <div className={styles.inputGrid}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Model name, if known</span>
+            <span className={styles.fieldLabel}>Model name, optional</span>
             <input
               value={typedModelName}
               onChange={(event) => {
@@ -1069,7 +1182,8 @@ export default function ValuationClient() {
       <label key={question.specKey} className={styles.field}>
         <span className={styles.fieldLabel}>{label}</span>
         <input
-          type={question.inputType === 'number' || question.inputType === 'money' ? 'number' : 'text'}
+          type="text"
+          inputMode={question.inputType === 'number' || question.inputType === 'money' ? 'decimal' : undefined}
           value={value}
           onChange={(event: ChangeEvent<HTMLInputElement>) => setSpecAnswer(question.specKey, event.target.value)}
           placeholder={question.helpText ?? question.label}
@@ -1090,7 +1204,7 @@ export default function ValuationClient() {
       <div>
         <h2 className={styles.stepTitle}>{genericPath ? 'Machine specs' : 'Tractor details'}</h2>
         <p className={styles.stepText}>
-          These details drive the depreciation method. Aim4price uses full depreciation when hours are known, semi depreciation when hours are estimated, and percentage depreciation for implements.
+          Enter what is known. The valuation still works when a model or exact hours are missing, provided the required family questions are answered.
         </p>
 
         <div className={styles.currentCard}>
@@ -1130,7 +1244,8 @@ export default function ValuationClient() {
               <label className={styles.field}>
                 <span className={styles.fieldLabel}>Engine hours, if known</span>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={usageAmount}
                   onChange={(event) => {
                     setUsageAmount(event.target.value);
@@ -1145,7 +1260,8 @@ export default function ValuationClient() {
             <label className={styles.field}>
               <span className={styles.fieldLabel}>{workedPercentLabel}</span>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={lifeWorkedPercent}
                 min={0}
                 max={100}
@@ -1331,7 +1447,8 @@ export default function ValuationClient() {
                 <label className={styles.field}>
                   <span className={styles.fieldLabel}>What does this cost new today?</span>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     value={userReplacementPrice}
                     onChange={(event) => setUserReplacementPrice(event.target.value)}
                     placeholder="Optional, ex VAT"
@@ -1417,7 +1534,7 @@ export default function ValuationClient() {
         </section>
 
         <section className={styles.wizardShell}>
-          <div className={styles.wizardCard}>
+          <div id="valuation-wizard-card" className={styles.wizardCard}>
             <div className={styles.wizardHeader}>
               <div className={styles.stepper}>
                 {WIZARD_STEPS.map((item) => {
@@ -1454,7 +1571,12 @@ export default function ValuationClient() {
                   </button>
                 </>
               ) : (
-                <button type="button" className={styles.primaryButton} onClick={handleNext} disabled={valuationLoading || (step === 2 && !brands.length)}>
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={handleNext}
+                  disabled={valuationLoading || (step === 1 && (familiesLoading || !selectedFamily)) || (step === 2 && (brandsLoading || !selectedBrand))}
+                >
                   {valuationLoading ? 'Calculating...' : step === 4 ? 'Get Valuation' : 'Continue'}
                 </button>
               )}
