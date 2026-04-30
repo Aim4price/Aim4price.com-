@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
-import { hasMarketplaceListingForAsset, publishRegisterItemToMarketplace } from '../../lib/marketplace';
 import {
   openAssetRegisterSummaryPrint,
   openAssetSheetPrint,
@@ -42,6 +41,9 @@ type RegisterAsset = {
   serialNumber: string;
   isFinanced: boolean;
   financeNote: string;
+  sellerPhone: string;
+  marketplaceNotes: string;
+  marketplaceStatus: string;
   photos: string[];
   publicAssetCode: string;
   plateLabel: string;
@@ -75,6 +77,13 @@ type AssetUploadApiResponse = {
     contentType: string;
     byteSize: number;
   }>;
+  error?: string;
+};
+
+type MarketplaceApiResponse = {
+  ok: boolean;
+  assetId?: string;
+  marketplaceStatus?: string;
   error?: string;
 };
 
@@ -416,6 +425,13 @@ function money(value: number): string {
   }).format(value || 0);
 }
 
+function parseMoneyInput(value: unknown): number | null {
+  const normalized = String(value ?? '').trim().replace(/\s/g, '').replace(',', '.');
+  if (!normalized) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function formatPercent(value: number): string {
   const normalized = Number(value || 0);
   return `${normalized.toFixed(normalized % 1 === 0 ? 0 : 1)}%`;
@@ -526,7 +542,25 @@ function normalizePhotos(value: string[]): string[] {
 }
 
 function isTractorAsset(asset: RegisterAsset): boolean {
-  return asset.kind === 'tractor' || Boolean(asset.brandName && asset.modelName && asset.yearModel);
+  return asset.kind === 'tractor' || Boolean(asset.tractorType || asset.drive || asset.cab || asset.powerKw !== null);
+}
+
+function isValuedEquipmentAsset(asset: RegisterAsset): boolean {
+  return asset.kind !== 'property' && Boolean(asset.valuationRunId !== null || asset.brandName || asset.modelName || asset.selectedMethod !== 'manual');
+}
+
+function isMarketplaceEligible(asset: RegisterAsset): boolean {
+  return asset.kind !== 'property' && asset.value > 0 && (isTractorAsset(asset) || isValuedEquipmentAsset(asset));
+}
+
+function isLiveOnMarketplace(asset: RegisterAsset): boolean {
+  return String(asset.marketplaceStatus ?? 'draft').toLowerCase() === 'live';
+}
+
+function assetKindLabel(asset: RegisterAsset): string {
+  if (isTractorAsset(asset)) return 'Tractor';
+  if (isValuedEquipmentAsset(asset)) return 'Valued equipment';
+  return kindLabel(asset.kind);
 }
 
 function canProjectFuturePrice(asset: RegisterAsset): boolean {
@@ -588,12 +622,12 @@ function createMarketplaceDraft(asset: RegisterAsset, profile: AccountProfile | 
   return {
     sellerName: profile?.name?.trim() || profile?.businessName?.trim() || 'Aim4price seller',
     sellerCompany: profile?.businessName?.trim() || '',
-    sellerPhone: profile?.phone?.trim() || '',
+    sellerPhone: asset.sellerPhone?.trim() || profile?.phone?.trim() || '',
     sellerEmail: profile?.email?.trim() || '',
     province: profile?.province?.trim() || '',
     area: profile?.townCity?.trim() || '',
     askingPriceExVat: String(Math.round(asset.selectedValueExVat || asset.value || 0)),
-    description: (asset.note || `Clean ${asset.title} listing from the Aim4price asset register.`).trim(),
+    description: (asset.marketplaceNotes || asset.note || `Clean ${asset.title} listing from the Aim4price asset register.`).trim(),
   };
 }
 
@@ -612,13 +646,14 @@ function assetPreviewImage(asset: RegisterAsset): string | null {
 }
 
 function assetSectorLabel(asset: RegisterAsset): string {
-  if (isTractorAsset(asset)) return 'Agricultural';
+  if (isTractorAsset(asset) || isValuedEquipmentAsset(asset)) return 'Agricultural';
   if (asset.kind === 'property') return 'Property';
   return 'Manual';
 }
 
 function assetFamilyLabel(asset: RegisterAsset): string {
   if (isTractorAsset(asset)) return 'Tractor';
+  if (isValuedEquipmentAsset(asset)) return 'Valued equipment';
   if (asset.kind === 'property') return 'Property';
   return 'Manual asset';
 }
@@ -1349,7 +1384,8 @@ export default function AssetRegisterClient() {
       return;
     }
 
-    const askingPriceExVat = Math.round(Number(marketplaceDraft.askingPriceExVat || 0));
+    const parsedPrice = parseMoneyInput(marketplaceDraft.askingPriceExVat);
+    const askingPriceExVat = Math.round(parsedPrice ?? 0);
 
     if (!Number.isFinite(askingPriceExVat) || askingPriceExVat <= 0) {
       setNotice({ tone: 'error', message: 'Enter a valid marketplace price before continuing.' });
@@ -1361,30 +1397,49 @@ export default function AssetRegisterClient() {
       return;
     }
 
+    if (!isMarketplaceEligible(marketplaceAsset)) {
+      setNotice({ tone: 'error', message: 'Only valued equipment assets can be sent to marketplace.' });
+      return;
+    }
+
     setIsPublishingMarketplace(true);
 
     try {
-      const normalizedAsset = buildSavedItemFromAsset(marketplaceAsset);
-      const publishableAsset = isTractorAsset(marketplaceAsset)
-        ? { ...normalizedAsset, kind: 'tractor' as const }
-        : normalizedAsset;
-
-      publishRegisterItemToMarketplace(publishableAsset, {
-        askingPriceExVat,
-        description: marketplaceDraft.description.trim(),
-        sellerName: marketplaceDraft.sellerName.trim(),
-        sellerCompany: marketplaceDraft.sellerCompany.trim(),
-        sellerPhone: marketplaceDraft.sellerPhone.trim(),
-        sellerEmail: marketplaceDraft.sellerEmail.trim(),
-        province: marketplaceDraft.province.trim(),
-        area: marketplaceDraft.area.trim(),
-        imageUrls: marketplaceAsset.photos.length ? marketplaceAsset.photos : [FALLBACK_ASSET_IMAGE],
-        imageSrc: assetImage(marketplaceAsset),
+      const response = await fetch('/api/marketplace', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetId: marketplaceAsset.id,
+          askingPriceExVat,
+          marketplaceNotes: marketplaceDraft.description.trim(),
+          sellerPhone: marketplaceDraft.sellerPhone.trim(),
+          sellerName: marketplaceDraft.sellerName.trim(),
+          sellerCompany: marketplaceDraft.sellerCompany.trim(),
+          sellerEmail: marketplaceDraft.sellerEmail.trim(),
+          province: marketplaceDraft.province.trim(),
+          area: marketplaceDraft.area.trim(),
+        }),
       });
+      const data = (await response.json()) as MarketplaceApiResponse;
 
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? 'Failed to send asset to marketplace.');
+      }
+
+      const publishedAsset: RegisterAsset = {
+        ...marketplaceAsset,
+        sellerPhone: marketplaceDraft.sellerPhone.trim(),
+        marketplaceNotes: marketplaceDraft.description.trim(),
+        marketplaceStatus: data.marketplaceStatus ?? 'live',
+        updatedAtIso: new Date().toISOString(),
+      };
+
+      setAssets((current) => current.map((asset) => (asset.id === publishedAsset.id ? publishedAsset : asset)));
+      setActiveAsset((current) => (current?.id === publishedAsset.id ? publishedAsset : current));
       setNotice({
         tone: 'success',
-        message: `${marketplaceAsset.title} is ready on the marketplace.`,
+        message: `${publishedAsset.title} is ready on the marketplace.`,
       });
       closeMarketplaceModal();
     } catch (error) {
@@ -1404,7 +1459,7 @@ export default function AssetRegisterClient() {
     const didOpen = openAssetSheetPrint({
       logoUrl: toAbsoluteUrl('/brand/aim4price-mark-white.png') ?? '',
       generatedAt: formatDate(new Date().toISOString()),
-      assetBadge: kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind),
+      assetBadge: assetKindLabel(asset),
       heroTitle: asset.title,
       heroMeta: buildAssetMeta(asset),
       valueLabel: `${methodLabel(asset.selectedMethod)} value`,
@@ -1413,7 +1468,7 @@ export default function AssetRegisterClient() {
       statusLabel: assetStatusDateLabel(asset),
       photoUrl: toAbsoluteUrl(asset.photos[0] || FALLBACK_ASSET_IMAGE) ?? null,
       facts: [
-        { label: 'Asset type', value: kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind) },
+        { label: 'Asset type', value: assetKindLabel(asset) },
         { label: 'Method', value: methodLabel(asset.selectedMethod) },
         { label: 'Brand', value: asset.brandName || '—' },
         { label: 'Model', value: asset.modelName || '—' },
@@ -1586,7 +1641,7 @@ export default function AssetRegisterClient() {
       ],
       rows: assets.map((asset) => ({
         asset: asset.title,
-        type: kindLabel(isTractorAsset(asset) ? 'tractor' : asset.kind),
+        type: assetKindLabel(asset),
         method: methodLabel(asset.selectedMethod),
         detail: buildExportDetail(asset),
         value: money(asset.value),
@@ -1855,7 +1910,7 @@ export default function AssetRegisterClient() {
                 <div className={styles.assetList}>
                   {visibleAssets.map((asset) => {
                     const previewPhoto = assetPreviewImage(asset);
-                    const isLive = isTractorAsset(asset) && hasMarketplaceListingForAsset(String(asset.id));
+                    const isLive = isLiveOnMarketplace(asset);
                     const isExpanded = expandedAssetId === asset.id;
 
                     return (
@@ -2444,11 +2499,11 @@ export default function AssetRegisterClient() {
                 <span>Download asset PDF</span>
               </button>
 
-              {isTractorAsset(activeAsset) ? (
+              {isMarketplaceEligible(activeAsset) ? (
                 <button type="button" className={styles.optionActionButton} onClick={() => handlePublishFromDialog(activeAsset)}>
                   <StoreIcon className={styles.buttonIcon} />
                   <span>
-                    {hasMarketplaceListingForAsset(String(activeAsset.id)) ? 'Update marketplace' : 'Send to marketplace'}
+                    {isLiveOnMarketplace(activeAsset) ? 'Update marketplace' : 'Send to marketplace'}
                   </span>
                 </button>
               ) : null}
@@ -2644,7 +2699,7 @@ export default function AssetRegisterClient() {
                   <button type="submit" className={styles.primaryButton} disabled={isPublishingMarketplace}>
                     {isPublishingMarketplace
                       ? 'Publishing...'
-                      : hasMarketplaceListingForAsset(String(marketplaceAsset.id))
+                      : isLiveOnMarketplace(marketplaceAsset)
                         ? 'Update marketplace listing'
                         : 'Confirm and send'}
                   </button>
