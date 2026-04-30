@@ -206,10 +206,10 @@ const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
   { step: 5, label: 'Value' },
 ];
 
-const SECTOR_OPTIONS: Array<{ key: SectorKey; label: string; note: string }> = [
-  { key: 'agricultural', label: SECTOR_LABELS.agricultural, note: 'Tractors, balers, implements and farm machinery' },
-  { key: 'construction', label: SECTOR_LABELS.construction, note: 'Construction equipment framework ready' },
-  { key: 'industrial', label: SECTOR_LABELS.industrial, note: 'Industrial equipment framework ready' },
+const SECTOR_OPTIONS: Array<{ key: SectorKey; label: string; available: boolean }> = [
+  { key: 'agricultural', label: SECTOR_LABELS.agricultural, available: true },
+  { key: 'construction', label: SECTOR_LABELS.construction, available: false },
+  { key: 'industrial', label: SECTOR_LABELS.industrial, available: false },
 ];
 
 function nextStep(step: Step): Step {
@@ -356,7 +356,7 @@ function buildSpecPayload(specQuestions: SpecQuestion[], specAnswers: Record<str
 export default function ValuationClient() {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
-  const [selectedSector, setSelectedSector] = useState<SectorKey>('agricultural');
+  const [selectedSector, setSelectedSector] = useState<SectorKey | null>(null);
   const [families, setFamilies] = useState<EquipmentFamilyRecord[]>([]);
   const [familiesLoading, setFamiliesLoading] = useState(false);
   const [familySearch, setFamilySearch] = useState('');
@@ -408,10 +408,7 @@ export default function ValuationClient() {
   );
   const filteredFamilies = useMemo(() => {
     return families.filter((family) =>
-      searchIncludes(
-        `${family.familyLabel} ${family.familyKey} ${family.sectorLabel} ${formatCatalogModeLabel(family.catalogMode)} ${formatUsageMetricLabel(family.usageMetricType)}`,
-        familySearch,
-      ),
+      searchIncludes(`${family.familyLabel} ${family.familyKey} ${family.sectorLabel}`, familySearch),
     );
   }, [families, familySearch]);
   const filteredBrands = useMemo(() => brands.filter((brand) => searchIncludes(`${brand.name} ${brand.slug}`, brandSearch)), [brands, brandSearch]);
@@ -436,8 +433,6 @@ export default function ValuationClient() {
     [specsJson, lifeWorkedPercentNumber, yearModelUnknown],
   );
   const headlineValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
-  const freeGuestValuationsRemaining = Math.max(0, 3 - guestValuationCount);
-
   useEffect(() => {
     const target = document.getElementById('valuation-wizard-card');
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -468,7 +463,7 @@ export default function ValuationClient() {
 
   useEffect(() => {
     let ignore = false;
-    setFamiliesLoading(true);
+
     setFamilies([]);
     setFamilyKey('');
     setFamilySearch('');
@@ -479,9 +474,20 @@ export default function ValuationClient() {
     setModelQuery('');
     setModelId('');
     setTractorModels([]);
+    setSpecQuestions([]);
+    setSpecAnswers({});
     setResultState(null);
     setSelectedMethod('aim4price');
     setReplacementPriceBasis('aim4price');
+
+    if (!selectedSector) {
+      setFamiliesLoading(false);
+      return () => {
+        ignore = true;
+      };
+    }
+
+    setFamiliesLoading(true);
 
     async function loadFamilies() {
       try {
@@ -491,7 +497,6 @@ export default function ValuationClient() {
         if (!response.ok || !data.ok || !Array.isArray(data.families)) throw new Error(data.error ?? 'Failed to load families.');
         if (ignore) return;
         setFamilies(data.families);
-        setFamilyKey(data.families[0]?.familyKey ?? '');
       } catch (error) {
         console.error(error);
         if (!ignore) setMessage(error instanceof Error ? error.message : 'Failed to load families.');
@@ -507,7 +512,7 @@ export default function ValuationClient() {
   }, [selectedSector]);
 
   useEffect(() => {
-    if (!selectedFamily) return;
+    if (!selectedFamily || !selectedSector) return;
 
     const familyForRequest = selectedFamily;
     const familyKeyForRequest = familyForRequest.familyKey;
@@ -560,7 +565,7 @@ export default function ValuationClient() {
   }, [selectedFamily, selectedSector]);
 
   useEffect(() => {
-    if (!selectedFamily) return;
+    if (!selectedFamily || !selectedSector) return;
 
     const familyKeyForRequest = selectedFamily.familyKey;
 
@@ -668,8 +673,8 @@ export default function ValuationClient() {
 
 
   async function calculateGenericWithReplacementPrice(priceExVat: number) {
-    if (!selectedFamily || !selectedBrand) {
-      setMessage('Choose a family and brand first.');
+    if (!selectedSector || !selectedFamily || !selectedBrand) {
+      setMessage('Choose a sector, family and brand first.');
       return;
     }
 
@@ -715,6 +720,11 @@ export default function ValuationClient() {
   }
 
   async function calculateValuation() {
+    if (!selectedSector) {
+      setMessage('Choose a sector first.');
+      return;
+    }
+
     const validationMessage = validateDetails();
     if (validationMessage) {
       setMessage(validationMessage);
@@ -885,9 +895,61 @@ export default function ValuationClient() {
     setStep(nextStep(step));
   }
 
+  function resetToSectorSelection() {
+    setStep(1);
+    setSelectedSector(null);
+    setFamilies([]);
+    setFamilyKey('');
+    setFamilySearch('');
+    setBrands([]);
+    setBrandSlug('');
+    setBrandSearch('');
+    setTypedModelName('');
+    setModelQuery('');
+    setModelId('');
+    setTractorModels([]);
+    setSpecQuestions([]);
+    setSpecAnswers({});
+    setUsageAmount('');
+    setLifeWorkedPercent('');
+    setUserReplacementPrice('');
+    setYearModelUnknown(false);
+    setMessage('');
+    resetResult();
+  }
+
+  function handleSectorSelect(sectorKey: SectorKey) {
+    const sector = SECTOR_OPTIONS.find((option) => option.key === sectorKey);
+    if (!sector?.available) {
+      setMessage(`${SECTOR_LABELS[sectorKey]} is coming soon. Agriculture is live first.`);
+      return;
+    }
+
+    setMessage('');
+    setSelectedSector(sectorKey);
+    resetResult();
+  }
+
+  function handleFamilySelection(nextFamilyKey: string) {
+    if (!nextFamilyKey) return;
+
+    setFamilyKey(nextFamilyKey);
+    setFamilySearch('');
+    setTypedModelName('');
+    setModelQuery('');
+    setModelId('');
+    resetResult();
+    setStep(2);
+  }
+
   function handleBack() {
     setMessage('');
     if (step === 1) {
+      if (selectedSector) {
+        resetToSectorSelection();
+        return;
+      }
+
       router.push('/');
       return;
     }
@@ -895,40 +957,47 @@ export default function ValuationClient() {
   }
 
   function renderMachineStep() {
-    return (
-      <div>
-        <h2 className={styles.stepTitle}>Choose machine type</h2>
-        <p className={styles.stepText}>Pick the sector, then search or select the machine family. The next steps only show fields that apply to that family.</p>
+    if (!selectedSector) {
+      return (
+        <div className={styles.sectorStart}>
+          <h2 className={styles.stepTitle}>Choose sector</h2>
 
-        <div className={`${styles.choiceGrid} ${styles.sectorChoiceGrid}`}>
-          {SECTOR_OPTIONS.map((sector) => (
-            <button
-              key={sector.key}
-              type="button"
-              className={`${styles.choiceCard} ${selectedSector === sector.key ? styles.choiceCardActive : ''}`}
-              onClick={() => {
-                setSelectedSector(sector.key);
-                resetResult();
-              }}
-            >
-              <strong>{sector.label}</strong>
-              <span className={styles.choiceCardNote}>{sector.note}</span>
-            </button>
-          ))}
+          <div className={styles.sectorLargeGrid}>
+            {SECTOR_OPTIONS.map((sector) => {
+              const isAvailable = sector.available;
+              return (
+                <button
+                  key={sector.key}
+                  type="button"
+                  className={`${styles.sectorBigCard} ${isAvailable ? styles.sectorBigCardLive : styles.sectorBigCardSoon}`}
+                  onClick={() => handleSectorSelect(sector.key)}
+                  aria-label={isAvailable ? `Choose ${sector.label}` : `${sector.label} coming soon`}
+                >
+                  <span className={styles.sectorBigCardContent}>
+                    <strong>{sector.label}</strong>
+                  </span>
+                  {!isAvailable ? <span className={styles.comingSoonBanner}>Coming soon</span> : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={styles.equipmentStage}>
+        <div className={styles.equipmentStageTop}>
+          <button type="button" className={styles.stageBackButton} onClick={resetToSectorSelection}>
+            Change sector
+          </button>
+          <span className={styles.selectedSummaryPill}>{SECTOR_LABELS[selectedSector]}</span>
         </div>
 
-        <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
-          <div className={styles.currentCardHead}>
-            <div>
-              <span className={styles.currentEyebrow}>Step 1</span>
-              <h3 className={styles.currentTitle}>Equipment type</h3>
-              <p className={styles.currentHint}>Search by normal words: tractor, baler, planter, sprayer, trailer.</p>
-            </div>
-            {selectedFamily ? (
-              <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span>
-            ) : null}
-          </div>
+        <h2 className={styles.stepTitle}>Choose equipment type</h2>
+        <p className={styles.stepText}>Search or choose the machine type. Selecting one moves to the brand step automatically.</p>
 
+        <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
           <label className={`${styles.field} ${styles.searchPanel}`}>
             <span className={styles.fieldLabel}>Search equipment type</span>
             <input
@@ -940,29 +1009,23 @@ export default function ValuationClient() {
             />
           </label>
 
-          {familiesLoading ? <p className={styles.fieldHint}>Loading equipment types...</p> : null}
+          <label className={`${styles.field} ${styles.equipmentSelectField}`}>
+            <span className={styles.fieldLabel}>Equipment type</span>
+            <select
+              value={familyKey}
+              onChange={(event) => handleFamilySelection(event.target.value)}
+              disabled={familiesLoading || !filteredFamilies.length}
+            >
+              <option value="">{familiesLoading ? 'Loading equipment types...' : 'Select equipment type...'}</option>
+              {filteredFamilies.map((family) => (
+                <option key={family.familyKey} value={family.familyKey}>
+                  {family.familyLabel}
+                </option>
+              ))}
+            </select>
+          </label>
 
-          <div className={`${styles.choiceGrid} ${styles.compactChoiceGrid}`}>
-            {filteredFamilies.map((family) => (
-              <button
-                key={family.familyKey}
-                type="button"
-                className={`${styles.choiceCard} ${familyKey === family.familyKey ? styles.choiceCardActive : ''}`}
-                onClick={() => {
-                  setFamilyKey(family.familyKey);
-                  setFamilySearch('');
-                  setTypedModelName('');
-                  setModelQuery('');
-                  setModelId('');
-                  resetResult();
-                }}
-              >
-                <span className={styles.choiceCardMeta}>{formatCatalogModeLabel(family.catalogMode)}</span>
-                <strong>{family.familyLabel}</strong>
-                <span className={styles.choiceCardNote}>{formatUsageMetricLabel(family.usageMetricType)} valuation inputs</span>
-              </button>
-            ))}
-          </div>
+          {familiesLoading ? <p className={styles.fieldHint}>Loading equipment types...</p> : null}
 
           {!filteredFamilies.length && !familiesLoading ? (
             <p className={styles.message}>No matching equipment type found. Clear the search or import the family into the equipment catalogue.</p>
@@ -1520,50 +1583,39 @@ export default function ValuationClient() {
     <main className={styles.page}>
       <AppHeader active="valuation" />
       <div className={styles.container}>
-        <section className={styles.heroIntro}>
-          <div className={styles.heroIntroContent}>
-            <span className={styles.heroBadge}>Aim4price V1 hybrid system</span>
-            <h1 className={styles.heroIntroTitle}>Value any machine.</h1>
-            <p className={styles.heroIntroText}>
-              Tractors can use exact model data. Every other family starts with brand, specs, replacement bands, and market evidence.
-            </p>
-            <p className={styles.heroIntroText}>
-              {isSignedIn ? 'Signed in valuations can be saved to your asset register.' : `${freeGuestValuationsRemaining} of 3 free guest valuations available.`}
-            </p>
-          </div>
-        </section>
-
         <section className={styles.wizardShell}>
           <div id="valuation-wizard-card" className={styles.wizardCard}>
-            <div className={styles.wizardHeader}>
-              <div className={styles.stepper}>
-                {WIZARD_STEPS.map((item) => {
-                  const active = item.step === step;
-                  const complete = item.step < step;
-                  return (
-                    <div key={item.step} className={`${styles.stepperItem} ${active ? styles.stepperItemActive : ''} ${complete ? styles.stepperItemComplete : ''}`}>
-                      <span className={`${styles.stepperBullet} ${active ? styles.stepperBulletActive : ''} ${complete ? styles.stepperBulletComplete : ''}`}>
-                        {complete ? '✓' : item.step}
-                      </span>
-                      <span className={`${styles.stepperLabel} ${active ? styles.stepperLabelActive : ''} ${complete ? styles.stepperLabelComplete : ''}`}>{item.label}</span>
-                    </div>
-                  );
-                })}
+            {step > 1 ? (
+              <div className={styles.wizardHeader}>
+                <div className={styles.stepper}>
+                  {WIZARD_STEPS.map((item) => {
+                    const active = item.step === step;
+                    const complete = item.step < step;
+                    return (
+                      <div key={item.step} className={`${styles.stepperItem} ${active ? styles.stepperItemActive : ''} ${complete ? styles.stepperItemComplete : ''}`}>
+                        <span className={`${styles.stepperBullet} ${active ? styles.stepperBulletActive : ''} ${complete ? styles.stepperBulletComplete : ''}`}>
+                          {complete ? '✓' : item.step}
+                        </span>
+                        <span className={`${styles.stepperLabel} ${active ? styles.stepperLabelActive : ''} ${complete ? styles.stepperLabelComplete : ''}`}>{item.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            ) : null}
 
             <div className={styles.stepContent}>
               {renderStepBody()}
               {message ? <div className={styles.message}>{message}</div> : null}
             </div>
 
-            <div className={styles.wizardFooter}>
+            <div className={`${styles.wizardFooter} ${step === 1 ? styles.wizardFooterSingle : ''}`}>
               <button type="button" className={styles.secondaryButton} onClick={handleBack} disabled={valuationLoading || saveLoading}>
                 Back
               </button>
-              {step === 5 ? (
+              {step === 1 ? null : step === 5 ? (
                 <>
-                  <button type="button" className={styles.secondaryButton} onClick={() => setStep(1)} disabled={saveLoading}>
+                  <button type="button" className={styles.secondaryButton} onClick={resetToSectorSelection} disabled={saveLoading}>
                     New valuation
                   </button>
                   <button type="button" className={styles.primaryButton} onClick={saveToAssetRegister} disabled={saveLoading || !resultState}>
@@ -1575,7 +1627,7 @@ export default function ValuationClient() {
                   type="button"
                   className={styles.primaryButton}
                   onClick={handleNext}
-                  disabled={valuationLoading || (step === 1 && (familiesLoading || !selectedFamily)) || (step === 2 && (brandsLoading || !selectedBrand))}
+                  disabled={valuationLoading || (step === 2 && (brandsLoading || !selectedBrand))}
                 >
                   {valuationLoading ? 'Calculating...' : step === 4 ? 'Get Valuation' : 'Continue'}
                 </button>
