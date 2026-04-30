@@ -14,7 +14,7 @@ import {
   type TractorType,
 } from '../../lib/tractor-data';
 import { SECTOR_LABELS, type CatalogMode, type SectorKey, type UsageMetricType } from '../../lib/equipment-types';
-import { conditionLabel, money, range, type Result } from '../../lib/tractor-logic';
+import { conditionLabel, money, type Result } from '../../lib/tractor-logic';
 import { getGuestValuationCount, incrementGuestValuationCount } from '../../lib/guest-valuation-limit';
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -470,6 +470,7 @@ export default function ValuationClient() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [guestValuationCount, setGuestValuationCount] = useState(0);
+  const [replacementPanelOpen, setReplacementPanelOpen] = useState(false);
 
   const selectedFamily = useMemo(
     () => families.find((family) => family.familyKey === familyKey) ?? null,
@@ -804,6 +805,7 @@ export default function ValuationClient() {
     setResultState(null);
     setSelectedMethod('aim4price');
     setReplacementPriceBasis('aim4price');
+    setReplacementPanelOpen(false);
   }
 
   function resetDetailsFlow() {
@@ -907,6 +909,7 @@ export default function ValuationClient() {
       setResultState({ kind: 'generic', result: data.result });
       setReplacementPriceBasis('user');
       setSelectedMethod('aim4price');
+      setReplacementPanelOpen(true);
     } catch (error) {
       console.error(error);
       setMessage(error instanceof Error ? error.message : 'Failed to recalculate with user replacement price.');
@@ -957,6 +960,7 @@ export default function ValuationClient() {
         if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to calculate tractor valuation.');
         setResultState({ kind: 'tractor', result: data.result });
         setSelectedMethod(data.result.marketMid !== null ? 'market' : 'aim4price');
+        setReplacementPanelOpen(false);
       } else if (selectedFamily && selectedBrand) {
         const response = await fetch('/api/generic-valuations', {
           method: 'POST',
@@ -981,6 +985,7 @@ export default function ValuationClient() {
         setResultState({ kind: 'generic', result: data.result });
         setReplacementPriceBasis(data.result.userReplacementCalculation ? 'user' : 'aim4price');
         setSelectedMethod(data.result.marketAverageExVat !== null ? 'market' : 'aim4price');
+        setReplacementPanelOpen(false);
       }
 
       if (!isSignedIn) {
@@ -2099,153 +2104,182 @@ export default function ValuationClient() {
       : tractorResult?.aim4priceValueExVat ?? null;
     const marketCount = isGeneric ? genericResult?.marketAverageCount ?? 0 : tractorResult?.marketCount ?? 0;
     const userPriceInput = toNumberOrNull(userReplacementPrice);
+    const confidenceText = getConfidenceLabel(resultState);
+    const resultHeroTone = confidenceText.toLowerCase().includes('high')
+      ? styles.resultHeroHigh
+      : confidenceText.toLowerCase().includes('medium')
+        ? styles.resultHeroMedium
+        : styles.resultHeroLow;
+    const machineTitle = isGeneric
+      ? `${genericResult?.family.label ?? 'Machine'} • ${genericResult?.brand.name ?? 'Brand'}${genericResult?.typedModelName ? ` • ${genericResult.typedModelName}` : ''}`
+      : `${tractorResult?.model.brandName ?? ''} ${tractorResult?.model.modelName ?? ''}`.trim();
+    const resultCondition = isGeneric ? genericResult?.condition ?? condition : condition;
+    const usageSummary = isGeneric && genericSelectedCalculation
+      ? `${formatPercent(genericSelectedCalculation.lifeWorkedPercent)} worked${genericSelectedCalculation.estimatedHours ? ` • ${genericSelectedCalculation.estimatedHours.toLocaleString('en-ZA')} estimated hours` : ''}`
+      : usageNumber
+        ? `${usageNumber.toLocaleString('en-ZA')} hours`
+        : lifeWorkedPercentNumber !== null
+          ? `${formatPercent(lifeWorkedPercentNumber)} worked`
+          : 'Usage captured';
+    const resultBasisText = selectedMethod === 'market'
+      ? 'Based on matched marketplace evidence'
+      : isGeneric && replacementPriceBasis === 'user'
+        ? 'Calculated from your replacement price'
+        : 'Calculated from Aim4price data';
+    const replacementBasisText = genericResult?.userReplacementCalculation && replacementPriceBasis === 'user'
+      ? `Current basis: your replacement price of ${money(genericResult.userReplacementCalculation.replacementPriceExVat)}`
+      : `Current basis: Aim4price replacement estimate of ${money(genericResult?.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}`;
 
     return (
       <div className={styles.resultsLayout}>
         <div className={styles.resultsMain}>
-          <div className={`${styles.valuePanel} ${getConfidenceClass(resultState)}`}>
-            <div className={styles.valuePanelTop}>
-              <span className={styles.valueLabel}>
-                {selectedMethod === 'market'
-                  ? 'Market value'
-                  : isGeneric && replacementPriceBasis === 'user'
-                    ? 'Aim4price value using your replacement price'
-                    : 'Aim4price value'}
-              </span>
-              <span className={styles.valueMeta}>{getConfidenceLabel(resultState)}</span>
+          <section className={`${styles.resultHero} ${resultHeroTone}`}>
+            <div className={styles.resultHeroTopline}>
+              <span className={styles.resultKicker}>{selectedMethod === 'market' ? 'Marketplace estimate' : 'Aim4price estimate'}</span>
+              <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState)}`}>{confidenceText}</span>
             </div>
-            <strong className={styles.valueAmount}>{money(headlineValue)}</strong>
-            <p className={styles.valueMeta}>
-              {isGeneric
-                ? `${genericResult?.family.label ?? ''} • ${genericResult?.brand.name ?? ''} • ${displayMarketStrategy(genericResult?.marketMatchStrategy ?? 'none')}`
-                : `${tractorResult?.model.brandName ?? ''} ${tractorResult?.model.modelName ?? ''}`}
-            </p>
-            {isGeneric && genericSelectedCalculation ? (
-              <p className={styles.valueMeta}>
-                {depreciationMethodLabel(genericSelectedCalculation.depreciationMethodUsed)} • worked {formatPercent(genericSelectedCalculation.lifeWorkedPercent)}
-                {genericSelectedCalculation.estimatedHours ? ` • estimated ${genericSelectedCalculation.estimatedHours.toLocaleString('en-ZA')} hours` : ''}
-              </p>
-            ) : null}
-          </div>
+            <strong className={styles.resultValue}>{money(headlineValue)}</strong>
+            <p className={styles.resultMachineTitle}>{machineTitle}</p>
+            <div className={styles.resultFactsGrid}>
+              <div className={styles.resultFactCard}>
+                <span>Condition</span>
+                <strong>{conditionLabel(resultCondition)}</strong>
+              </div>
+              <div className={styles.resultFactCard}>
+                <span>Usage</span>
+                <strong>{usageSummary}</strong>
+              </div>
+              <div className={styles.resultFactCard}>
+                <span>Basis</span>
+                <strong>{resultBasisText}</strong>
+              </div>
+            </div>
+          </section>
 
-          <div className={styles.choiceGrid} style={{ marginTop: '1rem' }}>
+          <section className={styles.resultMethodGrid}>
             <button
               type="button"
-              className={`${styles.choiceCard} ${selectedMethod === 'aim4price' ? styles.choiceCardActive : ''}`}
+              className={`${styles.resultMethodCard} ${selectedMethod === 'aim4price' ? styles.resultMethodCardActive : ''}`}
               onClick={() => setSelectedMethod('aim4price')}
             >
+              <span className={styles.resultMethodLabel}>Aim4price value</span>
               <strong>{money(aimValue)}</strong>
-              <span className={styles.choiceCardNote}>
-                {isGeneric && replacementPriceBasis === 'user' ? 'Using user replacement price' : 'Aim4price calculated value'}
-              </span>
+              <small>{isGeneric && replacementPriceBasis === 'user' ? 'Using your replacement price' : 'Using Aim4price valuation logic'}</small>
             </button>
             <button
               type="button"
-              className={`${styles.choiceCard} ${selectedMethod === 'market' ? styles.choiceCardActive : ''}`}
+              className={`${styles.resultMethodCard} ${selectedMethod === 'market' ? styles.resultMethodCardActive : ''}`}
               onClick={() => marketValue !== null && setSelectedMethod('market')}
               disabled={marketValue === null}
             >
+              <span className={styles.resultMethodLabel}>Marketplace value</span>
               <strong>{money(marketValue)}</strong>
-              <span className={styles.choiceCardNote}>{marketCount} market listing{marketCount === 1 ? '' : 's'} matched</span>
+              <small>{marketCount} matched listing{marketCount === 1 ? '' : 's'}</small>
             </button>
-          </div>
+          </section>
 
           {isGeneric && genericResult ? (
-            <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
-              <h3 className={styles.currentTitle}>Replacement price comparison</h3>
-              <p className={styles.currentHint}>First compare Aim4price's replacement estimate with what the user believes this machine costs new today.</p>
+            <section className={styles.resultAccordion}>
+              <button
+                type="button"
+                className={styles.resultAccordionToggle}
+                onClick={() => setReplacementPanelOpen((open) => !open)}
+                aria-expanded={replacementPanelOpen}
+              >
+                <span className={styles.resultAccordionTitleGroup}>
+                  <strong>Replacement price</strong>
+                  <small>{replacementBasisText}</small>
+                </span>
+                <span className={styles.resultAccordionAction}>{replacementPanelOpen ? 'Hide' : 'Adjust'}</span>
+              </button>
 
-              <div className={styles.choiceGrid} style={{ marginTop: '1rem' }}>
-                <button
-                  type="button"
-                  className={`${styles.choiceCard} ${replacementPriceBasis === 'aim4price' ? styles.choiceCardActive : ''}`}
-                  onClick={() => {
-                    setReplacementPriceBasis('aim4price');
-                    setSelectedMethod('aim4price');
-                  }}
-                >
-                  <strong>{money(genericResult.aim4priceReplacementCalculation?.valuationMidExVat ?? null)}</strong>
-                  <span className={styles.choiceCardNote}>
-                    Aim4price replacement: {money(genericResult.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}
-                  </span>
-                </button>
+              {replacementPanelOpen ? (
+                <div className={styles.resultAccordionBody}>
+                  <p className={styles.resultAccordionCopy}>
+                    Replacement price means what a similar machine would cost new today. Adjust it when you know the real current new price and want Aim4price to calculate from that number.
+                  </p>
 
-                <button
-                  type="button"
-                  className={`${styles.choiceCard} ${replacementPriceBasis === 'user' ? styles.choiceCardActive : ''}`}
-                  onClick={() => {
-                    if (genericResult.userReplacementCalculation) {
-                      setReplacementPriceBasis('user');
-                      setSelectedMethod('aim4price');
-                    }
-                  }}
-                  disabled={!genericResult.userReplacementCalculation}
-                >
-                  <strong>{money(genericResult.userReplacementCalculation?.valuationMidExVat ?? null)}</strong>
-                  <span className={styles.choiceCardNote}>
-                    User replacement: {money(genericResult.userReplacementCalculation?.replacementPriceExVat ?? null)}
-                  </span>
-                </button>
-              </div>
+                  <div className={styles.replacementOptionGrid}>
+                    <button
+                      type="button"
+                      className={`${styles.replacementOptionCard} ${replacementPriceBasis === 'aim4price' ? styles.replacementOptionCardActive : ''}`}
+                      onClick={() => {
+                        setReplacementPriceBasis('aim4price');
+                        setSelectedMethod('aim4price');
+                      }}
+                    >
+                      <span>Aim4price basis</span>
+                      <strong>{money(genericResult.aim4priceReplacementCalculation?.valuationMidExVat ?? null)}</strong>
+                      <small>New price used: {money(genericResult.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}</small>
+                    </button>
 
-              <div className={styles.inputGrid}>
-                <label className={styles.field}>
-                  <span className={styles.fieldLabel}>What does this cost new today?</span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={userReplacementPrice}
-                    onChange={(event) => setUserReplacementPrice(event.target.value)}
-                    placeholder="Optional, ex VAT"
-                  />
-                  <span className={styles.fieldHint}>This recalculates the valuation and can be saved into the Asset Register.</span>
-                </label>
-                <button
-                  type="button"
-                  className={styles.assetButton}
-                  style={{ alignSelf: 'end' }}
-                  disabled={!userPriceInput || replacementRecalculateLoading}
-                  onClick={() => userPriceInput && calculateGenericWithReplacementPrice(userPriceInput)}
-                >
-                  {replacementRecalculateLoading ? 'Recalculating...' : 'Recalculate using my replacement price'}
-                </button>
-              </div>
+                    <button
+                      type="button"
+                      className={`${styles.replacementOptionCard} ${replacementPriceBasis === 'user' ? styles.replacementOptionCardActive : ''}`}
+                      onClick={() => {
+                        if (genericResult.userReplacementCalculation) {
+                          setReplacementPriceBasis('user');
+                          setSelectedMethod('aim4price');
+                        }
+                      }}
+                      disabled={!genericResult.userReplacementCalculation}
+                    >
+                      <span>Your basis</span>
+                      <strong>{money(genericResult.userReplacementCalculation?.valuationMidExVat ?? null)}</strong>
+                      <small>New price used: {money(genericResult.userReplacementCalculation?.replacementPriceExVat ?? null)}</small>
+                    </button>
+                  </div>
 
-              {genericResult.replacementPriceBand ? (
-                <p className={styles.fieldHint}>Matched band: {genericResult.replacementPriceBand.bandLabel} • {range(genericResult.replacementPriceMinExVat, genericResult.replacementPriceMaxExVat)}</p>
+                  <div className={styles.replacementInputPanel}>
+                    <label className={styles.field}>
+                      <span className={styles.fieldLabel}>What does this cost new today?</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={userReplacementPrice}
+                        onChange={(event) => setUserReplacementPrice(event.target.value)}
+                        placeholder="Optional, ex VAT"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className={styles.assetButton}
+                      disabled={!userPriceInput || replacementRecalculateLoading}
+                      onClick={() => userPriceInput && calculateGenericWithReplacementPrice(userPriceInput)}
+                    >
+                      {replacementRecalculateLoading ? 'Recalculating...' : 'Recalculate value'}
+                    </button>
+                  </div>
+                </div>
               ) : null}
-              {genericResult.notes.length ? (
-                <div className={styles.message}>{genericResult.notes.join(' ')}</div>
-              ) : null}
-            </div>
+            </section>
           ) : null}
         </div>
 
         <aside className={styles.resultsSide}>
-          <div className={styles.sideCard}>
+          <div className={`${styles.sideCard} ${styles.marketEvidenceCard}`}>
             <h3>Market evidence</h3>
             {isGeneric && genericResult?.marketSources.length ? (
               genericResult.marketSources.slice(0, 6).map((listing) => (
-                <div key={listing.id} className={styles.answerRow}>
-                  <div className={styles.answerRowText}>
-                    <span className={styles.answerRowLabel}>{listing.matchReason}</span>
-                    <strong className={styles.answerRowValue}>{listing.title}</strong>
-                    <span className={styles.fieldHint}>{money(listing.advertisedPriceExVat)}</span>
-                  </div>
+                <div key={listing.id} className={styles.marketEvidenceItem}>
+                  <span>{listing.matchReason}</span>
+                  <strong>{listing.title}</strong>
+                  <small>{money(listing.advertisedPriceExVat)}</small>
                 </div>
               ))
             ) : tractorResult?.marketSources.length ? (
               tractorResult.marketSources.slice(0, 6).map((listing) => (
-                <div key={listing.id} className={styles.answerRow}>
-                  <div className={styles.answerRowText}>
-                    <span className={styles.answerRowLabel}>{listing.sourceName}</span>
-                    <strong className={styles.answerRowValue}>{listing.title}</strong>
-                    <span className={styles.fieldHint}>{money(listing.advertisedPriceExVat)}</span>
-                  </div>
+                <div key={listing.id} className={styles.marketEvidenceItem}>
+                  <span>{listing.sourceName}</span>
+                  <strong>{listing.title}</strong>
+                  <small>{money(listing.advertisedPriceExVat)}</small>
                 </div>
               ))
             ) : (
-              <p className={styles.fieldHint}>No exact marketplace average yet. Aim4price used replacement price and depreciation.</p>
+              <div className={styles.marketEvidenceEmpty}>
+                <strong>No matching marketplace average yet</strong>
+                <p>When Aim4price finds similar listings, they will appear here as supporting evidence.</p>
+              </div>
             )}
           </div>
         </aside>
