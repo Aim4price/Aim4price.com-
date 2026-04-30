@@ -855,78 +855,123 @@ export async function saveModelCandidate(input: {
   if (!normalized) return;
 
   const db = getDb();
-  await db.query(
-    `
-      insert into public.model_candidates (
-        sector_id,
-        equipment_family_id,
-        brand_id,
-        brand_name_snapshot,
-        raw_model_name,
-        normalized_model_name,
-        source_type,
-        source_url,
-        specs_json,
-        occurrence_count,
-        confidence,
-        candidate_status,
-        notes,
-        first_seen_at,
-        last_seen_at,
-        created_at,
-        updated_at
-      )
-      select
-        s.id,
-        ef.id,
-        b.id,
-        nullif($4, ''),
-        $5,
-        $6,
-        $7,
-        nullif($8, ''),
-        $9::jsonb,
-        1,
-        $10,
-        'pending',
-        nullif($11, ''),
-        now(),
-        now(),
-        now(),
-        now()
-      from public.sectors s
-      join public.equipment_families ef on ef.sector_id = s.id and ef.family_key = $2
-      left join public.brands b on b.slug = nullif($3, '')
-      where s.sector_key = $1
-      on conflict (equipment_family_id, brand_id, normalized_model_name)
-      do update set
-        occurrence_count = public.model_candidates.occurrence_count + 1,
-        raw_model_name = excluded.raw_model_name,
-        brand_name_snapshot = coalesce(excluded.brand_name_snapshot, public.model_candidates.brand_name_snapshot),
-        specs_json = case
-          when excluded.specs_json = '{}'::jsonb then public.model_candidates.specs_json
-          else public.model_candidates.specs_json || excluded.specs_json
-        end,
-        confidence = greatest(public.model_candidates.confidence, excluded.confidence),
-        source_url = coalesce(excluded.source_url, public.model_candidates.source_url),
-        notes = coalesce(excluded.notes, public.model_candidates.notes),
-        last_seen_at = now(),
-        updated_at = now()
-    `,
-    [
-      input.sectorKey,
-      input.familyKey,
-      input.brandSlug ?? '',
-      input.brandNameSnapshot ?? '',
-      rawModelName,
-      normalized,
-      input.sourceType,
-      input.sourceUrl ?? '',
-      JSON.stringify(normalizeSpecsJson(input.specsJson)),
-      Math.max(0.1, Math.min(0.99, Number(input.confidence ?? 0.55))),
-      input.notes ?? '',
-    ],
-  );
+  const params = [
+    input.sectorKey,
+    input.familyKey,
+    input.brandSlug ?? '',
+    input.brandNameSnapshot ?? '',
+    rawModelName,
+    normalized,
+    input.sourceType,
+    input.sourceUrl ?? '',
+    JSON.stringify(normalizeSpecsJson(input.specsJson)),
+    Math.max(0.1, Math.min(0.99, Number(input.confidence ?? 0.55))),
+    input.notes ?? '',
+  ];
+
+  try {
+    const updated = await db.query(
+      `
+        with target as (
+          select
+            s.id as sector_id,
+            ef.id as equipment_family_id,
+            b.id as brand_id
+          from public.sectors s
+          join public.equipment_families ef on ef.sector_id = s.id and ef.family_key = $2
+          left join public.brands b on b.slug = nullif($3, '')
+          where s.sector_key = $1
+          limit 1
+        )
+        update public.model_candidates mc
+        set
+          occurrence_count = coalesce(mc.occurrence_count, 0) + 1,
+          raw_model_name = $5,
+          brand_name_snapshot = coalesce(nullif($4, ''), mc.brand_name_snapshot),
+          specs_json = case
+            when $9::jsonb = '{}'::jsonb then coalesce(mc.specs_json, '{}'::jsonb)
+            else coalesce(mc.specs_json, '{}'::jsonb) || $9::jsonb
+          end,
+          confidence = greatest(coalesce(mc.confidence, 0), $10),
+          source_url = coalesce(nullif($8, ''), mc.source_url),
+          notes = coalesce(nullif($11, ''), mc.notes),
+          last_seen_at = now(),
+          updated_at = now()
+        from target
+        where mc.equipment_family_id = target.equipment_family_id
+          and mc.brand_id is not distinct from target.brand_id
+          and mc.normalized_model_name = $6
+        returning mc.id
+      `,
+      params,
+    );
+
+    if ((updated.rowCount ?? 0) > 0) return;
+
+    await db.query(
+      `
+        insert into public.model_candidates (
+          sector_id,
+          equipment_family_id,
+          brand_id,
+          brand_name_snapshot,
+          raw_model_name,
+          normalized_model_name,
+          source_type,
+          source_url,
+          specs_json,
+          occurrence_count,
+          confidence,
+          candidate_status,
+          notes,
+          first_seen_at,
+          last_seen_at,
+          created_at,
+          updated_at
+        )
+        select
+          target.sector_id,
+          target.equipment_family_id,
+          target.brand_id,
+          nullif($4, ''),
+          $5,
+          $6,
+          $7,
+          nullif($8, ''),
+          $9::jsonb,
+          1,
+          $10,
+          'pending',
+          nullif($11, ''),
+          now(),
+          now(),
+          now(),
+          now()
+        from (
+          select
+            s.id as sector_id,
+            ef.id as equipment_family_id,
+            b.id as brand_id
+          from public.sectors s
+          join public.equipment_families ef on ef.sector_id = s.id and ef.family_key = $2
+          left join public.brands b on b.slug = nullif($3, '')
+          where s.sector_key = $1
+          limit 1
+        ) target
+        where not exists (
+          select 1
+          from public.model_candidates mc
+          where mc.equipment_family_id = target.equipment_family_id
+            and mc.brand_id is not distinct from target.brand_id
+            and mc.normalized_model_name = $6
+        )
+        on conflict do nothing
+      `,
+      params,
+    );
+  } catch (error) {
+    console.warn('[Aim4price] Model candidate save skipped so valuation can continue.', error);
+  }
 }
 
 async function collectTypedModelKeys(input: {
