@@ -11,7 +11,7 @@ import {
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
-type AssetKind = 'tractor' | 'manual' | 'property';
+type AssetKind = 'tractor' | 'equipment' | 'manual' | 'property';
 type AssetMethod = 'aim4price' | 'market' | 'manual';
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
@@ -486,6 +486,7 @@ function kindLabel(value: AssetKind): string {
   return (
     {
       tractor: 'Tractor',
+      equipment: 'Valued equipment',
       manual: 'Manual asset',
       property: 'Property',
     }[value] ?? 'Manual asset'
@@ -1049,7 +1050,7 @@ export default function AssetRegisterClient() {
   }, [assets]);
 
   const equipmentCount = useMemo(() => {
-    return assets.filter((asset) => isTractorAsset(asset)).length;
+    return assets.filter((asset) => asset.kind !== 'property').length;
   }, [assets]);
 
   const editingAsset = useMemo(() => {
@@ -1057,7 +1058,7 @@ export default function AssetRegisterClient() {
   }, [assets, editingAssetId]);
 
   const showMachineFields = useMemo(() => {
-    return assetDraft.kind === 'tractor' || Boolean(editingAsset && isTractorAsset(editingAsset));
+    return assetDraft.kind === 'tractor' || assetDraft.kind === 'equipment' || Boolean(editingAsset && isTractorAsset(editingAsset));
   }, [assetDraft.kind, editingAsset]);
 
   const filteredAssets = useMemo(() => {
@@ -2196,14 +2197,14 @@ export default function AssetRegisterClient() {
                     setAssetDraft((current) => ({
                       ...current,
                       kind: nextKind,
-                      hours: nextKind === 'tractor' ? current.hours : '',
-                      condition: nextKind === 'tractor' ? current.condition : '',
+                      hours: nextKind === 'tractor' || nextKind === 'equipment' ? current.hours : '',
+                      condition: nextKind === 'tractor' || nextKind === 'equipment' ? current.condition : '',
                     }));
                   }}
                 >
                   <option value="manual">Manual asset</option>
                   <option value="property">Property</option>
-                  <option value="tractor">Equipment</option>
+                  <option value="equipment">Equipment</option>
                 </select>
               </label>
 
