@@ -26,3 +26,5 @@
 --   01-agri-foundation.sql
 --   02-agri-seed-and-backfill.sql
 --   03-agri-verify.sql
+--   04-valuation-usability-and-model-candidate-constraint.sql
+--   05-asset-register-marketplace-save-hardening.sql
