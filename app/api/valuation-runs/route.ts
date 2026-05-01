@@ -198,7 +198,19 @@ function buildFriendlyError(error: unknown): { status: number; message: string }
   if (message.includes('SELECTED_METHOD_NOT_AVAILABLE')) {
     return {
       status: 400,
-      message: 'The selected valuation method is not available for this tractor profile.',
+      message: 'The selected valuation method is not available for this machine profile.',
+    };
+  }
+
+  if (
+    message.includes('valuation_runs_cab_type_check') ||
+    message.includes('valuation_runs_drive_type_check') ||
+    message.includes('valuation_runs_tractor_type_check') ||
+    message.includes('asset_register_items_kind_check')
+  ) {
+    return {
+      status: 500,
+      message: 'The valuation calculated correctly, but the database still has an older tractor-only save constraint. Run database/migrations/05-asset-register-marketplace-save-hardening.sql once in DBeaver, then save again.',
     };
   }
 
