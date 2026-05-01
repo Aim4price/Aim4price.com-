@@ -4,7 +4,7 @@ import type { MethodKey } from './valuation-runs';
 import type { Result } from './tractor-logic';
 import type { GenericSelectedMethod, GenericValuationResult } from './generic-valuation';
 
-export type AssetRegisterItemKind = 'tractor' | 'manual' | 'property';
+export type AssetRegisterItemKind = 'tractor' | 'equipment' | 'manual' | 'property';
 export type AssetRegisterItemMethod = MethodKey | 'manual';
 export type AssetRegisterItemCondition = ConditionKey | '';
 export type AssetRegisterQrStatus = 'active' | 'transferred' | 'retired' | 'deleted' | '';
@@ -193,7 +193,8 @@ function normalizePhotoArray(value: unknown): string[] {
 function normalizeKind(value: unknown): AssetRegisterItemKind {
   const normalized = String(value ?? '').trim().toLowerCase();
 
-  if (normalized === 'tractor' || normalized === 'equipment') return 'tractor';
+  if (normalized === 'tractor') return 'tractor';
+  if (normalized === 'equipment' || normalized === 'valued equipment') return 'equipment';
   if (normalized === 'property') return 'property';
   return 'manual';
 }
@@ -1131,7 +1132,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
 
   pushField(fields, schema, ['user_id'], input.userId);
   pushField(fields, schema, ['valuation_run_id', 'run_id'], input.valuationRunId);
-  pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], 'manual');
+  pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], 'equipment');
   pushField(fields, schema, ['title', 'name', 'asset_name'], title);
   pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], selectedValueExVat);
   pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], input.selectedMethod);
@@ -1153,7 +1154,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
     userId: input.userId,
     valuationRunId: input.valuationRunId,
     title,
-    kind: 'manual',
+    kind: 'equipment',
     selectedMethod: input.selectedMethod,
     selectedValueExVat,
     note: input.note ?? null,

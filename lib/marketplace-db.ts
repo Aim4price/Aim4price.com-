@@ -123,10 +123,42 @@ async function ensureMarketplaceColumns(): Promise<void> {
   const db = getDb();
 
   await db.query(`
+    create table if not exists marketplace_listings (
+      id uuid primary key default gen_random_uuid(),
+      user_id text not null,
+      asset_register_item_id uuid,
+      status text not null default 'live',
+      title text not null,
+      description text,
+      asking_price_ex_vat numeric(14,2) not null default 0,
+      province text,
+      area text,
+      seller_name text,
+      seller_company text,
+      seller_phone text,
+      seller_email text,
+      primary_image_url text,
+      image_urls jsonb not null default '[]'::jsonb,
+      published_at timestamptz,
+      withdrawn_at timestamptz,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      sector_id bigint,
+      equipment_family_id bigint,
+      brand_id bigint,
+      equipment_model_id bigint,
+      brand_name_snapshot text,
+      model_name_raw text,
+      normalized_model_name text,
+      specs_json jsonb not null default '{}'::jsonb
+    )
+  `);
+
+  await db.query(`
     alter table asset_register_items
       add column if not exists seller_phone text,
       add column if not exists marketplace_notes text,
-      add column if not exists marketplace_status text,
+      add column if not exists marketplace_status text not null default 'draft',
       add column if not exists marketplace_price_ex_vat numeric(14,2),
       add column if not exists marketplace_seller_name text,
       add column if not exists marketplace_seller_company text,
@@ -135,7 +167,142 @@ async function ensureMarketplaceColumns(): Promise<void> {
       add column if not exists marketplace_area text
   `);
 
+  await db.query(`
+    alter table marketplace_listings
+      add column if not exists asset_register_item_id uuid,
+      add column if not exists status text not null default 'live',
+      add column if not exists title text,
+      add column if not exists description text,
+      add column if not exists asking_price_ex_vat numeric(14,2) not null default 0,
+      add column if not exists province text,
+      add column if not exists area text,
+      add column if not exists seller_name text,
+      add column if not exists seller_company text,
+      add column if not exists seller_phone text,
+      add column if not exists seller_email text,
+      add column if not exists primary_image_url text,
+      add column if not exists image_urls jsonb not null default '[]'::jsonb,
+      add column if not exists published_at timestamptz,
+      add column if not exists withdrawn_at timestamptz,
+      add column if not exists sector_id bigint,
+      add column if not exists equipment_family_id bigint,
+      add column if not exists brand_id bigint,
+      add column if not exists equipment_model_id bigint,
+      add column if not exists brand_name_snapshot text,
+      add column if not exists model_name_raw text,
+      add column if not exists normalized_model_name text,
+      add column if not exists specs_json jsonb not null default '{}'::jsonb
+  `);
+
+  await db.query(`
+    create index if not exists idx_asset_register_items_user_marketplace_status
+      on asset_register_items(user_id, marketplace_status);
+
+    create index if not exists idx_marketplace_listings_asset_status
+      on marketplace_listings(asset_register_item_id, status);
+
+    create index if not exists idx_marketplace_listings_status_updated
+      on marketplace_listings(status, updated_at desc);
+  `);
+
   marketplaceColumnsEnsured = true;
+}
+
+function normalizeListingModelName(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '')
+    .trim();
+}
+
+function pickJsonObject(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  return {};
+}
+
+async function createMarketplaceListingSnapshot(row: MarketplaceAssetRow): Promise<void> {
+  try {
+    const db = getDb();
+    const assetId = asText(row.id);
+    const userId = asText(row.user_id);
+    const { brandName, modelName } = deriveBrandAndModel(row);
+    const title = asText(pick(row, ['title', 'name', 'asset_name'])) || `${brandName} ${modelName}`.trim() || 'Aim4price listing';
+    const imageUrls = buildPhotoList(row);
+    const description =
+      asText(pick(row, ['marketplace_notes', 'note', 'notes', 'description'])) ||
+      `${title} available on the Aim4price marketplace.`;
+
+    if (!assetId || !userId || !title) {
+      return;
+    }
+
+    await db.query(
+      `
+        update marketplace_listings
+        set
+          status = 'withdrawn',
+          withdrawn_at = coalesce(withdrawn_at, now()),
+          updated_at = now()
+        where user_id = $1
+          and asset_register_item_id = $2::uuid
+          and status = 'live'
+      `,
+      [userId, assetId],
+    );
+
+    await db.query(
+      `
+        insert into marketplace_listings (
+          user_id, asset_register_item_id, status, title, description, asking_price_ex_vat,
+          province, area, seller_name, seller_company, seller_phone, seller_email,
+          primary_image_url, image_urls, published_at, sector_id, equipment_family_id,
+          brand_id, equipment_model_id, brand_name_snapshot, model_name_raw,
+          normalized_model_name, specs_json, created_at, updated_at
+        )
+        values (
+          $1, $2::uuid, 'live', $3, $4, $5, $6, $7, $8, nullif($9, ''), $10, nullif($11, ''),
+          $12, $13::jsonb, now(), $14, $15, $16, $17, $18, $19, $20, $21::jsonb, now(), now()
+        )
+      `,
+      [
+        userId,
+        assetId,
+        title,
+        description,
+        Math.round(asNumber(pick(row, ['marketplace_price_ex_vat', 'selected_value_ex_vat', 'value']), 0)),
+        asText(pick(row, ['marketplace_province'])) || asText(row.profile_province) || null,
+        asText(pick(row, ['marketplace_area'])) || asText(row.profile_town_city) || null,
+        asText(pick(row, ['marketplace_seller_name'])) || asText(row.profile_name) || asText(row.profile_business_name) || 'Aim4price seller',
+        asText(pick(row, ['marketplace_seller_company'])) || asText(row.profile_business_name),
+        asText(pick(row, ['seller_phone'])) || asText(row.profile_phone),
+        asText(pick(row, ['marketplace_seller_email'])) || asText(row.profile_email),
+        imageUrls[0] ?? FALLBACK_MARKETPLACE_IMAGE,
+        JSON.stringify(imageUrls),
+        pick(row, ['sector_id']),
+        pick(row, ['equipment_family_id']),
+        pick(row, ['brand_id']),
+        pick(row, ['equipment_model_id']),
+        brandName,
+        modelName,
+        normalizeListingModelName(modelName),
+        JSON.stringify(pickJsonObject(pick(row, ['specs_json']))),
+      ],
+    );
+  } catch (error) {
+    console.error('marketplace listing snapshot sync failed', error);
+  }
 }
 
 function buildMarketplaceListing(
@@ -368,6 +535,8 @@ export async function publishAssetRegisterItemToMarketplace(input: {
     profile_email: row.profile_email,
   };
 
+  await createMarketplaceListingSnapshot(listingRow);
+
   return buildMarketplaceListing(listingRow, {
     viewerUserId: input.userId,
     exposeContact: true,
@@ -395,4 +564,18 @@ export async function removeAssetRegisterItemFromMarketplace(input: {
   if ((result.rowCount ?? 0) === 0) {
     throw new Error('ASSET_NOT_FOUND');
   }
+
+  await db.query(
+    `
+      update marketplace_listings
+      set
+        status = 'withdrawn',
+        withdrawn_at = coalesce(withdrawn_at, now()),
+        updated_at = now()
+      where user_id = $1
+        and asset_register_item_id = $2::uuid
+        and status = 'live'
+    `,
+    [input.userId, input.assetId],
+  );
 }
