@@ -35,7 +35,8 @@ function unauthorized() {
 
 function normalizeKind(value: unknown): AssetRegisterItemKind {
   const normalized = String(value ?? '').trim().toLowerCase();
-  if (normalized === 'tractor' || normalized === 'equipment') return 'tractor';
+  if (normalized === 'tractor') return 'tractor';
+  if (normalized === 'equipment' || normalized === 'valued equipment') return 'equipment';
   if (normalized === 'property') return 'property';
   return 'manual';
 }
