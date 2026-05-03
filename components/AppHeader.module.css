@@ -3,16 +3,17 @@
   top: 0;
   z-index: 90;
   width: 100%;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   border-bottom: 1px solid rgba(6, 26, 58, 0.08);
+  box-shadow: 0 10px 30px rgba(6, 26, 58, 0.035);
   backdrop-filter: blur(18px);
 }
 
 .inner {
   width: var(--shell-width);
   margin: 0 auto;
-  min-height: 4.9rem;
-  padding: 0.72rem 0;
+  min-height: 4.72rem;
+  padding: 0.62rem 0;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -23,9 +24,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3.7rem;
-  min-width: 3.7rem;
-  height: 3.15rem;
+  width: 3.55rem;
+  min-width: 3.55rem;
+  height: 3.05rem;
   overflow: hidden;
   text-decoration: none;
   border-radius: 1rem;
@@ -40,7 +41,7 @@
 }
 
 .brandLogo {
-  width: 3.15rem;
+  width: 3rem;
   height: auto;
   object-fit: contain;
 }
@@ -55,7 +56,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(1.45rem, 3.6vw, 4.2rem);
+  gap: clamp(1.55rem, 3.8vw, 4.55rem);
   min-width: 0;
 }
 
@@ -64,15 +65,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.8rem;
-  padding: 0 0.12rem;
+  min-height: 2.75rem;
+  padding: 0 0.1rem;
   border: 0;
   text-decoration: none;
   white-space: nowrap;
   color: rgba(6, 26, 58, 0.78);
-  font-size: 0.98rem;
+  font-size: 0.97rem;
   line-height: 1;
-  font-weight: 700;
+  font-weight: 720;
   letter-spacing: -0.015em;
   transition:
     color 180ms ease,
@@ -120,7 +121,7 @@
 .actionsRail {
   display: inline-flex;
   align-items: center;
-  gap: 1.4rem;
+  gap: 1.38rem;
 }
 
 .actionDivider {
@@ -135,14 +136,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.95rem;
+  min-height: 2.9rem;
   border-radius: 0.76rem;
   border: 1px solid transparent;
   text-decoration: none;
-  font-size: 0.95rem;
+  font-size: 0.94rem;
   line-height: 1;
   white-space: nowrap;
-  font-weight: 750;
+  font-weight: 760;
   letter-spacing: -0.015em;
   transition:
     transform 180ms ease,
@@ -161,7 +162,7 @@
 }
 
 .loginButton {
-  min-height: 2.6rem;
+  min-height: 2.55rem;
   padding: 0;
   color: rgba(6, 26, 58, 0.72);
   background: transparent;
@@ -172,8 +173,8 @@
 }
 
 .signupButton {
-  min-width: 6.6rem;
-  padding: 0 1.2rem;
+  min-width: 6.45rem;
+  padding: 0 1.16rem;
   color: #ffffff;
   background: linear-gradient(180deg, var(--blue, #0f4bb8) 0%, #083f9f 100%);
   border-color: rgba(15, 75, 184, 0.2);
@@ -194,7 +195,7 @@
 
 .accountButton {
   gap: 0.7rem;
-  min-height: 2.95rem;
+  min-height: 2.9rem;
   padding: 0 1rem;
   background: #ffffff;
   color: var(--navy, #061a3a);
