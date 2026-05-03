@@ -28,22 +28,16 @@
 }
 
 .heroSection {
-  padding: clamp(1.35rem, 2vw, 1.9rem) 0 clamp(3.2rem, 4.4vw, 4.6rem);
+  padding: 0 0 clamp(3.2rem, 4.4vw, 4.6rem);
 }
 
 .heroMedia {
   position: relative;
-  width: var(--shell-width);
-  margin: 0 auto;
+  width: 100%;
   min-height: clamp(39rem, 49vw, 46rem);
   overflow: hidden;
   background: #10261f;
   isolation: isolate;
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  border-radius: clamp(1.7rem, 2.4vw, 2.45rem);
-  box-shadow:
-    0 26px 70px rgba(10, 24, 20, 0.16),
-    0 1px 0 rgba(255, 255, 255, 0.66);
 }
 
 .heroVideo {
@@ -85,7 +79,7 @@
   align-items: center;
   justify-content: space-between;
   gap: clamp(3.2rem, 5vw, 6.25rem);
-  padding: clamp(4.05rem, 5.4vw, 5.55rem) clamp(1.35rem, 2.6vw, 2.3rem) clamp(3.85rem, 4.8vw, 4.95rem);
+  padding: clamp(4.05rem, 5.4vw, 5.55rem) 0 clamp(3.85rem, 4.8vw, 4.95rem);
 }
 
 .heroCopy {
@@ -430,7 +424,7 @@
   .heroGrid {
     grid-template-columns: minmax(0, 1fr) minmax(14rem, 0.78fr);
     gap: 2.3rem;
-    padding: clamp(3.4rem, 5vw, 4.4rem) 1.35rem clamp(3.15rem, 4.6vw, 4rem);
+    padding: clamp(3.4rem, 5vw, 4.4rem) 0 clamp(3.15rem, 4.6vw, 4rem);
   }
 
   .heroMarkStage {
@@ -492,7 +486,7 @@
 
 @media (max-width: 720px) {
   .heroSection {
-    padding: 1rem 0 2rem;
+    padding: 0 0 2rem;
   }
 
   .heroMedia,
@@ -500,12 +494,8 @@
     min-height: unset;
   }
 
-  .heroMedia {
-    border-radius: 1.35rem;
-  }
-
   .heroGrid {
-    padding: 2.25rem 1rem 2.35rem;
+    padding: 2.25rem 0 2.35rem;
     gap: 1.55rem;
   }
 
