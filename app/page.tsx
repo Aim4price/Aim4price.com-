@@ -3,116 +3,208 @@ import Link from 'next/link';
 import AppHeader from '../components/AppHeader';
 import styles from './page.module.css';
 
-type WorkflowStep = {
-  number: string;
+type AudienceCard = {
   title: string;
   text: string;
+  href: string;
+  image: string;
+  accent: 'navy' | 'teal' | 'blue';
 };
 
-const workflowSteps: WorkflowStep[] = [
+type ToolCard = {
+  title: string;
+  text: string;
+  href: string;
+  image: string;
+  label: string;
+};
+
+type TrustItem = {
+  title: string;
+  text: string;
+  image: string;
+  imageClassName?: string;
+};
+
+const audienceCards: AudienceCard[] = [
   {
-    number: '01',
-    title: 'Start with a free valuation',
-    text: 'Select the machinery type, enter the key details, and get a clean value output in a guided flow.',
+    title: 'Machinery Owner',
+    text: 'Get accurate estimates, manage your assets, and unlock better opportunities.',
+    href: '/valuation',
+    image: '/brand/homepage/Machinery_owner.png',
+    accent: 'navy',
   },
   {
-    number: '02',
-    title: 'Save and manage assets',
-    text: 'Keep machinery records organised in one place and return whenever you need updated values.',
+    title: 'Financial Institution',
+    text: 'Assess risk with reliable data and comprehensive asset insights.',
+    href: '/valuation',
+    image: '/brand/homepage/Financials.png',
+    accent: 'teal',
   },
   {
-    number: '03',
-    title: 'Move equipment to market',
-    text: 'When the time is right, take the next commercial step with more clarity and structure.',
+    title: 'Dealer',
+    text: 'List, value, and connect with serious buyers and sellers.',
+    href: '/marketplace',
+    image: '/brand/homepage/Dealers.png',
+    accent: 'blue',
+  },
+];
+
+const toolCards: ToolCard[] = [
+  {
+    title: 'Get Estimate',
+    text: 'Instant, data-driven estimates for thousands of machinery makes and models.',
+    href: '/valuation',
+    image: '/brand/homepage/Get_Estimate.png',
+    label: 'Open estimate tool',
+  },
+  {
+    title: 'Asset Register',
+    text: 'Centralise asset records, track performance, and stay inspection-ready.',
+    href: '/asset-register',
+    image: '/brand/homepage/Asset_Register.png',
+    label: 'Open asset register',
+  },
+  {
+    title: 'Marketplace',
+    text: 'Discover listings, compare value, and connect with verified buyers and sellers.',
+    href: '/marketplace',
+    image: '/brand/homepage/Marketplace.png',
+    label: 'Open marketplace',
+  },
+];
+
+const trustItems: TrustItem[] = [
+  {
+    title: 'Trusted by industry professionals',
+    text: 'across South Africa',
+    image: '/brand/homepage/Security.png',
+  },
+  {
+    title: 'Local data. Local insight.',
+    text: 'Built for SA conditions.',
+    image: '/brand/homepage/RSA.png',
+    imageClassName: styles.flagImage,
+  },
+  {
+    title: 'Secure, compliant,',
+    text: 'and privacy-focused',
+    image: '/brand/homepage/Lock.png',
   },
 ];
 
 export default function HomePage() {
   return (
     <main className={styles.page}>
-      <AppHeader active="home" />
+      <AppHeader active="home" ctaLabel="Sign up" />
 
-      <section className={styles.heroSection}>
-        <div className={styles.heroMedia}>
-          <video
-            className={styles.heroVideo}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            poster="/brand/Home-page.png"
-          >
-            <source src="/brand/AIM4PRICE.mp4" type="video/mp4" />
-          </video>
+      <section className={styles.landingSection} aria-label="Aim4price overview">
+        <div className={styles.heroBackdrop} aria-hidden="true">
+          <Image
+            src="/brand/homepage/Aim4price_hero.png"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className={styles.heroImage}
+          />
+        </div>
 
-          <div className={styles.heroOverlay} />
+        <div className={styles.shell}>
+          <div className={styles.heroCopy}>
+            <h1 className={styles.heroTitle}>Know what your machinery is worth — fast</h1>
+            <p className={styles.heroText}>
+              Aim4price helps machinery owners, financiers, insurers, and dealers make confident
+              decisions with estimates, asset records, and marketplace tools built for the real world.
+            </p>
 
-          <div className={styles.shell}>
-            <div className={styles.heroGrid}>
-              <div className={styles.heroCopy}>
-                <p className={styles.eyebrow}>Agricultural &amp; industrial machinery pricing</p>
-
-                <h1 className={styles.heroTitle}>
-                  <span className={styles.heroTitleLine}>Know</span>
-                  <span className={styles.heroTitleLine}>what your</span>
-                  <span className={styles.heroTitleLine}>machinery</span>
-                  <span className={styles.heroTitleLine}>is worth.</span>
-                </h1>
-
-                <p className={styles.heroText}>
-                  <span className={styles.heroTextLine}>
-                    Professional tools for valuing equipment, managing machinery records,
-                  </span>
-                  <span className={styles.heroTextLine}>
-                    and taking the next commercial step with more clarity.
-                  </span>
-                </p>
-
-                <div className={styles.heroActions}>
-                  <Link href="/valuation" className={styles.primaryCta}>
-                    Get free valuation
-                  </Link>
-                </div>
-              </div>
-
-              <div className={styles.heroVisual} aria-hidden="true">
-                <div className={styles.heroMarkStage}>
-                  <Image
-                    src="/brand/aim4price-mark-white.png"
-                    alt=""
-                    width={640}
-                    height={640}
-                    priority
-                    className={styles.heroLogo}
-                  />
-                </div>
-              </div>
+            <div className={styles.heroActions}>
+              <Link href="/valuation" className={styles.primaryCta}>
+                Get Estimate
+              </Link>
+              <Link href="/asset-register" className={styles.secondaryCta}>
+                View Asset Register
+              </Link>
             </div>
+          </div>
+
+          <div className={styles.audienceGrid} aria-label="Choose your Aim4price path">
+            {audienceCards.map((card) => (
+              <Link
+                key={card.title}
+                href={card.href}
+                className={`${styles.audienceCard} ${styles[card.accent]}`}
+                aria-label={`Explore Aim4price for ${card.title.toLowerCase()}`}
+              >
+                <Image
+                  src={card.image}
+                  alt=""
+                  fill
+                  sizes="(max-width: 780px) 100vw, 33vw"
+                  className={styles.audienceImage}
+                />
+                <span className={styles.audienceContent}>
+                  <span className={styles.audienceTitle}>{card.title}</span>
+                  <span className={styles.audienceText}>{card.text}</span>
+                  <span className={styles.audienceButton}>Explore</span>
+                </span>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className={styles.workflowSection}>
+      <section className={styles.toolsSection} aria-labelledby="tools-heading">
         <div className={styles.shell}>
-          <div className={styles.workflowWrap}>
-            <div className={styles.workflowIntro}>
-              <p className={styles.workflowEyebrow}>How Aim4price works</p>
-              <h2 className={styles.workflowTitle}>A clean path from value to action.</h2>
-              <p className={styles.workflowText}>
-              </p>
-            </div>
-
-            <div className={styles.stepsGrid}>
-              {workflowSteps.map((step) => (
-                <div key={step.number} className={styles.stepCard}>
-                  <div className={styles.stepBadge}>{step.number}</div>
-                  <h3 className={styles.stepTitle}>{step.title}</h3>
-                  <p className={styles.stepText}>{step.text}</p>
-                </div>
-              ))}
-            </div>
+          <div className={styles.sectionIntro}>
+            <p className={styles.kicker}>Built for every stage</p>
+            <h2 id="tools-heading" className={styles.sectionTitle}>
+              Three powerful tools. One trusted platform.
+            </h2>
           </div>
+
+          <div className={styles.toolsGrid}>
+            {toolCards.map((card) => (
+              <Link key={card.title} href={card.href} className={styles.toolCard} aria-label={card.label}>
+                <Image
+                  src={card.image}
+                  alt=""
+                  fill
+                  sizes="(max-width: 860px) 100vw, 33vw"
+                  className={styles.toolImage}
+                />
+                <span className={styles.toolContent}>
+                  <span className={styles.toolTitle}>{card.title}</span>
+                  <span className={styles.toolText}>{card.text}</span>
+                </span>
+                <span className={styles.arrowButton} aria-hidden="true">
+                  →
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.trustSection} aria-label="Platform trust markers">
+        <div className={styles.trustShell}>
+          {trustItems.map((item) => (
+            <div key={item.title} className={styles.trustItem}>
+              <span className={styles.trustIcon}>
+                <Image
+                  src={item.image}
+                  alt=""
+                  fill
+                  sizes="44px"
+                  className={`${styles.trustImage} ${item.imageClassName ?? ''}`}
+                />
+              </span>
+              <span className={styles.trustCopy}>
+                <strong>{item.title}</strong>
+                <span>{item.text}</span>
+              </span>
+            </div>
+          ))}
         </div>
       </section>
     </main>
