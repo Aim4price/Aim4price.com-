@@ -22,9 +22,9 @@
   --line-strong: rgba(6, 26, 58, 0.12);
   --shadow-soft: 0 18px 38px rgba(6, 26, 58, 0.06);
   --shadow-card: 0 12px 30px rgba(6, 26, 58, 0.07);
-  --shell-max: 1180px;
-  --shell-narrow-max: 1040px;
-  --shell-gutter: 1.5rem;
+  --shell-max: 1420px;
+  --shell-narrow-max: 1120px;
+  --shell-gutter: clamp(1.25rem, 4vw, 4.5rem);
   --shell-width: min(calc(100% - (var(--shell-gutter) * 2)), var(--shell-max));
   --shell-narrow-width: min(calc(100% - (var(--shell-gutter) * 2)), var(--shell-narrow-max));
   --font-body: 'Inter';
@@ -52,6 +52,7 @@ body {
   font-family: var(--font-body), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: linear-gradient(180deg, var(--surface-soft) 0%, var(--surface) 100%);
   color: var(--text-strong);
+  text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: clip;
@@ -75,8 +76,12 @@ a {
   color: inherit;
 }
 
-img {
+img,
+svg {
   display: block;
+}
+
+img {
   max-width: 100%;
 }
 
@@ -119,11 +124,6 @@ h4,
 }
 
 ::selection {
-  background: rgba(15, 75, 184, 0.16);
-}
-
-@media (max-width: 640px) {
-  :root {
-    --shell-gutter: 0.85rem;
-  }
+  color: #ffffff;
+  background: rgba(15, 75, 184, 0.86);
 }

@@ -11,19 +11,23 @@ type AudienceCard = {
   accent: 'navy' | 'teal' | 'blue';
 };
 
+type ToolIconName = 'estimate' | 'register' | 'marketplace';
+
 type ToolCard = {
   title: string;
   text: string;
   href: string;
-  image: string;
+  icon: ToolIconName;
+  iconClassName: 'iconBlue' | 'iconTeal' | 'iconIndigo';
   label: string;
 };
+
+type TrustIconName = 'security' | 'flag' | 'lock';
 
 type TrustItem = {
   title: string;
   text: string;
-  image: string;
-  imageClassName?: string;
+  icon: TrustIconName;
 };
 
 const audienceCards: AudienceCard[] = [
@@ -55,21 +59,24 @@ const toolCards: ToolCard[] = [
     title: 'Get Estimate',
     text: 'Instant, data-driven estimates for thousands of machinery makes and models.',
     href: '/valuation',
-    image: '/brand/homepage/Get_Estimate.png',
+    icon: 'estimate',
+    iconClassName: 'iconBlue',
     label: 'Open estimate tool',
   },
   {
     title: 'Asset Register',
     text: 'Centralise asset records, track performance, and stay inspection-ready.',
     href: '/asset-register',
-    image: '/brand/homepage/Asset_Register.png',
+    icon: 'register',
+    iconClassName: 'iconTeal',
     label: 'Open asset register',
   },
   {
     title: 'Marketplace',
     text: 'Discover listings, compare value, and connect with verified buyers and sellers.',
     href: '/marketplace',
-    image: '/brand/homepage/Marketplace.png',
+    icon: 'marketplace',
+    iconClassName: 'iconIndigo',
     label: 'Open marketplace',
   },
 ];
@@ -78,20 +85,105 @@ const trustItems: TrustItem[] = [
   {
     title: 'Trusted by industry professionals',
     text: 'across South Africa',
-    image: '/brand/homepage/Security.png',
+    icon: 'security',
   },
   {
     title: 'Local data. Local insight.',
     text: 'Built for SA conditions.',
-    image: '/brand/homepage/RSA.png',
-    imageClassName: styles.flagImage,
+    icon: 'flag',
   },
   {
     title: 'Secure, compliant,',
     text: 'and privacy-focused',
-    image: '/brand/homepage/Lock.png',
+    icon: 'lock',
   },
 ];
+
+function ToolIcon({ name }: { name: ToolIconName }) {
+  if (name === 'estimate') {
+    return (
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M14 6h14.8L38 15.2V42H14V6Z" />
+        <path d="M29 6v10h9" />
+        <path d="M20 24h4" />
+        <path d="M20 30h4" />
+        <path d="M20 36h4" />
+        <path d="M29 34v2" />
+        <path d="M34 28v8" />
+        <path d="M39 22v14" />
+      </svg>
+    );
+  }
+
+  if (name === 'register') {
+    return (
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M18 8h12l1.5 4H36v30H12V12h4.5L18 8Z" />
+        <path d="M18 12h12" />
+        <path d="M19 22h1" />
+        <path d="M25 22h10" />
+        <path d="M19 29h1" />
+        <path d="M25 29h10" />
+        <path d="M19 36h1" />
+        <path d="M25 36h10" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M12 12h5l3.2 18.5h17.1L41 17H19" />
+      <path d="M22 38.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+      <path d="M35 38.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+      <path d="M22.4 23h15.1" />
+      <path d="M24.2 29h11.6" />
+    </svg>
+  );
+}
+
+function SouthAfricaFlag() {
+  return (
+    <svg className={styles.flagSvg} viewBox="0 0 72 48" aria-hidden="true">
+      <clipPath id="flagRadius">
+        <rect width="72" height="48" rx="7" />
+      </clipPath>
+      <g clipPath="url(#flagRadius)">
+        <path fill="#de3831" d="M0 0h72v24H0z" />
+        <path fill="#002395" d="M0 24h72v24H0z" />
+        <path fill="#fff" d="M0 0v48l36-24z" />
+        <path fill="#007a4d" d="M0 4.8v38.4L28.8 24z" />
+        <path fill="#ffb612" d="M0 9.7v28.6L21.5 24z" />
+        <path fill="#000" d="M0 14.5v19L14.3 24z" />
+        <path fill="#fff" d="M24 18h48v12H24z" />
+        <path fill="#007a4d" d="M25.8 20h46.2v8H25.8z" />
+      </g>
+    </svg>
+  );
+}
+
+function TrustIcon({ name }: { name: TrustIconName }) {
+  if (name === 'flag') {
+    return <SouthAfricaFlag />;
+  }
+
+  if (name === 'lock') {
+    return (
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M15 21v-5a9 9 0 0 1 18 0v5" />
+        <path d="M12 21h24v19H12V21Z" />
+        <path d="M24 29v5" />
+        <path d="M24 29h.01" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M24 6 38 12v10c0 9.8-5.7 16.8-14 20-8.3-3.2-14-10.2-14-20V12l14-6Z" />
+      <path d="m17.5 24.5 4.4 4.4 9-10" />
+    </svg>
+  );
+}
 
 export default function HomePage() {
   return (
@@ -105,6 +197,7 @@ export default function HomePage() {
             alt=""
             fill
             priority
+            quality={100}
             sizes="100vw"
             className={styles.heroImage}
           />
@@ -140,7 +233,8 @@ export default function HomePage() {
                   src={card.image}
                   alt=""
                   fill
-                  sizes="(max-width: 780px) 100vw, 33vw"
+                  quality={100}
+                  sizes="(min-width: 1280px) 440px, (min-width: 860px) 31vw, 100vw"
                   className={styles.audienceImage}
                 />
                 <span className={styles.audienceContent}>
@@ -166,13 +260,9 @@ export default function HomePage() {
           <div className={styles.toolsGrid}>
             {toolCards.map((card) => (
               <Link key={card.title} href={card.href} className={styles.toolCard} aria-label={card.label}>
-                <Image
-                  src={card.image}
-                  alt=""
-                  fill
-                  sizes="(max-width: 860px) 100vw, 33vw"
-                  className={styles.toolImage}
-                />
+                <span className={`${styles.toolIcon} ${styles[card.iconClassName]}`}>
+                  <ToolIcon name={card.icon} />
+                </span>
                 <span className={styles.toolContent}>
                   <span className={styles.toolTitle}>{card.title}</span>
                   <span className={styles.toolText}>{card.text}</span>
@@ -191,13 +281,7 @@ export default function HomePage() {
           {trustItems.map((item) => (
             <div key={item.title} className={styles.trustItem}>
               <span className={styles.trustIcon}>
-                <Image
-                  src={item.image}
-                  alt=""
-                  fill
-                  sizes="44px"
-                  className={`${styles.trustImage} ${item.imageClassName ?? ''}`}
-                />
+                <TrustIcon name={item.icon} />
               </span>
               <span className={styles.trustCopy}>
                 <strong>{item.title}</strong>
