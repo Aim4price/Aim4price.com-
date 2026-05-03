@@ -3,35 +3,37 @@
   top: 0;
   z-index: 90;
   width: 100%;
-  background: rgba(250, 251, 250, 0.96);
-  backdrop-filter: blur(18px);
-  border-bottom: 1px solid rgba(18, 45, 37, 0.08);
+  background: rgba(250, 251, 250, 0.94);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(18, 45, 37, 0.075);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .inner {
   width: var(--shell-width);
   margin: 0 auto;
-  min-height: 6.15rem;
-  padding: 0.95rem 0;
+  min-height: 6rem;
+  padding: 0.9rem 0;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, 1fr);
   align-items: center;
-  gap: 1.8rem;
+  gap: clamp(1.25rem, 2.2vw, 2.4rem);
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
+  justify-self: start;
   min-width: 0;
   text-decoration: none;
   color: var(--text-strong);
 }
 
 .brandTitle {
-  font-size: clamp(2rem, 2.35vw, 2.7rem);
+  font-size: clamp(2.05rem, 2.3vw, 2.58rem);
   line-height: 1;
   font-weight: 800;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.055em;
   color: #17362c;
   white-space: nowrap;
 }
@@ -40,33 +42,36 @@
   min-width: 0;
   display: flex;
   justify-content: center;
+  justify-self: center;
 }
 
 .navRail {
   min-width: 0;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.42rem;
+  gap: 0.44rem;
+  padding: 0.38rem;
   border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.93);
   border: 1px solid rgba(18, 45, 37, 0.07);
-  box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
+  box-shadow:
+    0 14px 32px rgba(18, 45, 37, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
 }
 
 .navLink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.35rem;
-  padding: 0 1.45rem;
+  min-height: 3.28rem;
+  padding: 0 1.38rem;
   border-radius: 1rem;
   border: 1px solid transparent;
   text-decoration: none;
   white-space: nowrap;
-  font-size: 1rem;
+  font-size: 0.98rem;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.008em;
   color: #42514b;
   transition:
     background 180ms ease,
@@ -86,7 +91,7 @@
   color: #163f32;
   background: #ffffff;
   border-color: rgba(23, 77, 62, 0.1);
-  box-shadow: 0 10px 20px rgba(18, 45, 37, 0.05);
+  box-shadow: 0 10px 22px rgba(18, 45, 37, 0.055);
 }
 
 .actions {
@@ -98,22 +103,24 @@
 .actionsRail {
   display: inline-flex;
   align-items: center;
-  gap: 0.38rem;
-  padding: 0.42rem;
+  gap: 0.34rem;
+  padding: 0.38rem;
   border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.93);
   border: 1px solid rgba(18, 45, 37, 0.07);
-  box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
+  box-shadow:
+    0 14px 32px rgba(18, 45, 37, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
 }
 
 .actionDivider {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 0.2rem;
+  padding: 0 0.18rem;
   font-size: 1rem;
   font-weight: 700;
-  color: rgba(23, 54, 44, 0.42);
+  color: rgba(23, 54, 44, 0.38);
   user-select: none;
 }
 
@@ -125,16 +132,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.35rem;
-  padding: 0 1.4rem;
+  min-height: 3.28rem;
+  padding: 0 1.32rem;
   border-radius: 1rem;
   border: 1px solid transparent;
   text-decoration: none;
-  font-size: 1rem;
+  font-size: 0.98rem;
   line-height: 1;
   white-space: nowrap;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.008em;
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -172,7 +179,7 @@
 .signupButton {
   color: #163f32;
   background: #ffffff;
-  box-shadow: 0 10px 20px rgba(18, 45, 37, 0.05);
+  box-shadow: 0 10px 22px rgba(18, 45, 37, 0.055);
 }
 
 .signupButton:hover {
@@ -185,7 +192,7 @@
 
 .accountButton {
   gap: 0.7rem;
-  min-height: 3.35rem;
+  min-height: 3.28rem;
   background: #ffffff;
   color: #17315c;
   border-color: rgba(62, 110, 213, 0.16);
@@ -293,14 +300,14 @@
 
 @media (max-width: 1240px) {
   .inner {
-    gap: 1.35rem;
+    gap: 1.25rem;
   }
 
   .navLink,
   .signupButton,
   .loginButton,
   .accountButton {
-    padding: 0 1.2rem;
+    padding: 0 1.12rem;
   }
 }
 
@@ -312,16 +319,18 @@
     padding: 1rem 0 1.08rem;
   }
 
+  .brand,
+  .nav,
+  .actions {
+    justify-self: start;
+  }
+
   .nav {
     justify-content: flex-start;
   }
 
   .navRail {
     flex-wrap: wrap;
-  }
-
-  .actions {
-    justify-self: start;
   }
 }
 
