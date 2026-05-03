@@ -12,8 +12,8 @@ type WorkflowStep = {
 const workflowSteps: WorkflowStep[] = [
   {
     number: '01',
-    title: 'Start with a free valuation',
-    text: 'Select the machinery type, enter the key details, and get a clean value output in a guided flow.',
+    title: 'Start with a free estimate',
+    text: 'Select the machinery type, enter the key details, and get a clean estimate output in a guided flow.',
   },
   {
     number: '02',
@@ -54,24 +54,20 @@ export default function HomePage() {
                 <p className={styles.eyebrow}>Agricultural &amp; industrial machinery pricing</p>
 
                 <h1 className={styles.heroTitle}>
-                  <span className={styles.heroTitleLine}>Know</span>
-                  <span className={styles.heroTitleLine}>what your</span>
+                  <span className={styles.heroTitleLine}>Know what</span>
                   <span className={styles.heroTitleLine}>machinery</span>
                   <span className={styles.heroTitleLine}>is worth.</span>
                 </h1>
 
                 <p className={styles.heroText}>
-                  <span className={styles.heroTextLine}>
-                    Professional tools for valuing equipment, managing machinery records,
-                  </span>
-                  <span className={styles.heroTextLine}>
-                    and taking the next commercial step with more clarity.
-                  </span>
+                  Aim4price helps machinery owners, financiers, insurers and dealers make
+                  confident decisions with estimates, asset records, and marketplace tools built
+                  for South Africa.
                 </p>
 
                 <div className={styles.heroActions}>
                   <Link href="/valuation" className={styles.primaryCta}>
-                    Get free valuation
+                    Get free estimate
                   </Link>
                 </div>
               </div>

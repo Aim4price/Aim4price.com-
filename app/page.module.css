@@ -71,15 +71,15 @@
   z-index: 2;
   min-height: clamp(39rem, 49vw, 47rem);
   display: grid;
-  grid-template-columns: minmax(0, 42rem) minmax(16rem, 1fr);
+  grid-template-columns: minmax(0, 44rem) minmax(16rem, 1fr);
   align-items: center;
   justify-content: space-between;
-  gap: clamp(1.5rem, 3vw, 3.4rem);
-  padding: clamp(3rem, 4.6vw, 4.4rem) 0;
+  gap: clamp(1.6rem, 3vw, 3.5rem);
+  padding: clamp(3.35rem, 4.8vw, 4.75rem) 0 clamp(3.05rem, 4.2vw, 4.15rem);
 }
 
 .heroCopy {
-  max-width: 42rem;
+  max-width: 44rem;
   color: #ffffff;
 }
 
@@ -91,12 +91,12 @@
 }
 
 .heroTitle {
-  margin: 1.25rem 0 0;
+  margin: 1.3rem 0 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  font-size: clamp(3.95rem, 6.15vw, 6.55rem);
-  line-height: 0.86;
+  font-size: clamp(4.25rem, 6.45vw, 7.05rem);
+  line-height: 0.88;
   letter-spacing: -0.095em;
   font-weight: 800;
 }
@@ -107,15 +107,17 @@
 }
 
 .heroTitleLine + .heroTitleLine {
-  margin-top: -0.045em;
+  margin-top: -0.04em;
 }
 
 .heroText {
-  margin: 1.65rem 0 0;
-  max-width: 50rem;
-  font-size: clamp(1rem, 1.22vw, 1.14rem);
-  line-height: 1.58;
-  color: rgba(245, 248, 246, 0.92);
+  margin: 1.55rem 0 0;
+  max-width: 48rem;
+  font-size: clamp(1.03rem, 1.24vw, 1.2rem);
+  line-height: 1.54;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+  color: rgba(245, 248, 246, 0.93);
 }
 
 .heroTextLine {
@@ -127,7 +129,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-top: 1.7rem;
+  margin-top: 1.85rem;
 }
 
 .primaryCta {
@@ -351,6 +353,7 @@
   .heroGrid {
     grid-template-columns: minmax(0, 1fr) minmax(13rem, 0.78fr);
     gap: 1.5rem;
+    padding-block: clamp(3rem, 5vw, 4.15rem);
   }
 
   .heroTextLine {
@@ -377,7 +380,7 @@
   }
 
   .heroText {
-    max-width: 34rem;
+    max-width: 40rem;
   }
 
   .heroVisual {
@@ -423,18 +426,20 @@
   }
 
   .heroGrid {
-    padding: 1.9rem 0 2.1rem;
+    padding: 2.1rem 0 2.25rem;
     gap: 1.45rem;
   }
 
   .heroTitle {
-    font-size: clamp(2.75rem, 12vw, 4.35rem);
+    font-size: clamp(3rem, 13vw, 4.55rem);
     line-height: 0.9;
   }
 
   .heroText {
-    font-size: 0.98rem;
-    line-height: 1.6;
+    max-width: 100%;
+    font-size: 1rem;
+    line-height: 1.58;
+    text-wrap: pretty;
   }
 
   .heroTextLine {
