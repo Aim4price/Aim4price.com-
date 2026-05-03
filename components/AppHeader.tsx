@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import styles from './AppHeader.module.css';
@@ -33,7 +34,7 @@ type SmartLinkProps = {
 
 const navItems: Array<{ key: ActivePage; href: string; label: string }> = [
   { key: 'home', href: '/', label: 'Home' },
-  { key: 'valuation', href: '/valuation', label: 'Valuation' },
+  { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
   { key: 'asset-register', href: '/asset-register', label: 'Asset Register' },
   { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
 ];
@@ -87,7 +88,7 @@ export default function AppHeader({
   signupHref = '/auth#signup',
   loginHref = '/auth#login',
   ctaHref,
-  ctaLabel = 'Create Account',
+  ctaLabel = 'Sign up',
 }: AppHeaderProps) {
   const primaryHref = ctaHref ?? signupHref;
   const router = useRouter();
@@ -183,7 +184,14 @@ export default function AppHeader({
     <header className={styles.header}>
       <div className={styles.inner}>
         <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
-          <span className={styles.brandTitle}>Aim4price</span>
+          <Image
+            src="/brand/aim4price-mark-black.png"
+            alt="Aim4price"
+            width={660}
+            height={515}
+            priority
+            className={styles.brandLogo}
+          />
         </Link>
 
         <nav className={styles.nav} aria-label="Primary navigation">
@@ -252,7 +260,7 @@ export default function AppHeader({
             ) : (
               <>
                 <SmartLink href={loginHref} className={styles.loginButton}>
-                  Login
+                  Log in
                 </SmartLink>
 
                 <span className={styles.actionDivider} aria-hidden="true">

@@ -1,10 +1,11 @@
 .footer {
   position: relative;
-  margin-top: clamp(4rem, 6vw, 5.4rem);
+  margin-top: clamp(3rem, 5vw, 4.6rem);
   color: #ffffff;
   background:
-    radial-gradient(circle at 18% 24%, rgba(49, 121, 92, 0.18) 0%, rgba(49, 121, 92, 0) 32%),
-    linear-gradient(180deg, #165243 0%, #103a2e 100%);
+    radial-gradient(circle at 15% 16%, rgba(0, 140, 149, 0.2) 0%, rgba(0, 140, 149, 0) 31rem),
+    radial-gradient(circle at 84% 18%, rgba(15, 75, 184, 0.26) 0%, rgba(15, 75, 184, 0) 32rem),
+    linear-gradient(180deg, #061a3a 0%, #041229 100%);
   overflow: hidden;
 }
 
@@ -13,7 +14,19 @@
   position: absolute;
   inset: 0 0 auto;
   height: 1px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.footer::after {
+  content: '';
+  position: absolute;
+  right: -14rem;
+  bottom: -18rem;
+  width: 42rem;
+  height: 42rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(234, 242, 255, 0.08), rgba(234, 242, 255, 0) 68%);
+  pointer-events: none;
 }
 
 .shell {
@@ -22,42 +35,65 @@
 }
 
 .topRow {
+  position: relative;
+  z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(500px, auto);
+  grid-template-columns: minmax(0, 1.08fr) minmax(520px, auto);
   align-items: start;
-  gap: clamp(2.6rem, 5vw, 5.4rem);
-  padding: clamp(2.9rem, 4.6vw, 3.85rem) 0 clamp(2.35rem, 4vw, 2.95rem);
+  gap: clamp(2.5rem, 5vw, 5.5rem);
+  padding: clamp(3rem, 4.7vw, 3.9rem) 0 clamp(2.3rem, 4vw, 3rem);
 }
 
 .brandBlock {
   display: grid;
   align-content: start;
   min-width: 0;
-  max-width: 34rem;
-  padding-top: 0.1rem;
+  max-width: 35rem;
 }
 
 .brandIdentity {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
   width: fit-content;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.logoWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.35rem;
+  height: 2.85rem;
+  overflow: hidden;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logoImage {
+  width: 2.78rem;
+  height: auto;
+  object-fit: contain;
 }
 
 .brandName {
   color: #ffffff;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.95rem, 2.9vw, 2.55rem);
-  line-height: 0.94;
-  font-weight: 800;
+  font-size: clamp(1.75rem, 2.5vw, 2.3rem);
+  line-height: 0.98;
+  font-weight: 850;
   letter-spacing: -0.06em;
   white-space: nowrap;
 }
 
 .brandText {
-  margin: 1.08rem 0 0;
+  margin: 1.1rem 0 0;
   max-width: 31rem;
-  color: rgba(232, 242, 237, 0.88);
+  color: rgba(234, 242, 255, 0.78);
   font-size: 1rem;
   line-height: 1.72;
+  font-weight: 500;
 }
 
 .socialGroup {
@@ -68,10 +104,9 @@
 }
 
 .socialLabel {
-  color: rgba(214, 231, 223, 0.72);
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.8rem;
-  font-weight: 800;
+  color: rgba(234, 242, 255, 0.58);
+  font-size: 0.78rem;
+  font-weight: 850;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -87,11 +122,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.6rem;
-  height: 2.6rem;
+  width: 2.62rem;
+  height: 2.62rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.035);
+  background: rgba(255, 255, 255, 0.055);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .socialIcon svg {
@@ -107,7 +143,7 @@
   justify-content: start;
   align-items: start;
   column-gap: clamp(2.4rem, 4vw, 4.8rem);
-  row-gap: 1.2rem;
+  row-gap: 1.35rem;
   padding-top: 0.18rem;
 }
 
@@ -120,29 +156,30 @@
 
 .linkColumn h3 {
   margin: 0 0 0.38rem;
-  color: rgba(214, 231, 223, 0.72);
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.82rem;
-  font-weight: 800;
+  color: rgba(234, 242, 255, 0.56);
+  font-size: 0.8rem;
+  font-weight: 850;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .linkColumn a {
   width: fit-content;
-  color: #ffffff;
+  color: rgba(255, 255, 255, 0.92);
   text-decoration: none;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.98rem;
+  font-weight: 650;
   line-height: 1.48;
   white-space: nowrap;
   transition:
+    color 180ms ease,
     opacity 180ms ease,
     transform 180ms ease;
 }
 
 .linkColumn a:hover {
-  opacity: 0.86;
+  color: #ffffff;
+  opacity: 0.92;
   transform: translateX(2px);
 }
 
@@ -152,8 +189,10 @@
 }
 
 .metaRow {
+  position: relative;
+  z-index: 1;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(5, 15, 11, 0.12);
+  background: rgba(2, 10, 24, 0.24);
 }
 
 .metaRow .shell {
@@ -163,11 +202,13 @@
   justify-content: space-between;
   gap: 0.85rem 1.4rem;
   padding: 0.96rem 0 1.14rem;
-  color: rgba(232, 242, 237, 0.78);
-  font-size: 0.92rem;
+  color: rgba(234, 242, 255, 0.7);
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 
 .metaNote {
+  max-width: 48rem;
   text-align: right;
 }
 
@@ -192,7 +233,7 @@
 
 @media (max-width: 640px) {
   .footer {
-    margin-top: 3.55rem;
+    margin-top: 3.2rem;
   }
 
   .topRow {
@@ -201,7 +242,7 @@
   }
 
   .brandName {
-    font-size: clamp(1.85rem, 11vw, 2.35rem);
+    font-size: clamp(1.65rem, 10vw, 2.1rem);
   }
 
   .brandText {

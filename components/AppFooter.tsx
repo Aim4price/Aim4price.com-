@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import styles from './AppFooter.module.css';
 
@@ -33,13 +34,22 @@ export default function AppFooter() {
       <div className={styles.shell}>
         <div className={styles.topRow}>
           <section className={styles.brandBlock} aria-label="Aim4price footer overview">
-            <div className={styles.brandIdentity}>
+            <Link href="/" className={styles.brandIdentity} aria-label="Go to Aim4price home">
+              <span className={styles.logoWrap}>
+                <Image
+                  src="/brand/aim4price-mark-white.png"
+                  alt=""
+                  width={660}
+                  height={515}
+                  className={styles.logoImage}
+                />
+              </span>
               <span className={styles.brandName}>Aim4price</span>
-            </div>
+            </Link>
 
             <p className={styles.brandText}>
-              Agricultural and industrial machinery pricing, asset register, and marketplace tools
-              built for clearer decisions.
+              Machinery pricing, asset intelligence, register management, and marketplace tools
+              built for South African conditions.
             </p>
 
             <div className={styles.socialGroup} aria-label="Aim4price social channels">
@@ -62,20 +72,23 @@ export default function AppFooter() {
             <nav className={styles.linkColumn} aria-label="Explore footer links">
               <h3>Explore</h3>
               <Link href="/">Home</Link>
-              <Link href="/valuation">Valuation</Link>
+              <Link href="/valuation">Get Estimate</Link>
               <Link href="/asset-register">Asset Register</Link>
               <Link href="/marketplace">Marketplace</Link>
               <Link href="/account">Account</Link>
+            </nav>
+
+            <nav className={styles.linkColumn} aria-label="Platform footer links">
+              <h3>Platform</h3>
+              <Link href="/valuation">Machinery Owners</Link>
+              <Link href="/valuation">Financial Institutions</Link>
+              <Link href="/marketplace">Dealers</Link>
             </nav>
 
             <nav className={styles.linkColumn} aria-label="Company footer links">
               <h3>Company</h3>
               <Link href="/about-us">About Us</Link>
               <Link href="/contact-us">Contact Us</Link>
-            </nav>
-
-            <nav className={styles.linkColumn} aria-label="Legal footer links">
-              <h3>Legal</h3>
               <Link href="/privacy-policy">Privacy Policy</Link>
               <Link href="/terms-of-service">Terms of Service</Link>
             </nav>
@@ -87,8 +100,8 @@ export default function AppFooter() {
         <div className={styles.shell}>
           <span>© {year} Aim4price</span>
           <span className={styles.metaNote}>
-            Indicative valuations should be confirmed for formal insurance, finance, or
-            transactional use.
+            Estimates are data-driven guidance and should be confirmed for formal finance,
+            insurance, or transactional use.
           </span>
         </div>
       </div>
