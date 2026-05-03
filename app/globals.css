@@ -1,34 +1,20 @@
 :root {
-  --navy: #061a3a;
-  --blue: #0f4bb8;
-  --blue-light: #eaf2ff;
-  --teal: #008c95;
-  --teal-light: #e6f7f8;
-  --success-green: #16a34a;
-  --whatsapp-green: #25d366;
-  --warning-yellow: #f59e0b;
-  --danger-red: #dc2626;
-  --background: #f7fafc;
-  --card: #ffffff;
-
-  --brand-700: var(--blue);
-  --brand-900: var(--navy);
-  --text-strong: var(--navy);
-  --text-muted: rgba(6, 26, 58, 0.64);
-  --surface: var(--background);
-  --surface-soft: #ffffff;
+  --brand-700: #184d3d;
+  --brand-900: #123b30;
+  --text-strong: #243c35;
+  --text-muted: #6f7a75;
+  --surface: #f7f8f7;
+  --surface-soft: #fcfdfc;
   --surface-card: rgba(255, 255, 255, 0.92);
-  --line-soft: rgba(6, 26, 58, 0.07);
-  --line-strong: rgba(6, 26, 58, 0.12);
-  --shadow-soft: 0 18px 38px rgba(6, 26, 58, 0.06);
-  --shadow-card: 0 12px 30px rgba(6, 26, 58, 0.07);
-  --shell-max: 1420px;
-  --shell-narrow-max: 1120px;
-  --shell-gutter: clamp(1.25rem, 4vw, 4.5rem);
+  --line-soft: rgba(18, 45, 37, 0.06);
+  --line-strong: rgba(18, 45, 37, 0.1);
+  --shadow-soft: 0 18px 38px rgba(16, 42, 34, 0.05);
+  --shadow-card: 0 12px 30px rgba(16, 42, 34, 0.05);
+  --shell-max: 1180px;
+  --shell-narrow-max: 1040px;
+  --shell-gutter: 1.5rem;
   --shell-width: min(calc(100% - (var(--shell-gutter) * 2)), var(--shell-max));
   --shell-narrow-width: min(calc(100% - (var(--shell-gutter) * 2)), var(--shell-narrow-max));
-  --font-body: 'Inter';
-  --font-heading: 'Inter';
   color-scheme: light;
 }
 
@@ -49,10 +35,9 @@ html {
 }
 
 body {
-  font-family: var(--font-body), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: linear-gradient(180deg, var(--surface-soft) 0%, var(--surface) 100%);
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-soft) 100%);
   color: var(--text-strong);
-  text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: clip;
@@ -76,12 +61,8 @@ a {
   color: inherit;
 }
 
-img,
-svg {
-  display: block;
-}
-
 img {
+  display: block;
   max-width: 100%;
 }
 
@@ -115,15 +96,20 @@ h4,
 .statementTitle,
 .ctaTitle,
 .footerHeading {
-  font-family: var(--font-heading), var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
 }
 
 :focus-visible {
-  outline: 3px solid rgba(15, 75, 184, 0.18);
+  outline: 3px solid rgba(23, 77, 62, 0.18);
   outline-offset: 3px;
 }
 
 ::selection {
-  color: #ffffff;
-  background: rgba(15, 75, 184, 0.86);
+  background: rgba(23, 77, 62, 0.14);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --shell-gutter: 0.85rem;
+  }
 }
