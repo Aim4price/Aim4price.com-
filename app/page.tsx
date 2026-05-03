@@ -7,6 +7,8 @@ type WorkflowStep = {
   number: string;
   title: string;
   text: string;
+  href: string;
+  action: string;
 };
 
 const workflowSteps: WorkflowStep[] = [
@@ -14,16 +16,22 @@ const workflowSteps: WorkflowStep[] = [
     number: '01',
     title: 'Start with a free estimate',
     text: 'Select the machinery type, enter the key details, and get a clean estimate output in a guided flow.',
+    href: '/valuation',
+    action: 'Start estimate',
   },
   {
     number: '02',
     title: 'Save and manage assets',
     text: 'Keep machinery records organised in one place and return whenever you need updated values.',
+    href: '/asset-register',
+    action: 'Open register',
   },
   {
     number: '03',
     title: 'Move equipment to market',
     text: 'When the time is right, take the next commercial step with more clarity and structure.',
+    href: '/marketplace',
+    action: 'View marketplace',
   },
 ];
 
@@ -96,16 +104,19 @@ export default function HomePage() {
               <p className={styles.workflowEyebrow}>How Aim4price works</p>
               <h2 className={styles.workflowTitle}>A clean path from value to action.</h2>
               <p className={styles.workflowText}>
+                Estimate value, save the asset record, and use the result when you insure,
+                finance, sell or manage machinery.
               </p>
             </div>
 
             <div className={styles.stepsGrid}>
               {workflowSteps.map((step) => (
-                <div key={step.number} className={styles.stepCard}>
+                <Link key={step.number} href={step.href} className={styles.stepCard}>
                   <div className={styles.stepBadge}>{step.number}</div>
                   <h3 className={styles.stepTitle}>{step.title}</h3>
                   <p className={styles.stepText}>{step.text}</p>
-                </div>
+                  <span className={styles.stepAction}>{step.action}</span>
+                </Link>
               ))}
             </div>
           </div>
