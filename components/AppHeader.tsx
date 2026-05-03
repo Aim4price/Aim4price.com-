@@ -33,7 +33,7 @@ type SmartLinkProps = {
 
 const navItems: Array<{ key: ActivePage; href: string; label: string }> = [
   { key: 'home', href: '/', label: 'Home' },
-  { key: 'valuation', href: '/valuation', label: 'Valuation' },
+  { key: 'valuation', href: '/valuation', label: 'Estimate' },
   { key: 'asset-register', href: '/asset-register', label: 'Asset Register' },
   { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
 ];
