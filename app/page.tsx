@@ -59,7 +59,18 @@ export default function HomePage() {
           <div className={styles.shell}>
             <div className={styles.heroGrid}>
               <div className={styles.heroCopy}>
-                <p className={styles.eyebrow}>Agricultural &amp; industrial machinery pricing</p>
+                <p
+                  className={styles.eyebrow}
+                  aria-label="Aim4price.com - Agricultural and industrial machinery pricing"
+                >
+                  <span className={styles.eyebrowStatic}>AIM4PRICE.COM</span>
+                  <span className={styles.eyebrowDivider} aria-hidden="true">
+                    —
+                  </span>
+                  <span className={styles.eyebrowTyping} aria-hidden="true">
+                    Agricultural &amp; industrial machinery pricing
+                  </span>
+                </p>
 
                 <h1 className={styles.heroTitle}>
                   <span className={styles.heroTitleLine}>Know what</span>
@@ -68,9 +79,10 @@ export default function HomePage() {
                 </h1>
 
                 <p className={styles.heroText}>
-                  Aim4price helps machinery owners, financiers, insurers and dealers make
-                  confident decisions with estimates, asset records, and marketplace tools built
-                  for South Africa.
+                  Aim4price helps machinery owners, financiers, insurers and dealers
+                  <br className={styles.heroTextBreak} />
+                  make confident decisions with estimates, asset records, and marketplace tools
+                  built for South Africa.
                 </p>
 
                 <div className={styles.heroActions}>
