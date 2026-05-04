@@ -93,7 +93,7 @@ function toNumber(value: unknown): number | null {
 }
 
 function toText(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
+  return typeof value === 'string' ? value.trim() : String(value ?? '').trim();
 }
 
 function toBoolean(value: unknown, fallback = false): boolean {
@@ -101,8 +101,8 @@ function toBoolean(value: unknown, fallback = false): boolean {
   if (typeof value === 'number') return value !== 0;
   if (typeof value === 'string') {
     const normalized = value.trim().toLowerCase();
-    if (['true', 't', '1', 'yes'].includes(normalized)) return true;
-    if (['false', 'f', '0', 'no'].includes(normalized)) return false;
+    if (['true', 't', '1', 'yes', 'y'].includes(normalized)) return true;
+    if (['false', 'f', '0', 'no', 'n'].includes(normalized)) return false;
   }
   return fallback;
 }
@@ -179,7 +179,7 @@ export async function listEquipmentBrands(input?: {
 }): Promise<EquipmentBrandRecord[]> {
   const db = getDb();
   const values: string[] = [];
-  const conditions: string[] = ['efb.equipment_family_id = ef.id', 'efb.brand_id = b.id'];
+  const conditions: string[] = [];
 
   if (input?.sectorKey) {
     values.push(input.sectorKey);
@@ -193,61 +193,41 @@ export async function listEquipmentBrands(input?: {
 
   if (!input?.includeInactive) {
     conditions.push('b.is_active = true');
-    conditions.push('efb.is_active = true');
     conditions.push('ef.is_active = true');
     conditions.push('s.is_active = true');
   }
 
+  const whereClause = conditions.length ? `where ${conditions.join(' and ')}` : '';
+
+  // Brands are sourced from both equipment_family_brands and equipment_models.
+  // This matters after the 2025 universal model import: every brand with imported
+  // equipment_models rows must appear in the website even if the linking table is incomplete.
   const result = await db.query(
     `
-      select distinct
-        b.id,
-        b.slug,
-        b.name,
-        b.is_active,
-        min(efb.sort_order) as family_brand_sort_order
-      from public.equipment_family_brands efb
-      join public.equipment_families ef
-        on efb.equipment_family_id = ef.id
-      join public.sectors s
-        on s.id = ef.sector_id
-      join public.brands b
-        on efb.brand_id = b.id
-      where ${conditions.join(' and ')}
-      group by b.id, b.slug, b.name, b.is_active
-      order by min(efb.sort_order) asc, b.name asc
-    `,
-    values,
-  );
-
-  if (!result.rows.length) {
-    const fallbackValues: string[] = [];
-    const fallbackConditions: string[] = ['b.id = em.brand_id', 'coalesce(em.is_generic_fallback, false) = false'];
-
-    if (input?.sectorKey) {
-      fallbackValues.push(input.sectorKey);
-      fallbackConditions.push(`s.sector_key = $${fallbackValues.length}`);
-    }
-
-    if (input?.familyKey) {
-      fallbackValues.push(input.familyKey);
-      fallbackConditions.push(`ef.family_key = $${fallbackValues.length}`);
-    }
-
-    if (!input?.includeInactive) {
-      fallbackConditions.push('b.is_active = true');
-      fallbackConditions.push('em.is_active = true');
-      fallbackConditions.push('ef.is_active = true');
-      fallbackConditions.push('s.is_active = true');
-    }
-
-    const fallback = await db.query(
-      `
+      with family_brand_rows as (
         select distinct
           b.id,
           b.slug,
           b.name,
-          b.is_active
+          b.is_active,
+          min(coalesce(efb.sort_order, 100000)) as sort_order
+        from public.equipment_family_brands efb
+        join public.equipment_families ef
+          on ef.id = efb.equipment_family_id
+        join public.sectors s
+          on s.id = ef.sector_id
+        join public.brands b
+          on b.id = efb.brand_id
+        ${whereClause ? `${whereClause} and coalesce(efb.is_active, true) = true` : 'where coalesce(efb.is_active, true) = true'}
+        group by b.id, b.slug, b.name, b.is_active
+      ),
+      model_brand_rows as (
+        select distinct
+          b.id,
+          b.slug,
+          b.name,
+          b.is_active,
+          200000 as sort_order
         from public.equipment_models em
         join public.equipment_families ef
           on ef.id = em.equipment_family_id
@@ -255,19 +235,26 @@ export async function listEquipmentBrands(input?: {
           on s.id = ef.sector_id
         join public.brands b
           on b.id = em.brand_id
-        where ${fallbackConditions.join(' and ')}
-        order by b.name asc
-      `,
-      fallbackValues,
-    );
-
-    return fallback.rows.map((row) => ({
-      id: toInteger(row.id) ?? 0,
-      slug: toText(row.slug),
-      name: toText(row.name),
-      isActive: toBoolean(row.is_active, true),
-    }));
-  }
+        ${whereClause ? `${whereClause} and coalesce(em.is_generic_fallback, false) = false` : 'where coalesce(em.is_generic_fallback, false) = false'}
+          ${!input?.includeInactive ? 'and em.is_active = true' : ''}
+      ),
+      combined as (
+        select * from family_brand_rows
+        union all
+        select * from model_brand_rows
+      )
+      select
+        id,
+        slug,
+        name,
+        bool_or(is_active) as is_active,
+        min(sort_order) as sort_order
+      from combined
+      group by id, slug, name
+      order by min(sort_order) asc, name asc
+    `,
+    values,
+  );
 
   return result.rows.map((row) => ({
     id: toInteger(row.id) ?? 0,
@@ -339,7 +326,6 @@ export async function listEquipmentModels(input?: ListEquipmentModelsInput): Pro
         em.brand_id,
         b.slug as brand_slug,
         b.name as brand_name,
-        em.legacy_tractor_catalog_id,
         em.model_name,
         em.variant_name,
         em.normalized_model_name,
@@ -390,7 +376,7 @@ export async function listEquipmentModels(input?: ListEquipmentModelsInput): Pro
     brandId: toInteger(row.brand_id),
     brandSlug: toText(row.brand_slug),
     brandName: toText(row.brand_name),
-    legacyTractorCatalogId: toInteger(row.legacy_tractor_catalog_id),
+    legacyTractorCatalogId: null,
     modelName: toText(row.model_name),
     variantName: toText(row.variant_name) || null,
     normalizedModelName: toText(row.normalized_model_name),
@@ -426,16 +412,13 @@ export async function fetchEquipmentLinkForModelSelection(modelId: string | numb
         em.brand_id,
         s.id as sector_id,
         ef.id as equipment_family_id,
-        em.id as equipment_model_id,
-        em.legacy_tractor_catalog_id
+        em.id as equipment_model_id
       from public.equipment_models em
       join public.equipment_families ef
         on ef.id = em.equipment_family_id
       join public.sectors s
         on s.id = ef.sector_id
       where em.id::text = $1
-         or em.legacy_tractor_catalog_id::text = $1
-      order by case when em.id::text = $1 then 0 else 1 end, em.id asc
       limit 1
     `,
     [modelKey],
@@ -449,7 +432,7 @@ export async function fetchEquipmentLinkForModelSelection(modelId: string | numb
     sectorId: toInteger(row.sector_id),
     equipmentFamilyId: toInteger(row.equipment_family_id),
     equipmentModelId: toInteger(row.equipment_model_id),
-    legacyTractorCatalogId: toInteger(row.legacy_tractor_catalog_id),
+    legacyTractorCatalogId: null,
   };
 }
 
