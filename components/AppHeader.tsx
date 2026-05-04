@@ -182,6 +182,10 @@ export default function AppHeader({
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
+        <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
+          <span className={styles.brandTitle}>Aim4price</span>
+        </Link>
+
         <nav className={styles.nav} aria-label="Primary navigation">
           <div className={styles.navRail}>
             {navItems.map((item) => {
