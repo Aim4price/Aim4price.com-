@@ -71,7 +71,7 @@ async function fetchCatalogLink(modelId: string): Promise<CatalogLinkRow | null>
   }
 
   return {
-    modelId: genericLink.legacyTractorCatalogId ?? genericLink.equipmentModelId,
+    modelId: genericLink.equipmentModelId,
     brandId: genericLink.brandId,
     sectorId: genericLink.sectorId,
     equipmentFamilyId: genericLink.equipmentFamilyId,

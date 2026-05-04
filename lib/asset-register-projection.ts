@@ -212,21 +212,27 @@ async function fetchValuationRunRow(userId: string, runId: number): Promise<Gene
 
 async function fetchCatalogReplacementPrice(input: {
   equipmentModelId?: unknown;
-  legacyModelId?: unknown;
+  fallbackModelId?: unknown;
 }): Promise<number | null> {
-  const equipmentModelKey = asText(input.equipmentModelId);
-  const legacyModelKey = asText(input.legacyModelId);
+  const candidateKeys = [asText(input.equipmentModelId), asText(input.fallbackModelId)].filter(Boolean);
+  const uniqueKeys = [...new Set(candidateKeys)];
+
+  if (!uniqueKeys.length) {
+    return null;
+  }
+
   const db = getDb();
 
-  if (equipmentModelKey) {
+  for (const modelKey of uniqueKeys) {
     const modelResult = await db.query<{ aim4price_replacement_price_ex_vat: unknown }>(
       `
         select aim4price_replacement_price_ex_vat
         from public.equipment_models
         where id::text = $1
+          and is_active = true
         limit 1
       `,
-      [equipmentModelKey],
+      [modelKey],
     );
 
     const replacement = asNumber(modelResult.rows[0]?.aim4price_replacement_price_ex_vat);
@@ -235,21 +241,7 @@ async function fetchCatalogReplacementPrice(input: {
     }
   }
 
-  if (!legacyModelKey) {
-    return null;
-  }
-
-  const result = await db.query<{ aim4price_replacement_price_ex_vat: unknown }>(
-    `
-      select aim4price_replacement_price_ex_vat
-      from public.tractor_catalog
-      where id::text = $1
-      limit 1
-    `,
-    [legacyModelKey],
-  );
-
-  return asNumber(result.rows[0]?.aim4price_replacement_price_ex_vat);
+  return null;
 }
 
 function requireTractorProjectionAsset(asset: AssetRegisterItem): asserts asset is AssetRegisterItem & {
@@ -329,7 +321,7 @@ export async function calculateFuturePriceForAsset(input: {
 
   const replacementPriceExVat = await fetchCatalogReplacementPrice({
     equipmentModelId: asset.equipmentModelId ?? pick(valuationRow, ['equipment_model_id']),
-    legacyModelId: pick(valuationRow, ['model_id']),
+    fallbackModelId: pick(valuationRow, ['model_id']),
   });
 
   if (!replacementPriceExVat || replacementPriceExVat <= 0) {

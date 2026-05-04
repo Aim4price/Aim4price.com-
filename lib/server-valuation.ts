@@ -26,7 +26,6 @@ type DbTractorCatalogRow = TractorCatalogRow & {
 
 type EquipmentModelDbRow = {
   id: string | number;
-  legacy_tractor_catalog_id: string | number | null;
   brand_slug: string | null;
   brand_name: string | null;
   model_name: string;
@@ -170,7 +169,7 @@ function mapModelRow(row: EquipmentModelDbRow): DbTractorCatalogRow {
     replacementPriceExVat: replacement,
     imageSrc: '/brand/Tractor.png',
     equipmentModelId: toNumber(row.id),
-    legacyTractorCatalogId: toPositiveNumber(row.legacy_tractor_catalog_id),
+    legacyTractorCatalogId: null,
     frontPtoSupported: toBoolean(specs.front_pto_supported),
     frontLoaderSupported: toBoolean(specs.front_loader_supported),
     gpsSupported: toBoolean(specs.gps_supported),
@@ -269,7 +268,6 @@ async function fetchModel(modelId: string): Promise<DbTractorCatalogRow | null> 
     `
       select
         em.id,
-        em.legacy_tractor_catalog_id,
         b.slug as brand_slug,
         b.name as brand_name,
         em.model_name,
@@ -290,12 +288,12 @@ async function fetchModel(modelId: string): Promise<DbTractorCatalogRow | null> 
         on s.id = ef.sector_id
       left join public.brands b
         on b.id = em.brand_id
-      where s.id = 1
+      where s.sector_key = 'agricultural'
         and ef.family_key = 'tractors'
         and em.is_active = true
         and coalesce(em.is_generic_fallback, false) = false
-        and (em.id::text = $1 or em.legacy_tractor_catalog_id::text = $1)
-      order by case when em.id::text = $1 then 0 else 1 end, em.id asc
+        and em.id::text = $1
+      order by em.id asc
       limit 1
     `,
     [modelId],
@@ -310,7 +308,7 @@ async function fetchMarketListings(model: DbTractorCatalogRow): Promise<Marketpl
   const values: Array<string | number> = [
     model.equipmentModelId,
     model.brandName.toLowerCase(),
-    model.modelName.toLowerCase(),
+    model.modelName,
     model.tractorType,
     model.drive,
   ];
@@ -318,44 +316,51 @@ async function fetchMarketListings(model: DbTractorCatalogRow): Promise<Marketpl
   const result = await db.query<MarketListingDbRow>(
     `
       select
-        id,
-        equipment_type,
-        equipment_model_id,
-        brand_name,
-        model_name,
-        tractor_type,
-        drive_type,
-        cab_type,
-        power_kw,
-        year_model,
-        hours,
-        advertised_price_ex_vat,
-        source_name,
-        source_url,
-        province,
-        area,
-        date_advertised,
-        is_sold
-      from public.market_vault_listings
-      where lower(trim(coalesce(equipment_type, 'tractor'))) = 'tractor'
-        and coalesce(is_sold, false) = false
+        m.id,
+        m.equipment_type,
+        m.equipment_model_id,
+        m.brand_name,
+        m.model_name,
+        m.tractor_type,
+        m.drive_type,
+        m.cab_type,
+        m.power_kw,
+        m.year_model,
+        m.hours,
+        m.advertised_price_ex_vat,
+        m.source_name,
+        m.source_url,
+        m.province,
+        m.area,
+        m.date_advertised,
+        m.is_sold
+      from public.market_vault_listings m
+      left join public.equipment_families ef
+        on ef.id = m.equipment_family_id
+      where coalesce(m.is_sold, false) = false
+        and m.advertised_price_ex_vat is not null
+        and m.advertised_price_ex_vat > 0
         and (
-          equipment_model_id = $1
+          ef.family_key = 'tractors'
+          or lower(trim(coalesce(m.equipment_type, ''))) in ('tractor', 'tractors')
+        )
+        and (
+          m.equipment_model_id = $1
           or (
-            lower(trim(brand_name)) = $2
-            and lower(trim(model_name)) = $3
-            and lower(trim(tractor_type)) = $4
-            and lower(replace(trim(drive_type), ' ', '')) = $5
+            lower(trim(coalesce(m.brand_name, m.brand_name_snapshot, ''))) = $2
+            and regexp_replace(lower(trim(coalesce(m.model_name_raw, m.model_name, ''))), '[^a-z0-9]+', '', 'g') =
+                regexp_replace(lower(trim($3)), '[^a-z0-9]+', '', 'g')
+            and lower(trim(coalesce(m.tractor_type, $4))) = $4
+            and lower(replace(trim(coalesce(m.drive_type, $5)), ' ', '')) = $5
           )
         )
-      order by date_advertised desc nulls last, year_model desc nulls last, hours asc nulls last
+      order by m.date_advertised desc nulls last, m.year_model desc nulls last, m.hours asc nulls last
     `,
     values,
   );
 
   return result.rows.map((row) => mapListingRow(row, model));
 }
-
 export async function runServerValuation(input: RunValuationInput): Promise<Result> {
   const model = await fetchModel(String(input.modelId));
   if (!model) {
