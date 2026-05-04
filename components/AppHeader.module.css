@@ -15,9 +15,9 @@
   min-height: 6rem;
   padding: 0.9rem 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, 1fr);
   align-items: center;
-  gap: clamp(2.4rem, 8vw, 10rem);
+  gap: clamp(1.25rem, 2.2vw, 2.4rem);
 }
 
 .brand {
@@ -41,8 +41,8 @@
 .nav {
   min-width: 0;
   display: flex;
-  justify-content: flex-start;
-  justify-self: start;
+  justify-content: center;
+  justify-self: center;
 }
 
 .navRail {
@@ -287,6 +287,7 @@
   color: #8a1f1f;
 }
 
+.brand:focus-visible,
 .navLink:focus-visible,
 .signupButton:focus-visible,
 .loginButton:focus-visible,
@@ -299,7 +300,7 @@
 
 @media (max-width: 1240px) {
   .inner {
-    gap: clamp(1.6rem, 4vw, 3.25rem);
+    gap: 1.25rem;
   }
 
   .navLink,
@@ -318,6 +319,7 @@
     padding: 1rem 0 1.08rem;
   }
 
+  .brand,
   .nav,
   .actions {
     justify-self: start;
@@ -333,6 +335,10 @@
 }
 
 @media (max-width: 720px) {
+  .brandTitle {
+    font-size: 1.85rem;
+  }
+
   .nav,
   .actions {
     width: 100%;
