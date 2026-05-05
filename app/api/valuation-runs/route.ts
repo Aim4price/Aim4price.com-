@@ -133,6 +133,10 @@ function buildInput(
     gpsEnabled: parseBoolean(body.gpsEnabled),
     gpsType: normalizeGpsType(body.gpsType),
     gpsYear: body.gpsYear ?? null,
+    userReplacementPriceExVat:
+      typeof body.userReplacementPriceExVat === 'number' && Number.isFinite(body.userReplacementPriceExVat) && body.userReplacementPriceExVat > 0
+        ? body.userReplacementPriceExVat
+        : null,
     selectedMethod,
     valuationVersion: String(body.valuationVersion ?? 'v1').trim() || 'v1',
     userId: null,
