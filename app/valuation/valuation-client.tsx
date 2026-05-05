@@ -2420,7 +2420,6 @@ export default function ValuationClient() {
       ? `Current basis: your replacement price of ${money(genericResult.userReplacementCalculation.replacementPriceExVat)}`
       : `Current basis: Aim4price replacement estimate of ${money(genericResult?.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}`;
     const replacementBasisText = isGeneric ? genericReplacementBasisText : tractorReplacementBasisText;
-    const marketEvidenceInfo = 'Market evidence only uses listings within 2 model years and 1,000 hours/usage of your machine. Confidence: Low = no listings, Medium = 3–5 listings, High = more than 5 listings.';
 
     return (
       <div className={styles.resultsLayout}>
@@ -2600,8 +2599,17 @@ export default function ValuationClient() {
                 <span className={styles.marketEvidenceCount}>
                   {marketCount > 0 ? `${marketCount} used` : 'No matches'}
                 </span>
-                <span className={styles.marketEvidenceInfo} title={marketEvidenceInfo} aria-label={marketEvidenceInfo}>
-                  i
+                <span className={styles.marketEvidenceInfoWrap}>
+                  <button type="button" className={styles.marketEvidenceInfo} aria-label="Show market evidence rules">
+                    i
+                  </button>
+                  <span className={styles.marketEvidenceTooltip} role="tooltip">
+                    <strong>Market evidence rules</strong>
+                    <span>Only close matches are used in the market average.</span>
+                    <span><b>Year:</b> within 2 model years of your machine.</span>
+                    <span><b>Usage:</b> within 1,000 hours of your machine.</span>
+                    <span><b>Confidence:</b> Low = 0–2 listings, Medium = 3–5, High = 6+.</span>
+                  </span>
                 </span>
               </div>
             </div>
