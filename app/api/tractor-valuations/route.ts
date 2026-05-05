@@ -65,6 +65,7 @@ function buildInputFromSearchParams(request: NextRequest): RunValuationInput | n
     gpsEnabled: parseBoolean(searchParams.get('gpsEnabled')),
     gpsType: normalizeGpsType(searchParams.get('gpsType')),
     gpsYear: searchParams.get('gpsYear'),
+    userReplacementPriceExVat: Number(searchParams.get('userReplacementPriceExVat')) || null,
   };
 }
 
@@ -90,6 +91,10 @@ function buildInputFromBody(body: Partial<RunValuationInput> | null | undefined)
     gpsEnabled: Boolean(body.gpsEnabled),
     gpsType: body.gpsType === 'full-autosteer' || body.gpsType === 'guidance-only' ? body.gpsType : null,
     gpsYear: body.gpsYear ?? null,
+    userReplacementPriceExVat:
+      typeof body.userReplacementPriceExVat === 'number' && Number.isFinite(body.userReplacementPriceExVat) && body.userReplacementPriceExVat > 0
+        ? body.userReplacementPriceExVat
+        : null,
   };
 }
 
