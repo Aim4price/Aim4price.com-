@@ -199,7 +199,6 @@ type SaveValuationRunApiResponse = {
 };
 
 const CURRENT_YEAR = new Date().getFullYear();
-const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 1950 + 1 }, (_, index) => CURRENT_YEAR - index);
 
 const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
   { step: 1, label: 'Machine' },
@@ -1941,53 +1940,100 @@ export default function ValuationClient() {
   }
 
   function renderYearModal() {
+    const parsedYear = Number(year);
+    const sliderYear = !yearModelUnknown && Number.isInteger(parsedYear) && parsedYear >= 1950 && parsedYear <= CURRENT_YEAR
+      ? parsedYear
+      : CURRENT_YEAR;
+    const machineAge = Math.max(0, CURRENT_YEAR - sliderYear);
+
     return (
       <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose machine manufacturing year">
         <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
-        <div className={styles.detailsModal}>
+        <div className={`${styles.detailsModal} ${styles.yearDetailsModal}`}>
           <div className={styles.detailsModalHeader}>
             <div>
               <span className={styles.currentEyebrow}>Step 1</span>
               <h3 className={styles.detailsModalTitle}>Machine manufacturing year</h3>
-              <p className={styles.detailsModalText}>Select the year from the list or type it manually.</p>
+              <p className={styles.detailsModalText}>Slide to the year, fine-tune it if needed, then continue.</p>
             </div>
             <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">
               ×
             </button>
           </div>
 
-          <label className={`${styles.field} ${styles.modalInputField}`}>
-            <span className={styles.fieldLabel}>Type year</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={yearModelUnknown ? '' : year}
-              onChange={(event) => {
-                setYear(event.target.value);
-                setYearModelUnknown(false);
-              }}
-              placeholder={`e.g. ${CURRENT_YEAR}`}
-            />
-          </label>
+          <div className={styles.yearSliderPanel}>
+            <div className={styles.yearSliderReadout}>
+              <span>Selected year</span>
+              <strong>{sliderYear}</strong>
+              <small>{machineAge === 0 ? 'Current model year' : `${machineAge} year${machineAge === 1 ? '' : 's'} old`}</small>
+            </div>
 
-          <button type="button" className={styles.unknownAnswerButton} onClick={saveUnknownYear}>
-            I do not know the year
-          </button>
-
-          <div className={styles.yearOptionGrid}>
-            {YEAR_OPTIONS.map((optionYear) => (
-              <button
-                key={optionYear}
-                type="button"
-                className={`${styles.yearOptionButton} ${!yearModelUnknown && Number(year) === optionYear ? styles.yearOptionButtonActive : ''}`}
-                onClick={() => {
-                  setYear(String(optionYear));
+            <label className={styles.yearSliderControl}>
+              <span className={styles.fieldLabel}>Slide to year</span>
+              <input
+                className={styles.yearRangeInput}
+                type="range"
+                min="1950"
+                max={CURRENT_YEAR}
+                step="1"
+                value={sliderYear}
+                onChange={(event) => {
+                  setYear(event.target.value);
                   setYearModelUnknown(false);
+                  setMessage('');
+                }}
+              />
+              <span className={styles.yearSliderMeta}>
+                <span>1950</span>
+                <span>{CURRENT_YEAR}</span>
+              </span>
+            </label>
+
+            <div className={styles.yearFineTuneRow}>
+              <button
+                type="button"
+                className={styles.yearFineTuneButton}
+                onClick={() => {
+                  setYear(String(Math.max(1950, sliderYear - 1)));
+                  setYearModelUnknown(false);
+                  setMessage('');
                 }}
               >
-                {optionYear}
+                − 1 year
               </button>
-            ))}
+              <button
+                type="button"
+                className={styles.yearFineTuneButton}
+                onClick={() => {
+                  setYear(String(Math.min(CURRENT_YEAR, sliderYear + 1)));
+                  setYearModelUnknown(false);
+                  setMessage('');
+                }}
+              >
+                + 1 year
+              </button>
+            </div>
+          </div>
+
+          <div className={styles.yearSecondaryControls}>
+            <label className={`${styles.field} ${styles.modalInputField} ${styles.manualYearField}`}>
+              <span className={styles.fieldLabel}>Or type the year</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={yearModelUnknown ? '' : year}
+                onChange={(event) => {
+                  setYear(event.target.value);
+                  setYearModelUnknown(false);
+                  setMessage('');
+                }}
+                placeholder={`e.g. ${CURRENT_YEAR}`}
+              />
+            </label>
+
+            <button type="button" className={styles.unknownAnswerButton} onClick={saveUnknownYear}>
+              I do not know the year
+            </button>
           </div>
 
           {message ? <p className={styles.modalMessage}>{message}</p> : null}
