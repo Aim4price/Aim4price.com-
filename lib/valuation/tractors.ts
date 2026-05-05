@@ -28,9 +28,15 @@ export function calculateTractorAim4priceValue(
   yearModel: number,
   hours: number,
   condition: ConditionKey,
+  replacementPriceOverrideExVat?: number | null,
 ): number {
+  const replacementPriceExVat =
+    typeof replacementPriceOverrideExVat === 'number' && Number.isFinite(replacementPriceOverrideExVat) && replacementPriceOverrideExVat > 0
+      ? replacementPriceOverrideExVat
+      : model.aim4priceReplacementExVat;
+
   return calculateEngineHoursValue({
-    replacementPriceExVat: model.aim4priceReplacementExVat,
+    replacementPriceExVat,
     yearModel,
     hours,
     condition,
