@@ -70,6 +70,13 @@ function normalizeKey(value: unknown): string {
   return normalizeText(value).toLowerCase();
 }
 
+function normalizeModelKey(value: unknown): string {
+  return normalizeText(value)
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '');
+}
+
 function slugify(value: string): string {
   return value
     .toLowerCase()
@@ -305,62 +312,106 @@ async function fetchModel(modelId: string): Promise<DbTractorCatalogRow | null> 
 
 async function fetchMarketListings(model: DbTractorCatalogRow): Promise<MarketplaceListing[]> {
   const db = getDb();
+  const normalizedModelKey = normalizeModelKey(model.modelName);
   const values: Array<string | number> = [
     model.equipmentModelId,
     model.brandName.toLowerCase(),
-    model.modelName,
+    normalizedModelKey,
     model.tractorType,
     model.drive,
   ];
 
   const result = await db.query<MarketListingDbRow>(
     `
+      with normalized_market as (
+        select
+          m.id,
+          m.equipment_type,
+          m.equipment_model_id,
+          coalesce(b.name, m.brand_name_snapshot, m.brand_name, '') as brand_name,
+          coalesce(m.model_name_raw, m.model_name, '') as model_name,
+          m.tractor_type,
+          m.drive_type,
+          m.cab_type,
+          m.power_kw,
+          m.year_model,
+          m.hours,
+          m.advertised_price_ex_vat,
+          m.source_name,
+          m.source_url,
+          m.province,
+          m.area,
+          m.date_advertised,
+          m.is_sold,
+          ef.family_key,
+          lower(trim(coalesce(b.name, m.brand_name_snapshot, m.brand_name, ''))) as normalized_brand_name,
+          regexp_replace(lower(trim(coalesce(m.model_name_raw, m.model_name, ''))), '[^a-z0-9]+', '', 'g') as normalized_listing_model_name,
+          case
+            when lower(trim(coalesce(m.tractor_type, ''))) in ('orchard', 'vineyard') then 'orchard'
+            else 'field'
+          end as normalized_tractor_type,
+          case
+            when lower(regexp_replace(trim(coalesce(m.drive_type, '')), '[^a-z0-9]+', '', 'g')) in ('2wd', '2x4', 'twowheeldrive') then '2wd'
+            when lower(regexp_replace(trim(coalesce(m.drive_type, '')), '[^a-z0-9]+', '', 'g')) in ('track', 'tracks', 'tracked') then 'tracks'
+            else '4wd'
+          end as normalized_drive_type
+        from public.market_vault_listings m
+        left join public.equipment_families ef
+          on ef.id = m.equipment_family_id
+        left join public.brands b
+          on b.id = m.brand_id
+        where coalesce(m.is_sold, false) = false
+          and m.advertised_price_ex_vat is not null
+          and m.advertised_price_ex_vat > 0
+      )
       select
-        m.id,
-        m.equipment_type,
-        m.equipment_model_id,
-        m.brand_name,
-        m.model_name,
-        m.tractor_type,
-        m.drive_type,
-        m.cab_type,
-        m.power_kw,
-        m.year_model,
-        m.hours,
-        m.advertised_price_ex_vat,
-        m.source_name,
-        m.source_url,
-        m.province,
-        m.area,
-        m.date_advertised,
-        m.is_sold
-      from public.market_vault_listings m
-      left join public.equipment_families ef
-        on ef.id = m.equipment_family_id
-      where coalesce(m.is_sold, false) = false
-        and m.advertised_price_ex_vat is not null
-        and m.advertised_price_ex_vat > 0
-        and (
-          ef.family_key = 'tractors'
-          or lower(trim(coalesce(m.equipment_type, ''))) in ('tractor', 'tractors')
-        )
-        and (
-          m.equipment_model_id = $1
-          or (
-            lower(trim(coalesce(m.brand_name, m.brand_name_snapshot, ''))) = $2
-            and regexp_replace(lower(trim(coalesce(m.model_name_raw, m.model_name, ''))), '[^a-z0-9]+', '', 'g') =
-                regexp_replace(lower(trim($3)), '[^a-z0-9]+', '', 'g')
-            and lower(trim(coalesce(m.tractor_type, $4))) = $4
-            and lower(replace(trim(coalesce(m.drive_type, $5)), ' ', '')) = $5
+        id,
+        equipment_type,
+        equipment_model_id,
+        brand_name,
+        model_name,
+        tractor_type,
+        drive_type,
+        cab_type,
+        power_kw,
+        year_model,
+        hours,
+        advertised_price_ex_vat,
+        source_name,
+        source_url,
+        province,
+        area,
+        date_advertised,
+        is_sold
+      from normalized_market
+      where
+        equipment_model_id = $1
+        or (
+          normalized_brand_name = $2
+          and normalized_listing_model_name <> ''
+          and $3 <> ''
+          and (
+            normalized_listing_model_name = $3
+            or normalized_listing_model_name like $3 || '%'
+            or normalized_listing_model_name like '%' || $3 || '%'
+          )
+          and normalized_tractor_type = $4
+          and normalized_drive_type = $5
+          and (
+            family_key = 'tractors'
+            or lower(trim(coalesce(equipment_type, ''))) in ('tractor', 'tractors')
+            or tractor_type is not null
+            or equipment_model_id is not null
           )
         )
-      order by m.date_advertised desc nulls last, m.year_model desc nulls last, m.hours asc nulls last
+      order by date_advertised desc nulls last, year_model desc nulls last, hours asc nulls last, id desc
     `,
     values,
   );
 
   return result.rows.map((row) => mapListingRow(row, model));
 }
+
 export async function runServerValuation(input: RunValuationInput): Promise<Result> {
   const model = await fetchModel(String(input.modelId));
   if (!model) {
