@@ -7693,3 +7693,136 @@
     min-width: 0;
   }
 }
+
+
+/* === Final polish pass — dark sector idle state + sleeker path pills === */
+.sectorBigCard {
+  background:
+    radial-gradient(circle at 16% 0%, rgba(79, 147, 120, 0.22), transparent 30%),
+    linear-gradient(135deg, #0f3329 0%, #123d31 52%, #0d2c24 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 28px 48px rgba(13, 36, 28, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.sectorBigCard,
+.sectorBigCard * {
+  color: #ffffff;
+}
+
+.sectorVideo {
+  opacity: 0;
+  filter: saturate(1.14) contrast(1.06) brightness(1.02);
+  transform: scale(1.02);
+  transition: opacity 260ms ease, transform 520ms ease, filter 260ms ease;
+}
+
+.sectorBigCard:hover .sectorVideo,
+.sectorBigCard:focus-visible .sectorVideo,
+.sectorBigCard:focus .sectorVideo {
+  opacity: 1;
+  filter: saturate(1.2) contrast(1.08) brightness(1.04);
+  transform: scale(1.055);
+}
+
+.sectorVideoOverlay {
+  opacity: 1;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(121, 190, 163, 0.18), transparent 32%),
+    linear-gradient(180deg, rgba(9, 26, 21, 0.22) 0%, rgba(9, 26, 21, 0.26) 42%, rgba(6, 16, 13, 0.58) 100%);
+}
+
+.sectorBigCard:hover .sectorVideoOverlay,
+.sectorBigCard:focus-visible .sectorVideoOverlay,
+.sectorBigCard:focus .sectorVideoOverlay {
+  background:
+    radial-gradient(circle at 16% 0%, rgba(255, 255, 255, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(9, 26, 21, 0.08) 0%, rgba(9, 26, 21, 0.12) 36%, rgba(6, 16, 13, 0.46) 100%);
+}
+
+.sectorBigCardSoon .sectorVideoOverlay {
+  background:
+    radial-gradient(circle at top right, rgba(255, 235, 235, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(34, 16, 16, 0.18) 0%, rgba(34, 16, 16, 0.18) 42%, rgba(9, 16, 13, 0.58) 100%);
+}
+
+.sectorLabelWrap {
+  gap: 0.42rem;
+}
+
+.sectorLabel,
+.sectorBigCard .sectorLabel {
+  color: #ffffff;
+  text-shadow: 0 14px 30px rgba(0, 0, 0, 0.34);
+}
+
+.sectorCardHint,
+.sectorBigCard .sectorCardHint {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.liveBadge {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.pathChoiceCard {
+  padding: 1.25rem 1.35rem 1.32rem;
+}
+
+.pathChoiceCardEyebrow {
+  width: calc(100% - 3.5rem);
+  min-height: 2.28rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  justify-content: flex-start;
+  background:
+    linear-gradient(90deg, rgba(23, 77, 62, 0.16) 0%, rgba(36, 109, 85, 0.11) 72%, rgba(36, 109, 85, 0.05) 100%);
+  border: 1px solid rgba(23, 77, 62, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 8px 18px rgba(16, 42, 34, 0.04);
+  color: #1e5a46;
+  font-size: 0.79rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+}
+
+.pathChoiceCard::after {
+  top: 2.39rem;
+  right: 1.32rem;
+  transform: translateY(-50%);
+}
+
+.pathChoiceCard.choiceCardActive::after {
+  top: 2.39rem;
+  transform: translateY(-50%);
+}
+
+.pathChoiceCard.choiceCardActive .pathChoiceCardEyebrow {
+  background:
+    linear-gradient(90deg, rgba(23, 77, 62, 0.22) 0%, rgba(36, 109, 85, 0.15) 72%, rgba(36, 109, 85, 0.08) 100%);
+  border-color: rgba(23, 77, 62, 0.16);
+  color: #164736;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.68),
+    0 10px 20px rgba(16, 42, 34, 0.05);
+}
+
+@media (max-width: 900px) {
+  .pathChoiceCardEyebrow {
+    width: calc(100% - 3.35rem);
+  }
+}
+
+@media (max-width: 720px) {
+  .sectorBigCard {
+    min-height: 13.2rem;
+  }
+
+  .pathChoiceCardEyebrow {
+    width: calc(100% - 3.05rem);
+  }
+}
