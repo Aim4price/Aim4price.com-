@@ -416,6 +416,15 @@ function getHeadlineValue(state: ValuationResultState | null, selectedMethod: Me
   return state.kind === 'tractor' ? getTractorValue(state.result, selectedMethod) : getGenericValue(state.result, selectedMethod, replacementBasis);
 }
 
+function getResultValueSizeClass(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return '';
+
+  const digitCount = String(Math.abs(Math.round(value))).length;
+  if (digitCount >= 8) return styles.resultValueLineTight;
+  if (digitCount >= 7) return styles.resultValueLineCompact;
+  return '';
+}
+
 type ConfidenceContext = {
   selectedMethod: MethodKey;
   yearKnown: boolean;
@@ -2420,6 +2429,8 @@ export default function ValuationClient() {
       ? `Current basis: your replacement price of ${money(genericResult.userReplacementCalculation.replacementPriceExVat)}`
       : `Current basis: Aim4price replacement estimate of ${money(genericResult?.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}`;
     const replacementBasisText = isGeneric ? genericReplacementBasisText : tractorReplacementBasisText;
+    const marketEvidenceInfo = 'Market evidence only uses listings within 2 model years and 1,000 hours/usage of your machine. Confidence: Low = no listings, Medium = 3–5 listings, High = more than 5 listings.';
+    const resultValueSizeClass = getResultValueSizeClass(headlineValue);
 
     return (
       <div className={styles.resultsLayout}>
@@ -2429,7 +2440,10 @@ export default function ValuationClient() {
               <span className={styles.resultKicker}>{selectedMethod === 'market' ? 'Marketplace estimate' : 'Aim4price estimate'}</span>
               <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span>
             </div>
-            <strong className={styles.resultValue}>{money(headlineValue)}</strong>
+            <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
+              <strong className={styles.resultValue}>{money(headlineValue)}</strong>
+              {headlineValue !== null ? <span className={styles.resultVatLabel}>+ VAT</span> : null}
+            </div>
             <p className={styles.resultMachineTitle}>{machineTitle}</p>
             <p className={styles.resultConfidenceNote}>{confidenceNote}</p>
             <div className={styles.resultFactsGrid}>
@@ -2599,16 +2613,13 @@ export default function ValuationClient() {
                 <span className={styles.marketEvidenceCount}>
                   {marketCount > 0 ? `${marketCount} used` : 'No matches'}
                 </span>
-                <span className={styles.marketEvidenceInfoWrap}>
-                  <button type="button" className={styles.marketEvidenceInfo} aria-label="Show market evidence rules">
-                    i
-                  </button>
-                  <span className={styles.marketEvidenceTooltip} role="tooltip">
+                <span className={styles.marketEvidenceInfo} tabIndex={0} aria-label={marketEvidenceInfo}>
+                  i
+                  <span className={styles.marketEvidenceInfoTooltip} role="tooltip">
                     <strong>Market evidence rules</strong>
-                    <span>Only close matches are used in the market average.</span>
-                    <span><b>Year:</b> within 2 model years of your machine.</span>
-                    <span><b>Usage:</b> within 1,000 hours of your machine.</span>
-                    <span><b>Confidence:</b> Low = 0–2 listings, Medium = 3–5, High = 6+.</span>
+                    <span>Only listings within <b>2 model years</b>.</span>
+                    <span>Only listings within <b>1,000 hours / usage</b>.</span>
+                    <span><b>Confidence:</b> Low = 0–2, Medium = 3–5, High = 6+ listings.</span>
                   </span>
                 </span>
               </div>
