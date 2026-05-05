@@ -19,7 +19,7 @@ import { getGuestValuationCount, incrementGuestValuationCount } from '../../lib/
 
 type Step = 1 | 2 | 3 | 4 | 5;
 type MethodKey = 'aim4price' | 'market';
-type FlowMode = 'exact_model' | 'generic_specs';
+type FlowMode = 'exact_model' | 'generic_specs' | '';
 type GpsType = 'full-autosteer' | 'guidance-only';
 type ReplacementPriceBasis = 'aim4price' | 'user';
 type DepreciationMethodUsed = 'full_depreciation' | 'semi_depreciation' | 'percentage_depreciation';
@@ -209,14 +209,7 @@ const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
   { step: 5, label: 'Value' },
 ];
 
-type SectorOption = {
-  key: SectorKey;
-  label: string;
-  available: boolean;
-  videoSrc: string;
-};
-
-const SECTOR_OPTIONS: SectorOption[] = [
+const SECTOR_OPTIONS: Array<{ key: SectorKey; label: string; available: boolean; videoSrc: string }> = [
   { key: 'agricultural', label: SECTOR_LABELS.agricultural, available: true, videoSrc: '/brand/valuation/Agriculture.mp4' },
   { key: 'construction', label: SECTOR_LABELS.construction, available: false, videoSrc: '/brand/valuation/Construction.mp4' },
   { key: 'industrial', label: SECTOR_LABELS.industrial, available: false, videoSrc: '/brand/valuation/Industrial.mp4' },
@@ -237,6 +230,20 @@ const CAB_OPTIONS: Array<{ value: CabType; label: string }> = [
   { value: 'cab', label: 'Cab' },
   { value: 'open-station', label: 'Open station' },
 ];
+
+function playSectorPreview(card: HTMLButtonElement) {
+  const video = card.querySelector('video');
+  if (!video) return;
+  video.currentTime = 0;
+  void video.play().catch(() => undefined);
+}
+
+function resetSectorPreview(card: HTMLButtonElement) {
+  const video = card.querySelector('video');
+  if (!video) return;
+  video.pause();
+  video.currentTime = 0;
+}
 
 function nextStep(step: Step): Step {
   return step === 1 ? 2 : step === 2 ? 3 : step === 3 ? 4 : 5;
@@ -273,21 +280,6 @@ function searchIncludes(value: string, query: string): boolean {
   if (!terms.length) return true;
   const haystack = value.toLowerCase();
   return terms.every((term) => haystack.includes(term));
-}
-
-function playSectorPreview(card: HTMLButtonElement): void {
-  const video = card.querySelector<HTMLVideoElement>('video[data-sector-preview="true"]');
-  if (!video) return;
-
-  void video.play().catch(() => undefined);
-}
-
-function stopSectorPreview(card: HTMLButtonElement): void {
-  const video = card.querySelector<HTMLVideoElement>('video[data-sector-preview="true"]');
-  if (!video) return;
-
-  video.pause();
-  video.currentTime = 0;
 }
 
 function formatCatalogModeLabel(mode: CatalogMode): string {
@@ -581,7 +573,7 @@ export default function ValuationClient() {
   const [brandSearch, setBrandSearch] = useState('');
   const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
   const [brandSlug, setBrandSlug] = useState('');
-  const [flowMode, setFlowMode] = useState<FlowMode>('generic_specs');
+  const [flowMode, setFlowMode] = useState<FlowMode>('');
   const [tractorType, setTractorType] = useState<TractorType | ''>('');
   const [drive, setDrive] = useState<DriveType | ''>('');
   const [cab, setCab] = useState<CabType | ''>('');
@@ -811,7 +803,7 @@ export default function ValuationClient() {
     const sectorForRequest = selectedSector;
     const familyForRequest = selectedFamily;
     const familyKeyForRequest = familyForRequest.familyKey;
-    const nextFlowMode = familyKeyForRequest === 'tractors' && familyForRequest.catalogMode === 'hybrid' ? 'exact_model' : 'generic_specs';
+    const nextFlowMode: FlowMode = familyKeyForRequest === 'tractors' && familyForRequest.catalogMode === 'hybrid' ? '' : 'generic_specs';
 
     setResultState(null);
     setSelectedMethod('aim4price');
@@ -1239,6 +1231,10 @@ export default function ValuationClient() {
       return;
     }
     if (step === 3) {
+      if (exactTractorAvailable && !flowMode) {
+        setMessage('Choose a valuation path first.');
+        return;
+      }
       if (flowMode === 'exact_model' && !tractorSetupComplete) {
         setMessage('Complete the type, drive and cab setup first.');
         return;
@@ -1366,7 +1362,9 @@ export default function ValuationClient() {
     setModelId(nextModelId);
     setModelQuery('');
     setModelDropdownOpen(false);
+    setMessage('');
     resetResult();
+    setStep(4);
   }
 
   function handleBack() {
@@ -1388,6 +1386,7 @@ export default function ValuationClient() {
       return (
         <div className={styles.sectorStart}>
           <h2 className={styles.stepTitle}>Choose sector</h2>
+          <p className={styles.stepText}>Pick the sector first. Hover over a card to preview that sector.</p>
 
           <div className={styles.sectorLargeGrid}>
             {SECTOR_OPTIONS.map((sector) => {
@@ -1398,28 +1397,40 @@ export default function ValuationClient() {
                   type="button"
                   className={`${styles.sectorBigCard} ${isAvailable ? styles.sectorBigCardLive : styles.sectorBigCardSoon}`}
                   onClick={() => handleSectorSelect(sector.key)}
-                  onPointerEnter={(event) => playSectorPreview(event.currentTarget)}
-                  onPointerLeave={(event) => stopSectorPreview(event.currentTarget)}
+                  onMouseEnter={(event) => playSectorPreview(event.currentTarget)}
+                  onMouseLeave={(event) => resetSectorPreview(event.currentTarget)}
                   onFocus={(event) => playSectorPreview(event.currentTarget)}
-                  onBlur={(event) => stopSectorPreview(event.currentTarget)}
+                  onBlur={(event) => resetSectorPreview(event.currentTarget)}
                   aria-label={isAvailable ? `Choose ${sector.label}` : `${sector.label} coming soon`}
                 >
                   <video
-                    className={styles.sectorCardVideo}
-                    data-sector-preview="true"
-                    src={sector.videoSrc}
+                    className={styles.sectorVideo}
                     muted
                     loop
                     playsInline
                     preload="metadata"
-                    aria-hidden="true"
-                  />
-                  <span className={styles.sectorCardVideoOverlay} aria-hidden="true" />
-                  <span className={styles.sectorCardKicker}>{isAvailable ? 'Live now' : 'Preview'}</span>
+                    poster=""
+                  >
+                    <source src={sector.videoSrc} type="video/mp4" />
+                  </video>
+
+                  <span className={styles.sectorVideoOverlay} />
+
                   <span className={styles.sectorBigCardContent}>
-                    <strong>{sector.label}</strong>
+                    <span className={styles.sectorCardTopRow}>
+                      <span className={isAvailable ? styles.liveBadge : styles.soonBadge}>
+                        {isAvailable ? 'Live now' : 'Coming soon'}
+                      </span>
+                      <span className={styles.sectorCardStatusDot} aria-hidden="true" />
+                    </span>
+
+                    {!isAvailable ? <span className={styles.sectorSoonMessage}>{sector.label} is coming soon.</span> : null}
+
+                    <span className={styles.sectorLabelWrap}>
+                      <strong className={styles.sectorLabel}>{sector.label}</strong>
+                      <span className={styles.sectorCardHint}>{isAvailable ? 'Open valuation flow' : 'Preview only'}</span>
+                    </span>
                   </span>
-                  {!isAvailable ? <span className={styles.comingSoonBanner}>Coming soon</span> : null}
                 </button>
               );
             })}
@@ -1602,11 +1613,12 @@ export default function ValuationClient() {
     return (
       <div>
         <h2 className={styles.stepTitle}>Choose valuation path</h2>
+        <p className={styles.stepText}>Choose one path first. Aim4price only shows the matching setup after you select it.</p>
 
-        <div className={`${styles.choiceGrid} ${styles.pathChoiceGrid}`}>
+        <div className={`${styles.choiceGrid} ${styles.pathChoiceGrid} ${styles.pathChoiceDeck}`}>
           <button
             type="button"
-            className={`${styles.choiceCard} ${flowMode === 'exact_model' ? styles.choiceCardActive : ''}`}
+            className={`${styles.choiceCard} ${styles.pathChoiceCard} ${flowMode === 'exact_model' ? styles.choiceCardActive : ''}`}
             onClick={() => {
               setFlowMode('exact_model');
               setTypedModelName('');
@@ -1617,13 +1629,14 @@ export default function ValuationClient() {
               resetDetailsFlow();
             }}
           >
+            <span className={styles.pathChoiceCardEyebrow}>Recommended</span>
             <strong>Use exact model</strong>
-            <span className={styles.choiceCardNote}>Helps improve confidence and gives a better valuation when the model exists in the catalogue.</span>
+            <span className={styles.choiceCardNote}>Best when you know the model and want the clearest valuation path.</span>
           </button>
 
           <button
             type="button"
-            className={`${styles.choiceCard} ${flowMode === 'generic_specs' ? styles.choiceCardActive : ''}`}
+            className={`${styles.choiceCard} ${styles.pathChoiceCard} ${flowMode === 'generic_specs' ? styles.choiceCardActive : ''}`}
             onClick={() => {
               setFlowMode('generic_specs');
               setTractorType('');
@@ -1633,12 +1646,15 @@ export default function ValuationClient() {
               resetDetailsFlow();
             }}
           >
+            <span className={styles.pathChoiceCardEyebrow}>Flexible</span>
             <strong>Use machine specs</strong>
             <span className={styles.choiceCardNote}>Use this when exact model data is not available or you are unsure of the exact model.</span>
           </button>
         </div>
 
-        {flowMode === 'exact_model' ? renderTractorModelPicker() : renderTypedModelBox()}
+        {!flowMode ? <div className={styles.pathSelectionPlaceholder}>Select one of the two paths above to continue.</div> : null}
+        {flowMode === 'exact_model' ? renderTractorModelPicker() : null}
+        {flowMode === 'generic_specs' ? renderTypedModelBox() : null}
       </div>
     );
   }
@@ -2148,12 +2164,12 @@ export default function ValuationClient() {
     return (
       <div>
         <h2 className={styles.stepTitle}>{genericPath ? 'Machine specs' : 'Tractor details'}</h2>
-        <p className={styles.stepText}>Answer one step at a time. Aim4price only unlocks the next section once the current answer is captured.</p>
+        <p className={styles.stepText}>Answer one step at a time. Aim4price only reveals the next question after the current one is saved.</p>
 
         <div className={styles.specFlowStack}>
           <button
             type="button"
-            className={`${styles.specStepCard} ${yearStepComplete ? styles.specStepCardComplete : styles.specStepCardActive}`}
+            className={`${styles.specStepCard} ${styles.specStepCardHero} ${yearStepComplete ? styles.specStepCardComplete : styles.specStepCardActive}`}
             onClick={() => {
               setActiveDetailsModal('year');
               setMessage('');
@@ -2162,36 +2178,37 @@ export default function ValuationClient() {
             <span className={`${styles.specStepNumber} ${yearStepComplete ? styles.specStepNumberDone : ''}`}>{yearStepComplete ? '✓' : 1}</span>
             <span className={styles.specStepContent}>
               <strong>Machine manufacturing year</strong>
-              <small>{getYearAnswerLabel()}</small>
+              <small>{yearStepComplete ? getYearAnswerLabel() : 'Choose the manufacturing year to start.'}</small>
             </span>
-            <span className={styles.specStepAction}>{yearStepComplete ? 'Edit' : 'Choose'}</span>
+            <span className={styles.specStepAction}>{yearStepComplete ? 'Edit' : 'Choose year'}</span>
           </button>
 
-          <button
-            type="button"
-            className={`${styles.specStepCard} ${usageStepComplete ? styles.specStepCardComplete : yearStepComplete ? styles.specStepCardActive : styles.specStepCardLocked}`}
-            onClick={() => yearStepComplete && openUsageModal(showHoursInput)}
-            disabled={!yearStepComplete}
-          >
-            <span className={`${styles.specStepNumber} ${usageStepComplete ? styles.specStepNumberDone : ''}`}>{usageStepComplete ? '✓' : 2}</span>
-            <span className={styles.specStepContent}>
-              <strong>{usageTitle}</strong>
-              <small>{getUsageAnswerLabel(showHoursInput)}</small>
-            </span>
-            <span className={styles.specStepAction}>{usageStepComplete ? 'Edit' : yearStepComplete ? 'Answer' : 'Locked'}</span>
-          </button>
+          {yearStepComplete ? (
+            <button
+              type="button"
+              className={`${styles.specStepCard} ${usageStepComplete ? styles.specStepCardComplete : styles.specStepCardActive}`}
+              onClick={() => openUsageModal(showHoursInput)}
+            >
+              <span className={`${styles.specStepNumber} ${usageStepComplete ? styles.specStepNumberDone : ''}`}>{usageStepComplete ? '✓' : 2}</span>
+              <span className={styles.specStepContent}>
+                <strong>{usageTitle}</strong>
+                <small>{usageStepComplete ? getUsageAnswerLabel(showHoursInput) : `Add ${usageTitle.toLowerCase()} to continue.`}</small>
+              </span>
+              <span className={styles.specStepAction}>{usageStepComplete ? 'Edit' : 'Add details'}</span>
+            </button>
+          ) : null}
 
-          <div className={`${styles.currentCard} ${styles.conditionStepCard} ${usageStepComplete ? '' : styles.lockedStepBlock}`}>
-            <div className={styles.currentCardHead}>
-              <div>
-                <span className={styles.currentEyebrow}>Step 3</span>
-                <h3 className={styles.currentTitle}>Condition</h3>
-                <p className={styles.currentHint}>{usageStepComplete ? 'Choose the closest current condition.' : 'Answer the usage step first.'}</p>
+          {usageStepComplete ? (
+            <div className={`${styles.currentCard} ${styles.conditionStepCard}`}>
+              <div className={styles.currentCardHead}>
+                <div>
+                  <span className={styles.currentEyebrow}>Step 3</span>
+                  <h3 className={styles.currentTitle}>Condition</h3>
+                  <p className={styles.currentHint}>Choose the closest current condition.</p>
+                </div>
+                {conditionStepComplete ? <span className={styles.selectedSummaryPill}>{conditionLabel(condition)}</span> : <span className={styles.selectedSummaryPill}>Choose one</span>}
               </div>
-              {conditionStepComplete ? <span className={styles.selectedSummaryPill}>{conditionLabel(condition)}</span> : null}
-            </div>
 
-            {usageStepComplete ? (
               <div className={styles.conditionButtonGrid}>
                 {conditionOptions.map((option) => (
                   <button
@@ -2208,8 +2225,8 @@ export default function ValuationClient() {
                   </button>
                 ))}
               </div>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
 
           {conditionStepComplete && genericPath ? renderSpecQuestionsProgress() : null}
         </div>
