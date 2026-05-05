@@ -114,11 +114,6 @@ export default function HomePage() {
           <div className={styles.workflowWrap}>
             <div className={styles.workflowIntro}>
               <p className={styles.workflowEyebrow}>How Aim4price works</p>
-              <h2 className={styles.workflowTitle}>A clean path from value to action.</h2>
-              <p className={styles.workflowText}>
-                Estimate value, save the asset record, and use the result when you insure,
-                finance, sell or manage machinery.
-              </p>
             </div>
 
             <div className={styles.stepsGrid}>
