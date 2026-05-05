@@ -209,10 +209,17 @@ const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
   { step: 5, label: 'Value' },
 ];
 
-const SECTOR_OPTIONS: Array<{ key: SectorKey; label: string; available: boolean }> = [
-  { key: 'agricultural', label: SECTOR_LABELS.agricultural, available: true },
-  { key: 'construction', label: SECTOR_LABELS.construction, available: false },
-  { key: 'industrial', label: SECTOR_LABELS.industrial, available: false },
+type SectorOption = {
+  key: SectorKey;
+  label: string;
+  available: boolean;
+  videoSrc: string;
+};
+
+const SECTOR_OPTIONS: SectorOption[] = [
+  { key: 'agricultural', label: SECTOR_LABELS.agricultural, available: true, videoSrc: '/brand/valuation/Agriculture.mp4' },
+  { key: 'construction', label: SECTOR_LABELS.construction, available: false, videoSrc: '/brand/valuation/Construction.mp4' },
+  { key: 'industrial', label: SECTOR_LABELS.industrial, available: false, videoSrc: '/brand/valuation/Industrial.mp4' },
 ];
 
 const TRACTOR_TYPE_OPTIONS: Array<{ value: TractorType; label: string }> = [
@@ -266,6 +273,21 @@ function searchIncludes(value: string, query: string): boolean {
   if (!terms.length) return true;
   const haystack = value.toLowerCase();
   return terms.every((term) => haystack.includes(term));
+}
+
+function playSectorPreview(card: HTMLButtonElement): void {
+  const video = card.querySelector<HTMLVideoElement>('video[data-sector-preview="true"]');
+  if (!video) return;
+
+  void video.play().catch(() => undefined);
+}
+
+function stopSectorPreview(card: HTMLButtonElement): void {
+  const video = card.querySelector<HTMLVideoElement>('video[data-sector-preview="true"]');
+  if (!video) return;
+
+  video.pause();
+  video.currentTime = 0;
 }
 
 function formatCatalogModeLabel(mode: CatalogMode): string {
@@ -1376,8 +1398,24 @@ export default function ValuationClient() {
                   type="button"
                   className={`${styles.sectorBigCard} ${isAvailable ? styles.sectorBigCardLive : styles.sectorBigCardSoon}`}
                   onClick={() => handleSectorSelect(sector.key)}
+                  onPointerEnter={(event) => playSectorPreview(event.currentTarget)}
+                  onPointerLeave={(event) => stopSectorPreview(event.currentTarget)}
+                  onFocus={(event) => playSectorPreview(event.currentTarget)}
+                  onBlur={(event) => stopSectorPreview(event.currentTarget)}
                   aria-label={isAvailable ? `Choose ${sector.label}` : `${sector.label} coming soon`}
                 >
+                  <video
+                    className={styles.sectorCardVideo}
+                    data-sector-preview="true"
+                    src={sector.videoSrc}
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    aria-hidden="true"
+                  />
+                  <span className={styles.sectorCardVideoOverlay} aria-hidden="true" />
+                  <span className={styles.sectorCardKicker}>{isAvailable ? 'Live now' : 'Preview'}</span>
                   <span className={styles.sectorBigCardContent}>
                     <strong>{sector.label}</strong>
                   </span>
