@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
@@ -1407,7 +1407,7 @@ export default function ValuationClient() {
                     muted
                     loop
                     playsInline
-                    preload="metadata"
+                    preload="auto"
                     poster=""
                   >
                     <source src={sector.videoSrc} type="video/mp4" />
@@ -1420,14 +1420,11 @@ export default function ValuationClient() {
                       <span className={isAvailable ? styles.liveBadge : styles.soonBadge}>
                         {isAvailable ? 'Live now' : 'Coming soon'}
                       </span>
-                      <span className={styles.sectorCardStatusDot} aria-hidden="true" />
                     </span>
-
-                    {!isAvailable ? <span className={styles.sectorSoonMessage}>{sector.label} is coming soon.</span> : null}
 
                     <span className={styles.sectorLabelWrap}>
                       <strong className={styles.sectorLabel}>{sector.label}</strong>
-                      <span className={styles.sectorCardHint}>{isAvailable ? 'Open valuation flow' : 'Preview only'}</span>
+                      {isAvailable ? <span className={styles.sectorCardHint}>Open valuation flow</span> : null}
                     </span>
                   </span>
                 </button>
@@ -1945,6 +1942,8 @@ export default function ValuationClient() {
       ? parsedYear
       : CURRENT_YEAR;
     const machineAge = Math.max(0, CURRENT_YEAR - sliderYear);
+    const yearSliderProgress = ((sliderYear - 1950) / Math.max(1, CURRENT_YEAR - 1950)) * 100;
+    const yearSliderStyle = { '--year-progress': `${yearSliderProgress}%` } as CSSProperties;
 
     return (
       <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose machine manufacturing year">
@@ -1972,6 +1971,7 @@ export default function ValuationClient() {
               <span className={styles.fieldLabel}>Slide to year</span>
               <input
                 className={styles.yearRangeInput}
+                style={yearSliderStyle}
                 type="range"
                 min="1950"
                 max={CURRENT_YEAR}
@@ -2031,7 +2031,7 @@ export default function ValuationClient() {
               />
             </label>
 
-            <button type="button" className={styles.unknownAnswerButton} onClick={saveUnknownYear}>
+            <button type="button" className={`${styles.unknownAnswerButton} ${styles.unknownDangerButton}`} onClick={saveUnknownYear}>
               I do not know the year
             </button>
           </div>
@@ -2088,7 +2088,7 @@ export default function ValuationClient() {
 
               <button
                 type="button"
-                className={styles.unknownAnswerButton}
+                className={`${styles.unknownAnswerButton} ${styles.unknownDangerButton}`}
                 onClick={() => {
                   setUsageAmount('');
                   setUsageModalMode('percent');
