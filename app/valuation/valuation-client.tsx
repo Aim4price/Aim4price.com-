@@ -429,10 +429,9 @@ function confidenceFromCoverageBand(band: Result['coverageBand']): 'High' | 'Med
   return 'Low';
 }
 
-function confidenceFromMarketCount(count: number, exactModelMatch = false): 'High' | 'Medium' | 'Low' {
-  if (exactModelMatch && count >= 4) return 'High';
-  if (count >= 5) return 'High';
-  if (count >= 2) return 'Medium';
+function confidenceFromMarketCount(count: number): 'High' | 'Medium' | 'Low' {
+  if (count > 5) return 'High';
+  if (count >= 3) return 'Medium';
   return 'Low';
 }
 
@@ -441,14 +440,14 @@ function getConfidenceLabel(state: ValuationResultState | null, context: Confide
 
   if (state.kind === 'generic') {
     if (context.selectedMethod === 'market') {
-      return `Confidence: ${confidenceFromMarketCount(state.result.marketAverageCount, state.result.marketMatchStrategy === 'exact_model')}`;
+      return `Confidence: ${confidenceFromMarketCount(state.result.marketAverageCount)}`;
     }
 
     return `Confidence: ${state.result.confidenceLabel}`;
   }
 
   if (context.selectedMethod === 'market') {
-    return `Confidence: ${confidenceFromCoverageBand(state.result.coverageBand)}`;
+    return `Confidence: ${confidenceFromMarketCount(state.result.marketCount)}`;
   }
 
   const hasReplacementPrice = Number.isFinite(state.result.model.aim4priceReplacementExVat) && state.result.model.aim4priceReplacementExVat > 0;
@@ -483,7 +482,7 @@ function getConfidenceNote(state: ValuationResultState | null, context: Confiden
     if (context.selectedMethod === 'market') {
       const count = state.result.marketAverageCount;
       return count > 0
-        ? `${count} marketplace listing${count === 1 ? '' : 's'} matched using ${displayMarketStrategy(state.result.marketMatchStrategy).toLowerCase()}.`
+        ? `${count} marketplace listing${count === 1 ? '' : 's'} matched within 2 model years and 1,000 hours/usage.`
         : 'No usable marketplace listing was found for this machine yet.';
     }
 
@@ -493,7 +492,7 @@ function getConfidenceNote(state: ValuationResultState | null, context: Confiden
   if (context.selectedMethod === 'market') {
     const count = state.result.marketCount;
     return count > 0
-      ? `${count} usable market listing${count === 1 ? '' : 's'} after model, year, hours and outlier checks.`
+      ? `${count} usable market listing${count === 1 ? '' : 's'} within 2 model years and 1,000 hours.`
       : 'No usable market listing was found for this exact tractor yet.';
   }
 
@@ -1064,6 +1063,52 @@ export default function ValuationClient() {
     }
   }
 
+  async function calculateTractorWithReplacementPrice(priceExVat: number | null) {
+    if (!selectedModel) {
+      setMessage('Choose an exact tractor model first.');
+      return;
+    }
+
+    const validationMessage = validateDetails();
+    if (validationMessage) {
+      setMessage(validationMessage);
+      return;
+    }
+
+    setReplacementRecalculateLoading(true);
+    setMessage('');
+
+    try {
+      const response = await fetch('/api/tractor-valuations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modelId: selectedModel.id,
+          year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
+          hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
+          condition,
+          frontPto,
+          frontLoader,
+          gpsEnabled,
+          gpsType,
+          gpsYear,
+          userReplacementPriceExVat: priceExVat,
+        }),
+      });
+      const data = (await response.json()) as TractorValuationApiResponse;
+      if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to recalculate tractor valuation.');
+      setResultState({ kind: 'tractor', result: data.result });
+      setReplacementPriceBasis(priceExVat ? 'user' : 'aim4price');
+      setSelectedMethod('aim4price');
+      setReplacementPanelOpen(true);
+    } catch (error) {
+      console.error(error);
+      setMessage(error instanceof Error ? error.message : 'Failed to recalculate tractor valuation.');
+    } finally {
+      setReplacementRecalculateLoading(false);
+    }
+  }
+
   async function calculateValuation() {
     if (!selectedSector) {
       setMessage('Choose a sector first.');
@@ -1180,6 +1225,10 @@ export default function ValuationClient() {
               gpsEnabled,
               gpsType,
               gpsYear,
+              userReplacementPriceExVat:
+                replacementPriceBasis === 'user' && selectedMethod === 'aim4price' && resultState.result.userReplacementPriceExVat
+                  ? resultState.result.userReplacementPriceExVat
+                  : null,
               selectedMethod,
               valuationVersion: 'v1',
             }
@@ -2355,6 +2404,8 @@ export default function ValuationClient() {
       ? `${genericResult?.family.label ?? 'Machine'} • ${genericResult?.brand.name ?? 'Brand'}${genericResult?.typedModelName ? ` • ${genericResult.typedModelName}` : ''}`
       : `${tractorResult?.model.brandName ?? ''} ${tractorResult?.model.modelName ?? ''}`.trim();
     const resultCondition = isGeneric ? genericResult?.condition ?? condition : condition;
+    const resultYear = isGeneric ? genericResult?.year ?? yearNumber : yearModelUnknown ? CURRENT_YEAR : yearNumber;
+    const yearSummary = yearModelUnknown ? 'Unknown' : String(resultYear);
     const usageSummary = isGeneric && genericSelectedCalculation
       ? `${formatPercent(genericSelectedCalculation.lifeWorkedPercent)} worked${genericSelectedCalculation.estimatedHours ? ` • ${genericSelectedCalculation.estimatedHours.toLocaleString('en-ZA')} estimated hours` : ''}`
       : usageNumber
@@ -2362,14 +2413,14 @@ export default function ValuationClient() {
         : lifeWorkedPercentNumber !== null
           ? `${formatPercent(lifeWorkedPercentNumber)} worked`
           : 'Usage captured';
-    const resultBasisText = selectedMethod === 'market'
-      ? 'Based on matched marketplace evidence'
-      : isGeneric && replacementPriceBasis === 'user'
-        ? 'Calculated from your replacement price'
-        : 'Calculated from Aim4price data';
-    const replacementBasisText = genericResult?.userReplacementCalculation && replacementPriceBasis === 'user'
+    const tractorReplacementBasisText = tractorResult?.userReplacementPriceExVat && replacementPriceBasis === 'user'
+      ? `Current basis: your replacement price of ${money(tractorResult.userReplacementPriceExVat)}`
+      : `Current basis: Aim4price replacement price of ${money(tractorResult?.model.aim4priceReplacementExVat ?? null)}`;
+    const genericReplacementBasisText = genericResult?.userReplacementCalculation && replacementPriceBasis === 'user'
       ? `Current basis: your replacement price of ${money(genericResult.userReplacementCalculation.replacementPriceExVat)}`
       : `Current basis: Aim4price replacement estimate of ${money(genericResult?.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}`;
+    const replacementBasisText = isGeneric ? genericReplacementBasisText : tractorReplacementBasisText;
+    const marketEvidenceInfo = 'Market evidence only uses listings within 2 model years and 1,000 hours/usage of your machine. Confidence: Low = no listings, Medium = 3–5 listings, High = more than 5 listings.';
 
     return (
       <div className={styles.resultsLayout}>
@@ -2384,16 +2435,16 @@ export default function ValuationClient() {
             <p className={styles.resultConfidenceNote}>{confidenceNote}</p>
             <div className={styles.resultFactsGrid}>
               <div className={styles.resultFactCard}>
-                <span>Condition</span>
-                <strong>{conditionLabel(resultCondition)}</strong>
+                <span>Year model</span>
+                <strong>{yearSummary}</strong>
               </div>
               <div className={styles.resultFactCard}>
                 <span>Usage</span>
                 <strong>{usageSummary}</strong>
               </div>
               <div className={styles.resultFactCard}>
-                <span>Basis</span>
-                <strong>{resultBasisText}</strong>
+                <span>Condition</span>
+                <strong>{conditionLabel(resultCondition)}</strong>
               </div>
             </div>
           </section>
@@ -2406,7 +2457,7 @@ export default function ValuationClient() {
             >
               <span className={styles.resultMethodLabel}>Aim4price value</span>
               <strong>{money(aimValue)}</strong>
-              <small>{isGeneric && replacementPriceBasis === 'user' ? 'Using your replacement price' : 'Using Aim4price valuation logic'}</small>
+              <small>{replacementPriceBasis === 'user' ? 'Using your replacement price' : 'Using Aim4price valuation logic'}</small>
             </button>
             <button
               type="button"
@@ -2420,7 +2471,7 @@ export default function ValuationClient() {
             </button>
           </section>
 
-          {isGeneric && genericResult ? (
+          {(isGeneric && genericResult) || tractorResult ? (
             <section className={styles.resultAccordion}>
               <button
                 type="button"
@@ -2441,36 +2492,69 @@ export default function ValuationClient() {
                     Replacement price means what a similar machine would cost new today. Adjust it when you know the real current new price and want Aim4price to calculate from that number.
                   </p>
 
-                  <div className={styles.replacementOptionGrid}>
-                    <button
-                      type="button"
-                      className={`${styles.replacementOptionCard} ${replacementPriceBasis === 'aim4price' ? styles.replacementOptionCardActive : ''}`}
-                      onClick={() => {
-                        setReplacementPriceBasis('aim4price');
-                        setSelectedMethod('aim4price');
-                      }}
-                    >
-                      <span>Aim4price basis</span>
-                      <strong>{money(genericResult.aim4priceReplacementCalculation?.valuationMidExVat ?? null)}</strong>
-                      <small>New price used: {money(genericResult.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}</small>
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`${styles.replacementOptionCard} ${replacementPriceBasis === 'user' ? styles.replacementOptionCardActive : ''}`}
-                      onClick={() => {
-                        if (genericResult.userReplacementCalculation) {
-                          setReplacementPriceBasis('user');
+                  {isGeneric && genericResult ? (
+                    <div className={styles.replacementOptionGrid}>
+                      <button
+                        type="button"
+                        className={`${styles.replacementOptionCard} ${replacementPriceBasis === 'aim4price' ? styles.replacementOptionCardActive : ''}`}
+                        onClick={() => {
+                          setReplacementPriceBasis('aim4price');
                           setSelectedMethod('aim4price');
-                        }
-                      }}
-                      disabled={!genericResult.userReplacementCalculation}
-                    >
-                      <span>Your basis</span>
-                      <strong>{money(genericResult.userReplacementCalculation?.valuationMidExVat ?? null)}</strong>
-                      <small>New price used: {money(genericResult.userReplacementCalculation?.replacementPriceExVat ?? null)}</small>
-                    </button>
-                  </div>
+                        }}
+                      >
+                        <span>Aim4price basis</span>
+                        <strong>{money(genericResult.aim4priceReplacementCalculation?.valuationMidExVat ?? null)}</strong>
+                        <small>New price used: {money(genericResult.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}</small>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`${styles.replacementOptionCard} ${replacementPriceBasis === 'user' ? styles.replacementOptionCardActive : ''}`}
+                        onClick={() => {
+                          if (genericResult.userReplacementCalculation) {
+                            setReplacementPriceBasis('user');
+                            setSelectedMethod('aim4price');
+                          }
+                        }}
+                        disabled={!genericResult.userReplacementCalculation}
+                      >
+                        <span>Your basis</span>
+                        <strong>{money(genericResult.userReplacementCalculation?.valuationMidExVat ?? null)}</strong>
+                        <small>New price used: {money(genericResult.userReplacementCalculation?.replacementPriceExVat ?? null)}</small>
+                      </button>
+                    </div>
+                  ) : tractorResult ? (
+                    <div className={styles.replacementOptionGrid}>
+                      <button
+                        type="button"
+                        className={`${styles.replacementOptionCard} ${replacementPriceBasis === 'aim4price' ? styles.replacementOptionCardActive : ''}`}
+                        onClick={() => {
+                          setUserReplacementPrice('');
+                          void calculateTractorWithReplacementPrice(null);
+                        }}
+                      >
+                        <span>Aim4price basis</span>
+                        <strong>{money(replacementPriceBasis === 'aim4price' ? tractorResult.aim4priceValueExVat : null)}</strong>
+                        <small>New price used: {money(tractorResult.model.aim4priceReplacementExVat)}</small>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`${styles.replacementOptionCard} ${replacementPriceBasis === 'user' ? styles.replacementOptionCardActive : ''}`}
+                        onClick={() => {
+                          if (tractorResult.userReplacementPriceExVat) {
+                            setSelectedMethod('aim4price');
+                            setReplacementPriceBasis('user');
+                          }
+                        }}
+                        disabled={!tractorResult.userReplacementPriceExVat}
+                      >
+                        <span>Your basis</span>
+                        <strong>{money(replacementPriceBasis === 'user' ? tractorResult.aim4priceValueExVat : null)}</strong>
+                        <small>New price used: {money(tractorResult.userReplacementPriceExVat ?? null)}</small>
+                      </button>
+                    </div>
+                  ) : null}
 
                   <div className={styles.replacementInputPanel}>
                     <label className={styles.field}>
@@ -2487,7 +2571,14 @@ export default function ValuationClient() {
                       type="button"
                       className={styles.assetButton}
                       disabled={!userPriceInput || replacementRecalculateLoading}
-                      onClick={() => userPriceInput && calculateGenericWithReplacementPrice(userPriceInput)}
+                      onClick={() => {
+                        if (!userPriceInput) return;
+                        if (isGeneric) {
+                          void calculateGenericWithReplacementPrice(userPriceInput);
+                        } else {
+                          void calculateTractorWithReplacementPrice(userPriceInput);
+                        }
+                      }}
                     >
                       {replacementRecalculateLoading ? 'Recalculating...' : 'Recalculate value'}
                     </button>
@@ -2505,9 +2596,14 @@ export default function ValuationClient() {
                 <h3>Market evidence</h3>
                 <p>Listings used after model, year, usage and price checks.</p>
               </div>
-              <span className={styles.marketEvidenceCount}>
-                {marketCount > 0 ? `${marketCount} used` : 'No matches'}
-              </span>
+              <div className={styles.marketEvidenceHeaderActions}>
+                <span className={styles.marketEvidenceCount}>
+                  {marketCount > 0 ? `${marketCount} used` : 'No matches'}
+                </span>
+                <span className={styles.marketEvidenceInfo} title={marketEvidenceInfo} aria-label={marketEvidenceInfo}>
+                  i
+                </span>
+              </div>
             </div>
 
             {marketValue !== null ? (
