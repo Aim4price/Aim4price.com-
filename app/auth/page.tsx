@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import styles from './page.module.css';
 
@@ -30,21 +29,6 @@ type LoginFormState = {
 
 const AUTH_BASE_PATH = '/api/auth';
 const POST_LOGIN_REDIRECT = '/asset-register';
-
-const showcaseHighlights = [
-  {
-    title: 'Valuations',
-    text: 'Save every pricing result and return to it later.',
-  },
-  {
-    title: 'Asset register',
-    text: 'Keep machinery records structured under one account.',
-  },
-  {
-    title: 'Marketplace',
-    text: 'Move selected assets into sale activity faster.',
-  },
-] as const;
 
 const initialSignupState: SignupFormState = {
   name: '',
@@ -382,58 +366,6 @@ export default function AuthPage() {
         </div>
 
         <section className={styles.frame}>
-          <aside className={styles.showcase}>
-            <div className={styles.showcaseHeader}>
-              <span className={styles.eyebrow}>Secure account access</span>
-              <h2 className={styles.showcaseTitle}>A cleaner home for your machinery workflow.</h2>
-              <p className={styles.showcaseText}>
-                Save valuations, organise asset records, and prepare marketplace activity from one secure
-                account built to feel calm, structured, and professional.
-              </p>
-            </div>
-
-            <div className={styles.workspaceCard}>
-              <div className={styles.workspaceTopRow}>
-                <div className={styles.workspaceMeta}>
-                  <span className={styles.workspaceKicker}>Aim4price workspace</span>
-                  <strong className={styles.workspaceMetaTitle}>One login. One connected workspace.</strong>
-                </div>
-
-                <span className={styles.workspaceBadge}>Secure cloud access</span>
-              </div>
-
-              <div className={styles.workspaceMedia}>
-                <Image
-                  src="/brand/Home-page.png"
-                  alt="Aim4price machinery platform preview"
-                  fill
-                  priority
-                  sizes="(max-width: 1080px) 100vw, 48vw"
-                  className={styles.workspaceImage}
-                />
-
-                <div className={styles.workspaceShade} aria-hidden="true" />
-                <span className={styles.mediaBadge}>Valuations · Register · Marketplace</span>
-              </div>
-
-              <div className={styles.workspaceSummary}>
-                <strong className={styles.workspaceSummaryTitle}>
-                  Keep pricing history, equipment records, and future sale activity linked to the same
-                  account.
-                </strong>
-              </div>
-
-              <div className={styles.workspaceGrid}>
-                {showcaseHighlights.map((item) => (
-                  <article key={item.title} className={styles.workspaceItem}>
-                    <span className={styles.workspaceItemTitle}>{item.title}</span>
-                    <p className={styles.workspaceItemText}>{item.text}</p>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </aside>
-
           <section className={styles.authCard} aria-labelledby="auth-heading" aria-busy={isSubmitting}>
             <div className={styles.modeRail} aria-label="Authentication mode">
               <button
