@@ -873,6 +873,7 @@ export default function AssetRegisterClient() {
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
   const [isExporting, setIsExporting] = useState(false);
@@ -1048,6 +1049,9 @@ export default function AssetRegisterClient() {
   const totalValue = useMemo(() => {
     return assets.reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
   }, [assets]);
+
+  const totalValueInclVat = useMemo(() => Math.round(totalValue * 1.15), [totalValue]);
+  const displayedRegisterValue = registerValueVatMode === 'included' ? totalValueInclVat : totalValue;
 
   const equipmentCount = useMemo(() => {
     return assets.filter((asset) => asset.kind !== 'property').length;
@@ -1828,9 +1832,7 @@ export default function AssetRegisterClient() {
         <section className={styles.registerPanel}>
           <div className={styles.registerHeader}>
             <div className={styles.registerTitleBlock}>
-              <span className={styles.eyebrow}>Asset Register</span>
               <h1>Saved assets</h1>
-              <p>Sleek register view with search, pagination, export tools and asset actions kept neatly inside a single options modal.</p>
             </div>
 
             <div className={styles.headerActions}>
@@ -1852,9 +1854,30 @@ export default function AssetRegisterClient() {
           </div>
 
           <div className={styles.summaryRow}>
-            <div className={styles.summaryTile}>
-              <span>Register value</span>
-              <strong>{money(totalValue)}</strong>
+            <div className={`${styles.summaryTile} ${styles.registerValueTile}`}>
+              <div className={styles.summaryTileTopRow}>
+                <span>Register value</span>
+                <span className={styles.vatStatusPill}>{registerValueVatMode === 'included' ? 'VAT included' : 'VAT excluded'}</span>
+              </div>
+              <strong>{money(displayedRegisterValue)}</strong>
+              <div className={styles.vatToggleGroup} aria-label="Register value VAT display">
+                <button
+                  type="button"
+                  className={`${styles.vatToggleButton} ${registerValueVatMode === 'excluded' ? styles.vatToggleButtonActive : ''}`}
+                  onClick={() => setRegisterValueVatMode('excluded')}
+                  aria-pressed={registerValueVatMode === 'excluded'}
+                >
+                  VAT excluded
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.vatToggleButton} ${registerValueVatMode === 'included' ? styles.vatToggleButtonActive : ''}`}
+                  onClick={() => setRegisterValueVatMode('included')}
+                  aria-pressed={registerValueVatMode === 'included'}
+                >
+                  VAT included
+                </button>
+              </div>
             </div>
 
             <div className={styles.summaryTile}>
