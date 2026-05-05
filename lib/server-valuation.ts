@@ -228,45 +228,136 @@ function addExtras(value: number | null, extrasValue: number): number | null {
   return roundMoney(value + extrasValue);
 }
 
-function marketSnapshot(model: TractorCatalogRow, year: number, hours: number, sourceRows: MarketplaceListing[]) {
-  const exactWithCab = sourceRows.filter((listing) => listing.cab === model.cab);
-  const exactWithoutCab = exactWithCab.length ? exactWithCab : sourceRows;
+type PricedMarketListing = {
+  listing: MarketplaceListing;
+  price: number;
+};
 
-  const tightMatches = exactWithoutCab.filter(
-    (listing) => Math.abs(listing.yearModel - year) <= 2 && Math.abs(listing.hours - hours) <= 1_000,
+function median(values: number[]): number | null {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+
+  if (sorted.length % 2 === 1) {
+    return sorted[middle];
+  }
+
+  return (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function listingDedupeKey(listing: MarketplaceListing): string {
+  const urlKey = normalizeKey(listing.sourceUrl);
+  if (urlKey) return `url:${urlKey}`;
+
+  return [
+    normalizeKey(listing.sourceName),
+    normalizeModelKey(listing.title),
+    Math.round(listing.advertisedPriceExVat || listing.priceExVat || 0),
+    listing.yearModel || 0,
+    listing.hours || 0,
+  ].join('|');
+}
+
+function uniqueListings(sourceRows: MarketplaceListing[]): MarketplaceListing[] {
+  const seen = new Set<string>();
+  const output: MarketplaceListing[] = [];
+
+  for (const listing of sourceRows) {
+    const key = listingDedupeKey(listing);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    output.push(listing);
+  }
+
+  return output;
+}
+
+function countDistinctMarketSources(sourceRows: MarketplaceListing[]): number {
+  const sourceKeys = new Set(
+    sourceRows.map((listing) => normalizeKey(listing.sourceName || listing.sourceUrl || listing.title)).filter(Boolean),
   );
 
-  const source = tightMatches.length ? tightMatches : exactWithoutCab;
-  if (!source.length) {
-    return { low: null, high: null, mid: null, count: 0, source };
+  return sourceKeys.size;
+}
+
+function getCoverageBand(input: {
+  pricedCount: number;
+  distinctSourceCount: number;
+  priceSpreadRatio: number;
+  usedTightMatches: boolean;
+}): Result['coverageBand'] {
+  if (input.pricedCount >= 4 && input.distinctSourceCount >= 2 && input.priceSpreadRatio <= 0.2 && input.usedTightMatches) {
+    return 'green';
   }
 
-  const prices = source
-    .map((listing) => toPositiveNumber(listing.advertisedPriceExVat) ?? toPositiveNumber(listing.priceExVat) ?? null)
-    .filter((value): value is number => value !== null);
-
-  if (!prices.length) {
-    return { low: null, high: null, mid: null, count: source.length, source };
+  if (input.pricedCount >= 2 && input.priceSpreadRatio <= 0.35) {
+    return 'amber';
   }
 
+  if (input.pricedCount >= 2 && input.usedTightMatches) {
+    return 'amber';
+  }
+
+  return 'red';
+}
+
+function marketSnapshot(model: TractorCatalogRow, year: number, hours: number, sourceRows: MarketplaceListing[]) {
+  const dedupedRows = uniqueListings(sourceRows);
+  const exactWithCab = dedupedRows.filter((listing) => listing.cab === model.cab);
+  const exactWithoutCab = exactWithCab.length ? exactWithCab : dedupedRows;
+
+  const tightMatches = exactWithoutCab.filter((listing) => {
+    const hasValidYear = Number.isFinite(listing.yearModel) && listing.yearModel >= 1950;
+    const hasValidHours = Number.isFinite(listing.hours) && listing.hours > 0;
+    const yearMatches = hasValidYear && Math.abs(listing.yearModel - year) <= 2;
+    const hoursMatch = hasValidHours && Math.abs(listing.hours - hours) <= 1_000;
+
+    return yearMatches && hoursMatch;
+  });
+
+  const candidateSource = tightMatches.length ? tightMatches : exactWithoutCab;
+  if (!candidateSource.length) {
+    return { low: null, high: null, mid: null, count: 0, source: candidateSource, coverageBand: 'red' as Result['coverageBand'] };
+  }
+
+  const pricedCandidates = candidateSource
+    .map((listing): PricedMarketListing | null => {
+      const price = toPositiveNumber(listing.advertisedPriceExVat) ?? toPositiveNumber(listing.priceExVat);
+      return price === null ? null : { listing, price };
+    })
+    .filter((value): value is PricedMarketListing => value !== null);
+
+  if (!pricedCandidates.length) {
+    return { low: null, high: null, mid: null, count: candidateSource.length, source: candidateSource, coverageBand: 'red' as Result['coverageBand'] };
+  }
+
+  const medianPrice = median(pricedCandidates.map((item) => item.price));
+  const consistentCandidates =
+    medianPrice && pricedCandidates.length >= 3
+      ? pricedCandidates.filter((item) => Math.abs(item.price - medianPrice) / medianPrice <= 0.25)
+      : pricedCandidates;
+  const valuationCandidates = consistentCandidates.length >= 2 ? consistentCandidates : pricedCandidates;
+  const prices = valuationCandidates.map((item) => item.price);
   const low = Math.min(...prices);
   const high = Math.max(...prices);
   const total = prices.reduce((sum, price) => sum + price, 0);
   const mid = roundMoney(total / prices.length);
+  const distinctSourceCount = countDistinctMarketSources(valuationCandidates.map((item) => item.listing));
+  const priceSpreadRatio = low > 0 ? (high - low) / low : 1;
 
   return {
     low: roundMoney(low),
     high: roundMoney(high),
     mid,
-    count: source.length,
-    source,
+    count: valuationCandidates.length,
+    source: valuationCandidates.map((item) => item.listing),
+    coverageBand: getCoverageBand({
+      pricedCount: valuationCandidates.length,
+      distinctSourceCount,
+      priceSpreadRatio,
+      usedTightMatches: tightMatches.length > 0,
+    }),
   };
-}
-
-function getCoverageBand(marketCount: number): Result['coverageBand'] {
-  if (marketCount >= 5) return 'green';
-  if (marketCount >= 2) return 'amber';
-  return 'red';
 }
 
 async function fetchModel(modelId: string): Promise<DbTractorCatalogRow | null> {
@@ -445,7 +536,7 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
     marketMid,
     marketCount: baseMarket.count,
     marketSources: baseMarket.source,
-    coverageBand: getCoverageBand(baseMarket.count),
+    coverageBand: baseMarket.coverageBand,
     previewValueExVat,
     previewLabel,
     baseAim4priceValueExVat,
