@@ -1831,10 +1831,6 @@ export default function AssetRegisterClient() {
 
         <section className={styles.registerPanel}>
           <div className={styles.registerHeader}>
-            <div className={styles.registerTitleBlock}>
-              <h1>Saved assets</h1>
-            </div>
-
             <div className={styles.headerActions}>
               <button
                 type="button"
@@ -1855,28 +1851,31 @@ export default function AssetRegisterClient() {
 
           <div className={styles.summaryRow}>
             <div className={`${styles.summaryTile} ${styles.registerValueTile}`}>
-              <div className={styles.summaryTileTopRow}>
+              <div className={styles.registerValueHead}>
                 <span>Register value</span>
-                <span className={styles.vatStatusPill}>{registerValueVatMode === 'included' ? 'VAT included' : 'VAT excluded'}</span>
+                <div className={styles.vatToggleGroup} aria-label="Register value VAT display">
+                  <button
+                    type="button"
+                    className={`${styles.vatToggleButton} ${registerValueVatMode === 'excluded' ? styles.vatToggleButtonActive : ''}`}
+                    onClick={() => setRegisterValueVatMode('excluded')}
+                    aria-pressed={registerValueVatMode === 'excluded'}
+                  >
+                    Excl. VAT
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.vatToggleButton} ${registerValueVatMode === 'included' ? styles.vatToggleButtonActive : ''}`}
+                    onClick={() => setRegisterValueVatMode('included')}
+                    aria-pressed={registerValueVatMode === 'included'}
+                  >
+                    Incl. VAT
+                  </button>
+                </div>
               </div>
-              <strong>{money(displayedRegisterValue)}</strong>
-              <div className={styles.vatToggleGroup} aria-label="Register value VAT display">
-                <button
-                  type="button"
-                  className={`${styles.vatToggleButton} ${registerValueVatMode === 'excluded' ? styles.vatToggleButtonActive : ''}`}
-                  onClick={() => setRegisterValueVatMode('excluded')}
-                  aria-pressed={registerValueVatMode === 'excluded'}
-                >
-                  VAT excluded
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.vatToggleButton} ${registerValueVatMode === 'included' ? styles.vatToggleButtonActive : ''}`}
-                  onClick={() => setRegisterValueVatMode('included')}
-                  aria-pressed={registerValueVatMode === 'included'}
-                >
-                  VAT included
-                </button>
+
+              <div className={styles.registerValueAmountRow}>
+                <strong>{money(displayedRegisterValue)}</strong>
+                <span className={styles.vatAmountNote}>{registerValueVatMode === 'included' ? 'VAT included' : 'VAT excluded'}</span>
               </div>
             </div>
 
@@ -1958,7 +1957,7 @@ export default function AssetRegisterClient() {
                             <div className={styles.valueBlock}>
                               <small>Register value</small>
                               <strong>{money(asset.value)}</strong>
-                              <span>Excl. VAT • {assetStatusDateLabel(asset)}</span>
+                              <span>Excl. VAT</span>
                             </div>
 
                             <div className={styles.assetHeaderActions}>
