@@ -7923,14 +7923,14 @@
   }
 }
 
-/* === Valuation fixes: footer breathing room and market evidence info === */
+/* === Valuation fixes: remove footer gap and market evidence info === */
 .page {
   min-height: auto;
-  padding-bottom: clamp(3rem, 5vw, 4.75rem);
+  padding-bottom: 0;
 }
 
 .container {
-  padding-bottom: clamp(1.6rem, 3vw, 2.4rem);
+  padding-bottom: clamp(1.2rem, 2.4vw, 2rem);
 }
 
 .page + :global(footer) {
@@ -8017,105 +8017,149 @@
 }
 
 
-/* === Final footer spacing + readable market-evidence tooltip === */
-.marketEvidenceHeaderActions {
-  position: relative;
+/* === Final VAT display and footer spacing pass === */
+.page {
+  min-height: auto;
+  padding-bottom: clamp(4.5rem, 7vw, 6.5rem);
+  background:
+    radial-gradient(circle at top left, rgba(23, 77, 62, 0.08), transparent 30%),
+    linear-gradient(180deg, #f4f7f5 0%, #e9efec 100%);
 }
 
-.marketEvidenceInfoWrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.container {
+  padding-bottom: clamp(2.2rem, 4.8vw, 4.2rem);
+}
+
+.page + :global(footer) {
+  margin-top: 0;
+}
+
+.resultValueLine {
+  display: flex;
+  align-items: baseline;
+  gap: clamp(0.45rem, 1.1vw, 0.82rem);
+  max-width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.resultValueLine .resultValue {
+  display: inline-block;
+  min-width: 0;
+  font-size: clamp(2.75rem, 5.45vw, 4.6rem);
+  line-height: 0.9;
+  letter-spacing: -0.072em;
+  white-space: nowrap;
+}
+
+.resultVatLabel {
+  flex: 0 0 auto;
+  color: #0d5a3c;
+  font-size: clamp(1.2rem, 2.15vw, 1.95rem);
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.resultValueLineCompact .resultValue {
+  font-size: clamp(2.45rem, 4.8vw, 4rem);
+  letter-spacing: -0.066em;
+}
+
+.resultValueLineCompact .resultVatLabel {
+  font-size: clamp(1.05rem, 1.85vw, 1.55rem);
+}
+
+.resultValueLineTight .resultValue {
+  font-size: clamp(2.1rem, 4.1vw, 3.35rem);
+  letter-spacing: -0.058em;
+}
+
+.resultValueLineTight .resultVatLabel {
+  font-size: clamp(0.95rem, 1.62vw, 1.3rem);
+}
+
+.resultHeroMedium .resultVatLabel {
+  color: #795700;
+}
+
+.resultHeroLow .resultVatLabel {
+  color: #8f2d22;
 }
 
 .marketEvidenceInfo {
-  appearance: none;
-  border: 1px solid rgba(26, 89, 68, 0.16);
-  background: rgba(255, 255, 255, 0.94);
-  font: inherit;
+  position: relative;
+  overflow: visible;
 }
 
 .marketEvidenceInfo::after {
-  display: none !important;
-  content: none !important;
+  content: none;
 }
 
-.marketEvidenceTooltip {
+.marketEvidenceInfoTooltip {
   position: absolute;
-  top: calc(100% + 0.72rem);
+  top: calc(100% + 0.65rem);
   right: 0;
-  z-index: 40;
-  width: min(24.5rem, 72vw);
+  z-index: 30;
+  width: min(23rem, 72vw);
   display: grid;
-  gap: 0.55rem;
-  padding: 1rem 1.05rem;
-  border-radius: 1.1rem;
-  border: 1px solid rgba(17, 56, 45, 0.11);
-  background: rgba(255, 255, 255, 0.985);
-  color: #213a33;
+  gap: 0.38rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(17, 56, 45, 0.12);
+  background: rgba(255, 255, 255, 0.99);
+  color: #223b34;
   text-align: left;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  font-weight: 650;
   box-shadow:
-    0 22px 44px rgba(16, 42, 34, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+    0 20px 38px rgba(16, 42, 34, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
   opacity: 0;
   visibility: hidden;
   transform: translateY(-0.25rem);
-  transition:
-    opacity 160ms ease,
-    transform 160ms ease,
-    visibility 160ms ease;
+  transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
   pointer-events: none;
 }
 
-.marketEvidenceTooltip::before {
-  content: '';
-  position: absolute;
-  top: -0.43rem;
-  right: 0.78rem;
-  width: 0.8rem;
-  height: 0.8rem;
-  transform: rotate(45deg);
-  border-left: 1px solid rgba(17, 56, 45, 0.11);
-  border-top: 1px solid rgba(17, 56, 45, 0.11);
-  background: rgba(255, 255, 255, 0.985);
+.marketEvidenceInfoTooltip strong {
+  color: #12372d;
+  font-size: 0.95rem;
+  line-height: 1.25;
 }
 
-.marketEvidenceTooltip strong {
-  color: #102f27;
-  font-size: 0.98rem;
-  line-height: 1.2;
-  letter-spacing: -0.015em;
-}
-
-.marketEvidenceTooltip span {
-  color: #4f625a;
-  font-size: 0.88rem;
-  line-height: 1.42;
-  font-weight: 650;
-}
-
-.marketEvidenceTooltip b {
-  color: #163f32;
+.marketEvidenceInfoTooltip b {
+  color: #12372d;
   font-weight: 900;
 }
 
-.marketEvidenceInfoWrap:hover .marketEvidenceTooltip,
-.marketEvidenceInfo:focus-visible + .marketEvidenceTooltip {
+.marketEvidenceInfo:hover .marketEvidenceInfoTooltip,
+.marketEvidenceInfo:focus-visible .marketEvidenceInfoTooltip {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
 }
 
 @media (max-width: 860px) {
-  .marketEvidenceTooltip {
-    right: auto;
-    left: 0;
-    width: min(22.5rem, calc(100vw - 2rem));
+  .resultValueLine {
+    gap: 0.42rem;
   }
 
-  .marketEvidenceTooltip::before {
+  .resultValueLine .resultValue {
+    font-size: clamp(2rem, 10.5vw, 3.45rem);
+  }
+
+  .resultVatLabel {
+    font-size: clamp(0.9rem, 4.2vw, 1.35rem);
+  }
+
+  .marketEvidenceInfoTooltip {
     right: auto;
-    left: 0.78rem;
+    left: 0;
+    width: min(21rem, 78vw);
   }
 }
