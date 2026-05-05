@@ -14,11 +14,12 @@
 }
 
 .topBar {
+  width: min(100%, 34.75rem);
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 1rem;
-  margin-bottom: 1.28rem;
+  margin: 0 auto 1.28rem;
 }
 
 .homeLink {
@@ -52,9 +53,9 @@
 }
 
 .frame {
-  display: grid;
-  grid-template-columns: minmax(0, 1.06fr) minmax(22rem, 0.94fr);
-  gap: 1.08rem;
+  width: min(100%, 34.75rem);
+  display: block;
+  margin: 0 auto;
   padding: 1.05rem;
   border-radius: 2.15rem;
   border: 1px solid rgba(18, 45, 37, 0.08);
@@ -65,10 +66,9 @@
   backdrop-filter: blur(12px);
 }
 
-.showcase,
 .authCard {
   min-width: 0;
-  height: 100%;
+  height: auto;
   border-radius: 1.72rem;
 }
 
@@ -604,30 +604,8 @@
 }
 
 @media (max-width: 1080px) {
-  .frame {
-    grid-template-columns: 1fr;
-  }
-
-  .authCard {
-    order: 1;
-  }
-
-  .showcase {
-    order: 2;
-  }
-
-  .showcaseTitle,
-  .authTitle,
-  .showcaseText {
+  .authTitle {
     max-width: none;
-  }
-
-  .workspaceMedia {
-    min-height: 18rem;
-  }
-
-  .workspaceGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
