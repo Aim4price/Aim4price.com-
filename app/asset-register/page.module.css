@@ -1566,3 +1566,104 @@
   font-size: 0.84rem;
   letter-spacing: 0.08em;
 }
+
+/* === Asset Register VAT display refinement === */
+.registerHeader {
+  margin-bottom: 1.35rem;
+}
+
+.registerTitleBlock {
+  padding-top: 0.15rem;
+}
+
+.registerValueTile {
+  min-height: 6.8rem;
+  align-content: start;
+  gap: 0.58rem;
+}
+
+.summaryTileTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.vatStatusPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.75rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(22, 83, 64, 0.16);
+  background: rgba(237, 246, 241, 0.96);
+  color: #165340;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.vatToggleGroup {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.2rem;
+  gap: 0.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(216, 225, 234, 0.95);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+.vatToggleButton {
+  cursor: pointer;
+  min-height: 2.1rem;
+  padding: 0 0.8rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: #657386;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.vatToggleButton:hover {
+  color: #17362c;
+  transform: translateY(-1px);
+}
+
+.vatToggleButtonActive {
+  color: #ffffff;
+  background: linear-gradient(180deg, #1a5a45 0%, #124233 100%);
+  border-color: rgba(18, 66, 51, 0.24);
+  box-shadow: 0 8px 16px rgba(18, 66, 51, 0.14);
+}
+
+@media (max-width: 760px) {
+  .summaryTileTopRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .vatToggleGroup {
+    width: 100%;
+  }
+
+  .vatToggleButton {
+    flex: 1 1 0;
+    padding: 0 0.45rem;
+  }
+}
