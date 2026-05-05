@@ -6579,3 +6579,236 @@
     width: 100%;
   }
 }
+
+/* === valuation final-output refinement pass === */
+.resultConfidenceNote {
+  max-width: 42rem;
+  margin: -0.35rem 0 0;
+  color: rgba(41, 65, 56, 0.78);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.resultHero {
+  gap: 0.82rem;
+}
+
+.resultMethodCard {
+  min-height: 7.2rem;
+}
+
+.resultMethodCard small {
+  color: #526960;
+}
+
+.marketEvidenceCard {
+  gap: 0.95rem;
+  padding: 1.1rem;
+}
+
+.marketEvidenceHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.marketEvidenceHeader h3 {
+  margin: 0;
+  color: #102f27;
+  font-size: 1.22rem;
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+}
+
+.marketEvidenceHeader p {
+  max-width: 24rem;
+  margin: 0.28rem 0 0;
+  color: #65766e;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.marketEvidenceCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(26, 89, 68, 0.14);
+  background: rgba(232, 244, 238, 0.95);
+  color: #174d3e;
+  font-size: 0.76rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.marketEvidenceSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(26, 89, 68, 0.12);
+  background: linear-gradient(180deg, rgba(239, 248, 244, 0.98) 0%, rgba(250, 252, 251, 0.98) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+.marketEvidenceSummary span {
+  color: #607168;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.marketEvidenceSummary strong {
+  color: #123f32;
+  font-size: 1.12rem;
+  letter-spacing: -0.025em;
+}
+
+.marketEvidenceItem,
+.marketEvidenceEmpty {
+  gap: 0.55rem;
+  padding: 0.95rem;
+  border-radius: 1.08rem;
+  border: 1px solid rgba(17, 56, 45, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(246, 250, 248, 0.96) 100%);
+  box-shadow:
+    0 10px 22px rgba(16, 42, 34, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.marketEvidenceItem {
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.marketEvidenceItem:hover {
+  transform: translateY(-1px);
+  border-color: rgba(26, 89, 68, 0.18);
+  box-shadow:
+    0 16px 30px rgba(16, 42, 34, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.marketEvidenceItemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.marketEvidenceItemHeader span {
+  min-width: 0;
+  color: #65766e;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marketEvidencePrice {
+  color: #155541;
+  font-size: 0.95rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.marketEvidenceItem strong,
+.marketEvidenceEmpty strong {
+  color: #102f27;
+  font-size: 1rem;
+  line-height: 1.32;
+  letter-spacing: -0.02em;
+}
+
+.marketEvidenceMeta {
+  margin: 0;
+  color: #63746c;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.marketEvidenceLink,
+.marketEvidenceNoLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 2.1rem;
+  margin-top: 0.1rem;
+  padding: 0 0.82rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.marketEvidenceLink {
+  border: 1px solid rgba(26, 89, 68, 0.14);
+  background: #ffffff;
+  color: #155541;
+  box-shadow: 0 8px 16px rgba(16, 42, 34, 0.045);
+}
+
+.marketEvidenceLink:hover {
+  border-color: rgba(26, 89, 68, 0.24);
+  background: rgba(239, 248, 244, 0.96);
+  color: #0f3d30;
+}
+
+.marketEvidenceNoLink {
+  border: 1px dashed rgba(17, 56, 45, 0.16);
+  background: rgba(248, 250, 249, 0.86);
+  color: #6a7a72;
+}
+
+.resultActionGroup {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.8rem;
+  margin-left: auto;
+}
+
+.resultActionGroup .primaryButton {
+  min-width: 13.2rem;
+}
+
+.resultActionGroup .secondaryButton {
+  min-width: 9.5rem;
+}
+
+@media (max-width: 860px) {
+  .marketEvidenceHeader,
+  .marketEvidenceSummary,
+  .marketEvidenceItemHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .marketEvidenceCount,
+  .marketEvidencePrice {
+    align-self: flex-start;
+  }
+
+  .resultActionGroup {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .resultActionGroup .secondaryButton,
+  .resultActionGroup .primaryButton {
+    width: 100%;
+  }
+}
