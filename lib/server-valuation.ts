@@ -282,22 +282,9 @@ function countDistinctMarketSources(sourceRows: MarketplaceListing[]): number {
 
 function getCoverageBand(input: {
   pricedCount: number;
-  distinctSourceCount: number;
-  priceSpreadRatio: number;
-  usedTightMatches: boolean;
 }): Result['coverageBand'] {
-  if (input.pricedCount >= 4 && input.distinctSourceCount >= 2 && input.priceSpreadRatio <= 0.2 && input.usedTightMatches) {
-    return 'green';
-  }
-
-  if (input.pricedCount >= 2 && input.priceSpreadRatio <= 0.35) {
-    return 'amber';
-  }
-
-  if (input.pricedCount >= 2 && input.usedTightMatches) {
-    return 'amber';
-  }
-
+  if (input.pricedCount > 5) return 'green';
+  if (input.pricedCount >= 3) return 'amber';
   return 'red';
 }
 
@@ -315,7 +302,7 @@ function marketSnapshot(model: TractorCatalogRow, year: number, hours: number, s
     return yearMatches && hoursMatch;
   });
 
-  const candidateSource = tightMatches.length ? tightMatches : exactWithoutCab;
+  const candidateSource = tightMatches;
   if (!candidateSource.length) {
     return { low: null, high: null, mid: null, count: 0, source: candidateSource, coverageBand: 'red' as Result['coverageBand'] };
   }
@@ -342,8 +329,6 @@ function marketSnapshot(model: TractorCatalogRow, year: number, hours: number, s
   const high = Math.max(...prices);
   const total = prices.reduce((sum, price) => sum + price, 0);
   const mid = roundMoney(total / prices.length);
-  const distinctSourceCount = countDistinctMarketSources(valuationCandidates.map((item) => item.listing));
-  const priceSpreadRatio = low > 0 ? (high - low) / low : 1;
 
   return {
     low: roundMoney(low),
@@ -353,9 +338,6 @@ function marketSnapshot(model: TractorCatalogRow, year: number, hours: number, s
     source: valuationCandidates.map((item) => item.listing),
     coverageBand: getCoverageBand({
       pricedCount: valuationCandidates.length,
-      distinctSourceCount,
-      priceSpreadRatio,
-      usedTightMatches: tightMatches.length > 0,
     }),
   };
 }
@@ -513,7 +495,14 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
   const safeHours = Math.max(0, Number(input.hours) || 0);
   const marketListings = await fetchMarketListings(model);
 
-  const baseAim4priceValueExVat = calculateTractorAim4priceValue(model, safeYear, safeHours, input.condition);
+  const userReplacementPriceExVat =
+    typeof input.userReplacementPriceExVat === 'number' && Number.isFinite(input.userReplacementPriceExVat) && input.userReplacementPriceExVat > 0
+      ? Math.round(input.userReplacementPriceExVat)
+      : null;
+  const replacementPriceBasis: Result['replacementPriceBasis'] = userReplacementPriceExVat ? 'user' : 'aim4price';
+  const replacementPriceUsedExVat = userReplacementPriceExVat ?? model.aim4priceReplacementExVat ?? null;
+
+  const baseAim4priceValueExVat = calculateTractorAim4priceValue(model, safeYear, safeHours, input.condition, userReplacementPriceExVat);
   const baseMarket = marketSnapshot(model, safeYear, safeHours, marketListings);
 
   const frontPtoValueExVat = calculateTractorFrontPtoValue(model, safeYear, safeHours, input.condition, Boolean(input.frontPto));
@@ -547,5 +536,8 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
     frontPtoValueExVat,
     frontLoaderValueExVat,
     gpsValueExVat,
+    replacementPriceBasis,
+    replacementPriceUsedExVat,
+    userReplacementPriceExVat,
   };
 }

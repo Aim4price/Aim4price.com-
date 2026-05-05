@@ -12,6 +12,7 @@ export type RunValuationInput = {
   gpsEnabled?: boolean;
   gpsType?: GpsType | null;
   gpsYear?: number | string | null;
+  userReplacementPriceExVat?: number | null;
 };
 
 export type Result = {
@@ -33,6 +34,9 @@ export type Result = {
   frontPtoValueExVat: number;
   frontLoaderValueExVat: number;
   gpsValueExVat: number;
+  replacementPriceBasis: 'aim4price' | 'user';
+  replacementPriceUsedExVat: number | null;
+  userReplacementPriceExVat: number | null;
 };
 
 export const conditionLabel = (key: ConditionKey): string =>

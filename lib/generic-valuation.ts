@@ -539,10 +539,34 @@ function marketAverage(matches: MarketMatch[]): number | null {
   return roundMoney(prices.reduce((total, price) => total + price, 0) / prices.length);
 }
 
+function confidenceLabelFromMarketCount(count: number): 'High' | 'Medium' | 'Low' {
+  if (count > 5) return 'High';
+  if (count >= 3) return 'Medium';
+  return 'Low';
+}
+
+function confidenceScoreFromMarketCount(count: number): number {
+  if (count > 5) return 0.82;
+  if (count >= 3) return 0.58;
+  return 0.28;
+}
+
 function confidenceLabel(score: number): 'High' | 'Medium' | 'Low' {
   if (score >= 0.74) return 'High';
   if (score >= 0.50) return 'Medium';
   return 'Low';
+}
+
+function withinMarketTolerance(match: MarketMatch, targetYear: number | null, targetUsageAmount: number | null): boolean {
+  if (targetYear !== null) {
+    if (match.yearModel === null || Math.abs(match.yearModel - targetYear) > 2) return false;
+  }
+
+  if (targetUsageAmount !== null && targetUsageAmount > 0) {
+    if (match.usageAmount === null || Math.abs(match.usageAmount - targetUsageAmount) > 1_000) return false;
+  }
+
+  return true;
 }
 
 function scoreSpecs(candidateSpecs: Record<string, unknown>, inputSpecs: Record<string, unknown>, questions: SpecQuestion[]): number {
@@ -1050,12 +1074,16 @@ export async function findMarketVaultMatches(input: {
   typedModelName?: string | null;
   specsJson?: Record<string, unknown> | null;
   questions?: SpecQuestion[];
+  targetYear?: number | null;
+  targetUsageAmount?: number | null;
   limit?: number;
 }): Promise<{ strategy: GenericValuationResult['marketMatchStrategy']; matches: MarketMatch[] }> {
   const db = getDb();
   const specsJson = normalizeSpecsJson(input.specsJson);
   const typedModelKey = normalizeModelKey(input.typedModelName);
   const limit = Math.min(50, Math.max(5, Math.round(Number(input.limit) || 12)));
+  const targetYear = toInteger(input.targetYear);
+  const targetUsageAmount = toNumber(input.targetUsageAmount);
 
   if (typedModelKey) {
     const typedModelKeys = await collectTypedModelKeys({
@@ -1097,12 +1125,16 @@ export async function findMarketVaultMatches(input: {
     );
 
     if (exact.rows.length) {
-      return {
-        strategy: typedModelKeys.hasApprovedAlias ? 'typed_model' : 'exact_model',
-        matches: exact.rows.map((row) =>
-          mapMarketRow(row, 1, typedModelKeys.hasApprovedAlias ? 'Typed model or approved alias match' : 'Exact typed model match'),
-        ),
-      };
+      const exactMatches = exact.rows
+        .map((row) => mapMarketRow(row, 1, typedModelKeys.hasApprovedAlias ? 'Typed model or approved alias match' : 'Exact typed model match'))
+        .filter((match) => withinMarketTolerance(match, targetYear, targetUsageAmount));
+
+      if (exactMatches.length) {
+        return {
+          strategy: typedModelKeys.hasApprovedAlias ? 'typed_model' : 'exact_model',
+          matches: exactMatches,
+        };
+      }
     }
   }
 
@@ -1150,6 +1182,7 @@ export async function findMarketVaultMatches(input: {
       return mapMarketRow(row, score, input.brandSlug ? 'Brand + similar specs' : 'Family + similar specs');
     })
     .filter((match) => match.matchScore >= 0.45 || Object.keys(specsJson).length === 0)
+    .filter((match) => withinMarketTolerance(match, targetYear, targetUsageAmount))
     .sort((left, right) => right.matchScore - left.matchScore || right.id - left.id)
     .slice(0, limit);
 
@@ -1229,6 +1262,8 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     typedModelName,
     specsJson,
     questions,
+    targetYear: input.yearModelUnknown ? null : input.year,
+    targetUsageAmount: input.usageAmount ?? null,
     limit: 12,
   });
   const marketAverageExVat = marketAverage(market.matches);
@@ -1271,17 +1306,8 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const valuationMidExVat = selectedCalculation.valuationMidExVat;
   const valuationHighExVat = selectedCalculation.valuationHighExVat;
 
-  let confidenceScore = 0.35;
-  if (replacementBand) confidenceScore += 0.18 * replacementBand.confidence;
-  if (typedModelName) confidenceScore += market.strategy === 'exact_model' ? 0.2 : 0.06;
-  if (marketAverageCount >= 5) confidenceScore += 0.24;
-  else if (marketAverageCount >= 2) confidenceScore += 0.15;
-  else if (marketAverageCount === 1) confidenceScore += 0.08;
-  if (Object.keys(specsJson).length >= 3) confidenceScore += 0.08;
-  if (userReplacementPriceExVat && userReplacementPriceExVat > 0) confidenceScore += 0.05;
-  if (selectedCalculation.depreciationMethodUsed === 'semi_depreciation') confidenceScore -= 0.04;
-  if (selectedCalculation.depreciationMethodUsed === 'percentage_depreciation') confidenceScore -= 0.02;
-  confidenceScore = Math.max(0.1, Math.min(0.95, confidenceScore));
+  const confidenceScore = confidenceScoreFromMarketCount(marketAverageCount);
+  const calculatedConfidenceLabel = confidenceLabelFromMarketCount(marketAverageCount);
 
   const notes: string[] = [];
   if (!replacementBand && !userReplacementPriceExVat) notes.push('No replacement price band matched yet. Add a band or enter a user replacement price.');
@@ -1362,7 +1388,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     valuationMidExVat,
     valuationHighExVat,
     confidenceScore,
-    confidenceLabel: confidenceLabel(confidenceScore),
+    confidenceLabel: calculatedConfidenceLabel,
     notes,
   };
 }

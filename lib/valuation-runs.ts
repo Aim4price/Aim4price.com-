@@ -91,6 +91,7 @@ function buildValuationPayload(input: SaveValuationRunInput, result: Result, sel
       gpsEnabled: Boolean(input.gpsEnabled),
       gpsType: input.gpsType ?? null,
       gpsYear: parseGpsYear(input.gpsYear),
+      userReplacementPriceExVat: input.userReplacementPriceExVat ?? null,
     },
     output: {
       coverageBand: result.coverageBand,
@@ -106,6 +107,9 @@ function buildValuationPayload(input: SaveValuationRunInput, result: Result, sel
       gpsValueExVat: result.gpsValueExVat,
       marketCount: result.marketCount,
       marketListingIds: getMarketListingIds(result),
+      replacementPriceBasis: result.replacementPriceBasis,
+      replacementPriceUsedExVat: result.replacementPriceUsedExVat,
+      userReplacementPriceExVat: result.userReplacementPriceExVat,
       selectedMethod: input.selectedMethod,
       selectedValueExVat,
     },
