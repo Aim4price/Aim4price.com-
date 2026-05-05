@@ -7923,14 +7923,14 @@
   }
 }
 
-/* === Valuation fixes: footer breathing room and market evidence info === */
+/* === Valuation fixes: remove footer gap and market evidence info === */
 .page {
   min-height: auto;
-  padding-bottom: clamp(3rem, 5vw, 4.75rem);
+  padding-bottom: 0;
 }
 
 .container {
-  padding-bottom: clamp(1.6rem, 3vw, 2.4rem);
+  padding-bottom: clamp(1.2rem, 2.4vw, 2rem);
 }
 
 .page + :global(footer) {
@@ -8013,109 +8013,5 @@
   .marketEvidenceInfo::after {
     right: auto;
     left: 0;
-  }
-}
-
-
-/* === Final footer spacing + readable market-evidence tooltip === */
-.marketEvidenceHeaderActions {
-  position: relative;
-}
-
-.marketEvidenceInfoWrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.marketEvidenceInfo {
-  appearance: none;
-  border: 1px solid rgba(26, 89, 68, 0.16);
-  background: rgba(255, 255, 255, 0.94);
-  font: inherit;
-}
-
-.marketEvidenceInfo::after {
-  display: none !important;
-  content: none !important;
-}
-
-.marketEvidenceTooltip {
-  position: absolute;
-  top: calc(100% + 0.72rem);
-  right: 0;
-  z-index: 40;
-  width: min(24.5rem, 72vw);
-  display: grid;
-  gap: 0.55rem;
-  padding: 1rem 1.05rem;
-  border-radius: 1.1rem;
-  border: 1px solid rgba(17, 56, 45, 0.11);
-  background: rgba(255, 255, 255, 0.985);
-  color: #213a33;
-  text-align: left;
-  box-shadow:
-    0 22px 44px rgba(16, 42, 34, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-0.25rem);
-  transition:
-    opacity 160ms ease,
-    transform 160ms ease,
-    visibility 160ms ease;
-  pointer-events: none;
-}
-
-.marketEvidenceTooltip::before {
-  content: '';
-  position: absolute;
-  top: -0.43rem;
-  right: 0.78rem;
-  width: 0.8rem;
-  height: 0.8rem;
-  transform: rotate(45deg);
-  border-left: 1px solid rgba(17, 56, 45, 0.11);
-  border-top: 1px solid rgba(17, 56, 45, 0.11);
-  background: rgba(255, 255, 255, 0.985);
-}
-
-.marketEvidenceTooltip strong {
-  color: #102f27;
-  font-size: 0.98rem;
-  line-height: 1.2;
-  letter-spacing: -0.015em;
-}
-
-.marketEvidenceTooltip span {
-  color: #4f625a;
-  font-size: 0.88rem;
-  line-height: 1.42;
-  font-weight: 650;
-}
-
-.marketEvidenceTooltip b {
-  color: #163f32;
-  font-weight: 900;
-}
-
-.marketEvidenceInfoWrap:hover .marketEvidenceTooltip,
-.marketEvidenceInfo:focus-visible + .marketEvidenceTooltip {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-@media (max-width: 860px) {
-  .marketEvidenceTooltip {
-    right: auto;
-    left: 0;
-    width: min(22.5rem, calc(100vw - 2rem));
-  }
-
-  .marketEvidenceTooltip::before {
-    right: auto;
-    left: 0.78rem;
   }
 }
