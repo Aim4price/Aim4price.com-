@@ -723,14 +723,19 @@ export default function ValuationClient() {
   }, [selectedFamily, selectedSector]);
 
   useEffect(() => {
-    if (!selectedFamily || !selectedSector) return;
+    let ignore = false;
+
+    setSpecQuestions([]);
+    setSpecAnswers({});
+
+    if (!selectedFamily || !selectedSector || flowMode !== 'generic_specs') {
+      return () => {
+        ignore = true;
+      };
+    }
 
     const sectorForRequest = selectedSector;
     const familyKeyForRequest = selectedFamily.familyKey;
-
-    let ignore = false;
-    setSpecQuestions([]);
-    setSpecAnswers({});
 
     async function loadSpecQuestions() {
       try {
@@ -753,7 +758,7 @@ export default function ValuationClient() {
     return () => {
       ignore = true;
     };
-  }, [selectedFamily, selectedSector]);
+  }, [selectedFamily, selectedSector, flowMode]);
 
   useEffect(() => {
     if (!brandSlug || flowMode !== 'exact_model' || !tractorType || !drive || !cab) {
@@ -860,9 +865,11 @@ export default function ValuationClient() {
     if (flowMode === 'exact_model' && !tractorSetupComplete) return 'Complete the type, drive and cab setup first.';
     if (flowMode === 'exact_model' && !selectedModel) return 'Choose the exact model or use machine specs.';
 
-    for (const question of specQuestions) {
-      if (question.isRequired && !isSpecQuestionAnswered(question, specAnswers[question.specKey])) {
-        return `Answer: ${question.label}.`;
+    if (flowMode === 'generic_specs') {
+      for (const question of specQuestions) {
+        if (question.isRequired && !isSpecQuestionAnswered(question, specAnswers[question.specKey])) {
+          return `Answer: ${question.label}.`;
+        }
       }
     }
 
@@ -2040,7 +2047,7 @@ export default function ValuationClient() {
             ) : null}
           </div>
 
-          {conditionStepComplete ? renderSpecQuestionsProgress() : null}
+          {conditionStepComplete && genericPath ? renderSpecQuestionsProgress() : null}
         </div>
 
         {!genericPath && conditionStepComplete ? (
