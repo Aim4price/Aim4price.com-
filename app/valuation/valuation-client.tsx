@@ -283,6 +283,56 @@ function formatPercent(value: number | null): string {
   return `${Math.round(value)}%`;
 }
 
+function formatWholeNumber(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return 'N/A';
+  return Math.round(value).toLocaleString('en-ZA');
+}
+
+function formatListingYear(value: number | null | undefined): string | null {
+  if (value === null || value === undefined || !Number.isFinite(value) || value < 1950) return null;
+  return String(Math.round(value));
+}
+
+function formatListingHours(value: number | null | undefined): string | null {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) return null;
+  return `${formatWholeNumber(value)} hours`;
+}
+
+function normalizeExternalUrl(value: string | null | undefined): string | null {
+  const trimmed = String(value ?? '').trim();
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^[a-z0-9.-]+\.[a-z]{2,}/i.test(trimmed)) return `https://${trimmed}`;
+  return null;
+}
+
+function joinMeta(parts: Array<string | null | undefined>): string {
+  const cleanParts = parts.map((part) => String(part ?? '').trim()).filter(Boolean);
+  return cleanParts.length ? cleanParts.join(' • ') : 'Details not captured';
+}
+
+function formatMarketSourceLabel(value: string | null | undefined): string {
+  const label = normalizeText(value);
+  return label || 'Marketplace listing';
+}
+
+function formatTractorMarketMeta(listing: Result['marketSources'][number]): string {
+  return joinMeta([
+    formatListingYear(listing.yearModel),
+    formatListingHours(listing.hours),
+    listing.location && !listing.location.toLowerCase().includes('unknown') ? listing.location : null,
+  ]);
+}
+
+function formatGenericMarketMeta(listing: MarketMatch): string {
+  return joinMeta([
+    formatListingYear(listing.yearModel),
+    formatListingHours(listing.usageAmount),
+    listing.condition ? conditionLabel(listing.condition as ConditionKey) : null,
+    listing.matchReason,
+  ]);
+}
+
 function tractorLifetimeHoursFromModel(model: TractorCatalogRow | null): number {
   if (!model) return 12_000;
   if (model.tractorType === 'orchard') return 10_000;
@@ -353,20 +403,96 @@ function getHeadlineValue(state: ValuationResultState | null, selectedMethod: Me
   return state.kind === 'tractor' ? getTractorValue(state.result, selectedMethod) : getGenericValue(state.result, selectedMethod, replacementBasis);
 }
 
-function getConfidenceLabel(state: ValuationResultState | null): string {
+type ConfidenceContext = {
+  selectedMethod: MethodKey;
+  yearKnown: boolean;
+  hoursKnown: boolean;
+  workedPercentKnown: boolean;
+};
+
+function confidenceFromCoverageBand(band: Result['coverageBand']): 'High' | 'Medium' | 'Low' {
+  if (band === 'green') return 'High';
+  if (band === 'amber') return 'Medium';
+  return 'Low';
+}
+
+function confidenceFromMarketCount(count: number, exactModelMatch = false): 'High' | 'Medium' | 'Low' {
+  if (exactModelMatch && count >= 4) return 'High';
+  if (count >= 5) return 'High';
+  if (count >= 2) return 'Medium';
+  return 'Low';
+}
+
+function getConfidenceLabel(state: ValuationResultState | null, context: ConfidenceContext): string {
   if (!state) return 'Confidence: Low';
-  if (state.kind === 'generic') return `Confidence: ${state.result.confidenceLabel}`;
-  if (state.result.marketCount >= 5) return 'Confidence: High';
-  if (state.result.marketCount >= 2) return 'Confidence: Medium';
+
+  if (state.kind === 'generic') {
+    if (context.selectedMethod === 'market') {
+      return `Confidence: ${confidenceFromMarketCount(state.result.marketAverageCount, state.result.marketMatchStrategy === 'exact_model')}`;
+    }
+
+    return `Confidence: ${state.result.confidenceLabel}`;
+  }
+
+  if (context.selectedMethod === 'market') {
+    return `Confidence: ${confidenceFromCoverageBand(state.result.coverageBand)}`;
+  }
+
+  const hasReplacementPrice = Number.isFinite(state.result.model.aim4priceReplacementExVat) && state.result.model.aim4priceReplacementExVat > 0;
+
+  if (hasReplacementPrice && context.yearKnown && context.hoursKnown) {
+    return 'Confidence: High';
+  }
+
+  if (hasReplacementPrice && context.yearKnown && context.workedPercentKnown) {
+    return 'Confidence: Medium';
+  }
+
+  if (hasReplacementPrice) {
+    return 'Confidence: Medium';
+  }
+
   return 'Confidence: Low';
 }
 
-function getConfidenceClass(state: ValuationResultState | null): string {
+function getConfidenceClass(state: ValuationResultState | null, context: ConfidenceContext): string {
   if (!state) return styles.confidenceLow;
-  const label = getConfidenceLabel(state).toLowerCase();
+  const label = getConfidenceLabel(state, context).toLowerCase();
   if (label.includes('high')) return styles.confidenceHigh;
   if (label.includes('medium')) return styles.confidenceMedium;
   return styles.confidenceLow;
+}
+
+function getConfidenceNote(state: ValuationResultState | null, context: ConfidenceContext): string {
+  if (!state) return 'Run a valuation to calculate confidence.';
+
+  if (state.kind === 'generic') {
+    if (context.selectedMethod === 'market') {
+      const count = state.result.marketAverageCount;
+      return count > 0
+        ? `${count} marketplace listing${count === 1 ? '' : 's'} matched using ${displayMarketStrategy(state.result.marketMatchStrategy).toLowerCase()}.`
+        : 'No usable marketplace listing was found for this machine yet.';
+    }
+
+    return 'Aim4price confidence uses the replacement-price band, captured specs, age, usage and condition.';
+  }
+
+  if (context.selectedMethod === 'market') {
+    const count = state.result.marketCount;
+    return count > 0
+      ? `${count} usable market listing${count === 1 ? '' : 's'} after model, year, hours and outlier checks.`
+      : 'No usable market listing was found for this exact tractor yet.';
+  }
+
+  if (context.hoursKnown) {
+    return 'Exact model, manufacturing year, engine hours and condition were captured.';
+  }
+
+  if (context.workedPercentKnown) {
+    return 'Exact model was captured, but usage was estimated from worked percentage.';
+  }
+
+  return 'Exact model was captured, but confidence improves when real hours are supplied.';
 }
 
 function buildSpecPayload(specQuestions: SpecQuestion[], specAnswers: Record<string, string>): Record<string, unknown> {
@@ -2111,7 +2237,14 @@ export default function ValuationClient() {
       : tractorResult?.aim4priceValueExVat ?? null;
     const marketCount = isGeneric ? genericResult?.marketAverageCount ?? 0 : tractorResult?.marketCount ?? 0;
     const userPriceInput = toNumberOrNull(userReplacementPrice);
-    const confidenceText = getConfidenceLabel(resultState);
+    const confidenceContext: ConfidenceContext = {
+      selectedMethod,
+      yearKnown: !yearModelUnknown,
+      hoursKnown: usageNumber !== null,
+      workedPercentKnown: lifeWorkedPercentNumber !== null && usageNumber === null,
+    };
+    const confidenceText = getConfidenceLabel(resultState, confidenceContext);
+    const confidenceNote = getConfidenceNote(resultState, confidenceContext);
     const resultHeroTone = confidenceText.toLowerCase().includes('high')
       ? styles.resultHeroHigh
       : confidenceText.toLowerCase().includes('medium')
@@ -2143,10 +2276,11 @@ export default function ValuationClient() {
           <section className={`${styles.resultHero} ${resultHeroTone}`}>
             <div className={styles.resultHeroTopline}>
               <span className={styles.resultKicker}>{selectedMethod === 'market' ? 'Marketplace estimate' : 'Aim4price estimate'}</span>
-              <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState)}`}>{confidenceText}</span>
+              <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span>
             </div>
             <strong className={styles.resultValue}>{money(headlineValue)}</strong>
             <p className={styles.resultMachineTitle}>{machineTitle}</p>
+            <p className={styles.resultConfidenceNote}>{confidenceNote}</p>
             <div className={styles.resultFactsGrid}>
               <div className={styles.resultFactCard}>
                 <span>Condition</span>
@@ -2181,7 +2315,7 @@ export default function ValuationClient() {
             >
               <span className={styles.resultMethodLabel}>Marketplace value</span>
               <strong>{money(marketValue)}</strong>
-              <small>{marketCount} matched listing{marketCount === 1 ? '' : 's'}</small>
+              <small>{marketCount > 0 ? `${marketCount} usable market listing${marketCount === 1 ? '' : 's'}` : 'No matching listings yet'}</small>
             </button>
           </section>
 
@@ -2265,23 +2399,67 @@ export default function ValuationClient() {
 
         <aside className={styles.resultsSide}>
           <div className={`${styles.sideCard} ${styles.marketEvidenceCard}`}>
-            <h3>Market evidence</h3>
+            <div className={styles.marketEvidenceHeader}>
+              <div>
+                <h3>Market evidence</h3>
+                <p>Listings used after model, year, usage and price checks.</p>
+              </div>
+              <span className={styles.marketEvidenceCount}>
+                {marketCount > 0 ? `${marketCount} used` : 'No matches'}
+              </span>
+            </div>
+
+            {marketValue !== null ? (
+              <div className={styles.marketEvidenceSummary}>
+                <span>Marketplace value</span>
+                <strong>{money(marketValue)}</strong>
+              </div>
+            ) : null}
+
             {isGeneric && genericResult?.marketSources.length ? (
-              genericResult.marketSources.slice(0, 6).map((listing) => (
-                <div key={listing.id} className={styles.marketEvidenceItem}>
-                  <span>{listing.matchReason}</span>
-                  <strong>{listing.title}</strong>
-                  <small>{money(listing.advertisedPriceExVat)}</small>
-                </div>
-              ))
+              genericResult.marketSources.slice(0, 6).map((listing) => {
+                const sourceHref = normalizeExternalUrl(listing.sourceUrl);
+
+                return (
+                  <article key={listing.id} className={styles.marketEvidenceItem}>
+                    <div className={styles.marketEvidenceItemHeader}>
+                      <span>{formatMarketSourceLabel(listing.sourceName)}</span>
+                      <small className={styles.marketEvidencePrice}>{money(listing.advertisedPriceExVat)}</small>
+                    </div>
+                    <strong>{listing.title}</strong>
+                    <p className={styles.marketEvidenceMeta}>{formatGenericMarketMeta(listing)}</p>
+                    {sourceHref ? (
+                      <a className={styles.marketEvidenceLink} href={sourceHref} target="_blank" rel="noreferrer">
+                        Open listing →
+                      </a>
+                    ) : (
+                      <span className={styles.marketEvidenceNoLink}>No source link saved</span>
+                    )}
+                  </article>
+                );
+              })
             ) : tractorResult?.marketSources.length ? (
-              tractorResult.marketSources.slice(0, 6).map((listing) => (
-                <div key={listing.id} className={styles.marketEvidenceItem}>
-                  <span>{listing.sourceName}</span>
-                  <strong>{listing.title}</strong>
-                  <small>{money(listing.advertisedPriceExVat)}</small>
-                </div>
-              ))
+              tractorResult.marketSources.slice(0, 6).map((listing) => {
+                const sourceHref = normalizeExternalUrl(listing.sourceUrl);
+
+                return (
+                  <article key={listing.id} className={styles.marketEvidenceItem}>
+                    <div className={styles.marketEvidenceItemHeader}>
+                      <span>{formatMarketSourceLabel(listing.sourceName)}</span>
+                      <small className={styles.marketEvidencePrice}>{money(listing.advertisedPriceExVat)}</small>
+                    </div>
+                    <strong>{listing.title}</strong>
+                    <p className={styles.marketEvidenceMeta}>{formatTractorMarketMeta(listing)}</p>
+                    {sourceHref ? (
+                      <a className={styles.marketEvidenceLink} href={sourceHref} target="_blank" rel="noreferrer">
+                        Open listing →
+                      </a>
+                    ) : (
+                      <span className={styles.marketEvidenceNoLink}>No source link saved</span>
+                    )}
+                  </article>
+                );
+              })
             ) : (
               <div className={styles.marketEvidenceEmpty}>
                 <strong>No matching marketplace average yet</strong>
@@ -2337,14 +2515,14 @@ export default function ValuationClient() {
                 Back
               </button>
               {step === 1 ? null : step === 5 ? (
-                <>
+                <div className={styles.resultActionGroup}>
                   <button type="button" className={styles.secondaryButton} onClick={resetToSectorSelection} disabled={saveLoading}>
                     New valuation
                   </button>
                   <button type="button" className={styles.primaryButton} onClick={saveToAssetRegister} disabled={saveLoading || !resultState}>
                     {saveLoading ? 'Saving...' : 'Save to Asset Register'}
                   </button>
-                </>
+                </div>
               ) : (
                 <button
                   type="button"
