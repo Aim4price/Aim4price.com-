@@ -7212,3 +7212,270 @@
     min-width: 6.6rem;
   }
 }
+
+/* --- Final UX detail pass: cleaner cards and slider-based year selection --- */
+.sectorBigCard::before,
+.sectorBigCard::after {
+  display: none;
+}
+
+.sectorBigCard {
+  box-shadow:
+    0 24px 42px rgba(13, 36, 28, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.sectorBigCard:hover,
+.sectorBigCard:focus-visible {
+  transform: translateY(-3px);
+  box-shadow:
+    0 30px 52px rgba(13, 36, 28, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.sectorVideoOverlay {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.12), transparent 26%),
+    linear-gradient(180deg, rgba(7, 20, 16, 0.12) 0%, rgba(7, 20, 16, 0.04) 35%, rgba(7, 20, 16, 0.7) 100%);
+}
+
+.sectorBigCardSoon .sectorVideoOverlay {
+  background:
+    radial-gradient(circle at top right, rgba(255, 210, 210, 0.14), transparent 28%),
+    linear-gradient(180deg, rgba(72, 22, 22, 0.32) 0%, rgba(36, 18, 18, 0.12) 36%, rgba(17, 18, 15, 0.74) 100%);
+}
+
+.sectorSoonMessage {
+  background: linear-gradient(180deg, rgba(161, 48, 48, 0.84) 0%, rgba(113, 30, 30, 0.84) 100%);
+  border: 1px solid rgba(255, 230, 230, 0.16);
+  backdrop-filter: blur(10px);
+}
+
+.pathChoiceCard {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(18, 45, 37, 0.09);
+  background:
+    radial-gradient(circle at top right, rgba(23, 77, 62, 0.05), transparent 32%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+}
+
+.pathChoiceCard:hover,
+.pathChoiceCard:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(23, 77, 62, 0.2);
+  box-shadow: 0 20px 36px rgba(16, 42, 34, 0.08);
+}
+
+.pathChoiceCard.choiceCardActive {
+  border-color: rgba(23, 77, 62, 0.38);
+  background:
+    radial-gradient(circle at top right, rgba(23, 77, 62, 0.12), transparent 32%),
+    linear-gradient(180deg, rgba(239, 248, 243, 0.98) 0%, rgba(250, 253, 251, 0.98) 100%);
+  box-shadow:
+    0 22px 38px rgba(16, 42, 34, 0.1),
+    0 0 0 4px rgba(26, 89, 68, 0.06);
+}
+
+.pathSelectionPlaceholder {
+  background: rgba(250, 252, 251, 0.76);
+}
+
+.yearDetailsModal {
+  width: min(100%, 720px);
+  gap: 1.05rem;
+  padding: 1.35rem;
+  overflow: visible;
+}
+
+.yearSliderPanel {
+  display: grid;
+  grid-template-columns: minmax(11rem, 0.42fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+  padding: 1rem;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background:
+    radial-gradient(circle at top left, rgba(23, 77, 62, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(247, 251, 249, 0.99) 0%, rgba(239, 247, 243, 0.99) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.yearSliderReadout {
+  display: grid;
+  align-content: center;
+  min-height: 10.6rem;
+  padding: 1rem;
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, #143c30 0%, #0f2f26 100%);
+  color: #ffffff;
+  box-shadow: 0 18px 34px rgba(14, 44, 35, 0.16);
+}
+
+.yearSliderReadout span {
+  color: rgba(229, 246, 239, 0.86);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.yearSliderReadout strong {
+  margin-top: 0.35rem;
+  color: #ffffff;
+  font-size: clamp(3rem, 6vw, 4.5rem);
+  line-height: 0.92;
+  letter-spacing: -0.08em;
+}
+
+.yearSliderReadout small {
+  margin-top: 0.65rem;
+  color: rgba(229, 246, 239, 0.86);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.yearSliderControl {
+  display: grid;
+  align-content: center;
+  gap: 0.75rem;
+  padding: 0.8rem 0.45rem 0.25rem;
+}
+
+.yearRangeInput {
+  width: 100%;
+  height: 2.7rem;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  accent-color: #1a5944;
+  cursor: pointer;
+}
+
+.yearRangeInput:focus {
+  outline: none;
+}
+
+.yearRangeInput::-webkit-slider-runnable-track {
+  height: 0.72rem;
+  border-radius: 999px;
+  border: 1px solid rgba(23, 77, 62, 0.12);
+  background: linear-gradient(90deg, #d8e7df 0%, #eef5f1 100%);
+  box-shadow: inset 0 1px 2px rgba(12, 32, 25, 0.08);
+}
+
+.yearRangeInput::-webkit-slider-thumb {
+  appearance: none;
+  width: 2.35rem;
+  height: 2.35rem;
+  margin-top: -0.86rem;
+  border-radius: 999px;
+  border: 5px solid #ffffff;
+  background: linear-gradient(180deg, #1a5944 0%, #123d31 100%);
+  box-shadow:
+    0 14px 24px rgba(16, 42, 34, 0.2),
+    0 0 0 4px rgba(26, 89, 68, 0.12);
+}
+
+.yearRangeInput:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 14px 24px rgba(16, 42, 34, 0.2),
+    0 0 0 6px rgba(26, 89, 68, 0.18);
+}
+
+.yearRangeInput::-moz-range-track {
+  height: 0.72rem;
+  border-radius: 999px;
+  border: 1px solid rgba(23, 77, 62, 0.12);
+  background: linear-gradient(90deg, #d8e7df 0%, #eef5f1 100%);
+  box-shadow: inset 0 1px 2px rgba(12, 32, 25, 0.08);
+}
+
+.yearRangeInput::-moz-range-thumb {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  border: 5px solid #ffffff;
+  background: linear-gradient(180deg, #1a5944 0%, #123d31 100%);
+  box-shadow:
+    0 14px 24px rgba(16, 42, 34, 0.2),
+    0 0 0 4px rgba(26, 89, 68, 0.12);
+}
+
+.yearSliderMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #6b7872;
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.yearFineTuneRow {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.yearFineTuneButton {
+  cursor: pointer;
+  min-height: 3.05rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.09);
+  background: rgba(255, 255, 255, 0.92);
+  color: #173d31;
+  font: inherit;
+  font-weight: 850;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.yearFineTuneButton:hover {
+  transform: translateY(-1px);
+  border-color: rgba(23, 77, 62, 0.2);
+  box-shadow: 0 12px 22px rgba(16, 42, 34, 0.06);
+}
+
+.yearSecondaryControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(13rem, 0.75fr);
+  gap: 0.85rem;
+  align-items: stretch;
+}
+
+.manualYearField {
+  margin: 0;
+}
+
+.manualYearField input {
+  min-height: 3rem;
+}
+
+.yearOptionGrid {
+  display: none;
+}
+
+.saveModalClose {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 720px) {
+  .yearDetailsModal {
+    overflow: auto;
+  }
+
+  .yearSliderPanel,
+  .yearSecondaryControls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .yearFineTuneRow {
+    grid-column: auto;
+  }
+
+  .yearSliderReadout {
+    min-height: 8.6rem;
+  }
+}
