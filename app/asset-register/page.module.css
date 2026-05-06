@@ -774,6 +774,24 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.94);
 }
 
+.assetFormModal {
+  width: min(100%, 840px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  padding-right: clamp(1.45rem, 2.8vw, 1.95rem);
+  border-radius: 1.9rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  border-color: rgba(218, 228, 236, 0.96);
+  box-shadow:
+    0 30px 80px rgba(16, 28, 45, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+
 .marketplaceModal {
   width: min(100%, 760px);
 }
@@ -1390,6 +1408,75 @@
   line-height: 1.5;
 }
 
+.assetFormModalHeader {
+  align-items: center;
+  gap: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.assetFormScrollBody {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 83, 64, 0.52) rgba(239, 244, 247, 0.98);
+  padding-right: 1rem;
+  margin-right: -0.18rem;
+}
+
+.assetFormScrollBody::-webkit-scrollbar {
+  width: 0.96rem;
+}
+
+.assetFormScrollBody::-webkit-scrollbar-track {
+  margin: 0.3rem 0 0.5rem;
+  border-radius: 999px;
+  background: rgba(239, 244, 247, 0.98);
+  border-left: 0.24rem solid transparent;
+  border-right: 0.24rem solid transparent;
+  background-clip: padding-box;
+}
+
+.assetFormScrollBody::-webkit-scrollbar-thumb {
+  border: 0.24rem solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(26, 90, 69, 0.64) 0%, rgba(18, 66, 51, 0.82) 100%);
+  background-clip: padding-box;
+}
+
+.assetFormScrollBody::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(26, 90, 69, 0.8) 0%, rgba(18, 66, 51, 0.94) 100%);
+  background-clip: padding-box;
+}
+
+.assetFormModal .modalForm {
+  gap: 0.95rem;
+}
+
+.assetFormModal .field input,
+.assetFormModal .field select,
+.assetFormModal .field textarea {
+  background: #ffffff;
+  border-color: rgba(216, 225, 240, 0.98);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.assetFormModal .uploadPanel {
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.04), transparent 35%),
+    linear-gradient(180deg, #fbfcfd 0%, #f3f7fa 100%);
+  border: 1px dashed rgba(196, 211, 224, 0.98);
+}
+
+.assetFormModal .photoGrid {
+  padding-top: 0.1rem;
+}
+
+.assetFormModal .formActions {
+  padding-top: 0.15rem;
+}
+
 .projectionModalHeader {
   align-items: center;
   gap: 1.1rem;
@@ -1575,11 +1662,19 @@
     padding-right: clamp(1.1rem, 2.8vw, 1.45rem);
   }
 
+  .assetFormModal {
+    padding-right: clamp(1.1rem, 2.8vw, 1.45rem);
+  }
+
   .qrModalScrollBody {
     padding-right: 0.75rem;
   }
 
   .projectionScrollBody {
+    padding-right: 0.75rem;
+  }
+
+  .assetFormScrollBody {
     padding-right: 0.75rem;
   }
 
@@ -1681,11 +1776,19 @@
     padding-right: 1rem;
   }
 
+  .assetFormModal {
+    padding-right: 1rem;
+  }
+
   .qrModalScrollBody {
     padding-right: 0.58rem;
   }
 
   .projectionScrollBody {
+    padding-right: 0.58rem;
+  }
+
+  .assetFormScrollBody {
     padding-right: 0.58rem;
   }
 
