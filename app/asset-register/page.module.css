@@ -2414,3 +2414,207 @@
 }
 
 
+
+/* === Manual Add / Update Asset modal polish === */
+.assetFormModal {
+  width: min(100%, 900px) !important;
+}
+
+.assetFormModalHeader {
+  padding-bottom: 0.95rem;
+  border-bottom: 1px solid rgba(221, 229, 237, 0.78);
+}
+
+.assetFormModalHeader .modalHeaderText {
+  display: grid;
+  gap: 0.34rem;
+}
+
+.assetFormModalHeader h3 {
+  margin-top: 0.1rem;
+  font-size: clamp(1.5rem, 2.4vw, 1.86rem);
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+}
+
+.assetFormModalHeader p {
+  max-width: 48rem;
+  margin-top: 0;
+  font-size: 1rem;
+  line-height: 1.58;
+}
+
+.assetFormModal .modalScrollBody {
+  padding-top: 0.15rem;
+  padding-bottom: 0;
+}
+
+.assetFormModal .modalForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 1.05rem 1rem;
+}
+
+.assetFormModal .field,
+.assetFormModal .checkboxRow {
+  gap: 0.52rem;
+}
+
+.assetFormModal .field > span,
+.assetFormModal .checkboxRow > span {
+  color: #263943;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.assetFormModal .field > span small {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.assetFormModal .field input,
+.assetFormModal .field select,
+.assetFormModal .field textarea {
+  min-height: 3.25rem;
+  border-radius: 1.05rem;
+  border-color: #dbe6ee;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.assetFormModal .field textarea {
+  min-height: 7.2rem;
+  line-height: 1.55;
+}
+
+.assetFormModal .field input:focus,
+.assetFormModal .field select:focus,
+.assetFormModal .field textarea:focus {
+  border-color: rgba(22, 83, 64, 0.38);
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.assetFormModal .fieldHint {
+  max-width: 46rem;
+  color: #68798c;
+  font-size: 0.82rem;
+  line-height: 1.52;
+}
+
+.assetTypeField {
+  padding: 1rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(221, 229, 237, 0.96);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.04), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  box-shadow:
+    0 10px 24px rgba(16, 28, 45, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.assetTypeField select,
+.assetTypeField input {
+  background-color: #ffffff;
+}
+
+.assetFormModal .checkboxRow {
+  min-height: 3.25rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1.05rem;
+  border: 1px solid #dbe6ee;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+}
+
+.assetFormModal .checkboxRow input {
+  width: 1.08rem;
+  height: 1.08rem;
+  accent-color: #165340;
+}
+
+.assetFormModal .uploadPanel {
+  padding: 1rem;
+  border-radius: 1.18rem;
+  border: 1px dashed #cfdae4;
+  background:
+    radial-gradient(circle at top left, rgba(42, 91, 134, 0.045), transparent 34%),
+    linear-gradient(180deg, #fbfcfd 0%, #f3f7fa 100%);
+}
+
+.assetFormModal .uploadRow {
+  gap: 0.85rem;
+}
+
+.assetFormModal .uploadRow .secondaryButton {
+  min-height: 3.05rem;
+  border-radius: 1rem;
+  padding-inline: 1rem;
+}
+
+.assetFormModal .uploadCount {
+  padding: 0.55rem 0.75rem;
+  border-radius: 999px;
+  color: #29456b;
+  background: #eef4fb;
+  border: 1px solid rgba(216, 225, 240, 0.98);
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+
+.assetFormModal .photoGrid {
+  gap: 0.85rem;
+}
+
+.assetFormModal .photoThumb {
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+}
+
+.assetFormActions {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.35rem !important;
+  padding: 1.05rem 0 0.05rem;
+  border-top: 1px solid rgba(221, 229, 237, 0.78);
+  background:
+    linear-gradient(180deg, rgba(248, 251, 252, 0) 0%, rgba(248, 251, 252, 0.98) 34%, rgba(248, 251, 252, 1) 100%);
+}
+
+.assetFormActions .primaryButton,
+.assetFormActions .secondaryButton {
+  min-height: 3.15rem;
+  border-radius: 1rem;
+  padding-inline: 1.15rem;
+}
+
+@media (max-width: 720px) {
+  .assetFormModal .modalForm {
+    grid-template-columns: 1fr;
+  }
+
+  .assetFormModalHeader {
+    align-items: flex-start;
+  }
+
+  .assetFormActions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .assetFormActions > button {
+    width: 100%;
+  }
+}

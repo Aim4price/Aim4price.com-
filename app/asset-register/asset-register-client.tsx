@@ -2292,8 +2292,8 @@ export default function AssetRegisterClient() {
                 <h3 id="asset-form-title">{editingAsset ? 'Update asset details' : 'Add another asset'}</h3>
                 <p>
                   {editingAsset
-                    ? 'Update the saved asset, including machine hours and condition, without leaving the register screen.'
-                    : 'Add a manual asset through a clean modal so the main register stays simple and easy to scan.'}
+                    ? 'Update the saved asset details without leaving the register.'
+                    : 'Choose a type, enter the value, then add notes or photos if needed.'}
                 </p>
               </div>
 
@@ -2309,7 +2309,7 @@ export default function AssetRegisterClient() {
 
             <div className={styles.modalScrollBody}>
               <form className={styles.modalForm} onSubmit={handleAssetSubmit}>
-              <label className={`${styles.field} ${styles.fullWidth}`}>
+              <label className={`${styles.field} ${styles.assetTypeField} ${styles.fullWidth}`}>
                 <span>Asset type</span>
                 {editingAsset?.valuationRunId ? (
                   <input value={kindLabel(editingAsset.kind)} disabled readOnly />
@@ -2336,7 +2336,7 @@ export default function AssetRegisterClient() {
                 <small className={styles.fieldHint}>
                   {editingAsset?.valuationRunId
                     ? 'This asset type comes from the saved valuation and cannot be changed here.'
-                    : `${getManualAssetOption(assetFormKind).description} This only affects manual Asset Register records.`}
+                    : getManualAssetOption(assetFormKind).description}
                 </small>
               </label>
 
@@ -2446,32 +2446,36 @@ export default function AssetRegisterClient() {
                 <input
                   type="checkbox"
                   checked={assetDraft.isFinanced}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const checked = event.target.checked;
                     setAssetDraft((current) => ({
                       ...current,
-                      isFinanced: event.target.checked,
-                    }))
-                  }
+                      isFinanced: checked,
+                      financeNote: checked ? current.financeNote : '',
+                    }));
+                  }}
                 />
                 <span>This asset is financed</span>
               </label>
 
-              <label className={`${styles.field} ${styles.fullWidth}`}>
-                <span>Finance note</span>
-                <input
-                  value={assetDraft.financeNote}
-                  onChange={(event) =>
-                    setAssetDraft((current) => ({
-                      ...current,
-                      financeNote: event.target.value,
-                    }))
-                  }
-                  placeholder="Bank, lender or finance reference"
-                />
-              </label>
+              {assetDraft.isFinanced ? (
+                <label className={`${styles.field} ${styles.fullWidth}`}>
+                  <span>Finance note</span>
+                  <input
+                    value={assetDraft.financeNote}
+                    onChange={(event) =>
+                      setAssetDraft((current) => ({
+                        ...current,
+                        financeNote: event.target.value,
+                      }))
+                    }
+                    placeholder="Bank, lender or finance reference"
+                  />
+                </label>
+              ) : null}
 
               <div className={`${styles.field} ${styles.fullWidth}`}>
-                <span>Photo gallery</span>
+                <span>Photo gallery <small>(optional)</small></span>
 
                 <div className={styles.uploadPanel}>
                   <input
@@ -2491,7 +2495,7 @@ export default function AssetRegisterClient() {
                       onClick={() => photoInputRef.current?.click()}
                       disabled={isUploadingPhotos || assetDraft.photos.length >= MAX_PHOTOS}
                     >
-                      {isUploadingPhotos ? 'Uploading...' : 'Choose image files'}
+                      {isUploadingPhotos ? 'Uploading...' : 'Add photos'}
                     </button>
 
                     <span className={styles.uploadCount}>
@@ -2518,13 +2522,13 @@ export default function AssetRegisterClient() {
                 </div>
               ) : null}
 
-              <div className={styles.formActions}>
-                <button type="submit" className={styles.primaryButton} disabled={isSavingAsset || isUploadingPhotos}>
-                  {isSavingAsset ? 'Saving...' : editingAsset ? 'Update asset' : 'Add asset'}
-                </button>
-
+              <div className={`${styles.formActions} ${styles.assetFormActions}`}>
                 <button type="button" className={styles.secondaryButton} onClick={closeAssetModal}>
                   Cancel
+                </button>
+
+                <button type="submit" className={styles.primaryButton} disabled={isSavingAsset || isUploadingPhotos}>
+                  {isSavingAsset ? 'Saving...' : editingAsset ? 'Update asset' : 'Add asset'}
                 </button>
               </div>
               </form>
