@@ -1,249 +1,269 @@
 .footer {
   position: relative;
-  margin-top: clamp(3.25rem, 5vw, 4.8rem);
+  margin-top: clamp(3.4rem, 5vw, 5rem);
   color: #ffffff;
   isolation: isolate;
-  perspective: 1200px;
   overflow: visible;
 }
 
-.shell {
+.shell,
+.dockShell {
   width: var(--shell-width);
   margin-inline: auto;
 }
 
-.collapseRegion {
+/* Collapsible drawer */
+
+.drawerRegion {
   display: grid;
   grid-template-rows: 0fr;
-  max-height: 0;
   opacity: 0;
   overflow: hidden;
-  transform: translateY(1.1rem) rotateX(-8deg);
-  transform-origin: bottom center;
+  transform: translateY(1.4rem);
   transition:
-    grid-template-rows 680ms cubic-bezier(0.2, 0.84, 0.24, 1),
-    max-height 680ms cubic-bezier(0.2, 0.84, 0.24, 1),
-    opacity 260ms ease,
-    transform 680ms cubic-bezier(0.2, 0.84, 0.24, 1);
-  will-change: grid-template-rows, max-height, transform, opacity;
+    grid-template-rows 860ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 360ms ease,
+    transform 860ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: grid-template-rows, opacity, transform;
 }
 
-.footerExpanded .collapseRegion {
+.footerExpanded .drawerRegion {
   grid-template-rows: 1fr;
-  max-height: 900px;
   opacity: 1;
-  transform: translateY(0) rotateX(0deg);
+  transform: translateY(0);
 }
 
-.collapseInner {
+.drawerInner {
   min-height: 0;
   overflow: hidden;
   visibility: hidden;
-  transition: visibility 0ms linear 680ms;
+  transition: visibility 0ms linear 620ms;
 }
 
-.footerExpanded .collapseInner {
+.footerExpanded .drawerInner {
   visibility: visible;
   transition-delay: 0ms;
 }
 
+/* Main green footer */
+
 .footerPanel {
   position: relative;
-  background:
-    radial-gradient(circle at 18% 24%, rgba(49, 121, 92, 0.18) 0%, rgba(49, 121, 92, 0) 32%),
-    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.045) 0%, rgba(255, 255, 255, 0) 24%),
-    linear-gradient(180deg, #165243 0%, #103a2e 100%);
-  box-shadow:
-    0 -1px 0 rgba(255, 255, 255, 0.07),
-    0 -24px 56px rgba(16, 42, 34, 0.08),
-    0 28px 54px rgba(5, 22, 16, 0.18);
   overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(65, 145, 112, 0.22) 0%, rgba(65, 145, 112, 0) 34%),
+    radial-gradient(circle at 86% 20%, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 27%),
+    linear-gradient(180deg, #155240 0%, #103b2f 52%, #0c2d24 100%);
+  box-shadow:
+    0 -1px 0 rgba(255, 255, 255, 0.08),
+    0 -26px 70px rgba(16, 42, 34, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
 .footerPanel::before {
   content: '';
   position: absolute;
   inset: 0 0 auto;
-  height: clamp(2.2rem, 4vw, 3.5rem);
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0.035) 52%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
-  pointer-events: none;
-  z-index: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.footerPanel::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .topRow {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(500px, auto);
+  grid-template-columns: minmax(36rem, 1fr) max-content;
   align-items: start;
-  gap: clamp(2.6rem, 5vw, 5.4rem);
-  padding: clamp(2.9rem, 4.6vw, 3.85rem) 0 clamp(2.35rem, 4vw, 2.95rem);
+  gap: clamp(4rem, 6vw, 6.4rem);
+  padding: clamp(3rem, 4.2vw, 3.9rem) 0 clamp(2.6rem, 3.6vw, 3.2rem);
 }
 
 .brandBlock {
   display: grid;
   align-content: start;
   min-width: 0;
-  max-width: 34rem;
-  padding-top: 0.1rem;
-}
-
-.brandIdentity {
-  display: inline-block;
-  width: fit-content;
 }
 
 .brandName {
+  width: fit-content;
   color: #ffffff;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.95rem, 2.9vw, 2.55rem);
-  line-height: 0.94;
-  font-weight: 800;
-  letter-spacing: -0.06em;
+  font-size: clamp(2.15rem, 3vw, 2.75rem);
+  line-height: 0.95;
+  font-weight: 850;
+  letter-spacing: -0.065em;
   white-space: nowrap;
 }
 
 .brandText {
   margin: 1.08rem 0 0;
-  max-width: 31rem;
-  color: rgba(232, 242, 237, 0.88);
+  color: rgba(235, 246, 240, 0.88);
   font-size: 1rem;
-  line-height: 1.72;
+  line-height: 1.65;
+  white-space: nowrap;
 }
 
 .socialGroup {
   display: grid;
-  align-content: start;
-  gap: 0.8rem;
-  margin-top: 1.55rem;
+  gap: 0.82rem;
+  margin-top: 1.65rem;
 }
 
-.socialLabel {
-  color: rgba(214, 231, 223, 0.72);
+.socialLabel,
+.linkColumn h3 {
+  color: rgba(215, 235, 225, 0.7);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
 .socialRow {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.72rem;
 }
 
 .socialIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.6rem;
-  height: 2.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  width: 2.72rem;
+  height: 2.72rem;
+  border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.035);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.028));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 28px rgba(3, 18, 13, 0.11);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.socialIcon:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.26);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
 }
 
 .socialIcon svg {
-  width: 0.98rem;
-  height: 0.98rem;
+  width: 1rem;
+  height: 1rem;
   fill: #ffffff;
-  opacity: 0.96;
+  opacity: 0.95;
 }
 
 .linksGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, max-content));
-  justify-content: start;
+  grid-template-columns: repeat(3, max-content);
   align-items: start;
-  column-gap: clamp(2.4rem, 4vw, 4.8rem);
-  row-gap: 1.2rem;
-  padding-top: 0.18rem;
+  gap: clamp(2.7rem, 4vw, 4.8rem);
 }
 
 .linkColumn {
   display: grid;
   align-content: start;
-  gap: 0.86rem;
+  gap: 0.72rem;
   min-width: max-content;
 }
 
 .linkColumn h3 {
-  margin: 0 0 0.38rem;
-  color: rgba(214, 231, 223, 0.72);
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.82rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  margin: 0 0 0.42rem;
 }
 
 .linkColumn a {
+  position: relative;
   width: fit-content;
   color: #ffffff;
   text-decoration: none;
   font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.48;
+  font-weight: 700;
+  line-height: 1.45;
   white-space: nowrap;
   transition:
     opacity 180ms ease,
-    transform 180ms ease;
+    transform 180ms ease,
+    color 180ms ease;
+}
+
+.linkColumn a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 100%;
+  bottom: -0.18rem;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.62);
+  transition: right 180ms ease;
 }
 
 .linkColumn a:hover {
-  opacity: 0.86;
+  color: rgba(255, 255, 255, 0.9);
   transform: translateX(2px);
+}
+
+.linkColumn a:hover::after {
+  right: 0;
 }
 
 .linkColumn a:focus-visible,
 .footerToggle:focus-visible {
-  outline: 3px solid rgba(255, 255, 255, 0.22);
+  outline: 3px solid rgba(255, 255, 255, 0.24);
   outline-offset: 4px;
 }
 
-.metaRow {
+/* Bottom dock */
+
+.footerDock {
   position: relative;
   z-index: 2;
-  min-height: 4.35rem;
+  min-height: 5.2rem;
   background: transparent;
   transition:
-    background-color 320ms ease,
+    background 320ms ease,
     box-shadow 320ms ease;
 }
 
-.footerExpanded .metaRow {
+.footerExpanded .footerDock {
   background:
-    linear-gradient(180deg, rgba(7, 28, 22, 0.3) 0%, rgba(5, 15, 11, 0.16) 100%),
-    #103a2e;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    linear-gradient(180deg, rgba(6, 25, 19, 0.38), rgba(5, 16, 12, 0.28)),
+    #0c2d24;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.075),
+    0 -14px 34px rgba(6, 25, 19, 0.08);
 }
 
-.metaShell {
-  width: var(--shell-width);
-  margin-inline: auto;
+.dockShell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: max-content auto max-content;
   align-items: center;
-  gap: 1.2rem;
-  min-height: 4.35rem;
-  padding: 0.58rem 0 0.76rem;
+  justify-content: space-between;
+  gap: 1.6rem;
+  min-height: 5.2rem;
+  padding: 0.74rem 0;
 }
 
 .metaItem {
-  color: rgba(232, 242, 237, 0.78);
+  color: rgba(233, 244, 239, 0.76);
   font-size: 0.92rem;
-  line-height: 1.35;
+  line-height: 1;
+  white-space: nowrap;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(0.28rem);
+  transform: translateY(0.3rem);
   transition:
     opacity 180ms ease,
     transform 180ms ease,
@@ -255,8 +275,8 @@
   visibility: visible;
   transform: translateY(0);
   transition:
-    opacity 220ms ease 240ms,
-    transform 220ms ease 240ms,
+    opacity 260ms ease 260ms,
+    transform 260ms ease 260ms,
     visibility 0ms linear 0ms;
 }
 
@@ -266,140 +286,98 @@
 
 .metaNote {
   justify-self: end;
-  max-width: 40rem;
   text-align: right;
 }
 
 .footerToggle {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   justify-self: center;
-  width: 3.15rem;
-  height: 3.15rem;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  width: 3.4rem;
+  height: 3.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 999px;
-  background: linear-gradient(180deg, #1f7159 0%, #124232 100%);
+  background:
+    linear-gradient(180deg, #1d775e 0%, #125241 100%);
   color: #ffffff;
   box-shadow:
-    0 16px 36px rgba(7, 28, 22, 0.2),
-    0 0 0 8px rgba(22, 82, 67, 0.08);
+    0 18px 42px rgba(18, 72, 57, 0.26),
+    0 0 0 8px rgba(18, 82, 65, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
   transition:
     transform 180ms ease,
-    background-color 180ms ease,
     border-color 180ms ease,
+    background 180ms ease,
     box-shadow 180ms ease;
 }
 
 .footerToggle:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.26);
+  border-color: rgba(255, 255, 255, 0.34);
   box-shadow:
-    0 18px 42px rgba(7, 28, 22, 0.24),
-    0 0 0 9px rgba(22, 82, 67, 0.11);
+    0 22px 48px rgba(18, 72, 57, 0.32),
+    0 0 0 9px rgba(18, 82, 65, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .footerExpanded .footerToggle {
-  background: rgba(255, 255, 255, 0.07);
-  box-shadow: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.045));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 12px 24px rgba(2, 14, 10, 0.13);
 }
 
 .toggleIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 1.36rem;
+  height: 1.36rem;
 }
 
 .toggleIcon svg {
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 1.36rem;
+  height: 1.36rem;
   fill: none;
   stroke: currentColor;
-  stroke-width: 2.45;
+  stroke-width: 2.55;
   stroke-linecap: round;
   stroke-linejoin: round;
   transform: rotate(0deg);
-  transition: transform 260ms ease;
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .footerExpanded .toggleIcon svg {
   transform: rotate(180deg);
 }
 
-@media (max-width: 1080px) {
+/* Responsive */
+
+@media (max-width: 1180px) {
   .topRow {
     grid-template-columns: 1fr;
-    gap: 2.5rem;
-  }
-
-  .linksGrid {
-    column-gap: 3rem;
-  }
-}
-
-@media (max-width: 760px) {
-  .linksGrid {
-    grid-template-columns: repeat(2, minmax(0, max-content));
-    column-gap: 2.5rem;
-    row-gap: 1.45rem;
-  }
-}
-
-@media (max-width: 640px) {
-  .footer {
-    margin-top: 3.15rem;
-    perspective: 900px;
-  }
-
-  .footerExpanded .collapseRegion {
-    max-height: 1120px;
-  }
-
-  .topRow {
-    gap: 2rem;
-    padding: 2.35rem 0 2rem;
-  }
-
-  .brandName {
-    font-size: clamp(1.85rem, 11vw, 2.35rem);
+    gap: 2.7rem;
   }
 
   .brandText {
-    margin-top: 0.95rem;
-    font-size: 0.97rem;
-    line-height: 1.66;
-  }
-
-  .socialGroup {
-    margin-top: 1.35rem;
-  }
-
-  .socialIcon {
-    width: 2.5rem;
-    height: 2.5rem;
+    white-space: normal;
+    max-width: 42rem;
   }
 
   .linksGrid {
-    grid-template-columns: 1fr;
-    gap: 1.45rem;
-    padding-top: 0;
+    justify-content: start;
   }
+}
 
-  .linkColumn {
-    min-width: 0;
-  }
-
-  .linkColumn a {
-    white-space: normal;
-  }
-
-  .metaShell {
+@media (max-width: 880px) {
+  .dockShell {
     grid-template-columns: 1fr;
     justify-items: center;
-    gap: 0.74rem;
-    padding: 0.74rem 0 0.92rem;
+    gap: 0.86rem;
+    padding: 0.95rem 0 1.05rem;
   }
 
   .metaCopyright,
@@ -407,20 +385,77 @@
     justify-self: center;
     text-align: center;
   }
+
+  .metaItem {
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  .footerDock,
+  .dockShell {
+    min-height: 5.4rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .linksGrid {
+    grid-template-columns: repeat(2, max-content);
+    gap: 1.7rem 2.8rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .footer {
+    margin-top: 3rem;
+  }
+
+  .topRow {
+    gap: 2.15rem;
+    padding: 2.55rem 0 2.25rem;
+  }
+
+  .brandName {
+    font-size: clamp(1.9rem, 11vw, 2.35rem);
+  }
+
+  .brandText {
+    margin-top: 0.95rem;
+    font-size: 0.96rem;
+    line-height: 1.62;
+  }
+
+  .linksGrid {
+    grid-template-columns: 1fr;
+    gap: 1.45rem;
+  }
+
+  .linkColumn {
+    min-width: 0;
+  }
+
+  .footerToggle {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .collapseRegion,
-  .collapseInner,
+  .drawerRegion,
+  .drawerInner,
+  .socialIcon,
+  .linkColumn a,
+  .linkColumn a::after,
+  .footerDock,
   .footerToggle,
   .toggleIcon svg,
-  .metaItem,
-  .linkColumn a {
+  .metaItem {
     transition: none;
   }
 
-  .collapseRegion,
-  .footerExpanded .collapseRegion {
+  .drawerRegion,
+  .footerExpanded .drawerRegion,
+  .metaItem,
+  .footerExpanded .metaItem {
     transform: none;
   }
 }
