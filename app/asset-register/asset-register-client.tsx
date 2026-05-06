@@ -2479,7 +2479,8 @@ export default function AssetRegisterClient() {
               </button>
             </div>
 
-            <div className={styles.optionsContent}>
+            <div className={styles.optionsScrollBody}>
+              <div className={styles.optionsContent}>
               <div className={styles.optionsMeta}>
                 <div className={styles.optionMetaTile}>
                   <span>Value</span>
@@ -2577,6 +2578,7 @@ export default function AssetRegisterClient() {
                 </button>
               </div>
             </div>
+            </div>
           </div>
         </div>
       ) : null}
@@ -2592,54 +2594,39 @@ export default function AssetRegisterClient() {
             aria-labelledby="delete-confirm-title"
             aria-describedby="delete-confirm-copy"
           >
-            <button
-              type="button"
-              className={styles.deleteConfirmCloseButton}
-              onClick={closeDeleteConfirmDialog}
-              disabled={busyDeleteId === deleteCandidateAsset.id}
-              aria-label="Close delete confirmation"
-            >
-              <CloseIcon className={styles.buttonIcon} />
-            </button>
+            <div className={styles.deleteConfirmIcon}>
+              <TrashIcon className={styles.buttonIcon} />
+            </div>
 
-            <div className={styles.deleteConfirmHero}>
-              <div className={styles.deleteConfirmIcon}>
-                <TrashIcon className={styles.buttonIcon} />
+            <div className={styles.deleteConfirmContent}>
+              <span className={styles.modalEyebrow}>Delete asset</span>
+              <h3 id="delete-confirm-title">Are you sure you want to delete this?</h3>
+              <p id="delete-confirm-copy">
+                All data will be lost. This permanently removes <strong>{deleteCandidateAsset.title}</strong> from your Asset Register,
+                including saved notes, photos, marketplace status and QR scan history.
+              </p>
+
+              <div className={styles.deleteConfirmAsset}>
+                <span>Selected asset</span>
+                <strong>{deleteCandidateAsset.title}</strong>
+                <small>{buildAssetMeta(deleteCandidateAsset)} · {money(deleteCandidateAsset.value)}</small>
               </div>
 
-              <div className={styles.deleteConfirmHeroText}>
-                <h3 id="delete-confirm-title">Are you sure you want to delete this asset?</h3>
-                <p id="delete-confirm-copy">
-                  This permanently removes <strong>{deleteCandidateAsset.title}</strong> from your Asset Register.
-                </p>
+              <div className={styles.deleteConfirmActions}>
+                <button type="button" className={styles.secondaryButton} onClick={closeDeleteConfirmDialog} disabled={busyDeleteId === deleteCandidateAsset.id}>
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.primaryButton} ${styles.deleteConfirmButton}`}
+                  onClick={() => void handleConfirmDeleteAsset()}
+                  disabled={busyDeleteId === deleteCandidateAsset.id}
+                >
+                  <TrashIcon className={styles.buttonIcon} />
+                  <span>{busyDeleteId === deleteCandidateAsset.id ? 'Deleting...' : 'Yes, delete asset'}</span>
+                </button>
               </div>
-            </div>
-
-            <div className={styles.deleteConfirmWarning}>
-              <strong>All data will be lost.</strong>
-              <span>Saved notes, photos, marketplace status and QR scan history cannot be recovered once this is deleted.</span>
-            </div>
-
-            <div className={styles.deleteConfirmAsset}>
-              <span>Selected asset</span>
-              <strong>{deleteCandidateAsset.title}</strong>
-              <small>{buildAssetMeta(deleteCandidateAsset)} · {money(deleteCandidateAsset.value)}</small>
-            </div>
-
-            <div className={styles.deleteConfirmActions}>
-              <button type="button" className={styles.secondaryButton} onClick={closeDeleteConfirmDialog} disabled={busyDeleteId === deleteCandidateAsset.id}>
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                className={`${styles.primaryButton} ${styles.deleteConfirmButton}`}
-                onClick={() => void handleConfirmDeleteAsset()}
-                disabled={busyDeleteId === deleteCandidateAsset.id}
-              >
-                <TrashIcon className={styles.buttonIcon} />
-                <span>{busyDeleteId === deleteCandidateAsset.id ? 'Deleting...' : 'Yes, delete asset'}</span>
-              </button>
             </div>
           </div>
         </div>
