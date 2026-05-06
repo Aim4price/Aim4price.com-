@@ -2221,8 +2221,8 @@ export default function AssetRegisterClient() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeAssetModal} />
 
-          <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="asset-form-title">
-            <div className={styles.modalHeader}>
+          <div className={`${styles.modalCard} ${styles.assetFormModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-form-title">
+            <div className={`${styles.modalHeader} ${styles.assetFormModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <span className={styles.modalEyebrow}>{editingAsset ? 'Update asset' : 'Manually add asset'}</span>
                 <h3 id="asset-form-title">{editingAsset ? 'Update asset details' : 'Add another asset'}</h3>
@@ -2243,7 +2243,8 @@ export default function AssetRegisterClient() {
               </button>
             </div>
 
-            <form className={styles.modalForm} onSubmit={handleAssetSubmit}>
+            <div className={styles.modalScrollBody}>
+              <form className={styles.modalForm} onSubmit={handleAssetSubmit}>
               <label className={styles.field}>
                 <span>Asset type</span>
                 <select
@@ -2452,7 +2453,8 @@ export default function AssetRegisterClient() {
                   Cancel
                 </button>
               </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       ) : null}
@@ -2479,8 +2481,7 @@ export default function AssetRegisterClient() {
               </button>
             </div>
 
-            <div className={styles.optionsScrollBody}>
-              <div className={styles.optionsContent}>
+            <div className={styles.optionsContent}>
               <div className={styles.optionsMeta}>
                 <div className={styles.optionMetaTile}>
                   <span>Value</span>
@@ -2578,7 +2579,6 @@ export default function AssetRegisterClient() {
                 </button>
               </div>
             </div>
-            </div>
           </div>
         </div>
       ) : null}
@@ -2636,8 +2636,8 @@ export default function AssetRegisterClient() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeExportModal} />
 
-          <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="export-title">
-            <div className={styles.modalHeader}>
+          <div className={`${styles.modalCard} ${styles.exportModal}`} role="dialog" aria-modal="true" aria-labelledby="export-title">
+            <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <span className={styles.modalEyebrow}>Download full Asset Register</span>
                 <h3 id="export-title">Choose an export format</h3>
@@ -2649,8 +2649,9 @@ export default function AssetRegisterClient() {
               </button>
             </div>
 
-            <div className={styles.modalBody}>
-              <div className={styles.exportChoices}>
+            <div className={styles.modalScrollBody}>
+              <div className={styles.modalBody}>
+                <div className={styles.exportChoices}>
                 <button
                   type="button"
                   className={`${styles.exportOption} ${exportFormat === 'pdf' ? styles.exportOptionActive : ''}`}
@@ -2680,20 +2681,21 @@ export default function AssetRegisterClient() {
                 </button>
               </div>
 
-              <div className={styles.exportHelp}>
-                <strong>{assets.length} assets will be included.</strong>
-                <span>All values remain ex VAT. The export always includes the full saved register, not just the current search page.</span>
+                <div className={styles.exportHelp}>
+                  <strong>{assets.length} assets will be included.</strong>
+                  <span>All values remain ex VAT. The export always includes the full saved register, not just the current search page.</span>
+                </div>
               </div>
-            </div>
 
-            <div className={styles.formActions}>
+              <div className={styles.formActions}>
               <button type="button" className={styles.primaryButton} onClick={handleConfirmExport} disabled={isExporting}>
                 {isExporting ? 'Preparing export...' : exportFormat === 'xlsx' ? 'Download XLSX' : 'Open PDF summary'}
               </button>
 
-              <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
-                Cancel
-              </button>
+                <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2704,7 +2706,7 @@ export default function AssetRegisterClient() {
           <div className={styles.modalBackdrop} onClick={closeMarketplaceModal} />
 
           <div className={`${styles.modalCard} ${styles.marketplaceModal}`} role="dialog" aria-modal="true" aria-labelledby="marketplace-confirm-title">
-            <div className={styles.modalHeader}>
+            <div className={`${styles.modalHeader} ${styles.marketplaceModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <span className={styles.modalEyebrow}>Send to marketplace</span>
                 <h3 id="marketplace-confirm-title">Confirm listing details</h3>
@@ -2716,19 +2718,20 @@ export default function AssetRegisterClient() {
               </button>
             </div>
 
-            <div className={styles.modalBody}>
-              <div className={styles.optionsMeta}>
+            <div className={styles.modalScrollBody}>
+              <div className={styles.modalBody}>
+                <div className={styles.optionsMeta}>
                 <div className={styles.optionMetaTile}>
                   <span>Asset</span>
                   <strong>{marketplaceAsset.title}</strong>
                 </div>
-                <div className={styles.optionMetaTile}>
-                  <span>Saved register value</span>
-                  <strong>{money(marketplaceAsset.value)}</strong>
+                  <div className={styles.optionMetaTile}>
+                    <span>Saved register value</span>
+                    <strong>{money(marketplaceAsset.value)}</strong>
+                  </div>
                 </div>
-              </div>
 
-              <form className={styles.modalForm} onSubmit={handleConfirmMarketplacePublish}>
+                <form className={styles.modalForm} onSubmit={handleConfirmMarketplacePublish}>
                 <label className={styles.field}>
                   <span>Contact name</span>
                   <input
@@ -2818,7 +2821,8 @@ export default function AssetRegisterClient() {
                     Cancel
                   </button>
                 </div>
-              </form>
+                </form>
+              </div>
             </div>
           </div>
         </div>
@@ -2842,80 +2846,79 @@ export default function AssetRegisterClient() {
               </button>
             </div>
 
-            <div className={styles.qrModalScrollBody}>
+            <div className={`${styles.modalScrollBody} ${styles.qrModalScrollBody}`}>
               <div className={styles.qrModalBody}>
                 <div className={styles.qrPreviewCard}>
-                  <span className={styles.qrPreviewEyebrow}>Permanent asset QR</span>
-                  <div className={styles.qrPreviewFrame}>
-                    {activeAsset.publicAssetCode ? (
-                      <img src={buildAssetQrSvgUrl(activeAsset)} alt={`QR code for ${activeAsset.title}`} />
-                    ) : (
-                      <p className={styles.qrPreviewFallback}>QR artwork is not ready for this asset yet.</p>
-                    )}
-                  </div>
-                  <p className={styles.qrPreviewNote}>Keep this QR linked to the asset for fast scan access and printed labels.</p>
-                </div>
-
-                <div className={styles.qrDetailsCard}>
-                  <span className={styles.qrPreviewEyebrow}>Scan access</span>
-
-                  <div className={styles.qrDetailRow}>
-                    <span>Plate label</span>
-                    <strong>{activeAsset.plateLabel || 'Pending'}</strong>
-                  </div>
-
-                  <div className={styles.qrDetailRow}>
-                    <span>Scan status</span>
-                    <strong>{formatQrStatus(activeAsset.qrStatus)}</strong>
-                  </div>
-
-                  <div className={styles.qrDetailRow}>
-                    <span>Last scanned</span>
-                    <strong>{activeAsset.lastScannedAtIso ? formatDate(activeAsset.lastScannedAtIso) : 'No QR updates yet'}</strong>
-                  </div>
-
-                  <div className={styles.qrDetailRow}>
-                    <span>Last known location</span>
-                    <strong>{activeAsset.lastKnownLocationText || 'Captured automatically after each QR update'}</strong>
-                  </div>
-
-                  <div className={`${styles.qrDetailRow} ${styles.qrLinkRow}`}>
-                    <span>Scan page</span>
-                    {buildAssetScanUrl(activeAsset) ? (
-                      <a className={styles.scanLinkText} href={buildAssetScanUrl(activeAsset) ?? '#'} target="_blank" rel="noreferrer">
-                        {buildAssetScanUrl(activeAsset)}
-                      </a>
-                    ) : (
-                      <strong>Not available yet</strong>
-                    )}
-                  </div>
+                <span className={styles.qrPreviewEyebrow}>Permanent asset QR</span>
+                <div className={styles.qrPreviewFrame}>
+                  {activeAsset.publicAssetCode ? (
+                    <img src={buildAssetQrSvgUrl(activeAsset)} alt={`QR code for ${activeAsset.title}`} />
+                  ) : (
+                    <p className={styles.qrPreviewFallback}>QR artwork is not ready for this asset yet.</p>
+                  )}
                 </div>
               </div>
 
+              <div className={styles.qrDetailsCard}>
+                <span className={styles.qrPreviewEyebrow}>Scan access</span>
+
+                <div className={styles.qrDetailRow}>
+                  <span>Plate label</span>
+                  <strong>{activeAsset.plateLabel || 'Pending'}</strong>
+                </div>
+
+                <div className={styles.qrDetailRow}>
+                  <span>Scan status</span>
+                  <strong>{formatQrStatus(activeAsset.qrStatus)}</strong>
+                </div>
+
+                <div className={styles.qrDetailRow}>
+                  <span>Last scanned</span>
+                  <strong>{activeAsset.lastScannedAtIso ? formatDate(activeAsset.lastScannedAtIso) : 'No QR updates yet'}</strong>
+                </div>
+
+                <div className={styles.qrDetailRow}>
+                  <span>Last known location</span>
+                  <strong>{activeAsset.lastKnownLocationText || 'Captured automatically after each QR update'}</strong>
+                </div>
+
+                <div className={styles.qrDetailRow}>
+                  <span>Scan page</span>
+                  {buildAssetScanUrl(activeAsset) ? (
+                    <a className={styles.scanLinkText} href={buildAssetScanUrl(activeAsset) ?? '#'} target="_blank" rel="noreferrer">
+                      {buildAssetScanUrl(activeAsset)}
+                    </a>
+                  ) : (
+                    <strong>Not available yet</strong>
+                  )}
+                </div>
+              </div>
+              </div>
+
               <div className={`${styles.optionsGrid} ${styles.qrActionsGrid}`}>
-                <button type="button" className={styles.optionActionButton} onClick={() => void handleCopyScanLink(activeAsset)}>
-                  <CopyIcon className={styles.buttonIcon} />
-                  <span>Copy scan link</span>
-                </button>
+              <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanReport(activeAsset)}>
+                <PdfIcon className={styles.buttonIcon} />
+                <span>QR scan report</span>
+              </button>
 
-                <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanPage(activeAsset)}>
-                  <ExternalLinkIcon className={styles.buttonIcon} />
-                  <span>Open scanner page</span>
-                </button>
+              <button type="button" className={styles.optionActionButton} onClick={() => void handleCopyScanLink(activeAsset)}>
+                <CopyIcon className={styles.buttonIcon} />
+                <span>Copy scan link</span>
+              </button>
 
-                <button type="button" className={styles.optionActionButton} onClick={() => void handleDownloadQr(activeAsset)}>
-                  <QrIcon className={styles.buttonIcon} />
-                  <span>Download QR SVG</span>
-                </button>
+              <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanPage(activeAsset)}>
+                <ExternalLinkIcon className={styles.buttonIcon} />
+                <span>Open scanner page</span>
+              </button>
+
+              <button type="button" className={styles.optionActionButton} onClick={() => void handleDownloadQr(activeAsset)}>
+                <QrIcon className={styles.buttonIcon} />
+                <span>Download QR SVG</span>
+              </button>
 
                 <button type="button" className={styles.optionActionButton} onClick={() => handlePrintQrSheet(activeAsset)}>
                   <PrintIcon className={styles.buttonIcon} />
                   <span>Print QR label</span>
-                </button>
-
-                <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanReport(activeAsset)}>
-                  <PdfIcon className={styles.buttonIcon} />
-                  <span>QR scan report</span>
                 </button>
               </div>
             </div>
@@ -2940,9 +2943,9 @@ export default function AssetRegisterClient() {
               </button>
             </div>
 
-            <div className={styles.projectionScrollBody}>
+            <div className={`${styles.modalScrollBody} ${styles.projectionScrollBody}`}>
               <div className={styles.modalBody}>
-              <div className={styles.projectionIntro}>
+                <div className={styles.projectionIntro}>
                 <div>
                   <span>Current register value</span>
                   <strong>{money(projectionAsset.value)}</strong>

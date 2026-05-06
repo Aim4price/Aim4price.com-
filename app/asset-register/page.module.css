@@ -741,56 +741,12 @@
 }
 
 .qrModal {
-  width: min(100%, 760px);
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  overflow: hidden;
-  padding: clamp(1rem, 2vw, 1.35rem);
-  padding-right: clamp(1.45rem, 2.8vw, 1.95rem);
-  border-radius: 1.9rem;
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
-  border-color: rgba(218, 228, 236, 0.96);
-  box-shadow:
-    0 30px 80px rgba(16, 28, 45, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+  width: min(100%, 680px);
 }
 
 .projectionModal {
   width: min(100%, 860px);
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  overflow: hidden;
-  padding: clamp(1rem, 2vw, 1.35rem);
-  padding-right: clamp(1.45rem, 2.8vw, 1.95rem);
-  border-radius: 1.9rem;
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
-  border-color: rgba(218, 228, 236, 0.96);
-  box-shadow:
-    0 30px 80px rgba(16, 28, 45, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
 }
-
-.assetFormModal {
-  width: min(100%, 840px);
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  overflow: hidden;
-  padding: clamp(1rem, 2vw, 1.35rem);
-  padding-right: clamp(1.45rem, 2.8vw, 1.95rem);
-  border-radius: 1.9rem;
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
-  border-color: rgba(218, 228, 236, 0.96);
-  box-shadow:
-    0 30px 80px rgba(16, 28, 45, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
 
 .marketplaceModal {
   width: min(100%, 760px);
@@ -1113,53 +1069,11 @@
   word-break: break-word;
 }
 
-.qrModalHeader {
-  align-items: center;
-  gap: 1.1rem;
-  margin-bottom: 1rem;
-}
-
-.qrModalScrollBody {
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(22, 83, 64, 0.52) rgba(239, 244, 247, 0.98);
-  padding-right: 1rem;
-  margin-right: -0.18rem;
-}
-
-.qrModalScrollBody::-webkit-scrollbar {
-  width: 0.96rem;
-}
-
-.qrModalScrollBody::-webkit-scrollbar-track {
-  margin: 0.3rem 0 0.5rem;
-  border-radius: 999px;
-  background: rgba(239, 244, 247, 0.98);
-  border-left: 0.24rem solid transparent;
-  border-right: 0.24rem solid transparent;
-  background-clip: padding-box;
-}
-
-.qrModalScrollBody::-webkit-scrollbar-thumb {
-  border: 0.24rem solid transparent;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(26, 90, 69, 0.64) 0%, rgba(18, 66, 51, 0.82) 100%);
-  background-clip: padding-box;
-}
-
-.qrModalScrollBody::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(26, 90, 69, 0.8) 0%, rgba(18, 66, 51, 0.94) 100%);
-  background-clip: padding-box;
-}
-
 .qrModalBody {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-  gap: 1rem;
-  margin-bottom: 1rem;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 0.85rem;
+  margin-bottom: 0.95rem;
 }
 
 .qrPanel {
@@ -1171,18 +1085,15 @@
 
 .qrPreviewCard,
 .qrDetailsCard {
-  padding: 1.05rem;
-  border-radius: 1.25rem;
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 38%),
-    linear-gradient(180deg, #fbfcfd 0%, #f1f6f7 100%);
-  border: 1px solid rgba(221, 229, 237, 0.96);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  padding: 1rem;
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, #f7fafb 0%, #f2f5f8 100%);
+  border: 1px solid var(--line);
 }
 
 .qrPreviewCard {
   display: grid;
-  gap: 0.85rem;
+  gap: 0.8rem;
   align-content: start;
 }
 
@@ -1197,19 +1108,18 @@
 
 .qrPreviewFrame {
   min-height: 220px;
-  padding: 0.95rem;
+  padding: 0.9rem;
   border-radius: 1rem;
   background: #ffffff;
   border: 1px solid rgba(220, 228, 236, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
 }
 
 .qrPreviewFrame img {
   width: 100%;
-  max-width: 205px;
+  max-width: 210px;
   aspect-ratio: 1 / 1;
   object-fit: contain;
 }
@@ -1221,23 +1131,16 @@
   line-height: 1.55;
 }
 
-.qrPreviewNote {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  line-height: 1.55;
-}
-
 .qrDetailsCard {
   display: grid;
-  gap: 0.78rem;
+  gap: 0.75rem;
   align-content: start;
 }
 
 .qrDetailRow {
   display: grid;
-  gap: 0.32rem;
-  padding: 0.95rem 1rem;
+  gap: 0.3rem;
+  padding: 0.9rem 0.95rem;
   border-radius: 1rem;
   background: #ffffff;
   border: 1px solid rgba(220, 228, 236, 0.95);
@@ -1258,10 +1161,6 @@
   word-break: break-word;
 }
 
-.qrLinkRow {
-  align-content: start;
-}
-
 .codeValue {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
   font-size: 0.92rem !important;
@@ -1277,32 +1176,6 @@
 
 .scanLinkText:hover {
   text-decoration: underline;
-}
-
-.qrActionsGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.8rem;
-  padding-top: 0.2rem;
-}
-
-.qrActionsGrid .optionActionButton {
-  min-height: 4rem;
-  padding: 0.95rem 1rem;
-  justify-content: flex-start;
-  border-radius: 1.1rem;
-  color: #29456b;
-  background: linear-gradient(180deg, #ffffff 0%, #f3f7fb 100%);
-  border-color: rgba(216, 225, 240, 0.98);
-  box-shadow:
-    0 10px 22px rgba(16, 28, 45, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
-}
-
-.qrActionsGrid .optionActionButton:hover {
-  border-color: rgba(177, 194, 218, 0.95);
-  box-shadow:
-    0 16px 28px rgba(16, 28, 45, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 .optionActionButton {
@@ -1408,146 +1281,30 @@
   line-height: 1.5;
 }
 
-.assetFormModalHeader {
-  align-items: center;
-  gap: 1.1rem;
-  margin-bottom: 1rem;
-}
-
-.assetFormScrollBody {
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(22, 83, 64, 0.52) rgba(239, 244, 247, 0.98);
-  padding-right: 1rem;
-  margin-right: -0.18rem;
-}
-
-.assetFormScrollBody::-webkit-scrollbar {
-  width: 0.96rem;
-}
-
-.assetFormScrollBody::-webkit-scrollbar-track {
-  margin: 0.3rem 0 0.5rem;
-  border-radius: 999px;
-  background: rgba(239, 244, 247, 0.98);
-  border-left: 0.24rem solid transparent;
-  border-right: 0.24rem solid transparent;
-  background-clip: padding-box;
-}
-
-.assetFormScrollBody::-webkit-scrollbar-thumb {
-  border: 0.24rem solid transparent;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(26, 90, 69, 0.64) 0%, rgba(18, 66, 51, 0.82) 100%);
-  background-clip: padding-box;
-}
-
-.assetFormScrollBody::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(26, 90, 69, 0.8) 0%, rgba(18, 66, 51, 0.94) 100%);
-  background-clip: padding-box;
-}
-
-.assetFormModal .modalForm {
-  gap: 0.95rem;
-}
-
-.assetFormModal .field input,
-.assetFormModal .field select,
-.assetFormModal .field textarea {
-  background: #ffffff;
-  border-color: rgba(216, 225, 240, 0.98);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
-}
-
-.assetFormModal .uploadPanel {
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.04), transparent 35%),
-    linear-gradient(180deg, #fbfcfd 0%, #f3f7fa 100%);
-  border: 1px dashed rgba(196, 211, 224, 0.98);
-}
-
-.assetFormModal .photoGrid {
-  padding-top: 0.1rem;
-}
-
-.assetFormModal .formActions {
-  padding-top: 0.15rem;
-}
-
-.projectionModalHeader {
-  align-items: center;
-  gap: 1.1rem;
-  margin-bottom: 1rem;
-}
-
-.projectionScrollBody {
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(22, 83, 64, 0.52) rgba(239, 244, 247, 0.98);
-  padding-right: 1rem;
-  margin-right: -0.18rem;
-}
-
-.projectionScrollBody::-webkit-scrollbar {
-  width: 0.96rem;
-}
-
-.projectionScrollBody::-webkit-scrollbar-track {
-  margin: 0.3rem 0 0.5rem;
-  border-radius: 999px;
-  background: rgba(239, 244, 247, 0.98);
-  border-left: 0.24rem solid transparent;
-  border-right: 0.24rem solid transparent;
-  background-clip: padding-box;
-}
-
-.projectionScrollBody::-webkit-scrollbar-thumb {
-  border: 0.24rem solid transparent;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(26, 90, 69, 0.64) 0%, rgba(18, 66, 51, 0.82) 100%);
-  background-clip: padding-box;
-}
-
-.projectionScrollBody::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(26, 90, 69, 0.8) 0%, rgba(18, 66, 51, 0.94) 100%);
-  background-clip: padding-box;
-}
-
 .projectionIntro {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
+  gap: 0.75rem;
 }
 
 .projectionInputRow {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.9rem;
+  gap: 0.85rem;
 }
 
 .projectionPresetRow {
   display: flex;
-  gap: 0.65rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
-  margin-top: 0.05rem;
 }
 
 .projectionPresetButton {
-  min-height: 2.78rem;
-  padding: 0 0.95rem;
-  border-radius: 0.95rem;
+  min-height: 2.7rem;
+  padding: 0 0.9rem;
   color: var(--blue-text);
-  background: linear-gradient(180deg, #ffffff 0%, #f3f7fb 100%);
-  border-color: rgba(216, 225, 240, 0.98);
-  box-shadow:
-    0 10px 22px rgba(16, 28, 45, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  background: var(--blue-soft);
+  border-color: var(--blue-soft-border);
 }
 
 .projectionStatsGrid {
@@ -1559,7 +1316,6 @@
 .projectionStatCardHighlight {
   background: linear-gradient(180deg, #f1faf4 0%, #e9f5ee 100%);
   border-color: var(--brand-soft-border);
-  box-shadow: 0 14px 30px rgba(18, 66, 51, 0.08);
 }
 
 .projectionStatValue {
@@ -1573,7 +1329,7 @@
   gap: 0.75rem;
   padding: 1rem;
   border-radius: 1.2rem;
-  background: linear-gradient(180deg, #fbfcfd 0%, #f3f7fa 100%);
+  background: #f9fbfc;
   border: 1px solid var(--line);
 }
 
@@ -1649,33 +1405,8 @@
   .qrPanel,
   .scanAccessPanel,
   .qrModalBody,
-  .scanAccessFacts,
-  .qrActionsGrid {
+  .scanAccessFacts {
     grid-template-columns: 1fr;
-  }
-
-  .qrModal {
-    padding-right: clamp(1.1rem, 2.8vw, 1.45rem);
-  }
-
-  .projectionModal {
-    padding-right: clamp(1.1rem, 2.8vw, 1.45rem);
-  }
-
-  .assetFormModal {
-    padding-right: clamp(1.1rem, 2.8vw, 1.45rem);
-  }
-
-  .qrModalScrollBody {
-    padding-right: 0.75rem;
-  }
-
-  .projectionScrollBody {
-    padding-right: 0.75rem;
-  }
-
-  .assetFormScrollBody {
-    padding-right: 0.75rem;
   }
 
   .toolbarMeta {
@@ -1766,30 +1497,6 @@
   .optionsModal,
   .qrModal {
     padding: 1rem;
-  }
-
-  .qrModal {
-    padding-right: 1rem;
-  }
-
-  .projectionModal {
-    padding-right: 1rem;
-  }
-
-  .assetFormModal {
-    padding-right: 1rem;
-  }
-
-  .qrModalScrollBody {
-    padding-right: 0.58rem;
-  }
-
-  .projectionScrollBody {
-    padding-right: 0.58rem;
-  }
-
-  .assetFormScrollBody {
-    padding-right: 0.58rem;
   }
 
   .registerTitleBlock h1 {
@@ -2131,11 +1838,7 @@
 .optionsModal {
   width: min(100%, 900px);
   max-height: min(90vh, calc(100dvh - 2.5rem));
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  overflow: hidden;
   padding: clamp(1rem, 2vw, 1.45rem);
-  padding-right: clamp(1.5rem, 2.8vw, 2.05rem);
   border-radius: 2rem;
   background:
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 32%),
@@ -2167,42 +1870,6 @@
 .optionsModalHeader p {
   margin-top: 0;
   max-width: 52rem;
-}
-
-.optionsScrollBody {
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(22, 83, 64, 0.52) rgba(239, 244, 247, 0.98);
-  padding-right: 1.05rem;
-  margin-right: -0.18rem;
-}
-
-.optionsScrollBody::-webkit-scrollbar {
-  width: 0.96rem;
-}
-
-.optionsScrollBody::-webkit-scrollbar-track {
-  margin: 0.3rem 0 0.5rem;
-  border-radius: 999px;
-  background: rgba(239, 244, 247, 0.98);
-  border-left: 0.24rem solid transparent;
-  border-right: 0.24rem solid transparent;
-  background-clip: padding-box;
-}
-
-.optionsScrollBody::-webkit-scrollbar-thumb {
-  border: 0.24rem solid transparent;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(26, 90, 69, 0.64) 0%, rgba(18, 66, 51, 0.82) 100%);
-  background-clip: padding-box;
-}
-
-.optionsScrollBody::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(26, 90, 69, 0.8) 0%, rgba(18, 66, 51, 0.94) 100%);
-  background-clip: padding-box;
 }
 
 .optionsContent {
@@ -2407,24 +2074,6 @@
   .assetOptionsGrid {
     grid-template-columns: 1fr;
   }
-
-  .optionsModal {
-    padding-right: clamp(1.15rem, 2.8vw, 1.45rem);
-  }
-
-  .optionsScrollBody {
-    padding-right: 0.78rem;
-  }
-}
-
-@media (max-width: 560px) {
-  .optionsModal {
-    padding-right: 1rem;
-  }
-
-  .optionsScrollBody {
-    padding-right: 0.58rem;
-  }
 }
 
 @media (max-width: 560px) {
@@ -2442,5 +2091,183 @@
 
   .deleteConfirmActions > button {
     width: 100%;
+  }
+}
+
+/* === Unified scrollable modal standard across Asset Register === */
+.assetFormModal,
+.exportModal,
+.marketplaceModal,
+.qrModal,
+.projectionModal,
+.optionsModal {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  max-height: min(90vh, calc(100dvh - 2.5rem)) !important;
+  overflow: hidden !important;
+  padding: clamp(1rem, 2vw, 1.45rem) !important;
+  padding-right: clamp(1.5rem, 2.8vw, 2.05rem) !important;
+  border-radius: 2rem !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+  border-color: rgba(218, 228, 236, 0.96) !important;
+  box-shadow:
+    0 30px 80px rgba(16, 28, 45, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+}
+
+.assetFormModal {
+  width: min(100%, 900px) !important;
+}
+
+.exportModal {
+  width: min(100%, 760px) !important;
+}
+
+.marketplaceModal {
+  width: min(100%, 820px) !important;
+}
+
+.qrModal {
+  width: min(100%, 760px) !important;
+}
+
+.projectionModal {
+  width: min(100%, 860px) !important;
+}
+
+.assetFormModalHeader,
+.exportModalHeader,
+.marketplaceModalHeader,
+.qrModalHeader,
+.projectionModalHeader,
+.optionsModalHeader {
+  align-items: center;
+  gap: 1.15rem;
+  margin-bottom: 1.05rem;
+  padding: 0.1rem 0.1rem 0;
+}
+
+.modalScrollBody,
+.optionsScrollBody,
+.qrModalScrollBody,
+.projectionScrollBody {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 83, 64, 0.52) rgba(239, 244, 247, 0.98);
+  padding-right: 1.05rem;
+  margin-right: -0.18rem;
+  padding-bottom: 0.1rem;
+}
+
+.modalScrollBody::-webkit-scrollbar,
+.optionsScrollBody::-webkit-scrollbar,
+.qrModalScrollBody::-webkit-scrollbar,
+.projectionScrollBody::-webkit-scrollbar {
+  width: 0.96rem;
+}
+
+.modalScrollBody::-webkit-scrollbar-track,
+.optionsScrollBody::-webkit-scrollbar-track,
+.qrModalScrollBody::-webkit-scrollbar-track,
+.projectionScrollBody::-webkit-scrollbar-track {
+  margin: 0.3rem 0 0.5rem;
+  border-radius: 999px;
+  background: rgba(239, 244, 247, 0.98);
+  border-left: 0.24rem solid transparent;
+  border-right: 0.24rem solid transparent;
+  background-clip: padding-box;
+}
+
+.modalScrollBody::-webkit-scrollbar-thumb,
+.optionsScrollBody::-webkit-scrollbar-thumb,
+.qrModalScrollBody::-webkit-scrollbar-thumb,
+.projectionScrollBody::-webkit-scrollbar-thumb {
+  border: 0.24rem solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(26, 90, 69, 0.64) 0%, rgba(18, 66, 51, 0.82) 100%);
+  background-clip: padding-box;
+}
+
+.modalScrollBody::-webkit-scrollbar-thumb:hover,
+.optionsScrollBody::-webkit-scrollbar-thumb:hover,
+.qrModalScrollBody::-webkit-scrollbar-thumb:hover,
+.projectionScrollBody::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(26, 90, 69, 0.8) 0%, rgba(18, 66, 51, 0.94) 100%);
+  background-clip: padding-box;
+}
+
+.assetFormModal .modalForm,
+.marketplaceModal .modalForm {
+  row-gap: 0.95rem;
+  column-gap: 0.9rem;
+}
+
+.assetFormModal .formActions,
+.exportModal .formActions,
+.marketplaceModal .formActions,
+.projectionModal .formActions {
+  margin-top: 0.35rem;
+}
+
+.qrActionsGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.qrActionsGrid .optionActionButton {
+  min-height: 4rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1.1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f7fb 100%);
+  border-color: rgba(216, 225, 240, 0.98);
+  box-shadow:
+    0 10px 22px rgba(16, 28, 45, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+@media (max-width: 860px) {
+  .assetFormModal,
+  .exportModal,
+  .marketplaceModal,
+  .qrModal,
+  .projectionModal,
+  .optionsModal {
+    padding-right: clamp(1.1rem, 2.8vw, 1.45rem) !important;
+  }
+
+  .modalScrollBody,
+  .optionsScrollBody,
+  .qrModalScrollBody,
+  .projectionScrollBody {
+    padding-right: 0.78rem;
+  }
+
+  .qrActionsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .assetFormModal,
+  .exportModal,
+  .marketplaceModal,
+  .qrModal,
+  .projectionModal,
+  .optionsModal {
+    padding: 1rem !important;
+    padding-right: 1rem !important;
+    border-radius: 1.45rem !important;
+  }
+
+  .modalScrollBody,
+  .optionsScrollBody,
+  .qrModalScrollBody,
+  .projectionScrollBody {
+    padding-right: 0.58rem;
   }
 }
