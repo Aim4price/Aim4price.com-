@@ -34,7 +34,7 @@ function InstagramIcon() {
 function ChevronIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M6.35 14.35 12 8.7l5.65 5.65" />
+      <path d="m6.5 14.25 5.5-5.5 5.5 5.5" />
     </svg>
   );
 }
@@ -42,8 +42,6 @@ function ChevronIcon() {
 export default function AppFooter() {
   const footerRef = useRef<HTMLElement | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-
-  const toggleLabel = isExpanded ? 'Collapse footer' : 'Open footer';
 
   function handleFooterToggle() {
     const nextExpanded = !isExpanded;
@@ -53,7 +51,7 @@ export default function AppFooter() {
     if (nextExpanded) {
       window.setTimeout(() => {
         footerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }, 80);
+      }, 120);
     }
   }
 
@@ -62,15 +60,13 @@ export default function AppFooter() {
       ref={footerRef}
       className={`${styles.footer} ${isExpanded ? styles.footerExpanded : ''}`}
     >
-      <div id={footerContentId} className={styles.collapseRegion} aria-hidden={!isExpanded}>
-        <div className={styles.collapseInner}>
+      <div id={footerContentId} className={styles.drawerRegion} aria-hidden={!isExpanded}>
+        <div className={styles.drawerInner}>
           <div className={styles.footerPanel}>
             <div className={styles.shell}>
               <div className={styles.topRow}>
                 <section className={styles.brandBlock} aria-label="Aim4price footer overview">
-                  <div className={styles.brandIdentity}>
-                    <span className={styles.brandName}>Aim4price</span>
-                  </div>
+                  <span className={styles.brandName}>Aim4price</span>
 
                   <p className={styles.brandText}>
                     Agricultural and industrial machinery pricing, asset register, and marketplace
@@ -79,13 +75,16 @@ export default function AppFooter() {
 
                   <div className={styles.socialGroup} aria-label="Aim4price social channels">
                     <span className={styles.socialLabel}>Social</span>
+
                     <div className={styles.socialRow}>
                       <span className={styles.socialIcon} aria-label="Facebook">
                         <FacebookIcon />
                       </span>
+
                       <span className={styles.socialIcon} aria-label="LinkedIn">
                         <LinkedInIcon />
                       </span>
+
                       <span className={styles.socialIcon} aria-label="Instagram">
                         <InstagramIcon />
                       </span>
@@ -121,14 +120,14 @@ export default function AppFooter() {
         </div>
       </div>
 
-      <div className={styles.metaRow}>
-        <div className={styles.metaShell}>
+      <div className={styles.footerDock}>
+        <div className={styles.dockShell}>
           <span className={`${styles.metaItem} ${styles.metaCopyright}`}>© {year} Aim4price</span>
 
           <button
             type="button"
             className={styles.footerToggle}
-            aria-label={toggleLabel}
+            aria-label={isExpanded ? 'Collapse footer' : 'Open footer'}
             aria-expanded={isExpanded}
             aria-controls={footerContentId}
             onClick={handleFooterToggle}
@@ -139,8 +138,7 @@ export default function AppFooter() {
           </button>
 
           <span className={`${styles.metaItem} ${styles.metaNote}`}>
-            Indicative estimates should be confirmed for formal insurance, finance, or
-            transactional use.
+            Indicative estimates should be confirmed for formal insurance, finance, or transactional use.
           </span>
         </div>
       </div>
