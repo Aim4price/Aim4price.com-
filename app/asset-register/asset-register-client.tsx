@@ -2830,7 +2830,7 @@ export default function AssetRegisterClient() {
           <div className={styles.modalBackdrop} onClick={closeQrDialog} />
 
           <div className={`${styles.modalCard} ${styles.qrModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-qr-title">
-            <div className={styles.modalHeader}>
+            <div className={`${styles.modalHeader} ${styles.qrModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <span className={styles.modalEyebrow}>QR code</span>
                 <h3 id="asset-qr-title">{activeAsset.title}</h3>
@@ -2842,79 +2842,82 @@ export default function AssetRegisterClient() {
               </button>
             </div>
 
-            <div className={styles.qrModalBody}>
-              <div className={styles.qrPreviewCard}>
-                <span className={styles.qrPreviewEyebrow}>Permanent asset QR</span>
-                <div className={styles.qrPreviewFrame}>
-                  {activeAsset.publicAssetCode ? (
-                    <img src={buildAssetQrSvgUrl(activeAsset)} alt={`QR code for ${activeAsset.title}`} />
-                  ) : (
-                    <p className={styles.qrPreviewFallback}>QR artwork is not ready for this asset yet.</p>
-                  )}
+            <div className={styles.qrModalScrollBody}>
+              <div className={styles.qrModalBody}>
+                <div className={styles.qrPreviewCard}>
+                  <span className={styles.qrPreviewEyebrow}>Permanent asset QR</span>
+                  <div className={styles.qrPreviewFrame}>
+                    {activeAsset.publicAssetCode ? (
+                      <img src={buildAssetQrSvgUrl(activeAsset)} alt={`QR code for ${activeAsset.title}`} />
+                    ) : (
+                      <p className={styles.qrPreviewFallback}>QR artwork is not ready for this asset yet.</p>
+                    )}
+                  </div>
+                  <p className={styles.qrPreviewNote}>Keep this QR linked to the asset for fast scan access and printed labels.</p>
+                </div>
+
+                <div className={styles.qrDetailsCard}>
+                  <span className={styles.qrPreviewEyebrow}>Scan access</span>
+
+                  <div className={styles.qrDetailRow}>
+                    <span>Plate label</span>
+                    <strong>{activeAsset.plateLabel || 'Pending'}</strong>
+                  </div>
+
+                  <div className={styles.qrDetailRow}>
+                    <span>Scan status</span>
+                    <strong>{formatQrStatus(activeAsset.qrStatus)}</strong>
+                  </div>
+
+                  <div className={styles.qrDetailRow}>
+                    <span>Last scanned</span>
+                    <strong>{activeAsset.lastScannedAtIso ? formatDate(activeAsset.lastScannedAtIso) : 'No QR updates yet'}</strong>
+                  </div>
+
+                  <div className={styles.qrDetailRow}>
+                    <span>Last known location</span>
+                    <strong>{activeAsset.lastKnownLocationText || 'Captured automatically after each QR update'}</strong>
+                  </div>
+
+                  <div className={`${styles.qrDetailRow} ${styles.qrLinkRow}`}>
+                    <span>Scan page</span>
+                    {buildAssetScanUrl(activeAsset) ? (
+                      <a className={styles.scanLinkText} href={buildAssetScanUrl(activeAsset) ?? '#'} target="_blank" rel="noreferrer">
+                        {buildAssetScanUrl(activeAsset)}
+                      </a>
+                    ) : (
+                      <strong>Not available yet</strong>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className={styles.qrDetailsCard}>
-                <span className={styles.qrPreviewEyebrow}>Scan access</span>
+              <div className={`${styles.optionsGrid} ${styles.qrActionsGrid}`}>
+                <button type="button" className={styles.optionActionButton} onClick={() => void handleCopyScanLink(activeAsset)}>
+                  <CopyIcon className={styles.buttonIcon} />
+                  <span>Copy scan link</span>
+                </button>
 
-                <div className={styles.qrDetailRow}>
-                  <span>Plate label</span>
-                  <strong>{activeAsset.plateLabel || 'Pending'}</strong>
-                </div>
+                <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanPage(activeAsset)}>
+                  <ExternalLinkIcon className={styles.buttonIcon} />
+                  <span>Open scanner page</span>
+                </button>
 
-                <div className={styles.qrDetailRow}>
-                  <span>Scan status</span>
-                  <strong>{formatQrStatus(activeAsset.qrStatus)}</strong>
-                </div>
+                <button type="button" className={styles.optionActionButton} onClick={() => void handleDownloadQr(activeAsset)}>
+                  <QrIcon className={styles.buttonIcon} />
+                  <span>Download QR SVG</span>
+                </button>
 
-                <div className={styles.qrDetailRow}>
-                  <span>Last scanned</span>
-                  <strong>{activeAsset.lastScannedAtIso ? formatDate(activeAsset.lastScannedAtIso) : 'No QR updates yet'}</strong>
-                </div>
+                <button type="button" className={styles.optionActionButton} onClick={() => handlePrintQrSheet(activeAsset)}>
+                  <PrintIcon className={styles.buttonIcon} />
+                  <span>Print QR label</span>
+                </button>
 
-                <div className={styles.qrDetailRow}>
-                  <span>Last known location</span>
-                  <strong>{activeAsset.lastKnownLocationText || 'Captured automatically after each QR update'}</strong>
-                </div>
-
-                <div className={styles.qrDetailRow}>
-                  <span>Scan page</span>
-                  {buildAssetScanUrl(activeAsset) ? (
-                    <a className={styles.scanLinkText} href={buildAssetScanUrl(activeAsset) ?? '#'} target="_blank" rel="noreferrer">
-                      {buildAssetScanUrl(activeAsset)}
-                    </a>
-                  ) : (
-                    <strong>Not available yet</strong>
-                  )}
-                </div>
+                <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanReport(activeAsset)}>
+                  <PdfIcon className={styles.buttonIcon} />
+                  <span>QR scan report</span>
+                </button>
               </div>
-            </div>
-
-            <div className={styles.optionsGrid}>
-              <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanReport(activeAsset)}>
-                <PdfIcon className={styles.buttonIcon} />
-                <span>QR scan report</span>
-              </button>
-
-              <button type="button" className={styles.optionActionButton} onClick={() => void handleCopyScanLink(activeAsset)}>
-                <CopyIcon className={styles.buttonIcon} />
-                <span>Copy scan link</span>
-              </button>
-
-              <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanPage(activeAsset)}>
-                <ExternalLinkIcon className={styles.buttonIcon} />
-                <span>Open scanner page</span>
-              </button>
-
-              <button type="button" className={styles.optionActionButton} onClick={() => void handleDownloadQr(activeAsset)}>
-                <QrIcon className={styles.buttonIcon} />
-                <span>Download QR SVG</span>
-              </button>
-
-              <button type="button" className={styles.optionActionButton} onClick={() => handlePrintQrSheet(activeAsset)}>
-                <PrintIcon className={styles.buttonIcon} />
-                <span>Print QR label</span>
-              </button>
             </div>
           </div>
         </div>
