@@ -2481,8 +2481,9 @@ export default function AssetRegisterClient() {
               </button>
             </div>
 
-            <div className={styles.optionsContent}>
-              <div className={styles.optionsMeta}>
+            <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody}`}>
+              <div className={styles.optionsContent}>
+                <div className={styles.optionsMeta}>
                 <div className={styles.optionMetaTile}>
                   <span>Value</span>
                   <strong>{money(activeAsset.value)}</strong>
@@ -2578,6 +2579,7 @@ export default function AssetRegisterClient() {
                   <span>{busyDeleteId === activeAsset.id ? 'Removing...' : 'Delete asset'}</span>
                 </button>
               </div>
+            </div>
             </div>
           </div>
         </div>

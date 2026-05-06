@@ -2271,3 +2271,144 @@
     padding-right: 0.58rem;
   }
 }
+
+/* === Final Asset Register modal scroll standard (authoritative override) === */
+.assetFormModal,
+.exportModal,
+.marketplaceModal,
+.qrModal,
+.projectionModal,
+.optionsModal {
+  max-height: min(90vh, calc(100dvh - 2.5rem)) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: clamp(1rem, 2vw, 1.45rem) !important;
+  padding-right: clamp(1.5rem, 2.8vw, 2.05rem) !important;
+}
+
+.assetFormModal {
+  width: min(100%, 900px) !important;
+}
+
+.exportModal {
+  width: min(100%, 760px) !important;
+}
+
+.marketplaceModal {
+  width: min(100%, 820px) !important;
+}
+
+.qrModal {
+  width: min(100%, 760px) !important;
+}
+
+.projectionModal {
+  width: min(100%, 860px) !important;
+}
+
+.optionsModal {
+  width: min(100%, 900px) !important;
+}
+
+.assetFormModalHeader,
+.exportModalHeader,
+.marketplaceModalHeader,
+.qrModalHeader,
+.projectionModalHeader,
+.optionsModalHeader {
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.modalScrollBody,
+.optionsScrollBody,
+.qrModalScrollBody,
+.projectionScrollBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 83, 64, 0.6) rgba(239, 244, 247, 0.98);
+  padding-right: 1rem;
+  margin-right: -0.2rem;
+  padding-bottom: 0.15rem;
+}
+
+.modalScrollBody::-webkit-scrollbar,
+.optionsScrollBody::-webkit-scrollbar,
+.qrModalScrollBody::-webkit-scrollbar,
+.projectionScrollBody::-webkit-scrollbar {
+  width: 0.96rem;
+}
+
+.modalScrollBody::-webkit-scrollbar-track,
+.optionsScrollBody::-webkit-scrollbar-track,
+.qrModalScrollBody::-webkit-scrollbar-track,
+.projectionScrollBody::-webkit-scrollbar-track {
+  margin: 0.25rem 0 0.45rem;
+  border-radius: 999px;
+  background: rgba(239, 244, 247, 0.98);
+  border-left: 0.24rem solid transparent;
+  border-right: 0.24rem solid transparent;
+  background-clip: padding-box;
+}
+
+.modalScrollBody::-webkit-scrollbar-thumb,
+.optionsScrollBody::-webkit-scrollbar-thumb,
+.qrModalScrollBody::-webkit-scrollbar-thumb,
+.projectionScrollBody::-webkit-scrollbar-thumb {
+  border: 0.24rem solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(26, 90, 69, 0.66) 0%, rgba(18, 66, 51, 0.84) 100%);
+  background-clip: padding-box;
+}
+
+.modalScrollBody::-webkit-scrollbar-thumb:hover,
+.optionsScrollBody::-webkit-scrollbar-thumb:hover,
+.qrModalScrollBody::-webkit-scrollbar-thumb:hover,
+.projectionScrollBody::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(26, 90, 69, 0.82) 0%, rgba(18, 66, 51, 0.96) 100%);
+  background-clip: padding-box;
+}
+
+@media (max-width: 860px) {
+  .assetFormModal,
+  .exportModal,
+  .marketplaceModal,
+  .qrModal,
+  .projectionModal,
+  .optionsModal {
+    padding-right: clamp(1.1rem, 2.8vw, 1.45rem) !important;
+  }
+
+  .modalScrollBody,
+  .optionsScrollBody,
+  .qrModalScrollBody,
+  .projectionScrollBody {
+    padding-right: 0.76rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .assetFormModal,
+  .exportModal,
+  .marketplaceModal,
+  .qrModal,
+  .projectionModal,
+  .optionsModal {
+    padding: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  .modalScrollBody,
+  .optionsScrollBody,
+  .qrModalScrollBody,
+  .projectionScrollBody {
+    padding-right: 0.58rem;
+  }
+}
