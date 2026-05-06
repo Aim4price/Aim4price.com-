@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import styles from './AppFooter.module.css';
 
 const year = new Date().getFullYear();
+const footerContentId = 'aim4price-footer-content';
 
 function FacebookIcon() {
   return (
@@ -30,110 +31,117 @@ function InstagramIcon() {
   );
 }
 
+function ChevronIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6.35 14.35 12 8.7l5.65 5.65" />
+    </svg>
+  );
+}
+
 export default function AppFooter() {
   const footerRef = useRef<HTMLElement | null>(null);
-  const [isFoldOpen, setIsFoldOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  useEffect(() => {
-    const footer = footerRef.current;
+  const toggleLabel = isExpanded ? 'Collapse footer' : 'Open footer';
 
-    if (!footer) {
-      return undefined;
+  function handleFooterToggle() {
+    const nextExpanded = !isExpanded;
+
+    setIsExpanded(nextExpanded);
+
+    if (nextExpanded) {
+      window.setTimeout(() => {
+        footerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 80);
     }
-
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    if (prefersReducedMotion || !('IntersectionObserver' in window)) {
-      setIsFoldOpen(true);
-      return undefined;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsFoldOpen(entry.isIntersecting && entry.intersectionRatio >= 0.12);
-      },
-      {
-        threshold: [0, 0.12, 0.24],
-        rootMargin: '0px 0px -8% 0px',
-      },
-    );
-
-    observer.observe(footer);
-
-    return () => observer.disconnect();
-  }, []);
+  }
 
   return (
     <footer
       ref={footerRef}
-      className={`${styles.footer} ${isFoldOpen ? styles.footerFoldOpen : ''}`}
+      className={`${styles.footer} ${isExpanded ? styles.footerExpanded : ''}`}
     >
-      <div className={styles.topPageFold} aria-hidden="true" />
+      <div id={footerContentId} className={styles.collapseRegion} aria-hidden={!isExpanded}>
+        <div className={styles.collapseInner}>
+          <div className={styles.footerPanel}>
+            <div className={styles.shell}>
+              <div className={styles.topRow}>
+                <section className={styles.brandBlock} aria-label="Aim4price footer overview">
+                  <div className={styles.brandIdentity}>
+                    <span className={styles.brandName}>Aim4price</span>
+                  </div>
 
-      <div className={styles.footerPanel}>
-        <div className={styles.shell}>
-          <div className={styles.topRow}>
-            <section className={styles.brandBlock} aria-label="Aim4price footer overview">
-              <div className={styles.brandIdentity}>
-                <span className={styles.brandName}>Aim4price</span>
-              </div>
+                  <p className={styles.brandText}>
+                    Agricultural and industrial machinery pricing, asset register, and marketplace
+                    tools built for clearer decisions.
+                  </p>
 
-              <p className={styles.brandText}>
-                Agricultural and industrial machinery pricing, asset register, and marketplace tools
-                built for clearer decisions.
-              </p>
+                  <div className={styles.socialGroup} aria-label="Aim4price social channels">
+                    <span className={styles.socialLabel}>Social</span>
+                    <div className={styles.socialRow}>
+                      <span className={styles.socialIcon} aria-label="Facebook">
+                        <FacebookIcon />
+                      </span>
+                      <span className={styles.socialIcon} aria-label="LinkedIn">
+                        <LinkedInIcon />
+                      </span>
+                      <span className={styles.socialIcon} aria-label="Instagram">
+                        <InstagramIcon />
+                      </span>
+                    </div>
+                  </div>
+                </section>
 
-              <div className={styles.socialGroup} aria-label="Aim4price social channels">
-                <span className={styles.socialLabel}>Social</span>
-                <div className={styles.socialRow}>
-                  <span className={styles.socialIcon} aria-label="Facebook">
-                    <FacebookIcon />
-                  </span>
-                  <span className={styles.socialIcon} aria-label="LinkedIn">
-                    <LinkedInIcon />
-                  </span>
-                  <span className={styles.socialIcon} aria-label="Instagram">
-                    <InstagramIcon />
-                  </span>
+                <div className={styles.linksGrid}>
+                  <nav className={styles.linkColumn} aria-label="Explore footer links">
+                    <h3>Explore</h3>
+                    <Link href="/">Home</Link>
+                    <Link href="/valuation">Estimate</Link>
+                    <Link href="/asset-register">Asset Register</Link>
+                    <Link href="/marketplace">Marketplace</Link>
+                    <Link href="/account">Account</Link>
+                  </nav>
+
+                  <nav className={styles.linkColumn} aria-label="Company footer links">
+                    <h3>Company</h3>
+                    <Link href="/about-us">About Us</Link>
+                    <Link href="/contact-us">Contact Us</Link>
+                  </nav>
+
+                  <nav className={styles.linkColumn} aria-label="Legal footer links">
+                    <h3>Legal</h3>
+                    <Link href="/privacy-policy">Privacy Policy</Link>
+                    <Link href="/terms-of-service">Terms of Service</Link>
+                  </nav>
                 </div>
               </div>
-            </section>
-
-            <div className={styles.linksGrid}>
-              <nav className={styles.linkColumn} aria-label="Explore footer links">
-                <h3>Explore</h3>
-                <Link href="/">Home</Link>
-                <Link href="/valuation">Estimate</Link>
-                <Link href="/asset-register">Asset Register</Link>
-                <Link href="/marketplace">Marketplace</Link>
-                <Link href="/account">Account</Link>
-              </nav>
-
-              <nav className={styles.linkColumn} aria-label="Company footer links">
-                <h3>Company</h3>
-                <Link href="/about-us">About Us</Link>
-                <Link href="/contact-us">Contact Us</Link>
-              </nav>
-
-              <nav className={styles.linkColumn} aria-label="Legal footer links">
-                <h3>Legal</h3>
-                <Link href="/privacy-policy">Privacy Policy</Link>
-                <Link href="/terms-of-service">Terms of Service</Link>
-              </nav>
             </div>
           </div>
         </div>
       </div>
 
-      <div className={styles.bottomFold}>
-        <div className={styles.metaRow}>
-          <div className={styles.shell}>
-            <span>© {year} Aim4price</span>
-            <span className={styles.metaNote}>
-              Indicative estimates should be confirmed for formal insurance, finance, or
-              transactional use.
+      <div className={styles.metaRow}>
+        <div className={styles.metaShell}>
+          <span className={`${styles.metaItem} ${styles.metaCopyright}`}>© {year} Aim4price</span>
+
+          <button
+            type="button"
+            className={styles.footerToggle}
+            aria-label={toggleLabel}
+            aria-expanded={isExpanded}
+            aria-controls={footerContentId}
+            onClick={handleFooterToggle}
+          >
+            <span className={styles.toggleIcon}>
+              <ChevronIcon />
             </span>
-          </div>
+          </button>
+
+          <span className={`${styles.metaItem} ${styles.metaNote}`}>
+            Indicative estimates should be confirmed for formal insurance, finance, or
+            transactional use.
+          </span>
         </div>
       </div>
     </footer>
