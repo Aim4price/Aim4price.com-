@@ -1973,6 +1973,807 @@
 
 .deleteConfirmModal {
   position: relative;
+  width: min(100%, 620px);
+  display: grid;
+  gap: 1.3rem;
+  margin: auto;
+  padding: clamp(1.35rem, 2.8vw, 1.7rem);
+  border-radius: 1.9rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(160, 53, 53, 0.06), transparent 38%),
+    radial-gradient(circle at bottom right, rgba(22, 83, 64, 0.035), transparent 40%),
+    linear-gradient(180deg, #ffffff 0%, #fffafa 100%);
+  border: 1px solid rgba(238, 211, 211, 0.88);
+  box-shadow:
+    0 34px 90px rgba(30, 18, 18, 0.26),
+    0 12px 26px rgba(30, 18, 18, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.deleteConfirmModal::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0.28rem;
+  background: linear-gradient(90deg, #913232 0%, #d06a6a 50%, #f0c2b9 100%);
+}
+
+.deleteConfirmCloseButton {
+  position: absolute;
+  top: 1.15rem;
+  right: 1.15rem;
+  z-index: 2;
+  width: 2.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 999px;
+  color: #8a4f4f;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(238, 211, 211, 0.92);
+  box-shadow: 0 10px 24px rgba(73, 31, 31, 0.08);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.deleteConfirmCloseButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  color: var(--danger-text);
+  border-color: rgba(211, 154, 154, 0.95);
+  background: #fff7f7;
+}
+
+.deleteConfirmCloseButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.deleteConfirmHero {
+  display: grid;
+  grid-template-columns: 4.35rem minmax(0, 1fr);
+  align-items: start;
+  gap: 1.15rem;
+  padding: 0.55rem 3.4rem 0 0;
+}
+
+.deleteConfirmIcon {
+  width: 4.35rem;
+  height: 4.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.3rem;
+  color: #a03535;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.9), transparent 38%),
+    linear-gradient(180deg, #fff4f4 0%, #ffe6e6 100%);
+  border: 1px solid rgba(236, 190, 190, 0.92);
+  box-shadow:
+    0 14px 26px rgba(160, 53, 53, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.deleteConfirmIcon .buttonIcon {
+  width: 1.42rem;
+  height: 1.42rem;
+}
+
+.deleteConfirmHeroText {
+  min-width: 0;
+  display: grid;
+  gap: 0.45rem;
+  padding-top: 0.1rem;
+}
+
+.deleteConfirmEyebrow {
+  display: none;
+}
+
+.deleteConfirmHeroText h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(1.55rem, 2.35vw, 1.95rem);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+  max-width: 24rem;
+}
+
+.deleteConfirmHeroText p {
+  max-width: 28rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.62;
+}
+
+.deleteConfirmHeroText p strong {
+  color: var(--text);
+  font-weight: 850;
+}
+
+.deleteConfirmWarning {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1.1rem 1.15rem;
+  border-radius: 1.25rem;
+  color: #733232;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), transparent 38%),
+    linear-gradient(180deg, #fff8f2 0%, #fff2f2 100%);
+  border: 1px solid rgba(238, 211, 211, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.deleteConfirmWarning strong {
+  color: #8f2f2f;
+  font-size: 0.98rem;
+  line-height: 1.35;
+}
+
+.deleteConfirmWarning span {
+  color: #7f5d5d;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.deleteConfirmAsset {
+  display: grid;
+  gap: 0.42rem;
+  padding: 1.12rem 1.15rem;
+  border-radius: 1.28rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbfc 100%);
+  border: 1px solid rgba(222, 230, 238, 0.96);
+  box-shadow:
+    0 10px 22px rgba(16, 28, 45, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.deleteConfirmAsset span {
+  color: #7a8899;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.deleteConfirmAsset strong {
+  color: var(--text);
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.deleteConfirmAsset small {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.58;
+}
+
+.deleteConfirmActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 0.15rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(227, 233, 240, 0.85);
+}
+
+.deleteConfirmActions .secondaryButton,
+.deleteConfirmActions .deleteConfirmButton {
+  min-height: 3.25rem;
+  border-radius: 1rem;
+  padding-inline: 1.2rem;
+}
+
+.deleteConfirmActions .secondaryButton {
+  background: #f3f7fb;
+  border-color: rgba(216, 225, 240, 0.98);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.deleteConfirmButton {
+  min-width: 12.6rem;
+  background: linear-gradient(180deg, #c44747 0%, #8f2f2f 100%);
+  border-color: rgba(127, 38, 38, 0.28);
+  box-shadow:
+    0 14px 28px rgba(160, 53, 53, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.deleteConfirmButton:hover {
+  box-shadow:
+    0 18px 34px rgba(160, 53, 53, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+
+@media (max-width: 860px) {
+  .toolbar,
+  .projectionIntro,
+  .projectionInputRow,
+  .exportChoices,
+  .projectionStatsGrid,
+  .projectionSummaryCard,
+  .qrPanel,
+  .scanAccessPanel,
+  .qrModalBody,
+  .scanAccessFacts {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbarMeta {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .assetHeader {
+    flex-direction: column;
+  }
+
+  .assetHeaderAside,
+  .assetHeaderActions {
+    width: 100%;
+    justify-items: stretch;
+    justify-content: stretch;
+  }
+
+  .valueBlock {
+    text-align: left;
+    min-width: 0;
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .shell {
+    width: min(calc(100% - 1rem), 1320px);
+    padding: 1rem 0 2rem;
+  }
+
+  .registerPanel,
+  .modalCard,
+  .optionsModal,
+  .qrModal {
+    border-radius: 1.4rem;
+  }
+
+  .qrPreviewFrame {
+    min-height: 200px;
+  }
+
+  .registerHeader,
+  .headerActions,
+  .formActions,
+  .uploadRow,
+  .assetFooter,
+  .paginationBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .summaryRow,
+  .modalForm,
+  .infoGrid,
+  .optionsMeta,
+  .projectionIntro,
+  .projectionInputRow {
+    grid-template-columns: 1fr;
+  }
+
+  .headerActions > :is(a, button),
+  .formActions > button,
+  .emptyStateActions > :is(a, button),
+  .paginationActions,
+  .paginationButton,
+  .optionsButton,
+  .expandButton {
+    width: 100%;
+  }
+
+  .assetFooterStatus {
+    width: 100%;
+  }
+
+  .paginationActions {
+    justify-content: stretch;
+  }
+
+  .modalOverlay {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .registerPanel,
+  .modalCard,
+  .optionsModal,
+  .qrModal {
+    padding: 1rem;
+  }
+
+  .registerTitleBlock h1 {
+    font-size: 1.9rem;
+  }
+
+  .toolbarMetaTitle {
+    font-size: 0.9rem;
+  }
+
+  .valueBlock strong {
+    font-size: 1.24rem;
+  }
+
+  .modalHeader h3 {
+    font-size: 1.28rem;
+  }
+
+  .optionActionButton,
+  .primaryButton,
+  .secondaryButton,
+  .optionsButton,
+  .paginationButton,
+  .projectionPresetButton {
+    min-height: 2.85rem;
+  }
+
+  .paginationActions {
+    gap: 0.4rem;
+  }
+}
+
+
+@media (max-width: 640px) {
+  .previewNavButton {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
+
+  .previewThumbRow {
+    grid-auto-columns: 64px;
+  }
+}
+
+
+.previewPlaceholder {
+  min-height: 232px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.68rem;
+  padding: 1.35rem;
+  background: linear-gradient(180deg, rgba(249, 252, 253, 0.98) 0%, rgba(236, 242, 246, 0.98) 100%);
+  color: var(--text);
+}
+
+.previewPlaceholderBadges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.previewPlaceholderBadge {
+  min-height: 2.35rem;
+  padding: 0 1rem;
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
+}
+
+/* === Asset Register VAT display refinement === */
+.registerHeader {
+  margin-bottom: 1.35rem;
+}
+
+.registerTitleBlock {
+  padding-top: 0.15rem;
+}
+
+.registerValueTile {
+  min-height: 6.8rem;
+  align-content: start;
+  gap: 0.58rem;
+}
+
+.summaryTileTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.vatStatusPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.75rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(22, 83, 64, 0.16);
+  background: rgba(237, 246, 241, 0.96);
+  color: #165340;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.vatToggleGroup {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.2rem;
+  gap: 0.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(216, 225, 234, 0.95);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+.vatToggleButton {
+  cursor: pointer;
+  min-height: 2.1rem;
+  padding: 0 0.8rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: #657386;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.vatToggleButton:hover {
+  color: #17362c;
+  transform: translateY(-1px);
+}
+
+.vatToggleButtonActive {
+  color: #ffffff;
+  background: linear-gradient(180deg, #1a5a45 0%, #124233 100%);
+  border-color: rgba(18, 66, 51, 0.24);
+  box-shadow: 0 8px 16px rgba(18, 66, 51, 0.14);
+}
+
+@media (max-width: 760px) {
+  .summaryTileTopRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .vatToggleGroup {
+    width: 100%;
+  }
+
+  .vatToggleButton {
+    flex: 1 1 0;
+    padding: 0 0.45rem;
+  }
+}
+
+/* === Asset register final VAT tile polish === */
+.registerHeader {
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 1.05rem;
+}
+
+.headerActions {
+  margin-left: auto;
+}
+
+.registerValueTile {
+  min-height: 7.65rem;
+  padding: 1.1rem 1.15rem;
+  gap: 0.8rem;
+  align-content: stretch;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 34%),
+    linear-gradient(180deg, #f9fcfb 0%, #eef6f2 100%);
+  border-color: rgba(22, 83, 64, 0.13);
+  box-shadow:
+    0 14px 30px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.registerValueHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.registerValueHead > span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.015em;
+}
+
+.registerValueAmountRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.85rem;
+  margin-top: auto;
+}
+
+.registerValueAmountRow strong {
+  color: var(--text);
+  font-size: clamp(1.45rem, 2.1vw, 1.85rem);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+  white-space: nowrap;
+}
+
+.vatAmountNote {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0 0.78rem;
+  border-radius: 999px;
+  border: 1px solid rgba(22, 83, 64, 0.13);
+  background: rgba(255, 255, 255, 0.7);
+  color: #3e5d52;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.vatToggleGroup {
+  padding: 0.16rem;
+  gap: 0.16rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(22, 83, 64, 0.13);
+  box-shadow:
+    0 8px 18px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.vatToggleButton {
+  min-height: 2.08rem;
+  padding: 0 0.82rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 850;
+  color: #5d6f68;
+}
+
+.vatToggleButtonActive {
+  color: #ffffff;
+  background: linear-gradient(180deg, #1a5a45 0%, #113e31 100%);
+  border-color: rgba(17, 62, 49, 0.28);
+  box-shadow:
+    0 9px 18px rgba(18, 66, 51, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.valueBlock span {
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .registerHeader {
+    justify-content: stretch;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .headerActions .secondaryButton,
+  .headerActions .primaryButton {
+    flex: 1 1 260px;
+  }
+
+  .registerValueHead,
+  .registerValueAmountRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .vatToggleGroup {
+    width: 100%;
+  }
+
+  .vatToggleButton {
+    flex: 1 1 0;
+  }
+}
+
+/* === Asset options modal polish + guarded delete confirmation === */
+.modalCard,
+.optionsModal {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 83, 64, 0.46) rgba(239, 244, 247, 0.96);
+}
+
+.modalCard::-webkit-scrollbar,
+.optionsModal::-webkit-scrollbar {
+  width: 0.72rem;
+}
+
+.modalCard::-webkit-scrollbar-track,
+.optionsModal::-webkit-scrollbar-track {
+  margin: 1.15rem 0;
+  border-radius: 999px;
+  background: rgba(239, 244, 247, 0.96);
+}
+
+.modalCard::-webkit-scrollbar-thumb,
+.optionsModal::-webkit-scrollbar-thumb {
+  border: 0.2rem solid #ffffff;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(26, 90, 69, 0.62) 0%, rgba(18, 66, 51, 0.78) 100%);
+}
+
+.modalCard::-webkit-scrollbar-thumb:hover,
+.optionsModal::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(26, 90, 69, 0.78) 0%, rgba(18, 66, 51, 0.92) 100%);
+}
+
+.optionsModal {
+  width: min(100%, 900px);
+  max-height: min(90vh, calc(100dvh - 2.5rem));
+  padding: clamp(1rem, 2vw, 1.45rem);
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 32%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  border-color: rgba(218, 228, 236, 0.96);
+  box-shadow:
+    0 30px 80px rgba(16, 28, 45, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.optionsModalHeader {
+  align-items: center;
+  gap: 1.15rem;
+  margin-bottom: 1.05rem;
+  padding: 0.1rem 0.1rem 0;
+}
+
+.optionsModalHeader .modalHeaderText {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.optionsModalHeader h3 {
+  margin-top: 0;
+  font-size: clamp(1.36rem, 2.2vw, 1.72rem);
+  line-height: 1.05;
+}
+
+.optionsModalHeader p {
+  margin-top: 0;
+  max-width: 52rem;
+}
+
+.optionsContent {
+  display: grid;
+  gap: 1rem;
+}
+
+.optionsContent .optionsMeta {
+  gap: 0.85rem;
+  margin-bottom: 0;
+}
+
+.optionsContent .optionMetaTile {
+  min-height: 5rem;
+  display: grid;
+  align-content: center;
+  padding: 1rem 1.05rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 248, 250, 0.98) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.optionsContent .scanAccessPanel {
+  grid-template-columns: 224px minmax(0, 1fr);
+  gap: 1rem;
+  margin-bottom: 0;
+}
+
+.optionsContent .scanAccessPreview,
+.optionsContent .scanAccessSummary {
+  padding: 1.08rem;
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 38%),
+    linear-gradient(180deg, #fbfcfd 0%, #f1f6f7 100%);
+  border-color: rgba(221, 229, 237, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.optionsContent .scanAccessQrFrame {
+  min-height: 204px;
+  border-radius: 1.15rem;
+}
+
+.assetOptionsGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.assetOptionsGrid .optionActionButton {
+  min-height: 4.35rem;
+  padding: 0.95rem 1rem;
+  justify-content: flex-start;
+  border-radius: 1.15rem;
+  color: #29456b;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f3f7fb 100%);
+  border-color: rgba(216, 225, 240, 0.98);
+  box-shadow:
+    0 10px 22px rgba(16, 28, 45, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.assetOptionsGrid .optionActionButton:hover {
+  border-color: rgba(177, 194, 218, 0.95);
+  box-shadow:
+    0 16px 28px rgba(16, 28, 45, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.assetOptionsGrid .optionActionButton .buttonIcon {
+  width: 1.12rem;
+  height: 1.12rem;
+}
+
+.assetOptionsGrid .optionDangerButton {
+  color: var(--danger-text);
+  background:
+    linear-gradient(180deg, #fffafa 0%, #fff0f0 100%);
+  border-color: rgba(238, 211, 211, 0.96);
+}
+
+.assetOptionsGrid .optionDangerButton:hover {
+  border-color: rgba(211, 154, 154, 0.95);
+  box-shadow:
+    0 16px 28px rgba(160, 53, 53, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+
+.confirmDeleteOverlay {
+  z-index: 190;
+}
+
+.confirmDeleteOverlay .modalBackdrop {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.18), transparent 32%),
+    rgba(12, 21, 32, 0.48);
+  backdrop-filter: blur(14px) saturate(1.08);
+}
+
+.deleteConfirmModal {
+  position: relative;
   width: min(100%, 560px);
   display: grid;
   gap: 0.95rem;
@@ -2216,31 +3017,37 @@
 
 @media (max-width: 560px) {
   .deleteConfirmModal {
-    gap: 0.82rem;
-    padding: 0.9rem;
+    gap: 1rem;
+    padding: 1rem;
     border-radius: 1.45rem;
   }
 
   .deleteConfirmCloseButton {
-    top: 0.82rem;
-    right: 0.82rem;
+    top: 0.85rem;
+    right: 0.85rem;
   }
 
   .deleteConfirmHero {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
-    padding: 0.85rem 3rem 0.9rem 0.85rem;
+    gap: 0.85rem;
+    padding: 0.2rem 2.9rem 0 0;
   }
 
   .deleteConfirmIcon {
-    width: 3.35rem;
-    height: 3.35rem;
+    width: 3.5rem;
+    height: 3.5rem;
     border-radius: 1rem;
+  }
+
+  .deleteConfirmHeroText h3 {
+    font-size: 1.42rem;
+    max-width: none;
   }
 
   .deleteConfirmActions {
     flex-direction: column-reverse;
     align-items: stretch;
+    padding-top: 0.9rem;
   }
 
   .deleteConfirmActions > button,
