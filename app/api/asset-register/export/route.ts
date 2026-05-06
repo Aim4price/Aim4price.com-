@@ -52,14 +52,11 @@ function methodLabel(value: AssetRegisterItem['selectedMethod']): string {
 }
 
 function kindLabel(asset: AssetRegisterItem): string {
-  if (asset.kind === 'tractor' || Boolean(asset.brandName && asset.modelName && asset.yearModel)) {
-    return 'Equipment';
-  }
-
-  if (asset.kind === 'property') {
-    return 'Property';
-  }
-
+  if (asset.kind === 'tractor') return 'Tractor';
+  if (asset.kind === 'equipment' || Boolean(asset.brandName && asset.modelName && asset.yearModel)) return 'Equipment';
+  if (asset.kind === 'property') return 'Property';
+  if (asset.kind === 'vehicle') return 'Vehicle';
+  if (asset.kind === 'tools') return 'Tools';
   return 'Manual asset';
 }
 
