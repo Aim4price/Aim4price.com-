@@ -868,6 +868,7 @@ export default function AssetRegisterClient() {
   const [detailPhotoIndexByAsset, setDetailPhotoIndexByAsset] = useState<Record<string, number>>({});
   const detailTouchStartXRef = useRef<number | null>(null);
   const [busyDeleteId, setBusyDeleteId] = useState<string | null>(null);
+  const [deleteCandidateAsset, setDeleteCandidateAsset] = useState<RegisterAsset | null>(null);
   const [marketplaceAsset, setMarketplaceAsset] = useState<RegisterAsset | null>(null);
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
@@ -995,7 +996,14 @@ export default function AssetRegisterClient() {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  const anyModalOpen = isAssetModalOpen || Boolean(activeAsset) || isQrModalOpen || isExportModalOpen || Boolean(projectionAsset) || Boolean(marketplaceAsset);
+  const anyModalOpen =
+    isAssetModalOpen ||
+    Boolean(activeAsset) ||
+    Boolean(deleteCandidateAsset) ||
+    isQrModalOpen ||
+    isExportModalOpen ||
+    Boolean(projectionAsset) ||
+    Boolean(marketplaceAsset);
 
   useEffect(() => {
     if (!anyModalOpen) {
@@ -1007,6 +1015,11 @@ export default function AssetRegisterClient() {
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
+
+      if (deleteCandidateAsset) {
+        closeDeleteConfirmDialog();
+        return;
+      }
 
       if (isQrModalOpen) {
         closeQrDialog();
@@ -1044,7 +1057,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, isAssetModalOpen, isExportModalOpen, isQrModalOpen, marketplaceAsset, projectionAsset]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAssetModalOpen, isExportModalOpen, isQrModalOpen, marketplaceAsset, projectionAsset]);
 
   const totalValue = useMemo(() => {
     return assets.reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
@@ -1128,7 +1141,17 @@ export default function AssetRegisterClient() {
 
   function closeActionDialog() {
     setIsQrModalOpen(false);
+    setDeleteCandidateAsset(null);
     setActiveAsset(null);
+  }
+
+  function openDeleteConfirmDialog(asset: RegisterAsset) {
+    setDeleteCandidateAsset(asset);
+  }
+
+  function closeDeleteConfirmDialog() {
+    if (busyDeleteId) return;
+    setDeleteCandidateAsset(null);
   }
 
   function openQrDialog() {
@@ -1337,7 +1360,7 @@ export default function AssetRegisterClient() {
     }
   }
 
-  async function handleDeleteAsset(assetId: string) {
+  async function handleDeleteAsset(assetId: string): Promise<boolean> {
     setBusyDeleteId(assetId);
 
     try {
@@ -1367,19 +1390,31 @@ export default function AssetRegisterClient() {
       }
 
       setNotice({ tone: 'success', message: 'Asset removed.' });
+      return true;
     } catch (error) {
       setNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'Failed to delete asset.',
       });
+      return false;
     } finally {
       setBusyDeleteId(null);
     }
   }
 
   function handleDeleteFromDialog(asset: RegisterAsset) {
-    closeActionDialog();
-    void handleDeleteAsset(asset.id);
+    openDeleteConfirmDialog(asset);
+  }
+
+  async function handleConfirmDeleteAsset() {
+    if (!deleteCandidateAsset) return;
+
+    const deletedAssetId = deleteCandidateAsset.id;
+    const wasDeleted = await handleDeleteAsset(deletedAssetId);
+
+    if (wasDeleted) {
+      setDeleteCandidateAsset((current) => (current?.id === deletedAssetId ? null : current));
+    }
   }
 
   async function handleConfirmMarketplacePublish(event: FormEvent<HTMLFormElement>) {
@@ -2427,7 +2462,7 @@ export default function AssetRegisterClient() {
           <div className={styles.modalBackdrop} onClick={closeActionDialog} />
 
           <div className={styles.optionsModal} role="dialog" aria-modal="true" aria-labelledby="asset-options-title">
-            <div className={styles.modalHeader}>
+            <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <span className={styles.modalEyebrow}>Asset options</span>
                 <h3 id="asset-options-title">{activeAsset.title}</h3>
@@ -2444,102 +2479,152 @@ export default function AssetRegisterClient() {
               </button>
             </div>
 
-            <div className={styles.optionsMeta}>
-              <div className={styles.optionMetaTile}>
-                <span>Value</span>
-                <strong>{money(activeAsset.value)}</strong>
-              </div>
+            <div className={styles.optionsContent}>
+              <div className={styles.optionsMeta}>
+                <div className={styles.optionMetaTile}>
+                  <span>Value</span>
+                  <strong>{money(activeAsset.value)}</strong>
+                </div>
 
-              <div className={styles.optionMetaTile}>
-                <span>Status</span>
-                <strong>{assetStatusDateLabel(activeAsset)}</strong>
-              </div>
+                <div className={styles.optionMetaTile}>
+                  <span>Status</span>
+                  <strong>{assetStatusDateLabel(activeAsset)}</strong>
+                </div>
 
-              <div className={styles.optionMetaTile}>
-                <span>Plate label</span>
-                <strong>{activeAsset.plateLabel || 'Pending'}</strong>
-              </div>
+                <div className={styles.optionMetaTile}>
+                  <span>Plate label</span>
+                  <strong>{activeAsset.plateLabel || 'Pending'}</strong>
+                </div>
 
-              <div className={styles.optionMetaTile}>
-                <span>Scan status</span>
-                <strong>{formatQrStatus(activeAsset.qrStatus)}</strong>
-              </div>
-            </div>
-
-            <div className={styles.scanAccessPanel}>
-              <div className={styles.scanAccessPreview}>
-                <span className={styles.qrPreviewEyebrow}>QR code</span>
-                <div className={styles.scanAccessQrFrame}>
-                  {activeAsset.publicAssetCode ? (
-                    <img src={buildAssetQrSvgUrl(activeAsset)} alt={`QR code for ${activeAsset.title}`} />
-                  ) : (
-                    <p className={styles.qrPreviewFallback}>QR artwork is not ready for this asset yet.</p>
-                  )}
+                <div className={styles.optionMetaTile}>
+                  <span>Scan status</span>
+                  <strong>{formatQrStatus(activeAsset.qrStatus)}</strong>
                 </div>
               </div>
 
-              <div className={styles.scanAccessSummary}>
-                <span className={styles.qrPreviewEyebrow}>Scan access</span>
-                <h4>Permanent scanner access</h4>
-                <p>
-                  Keep the fixed QR linked to this asset. Open the QR code modal for the scan link, SVG download and print-ready label.
-                  Public QR scans always ask for the farm PIN.
-                </p>
-
-                <div className={styles.scanAccessFacts}>
-                  <div className={styles.scanFact}>
-                    <span>Plate label</span>
-                    <strong>{activeAsset.plateLabel || 'Pending'}</strong>
+              <div className={styles.scanAccessPanel}>
+                <div className={styles.scanAccessPreview}>
+                  <span className={styles.qrPreviewEyebrow}>QR code</span>
+                  <div className={styles.scanAccessQrFrame}>
+                    {activeAsset.publicAssetCode ? (
+                      <img src={buildAssetQrSvgUrl(activeAsset)} alt={`QR code for ${activeAsset.title}`} />
+                    ) : (
+                      <p className={styles.qrPreviewFallback}>QR artwork is not ready for this asset yet.</p>
+                    )}
                   </div>
-                  <div className={styles.scanFact}>
-                    <span>Scan status</span>
-                    <strong>{formatQrStatus(activeAsset.qrStatus)}</strong>
+                </div>
+
+                <div className={styles.scanAccessSummary}>
+                  <span className={styles.qrPreviewEyebrow}>Scan access</span>
+                  <h4>Permanent scanner access</h4>
+                  <p>
+                    Keep the fixed QR linked to this asset. Open the QR code modal for the scan link, SVG download and print-ready label.
+                    Public QR scans always ask for the farm PIN.
+                  </p>
+
+                  <div className={styles.scanAccessFacts}>
+                    <div className={styles.scanFact}>
+                      <span>Plate label</span>
+                      <strong>{activeAsset.plateLabel || 'Pending'}</strong>
+                    </div>
+
+                    <div className={styles.scanFact}>
+                      <span>Scan status</span>
+                      <strong>{formatQrStatus(activeAsset.qrStatus)}</strong>
+                    </div>
                   </div>
                 </div>
               </div>
+
+              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid}`}>
+                <button type="button" className={styles.optionActionButton} onClick={openQrDialog}>
+                  <QrIcon className={styles.buttonIcon} />
+                  <span>QR code</span>
+                </button>
+
+                <button type="button" className={styles.optionActionButton} onClick={() => { closeActionDialog(); openUpdater(activeAsset); }}>
+                  <EditIcon className={styles.buttonIcon} />
+                  <span>Update asset</span>
+                </button>
+
+                {canProjectFuturePrice(activeAsset) ? (
+                  <button type="button" className={styles.optionActionButton} onClick={() => openProjectionModal(activeAsset)}>
+                    <TrendIcon className={styles.buttonIcon} />
+                    <span>Calculate future price</span>
+                  </button>
+                ) : null}
+
+                <button type="button" className={styles.optionActionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
+                  <DownloadIcon className={styles.buttonIcon} />
+                  <span>Download asset PDF</span>
+                </button>
+
+                {isMarketplaceEligible(activeAsset) ? (
+                  <button type="button" className={styles.optionActionButton} onClick={() => handlePublishFromDialog(activeAsset)}>
+                    <StoreIcon className={styles.buttonIcon} />
+                    <span>{isLiveOnMarketplace(activeAsset) ? 'Update marketplace' : 'Send to marketplace'}</span>
+                  </button>
+                ) : null}
+
+                <button
+                  type="button"
+                  className={`${styles.optionActionButton} ${styles.optionDangerButton}`}
+                  disabled={busyDeleteId === activeAsset.id}
+                  onClick={() => handleDeleteFromDialog(activeAsset)}
+                >
+                  <TrashIcon className={styles.buttonIcon} />
+                  <span>{busyDeleteId === activeAsset.id ? 'Removing...' : 'Delete asset'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {deleteCandidateAsset ? (
+        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={closeDeleteConfirmDialog} />
+
+          <div
+            className={styles.deleteConfirmModal}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-confirm-title"
+            aria-describedby="delete-confirm-copy"
+          >
+            <div className={styles.deleteConfirmIcon}>
+              <TrashIcon className={styles.buttonIcon} />
             </div>
 
-            <div className={styles.optionsGrid}>
-              <button type="button" className={styles.optionActionButton} onClick={openQrDialog}>
-                <QrIcon className={styles.buttonIcon} />
-                <span>QR code</span>
-              </button>
+            <div className={styles.deleteConfirmContent}>
+              <span className={styles.modalEyebrow}>Delete asset</span>
+              <h3 id="delete-confirm-title">Are you sure you want to delete this?</h3>
+              <p id="delete-confirm-copy">
+                All data will be lost. This permanently removes <strong>{deleteCandidateAsset.title}</strong> from your Asset Register,
+                including saved notes, photos, marketplace status and QR scan history.
+              </p>
 
-              <button type="button" className={styles.optionActionButton} onClick={() => { closeActionDialog(); openUpdater(activeAsset); }}>
-                <EditIcon className={styles.buttonIcon} />
-                <span>Update asset</span>
-              </button>
+              <div className={styles.deleteConfirmAsset}>
+                <span>Selected asset</span>
+                <strong>{deleteCandidateAsset.title}</strong>
+                <small>{buildAssetMeta(deleteCandidateAsset)} · {money(deleteCandidateAsset.value)}</small>
+              </div>
 
-              {canProjectFuturePrice(activeAsset) ? (
-                <button type="button" className={styles.optionActionButton} onClick={() => openProjectionModal(activeAsset)}>
-                  <TrendIcon className={styles.buttonIcon} />
-                  <span>Calculate future price</span>
+              <div className={styles.deleteConfirmActions}>
+                <button type="button" className={styles.secondaryButton} onClick={closeDeleteConfirmDialog} disabled={busyDeleteId === deleteCandidateAsset.id}>
+                  Cancel
                 </button>
-              ) : null}
 
-              <button type="button" className={styles.optionActionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
-                <DownloadIcon className={styles.buttonIcon} />
-                <span>Download asset PDF</span>
-              </button>
-
-              {isMarketplaceEligible(activeAsset) ? (
-                <button type="button" className={styles.optionActionButton} onClick={() => handlePublishFromDialog(activeAsset)}>
-                  <StoreIcon className={styles.buttonIcon} />
-                  <span>
-                    {isLiveOnMarketplace(activeAsset) ? 'Update marketplace' : 'Send to marketplace'}
-                  </span>
+                <button
+                  type="button"
+                  className={`${styles.primaryButton} ${styles.deleteConfirmButton}`}
+                  onClick={() => void handleConfirmDeleteAsset()}
+                  disabled={busyDeleteId === deleteCandidateAsset.id}
+                >
+                  <TrashIcon className={styles.buttonIcon} />
+                  <span>{busyDeleteId === deleteCandidateAsset.id ? 'Deleting...' : 'Yes, delete asset'}</span>
                 </button>
-              ) : null}
-
-              <button
-                type="button"
-                className={`${styles.optionActionButton} ${styles.optionDangerButton}`}
-                disabled={busyDeleteId === activeAsset.id}
-                onClick={() => handleDeleteFromDialog(activeAsset)}
-              >
-                <TrashIcon className={styles.buttonIcon} />
-                <span>{busyDeleteId === activeAsset.id ? 'Removing...' : 'Delete asset'}</span>
-              </button>
+              </div>
             </div>
           </div>
         </div>
