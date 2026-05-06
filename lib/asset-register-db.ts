@@ -15,7 +15,12 @@ export type AssetRegisterItem = {
   valuationRunId: number | null;
   sectorId: number | null;
   equipmentFamilyId: number | null;
+  equipmentFamilyKey: string;
+  equipmentFamilyLabel: string;
   equipmentModelId: number | null;
+  typedModelName: string;
+  normalizedTypedModelName: string;
+  specsJson: Record<string, unknown>;
   kind: AssetRegisterItemKind;
   title: string;
   value: number;
@@ -85,7 +90,12 @@ type AssetRegisterRow = {
   valuation_run_id: string | number | null;
   sector_id: string | number | null;
   equipment_family_id: string | number | null;
+  equipment_family_key: string | null;
+  equipment_family_label: string | null;
   equipment_model_id: string | number | null;
+  typed_model_name: string | null;
+  normalized_typed_model_name: string | null;
+  specs_json: unknown;
   kind: string | null;
   title: string | null;
   value: string | number | null;
@@ -144,6 +154,10 @@ type SqlField = {
 let assetRegisterSchemaPromises = new Map<string, Promise<TableSchema>>();
 
 type GenericDbRow = Record<string, unknown>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -300,7 +314,12 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     valuationRunId: asNumber(row.valuation_run_id),
     sectorId: asNumber(row.sector_id),
     equipmentFamilyId: asNumber(row.equipment_family_id),
+    equipmentFamilyKey: asText(row.equipment_family_key),
+    equipmentFamilyLabel: asText(row.equipment_family_label),
     equipmentModelId: asNumber(row.equipment_model_id),
+    typedModelName: asText(row.typed_model_name),
+    normalizedTypedModelName: asText(row.normalized_typed_model_name),
+    specsJson: isRecord(row.specs_json) ? row.specs_json : {},
     kind: normalizeKind(row.kind),
     title: asText(row.title),
     value: Math.round(asNumber(row.value) ?? selectedValueExVat),
@@ -413,6 +432,9 @@ function buildSelectList(schema: TableSchema): string {
   const sectorIdColumn = resolveColumn(schema, 'sector_id');
   const equipmentFamilyIdColumn = resolveColumn(schema, 'equipment_family_id');
   const equipmentModelIdColumn = resolveColumn(schema, 'equipment_model_id');
+  const typedModelNameColumn = resolveColumn(schema, 'typed_model_name');
+  const normalizedTypedModelNameColumn = resolveColumn(schema, 'normalized_typed_model_name');
+  const specsJsonColumn = resolveColumn(schema, 'specs_json');
   const kindColumn = resolveColumn(schema, 'kind', 'equipment_type', 'asset_type', 'item_type');
   const titleColumn = resolveColumn(schema, 'title', 'name', 'asset_name');
   const valueColumn = resolveColumn(
@@ -459,14 +481,32 @@ function buildSelectList(schema: TableSchema): string {
   const fuelPercentColumn = resolveColumn(schema, 'fuel_percent');
   const createdAtColumn = resolveColumn(schema, 'created_at', 'createdon', 'created');
   const updatedAtColumn = resolveColumn(schema, 'updated_at', 'modified_at', 'updatedon', 'created_at');
+  const valuationRunIdExpression = valuationRunIdColumn ?? 'null::bigint';
+  const equipmentFamilyIdExpression = equipmentFamilyIdColumn
+    ? `coalesce(${equipmentFamilyIdColumn}, (select vr.equipment_family_id from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1))`
+    : `(select vr.equipment_family_id from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1)`;
+  const typedModelNameExpression = typedModelNameColumn
+    ? `coalesce(${typedModelNameColumn}, (select vr.typed_model_name from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1))`
+    : `(select vr.typed_model_name from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1)`;
+  const normalizedTypedModelNameExpression = normalizedTypedModelNameColumn
+    ? `coalesce(${normalizedTypedModelNameColumn}, (select vr.normalized_typed_model_name from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1))`
+    : `(select vr.normalized_typed_model_name from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1)`;
+  const specsJsonExpression = specsJsonColumn
+    ? `coalesce(${specsJsonColumn}, (select vr.specs_json from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1), '{}'::jsonb)`
+    : `coalesce((select vr.specs_json from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1), '{}'::jsonb)`;
 
   const selectParts = [
     'id',
     userIdColumn ? `${userIdColumn} as user_id` : `''::text as user_id`,
     valuationRunIdColumn ? `${valuationRunIdColumn} as valuation_run_id` : 'null::bigint as valuation_run_id',
     sectorIdColumn ? `${sectorIdColumn} as sector_id` : 'null::bigint as sector_id',
-    equipmentFamilyIdColumn ? `${equipmentFamilyIdColumn} as equipment_family_id` : 'null::bigint as equipment_family_id',
+    `${equipmentFamilyIdExpression} as equipment_family_id`,
+    `(select ef.family_key from public.equipment_families ef where ef.id = ${equipmentFamilyIdExpression} limit 1) as equipment_family_key`,
+    `(select ef.family_label from public.equipment_families ef where ef.id = ${equipmentFamilyIdExpression} limit 1) as equipment_family_label`,
     equipmentModelIdColumn ? `${equipmentModelIdColumn} as equipment_model_id` : 'null::bigint as equipment_model_id',
+    `${typedModelNameExpression} as typed_model_name`,
+    `${normalizedTypedModelNameExpression} as normalized_typed_model_name`,
+    `${specsJsonExpression} as specs_json`,
     kindColumn ? `${kindColumn} as kind` : `'manual'::text as kind`,
     titleColumn ? `${titleColumn} as title` : `''::text as title`,
     valueColumn ? `${valueColumn} as value` : '0::numeric as value',
@@ -1134,6 +1174,9 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
 
   pushField(fields, schema, ['user_id'], input.userId);
   pushField(fields, schema, ['valuation_run_id', 'run_id'], input.valuationRunId);
+  pushField(fields, schema, ['sector_id'], valuationResult.sector.id);
+  pushField(fields, schema, ['equipment_family_id'], valuationResult.family.id);
+  pushField(fields, schema, ['equipment_model_id'], null);
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], 'equipment');
   pushField(fields, schema, ['title', 'name', 'asset_name'], title);
   pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], selectedValueExVat);
@@ -1142,6 +1185,9 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['source_type', 'source', 'origin', 'entry_source'], 'valuation');
   pushField(fields, schema, ['brand_name', 'brand'], valuationResult.brand.name);
   pushField(fields, schema, ['model_name', 'model'], valuationResult.typedModelName || 'Specs-based valuation');
+  pushField(fields, schema, ['typed_model_name'], valuationResult.typedModelName || null);
+  pushField(fields, schema, ['normalized_typed_model_name'], valuationResult.normalizedTypedModelName || null);
+  pushField(fields, schema, ['specs_json'], valuationResult.specsJson ?? {}, '::jsonb');
   pushField(fields, schema, ['year_model', 'year'], valuationResult.year);
   pushField(fields, schema, ['hours', 'engine_hours'], valuationResult.usageAmount ?? null);
   pushField(fields, schema, ['condition'], valuationResult.condition);
