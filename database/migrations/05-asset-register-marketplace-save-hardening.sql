@@ -155,7 +155,7 @@ ALTER TABLE IF EXISTS public.asset_register_items DROP CONSTRAINT IF EXISTS asse
 
 ALTER TABLE public.asset_register_items
   ADD CONSTRAINT asset_register_items_kind_check
-    CHECK (kind IN ('tractor', 'equipment', 'manual', 'property')),
+    CHECK (kind IN ('tractor', 'equipment', 'manual', 'property', 'vehicle', 'tools')),
   ADD CONSTRAINT asset_register_items_cab_type_check
     CHECK (cab_type IS NULL OR cab_type IN ('cab', 'open-station')),
   ADD CONSTRAINT asset_register_items_drive_type_check
