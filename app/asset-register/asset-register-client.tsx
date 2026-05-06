@@ -790,22 +790,12 @@ function buildAssetMeta(asset: RegisterAsset): string {
   const parts = [
     asset.yearModel ? `Year Model: ${asset.yearModel}` : '',
     asset.hours !== null && typeof asset.hours !== 'undefined'
-      ? `Hours: ${asset.hours.toLocaleString('en-ZA')}`
+      ? `Usage: ${asset.hours.toLocaleString('en-ZA')} hours`
       : '',
     asset.condition ? `Condition: ${conditionLabel(asset.condition)}` : '',
   ].filter(Boolean);
 
-  const basicSpecs = buildBasicSpecParts(asset);
-
-  if (basicSpecs.length) {
-    parts.push(`Basic specs: ${basicSpecs.join(' • ')}`);
-  }
-
-  if (parts.length) {
-    return parts.join(' • ');
-  }
-
-  return [asset.brandName, asset.typedModelName || asset.modelName].filter(Boolean).join(' • ') || kindLabel(asset.kind);
+  return parts.join(' • ') || 'No key details saved yet';
 }
 
 function buildSearchableText(asset: RegisterAsset): string {
@@ -2122,10 +2112,11 @@ export default function AssetRegisterClient() {
                       <article className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''}`} key={asset.id}>
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
-                            <div className={styles.badgeRow}>
-                              <span className={`${styles.badge} ${styles.badgeNeutral}`}>{assetFamilyLabel(asset)}</span>
-                              {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
-                            </div>
+                            {isLive ? (
+                              <div className={styles.badgeRow}>
+                                <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span>
+                              </div>
+                            ) : null}
                             <h2>{asset.title}</h2>
                             <p>{buildAssetMeta(asset)}</p>
                             <div className={styles.assetMetaRow}>

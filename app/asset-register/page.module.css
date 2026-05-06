@@ -394,6 +394,10 @@
   letter-spacing: -0.03em;
 }
 
+.assetTitleBlock .badgeRow + h2 {
+  margin-top: 0.1rem;
+}
+
 .assetTitleBlock p {
   margin: 0.45rem 0 0;
   color: #5f6c78;
@@ -1561,10 +1565,15 @@
 }
 
 .previewPlaceholderBadge {
-  min-height: 2.35rem;
-  padding: 0 1rem;
-  font-size: 0.84rem;
-  letter-spacing: 0.08em;
+  min-height: 3.1rem;
+  max-width: 12rem;
+  justify-content: center;
+  padding: 0.55rem 1.2rem;
+  font-size: 0.82rem;
+  line-height: 1.25;
+  letter-spacing: 0.07em;
+  text-align: center;
+  white-space: normal;
 }
 
 /* === Asset Register VAT display refinement === */
