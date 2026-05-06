@@ -2928,7 +2928,7 @@ export default function AssetRegisterClient() {
           <div className={styles.modalBackdrop} onClick={closeProjectionModal} />
 
           <div className={`${styles.modalCard} ${styles.projectionModal}`} role="dialog" aria-modal="true" aria-labelledby="projection-title">
-            <div className={styles.modalHeader}>
+            <div className={`${styles.modalHeader} ${styles.projectionModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <span className={styles.modalEyebrow}>Calculate future price</span>
                 <h3 id="projection-title">{projectionAsset.title}</h3>
@@ -2940,7 +2940,8 @@ export default function AssetRegisterClient() {
               </button>
             </div>
 
-            <div className={styles.modalBody}>
+            <div className={styles.projectionScrollBody}>
+              <div className={styles.modalBody}>
               <div className={styles.projectionIntro}>
                 <div>
                   <span>Current register value</span>
@@ -3083,6 +3084,7 @@ export default function AssetRegisterClient() {
               ) : isLoadingProjection ? (
                 <div className={styles.projectionLoading}>Calculating future price...</div>
               ) : null}
+              </div>
             </div>
           </div>
         </div>
