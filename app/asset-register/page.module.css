@@ -1835,10 +1835,26 @@
   background: linear-gradient(180deg, rgba(26, 90, 69, 0.78) 0%, rgba(18, 66, 51, 0.92) 100%);
 }
 
+.optionsModal::-webkit-scrollbar {
+  width: 0.86rem;
+}
+
+.optionsModal::-webkit-scrollbar-track {
+  border-left: 0.18rem solid transparent;
+  border-right: 0.18rem solid transparent;
+  background-clip: padding-box;
+}
+
+.optionsModal::-webkit-scrollbar-thumb {
+  border: 0.18rem solid transparent;
+  background-clip: padding-box;
+}
+
 .optionsModal {
   width: min(100%, 900px);
   max-height: min(90vh, calc(100dvh - 2.5rem));
   padding: clamp(1rem, 2vw, 1.45rem);
+  padding-right: calc(clamp(1rem, 2vw, 1.45rem) + 0.28rem);
   border-radius: 2rem;
   background:
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 32%),
@@ -2636,10 +2652,26 @@
   background: linear-gradient(180deg, rgba(26, 90, 69, 0.78) 0%, rgba(18, 66, 51, 0.92) 100%);
 }
 
+.optionsModal::-webkit-scrollbar {
+  width: 0.86rem;
+}
+
+.optionsModal::-webkit-scrollbar-track {
+  border-left: 0.18rem solid transparent;
+  border-right: 0.18rem solid transparent;
+  background-clip: padding-box;
+}
+
+.optionsModal::-webkit-scrollbar-thumb {
+  border: 0.18rem solid transparent;
+  background-clip: padding-box;
+}
+
 .optionsModal {
   width: min(100%, 900px);
   max-height: min(90vh, calc(100dvh - 2.5rem));
   padding: clamp(1rem, 2vw, 1.45rem);
+  padding-right: calc(clamp(1rem, 2vw, 1.45rem) + 0.28rem);
   border-radius: 2rem;
   background:
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 32%),
