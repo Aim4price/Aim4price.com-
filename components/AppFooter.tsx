@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRef, useState } from 'react';
 import styles from './AppFooter.module.css';
 
-const year = new Date().getFullYear();
 const footerContentId = 'aim4price-footer-content';
 
 function FacebookIcon() {
@@ -51,7 +50,7 @@ export default function AppFooter() {
     if (nextExpanded) {
       window.setTimeout(() => {
         footerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }, 120);
+      }, 140);
     }
   }
 
@@ -121,26 +120,18 @@ export default function AppFooter() {
       </div>
 
       <div className={styles.footerDock}>
-        <div className={styles.dockShell}>
-          <span className={`${styles.metaItem} ${styles.metaCopyright}`}>© {year} Aim4price</span>
-
-          <button
-            type="button"
-            className={styles.footerToggle}
-            aria-label={isExpanded ? 'Collapse footer' : 'Open footer'}
-            aria-expanded={isExpanded}
-            aria-controls={footerContentId}
-            onClick={handleFooterToggle}
-          >
-            <span className={styles.toggleIcon}>
-              <ChevronIcon />
-            </span>
-          </button>
-
-          <span className={`${styles.metaItem} ${styles.metaNote}`}>
-            Indicative estimates should be confirmed for formal insurance, finance, or transactional use.
+        <button
+          type="button"
+          className={styles.footerToggle}
+          aria-label={isExpanded ? 'Collapse footer' : 'Open footer'}
+          aria-expanded={isExpanded}
+          aria-controls={footerContentId}
+          onClick={handleFooterToggle}
+        >
+          <span className={styles.toggleIcon}>
+            <ChevronIcon />
           </span>
-        </div>
+        </button>
       </div>
     </footer>
   );
