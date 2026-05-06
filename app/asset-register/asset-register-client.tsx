@@ -11,7 +11,7 @@ import {
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
-type AssetKind = 'tractor' | 'equipment' | 'manual' | 'property';
+type AssetKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools';
 type AssetMethod = 'aim4price' | 'market' | 'manual';
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
@@ -178,6 +178,38 @@ type IconProps = {
 const MAX_PHOTOS = 12;
 const PAGE_SIZE = 6;
 const FALLBACK_ASSET_IMAGE = '/brand/Tractor.png';
+const MANUAL_ASSET_TYPE_OPTIONS: Array<{
+  value: Extract<AssetKind, 'vehicle' | 'tools' | 'property' | 'equipment'>;
+  label: string;
+  description: string;
+  titlePlaceholder: string;
+}> = [
+  {
+    value: 'vehicle',
+    label: 'Vehicle',
+    description: 'Bakkies, trucks, trailers and other road or farm vehicles.',
+    titlePlaceholder: 'Example: Toyota Hilux farm bakkie',
+  },
+  {
+    value: 'tools',
+    label: 'Tools',
+    description: 'Smaller tools, workshop items and handheld equipment.',
+    titlePlaceholder: 'Example: Workshop tool set',
+  },
+  {
+    value: 'property',
+    label: 'Property',
+    description: 'Buildings, sheds, houses, stores and fixed improvements.',
+    titlePlaceholder: 'Example: Main workshop building',
+  },
+  {
+    value: 'equipment',
+    label: 'Equipment',
+    description: 'General machines and larger equipment not added through valuation.',
+    titlePlaceholder: 'Example: Water pump trailer',
+  },
+];
+
 const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = [
   { value: '', label: 'Select condition' },
   { value: 'excellent', label: 'Excellent' },
@@ -188,7 +220,7 @@ const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = 
 ];
 
 const initialAssetDraft: AssetDraft = {
-  kind: 'manual',
+  kind: 'equipment',
   title: '',
   value: '',
   note: '',
@@ -486,11 +518,23 @@ function kindLabel(value: AssetKind): string {
   return (
     {
       tractor: 'Tractor',
-      equipment: 'Valued equipment',
+      equipment: 'Equipment',
       manual: 'Manual asset',
       property: 'Property',
+      vehicle: 'Vehicle',
+      tools: 'Tools',
     }[value] ?? 'Manual asset'
   );
+}
+
+function normalizeDraftKind(value: AssetKind): AssetKind {
+  return value === 'manual' ? 'equipment' : value;
+}
+
+
+function getManualAssetOption(kind: AssetKind) {
+  const normalizedKind = normalizeDraftKind(kind);
+  return MANUAL_ASSET_TYPE_OPTIONS.find((option) => option.value === normalizedKind) ?? MANUAL_ASSET_TYPE_OPTIONS[3];
 }
 
 function conditionLabel(value: AssetConditionValue): string {
@@ -576,7 +620,7 @@ function canProjectFuturePrice(asset: RegisterAsset): boolean {
 
 function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
   return {
-    kind: asset.kind,
+    kind: normalizeDraftKind(asset.kind),
     title: asset.title,
     value: String(asset.value || ''),
     note: asset.note,
@@ -593,7 +637,7 @@ function buildSavedItemFromAsset(asset: RegisterAsset) {
   return {
     id: asset.id,
     valuationRunId: asset.valuationRunId ?? undefined,
-    kind: asset.kind,
+    kind: normalizeDraftKind(asset.kind),
     title: asset.title,
     value: asset.value,
     selectedMethod: asset.selectedMethod,
@@ -649,13 +693,18 @@ function assetPreviewImage(asset: RegisterAsset): string | null {
 function assetSectorLabel(asset: RegisterAsset): string {
   if (isTractorAsset(asset) || isValuedEquipmentAsset(asset)) return 'Agricultural';
   if (asset.kind === 'property') return 'Property';
+  if (asset.kind === 'vehicle') return 'Vehicle';
+  if (asset.kind === 'tools') return 'Tools';
   return 'Manual';
 }
 
 function assetFamilyLabel(asset: RegisterAsset): string {
   if (isTractorAsset(asset)) return 'Tractor';
-  if (isValuedEquipmentAsset(asset)) return 'Valued equipment';
+  if (asset.kind === 'equipment') return 'Equipment';
   if (asset.kind === 'property') return 'Property';
+  if (asset.kind === 'vehicle') return 'Vehicle';
+  if (asset.kind === 'tools') return 'Tools';
+  if (isValuedEquipmentAsset(asset)) return 'Valued equipment';
   return 'Manual asset';
 }
 
@@ -675,7 +724,7 @@ function buildAssetMeta(asset: RegisterAsset): string {
     return parts.join(' • ');
   }
 
-  return [asset.brandName, asset.modelName].filter(Boolean).join(' • ') || 'Manual asset';
+  return [asset.brandName, asset.modelName].filter(Boolean).join(' • ') || kindLabel(asset.kind);
 }
 
 function buildSearchableText(asset: RegisterAsset): string {
@@ -1074,9 +1123,24 @@ export default function AssetRegisterClient() {
     return editingAssetId === null ? null : assets.find((asset) => asset.id === editingAssetId) ?? null;
   }, [assets, editingAssetId]);
 
-  const showMachineFields = useMemo(() => {
-    return assetDraft.kind === 'tractor' || assetDraft.kind === 'equipment' || Boolean(editingAsset && isTractorAsset(editingAsset));
+  const assetFormKind = useMemo<AssetKind>(() => {
+    return editingAsset?.valuationRunId ? editingAsset.kind : normalizeDraftKind(assetDraft.kind);
   }, [assetDraft.kind, editingAsset]);
+
+  const showUsageHoursField = useMemo(() => {
+    return assetFormKind === 'tractor' || assetFormKind === 'equipment' || assetFormKind === 'vehicle';
+  }, [assetFormKind]);
+
+  const showConditionField = useMemo(() => {
+    return assetFormKind !== 'property';
+  }, [assetFormKind]);
+
+  const usageFieldLabel = assetFormKind === 'vehicle' ? 'Odometer / hours' : 'Machine hours';
+  const usageFieldPlaceholder = assetFormKind === 'vehicle' ? 'Enter kilometres or hours' : 'Enter machine hours';
+  const usageFieldHint =
+    assetFormKind === 'vehicle'
+      ? 'Use mileage or engine hours — whichever you use to track this vehicle.'
+      : 'This can be updated later whenever the machine hours change.';
 
   const filteredAssets = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -1294,8 +1358,8 @@ export default function AssetRegisterClient() {
       isFinanced: assetDraft.isFinanced,
       financeNote: assetDraft.financeNote,
       photos,
-      hours: showMachineFields && hasHours ? Math.round(Number(hours)) : null,
-      condition: showMachineFields ? assetDraft.condition || null : null,
+      hours: showUsageHoursField && hasHours ? Math.round(Number(hours)) : null,
+      condition: showConditionField ? assetDraft.condition || null : null,
     };
 
     try {
@@ -2245,26 +2309,42 @@ export default function AssetRegisterClient() {
 
             <div className={styles.modalScrollBody}>
               <form className={styles.modalForm} onSubmit={handleAssetSubmit}>
-              <label className={styles.field}>
-                <span>Asset type</span>
-                <select
-                  value={editingAsset?.valuationRunId ? editingAsset.kind : assetDraft.kind}
-                  disabled={Boolean(editingAsset?.valuationRunId)}
-                  onChange={(event) => {
-                    const nextKind = event.target.value as AssetKind;
-                    setAssetDraft((current) => ({
-                      ...current,
-                      kind: nextKind,
-                      hours: nextKind === 'tractor' || nextKind === 'equipment' ? current.hours : '',
-                      condition: nextKind === 'tractor' || nextKind === 'equipment' ? current.condition : '',
-                    }));
-                  }}
-                >
-                  <option value="manual">Manual asset</option>
-                  <option value="property">Property</option>
-                  <option value="equipment">Equipment</option>
-                </select>
-              </label>
+              {editingAsset?.valuationRunId ? (
+                <label className={`${styles.field} ${styles.fullWidth}`}>
+                  <span>Asset type</span>
+                  <input value={kindLabel(editingAsset.kind)} disabled readOnly />
+                  <small className={styles.fieldHint}>This asset type comes from the saved valuation and cannot be changed here.</small>
+                </label>
+              ) : (
+                <div className={`${styles.field} ${styles.fullWidth}`}>
+                  <span>Asset type</span>
+                  <div className={styles.assetTypeBubbleRow}>
+                    {MANUAL_ASSET_TYPE_OPTIONS.map((option) => {
+                      const isActive = normalizeDraftKind(assetDraft.kind) === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={`${styles.assetTypeBubble} ${isActive ? styles.assetTypeBubbleActive : ''}`}
+                          onClick={() =>
+                            setAssetDraft((current) => ({
+                              ...current,
+                              kind: option.value,
+                              hours: option.value === 'property' || option.value === 'tools' ? '' : current.hours,
+                              condition: option.value === 'property' ? '' : current.condition,
+                            }))
+                          }
+                          aria-pressed={isActive}
+                        >
+                          <strong>{option.label}</strong>
+                          <span>{option.description}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <small className={styles.fieldHint}>Choose the closest manual asset type. This only affects manual Asset Register records.</small>
+                </div>
+              )}
 
               <label className={styles.field}>
                 <span>Title</span>
@@ -2276,7 +2356,7 @@ export default function AssetRegisterClient() {
                       title: event.target.value,
                     }))
                   }
-                  placeholder="Example: Main workshop"
+                  placeholder={getManualAssetOption(assetFormKind).titlePlaceholder}
                 />
               </label>
 
@@ -2311,46 +2391,46 @@ export default function AssetRegisterClient() {
                 />
               </label>
 
-              {showMachineFields ? (
-                <>
-                  <label className={styles.field}>
-                    <span>Machine hours</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={assetDraft.hours}
-                      onChange={(event) =>
-                        setAssetDraft((current) => ({
-                          ...current,
-                          hours: event.target.value,
-                        }))
-                      }
-                      placeholder="Enter machine hours"
-                    />
-                    <small className={styles.fieldHint}>This can be updated later whenever the machine hours change.</small>
-                  </label>
+              {showUsageHoursField ? (
+                <label className={styles.field}>
+                  <span>{usageFieldLabel}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={assetDraft.hours}
+                    onChange={(event) =>
+                      setAssetDraft((current) => ({
+                        ...current,
+                        hours: event.target.value,
+                      }))
+                    }
+                    placeholder={usageFieldPlaceholder}
+                  />
+                  <small className={styles.fieldHint}>{usageFieldHint}</small>
+                </label>
+              ) : null}
 
-                  <label className={styles.field}>
-                    <span>Condition</span>
-                    <select
-                      value={assetDraft.condition}
-                      onChange={(event) =>
-                        setAssetDraft((current) => ({
-                          ...current,
-                          condition: event.target.value as AssetConditionValue,
-                        }))
-                      }
-                    >
-                      {CONDITION_OPTIONS.map((option) => (
-                        <option key={option.value || 'blank'} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <small className={styles.fieldHint}>Condition feeds through to future-price calculations and cleaner asset sheets.</small>
-                  </label>
-                </>
+              {showConditionField ? (
+                <label className={styles.field}>
+                  <span>Condition</span>
+                  <select
+                    value={assetDraft.condition}
+                    onChange={(event) =>
+                      setAssetDraft((current) => ({
+                        ...current,
+                        condition: event.target.value as AssetConditionValue,
+                      }))
+                    }
+                  >
+                    {CONDITION_OPTIONS.map((option) => (
+                      <option key={option.value || 'blank'} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <small className={styles.fieldHint}>Condition feeds through to cleaner asset sheets and better saved asset information.</small>
+                </label>
               ) : null}
 
               <label className={`${styles.field} ${styles.fullWidth}`}>
