@@ -4,7 +4,7 @@ import type { MethodKey } from './valuation-runs';
 import type { Result } from './tractor-logic';
 import type { GenericSelectedMethod, GenericValuationResult } from './generic-valuation';
 
-export type AssetRegisterItemKind = 'tractor' | 'equipment' | 'manual' | 'property';
+export type AssetRegisterItemKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools';
 export type AssetRegisterItemMethod = MethodKey | 'manual';
 export type AssetRegisterItemCondition = ConditionKey | '';
 export type AssetRegisterQrStatus = 'active' | 'transferred' | 'retired' | 'deleted' | '';
@@ -196,6 +196,8 @@ function normalizeKind(value: unknown): AssetRegisterItemKind {
   if (normalized === 'tractor') return 'tractor';
   if (normalized === 'equipment' || normalized === 'valued equipment') return 'equipment';
   if (normalized === 'property') return 'property';
+  if (normalized === 'vehicle') return 'vehicle';
+  if (normalized === 'tool' || normalized === 'tools') return 'tools';
   return 'manual';
 }
 
