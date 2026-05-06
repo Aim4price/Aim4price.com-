@@ -2309,42 +2309,36 @@ export default function AssetRegisterClient() {
 
             <div className={styles.modalScrollBody}>
               <form className={styles.modalForm} onSubmit={handleAssetSubmit}>
-              {editingAsset?.valuationRunId ? (
-                <label className={`${styles.field} ${styles.fullWidth}`}>
-                  <span>Asset type</span>
+              <label className={`${styles.field} ${styles.fullWidth}`}>
+                <span>Asset type</span>
+                {editingAsset?.valuationRunId ? (
                   <input value={kindLabel(editingAsset.kind)} disabled readOnly />
-                  <small className={styles.fieldHint}>This asset type comes from the saved valuation and cannot be changed here.</small>
-                </label>
-              ) : (
-                <div className={`${styles.field} ${styles.fullWidth}`}>
-                  <span>Asset type</span>
-                  <div className={styles.assetTypeBubbleRow}>
-                    {MANUAL_ASSET_TYPE_OPTIONS.map((option) => {
-                      const isActive = normalizeDraftKind(assetDraft.kind) === option.value;
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          className={`${styles.assetTypeBubble} ${isActive ? styles.assetTypeBubbleActive : ''}`}
-                          onClick={() =>
-                            setAssetDraft((current) => ({
-                              ...current,
-                              kind: option.value,
-                              hours: option.value === 'property' || option.value === 'tools' ? '' : current.hours,
-                              condition: option.value === 'property' ? '' : current.condition,
-                            }))
-                          }
-                          aria-pressed={isActive}
-                        >
-                          <strong>{option.label}</strong>
-                          <span>{option.description}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <small className={styles.fieldHint}>Choose the closest manual asset type. This only affects manual Asset Register records.</small>
-                </div>
-              )}
+                ) : (
+                  <select
+                    value={assetFormKind}
+                    onChange={(event) => {
+                      const nextKind = event.target.value as AssetKind;
+                      setAssetDraft((current) => ({
+                        ...current,
+                        kind: nextKind,
+                        hours: nextKind === 'property' || nextKind === 'tools' ? '' : current.hours,
+                        condition: nextKind === 'property' ? '' : current.condition,
+                      }));
+                    }}
+                  >
+                    {MANUAL_ASSET_TYPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <small className={styles.fieldHint}>
+                  {editingAsset?.valuationRunId
+                    ? 'This asset type comes from the saved valuation and cannot be changed here.'
+                    : `${getManualAssetOption(assetFormKind).description} This only affects manual Asset Register records.`}
+                </small>
+              </label>
 
               <label className={styles.field}>
                 <span>Title</span>
