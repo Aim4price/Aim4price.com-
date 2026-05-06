@@ -52,6 +52,7 @@ function methodLabel(value: AssetRegisterItem['selectedMethod']): string {
 }
 
 function kindLabel(asset: AssetRegisterItem): string {
+  if (asset.equipmentFamilyLabel) return asset.equipmentFamilyLabel;
   if (asset.kind === 'tractor') return 'Tractor';
   if (asset.kind === 'equipment' || Boolean(asset.brandName && asset.modelName && asset.yearModel)) return 'Equipment';
   if (asset.kind === 'property') return 'Property';
