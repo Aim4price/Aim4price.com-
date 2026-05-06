@@ -21,6 +21,14 @@ type RegisterAsset = {
   id: string;
   userId: string;
   valuationRunId: number | null;
+  sectorId: number | null;
+  equipmentFamilyId: number | null;
+  equipmentFamilyKey: string;
+  equipmentFamilyLabel: string;
+  equipmentModelId: number | null;
+  typedModelName: string;
+  normalizedTypedModelName: string;
+  specsJson: Record<string, unknown>;
   kind: AssetKind;
   title: string;
   value: number;
@@ -586,8 +594,79 @@ function normalizePhotos(value: string[]): string[] {
     .slice(0, MAX_PHOTOS);
 }
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function toDisplayText(value: unknown): string {
+  if (value === null || typeof value === 'undefined') return '';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'number') return Number.isFinite(value) ? value.toLocaleString('en-ZA') : '';
+  if (typeof value === 'string') return value.trim();
+  if (Array.isArray(value)) return value.map(toDisplayText).filter(Boolean).join(', ');
+
+  if (isPlainRecord(value)) {
+    return toDisplayText(value.label ?? value.name ?? value.value ?? value.title ?? '');
+  }
+
+  return '';
+}
+
+function formatSpecKey(value: string): string {
+  return value
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+const HIDDEN_BASIC_SPEC_KEYS = new Set([
+  'year',
+  'year model',
+  'year model unknown',
+  'condition',
+  'brand',
+  'brand slug',
+  'family key',
+  'sector key',
+  'typed model name',
+  'normalized typed model name',
+  'usage amount',
+  'life worked percent',
+  'hours',
+  'engine hours',
+]);
+
+function buildBasicSpecParts(asset: RegisterAsset): string[] {
+  const directParts = [
+    asset.tractorType ? formatTractorType(asset.tractorType) : '',
+    asset.drive ? formatDrive(asset.drive) : '',
+    asset.cab ? formatCab(asset.cab) : '',
+    asset.powerKw !== null && typeof asset.powerKw !== 'undefined' && asset.powerKw > 0 ? `${asset.powerKw} kW` : '',
+  ].filter(Boolean);
+
+  const specsJson = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+  const specParts = Object.entries(specsJson)
+    .map(([key, value]) => {
+      const label = formatSpecKey(key);
+      const normalizedLabel = label.toLowerCase();
+      const displayValue = toDisplayText(value);
+
+      if (!label || !displayValue || HIDDEN_BASIC_SPEC_KEYS.has(normalizedLabel)) {
+        return '';
+      }
+
+      return `${label}: ${displayValue}`;
+    })
+    .filter(Boolean)
+    .slice(0, 4);
+
+  return [...directParts, ...specParts];
+}
+
 function isTractorAsset(asset: RegisterAsset): boolean {
-  return asset.kind === 'tractor' || Boolean(asset.tractorType || asset.drive || asset.cab || asset.powerKw !== null);
+  return asset.kind === 'tractor' || Boolean(asset.tractorType || asset.drive || asset.cab);
 }
 
 function isValuedEquipmentAsset(asset: RegisterAsset): boolean {
@@ -603,9 +682,7 @@ function isLiveOnMarketplace(asset: RegisterAsset): boolean {
 }
 
 function assetKindLabel(asset: RegisterAsset): string {
-  if (isTractorAsset(asset)) return 'Tractor';
-  if (isValuedEquipmentAsset(asset)) return 'Valued equipment';
-  return kindLabel(asset.kind);
+  return assetFamilyLabel(asset);
 }
 
 function canProjectFuturePrice(asset: RegisterAsset): boolean {
@@ -699,6 +776,7 @@ function assetSectorLabel(asset: RegisterAsset): string {
 }
 
 function assetFamilyLabel(asset: RegisterAsset): string {
+  if (asset.equipmentFamilyLabel) return asset.equipmentFamilyLabel;
   if (isTractorAsset(asset)) return 'Tractor';
   if (asset.kind === 'equipment') return 'Equipment';
   if (asset.kind === 'property') return 'Property';
@@ -710,21 +788,24 @@ function assetFamilyLabel(asset: RegisterAsset): string {
 
 function buildAssetMeta(asset: RegisterAsset): string {
   const parts = [
-    asset.tractorType ? formatTractorType(asset.tractorType) : '',
-    asset.drive ? formatDrive(asset.drive) : '',
-    asset.cab ? formatCab(asset.cab) : '',
-    asset.powerKw !== null && typeof asset.powerKw !== 'undefined' ? `${asset.powerKw} kW` : '',
-    asset.yearModel ? `${asset.yearModel} model` : '',
+    asset.yearModel ? `Year Model: ${asset.yearModel}` : '',
     asset.hours !== null && typeof asset.hours !== 'undefined'
-      ? `${asset.hours.toLocaleString('en-ZA')} hours`
+      ? `Hours: ${asset.hours.toLocaleString('en-ZA')}`
       : '',
+    asset.condition ? `Condition: ${conditionLabel(asset.condition)}` : '',
   ].filter(Boolean);
+
+  const basicSpecs = buildBasicSpecParts(asset);
+
+  if (basicSpecs.length) {
+    parts.push(`Basic specs: ${basicSpecs.join(' • ')}`);
+  }
 
   if (parts.length) {
     return parts.join(' • ');
   }
 
-  return [asset.brandName, asset.modelName].filter(Boolean).join(' • ') || kindLabel(asset.kind);
+  return [asset.brandName, asset.typedModelName || asset.modelName].filter(Boolean).join(' • ') || kindLabel(asset.kind);
 }
 
 function buildSearchableText(asset: RegisterAsset): string {
@@ -732,6 +813,9 @@ function buildSearchableText(asset: RegisterAsset): string {
     asset.title,
     asset.brandName,
     asset.modelName,
+    asset.typedModelName,
+    asset.equipmentFamilyLabel,
+    asset.equipmentFamilyKey,
     asset.serialNumber,
     asset.note,
     asset.financeNote,
@@ -752,7 +836,6 @@ function buildSearchableText(asset: RegisterAsset): string {
 function buildExportDetail(asset: RegisterAsset): string {
   const parts = [
     buildAssetMeta(asset),
-    asset.condition ? `Condition: ${conditionLabel(asset.condition)}` : '',
     asset.serialNumber ? `Serial: ${asset.serialNumber}` : '',
   ].filter(Boolean);
 
