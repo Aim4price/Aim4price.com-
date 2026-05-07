@@ -2093,19 +2093,20 @@ export default function AssetRegisterClient() {
             </div>
           </div>
 
-          <div className={styles.summaryRow}>
-            <div className={`${styles.summaryTile} ${styles.registerValueTile}`}>
-              <div className={styles.registerValueHead}>
-                <span>Register value</span>
+          <div className={`${styles.summaryRow} ${styles.heroSummaryRow}`}>
+            <div className={`${styles.summaryTile} ${styles.registerValueTile} ${styles.heroSummaryTile} ${styles.heroRegisterTile}`}>
+              <div className={styles.heroSummaryHead}>
+                <span className={styles.heroSummaryTitle}>Register value</span>
               </div>
 
-              <div className={styles.registerValueAmountRow}>
-                <strong className={styles.registerValueTotal}>
+              <div className={styles.heroSummaryValueRow}>
+                <strong className={`${styles.heroSummaryValue} ${styles.heroRegisterValue}`}>
                   {money(displayedRegisterValue)}
-                  {registerValueVatMode === 'excluded' ? <span className={styles.registerValueSuffix}> + VAT</span> : null}
+                  {registerValueVatMode === 'excluded' ? <span className={styles.heroRegisterVatSuffix}> + VAT</span> : null}
                 </strong>
               </div>
-              <div className={`${styles.summaryTileFooter} ${styles.registerValueFooter}`}>
+
+              <div className={`${styles.heroSummaryFooter} ${styles.heroVatFooter}`}>
                 <div className={styles.vatToggleGroup} aria-label="Register value VAT display">
                   <button
                     type="button"
@@ -2127,20 +2128,28 @@ export default function AssetRegisterClient() {
               </div>
             </div>
 
-            <div className={`${styles.summaryTile} ${styles.metricSummaryTile}`}>
-              <div className={styles.metricSummaryTileHead}>
-                <span className={styles.summaryLabel}>Aim4price valued equipment</span>
+            <div className={`${styles.summaryTile} ${styles.metricSummaryTile} ${styles.heroSummaryTile}`}>
+              <div className={styles.heroSummaryHead}>
+                <span className={styles.heroSummaryTitle}>Aim4price valued equipment</span>
               </div>
-              <strong className={styles.summaryValue}>{aim4priceValuedEquipmentCount}</strong>
-              <div className={styles.summaryTileFooter} aria-hidden="true" />
+
+              <div className={styles.heroSummaryValueRow}>
+                <strong className={styles.heroSummaryValue}>{aim4priceValuedEquipmentCount}</strong>
+              </div>
+
+              <div className={styles.heroSummaryFooter} aria-hidden="true" />
             </div>
 
-            <div className={`${styles.summaryTile} ${styles.totalAssetsTile}`}>
-              <div className={styles.metricSummaryTileHead}>
-                <span className={styles.summaryLabel}>Total assets</span>
+            <div className={`${styles.summaryTile} ${styles.totalAssetsTile} ${styles.heroSummaryTile}`}>
+              <div className={styles.heroSummaryHead}>
+                <span className={styles.heroSummaryTitle}>Total assets</span>
               </div>
-              <strong className={styles.summaryValue}>{assets.length}</strong>
-              <div className={`${styles.summaryTileFooter} ${styles.totalAssetsFooter}`}>
+
+              <div className={styles.heroSummaryValueRow}>
+                <strong className={styles.heroSummaryValue}>{assets.length}</strong>
+              </div>
+
+              <div className={`${styles.heroSummaryFooter} ${styles.heroTotalFooter}`}>
                 <small>{registerRangeDescription}</small>
               </div>
             </div>
