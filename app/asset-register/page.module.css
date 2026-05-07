@@ -4368,3 +4368,16 @@
     font-size: 1.45rem;
   }
 }
+
+/* === Asset title typography softness === */
+.assetTitleBlock h2 {
+  font-weight: 760;
+  letter-spacing: -0.032em;
+}
+
+@media (max-width: 760px) {
+  .assetTitleBlock h2 {
+    font-weight: 740;
+    letter-spacing: -0.026em;
+  }
+}
