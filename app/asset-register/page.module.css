@@ -2724,8 +2724,8 @@
 }
 
 .summaryTile {
-  min-height: 8.4rem;
-  padding: 1.22rem 1.28rem;
+  min-height: 8.8rem;
+  padding: 1.28rem 1.34rem;
   border-radius: 1.35rem;
   border: 1px solid rgba(212, 221, 230, 0.95);
   background: linear-gradient(180deg, #f9fbfc 0%, #f2f5f8 100%);
@@ -2756,18 +2756,18 @@
 .summaryLabel {
   display: inline-flex;
   align-items: center;
-  min-height: 2rem;
+  min-height: 2.15rem;
   color: #5e6f80;
-  font-size: 0.82rem;
+  font-size: 0.94rem;
   font-weight: 800;
-  letter-spacing: 0.015em;
+  letter-spacing: 0.01em;
   line-height: 1.35;
 }
 
 .summaryValue,
 .registerValueTotal {
   color: #193229;
-  font-size: clamp(2rem, 3vw, 2.45rem);
+  font-size: clamp(2.3rem, 3.6vw, 2.9rem);
   line-height: 1;
   letter-spacing: -0.055em;
   align-self: center;
@@ -2777,27 +2777,27 @@
 .registerValueAmountRow {
   display: flex;
   align-items: flex-end;
-  min-height: 3.2rem;
+  min-height: 3.45rem;
 }
 
 .registerValueSuffix {
   color: #5f6f80;
-  font-size: 0.92rem;
+  font-size: 1.04rem;
   font-weight: 800;
   letter-spacing: 0.01em;
 }
 
 .summaryTileFooter {
   margin-top: auto;
-  min-height: 2rem;
-  padding-top: 0.78rem;
+  min-height: 2.2rem;
+  padding-top: 0.85rem;
   border-top: 1px solid rgba(214, 222, 230, 0.9);
 }
 
 .summaryTileFooter small {
   margin: 0;
   color: #6c7d8d;
-  font-size: 0.84rem;
+  font-size: 0.96rem;
   font-weight: 700;
   line-height: 1.4;
 }
