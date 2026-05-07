@@ -2885,13 +2885,6 @@ export default function AssetRegisterClient() {
 
             <div className={`${styles.modalScrollBody} ${styles.exportModalScrollBody}`}>
               <div className={styles.exportModalBody}>
-                <div className={styles.exportFormatHeader}>
-                  <div>
-                    <span>Choose format</span>
-                    <strong>{exportFormat === 'xlsx' ? 'XLSX workbook selected' : 'PDF summary selected'}</strong>
-                  </div>
-                </div>
-
                 <div className={styles.exportChoices}>
                   <button
                     type="button"
@@ -2944,7 +2937,7 @@ export default function AssetRegisterClient() {
 
                 <div className={styles.exportHelp}>
                   <strong>Ready to export {assets.length} {assets.length === 1 ? 'asset' : 'assets'}.</strong>
-                  <span>The download uses the full saved register, not only the current search results.</span>
+                  <span>The download uses the full saved register.</span>
                 </div>
 
                 <div className={`${styles.formActions} ${styles.exportActions}`}>

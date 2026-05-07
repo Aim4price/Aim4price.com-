@@ -5489,3 +5489,112 @@
     padding: 1.1rem;
   }
 }
+
+/* === Final export/delete modal clean-up === */
+.exportFormatHeader {
+  display: none !important;
+}
+
+.exportModalBody {
+  gap: 1.05rem;
+}
+
+.exportModal .exportChoices {
+  margin-top: 0;
+}
+
+.exportHelp span {
+  max-width: 44rem;
+}
+
+.deleteConfirmModal {
+  width: min(100%, 760px) !important;
+  grid-template-columns: 3.8rem minmax(0, 1fr) !important;
+  gap: 1.35rem !important;
+  padding: clamp(1.65rem, 2.3vw, 2rem) !important;
+  border-radius: 1.9rem !important;
+}
+
+.deleteConfirmIcon {
+  width: 3.8rem !important;
+  height: 3.8rem !important;
+  border-radius: 1.18rem !important;
+}
+
+.deleteConfirmIcon .buttonIcon {
+  width: 1.28rem;
+  height: 1.28rem;
+}
+
+.deleteConfirmContent {
+  gap: 1.05rem !important;
+}
+
+.deleteConfirmContent .modalEyebrow {
+  margin-bottom: 0.05rem;
+}
+
+.deleteConfirmContent h3 {
+  max-width: 42rem;
+  font-size: clamp(1.58rem, 2.65vw, 2rem) !important;
+  line-height: 1.06 !important;
+}
+
+.deleteConfirmContent p {
+  max-width: 41.5rem;
+  font-size: 1.03rem !important;
+  line-height: 1.68 !important;
+}
+
+.deleteConfirmAsset {
+  padding: 1.18rem 1.25rem !important;
+  border-radius: 1.22rem !important;
+  gap: 0.42rem !important;
+}
+
+.deleteConfirmAsset strong {
+  font-size: 1.12rem !important;
+  line-height: 1.28 !important;
+}
+
+.deleteConfirmAsset small {
+  font-size: 0.94rem !important;
+  line-height: 1.5 !important;
+}
+
+.deleteConfirmActions {
+  gap: 0.85rem !important;
+  margin-top: 0.2rem !important;
+}
+
+.deleteConfirmActions .secondaryButton,
+.deleteConfirmActions .deleteConfirmButton {
+  min-height: 3.25rem !important;
+  padding-inline: 1.25rem !important;
+  border-radius: 1.05rem !important;
+}
+
+.deleteConfirmActions .deleteConfirmButton {
+  min-width: 13.5rem;
+}
+
+@media (max-width: 760px) {
+  .deleteConfirmModal {
+    width: min(100%, calc(100vw - 1.25rem)) !important;
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+    padding: 1.18rem !important;
+    border-radius: 1.45rem !important;
+  }
+
+  .deleteConfirmActions {
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+  }
+
+  .deleteConfirmActions .secondaryButton,
+  .deleteConfirmActions .deleteConfirmButton {
+    width: 100%;
+    min-width: 0;
+  }
+}
