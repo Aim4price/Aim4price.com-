@@ -2702,3 +2702,150 @@
   }
 }
 
+
+/* === Asset register top summary redesign === */
+.registerHeader {
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 0.95rem;
+}
+
+.headerActions {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.summaryRow {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr;
+  gap: 0.95rem;
+  margin-bottom: 1.1rem;
+  align-items: stretch;
+}
+
+.summaryTile {
+  min-height: 8rem;
+  padding: 1.2rem 1.25rem;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(212, 221, 230, 0.95);
+  background: linear-gradient(180deg, #f9fbfc 0%, #f2f5f8 100%);
+  box-shadow:
+    0 16px 30px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  display: grid;
+  gap: 0.75rem;
+  align-content: stretch;
+}
+
+.metricSummaryTile,
+.totalAssetsTile {
+  grid-template-rows: auto 1fr auto;
+}
+
+.metricSummaryTileHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.summaryLabel {
+  color: #5e6f80;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.015em;
+  line-height: 1.35;
+}
+
+.summaryValue {
+  color: #193229;
+  font-size: clamp(2rem, 3vw, 2.45rem);
+  line-height: 1;
+  letter-spacing: -0.055em;
+  align-self: center;
+}
+
+.metricPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.9rem;
+  padding: 0 0.72rem;
+  border-radius: 999px;
+  background: rgba(22, 83, 64, 0.08);
+  border: 1px solid rgba(22, 83, 64, 0.12);
+  color: #165340;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.summarySupportText,
+.summaryTileFooter small {
+  margin: 0;
+  color: #6c7d8d;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.summaryTileFooter {
+  margin-top: auto;
+  padding-top: 0.1rem;
+}
+
+.totalAssetsTile .summaryTileFooter {
+  border-top: 1px solid rgba(214, 222, 230, 0.9);
+  padding-top: 0.75rem;
+}
+
+.registerValueTile {
+  min-height: 8rem;
+  padding: 1.2rem 1.25rem;
+}
+
+.registerValueAmountRow {
+  min-height: 3.1rem;
+}
+
+@media (max-width: 1080px) {
+  .summaryRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .registerValueTile {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .summaryRow {
+    grid-template-columns: 1fr;
+  }
+
+  .registerValueTile {
+    grid-column: auto;
+  }
+
+  .metricSummaryTileHead,
+  .registerValueHead,
+  .registerValueAmountRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .metricPill,
+  .vatAmountNote {
+    white-space: normal;
+  }
+
+  .headerActions {
+    justify-content: stretch;
+  }
+
+  .headerActions .secondaryButton {
+    width: 100%;
+  }
+}

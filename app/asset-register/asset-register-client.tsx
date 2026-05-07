@@ -678,6 +678,10 @@ function isValuedEquipmentAsset(asset: RegisterAsset): boolean {
   return asset.kind !== 'property' && Boolean(asset.valuationRunId !== null || asset.brandName || asset.modelName || asset.selectedMethod !== 'manual');
 }
 
+function isAim4priceValuedAsset(asset: RegisterAsset): boolean {
+  return Boolean(asset.valuationRunId !== null || asset.selectedMethod === 'aim4price' || asset.aim4priceValueExVat !== null);
+}
+
 function isMarketplaceEligible(asset: RegisterAsset): boolean {
   return asset.kind !== 'property' && asset.value > 0 && (isTractorAsset(asset) || isValuedEquipmentAsset(asset));
 }
@@ -1261,8 +1265,8 @@ export default function AssetRegisterClient() {
   const totalValueInclVat = useMemo(() => Math.round(totalValue * 1.15), [totalValue]);
   const displayedRegisterValue = registerValueVatMode === 'included' ? totalValueInclVat : totalValue;
 
-  const equipmentCount = useMemo(() => {
-    return assets.filter((asset) => asset.kind !== 'property').length;
+  const aim4priceValuedEquipmentCount = useMemo(() => {
+    return assets.filter((asset) => isAim4priceValuedAsset(asset)).length;
   }, [assets]);
 
   const editingAsset = useMemo(() => {
@@ -1883,8 +1887,8 @@ export default function AssetRegisterClient() {
       intro: 'Complete asset register snapshot for sharing, printing or record keeping.',
       stats: [
         { label: 'Register value', value: money(totalValue), note: 'Saved values exclude VAT.' },
+        { label: 'Aim4price valued equipment', value: String(aim4priceValuedEquipmentCount), note: 'Assets saved from Aim4price valuations.' },
         { label: 'Total assets', value: String(assets.length), note: 'Full saved register count.' },
-        { label: 'Equipment assets', value: String(equipmentCount), note: 'Saved valuation equipment items.' },
       ],
       rows: assets.map((asset) => ({
         asset: asset.title,
@@ -2056,11 +2060,8 @@ export default function AssetRegisterClient() {
     void requestProjection(projectionAsset, projectionForm);
   }
 
-  const searchDescription = searchTerm.trim()
-    ? `${filteredAssets.length} result${filteredAssets.length === 1 ? '' : 's'} for “${searchTerm.trim()}”`
-    : `${assets.length} saved asset${assets.length === 1 ? '' : 's'} in your register`;
   const registerRangeDescription = filteredAssets.length
-    ? `Showing ${pageStart + 1}-${pageEnd} of ${filteredAssets.length}`
+    ? `Showing ${pageStart + 1}-${pageEnd} of ${filteredAssets.length} ${filteredAssets.length === 1 ? 'asset' : 'assets'}`
     : searchTerm.trim()
       ? 'No assets match the current search.'
       : 'No saved assets yet.';
@@ -2122,18 +2123,21 @@ export default function AssetRegisterClient() {
               </div>
             </div>
 
-            <div className={styles.summaryTile}>
-              <span>Total assets</span>
-              <strong>{assets.length}</strong>
+            <div className={`${styles.summaryTile} ${styles.metricSummaryTile}`}>
+              <div className={styles.metricSummaryTileHead}>
+                <span className={styles.summaryLabel}>Aim4price valued equipment</span>
+                <span className={styles.metricPill}>Live register</span>
+              </div>
+              <strong className={styles.summaryValue}>{aim4priceValuedEquipmentCount}</strong>
+              <small className={styles.summarySupportText}>Assets saved from Aim4price valuations.</small>
             </div>
 
-            <div className={`${styles.summaryTile} ${styles.equipmentSummaryTile}`}>
-              <div className={styles.summaryTileMain}>
-                <span>Equipment assets</span>
-                <strong>{equipmentCount}</strong>
+            <div className={`${styles.summaryTile} ${styles.totalAssetsTile}`}>
+              <div className={styles.metricSummaryTileHead}>
+                <span className={styles.summaryLabel}>Total assets</span>
               </div>
-              <div className={styles.summaryTileMeta}>
-                <span>{searchDescription}</span>
+              <strong className={styles.summaryValue}>{assets.length}</strong>
+              <div className={styles.summaryTileFooter}>
                 <small>{registerRangeDescription}</small>
               </div>
             </div>
