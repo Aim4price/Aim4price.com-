@@ -162,6 +162,8 @@ function buildPrintHtml(options: {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${assetTitle} QR label</title>
     <style>
+      @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap");
+
       :root {
         color-scheme: light;
         --brand-dark: #10382f;
@@ -180,7 +182,7 @@ function buildPrintHtml(options: {
       body {
         margin: 0;
         padding: 24px;
-        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        font-family: Montserrat, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
         background:
           radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 32%),
           var(--page);
@@ -209,7 +211,7 @@ function buildPrintHtml(options: {
 
       .titleBlock h1 {
         margin: 0;
-        color: var(--text);
+        color: var(--brand-dark);
         font-size: clamp(30px, 4vw, 42px);
         line-height: 0.98;
         letter-spacing: -0.055em;
@@ -288,28 +290,14 @@ function buildPrintHtml(options: {
         min-width: 0;
         display: grid;
         align-content: center;
-        gap: 10px;
+        gap: 11px;
       }
 
-      .labelHeader {
-        display: flex;
-        align-items: center;
-        min-height: 18px;
-      }
-
-      .labelHeader span {
-        color: #718195;
-        font-size: 10px;
-        font-weight: 900;
-        letter-spacing: 0.095em;
-        line-height: 1;
-        text-transform: uppercase;
-      }
 
       .assetTitle {
         margin: 0;
-        color: var(--text);
-        font-size: 32px;
+        color: var(--brand-dark);
+        font-size: 33px;
         font-weight: 900;
         line-height: 1;
         letter-spacing: -0.06em;
@@ -323,7 +311,7 @@ function buildPrintHtml(options: {
         padding: 12px 14px;
         border-radius: 17px;
         background: #ffffff;
-        border: 1px solid #d9e4dc;
+        border: 1px solid #d5e2da;
       }
 
       .plateBlock span,
@@ -337,7 +325,7 @@ function buildPrintHtml(options: {
 
       .plateBlock strong {
         min-width: 0;
-        color: var(--text);
+        color: var(--brand-dark);
         font-size: 22px;
         font-weight: 900;
         line-height: 1;
@@ -412,9 +400,6 @@ function buildPrintHtml(options: {
           max-width: 35mm;
         }
 
-        .labelHeader span {
-          font-size: 7pt;
-        }
 
         .assetTitle {
           font-size: 19pt;
@@ -481,9 +466,6 @@ function buildPrintHtml(options: {
           </div>
 
           <div class="labelCopy">
-            <div class="labelHeader">
-              <span>Operational scan</span>
-            </div>
 
             <h2 class="assetTitle">${assetTitle}</h2>
 
