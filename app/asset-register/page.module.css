@@ -6001,3 +6001,16 @@
     font-size: 2.15rem;
   }
 }
+
+/* === Calculate Future Price small usability updates === */
+.projectionSimpleCard .field select {
+  min-height: 3.15rem;
+  border-radius: 0.98rem;
+  font-size: 1rem;
+  font-weight: 680;
+  cursor: pointer;
+}
+
+.projectionSimpleResult {
+  scroll-margin-top: 1rem;
+}

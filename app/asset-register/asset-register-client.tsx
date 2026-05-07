@@ -232,6 +232,17 @@ const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = 
   { value: 'serious', label: 'Requires attention' },
 ];
 
+const PROJECTION_EXTRA_HOUR_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '', label: 'No extra hours' },
+  { value: '0', label: '+0 hours' },
+  { value: '250', label: '+250 hours' },
+  { value: '500', label: '+500 hours' },
+  { value: '1000', label: '+1 000 hours' },
+  { value: '1500', label: '+1 500 hours' },
+  { value: '2000', label: '+2 000 hours' },
+  { value: '3000', label: '+3 000 hours' },
+];
+
 const initialAssetDraft: AssetDraft = {
   kind: 'equipment',
   title: '',
@@ -1084,6 +1095,12 @@ export default function AssetRegisterClient() {
   const [isLoadingProjection, setIsLoadingProjection] = useState(false);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const projectionRequestRef = useRef(0);
+  const projectionResultRef = useRef<HTMLElement | null>(null);
+  const [shouldScrollToProjectionResult, setShouldScrollToProjectionResult] = useState(false);
+  const projectionYearOptions = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return Array.from({ length: 16 }, (_, index) => currentYear + index);
+  }, []);
 
   function getDetailPhotos(asset: RegisterAsset): string[] {
     return normalizePhotos(asset.photos);
@@ -1190,6 +1207,17 @@ export default function AssetRegisterClient() {
     const timeout = window.setTimeout(() => setNotice(null), 3600);
     return () => window.clearTimeout(timeout);
   }, [notice]);
+
+  useEffect(() => {
+    if (!projectionResult || !shouldScrollToProjectionResult) return undefined;
+
+    const timeout = window.setTimeout(() => {
+      projectionResultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setShouldScrollToProjectionResult(false);
+    }, 120);
+
+    return () => window.clearTimeout(timeout);
+  }, [projectionResult, shouldScrollToProjectionResult]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -1966,16 +1994,19 @@ export default function AssetRegisterClient() {
     const extraHours = formState.extraHours.trim() ? Number(formState.extraHours) : 0;
 
     if (!Number.isFinite(targetYear)) {
+      setShouldScrollToProjectionResult(false);
       setProjectionError('Select a valid target year.');
       return;
     }
 
     if (!Number.isFinite(inflationRatePct)) {
+      setShouldScrollToProjectionResult(false);
       setProjectionError('Enter a valid inflation rate.');
       return;
     }
 
     if (!Number.isFinite(extraHours) || extraHours < 0) {
+      setShouldScrollToProjectionResult(false);
       setProjectionError('Extra hours must be zero or greater.');
       return;
     }
@@ -2018,6 +2049,7 @@ export default function AssetRegisterClient() {
       }
 
       setProjectionResult(null);
+      setShouldScrollToProjectionResult(false);
       setProjectionError(error instanceof Error ? error.message : 'Failed to calculate future price.');
     } finally {
       if (projectionRequestRef.current === requestId) {
@@ -2032,6 +2064,7 @@ export default function AssetRegisterClient() {
     setProjectionResult(null);
     setProjectionError(null);
     setProjectionForm(createDefaultProjectionForm());
+    setShouldScrollToProjectionResult(false);
     setIsLoadingProjection(false);
   }
 
@@ -2042,14 +2075,22 @@ export default function AssetRegisterClient() {
     setProjectionForm(defaults);
     setProjectionResult(null);
     setProjectionError(null);
+    setShouldScrollToProjectionResult(false);
     void requestProjection(asset, defaults);
   }
 
-  function handleProjectionPreset(nextState: Partial<ProjectionFormState>) {
+  function updateProjectionForm(nextState: Partial<ProjectionFormState>) {
     setProjectionForm((current) => ({
       ...current,
       ...nextState,
     }));
+    setProjectionResult(null);
+    setProjectionError(null);
+    setShouldScrollToProjectionResult(false);
+  }
+
+  function handleProjectionPreset(nextState: Partial<ProjectionFormState>) {
+    updateProjectionForm(nextState);
   }
 
   function handleProjectionSubmit() {
@@ -2057,6 +2098,7 @@ export default function AssetRegisterClient() {
       return;
     }
 
+    setShouldScrollToProjectionResult(true);
     void requestProjection(projectionAsset, projectionForm);
   }
 
@@ -3224,18 +3266,16 @@ export default function AssetRegisterClient() {
                   <div className={styles.projectionInputRow}>
                     <label className={styles.field}>
                       <span>Target year</span>
-                      <input
-                        type="number"
-                        min={new Date().getFullYear()}
-                        max={new Date().getFullYear() + 15}
+                      <select
                         value={projectionForm.targetYear}
-                        onChange={(event) =>
-                          setProjectionForm((current) => ({
-                            ...current,
-                            targetYear: event.target.value,
-                          }))
-                        }
-                      />
+                        onChange={(event) => updateProjectionForm({ targetYear: event.target.value })}
+                      >
+                        {projectionYearOptions.map((year) => (
+                          <option key={year} value={String(year)}>
+                            {year}
+                          </option>
+                        ))}
+                      </select>
                     </label>
 
                     <label className={styles.field}>
@@ -3246,46 +3286,35 @@ export default function AssetRegisterClient() {
                         max="200"
                         step="0.1"
                         value={projectionForm.inflationRatePct}
-                        onChange={(event) =>
-                          setProjectionForm((current) => ({
-                            ...current,
-                            inflationRatePct: event.target.value,
-                          }))
-                        }
+                        onChange={(event) => updateProjectionForm({ inflationRatePct: event.target.value })}
                       />
                     </label>
 
                     <label className={styles.field}>
-                      <span>Extra hours</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="50"
+                      <span>Add extra hours</span>
+                      <select
                         value={projectionForm.extraHours}
-                        onChange={(event) =>
-                          setProjectionForm((current) => ({
-                            ...current,
-                            extraHours: event.target.value,
-                          }))
-                        }
-                        placeholder="Optional"
-                      />
+                        onChange={(event) => updateProjectionForm({ extraHours: event.target.value })}
+                      >
+                        {PROJECTION_EXTRA_HOUR_OPTIONS.map((option) => (
+                          <option key={option.value || 'none'} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
                     </label>
                   </div>
 
                   <div className={styles.projectionQuickRow}>
-                    <span>Quick options</span>
+                    <span>Quick inflation</span>
                     <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ inflationRatePct: '5' })}>
                       5%
                     </button>
                     <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ inflationRatePct: '8' })}>
                       8%
                     </button>
-                    <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ extraHours: '0' })}>
-                      +0 hrs
-                    </button>
-                    <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ extraHours: '1000' })}>
-                      +1 000 hrs
+                    <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ inflationRatePct: '10' })}>
+                      10%
                     </button>
                   </div>
 
@@ -3297,7 +3326,7 @@ export default function AssetRegisterClient() {
                 {projectionError ? <div className={styles.projectionError}>{projectionError}</div> : null}
 
                 {projectionResult ? (
-                  <section className={styles.projectionSimpleResult} aria-live="polite">
+                  <section ref={projectionResultRef} className={styles.projectionSimpleResult} aria-live="polite">
                     <span>Projected future price</span>
                     <strong>{money(projectionResult.projected.retailExVat)}</strong>
                     <p>Estimated ex VAT value for {projectionResult.targetYear}.</p>
