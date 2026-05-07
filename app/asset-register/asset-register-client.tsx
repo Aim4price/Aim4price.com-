@@ -3026,28 +3026,6 @@ export default function AssetRegisterClient() {
 
             <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody}`}>
               <div className={styles.optionsContent}>
-                <div className={styles.optionsMeta}>
-                <div className={styles.optionMetaTile}>
-                  <span>Value</span>
-                  <strong>{money(activeAsset.value)}</strong>
-                </div>
-
-                <div className={styles.optionMetaTile}>
-                  <span>Status</span>
-                  <strong>{assetStatusDateLabel(activeAsset)}</strong>
-                </div>
-
-                <div className={styles.optionMetaTile}>
-                  <span>Plate label</span>
-                  <strong>{activeAsset.plateLabel || 'Pending'}</strong>
-                </div>
-
-                <div className={styles.optionMetaTile}>
-                  <span>Scan status</span>
-                  <strong>{formatQrStatus(activeAsset.qrStatus)}</strong>
-                </div>
-              </div>
-
               <div className={styles.scanAccessPanel}>
                 <div className={styles.scanAccessPreview}>
                   <span className={styles.qrPreviewEyebrow}>QR code</span>
@@ -3067,18 +3045,6 @@ export default function AssetRegisterClient() {
                     Keep the fixed QR linked to this asset. Open the QR code modal to copy the scan link, download the QR image and print a label.
                     Public QR scans always ask for the farm PIN.
                   </p>
-
-                  <div className={styles.scanAccessFacts}>
-                    <div className={styles.scanFact}>
-                      <span>Plate label</span>
-                      <strong>{activeAsset.plateLabel || 'Pending'}</strong>
-                    </div>
-
-                    <div className={styles.scanFact}>
-                      <span>Scan status</span>
-                      <strong>{formatQrStatus(activeAsset.qrStatus)}</strong>
-                    </div>
-                  </div>
                 </div>
               </div>
 

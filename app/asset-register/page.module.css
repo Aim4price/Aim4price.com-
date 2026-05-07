@@ -6881,3 +6881,144 @@
     min-width: 0 !important;
   }
 }
+
+/* === Asset Options modal: simplified no-scroll layout === */
+.optionsModal {
+  width: min(100%, 900px) !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: clamp(1.35rem, 2.2vw, 1.75rem) !important;
+}
+
+.optionsModalHeader {
+  margin-bottom: 1rem !important;
+  padding-bottom: 1rem !important;
+}
+
+.optionsModalHeader .modalHeaderText {
+  gap: 0.36rem !important;
+}
+
+.optionsScrollBody {
+  flex: 0 0 auto !important;
+  min-height: auto !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  scrollbar-gutter: auto !important;
+}
+
+.optionsContent {
+  display: grid !important;
+  gap: 1rem !important;
+}
+
+.optionsContent .scanAccessPanel {
+  display: grid !important;
+  grid-template-columns: 250px minmax(0, 1fr) !important;
+  gap: 1rem !important;
+  margin: 0 !important;
+  align-items: stretch !important;
+}
+
+.optionsContent .scanAccessPreview,
+.optionsContent .scanAccessSummary {
+  min-height: 0 !important;
+  padding: 1rem !important;
+  border-radius: 1.22rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.032),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.optionsContent .scanAccessPreview {
+  display: grid !important;
+  gap: 0.75rem !important;
+  align-content: start !important;
+}
+
+.optionsContent .scanAccessQrFrame {
+  min-height: 190px !important;
+  padding: 0.78rem !important;
+  border-radius: 1.05rem !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(216, 226, 236, 0.96) !important;
+}
+
+.optionsContent .scanAccessQrFrame img {
+  max-width: 178px !important;
+}
+
+.optionsContent .scanAccessSummary {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 0.65rem !important;
+}
+
+.optionsContent .scanAccessSummary h4 {
+  margin: 0 !important;
+  color: #0f3329 !important;
+  font-size: clamp(1.28rem, 1.6vw, 1.55rem) !important;
+  font-weight: 780 !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.optionsContent .scanAccessSummary p {
+  max-width: 32rem;
+  margin: 0 !important;
+  color: #617286 !important;
+  font-size: 0.98rem !important;
+  font-weight: 630 !important;
+  line-height: 1.55 !important;
+}
+
+.assetOptionsGrid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.8rem !important;
+}
+
+.assetOptionsGrid .optionActionButton {
+  min-height: 3.65rem !important;
+  padding: 0.85rem 1rem !important;
+  border-radius: 1.08rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%) !important;
+  border-color: rgba(216, 226, 236, 0.98) !important;
+  box-shadow:
+    0 9px 18px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.assetOptionsGrid .optionDangerButton {
+  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%) !important;
+  border-color: rgba(235, 203, 203, 0.98) !important;
+}
+
+@media (max-width: 900px) {
+  .optionsModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: min(88vh, calc(100dvh - 1rem)) !important;
+    overflow: hidden !important;
+    padding: 1rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .optionsScrollBody {
+    overflow-y: auto !important;
+    padding-right: 0.58rem !important;
+    margin-right: -0.2rem !important;
+  }
+
+  .optionsContent .scanAccessPanel,
+  .assetOptionsGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .optionsContent .scanAccessQrFrame {
+    min-height: 210px !important;
+  }
+}
