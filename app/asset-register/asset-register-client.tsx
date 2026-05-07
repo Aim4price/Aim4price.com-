@@ -312,16 +312,6 @@ function CopyIcon({ className }: IconProps) {
   );
 }
 
-function ExternalLinkIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="M14 4h6v6" />
-      <path d="M10 14 20 4" />
-      <path d="M20 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4" />
-    </svg>
-  );
-}
-
 function QrIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
@@ -1166,6 +1156,7 @@ export default function AssetRegisterClient() {
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [copiedScanLinkAssetId, setCopiedScanLinkAssetId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
@@ -1485,6 +1476,7 @@ export default function AssetRegisterClient() {
 
   function closeActionDialog() {
     setIsQrModalOpen(false);
+    setCopiedScanLinkAssetId(null);
     setDeleteCandidateAsset(null);
     setActiveAsset(null);
   }
@@ -1504,6 +1496,7 @@ export default function AssetRegisterClient() {
 
   function closeQrDialog() {
     setIsQrModalOpen(false);
+    setCopiedScanLinkAssetId(null);
   }
 
   async function openMarketplaceModal(asset: RegisterAsset) {
@@ -1975,39 +1968,31 @@ export default function AssetRegisterClient() {
       return;
     }
 
+    function markScanLinkCopied() {
+      setCopiedScanLinkAssetId(asset.id);
+      window.setTimeout(() => {
+        setCopiedScanLinkAssetId((current) => (current === asset.id ? null : current));
+      }, 2200);
+    }
+
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(scanUrl);
+        markScanLinkCopied();
         setNotice({ tone: 'success', message: 'Scan link copied.' });
         return;
       }
 
       window.prompt('Copy this asset scan link', scanUrl);
+      markScanLinkCopied();
       setNotice({ tone: 'success', message: 'Scan link ready to copy.' });
     } catch (error) {
+      setCopiedScanLinkAssetId(null);
       setNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'Failed to copy the scan link.',
       });
     }
-  }
-
-  function handleOpenScanPage(asset: RegisterAsset) {
-    const scanUrl = buildAssetScanUrl(asset);
-
-    if (!scanUrl) {
-      setNotice({ tone: 'error', message: 'This asset does not have a scan link yet.' });
-      return;
-    }
-
-    const opened = window.open(scanUrl, '_blank', 'noopener,noreferrer');
-
-    if (!opened) {
-      setNotice({ tone: 'error', message: 'Unable to open the scan page. Please allow pop-ups and try again.' });
-      return;
-    }
-
-    setNotice({ tone: 'success', message: 'Operational scan page opened in a new tab.' });
   }
 
   function handleOpenScanReport(asset: RegisterAsset) {
@@ -2030,7 +2015,7 @@ export default function AssetRegisterClient() {
 
   async function handleDownloadQr(asset: RegisterAsset) {
     try {
-      const response = await fetch(`/api/asset-register/qr?assetId=${encodeURIComponent(asset.id)}&format=svg&download=1`, {
+      const response = await fetch(`/api/asset-register/qr?assetId=${encodeURIComponent(asset.id)}&format=png&download=1`, {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -2038,25 +2023,25 @@ export default function AssetRegisterClient() {
       if (!response.ok) {
         try {
           const data = (await response.json()) as { error?: string };
-          throw new Error(data.error ?? 'Failed to download the asset QR code.');
+          throw new Error(data.error ?? 'Failed to download the asset QR image.');
         } catch (error) {
           if (error instanceof Error) {
             throw error;
           }
 
-          throw new Error('Failed to download the asset QR code.');
+          throw new Error('Failed to download the asset QR image.');
         }
       }
 
       const blob = await response.blob();
-      const fallbackName = `${asset.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'asset'}-qr.svg`;
+      const fallbackName = `${asset.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'asset'}-qr.png`;
       const fileName = parseDownloadFileName(response, fallbackName);
       downloadBlob(blob, fileName);
-      setNotice({ tone: 'success', message: 'Asset QR SVG downloaded.' });
+      setNotice({ tone: 'success', message: 'Asset QR image downloaded.' });
     } catch (error) {
       setNotice({
         tone: 'error',
-        message: error instanceof Error ? error.message : 'Failed to download the asset QR code.',
+        message: error instanceof Error ? error.message : 'Failed to download the asset QR image.',
       });
     }
   }
@@ -3079,7 +3064,7 @@ export default function AssetRegisterClient() {
                   <span className={styles.qrPreviewEyebrow}>Scan access</span>
                   <h4>Permanent scanner access</h4>
                   <p>
-                    Keep the fixed QR linked to this asset. Open the QR code modal for the scan link, SVG download and print-ready label.
+                    Keep the fixed QR linked to this asset. Open the QR code modal to copy the scan link, download the QR image and print a label.
                     Public QR scans always ask for the farm PIN.
                   </p>
 
@@ -3462,16 +3447,6 @@ export default function AssetRegisterClient() {
                   <strong>{activeAsset.lastKnownLocationText || 'Captured automatically after each QR update'}</strong>
                 </div>
 
-                <div className={styles.qrDetailRow}>
-                  <span>Scan page</span>
-                  {buildAssetScanUrl(activeAsset) ? (
-                    <a className={styles.scanLinkText} href={buildAssetScanUrl(activeAsset) ?? '#'} target="_blank" rel="noreferrer">
-                      {buildAssetScanUrl(activeAsset)}
-                    </a>
-                  ) : (
-                    <strong>Not available yet</strong>
-                  )}
-                </div>
               </div>
               </div>
 
@@ -3481,19 +3456,19 @@ export default function AssetRegisterClient() {
                 <span>QR scan report</span>
               </button>
 
-              <button type="button" className={styles.optionActionButton} onClick={() => void handleCopyScanLink(activeAsset)}>
+              <button
+                type="button"
+                className={`${styles.optionActionButton} ${copiedScanLinkAssetId === activeAsset.id ? styles.qrCopiedButton : ''}`}
+                onClick={() => void handleCopyScanLink(activeAsset)}
+              >
                 <CopyIcon className={styles.buttonIcon} />
-                <span>Copy scan link</span>
+                <span>{copiedScanLinkAssetId === activeAsset.id ? 'Copied' : 'Copy scan link'}</span>
               </button>
 
-              <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanPage(activeAsset)}>
-                <ExternalLinkIcon className={styles.buttonIcon} />
-                <span>Open scanner page</span>
-              </button>
 
               <button type="button" className={styles.optionActionButton} onClick={() => void handleDownloadQr(activeAsset)}>
                 <QrIcon className={styles.buttonIcon} />
-                <span>Download QR SVG</span>
+                <span>Download QR Image</span>
               </button>
 
                 <button type="button" className={styles.optionActionButton} onClick={() => handlePrintQrSheet(activeAsset)}>

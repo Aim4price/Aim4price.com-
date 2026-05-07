@@ -6578,3 +6578,18 @@
     justify-content: flex-start;
   }
 }
+
+/* === QR modal copy success state === */
+.qrCopiedButton,
+.qrCopiedButton:hover {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #1d6048 0%, #114635 100%) !important;
+  border-color: rgba(17, 70, 52, 0.3) !important;
+  box-shadow:
+    0 14px 26px rgba(17, 70, 52, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+.qrCopiedButton .buttonIcon {
+  color: #ffffff !important;
+}
