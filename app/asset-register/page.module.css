@@ -2979,3 +2979,115 @@
     margin-left: 0;
   }
 }
+
+
+/* === Asset register summary hero emphasis === */
+.summaryRow {
+  gap: 1.1rem;
+  margin-bottom: 1.25rem;
+}
+
+.summaryTile {
+  min-height: 10.8rem;
+  padding: 1.6rem 1.7rem;
+  border-radius: 1.55rem;
+  gap: 1rem;
+  box-shadow:
+    0 18px 34px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.registerValueHead,
+.metricSummaryTileHead {
+  min-height: 3.5rem;
+}
+
+.registerValueHead > span,
+.summaryLabel {
+  min-height: 2.7rem;
+  font-size: 1.24rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.summaryValue,
+.registerValueTotal {
+  font-size: clamp(2.9rem, 4vw, 3.4rem);
+  line-height: 0.96;
+  letter-spacing: -0.065em;
+}
+
+.registerValueAmountRow {
+  min-height: 4.35rem;
+  align-items: center;
+}
+
+.registerValueSuffix {
+  font-size: 1.16rem;
+}
+
+.summaryTileFooter {
+  min-height: 2.65rem;
+  padding-top: 1rem;
+}
+
+.summaryTileFooter small {
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.registerValueFooter .vatToggleGroup {
+  padding: 0.22rem;
+  gap: 0.22rem;
+}
+
+.registerValueFooter .vatToggleButton {
+  min-height: 2.75rem;
+  padding: 0 1.05rem;
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+@media (max-width: 1200px) {
+  .summaryTile {
+    min-height: 10.2rem;
+    padding: 1.45rem 1.5rem;
+  }
+
+  .registerValueHead > span,
+  .summaryLabel {
+    font-size: 1.14rem;
+  }
+
+  .summaryValue,
+  .registerValueTotal {
+    font-size: clamp(2.55rem, 3.8vw, 3rem);
+  }
+}
+
+@media (max-width: 760px) {
+  .summaryTile {
+    min-height: 9.6rem;
+    padding: 1.3rem 1.25rem;
+  }
+
+  .registerValueHead > span,
+  .summaryLabel {
+    font-size: 1.05rem;
+  }
+
+  .summaryValue,
+  .registerValueTotal {
+    font-size: 2.45rem;
+  }
+
+  .summaryTileFooter small {
+    font-size: 0.98rem;
+  }
+
+  .registerValueFooter .vatToggleButton {
+    min-height: 2.55rem;
+    font-size: 0.92rem;
+  }
+}
