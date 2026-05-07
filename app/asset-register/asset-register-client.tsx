@@ -3189,7 +3189,7 @@ export default function AssetRegisterClient() {
               <div className={styles.modalHeaderText}>
                 <span className={styles.modalEyebrow}>Calculate future price</span>
                 <h3 id="projection-title">{projectionAsset.title}</h3>
-                <p>Project a future value using compound inflation, updated machine hours and the same saved condition.</p>
+                <p>Follow the steps: confirm the saved starting point, set your future assumptions, then calculate the projected value.</p>
               </div>
 
               <button type="button" className={styles.modalCloseButton} onClick={closeProjectionModal} aria-label="Close future price modal">
@@ -3198,145 +3198,198 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.projectionScrollBody}`}>
-              <div className={styles.modalBody}>
-                <div className={styles.projectionIntro}>
-                <div>
-                  <span>Current register value</span>
-                  <strong>{money(projectionAsset.value)}</strong>
-                </div>
-                <div>
-                  <span>Saved condition</span>
-                  <strong>{conditionLabel(projectionAsset.condition)}</strong>
-                </div>
-                <div>
-                  <span>Current usage</span>
-                  <strong>{buildAssetUsageValue(projectionAsset)}</strong>
-                </div>
-              </div>
-
-              <div className={styles.projectionInputRow}>
-                <label className={styles.field}>
-                  <span>Target year</span>
-                  <input
-                    type="number"
-                    min={new Date().getFullYear()}
-                    max={new Date().getFullYear() + 15}
-                    value={projectionForm.targetYear}
-                    onChange={(event) =>
-                      setProjectionForm((current) => ({
-                        ...current,
-                        targetYear: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Inflation % p.a.</span>
-                  <input
-                    type="number"
-                    min="-50"
-                    max="200"
-                    step="0.1"
-                    value={projectionForm.inflationRatePct}
-                    onChange={(event) =>
-                      setProjectionForm((current) => ({
-                        ...current,
-                        inflationRatePct: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Extra hours</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="50"
-                    value={projectionForm.extraHours}
-                    onChange={(event) =>
-                      setProjectionForm((current) => ({
-                        ...current,
-                        extraHours: event.target.value,
-                      }))
-                    }
-                    placeholder="Optional"
-                  />
-                </label>
-              </div>
-
-              <div className={styles.projectionPresetRow}>
-                <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ inflationRatePct: '5' })}>
-                  5%
-                </button>
-                <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ inflationRatePct: '8' })}>
-                  8%
-                </button>
-                <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ inflationRatePct: '10' })}>
-                  10%
-                </button>
-                <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ extraHours: '0' })}>
-                  +0 hrs
-                </button>
-                <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ extraHours: '1000' })}>
-                  +1 000 hrs
-                </button>
-                <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ extraHours: '2000' })}>
-                  +2 000 hrs
-                </button>
-              </div>
-
-              <div className={styles.formActions}>
-                <button type="button" className={styles.primaryButton} onClick={handleProjectionSubmit} disabled={isLoadingProjection}>
-                  {isLoadingProjection ? 'Calculating...' : 'Update future price'}
-                </button>
-              </div>
-
-              {projectionError ? <div className={styles.projectionError}>{projectionError}</div> : null}
-
-              {projectionResult ? (
-                <>
-                  <div className={styles.projectionStatsGrid}>
-                    <div className={styles.projectionStatCard}>
-                      <span className={styles.projectionStatLabel}>Current register</span>
-                      <strong className={styles.projectionStatValue}>{money(projectionResult.currentRegisterValueExVat)}</strong>
+              <div className={styles.projectionWorkflow}>
+                <div className={styles.projectionControlsColumn}>
+                  <section className={styles.projectionStepCard}>
+                    <div className={styles.projectionStepHeader}>
+                      <span className={styles.projectionStepNumber}>1</span>
+                      <div>
+                        <h4>Confirm the starting point</h4>
+                        <p>This saved register snapshot is used as the baseline for the future price.</p>
+                      </div>
                     </div>
 
-                    <div className={styles.projectionStatCard}>
-                      <span className={styles.projectionStatLabel}>Today retail</span>
-                      <strong className={styles.projectionStatValue}>{money(projectionResult.current.retailExVat)}</strong>
+                    <div className={styles.projectionIntro}>
+                      <div>
+                        <span>Current register value</span>
+                        <strong>{money(projectionAsset.value)}</strong>
+                      </div>
+                      <div>
+                        <span>Saved condition</span>
+                        <strong>{conditionLabel(projectionAsset.condition)}</strong>
+                      </div>
+                      <div>
+                        <span>Current usage</span>
+                        <strong>{buildAssetUsageValue(projectionAsset)}</strong>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className={styles.projectionStepCard}>
+                    <div className={styles.projectionStepHeader}>
+                      <span className={styles.projectionStepNumber}>2</span>
+                      <div>
+                        <h4>Set the future assumptions</h4>
+                        <p>Choose the year, inflation rate and expected extra usage, then calculate.</p>
+                      </div>
                     </div>
 
-                    <div className={`${styles.projectionStatCard} ${styles.projectionStatCardHighlight}`}>
-                      <span className={styles.projectionStatLabel}>Projected future price</span>
-                      <strong className={styles.projectionStatValue}>{money(projectionResult.projected.retailExVat)}</strong>
+                    <div className={styles.projectionInputRow}>
+                      <label className={styles.field}>
+                        <span>Target year</span>
+                        <input
+                          type="number"
+                          min={new Date().getFullYear()}
+                          max={new Date().getFullYear() + 15}
+                          value={projectionForm.targetYear}
+                          onChange={(event) =>
+                            setProjectionForm((current) => ({
+                              ...current,
+                              targetYear: event.target.value,
+                            }))
+                          }
+                        />
+                        <small className={styles.fieldHint}>The year you want to estimate.</small>
+                      </label>
+
+                      <label className={styles.field}>
+                        <span>Inflation % p.a.</span>
+                        <input
+                          type="number"
+                          min="-50"
+                          max="200"
+                          step="0.1"
+                          value={projectionForm.inflationRatePct}
+                          onChange={(event) =>
+                            setProjectionForm((current) => ({
+                              ...current,
+                              inflationRatePct: event.target.value,
+                            }))
+                          }
+                        />
+                        <small className={styles.fieldHint}>Annual price movement.</small>
+                      </label>
+
+                      <label className={styles.field}>
+                        <span>Extra hours</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="50"
+                          value={projectionForm.extraHours}
+                          onChange={(event) =>
+                            setProjectionForm((current) => ({
+                              ...current,
+                              extraHours: event.target.value,
+                            }))
+                          }
+                          placeholder="Optional"
+                        />
+                        <small className={styles.fieldHint}>Leave blank if usage stays the same.</small>
+                      </label>
+                    </div>
+
+                    <div className={styles.projectionPresetPanel}>
+                      <div className={styles.projectionPresetGroup}>
+                        <span>Inflation shortcuts</span>
+                        <div className={styles.projectionPresetRow}>
+                          <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ inflationRatePct: '5' })}>
+                            5%
+                          </button>
+                          <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ inflationRatePct: '8' })}>
+                            8%
+                          </button>
+                          <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ inflationRatePct: '10' })}>
+                            10%
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className={styles.projectionPresetGroup}>
+                        <span>Usage shortcuts</span>
+                        <div className={styles.projectionPresetRow}>
+                          <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ extraHours: '0' })}>
+                            +0 hrs
+                          </button>
+                          <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ extraHours: '1000' })}>
+                            +1 000 hrs
+                          </button>
+                          <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ extraHours: '2000' })}>
+                            +2 000 hrs
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={`${styles.formActions} ${styles.projectionActions}`}>
+                      <button type="button" className={styles.primaryButton} onClick={handleProjectionSubmit} disabled={isLoadingProjection}>
+                        {isLoadingProjection ? 'Calculating...' : 'Calculate future price'}
+                      </button>
+                      <span className={styles.projectionActionHint}>The projected value updates in Step 3.</span>
+                    </div>
+                  </section>
+                </div>
+
+                <section className={`${styles.projectionStepCard} ${styles.projectionResultPanel}`} aria-live="polite">
+                  <div className={styles.projectionStepHeader}>
+                    <span className={styles.projectionStepNumber}>3</span>
+                    <div>
+                      <h4>Review the projected value</h4>
+                      <p>Compare the current register value, today retail value and future estimate.</p>
                     </div>
                   </div>
 
-                  <div className={styles.projectionSummaryCard}>
-                    <div>
-                      <span className={styles.projectionSummaryLabel}>Year move</span>
-                      <strong>{projectionResult.baseYear} → {projectionResult.targetYear}</strong>
-                    </div>
-                    <div>
-                      <span className={styles.projectionSummaryLabel}>Hours move</span>
-                      <strong>{projectionResult.current.hours.toLocaleString('en-ZA')} → {projectionResult.projected.hours.toLocaleString('en-ZA')}</strong>
-                    </div>
-                    <div>
-                      <span className={styles.projectionSummaryLabel}>Inflation used</span>
-                      <strong>{formatPercent(projectionResult.inflationRatePct)} p.a.</strong>
-                    </div>
-                  </div>
+                  {projectionError ? <div className={styles.projectionError}>{projectionError}</div> : null}
 
-                  <div className={styles.exportHelp}>
-                    <strong>Projection note</strong>
-                    <span>Future price keeps the same saved condition and updates the value using compound inflation plus extra machine hours.</span>
-                  </div>
-                </>
-              ) : isLoadingProjection ? (
-                <div className={styles.projectionLoading}>Calculating future price...</div>
-              ) : null}
+                  {projectionResult ? (
+                    <>
+                      <div className={styles.projectionHeroResult}>
+                        <span>Projected future price</span>
+                        <strong>{money(projectionResult.projected.retailExVat)}</strong>
+                        <small>Estimated ex VAT value for {projectionResult.targetYear}</small>
+                      </div>
+
+                      <div className={styles.projectionStatsGrid}>
+                        <div className={styles.projectionStatCard}>
+                          <span className={styles.projectionStatLabel}>Current register</span>
+                          <strong className={styles.projectionStatValue}>{money(projectionResult.currentRegisterValueExVat)}</strong>
+                        </div>
+
+                        <div className={styles.projectionStatCard}>
+                          <span className={styles.projectionStatLabel}>Today retail</span>
+                          <strong className={styles.projectionStatValue}>{money(projectionResult.current.retailExVat)}</strong>
+                        </div>
+                      </div>
+
+                      <div className={styles.projectionSummaryCard}>
+                        <div>
+                          <span className={styles.projectionSummaryLabel}>Year move</span>
+                          <strong>{projectionResult.baseYear} → {projectionResult.targetYear}</strong>
+                        </div>
+                        <div>
+                          <span className={styles.projectionSummaryLabel}>Hours move</span>
+                          <strong>{projectionResult.current.hours.toLocaleString('en-ZA')} → {projectionResult.projected.hours.toLocaleString('en-ZA')}</strong>
+                        </div>
+                        <div>
+                          <span className={styles.projectionSummaryLabel}>Inflation used</span>
+                          <strong>{formatPercent(projectionResult.inflationRatePct)} p.a.</strong>
+                        </div>
+                      </div>
+
+                      <div className={styles.exportHelp}>
+                        <strong>Projection note</strong>
+                        <span>Future price keeps the same saved condition and updates the value using compound inflation plus extra machine hours.</span>
+                      </div>
+                    </>
+                  ) : isLoadingProjection ? (
+                    <div className={styles.projectionLoading}>Calculating future price...</div>
+                  ) : (
+                    <div className={styles.projectionEmptyResult}>
+                      <strong>No projection yet</strong>
+                      <span>Set the future assumptions in Step 2, then calculate the future price.</span>
+                    </div>
+                  )}
+                </section>
               </div>
             </div>
           </div>
