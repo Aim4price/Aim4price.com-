@@ -7022,3 +7022,198 @@
     min-height: 210px !important;
   }
 }
+
+/* === Asset Options modal final action-only redesign === */
+.optionsModal {
+  width: min(100%, 900px) !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: clamp(1.35rem, 2.15vw, 1.75rem) !important;
+  border-radius: 2rem !important;
+}
+
+.optionsModalHeader {
+  margin-bottom: 1.05rem !important;
+  padding-bottom: 1.05rem !important;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9) !important;
+}
+
+.optionsModalHeader h3 {
+  font-size: clamp(1.72rem, 2.5vw, 2.18rem) !important;
+  font-weight: 760 !important;
+  letter-spacing: -0.052em !important;
+}
+
+.optionsScrollBody {
+  flex: 0 0 auto !important;
+  min-height: auto !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  scrollbar-gutter: auto !important;
+}
+
+.optionsContent {
+  display: grid !important;
+  gap: 1rem !important;
+}
+
+.assetOptionsSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1.22rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 38%),
+    linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.032),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.assetOptionsSectionHeader span {
+  color: #10352b;
+  font-size: 1rem;
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+}
+
+.assetOptionsSectionHeader p {
+  max-width: 34rem;
+  margin: 0;
+  color: #617286;
+  font-size: 0.92rem;
+  font-weight: 620;
+  line-height: 1.42;
+  text-align: right;
+}
+
+.assetOptionsGrid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.86rem !important;
+}
+
+.assetOptionsGrid .optionActionButton {
+  min-height: 5.15rem !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  gap: 0.9rem !important;
+  padding: 1rem 1.05rem !important;
+  border-radius: 1.18rem !important;
+  color: #1d3b62 !important;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetOptionsGrid .optionActionButton:hover {
+  border-color: rgba(184, 202, 218, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eef5fb 100%) !important;
+  box-shadow:
+    0 16px 30px rgba(16, 31, 28, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetOptionsGrid .optionActionButton > .buttonIcon {
+  width: 1.18rem;
+  height: 1.18rem;
+  color: #1d3b62;
+}
+
+.assetOptionsGrid .optionActionButton > span {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.assetOptionsGrid .optionActionButton strong {
+  color: #10352b;
+  font-size: 1rem;
+  font-weight: 850;
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+}
+
+.assetOptionsGrid .optionActionButton small {
+  color: #627386;
+  font-size: 0.83rem;
+  font-weight: 620;
+  line-height: 1.32;
+}
+
+.assetOptionsGrid .optionFeaturedButton {
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.1), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%) !important;
+  border-color: rgba(190, 224, 206, 0.98) !important;
+}
+
+.assetOptionsGrid .optionFeaturedButton > .buttonIcon,
+.assetOptionsGrid .optionFeaturedButton strong {
+  color: #124635 !important;
+}
+
+.assetOptionsGrid .optionDangerButton {
+  color: #9b3030 !important;
+  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%) !important;
+  border-color: rgba(235, 203, 203, 0.98) !important;
+}
+
+.assetOptionsGrid .optionDangerButton:hover {
+  border-color: rgba(214, 164, 164, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #ffeded 100%) !important;
+  box-shadow:
+    0 16px 30px rgba(155, 51, 51, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetOptionsGrid .optionDangerButton > .buttonIcon,
+.assetOptionsGrid .optionDangerButton strong {
+  color: #9b3030 !important;
+}
+
+@media (max-width: 900px) {
+  .optionsModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: min(88vh, calc(100dvh - 1rem)) !important;
+    overflow: hidden !important;
+    padding: 1rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .optionsScrollBody {
+    overflow-y: auto !important;
+    padding-right: 0.58rem !important;
+    margin-right: -0.2rem !important;
+  }
+
+  .assetOptionsSectionHeader {
+    display: grid;
+    justify-items: start;
+  }
+
+  .assetOptionsSectionHeader p {
+    text-align: left;
+  }
+
+  .assetOptionsGrid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .assetOptionsGrid .optionActionButton {
+    min-height: auto !important;
+    align-items: flex-start !important;
+    padding: 0.95rem !important;
+  }
+}

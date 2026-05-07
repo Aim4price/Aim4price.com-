@@ -3026,69 +3026,74 @@ export default function AssetRegisterClient() {
 
             <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody}`}>
               <div className={styles.optionsContent}>
-              <div className={styles.scanAccessPanel}>
-                <div className={styles.scanAccessPreview}>
-                  <span className={styles.qrPreviewEyebrow}>QR code</span>
-                  <div className={styles.scanAccessQrFrame}>
-                    {activeAsset.publicAssetCode ? (
-                      <img src={buildAssetQrSvgUrl(activeAsset)} alt={`QR code for ${activeAsset.title}`} />
-                    ) : (
-                      <p className={styles.qrPreviewFallback}>QR artwork is not ready for this asset yet.</p>
-                    )}
-                  </div>
+                <div className={styles.assetOptionsSectionHeader}>
+                  <span>Choose an action</span>
+                  <p>Manage the saved asset, QR tools, reporting and marketplace from one clean panel.</p>
                 </div>
 
-                <div className={styles.scanAccessSummary}>
-                  <span className={styles.qrPreviewEyebrow}>Scan access</span>
-                  <h4>Permanent scanner access</h4>
-                  <p>
-                    Keep the fixed QR linked to this asset. Open the QR code modal to copy the scan link, download the QR image and print a label.
-                    Public QR scans always ask for the farm PIN.
-                  </p>
+                <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid}`}>
+                  <button
+                    type="button"
+                    className={`${styles.optionActionButton} ${styles.optionFeaturedButton}`}
+                    onClick={() => { closeActionDialog(); openUpdater(activeAsset); }}
+                  >
+                    <EditIcon className={styles.buttonIcon} />
+                    <span>
+                      <strong>Update asset</strong>
+                      <small>Edit details, documents, photos and status.</small>
+                    </span>
+                  </button>
+
+                  <button type="button" className={styles.optionActionButton} onClick={openQrDialog}>
+                    <QrIcon className={styles.buttonIcon} />
+                    <span>
+                      <strong>QR code</strong>
+                      <small>Copy, download or print the asset QR label.</small>
+                    </span>
+                  </button>
+
+                  <button type="button" className={styles.optionActionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
+                    <DownloadIcon className={styles.buttonIcon} />
+                    <span>
+                      <strong>Download asset PDF</strong>
+                      <small>Open a clean asset sheet for records.</small>
+                    </span>
+                  </button>
+
+                  {canProjectFuturePrice(activeAsset) ? (
+                    <button type="button" className={styles.optionActionButton} onClick={() => openProjectionModal(activeAsset)}>
+                      <TrendIcon className={styles.buttonIcon} />
+                      <span>
+                        <strong>Calculate future price</strong>
+                        <small>Project value using year, inflation and hours.</small>
+                      </span>
+                    </button>
+                  ) : null}
+
+                  {isMarketplaceEligible(activeAsset) ? (
+                    <button type="button" className={styles.optionActionButton} onClick={() => handlePublishFromDialog(activeAsset)}>
+                      <StoreIcon className={styles.buttonIcon} />
+                      <span>
+                        <strong>{isLiveOnMarketplace(activeAsset) ? 'Update marketplace' : 'Send to marketplace'}</strong>
+                        <small>{isLiveOnMarketplace(activeAsset) ? 'Refresh the live listing details.' : 'Create a marketplace listing from this asset.'}</small>
+                      </span>
+                    </button>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    className={`${styles.optionActionButton} ${styles.optionDangerButton}`}
+                    disabled={busyDeleteId === activeAsset.id}
+                    onClick={() => handleDeleteFromDialog(activeAsset)}
+                  >
+                    <TrashIcon className={styles.buttonIcon} />
+                    <span>
+                      <strong>{busyDeleteId === activeAsset.id ? 'Removing...' : 'Delete asset'}</strong>
+                      <small>Permanently remove this saved asset.</small>
+                    </span>
+                  </button>
                 </div>
               </div>
-
-              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid}`}>
-                <button type="button" className={styles.optionActionButton} onClick={openQrDialog}>
-                  <QrIcon className={styles.buttonIcon} />
-                  <span>QR code</span>
-                </button>
-
-                <button type="button" className={styles.optionActionButton} onClick={() => { closeActionDialog(); openUpdater(activeAsset); }}>
-                  <EditIcon className={styles.buttonIcon} />
-                  <span>Update asset</span>
-                </button>
-
-                {canProjectFuturePrice(activeAsset) ? (
-                  <button type="button" className={styles.optionActionButton} onClick={() => openProjectionModal(activeAsset)}>
-                    <TrendIcon className={styles.buttonIcon} />
-                    <span>Calculate future price</span>
-                  </button>
-                ) : null}
-
-                <button type="button" className={styles.optionActionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
-                  <DownloadIcon className={styles.buttonIcon} />
-                  <span>Download asset PDF</span>
-                </button>
-
-                {isMarketplaceEligible(activeAsset) ? (
-                  <button type="button" className={styles.optionActionButton} onClick={() => handlePublishFromDialog(activeAsset)}>
-                    <StoreIcon className={styles.buttonIcon} />
-                    <span>{isLiveOnMarketplace(activeAsset) ? 'Update marketplace' : 'Send to marketplace'}</span>
-                  </button>
-                ) : null}
-
-                <button
-                  type="button"
-                  className={`${styles.optionActionButton} ${styles.optionDangerButton}`}
-                  disabled={busyDeleteId === activeAsset.id}
-                  onClick={() => handleDeleteFromDialog(activeAsset)}
-                >
-                  <TrashIcon className={styles.buttonIcon} />
-                  <span>{busyDeleteId === activeAsset.id ? 'Removing...' : 'Delete asset'}</span>
-                </button>
-              </div>
-            </div>
             </div>
           </div>
         </div>
