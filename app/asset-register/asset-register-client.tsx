@@ -29,6 +29,11 @@ type RegisterAsset = {
   typedModelName: string;
   normalizedTypedModelName: string;
   specsJson: Record<string, unknown>;
+  depreciationMethodUsed: string;
+  lifeWorkedPercent: number | null;
+  lifeRemainingPercent: number | null;
+  estimatedHours: number | null;
+  maxLifetimeHours: number | null;
   kind: AssetKind;
   title: string;
   value: number;
@@ -786,12 +791,78 @@ function assetFamilyLabel(asset: RegisterAsset): string {
   return 'Manual asset';
 }
 
+function readNumberFromSpecs(specs: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const value = specs[key];
+    if (value === null || typeof value === 'undefined' || value === '') {
+      continue;
+    }
+
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+      return numeric;
+    }
+  }
+
+  return null;
+}
+
+function getAssetLifeWorkedPercent(asset: RegisterAsset): number | null {
+  if (asset.lifeWorkedPercent !== null && typeof asset.lifeWorkedPercent !== 'undefined') {
+    const direct = Number(asset.lifeWorkedPercent);
+    if (Number.isFinite(direct)) {
+      return Math.min(100, Math.max(0, direct));
+    }
+  }
+
+  const fromSpecs = readNumberFromSpecs(asset.specsJson, [
+    'life_worked_percent',
+    'worked_percent',
+    'lifetime_worked_percent',
+    'percent_worked',
+    'lifetime_used_percent',
+  ]);
+
+  return fromSpecs === null ? null : Math.min(100, Math.max(0, fromSpecs));
+}
+
+function formatUsagePercent(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  const formatted = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  return `${formatted}% worked`;
+}
+
+function buildAssetUsageValue(asset: RegisterAsset): string {
+  const percent = getAssetLifeWorkedPercent(asset);
+  const hours = Number(asset.hours);
+  const hasHours = Number.isFinite(hours) && hours > 0;
+  const depreciationMethod = String(asset.depreciationMethodUsed ?? '').trim().toLowerCase();
+  const usesPercentDepreciation = depreciationMethod === 'semi_depreciation' || depreciationMethod === 'percentage_depreciation';
+
+  if (percent !== null && (usesPercentDepreciation || !hasHours)) {
+    return formatUsagePercent(percent);
+  }
+
+  if (hasHours) {
+    return `${Math.round(hours).toLocaleString('en-ZA')} hours`;
+  }
+
+  if (percent !== null) {
+    return formatUsagePercent(percent);
+  }
+
+  return '—';
+}
+
+function buildAssetUsageMeta(asset: RegisterAsset): string {
+  const usageValue = buildAssetUsageValue(asset);
+  return usageValue === '—' ? '' : `Usage: ${usageValue}`;
+}
+
 function buildAssetMeta(asset: RegisterAsset): string {
   const parts = [
     asset.yearModel ? `Year Model: ${asset.yearModel}` : '',
-    asset.hours !== null && typeof asset.hours !== 'undefined'
-      ? `Usage: ${asset.hours.toLocaleString('en-ZA')} hours`
-      : '',
+    buildAssetUsageMeta(asset),
     asset.condition ? `Condition: ${conditionLabel(asset.condition)}` : '',
   ].filter(Boolean);
 
@@ -814,6 +885,8 @@ function buildSearchableText(asset: RegisterAsset): string {
     asset.cab,
     asset.yearModel ? String(asset.yearModel) : '',
     asset.hours !== null && typeof asset.hours !== 'undefined' ? String(asset.hours) : '',
+    asset.lifeWorkedPercent !== null && typeof asset.lifeWorkedPercent !== 'undefined' ? String(asset.lifeWorkedPercent) : '',
+    buildAssetUsageMeta(asset),
     conditionLabel(asset.condition),
     kindLabel(asset.kind),
     methodLabel(asset.selectedMethod),
@@ -1654,11 +1727,8 @@ export default function AssetRegisterClient() {
         { label: 'Power', value: asset.powerKw !== null && typeof asset.powerKw !== 'undefined' ? `${asset.powerKw} kW` : '—' },
         { label: 'Year', value: asset.yearModel ? String(asset.yearModel) : '—' },
         {
-          label: 'Hours',
-          value:
-            asset.hours !== null && typeof asset.hours !== 'undefined'
-              ? asset.hours.toLocaleString('en-ZA')
-              : '—',
+          label: 'Usage',
+          value: buildAssetUsageValue(asset),
         },
         { label: 'Condition', value: conditionLabel(asset.condition) },
         { label: 'Serial', value: asset.serialNumber || '—' },
@@ -1989,6 +2059,11 @@ export default function AssetRegisterClient() {
   const searchDescription = searchTerm.trim()
     ? `${filteredAssets.length} result${filteredAssets.length === 1 ? '' : 's'} for “${searchTerm.trim()}”`
     : `${assets.length} saved asset${assets.length === 1 ? '' : 's'} in your register`;
+  const registerRangeDescription = filteredAssets.length
+    ? `Showing ${pageStart + 1}-${pageEnd} of ${filteredAssets.length}`
+    : searchTerm.trim()
+      ? 'No assets match the current search.'
+      : 'No saved assets yet.';
 
   return (
     <main className={styles.page}>
@@ -2014,10 +2089,6 @@ export default function AssetRegisterClient() {
                 <span>Download full Asset Register</span>
               </button>
 
-              <button type="button" className={styles.primaryButton} onClick={openCreateModal}>
-                <PlusIcon className={styles.buttonIcon} />
-                <span>Manually add asset</span>
-              </button>
             </div>
           </div>
 
@@ -2056,9 +2127,15 @@ export default function AssetRegisterClient() {
               <strong>{assets.length}</strong>
             </div>
 
-            <div className={styles.summaryTile}>
-              <span>Equipment assets</span>
-              <strong>{equipmentCount}</strong>
+            <div className={`${styles.summaryTile} ${styles.equipmentSummaryTile}`}>
+              <div className={styles.summaryTileMain}>
+                <span>Equipment assets</span>
+                <strong>{equipmentCount}</strong>
+              </div>
+              <div className={styles.summaryTileMeta}>
+                <span>{searchDescription}</span>
+                <small>{registerRangeDescription}</small>
+              </div>
             </div>
           </div>
 
@@ -2085,16 +2162,10 @@ export default function AssetRegisterClient() {
               ) : null}
             </label>
 
-            <div className={styles.toolbarMeta}>
-              <strong className={styles.toolbarMetaTitle}>{searchDescription}</strong>
-              <span className={styles.toolbarMetaSub}>
-                {filteredAssets.length
-                  ? `Showing ${pageStart + 1}-${pageEnd} of ${filteredAssets.length}`
-                  : searchTerm.trim()
-                    ? 'No assets match the current search.'
-                    : 'No saved assets yet.'}
-              </span>
-            </div>
+            <button type="button" className={`${styles.primaryButton} ${styles.toolbarPrimaryButton}`} onClick={openCreateModal}>
+              <PlusIcon className={styles.buttonIcon} />
+              <span>Manually add asset</span>
+            </button>
           </div>
 
           {isLoading ? (
@@ -2248,12 +2319,8 @@ export default function AssetRegisterClient() {
                                       </div>
 
                                       <div className={styles.infoTile}>
-                                        <span>Hours</span>
-                                        <strong>
-                                          {asset.hours !== null && typeof asset.hours !== 'undefined'
-                                            ? asset.hours.toLocaleString('en-ZA')
-                                            : '—'}
-                                        </strong>
+                                        <span>Usage</span>
+                                        <strong>{buildAssetUsageValue(asset)}</strong>
                                       </div>
 
                                       <div className={styles.infoTile}>
@@ -3109,12 +3176,8 @@ export default function AssetRegisterClient() {
                   <strong>{conditionLabel(projectionAsset.condition)}</strong>
                 </div>
                 <div>
-                  <span>Current hours</span>
-                  <strong>
-                    {projectionAsset.hours !== null && typeof projectionAsset.hours !== 'undefined'
-                      ? projectionAsset.hours.toLocaleString('en-ZA')
-                      : '—'}
-                  </strong>
+                  <span>Current usage</span>
+                  <strong>{buildAssetUsageValue(projectionAsset)}</strong>
                 </div>
               </div>
 
