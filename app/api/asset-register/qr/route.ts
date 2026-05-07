@@ -5,7 +5,7 @@ import { getAssetRegisterItemById } from '../../../../lib/asset-register-db';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type QrFormat = 'svg' | 'print';
+type QrFormat = 'svg' | 'png' | 'print';
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -16,7 +16,12 @@ function unauthorized() {
 }
 
 function normalizeFormat(value: string | null): QrFormat {
-  return String(value ?? '').trim().toLowerCase() === 'print' ? 'print' : 'svg';
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (normalized === 'print') return 'print';
+  if (normalized === 'png' || normalized === 'image' || normalized === 'jpg' || normalized === 'jpeg') return 'png';
+
+  return 'svg';
 }
 
 function slugifyFileSegment(value: string): string {
@@ -126,30 +131,28 @@ function buildScanUrl(origin: string, publicAssetCode: string): string {
   return new URL(`/scan/${encodeURIComponent(publicAssetCode)}`, origin).toString();
 }
 
-function buildExternalQrSvgUrl(scanUrl: string, size: number): string {
+function buildExternalQrImageUrl(scanUrl: string, size: number, format: 'svg' | 'png'): string {
   const url = new URL('https://api.qrserver.com/v1/create-qr-code/');
   url.searchParams.set('data', scanUrl);
   url.searchParams.set('size', `${size}x${size}`);
-  url.searchParams.set('format', 'svg');
-  url.searchParams.set('margin', '0');
+  url.searchParams.set('format', format);
+  url.searchParams.set('margin', '18');
   return url.toString();
 }
 
-function buildSvgFileName(assetTitle: string, plateLabel: string): string {
-  return `${slugifyFileSegment(assetTitle)}-${slugifyFileSegment(plateLabel)}-qr.svg`;
+function buildQrFileName(assetTitle: string, plateLabel: string, extension: 'svg' | 'png'): string {
+  return `${slugifyFileSegment(assetTitle)}-${slugifyFileSegment(plateLabel)}-qr.${extension}`;
 }
 
 function buildPrintHtml(options: {
   assetTitle: string;
   plateLabel: string;
   publicAssetCode: string;
-  scanUrl: string;
   qrImageUrl: string;
 }): string {
   const assetTitle = escapeHtml(options.assetTitle);
   const plateLabel = escapeHtml(options.plateLabel);
   const publicAssetCode = escapeHtml(options.publicAssetCode);
-  const scanUrl = escapeHtml(options.scanUrl);
   const qrImageUrl = escapeHtml(options.qrImageUrl);
 
   return `<!doctype html>
@@ -157,169 +160,317 @@ function buildPrintHtml(options: {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${assetTitle} QR sheet</title>
+    <title>${assetTitle} QR label</title>
     <style>
       :root {
         color-scheme: light;
+        --brand-dark: #10382f;
+        --brand-mid: #165340;
+        --brand-soft: #edf6f1;
+        --line: #d9e3eb;
+        --text: #102f27;
+        --muted: #617286;
+        --page: #eef3f5;
       }
+
       * {
         box-sizing: border-box;
       }
+
       body {
         margin: 0;
         padding: 24px;
-        font-family: Inter, Arial, sans-serif;
-        background: #eef3f7;
-        color: #10232f;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 32%),
+          var(--page);
+        color: var(--text);
       }
+
       .shell {
-        width: min(100%, 920px);
+        width: min(100%, 880px);
         margin: 0 auto;
         display: grid;
-        gap: 16px;
+        gap: 18px;
       }
+
       .toolbar {
         display: flex;
         justify-content: space-between;
-        gap: 12px;
         align-items: center;
+        gap: 14px;
         flex-wrap: wrap;
       }
-      .titleBlock h1 {
-        margin: 0;
-        font-size: 32px;
-        line-height: 1.02;
-        letter-spacing: -0.03em;
-      }
-      .titleBlock p {
-        margin: 8px 0 0;
-        color: #5d6d7a;
-        line-height: 1.55;
-      }
-      .toolbar button {
-        min-height: 48px;
-        padding: 0 18px;
-        border-radius: 999px;
-        border: 1px solid #cfdae4;
-        background: #ffffff;
-        color: #173042;
-        font: inherit;
-        font-weight: 700;
-        cursor: pointer;
-      }
-      .sheet {
+
+      .titleBlock {
         display: grid;
-        grid-template-columns: 320px minmax(0, 1fr);
-        gap: 20px;
-        padding: 24px;
-        background: #ffffff;
-        border: 1px solid #d8e2ea;
-        border-radius: 28px;
-        box-shadow: 0 24px 60px rgba(13, 29, 41, 0.12);
+        gap: 5px;
       }
-      .qrCard,
-      .infoCard {
-        border: 1px solid #dfe8ee;
-        border-radius: 24px;
-        background: linear-gradient(180deg, #f9fbfc 0%, #f3f7fa 100%);
-        padding: 18px;
-      }
-      .qrCard {
-        display: grid;
-        gap: 16px;
-        align-content: start;
-      }
-      .eyebrow,
-      .infoRow span {
+
+      .eyebrow {
         display: inline-flex;
-        color: #6f8190;
+        align-items: center;
+        width: fit-content;
+        min-height: 28px;
+        padding: 0 12px;
+        border-radius: 999px;
+        color: #405b4f;
+        background: rgba(237, 246, 241, 0.94);
+        border: 1px solid rgba(205, 229, 216, 0.98);
         font-size: 12px;
-        font-weight: 800;
-        letter-spacing: 0.06em;
+        font-weight: 850;
+        letter-spacing: 0.075em;
         text-transform: uppercase;
       }
+
+      .titleBlock h1 {
+        margin: 0;
+        color: var(--text);
+        font-size: clamp(30px, 4vw, 42px);
+        line-height: 0.98;
+        letter-spacing: -0.055em;
+      }
+
+      .titleBlock p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 16px;
+        font-weight: 620;
+        line-height: 1.5;
+      }
+
+      .toolbar button {
+        min-height: 48px;
+        padding: 0 20px;
+        border-radius: 999px;
+        border: 1px solid rgba(210, 222, 237, 0.98);
+        background: linear-gradient(180deg, #ffffff 0%, #eef4fb 100%);
+        color: #1d3b62;
+        font: inherit;
+        font-size: 15px;
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: 0 12px 24px rgba(23, 45, 75, 0.07);
+      }
+
+      .previewArea {
+        display: grid;
+        justify-items: center;
+        padding: 22px;
+        border-radius: 32px;
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid rgba(217, 227, 235, 0.96);
+        box-shadow: 0 26px 70px rgba(16, 31, 28, 0.08);
+      }
+
+      .qrLabel {
+        width: min(100%, 510px);
+        min-height: 292px;
+        display: grid;
+        grid-template-columns: 190px minmax(0, 1fr);
+        gap: 18px;
+        align-items: stretch;
+        padding: 18px;
+        border-radius: 28px;
+        border: 1px solid #cbd9d1;
+        background:
+          radial-gradient(circle at top left, rgba(22, 83, 64, 0.09), transparent 36%),
+          linear-gradient(180deg, #ffffff 0%, #f6faf8 100%);
+        box-shadow:
+          0 16px 36px rgba(16, 31, 28, 0.08),
+          inset 0 1px 0 rgba(255, 255, 255, 0.96);
+      }
+
       .qrFrame {
-        aspect-ratio: 1 / 1;
+        display: grid;
+        place-items: center;
+        min-width: 0;
+        padding: 10px;
         border-radius: 22px;
         background: #ffffff;
-        border: 1px solid #d8e2ea;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
+        border: 1px solid #d9e4dc;
       }
+
       .qrFrame img {
         width: 100%;
-        height: 100%;
+        max-width: 160px;
+        aspect-ratio: 1 / 1;
         object-fit: contain;
-      }
-      .plateLabel {
         display: block;
-        font-size: 30px;
-        font-weight: 900;
-        letter-spacing: -0.03em;
       }
-      .infoCard {
+
+      .labelCopy {
+        min-width: 0;
         display: grid;
+        align-content: center;
         gap: 12px;
       }
-      .infoTitle {
-        margin: 0;
-        font-size: 42px;
-        line-height: 0.96;
-        letter-spacing: -0.04em;
+
+      .brandRow {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
       }
-      .infoRow {
+
+      .brandName {
+        color: var(--brand-dark);
+        font-size: 24px;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: -0.055em;
+      }
+
+      .labelPill {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        min-height: 28px;
+        padding: 0 11px;
+        border-radius: 999px;
+        color: var(--brand-mid);
+        background: var(--brand-soft);
+        border: 1px solid rgba(205, 229, 216, 0.98);
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.075em;
+        text-transform: uppercase;
+      }
+
+      .assetTitle {
+        margin: 0;
+        color: var(--text);
+        font-size: 30px;
+        line-height: 1.02;
+        letter-spacing: -0.055em;
+      }
+
+      .plateBlock {
         display: grid;
-        gap: 6px;
-        padding: 14px 16px;
+        gap: 4px;
+        padding: 12px 14px;
         border-radius: 18px;
         background: #ffffff;
-        border: 1px solid #d8e2ea;
+        border: 1px solid #d9e4dc;
       }
-      .infoRow strong,
-      .scanUrl {
-        color: #10232f;
-        font-size: 18px;
+
+      .plateBlock span,
+      .helpText span {
+        color: #718195;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .plateBlock strong {
+        color: var(--text);
+        font-size: 23px;
+        line-height: 1;
+        letter-spacing: -0.035em;
+      }
+
+      .helpText {
+        display: grid;
+        gap: 4px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 650;
         line-height: 1.45;
-        word-break: break-word;
       }
-      .scanUrl {
-        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-        font-size: 14px;
+
+      .publicCode {
+        margin-top: 2px;
+        color: #7a8797;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 10px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
       }
-      .footerNote {
-        color: #5d6d7a;
-        font-size: 14px;
-        line-height: 1.6;
+
+      @page {
+        size: A4;
+        margin: 12mm;
       }
+
       @media print {
         body {
           padding: 0;
           background: #ffffff;
         }
+
         .toolbar {
           display: none;
         }
+
         .shell {
           width: 100%;
+          margin: 0;
         }
-        .sheet {
-          box-shadow: none;
-          border-radius: 0;
-          border: none;
+
+        .previewArea {
+          display: block;
           padding: 0;
+          border: none;
+          box-shadow: none;
+          background: #ffffff;
+        }
+
+        .qrLabel {
+          width: 110mm;
+          min-height: 68mm;
+          padding: 5mm;
+          gap: 5mm;
+          border-radius: 8mm;
+          box-shadow: none;
+          break-inside: avoid;
+        }
+
+        .qrFrame {
+          border-radius: 6mm;
+          padding: 3mm;
+        }
+
+        .qrFrame img {
+          max-width: 42mm;
+        }
+
+        .brandName {
+          font-size: 18pt;
+        }
+
+        .assetTitle {
+          font-size: 20pt;
+        }
+
+        .plateBlock {
+          border-radius: 5mm;
+          padding: 3mm 4mm;
+        }
+
+        .plateBlock strong {
+          font-size: 17pt;
         }
       }
-      @media (max-width: 760px) {
+
+      @media (max-width: 640px) {
         body {
           padding: 12px;
         }
-        .sheet {
-          grid-template-columns: 1fr;
+
+        .previewArea {
+          padding: 12px;
+          border-radius: 24px;
         }
-        .infoTitle {
-          font-size: 34px;
+
+        .qrLabel {
+          grid-template-columns: 1fr;
+          width: 100%;
+        }
+
+        .qrFrame img {
+          max-width: 210px;
         }
       }
     </style>
@@ -328,44 +479,40 @@ function buildPrintHtml(options: {
     <div class="shell">
       <div class="toolbar">
         <div class="titleBlock">
-          <h1>Aim4price QR sheet</h1>
-          <p>Print or share this permanent operational QR for field scanning and asset updates.</p>
+          <span class="eyebrow">QR label</span>
+          <h1>Aim4price QR label</h1>
+          <p>Print this compact label and attach it to the asset.</p>
         </div>
-        <button type="button" onclick="window.print()">Print QR sheet</button>
+        <button type="button" onclick="window.print()">Print QR label</button>
       </div>
 
-      <section class="sheet">
-        <div class="qrCard">
-          <span class="eyebrow">Permanent asset QR</span>
+      <main class="previewArea">
+        <section class="qrLabel" aria-label="Printable Aim4price QR label">
           <div class="qrFrame">
             <img src="${qrImageUrl}" alt="QR code for ${assetTitle}" />
           </div>
-          <div>
-            <span class="eyebrow">Plate label</span>
-            <strong class="plateLabel">${plateLabel}</strong>
-          </div>
-        </div>
 
-        <div class="infoCard">
-          <span class="eyebrow">Operational scan</span>
-          <h1 class="infoTitle">${assetTitle}</h1>
-          <div class="infoRow">
-            <span>Plate label</span>
-            <strong>${plateLabel}</strong>
+          <div class="labelCopy">
+            <div class="brandRow">
+              <strong class="brandName">Aim4price</strong>
+              <span class="labelPill">Asset QR</span>
+            </div>
+
+            <h2 class="assetTitle">${assetTitle}</h2>
+
+            <div class="plateBlock">
+              <span>Plate label</span>
+              <strong>${plateLabel}</strong>
+            </div>
+
+            <div class="helpText">
+              <span>Scan access</span>
+              <div>Scan to update hours, fuel, notes and photos. Farm PIN required.</div>
+              <div class="publicCode">${publicAssetCode}</div>
+            </div>
           </div>
-          <div class="infoRow">
-            <span>Public asset code</span>
-            <strong>${publicAssetCode}</strong>
-          </div>
-          <div class="infoRow">
-            <span>Scan page</span>
-            <div class="scanUrl">${scanUrl}</div>
-          </div>
-          <p class="footerNote">
-            This QR opens the Aim4price operational scan page only. Valuation and finance details stay hidden behind the owner side of the platform.
-          </p>
-        </div>
-      </section>
+        </section>
+      </main>
     </div>
   </body>
 </html>`;
@@ -401,41 +548,58 @@ export async function GET(request: NextRequest) {
 
   const scanOrigin = resolvePublicOrigin(request);
   const scanUrl = buildScanUrl(scanOrigin, publicAssetCode);
-  const qrImageUrl = buildExternalQrSvgUrl(scanUrl, format === 'print' ? 920 : 840);
 
   if (format === 'print') {
-    return new NextResponse(
-      buildPrintHtml({
-        assetTitle: asset.title,
-        plateLabel,
-        publicAssetCode,
-        scanUrl,
-        qrImageUrl,
-      }),
-      {
-        status: 200,
-        headers: {
-          'content-type': 'text/html; charset=utf-8',
-          'cache-control': 'no-store',
+    try {
+      const qrImageUrl = buildExternalQrImageUrl(scanUrl, 640, 'png');
+      const qrResponse = await fetch(qrImageUrl, { cache: 'no-store' });
+
+      if (!qrResponse.ok) {
+        throw new Error(`QR render service returned ${qrResponse.status}.`);
+      }
+
+      const qrBuffer = Buffer.from(await qrResponse.arrayBuffer());
+      const embeddedQrImageUrl = `data:image/png;base64,${qrBuffer.toString('base64')}`;
+
+      return new NextResponse(
+        buildPrintHtml({
+          assetTitle: asset.title,
+          plateLabel,
+          publicAssetCode,
+          qrImageUrl: embeddedQrImageUrl,
+        }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'text/html; charset=utf-8',
+            'cache-control': 'no-store',
+          },
         },
-      },
-    );
+      );
+    } catch (error) {
+      console.error('asset QR print render failed', error);
+      return NextResponse.json(
+        { ok: false, error: 'Failed to render the asset QR label right now.' },
+        { status: 502 },
+      );
+    }
   }
 
   try {
+    const qrImageUrl = buildExternalQrImageUrl(scanUrl, format === 'png' ? 1200 : 840, format);
     const qrResponse = await fetch(qrImageUrl, { cache: 'no-store' });
 
     if (!qrResponse.ok) {
       throw new Error(`QR render service returned ${qrResponse.status}.`);
     }
 
-    const svg = await qrResponse.text();
-    const fileName = buildSvgFileName(asset.title, plateLabel);
+    const body = await qrResponse.arrayBuffer();
+    const fileName = buildQrFileName(asset.title, plateLabel, format);
 
-    return new NextResponse(svg, {
+    return new NextResponse(body, {
       status: 200,
       headers: {
-        'content-type': 'image/svg+xml; charset=utf-8',
+        'content-type': format === 'png' ? 'image/png' : 'image/svg+xml; charset=utf-8',
         'cache-control': 'no-store',
         'content-disposition': `${shouldDownload ? 'attachment' : 'inline'}; filename="${fileName}"`,
       },
