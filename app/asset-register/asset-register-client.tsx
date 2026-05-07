@@ -232,17 +232,6 @@ const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = 
   { value: 'serious', label: 'Requires attention' },
 ];
 
-const PROJECTION_EXTRA_HOUR_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: '', label: 'No extra hours' },
-  { value: '0', label: '+0 hours' },
-  { value: '250', label: '+250 hours' },
-  { value: '500', label: '+500 hours' },
-  { value: '1000', label: '+1 000 hours' },
-  { value: '1500', label: '+1 500 hours' },
-  { value: '2000', label: '+2 000 hours' },
-  { value: '3000', label: '+3 000 hours' },
-];
-
 const initialAssetDraft: AssetDraft = {
   kind: 'equipment',
   title: '',
@@ -3292,16 +3281,14 @@ export default function AssetRegisterClient() {
 
                     <label className={styles.field}>
                       <span>Add extra hours</span>
-                      <select
+                      <input
+                        type="number"
+                        min="0"
+                        step="50"
                         value={projectionForm.extraHours}
                         onChange={(event) => updateProjectionForm({ extraHours: event.target.value })}
-                      >
-                        {PROJECTION_EXTRA_HOUR_OPTIONS.map((option) => (
-                          <option key={option.value || 'none'} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                        placeholder="Type extra hours"
+                      />
                     </label>
                   </div>
 
