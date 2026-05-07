@@ -2123,6 +2123,7 @@ export default function AssetRegisterClient() {
                   {registerValueVatMode === 'excluded' ? <span className={styles.registerValueSuffix}> + VAT</span> : null}
                 </strong>
               </div>
+              <div className={styles.summaryTileFooter} aria-hidden="true" />
             </div>
 
             <div className={`${styles.summaryTile} ${styles.metricSummaryTile}`}>
