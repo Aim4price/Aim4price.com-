@@ -21,6 +21,11 @@ export type AssetRegisterItem = {
   typedModelName: string;
   normalizedTypedModelName: string;
   specsJson: Record<string, unknown>;
+  depreciationMethodUsed: string;
+  lifeWorkedPercent: number | null;
+  lifeRemainingPercent: number | null;
+  estimatedHours: number | null;
+  maxLifetimeHours: number | null;
   kind: AssetRegisterItemKind;
   title: string;
   value: number;
@@ -96,6 +101,11 @@ type AssetRegisterRow = {
   typed_model_name: string | null;
   normalized_typed_model_name: string | null;
   specs_json: unknown;
+  depreciation_method_used: string | null;
+  life_worked_percent: string | number | null;
+  life_remaining_percent: string | number | null;
+  estimated_hours: string | number | null;
+  max_lifetime_hours: string | number | null;
   kind: string | null;
   title: string | null;
   value: string | number | null;
@@ -171,8 +181,54 @@ function asIdText(value: unknown): string {
 }
 
 function asNumber(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') {
+    return null;
+  }
+
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function numberFromRecord(record: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const value = record[key];
+    if (value === null || typeof value === 'undefined' || value === '') {
+      continue;
+    }
+
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function percentFromSpecs(specs: Record<string, unknown>): number | null {
+  const value = numberFromRecord(specs, [
+    'life_worked_percent',
+    'worked_percent',
+    'lifetime_worked_percent',
+    'percent_worked',
+    'lifetime_used_percent',
+  ]);
+
+  if (value === null) {
+    return null;
+  }
+
+  return Math.min(100, Math.max(0, value));
+}
+
+function hoursFromSpecs(specs: Record<string, unknown>): number | null {
+  const value = numberFromRecord(specs, ['estimated_hours', 'hours', 'engine_hours', 'usage_amount']);
+  return value === null ? null : Math.max(0, Math.round(value));
+}
+
+function lifetimeHoursFromSpecs(specs: Record<string, unknown>): number | null {
+  const value = numberFromRecord(specs, ['max_lifetime_hours', 'expected_lifetime_hours', 'lifetime_hours', 'design_life_hours']);
+  return value === null ? null : Math.max(0, Math.round(value));
 }
 
 function asStringArray(value: unknown): string[] {
@@ -307,6 +363,10 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
   const selectedValueExVat = Math.round(
     asNumber(row.selected_value_ex_vat) ?? asNumber(row.value) ?? 0,
   );
+  const specsJson = isRecord(row.specs_json) ? row.specs_json : {};
+  const lifeWorkedPercent = asNumber(row.life_worked_percent) ?? percentFromSpecs(specsJson);
+  const estimatedHours = asNumber(row.estimated_hours) ?? hoursFromSpecs(specsJson);
+  const maxLifetimeHours = asNumber(row.max_lifetime_hours) ?? lifetimeHoursFromSpecs(specsJson);
 
   return {
     id: asIdText(row.id),
@@ -319,7 +379,12 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     equipmentModelId: asNumber(row.equipment_model_id),
     typedModelName: asText(row.typed_model_name),
     normalizedTypedModelName: asText(row.normalized_typed_model_name),
-    specsJson: isRecord(row.specs_json) ? row.specs_json : {},
+    specsJson,
+    depreciationMethodUsed: asText(row.depreciation_method_used),
+    lifeWorkedPercent,
+    lifeRemainingPercent: asNumber(row.life_remaining_percent),
+    estimatedHours,
+    maxLifetimeHours,
     kind: normalizeKind(row.kind),
     title: asText(row.title),
     value: Math.round(asNumber(row.value) ?? selectedValueExVat),
@@ -435,6 +500,11 @@ function buildSelectList(schema: TableSchema): string {
   const typedModelNameColumn = resolveColumn(schema, 'typed_model_name');
   const normalizedTypedModelNameColumn = resolveColumn(schema, 'normalized_typed_model_name');
   const specsJsonColumn = resolveColumn(schema, 'specs_json');
+  const depreciationMethodColumn = resolveColumn(schema, 'depreciation_method_used');
+  const lifeWorkedPercentColumn = resolveColumn(schema, 'life_worked_percent');
+  const lifeRemainingPercentColumn = resolveColumn(schema, 'life_remaining_percent');
+  const estimatedHoursColumn = resolveColumn(schema, 'estimated_hours');
+  const maxLifetimeHoursColumn = resolveColumn(schema, 'max_lifetime_hours');
   const kindColumn = resolveColumn(schema, 'kind', 'equipment_type', 'asset_type', 'item_type');
   const titleColumn = resolveColumn(schema, 'title', 'name', 'asset_name');
   const valueColumn = resolveColumn(
@@ -507,6 +577,11 @@ function buildSelectList(schema: TableSchema): string {
     `${typedModelNameExpression} as typed_model_name`,
     `${normalizedTypedModelNameExpression} as normalized_typed_model_name`,
     `${specsJsonExpression} as specs_json`,
+    depreciationMethodColumn ? `${depreciationMethodColumn} as depreciation_method_used` : `null::text as depreciation_method_used`,
+    lifeWorkedPercentColumn ? `${lifeWorkedPercentColumn} as life_worked_percent` : `null::numeric as life_worked_percent`,
+    lifeRemainingPercentColumn ? `${lifeRemainingPercentColumn} as life_remaining_percent` : `null::numeric as life_remaining_percent`,
+    estimatedHoursColumn ? `${estimatedHoursColumn} as estimated_hours` : `null::numeric as estimated_hours`,
+    maxLifetimeHoursColumn ? `${maxLifetimeHoursColumn} as max_lifetime_hours` : `null::numeric as max_lifetime_hours`,
     kindColumn ? `${kindColumn} as kind` : `'manual'::text as kind`,
     titleColumn ? `${titleColumn} as title` : `''::text as title`,
     valueColumn ? `${valueColumn} as value` : '0::numeric as value',
@@ -1188,6 +1263,12 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['typed_model_name'], valuationResult.typedModelName || null);
   pushField(fields, schema, ['normalized_typed_model_name'], valuationResult.normalizedTypedModelName || null);
   pushField(fields, schema, ['specs_json'], valuationResult.specsJson ?? {}, '::jsonb');
+  pushField(fields, schema, ['depreciation_method_used'], valuationResult.depreciationMethodUsed);
+  pushField(fields, schema, ['replacement_price_basis'], valuationResult.replacementPriceBasis);
+  pushField(fields, schema, ['life_worked_percent'], valuationResult.lifeWorkedPercent);
+  pushField(fields, schema, ['life_remaining_percent'], valuationResult.lifeRemainingPercent);
+  pushField(fields, schema, ['estimated_hours'], valuationResult.estimatedHours);
+  pushField(fields, schema, ['max_lifetime_hours'], valuationResult.maxLifetimeHours);
   pushField(fields, schema, ['year_model', 'year'], valuationResult.year);
   pushField(fields, schema, ['hours', 'engine_hours'], valuationResult.usageAmount ?? null);
   pushField(fields, schema, ['condition'], valuationResult.condition);
