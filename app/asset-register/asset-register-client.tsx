@@ -3009,7 +3009,6 @@ export default function AssetRegisterClient() {
           <div className={styles.optionsModal} role="dialog" aria-modal="true" aria-labelledby="asset-options-title">
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <span className={styles.modalEyebrow}>Asset options</span>
                 <h3 id="asset-options-title">{activeAsset.title}</h3>
                 <p>{buildAssetMeta(activeAsset)}</p>
               </div>
@@ -3026,11 +3025,6 @@ export default function AssetRegisterClient() {
 
             <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody}`}>
               <div className={styles.optionsContent}>
-                <div className={styles.assetOptionsSectionHeader}>
-                  <span>Choose an action</span>
-                  <p>Manage the saved asset, QR tools, reporting and marketplace from one clean panel.</p>
-                </div>
-
                 <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid}`}>
                   <button
                     type="button"
