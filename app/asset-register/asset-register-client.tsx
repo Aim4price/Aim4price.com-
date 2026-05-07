@@ -2118,18 +2118,19 @@ export default function AssetRegisterClient() {
               </div>
 
               <div className={styles.registerValueAmountRow}>
-                <strong>{money(displayedRegisterValue)}</strong>
-                <span className={styles.vatAmountNote}>{registerValueVatMode === 'included' ? 'VAT included' : 'VAT excluded'}</span>
+                <strong className={styles.registerValueTotal}>
+                  {money(displayedRegisterValue)}
+                  {registerValueVatMode === 'excluded' ? <span className={styles.registerValueSuffix}> + VAT</span> : null}
+                </strong>
               </div>
             </div>
 
             <div className={`${styles.summaryTile} ${styles.metricSummaryTile}`}>
               <div className={styles.metricSummaryTileHead}>
                 <span className={styles.summaryLabel}>Aim4price valued equipment</span>
-                <span className={styles.metricPill}>Live register</span>
               </div>
               <strong className={styles.summaryValue}>{aim4priceValuedEquipmentCount}</strong>
-              <small className={styles.summarySupportText}>Assets saved from Aim4price valuations.</small>
+              <div className={styles.summaryTileFooter} aria-hidden="true" />
             </div>
 
             <div className={`${styles.summaryTile} ${styles.totalAssetsTile}`}>
