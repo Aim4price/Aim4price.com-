@@ -2207,15 +2207,13 @@ export default function AssetRegisterClient() {
                             <h2>{asset.title}</h2>
                             <p>{buildAssetMeta(asset)}</p>
                             <div className={styles.assetMetaRow}>
-                              <span>{methodLabel(asset.selectedMethod)} value</span>
-                              <span>{conditionLabel(asset.condition)}</span>
-                              <span>{assetStatusDateLabel(asset)}</span>
+                              <span className={styles.assetValueMethodLabel}>{methodLabel(asset.selectedMethod)} value</span>
+                              <span className={styles.assetSavedDateLabel}>{assetStatusDateLabel(asset)}</span>
                             </div>
                           </div>
 
                           <div className={styles.assetHeaderAside}>
                             <div className={styles.valueBlock}>
-                              <small>Register value</small>
                               <strong>{money(asset.value)}</strong>
                               <span>Excl. VAT</span>
                             </div>

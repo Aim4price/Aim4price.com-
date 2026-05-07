@@ -3397,3 +3397,47 @@
     text-align: left;
   }
 }
+
+/* === Asset list value/date cleanup === */
+.assetMetaRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.12rem;
+  margin-top: 0.18rem;
+  color: var(--text-muted);
+  font-size: 0.96rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.assetMetaRow span {
+  display: block;
+}
+
+.assetValueMethodLabel {
+  color: #526172;
+  font-weight: 850;
+}
+
+.assetSavedDateLabel {
+  color: #667586;
+  font-size: 0.91rem;
+  font-weight: 720;
+}
+
+.valueBlock {
+  display: grid;
+  align-content: center;
+  gap: 0.18rem;
+}
+
+.valueBlock strong {
+  margin-top: 0;
+}
+
+@media (max-width: 860px) {
+  .valueBlock {
+    justify-items: start;
+  }
+}
+
