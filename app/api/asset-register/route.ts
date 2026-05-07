@@ -4,6 +4,7 @@ import {
   deleteUnreferencedAssetRegisterUploads,
   listInternalAssetRegisterUploadIds,
   MAX_ASSET_REGISTER_PHOTOS,
+  MAX_ASSET_REGISTER_DOCUMENTS,
 } from '../../../lib/asset-register-uploads';
 import {
   createManualAssetRegisterItem,
@@ -11,6 +12,7 @@ import {
   getAssetRegisterItemById,
   listAssetRegisterItems,
   updateAssetRegisterItem,
+  type AssetRegisterDocument,
   type AssetRegisterItemKind,
   type CreateManualAssetInput,
   type UpdateAssetRegisterItemInput,
@@ -95,6 +97,53 @@ function normalizePhotos(value: unknown): string[] {
       return true;
     })
     .slice(0, MAX_ASSET_REGISTER_PHOTOS);
+}
+
+
+function normalizeDocuments(value: unknown): AssetRegisterDocument[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const documents: AssetRegisterDocument[] = [];
+
+  value.forEach((entry, index) => {
+    if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
+      return;
+    }
+
+    const record = entry as Record<string, unknown>;
+    const url = String(record.url ?? '').trim();
+    const fileName = String(record.fileName ?? record.name ?? '').trim();
+
+    if (!url) {
+      return;
+    }
+
+    const document: AssetRegisterDocument = {
+      id: String(record.id ?? record.uploadId ?? url).trim() || url,
+      url,
+      fileName: fileName || `Document ${index + 1}`,
+      contentType: String(record.contentType ?? record.mimeType ?? 'application/octet-stream').trim() || 'application/octet-stream',
+      byteSize: Math.max(0, Math.round(Number(record.byteSize ?? record.sizeBytes ?? 0) || 0)),
+      uploadedAtIso: String(record.uploadedAtIso ?? record.uploadedAt ?? '').trim() || new Date().toISOString(),
+    };
+
+    const duplicateKey = document.url || document.id;
+    if (seen.has(duplicateKey)) {
+      return;
+    }
+
+    seen.add(duplicateKey);
+    documents.push(document);
+  });
+
+  return documents.slice(0, MAX_ASSET_REGISTER_DOCUMENTS);
+}
+
+function documentUrls(documents: AssetRegisterDocument[]): string[] {
+  return documents.map((document) => String(document.url ?? '').trim()).filter(Boolean);
 }
 
 function formatUnknownError(error: unknown, fallback: string): string {
@@ -192,6 +241,7 @@ export async function POST(request: NextRequest) {
       isInsured: Boolean(body.isInsured),
       financeNote: body.financeNote ?? null,
       photos: normalizePhotos(body.photos),
+      documents: normalizeDocuments(body.documents),
       hours: normalizeHours(body.hours),
       condition: normalizeCondition(body.condition),
     });
@@ -239,9 +289,12 @@ export async function PUT(request: NextRequest) {
   }
 
   const nextPhotos = normalizePhotos(body.photos);
-  const removedUploadIds = listInternalAssetRegisterUploadIds(
-    existing.photos.filter((photo) => !nextPhotos.includes(photo)),
-  );
+  const nextDocuments = normalizeDocuments(body.documents);
+  const nextDocumentUrls = documentUrls(nextDocuments);
+  const removedUploadIds = listInternalAssetRegisterUploadIds([
+    ...existing.photos.filter((photo) => !nextPhotos.includes(photo)),
+    ...documentUrls(existing.documents).filter((documentUrl) => !nextDocumentUrls.includes(documentUrl)),
+  ]);
 
   try {
     const item = await updateAssetRegisterItem(session.user.id, {
@@ -255,6 +308,7 @@ export async function PUT(request: NextRequest) {
       isInsured: Boolean(body.isInsured),
       financeNote: body.financeNote ?? null,
       photos: nextPhotos,
+      documents: nextDocuments,
       hours: normalizeHours(body.hours),
       condition: normalizeCondition(body.condition),
     });
@@ -299,7 +353,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
   }
 
-  const uploadIds = listInternalAssetRegisterUploadIds(existing.photos);
+  const uploadIds = listInternalAssetRegisterUploadIds([...existing.photos, ...documentUrls(existing.documents)]);
 
   try {
     await deleteAssetRegisterItem(session.user.id, assetId);
