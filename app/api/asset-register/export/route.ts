@@ -108,6 +108,11 @@ function buildOwnerMeta(profile: Awaited<ReturnType<typeof getAccountProfile>> |
   return parts.join(' • ') || 'Aim4price asset register export';
 }
 
+function documentSummary(item: AssetRegisterItem): string {
+  if (!item.documents.length) return '—';
+  return item.documents.map((document) => document.fileName).filter(Boolean).join(', ') || `${item.documents.length} document${item.documents.length === 1 ? '' : 's'}`;
+}
+
 function buildRows(items: AssetRegisterItem[], ownerName: string, ownerMeta: string): XlsxCellValue[][] {
   const totalValue = items.reduce((sum, item) => sum + Math.round(Number(item.value || 0)), 0);
   const equipmentCount = items.filter(
@@ -140,6 +145,8 @@ function buildRows(items: AssetRegisterItem[], ownerName: string, ownerMeta: str
       'Serial number',
       'Finance status',
       'Insurance status',
+      'Documents count',
+      'Documents',
       'Finance note',
       'Register value ex VAT',
       'Aim4price ex VAT',
@@ -168,6 +175,8 @@ function buildRows(items: AssetRegisterItem[], ownerName: string, ownerMeta: str
       item.serialNumber || '—',
       item.isFinanced ? 'Financed' : 'Not financed',
       item.isInsured ? 'Insured' : 'Not insured',
+      item.documents.length,
+      documentSummary(item),
       item.financeNote || '—',
       Math.round(Number(item.value || 0)),
       item.aim4priceValueExVat ?? '—',
