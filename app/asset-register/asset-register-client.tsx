@@ -53,6 +53,7 @@ type RegisterAsset = {
   note: string;
   serialNumber: string;
   isFinanced: boolean;
+  isInsured: boolean;
   financeNote: string;
   sellerPhone: string;
   marketplaceNotes: string;
@@ -170,6 +171,7 @@ type AssetDraft = {
   note: string;
   serialNumber: string;
   isFinanced: boolean;
+  isInsured: boolean;
   financeNote: string;
   photos: string[];
   hours: string;
@@ -239,6 +241,7 @@ const initialAssetDraft: AssetDraft = {
   note: '',
   serialNumber: '',
   isFinanced: false,
+  isInsured: false,
   financeNote: '',
   photos: [],
   hours: '',
@@ -712,6 +715,7 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     note: asset.note,
     serialNumber: asset.serialNumber,
     isFinanced: asset.isFinanced,
+    isInsured: asset.isInsured,
     financeNote: asset.financeNote,
     photos: normalizePhotos(asset.photos),
     hours: asset.hours === null || typeof asset.hours === 'undefined' ? '' : String(asset.hours),
@@ -744,6 +748,7 @@ function buildSavedItemFromAsset(asset: RegisterAsset) {
     updatedAtIso: asset.updatedAtIso,
     serialNumber: asset.serialNumber || undefined,
     isFinanced: asset.isFinanced,
+    isInsured: asset.isInsured,
     financeNote: asset.financeNote || undefined,
     photos: asset.photos,
   };
@@ -884,6 +889,7 @@ function buildSearchableText(asset: RegisterAsset): string {
     asset.serialNumber,
     asset.note,
     asset.financeNote,
+    asset.isInsured ? 'insured insurance' : 'not insured no insurance',
     asset.tractorType,
     asset.drive,
     asset.cab,
@@ -904,6 +910,7 @@ function buildExportDetail(asset: RegisterAsset): string {
   const parts = [
     buildAssetMeta(asset),
     asset.serialNumber ? `Serial: ${asset.serialNumber}` : '',
+    `Insurance: ${asset.isInsured ? 'Insured' : 'Not insured'}`,
   ].filter(Boolean);
 
   return parts.join(' • ');
@@ -1523,6 +1530,7 @@ export default function AssetRegisterClient() {
       note: assetDraft.note,
       serialNumber: assetDraft.serialNumber,
       isFinanced: assetDraft.isFinanced,
+      isInsured: assetDraft.isInsured,
       financeNote: assetDraft.financeNote,
       photos,
       hours: showUsageHoursField && hasHours ? Math.round(Number(hours)) : null,
@@ -1754,6 +1762,7 @@ export default function AssetRegisterClient() {
         { label: 'Condition', value: conditionLabel(asset.condition) },
         { label: 'Serial', value: asset.serialNumber || '—' },
         { label: 'Finance', value: asset.isFinanced ? 'Financed' : 'Not financed' },
+        { label: 'Insurance', value: asset.isInsured ? 'Insured' : 'Not insured' },
         { label: 'Updated', value: assetStatusDateLabel(asset) },
       ],
       notes: [
@@ -2364,6 +2373,11 @@ export default function AssetRegisterClient() {
                                       </div>
 
                                       <div className={styles.infoTile}>
+                                        <span>Insurance</span>
+                                        <strong>{asset.isInsured ? 'Insured' : 'Not insured'}</strong>
+                                      </div>
+
+                                      <div className={styles.infoTile}>
                                         <span>Usage</span>
                                         <strong>{buildAssetUsageValue(asset)}</strong>
                                       </div>
@@ -2642,6 +2656,21 @@ export default function AssetRegisterClient() {
                   }}
                 />
                 <span>This asset is financed</span>
+              </label>
+
+              <label className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  checked={assetDraft.isInsured}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    setAssetDraft((current) => ({
+                      ...current,
+                      isInsured: checked,
+                    }));
+                  }}
+                />
+                <span>This asset is insured</span>
               </label>
 
               {assetDraft.isFinanced ? (

@@ -6014,3 +6014,26 @@
 .projectionSimpleResult {
   scroll-margin-top: 1rem;
 }
+
+/* === Asset Register insurance status detail tile === */
+.infoGrid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media (max-width: 1180px) {
+  .infoGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .infoGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+}
