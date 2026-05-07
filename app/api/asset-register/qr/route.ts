@@ -162,92 +162,89 @@ function buildPrintHtml(options: {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${assetTitle} QR label</title>
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap');
+
       :root {
         color-scheme: light;
+        --page: #edf3f5;
+        --surface: #ffffff;
+        --surface-soft: #f7faf9;
+        --line: #d8e4dd;
+        --line-strong: #c8d8cf;
+        --text: #0f3329;
+        --muted: #5f7084;
+        --muted-soft: #7a8b9d;
         --brand-dark: #10382f;
         --brand-mid: #165340;
-        --brand-soft: #edf6f1;
-        --line: #d9e3eb;
-        --text: #102f27;
-        --muted: #617286;
-        --page: #eef3f5;
+        --blue-text: #1d3b62;
       }
 
       * {
         box-sizing: border-box;
       }
 
+      html,
+      body {
+        min-height: 100%;
+      }
+
       body {
         margin: 0;
-        padding: 24px;
-        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        padding: 28px;
+        font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
         background:
-          radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 32%),
-          var(--page);
+          radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 34%),
+          linear-gradient(180deg, #f4f7f8 0%, var(--page) 100%);
         color: var(--text);
       }
 
       .shell {
-        width: min(100%, 880px);
+        width: min(100%, 940px);
         margin: 0 auto;
         display: grid;
-        gap: 18px;
+        gap: 20px;
       }
 
       .toolbar {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 14px;
+        gap: 18px;
         flex-wrap: wrap;
       }
 
       .titleBlock {
         display: grid;
-        gap: 5px;
-      }
-
-      .eyebrow {
-        display: inline-flex;
-        align-items: center;
-        width: fit-content;
-        min-height: 28px;
-        padding: 0 12px;
-        border-radius: 999px;
-        color: #405b4f;
-        background: rgba(237, 246, 241, 0.94);
-        border: 1px solid rgba(205, 229, 216, 0.98);
-        font-size: 12px;
-        font-weight: 850;
-        letter-spacing: 0.075em;
-        text-transform: uppercase;
+        gap: 6px;
+        min-width: 0;
       }
 
       .titleBlock h1 {
         margin: 0;
         color: var(--text);
         font-size: clamp(30px, 4vw, 42px);
-        line-height: 0.98;
+        font-weight: 800;
+        line-height: 1;
         letter-spacing: -0.055em;
       }
 
       .titleBlock p {
         margin: 0;
         color: var(--muted);
-        font-size: 16px;
-        font-weight: 620;
-        line-height: 1.5;
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.48;
       }
 
       .toolbar button {
         min-height: 48px;
         padding: 0 20px;
-        border-radius: 999px;
         border: 1px solid rgba(210, 222, 237, 0.98);
+        border-radius: 999px;
         background: linear-gradient(180deg, #ffffff 0%, #eef4fb 100%);
-        color: #1d3b62;
+        color: var(--blue-text);
         font: inherit;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 800;
         cursor: pointer;
         box-shadow: 0 12px 24px rgba(23, 45, 75, 0.07);
@@ -256,28 +253,27 @@ function buildPrintHtml(options: {
       .previewArea {
         display: grid;
         justify-items: center;
-        padding: 22px;
+        padding: 26px;
+        border: 1px solid rgba(217, 227, 235, 0.96);
         border-radius: 32px;
         background: rgba(255, 255, 255, 0.82);
-        border: 1px solid rgba(217, 227, 235, 0.96);
         box-shadow: 0 26px 70px rgba(16, 31, 28, 0.08);
       }
 
       .qrLabel {
-        width: min(100%, 510px);
-        min-height: 292px;
+        width: min(100%, 680px);
         display: grid;
-        grid-template-columns: 190px minmax(0, 1fr);
-        gap: 18px;
+        grid-template-columns: 210px minmax(0, 1fr);
+        gap: 22px;
         align-items: stretch;
-        padding: 18px;
-        border-radius: 28px;
-        border: 1px solid #cbd9d1;
+        padding: 20px;
+        border: 1px solid var(--line-strong);
+        border-radius: 30px;
         background:
-          radial-gradient(circle at top left, rgba(22, 83, 64, 0.09), transparent 36%),
-          linear-gradient(180deg, #ffffff 0%, #f6faf8 100%);
+          radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 34%),
+          linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
         box-shadow:
-          0 16px 36px rgba(16, 31, 28, 0.08),
+          0 18px 38px rgba(16, 31, 28, 0.08),
           inset 0 1px 0 rgba(255, 255, 255, 0.96);
       }
 
@@ -285,95 +281,77 @@ function buildPrintHtml(options: {
         display: grid;
         place-items: center;
         min-width: 0;
-        padding: 10px;
-        border-radius: 22px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 24px;
         background: #ffffff;
-        border: 1px solid #d9e4dc;
       }
 
       .qrFrame img {
+        display: block;
         width: 100%;
-        max-width: 160px;
+        max-width: 176px;
         aspect-ratio: 1 / 1;
         object-fit: contain;
-        display: block;
       }
 
       .labelCopy {
         min-width: 0;
         display: grid;
         align-content: center;
-        gap: 12px;
-      }
-
-      .brandRow {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        flex-wrap: wrap;
+        gap: 14px;
+        padding: 2px 0;
       }
 
       .brandName {
         color: var(--brand-dark);
-        font-size: 24px;
+        font-size: 25px;
         font-weight: 900;
         line-height: 1;
-        letter-spacing: -0.055em;
+        letter-spacing: -0.06em;
       }
 
-      .labelPill {
-        display: inline-flex;
+      .assetTitle {
+        margin: 0;
+        color: var(--text);
+        font-size: clamp(27px, 4vw, 38px);
+        font-weight: 800;
+        line-height: 1.02;
+        letter-spacing: -0.065em;
+      }
+
+      .plateBlock {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
-        width: fit-content;
-        min-height: 28px;
-        padding: 0 11px;
-        border-radius: 999px;
-        color: var(--brand-mid);
-        background: var(--brand-soft);
-        border: 1px solid rgba(205, 229, 216, 0.98);
+        gap: 14px;
+        padding: 13px 16px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: #ffffff;
+      }
+
+      .plateBlock span,
+      .helpText span {
+        color: var(--muted-soft);
         font-size: 11px;
         font-weight: 900;
         letter-spacing: 0.075em;
         text-transform: uppercase;
       }
 
-      .assetTitle {
-        margin: 0;
-        color: var(--text);
-        font-size: 30px;
-        line-height: 1.02;
-        letter-spacing: -0.055em;
-      }
-
-      .plateBlock {
-        display: grid;
-        gap: 4px;
-        padding: 12px 14px;
-        border-radius: 18px;
-        background: #ffffff;
-        border: 1px solid #d9e4dc;
-      }
-
-      .plateBlock span,
-      .helpText span {
-        color: #718195;
-        font-size: 11px;
-        font-weight: 900;
-        letter-spacing: 0.07em;
-        text-transform: uppercase;
-      }
-
       .plateBlock strong {
         color: var(--text);
-        font-size: 23px;
+        font-size: 24px;
+        font-weight: 900;
         line-height: 1;
         letter-spacing: -0.035em;
+        white-space: nowrap;
       }
 
       .helpText {
         display: grid;
-        gap: 4px;
+        gap: 6px;
         color: var(--muted);
         font-size: 13px;
         font-weight: 650;
@@ -381,11 +359,12 @@ function buildPrintHtml(options: {
       }
 
       .publicCode {
-        margin-top: 2px;
+        margin-top: 1px;
         color: #7a8797;
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: 10px;
-        line-height: 1.35;
+        font-size: 9px;
+        font-weight: 700;
+        line-height: 1.3;
         overflow-wrap: anywhere;
       }
 
@@ -398,6 +377,8 @@ function buildPrintHtml(options: {
         body {
           padding: 0;
           background: #ffffff;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
 
         .toolbar {
@@ -418,30 +399,31 @@ function buildPrintHtml(options: {
         }
 
         .qrLabel {
-          width: 110mm;
-          min-height: 68mm;
+          width: 132mm;
+          min-height: 72mm;
+          grid-template-columns: 48mm minmax(0, 1fr);
+          gap: 6mm;
           padding: 5mm;
-          gap: 5mm;
           border-radius: 8mm;
           box-shadow: none;
           break-inside: avoid;
         }
 
         .qrFrame {
-          border-radius: 6mm;
           padding: 3mm;
+          border-radius: 6mm;
         }
 
         .qrFrame img {
-          max-width: 42mm;
+          max-width: 40mm;
         }
 
         .brandName {
-          font-size: 18pt;
+          font-size: 17pt;
         }
 
         .assetTitle {
-          font-size: 20pt;
+          font-size: 21pt;
         }
 
         .plateBlock {
@@ -454,7 +436,7 @@ function buildPrintHtml(options: {
         }
       }
 
-      @media (max-width: 640px) {
+      @media (max-width: 680px) {
         body {
           padding: 12px;
         }
@@ -465,12 +447,18 @@ function buildPrintHtml(options: {
         }
 
         .qrLabel {
-          grid-template-columns: 1fr;
           width: 100%;
+          grid-template-columns: 1fr;
+          gap: 16px;
         }
 
         .qrFrame img {
-          max-width: 210px;
+          max-width: 230px;
+        }
+
+        .plateBlock {
+          grid-template-columns: 1fr;
+          align-items: start;
         }
       }
     </style>
@@ -479,9 +467,8 @@ function buildPrintHtml(options: {
     <div class="shell">
       <div class="toolbar">
         <div class="titleBlock">
-          <span class="eyebrow">QR label</span>
           <h1>Aim4price QR label</h1>
-          <p>Print this compact label and attach it to the asset.</p>
+          <p>Print this permanent operational QR label and attach it to the asset.</p>
         </div>
         <button type="button" onclick="window.print()">Print QR label</button>
       </div>
@@ -493,10 +480,7 @@ function buildPrintHtml(options: {
           </div>
 
           <div class="labelCopy">
-            <div class="brandRow">
-              <strong class="brandName">Aim4price</strong>
-              <span class="labelPill">Asset QR</span>
-            </div>
+            <strong class="brandName">Aim4price</strong>
 
             <h2 class="assetTitle">${assetTitle}</h2>
 
