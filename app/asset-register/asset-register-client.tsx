@@ -17,6 +17,15 @@ type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
 type ExportFormat = 'pdf' | 'xlsx';
 
+type AssetDocument = {
+  id: string;
+  url: string;
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+  uploadedAtIso: string;
+};
+
 type RegisterAsset = {
   id: string;
   userId: string;
@@ -59,6 +68,7 @@ type RegisterAsset = {
   marketplaceNotes: string;
   marketplaceStatus: string;
   photos: string[];
+  documents: AssetDocument[];
   publicAssetCode: string;
   plateLabel: string;
   qrStatus: string;
@@ -174,6 +184,7 @@ type AssetDraft = {
   isInsured: boolean;
   financeNote: string;
   photos: string[];
+  documents: AssetDocument[];
   hours: string;
   condition: AssetConditionValue;
 };
@@ -191,6 +202,7 @@ type IconProps = {
 };
 
 const MAX_PHOTOS = 12;
+const MAX_DOCUMENTS = 20;
 const PAGE_SIZE = 6;
 const FALLBACK_ASSET_IMAGE = '/brand/Tractor.png';
 const MANUAL_ASSET_TYPE_OPTIONS: Array<{
@@ -244,6 +256,7 @@ const initialAssetDraft: AssetDraft = {
   isInsured: false,
   financeNote: '',
   photos: [],
+  documents: [],
   hours: '',
   condition: '',
 };
@@ -345,6 +358,18 @@ function PdfIcon({ className }: IconProps) {
       <path d="M14 3v5h5" />
       <path d="M9 15h6" />
       <path d="M9 18h5" />
+    </svg>
+  );
+}
+
+
+function DocumentIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M7 3h7l5 5v13H7z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 13h6" />
+      <path d="M9 17h6" />
     </svg>
   );
 }
@@ -602,6 +627,76 @@ function normalizePhotos(value: string[]): string[] {
     .slice(0, MAX_PHOTOS);
 }
 
+
+function normalizeDocuments(value: unknown): AssetDocument[] {
+  const rawItems = Array.isArray(value) ? value : [];
+  const seen = new Set<string>();
+  const documents: AssetDocument[] = [];
+
+  rawItems.forEach((entry, index) => {
+    let document: AssetDocument | null = null;
+
+    if (typeof entry === 'string') {
+      const url = entry.trim();
+      if (url) {
+        document = {
+          id: url,
+          url,
+          fileName: `Document ${index + 1}`,
+          contentType: 'application/octet-stream',
+          byteSize: 0,
+          uploadedAtIso: new Date().toISOString(),
+        };
+      }
+    } else if (isPlainRecord(entry)) {
+      const url = String(entry.url ?? '').trim();
+      const fileName = String(entry.fileName ?? entry.name ?? entry.title ?? '').trim();
+
+      if (url) {
+        document = {
+          id: String(entry.id ?? entry.uploadId ?? url).trim() || url,
+          url,
+          fileName: fileName || `Document ${index + 1}`,
+          contentType: String(entry.contentType ?? entry.mimeType ?? 'application/octet-stream').trim() || 'application/octet-stream',
+          byteSize: Math.max(0, Math.round(Number(entry.byteSize ?? entry.sizeBytes ?? 0) || 0)),
+          uploadedAtIso: String(entry.uploadedAtIso ?? entry.uploadedAt ?? '').trim() || new Date().toISOString(),
+        };
+      }
+    }
+
+    if (!document) return;
+
+    const duplicateKey = document.url || document.id;
+    if (seen.has(duplicateKey)) return;
+
+    seen.add(duplicateKey);
+    documents.push(document);
+  });
+
+  return documents.slice(0, MAX_DOCUMENTS);
+}
+
+function assetDocuments(asset: RegisterAsset): AssetDocument[] {
+  return normalizeDocuments(asset.documents);
+}
+
+function formatByteSize(value: number): string {
+  const bytes = Math.max(0, Math.round(Number(value) || 0));
+
+  if (!bytes) return 'Saved document';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+
+  const mb = bytes / (1024 * 1024);
+  return `${mb.toFixed(mb >= 10 ? 0 : 1)} MB`;
+}
+
+function shortDocumentName(value: string): string {
+  const text = String(value ?? '').trim();
+  if (!text) return 'Document';
+  return text.length > 34 ? `${text.slice(0, 18)}…${text.slice(-10)}` : text;
+}
+
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -718,6 +813,7 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     isInsured: asset.isInsured,
     financeNote: asset.financeNote,
     photos: normalizePhotos(asset.photos),
+    documents: assetDocuments(asset),
     hours: asset.hours === null || typeof asset.hours === 'undefined' ? '' : String(asset.hours),
     condition: asset.condition,
   };
@@ -751,6 +847,7 @@ function buildSavedItemFromAsset(asset: RegisterAsset) {
     isInsured: asset.isInsured,
     financeNote: asset.financeNote || undefined,
     photos: asset.photos,
+    documents: assetDocuments(asset),
   };
 }
 
@@ -889,6 +986,8 @@ function buildSearchableText(asset: RegisterAsset): string {
     asset.serialNumber,
     asset.note,
     asset.financeNote,
+    ...assetDocuments(asset).map((document) => document.fileName),
+    assetDocuments(asset).length ? 'documents paperwork invoice natis papers' : '',
     asset.isInsured ? 'insured insurance' : 'not insured no insurance',
     asset.tractorType,
     asset.drive,
@@ -911,6 +1010,7 @@ function buildExportDetail(asset: RegisterAsset): string {
     buildAssetMeta(asset),
     asset.serialNumber ? `Serial: ${asset.serialNumber}` : '',
     `Insurance: ${asset.isInsured ? 'Insured' : 'Not insured'}`,
+    assetDocuments(asset).length ? `Documents: ${assetDocuments(asset).length}` : '',
   ].filter(Boolean);
 
   return parts.join(' • ');
@@ -1070,6 +1170,7 @@ export default function AssetRegisterClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
+  const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
   const [detailPhotoIndexByAsset, setDetailPhotoIndexByAsset] = useState<Record<string, number>>({});
   const detailTouchStartXRef = useRef<number | null>(null);
@@ -1090,6 +1191,7 @@ export default function AssetRegisterClient() {
   const [projectionError, setProjectionError] = useState<string | null>(null);
   const [isLoadingProjection, setIsLoadingProjection] = useState(false);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const documentInputRef = useRef<HTMLInputElement | null>(null);
   const projectionRequestRef = useRef(0);
   const projectionResultRef = useRef<HTMLElement | null>(null);
   const [shouldScrollToProjectionResult, setShouldScrollToProjectionResult] = useState(false);
@@ -1355,6 +1457,10 @@ export default function AssetRegisterClient() {
     if (photoInputRef.current) {
       photoInputRef.current.value = '';
     }
+
+    if (documentInputRef.current) {
+      documentInputRef.current.value = '';
+    }
   }
 
   function openCreateModal() {
@@ -1503,11 +1609,86 @@ export default function AssetRegisterClient() {
     }));
   }
 
+
+  async function handleDocumentFilesSelected(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    event.target.value = '';
+
+    if (!selectedFiles.length) {
+      return;
+    }
+
+    const remainingSlots = MAX_DOCUMENTS - assetDraft.documents.length;
+
+    if (remainingSlots <= 0) {
+      setNotice({ tone: 'error', message: `You can upload a maximum of ${MAX_DOCUMENTS} documents per asset.` });
+      return;
+    }
+
+    const filesToUpload = selectedFiles.slice(0, remainingSlots);
+    const formData = new FormData();
+    formData.append('uploadType', 'document');
+
+    filesToUpload.forEach((file) => {
+      formData.append('files', file);
+    });
+
+    setIsUploadingDocuments(true);
+
+    try {
+      const response = await fetch('/api/asset-register/uploads', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      const data = (await response.json()) as AssetUploadApiResponse;
+
+      if (!response.ok || !data.ok || !data.uploads?.length) {
+        throw new Error(data.error ?? 'Failed to upload documents.');
+      }
+
+      const uploadedDocuments = data.uploads.map((entry) => ({
+        id: entry.uploadId || entry.url,
+        url: entry.url,
+        fileName: entry.fileName,
+        contentType: entry.contentType,
+        byteSize: entry.byteSize,
+        uploadedAtIso: new Date().toISOString(),
+      }));
+
+      setAssetDraft((current) => ({
+        ...current,
+        documents: normalizeDocuments([...current.documents, ...uploadedDocuments]),
+      }));
+
+      setNotice({
+        tone: 'success',
+        message: `${data.uploads.length} document${data.uploads.length === 1 ? '' : 's'} uploaded.`,
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to upload documents.',
+      });
+    } finally {
+      setIsUploadingDocuments(false);
+    }
+  }
+
+  function removeDraftDocument(documentId: string) {
+    setAssetDraft((current) => ({
+      ...current,
+      documents: current.documents.filter((document) => document.id !== documentId),
+    }));
+  }
+
   async function handleAssetSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const value = Math.round(Number(assetDraft.value) || 0);
     const photos = normalizePhotos(assetDraft.photos);
+    const documents = normalizeDocuments(assetDraft.documents);
     const hasHours = assetDraft.hours.trim() !== '';
     const hours = hasHours ? Number(assetDraft.hours) : null;
 
@@ -1533,6 +1714,7 @@ export default function AssetRegisterClient() {
       isInsured: assetDraft.isInsured,
       financeNote: assetDraft.financeNote,
       photos,
+      documents,
       hours: showUsageHoursField && hasHours ? Math.round(Number(hours)) : null,
       condition: showConditionField ? assetDraft.condition || null : null,
     };
@@ -1763,6 +1945,7 @@ export default function AssetRegisterClient() {
         { label: 'Serial', value: asset.serialNumber || '—' },
         { label: 'Finance', value: asset.isFinanced ? 'Financed' : 'Not financed' },
         { label: 'Insurance', value: asset.isInsured ? 'Insured' : 'Not insured' },
+        { label: 'Documents', value: assetDocuments(asset).length ? `${assetDocuments(asset).length} saved` : 'No documents' },
         { label: 'Updated', value: assetStatusDateLabel(asset) },
       ],
       notes: [
@@ -2234,6 +2417,7 @@ export default function AssetRegisterClient() {
                     const previewPhoto = assetPreviewImage(asset);
                     const isLive = isLiveOnMarketplace(asset);
                     const isExpanded = expandedAssetId === asset.id;
+                    const detailDocuments = assetDocuments(asset);
 
                     return (
                       <article className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''}`} key={asset.id}>
@@ -2360,31 +2544,61 @@ export default function AssetRegisterClient() {
                                     ) : null}
                                   </div>
 
-                                  <div className={styles.assetContent}>
-                                    <div className={styles.infoGrid}>
-                                      <div className={styles.infoTile}>
-                                        <span>Serial</span>
-                                        <strong>{asset.serialNumber || '—'}</strong>
+                                  <div className={styles.assetDocumentsPanel}>
+                                    <div className={styles.assetDocumentsCard}>
+                                      <div className={styles.assetDocumentsMainLabel}>
+                                        <DocumentIcon className={styles.buttonIcon} />
+                                        <strong>Documents</strong>
+                                      </div>
+                                      <span>{detailDocuments.length ? `${detailDocuments.length} saved` : 'No documents yet'}</span>
+                                    </div>
+
+                                    {detailDocuments.length ? (
+                                      <div className={styles.assetDocumentList}>
+                                        {detailDocuments.slice(0, 4).map((document) => (
+                                          <a href={document.url} target="_blank" rel="noreferrer" className={styles.assetDocumentLink} key={document.id}>
+                                            <DocumentIcon className={styles.buttonIcon} />
+                                            <span>{shortDocumentName(document.fileName)}</span>
+                                          </a>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className={styles.assetDocumentEmpty}>Upload invoices, NATIS papers or finance documents from Update asset.</p>
+                                    )}
+                                  </div>
+
+                                  <div className={styles.assetDetailDivider} aria-hidden="true" />
+
+                                  <div className={styles.assetDetailsPanel}>
+                                    <div className={styles.assetDetailsGrid}>
+                                      <div className={styles.assetPrimaryDetails}>
+                                        <div className={styles.assetDetailRow}>
+                                          <span>Serial</span>
+                                          <strong>{asset.serialNumber || '—'}</strong>
+                                        </div>
+                                        <div className={styles.assetDetailRow}>
+                                          <span>Year</span>
+                                          <strong>{asset.yearModel || '—'}</strong>
+                                        </div>
+                                        <div className={styles.assetDetailRow}>
+                                          <span>Usage</span>
+                                          <strong>{buildAssetUsageValue(asset)}</strong>
+                                        </div>
+                                        <div className={styles.assetDetailRow}>
+                                          <span>Condition</span>
+                                          <strong>{conditionLabel(asset.condition)}</strong>
+                                        </div>
                                       </div>
 
-                                      <div className={styles.infoTile}>
-                                        <span>Finance</span>
-                                        <strong>{asset.isFinanced ? 'Financed' : 'Not financed'}</strong>
-                                      </div>
-
-                                      <div className={styles.infoTile}>
-                                        <span>Insurance</span>
-                                        <strong>{asset.isInsured ? 'Insured' : 'Not insured'}</strong>
-                                      </div>
-
-                                      <div className={styles.infoTile}>
-                                        <span>Usage</span>
-                                        <strong>{buildAssetUsageValue(asset)}</strong>
-                                      </div>
-
-                                      <div className={styles.infoTile}>
-                                        <span>Condition</span>
-                                        <strong>{conditionLabel(asset.condition)}</strong>
+                                      <div className={styles.assetStatusDetails}>
+                                        <div className={styles.assetStatusRow}>
+                                          <span>Financed</span>
+                                          <strong>{asset.isFinanced ? 'Yes' : 'No'}</strong>
+                                        </div>
+                                        <div className={styles.assetStatusRow}>
+                                          <span>Insured</span>
+                                          <strong>{asset.isInsured ? 'Yes' : 'No'}</strong>
+                                        </div>
                                       </div>
                                     </div>
 
@@ -2690,6 +2904,61 @@ export default function AssetRegisterClient() {
               ) : null}
 
               <div className={`${styles.field} ${styles.fullWidth}`}>
+                <span>Documents <small>(optional)</small></span>
+
+                <div className={styles.documentUploadPanel}>
+                  <input
+                    ref={documentInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain,image/jpeg,image/png,image/webp"
+                    multiple
+                    className={styles.fileInput}
+                    onChange={handleDocumentFilesSelected}
+                    disabled={isUploadingDocuments || assetDraft.documents.length >= MAX_DOCUMENTS}
+                  />
+
+                  <div className={styles.uploadRow}>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => documentInputRef.current?.click()}
+                      disabled={isUploadingDocuments || assetDraft.documents.length >= MAX_DOCUMENTS}
+                    >
+                      {isUploadingDocuments ? 'Uploading...' : 'Add documents'}
+                    </button>
+
+                    <span className={styles.uploadCount}>
+                      {assetDraft.documents.length} / {MAX_DOCUMENTS} documents
+                    </span>
+                  </div>
+
+                  <small className={styles.fieldHint}>Upload invoices, NATIS papers, insurance documents, finance contracts or service records.</small>
+                </div>
+              </div>
+
+              {assetDraft.documents.length ? (
+                <div className={styles.documentDraftList}>
+                  {assetDraft.documents.map((document) => (
+                    <div className={styles.documentDraftRow} key={document.id}>
+                      <span className={styles.documentDraftIcon}>
+                        <DocumentIcon className={styles.buttonIcon} />
+                      </span>
+                      <div>
+                        <strong>{shortDocumentName(document.fileName)}</strong>
+                        <small>{formatByteSize(document.byteSize)}</small>
+                      </div>
+                      <a href={document.url} target="_blank" rel="noreferrer" className={styles.documentOpenLink}>
+                        Open
+                      </a>
+                      <button type="button" className={styles.documentRemoveButton} onClick={() => removeDraftDocument(document.id)}>
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className={`${styles.field} ${styles.fullWidth}`}>
                 <span>Photo gallery <small>(optional)</small></span>
 
                 <div className={styles.uploadPanel}>
@@ -2742,7 +3011,7 @@ export default function AssetRegisterClient() {
                   Cancel
                 </button>
 
-                <button type="submit" className={styles.primaryButton} disabled={isSavingAsset || isUploadingPhotos}>
+                <button type="submit" className={styles.primaryButton} disabled={isSavingAsset || isUploadingPhotos || isUploadingDocuments}>
                   {isSavingAsset ? 'Saving...' : editingAsset ? 'Update asset' : 'Add asset'}
                 </button>
               </div>
@@ -2898,7 +3167,7 @@ export default function AssetRegisterClient() {
               <h3 id="delete-confirm-title">Are you sure you want to delete this?</h3>
               <p id="delete-confirm-copy">
                 All data will be lost. This permanently removes <strong>{deleteCandidateAsset.title}</strong> from your Asset Register,
-                including saved notes, photos, marketplace status and QR scan history.
+                including saved notes, photos, documents, marketplace status and QR scan history.
               </p>
 
               <div className={styles.deleteConfirmAsset}>
