@@ -2868,25 +2868,14 @@ export default function AssetRegisterClient() {
       ) : null}
 
       {isExportModalOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.exportModalOverlay}`}>
+        <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeExportModal} />
 
           <div className={`${styles.modalCard} ${styles.exportModal}`} role="dialog" aria-modal="true" aria-labelledby="export-title">
             <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
-              <div className={`${styles.modalHeaderText} ${styles.exportHeaderCopy}`}>
+              <div className={styles.modalHeaderText}>
                 <span className={styles.modalEyebrow}>Download full Asset Register</span>
-                <h3 id="export-title">Export your asset register</h3>
-                <p>
-                  Choose a clean PDF for sharing and printing, or a detailed Excel workbook for admin, insurance and data checks.
-                </p>
-
-                <div className={styles.exportQuickFacts} aria-label="Export details">
-                  <span>
-                    <strong>{assets.length}</strong> {assets.length === 1 ? 'asset' : 'assets'} included
-                  </span>
-                  <span>Values exclude VAT</span>
-                  <span>Exports the full register</span>
-                </div>
+                <h3 id="export-title">Export asset register</h3>
               </div>
 
               <button type="button" className={styles.modalCloseButton} onClick={closeExportModal} aria-label="Close export options">
@@ -2895,38 +2884,37 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.exportModalScrollBody}`}>
-              <div className={`${styles.modalBody} ${styles.exportModalBody}`}>
+              <div className={styles.exportModalBody}>
                 <div className={styles.exportFormatHeader}>
                   <div>
                     <span>Choose format</span>
                     <strong>{exportFormat === 'xlsx' ? 'XLSX workbook selected' : 'PDF summary selected'}</strong>
                   </div>
-                  <small>Click a card below, then confirm the download.</small>
                 </div>
 
-                <div className={styles.exportChoices} role="radiogroup" aria-label="Export format">
+                <div className={styles.exportChoices}>
                   <button
                     type="button"
                     className={`${styles.exportOption} ${exportFormat === 'pdf' ? styles.exportOptionActive : ''}`}
                     onClick={() => setExportFormat('pdf')}
                     aria-pressed={exportFormat === 'pdf'}
                   >
-                    <span className={styles.exportOptionSelectedMark} aria-hidden="true">
-                      {exportFormat === 'pdf' ? 'Selected' : 'Select'}
-                    </span>
-                    <span className={styles.exportGraphic}>
-                      <ExportGraphic src="/brand/pdf.png" alt="PDF export" icon={<PdfIcon className={styles.exportOptionIcon} />} />
-                    </span>
-                    <span className={styles.exportCopy}>
-                      <span className={styles.exportOptionKicker}>Best for sharing</span>
-                      <strong>PDF summary</strong>
-                      <span>Polished printable overview with key values, asset details and status dates.</span>
-                    </span>
-                    <span className={styles.exportFeatureList} aria-hidden="true">
-                      <span>Printable register summary</span>
-                      <span>Clean client / bank handover</span>
-                      <span>Fast visual review</span>
-                    </span>
+                    <div className={styles.exportOptionTop}>
+                      <span className={styles.exportGraphic}>
+                        <ExportGraphic src="/brand/pdf.png" alt="PDF export" icon={<PdfIcon className={styles.exportOptionIcon} />} />
+                      </span>
+
+                      <div className={styles.exportOptionTitleBlock}>
+                        <strong>PDF summary</strong>
+                        <span className={styles.exportOptionStatus}>{exportFormat === 'pdf' ? 'Selected' : 'Select'}</span>
+                      </div>
+                    </div>
+
+                    <ul className={styles.exportFeatureList}>
+                      <li>Printable register summary</li>
+                      <li>Clean client / bank handover</li>
+                      <li>Fast visual review</li>
+                    </ul>
                   </button>
 
                   <button
@@ -2935,55 +2923,47 @@ export default function AssetRegisterClient() {
                     onClick={() => setExportFormat('xlsx')}
                     aria-pressed={exportFormat === 'xlsx'}
                   >
-                    <span className={styles.exportOptionSelectedMark} aria-hidden="true">
-                      {exportFormat === 'xlsx' ? 'Selected' : 'Select'}
-                    </span>
-                    <span className={styles.exportGraphic}>
-                      <ExportGraphic src="/brand/sheet.png" alt="Spreadsheet export" icon={<SpreadsheetIcon className={styles.exportOptionIcon} />} />
-                    </span>
-                    <span className={styles.exportCopy}>
-                      <span className={styles.exportOptionKicker}>Best for data work</span>
-                      <strong>XLSX workbook</strong>
-                      <span>Structured spreadsheet for Excel, DBeaver, accounting checks and bulk admin workflows.</span>
-                    </span>
-                    <span className={styles.exportFeatureList} aria-hidden="true">
-                      <span>Detailed register rows</span>
-                      <span>Spreadsheet-friendly data</span>
-                      <span>Easy offline editing</span>
-                    </span>
+                    <div className={styles.exportOptionTop}>
+                      <span className={styles.exportGraphic}>
+                        <ExportGraphic src="/brand/sheet.png" alt="Spreadsheet export" icon={<SpreadsheetIcon className={styles.exportOptionIcon} />} />
+                      </span>
+
+                      <div className={styles.exportOptionTitleBlock}>
+                        <strong>XLSX workbook</strong>
+                        <span className={styles.exportOptionStatus}>{exportFormat === 'xlsx' ? 'Selected' : 'Select'}</span>
+                      </div>
+                    </div>
+
+                    <ul className={styles.exportFeatureList}>
+                      <li>Detailed register rows</li>
+                      <li>Spreadsheet-friendly data</li>
+                      <li>Easy offline editing</li>
+                    </ul>
                   </button>
                 </div>
 
                 <div className={styles.exportHelp}>
-                  <div className={styles.exportHelpIcon} aria-hidden="true">
-                    <DownloadIcon className={styles.buttonIcon} />
-                  </div>
-                  <div>
-                    <strong>{assets.length} {assets.length === 1 ? 'asset' : 'assets'} will be included.</strong>
-                    <span>
-                      The export uses the full saved register, not only the visible search page. All register values remain ex VAT.
-                    </span>
-                  </div>
+                  <strong>Ready to export {assets.length} {assets.length === 1 ? 'asset' : 'assets'}.</strong>
+                  <span>The download uses the full saved register, not only the current search results.</span>
                 </div>
-              </div>
 
-              <div className={`${styles.formActions} ${styles.exportActions}`}>
-                <button type="button" className={styles.primaryButton} onClick={handleConfirmExport} disabled={isExporting}>
-                  <DownloadIcon className={styles.buttonIcon} />
-                  <span>{isExporting ? 'Preparing export...' : exportFormat === 'xlsx' ? 'Download XLSX workbook' : 'Open PDF summary'}</span>
-                </button>
+                <div className={`${styles.formActions} ${styles.exportActions}`}>
+                  <button type="button" className={styles.primaryButton} onClick={handleConfirmExport} disabled={isExporting}>
+                    <DownloadIcon className={styles.buttonIcon} />
+                    <span>{isExporting ? 'Preparing export...' : exportFormat === 'xlsx' ? 'Download XLSX' : 'Open PDF summary'}</span>
+                  </button>
 
-                <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
-                  Cancel
-                </button>
+                  <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       ) : null}
 
-      
-{marketplaceAsset && marketplaceDraft ? (
+      {marketplaceAsset && marketplaceDraft ? (
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeMarketplaceModal} />
 
