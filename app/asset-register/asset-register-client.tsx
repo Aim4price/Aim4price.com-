@@ -2834,7 +2834,6 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={styles.deleteConfirmContent}>
-              <span className={styles.modalEyebrow}>Delete asset</span>
               <h3 id="delete-confirm-title">Are you sure you want to delete this?</h3>
               <p id="delete-confirm-copy">
                 All data will be lost. This permanently removes <strong>{deleteCandidateAsset.title}</strong> from your Asset Register,
