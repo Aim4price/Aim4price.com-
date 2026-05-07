@@ -4735,3 +4735,757 @@
     height: 4.2rem;
   }
 }
+
+/* === Asset Register unified modal system v4 === */
+.modalOverlay {
+  padding: clamp(1rem, 3vh, 2rem);
+  align-items: center;
+  justify-content: center;
+}
+
+.modalBackdrop {
+  background: rgba(14, 22, 32, 0.44);
+  backdrop-filter: blur(14px) saturate(0.9);
+}
+
+.assetFormModal,
+.exportModal,
+.marketplaceModal,
+.qrModal,
+.projectionModal,
+.optionsModal {
+  width: min(100%, 920px) !important;
+  max-height: min(86vh, calc(100dvh - 2.25rem)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: clamp(1.28rem, 2.2vw, 1.68rem) !important;
+  padding-right: clamp(1.28rem, 2.2vw, 1.68rem) !important;
+  border-radius: 2rem !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.995) 0%, rgba(247, 250, 252, 0.99) 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  box-shadow:
+    0 34px 88px rgba(11, 21, 34, 0.29),
+    0 14px 34px rgba(11, 21, 34, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.exportModal,
+.qrModal {
+  width: min(100%, 820px) !important;
+}
+
+.deleteConfirmModal {
+  width: min(100%, 660px) !important;
+}
+
+.assetFormModalHeader,
+.exportModalHeader,
+.marketplaceModalHeader,
+.qrModalHeader,
+.projectionModalHeader,
+.optionsModalHeader,
+.modalHeader {
+  flex: 0 0 auto;
+  align-items: flex-start !important;
+  gap: 1.15rem !important;
+  margin: 0 0 1.08rem !important;
+  padding: 0 0 1rem !important;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.88);
+}
+
+.modalHeaderText {
+  min-width: 0;
+  display: grid;
+  gap: 0.42rem;
+}
+
+.modalEyebrow {
+  min-height: 1.85rem;
+  padding: 0 0.85rem;
+  color: #405b4f;
+  background: rgba(237, 246, 241, 0.94);
+  border: 1px solid rgba(205, 229, 216, 0.98);
+  font-size: 0.72rem;
+  font-weight: 880;
+  letter-spacing: 0.075em;
+}
+
+.modalHeader h3,
+.optionsModalHeader h3,
+.assetFormModalHeader h3,
+.exportModalHeader h3,
+.marketplaceModalHeader h3,
+.qrModalHeader h3,
+.projectionModalHeader h3 {
+  margin: 0 !important;
+  color: #0f3329;
+  font-size: clamp(1.55rem, 2.35vw, 1.98rem) !important;
+  font-weight: 760 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.047em !important;
+}
+
+.modalHeader p,
+.optionsModalHeader p,
+.assetFormModalHeader p,
+.marketplaceModalHeader p,
+.qrModalHeader p,
+.projectionModalHeader p {
+  max-width: 48rem;
+  margin: 0 !important;
+  color: #617286;
+  font-size: 1rem;
+  font-weight: 620;
+  line-height: 1.52;
+}
+
+.modalCloseButton {
+  width: 3.08rem !important;
+  min-width: 3.08rem !important;
+  min-height: 3.08rem !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  color: #1d3b62;
+  background: linear-gradient(180deg, #f7fbff 0%, #edf4fb 100%) !important;
+  border: 1px solid rgba(210, 222, 237, 0.98) !important;
+  box-shadow:
+    0 10px 20px rgba(23, 45, 75, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.modalCloseButton:hover {
+  transform: translateY(-1px);
+  border-color: rgba(177, 197, 220, 0.98) !important;
+  box-shadow:
+    0 14px 26px rgba(23, 45, 75, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.modalScrollBody,
+.optionsScrollBody,
+.qrModalScrollBody,
+.projectionScrollBody,
+.exportModalScrollBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 83, 64, 0.68) rgba(239, 244, 247, 0.98);
+  padding: 0.08rem 0.9rem 0.25rem 0;
+  margin-right: -0.34rem;
+}
+
+.modalScrollBody::-webkit-scrollbar,
+.optionsScrollBody::-webkit-scrollbar,
+.qrModalScrollBody::-webkit-scrollbar,
+.projectionScrollBody::-webkit-scrollbar,
+.exportModalScrollBody::-webkit-scrollbar {
+  width: 0.88rem;
+}
+
+.modalScrollBody::-webkit-scrollbar-track,
+.optionsScrollBody::-webkit-scrollbar-track,
+.qrModalScrollBody::-webkit-scrollbar-track,
+.projectionScrollBody::-webkit-scrollbar-track,
+.exportModalScrollBody::-webkit-scrollbar-track {
+  margin: 0.18rem 0 0.35rem;
+  border-radius: 999px;
+  background: rgba(239, 244, 247, 0.98);
+  border-left: 0.26rem solid transparent;
+  border-right: 0.26rem solid transparent;
+  background-clip: padding-box;
+}
+
+.modalScrollBody::-webkit-scrollbar-thumb,
+.optionsScrollBody::-webkit-scrollbar-thumb,
+.qrModalScrollBody::-webkit-scrollbar-thumb,
+.projectionScrollBody::-webkit-scrollbar-thumb,
+.exportModalScrollBody::-webkit-scrollbar-thumb {
+  border: 0.26rem solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(29, 96, 72, 0.72) 0%, rgba(18, 70, 53, 0.9) 100%);
+  background-clip: padding-box;
+}
+
+.modalBody,
+.optionsContent,
+.exportModalBody {
+  display: grid;
+  gap: 1rem;
+}
+
+.optionsMeta,
+.projectionIntro,
+.projectionInputRow,
+.projectionStatsGrid,
+.projectionSummaryCard,
+.scanAccessFacts,
+.infoGrid {
+  gap: 0.85rem;
+}
+
+.optionMetaTile,
+.projectionIntro > div,
+.projectionStatCard,
+.projectionSummaryCard,
+.exportHelp,
+.qrDetailRow,
+.scanFact,
+.infoTile {
+  border-radius: 1.08rem !important;
+  border: 1px solid rgba(216, 226, 236, 0.96) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%) !important;
+  box-shadow:
+    0 8px 18px rgba(16, 31, 28, 0.028),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.optionMetaTile,
+.projectionIntro > div,
+.projectionStatCard,
+.qrDetailRow,
+.scanFact,
+.infoTile {
+  min-height: 5.15rem;
+  padding: 1rem 1.08rem !important;
+  align-content: center;
+}
+
+.optionMetaTile span,
+.projectionIntro span,
+.projectionStatLabel,
+.projectionSummaryLabel,
+.qrDetailRow span,
+.scanFact span,
+.infoTile span,
+.qrPreviewEyebrow {
+  color: #718195 !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.07em !important;
+  text-transform: uppercase;
+}
+
+.optionMetaTile strong,
+.projectionIntro strong,
+.projectionStatValue,
+.projectionSummaryCard strong,
+.qrDetailRow strong,
+.scanFact strong,
+.infoTile strong {
+  margin-top: 0.36rem;
+  color: #10352b !important;
+  font-size: 1rem;
+  font-weight: 820;
+  line-height: 1.35;
+}
+
+.field,
+.checkboxRow {
+  gap: 0.5rem;
+}
+
+.field span,
+.checkboxRow span {
+  color: #263845;
+  font-size: 0.9rem;
+  font-weight: 820;
+  letter-spacing: -0.012em;
+}
+
+.field input,
+.field select,
+.field textarea {
+  min-height: 3.35rem;
+  border-radius: 1.02rem;
+  border: 1px solid rgba(211, 223, 233, 0.98);
+  background: rgba(255, 255, 255, 0.98);
+  color: #20313b;
+  font-size: 0.98rem;
+  font-weight: 560;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.field textarea {
+  min-height: 7.4rem;
+  line-height: 1.55;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: rgba(22, 83, 64, 0.38) !important;
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.fieldHint {
+  color: #64778a;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.48;
+}
+
+.modalForm {
+  gap: 1rem 0.95rem;
+}
+
+.formActions {
+  gap: 0.75rem;
+}
+
+.assetFormActions,
+.marketplaceModal .formActions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 0.35rem !important;
+  padding: 1rem 0 0.05rem;
+  border-top: 1px solid rgba(216, 226, 236, 0.88);
+  background:
+    linear-gradient(180deg, rgba(248, 251, 252, 0) 0%, rgba(248, 251, 252, 0.98) 34%, rgba(248, 251, 252, 1) 100%);
+}
+
+.assetFormActions .primaryButton,
+.assetFormActions .secondaryButton,
+.marketplaceModal .formActions .primaryButton,
+.marketplaceModal .formActions .secondaryButton,
+.projectionModal .formActions .primaryButton,
+.exportActions .primaryButton,
+.exportActions .secondaryButton {
+  min-height: 3.18rem;
+  border-radius: 1rem;
+  padding-inline: 1.15rem;
+  font-size: 0.96rem;
+  font-weight: 850;
+}
+
+.checkboxRow,
+.uploadPanel,
+.assetTypeField {
+  border-radius: 1.08rem !important;
+  border-color: rgba(216, 226, 236, 0.96) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%) !important;
+}
+
+.checkboxRow {
+  min-height: 3.55rem;
+  padding: 0.95rem 1rem;
+}
+
+.checkboxRow input {
+  width: 1.12rem;
+  height: 1.12rem;
+  accent-color: #165340;
+}
+
+.uploadPanel {
+  padding: 1rem;
+  border-style: dashed !important;
+}
+
+.uploadCount {
+  padding: 0.55rem 0.78rem;
+  border-radius: 999px;
+  color: #26466c;
+  background: #eef5fb;
+  border: 1px solid rgba(211, 223, 237, 0.98);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+/* Asset options modal */
+.optionsModal .optionsMeta {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 0;
+}
+
+.scanAccessPanel {
+  grid-template-columns: 250px minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+  margin-bottom: 0;
+}
+
+.scanAccessPreview,
+.scanAccessSummary,
+.qrPreviewCard,
+.qrDetailsCard {
+  align-self: start;
+  padding: 1.08rem;
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  border: 1px solid rgba(216, 226, 236, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.scanAccessQrFrame,
+.qrPreviewFrame {
+  min-height: 210px;
+  border-radius: 1rem;
+  background: #ffffff;
+  border: 1px solid rgba(216, 226, 236, 0.96);
+}
+
+.scanAccessQrFrame img,
+.qrPreviewFrame img {
+  max-width: 198px;
+}
+
+.scanAccessSummary {
+  gap: 0.88rem;
+}
+
+.scanAccessSummary h4 {
+  color: #10352b;
+  font-size: 1.22rem;
+  font-weight: 820;
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+}
+
+.scanAccessSummary p {
+  color: #617286;
+  font-size: 0.98rem;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.assetOptionsGrid,
+.qrActionsGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.optionActionButton {
+  min-height: 4.1rem;
+  padding: 0.95rem 1.05rem;
+  border-radius: 1.05rem;
+  font-size: 0.96rem;
+  font-weight: 820;
+}
+
+.optionActionButton .buttonIcon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.optionDangerButton {
+  color: #9b3030 !important;
+  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%) !important;
+  border-color: rgba(235, 203, 203, 0.98) !important;
+}
+
+/* QR modal */
+.qrModalBody {
+  grid-template-columns: 250px minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.qrPreviewCard {
+  display: grid;
+  gap: 0.85rem;
+  position: sticky;
+  top: 0.08rem;
+}
+
+.qrDetailsCard {
+  display: grid;
+  gap: 0.78rem;
+}
+
+.qrDetailRow {
+  min-height: 5rem;
+}
+
+.scanLinkText {
+  color: #193d67;
+  font-size: 0.94rem;
+  font-weight: 760;
+  line-height: 1.45;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Future price modal */
+.projectionModal .modalBody {
+  gap: 1rem;
+}
+
+.projectionIntro {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.projectionInputRow {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.projectionPresetRow {
+  gap: 0.55rem;
+}
+
+.projectionPresetButton {
+  min-height: 3.05rem;
+  padding: 0 1.05rem;
+  border-radius: 0.95rem;
+  font-weight: 850;
+}
+
+.projectionStatsGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.projectionStatCardHighlight {
+  background: linear-gradient(180deg, #f5fcf8 0%, #e8f5ee 100%) !important;
+  border-color: rgba(195, 228, 210, 0.98) !important;
+}
+
+.projectionSummaryCard {
+  padding: 1rem 1.08rem;
+}
+
+.projectionError,
+.projectionLoading {
+  border-radius: 1rem;
+  padding: 1rem 1.05rem;
+}
+
+/* Marketplace modal */
+.marketplaceModal .optionsMeta {
+  margin-bottom: 0.15rem;
+}
+
+.marketplaceModal .modalForm {
+  gap: 1rem 0.95rem;
+}
+
+.marketplaceModal .field textarea {
+  min-height: 7.6rem;
+}
+
+/* Export modal kept aligned with the same modal system */
+.exportModalHeader h3 {
+  font-size: clamp(1.6rem, 2.45vw, 2.05rem) !important;
+}
+
+.exportFormatHeader,
+.exportOption,
+.exportHelp {
+  border-radius: 1.12rem;
+}
+
+.exportOption {
+  min-height: 12.2rem;
+}
+
+.exportActions {
+  justify-content: flex-end;
+}
+
+/* Delete modal */
+.deleteConfirmOverlay,
+.confirmDeleteOverlay {
+  z-index: 190;
+}
+
+.deleteConfirmModal {
+  grid-template-columns: 3.35rem minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1.35rem;
+  border-radius: 1.65rem;
+  background:
+    radial-gradient(circle at top left, rgba(160, 53, 53, 0.07), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #fffafa 100%);
+  border: 1px solid rgba(235, 203, 203, 0.98);
+  box-shadow:
+    0 34px 86px rgba(42, 20, 20, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.deleteConfirmIcon {
+  width: 3.35rem;
+  height: 3.35rem;
+  border-radius: 1.05rem;
+  color: #a63a3a;
+  background: #fff5f5;
+  border: 1px solid rgba(235, 203, 203, 0.98);
+}
+
+.deleteConfirmContent {
+  gap: 0.9rem;
+}
+
+.deleteConfirmContent h3 {
+  color: #10352b;
+  font-size: clamp(1.4rem, 2.35vw, 1.72rem);
+  font-weight: 760;
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+}
+
+.deleteConfirmContent p {
+  color: #617286;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.58;
+}
+
+.deleteConfirmAsset {
+  gap: 0.3rem;
+  padding: 1rem 1.05rem;
+  border-radius: 1.08rem;
+  background: #ffffff;
+  border: 1px solid rgba(235, 203, 203, 0.92);
+}
+
+.deleteConfirmAsset span {
+  color: #8c6767;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+}
+
+.deleteConfirmAsset strong {
+  color: #10352b;
+  font-size: 1.04rem;
+  font-weight: 820;
+}
+
+.deleteConfirmAsset small {
+  color: #617286;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.deleteConfirmActions {
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.deleteConfirmButton {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #bd4545 0%, #922f2f 100%) !important;
+  border-color: rgba(146, 47, 47, 0.34) !important;
+  box-shadow:
+    0 14px 26px rgba(160, 53, 53, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+.deleteConfirmButton:hover {
+  box-shadow:
+    0 18px 32px rgba(160, 53, 53, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+@media (max-width: 900px) {
+  .assetFormModal,
+  .exportModal,
+  .marketplaceModal,
+  .qrModal,
+  .projectionModal,
+  .optionsModal {
+    width: min(100%, calc(100vw - 1.25rem)) !important;
+    max-height: min(88vh, calc(100dvh - 1.25rem)) !important;
+    padding: 1.15rem !important;
+    padding-right: 1.15rem !important;
+    border-radius: 1.45rem !important;
+  }
+
+  .modalScrollBody,
+  .optionsScrollBody,
+  .qrModalScrollBody,
+  .projectionScrollBody,
+  .exportModalScrollBody {
+    padding-right: 0.72rem;
+    margin-right: -0.28rem;
+  }
+
+  .scanAccessPanel,
+  .qrModalBody,
+  .projectionIntro,
+  .projectionInputRow,
+  .projectionStatsGrid,
+  .projectionSummaryCard,
+  .optionsMeta,
+  .scanAccessFacts {
+    grid-template-columns: 1fr !important;
+  }
+
+  .qrPreviewCard {
+    position: static;
+  }
+
+  .assetOptionsGrid,
+  .qrActionsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .modalHeader,
+  .assetFormModalHeader,
+  .exportModalHeader,
+  .marketplaceModalHeader,
+  .qrModalHeader,
+  .projectionModalHeader,
+  .optionsModalHeader {
+    gap: 0.85rem !important;
+  }
+
+  .modalHeader h3,
+  .optionsModalHeader h3,
+  .assetFormModalHeader h3,
+  .exportModalHeader h3,
+  .marketplaceModalHeader h3,
+  .qrModalHeader h3,
+  .projectionModalHeader h3 {
+    font-size: 1.48rem !important;
+  }
+
+  .modalHeader p,
+  .optionsModalHeader p,
+  .assetFormModalHeader p,
+  .marketplaceModalHeader p,
+  .qrModalHeader p,
+  .projectionModalHeader p {
+    font-size: 0.94rem;
+  }
+
+  .modalForm,
+  .marketplaceModal .modalForm,
+  .assetFormModal .modalForm {
+    grid-template-columns: 1fr;
+  }
+
+  .assetFormActions,
+  .marketplaceModal .formActions,
+  .deleteConfirmActions,
+  .exportActions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .assetFormActions > button,
+  .marketplaceModal .formActions > button,
+  .deleteConfirmActions > button,
+  .exportActions > button {
+    width: 100%;
+  }
+
+  .deleteConfirmModal {
+    grid-template-columns: 1fr;
+    padding: 1.1rem;
+  }
+}
