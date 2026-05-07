@@ -6593,78 +6593,18 @@
 .qrCopiedButton .buttonIcon {
   color: #ffffff !important;
 }
-/* === Delete and QR modal final cleanup === */
-.deleteConfirmModal {
-  width: min(100%, 900px) !important;
-  grid-template-columns: 4.15rem minmax(0, 1fr) !important;
-  gap: 1.7rem !important;
-  padding: clamp(2rem, 2.8vw, 2.55rem) !important;
-  align-items: start !important;
-}
-
-.deleteConfirmContent {
-  padding-top: 0.62rem !important;
-  gap: 1.16rem !important;
-}
-
-.deleteConfirmContent .modalEyebrow {
-  display: none !important;
-}
-
-.deleteConfirmContent h3 {
-  color: #10352b !important;
-  font-size: clamp(1.82rem, 2.9vw, 2.28rem) !important;
-  font-weight: 760 !important;
-  line-height: 1.02 !important;
-  letter-spacing: -0.052em !important;
-}
-
-.deleteConfirmContent p {
-  font-size: 1.04rem !important;
-  line-height: 1.68 !important;
-}
-
-.deleteConfirmButton {
-  min-width: 15.2rem !important;
-  min-height: 3.48rem !important;
-  padding-inline: 1.45rem !important;
-  border-radius: 1.12rem !important;
-  color: #ffffff !important;
-  background:
-    linear-gradient(180deg, rgba(203, 73, 73, 1) 0%, rgba(151, 45, 45, 1) 100%) !important;
-  border: 1px solid rgba(135, 37, 37, 0.45) !important;
-  box-shadow:
-    0 18px 34px rgba(160, 53, 53, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
-}
-
-.deleteConfirmButton:hover {
-  background:
-    linear-gradient(180deg, rgba(217, 81, 81, 1) 0%, rgba(160, 48, 48, 1) 100%) !important;
-  box-shadow:
-    0 22px 40px rgba(160, 53, 53, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
-}
-
-.deleteConfirmButton .buttonIcon {
-  width: 1.08rem !important;
-  height: 1.08rem !important;
-}
-
+/* === QR modal final cleanup: compact no-scroll layout === */
 .qrModal {
-  width: min(100%, 820px) !important;
-  max-height: min(92vh, calc(100dvh - 2rem)) !important;
-  padding: clamp(1.2rem, 2vw, 1.55rem) !important;
-  padding-right: clamp(1.2rem, 2vw, 1.55rem) !important;
+  width: min(100%, 840px) !important;
+  max-height: none !important;
+  padding: clamp(1.35rem, 2vw, 1.65rem) !important;
+  border-radius: 1.95rem !important;
 }
 
 .qrModalHeader {
+  align-items: flex-start !important;
   margin-bottom: 1rem !important;
-  padding-bottom: 0.95rem !important;
-}
-
-.qrModalHeader .modalHeaderText {
-  gap: 0.36rem;
+  padding-bottom: 1rem !important;
 }
 
 .qrModalHeader .modalEyebrow {
@@ -6672,13 +6612,17 @@
 }
 
 .qrModalHeader h3 {
-  font-size: clamp(1.74rem, 2.65vw, 2.2rem) !important;
+  font-size: clamp(1.85rem, 3vw, 2.35rem) !important;
+  font-weight: 760 !important;
+  letter-spacing: -0.055em !important;
+  color: #0f3329 !important;
 }
 
 .qrModalHeader p {
-  max-width: 42rem !important;
-  font-size: 0.96rem !important;
-  line-height: 1.48 !important;
+  max-width: 46rem !important;
+  font-size: 1rem !important;
+  font-weight: 650 !important;
+  line-height: 1.45 !important;
 }
 
 .qrModalScrollBody {
@@ -6688,124 +6632,224 @@
 }
 
 .qrModalBody {
-  grid-template-columns: 258px minmax(0, 1fr) !important;
-  gap: 0.9rem !important;
+  display: grid !important;
+  grid-template-columns: 280px minmax(0, 1fr) !important;
+  gap: 1rem !important;
   align-items: stretch !important;
-  margin-bottom: 0.9rem !important;
+  margin-bottom: 1rem !important;
 }
 
 .qrPreviewCard,
 .qrDetailsCard {
-  padding: 0.95rem !important;
-  border-radius: 1.24rem !important;
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 38%),
-    linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%) !important;
-  border: 1px solid rgba(216, 226, 236, 0.96) !important;
+  min-height: 0 !important;
+  align-self: stretch !important;
+  padding: 1rem !important;
+  border-radius: 1.25rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
   box-shadow:
     0 10px 22px rgba(16, 31, 28, 0.035),
     inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
 }
 
 .qrPreviewCard {
-  position: static !important;
-  align-content: start !important;
-  gap: 0.7rem !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  gap: 0.8rem !important;
 }
 
 .qrPreviewFrame {
-  min-height: 214px !important;
-  padding: 0.75rem !important;
-  border-radius: 1.05rem !important;
+  min-height: 238px !important;
+  padding: 0.9rem !important;
+  border-radius: 1.1rem !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
 }
 
 .qrPreviewFrame img {
-  max-width: 184px !important;
+  max-width: 214px !important;
 }
 
 .qrDetailsCard {
-  align-content: stretch !important;
-  gap: 0.7rem !important;
+  display: grid !important;
+  gap: 0.78rem !important;
+  align-content: start !important;
+}
+
+.qrDetailsCard > .qrPreviewEyebrow,
+.qrPreviewCard > .qrPreviewEyebrow {
+  color: #718195 !important;
+  font-size: 0.74rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.07em !important;
+  text-transform: uppercase !important;
 }
 
 .qrDetailRow {
-  min-height: 4.45rem !important;
-  padding: 0.82rem 0.95rem !important;
-  border-radius: 1rem !important;
+  min-height: 5.2rem !important;
+  display: grid !important;
+  gap: 0.38rem !important;
+  align-content: center !important;
+  padding: 1rem 1.05rem !important;
+  border-radius: 1.05rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+}
+
+.qrDetailRow span {
+  color: #728193 !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.07em !important;
+  text-transform: uppercase !important;
 }
 
 .qrDetailRow strong {
-  font-size: 1.04rem !important;
-  line-height: 1.32 !important;
-}
-
-.qrAccessNote {
-  display: grid;
-  gap: 0.26rem;
-  padding: 0.88rem 0.95rem;
-  border-radius: 1rem;
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 40%),
-    linear-gradient(180deg, #f8fcfa 0%, #edf7f1 100%);
-  border: 1px solid rgba(205, 229, 216, 0.98);
-}
-
-.qrAccessNote strong {
-  color: #10352b;
-  font-size: 0.98rem;
-  font-weight: 850;
-  line-height: 1.25;
-}
-
-.qrAccessNote span {
-  color: #617286;
-  font-size: 0.9rem;
-  font-weight: 650;
-  line-height: 1.42;
+  color: #10352b !important;
+  font-size: 1.08rem !important;
+  font-weight: 850 !important;
+  line-height: 1.25 !important;
 }
 
 .qrActionsGrid {
+  display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 0.72rem !important;
+  gap: 0.8rem !important;
 }
 
 .qrActionsGrid .optionActionButton {
-  min-height: 3.55rem !important;
-  padding: 0.82rem 0.95rem !important;
-  border-radius: 1.02rem !important;
+  min-height: 3.65rem !important;
+  padding: 0.85rem 1rem !important;
+  border-radius: 1.05rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%) !important;
+  border-color: rgba(216, 226, 236, 0.98) !important;
+  box-shadow:
+    0 9px 18px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.qrCopiedButton,
+.qrCopiedButton:hover {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #1d6048 0%, #114635 100%) !important;
+  border-color: rgba(17, 70, 52, 0.3) !important;
+  box-shadow:
+    0 14px 26px rgba(17, 70, 52, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+.qrCopiedButton .buttonIcon {
+  color: #ffffff !important;
+}
+
+/* === Delete confirmation final cleanup === */
+.deleteConfirmModal {
+  width: min(100%, 900px) !important;
+  grid-template-columns: 4.05rem minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: 1.55rem !important;
+  padding: clamp(2rem, 2.7vw, 2.5rem) !important;
+  border-radius: 2rem !important;
+}
+
+.deleteConfirmIcon {
+  width: 4.05rem !important;
+  height: 4.05rem !important;
+  margin-top: 0 !important;
+  border-radius: 1.28rem !important;
+  color: #a63a3a !important;
+  background: linear-gradient(180deg, #fff7f7 0%, #fff1f1 100%) !important;
+  border: 1px solid rgba(235, 203, 203, 0.98) !important;
+}
+
+.deleteConfirmIcon .buttonIcon {
+  width: 1.32rem !important;
+  height: 1.32rem !important;
+}
+
+.deleteConfirmContent {
+  gap: 1.12rem !important;
+  padding-right: 0 !important;
+}
+
+.deleteConfirmContent .modalEyebrow {
+  display: none !important;
+}
+
+.deleteConfirmContent h3 {
+  margin: 0 !important;
+  color: #0f3329 !important;
+  font-size: clamp(1.78rem, 2.9vw, 2.28rem) !important;
+  font-weight: 760 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.052em !important;
+}
+
+.deleteConfirmContent p {
+  max-width: 100% !important;
+  margin: 0 !important;
+  color: #617286 !important;
+  font-size: 1.04rem !important;
+  font-weight: 620 !important;
+  line-height: 1.68 !important;
+}
+
+.deleteConfirmAsset {
+  width: 100% !important;
+  padding: 1.25rem 1.35rem !important;
+  border-radius: 1.25rem !important;
+  gap: 0.42rem !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(235, 203, 203, 0.94) !important;
+}
+
+.deleteConfirmActions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 0.95rem !important;
+  margin-top: 0.12rem !important;
+}
+
+.deleteConfirmActions .secondaryButton,
+.deleteConfirmActions .deleteConfirmButton {
+  min-height: 3.45rem !important;
+  padding-inline: 1.42rem !important;
+  border-radius: 1.1rem !important;
+  font-size: 1rem !important;
+  font-weight: 870 !important;
+}
+
+.deleteConfirmButton {
+  min-width: 15rem !important;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #c94e4e 0%, #9b3333 100%) !important;
+  border-color: rgba(155, 51, 51, 0.42) !important;
+  box-shadow:
+    0 16px 30px rgba(155, 51, 51, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+.deleteConfirmButton:hover {
+  background: linear-gradient(180deg, #d05656 0%, #8f2f2f 100%) !important;
+  box-shadow:
+    0 20px 36px rgba(155, 51, 51, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
 }
 
 @media (max-width: 900px) {
-  .deleteConfirmModal {
-    grid-template-columns: 1fr !important;
-    gap: 1rem !important;
-    padding: 1.25rem !important;
-  }
-
-  .deleteConfirmContent {
-    padding-top: 0 !important;
-  }
-
-  .deleteConfirmActions {
-    flex-direction: column-reverse !important;
-    align-items: stretch !important;
-  }
-
-  .deleteConfirmButton {
-    min-width: 0 !important;
-    width: 100%;
-  }
-
   .qrModal {
     width: min(100%, calc(100vw - 1rem)) !important;
     max-height: min(88vh, calc(100dvh - 1rem)) !important;
+    overflow: hidden !important;
     padding: 1rem !important;
+    border-radius: 1.35rem !important;
   }
 
   .qrModalScrollBody {
     overflow-y: auto !important;
     padding-right: 0.58rem !important;
-    margin-right: -0.22rem !important;
+    margin-right: -0.2rem !important;
   }
 
   .qrModalBody,
@@ -6814,10 +6858,26 @@
   }
 
   .qrPreviewFrame {
-    min-height: 198px !important;
+    min-height: 220px !important;
   }
 
-  .qrPreviewFrame img {
-    max-width: 176px !important;
+  .deleteConfirmModal {
+    width: min(100%, calc(100vw - 1.25rem)) !important;
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+    padding: 1.3rem !important;
+    border-radius: 1.5rem !important;
+  }
+
+  .deleteConfirmActions {
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+
+  .deleteConfirmActions .secondaryButton,
+  .deleteConfirmActions .deleteConfirmButton {
+    width: 100% !important;
+    min-width: 0 !important;
   }
 }

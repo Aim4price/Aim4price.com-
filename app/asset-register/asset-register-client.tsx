@@ -3434,34 +3434,28 @@ export default function AssetRegisterClient() {
                     <span>Last scanned</span>
                     <strong>{activeAsset.lastScannedAtIso ? formatDate(activeAsset.lastScannedAtIso) : 'No QR updates yet'}</strong>
                   </div>
-
-                  <div className={styles.qrAccessNote}>
-                    <strong>Farm PIN required</strong>
-                    <span>Use the QR label for operational updates. The direct scanner page is not shown here.</span>
-                  </div>
                 </div>
               </div>
 
               <div className={`${styles.optionsGrid} ${styles.qrActionsGrid}`}>
-              <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanReport(activeAsset)}>
-                <PdfIcon className={styles.buttonIcon} />
-                <span>QR scan report</span>
-              </button>
+                <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanReport(activeAsset)}>
+                  <PdfIcon className={styles.buttonIcon} />
+                  <span>QR scan report</span>
+                </button>
 
-              <button
-                type="button"
-                className={`${styles.optionActionButton} ${copiedScanLinkAssetId === activeAsset.id ? styles.qrCopiedButton : ''}`}
-                onClick={() => void handleCopyScanLink(activeAsset)}
-              >
-                <CopyIcon className={styles.buttonIcon} />
-                <span>{copiedScanLinkAssetId === activeAsset.id ? 'Copied' : 'Copy scan link'}</span>
-              </button>
+                <button
+                  type="button"
+                  className={`${styles.optionActionButton} ${copiedScanLinkAssetId === activeAsset.id ? styles.qrCopiedButton : ''}`}
+                  onClick={() => void handleCopyScanLink(activeAsset)}
+                >
+                  <CopyIcon className={styles.buttonIcon} />
+                  <span>{copiedScanLinkAssetId === activeAsset.id ? 'Copied' : 'Copy scan link'}</span>
+                </button>
 
-
-              <button type="button" className={styles.optionActionButton} onClick={() => void handleDownloadQr(activeAsset)}>
-                <QrIcon className={styles.buttonIcon} />
-                <span>Download QR Image</span>
-              </button>
+                <button type="button" className={styles.optionActionButton} onClick={() => void handleDownloadQr(activeAsset)}>
+                  <QrIcon className={styles.buttonIcon} />
+                  <span>Download QR Image</span>
+                </button>
 
                 <button type="button" className={styles.optionActionButton} onClick={() => handlePrintQrSheet(activeAsset)}>
                   <PrintIcon className={styles.buttonIcon} />
