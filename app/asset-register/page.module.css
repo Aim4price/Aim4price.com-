@@ -2921,3 +2921,61 @@
     font-size: 0.92rem;
   }
 }
+
+
+/* === Asset register summary header sizing + footer alignment === */
+.summaryTile {
+  min-height: 9.15rem;
+  padding: 1.34rem 1.42rem;
+}
+
+.registerValueHead,
+.metricSummaryTileHead {
+  min-height: 3.1rem;
+  align-items: flex-start;
+}
+
+.registerValueHead > span,
+.summaryLabel {
+  min-height: 2.4rem;
+  font-size: 1.08rem;
+  line-height: 1.25;
+}
+
+.registerValueAmountRow {
+  min-height: 3.55rem;
+}
+
+.summaryTileFooter {
+  min-height: 2.35rem;
+  padding-top: 0.92rem;
+}
+
+.registerValueFooter {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.totalAssetsFooter {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  text-align: right;
+}
+
+.totalAssetsFooter small {
+  margin-left: auto;
+}
+
+@media (max-width: 760px) {
+  .registerValueFooter,
+  .totalAssetsFooter {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .totalAssetsFooter small {
+    margin-left: 0;
+  }
+}

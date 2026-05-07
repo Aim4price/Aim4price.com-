@@ -2097,6 +2097,15 @@ export default function AssetRegisterClient() {
             <div className={`${styles.summaryTile} ${styles.registerValueTile}`}>
               <div className={styles.registerValueHead}>
                 <span>Register value</span>
+              </div>
+
+              <div className={styles.registerValueAmountRow}>
+                <strong className={styles.registerValueTotal}>
+                  {money(displayedRegisterValue)}
+                  {registerValueVatMode === 'excluded' ? <span className={styles.registerValueSuffix}> + VAT</span> : null}
+                </strong>
+              </div>
+              <div className={`${styles.summaryTileFooter} ${styles.registerValueFooter}`}>
                 <div className={styles.vatToggleGroup} aria-label="Register value VAT display">
                   <button
                     type="button"
@@ -2116,14 +2125,6 @@ export default function AssetRegisterClient() {
                   </button>
                 </div>
               </div>
-
-              <div className={styles.registerValueAmountRow}>
-                <strong className={styles.registerValueTotal}>
-                  {money(displayedRegisterValue)}
-                  {registerValueVatMode === 'excluded' ? <span className={styles.registerValueSuffix}> + VAT</span> : null}
-                </strong>
-              </div>
-              <div className={styles.summaryTileFooter} aria-hidden="true" />
             </div>
 
             <div className={`${styles.summaryTile} ${styles.metricSummaryTile}`}>
@@ -2139,7 +2140,7 @@ export default function AssetRegisterClient() {
                 <span className={styles.summaryLabel}>Total assets</span>
               </div>
               <strong className={styles.summaryValue}>{assets.length}</strong>
-              <div className={styles.summaryTileFooter}>
+              <div className={`${styles.summaryTileFooter} ${styles.totalAssetsFooter}`}>
                 <small>{registerRangeDescription}</small>
               </div>
             </div>
