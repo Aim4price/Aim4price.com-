@@ -2547,10 +2547,8 @@ export default function AssetRegisterClient() {
                                   <div className={styles.assetDocumentsPanel}>
                                     <div className={styles.assetDocumentsCard}>
                                       <div className={styles.assetDocumentsMainLabel}>
-                                        <DocumentIcon className={styles.buttonIcon} />
                                         <strong>Documents</strong>
                                       </div>
-                                      <span>{detailDocuments.length ? `${detailDocuments.length} saved` : 'No documents yet'}</span>
                                     </div>
 
                                     {detailDocuments.length ? (
@@ -2562,9 +2560,7 @@ export default function AssetRegisterClient() {
                                           </a>
                                         ))}
                                       </div>
-                                    ) : (
-                                      <p className={styles.assetDocumentEmpty}>Upload invoices, NATIS papers or finance documents from Update asset.</p>
-                                    )}
+                                    ) : null}
                                   </div>
 
                                   <div className={styles.assetDetailDivider} aria-hidden="true" />

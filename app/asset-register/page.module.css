@@ -6379,3 +6379,202 @@
     justify-content: flex-start;
   }
 }
+
+/* === Asset details final polish: documents + compact detail boxes === */
+.assetBody {
+  grid-template-columns: minmax(220px, 300px) minmax(230px, 1fr) 1px minmax(400px, 1.55fr);
+  gap: 1.15rem;
+  align-items: stretch;
+}
+
+.assetDocumentsPanel {
+  display: grid;
+  align-content: stretch;
+  gap: 0.75rem;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.assetDocumentsCard {
+  min-height: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  border-radius: 1.18rem;
+  background: linear-gradient(180deg, #f8fbfc 0%, #edf3f6 100%);
+  border: 1px solid rgba(220, 228, 236, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.assetDocumentsMainLabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.72rem;
+  padding: 0 1.08rem;
+  border-radius: 999px;
+  color: #66758d;
+  background: #eef2f8;
+  border: 1px solid #dde4ee;
+  box-shadow: none;
+}
+
+.assetDocumentsMainLabel strong {
+  color: #66758d;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.assetDocumentsCard > span,
+.assetDocumentEmpty {
+  display: none !important;
+}
+
+.assetDocumentList {
+  gap: 0.52rem;
+}
+
+.assetDocumentLink {
+  min-height: 2.6rem;
+  padding: 0 0.82rem;
+  border-radius: 0.92rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  border: 1px solid rgba(216, 226, 236, 0.96);
+  box-shadow: 0 8px 16px rgba(16, 31, 28, 0.026);
+}
+
+.assetDetailsPanel {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  padding: 0.78rem;
+  border-radius: 1.24rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%);
+  border: 1px solid rgba(216, 226, 236, 0.96);
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.assetDetailsGrid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.78fr);
+  gap: 0.72rem;
+  align-items: start;
+}
+
+.assetPrimaryDetails,
+.assetStatusDetails {
+  display: grid;
+  align-content: start;
+  gap: 0.56rem;
+}
+
+.assetDetailRow,
+.assetStatusRow {
+  min-height: 3.08rem;
+  height: 3.08rem;
+  border-radius: 0.96rem;
+  background: #ffffff;
+  border: 1px solid rgba(216, 226, 236, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.assetDetailRow {
+  grid-template-columns: minmax(6.2rem, 0.72fr) minmax(0, 1fr);
+}
+
+.assetStatusRow {
+  grid-template-columns: minmax(6.2rem, 0.72fr) minmax(3.85rem, 0.45fr);
+}
+
+.assetDetailRow span,
+.assetStatusRow span {
+  padding: 0 0.82rem;
+  color: #31485a;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  background: linear-gradient(180deg, #fbfcfd 0%, #f1f6f8 100%);
+  border-right: 1px solid rgba(216, 226, 236, 0.96);
+}
+
+.assetDetailRow strong,
+.assetStatusRow strong {
+  padding: 0 0.86rem;
+  color: #10352b;
+  font-size: 0.94rem;
+  font-weight: 840;
+  line-height: 1.25;
+  background: #ffffff;
+}
+
+.assetStatusRow strong {
+  justify-content: center;
+  padding: 0 0.7rem;
+  font-size: 0.94rem;
+  font-weight: 900;
+  letter-spacing: 0.015em;
+  text-transform: uppercase;
+}
+
+.assetDetailsPanel .noteStack {
+  margin-top: 0.05rem;
+}
+
+@media (max-width: 1180px) {
+  .assetBody {
+    grid-template-columns: minmax(220px, 300px) minmax(230px, 1fr);
+  }
+
+  .assetDocumentsPanel {
+    min-height: 13.6rem;
+  }
+
+  .assetDetailsPanel {
+    grid-column: 1 / -1;
+  }
+
+  .assetDetailsGrid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .assetBody,
+  .assetDetailsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .assetDocumentsPanel {
+    min-height: 11.5rem;
+  }
+}
+
+@media (max-width: 620px) {
+  .assetDetailRow,
+  .assetStatusRow {
+    height: auto;
+    min-height: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .assetDetailRow span,
+  .assetStatusRow span {
+    min-height: 2.25rem;
+    border-right: 0;
+    border-bottom: 1px solid rgba(216, 226, 236, 0.96);
+  }
+
+  .assetDetailRow strong,
+  .assetStatusRow strong {
+    min-height: 2.65rem;
+    justify-content: flex-start;
+  }
+}
