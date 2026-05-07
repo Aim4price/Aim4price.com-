@@ -3144,7 +3144,6 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={styles.deleteConfirmContent}>
-              <span className={styles.modalEyebrow}>Delete asset</span>
               <h3 id="delete-confirm-title">Are you sure you want to delete this?</h3>
               <p id="delete-confirm-copy">
                 All data will be lost. This permanently removes <strong>{deleteCandidateAsset.title}</strong> from your Asset Register,
@@ -3401,7 +3400,6 @@ export default function AssetRegisterClient() {
           <div className={`${styles.modalCard} ${styles.qrModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-qr-title">
             <div className={`${styles.modalHeader} ${styles.qrModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <span className={styles.modalEyebrow}>QR code</span>
                 <h3 id="asset-qr-title">{activeAsset.title}</h3>
                 <p>Use this permanent QR for scan access. Public QR scans always ask for the farm PIN.</p>
               </div>
@@ -3414,40 +3412,34 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalScrollBody} ${styles.qrModalScrollBody}`}>
               <div className={styles.qrModalBody}>
                 <div className={styles.qrPreviewCard}>
-                <span className={styles.qrPreviewEyebrow}>Permanent asset QR</span>
-                <div className={styles.qrPreviewFrame}>
-                  {activeAsset.publicAssetCode ? (
-                    <img src={buildAssetQrSvgUrl(activeAsset)} alt={`QR code for ${activeAsset.title}`} />
-                  ) : (
-                    <p className={styles.qrPreviewFallback}>QR artwork is not ready for this asset yet.</p>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.qrDetailsCard}>
-                <span className={styles.qrPreviewEyebrow}>Scan access</span>
-
-                <div className={styles.qrDetailRow}>
-                  <span>Plate label</span>
-                  <strong>{activeAsset.plateLabel || 'Pending'}</strong>
+                  <span className={styles.qrPreviewEyebrow}>Permanent asset QR</span>
+                  <div className={styles.qrPreviewFrame}>
+                    {activeAsset.publicAssetCode ? (
+                      <img src={buildAssetQrSvgUrl(activeAsset)} alt={`QR code for ${activeAsset.title}`} />
+                    ) : (
+                      <p className={styles.qrPreviewFallback}>QR artwork is not ready for this asset yet.</p>
+                    )}
+                  </div>
                 </div>
 
-                <div className={styles.qrDetailRow}>
-                  <span>Scan status</span>
-                  <strong>{formatQrStatus(activeAsset.qrStatus)}</strong>
-                </div>
+                <div className={styles.qrDetailsCard}>
+                  <span className={styles.qrPreviewEyebrow}>Scanner details</span>
 
-                <div className={styles.qrDetailRow}>
-                  <span>Last scanned</span>
-                  <strong>{activeAsset.lastScannedAtIso ? formatDate(activeAsset.lastScannedAtIso) : 'No QR updates yet'}</strong>
-                </div>
+                  <div className={styles.qrDetailRow}>
+                    <span>Plate label</span>
+                    <strong>{activeAsset.plateLabel || 'Pending'}</strong>
+                  </div>
 
-                <div className={styles.qrDetailRow}>
-                  <span>Last known location</span>
-                  <strong>{activeAsset.lastKnownLocationText || 'Captured automatically after each QR update'}</strong>
-                </div>
+                  <div className={styles.qrDetailRow}>
+                    <span>Last scanned</span>
+                    <strong>{activeAsset.lastScannedAtIso ? formatDate(activeAsset.lastScannedAtIso) : 'No QR updates yet'}</strong>
+                  </div>
 
-              </div>
+                  <div className={styles.qrAccessNote}>
+                    <strong>Farm PIN required</strong>
+                    <span>Use the QR label for operational updates. The direct scanner page is not shown here.</span>
+                  </div>
+                </div>
               </div>
 
               <div className={`${styles.optionsGrid} ${styles.qrActionsGrid}`}>
