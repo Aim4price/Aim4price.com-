@@ -3441,3 +3441,90 @@
   }
 }
 
+
+/* === Asset card spacing polish === */
+.assetList {
+  gap: 1.15rem;
+}
+
+.assetCard {
+  padding: 1.22rem 1.28rem 1.22rem;
+  border-radius: 1.78rem;
+}
+
+.assetHeader {
+  align-items: flex-start;
+  gap: 1.35rem;
+}
+
+.assetTitleBlock {
+  gap: 0.48rem;
+  padding-top: 0.12rem;
+}
+
+.assetTitleBlock p {
+  line-height: 1.5;
+}
+
+.assetMetaRow {
+  gap: 0.26rem;
+  margin-top: 0.42rem;
+}
+
+.assetHeaderAside {
+  gap: 0.95rem;
+  min-width: min(100%, 320px);
+}
+
+.valueBlock {
+  min-width: 252px;
+  padding-left: 0.9rem;
+  gap: 0.24rem;
+}
+
+.valueBlock strong {
+  line-height: 1.04;
+}
+
+.valueBlock span {
+  margin-top: 0.1rem;
+}
+
+.assetHeaderActions {
+  gap: 0.8rem;
+}
+
+@media (max-width: 860px) {
+  .assetCard {
+    padding: 1.12rem 1.14rem 1.14rem;
+  }
+
+  .assetHeaderAside {
+    min-width: 0;
+    gap: 0.82rem;
+  }
+
+  .valueBlock {
+    min-width: 0;
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .assetCard {
+    padding: 1rem 1rem 1.04rem;
+    border-radius: 1.45rem;
+  }
+
+  .assetHeader {
+    gap: 1rem;
+  }
+
+  .assetTitleBlock {
+    gap: 0.38rem;
+  }
+
+  .assetMetaRow {
+    margin-top: 0.34rem;
+  }
+}
