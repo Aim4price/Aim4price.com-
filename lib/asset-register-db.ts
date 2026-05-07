@@ -9,6 +9,15 @@ export type AssetRegisterItemMethod = MethodKey | 'manual';
 export type AssetRegisterItemCondition = ConditionKey | '';
 export type AssetRegisterQrStatus = 'active' | 'transferred' | 'retired' | 'deleted' | '';
 
+export type AssetRegisterDocument = {
+  id: string;
+  url: string;
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+  uploadedAtIso: string;
+};
+
 export type AssetRegisterItem = {
   id: string;
   userId: string;
@@ -51,6 +60,7 @@ export type AssetRegisterItem = {
   marketplaceNotes: string;
   marketplaceStatus: string;
   photos: string[];
+  documents: AssetRegisterDocument[];
   publicAssetCode: string;
   plateLabel: string;
   qrStatus: AssetRegisterQrStatus;
@@ -73,6 +83,7 @@ export type CreateManualAssetInput = {
   isInsured?: boolean;
   financeNote?: string | null;
   photos?: string[];
+  documents?: AssetRegisterDocument[];
   hours?: number | null;
   condition?: ConditionKey | null;
 };
@@ -88,6 +99,7 @@ export type UpdateAssetRegisterItemInput = {
   isInsured?: boolean;
   financeNote?: string | null;
   photos?: string[];
+  documents?: AssetRegisterDocument[];
   hours?: number | null;
   condition?: ConditionKey | null;
 };
@@ -134,6 +146,7 @@ type AssetRegisterRow = {
   marketplace_notes: string | null;
   marketplace_status: string | null;
   photos: unknown;
+  documents: unknown;
   public_asset_code: string | null;
   plate_label: string | null;
   qr_status: string | null;
@@ -262,6 +275,60 @@ function normalizePhotoArray(value: unknown): string[] {
     seen.add(entry);
     return true;
   });
+}
+
+
+function normalizeDocumentArray(value: unknown): AssetRegisterDocument[] {
+  const rawItems = Array.isArray(value) ? value : typeof value === 'string' && value.trim() ? (() => {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  })() : [];
+
+  const seen = new Set<string>();
+  const documents: AssetRegisterDocument[] = [];
+
+  rawItems.forEach((entry, index) => {
+    let document: AssetRegisterDocument | null = null;
+
+    if (typeof entry === 'string') {
+      const url = entry.trim();
+      if (url) {
+        document = {
+          id: url,
+          url,
+          fileName: `Document ${index + 1}`,
+          contentType: 'application/octet-stream',
+          byteSize: 0,
+          uploadedAtIso: new Date().toISOString(),
+        };
+      }
+    } else if (isRecord(entry)) {
+      const url = asText(entry.url);
+      const fileName = asText(entry.fileName) || asText(entry.name) || asText(entry.title) || `Document ${index + 1}`;
+      if (url) {
+        document = {
+          id: asText(entry.id) || asText(entry.uploadId) || url,
+          url,
+          fileName,
+          contentType: asText(entry.contentType) || asText(entry.mimeType) || 'application/octet-stream',
+          byteSize: Math.max(0, Math.round(asNumber(entry.byteSize) ?? asNumber(entry.sizeBytes) ?? 0)),
+          uploadedAtIso: asText(entry.uploadedAtIso) || asText(entry.uploadedAt) || new Date().toISOString(),
+        };
+      }
+    }
+
+    if (!document) return;
+    const duplicateKey = document.url || document.id;
+    if (seen.has(duplicateKey)) return;
+    seen.add(duplicateKey);
+    documents.push(document);
+  });
+
+  return documents.slice(0, 20);
 }
 
 function normalizeKind(value: unknown): AssetRegisterItemKind {
@@ -414,6 +481,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     marketplaceNotes: asText(row.marketplace_notes),
     marketplaceStatus: asText(row.marketplace_status) || 'draft',
     photos: normalizePhotoArray(row.photos),
+    documents: normalizeDocumentArray(row.documents),
     publicAssetCode: asText(row.public_asset_code),
     plateLabel: asText(row.plate_label),
     qrStatus: normalizeQrStatus(row.qr_status),
@@ -547,6 +615,7 @@ function buildSelectList(schema: TableSchema): string {
   const marketplaceNotesColumn = resolveColumn(schema, 'marketplace_notes', 'listing_notes');
   const marketplaceStatusColumn = resolveColumn(schema, 'marketplace_status', 'listing_status', 'status');
   const photosColumn = resolveColumn(schema, 'photos', 'photo_urls', 'image_urls', 'images');
+  const documentsColumn = resolveColumn(schema, 'documents', 'document_urls', 'document_files', 'attachments', 'files');
   const publicAssetCodeColumn = resolveColumn(schema, 'public_asset_code');
   const plateLabelColumn = resolveColumn(schema, 'plate_label');
   const qrStatusColumn = resolveColumn(schema, 'qr_status');
@@ -613,6 +682,7 @@ function buildSelectList(schema: TableSchema): string {
     marketplaceNotesColumn ? `${marketplaceNotesColumn} as marketplace_notes` : 'null::text as marketplace_notes',
     marketplaceStatusColumn ? `${marketplaceStatusColumn} as marketplace_status` : `'draft'::text as marketplace_status`,
     photosColumn ? `${photosColumn} as photos` : `'[]'::jsonb as photos`,
+    documentsColumn ? `${documentsColumn} as documents` : `'[]'::jsonb as documents`,
     publicAssetCodeColumn ? `${publicAssetCodeColumn} as public_asset_code` : `''::text as public_asset_code`,
     plateLabelColumn ? `${plateLabelColumn} as plate_label` : `''::text as plate_label`,
     qrStatusColumn ? `${qrStatusColumn} as qr_status` : `'active'::text as qr_status`,
@@ -709,6 +779,17 @@ function pushPhotoField(fields: SqlField[], schema: TableSchema, photos: string[
   }
 
   const normalized = normalizePhotoArray(photos);
+  setField(fields, buildFieldFromMeta(meta, normalized));
+}
+
+
+function pushDocumentField(fields: SqlField[], schema: TableSchema, documents: AssetRegisterDocument[]): void {
+  const meta = getColumnMeta(schema, 'documents', 'document_urls', 'document_files', 'attachments', 'files');
+  if (!meta) {
+    return;
+  }
+
+  const normalized = normalizeDocumentArray(documents);
   setField(fields, buildFieldFromMeta(meta, normalized));
 }
 
@@ -838,12 +919,16 @@ function buildRequiredFallbackField(meta: ColumnMetaRow, context: RequiredFieldC
     return buildFieldFromMeta(meta, []);
   }
 
+  if (column === 'documents' || column === 'document_urls' || column === 'document_files' || column === 'attachments' || column === 'files') {
+    return buildFieldFromMeta(meta, []);
+  }
+
   if (isArrayColumn(meta)) {
     return buildFieldFromMeta(meta, []);
   }
 
   if (isJsonColumn(meta)) {
-    const emptyValue = column.includes('photo') || column.includes('image') || column.includes('listing') ? [] : {};
+    const emptyValue = column.includes('photo') || column.includes('image') || column.includes('listing') || column.includes('document') || column.includes('attachment') || column === 'files' ? [] : {};
     return buildFieldFromMeta(meta, emptyValue);
   }
 
@@ -919,6 +1004,11 @@ function copySharedFieldsFromValuationRun(
     'photo_urls',
     'image_urls',
     'images',
+    'documents',
+    'document_urls',
+    'document_files',
+    'attachments',
+    'files',
   ]);
 
   for (const [columnName, meta] of assetSchema.columns.entries()) {
@@ -1045,6 +1135,7 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['hours', 'engine_hours'], input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours)));
   pushField(fields, schema, ['condition'], input.condition ?? null);
   pushPhotoField(fields, schema, input.photos ?? []);
+  pushDocumentField(fields, schema, input.documents ?? []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
   ensureRequiredFields(fields, schema, {
@@ -1105,6 +1196,7 @@ export async function updateAssetRegisterItem(
   );
   pushField(fields, schema, ['condition'], input.condition ?? existing.condition ?? null);
   pushPhotoField(fields, schema, input.photos ?? []);
+  pushDocumentField(fields, schema, input.documents ?? []);
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
   if (!fields.length) {
