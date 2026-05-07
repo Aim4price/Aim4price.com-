@@ -45,6 +45,7 @@ export type AssetRegisterItem = {
   note: string;
   serialNumber: string;
   isFinanced: boolean;
+  isInsured: boolean;
   financeNote: string;
   sellerPhone: string;
   marketplaceNotes: string;
@@ -69,6 +70,7 @@ export type CreateManualAssetInput = {
   note?: string | null;
   serialNumber?: string | null;
   isFinanced?: boolean;
+  isInsured?: boolean;
   financeNote?: string | null;
   photos?: string[];
   hours?: number | null;
@@ -83,6 +85,7 @@ export type UpdateAssetRegisterItemInput = {
   note?: string | null;
   serialNumber?: string | null;
   isFinanced?: boolean;
+  isInsured?: boolean;
   financeNote?: string | null;
   photos?: string[];
   hours?: number | null;
@@ -125,6 +128,7 @@ type AssetRegisterRow = {
   note: string | null;
   serial_number: string | null;
   is_financed: boolean | null;
+  is_insured: boolean | null;
   finance_note: string | null;
   seller_phone: string | null;
   marketplace_notes: string | null;
@@ -404,6 +408,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     note: asText(row.note),
     serialNumber: asText(row.serial_number),
     isFinanced: Boolean(row.is_financed),
+    isInsured: Boolean(row.is_insured),
     financeNote: asText(row.finance_note),
     sellerPhone: asText(row.seller_phone),
     marketplaceNotes: asText(row.marketplace_notes),
@@ -536,6 +541,7 @@ function buildSelectList(schema: TableSchema): string {
   const noteColumn = resolveColumn(schema, 'note', 'notes', 'description');
   const serialColumn = resolveColumn(schema, 'serial_number', 'serial', 'vin');
   const financedColumn = resolveColumn(schema, 'is_financed', 'financed');
+  const insuredColumn = resolveColumn(schema, 'is_insured', 'insured');
   const financeNoteColumn = resolveColumn(schema, 'finance_note', 'finance_notes', 'finance_status');
   const sellerPhoneColumn = resolveColumn(schema, 'seller_phone', 'phone', 'contact_phone');
   const marketplaceNotesColumn = resolveColumn(schema, 'marketplace_notes', 'listing_notes');
@@ -601,6 +607,7 @@ function buildSelectList(schema: TableSchema): string {
     noteColumn ? `${noteColumn} as note` : 'null::text as note',
     serialColumn ? `${serialColumn} as serial_number` : 'null::text as serial_number',
     financedColumn ? `${financedColumn} as is_financed` : 'false as is_financed',
+    insuredColumn ? `${insuredColumn} as is_insured` : 'false as is_insured',
     financeNoteColumn ? `${financeNoteColumn} as finance_note` : 'null::text as finance_note',
     sellerPhoneColumn ? `${sellerPhoneColumn} as seller_phone` : 'null::text as seller_phone',
     marketplaceNotesColumn ? `${marketplaceNotesColumn} as marketplace_notes` : 'null::text as marketplace_notes',
@@ -1033,6 +1040,7 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['note', 'notes', 'description'], asText(input.note) || null);
   pushField(fields, schema, ['serial_number', 'serial', 'vin'], asText(input.serialNumber) || null);
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
+  pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured));
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
   pushField(fields, schema, ['hours', 'engine_hours'], input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours)));
   pushField(fields, schema, ['condition'], input.condition ?? null);
@@ -1087,6 +1095,7 @@ export async function updateAssetRegisterItem(
   pushField(fields, schema, ['note', 'notes', 'description'], asText(input.note) || null);
   pushField(fields, schema, ['serial_number', 'serial', 'vin'], asText(input.serialNumber) || null);
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
+  pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured));
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
   pushField(
     fields,
