@@ -16,6 +16,17 @@ type AssetMethod = 'aim4price' | 'market' | 'manual';
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
 type ExportFormat = 'pdf' | 'xlsx';
+type AssetFilterKey =
+  | 'all'
+  | 'insured'
+  | 'not-insured'
+  | 'financed'
+  | 'not-financed'
+  | 'highest-value'
+  | 'lowest-value'
+  | 'aim4price-value'
+  | 'manual-value'
+  | 'marketplace';
 
 type AssetDocument = {
   id: string;
@@ -250,6 +261,19 @@ const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = 
   { value: 'serious', label: 'Requires attention' },
 ];
 
+const ASSET_FILTER_OPTIONS: Array<{ value: AssetFilterKey; label: string }> = [
+  { value: 'all', label: 'All assets' },
+  { value: 'insured', label: 'Insured' },
+  { value: 'not-insured', label: 'Not insured' },
+  { value: 'financed', label: 'Financed' },
+  { value: 'not-financed', label: 'Not financed' },
+  { value: 'highest-value', label: 'Highest value' },
+  { value: 'lowest-value', label: 'Lowest value' },
+  { value: 'aim4price-value', label: 'Aim4price value' },
+  { value: 'manual-value', label: 'Manual value' },
+  { value: 'marketplace', label: 'Marketplace' },
+];
+
 const initialAssetDraft: AssetDraft = {
   kind: 'equipment',
   title: '',
@@ -280,6 +304,16 @@ function SearchIcon({ className }: IconProps) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
       <circle cx="11" cy="11" r="7" />
       <path d="m20 20-3.5-3.5" />
+    </svg>
+  );
+}
+
+function FilterIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M4 6h16" />
+      <path d="M7 12h10" />
+      <path d="M10 18h4" />
     </svg>
   );
 }
@@ -1183,6 +1217,9 @@ export default function AssetRegisterClient() {
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [assetFilter, setAssetFilter] = useState<AssetFilterKey>('all');
+  const [isAssetFilterOpen, setIsAssetFilterOpen] = useState(false);
+  const assetFilterWrapRef = useRef<HTMLDivElement | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
@@ -1323,7 +1360,23 @@ export default function AssetRegisterClient() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, assetFilter]);
+
+  useEffect(() => {
+    if (!isAssetFilterOpen) return undefined;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && assetFilterWrapRef.current?.contains(target)) {
+        return;
+      }
+
+      setIsAssetFilterOpen(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [isAssetFilterOpen]);
 
   const anyModalOpen =
     isAssetModalOpen ||
@@ -1345,6 +1398,8 @@ export default function AssetRegisterClient() {
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
+
+      setIsAssetFilterOpen(false);
 
       if (deleteCandidateAsset) {
         closeDeleteConfirmDialog();
@@ -1443,19 +1498,6 @@ export default function AssetRegisterClient() {
     );
   }, [assets]);
 
-  const unfinancedAssetStats = useMemo(() => {
-    return {
-      count: Math.max(0, assets.length - financedAssetStats.count),
-      value: Math.max(0, totalValue - financedAssetStats.value),
-    };
-  }, [assets.length, financedAssetStats.count, financedAssetStats.value, totalValue]);
-
-  const uninsuredAssetStats = useMemo(() => {
-    return {
-      count: Math.max(0, assets.length - insuredAssetStats.count),
-      value: Math.max(0, totalValue - insuredAssetStats.value),
-    };
-  }, [assets.length, insuredAssetStats.count, insuredAssetStats.value, totalValue]);
 
   const editingAsset = useMemo(() => {
     return editingAssetId === null ? null : assets.find((asset) => asset.id === editingAssetId) ?? null;
@@ -1480,15 +1522,51 @@ export default function AssetRegisterClient() {
       ? 'Use mileage or engine hours — whichever you use to track this vehicle.'
       : 'This can be updated later whenever the machine hours change.';
 
+  const activeAssetFilterLabel = useMemo(() => {
+    return ASSET_FILTER_OPTIONS.find((option) => option.value === assetFilter)?.label ?? 'All assets';
+  }, [assetFilter]);
+
   const filteredAssets = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
+    let nextAssets = normalizedSearch
+      ? assets.filter((asset) => buildSearchableText(asset).includes(normalizedSearch))
+      : [...assets];
 
-    if (!normalizedSearch) {
-      return assets;
+    switch (assetFilter) {
+      case 'insured':
+        nextAssets = nextAssets.filter((asset) => asset.isInsured);
+        break;
+      case 'not-insured':
+        nextAssets = nextAssets.filter((asset) => !asset.isInsured);
+        break;
+      case 'financed':
+        nextAssets = nextAssets.filter((asset) => asset.isFinanced);
+        break;
+      case 'not-financed':
+        nextAssets = nextAssets.filter((asset) => !asset.isFinanced);
+        break;
+      case 'highest-value':
+        nextAssets = [...nextAssets].sort((left, right) => Number(right.value || 0) - Number(left.value || 0));
+        break;
+      case 'lowest-value':
+        nextAssets = [...nextAssets].sort((left, right) => Number(left.value || 0) - Number(right.value || 0));
+        break;
+      case 'aim4price-value':
+        nextAssets = nextAssets.filter((asset) => isAim4priceValuedAsset(asset));
+        break;
+      case 'manual-value':
+        nextAssets = nextAssets.filter((asset) => asset.selectedMethod === 'manual');
+        break;
+      case 'marketplace':
+        nextAssets = nextAssets.filter((asset) => isLiveOnMarketplace(asset));
+        break;
+      case 'all':
+      default:
+        break;
     }
 
-    return assets.filter((asset) => buildSearchableText(asset).includes(normalizedSearch));
-  }, [assets, searchTerm]);
+    return nextAssets;
+  }, [assets, assetFilter, searchTerm]);
 
   const pageCount = Math.max(1, Math.ceil(filteredAssets.length / PAGE_SIZE));
   const pageStart = (currentPage - 1) * PAGE_SIZE;
@@ -2139,6 +2217,16 @@ export default function AssetRegisterClient() {
     setIsSummaryModalOpen(false);
   }
 
+  function selectAssetFilter(nextFilter: AssetFilterKey) {
+    setAssetFilter(nextFilter);
+    setIsAssetFilterOpen(false);
+  }
+
+  function clearAssetFilter() {
+    setAssetFilter('all');
+    setIsAssetFilterOpen(false);
+  }
+
   function openExportModal() {
     if (!assets.length) {
       return;
@@ -2352,10 +2440,11 @@ export default function AssetRegisterClient() {
     void requestProjection(projectionAsset, projectionForm);
   }
 
+  const hasActiveAssetFilter = assetFilter !== 'all';
   const registerRangeDescription = filteredAssets.length
-    ? `Showing ${pageStart + 1}-${pageEnd} of ${filteredAssets.length} ${filteredAssets.length === 1 ? 'asset' : 'assets'}`
-    : searchTerm.trim()
-      ? 'No assets match the current search.'
+    ? `Showing ${pageStart + 1}-${pageEnd} of ${filteredAssets.length} ${filteredAssets.length === 1 ? 'asset' : 'assets'}${hasActiveAssetFilter ? ` · ${activeAssetFilterLabel}` : ''}`
+    : searchTerm.trim() || hasActiveAssetFilter
+      ? 'No assets match the current search or filter.'
       : 'No saved assets yet.';
 
   return (
@@ -2380,6 +2469,43 @@ export default function AssetRegisterClient() {
               >
                 <span>Summary</span>
               </button>
+
+              <div className={styles.assetFilterWrap} ref={assetFilterWrapRef}>
+                <button
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.filterTriggerButton} ${hasActiveAssetFilter ? styles.filterTriggerButtonActive : ''} ${isAssetFilterOpen ? styles.filterTriggerButtonOpen : ''}`}
+                  onClick={() => setIsAssetFilterOpen((current) => !current)}
+                  disabled={isLoading}
+                  aria-haspopup="menu"
+                  aria-expanded={isAssetFilterOpen}
+                >
+                  <FilterIcon className={styles.buttonIcon} />
+                  <span>{hasActiveAssetFilter ? activeAssetFilterLabel : 'Filter'}</span>
+                  <ChevronDownIcon className={styles.filterChevron} />
+                </button>
+
+                {isAssetFilterOpen ? (
+                  <div className={styles.assetFilterMenu} role="menu" aria-label="Filter asset register">
+                    {ASSET_FILTER_OPTIONS.map((option) => {
+                      const isActiveFilter = assetFilter === option.value;
+
+                      return (
+                        <button
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={isActiveFilter}
+                          key={option.value}
+                          className={`${styles.assetFilterMenuButton} ${isActiveFilter ? styles.assetFilterMenuButtonActive : ''}`}
+                          onClick={() => selectAssetFilter(option.value)}
+                        >
+                          <span>{option.label}</span>
+                          {isActiveFilter ? <span className={styles.assetFilterMenuTick}>✓</span> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
 
               <button
                 type="button"
@@ -2742,11 +2868,18 @@ export default function AssetRegisterClient() {
               </>
             ) : (
               <div className={styles.emptyState}>
-                <h3>No assets match your search</h3>
-                <p>Try a broader term, or clear the search to see the full register again.</p>
+                <h3>No assets match your search or filter</h3>
+                <p>Try a broader term, choose another filter, or clear both to see the full register again.</p>
                 <div className={styles.emptyStateActions}>
-                  <button type="button" className={styles.secondaryButton} onClick={() => setSearchTerm('')}>
-                    Clear search
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={() => {
+                      setSearchTerm('');
+                      clearAssetFilter();
+                    }}
+                  >
+                    Clear search and filter
                   </button>
                 </div>
               </div>
@@ -2776,7 +2909,6 @@ export default function AssetRegisterClient() {
           <div className={`${styles.modalCard} ${styles.summaryModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-register-summary-title">
             <div className={`${styles.modalHeader} ${styles.summaryModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <span className={styles.modalEyebrow}>Asset Register Summary</span>
                 <h3 id="asset-register-summary-title">Register summary</h3>
                 <p>Live totals calculated from the saved assets in this register. Financed and insured totals update when those asset checkboxes are changed.</p>
               </div>
@@ -2833,38 +2965,6 @@ export default function AssetRegisterClient() {
                   </article>
                 </section>
 
-                <section className={styles.summaryCoveragePanel}>
-                  <div className={styles.summaryCoverageHeader}>
-                    <h4>Coverage breakdown</h4>
-                    <p>Financed and insured values are calculated independently, so the same asset can be counted in both totals.</p>
-                  </div>
-
-                  <div className={styles.summaryCoverageGrid}>
-                    <div className={styles.summaryCoverageTile}>
-                      <span>Not financed</span>
-                      <strong>{unfinancedAssetStats.count}</strong>
-                      <small>{money(unfinancedAssetStats.value)}</small>
-                    </div>
-
-                    <div className={styles.summaryCoverageTile}>
-                      <span>Not insured</span>
-                      <strong>{uninsuredAssetStats.count}</strong>
-                      <small>{money(uninsuredAssetStats.value)}</small>
-                    </div>
-
-                    <div className={styles.summaryCoverageTile}>
-                      <span>Financed share</span>
-                      <strong>{totalValue ? formatRatioPercent(financedAssetStats.value / totalValue) : '0%'}</strong>
-                      <small>By register value</small>
-                    </div>
-
-                    <div className={styles.summaryCoverageTile}>
-                      <span>Insured share</span>
-                      <strong>{totalValue ? formatRatioPercent(insuredAssetStats.value / totalValue) : '0%'}</strong>
-                      <small>By register value</small>
-                    </div>
-                  </div>
-                </section>
               </div>
             </div>
           </div>
