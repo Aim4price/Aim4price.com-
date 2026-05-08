@@ -101,6 +101,29 @@ function normalizeUsageMetric(value: unknown): 'hours' | 'km' | null {
   return null;
 }
 
+function normalizeLifeWorkedPercent(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') {
+    return null;
+  }
+
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 0 || numeric > 100) {
+    return null;
+  }
+
+  return Math.round(numeric * 10) / 10;
+}
+
+function readLifeWorkedPercentFromSpecs(specs: Record<string, unknown>): number | null {
+  return (
+    normalizeLifeWorkedPercent(specs.life_worked_percent) ??
+    normalizeLifeWorkedPercent(specs.worked_percent) ??
+    normalizeLifeWorkedPercent(specs.lifetime_worked_percent) ??
+    normalizeLifeWorkedPercent(specs.percent_worked) ??
+    normalizeLifeWorkedPercent(specs.lifetime_used_percent)
+  );
+}
+
 function normalizeSpecsJson(value: unknown): Record<string, unknown> {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as Record<string, unknown>;
@@ -109,18 +132,31 @@ function normalizeSpecsJson(value: unknown): Record<string, unknown> {
   return {};
 }
 
-function buildManualSpecsJson(value: unknown, usageMetric: 'hours' | 'km' | null): Record<string, unknown> {
+function buildManualSpecsJson(
+  value: unknown,
+  usageMetric: 'hours' | 'km' | null,
+  lifeWorkedPercent: number | null,
+): Record<string, unknown> {
   const specs = normalizeSpecsJson(value);
-
-  if (!usageMetric) {
-    return specs;
-  }
+  const resolvedLifeWorkedPercent = lifeWorkedPercent ?? readLifeWorkedPercentFromSpecs(specs);
 
   return {
     ...specs,
-    usageMetric,
-    usage_metric: usageMetric,
-    usage_unit: usageMetric,
+    ...(usageMetric
+      ? {
+          usageMetric,
+          usage_metric: usageMetric,
+          usage_unit: usageMetric,
+        }
+      : {}),
+    ...(resolvedLifeWorkedPercent !== null
+      ? {
+          life_worked_percent: resolvedLifeWorkedPercent,
+          worked_percent: resolvedLifeWorkedPercent,
+          percent_worked: resolvedLifeWorkedPercent,
+          lifetime_worked_percent: resolvedLifeWorkedPercent,
+        }
+      : {}),
   };
 }
 
@@ -280,6 +316,7 @@ export async function POST(request: NextRequest) {
   const title = String(body.title ?? '').trim();
   const value = Math.round(Number(body.value) || 0);
   const usageMetric = normalizeUsageMetric(body.usageMetric);
+  const lifeWorkedPercent = normalizeLifeWorkedPercent((body as { lifeWorkedPercent?: unknown }).lifeWorkedPercent);
 
   if (!title || value <= 0) {
     return NextResponse.json(
@@ -306,7 +343,8 @@ export async function POST(request: NextRequest) {
       yearModel: normalizeYearModel(body.yearModel),
       hours: normalizeHours(body.hours),
       usageMetric,
-      specsJson: buildManualSpecsJson(body.specsJson, usageMetric),
+      lifeWorkedPercent,
+      specsJson: buildManualSpecsJson(body.specsJson, usageMetric, lifeWorkedPercent),
       condition: normalizeCondition(body.condition),
     });
 
@@ -332,6 +370,7 @@ export async function PUT(request: NextRequest) {
   const title = String(body.title ?? '').trim();
   const value = Math.round(Number(body.value) || 0);
   const usageMetric = normalizeUsageMetric(body.usageMetric);
+  const lifeWorkedPercent = normalizeLifeWorkedPercent((body as { lifeWorkedPercent?: unknown }).lifeWorkedPercent);
 
   if (!assetId) {
     return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
@@ -377,7 +416,8 @@ export async function PUT(request: NextRequest) {
       yearModel: normalizeYearModel(body.yearModel),
       hours: normalizeHours(body.hours),
       usageMetric,
-      specsJson: buildManualSpecsJson(body.specsJson, usageMetric),
+      lifeWorkedPercent,
+      specsJson: buildManualSpecsJson(body.specsJson, usageMetric, lifeWorkedPercent),
       condition: normalizeCondition(body.condition),
     });
 
