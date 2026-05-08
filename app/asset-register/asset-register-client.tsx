@@ -15,6 +15,7 @@ type AssetKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | '
 type AssetMethod = 'aim4price' | 'market' | 'manual';
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
+type UsageMetric = 'hours' | 'km';
 type ExportFormat = 'pdf' | 'xlsx';
 type AssetFilterKey =
   | 'all'
@@ -200,7 +201,9 @@ type AssetDraft = {
   financeNote: string;
   photos: string[];
   documents: AssetDocument[];
+  yearModel: string;
   hours: string;
+  usageMetric: UsageMetric;
   condition: AssetConditionValue;
 };
 
@@ -240,7 +243,7 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   },
   {
     value: 'property',
-    label: 'Property',
+    label: 'Property/Buildings',
     description: 'Buildings, sheds, houses, stores and fixed improvements.',
     titlePlaceholder: 'Example: Main workshop building',
   },
@@ -285,7 +288,9 @@ const initialAssetDraft: AssetDraft = {
   financeNote: '',
   photos: [],
   documents: [],
+  yearModel: '',
   hours: '',
+  usageMetric: 'hours',
   condition: '',
 };
 
@@ -597,7 +602,7 @@ function kindLabel(value: AssetKind): string {
       tractor: 'Tractor',
       equipment: 'Equipment',
       manual: 'Manual asset',
-      property: 'Property',
+      property: 'Property/Buildings',
       vehicle: 'Vehicle',
       tools: 'Tools',
     }[value] ?? 'Manual asset'
@@ -608,6 +613,40 @@ function normalizeDraftKind(value: AssetKind): AssetKind {
   return value === 'manual' ? 'equipment' : value;
 }
 
+function normalizeUsageMetric(value: unknown, kind?: AssetKind): UsageMetric {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') {
+    return 'km';
+  }
+
+  if (normalized === 'hours' || normalized === 'hour' || normalized === 'hrs') {
+    return 'hours';
+  }
+
+  return kind === 'vehicle' ? 'km' : 'hours';
+}
+
+function getAssetUsageMetric(asset: Pick<RegisterAsset, 'kind' | 'specsJson'>): UsageMetric {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return normalizeUsageMetric(
+    specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit ?? specs.usage_measure,
+    asset.kind,
+  );
+}
+
+function usageMetricLabel(value: UsageMetric): string {
+  return value === 'km' ? 'km' : 'hours';
+}
+
+function assetYearLabel(asset: Pick<RegisterAsset, 'kind'>): string {
+  return asset.kind === 'property' ? 'Year Built' : 'Year Model';
+}
+
+function draftYearLabel(kind: AssetKind): string {
+  return kind === 'property' ? 'Year built' : 'Year model';
+}
 
 function getManualAssetOption(kind: AssetKind) {
   const normalizedKind = normalizeDraftKind(kind);
@@ -817,7 +856,7 @@ function isAim4priceValuedAsset(asset: RegisterAsset): boolean {
 }
 
 function isMarketplaceEligible(asset: RegisterAsset): boolean {
-  return asset.kind !== 'property' && asset.value > 0 && (isTractorAsset(asset) || isValuedEquipmentAsset(asset));
+  return asset.kind !== 'property' && asset.value > 0;
 }
 
 function isLiveOnMarketplace(asset: RegisterAsset): boolean {
@@ -850,7 +889,9 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     financeNote: asset.financeNote,
     photos: normalizePhotos(asset.photos),
     documents: assetDocuments(asset),
+    yearModel: asset.yearModel === null || typeof asset.yearModel === 'undefined' ? '' : String(asset.yearModel),
     hours: asset.hours === null || typeof asset.hours === 'undefined' ? '' : String(asset.hours),
+    usageMetric: getAssetUsageMetric(asset),
     condition: asset.condition,
   };
 }
@@ -916,7 +957,7 @@ function assetPreviewImage(asset: RegisterAsset): string | null {
 
 function assetSectorLabel(asset: RegisterAsset): string {
   if (isTractorAsset(asset) || isValuedEquipmentAsset(asset)) return 'Agricultural';
-  if (asset.kind === 'property') return 'Property';
+  if (asset.kind === 'property') return 'Property/Buildings';
   if (asset.kind === 'vehicle') return 'Vehicle';
   if (asset.kind === 'tools') return 'Tools';
   return 'Manual';
@@ -926,7 +967,7 @@ function assetFamilyLabel(asset: RegisterAsset): string {
   if (asset.equipmentFamilyLabel) return asset.equipmentFamilyLabel;
   if (isTractorAsset(asset)) return 'Tractor';
   if (asset.kind === 'equipment') return 'Equipment';
-  if (asset.kind === 'property') return 'Property';
+  if (asset.kind === 'property') return 'Property/Buildings';
   if (asset.kind === 'vehicle') return 'Vehicle';
   if (asset.kind === 'tools') return 'Tools';
   if (isValuedEquipmentAsset(asset)) return 'Valued equipment';
@@ -978,6 +1019,7 @@ function buildAssetUsageValue(asset: RegisterAsset): string {
   const percent = getAssetLifeWorkedPercent(asset);
   const hours = Number(asset.hours);
   const hasHours = Number.isFinite(hours) && hours > 0;
+  const usageMetric = getAssetUsageMetric(asset);
   const depreciationMethod = String(asset.depreciationMethodUsed ?? '').trim().toLowerCase();
   const usesPercentDepreciation = depreciationMethod === 'semi_depreciation' || depreciationMethod === 'percentage_depreciation';
 
@@ -986,7 +1028,7 @@ function buildAssetUsageValue(asset: RegisterAsset): string {
   }
 
   if (hasHours) {
-    return `${Math.round(hours).toLocaleString('en-ZA')} hours`;
+    return `${Math.round(hours).toLocaleString('en-ZA')} ${usageMetricLabel(usageMetric)}`;
   }
 
   if (percent !== null) {
@@ -1003,7 +1045,7 @@ function buildAssetUsageMeta(asset: RegisterAsset): string {
 
 function buildAssetMeta(asset: RegisterAsset): string {
   const parts = [
-    asset.yearModel ? `Year Model: ${asset.yearModel}` : '',
+    asset.yearModel ? `${assetYearLabel(asset)}: ${asset.yearModel}` : '',
     buildAssetUsageMeta(asset),
     asset.condition ? `Condition: ${conditionLabel(asset.condition)}` : '',
   ].filter(Boolean);
@@ -1030,6 +1072,7 @@ function buildSearchableText(asset: RegisterAsset): string {
     asset.cab,
     asset.yearModel ? String(asset.yearModel) : '',
     asset.hours !== null && typeof asset.hours !== 'undefined' ? String(asset.hours) : '',
+    getAssetUsageMetric(asset),
     asset.lifeWorkedPercent !== null && typeof asset.lifeWorkedPercent !== 'undefined' ? String(asset.lifeWorkedPercent) : '',
     buildAssetUsageMeta(asset),
     conditionLabel(asset.condition),
@@ -1216,6 +1259,7 @@ export default function AssetRegisterClient() {
   const [marketplaceAsset, setMarketplaceAsset] = useState<RegisterAsset | null>(null);
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
+  const [busyMarketplaceRemoveId, setBusyMarketplaceRemoveId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [assetFilter, setAssetFilter] = useState<AssetFilterKey>('all');
   const [isAssetFilterOpen, setIsAssetFilterOpen] = useState(false);
@@ -1515,11 +1559,24 @@ export default function AssetRegisterClient() {
     return assetFormKind !== 'property';
   }, [assetFormKind]);
 
-  const usageFieldLabel = assetFormKind === 'vehicle' ? 'Odometer / hours' : 'Machine hours';
-  const usageFieldPlaceholder = assetFormKind === 'vehicle' ? 'Enter kilometres or hours' : 'Enter machine hours';
+  const yearFieldLabel = draftYearLabel(assetFormKind);
+  const usageFieldLabel =
+    assetFormKind === 'vehicle'
+      ? assetDraft.usageMetric === 'km'
+        ? 'Odometer reading'
+        : 'Vehicle hours'
+      : 'Machine hours';
+  const usageFieldPlaceholder =
+    assetFormKind === 'vehicle'
+      ? assetDraft.usageMetric === 'km'
+        ? 'Enter kilometres'
+        : 'Enter vehicle hours'
+      : 'Enter machine hours';
   const usageFieldHint =
     assetFormKind === 'vehicle'
-      ? 'Use mileage or engine hours — whichever you use to track this vehicle.'
+      ? assetDraft.usageMetric === 'km'
+        ? 'Vehicle usage will show as kilometres across the register and marketplace.'
+        : 'Vehicle usage will show as hours across the register and marketplace.'
       : 'This can be updated later whenever the machine hours change.';
 
   const activeAssetFilterLabel = useMemo(() => {
@@ -1831,16 +1888,24 @@ export default function AssetRegisterClient() {
     const value = Math.round(Number(assetDraft.value) || 0);
     const photos = normalizePhotos(assetDraft.photos);
     const documents = normalizeDocuments(assetDraft.documents);
+    const hasYearModel = assetDraft.yearModel.trim() !== '';
+    const yearModel = hasYearModel ? Number(assetDraft.yearModel) : null;
     const hasHours = assetDraft.hours.trim() !== '';
     const hours = hasHours ? Number(assetDraft.hours) : null;
+    const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
 
     if (!assetDraft.title.trim() || value <= 0) {
       setNotice({ tone: 'error', message: 'Asset title and value are required.' });
       return;
     }
 
+    if (hasYearModel && (!Number.isFinite(yearModel) || Number(yearModel) < 1800 || Number(yearModel) > new Date().getFullYear() + 1)) {
+      setNotice({ tone: 'error', message: `${yearFieldLabel} must be a valid year.` });
+      return;
+    }
+
     if (hasHours && (!Number.isFinite(hours) || Number(hours) < 0)) {
-      setNotice({ tone: 'error', message: 'Machine hours must be zero or greater.' });
+      setNotice({ tone: 'error', message: `${usageErrorLabel} must be zero or greater.` });
       return;
     }
 
@@ -1857,7 +1922,9 @@ export default function AssetRegisterClient() {
       financeNote: assetDraft.financeNote,
       photos,
       documents,
+      yearModel: hasYearModel ? Math.round(Number(yearModel)) : null,
       hours: showUsageHoursField && hasHours ? Math.round(Number(hours)) : null,
+      usageMetric: showUsageHoursField ? assetDraft.usageMetric : null,
       condition: showConditionField ? assetDraft.condition || null : null,
     };
 
@@ -2001,7 +2068,7 @@ export default function AssetRegisterClient() {
     }
 
     if (!isMarketplaceEligible(marketplaceAsset)) {
-      setNotice({ tone: 'error', message: 'Only valued equipment assets can be sent to marketplace.' });
+      setNotice({ tone: 'error', message: 'Property/Buildings cannot be sent to marketplace.' });
       return;
     }
 
@@ -2061,6 +2128,41 @@ export default function AssetRegisterClient() {
     void openMarketplaceModal(asset);
   }
 
+  async function handleRemoveFromMarketplace(asset: RegisterAsset) {
+    setBusyMarketplaceRemoveId(asset.id);
+
+    try {
+      const response = await fetch(`/api/marketplace?assetId=${encodeURIComponent(asset.id)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = (await response.json()) as MarketplaceApiResponse;
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? 'Failed to remove asset from marketplace.');
+      }
+
+      const removedAsset: RegisterAsset = {
+        ...asset,
+        marketplaceStatus: data.marketplaceStatus ?? 'draft',
+        updatedAtIso: new Date().toISOString(),
+      };
+
+      setAssets((current) => current.map((entry) => (entry.id === removedAsset.id ? removedAsset : entry)));
+      setActiveAsset((current) => (current?.id === removedAsset.id ? removedAsset : current));
+      setMarketplaceAsset((current) => (current?.id === removedAsset.id ? removedAsset : current));
+      setNotice({ tone: 'success', message: `${removedAsset.title} was removed from marketplace.` });
+      closeActionDialog();
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to remove asset from marketplace.',
+      });
+    } finally {
+      setBusyMarketplaceRemoveId(null);
+    }
+  }
+
   function handlePrintAssetSheet(asset: RegisterAsset) {
     const didOpen = openAssetSheetPrint({
       logoUrl: toAbsoluteUrl('/brand/aim4price-mark-white.png') ?? '',
@@ -2081,7 +2183,7 @@ export default function AssetRegisterClient() {
         { label: 'Drive', value: asset.drive ? formatDrive(asset.drive) : '—' },
         { label: 'Cab', value: asset.cab ? formatCab(asset.cab) : '—' },
         { label: 'Power', value: asset.powerKw !== null && typeof asset.powerKw !== 'undefined' ? `${asset.powerKw} kW` : '—' },
-        { label: 'Year', value: asset.yearModel ? String(asset.yearModel) : '—' },
+        { label: asset.kind === 'property' ? 'Year built' : 'Year model', value: asset.yearModel ? String(asset.yearModel) : '—' },
         {
           label: 'Usage',
           value: buildAssetUsageValue(asset),
@@ -2777,7 +2879,7 @@ export default function AssetRegisterClient() {
                                           <strong>{asset.serialNumber || '—'}</strong>
                                         </div>
                                         <div className={styles.assetDetailRow}>
-                                          <span>Year</span>
+                                          <span>{asset.kind === 'property' ? 'Year Built' : 'Year'}</span>
                                           <strong>{asset.yearModel || '—'}</strong>
                                         </div>
                                         <div className={styles.assetDetailRow}>
@@ -3012,6 +3114,7 @@ export default function AssetRegisterClient() {
                         ...current,
                         kind: nextKind,
                         hours: nextKind === 'property' || nextKind === 'tools' ? '' : current.hours,
+                        usageMetric: nextKind === 'vehicle' ? normalizeUsageMetric(current.usageMetric, 'vehicle') : 'hours',
                         condition: nextKind === 'property' ? '' : current.condition,
                       }));
                     }}
@@ -3074,6 +3177,48 @@ export default function AssetRegisterClient() {
                   placeholder="Serial number or internal reference"
                 />
               </label>
+
+              <label className={styles.field}>
+                <span>{yearFieldLabel}</span>
+                <input
+                  type="number"
+                  min="1800"
+                  max={new Date().getFullYear() + 1}
+                  step="1"
+                  value={assetDraft.yearModel}
+                  onChange={(event) =>
+                    setAssetDraft((current) => ({
+                      ...current,
+                      yearModel: event.target.value,
+                    }))
+                  }
+                  placeholder={assetFormKind === 'property' ? 'Example: 2012' : 'Example: 2020'}
+                />
+                <small className={styles.fieldHint}>
+                  {assetFormKind === 'property'
+                    ? 'Use the year the property or building was built.'
+                    : 'Use the model year or manufacturing year shown on the asset records.'}
+                </small>
+              </label>
+
+              {assetFormKind === 'vehicle' ? (
+                <label className={styles.field}>
+                  <span>Usage type</span>
+                  <select
+                    value={assetDraft.usageMetric}
+                    onChange={(event) =>
+                      setAssetDraft((current) => ({
+                        ...current,
+                        usageMetric: normalizeUsageMetric(event.target.value, 'vehicle'),
+                      }))
+                    }
+                  >
+                    <option value="km">Kilometres</option>
+                    <option value="hours">Hours</option>
+                  </select>
+                  <small className={styles.fieldHint}>Choose how this vehicle usage must display in Aim4price.</small>
+                </label>
+              ) : null}
 
               {showUsageHoursField ? (
                 <label className={styles.field}>
@@ -3365,6 +3510,21 @@ export default function AssetRegisterClient() {
                       <span>
                         <strong>{isLiveOnMarketplace(activeAsset) ? 'Update marketplace' : 'Send to marketplace'}</strong>
                         <small>{isLiveOnMarketplace(activeAsset) ? 'Refresh the live listing details.' : 'Create a marketplace listing from this asset.'}</small>
+                      </span>
+                    </button>
+                  ) : null}
+
+                  {isLiveOnMarketplace(activeAsset) ? (
+                    <button
+                      type="button"
+                      className={styles.optionActionButton}
+                      disabled={busyMarketplaceRemoveId === activeAsset.id}
+                      onClick={() => void handleRemoveFromMarketplace(activeAsset)}
+                    >
+                      <StoreIcon className={styles.buttonIcon} />
+                      <span>
+                        <strong>{busyMarketplaceRemoveId === activeAsset.id ? 'Removing...' : 'Remove from marketplace'}</strong>
+                        <small>Withdraw the live listing but keep this asset in the register.</small>
                       </span>
                     </button>
                   ) : null}
