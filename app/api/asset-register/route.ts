@@ -393,6 +393,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
     }
 
+    if (error instanceof Error && error.message === 'USAGE_READING_CANNOT_DECREASE') {
+      return NextResponse.json({ ok: false, error: 'The new usage reading cannot be lower than the reading already saved on this asset.' }, { status: 400 });
+    }
+
+    if (error instanceof Error && error.message === 'LIFE_WORKED_PERCENT_CANNOT_DECREASE') {
+      return NextResponse.json({ ok: false, error: 'The new lifetime worked percentage cannot be lower than the percentage already saved on this asset.' }, { status: 400 });
+    }
+
     console.error('asset register PUT failed', error);
     return NextResponse.json(
       { ok: false, error: formatUnknownError(error, 'Failed to update asset.') },
