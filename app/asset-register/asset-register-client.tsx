@@ -861,7 +861,7 @@ function createMarketplaceDraft(asset: RegisterAsset, profile: AccountProfile | 
     sellerEmail: profile?.email?.trim() || '',
     province: profile?.province?.trim() || '',
     area: profile?.townCity?.trim() || '',
-    askingPriceExVat: formatMarketplacePriceInput(Math.round(asset.selectedValueExVat || asset.value || 0)),
+    askingPriceExVat: '',
     description: (asset.marketplaceNotes || asset.note || '').trim(),
   };
 }
@@ -1967,6 +1967,9 @@ export default function AssetRegisterClient() {
         message: `${publishedAsset.title} is ready on the marketplace.`,
       });
       closeMarketplaceModal();
+
+      const listingIdentifier = data.listing?.id ?? data.listing?.sourceAssetId ?? data.assetId ?? publishedAsset.id;
+      window.location.assign(`/marketplace?listing=${encodeURIComponent(String(listingIdentifier))}`);
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -3460,7 +3463,8 @@ export default function AssetRegisterClient() {
                                 current ? { ...current, askingPriceExVat: formatMarketplacePriceInput(current.askingPriceExVat) } : current,
                               )
                             }
-                            placeholder="0"
+                            placeholder=""
+                            autoFocus
                             aria-label="Marketplace price excluding VAT"
                           />
                         </div>
@@ -3542,16 +3546,16 @@ export default function AssetRegisterClient() {
                 </div>
 
                 <div className={`${styles.formActions} ${styles.marketplaceActions}`}>
+                  <button type="button" className={styles.secondaryButton} onClick={closeMarketplaceModal} disabled={isPublishingMarketplace}>
+                    Cancel
+                  </button>
+
                   <button type="submit" className={styles.primaryButton} disabled={isPublishingMarketplace}>
                     {isPublishingMarketplace
                       ? 'Publishing...'
                       : isLiveOnMarketplace(marketplaceAsset)
                         ? 'Update and view listing'
                         : 'Confirm and view listing'}
-                  </button>
-
-                  <button type="button" className={styles.secondaryButton} onClick={closeMarketplaceModal} disabled={isPublishingMarketplace}>
-                    Cancel
                   </button>
                 </div>
               </form>
