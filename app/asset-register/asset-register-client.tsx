@@ -3442,6 +3442,19 @@ export default function AssetRegisterClient() {
 
             <div className={`${styles.modalScrollBody} ${styles.marketplaceModalScrollBody}`}>
               <form className={styles.marketplaceForm} onSubmit={handleConfirmMarketplacePublish}>
+                <section className={styles.marketplaceAssetSummary}>
+                  <div className={styles.marketplaceAssetSummaryMain}>
+                    <span>Asset</span>
+                    <strong>{marketplaceAsset.title}</strong>
+                  </div>
+
+                  <div className={styles.marketplaceAssetSummaryValue}>
+                    <span>Register value</span>
+                    <strong>{money(marketplaceAsset.value)}</strong>
+                    <small>Excl. VAT</small>
+                  </div>
+                </section>
+
                 <div className={styles.marketplaceBodyGrid}>
                   <div className={styles.marketplaceListingColumn}>
                     <section className={styles.marketplacePricePanel}>
@@ -3476,72 +3489,78 @@ export default function AssetRegisterClient() {
                       <textarea
                         value={marketplaceDraft.description}
                         onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, description: event.target.value } : current))}
-                        placeholder="Notes"
+                        placeholder=""
                       />
                     </label>
                   </div>
 
                   <section className={styles.marketplaceSellerPanel}>
-                    <label className={`${styles.field} ${styles.marketplaceContactField}`}>
-                      <span>Business name</span>
-                      <input
-                        value={marketplaceDraft.sellerCompany}
-                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerCompany: event.target.value } : current))}
-                        placeholder="Business name"
-                        aria-label="Business name"
-                      />
-                    </label>
+                    <div className={styles.marketplaceSellerHeader}>
+                      <h4>Seller details</h4>
+                    </div>
 
-                    <label className={`${styles.field} ${styles.marketplaceContactField}`}>
-                      <span>Contact name</span>
-                      <input
-                        value={marketplaceDraft.sellerName}
-                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerName: event.target.value } : current))}
-                        placeholder="Contact name"
-                        aria-label="Contact name"
-                      />
-                    </label>
+                    <div className={styles.marketplaceSellerGrid}>
+                      <label className={`${styles.field} ${styles.marketplaceContactField} ${styles.marketplaceWideField}`}>
+                        <span>Business name</span>
+                        <input
+                          value={marketplaceDraft.sellerCompany}
+                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerCompany: event.target.value } : current))}
+                          placeholder="Business name"
+                          aria-label="Business name"
+                        />
+                      </label>
 
-                    <label className={`${styles.field} ${styles.marketplaceContactField}`}>
-                      <span>Phone</span>
-                      <input
-                        value={marketplaceDraft.sellerPhone}
-                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerPhone: event.target.value } : current))}
-                        placeholder="Phone"
-                        aria-label="Phone"
-                      />
-                    </label>
+                      <label className={`${styles.field} ${styles.marketplaceContactField}`}>
+                        <span>Contact name</span>
+                        <input
+                          value={marketplaceDraft.sellerName}
+                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerName: event.target.value } : current))}
+                          placeholder="Contact name"
+                          aria-label="Contact name"
+                        />
+                      </label>
 
-                    <label className={`${styles.field} ${styles.marketplaceContactField}`}>
-                      <span>Email</span>
-                      <input
-                        type="email"
-                        value={marketplaceDraft.sellerEmail}
-                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerEmail: event.target.value } : current))}
-                        placeholder="Email"
-                        aria-label="Email"
-                      />
-                    </label>
+                      <label className={`${styles.field} ${styles.marketplaceContactField}`}>
+                        <span>Phone</span>
+                        <input
+                          value={marketplaceDraft.sellerPhone}
+                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerPhone: event.target.value } : current))}
+                          placeholder="Phone"
+                          aria-label="Phone"
+                        />
+                      </label>
 
-                    <label className={`${styles.field} ${styles.marketplaceContactField}`}>
-                      <span>Province</span>
-                      <input
-                        value={marketplaceDraft.province}
-                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, province: event.target.value } : current))}
-                        placeholder="Province"
-                        aria-label="Province"
-                      />
-                    </label>
+                      <label className={`${styles.field} ${styles.marketplaceContactField} ${styles.marketplaceWideField}`}>
+                        <span>Email</span>
+                        <input
+                          type="email"
+                          value={marketplaceDraft.sellerEmail}
+                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerEmail: event.target.value } : current))}
+                          placeholder="Email"
+                          aria-label="Email"
+                        />
+                      </label>
 
-                    <label className={`${styles.field} ${styles.marketplaceContactField}`}>
-                      <span>Area</span>
-                      <input
-                        value={marketplaceDraft.area}
-                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, area: event.target.value } : current))}
-                        placeholder="Area"
-                        aria-label="Area"
-                      />
-                    </label>
+                      <label className={`${styles.field} ${styles.marketplaceContactField}`}>
+                        <span>Province</span>
+                        <input
+                          value={marketplaceDraft.province}
+                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, province: event.target.value } : current))}
+                          placeholder="Province"
+                          aria-label="Province"
+                        />
+                      </label>
+
+                      <label className={`${styles.field} ${styles.marketplaceContactField}`}>
+                        <span>Area</span>
+                        <input
+                          value={marketplaceDraft.area}
+                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, area: event.target.value } : current))}
+                          placeholder="Area"
+                          aria-label="Area"
+                        />
+                      </label>
+                    </div>
                   </section>
                 </div>
 
@@ -3550,7 +3569,11 @@ export default function AssetRegisterClient() {
                     Cancel
                   </button>
 
-                  <button type="submit" className={styles.primaryButton} disabled={isPublishingMarketplace}>
+                  <button
+                    type="submit"
+                    className={styles.primaryButton}
+                    disabled={isPublishingMarketplace || (parseMoneyInput(marketplaceDraft.askingPriceExVat) ?? 0) <= 0}
+                  >
                     {isPublishingMarketplace
                       ? 'Publishing...'
                       : isLiveOnMarketplace(marketplaceAsset)
@@ -3563,7 +3586,6 @@ export default function AssetRegisterClient() {
           </div>
         </div>
       ) : null}
-
 
       {activeAsset && isQrModalOpen ? (
         <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
