@@ -16,16 +16,6 @@ type AssetMethod = 'aim4price' | 'market' | 'manual';
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
 type ExportFormat = 'pdf' | 'xlsx';
-type RegisterFilterOption =
-  | 'all'
-  | 'insured'
-  | 'not_insured'
-  | 'financed'
-  | 'not_financed'
-  | 'highest_value'
-  | 'lowest_value'
-  | 'aim4price_value'
-  | 'manual_value';
 
 type AssetDocument = {
   id: string;
@@ -119,9 +109,9 @@ type MarketplaceApiResponse = {
   assetId?: string;
   marketplaceStatus?: string;
   listing?: {
-    id?: string;
-    sourceAssetId?: string;
-  };
+    id?: string | number | null;
+    sourceAssetId?: string | number | null;
+  } | null;
   error?: string;
 };
 
@@ -251,58 +241,6 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   },
 ];
 
-const REGISTER_FILTER_OPTIONS: Array<{
-  value: RegisterFilterOption;
-  label: string;
-  description: string;
-}> = [
-  {
-    value: 'all',
-    label: 'All assets',
-    description: 'Show the full asset register.',
-  },
-  {
-    value: 'insured',
-    label: 'Insured',
-    description: 'Only assets marked as insured.',
-  },
-  {
-    value: 'not_insured',
-    label: 'Not insured',
-    description: 'Only assets not marked as insured.',
-  },
-  {
-    value: 'financed',
-    label: 'Financed',
-    description: 'Only assets marked as financed.',
-  },
-  {
-    value: 'not_financed',
-    label: 'Not financed',
-    description: 'Only assets not marked as financed.',
-  },
-  {
-    value: 'highest_value',
-    label: 'Highest value',
-    description: 'Sort from highest register value to lowest.',
-  },
-  {
-    value: 'lowest_value',
-    label: 'Lowest value',
-    description: 'Sort from lowest register value to highest.',
-  },
-  {
-    value: 'aim4price_value',
-    label: 'Aim4price value',
-    description: 'Only assets using the Aim4price value.',
-  },
-  {
-    value: 'manual_value',
-    label: 'Manual value',
-    description: 'Only assets using a manual register value.',
-  },
-];
-
 const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = [
   { value: '', label: 'Select condition' },
   { value: 'excellent', label: 'Excellent' },
@@ -365,16 +303,6 @@ function DownloadIcon({ className }: IconProps) {
       <path d="M12 3v10" />
       <path d="m8 9 4 4 4-4" />
       <path d="M4 20h16" />
-    </svg>
-  );
-}
-
-function FilterIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="M4 5h16" />
-      <path d="M7 12h10" />
-      <path d="M10 19h4" />
     </svg>
   );
 }
@@ -556,39 +484,27 @@ function ExportGraphic({ src, alt, icon }: ExportGraphicProps) {
   return <img src={src} alt={alt} className={styles.exportGraphicImage} onError={() => setHasError(true)} />;
 }
 
-function formatSpacedWholeNumber(value: number): string {
-  const rounded = Math.round(Number(value) || 0);
-  const sign = rounded < 0 ? '-' : '';
-  const absoluteValue = Math.abs(rounded);
-
-  return `${sign}${String(absoluteValue).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}`;
-}
-
 function money(value: number): string {
-  return `R ${formatSpacedWholeNumber(value || 0)}`;
+  return new Intl.NumberFormat('en-ZA', {
+    style: 'currency',
+    currency: 'ZAR',
+    maximumFractionDigits: 0,
+  }).format(value || 0);
 }
 
 function parseMoneyInput(value: unknown): number | null {
-  const normalized = String(value ?? '')
-    .trim()
-    .replace(/\s/g, '')
-    .replace(/[^0-9,.-]/g, '')
-    .replace(',', '.');
+  const digits = String(value ?? '').replace(/[^0-9]/g, '');
+  if (!digits) return null;
 
-  if (!normalized) return null;
-
-  const parsed = Number(normalized);
+  const parsed = Number(digits);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
 function formatMarketplacePriceInput(value: unknown): string {
-  const parsed = parseMoneyInput(value);
+  const digits = String(value ?? '').replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
+  if (!digits) return '';
 
-  if (parsed === null) {
-    return '';
-  }
-
-  return formatSpacedWholeNumber(Math.max(0, Math.round(parsed)));
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
 function formatPercent(value: number): string {
@@ -946,7 +862,7 @@ function createMarketplaceDraft(asset: RegisterAsset, profile: AccountProfile | 
     province: profile?.province?.trim() || '',
     area: profile?.townCity?.trim() || '',
     askingPriceExVat: formatMarketplacePriceInput(Math.round(asset.selectedValueExVat || asset.value || 0)),
-    description: (asset.marketplaceNotes || asset.note || `Clean ${asset.title} listing from the Aim4price asset register.`).trim(),
+    description: (asset.marketplaceNotes || asset.note || '').trim(),
   };
 }
 
@@ -1161,10 +1077,6 @@ function buildAssetQrPrintUrl(asset: RegisterAsset): string {
   return `/api/asset-register/qr?assetId=${encodeURIComponent(asset.id)}&format=print`;
 }
 
-function buildMarketplaceListingUrl(referenceId: string): string {
-  return `/marketplace?listing=${encodeURIComponent(referenceId)}`;
-}
-
 function formatQrStatus(value?: string | null): string {
   const normalized = String(value ?? '').trim().toLowerCase();
 
@@ -1271,8 +1183,6 @@ export default function AssetRegisterClient() {
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeRegisterFilter, setActiveRegisterFilter] = useState<RegisterFilterOption>('all');
-  const [isRegisterFilterOpen, setIsRegisterFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
@@ -1286,7 +1196,6 @@ export default function AssetRegisterClient() {
   const [isLoadingProjection, setIsLoadingProjection] = useState(false);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const documentInputRef = useRef<HTMLInputElement | null>(null);
-  const filterMenuRef = useRef<HTMLDivElement | null>(null);
   const projectionRequestRef = useRef(0);
   const projectionResultRef = useRef<HTMLElement | null>(null);
   const [shouldScrollToProjectionResult, setShouldScrollToProjectionResult] = useState(false);
@@ -1414,35 +1323,7 @@ export default function AssetRegisterClient() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeRegisterFilter, searchTerm]);
-
-  useEffect(() => {
-    if (!isRegisterFilterOpen) return undefined;
-
-    const handleOutsideClick = (event: MouseEvent) => {
-      const target = event.target instanceof Node ? event.target : null;
-
-      if (!target || filterMenuRef.current?.contains(target)) {
-        return;
-      }
-
-      setIsRegisterFilterOpen(false);
-    };
-
-    const handleFilterEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsRegisterFilterOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleOutsideClick);
-    document.addEventListener('keydown', handleFilterEscape);
-
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
-      document.removeEventListener('keydown', handleFilterEscape);
-    };
-  }, [isRegisterFilterOpen]);
+  }, [searchTerm]);
 
   const anyModalOpen =
     isAssetModalOpen ||
@@ -1562,6 +1443,19 @@ export default function AssetRegisterClient() {
     );
   }, [assets]);
 
+  const unfinancedAssetStats = useMemo(() => {
+    return {
+      count: Math.max(0, assets.length - financedAssetStats.count),
+      value: Math.max(0, totalValue - financedAssetStats.value),
+    };
+  }, [assets.length, financedAssetStats.count, financedAssetStats.value, totalValue]);
+
+  const uninsuredAssetStats = useMemo(() => {
+    return {
+      count: Math.max(0, assets.length - insuredAssetStats.count),
+      value: Math.max(0, totalValue - insuredAssetStats.value),
+    };
+  }, [assets.length, insuredAssetStats.count, insuredAssetStats.value, totalValue]);
 
   const editingAsset = useMemo(() => {
     return editingAssetId === null ? null : assets.find((asset) => asset.id === editingAssetId) ?? null;
@@ -1586,51 +1480,15 @@ export default function AssetRegisterClient() {
       ? 'Use mileage or engine hours — whichever you use to track this vehicle.'
       : 'This can be updated later whenever the machine hours change.';
 
-  const activeRegisterFilterLabel = useMemo(() => {
-    return REGISTER_FILTER_OPTIONS.find((option) => option.value === activeRegisterFilter)?.label ?? 'All assets';
-  }, [activeRegisterFilter]);
-
   const filteredAssets = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
-    let nextAssets = [...assets];
 
-    switch (activeRegisterFilter) {
-      case 'insured':
-        nextAssets = nextAssets.filter((asset) => asset.isInsured);
-        break;
-      case 'not_insured':
-        nextAssets = nextAssets.filter((asset) => !asset.isInsured);
-        break;
-      case 'financed':
-        nextAssets = nextAssets.filter((asset) => asset.isFinanced);
-        break;
-      case 'not_financed':
-        nextAssets = nextAssets.filter((asset) => !asset.isFinanced);
-        break;
-      case 'aim4price_value':
-        nextAssets = nextAssets.filter((asset) => asset.selectedMethod === 'aim4price');
-        break;
-      case 'manual_value':
-        nextAssets = nextAssets.filter((asset) => asset.selectedMethod === 'manual');
-        break;
-      default:
-        break;
+    if (!normalizedSearch) {
+      return assets;
     }
 
-    if (normalizedSearch) {
-      nextAssets = nextAssets.filter((asset) => buildSearchableText(asset).includes(normalizedSearch));
-    }
-
-    if (activeRegisterFilter === 'highest_value') {
-      nextAssets.sort((left, right) => Number(right.value || 0) - Number(left.value || 0));
-    }
-
-    if (activeRegisterFilter === 'lowest_value') {
-      nextAssets.sort((left, right) => Number(left.value || 0) - Number(right.value || 0));
-    }
-
-    return nextAssets;
-  }, [activeRegisterFilter, assets, searchTerm]);
+    return assets.filter((asset) => buildSearchableText(asset).includes(normalizedSearch));
+  }, [assets, searchTerm]);
 
   const pageCount = Math.max(1, Math.ceil(filteredAssets.length / PAGE_SIZE));
   const pageStart = (currentPage - 1) * PAGE_SIZE;
@@ -2102,8 +1960,6 @@ export default function AssetRegisterClient() {
         updatedAtIso: new Date().toISOString(),
       };
 
-      const listingReference = String(data.listing?.id ?? data.listing?.sourceAssetId ?? data.assetId ?? publishedAsset.id).trim() || publishedAsset.id;
-
       setAssets((current) => current.map((asset) => (asset.id === publishedAsset.id ? publishedAsset : asset)));
       setActiveAsset((current) => (current?.id === publishedAsset.id ? publishedAsset : current));
       setNotice({
@@ -2111,7 +1967,6 @@ export default function AssetRegisterClient() {
         message: `${publishedAsset.title} is ready on the marketplace.`,
       });
       closeMarketplaceModal();
-      window.location.assign(buildMarketplaceListingUrl(listingReference));
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -2494,16 +2349,11 @@ export default function AssetRegisterClient() {
     void requestProjection(projectionAsset, projectionForm);
   }
 
-  const isRegisterFilterActive = activeRegisterFilter !== 'all';
   const registerRangeDescription = filteredAssets.length
     ? `Showing ${pageStart + 1}-${pageEnd} of ${filteredAssets.length} ${filteredAssets.length === 1 ? 'asset' : 'assets'}`
-    : searchTerm.trim() && isRegisterFilterActive
-      ? 'No assets match the current search and filter.'
-      : searchTerm.trim()
-        ? 'No assets match the current search.'
-        : isRegisterFilterActive
-          ? 'No assets match the selected filter.'
-          : 'No saved assets yet.';
+    : searchTerm.trim()
+      ? 'No assets match the current search.'
+      : 'No saved assets yet.';
 
   return (
     <main className={styles.page}>
@@ -2527,46 +2377,6 @@ export default function AssetRegisterClient() {
               >
                 <span>Summary</span>
               </button>
-
-              <div className={styles.filterMenuWrap} ref={filterMenuRef}>
-                <button
-                  type="button"
-                  className={`${styles.secondaryButton} ${styles.filterTriggerButton} ${isRegisterFilterActive ? styles.filterTriggerButtonActive : ''}`}
-                  onClick={() => setIsRegisterFilterOpen((current) => !current)}
-                  disabled={isLoading}
-                  aria-haspopup="menu"
-                  aria-expanded={isRegisterFilterOpen}
-                >
-                  <FilterIcon className={styles.buttonIcon} />
-                  <span>{isRegisterFilterActive ? activeRegisterFilterLabel : 'Filter'}</span>
-                  <ChevronDownIcon className={styles.buttonIcon} />
-                </button>
-
-                {isRegisterFilterOpen ? (
-                  <div className={styles.filterMenu} role="menu" aria-label="Filter asset register">
-                    {REGISTER_FILTER_OPTIONS.map((option) => {
-                      const isActiveOption = option.value === activeRegisterFilter;
-
-                      return (
-                        <button
-                          type="button"
-                          role="menuitemradio"
-                          aria-checked={isActiveOption}
-                          className={`${styles.filterMenuOption} ${isActiveOption ? styles.filterMenuOptionActive : ''}`}
-                          key={option.value}
-                          onClick={() => {
-                            setActiveRegisterFilter(option.value);
-                            setIsRegisterFilterOpen(false);
-                          }}
-                        >
-                          <span>{option.label}</span>
-                          <small>{option.description}</small>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
 
               <button
                 type="button"
@@ -2929,20 +2739,12 @@ export default function AssetRegisterClient() {
               </>
             ) : (
               <div className={styles.emptyState}>
-                <h3>No assets match this view</h3>
-                <p>Clear the search or choose All assets to see the full register again.</p>
+                <h3>No assets match your search</h3>
+                <p>Try a broader term, or clear the search to see the full register again.</p>
                 <div className={styles.emptyStateActions}>
-                  {searchTerm ? (
-                    <button type="button" className={styles.secondaryButton} onClick={() => setSearchTerm('')}>
-                      Clear search
-                    </button>
-                  ) : null}
-
-                  {isRegisterFilterActive ? (
-                    <button type="button" className={styles.secondaryButton} onClick={() => setActiveRegisterFilter('all')}>
-                      Clear filter
-                    </button>
-                  ) : null}
+                  <button type="button" className={styles.secondaryButton} onClick={() => setSearchTerm('')}>
+                    Clear search
+                  </button>
                 </div>
               </div>
             )
@@ -2971,6 +2773,7 @@ export default function AssetRegisterClient() {
           <div className={`${styles.modalCard} ${styles.summaryModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-register-summary-title">
             <div className={`${styles.modalHeader} ${styles.summaryModalHeader}`}>
               <div className={styles.modalHeaderText}>
+                <span className={styles.modalEyebrow}>Asset Register Summary</span>
                 <h3 id="asset-register-summary-title">Register summary</h3>
                 <p>Live totals calculated from the saved assets in this register. Financed and insured totals update when those asset checkboxes are changed.</p>
               </div>
@@ -3027,6 +2830,38 @@ export default function AssetRegisterClient() {
                   </article>
                 </section>
 
+                <section className={styles.summaryCoveragePanel}>
+                  <div className={styles.summaryCoverageHeader}>
+                    <h4>Coverage breakdown</h4>
+                    <p>Financed and insured values are calculated independently, so the same asset can be counted in both totals.</p>
+                  </div>
+
+                  <div className={styles.summaryCoverageGrid}>
+                    <div className={styles.summaryCoverageTile}>
+                      <span>Not financed</span>
+                      <strong>{unfinancedAssetStats.count}</strong>
+                      <small>{money(unfinancedAssetStats.value)}</small>
+                    </div>
+
+                    <div className={styles.summaryCoverageTile}>
+                      <span>Not insured</span>
+                      <strong>{uninsuredAssetStats.count}</strong>
+                      <small>{money(uninsuredAssetStats.value)}</small>
+                    </div>
+
+                    <div className={styles.summaryCoverageTile}>
+                      <span>Financed share</span>
+                      <strong>{totalValue ? formatRatioPercent(financedAssetStats.value / totalValue) : '0%'}</strong>
+                      <small>By register value</small>
+                    </div>
+
+                    <div className={styles.summaryCoverageTile}>
+                      <span>Insured share</span>
+                      <strong>{totalValue ? formatRatioPercent(insuredAssetStats.value / totalValue) : '0%'}</strong>
+                      <small>By register value</small>
+                    </div>
+                  </div>
+                </section>
               </div>
             </div>
           </div>
@@ -3594,7 +3429,7 @@ export default function AssetRegisterClient() {
           <div className={`${styles.modalCard} ${styles.marketplaceModal}`} role="dialog" aria-modal="true" aria-labelledby="marketplace-confirm-title">
             <div className={`${styles.modalHeader} ${styles.marketplaceModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="marketplace-confirm-title">Create marketplace listing</h3>
+                <h3 id="marketplace-confirm-title">Send this asset to marketplace</h3>
               </div>
 
               <button type="button" className={styles.modalCloseButton} onClick={closeMarketplaceModal} aria-label="Close marketplace modal">
@@ -3607,12 +3442,6 @@ export default function AssetRegisterClient() {
                 <div className={styles.marketplaceBodyGrid}>
                   <div className={styles.marketplaceListingColumn}>
                     <section className={styles.marketplacePricePanel}>
-                      <div className={styles.marketplacePriceCopy}>
-                        <span>Marketplace price</span>
-                        <h4>What do you want to sell this asset for?</h4>
-                        <p>Set the buyer-facing asking price. This amount is saved as the marketplace price excluding VAT.</p>
-                      </div>
-
                       <label className={`${styles.field} ${styles.marketplacePriceField}`}>
                         <span>Asking price excl. VAT</span>
                         <div className={styles.marketplaceCurrencyInput}>
@@ -3635,98 +3464,94 @@ export default function AssetRegisterClient() {
                             aria-label="Marketplace price excluding VAT"
                           />
                         </div>
-                        <small className={styles.fieldHint}>Type numbers only. Aim4price will format it as R 10 000, R 41 650, and so on.</small>
                       </label>
                     </section>
 
                     <label className={`${styles.field} ${styles.marketplaceNotesField}`}>
-                      <span>Listing notes</span>
+                      <span>Notes</span>
                       <textarea
                         value={marketplaceDraft.description}
                         onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, description: event.target.value } : current))}
-                        placeholder="Add the strongest selling points, visible condition notes, included attachments and anything the buyer should know."
+                        placeholder="Notes"
                       />
                     </label>
                   </div>
 
                   <section className={styles.marketplaceSellerPanel}>
-                    <div className={styles.marketplaceSectionHeader}>
-                      <div>
-                        <h4>Seller details</h4>
-                        <p>These details will show with the marketplace listing.</p>
-                      </div>
-                    </div>
+                    <label className={`${styles.field} ${styles.marketplaceContactField}`}>
+                      <span>Business name</span>
+                      <input
+                        value={marketplaceDraft.sellerCompany}
+                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerCompany: event.target.value } : current))}
+                        placeholder="Business name"
+                        aria-label="Business name"
+                      />
+                    </label>
 
-                    <div className={styles.marketplaceContactGrid}>
-                      <label className={styles.field}>
-                        <span>Contact name</span>
-                        <input
-                          value={marketplaceDraft.sellerName}
-                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerName: event.target.value } : current))}
-                          placeholder="Seller or contact name"
-                        />
-                      </label>
+                    <label className={`${styles.field} ${styles.marketplaceContactField}`}>
+                      <span>Contact name</span>
+                      <input
+                        value={marketplaceDraft.sellerName}
+                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerName: event.target.value } : current))}
+                        placeholder="Contact name"
+                        aria-label="Contact name"
+                      />
+                    </label>
 
-                      <label className={styles.field}>
-                        <span>Phone</span>
-                        <input
-                          value={marketplaceDraft.sellerPhone}
-                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerPhone: event.target.value } : current))}
-                          placeholder="Contact phone"
-                        />
-                      </label>
+                    <label className={`${styles.field} ${styles.marketplaceContactField}`}>
+                      <span>Phone</span>
+                      <input
+                        value={marketplaceDraft.sellerPhone}
+                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerPhone: event.target.value } : current))}
+                        placeholder="Phone"
+                        aria-label="Phone"
+                      />
+                    </label>
 
-                      <label className={styles.field}>
-                        <span>Company</span>
-                        <input
-                          value={marketplaceDraft.sellerCompany}
-                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerCompany: event.target.value } : current))}
-                          placeholder="Business name"
-                        />
-                      </label>
+                    <label className={`${styles.field} ${styles.marketplaceContactField}`}>
+                      <span>Email</span>
+                      <input
+                        type="email"
+                        value={marketplaceDraft.sellerEmail}
+                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerEmail: event.target.value } : current))}
+                        placeholder="Email"
+                        aria-label="Email"
+                      />
+                    </label>
 
-                      <label className={styles.field}>
-                        <span>Email</span>
-                        <input
-                          type="email"
-                          value={marketplaceDraft.sellerEmail}
-                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerEmail: event.target.value } : current))}
-                          placeholder="Contact email"
-                        />
-                      </label>
+                    <label className={`${styles.field} ${styles.marketplaceContactField}`}>
+                      <span>Province</span>
+                      <input
+                        value={marketplaceDraft.province}
+                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, province: event.target.value } : current))}
+                        placeholder="Province"
+                        aria-label="Province"
+                      />
+                    </label>
 
-                      <label className={styles.field}>
-                        <span>Province</span>
-                        <input
-                          value={marketplaceDraft.province}
-                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, province: event.target.value } : current))}
-                          placeholder="Province"
-                        />
-                      </label>
-
-                      <label className={styles.field}>
-                        <span>Area / town</span>
-                        <input
-                          value={marketplaceDraft.area}
-                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, area: event.target.value } : current))}
-                          placeholder="Area or town"
-                        />
-                      </label>
-                    </div>
+                    <label className={`${styles.field} ${styles.marketplaceContactField}`}>
+                      <span>Area</span>
+                      <input
+                        value={marketplaceDraft.area}
+                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, area: event.target.value } : current))}
+                        placeholder="Area"
+                        aria-label="Area"
+                      />
+                    </label>
                   </section>
                 </div>
 
                 <div className={`${styles.formActions} ${styles.marketplaceActions}`}>
-                  <button type="button" className={styles.secondaryButton} onClick={closeMarketplaceModal} disabled={isPublishingMarketplace}>
-                    Cancel
-                  </button>
-
                   <button type="submit" className={styles.primaryButton} disabled={isPublishingMarketplace}>
                     {isPublishingMarketplace
                       ? 'Publishing...'
                       : isLiveOnMarketplace(marketplaceAsset)
                         ? 'Update and view listing'
                         : 'Confirm and view listing'}
+                  </button>
+
+                  <button type="button" className={styles.secondaryButton} onClick={closeMarketplaceModal} disabled={isPublishingMarketplace}>
+                    Cancel
                   </button>
                 </div>
               </form>
