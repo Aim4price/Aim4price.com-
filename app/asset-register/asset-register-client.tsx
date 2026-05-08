@@ -16,6 +16,16 @@ type AssetMethod = 'aim4price' | 'market' | 'manual';
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
 type ExportFormat = 'pdf' | 'xlsx';
+type RegisterFilterOption =
+  | 'all'
+  | 'insured'
+  | 'not_insured'
+  | 'financed'
+  | 'not_financed'
+  | 'highest_value'
+  | 'lowest_value'
+  | 'aim4price_value'
+  | 'manual_value';
 
 type AssetDocument = {
   id: string;
@@ -237,6 +247,58 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   },
 ];
 
+const REGISTER_FILTER_OPTIONS: Array<{
+  value: RegisterFilterOption;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: 'all',
+    label: 'All assets',
+    description: 'Show the full asset register.',
+  },
+  {
+    value: 'insured',
+    label: 'Insured',
+    description: 'Only assets marked as insured.',
+  },
+  {
+    value: 'not_insured',
+    label: 'Not insured',
+    description: 'Only assets not marked as insured.',
+  },
+  {
+    value: 'financed',
+    label: 'Financed',
+    description: 'Only assets marked as financed.',
+  },
+  {
+    value: 'not_financed',
+    label: 'Not financed',
+    description: 'Only assets not marked as financed.',
+  },
+  {
+    value: 'highest_value',
+    label: 'Highest value',
+    description: 'Sort from highest register value to lowest.',
+  },
+  {
+    value: 'lowest_value',
+    label: 'Lowest value',
+    description: 'Sort from lowest register value to highest.',
+  },
+  {
+    value: 'aim4price_value',
+    label: 'Aim4price value',
+    description: 'Only assets using the Aim4price value.',
+  },
+  {
+    value: 'manual_value',
+    label: 'Manual value',
+    description: 'Only assets using a manual register value.',
+  },
+];
+
 const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = [
   { value: '', label: 'Select condition' },
   { value: 'excellent', label: 'Excellent' },
@@ -299,6 +361,16 @@ function DownloadIcon({ className }: IconProps) {
       <path d="M12 3v10" />
       <path d="m8 9 4 4 4-4" />
       <path d="M4 20h16" />
+    </svg>
+  );
+}
+
+function FilterIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M4 5h16" />
+      <path d="M7 12h10" />
+      <path d="M10 19h4" />
     </svg>
   );
 }
@@ -1171,6 +1243,8 @@ export default function AssetRegisterClient() {
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeRegisterFilter, setActiveRegisterFilter] = useState<RegisterFilterOption>('all');
+  const [isRegisterFilterOpen, setIsRegisterFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
@@ -1184,6 +1258,7 @@ export default function AssetRegisterClient() {
   const [isLoadingProjection, setIsLoadingProjection] = useState(false);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const documentInputRef = useRef<HTMLInputElement | null>(null);
+  const filterMenuRef = useRef<HTMLDivElement | null>(null);
   const projectionRequestRef = useRef(0);
   const projectionResultRef = useRef<HTMLElement | null>(null);
   const [shouldScrollToProjectionResult, setShouldScrollToProjectionResult] = useState(false);
@@ -1311,7 +1386,35 @@ export default function AssetRegisterClient() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [activeRegisterFilter, searchTerm]);
+
+  useEffect(() => {
+    if (!isRegisterFilterOpen) return undefined;
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target instanceof Node ? event.target : null;
+
+      if (!target || filterMenuRef.current?.contains(target)) {
+        return;
+      }
+
+      setIsRegisterFilterOpen(false);
+    };
+
+    const handleFilterEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsRegisterFilterOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('keydown', handleFilterEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('keydown', handleFilterEscape);
+    };
+  }, [isRegisterFilterOpen]);
 
   const anyModalOpen =
     isAssetModalOpen ||
@@ -1455,15 +1558,51 @@ export default function AssetRegisterClient() {
       ? 'Use mileage or engine hours — whichever you use to track this vehicle.'
       : 'This can be updated later whenever the machine hours change.';
 
+  const activeRegisterFilterLabel = useMemo(() => {
+    return REGISTER_FILTER_OPTIONS.find((option) => option.value === activeRegisterFilter)?.label ?? 'All assets';
+  }, [activeRegisterFilter]);
+
   const filteredAssets = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
+    let nextAssets = [...assets];
 
-    if (!normalizedSearch) {
-      return assets;
+    switch (activeRegisterFilter) {
+      case 'insured':
+        nextAssets = nextAssets.filter((asset) => asset.isInsured);
+        break;
+      case 'not_insured':
+        nextAssets = nextAssets.filter((asset) => !asset.isInsured);
+        break;
+      case 'financed':
+        nextAssets = nextAssets.filter((asset) => asset.isFinanced);
+        break;
+      case 'not_financed':
+        nextAssets = nextAssets.filter((asset) => !asset.isFinanced);
+        break;
+      case 'aim4price_value':
+        nextAssets = nextAssets.filter((asset) => asset.selectedMethod === 'aim4price');
+        break;
+      case 'manual_value':
+        nextAssets = nextAssets.filter((asset) => asset.selectedMethod === 'manual');
+        break;
+      default:
+        break;
     }
 
-    return assets.filter((asset) => buildSearchableText(asset).includes(normalizedSearch));
-  }, [assets, searchTerm]);
+    if (normalizedSearch) {
+      nextAssets = nextAssets.filter((asset) => buildSearchableText(asset).includes(normalizedSearch));
+    }
+
+    if (activeRegisterFilter === 'highest_value') {
+      nextAssets.sort((left, right) => Number(right.value || 0) - Number(left.value || 0));
+    }
+
+    if (activeRegisterFilter === 'lowest_value') {
+      nextAssets.sort((left, right) => Number(left.value || 0) - Number(right.value || 0));
+    }
+
+    return nextAssets;
+  }, [activeRegisterFilter, assets, searchTerm]);
 
   const pageCount = Math.max(1, Math.ceil(filteredAssets.length / PAGE_SIZE));
   const pageStart = (currentPage - 1) * PAGE_SIZE;
@@ -2324,11 +2463,16 @@ export default function AssetRegisterClient() {
     void requestProjection(projectionAsset, projectionForm);
   }
 
+  const isRegisterFilterActive = activeRegisterFilter !== 'all';
   const registerRangeDescription = filteredAssets.length
     ? `Showing ${pageStart + 1}-${pageEnd} of ${filteredAssets.length} ${filteredAssets.length === 1 ? 'asset' : 'assets'}`
-    : searchTerm.trim()
-      ? 'No assets match the current search.'
-      : 'No saved assets yet.';
+    : searchTerm.trim() && isRegisterFilterActive
+      ? 'No assets match the current search and filter.'
+      : searchTerm.trim()
+        ? 'No assets match the current search.'
+        : isRegisterFilterActive
+          ? 'No assets match the selected filter.'
+          : 'No saved assets yet.';
 
   return (
     <main className={styles.page}>
@@ -2349,10 +2493,49 @@ export default function AssetRegisterClient() {
                 className={`${styles.secondaryButton} ${styles.summaryTriggerButton}`}
                 onClick={openSummaryModal}
                 disabled={isLoading}
-                aria-haspopup="dialog"
               >
                 <span>Summary</span>
               </button>
+
+              <div className={styles.filterMenuWrap} ref={filterMenuRef}>
+                <button
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.filterTriggerButton} ${isRegisterFilterActive ? styles.filterTriggerButtonActive : ''}`}
+                  onClick={() => setIsRegisterFilterOpen((current) => !current)}
+                  disabled={isLoading}
+                  aria-haspopup="menu"
+                  aria-expanded={isRegisterFilterOpen}
+                >
+                  <FilterIcon className={styles.buttonIcon} />
+                  <span>{isRegisterFilterActive ? activeRegisterFilterLabel : 'Filter'}</span>
+                  <ChevronDownIcon className={styles.buttonIcon} />
+                </button>
+
+                {isRegisterFilterOpen ? (
+                  <div className={styles.filterMenu} role="menu" aria-label="Filter asset register">
+                    {REGISTER_FILTER_OPTIONS.map((option) => {
+                      const isActiveOption = option.value === activeRegisterFilter;
+
+                      return (
+                        <button
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={isActiveOption}
+                          className={`${styles.filterMenuOption} ${isActiveOption ? styles.filterMenuOptionActive : ''}`}
+                          key={option.value}
+                          onClick={() => {
+                            setActiveRegisterFilter(option.value);
+                            setIsRegisterFilterOpen(false);
+                          }}
+                        >
+                          <span>{option.label}</span>
+                          <small>{option.description}</small>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
 
               <button
                 type="button"
@@ -2363,6 +2546,7 @@ export default function AssetRegisterClient() {
                 <DownloadIcon className={styles.buttonIcon} />
                 <span>Download full Asset Register</span>
               </button>
+
             </div>
           </div>
 
@@ -2714,12 +2898,20 @@ export default function AssetRegisterClient() {
               </>
             ) : (
               <div className={styles.emptyState}>
-                <h3>No assets match your search</h3>
-                <p>Try a broader term, or clear the search to see the full register again.</p>
+                <h3>No assets match this view</h3>
+                <p>Clear the search or choose All assets to see the full register again.</p>
                 <div className={styles.emptyStateActions}>
-                  <button type="button" className={styles.secondaryButton} onClick={() => setSearchTerm('')}>
-                    Clear search
-                  </button>
+                  {searchTerm ? (
+                    <button type="button" className={styles.secondaryButton} onClick={() => setSearchTerm('')}>
+                      Clear search
+                    </button>
+                  ) : null}
+
+                  {isRegisterFilterActive ? (
+                    <button type="button" className={styles.secondaryButton} onClick={() => setActiveRegisterFilter('all')}>
+                      Clear filter
+                    </button>
+                  ) : null}
                 </div>
               </div>
             )
@@ -2803,6 +2995,7 @@ export default function AssetRegisterClient() {
                     <p>{assets.length ? formatRatioPercent(insuredAssetStats.count / assets.length) : '0%'} of assets · {money(Math.round(insuredAssetStats.value * 1.15))} incl. VAT</p>
                   </article>
                 </section>
+
               </div>
             </div>
           </div>

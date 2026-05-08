@@ -7613,7 +7613,7 @@
   }
 }
 
-/* === Summary button final placement beside export === */
+/* === Asset Register header filter dropdown === */
 .registerHeader .headerActions {
   width: 100% !important;
   display: flex !important;
@@ -7623,52 +7623,132 @@
   flex-wrap: wrap !important;
 }
 
-.registerHeader .headerActions > .secondaryButton {
-  flex: 0 0 auto !important;
+.registerHeader .headerActions > .secondaryButton,
+.registerHeader .headerActions .filterMenuWrap {
   grid-column: auto !important;
   justify-self: auto !important;
 }
 
-.registerHeader .headerActions .summaryTriggerButton {
-  min-width: 180px !important;
-  min-height: 3.25rem !important;
-  padding: 0 1.45rem !important;
-  border-radius: 1.05rem !important;
+.filterMenuWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  z-index: 25;
+}
+
+.filterTriggerButton {
+  min-width: 170px;
+  min-height: 3.25rem;
+  padding: 0 1.12rem;
+  border-radius: 1.05rem;
+  white-space: nowrap;
+}
+
+.filterTriggerButtonActive {
   color: #0f3329 !important;
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 38%),
-    linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%) !important;
-  border: 1px solid rgba(190, 208, 222, 0.98) !important;
-  box-shadow:
-    0 14px 28px rgba(16, 31, 28, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
-  font-size: 1.02rem !important;
-  font-weight: 880 !important;
-  letter-spacing: -0.015em !important;
-}
-
-.registerHeader .headerActions .summaryTriggerButton:hover {
-  border-color: rgba(22, 83, 64, 0.28) !important;
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.1), transparent 40%),
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.09), transparent 38%),
     linear-gradient(180deg, #ffffff 0%, #edf8f2 100%) !important;
+  border-color: rgba(190, 224, 206, 0.98) !important;
   box-shadow:
-    0 18px 34px rgba(16, 31, 28, 0.08),
+    0 14px 28px rgba(18, 70, 53, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
-.summaryLaunchRow {
-  display: none !important;
+.filterMenu {
+  position: absolute;
+  top: calc(100% + 0.62rem);
+  right: 0;
+  width: min(360px, calc(100vw - 2rem));
+  display: grid;
+  gap: 0.38rem;
+  padding: 0.55rem;
+  border-radius: 1.12rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
+  border: 1px solid rgba(211, 223, 233, 0.98);
+  box-shadow:
+    0 24px 54px rgba(11, 21, 34, 0.18),
+    0 10px 22px rgba(11, 21, 34, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.filterMenuOption {
+  display: grid;
+  gap: 0.18rem;
+  width: 100%;
+  min-height: 3.35rem;
+  padding: 0.75rem 0.82rem;
+  border: 1px solid transparent;
+  border-radius: 0.86rem;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.filterMenuOption:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, #ffffff 0%, #f2f7fb 100%);
+  border-color: rgba(216, 226, 236, 0.98);
+  box-shadow: 0 8px 16px rgba(16, 31, 28, 0.04);
+}
+
+.filterMenuOption span {
+  color: #10352b;
+  font-size: 0.94rem;
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: -0.018em;
+}
+
+.filterMenuOption small {
+  color: #65778a;
+  font-size: 0.8rem;
+  font-weight: 620;
+  line-height: 1.35;
+}
+
+.filterMenuOptionActive,
+.filterMenuOptionActive:hover {
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 40%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  border-color: rgba(190, 224, 206, 0.98);
+  box-shadow: 0 10px 20px rgba(18, 70, 53, 0.07);
+}
+
+.filterMenuOptionActive span {
+  color: #124635;
 }
 
 @media (max-width: 960px) {
   .registerHeader .headerActions {
+    align-items: stretch !important;
     justify-content: stretch !important;
+    flex-direction: column !important;
+    gap: 0.7rem !important;
   }
 
   .registerHeader .headerActions > .secondaryButton,
-  .registerHeader .headerActions .summaryTriggerButton {
+  .registerHeader .headerActions .filterMenuWrap,
+  .filterTriggerButton {
     width: 100% !important;
-    min-width: 0 !important;
+  }
+
+  .filterMenuWrap {
+    display: grid;
+  }
+
+  .filterMenu {
+    position: static;
+    width: 100%;
+    margin-top: 0.58rem;
   }
 }
