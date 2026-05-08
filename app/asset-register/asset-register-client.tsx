@@ -556,12 +556,16 @@ function ExportGraphic({ src, alt, icon }: ExportGraphicProps) {
   return <img src={src} alt={alt} className={styles.exportGraphicImage} onError={() => setHasError(true)} />;
 }
 
+function formatSpacedWholeNumber(value: number): string {
+  const rounded = Math.round(Number(value) || 0);
+  const sign = rounded < 0 ? '-' : '';
+  const absoluteValue = Math.abs(rounded);
+
+  return `${sign}${String(absoluteValue).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}`;
+}
+
 function money(value: number): string {
-  return new Intl.NumberFormat('en-ZA', {
-    style: 'currency',
-    currency: 'ZAR',
-    maximumFractionDigits: 0,
-  }).format(value || 0);
+  return `R ${formatSpacedWholeNumber(value || 0)}`;
 }
 
 function parseMoneyInput(value: unknown): number | null {
@@ -584,10 +588,7 @@ function formatMarketplacePriceInput(value: unknown): string {
     return '';
   }
 
-  const rounded = Math.max(0, Math.round(parsed));
-  const spaced = String(rounded).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-
-  return `R ${spaced}`;
+  return formatSpacedWholeNumber(Math.max(0, Math.round(parsed)));
 }
 
 function formatPercent(value: number): string {
@@ -3594,7 +3595,7 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalHeader} ${styles.marketplaceModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="marketplace-confirm-title">Send this asset to marketplace</h3>
-                <p>Start with the saved register value, set the asking price, then add the listing notes and seller details.</p>
+                <p>Confirm the saved register value, set a clean asking price, then add the listing notes and seller details.</p>
               </div>
 
               <button type="button" className={styles.modalCloseButton} onClick={closeMarketplaceModal} aria-label="Close marketplace modal">
@@ -3604,110 +3605,117 @@ export default function AssetRegisterClient() {
 
             <div className={`${styles.modalScrollBody} ${styles.marketplaceModalScrollBody}`}>
               <form className={styles.marketplaceForm} onSubmit={handleConfirmMarketplacePublish}>
-                <section className={styles.marketplaceValuePanel}>
-                  <div className={styles.marketplaceRegisterCard}>
-                    <span>Saved register value</span>
-                    <strong>{money(marketplaceAsset.value)}</strong>
-                    <small>Excl. VAT · {marketplaceAsset.title}</small>
+                <div className={styles.marketplaceBodyGrid}>
+                  <div className={styles.marketplaceListingColumn}>
+                    <section className={styles.marketplaceValuePanel}>
+                      <div className={styles.marketplaceRegisterCard}>
+                        <span>Saved register value</span>
+                        <strong>{money(marketplaceAsset.value)}</strong>
+                        <small>Excl. VAT · {marketplaceAsset.title}</small>
+                      </div>
+
+                      <label className={`${styles.field} ${styles.marketplacePriceField}`}>
+                        <span>What do you want to sell this asset for?</span>
+                        <div className={styles.marketplaceCurrencyInput}>
+                          <span className={styles.marketplaceCurrencyPrefix}>R</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={marketplaceDraft.askingPriceExVat}
+                            onChange={(event) =>
+                              setMarketplaceDraft((current) =>
+                                current ? { ...current, askingPriceExVat: formatMarketplacePriceInput(event.target.value) } : current,
+                              )
+                            }
+                            onBlur={() =>
+                              setMarketplaceDraft((current) =>
+                                current ? { ...current, askingPriceExVat: formatMarketplacePriceInput(current.askingPriceExVat) } : current,
+                              )
+                            }
+                            placeholder="0"
+                            aria-label="Marketplace price excluding VAT"
+                          />
+                        </div>
+                        <small className={styles.fieldHint}>Marketplace price excludes VAT. Example: R 10 000.</small>
+                      </label>
+                    </section>
+
+                    <label className={`${styles.field} ${styles.marketplaceNotesField}`}>
+                      <span>Listing notes</span>
+                      <textarea
+                        value={marketplaceDraft.description}
+                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, description: event.target.value } : current))}
+                        placeholder="Add the strongest selling points, visible condition notes, attachments and anything the buyer should know."
+                      />
+                    </label>
                   </div>
 
-                  <label className={`${styles.field} ${styles.marketplacePriceField}`}>
-                    <span>What do you want to sell this asset for?</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={marketplaceDraft.askingPriceExVat}
-                      onChange={(event) =>
-                        setMarketplaceDraft((current) =>
-                          current ? { ...current, askingPriceExVat: formatMarketplacePriceInput(event.target.value) } : current,
-                        )
-                      }
-                      onBlur={() =>
-                        setMarketplaceDraft((current) =>
-                          current ? { ...current, askingPriceExVat: formatMarketplacePriceInput(current.askingPriceExVat) } : current,
-                        )
-                      }
-                      placeholder="R 0"
-                      aria-label="Marketplace price excluding VAT"
-                    />
-                    <small className={styles.fieldHint}>Marketplace price excludes VAT. Example: R 10 000.</small>
-                  </label>
-                </section>
-
-                <label className={`${styles.field} ${styles.marketplaceNotesField}`}>
-                  <span>Listing notes</span>
-                  <textarea
-                    value={marketplaceDraft.description}
-                    onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, description: event.target.value } : current))}
-                    placeholder="Add the strongest selling points, visible condition notes, attachments and anything the buyer should know."
-                  />
-                </label>
-
-                <section className={styles.marketplaceSellerPanel}>
-                  <div className={styles.marketplaceSectionHeader}>
-                    <div>
-                      <h4>Seller details</h4>
-                      <p>These details are saved with the marketplace listing.</p>
+                  <section className={styles.marketplaceSellerPanel}>
+                    <div className={styles.marketplaceSectionHeader}>
+                      <div>
+                        <h4>Seller details</h4>
+                        <p>These details are saved with the marketplace listing.</p>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className={styles.marketplaceContactGrid}>
-                    <label className={styles.field}>
-                      <span>Contact name</span>
-                      <input
-                        value={marketplaceDraft.sellerName}
-                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerName: event.target.value } : current))}
-                        placeholder="Seller or contact name"
-                      />
-                    </label>
+                    <div className={styles.marketplaceContactGrid}>
+                      <label className={styles.field}>
+                        <span>Contact name</span>
+                        <input
+                          value={marketplaceDraft.sellerName}
+                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerName: event.target.value } : current))}
+                          placeholder="Seller or contact name"
+                        />
+                      </label>
 
-                    <label className={styles.field}>
-                      <span>Phone</span>
-                      <input
-                        value={marketplaceDraft.sellerPhone}
-                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerPhone: event.target.value } : current))}
-                        placeholder="Contact phone"
-                      />
-                    </label>
+                      <label className={styles.field}>
+                        <span>Phone</span>
+                        <input
+                          value={marketplaceDraft.sellerPhone}
+                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerPhone: event.target.value } : current))}
+                          placeholder="Contact phone"
+                        />
+                      </label>
 
-                    <label className={styles.field}>
-                      <span>Company</span>
-                      <input
-                        value={marketplaceDraft.sellerCompany}
-                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerCompany: event.target.value } : current))}
-                        placeholder="Business name"
-                      />
-                    </label>
+                      <label className={styles.field}>
+                        <span>Company</span>
+                        <input
+                          value={marketplaceDraft.sellerCompany}
+                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerCompany: event.target.value } : current))}
+                          placeholder="Business name"
+                        />
+                      </label>
 
-                    <label className={styles.field}>
-                      <span>Email</span>
-                      <input
-                        type="email"
-                        value={marketplaceDraft.sellerEmail}
-                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerEmail: event.target.value } : current))}
-                        placeholder="Contact email"
-                      />
-                    </label>
+                      <label className={styles.field}>
+                        <span>Email</span>
+                        <input
+                          type="email"
+                          value={marketplaceDraft.sellerEmail}
+                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerEmail: event.target.value } : current))}
+                          placeholder="Contact email"
+                        />
+                      </label>
 
-                    <label className={styles.field}>
-                      <span>Province</span>
-                      <input
-                        value={marketplaceDraft.province}
-                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, province: event.target.value } : current))}
-                        placeholder="Province"
-                      />
-                    </label>
+                      <label className={styles.field}>
+                        <span>Province</span>
+                        <input
+                          value={marketplaceDraft.province}
+                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, province: event.target.value } : current))}
+                          placeholder="Province"
+                        />
+                      </label>
 
-                    <label className={styles.field}>
-                      <span>Area / town</span>
-                      <input
-                        value={marketplaceDraft.area}
-                        onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, area: event.target.value } : current))}
-                        placeholder="Area or town"
-                      />
-                    </label>
-                  </div>
-                </section>
+                      <label className={styles.field}>
+                        <span>Area / town</span>
+                        <input
+                          value={marketplaceDraft.area}
+                          onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, area: event.target.value } : current))}
+                          placeholder="Area or town"
+                        />
+                      </label>
+                    </div>
+                  </section>
+                </div>
 
                 <div className={`${styles.formActions} ${styles.marketplaceActions}`}>
                   <button type="submit" className={styles.primaryButton} disabled={isPublishingMarketplace}>
