@@ -179,6 +179,17 @@ type ProjectionApiResponse = {
   error?: string;
 };
 
+type RevalueAssetApiResponse = {
+  ok: boolean;
+  item?: RegisterAsset;
+  valuationRunId?: number;
+  selectedMethod?: AssetMethod;
+  oldValueExVat?: number;
+  newValueExVat?: number;
+  warning?: string;
+  error?: string;
+};
+
 type MarketplacePublishDraft = {
   sellerName: string;
   sellerCompany: string;
@@ -204,6 +215,7 @@ type AssetDraft = {
   yearModel: string;
   hours: string;
   usageMetric: UsageMetric;
+  lifeWorkedPercent: string;
   condition: AssetConditionValue;
 };
 
@@ -291,6 +303,7 @@ const initialAssetDraft: AssetDraft = {
   yearModel: '',
   hours: '',
   usageMetric: 'hours',
+  lifeWorkedPercent: '',
   condition: '',
 };
 
@@ -814,6 +827,16 @@ const HIDDEN_BASIC_SPEC_KEYS = new Set([
   'life worked percent',
   'hours',
   'engine hours',
+  'valuation needs update',
+  'valuation stale since',
+  'valuation stale reason',
+  'valuation stale reasons',
+  'valuation last updated at',
+  'valuation last run id',
+  'valuation last value ex vat',
+  'valuation last hours',
+  'valuation last life worked percent',
+  'valuation last condition',
 ]);
 
 function buildBasicSpecParts(asset: RegisterAsset): string[] {
@@ -863,6 +886,42 @@ function isLiveOnMarketplace(asset: RegisterAsset): boolean {
   return String(asset.marketplaceStatus ?? 'draft').toLowerCase() === 'live';
 }
 
+function readBooleanFromSpecs(specs: Record<string, unknown>, keys: string[]): boolean {
+  for (const key of keys) {
+    const value = specs[key];
+
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value === 1;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'true' || normalized === '1' || normalized === 'yes') return true;
+      if (normalized === 'false' || normalized === '0' || normalized === 'no') return false;
+    }
+  }
+
+  return false;
+}
+
+function isValuationUpdateAvailable(asset: RegisterAsset): boolean {
+  return Boolean(asset.valuationRunId !== null && asset.selectedMethod !== 'manual');
+}
+
+function doesEstimateNeedUpdate(asset: RegisterAsset): boolean {
+  return readBooleanFromSpecs(asset.specsJson ?? {}, ['valuationNeedsUpdate', 'valuation_needs_update']);
+}
+
+function valuationStaleReason(asset: RegisterAsset): string {
+  const specs = asset.specsJson ?? {};
+  const rawReasons = specs.valuation_stale_reasons ?? specs.valuationStaleReasons;
+
+  if (Array.isArray(rawReasons)) {
+    const text = rawReasons.map((entry) => String(entry ?? '').trim()).filter(Boolean).join(', ');
+    if (text) return text;
+  }
+
+  return String(specs.valuation_stale_reason ?? specs.valuationStaleReason ?? 'latest asset details changed').trim() || 'latest asset details changed';
+}
+
 function assetKindLabel(asset: RegisterAsset): string {
   return assetFamilyLabel(asset);
 }
@@ -892,6 +951,7 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     yearModel: asset.yearModel === null || typeof asset.yearModel === 'undefined' ? '' : String(asset.yearModel),
     hours: asset.hours === null || typeof asset.hours === 'undefined' ? '' : String(asset.hours),
     usageMetric: getAssetUsageMetric(asset),
+    lifeWorkedPercent: getAssetLifeWorkedPercent(asset) === null ? '' : String(getAssetLifeWorkedPercent(asset)),
     condition: asset.condition,
   };
 }
@@ -1260,6 +1320,7 @@ export default function AssetRegisterClient() {
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const [busyMarketplaceRemoveId, setBusyMarketplaceRemoveId] = useState<string | null>(null);
+  const [busyRevalueAssetId, setBusyRevalueAssetId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [assetFilter, setAssetFilter] = useState<AssetFilterKey>('all');
   const [isAssetFilterOpen, setIsAssetFilterOpen] = useState(false);
@@ -1557,6 +1618,10 @@ export default function AssetRegisterClient() {
 
   const showConditionField = useMemo(() => {
     return assetFormKind !== 'property';
+  }, [assetFormKind]);
+
+  const showLifeWorkedPercentField = useMemo(() => {
+    return assetFormKind === 'tractor' || assetFormKind === 'equipment' || assetFormKind === 'tools';
   }, [assetFormKind]);
 
   const yearFieldLabel = draftYearLabel(assetFormKind);
@@ -1892,6 +1957,8 @@ export default function AssetRegisterClient() {
     const yearModel = hasYearModel ? Number(assetDraft.yearModel) : null;
     const hasHours = assetDraft.hours.trim() !== '';
     const hours = hasHours ? Number(assetDraft.hours) : null;
+    const hasLifeWorkedPercent = assetDraft.lifeWorkedPercent.trim() !== '';
+    const lifeWorkedPercent = hasLifeWorkedPercent ? Number(assetDraft.lifeWorkedPercent) : null;
     const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
 
     if (!assetDraft.title.trim() || value <= 0) {
@@ -1907,6 +1974,47 @@ export default function AssetRegisterClient() {
     if (hasHours && (!Number.isFinite(hours) || Number(hours) < 0)) {
       setNotice({ tone: 'error', message: `${usageErrorLabel} must be zero or greater.` });
       return;
+    }
+
+    if (hasLifeWorkedPercent && (!Number.isFinite(lifeWorkedPercent) || Number(lifeWorkedPercent) < 0 || Number(lifeWorkedPercent) > 100)) {
+      setNotice({ tone: 'error', message: 'Lifetime worked must be between 0% and 100%.' });
+      return;
+    }
+
+    if (
+      editingAsset &&
+      hasHours &&
+      editingAsset.hours !== null &&
+      typeof editingAsset.hours !== 'undefined' &&
+      Number(hours) < Number(editingAsset.hours)
+    ) {
+      setNotice({
+        tone: 'error',
+        message: `${usageErrorLabel} cannot be lower than the reading already saved on this asset.`,
+      });
+      return;
+    }
+
+    const currentLifeWorkedPercent = editingAsset ? getAssetLifeWorkedPercent(editingAsset) : null;
+    if (
+      editingAsset &&
+      hasLifeWorkedPercent &&
+      currentLifeWorkedPercent !== null &&
+      Number(lifeWorkedPercent) < currentLifeWorkedPercent
+    ) {
+      setNotice({
+        tone: 'error',
+        message: 'Lifetime worked cannot be lower than the percentage already saved on this asset.',
+      });
+      return;
+    }
+
+    const specsJson: Record<string, unknown> = {};
+    if (showLifeWorkedPercentField && hasLifeWorkedPercent) {
+      const roundedLifeWorkedPercent = Math.round(Number(lifeWorkedPercent) * 10) / 10;
+      specsJson.life_worked_percent = roundedLifeWorkedPercent;
+      specsJson.worked_percent = roundedLifeWorkedPercent;
+      specsJson.percent_worked = roundedLifeWorkedPercent;
     }
 
     setIsSavingAsset(true);
@@ -1925,6 +2033,7 @@ export default function AssetRegisterClient() {
       yearModel: hasYearModel ? Math.round(Number(yearModel)) : null,
       hours: showUsageHoursField && hasHours ? Math.round(Number(hours)) : null,
       usageMetric: showUsageHoursField ? assetDraft.usageMetric : null,
+      specsJson,
       condition: showConditionField ? assetDraft.condition || null : null,
     };
 
@@ -2160,6 +2269,46 @@ export default function AssetRegisterClient() {
       });
     } finally {
       setBusyMarketplaceRemoveId(null);
+    }
+  }
+
+
+  async function handleUpdateEstimate(asset: RegisterAsset) {
+    setBusyRevalueAssetId(asset.id);
+
+    try {
+      const response = await fetch('/api/asset-register/revalue', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assetId: asset.id }),
+      });
+      const data = (await response.json()) as RevalueAssetApiResponse;
+
+      if (!response.ok || !data.ok || !data.item) {
+        throw new Error(data.error ?? 'Failed to update estimate.');
+      }
+
+      setAssets((current) => current.map((entry) => (entry.id === data.item!.id ? data.item! : entry)));
+      setActiveAsset((current) => (current?.id === data.item!.id ? data.item! : current));
+      setMarketplaceAsset((current) => (current?.id === data.item!.id ? data.item! : current));
+
+      if (projectionAsset?.id === data.item.id) {
+        setProjectionAsset(data.item);
+      }
+
+      const marketplaceNote = isLiveOnMarketplace(asset) ? ' Marketplace asking price was not changed.' : '';
+      setNotice({
+        tone: 'success',
+        message: `${data.item.title} estimate updated to ${money(data.item.value)}.${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to update estimate.',
+      });
+    } finally {
+      setBusyRevalueAssetId(null);
     }
   }
 
@@ -2729,9 +2878,12 @@ export default function AssetRegisterClient() {
                       <article className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''}`} key={asset.id}>
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
-                            {isLive ? (
+                            {isLive || doesEstimateNeedUpdate(asset) ? (
                               <div className={styles.badgeRow}>
-                                <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span>
+                                {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
+                                {doesEstimateNeedUpdate(asset) ? (
+                                  <span className={`${styles.badge} ${styles.badgeNeutral}`}>Estimate needs update</span>
+                                ) : null}
                               </div>
                             ) : null}
                             <h2>{asset.title}</h2>
@@ -3115,6 +3267,7 @@ export default function AssetRegisterClient() {
                         kind: nextKind,
                         hours: nextKind === 'property' || nextKind === 'tools' ? '' : current.hours,
                         usageMetric: nextKind === 'vehicle' ? normalizeUsageMetric(current.usageMetric, 'vehicle') : 'hours',
+                        lifeWorkedPercent: nextKind === 'property' || nextKind === 'vehicle' ? '' : current.lifeWorkedPercent,
                         condition: nextKind === 'property' ? '' : current.condition,
                       }));
                     }}
@@ -3237,6 +3390,27 @@ export default function AssetRegisterClient() {
                     placeholder={usageFieldPlaceholder}
                   />
                   <small className={styles.fieldHint}>{usageFieldHint}</small>
+                </label>
+              ) : null}
+
+              {showLifeWorkedPercentField ? (
+                <label className={styles.field}>
+                  <span>Lifetime worked %</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={assetDraft.lifeWorkedPercent}
+                    onChange={(event) =>
+                      setAssetDraft((current) => ({
+                        ...current,
+                        lifeWorkedPercent: event.target.value,
+                      }))
+                    }
+                    placeholder="Example: 45"
+                  />
+                  <small className={styles.fieldHint}>Use this when exact hours are unknown or the machine is valued on percentage worked.</small>
                 </label>
               ) : null}
 
@@ -3500,6 +3674,25 @@ export default function AssetRegisterClient() {
                       <span>
                         <strong>Calculate future price</strong>
                         <small>Project value using year, inflation and hours.</small>
+                      </span>
+                    </button>
+                  ) : null}
+
+                  {isValuationUpdateAvailable(activeAsset) ? (
+                    <button
+                      type="button"
+                      className={`${styles.optionActionButton} ${doesEstimateNeedUpdate(activeAsset) ? styles.optionFeaturedButton : ''}`}
+                      disabled={busyRevalueAssetId === activeAsset.id}
+                      onClick={() => void handleUpdateEstimate(activeAsset)}
+                    >
+                      <TrendIcon className={styles.buttonIcon} />
+                      <span>
+                        <strong>{busyRevalueAssetId === activeAsset.id ? 'Updating estimate...' : 'Update estimate'}</strong>
+                        <small>
+                          {doesEstimateNeedUpdate(activeAsset)
+                            ? `Re-run Aim4price using the latest ${valuationStaleReason(activeAsset)}.`
+                            : 'Re-run Aim4price using the latest saved asset details.'}
+                        </small>
                       </span>
                     </button>
                   ) : null}
