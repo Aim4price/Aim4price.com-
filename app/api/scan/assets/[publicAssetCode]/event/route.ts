@@ -138,6 +138,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
       recentEvents,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'USAGE_READING_CANNOT_DECREASE') {
+      return NextResponse.json(
+        { ok: false, error: 'The new usage reading cannot be lower than the reading already saved on this asset.' },
+        { status: 400 },
+      );
+    }
+
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : 'Failed to save scan update.' },
       { status: 500 },
