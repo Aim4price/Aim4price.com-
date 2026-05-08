@@ -1431,19 +1431,6 @@ export default function AssetRegisterClient() {
     );
   }, [assets]);
 
-  const unfinancedAssetStats = useMemo(() => {
-    return {
-      count: Math.max(0, assets.length - financedAssetStats.count),
-      value: Math.max(0, totalValue - financedAssetStats.value),
-    };
-  }, [assets.length, financedAssetStats.count, financedAssetStats.value, totalValue]);
-
-  const uninsuredAssetStats = useMemo(() => {
-    return {
-      count: Math.max(0, assets.length - insuredAssetStats.count),
-      value: Math.max(0, totalValue - insuredAssetStats.value),
-    };
-  }, [assets.length, insuredAssetStats.count, insuredAssetStats.value, totalValue]);
 
   const editingAsset = useMemo(() => {
     return editingAssetId === null ? null : assets.find((asset) => asset.id === editingAssetId) ?? null;
@@ -2359,6 +2346,16 @@ export default function AssetRegisterClient() {
             <div className={styles.headerActions}>
               <button
                 type="button"
+                className={`${styles.secondaryButton} ${styles.summaryTriggerButton}`}
+                onClick={openSummaryModal}
+                disabled={isLoading}
+                aria-haspopup="dialog"
+              >
+                <span>Summary</span>
+              </button>
+
+              <button
+                type="button"
                 className={styles.secondaryButton}
                 onClick={openExportModal}
                 disabled={!assets.length || isLoading}
@@ -2367,18 +2364,6 @@ export default function AssetRegisterClient() {
                 <span>Download full Asset Register</span>
               </button>
             </div>
-          </div>
-
-          <div className={styles.summaryLaunchRow}>
-            <button
-              type="button"
-              className={`${styles.secondaryButton} ${styles.summaryLaunchButton}`}
-              onClick={openSummaryModal}
-              disabled={isLoading}
-              aria-haspopup="dialog"
-            >
-              <span>Summary</span>
-            </button>
           </div>
 
           <div className={`${styles.summaryRow} ${styles.heroSummaryRow}`}>
@@ -2763,7 +2748,6 @@ export default function AssetRegisterClient() {
           <div className={`${styles.modalCard} ${styles.summaryModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-register-summary-title">
             <div className={`${styles.modalHeader} ${styles.summaryModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <span className={styles.modalEyebrow}>Asset Register Summary</span>
                 <h3 id="asset-register-summary-title">Register summary</h3>
                 <p>Live totals calculated from the saved assets in this register. Financed and insured totals update when those asset checkboxes are changed.</p>
               </div>
@@ -2818,39 +2802,6 @@ export default function AssetRegisterClient() {
                     <div className={styles.summaryStatusValue}>{money(insuredAssetStats.value)}</div>
                     <p>{assets.length ? formatRatioPercent(insuredAssetStats.count / assets.length) : '0%'} of assets · {money(Math.round(insuredAssetStats.value * 1.15))} incl. VAT</p>
                   </article>
-                </section>
-
-                <section className={styles.summaryCoveragePanel}>
-                  <div className={styles.summaryCoverageHeader}>
-                    <h4>Coverage breakdown</h4>
-                    <p>Financed and insured values are calculated independently, so the same asset can be counted in both totals.</p>
-                  </div>
-
-                  <div className={styles.summaryCoverageGrid}>
-                    <div className={styles.summaryCoverageTile}>
-                      <span>Not financed</span>
-                      <strong>{unfinancedAssetStats.count}</strong>
-                      <small>{money(unfinancedAssetStats.value)}</small>
-                    </div>
-
-                    <div className={styles.summaryCoverageTile}>
-                      <span>Not insured</span>
-                      <strong>{uninsuredAssetStats.count}</strong>
-                      <small>{money(uninsuredAssetStats.value)}</small>
-                    </div>
-
-                    <div className={styles.summaryCoverageTile}>
-                      <span>Financed share</span>
-                      <strong>{totalValue ? formatRatioPercent(financedAssetStats.value / totalValue) : '0%'}</strong>
-                      <small>By register value</small>
-                    </div>
-
-                    <div className={styles.summaryCoverageTile}>
-                      <span>Insured share</span>
-                      <strong>{totalValue ? formatRatioPercent(insuredAssetStats.value / totalValue) : '0%'}</strong>
-                      <small>By register value</small>
-                    </div>
-                  </div>
                 </section>
               </div>
             </div>

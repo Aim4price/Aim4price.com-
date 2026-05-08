@@ -7612,3 +7612,63 @@
     width: 100%;
   }
 }
+
+/* === Summary button final placement beside export === */
+.registerHeader .headerActions {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.85rem !important;
+  flex-wrap: wrap !important;
+}
+
+.registerHeader .headerActions > .secondaryButton {
+  flex: 0 0 auto !important;
+  grid-column: auto !important;
+  justify-self: auto !important;
+}
+
+.registerHeader .headerActions .summaryTriggerButton {
+  min-width: 180px !important;
+  min-height: 3.25rem !important;
+  padding: 0 1.45rem !important;
+  border-radius: 1.05rem !important;
+  color: #0f3329 !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 38%),
+    linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%) !important;
+  border: 1px solid rgba(190, 208, 222, 0.98) !important;
+  box-shadow:
+    0 14px 28px rgba(16, 31, 28, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  font-size: 1.02rem !important;
+  font-weight: 880 !important;
+  letter-spacing: -0.015em !important;
+}
+
+.registerHeader .headerActions .summaryTriggerButton:hover {
+  border-color: rgba(22, 83, 64, 0.28) !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.1), transparent 40%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%) !important;
+  box-shadow:
+    0 18px 34px rgba(16, 31, 28, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.summaryLaunchRow {
+  display: none !important;
+}
+
+@media (max-width: 960px) {
+  .registerHeader .headerActions {
+    justify-content: stretch !important;
+  }
+
+  .registerHeader .headerActions > .secondaryButton,
+  .registerHeader .headerActions .summaryTriggerButton {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
