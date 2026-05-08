@@ -231,6 +231,153 @@ function buildManualSpecsJson(
   };
 }
 
+const VALUATION_STALE_SPEC_KEYS = [
+  'valuationNeedsUpdate',
+  'valuation_needs_update',
+  'valuationStaleSince',
+  'valuation_stale_since',
+  'valuationStaleReason',
+  'valuation_stale_reason',
+  'valuationStaleReasons',
+  'valuation_stale_reasons',
+] as const;
+
+const VALUATION_METADATA_SPEC_KEYS = [
+  ...VALUATION_STALE_SPEC_KEYS,
+  'valuationLastUpdatedAt',
+  'valuation_last_updated_at',
+  'valuationLastRunId',
+  'valuation_last_run_id',
+  'valuationLastValueExVat',
+  'valuation_last_value_ex_vat',
+  'valuationLastHours',
+  'valuation_last_hours',
+  'valuationLastLifeWorkedPercent',
+  'valuation_last_life_worked_percent',
+  'valuationLastCondition',
+  'valuation_last_condition',
+] as const;
+
+function stripValuationMetadata(specs: Record<string, unknown>): Record<string, unknown> {
+  const cleaned = { ...specs };
+
+  VALUATION_METADATA_SPEC_KEYS.forEach((key) => {
+    delete cleaned[key];
+  });
+
+  return cleaned;
+}
+
+function markValuationNeedsUpdate(
+  specs: Record<string, unknown>,
+  reasons: string[],
+  now: Date,
+): Record<string, unknown> {
+  const uniqueReasons = Array.from(new Set(reasons.map((reason) => reason.trim()).filter(Boolean)));
+
+  if (!uniqueReasons.length) {
+    return specs;
+  }
+
+  const existingSince = asText(specs.valuation_stale_since) || asText(specs.valuationStaleSince) || now.toISOString();
+
+  return {
+    ...specs,
+    valuationNeedsUpdate: true,
+    valuation_needs_update: true,
+    valuationStaleSince: existingSince,
+    valuation_stale_since: existingSince,
+    valuationStaleReason: uniqueReasons.join(', '),
+    valuation_stale_reason: uniqueReasons.join(', '),
+    valuationStaleReasons: uniqueReasons,
+    valuation_stale_reasons: uniqueReasons,
+  };
+}
+
+function buildCurrentValuationSpecs(
+  existingSpecs: Record<string, unknown>,
+  valuationSpecs: Record<string, unknown>,
+  context: {
+    valuationRunId: number;
+    selectedValueExVat: number;
+    hours?: number | null;
+    lifeWorkedPercent?: number | null;
+    condition?: string | null;
+    now: Date;
+  },
+): Record<string, unknown> {
+  const merged = stripValuationMetadata({
+    ...existingSpecs,
+    ...valuationSpecs,
+  });
+
+  return {
+    ...merged,
+    valuationNeedsUpdate: false,
+    valuation_needs_update: false,
+    valuationLastUpdatedAt: context.now.toISOString(),
+    valuation_last_updated_at: context.now.toISOString(),
+    valuationLastRunId: context.valuationRunId,
+    valuation_last_run_id: context.valuationRunId,
+    valuationLastValueExVat: Math.round(Number(context.selectedValueExVat) || 0),
+    valuation_last_value_ex_vat: Math.round(Number(context.selectedValueExVat) || 0),
+    valuationLastHours: context.hours ?? null,
+    valuation_last_hours: context.hours ?? null,
+    valuationLastLifeWorkedPercent: context.lifeWorkedPercent ?? null,
+    valuation_last_life_worked_percent: context.lifeWorkedPercent ?? null,
+    valuationLastCondition: context.condition ?? null,
+    valuation_last_condition: context.condition ?? null,
+  };
+}
+
+function hasValueChanged(left: unknown, right: unknown): boolean {
+  if ((left === null || typeof left === 'undefined' || left === '') && (right === null || typeof right === 'undefined' || right === '')) {
+    return false;
+  }
+
+  const leftNumber = asNumber(left);
+  const rightNumber = asNumber(right);
+
+  if (leftNumber !== null || rightNumber !== null) {
+    return leftNumber !== rightNumber;
+  }
+
+  return String(left ?? '').trim() !== String(right ?? '').trim();
+}
+
+function buildValuationStaleReasons(input: {
+  existing: AssetRegisterItem;
+  nextYearModel: number | null;
+  nextHours: number | null;
+  nextLifeWorkedPercent: number | null;
+  nextCondition: string | null;
+}): string[] {
+  const reasons: string[] = [];
+
+  if (!input.existing.valuationRunId || input.existing.selectedMethod === 'manual') {
+    return reasons;
+  }
+
+  if (hasValueChanged(input.existing.yearModel, input.nextYearModel)) {
+    reasons.push('year changed');
+  }
+
+  if (hasValueChanged(input.existing.hours, input.nextHours)) {
+    reasons.push('usage changed');
+  }
+
+  const existingLifeWorkedPercent = input.existing.lifeWorkedPercent ?? percentFromSpecs(input.existing.specsJson);
+  if (hasValueChanged(existingLifeWorkedPercent, input.nextLifeWorkedPercent)) {
+    reasons.push('life worked changed');
+  }
+
+  if (hasValueChanged(input.existing.condition, input.nextCondition)) {
+    reasons.push('condition changed');
+  }
+
+  return reasons;
+}
+
 function asIdText(value: unknown): string {
   if (typeof value === 'string') return value.trim();
   if (typeof value === 'number' && Number.isFinite(value)) return String(value);
@@ -1221,7 +1368,36 @@ export async function updateAssetRegisterItem(
   const now = new Date();
   const nextKind = existing.valuationRunId ? existing.kind : normalizeKind(input.kind);
   const nextValue = Math.round(Number(input.value) || 0);
+  const incomingYearModel = input.yearModel === null || input.yearModel === undefined ? null : Math.max(0, Math.round(input.yearModel));
+  const incomingHours = input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours));
+  const nextYearModel = existing.valuationRunId && incomingYearModel === null ? existing.yearModel : incomingYearModel;
+  const nextHours = existing.valuationRunId && incomingHours === null ? existing.hours : incomingHours;
+  const nextCondition = input.condition ?? existing.condition ?? null;
+  const baseSpecsJson = buildManualSpecsJson(input, nextKind, existing.specsJson);
+  const nextLifeWorkedPercent = percentFromSpecs(baseSpecsJson);
+  const existingLifeWorkedPercent = existing.lifeWorkedPercent ?? percentFromSpecs(existing.specsJson);
   const fields: SqlField[] = [];
+
+  if (incomingHours !== null && existing.hours !== null && incomingHours < existing.hours) {
+    throw new Error('USAGE_READING_CANNOT_DECREASE');
+  }
+
+  if (
+    nextLifeWorkedPercent !== null &&
+    existingLifeWorkedPercent !== null &&
+    nextLifeWorkedPercent < existingLifeWorkedPercent
+  ) {
+    throw new Error('LIFE_WORKED_PERCENT_CANNOT_DECREASE');
+  }
+
+  const staleReasons = buildValuationStaleReasons({
+    existing,
+    nextYearModel,
+    nextHours,
+    nextLifeWorkedPercent,
+    nextCondition,
+  });
+  const nextSpecsJson = markValuationNeedsUpdate(baseSpecsJson, staleReasons, now);
 
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
   pushField(fields, schema, ['title', 'name', 'asset_name'], asText(input.title));
@@ -1232,20 +1408,10 @@ export async function updateAssetRegisterItem(
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
   pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured));
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
-  pushField(
-    fields,
-    schema,
-    ['year_model', 'year'],
-    input.yearModel === null || input.yearModel === undefined ? null : Math.max(0, Math.round(input.yearModel)),
-  );
-  pushField(fields, schema, ['specs_json'], buildManualSpecsJson(input, nextKind, existing.specsJson), '::jsonb');
-  pushField(
-    fields,
-    schema,
-    ['hours', 'engine_hours'],
-    input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours)),
-  );
-  pushField(fields, schema, ['condition'], input.condition ?? existing.condition ?? null);
+  pushField(fields, schema, ['year_model', 'year'], nextYearModel);
+  pushField(fields, schema, ['specs_json'], nextSpecsJson, '::jsonb');
+  pushField(fields, schema, ['hours', 'engine_hours'], nextHours);
+  pushField(fields, schema, ['condition'], nextCondition);
   pushPhotoField(fields, schema, input.photos ?? []);
   pushDocumentField(fields, schema, input.documents ?? []);
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
@@ -1265,6 +1431,186 @@ export async function updateAssetRegisterItem(
         ${buildSelectList(schema)}
     `,
     [userId, input.assetId, ...update.values],
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    throw new Error('ASSET_UPDATE_FAILED');
+  }
+
+  return mapAssetRegisterRow(row);
+}
+
+
+export async function updateAssetRegisterItemFromValuation(input: {
+  userId: string;
+  assetId: string;
+  valuationRunId: number;
+  result: Result;
+  selectedMethod: MethodKey;
+  selectedValueExVat: number;
+  year: number;
+  hours: number;
+  condition: ConditionKey;
+}): Promise<AssetRegisterItem> {
+  const db = getDb();
+  const schema = await getAssetRegisterSchema();
+  const valuationSchema = await getValuationRunsSchema();
+  const existing = await getAssetRegisterItemById(input.userId, input.assetId);
+
+  if (!existing) {
+    throw new Error('ASSET_NOT_FOUND');
+  }
+
+  const valuationRow = await fetchValuationRunRowById(input.userId, input.valuationRunId);
+
+  if (!valuationRow) {
+    throw new Error('VALUATION_RUN_NOT_FOUND');
+  }
+
+  const now = new Date();
+  const model = input.result.model;
+  const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const fields: SqlField[] = [];
+  const valuationSpecsJson = isRecord(valuationRow.specs_json) ? valuationRow.specs_json : {};
+
+  copySharedFieldsFromValuationRun(fields, schema, valuationSchema, valuationRow);
+
+  pushField(fields, schema, ['valuation_run_id', 'run_id'], input.valuationRunId);
+  pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], 'tractor');
+  pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], selectedValueExVat);
+  pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], input.selectedMethod);
+  pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], selectedValueExVat);
+  pushField(fields, schema, ['source_type', 'source', 'origin', 'entry_source'], 'valuation');
+  pushField(fields, schema, ['brand_name', 'brand'], model.brandName);
+  pushField(fields, schema, ['model_name', 'model'], model.modelName);
+  pushField(fields, schema, ['drive_type', 'drive', 'drivetrain'], model.drive);
+  pushField(fields, schema, ['tractor_type', 'tractor_category'], model.tractorType);
+  pushField(fields, schema, ['cab_type', 'cab'], model.cab);
+  pushField(fields, schema, ['power_kw', 'kw', 'power'], model.powerKw);
+  pushField(fields, schema, ['year_model', 'year'], Math.round(input.year));
+  pushField(fields, schema, ['hours', 'engine_hours'], Math.max(0, Math.round(input.hours)));
+  pushField(fields, schema, ['condition'], input.condition);
+  pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(input.result.aim4priceValueExVat));
+  pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(input.result.marketMid));
+  pushField(
+    fields,
+    schema,
+    ['specs_json'],
+    buildCurrentValuationSpecs(existing.specsJson, valuationSpecsJson, {
+      valuationRunId: input.valuationRunId,
+      selectedValueExVat,
+      hours: input.hours,
+      lifeWorkedPercent: null,
+      condition: input.condition,
+      now,
+    }),
+    '::jsonb',
+  );
+  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
+
+  const update = buildUpdateSetClause(fields);
+  const result = await db.query<AssetRegisterRow>(
+    `
+      update asset_register_items
+      set
+        ${update.clause}
+      where user_id = $1 and id = $2
+      returning
+        ${buildSelectList(schema)}
+    `,
+    [input.userId, input.assetId, ...update.values],
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    throw new Error('ASSET_UPDATE_FAILED');
+  }
+
+  return mapAssetRegisterRow(row);
+}
+
+export async function updateAssetRegisterItemFromGenericValuation(input: {
+  userId: string;
+  assetId: string;
+  valuationRunId: number;
+  result: GenericValuationResult;
+  selectedMethod: GenericSelectedMethod;
+  selectedValueExVat: number;
+}): Promise<AssetRegisterItem> {
+  const db = getDb();
+  const schema = await getAssetRegisterSchema();
+  const valuationSchema = await getValuationRunsSchema();
+  const existing = await getAssetRegisterItemById(input.userId, input.assetId);
+
+  if (!existing) {
+    throw new Error('ASSET_NOT_FOUND');
+  }
+
+  const valuationRow = await fetchValuationRunRowById(input.userId, input.valuationRunId);
+
+  if (!valuationRow) {
+    throw new Error('VALUATION_RUN_NOT_FOUND');
+  }
+
+  const now = new Date();
+  const valuationResult = input.result;
+  const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const fields: SqlField[] = [];
+
+  copySharedFieldsFromValuationRun(fields, schema, valuationSchema, valuationRow);
+
+  pushField(fields, schema, ['valuation_run_id', 'run_id'], input.valuationRunId);
+  pushField(fields, schema, ['sector_id'], valuationResult.sector.id);
+  pushField(fields, schema, ['equipment_family_id'], valuationResult.family.id);
+  pushField(fields, schema, ['equipment_model_id'], null);
+  pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], 'equipment');
+  pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], selectedValueExVat);
+  pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], input.selectedMethod);
+  pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], selectedValueExVat);
+  pushField(fields, schema, ['source_type', 'source', 'origin', 'entry_source'], 'valuation');
+  pushField(fields, schema, ['brand_name', 'brand'], valuationResult.brand.name);
+  pushField(fields, schema, ['model_name', 'model'], valuationResult.typedModelName || 'Specs-based valuation');
+  pushField(fields, schema, ['typed_model_name'], valuationResult.typedModelName || null);
+  pushField(fields, schema, ['normalized_typed_model_name'], valuationResult.normalizedTypedModelName || null);
+  pushField(
+    fields,
+    schema,
+    ['specs_json'],
+    buildCurrentValuationSpecs(existing.specsJson, valuationResult.specsJson ?? {}, {
+      valuationRunId: input.valuationRunId,
+      selectedValueExVat,
+      hours: valuationResult.usageAmount ?? null,
+      lifeWorkedPercent: valuationResult.lifeWorkedPercent,
+      condition: valuationResult.condition,
+      now,
+    }),
+    '::jsonb',
+  );
+  pushField(fields, schema, ['depreciation_method_used'], valuationResult.depreciationMethodUsed);
+  pushField(fields, schema, ['replacement_price_basis'], valuationResult.replacementPriceBasis);
+  pushField(fields, schema, ['life_worked_percent'], valuationResult.lifeWorkedPercent);
+  pushField(fields, schema, ['life_remaining_percent'], valuationResult.lifeRemainingPercent);
+  pushField(fields, schema, ['estimated_hours'], valuationResult.estimatedHours);
+  pushField(fields, schema, ['max_lifetime_hours'], valuationResult.maxLifetimeHours);
+  pushField(fields, schema, ['year_model', 'year'], valuationResult.year);
+  pushField(fields, schema, ['hours', 'engine_hours'], valuationResult.usageAmount ?? null);
+  pushField(fields, schema, ['condition'], valuationResult.condition);
+  pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
+  pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(valuationResult.marketAverageExVat));
+  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
+
+  const update = buildUpdateSetClause(fields);
+  const result = await db.query<AssetRegisterRow>(
+    `
+      update asset_register_items
+      set
+        ${update.clause}
+      where user_id = $1 and id = $2
+      returning
+        ${buildSelectList(schema)}
+    `,
+    [input.userId, input.assetId, ...update.values],
   );
 
   const row = result.rows[0];

@@ -81,6 +81,9 @@ type ScanAccessRow = {
   last_known_location_text: string | null;
   created_at: string | null;
   updated_at: string | null;
+  valuation_run_id?: string | number | null;
+  selected_method?: string | null;
+  specs_json?: unknown;
   scan_pin_hash: string | null;
   scan_pin_enabled: boolean | null;
   scan_pin_updated_at: string | null;
@@ -147,6 +150,53 @@ function normalizePhotos(value: unknown): string[] {
       seen.add(entry);
       return true;
     });
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      return {};
+    }
+  }
+
+  return {};
+}
+
+function hasSavedValuation(row: ScanAccessRow): boolean {
+  const selectedMethod = asText(row.selected_method).toLowerCase();
+  return Boolean(row.valuation_run_id && selectedMethod !== 'manual');
+}
+
+function markValuationNeedsUpdate(specs: Record<string, unknown>, reasons: string[]): Record<string, unknown> {
+  const uniqueReasons = Array.from(new Set(reasons.map((reason) => reason.trim()).filter(Boolean)));
+
+  if (!uniqueReasons.length) {
+    return specs;
+  }
+
+  const nowIso = new Date().toISOString();
+  const existingSince = asText(specs.valuation_stale_since) || asText(specs.valuationStaleSince) || nowIso;
+
+  return {
+    ...specs,
+    valuationNeedsUpdate: true,
+    valuation_needs_update: true,
+    valuationStaleSince: existingSince,
+    valuation_stale_since: existingSince,
+    valuationStaleReason: uniqueReasons.join(', '),
+    valuation_stale_reason: uniqueReasons.join(', '),
+    valuationStaleReasons: uniqueReasons,
+    valuation_stale_reasons: uniqueReasons,
+  };
 }
 
 function normalizeQrStatus(value: unknown): ScanAssetQrStatus {
@@ -375,6 +425,9 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           a.last_known_location_text,
           a.created_at,
           a.updated_at,
+          a.valuation_run_id,
+          a.selected_method,
+          a.specs_json,
           ''::text as scan_pin_hash,
           false as scan_pin_enabled,
           null::timestamptz as scan_pin_updated_at
@@ -410,6 +463,23 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         ? input.longitude
         : null;
     const nextLocationText = asText(input.locationText) || null;
+
+    if (nextHours !== null && currentAsset.hours !== null && nextHours < currentAsset.hours) {
+      throw new Error('USAGE_READING_CANNOT_DECREASE');
+    }
+
+    const valuationStaleReasons: string[] = [];
+    if (hasSavedValuation(existingRow)) {
+      if (nextHours !== null && currentAsset.hours !== null && nextHours !== currentAsset.hours) {
+        valuationStaleReasons.push('usage changed');
+      }
+
+      if (nextCondition && currentAsset.condition && nextCondition !== currentAsset.condition) {
+        valuationStaleReasons.push('condition changed');
+      }
+    }
+
+    const nextSpecsJson = markValuationNeedsUpdate(asRecord(existingRow.specs_json), valuationStaleReasons);
 
     const insertedEvent = await client.query<ScanEventRow>(
       `
@@ -484,6 +554,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           last_known_lat = coalesce($7, last_known_lat),
           last_known_lng = coalesce($8, last_known_lng),
           last_known_location_text = coalesce($9, last_known_location_text),
+          specs_json = $10::jsonb,
           updated_at = now()
         where id = $1
         returning
@@ -519,6 +590,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         nextLatitude,
         nextLongitude,
         nextLocationText,
+        JSON.stringify(nextSpecsJson),
       ],
     );
 
