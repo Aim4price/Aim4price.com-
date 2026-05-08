@@ -1173,6 +1173,7 @@ export default function AssetRegisterClient() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
   const [isExporting, setIsExporting] = useState(false);
@@ -1317,6 +1318,7 @@ export default function AssetRegisterClient() {
     Boolean(activeAsset) ||
     Boolean(deleteCandidateAsset) ||
     isQrModalOpen ||
+    isSummaryModalOpen ||
     isExportModalOpen ||
     Boolean(projectionAsset) ||
     Boolean(marketplaceAsset);
@@ -1357,6 +1359,11 @@ export default function AssetRegisterClient() {
         return;
       }
 
+      if (isSummaryModalOpen) {
+        closeSummaryModal();
+        return;
+      }
+
       if (isExportModalOpen) {
         closeExportModal();
         return;
@@ -1373,7 +1380,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAssetModalOpen, isExportModalOpen, isQrModalOpen, marketplaceAsset, projectionAsset]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAssetModalOpen, isExportModalOpen, isQrModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset]);
 
   const totalValue = useMemo(() => {
     return assets.reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
@@ -1385,6 +1392,58 @@ export default function AssetRegisterClient() {
   const aim4priceValuedEquipmentCount = useMemo(() => {
     return assets.filter((asset) => isAim4priceValuedAsset(asset)).length;
   }, [assets]);
+
+  const aim4priceValuedEquipmentValue = useMemo(() => {
+    return assets
+      .filter((asset) => isAim4priceValuedAsset(asset))
+      .reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
+  }, [assets]);
+
+  const financedAssetStats = useMemo(() => {
+    return assets.reduce(
+      (stats, asset) => {
+        if (!asset.isFinanced) {
+          return stats;
+        }
+
+        return {
+          count: stats.count + 1,
+          value: stats.value + Math.round(Number(asset.value || 0)),
+        };
+      },
+      { count: 0, value: 0 },
+    );
+  }, [assets]);
+
+  const insuredAssetStats = useMemo(() => {
+    return assets.reduce(
+      (stats, asset) => {
+        if (!asset.isInsured) {
+          return stats;
+        }
+
+        return {
+          count: stats.count + 1,
+          value: stats.value + Math.round(Number(asset.value || 0)),
+        };
+      },
+      { count: 0, value: 0 },
+    );
+  }, [assets]);
+
+  const unfinancedAssetStats = useMemo(() => {
+    return {
+      count: Math.max(0, assets.length - financedAssetStats.count),
+      value: Math.max(0, totalValue - financedAssetStats.value),
+    };
+  }, [assets.length, financedAssetStats.count, financedAssetStats.value, totalValue]);
+
+  const uninsuredAssetStats = useMemo(() => {
+    return {
+      count: Math.max(0, assets.length - insuredAssetStats.count),
+      value: Math.max(0, totalValue - insuredAssetStats.value),
+    };
+  }, [assets.length, insuredAssetStats.count, insuredAssetStats.value, totalValue]);
 
   const editingAsset = useMemo(() => {
     return editingAssetId === null ? null : assets.find((asset) => asset.id === editingAssetId) ?? null;
@@ -2057,6 +2116,14 @@ export default function AssetRegisterClient() {
     setNotice({ tone: 'success', message: 'QR print sheet opened in a new tab.' });
   }
 
+  function openSummaryModal() {
+    setIsSummaryModalOpen(true);
+  }
+
+  function closeSummaryModal() {
+    setIsSummaryModalOpen(false);
+  }
+
   function openExportModal() {
     if (!assets.length) {
       return;
@@ -2083,6 +2150,8 @@ export default function AssetRegisterClient() {
         { label: 'Register value', value: money(totalValue), note: 'Saved values exclude VAT.' },
         { label: 'Aim4price valued equipment', value: String(aim4priceValuedEquipmentCount), note: 'Assets saved from Aim4price valuations.' },
         { label: 'Total assets', value: String(assets.length), note: 'Full saved register count.' },
+        { label: 'Assets financed', value: money(financedAssetStats.value), note: `${financedAssetStats.count} marked as financed.` },
+        { label: 'Assets insured', value: money(insuredAssetStats.value), note: `${insuredAssetStats.count} marked as insured.` },
       ],
       rows: assets.map((asset) => ({
         asset: asset.title,
@@ -2297,8 +2366,19 @@ export default function AssetRegisterClient() {
                 <DownloadIcon className={styles.buttonIcon} />
                 <span>Download full Asset Register</span>
               </button>
-
             </div>
+          </div>
+
+          <div className={styles.summaryLaunchRow}>
+            <button
+              type="button"
+              className={`${styles.secondaryButton} ${styles.summaryLaunchButton}`}
+              onClick={openSummaryModal}
+              disabled={isLoading}
+              aria-haspopup="dialog"
+            >
+              <span>Summary</span>
+            </button>
           </div>
 
           <div className={`${styles.summaryRow} ${styles.heroSummaryRow}`}>
@@ -2675,6 +2755,108 @@ export default function AssetRegisterClient() {
           )}
         </section>
       </section>
+
+      {isSummaryModalOpen ? (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBackdrop} onClick={closeSummaryModal} />
+
+          <div className={`${styles.modalCard} ${styles.summaryModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-register-summary-title">
+            <div className={`${styles.modalHeader} ${styles.summaryModalHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <span className={styles.modalEyebrow}>Asset Register Summary</span>
+                <h3 id="asset-register-summary-title">Register summary</h3>
+                <p>Live totals calculated from the saved assets in this register. Financed and insured totals update when those asset checkboxes are changed.</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={closeSummaryModal}
+                aria-label="Close register summary"
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${styles.modalScrollBody} ${styles.summaryModalScrollBody}`}>
+              <div className={styles.summaryModalBody}>
+                <section className={styles.summaryTotalsHero} aria-label="Asset register totals">
+                  <article className={`${styles.summaryHeroMetric} ${styles.summaryHeroMetricFeatured}`}>
+                    <span className={styles.summaryHeroLabel}>Register value</span>
+                    <strong className={styles.summaryHeroValue}>{money(totalValue)}</strong>
+                    <small className={styles.summaryHeroNote}>{money(totalValueInclVat)} incl. VAT</small>
+                  </article>
+
+                  <article className={styles.summaryHeroMetric}>
+                    <span className={styles.summaryHeroLabel}>Aim4price valued equipment</span>
+                    <strong className={styles.summaryHeroValue}>{aim4priceValuedEquipmentCount}</strong>
+                    <small className={styles.summaryHeroNote}>{money(aim4priceValuedEquipmentValue)} register value</small>
+                  </article>
+
+                  <article className={styles.summaryHeroMetric}>
+                    <span className={styles.summaryHeroLabel}>Total assets</span>
+                    <strong className={styles.summaryHeroValue}>{assets.length}</strong>
+                    <small className={styles.summaryHeroNote}>Full saved register count</small>
+                  </article>
+                </section>
+
+                <section className={styles.summaryStatusGrid} aria-label="Finance and insurance totals">
+                  <article className={`${styles.summaryStatusCard} ${styles.summaryStatusCardFinanced}`}>
+                    <div className={styles.summaryStatusHeader}>
+                      <span>Assets financed</span>
+                      <strong>{financedAssetStats.count}</strong>
+                    </div>
+                    <div className={styles.summaryStatusValue}>{money(financedAssetStats.value)}</div>
+                    <p>{assets.length ? formatRatioPercent(financedAssetStats.count / assets.length) : '0%'} of assets · {money(Math.round(financedAssetStats.value * 1.15))} incl. VAT</p>
+                  </article>
+
+                  <article className={`${styles.summaryStatusCard} ${styles.summaryStatusCardInsured}`}>
+                    <div className={styles.summaryStatusHeader}>
+                      <span>Assets insured</span>
+                      <strong>{insuredAssetStats.count}</strong>
+                    </div>
+                    <div className={styles.summaryStatusValue}>{money(insuredAssetStats.value)}</div>
+                    <p>{assets.length ? formatRatioPercent(insuredAssetStats.count / assets.length) : '0%'} of assets · {money(Math.round(insuredAssetStats.value * 1.15))} incl. VAT</p>
+                  </article>
+                </section>
+
+                <section className={styles.summaryCoveragePanel}>
+                  <div className={styles.summaryCoverageHeader}>
+                    <h4>Coverage breakdown</h4>
+                    <p>Financed and insured values are calculated independently, so the same asset can be counted in both totals.</p>
+                  </div>
+
+                  <div className={styles.summaryCoverageGrid}>
+                    <div className={styles.summaryCoverageTile}>
+                      <span>Not financed</span>
+                      <strong>{unfinancedAssetStats.count}</strong>
+                      <small>{money(unfinancedAssetStats.value)}</small>
+                    </div>
+
+                    <div className={styles.summaryCoverageTile}>
+                      <span>Not insured</span>
+                      <strong>{uninsuredAssetStats.count}</strong>
+                      <small>{money(uninsuredAssetStats.value)}</small>
+                    </div>
+
+                    <div className={styles.summaryCoverageTile}>
+                      <span>Financed share</span>
+                      <strong>{totalValue ? formatRatioPercent(financedAssetStats.value / totalValue) : '0%'}</strong>
+                      <small>By register value</small>
+                    </div>
+
+                    <div className={styles.summaryCoverageTile}>
+                      <span>Insured share</span>
+                      <strong>{totalValue ? formatRatioPercent(insuredAssetStats.value / totalValue) : '0%'}</strong>
+                      <small>By register value</small>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {isAssetModalOpen ? (
         <div className={styles.modalOverlay}>

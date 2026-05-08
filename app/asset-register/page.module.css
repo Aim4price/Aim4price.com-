@@ -7552,3 +7552,63 @@
     font-size: 2.1rem;
   }
 }
+
+/* === Summary launch button visibility fix === */
+.registerHeader .headerActions {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.85rem !important;
+}
+
+.registerHeader .headerActions > .secondaryButton {
+  grid-column: auto !important;
+  justify-self: auto !important;
+}
+
+.summaryLaunchRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0.05rem 0 1.1rem;
+}
+
+.summaryLaunchButton {
+  min-width: 230px;
+  min-height: 3.25rem;
+  padding: 0 1.8rem;
+  border-radius: 1.05rem;
+  color: #0f3329;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 38%),
+    linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  border: 1px solid rgba(190, 208, 222, 0.98);
+  box-shadow:
+    0 14px 28px rgba(16, 31, 28, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  font-size: 1.04rem;
+  font-weight: 880;
+  letter-spacing: -0.015em;
+}
+
+.summaryLaunchButton:hover {
+  border-color: rgba(22, 83, 64, 0.28);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.1), transparent 40%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  box-shadow:
+    0 18px 34px rgba(16, 31, 28, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+@media (max-width: 960px) {
+  .summaryLaunchRow {
+    justify-content: stretch;
+    margin-bottom: 1rem;
+  }
+
+  .summaryLaunchButton {
+    width: 100%;
+  }
+}
