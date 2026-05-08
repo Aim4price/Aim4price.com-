@@ -184,6 +184,42 @@ function readLifeWorkedPercent(asset: AssetRegisterItem, payloadInput: Record<st
   return fromPayload === null ? null : Math.max(0, Math.min(100, fromPayload));
 }
 
+function assetUsesPercentUsageForRevaluation(asset: AssetRegisterItem): boolean {
+  const specs = asset.specsJson ?? {};
+  const rawUsageMode = asText(
+    specs.usageMode ??
+      specs.usage_mode ??
+      specs.usageMetricType ??
+      specs.usage_metric_type ??
+      specs.valuationMode ??
+      specs.valuation_mode,
+  )
+    .toLowerCase();
+  const depreciationMethod = asText(asset.depreciationMethodUsed).toLowerCase();
+  const percent = readLifeWorkedPercent(asset, {});
+  const hours = asNumber(asset.hours);
+
+  if (
+    rawUsageMode === 'percent' ||
+    rawUsageMode === 'percentage' ||
+    rawUsageMode === 'percent_used' ||
+    rawUsageMode === 'percentage_depreciation' ||
+    rawUsageMode === 'wear_class'
+  ) {
+    return true;
+  }
+
+  if (asset.kind === 'vehicle') {
+    return false;
+  }
+
+  if (depreciationMethod === 'percentage_depreciation') {
+    return true;
+  }
+
+  return percent !== null && ((!hours || hours <= 0) || depreciationMethod === 'semi_depreciation');
+}
+
 function requireNumber(value: unknown, message: string): number {
   const parsed = asNumber(value);
   if (parsed === null) {
@@ -395,8 +431,11 @@ async function revalueGenericAsset(input: {
     ...rowSpecs,
     ...assetSpecs,
   };
-  const usageAmount = asNumber(input.asset.hours) ?? asNumber(payloadInput.usageAmount) ?? asNumber(input.row.hours);
   const lifeWorkedPercent = readLifeWorkedPercent(input.asset, payloadInput);
+  const usePercentUsage = assetUsesPercentUsageForRevaluation(input.asset);
+  const usageAmount = usePercentUsage
+    ? null
+    : asNumber(input.asset.hours) ?? asNumber(payloadInput.usageAmount) ?? asNumber(input.row.hours);
   const userReplacementPriceExVat =
     asNumber(payloadInput.userReplacementPriceExVat) ?? asNumber(input.row.user_replacement_price_ex_vat);
 

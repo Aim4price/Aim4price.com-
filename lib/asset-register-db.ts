@@ -87,6 +87,7 @@ export type CreateManualAssetInput = {
   yearModel?: number | null;
   hours?: number | null;
   usageMetric?: 'hours' | 'km' | null;
+  lifeWorkedPercent?: number | null;
   specsJson?: Record<string, unknown>;
   condition?: ConditionKey | null;
 };
@@ -106,6 +107,7 @@ export type UpdateAssetRegisterItemInput = {
   yearModel?: number | null;
   hours?: number | null;
   usageMetric?: 'hours' | 'km' | null;
+  lifeWorkedPercent?: number | null;
   specsJson?: Record<string, unknown>;
   condition?: ConditionKey | null;
 };
@@ -222,9 +224,23 @@ function buildManualSpecsJson(
   const usageMetric = input.usageMetric
     ? normalizeUsageMetric(input.usageMetric, kind)
     : normalizeUsageMetric(specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit, kind);
+  const explicitLifeWorkedPercent = input.lifeWorkedPercent === null || typeof input.lifeWorkedPercent === 'undefined'
+    ? null
+    : Math.max(0, Math.min(100, Number(input.lifeWorkedPercent)));
+  const lifeWorkedPercent = Number.isFinite(explicitLifeWorkedPercent as number)
+    ? explicitLifeWorkedPercent
+    : percentFromSpecs(specs);
 
   return {
     ...specs,
+    ...(lifeWorkedPercent !== null
+      ? {
+          life_worked_percent: lifeWorkedPercent,
+          worked_percent: lifeWorkedPercent,
+          percent_worked: lifeWorkedPercent,
+          lifetime_worked_percent: lifeWorkedPercent,
+        }
+      : {}),
     usageMetric,
     usage_metric: usageMetric,
     usage_unit: usageMetric,
@@ -1305,11 +1321,14 @@ export async function createManualAssetRegisterItem(
   const schema = await getAssetRegisterSchema();
   const now = new Date();
   const nextValue = Math.round(Number(input.value) || 0);
+  const nextKind = normalizeKind(input.kind);
+  const nextSpecsJson = buildManualSpecsJson(input, nextKind);
+  const nextLifeWorkedPercent = percentFromSpecs(nextSpecsJson);
   const fields: SqlField[] = [];
 
   pushField(fields, schema, ['user_id'], userId);
   pushField(fields, schema, ['valuation_run_id', 'run_id'], null);
-  pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], normalizeKind(input.kind));
+  pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
   pushField(fields, schema, ['title', 'name', 'asset_name'], asText(input.title));
   pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], nextValue);
   pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], 'manual');
@@ -1321,7 +1340,9 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured));
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
   pushField(fields, schema, ['year_model', 'year'], input.yearModel === null || input.yearModel === undefined ? null : Math.max(0, Math.round(input.yearModel)));
-  pushField(fields, schema, ['specs_json'], buildManualSpecsJson(input, normalizeKind(input.kind)), '::jsonb');
+  pushField(fields, schema, ['specs_json'], nextSpecsJson, '::jsonb');
+  pushField(fields, schema, ['life_worked_percent'], nextLifeWorkedPercent);
+  pushField(fields, schema, ['life_remaining_percent'], nextLifeWorkedPercent === null ? null : Math.max(0, 100 - nextLifeWorkedPercent));
   pushField(fields, schema, ['hours', 'engine_hours'], input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours)));
   pushField(fields, schema, ['condition'], input.condition ?? null);
   pushPhotoField(fields, schema, input.photos ?? []);
@@ -1332,7 +1353,7 @@ export async function createManualAssetRegisterItem(
     userId,
     valuationRunId: null,
     title: asText(input.title),
-    kind: normalizeKind(input.kind),
+    kind: nextKind,
     selectedMethod: 'manual',
     selectedValueExVat: nextValue,
     note: input.note ?? null,
@@ -1410,6 +1431,8 @@ export async function updateAssetRegisterItem(
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
   pushField(fields, schema, ['year_model', 'year'], nextYearModel);
   pushField(fields, schema, ['specs_json'], nextSpecsJson, '::jsonb');
+  pushField(fields, schema, ['life_worked_percent'], nextLifeWorkedPercent);
+  pushField(fields, schema, ['life_remaining_percent'], nextLifeWorkedPercent === null ? null : Math.max(0, 100 - nextLifeWorkedPercent));
   pushField(fields, schema, ['hours', 'engine_hours'], nextHours);
   pushField(fields, schema, ['condition'], nextCondition);
   pushPhotoField(fields, schema, input.photos ?? []);

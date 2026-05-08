@@ -2,6 +2,7 @@ import { getDb } from './db';
 import { MAX_ASSET_REGISTER_PHOTOS } from './asset-register-uploads';
 
 export type ScanAssetQrStatus = 'active' | 'transferred' | 'retired' | 'deleted' | '';
+export type ScanAssetUsageMode = 'hours' | 'percent' | 'km' | 'none';
 export type ScanAccessMode = 'owner_session' | 'scan_pin';
 export type ScanEventActorType = ScanAccessMode | 'admin_session';
 
@@ -12,8 +13,16 @@ export type ScanSafeAsset = {
   plateLabel: string;
   qrStatus: ScanAssetQrStatus;
   title: string;
+  kind: string;
+  equipmentFamilyKey: string;
+  equipmentFamilyLabel: string;
   serialNumber: string;
   hours: number | null;
+  usageMode: ScanAssetUsageMode;
+  usageMetric: 'hours' | 'km';
+  lifeWorkedPercent: number | null;
+  isPropelled: boolean;
+  canUpdateFuel: boolean;
   fuelPercent: number | null;
   condition: string;
   note: string;
@@ -53,6 +62,7 @@ export type SaveScanAssetEventInput = {
   actorType: ScanEventActorType;
   operatorName?: string | null;
   hours?: number | null;
+  lifeWorkedPercent?: number | null;
   fuelPercent?: number | null;
   condition?: string | null;
   note?: string | null;
@@ -69,6 +79,16 @@ type ScanAccessRow = {
   plate_label: string | null;
   qr_status: string | null;
   title: string | null;
+  kind: string | null;
+  equipment_family_key: string | null;
+  equipment_family_label: string | null;
+  depreciation_method_used: string | null;
+  life_worked_percent: string | number | null;
+  estimated_hours: string | number | null;
+  max_lifetime_hours: string | number | null;
+  specs_json: unknown;
+  family_is_propelled: boolean | string | number | null;
+  family_usage_metric_type: string | null;
   serial_number: string | null;
   hours: string | number | null;
   fuel_percent: string | number | null;
@@ -83,7 +103,6 @@ type ScanAccessRow = {
   updated_at: string | null;
   valuation_run_id?: string | number | null;
   selected_method?: string | null;
-  specs_json?: unknown;
   scan_pin_hash: string | null;
   scan_pin_enabled: boolean | null;
   scan_pin_updated_at: string | null;
@@ -118,6 +137,27 @@ function asId(value: unknown): string {
 function asNumber(value: unknown): number | null {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function asBoolean(value: unknown): boolean | null {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'y') return true;
+    if (normalized === 'false' || normalized === '0' || normalized === 'no' || normalized === 'n') return false;
+  }
+
+  return null;
+}
+
+function clampPercent(value: number): number {
+  return Math.max(0, Math.min(100, Math.round(value * 10) / 10));
+}
+
+function asPercent(value: unknown): number | null {
+  const parsed = asNumber(value);
+  return parsed === null || parsed < 0 || parsed > 100 ? null : clampPercent(parsed);
 }
 
 function asStringArray(value: unknown): string[] {
@@ -169,6 +209,86 @@ function asRecord(value: unknown): Record<string, unknown> {
   }
 
   return {};
+}
+
+function percentFromSpecs(specs: Record<string, unknown>): number | null {
+  return (
+    asPercent(specs.life_worked_percent) ??
+    asPercent(specs.worked_percent) ??
+    asPercent(specs.lifetime_worked_percent) ??
+    asPercent(specs.percent_worked) ??
+    asPercent(specs.lifetime_used_percent)
+  );
+}
+
+function applyLifeWorkedPercent(specs: Record<string, unknown>, lifeWorkedPercent: number): Record<string, unknown> {
+  const nextPercent = clampPercent(lifeWorkedPercent);
+
+  return {
+    ...specs,
+    life_worked_percent: nextPercent,
+    worked_percent: nextPercent,
+    percent_worked: nextPercent,
+    lifetime_worked_percent: nextPercent,
+    lifetime_used_percent: nextPercent,
+  };
+}
+
+function normalizeUsageMetric(value: unknown, kind = ''): 'hours' | 'km' {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') return 'km';
+  return kind === 'vehicle' ? 'km' : 'hours';
+}
+
+function readSpecUsageMode(specs: Record<string, unknown>): ScanAssetUsageMode | null {
+  const raw = String(
+    specs.usageMode ?? specs.usage_mode ?? specs.usageMetricType ?? specs.usage_metric_type ?? specs.valuation_mode ?? '',
+  )
+    .trim()
+    .toLowerCase();
+
+  if (raw === 'percent' || raw === 'percentage' || raw === 'percentage_depreciation' || raw === 'percent_used' || raw === 'wear_class') return 'percent';
+  if (raw === 'km' || raw === 'kms' || raw === 'kilometres' || raw === 'kilometers') return 'km';
+  if (raw === 'hours' || raw === 'engine_hours' || raw === 'hour_meter') return 'hours';
+  return null;
+}
+
+function scanLifeWorkedPercent(row: Pick<ScanAccessRow, 'life_worked_percent' | 'specs_json'>): number | null {
+  return asPercent(row.life_worked_percent) ?? percentFromSpecs(asRecord(row.specs_json));
+}
+
+function inferScanUsageMode(row: ScanAccessRow): ScanAssetUsageMode {
+  const specs = asRecord(row.specs_json);
+  const specUsageMode = readSpecUsageMode(specs);
+  const kind = asText(row.kind).toLowerCase();
+  const familyUsageMetricType = asText(row.family_usage_metric_type).toLowerCase();
+  const depreciationMethod = asText(row.depreciation_method_used).toLowerCase();
+  const usageMetric = normalizeUsageMetric(specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit, kind);
+  const lifeWorkedPercent = scanLifeWorkedPercent(row);
+  const hours = asNumber(row.hours);
+
+  if (kind === 'property') return 'none';
+  if (kind === 'vehicle') return usageMetric === 'km' ? 'km' : 'hours';
+  if (specUsageMode) return specUsageMode;
+  if (familyUsageMetricType === 'wear_class' || familyUsageMetricType === 'percent_used' || familyUsageMetricType === 'percentage') return 'percent';
+  if (depreciationMethod === 'percentage_depreciation') return 'percent';
+  if (lifeWorkedPercent !== null && (!hours || hours <= 0 || depreciationMethod === 'semi_depreciation')) return 'percent';
+  if (hours !== null && hours > 0) return 'hours';
+  if (kind === 'tractor' || familyUsageMetricType === 'hours') return 'hours';
+  if (lifeWorkedPercent !== null) return 'percent';
+  return 'none';
+}
+
+function inferIsPropelled(row: ScanAccessRow): boolean {
+  const specs = asRecord(row.specs_json);
+  const kind = asText(row.kind).toLowerCase();
+  const specValue = asBoolean(specs.is_propelled ?? specs.isPropelled ?? specs.self_propelled ?? specs.selfPropelled);
+  const familyValue = asBoolean(row.family_is_propelled);
+
+  if (kind === 'tractor' || kind === 'vehicle') return true;
+  if (specValue !== null) return specValue;
+  if (familyValue !== null) return familyValue;
+  return false;
 }
 
 function hasSavedValuation(row: ScanAccessRow): boolean {
@@ -253,6 +373,11 @@ function mergePhotos(existing: string[], next: string[]): string[] {
 }
 
 function mapScanSafeAsset(row: ScanAccessRow): ScanSafeAsset {
+  const kind = asText(row.kind).toLowerCase();
+  const specs = asRecord(row.specs_json);
+  const usageMetric = normalizeUsageMetric(specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit, kind);
+  const isPropelled = inferIsPropelled(row);
+
   return {
     id: asId(row.id),
     userId: asText(row.user_id),
@@ -260,8 +385,16 @@ function mapScanSafeAsset(row: ScanAccessRow): ScanSafeAsset {
     plateLabel: asText(row.plate_label),
     qrStatus: normalizeQrStatus(row.qr_status),
     title: asText(row.title),
+    kind,
+    equipmentFamilyKey: asText(row.equipment_family_key),
+    equipmentFamilyLabel: asText(row.equipment_family_label),
     serialNumber: asText(row.serial_number),
     hours: asNumber(row.hours),
+    usageMode: inferScanUsageMode(row),
+    usageMetric,
+    lifeWorkedPercent: scanLifeWorkedPercent(row),
+    isPropelled,
+    canUpdateFuel: isPropelled,
     fuelPercent: asNumber(row.fuel_percent),
     condition: normalizeCondition(row.condition),
     note: asText(row.note),
@@ -316,6 +449,16 @@ export async function getScanAssetAccessContext(publicAssetCode: string): Promis
         a.plate_label,
         a.qr_status,
         a.title,
+        a.kind,
+        coalesce(ef.family_key, '') as equipment_family_key,
+        coalesce(ef.family_label, '') as equipment_family_label,
+        a.depreciation_method_used,
+        a.life_worked_percent,
+        a.estimated_hours,
+        a.max_lifetime_hours,
+        coalesce(a.specs_json, '{}'::jsonb) as specs_json,
+        ef.is_propelled as family_is_propelled,
+        ef.usage_metric_type as family_usage_metric_type,
         a.serial_number,
         a.hours,
         a.fuel_percent,
@@ -328,10 +471,16 @@ export async function getScanAssetAccessContext(publicAssetCode: string): Promis
         a.last_known_location_text,
         a.created_at,
         a.updated_at,
+        a.valuation_run_id,
+        a.selected_method,
         coalesce(p.scan_pin_hash, '') as scan_pin_hash,
         coalesce(p.scan_pin_enabled, false) as scan_pin_enabled,
         p.scan_pin_updated_at
       from asset_register_items a
+      left join valuation_runs vr
+        on vr.id = a.valuation_run_id
+      left join equipment_families ef
+        on ef.id = coalesce(a.equipment_family_id, vr.equipment_family_id)
       left join account_profiles p
         on p.user_id = a.user_id
       where upper(a.public_asset_code) = $1
@@ -413,6 +562,16 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           a.plate_label,
           a.qr_status,
           a.title,
+          a.kind,
+          coalesce(ef.family_key, '') as equipment_family_key,
+          coalesce(ef.family_label, '') as equipment_family_label,
+          a.depreciation_method_used,
+          a.life_worked_percent,
+          a.estimated_hours,
+          a.max_lifetime_hours,
+          coalesce(a.specs_json, '{}'::jsonb) as specs_json,
+          ef.is_propelled as family_is_propelled,
+          ef.usage_metric_type as family_usage_metric_type,
           a.serial_number,
           a.hours,
           a.fuel_percent,
@@ -427,11 +586,14 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           a.updated_at,
           a.valuation_run_id,
           a.selected_method,
-          a.specs_json,
           ''::text as scan_pin_hash,
           false as scan_pin_enabled,
           null::timestamptz as scan_pin_updated_at
         from asset_register_items a
+        left join valuation_runs vr
+          on vr.id = a.valuation_run_id
+        left join equipment_families ef
+          on ef.id = coalesce(a.equipment_family_id, vr.equipment_family_id)
         where upper(a.public_asset_code) = $1
         limit 1
       `,
@@ -445,14 +607,21 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
     }
 
     const currentAsset = mapScanSafeAsset(existingRow);
+    const currentUsageMode = currentAsset.usageMode;
+    const currentLifeWorkedPercent = currentAsset.lifeWorkedPercent;
     const nextOperatorName = asText(input.operatorName) || null;
     const nextHours = typeof input.hours === 'number' && Number.isFinite(input.hours) ? Math.max(0, Math.round(input.hours)) : null;
+    const nextLifeWorkedPercent = typeof input.lifeWorkedPercent === 'number' && Number.isFinite(input.lifeWorkedPercent)
+      ? clampPercent(input.lifeWorkedPercent)
+      : null;
     const nextFuelPercent =
       typeof input.fuelPercent === 'number' && Number.isFinite(input.fuelPercent)
         ? Math.max(0, Math.min(100, Math.round(input.fuelPercent)))
         : null;
     const nextCondition = normalizeCondition(input.condition) || null;
-    const nextNote = asText(input.note) || null;
+    const rawNote = asText(input.note);
+    const usageNote = nextLifeWorkedPercent !== null ? `Lifetime worked updated to ${nextLifeWorkedPercent}%.` : '';
+    const nextNote = [usageNote, rawNote].filter(Boolean).join('\n\n') || null;
     const nextPhotoUrls = normalizePhotos(input.photoUrls ?? []);
     const nextLatitude =
       typeof input.latitude === 'number' && Number.isFinite(input.latitude) && Math.abs(input.latitude) <= 90
@@ -464,8 +633,28 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         : null;
     const nextLocationText = asText(input.locationText) || null;
 
+    if (nextHours !== null && currentUsageMode === 'percent') {
+      throw new Error('USAGE_MODE_PERCENT_CANNOT_ACCEPT_HOURS');
+    }
+
+    if (nextLifeWorkedPercent !== null && currentUsageMode !== 'percent') {
+      throw new Error('USAGE_MODE_HOURS_CANNOT_ACCEPT_PERCENT');
+    }
+
+    if (nextFuelPercent !== null && !currentAsset.canUpdateFuel) {
+      throw new Error('ASSET_DOES_NOT_ACCEPT_FUEL');
+    }
+
     if (nextHours !== null && currentAsset.hours !== null && nextHours < currentAsset.hours) {
       throw new Error('USAGE_READING_CANNOT_DECREASE');
+    }
+
+    if (
+      nextLifeWorkedPercent !== null &&
+      currentLifeWorkedPercent !== null &&
+      nextLifeWorkedPercent < currentLifeWorkedPercent
+    ) {
+      throw new Error('LIFE_WORKED_PERCENT_CANNOT_DECREASE');
     }
 
     const valuationStaleReasons: string[] = [];
@@ -474,12 +663,19 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         valuationStaleReasons.push('usage changed');
       }
 
+      if (nextLifeWorkedPercent !== null && nextLifeWorkedPercent !== currentLifeWorkedPercent) {
+        valuationStaleReasons.push('life worked changed');
+      }
+
       if (nextCondition && currentAsset.condition && nextCondition !== currentAsset.condition) {
         valuationStaleReasons.push('condition changed');
       }
     }
 
-    const nextSpecsJson = markValuationNeedsUpdate(asRecord(existingRow.specs_json), valuationStaleReasons);
+    const baseSpecsJson = nextLifeWorkedPercent !== null
+      ? applyLifeWorkedPercent(asRecord(existingRow.specs_json), nextLifeWorkedPercent)
+      : asRecord(existingRow.specs_json);
+    const nextSpecsJson = markValuationNeedsUpdate(baseSpecsJson, valuationStaleReasons);
 
     const insertedEvent = await client.query<ScanEventRow>(
       `
@@ -543,42 +739,64 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
     const mergedPhotos = mergePhotos(currentAsset.photos, nextPhotoUrls);
     const updatedAsset = await client.query<ScanAccessRow>(
       `
-        update asset_register_items
-        set
-          hours = coalesce($2, hours),
-          fuel_percent = coalesce($3, fuel_percent),
-          condition = coalesce($4, condition),
-          note = coalesce($5, note),
-          photo_urls = $6::jsonb,
-          last_scanned_at = now(),
-          last_known_lat = coalesce($7, last_known_lat),
-          last_known_lng = coalesce($8, last_known_lng),
-          last_known_location_text = coalesce($9, last_known_location_text),
-          specs_json = $10::jsonb,
-          updated_at = now()
-        where id = $1
-        returning
-          id,
-          user_id,
-          public_asset_code,
-          plate_label,
-          qr_status,
-          title,
-          serial_number,
-          hours,
-          fuel_percent,
-          condition,
-          note,
-          photo_urls,
-          last_scanned_at,
-          last_known_lat,
-          last_known_lng,
-          last_known_location_text,
-          created_at,
-          updated_at,
+        with updated as (
+          update asset_register_items
+          set
+            hours = case when $11::numeric is null then coalesce($2, hours) else hours end,
+            life_worked_percent = coalesce($11, life_worked_percent),
+            life_remaining_percent = case when $11::numeric is null then life_remaining_percent else greatest(0, 100 - $11::numeric) end,
+            fuel_percent = coalesce($3, fuel_percent),
+            condition = coalesce($4, condition),
+            note = coalesce($5, note),
+            photo_urls = $6::jsonb,
+            last_scanned_at = now(),
+            last_known_lat = coalesce($7, last_known_lat),
+            last_known_lng = coalesce($8, last_known_lng),
+            last_known_location_text = coalesce($9, last_known_location_text),
+            specs_json = $10::jsonb,
+            updated_at = now()
+          where id = $1
+          returning *
+        )
+        select
+          u.id,
+          u.user_id,
+          u.public_asset_code,
+          u.plate_label,
+          u.qr_status,
+          u.title,
+          u.kind,
+          coalesce(ef.family_key, '') as equipment_family_key,
+          coalesce(ef.family_label, '') as equipment_family_label,
+          u.depreciation_method_used,
+          u.life_worked_percent,
+          u.estimated_hours,
+          u.max_lifetime_hours,
+          coalesce(u.specs_json, '{}'::jsonb) as specs_json,
+          ef.is_propelled as family_is_propelled,
+          ef.usage_metric_type as family_usage_metric_type,
+          u.serial_number,
+          u.hours,
+          u.fuel_percent,
+          u.condition,
+          u.note,
+          u.photo_urls,
+          u.last_scanned_at,
+          u.last_known_lat,
+          u.last_known_lng,
+          u.last_known_location_text,
+          u.created_at,
+          u.updated_at,
+          u.valuation_run_id,
+          u.selected_method,
           ''::text as scan_pin_hash,
           false as scan_pin_enabled,
           null::timestamptz as scan_pin_updated_at
+        from updated u
+        left join valuation_runs vr
+          on vr.id = u.valuation_run_id
+        left join equipment_families ef
+          on ef.id = coalesce(u.equipment_family_id, vr.equipment_family_id)
       `,
       [
         currentAsset.id,
@@ -591,6 +809,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         nextLongitude,
         nextLocationText,
         JSON.stringify(nextSpecsJson),
+        nextLifeWorkedPercent,
       ],
     );
 
