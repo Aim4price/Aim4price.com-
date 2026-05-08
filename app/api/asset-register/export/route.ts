@@ -55,7 +55,7 @@ function kindLabel(asset: AssetRegisterItem): string {
   if (asset.equipmentFamilyLabel) return asset.equipmentFamilyLabel;
   if (asset.kind === 'tractor') return 'Tractor';
   if (asset.kind === 'equipment' || Boolean(asset.brandName && asset.modelName && asset.yearModel)) return 'Equipment';
-  if (asset.kind === 'property') return 'Property';
+  if (asset.kind === 'property') return 'Property/Buildings';
   if (asset.kind === 'vehicle') return 'Vehicle';
   if (asset.kind === 'tools') return 'Tools';
   return 'Manual asset';
@@ -72,6 +72,26 @@ function conditionLabel(value: AssetRegisterItem['condition']): string {
       '': '—',
     }[value] ?? '—'
   );
+}
+
+function usageUnit(item: AssetRegisterItem): 'hours' | 'km' {
+  const specs = item.specsJson && typeof item.specsJson === 'object' && !Array.isArray(item.specsJson) ? item.specsJson : {};
+  const normalized = String(
+    specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit ?? '',
+  )
+    .trim()
+    .toLowerCase();
+
+  if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') {
+    return 'km';
+  }
+
+  return item.kind === 'vehicle' ? 'km' : 'hours';
+}
+
+function usageLabel(item: AssetRegisterItem): string {
+  if (item.hours === null || typeof item.hours === 'undefined') return '—';
+  return `${Math.round(Number(item.hours) || 0).toLocaleString('en-ZA')} ${usageUnit(item)}`;
 }
 
 function formatDrive(value: string): string {
@@ -139,8 +159,8 @@ function buildRows(items: AssetRegisterItem[], ownerName: string, ownerMeta: str
       'Drive',
       'Cab',
       'Power kW',
-      'Year model',
-      'Hours',
+      'Year model / built',
+      'Usage',
       'Condition',
       'Serial number',
       'Finance status',
@@ -170,7 +190,7 @@ function buildRows(items: AssetRegisterItem[], ownerName: string, ownerMeta: str
       formatCab(item.cab),
       item.powerKw ?? '—',
       item.yearModel ?? '—',
-      item.hours ?? '—',
+      usageLabel(item),
       conditionLabel(item.condition),
       item.serialNumber || '—',
       item.isFinanced ? 'Financed' : 'Not financed',
