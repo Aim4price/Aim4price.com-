@@ -2957,6 +2957,18 @@ export default function AssetRegisterClient() {
                             </div>
 
                             <div className={styles.assetHeaderActions}>
+                              {estimateNeedsUpdate ? (
+                                <button
+                                  type="button"
+                                  className={`${styles.expandButton} ${styles.updateEstimateInlineButton}`}
+                                  disabled={busyRevalueAssetId === asset.id}
+                                  onClick={() => void handleUpdateEstimate(asset)}
+                                >
+                                  <TrendIcon className={styles.buttonIcon} />
+                                  <span>{busyRevalueAssetId === asset.id ? 'Updating...' : 'Update estimate'}</span>
+                                </button>
+                              ) : null}
+
                               <button
                                 type="button"
                                 className={styles.expandButton}
@@ -2967,18 +2979,6 @@ export default function AssetRegisterClient() {
                                 {isExpanded ? <ChevronUpIcon className={styles.buttonIcon} /> : <ChevronDownIcon className={styles.buttonIcon} />}
                                 <span>{isExpanded ? 'Hide details' : 'View details'}</span>
                               </button>
-
-                              {estimateNeedsUpdate ? (
-                                <button
-                                  type="button"
-                                  className={styles.updateEstimateInlineButton}
-                                  disabled={busyRevalueAssetId === asset.id}
-                                  onClick={() => void handleUpdateEstimate(asset)}
-                                >
-                                  <TrendIcon className={styles.buttonIcon} />
-                                  <span>{busyRevalueAssetId === asset.id ? 'Updating...' : 'Update estimate'}</span>
-                                </button>
-                              ) : null}
 
                               <button
                                 type="button"
