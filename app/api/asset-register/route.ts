@@ -64,6 +64,66 @@ function normalizeHours(value: unknown): number | null {
   return Math.round(numeric);
 }
 
+function normalizeYearModel(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined') {
+    return null;
+  }
+
+  const text = String(value).trim();
+  if (!text) {
+    return null;
+  }
+
+  const numeric = Number(text);
+  if (!Number.isFinite(numeric)) {
+    return null;
+  }
+
+  const year = Math.round(numeric);
+  if (year < 1800 || year > new Date().getFullYear() + 1) {
+    return null;
+  }
+
+  return year;
+}
+
+function normalizeUsageMetric(value: unknown): 'hours' | 'km' | null {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') {
+    return 'km';
+  }
+
+  if (normalized === 'hours' || normalized === 'hour' || normalized === 'hrs') {
+    return 'hours';
+  }
+
+  return null;
+}
+
+function normalizeSpecsJson(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+
+  return {};
+}
+
+function buildManualSpecsJson(value: unknown, usageMetric: 'hours' | 'km' | null): Record<string, unknown> {
+  const specs = normalizeSpecsJson(value);
+
+  if (!usageMetric) {
+    return specs;
+  }
+
+  return {
+    ...specs,
+    usageMetric,
+    usage_metric: usageMetric,
+    usage_unit: usageMetric,
+  };
+}
+
 function normalizeCondition(value: unknown): UpdateAssetRegisterItemInput['condition'] {
   const normalized = String(value ?? '').trim().toLowerCase();
 
@@ -219,6 +279,7 @@ export async function POST(request: NextRequest) {
   const body = (await request.json()) as Partial<CreateManualAssetInput>;
   const title = String(body.title ?? '').trim();
   const value = Math.round(Number(body.value) || 0);
+  const usageMetric = normalizeUsageMetric(body.usageMetric);
 
   if (!title || value <= 0) {
     return NextResponse.json(
@@ -242,7 +303,10 @@ export async function POST(request: NextRequest) {
       financeNote: body.financeNote ?? null,
       photos: normalizePhotos(body.photos),
       documents: normalizeDocuments(body.documents),
+      yearModel: normalizeYearModel(body.yearModel),
       hours: normalizeHours(body.hours),
+      usageMetric,
+      specsJson: buildManualSpecsJson(body.specsJson, usageMetric),
       condition: normalizeCondition(body.condition),
     });
 
@@ -267,6 +331,7 @@ export async function PUT(request: NextRequest) {
   const assetId = String(body.assetId ?? '').trim();
   const title = String(body.title ?? '').trim();
   const value = Math.round(Number(body.value) || 0);
+  const usageMetric = normalizeUsageMetric(body.usageMetric);
 
   if (!assetId) {
     return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
@@ -309,7 +374,10 @@ export async function PUT(request: NextRequest) {
       financeNote: body.financeNote ?? null,
       photos: nextPhotos,
       documents: nextDocuments,
+      yearModel: normalizeYearModel(body.yearModel),
       hours: normalizeHours(body.hours),
+      usageMetric,
+      specsJson: buildManualSpecsJson(body.specsJson, usageMetric),
       condition: normalizeCondition(body.condition),
     });
 
