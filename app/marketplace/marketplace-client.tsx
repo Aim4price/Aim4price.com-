@@ -125,6 +125,26 @@ function getListingNote(listing: MarketplaceListing): string {
   return `${listing.brandName} ${listing.modelName} listed in ${listing.area}, ${listing.province}.`;
 }
 
+function listingDisplayTitle(listing: MarketplaceListing): string {
+  return String(listing.title ?? '').trim() || `${listing.brandName} ${listing.modelName}`.trim() || 'Marketplace listing';
+}
+
+function hasTractorSpecLine(listing: MarketplaceListing): boolean {
+  return listing.publishedBy === 'seed' || Number(listing.powerKw || 0) > 0;
+}
+
+function buildListingSpecLine(listing: MarketplaceListing): string {
+  if (hasTractorSpecLine(listing)) {
+    return `${formatTypeLabel(listing.tractorType)} tractor • ${listing.drive.toUpperCase()} • ${formatCabLabel(listing.cab)} • ${listing.powerKw} kW`;
+  }
+
+  return 'Asset register listing';
+}
+
+function listingUsageLabel(listing: MarketplaceListing): string {
+  return listing.usageUnit === 'km' ? 'Kilometres' : 'Engine hours';
+}
+
 function formatPublishedDate(value: string): string {
   const parsed = new Date(value);
 
@@ -216,7 +236,7 @@ function buildListingShareUrl(listing: MarketplaceListing): string {
 
 function buildListingShareText(listing: MarketplaceListing): string {
   return [
-    `${listing.brandName} ${listing.modelName}`,
+    listingDisplayTitle(listing),
     `${money(listing.askingPriceExVat)} excl. VAT`,
     formatLocation(listing),
     'View this listing on Aim4price.',
@@ -826,8 +846,8 @@ export default function MarketplaceClient({
                   <option value="newest">Newest listed</option>
                   <option value="price-low">Price: low to high</option>
                   <option value="price-high">Price: high to low</option>
-                  <option value="hours-low">Hours: low to high</option>
-                  <option value="hours-high">Hours: high to low</option>
+                  <option value="hours-low">Usage: low to high</option>
+                  <option value="hours-high">Usage: high to low</option>
                   <option value="year-new">Year: newest first</option>
                 </select>
               </label>
@@ -931,14 +951,8 @@ export default function MarketplaceClient({
 
                   <div className={styles.cardHead}>
                     <div className={styles.titleBlock}>
-                      <h3>
-                        {listing.brandName} {listing.modelName}
-                      </h3>
-                      <p className={styles.specLine}>
-                        {formatTypeLabel(listing.tractorType)} tractor •{' '}
-                        {listing.drive.toUpperCase()} • {formatCabLabel(listing.cab)} •{' '}
-                        {listing.powerKw} kW
-                      </p>
+                      <h3>{listingDisplayTitle(listing)}</h3>
+                      <p className={styles.specLine}>{buildListingSpecLine(listing)}</p>
                     </div>
 
                     <div className={styles.priceBlock}>
@@ -963,7 +977,7 @@ export default function MarketplaceClient({
                     </div>
 
                     <div className={styles.statCard}>
-                      <span className={styles.statLabel}>Engine hours</span>
+                      <span className={styles.statLabel}>{listingUsageLabel(listing)}</span>
                       <strong className={styles.statValue}>
                         {listing.hours.toLocaleString('en-ZA')}
                       </strong>
@@ -1272,14 +1286,8 @@ export default function MarketplaceClient({
                 <div className={styles.modalHeader}>
                   <div className={styles.modalTitleBlock}>
                     <span className={styles.modalEyebrow}>{getListingTag(activeListing)}</span>
-                    <h2 id="marketplace-listing-title">
-                      {activeListing.brandName} {activeListing.modelName}
-                    </h2>
-                    <p className={styles.specLine}>
-                      {formatTypeLabel(activeListing.tractorType)} tractor •{' '}
-                      {activeListing.drive.toUpperCase()} • {formatCabLabel(activeListing.cab)} •{' '}
-                      {activeListing.powerKw} kW
-                    </p>
+                    <h2 id="marketplace-listing-title">{listingDisplayTitle(activeListing)}</h2>
+                    <p className={styles.specLine}>{buildListingSpecLine(activeListing)}</p>
                     <div className={styles.modalMetaRow}>
                       <span className={styles.metaPill}>{formatLocation(activeListing)}</span>
                       <span className={styles.metaPill}>
@@ -1302,7 +1310,7 @@ export default function MarketplaceClient({
                   </div>
 
                   <div className={styles.statCard}>
-                    <span className={styles.statLabel}>Engine hours</span>
+                    <span className={styles.statLabel}>{listingUsageLabel(activeListing)}</span>
                     <strong className={styles.statValue}>
                       {activeListing.hours.toLocaleString('en-ZA')}
                     </strong>
