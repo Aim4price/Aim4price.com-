@@ -3594,8 +3594,7 @@ export default function AssetRegisterClient() {
           <div className={`${styles.modalCard} ${styles.marketplaceModal}`} role="dialog" aria-modal="true" aria-labelledby="marketplace-confirm-title">
             <div className={`${styles.modalHeader} ${styles.marketplaceModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="marketplace-confirm-title">Send this asset to marketplace</h3>
-                <p>Confirm the saved register value, set a clean asking price, then add the listing notes and seller details.</p>
+                <h3 id="marketplace-confirm-title">Create marketplace listing</h3>
               </div>
 
               <button type="button" className={styles.modalCloseButton} onClick={closeMarketplaceModal} aria-label="Close marketplace modal">
@@ -3607,15 +3606,15 @@ export default function AssetRegisterClient() {
               <form className={styles.marketplaceForm} onSubmit={handleConfirmMarketplacePublish}>
                 <div className={styles.marketplaceBodyGrid}>
                   <div className={styles.marketplaceListingColumn}>
-                    <section className={styles.marketplaceValuePanel}>
-                      <div className={styles.marketplaceRegisterCard}>
-                        <span>Saved register value</span>
-                        <strong>{money(marketplaceAsset.value)}</strong>
-                        <small>Excl. VAT · {marketplaceAsset.title}</small>
+                    <section className={styles.marketplacePricePanel}>
+                      <div className={styles.marketplacePriceCopy}>
+                        <span>Marketplace price</span>
+                        <h4>What do you want to sell this asset for?</h4>
+                        <p>Set the buyer-facing asking price. This amount is saved as the marketplace price excluding VAT.</p>
                       </div>
 
                       <label className={`${styles.field} ${styles.marketplacePriceField}`}>
-                        <span>What do you want to sell this asset for?</span>
+                        <span>Asking price excl. VAT</span>
                         <div className={styles.marketplaceCurrencyInput}>
                           <span className={styles.marketplaceCurrencyPrefix}>R</span>
                           <input
@@ -3636,7 +3635,7 @@ export default function AssetRegisterClient() {
                             aria-label="Marketplace price excluding VAT"
                           />
                         </div>
-                        <small className={styles.fieldHint}>Marketplace price excludes VAT. Example: R 10 000.</small>
+                        <small className={styles.fieldHint}>Type numbers only. Aim4price will format it as R 10 000, R 41 650, and so on.</small>
                       </label>
                     </section>
 
@@ -3645,7 +3644,7 @@ export default function AssetRegisterClient() {
                       <textarea
                         value={marketplaceDraft.description}
                         onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, description: event.target.value } : current))}
-                        placeholder="Add the strongest selling points, visible condition notes, attachments and anything the buyer should know."
+                        placeholder="Add the strongest selling points, visible condition notes, included attachments and anything the buyer should know."
                       />
                     </label>
                   </div>
@@ -3654,7 +3653,7 @@ export default function AssetRegisterClient() {
                     <div className={styles.marketplaceSectionHeader}>
                       <div>
                         <h4>Seller details</h4>
-                        <p>These details are saved with the marketplace listing.</p>
+                        <p>These details will show with the marketplace listing.</p>
                       </div>
                     </div>
 
@@ -3718,16 +3717,16 @@ export default function AssetRegisterClient() {
                 </div>
 
                 <div className={`${styles.formActions} ${styles.marketplaceActions}`}>
+                  <button type="button" className={styles.secondaryButton} onClick={closeMarketplaceModal} disabled={isPublishingMarketplace}>
+                    Cancel
+                  </button>
+
                   <button type="submit" className={styles.primaryButton} disabled={isPublishingMarketplace}>
                     {isPublishingMarketplace
                       ? 'Publishing...'
                       : isLiveOnMarketplace(marketplaceAsset)
                         ? 'Update and view listing'
                         : 'Confirm and view listing'}
-                  </button>
-
-                  <button type="button" className={styles.secondaryButton} onClick={closeMarketplaceModal} disabled={isPublishingMarketplace}>
-                    Cancel
                   </button>
                 </div>
               </form>
