@@ -84,7 +84,10 @@ export type CreateManualAssetInput = {
   financeNote?: string | null;
   photos?: string[];
   documents?: AssetRegisterDocument[];
+  yearModel?: number | null;
   hours?: number | null;
+  usageMetric?: 'hours' | 'km' | null;
+  specsJson?: Record<string, unknown>;
   condition?: ConditionKey | null;
 };
 
@@ -100,7 +103,10 @@ export type UpdateAssetRegisterItemInput = {
   financeNote?: string | null;
   photos?: string[];
   documents?: AssetRegisterDocument[];
+  yearModel?: number | null;
   hours?: number | null;
+  usageMetric?: 'hours' | 'km' | null;
+  specsJson?: Record<string, unknown>;
   condition?: ConditionKey | null;
 };
 
@@ -188,6 +194,41 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizeUsageMetric(value: unknown, kind?: AssetRegisterItemKind): 'hours' | 'km' {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') {
+    return 'km';
+  }
+
+  if (normalized === 'hours' || normalized === 'hour' || normalized === 'hrs') {
+    return 'hours';
+  }
+
+  return kind === 'vehicle' ? 'km' : 'hours';
+}
+
+function buildManualSpecsJson(
+  input: CreateManualAssetInput | UpdateAssetRegisterItemInput,
+  kind: AssetRegisterItemKind,
+  existingSpecsJson: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const specs = {
+    ...existingSpecsJson,
+    ...(isRecord(input.specsJson) ? input.specsJson : {}),
+  };
+  const usageMetric = input.usageMetric
+    ? normalizeUsageMetric(input.usageMetric, kind)
+    : normalizeUsageMetric(specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit, kind);
+
+  return {
+    ...specs,
+    usageMetric,
+    usage_metric: usageMetric,
+    usage_unit: usageMetric,
+  };
 }
 
 function asIdText(value: unknown): string {
@@ -1132,6 +1173,8 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
   pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured));
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
+  pushField(fields, schema, ['year_model', 'year'], input.yearModel === null || input.yearModel === undefined ? null : Math.max(0, Math.round(input.yearModel)));
+  pushField(fields, schema, ['specs_json'], buildManualSpecsJson(input, normalizeKind(input.kind)), '::jsonb');
   pushField(fields, schema, ['hours', 'engine_hours'], input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours)));
   pushField(fields, schema, ['condition'], input.condition ?? null);
   pushPhotoField(fields, schema, input.photos ?? []);
@@ -1146,6 +1189,7 @@ export async function createManualAssetRegisterItem(
     selectedMethod: 'manual',
     selectedValueExVat: nextValue,
     note: input.note ?? null,
+    year: input.yearModel ?? null,
     hours: input.hours ?? null,
     condition: input.condition ?? null,
     now,
@@ -1191,8 +1235,15 @@ export async function updateAssetRegisterItem(
   pushField(
     fields,
     schema,
+    ['year_model', 'year'],
+    input.yearModel === null || input.yearModel === undefined ? null : Math.max(0, Math.round(input.yearModel)),
+  );
+  pushField(fields, schema, ['specs_json'], buildManualSpecsJson(input, nextKind, existing.specsJson), '::jsonb');
+  pushField(
+    fields,
+    schema,
     ['hours', 'engine_hours'],
-    input.hours === null || input.hours === undefined ? existing.hours : Math.max(0, Math.round(input.hours)),
+    input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours)),
   );
   pushField(fields, schema, ['condition'], input.condition ?? existing.condition ?? null);
   pushPhotoField(fields, schema, input.photos ?? []);

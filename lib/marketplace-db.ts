@@ -232,6 +232,18 @@ function pickJsonObject(value: unknown): Record<string, unknown> {
   return {};
 }
 
+function listingUsageUnit(row: MarketplaceAssetRow): 'hours' | 'km' {
+  const specs = pickJsonObject(pick(row, ['specs_json']));
+  const normalized = asText(specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit).toLowerCase();
+  const kind = asText(pick(row, ['kind', 'equipment_type', 'asset_type', 'item_type'])).toLowerCase();
+
+  if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') {
+    return 'km';
+  }
+
+  return kind === 'vehicle' ? 'km' : 'hours';
+}
+
 async function createMarketplaceListingSnapshot(row: MarketplaceAssetRow): Promise<void> {
   try {
     const db = getDb();
@@ -360,6 +372,7 @@ function buildMarketplaceListing(
     yearModel,
     year: yearModel,
     hours,
+    usageUnit: listingUsageUnit(row),
     province,
     area,
     location: `${area}, ${province}`,
@@ -456,7 +469,7 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   }
 
   if (!isPublishableEquipment(row)) {
-    throw new Error('Only valued equipment assets can be sent to the marketplace.');
+    throw new Error('Property/Buildings cannot be sent to the marketplace.');
   }
 
   const currentAskingPrice = Math.round(

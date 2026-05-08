@@ -29,6 +29,7 @@ export type MarketplaceListing = {
   yearModel: number;
   year: number;
   hours: number;
+  usageUnit: 'hours' | 'km';
   province: string;
   area: string;
   location: string;
@@ -196,6 +197,7 @@ function fromMarketVaultListing(
     yearModel: listing.yearModel,
     year: listing.year,
     hours: listing.hours,
+    usageUnit: 'hours',
     province: listing.province,
     area: listing.area,
     location: listing.location,
@@ -258,6 +260,7 @@ function normalizeStoredListing(value: unknown): MarketplaceListing | null {
     yearModel: Math.round(cleanUnknownNumber(value.yearModel ?? value.year, new Date().getFullYear())),
     year: Math.round(cleanUnknownNumber(value.year ?? value.yearModel, new Date().getFullYear())),
     hours: Math.round(cleanUnknownNumber(value.hours, 0)),
+    usageUnit: cleanUnknownText(value.usageUnit ?? value.usage_unit).toLowerCase() === 'km' ? 'km' : 'hours',
     province: cleanUnknownText(value.province, 'South Africa'),
     area: cleanUnknownText(value.area, 'Undisclosed'),
     location: cleanUnknownText(value.location, `${cleanUnknownText(value.area, 'Undisclosed')}, ${cleanUnknownText(value.province, 'South Africa')}`),
@@ -399,6 +402,7 @@ export function publishRegisterItemToMarketplace(
     yearModel,
     year: yearModel,
     hours,
+    usageUnit: 'hours',
     province,
     area,
     location: `${area}, ${province}`,
