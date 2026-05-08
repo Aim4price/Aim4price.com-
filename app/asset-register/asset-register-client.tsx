@@ -649,6 +649,45 @@ function getAssetUsageMetric(asset: Pick<RegisterAsset, 'kind' | 'specsJson'>): 
   );
 }
 
+function assetUsesPercentUsage(asset: RegisterAsset): boolean {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+  const percent = getAssetLifeWorkedPercent(asset);
+  const hours = Number(asset.hours);
+  const hasPositiveHours = Number.isFinite(hours) && hours > 0;
+  const depreciationMethod = String(asset.depreciationMethodUsed ?? '').trim().toLowerCase();
+  const rawUsageMode = String(
+    specs.usageMode ??
+      specs.usage_mode ??
+      specs.usageMetricType ??
+      specs.usage_metric_type ??
+      specs.valuationMode ??
+      specs.valuation_mode ??
+      '',
+  )
+    .trim()
+    .toLowerCase();
+
+  if (
+    rawUsageMode === 'percent' ||
+    rawUsageMode === 'percentage' ||
+    rawUsageMode === 'percent_used' ||
+    rawUsageMode === 'percentage_depreciation' ||
+    rawUsageMode === 'wear_class'
+  ) {
+    return true;
+  }
+
+  if (asset.kind === 'vehicle') {
+    return false;
+  }
+
+  if (depreciationMethod === 'percentage_depreciation') {
+    return true;
+  }
+
+  return percent !== null && (!hasPositiveHours || depreciationMethod === 'semi_depreciation');
+}
+
 function usageMetricLabel(value: UsageMetric): string {
   return value === 'km' ? 'km' : 'hours';
 }
@@ -1081,7 +1120,10 @@ function buildAssetUsageValue(asset: RegisterAsset): string {
   const hasHours = Number.isFinite(hours) && hours > 0;
   const usageMetric = getAssetUsageMetric(asset);
   const depreciationMethod = String(asset.depreciationMethodUsed ?? '').trim().toLowerCase();
-  const usesPercentDepreciation = depreciationMethod === 'semi_depreciation' || depreciationMethod === 'percentage_depreciation';
+  const usesPercentDepreciation =
+    depreciationMethod === 'semi_depreciation' ||
+    depreciationMethod === 'percentage_depreciation' ||
+    assetUsesPercentUsage(asset);
 
   if (percent !== null && (usesPercentDepreciation || !hasHours)) {
     return formatUsagePercent(percent);
@@ -1612,17 +1654,23 @@ export default function AssetRegisterClient() {
     return editingAsset?.valuationRunId ? editingAsset.kind : normalizeDraftKind(assetDraft.kind);
   }, [assetDraft.kind, editingAsset]);
 
+  const assetFormUsesPercentUsage = useMemo(() => {
+    return editingAsset ? assetUsesPercentUsage(editingAsset) : false;
+  }, [editingAsset]);
+
   const showUsageHoursField = useMemo(() => {
+    if (assetFormUsesPercentUsage) return false;
     return assetFormKind === 'tractor' || assetFormKind === 'equipment' || assetFormKind === 'vehicle';
-  }, [assetFormKind]);
+  }, [assetFormKind, assetFormUsesPercentUsage]);
 
   const showConditionField = useMemo(() => {
     return assetFormKind !== 'property';
   }, [assetFormKind]);
 
   const showLifeWorkedPercentField = useMemo(() => {
+    if (editingAsset) return assetFormUsesPercentUsage;
     return assetFormKind === 'tractor' || assetFormKind === 'equipment' || assetFormKind === 'tools';
-  }, [assetFormKind]);
+  }, [assetFormKind, assetFormUsesPercentUsage, editingAsset]);
 
   const yearFieldLabel = draftYearLabel(assetFormKind);
   const usageFieldLabel =
@@ -2009,12 +2057,15 @@ export default function AssetRegisterClient() {
       return;
     }
 
+    const roundedLifeWorkedPercent = showLifeWorkedPercentField && hasLifeWorkedPercent
+      ? Math.round(Number(lifeWorkedPercent) * 10) / 10
+      : null;
     const specsJson: Record<string, unknown> = {};
-    if (showLifeWorkedPercentField && hasLifeWorkedPercent) {
-      const roundedLifeWorkedPercent = Math.round(Number(lifeWorkedPercent) * 10) / 10;
+    if (roundedLifeWorkedPercent !== null) {
       specsJson.life_worked_percent = roundedLifeWorkedPercent;
       specsJson.worked_percent = roundedLifeWorkedPercent;
       specsJson.percent_worked = roundedLifeWorkedPercent;
+      specsJson.lifetime_worked_percent = roundedLifeWorkedPercent;
     }
 
     setIsSavingAsset(true);
@@ -2033,6 +2084,7 @@ export default function AssetRegisterClient() {
       yearModel: hasYearModel ? Math.round(Number(yearModel)) : null,
       hours: showUsageHoursField && hasHours ? Math.round(Number(hours)) : null,
       usageMetric: showUsageHoursField ? assetDraft.usageMetric : null,
+      lifeWorkedPercent: roundedLifeWorkedPercent,
       specsJson,
       condition: showConditionField ? assetDraft.condition || null : null,
     };
@@ -2873,16 +2925,20 @@ export default function AssetRegisterClient() {
                     const isLive = isLiveOnMarketplace(asset);
                     const isExpanded = expandedAssetId === asset.id;
                     const detailDocuments = assetDocuments(asset);
+                    const estimateNeedsUpdate = doesEstimateNeedUpdate(asset) && isValuationUpdateAvailable(asset);
 
                     return (
-                      <article className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''}`} key={asset.id}>
+                      <article
+                        className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''}`}
+                        key={asset.id}
+                      >
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
-                            {isLive || doesEstimateNeedUpdate(asset) ? (
+                            {isLive || estimateNeedsUpdate ? (
                               <div className={styles.badgeRow}>
                                 {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
-                                {doesEstimateNeedUpdate(asset) ? (
-                                  <span className={`${styles.badge} ${styles.badgeNeutral}`}>Estimate needs update</span>
+                                {estimateNeedsUpdate ? (
+                                  <span className={`${styles.badge} ${styles.badgeWarning}`}>Estimate needs update</span>
                                 ) : null}
                               </div>
                             ) : null}
@@ -2911,6 +2967,18 @@ export default function AssetRegisterClient() {
                                 {isExpanded ? <ChevronUpIcon className={styles.buttonIcon} /> : <ChevronDownIcon className={styles.buttonIcon} />}
                                 <span>{isExpanded ? 'Hide details' : 'View details'}</span>
                               </button>
+
+                              {estimateNeedsUpdate ? (
+                                <button
+                                  type="button"
+                                  className={styles.updateEstimateInlineButton}
+                                  disabled={busyRevalueAssetId === asset.id}
+                                  onClick={() => void handleUpdateEstimate(asset)}
+                                >
+                                  <TrendIcon className={styles.buttonIcon} />
+                                  <span>{busyRevalueAssetId === asset.id ? 'Updating...' : 'Update estimate'}</span>
+                                </button>
+                              ) : null}
 
                               <button
                                 type="button"
@@ -3674,25 +3742,6 @@ export default function AssetRegisterClient() {
                       <span>
                         <strong>Calculate future price</strong>
                         <small>Project value using year, inflation and hours.</small>
-                      </span>
-                    </button>
-                  ) : null}
-
-                  {isValuationUpdateAvailable(activeAsset) ? (
-                    <button
-                      type="button"
-                      className={`${styles.optionActionButton} ${doesEstimateNeedUpdate(activeAsset) ? styles.optionFeaturedButton : ''}`}
-                      disabled={busyRevalueAssetId === activeAsset.id}
-                      onClick={() => void handleUpdateEstimate(activeAsset)}
-                    >
-                      <TrendIcon className={styles.buttonIcon} />
-                      <span>
-                        <strong>{busyRevalueAssetId === activeAsset.id ? 'Updating estimate...' : 'Update estimate'}</strong>
-                        <small>
-                          {doesEstimateNeedUpdate(activeAsset)
-                            ? `Re-run Aim4price using the latest ${valuationStaleReason(activeAsset)}.`
-                            : 'Re-run Aim4price using the latest saved asset details.'}
-                        </small>
                       </span>
                     </button>
                   ) : null}
