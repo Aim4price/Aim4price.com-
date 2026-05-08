@@ -617,3 +617,92 @@
     padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   }
 }
+
+/* === QR scan mobile refinements === */
+.assetPlaceholder {
+  min-height: 140px;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 70, 59, 0.08), transparent 38%),
+    linear-gradient(180deg, #f8fbfc 0%, #edf3f6 100%);
+}
+
+.assetPlaceholderLabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.7rem;
+  max-width: 100%;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  color: #66758d;
+  background: #eef2f8;
+  border: 1px solid #dde4ee;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.075em;
+  line-height: 1.18;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+@media (max-width: 720px) {
+  .quickActionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
+  }
+
+  .quickActionCard {
+    min-height: 8.1rem;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    align-content: center;
+    gap: 0.55rem;
+    padding: 0.85rem 0.72rem;
+    text-align: center;
+  }
+
+  .quickActionIconWrap {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .quickActionCopy {
+    text-align: center;
+  }
+
+  .quickActionCopy strong {
+    font-size: 0.94rem;
+    line-height: 1.15;
+  }
+
+  .quickActionCopy span {
+    font-size: 0.78rem;
+    line-height: 1.3;
+  }
+
+  .quickActionChevron {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .quickActionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .quickActionCard {
+    min-height: 5.8rem;
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: stretch;
+    text-align: left;
+  }
+
+  .quickActionCopy {
+    text-align: left;
+  }
+}

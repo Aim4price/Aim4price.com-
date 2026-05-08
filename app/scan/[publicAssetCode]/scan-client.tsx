@@ -5,8 +5,9 @@ import Link from 'next/link';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
-type EditorKey = 'hours' | 'fuel' | 'notes' | 'photos';
+type EditorKey = 'usage' | 'fuel' | 'notes' | 'service' | 'photos';
 type LocationState = 'idle' | 'capturing' | 'ready' | 'error';
+type ScanAssetUsageMode = 'hours' | 'percent' | 'km' | 'none';
 
 type ScanSafeAsset = {
   id: string;
@@ -15,8 +16,16 @@ type ScanSafeAsset = {
   plateLabel: string;
   qrStatus: string;
   title: string;
+  kind: string;
+  equipmentFamilyKey: string;
+  equipmentFamilyLabel: string;
   serialNumber: string;
   hours: number | null;
+  usageMode: ScanAssetUsageMode;
+  usageMetric: 'hours' | 'km';
+  lifeWorkedPercent: number | null;
+  isPropelled: boolean;
+  canUpdateFuel: boolean;
   fuelPercent: number | null;
   condition: string;
   note: string;
@@ -63,8 +72,10 @@ type SaveScanEventResponse = {
 
 type DraftState = {
   hours: string;
+  lifeWorkedPercent: string;
   fuelPercent: string;
   note: string;
+  serviceNote: string;
   latitude: string;
   longitude: string;
   photoUrls: string[];
@@ -72,14 +83,15 @@ type DraftState = {
 
 const initialDraft: DraftState = {
   hours: '',
+  lifeWorkedPercent: '',
   fuelPercent: '',
   note: '',
+  serviceNote: '',
   latitude: '',
   longitude: '',
   photoUrls: [],
 };
 
-const FALLBACK_ASSET_IMAGE = '/brand/Tractor.png';
 const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
 
 function formatDate(value?: string | null): string {
@@ -108,8 +120,27 @@ function normalizeIntegerInput(value: string): string {
   return value.replace(/\D+/g, '');
 }
 
+function normalizePercentInput(value: string): string {
+  const cleaned = value.replace(/[^0-9.]/g, '');
+  const parts = cleaned.split('.');
+  const normalized = parts.length > 1 ? `${parts[0]}.${parts.slice(1).join('').slice(0, 1)}` : parts[0];
+
+  if (!normalized) return '';
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed)) return '';
+  if (parsed > 100) return '100';
+  return normalized;
+}
+
 function hasMeaningfulDraftValue(draft: DraftState): boolean {
-  return Boolean(draft.hours.trim() !== '' || draft.fuelPercent.trim() !== '' || draft.note.trim() || draft.photoUrls.length);
+  return Boolean(
+    draft.hours.trim() !== '' ||
+      draft.lifeWorkedPercent.trim() !== '' ||
+      draft.fuelPercent.trim() !== '' ||
+      draft.note.trim() ||
+      draft.serviceNote.trim() ||
+      draft.photoUrls.length,
+  );
 }
 
 function hasLocationCaptured(draft: DraftState): boolean {
@@ -121,7 +152,7 @@ function formatCoordinate(value: string): string {
   return Number.isFinite(parsed) ? parsed.toFixed(6) : value;
 }
 
-function formatHours(value: number | null): string {
+function formatNumber(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return '—';
   return new Intl.NumberFormat('en-ZA').format(Math.round(value));
 }
@@ -131,25 +162,87 @@ function formatFuel(value: number | null): string {
   return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
 }
 
-function assetPreview(asset: ScanSafeAsset | null): string {
-  return asset?.photos?.[0] || FALLBACK_ASSET_IMAGE;
+function formatPercent(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return '—';
+  const rounded = Math.round(value * 10) / 10;
+  return `${Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)}%`;
+}
+
+function formatUsage(asset: ScanSafeAsset | null): string {
+  if (!asset) return '—';
+
+  if (asset.usageMode === 'percent') {
+    return asset.lifeWorkedPercent === null ? '—' : `${formatPercent(asset.lifeWorkedPercent)} worked`;
+  }
+
+  if (asset.usageMode === 'km') {
+    return asset.hours === null ? '—' : `${formatNumber(asset.hours)} km`;
+  }
+
+  if (asset.usageMode === 'hours') {
+    return asset.hours === null ? '—' : `${formatNumber(asset.hours)} hours`;
+  }
+
+  return 'Not tracked';
+}
+
+function usageTitle(asset: ScanSafeAsset | null): string {
+  if (!asset) return 'Usage';
+  if (asset.usageMode === 'percent') return 'Lifetime worked %';
+  if (asset.usageMode === 'km') return 'Odometer';
+  if (asset.usageMode === 'hours') return 'Hour meter';
+  return 'Usage';
+}
+
+function usageModalLabel(asset: ScanSafeAsset): string {
+  if (asset.usageMode === 'percent') return 'Lifetime worked percentage';
+  if (asset.usageMode === 'km') return 'Odometer reading';
+  return 'Hour meter reading';
+}
+
+function usagePlaceholder(asset: ScanSafeAsset): string {
+  if (asset.usageMode === 'percent') return asset.lifeWorkedPercent !== null ? String(asset.lifeWorkedPercent) : 'Enter % worked';
+  if (asset.usageMode === 'km') return asset.hours !== null ? String(asset.hours) : 'Enter current kilometres';
+  return asset.hours !== null ? String(asset.hours) : 'Enter current hours';
+}
+
+function assetPlaceholderLabel(asset: ScanSafeAsset): string {
+  const label = asset.equipmentFamilyLabel || asset.kind || 'Asset';
+  return label.replace(/[_-]+/g, ' ').trim() || 'Asset';
 }
 
 function countPendingDraftSections(draft: DraftState): number {
   let total = 0;
-  if (draft.hours.trim() !== '') total += 1;
+  if (draft.hours.trim() !== '' || draft.lifeWorkedPercent.trim() !== '') total += 1;
   if (draft.fuelPercent.trim() !== '') total += 1;
   if (draft.note.trim()) total += 1;
+  if (draft.serviceNote.trim()) total += 1;
   if (draft.photoUrls.length) total += 1;
   return total;
 }
 
 function buildEditorSummary(editor: EditorKey, draft: DraftState, asset: ScanSafeAsset | null, isUploading = false): string {
-  if (editor === 'hours') {
+  if (editor === 'usage') {
+    if (asset?.usageMode === 'percent') {
+      return draft.lifeWorkedPercent.trim() !== ''
+        ? `${draft.lifeWorkedPercent}% worked ready to save`
+        : asset.lifeWorkedPercent !== null
+          ? `${formatPercent(asset.lifeWorkedPercent)} worked saved now`
+          : 'Tap to capture lifetime worked %';
+    }
+
+    if (asset?.usageMode === 'km') {
+      return draft.hours.trim() !== ''
+        ? `${new Intl.NumberFormat('en-ZA').format(Number(draft.hours))} km ready to save`
+        : asset.hours !== null
+          ? `${formatNumber(asset.hours)} km saved now`
+          : 'Tap to capture kilometres';
+    }
+
     return draft.hours.trim() !== ''
-      ? `${new Intl.NumberFormat('en-ZA').format(Number(draft.hours))} ready to save`
+      ? `${new Intl.NumberFormat('en-ZA').format(Number(draft.hours))} hours ready to save`
       : asset?.hours !== null && typeof asset?.hours !== 'undefined'
-        ? `${formatHours(asset.hours)} saved now`
+        ? `${formatNumber(asset.hours)} hours saved now`
         : 'Tap to capture the hour meter';
   }
 
@@ -159,6 +252,12 @@ function buildEditorSummary(editor: EditorKey, draft: DraftState, asset: ScanSaf
       : asset?.fuelPercent !== null && typeof asset?.fuelPercent !== 'undefined'
         ? `${formatFuel(asset.fuelPercent)} saved now`
         : 'Tap to capture the fuel level';
+  }
+
+  if (editor === 'service') {
+    return draft.serviceNote.trim()
+      ? 'Service / check note ready'
+      : 'Tap when the asset was serviced or checked';
   }
 
   if (editor === 'notes') {
@@ -216,6 +315,16 @@ function NotesIcon({ className }: IconProps) {
   );
 }
 
+function ServiceIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="m14.7 6.3 3 3" />
+      <path d="M9 18.5 4.5 14l2.1-2.1L9 14.3 17.4 6l2.1 2.1z" />
+      <path d="M4 21h16" />
+    </svg>
+  );
+}
+
 function CameraIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
@@ -251,8 +360,24 @@ function CloseIcon({ className }: IconProps) {
   );
 }
 
-function getModalCopy(editor: EditorKey | null): { eyebrow: string; title: string; description: string } {
-  if (editor === 'hours') {
+function getModalCopy(editor: EditorKey | null, asset: ScanSafeAsset | null): { eyebrow: string; title: string; description: string } {
+  if (editor === 'usage') {
+    if (asset?.usageMode === 'percent') {
+      return {
+        eyebrow: 'Lifetime worked',
+        title: 'Update the worked percentage',
+        description: 'This asset was valued by percentage worked, so QR updates cannot use hours.',
+      };
+    }
+
+    if (asset?.usageMode === 'km') {
+      return {
+        eyebrow: 'Odometer',
+        title: 'Capture the latest kilometres',
+        description: 'Use the current odometer reading. It cannot be lower than the saved reading.',
+      };
+    }
+
     return {
       eyebrow: 'Hour meter',
       title: 'Capture the latest hours',
@@ -268,6 +393,14 @@ function getModalCopy(editor: EditorKey | null): { eyebrow: string; title: strin
     };
   }
 
+  if (editor === 'service') {
+    return {
+      eyebrow: 'Serviced / checked',
+      title: 'Add a service or check note',
+      description: 'Record what was checked, serviced, repaired, or confirmed by the operator.',
+    };
+  }
+
   if (editor === 'notes') {
     return {
       eyebrow: 'Notes',
@@ -279,7 +412,7 @@ function getModalCopy(editor: EditorKey | null): { eyebrow: string; title: strin
   return {
     eyebrow: 'Photos',
     title: 'Add fresh photos',
-    description: 'Use clear photos that show the machine or the issue quickly.',
+    description: 'Use clear photos that show the asset or the issue quickly.',
   };
 }
 
@@ -492,9 +625,27 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
     });
   }
 
+  function buildSaveNote(): string {
+    const parts: string[] = [];
+    const serviceNote = draft.serviceNote.trim();
+    const normalNote = draft.note.trim();
+
+    if (serviceNote) {
+      parts.push(`Serviced/Checked: ${serviceNote}`);
+    }
+
+    if (normalNote) {
+      parts.push(normalNote);
+    }
+
+    return parts.join('\n\n');
+  }
+
   async function handleSaveUpdate() {
+    if (!asset) return;
+
     if (!hasMeaningfulDraftValue(draft)) {
-      setNotice({ tone: 'error', message: 'Tap one of the four blocks and add something before saving.' });
+      setNotice({ tone: 'error', message: 'Tap one of the update blocks and add something before saving.' });
       return;
     }
 
@@ -511,9 +662,10 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          hours: draft.hours,
-          fuelPercent: draft.fuelPercent,
-          note: draft.note,
+          hours: asset.usageMode === 'hours' || asset.usageMode === 'km' ? draft.hours : '',
+          lifeWorkedPercent: asset.usageMode === 'percent' ? draft.lifeWorkedPercent : '',
+          fuelPercent: asset.canUpdateFuel ? draft.fuelPercent : '',
+          note: buildSaveNote(),
           photoUrls: draft.photoUrls,
           latitude: draft.latitude,
           longitude: draft.longitude,
@@ -541,9 +693,11 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
 
   const locationReady = hasLocationCaptured(draft);
   const canSave = locationReady && hasMeaningfulDraftValue(draft) && !isSaving;
-  const assetPhoto = assetPreview(asset);
   const pendingCount = countPendingDraftSections(draft);
-  const modalCopy = getModalCopy(activeEditor);
+  const modalCopy = getModalCopy(activeEditor, asset);
+  const assetPhoto = asset?.photos?.[0] ?? null;
+  const showUsageAction = asset ? asset.usageMode !== 'none' : false;
+  const showFuelAction = Boolean(asset?.canUpdateFuel);
 
   return (
     <main className={styles.page}>
@@ -553,8 +707,8 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
             <span className={styles.eyebrow}>Aim4price QR update</span>
             <h1>{asset?.title || 'Unlock this asset'}</h1>
             <p>
-              Every public QR scan asks for the farm PIN first. After that, the page stays simple: tap one block,
-              update it, and save the live GPS location automatically.
+              Every public QR scan asks for the farm PIN first. Then the manager can save the correct usage, service note,
+              photos and GPS point without opening the full account.
             </p>
           </div>
 
@@ -579,10 +733,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
             <div className={styles.pinCardCopy}>
               <span className={styles.kicker}>Farm PIN required</span>
               <h2>Enter the farm scan PIN</h2>
-              <p>
-                This public QR page never opens the finance side. Unlock the asset, then tap one of the four update
-                blocks below.
-              </p>
+              <p>This public QR page never opens the finance side. Unlock the asset, then tap one of the update blocks below.</p>
             </div>
 
             <form className={styles.pinForm} onSubmit={handlePinSubmit}>
@@ -621,7 +772,13 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
             <section className={styles.assetCard}>
               <div className={styles.assetTopRow}>
                 <div className={styles.assetMediaWrap}>
-                  <img src={assetPhoto} alt={`${asset.title} preview`} className={styles.assetPhoto} />
+                  {assetPhoto ? (
+                    <img src={assetPhoto} alt={`${asset.title} preview`} className={styles.assetPhoto} />
+                  ) : (
+                    <div className={styles.assetPlaceholder}>
+                      <span className={styles.assetPlaceholderLabel}>{assetPlaceholderLabel(asset)}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className={styles.assetSummary}>
@@ -641,13 +798,15 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
                       <strong>{formatDate(asset.lastScannedAtIso)}</strong>
                     </article>
                     <article className={styles.summaryTile}>
-                      <span>Saved hours</span>
-                      <strong>{formatHours(asset.hours)}</strong>
+                      <span>{usageTitle(asset)}</span>
+                      <strong>{formatUsage(asset)}</strong>
                     </article>
-                    <article className={styles.summaryTile}>
-                      <span>Saved fuel</span>
-                      <strong>{formatFuel(asset.fuelPercent)}</strong>
-                    </article>
+                    {asset.canUpdateFuel ? (
+                      <article className={styles.summaryTile}>
+                        <span>Saved fuel</span>
+                        <strong>{formatFuel(asset.fuelPercent)}</strong>
+                      </article>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -669,7 +828,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
                 </div>
                 <div>
                   <span className={styles.kicker}>Required location</span>
-                  <h3>Every QR update must save where the machine was scanned</h3>
+                  <h3>Every QR update must save where the asset was scanned</h3>
                   <p>{locationMessage}</p>
                   {locationReady ? (
                     <p className={styles.metaText}>
@@ -690,24 +849,39 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
             </section>
 
             <section className={styles.quickActionGrid}>
-              <button type="button" className={styles.quickActionCard} onClick={() => setActiveEditor('hours')}>
-                <div className={styles.quickActionIconWrap}>
-                  <MeterIcon className={styles.quickActionIcon} />
-                </div>
-                <div className={styles.quickActionCopy}>
-                  <strong>Hour Meter</strong>
-                  <span>{buildEditorSummary('hours', draft, asset)}</span>
-                </div>
-                <ChevronRightIcon className={styles.quickActionChevron} />
-              </button>
+              {showUsageAction ? (
+                <button type="button" className={styles.quickActionCard} onClick={() => setActiveEditor('usage')}>
+                  <div className={styles.quickActionIconWrap}>
+                    <MeterIcon className={styles.quickActionIcon} />
+                  </div>
+                  <div className={styles.quickActionCopy}>
+                    <strong>{usageTitle(asset)}</strong>
+                    <span>{buildEditorSummary('usage', draft, asset)}</span>
+                  </div>
+                  <ChevronRightIcon className={styles.quickActionChevron} />
+                </button>
+              ) : null}
 
-              <button type="button" className={styles.quickActionCard} onClick={() => setActiveEditor('fuel')}>
+              {showFuelAction ? (
+                <button type="button" className={styles.quickActionCard} onClick={() => setActiveEditor('fuel')}>
+                  <div className={styles.quickActionIconWrap}>
+                    <FuelIcon className={styles.quickActionIcon} />
+                  </div>
+                  <div className={styles.quickActionCopy}>
+                    <strong>Fuel</strong>
+                    <span>{buildEditorSummary('fuel', draft, asset)}</span>
+                  </div>
+                  <ChevronRightIcon className={styles.quickActionChevron} />
+                </button>
+              ) : null}
+
+              <button type="button" className={styles.quickActionCard} onClick={() => setActiveEditor('service')}>
                 <div className={styles.quickActionIconWrap}>
-                  <FuelIcon className={styles.quickActionIcon} />
+                  <ServiceIcon className={styles.quickActionIcon} />
                 </div>
                 <div className={styles.quickActionCopy}>
-                  <strong>Fuel</strong>
-                  <span>{buildEditorSummary('fuel', draft, asset)}</span>
+                  <strong>Serviced/Checked</strong>
+                  <span>{buildEditorSummary('service', draft, asset)}</span>
                 </div>
                 <ChevronRightIcon className={styles.quickActionChevron} />
               </button>
@@ -740,7 +914,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
                 <strong>
                   {pendingCount
                     ? `${pendingCount} block${pendingCount === 1 ? '' : 's'} ready to save`
-                    : 'Choose one of the four blocks above'}
+                    : 'Choose an update block above'}
                 </strong>
                 <span>
                   {locationReady
@@ -785,16 +959,27 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
             </div>
 
             <div className={styles.modalBody}>
-              {activeEditor === 'hours' ? (
+              {activeEditor === 'usage' && asset.usageMode !== 'none' ? (
                 <label className={styles.field}>
-                  <span>Hour meter reading</span>
+                  <span>{usageModalLabel(asset)}</span>
                   <input
                     inputMode="numeric"
-                    placeholder={asset.hours !== null ? String(asset.hours) : 'Enter current hours'}
-                    value={draft.hours}
-                    onChange={(event) => setDraft((current) => ({ ...current, hours: normalizeIntegerInput(event.target.value) }))}
+                    placeholder={usagePlaceholder(asset)}
+                    value={asset.usageMode === 'percent' ? draft.lifeWorkedPercent : draft.hours}
+                    onChange={(event) =>
+                      setDraft((current) =>
+                        asset.usageMode === 'percent'
+                          ? { ...current, lifeWorkedPercent: normalizePercentInput(event.target.value), hours: '' }
+                          : { ...current, hours: normalizeIntegerInput(event.target.value), lifeWorkedPercent: '' },
+                      )
+                    }
                     disabled={isSaving}
                   />
+                  <p className={styles.helperText}>
+                    {asset.usageMode === 'percent'
+                      ? 'Only percentage worked can be changed for this asset. Hours are blocked for this QR page.'
+                      : 'This reading cannot be lower than the reading already saved on this asset.'}
+                  </p>
                 </label>
               ) : null}
 
@@ -827,11 +1012,23 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
                 </div>
               ) : null}
 
+              {activeEditor === 'service' ? (
+                <label className={styles.field}>
+                  <span>Service / check note</span>
+                  <textarea
+                    placeholder="Example: Checked oil and filters, greased boom, no leaks found…"
+                    value={draft.serviceNote}
+                    onChange={(event) => setDraft((current) => ({ ...current, serviceNote: event.target.value.slice(0, 1600) }))}
+                    disabled={isSaving}
+                  />
+                </label>
+              ) : null}
+
               {activeEditor === 'notes' ? (
                 <label className={styles.field}>
                   <span>Short note</span>
                   <textarea
-                    placeholder="Moved to north field, serviced, delivered, washed, fuel topped up…"
+                    placeholder="Moved to north field, delivered, washed, minor issue noticed…"
                     value={draft.note}
                     onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
                     disabled={isSaving}
@@ -846,7 +1043,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
                       <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleUploadChange} disabled={isUploading || isSaving} />
                       {isUploading ? 'Uploading…' : 'Add photos'}
                     </label>
-                    <p className={styles.helperText}>Use clear light and make the machine easy to identify.</p>
+                    <p className={styles.helperText}>Use clear light and make the asset easy to identify.</p>
                   </div>
 
                   {draft.photoUrls.length ? (
