@@ -46,8 +46,16 @@ export type AssetSheetPayload = {
   value: string;
   valueNote: string;
   statusLabel: string;
+  issuerName?: string;
+  issuerAddress?: string;
+  issuerPhone?: string;
+  issuerEmail?: string;
+  clientRows?: ReportKeyValue[];
+  summaryItems?: ReportKeyValue[];
   photoUrl?: string | null;
   photoUrls?: string[] | null;
+  qrUrl?: string | null;
+  scanUrl?: string | null;
   facts: ReportKeyValue[];
   notes?: ReportKeyValue[];
   methodCards?: ReportMethodCard[];
@@ -1276,19 +1284,35 @@ export function openValuationReportPrint(payload: ValuationReportPayload): boole
   );
 }
 
-function renderAssetSheetFactCards(rows: ReportKeyValue[]): string {
-  if (!rows.length) {
-    return '<div class="assetSheetEmpty">No asset details were available for this sheet.</div>';
+function getAssetSheetValue(rows: ReportKeyValue[], label: string): string {
+  const normalizedLabel = label.trim().toLowerCase();
+  const row = rows.find((entry) => entry.label.trim().toLowerCase() === normalizedLabel);
+  const value = String(row?.value ?? '').trim();
+
+  return value || '-';
+}
+
+function isBlankReportValue(value: string): boolean {
+  const normalized = value.trim();
+
+  return !normalized || normalized === '—' || normalized === '-';
+}
+
+function renderAssetReportRows(rows: ReportKeyValue[], emptyLabel: string): string {
+  const visibleRows = rows.filter((row) => String(row.label ?? '').trim());
+
+  if (!visibleRows.length) {
+    return `<div class="assetReportEmpty">${escapeHtml(emptyLabel)}</div>`;
   }
 
   return `
-    <div class="assetSheetFactGrid">
-      ${rows
+    <div class="assetReportRows">
+      ${visibleRows
         .map(
           (row) => `
-            <div class="assetSheetFactCard">
-              <span class="assetSheetFactLabel">${escapeHtml(row.label)}</span>
-              <strong class="assetSheetFactValue">${escapeHtml(row.value)}</strong>
+            <div class="assetReportRow">
+              <span>${escapeHtml(row.label)}</span>
+              <strong>${escapeHtml(isBlankReportValue(String(row.value ?? '')) ? '-' : row.value)}</strong>
             </div>
           `,
         )
@@ -1297,85 +1321,137 @@ function renderAssetSheetFactCards(rows: ReportKeyValue[]): string {
   `;
 }
 
-function renderAssetSheetNotes(rows: ReportKeyValue[]): string {
-  if (!rows.length) {
+function renderAssetReportNotes(rows: ReportKeyValue[]): string {
+  const visibleRows = rows.filter((row) => String(row.value ?? '').trim());
+
+  if (!visibleRows.length) {
     return '';
   }
 
   return `
-    <section class="assetSheetSection assetSheetAvoidBreak">
+    <section class="assetReportSection assetReportNotesSection">
       <h2>Notes</h2>
-      <div class="assetSheetNotes">
-        ${rows
-          .map(
-            (row) => `
-              <div class="assetSheetNote">
-                <span>${escapeHtml(row.label)}</span>
-                <p>${escapeHtml(row.value)}</p>
-              </div>
-            `,
-          )
-          .join('')}
-      </div>
+      ${renderAssetReportRows(visibleRows, 'No notes saved.')}
     </section>
   `;
 }
 
-function renderAssetSheetPhotos(photoUrls: string[], title: string): string {
-  if (!photoUrls.length) {
-    return `
-      <div class="assetSheetPhotoEmpty">
-        <span>No photos saved</span>
-        <small>Add photos to the asset register item to include them on this PDF.</small>
-      </div>
-    `;
+function renderAssetReportMedia(options: {
+  photoUrls: string[];
+  qrUrl?: string | null;
+  scanUrl?: string | null;
+  title: string;
+}): string {
+  const qrUrl = String(options.qrUrl ?? '').trim();
+  const scanUrl = String(options.scanUrl ?? '').trim();
+  const photos = options.photoUrls.slice(0, 2);
+  const remainingPhotoCount = Math.max(0, options.photoUrls.length - photos.length);
+
+  if (!qrUrl && !photos.length) {
+    return '';
   }
 
   return `
-    <div class="assetSheetPhotoGrid${photoUrls.length === 1 ? ' assetSheetPhotoGridSingle' : ''}">
-      ${photoUrls
-        .map(
-          (url, index) => `
-            <figure class="assetSheetPhotoTile">
-              <img src="${escapeHtml(url)}" alt="${escapeHtml(`${title} photo ${index + 1}`)}" />
-              <figcaption>Photo ${index + 1}</figcaption>
-            </figure>
-          `,
-        )
-        .join('')}
+    <section class="assetReportSideCard assetReportMediaCard">
+      <h2>Photos &amp; QR</h2>
+      <div class="assetReportMediaGrid">
+        ${
+          qrUrl
+            ? `
+              <figure class="assetReportMediaTile assetReportQrTile">
+                <img src="${escapeHtml(qrUrl)}" alt="QR code for ${escapeHtml(options.title)}" />
+                <figcaption>Permanent asset QR</figcaption>
+              </figure>
+            `
+            : ''
+        }
+        ${photos
+          .map(
+            (url, index) => `
+              <figure class="assetReportMediaTile">
+                <img src="${escapeHtml(url)}" alt="${escapeHtml(`${options.title} photo ${index + 1}`)}" />
+                <figcaption>Photo ${index + 1}</figcaption>
+              </figure>
+            `,
+          )
+          .join('')}
+      </div>
+      ${remainingPhotoCount ? `<p class="assetReportMediaNote">${remainingPhotoCount} additional photo${remainingPhotoCount === 1 ? '' : 's'} saved in the asset register.</p>` : ''}
+      ${scanUrl ? `<p class="assetReportMediaNote">Scan link: ${escapeHtml(scanUrl)}</p>` : ''}
+    </section>
+  `;
+}
+
+function renderAssetReportBreakdown(payload: AssetSheetPayload): string {
+  const selectedCards = (payload.methodCards ?? []).filter((card) => card.selected);
+  const otherCards = (payload.methodCards ?? []).filter((card) => !card.selected);
+  const cards = [...selectedCards, ...otherCards];
+
+  if (cards.length) {
+    return cards
+      .map(
+        (card) => `
+          <div class="assetReportBreakdownRow${card.selected ? ' assetReportBreakdownRowSelected' : ''}">
+            <span>${escapeHtml(card.label)}</span>
+            <strong>${escapeHtml(card.value)}<small>VAT Excluded</small></strong>
+          </div>
+        `,
+      )
+      .join('');
+  }
+
+  return `
+    <div class="assetReportBreakdownRow assetReportBreakdownRowSelected">
+      <span>${escapeHtml(payload.assetBadge || 'Asset')}</span>
+      <strong>${escapeHtml(payload.value)}<small>VAT Excluded</small></strong>
     </div>
   `;
 }
 
 function renderAssetSheetDocument(payload: AssetSheetPayload): string {
   const rawPhotoUrls = payload.photoUrls?.length ? payload.photoUrls : payload.photoUrl ? [payload.photoUrl] : [];
-  const photoUrls = rawPhotoUrls
-    .map((url) => String(url ?? '').trim())
-    .filter(Boolean);
-  const noteRows = [...(payload.contactRows ?? []), ...(payload.notes ?? [])].filter((row) => String(row.value ?? '').trim());
+  const photoUrls = rawPhotoUrls.map((url) => String(url ?? '').trim()).filter(Boolean);
   const safeTitle = escapeHtml(payload.heroTitle);
+  const noteRows = [...(payload.contactRows ?? []), ...(payload.notes ?? [])].filter((row) => String(row.value ?? '').trim());
+  const issuerName = String(payload.issuerName ?? '').trim() || 'Aim4price';
+  const issuerAddress = String(payload.issuerAddress ?? '').trim() || 'Asset Register Report';
+  const issuerPhone = String(payload.issuerPhone ?? '').trim();
+  const issuerEmail = String(payload.issuerEmail ?? '').trim();
+  const brand = getAssetSheetValue(payload.facts, 'Brand');
+  const model = getAssetSheetValue(payload.facts, 'Model');
+  const year = getAssetSheetValue(payload.facts, payload.assetBadge.toLowerCase() === 'property' ? 'Year built' : 'Year');
+  const summaryItems = payload.summaryItems?.length
+    ? payload.summaryItems
+    : [
+        { label: 'Brand', value: brand },
+        { label: 'Model', value: model },
+        { label: 'Year', value: year },
+      ];
+  const clientRows = payload.clientRows?.length
+    ? payload.clientRows
+    : [
+        { label: 'Name', value: '-' },
+        { label: 'Email', value: '-' },
+        { label: 'Phone', value: '-' },
+      ];
+  const footerNote =
+    payload.footerNote ??
+    'This asset register report is generated using Aim4price.com asset data and saved user inputs. Aim4price.com values are indicative estimates only and are not a certified valuation, inspection report or guarantee of selling price. The end user remains responsible for independent verification and any final decision.';
 
   return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${safeTitle} - Aim4price asset PDF</title>
+    <title>${safeTitle} - Aim4price asset report</title>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
-
       :root {
         color-scheme: light;
-        --asset-bg: #eef4f2;
-        --asset-paper: #ffffff;
-        --asset-soft: #f6f9f8;
-        --asset-soft-2: #edf4f1;
-        --asset-text: #0b3028;
-        --asset-muted: #61756f;
-        --asset-line: #cddcd7;
-        --asset-line-strong: #b9d0c8;
-        --asset-brand: #0f372f;
-        --asset-brand-2: #193f73;
+        --report-ink: #101820;
+        --report-muted: #536070;
+        --report-line: #d9dde3;
+        --report-soft: #f3f4f6;
+        --report-soft-2: #fafafa;
       }
 
       * {
@@ -1386,441 +1462,376 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
 
       @page {
         size: A4;
-        margin: 12mm;
+        margin: 13mm 13mm 12mm;
       }
 
       html,
       body {
         margin: 0;
         padding: 0;
-        background: var(--asset-bg);
-        color: var(--asset-text);
-        font-family: Montserrat, Arial, Helvetica, sans-serif;
+        background: #eef1f4;
+        color: var(--report-ink);
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 11px;
+        line-height: 1.32;
       }
 
-      body {
-        min-height: 100vh;
-      }
-
-      .assetSheetScreenBar {
+      .assetReportScreenBar {
         position: sticky;
         top: 0;
         z-index: 10;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 1rem;
-        padding: 0.85rem 1.1rem;
-        background: rgba(255, 255, 255, 0.94);
-        border-bottom: 1px solid rgba(15, 55, 47, 0.1);
-        backdrop-filter: blur(14px);
+        gap: 16px;
+        padding: 14px 18px;
+        background: rgba(255, 255, 255, 0.96);
+        border-bottom: 1px solid #d7dce2;
       }
 
-      .assetSheetScreenText {
-        color: var(--asset-muted);
-        font-size: 0.86rem;
-        line-height: 1.45;
+      .assetReportScreenText {
+        color: var(--report-muted);
+        font-size: 13px;
       }
 
-      .assetSheetScreenActions {
+      .assetReportScreenActions {
         display: flex;
-        gap: 0.65rem;
-        flex-wrap: wrap;
+        gap: 10px;
       }
 
-      .assetSheetButton {
+      .assetReportButton {
         appearance: none;
-        min-height: 2.65rem;
-        padding: 0 1rem;
-        border: 1px solid rgba(15, 55, 47, 0.14);
+        min-height: 38px;
+        padding: 0 16px;
+        border: 1px solid #cfd5dd;
         border-radius: 999px;
         background: #ffffff;
-        color: var(--asset-text);
+        color: var(--report-ink);
         font: inherit;
-        font-size: 0.86rem;
-        font-weight: 800;
+        font-size: 13px;
+        font-weight: 700;
         cursor: pointer;
       }
 
-      .assetSheetButtonPrimary {
-        border-color: transparent;
-        background: var(--asset-brand);
+      .assetReportButtonPrimary {
+        border-color: #101820;
+        background: #101820;
         color: #ffffff;
       }
 
-      .assetSheetPage {
-        width: min(100%, 1060px);
-        margin: 1.25rem auto 2rem;
-        padding: 0 1rem;
+      .assetReportPage {
+        width: min(100%, 210mm);
+        min-height: 297mm;
+        margin: 18px auto;
+        padding: 20mm 16mm 12mm;
+        background: #ffffff;
+        box-shadow: 0 14px 40px rgba(16, 24, 32, 0.14);
       }
 
-      .assetSheetTopbar {
+      .assetReportInner {
         display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 1rem;
-        margin-bottom: 0.85rem;
+        min-height: calc(297mm - 45mm);
+        flex-direction: column;
       }
 
-      .assetSheetBrand {
+      .assetReportLogoRow {
+        min-height: 68px;
+        display: flex;
+        align-items: flex-start;
+      }
+
+      .assetReportLogo {
+        width: 74px;
+        height: auto;
+        object-fit: contain;
+      }
+
+      .assetReportIssuerGrid {
         display: grid;
-        gap: 0.15rem;
-      }
-
-      .assetSheetBrandName {
-        color: var(--asset-brand);
-        font-size: 1.55rem;
-        line-height: 1;
-        font-weight: 900;
-        letter-spacing: -0.055em;
-      }
-
-      .assetSheetDocumentType {
-        color: var(--asset-muted);
-        font-size: 0.68rem;
-        line-height: 1.4;
-        font-weight: 800;
-        letter-spacing: 0.11em;
-        text-transform: uppercase;
-      }
-
-      .assetSheetGenerated {
-        text-align: right;
-        color: var(--asset-muted);
-        font-size: 0.72rem;
-        font-weight: 700;
-        line-height: 1.45;
-      }
-
-      .assetSheetGenerated strong {
-        display: block;
-        color: var(--asset-text);
-        font-size: 0.9rem;
-        font-weight: 900;
-      }
-
-      .assetSheetCard {
-        overflow: hidden;
-        border: 1.5px solid var(--asset-line-strong);
-        border-radius: 1.45rem;
-        background: var(--asset-paper);
-        box-shadow: 0 22px 48px rgba(15, 55, 47, 0.08);
-      }
-
-      .assetSheetHero {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 1.2rem;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr) minmax(0, 0.9fr);
+        gap: 18px;
         align-items: start;
-        padding: 1.35rem 1.45rem 1.05rem;
+        margin-top: 14px;
+        margin-bottom: 14px;
       }
 
-      .assetSheetBadge {
-        display: inline-flex;
-        align-items: center;
-        min-height: 1.65rem;
-        padding: 0 0.75rem;
-        border: 1px solid rgba(15, 55, 47, 0.12);
-        border-radius: 999px;
-        background: var(--asset-soft-2);
-        color: var(--asset-brand);
-        font-size: 0.68rem;
-        font-weight: 900;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-      }
-
-      .assetSheetTitle {
-        margin: 0.62rem 0 0.45rem;
-        color: var(--asset-text);
-        font-size: clamp(1.7rem, 4vw, 2.35rem);
-        line-height: 1.03;
-        font-weight: 900;
-        letter-spacing: -0.06em;
-      }
-
-      .assetSheetMeta {
-        margin: 0;
-        color: var(--asset-muted);
-        font-size: 0.92rem;
-        font-weight: 750;
-        line-height: 1.55;
-      }
-
-      .assetSheetValueBlock {
-        min-width: 13rem;
-        text-align: right;
-      }
-
-      .assetSheetValueLabel {
+      .assetReportIssuer strong {
         display: block;
-        color: var(--asset-muted);
-        font-size: 0.68rem;
-        font-weight: 900;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-      }
-
-      .assetSheetValue {
-        display: block;
-        margin-top: 0.35rem;
-        color: var(--asset-text);
-        font-size: clamp(1.75rem, 4vw, 2.45rem);
-        line-height: 0.95;
-        font-weight: 900;
-        letter-spacing: -0.07em;
-      }
-
-      .assetSheetVat {
-        display: block;
-        margin-top: 0.35rem;
-        color: var(--asset-muted);
-        font-size: 0.72rem;
-        font-weight: 900;
-      }
-
-      .assetSheetValueNote {
-        display: inline-flex;
-        margin-top: 0.75rem;
-        padding: 0.42rem 0.65rem;
-        border-radius: 999px;
-        background: var(--asset-soft-2);
-        color: var(--asset-brand);
-        font-size: 0.72rem;
-        font-weight: 850;
-      }
-
-      .assetSheetDivider {
-        height: 1px;
-        margin: 0 1.45rem;
-        background: var(--asset-line);
-      }
-
-      .assetSheetMain {
-        display: grid;
-        grid-template-columns: minmax(16rem, 0.82fr) minmax(0, 1.18fr);
-        gap: 1.15rem;
-        padding: 1.15rem 1.45rem 1.35rem;
-      }
-
-      .assetSheetSection {
-        min-width: 0;
-      }
-
-      .assetSheetSection h2 {
-        margin: 0 0 0.7rem;
-        color: var(--asset-text);
-        font-size: 0.92rem;
-        font-weight: 900;
-        letter-spacing: -0.02em;
-      }
-
-      .assetSheetPhotoGrid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.65rem;
-      }
-
-      .assetSheetPhotoGridSingle {
-        grid-template-columns: 1fr;
-      }
-
-      .assetSheetPhotoTile {
-        min-width: 0;
-        margin: 0;
-        overflow: hidden;
-        border: 1px solid var(--asset-line);
-        border-radius: 1.05rem;
-        background: var(--asset-soft);
-        break-inside: avoid;
-      }
-
-      .assetSheetPhotoTile img {
-        display: block;
-        width: 100%;
-        height: 9.5rem;
-        object-fit: cover;
-      }
-
-      .assetSheetPhotoGridSingle .assetSheetPhotoTile img {
-        height: 16.5rem;
-      }
-
-      .assetSheetPhotoTile figcaption {
-        padding: 0.45rem 0.65rem;
-        color: var(--asset-muted);
-        font-size: 0.68rem;
+        font-size: 12px;
         font-weight: 800;
       }
 
-      .assetSheetPhotoEmpty {
-        display: grid;
-        place-items: center;
-        min-height: 14.5rem;
-        padding: 1rem;
-        border: 1px solid var(--asset-line);
-        border-radius: 1.05rem;
-        background: linear-gradient(180deg, #f8fbfa 0%, #edf4f1 100%);
-        color: var(--asset-muted);
+      .assetReportIssuer span,
+      .assetReportDate,
+      .assetReportContact {
+        color: var(--report-muted);
+        font-size: 10px;
+        line-height: 1.28;
+      }
+
+      .assetReportDate {
         text-align: center;
       }
 
-      .assetSheetPhotoEmpty span {
-        display: block;
-        color: var(--asset-text);
-        font-size: 0.86rem;
-        font-weight: 900;
+      .assetReportContact {
+        text-align: right;
       }
 
-      .assetSheetPhotoEmpty small {
-        display: block;
-        max-width: 15rem;
-        margin-top: 0.35rem;
-        font-size: 0.72rem;
-        font-weight: 650;
-        line-height: 1.5;
-      }
-
-      .assetSheetFactGrid {
+      .assetReportSummaryStrip {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.65rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 11px;
+        margin-bottom: 12px;
       }
 
-      .assetSheetFactCard {
+      .assetReportSummaryItem {
+        min-height: 28px;
+        padding: 8px 10px;
+        background: var(--report-soft);
+        border: 1px solid var(--report-soft);
+        font-size: 10.5px;
+        font-weight: 700;
+      }
+
+      .assetReportSummaryItem span {
+        font-weight: 800;
+      }
+
+      .assetReportMainGrid {
         display: grid;
-        grid-template-columns: minmax(5.85rem, 0.42fr) minmax(0, 1fr);
-        min-height: 3.2rem;
-        overflow: hidden;
-        border: 1px solid var(--asset-line);
-        border-radius: 0.82rem;
+        grid-template-columns: minmax(0, 1fr) 66mm;
+        gap: 14px;
+        align-items: start;
+      }
+
+      .assetReportSection {
+        margin-bottom: 13px;
+        break-inside: avoid;
+      }
+
+      .assetReportSection h2,
+      .assetReportSideCard h2 {
+        margin: 0 0 8px;
+        color: #000000;
+        font-size: 12px;
+        line-height: 1.2;
+        font-weight: 800;
+      }
+
+      .assetReportRows {
+        width: 100%;
+      }
+
+      .assetReportRow {
+        display: grid;
+        grid-template-columns: 31mm minmax(0, 1fr);
+        min-height: 21px;
+        align-items: center;
+        border-bottom: 1px solid var(--report-line);
+      }
+
+      .assetReportRow span {
+        color: #1f2933;
+        font-size: 10.5px;
+        font-weight: 700;
+      }
+
+      .assetReportRow strong {
+        color: #000000;
+        font-size: 10.5px;
+        font-weight: 700;
+        word-break: break-word;
+      }
+
+      .assetReportEmpty {
+        padding: 8px 0;
+        color: var(--report-muted);
+        font-size: 10.5px;
+      }
+
+      .assetReportSide {
+        display: grid;
+        gap: 12px;
+      }
+
+      .assetReportSideCard {
+        border: 1px solid var(--report-line);
         background: #ffffff;
         break-inside: avoid;
       }
 
-      .assetSheetFactLabel {
-        display: flex;
-        align-items: center;
-        padding: 0.62rem 0.72rem;
-        border-right: 1px solid var(--asset-line);
-        background: var(--asset-soft);
-        color: #203f71;
-        font-size: 0.68rem;
-        font-weight: 900;
-        letter-spacing: -0.01em;
-        text-transform: uppercase;
+      .assetReportValuationCard {
+        padding: 14px 12px 12px;
       }
 
-      .assetSheetFactValue {
-        display: flex;
-        align-items: center;
-        min-width: 0;
-        padding: 0.62rem 0.78rem;
-        color: var(--asset-text);
-        font-size: 0.86rem;
-        font-weight: 900;
-        line-height: 1.35;
-        word-break: break-word;
+      .assetReportValueLabel {
+        margin: 0 0 4px;
+        color: #1f2933;
+        font-size: 10.5px;
+        font-weight: 800;
       }
 
-      .assetSheetNotes {
-        display: grid;
-        gap: 0.65rem;
-      }
-
-      .assetSheetNote {
-        border: 1px solid var(--asset-line);
-        border-radius: 0.95rem;
-        background: var(--asset-soft);
-        padding: 0.75rem 0.85rem;
-      }
-
-      .assetSheetNote span {
+      .assetReportValue {
         display: block;
-        color: #203f71;
-        font-size: 0.68rem;
-        font-weight: 900;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
+        color: #000000;
+        font-size: 24px;
+        line-height: 1.03;
+        font-weight: 800;
+        letter-spacing: -0.04em;
       }
 
-      .assetSheetNote p {
-        margin: 0.32rem 0 0;
-        color: var(--asset-text);
-        font-size: 0.84rem;
-        font-weight: 650;
-        line-height: 1.55;
-        white-space: pre-wrap;
+      .assetReportVat {
+        display: block;
+        margin-top: 2px;
+        color: var(--report-muted);
+        font-size: 10px;
       }
 
-      .assetSheetLower {
+      .assetReportCardDivider {
+        height: 1px;
+        margin: 15px -12px 12px;
+        background: var(--report-line);
+      }
+
+      .assetReportBreakdownTitle {
+        display: block;
+        margin-bottom: 8px;
+        color: #1f2933;
+        font-size: 10.5px;
+        font-weight: 800;
+      }
+
+      .assetReportBreakdownRow {
         display: grid;
-        gap: 0.9rem;
-        padding: 0 1.45rem 1.35rem;
+        grid-template-columns: minmax(0, 1fr) 29mm;
+        gap: 8px;
+        padding: 7px 0;
+        border-bottom: 1px solid var(--report-line);
+        align-items: start;
       }
 
-      .assetSheetDisclaimer {
-        border-top: 1px solid var(--asset-line);
-        padding: 1rem 1.45rem 1.15rem;
-        background: #fbfdfc;
-        color: var(--asset-muted);
-        font-size: 0.68rem;
-        line-height: 1.6;
+      .assetReportBreakdownRow:last-child {
+        border-bottom: 0;
       }
 
-      .assetSheetDisclaimer strong {
-        color: var(--asset-text);
-        font-weight: 900;
-      }
-
-      .assetSheetDisclaimer ul {
-        margin: 0.45rem 0 0;
-        padding-left: 1rem;
-      }
-
-      .assetSheetDisclaimer li + li {
-        margin-top: 0.22rem;
-      }
-
-      .assetSheetEmpty {
-        padding: 0.9rem;
-        border: 1px solid var(--asset-line);
-        border-radius: 0.95rem;
-        background: var(--asset-soft);
-        color: var(--asset-muted);
-        font-size: 0.8rem;
+      .assetReportBreakdownRow span {
+        font-size: 10.5px;
         font-weight: 700;
       }
 
-      .assetSheetAvoidBreak {
-        break-inside: avoid;
+      .assetReportBreakdownRow strong {
+        text-align: right;
+        font-size: 10.5px;
+        line-height: 1.15;
+        font-weight: 700;
       }
 
-      @media (max-width: 860px) {
-        .assetSheetTopbar,
-        .assetSheetHero,
-        .assetSheetMain {
+      .assetReportBreakdownRow small {
+        display: block;
+        font-size: 10px;
+        font-weight: 400;
+      }
+
+      .assetReportPartnerLine {
+        margin: 15px 0 0;
+        color: #1f2933;
+        font-size: 10.5px;
+      }
+
+      .assetReportMediaCard {
+        padding: 10px 10px 9px;
+      }
+
+      .assetReportMediaGrid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .assetReportMediaTile {
+        min-width: 0;
+        margin: 0;
+        overflow: hidden;
+        border: 1px solid var(--report-line);
+        background: var(--report-soft-2);
+      }
+
+      .assetReportMediaTile img {
+        display: block;
+        width: 100%;
+        height: 65px;
+        object-fit: cover;
+      }
+
+      .assetReportQrTile img {
+        height: 65px;
+        object-fit: contain;
+        padding: 6px;
+        background: #ffffff;
+      }
+
+      .assetReportMediaTile figcaption {
+        padding: 4px 5px;
+        color: var(--report-muted);
+        font-size: 8.5px;
+        line-height: 1.2;
+      }
+
+      .assetReportMediaNote {
+        margin: 7px 0 0;
+        color: var(--report-muted);
+        font-size: 8.5px;
+        line-height: 1.25;
+        word-break: break-word;
+      }
+
+      .assetReportNotesSection .assetReportRow {
+        grid-template-columns: 34mm minmax(0, 1fr);
+      }
+
+      .assetReportFooter {
+        margin-top: auto;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: end;
+        padding-top: 12px;
+      }
+
+      .assetReportPowered {
+        margin: 0 0 4px;
+        color: #000000;
+        font-size: 10px;
+      }
+
+      .assetReportDisclaimer {
+        max-width: 168mm;
+        color: #000000;
+        font-size: 8.5px;
+        line-height: 1.24;
+        font-style: italic;
+      }
+
+      .assetReportPageNumber {
+        color: #000000;
+        font-size: 10px;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 760px) {
+        .assetReportPage {
+          padding: 24px;
+        }
+
+        .assetReportIssuerGrid,
+        .assetReportSummaryStrip,
+        .assetReportMainGrid {
           grid-template-columns: 1fr;
         }
 
-        .assetSheetTopbar {
-          align-items: flex-start;
-        }
-
-        .assetSheetGenerated,
-        .assetSheetValueBlock {
+        .assetReportDate,
+        .assetReportContact {
           text-align: left;
-        }
-      }
-
-      @media (max-width: 640px) {
-        .assetSheetPage {
-          padding: 0 0.7rem;
-        }
-
-        .assetSheetFactGrid,
-        .assetSheetPhotoGrid {
-          grid-template-columns: 1fr;
         }
       }
 
@@ -1830,91 +1841,106 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
           background: #ffffff;
         }
 
-        .assetSheetScreenBar {
+        .assetReportScreenBar {
           display: none !important;
         }
 
-        .assetSheetPage {
+        .assetReportPage {
           width: auto;
+          min-height: auto;
           margin: 0;
           padding: 0;
-        }
-
-        .assetSheetCard {
-          border-radius: 1rem;
           box-shadow: none;
         }
 
-        .assetSheetPhotoTile img {
-          max-height: 9.5rem;
+        .assetReportInner {
+          min-height: calc(297mm - 25mm);
         }
       }
     </style>
   </head>
   <body>
-    <div class="assetSheetScreenBar">
-      <div class="assetSheetScreenText">Choose <strong>Save as PDF</strong> in the print dialog to download this asset PDF.</div>
-      <div class="assetSheetScreenActions">
-        <button type="button" class="assetSheetButton" onclick="window.close()">Close</button>
-        <button type="button" class="assetSheetButton assetSheetButtonPrimary" onclick="window.print()">Print / Save PDF</button>
+    <div class="assetReportScreenBar">
+      <div class="assetReportScreenText">Choose <strong>Save as PDF</strong> in the print dialog to download this asset report.</div>
+      <div class="assetReportScreenActions">
+        <button type="button" class="assetReportButton" onclick="window.close()">Close</button>
+        <button type="button" class="assetReportButton assetReportButtonPrimary" onclick="window.print()">Print / Save PDF</button>
       </div>
     </div>
 
-    <main class="assetSheetPage">
-      <div class="assetSheetTopbar">
-        <div class="assetSheetBrand">
-          <span class="assetSheetBrandName">Aim4price</span>
-          <span class="assetSheetDocumentType">Asset register PDF</span>
-        </div>
-        <div class="assetSheetGenerated">
-          Generated
-          <strong>${escapeHtml(payload.generatedAt)}</strong>
-        </div>
-      </div>
+    <main class="assetReportPage">
+      <div class="assetReportInner">
+        <header>
+          <div class="assetReportLogoRow">
+            ${payload.logoUrl ? `<img class="assetReportLogo" src="${escapeHtml(payload.logoUrl)}" alt="Aim4price" />` : ''}
+          </div>
 
-      <article class="assetSheetCard">
-        <section class="assetSheetHero assetSheetAvoidBreak">
+          <div class="assetReportIssuerGrid">
+            <div class="assetReportIssuer">
+              <strong>${escapeHtml(issuerName)}</strong>
+              <span>${escapeHtml(issuerAddress)}</span>
+            </div>
+            <div class="assetReportDate">Report Date: ${escapeHtml(payload.generatedAt)}</div>
+            <div class="assetReportContact">
+              ${issuerPhone ? `${escapeHtml(issuerPhone)}<br />` : ''}
+              ${issuerEmail ? escapeHtml(issuerEmail) : ''}
+            </div>
+          </div>
+
+          <div class="assetReportSummaryStrip">
+            ${summaryItems
+              .slice(0, 3)
+              .map(
+                (item) => `
+                  <div class="assetReportSummaryItem">
+                    <span>${escapeHtml(item.label)}:</span> ${escapeHtml(isBlankReportValue(String(item.value ?? '')) ? '-' : item.value)}
+                  </div>
+                `,
+              )
+              .join('')}
+          </div>
+        </header>
+
+        <div class="assetReportMainGrid">
           <div>
-            <span class="assetSheetBadge">${escapeHtml(payload.assetBadge)}</span>
-            <h1 class="assetSheetTitle">${safeTitle}</h1>
-            <p class="assetSheetMeta">${escapeHtml(payload.heroMeta)}</p>
+            <section class="assetReportSection">
+              <h2>Client</h2>
+              ${renderAssetReportRows(clientRows, 'No client details available.')}
+            </section>
+
+            <section class="assetReportSection">
+              <h2>${escapeHtml(payload.assetBadge || 'Asset')}</h2>
+              ${renderAssetReportRows(payload.facts, 'No asset details available.')}
+            </section>
+
+            ${renderAssetReportNotes(noteRows)}
           </div>
 
-          <aside class="assetSheetValueBlock" aria-label="Asset value">
-            <span class="assetSheetValueLabel">${escapeHtml(payload.valueLabel)}</span>
-            <strong class="assetSheetValue">${escapeHtml(payload.value)}</strong>
-            <span class="assetSheetVat">Excl. VAT</span>
-            <span class="assetSheetValueNote">${escapeHtml(payload.valueNote)}</span>
+          <aside class="assetReportSide">
+            <section class="assetReportSideCard assetReportValuationCard">
+              <h2>Valuation Summary</h2>
+              <p class="assetReportValueLabel">${escapeHtml(payload.valueLabel)} (VAT Excl.)</p>
+              <strong class="assetReportValue">${escapeHtml(payload.value)}</strong>
+              <span class="assetReportVat">VAT Excluded</span>
+
+              <div class="assetReportCardDivider"></div>
+              <span class="assetReportBreakdownTitle">Breakdown</span>
+              ${renderAssetReportBreakdown(payload)}
+              <p class="assetReportPartnerLine">Your Partner in Progress.</p>
+            </section>
+
+            ${renderAssetReportMedia({ photoUrls, qrUrl: payload.qrUrl, scanUrl: payload.scanUrl, title: payload.heroTitle })}
           </aside>
-        </section>
-
-        <div class="assetSheetDivider"></div>
-
-        <section class="assetSheetMain">
-          <div class="assetSheetSection assetSheetAvoidBreak">
-            <h2>Photos</h2>
-            ${renderAssetSheetPhotos(photoUrls, payload.heroTitle)}
-          </div>
-
-          <div class="assetSheetSection">
-            <h2>Asset details</h2>
-            ${renderAssetSheetFactCards(payload.facts)}
-          </div>
-        </section>
-
-        <div class="assetSheetLower">
-          ${renderAssetSheetNotes(noteRows)}
         </div>
 
-        <footer class="assetSheetDisclaimer">
-          <strong>Disclaimer.</strong>
-          <ul>
-            <li>Aim4price values are indicative asset-register estimates and are not a certified valuation, inspection report or guarantee of selling price.</li>
-            <li>All values shown on this sheet exclude VAT unless stated otherwise.</li>
-            <li>Final market value can change after physical inspection, document checks, repairs, attachments, finance status, location and live market demand.</li>
-          </ul>
+        <footer class="assetReportFooter">
+          <div>
+            <p class="assetReportPowered">Powered by Aim4price.com</p>
+            <div class="assetReportDisclaimer">${escapeHtml(footerNote)}</div>
+          </div>
+          <div class="assetReportPageNumber">Page 1 of 1</div>
         </footer>
-      </article>
+      </div>
     </main>
 
     <script>
@@ -1965,7 +1991,7 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
 
 export function openAssetSheetPrint(payload: AssetSheetPayload): boolean {
   return openPrintWindow(
-    `${payload.heroTitle} - Aim4price asset PDF`,
+    `${payload.heroTitle} - Aim4price asset report`,
     renderAssetSheetDocument(payload),
   );
 }
