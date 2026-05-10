@@ -48,6 +48,7 @@ type ScanAssetResponse = {
   ok: boolean;
   asset?: ScanSafeAsset;
   pinRequired?: boolean;
+  preview?: boolean;
   error?: string;
 };
 
@@ -497,6 +498,7 @@ export default function ScanClient({
     [publicAssetCode],
   );
   const [asset, setAsset] = useState<ScanSafeAsset | null>(null);
+  const [assetPreview, setAssetPreview] = useState<ScanSafeAsset | null>(null);
   const [draft, setDraft] = useState<DraftState>(initialDraft);
   const [pin, setPin] = useState("");
   const [notice, setNotice] = useState<{
@@ -519,7 +521,29 @@ export default function ScanClient({
   const autoLocationKeyRef = useRef<string>("");
 
   useEffect(() => {
+    const previousBodyBackground = document.body.style.background;
+    const footerElements = Array.from(document.querySelectorAll<HTMLElement>("footer"));
+    const previousFooterDisplays = footerElements.map((element) => ({
+      element,
+      display: element.style.display,
+    }));
+
+    document.body.style.background = "#f3f7f8";
+    footerElements.forEach((element) => {
+      element.style.display = "none";
+    });
+
+    return () => {
+      document.body.style.background = previousBodyBackground;
+      previousFooterDisplays.forEach(({ element, display }) => {
+        element.style.display = display;
+      });
+    };
+  }, []);
+
+  useEffect(() => {
     setAsset(null);
+    setAssetPreview(null);
     setDraft(initialDraft);
     setPin("");
     setIsUnavailable(false);
@@ -536,6 +560,46 @@ export default function ScanClient({
       "Location will be captured automatically once the asset is unlocked.",
     );
     autoLocationKeyRef.current = "";
+  }, [normalizedCode]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadAssetPreview() {
+      if (!normalizedCode) return;
+
+      try {
+        const response = await fetch(
+          `/api/scan/assets/${encodeURIComponent(normalizedCode)}?preview=1`,
+          {
+            credentials: "include",
+            cache: "no-store",
+          },
+        );
+        const data = (await response
+          .json()
+          .catch(() => null)) as ScanAssetResponse | null;
+
+        if (!isMounted) return;
+
+        if (response.ok && data?.ok && data.asset) {
+          setAssetPreview(data.asset);
+          return;
+        }
+
+        if (response.status === 403 || response.status === 404) {
+          setIsUnavailable(true);
+        }
+      } catch {
+        // Keep the PIN page usable even if the preview cannot be loaded.
+      }
+    }
+
+    void loadAssetPreview();
+
+    return () => {
+      isMounted = false;
+    };
   }, [normalizedCode]);
 
   useEffect(() => {
@@ -597,6 +661,7 @@ export default function ScanClient({
       }
 
       setAsset(data.asset);
+      setAssetPreview(data.asset);
       setDraft(initialDraft);
       setIsDone(false);
       setSavedUpdateCount(0);
@@ -886,7 +951,7 @@ export default function ScanClient({
       setSavedUpdateCount((current) => current + 1);
       setDraft(initialDraft);
       setActiveEditor(null);
-      setNotice({ tone: "success", message: "QR update saved." });
+      setNotice({ tone: "success", message: "Asset update saved." });
       setLocationState("idle");
       setLocationMessage("Capturing GPS again…");
       void captureLocation(true);
@@ -917,78 +982,43 @@ export default function ScanClient({
   const modalCopy = getModalCopy(activeEditor, asset);
   const showUsageAction = asset ? asset.usageMode !== "none" : false;
   const showFuelAction = Boolean(asset?.canUpdateFuel);
+  const prePinAsset = assetPreview;
 
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
         {!asset && !isUnavailable ? (
-          <section className={styles.scanIntroCard}>
-            <span className={styles.kicker}>Aim4price QR update</span>
-            <h1>Asset update</h1>
-            <p>Enter the farm PIN. Then update only what changed.</p>
-            <div
-              className={styles.scanIntroPills}
-              aria-label="Available QR updates"
-            >
-              <span>Hour meter</span>
-              <span>Fuel</span>
-              <span>Service</span>
-              <span>Notes</span>
-              <span>Photos</span>
+          <section className={styles.prePinAssetCard}>
+            <div className={styles.prePinAssetHeader}>
+              <span className={styles.kicker}>Asset scan</span>
+              <h1>{prePinAsset?.title || "Asset scan"}</h1>
+              <p>
+                {prePinAsset
+                  ? prePinAsset.serialNumber
+                    ? `Serial ${prePinAsset.serialNumber}`
+                    : prePinAsset.equipmentFamilyLabel || prePinAsset.plateLabel || "Ready to unlock"
+                  : "Enter the farm PIN to open this asset."}
+              </p>
             </div>
-          </section>
-        ) : null}
 
-        {asset && !isDone ? (
-          <section className={styles.scanAssetHeader}>
-            <span className={styles.kicker}>Asset opened</span>
-            <h1>{asset.title}</h1>
-            <p>
-              {asset.serialNumber
-                ? `Serial ${asset.serialNumber}`
-                : asset.equipmentFamilyLabel ||
-                  asset.plateLabel ||
-                  "Ready to update"}
-            </p>
-
-            <div className={styles.scanStatusGrid}>
-              <div>
-                <span>{usageTitle(asset)}</span>
-                <strong>{formatUsage(asset)}</strong>
-              </div>
-              {asset.canUpdateFuel ? (
+            {prePinAsset ? (
+              <div className={styles.prePinDetailGrid}>
                 <div>
-                  <span>Fuel</span>
-                  <strong>{formatFuel(asset.fuelPercent)}</strong>
+                  <span>Type</span>
+                  <strong>{assetPlaceholderLabel(prePinAsset)}</strong>
                 </div>
-              ) : null}
-              <div>
-                <span>GPS</span>
-                <strong>
-                  {locationReady
-                    ? "Ready"
-                    : locationState === "capturing"
-                      ? "Capturing"
-                      : "Required"}
-                </strong>
+                <div>
+                  <span>{usageTitle(prePinAsset)}</span>
+                  <strong>{formatUsage(prePinAsset)}</strong>
+                </div>
+                {prePinAsset.canUpdateFuel ? (
+                  <div>
+                    <span>Fuel</span>
+                    <strong>{formatFuel(prePinAsset.fuelPercent)}</strong>
+                  </div>
+                ) : null}
               </div>
-            </div>
-          </section>
-        ) : null}
-
-        {asset && isDone ? (
-          <section className={styles.doneCard}>
-            <span className={styles.kicker}>Updated asset</span>
-            <h1>Asset update complete</h1>
-            <p>
-              {savedUpdateCount > 0
-                ? `${savedUpdateCount} update${savedUpdateCount === 1 ? "" : "s"} saved with GPS.`
-                : "You can now close this page."}
-            </p>
-            <div className={styles.doneAssetBox}>
-              <span>{asset.title}</span>
-              <strong>{asset.plateLabel || asset.publicAssetCode}</strong>
-            </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -1052,8 +1082,10 @@ export default function ScanClient({
         {asset && !isDone ? (
           <>
             <section className={styles.quickPanel}>
-              <div className={styles.quickPanelHeader}>
-                <h2>What do you want to update?</h2>
+              <div className={styles.scanReadyHeader}>
+                <span className={styles.kicker}>Asset opened</span>
+                <h1>{asset.title}</h1>
+                <p>Tap one button to update what changed.</p>
                 <button
                   type="button"
                   className={`${styles.gpsStatusButton} ${locationReady ? styles.gpsStatusButtonReady : ""}`}
@@ -1063,7 +1095,7 @@ export default function ScanClient({
                   {locationReady
                     ? "GPS ready"
                     : locationState === "capturing"
-                      ? "GPS…"
+                      ? "Getting GPS…"
                       : "GPS required"}
                 </button>
               </div>
@@ -1152,34 +1184,12 @@ export default function ScanClient({
               </div>
             </section>
 
-            <section className={styles.doneActionBar}>
-              <div>
-                <strong>
-                  {savedUpdateCount > 0
-                    ? `${savedUpdateCount} saved`
-                    : "Finish scan"}
-                </strong>
-                <span>
-                  {savedUpdateCount > 0
-                    ? "Tap Done when you are finished."
-                    : "Save any update first if needed."}
-                </span>
-              </div>
-              <button
-                type="button"
-                className={styles.doneButton}
-                onClick={handleDone}
-                disabled={isSaving || isUploading}
-              >
-                Done
-              </button>
-            </section>
           </>
         ) : null}
       </div>
 
       {asset && showLocationReminder && !activeEditor && !isDone ? (
-        <div className={styles.modalOverlay}>
+        <div className={`${styles.modalOverlay} ${styles.locationReminderOverlay}`}>
           <div
             className={styles.modalBackdrop}
             onClick={() => setShowLocationReminder(false)}
