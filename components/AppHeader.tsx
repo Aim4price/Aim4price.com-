@@ -185,15 +185,13 @@ export default function AppHeader({
       <div className={styles.inner}>
         <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
           <Image
-            src="/brand/aim4price-mark-black.png"
-            alt=""
-            aria-hidden="true"
-            width={72}
-            height={72}
-            className={styles.brandMark}
+            src="/brand/Aim4price_Home_Logo.png"
+            alt="Aim4price"
+            width={900}
+            height={240}
+            className={styles.brandLogo}
             priority
           />
-          <span className={styles.brandTitle}>Aim4price</span>
         </Link>
 
         <nav className={styles.nav} aria-label="Primary navigation">
