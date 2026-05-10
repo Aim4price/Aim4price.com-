@@ -2265,9 +2265,6 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
         { label: 'Account', value: payload.ownerName },
         { label: 'Details', value: payload.ownerMeta },
       ];
-  const latestUpdated = payload.rows
-    .map((row) => sanitizeRegisterDisplayValue(row.updated || row.status))
-    .find((value) => value !== '-') || payload.generatedAt;
   const footerNote =
     payload.footerNote ??
     'Values are indicative estimates based on saved Aim4price asset-register information and available pricing inputs. Values exclude VAT unless stated otherwise. This is not a certified valuation, inspection report or guarantee of selling price. Final values remain subject to physical inspection, documents, attachments, condition, location and live market demand.';
@@ -2534,12 +2531,18 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
         font-weight: 600;
       }
 
-      .fullRegisterTopGrid {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(72mm, 0.34fr);
-        gap: 4.5mm;
+      .fullRegisterOwnerDetailsPanel {
         margin-top: 4.5mm;
-        align-items: start;
+        padding: 4.8mm 5.2mm 5.2mm;
+      }
+
+      .fullRegisterOwnerDetailsPanel .fullRegisterMetaRow {
+        grid-template-columns: 34mm minmax(0, 1fr);
+        min-height: 7.6mm;
+      }
+
+      .fullRegisterOwnerDetailsPanel .fullRegisterMetaRowTall {
+        min-height: 12.5mm;
       }
 
       .fullRegisterAssetSection {
@@ -2555,12 +2558,14 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
       }
 
       .fullRegisterSectionTitle h2 {
+        flex: 0 0 auto;
         margin: 0;
         color: var(--strong);
         font-size: 11pt;
         line-height: 1.1;
         font-weight: 800;
         letter-spacing: -0.035em;
+        white-space: nowrap;
       }
 
       .fullRegisterMetaRows {
@@ -2881,24 +2886,11 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
 
       ${renderFullRegisterStats(payload)}
 
-      <section class="fullRegisterTopGrid">
-        <section class="fullRegisterPanel">
-          <div class="fullRegisterSectionTitle">
-            <h2>Owner Details</h2>
-          </div>
-          <div class="fullRegisterMetaRows">${renderFullRegisterMetaRows(ownerRows)}</div>
-        </section>
-
-        <aside class="fullRegisterPanel">
-          <div class="fullRegisterSectionTitle">
-            <h2>Register Summary</h2>
-          </div>
-          <div class="fullRegisterMetaRows">
-            <div class="fullRegisterMetaRow"><span>Total value</span><strong>${escapeHtml(registerValue)}</strong></div>
-            <div class="fullRegisterMetaRow"><span>Total assets</span><strong>${escapeHtml(String(payload.rows.length))}</strong></div>
-            <div class="fullRegisterMetaRow"><span>Last updated</span><strong>${escapeHtml(latestUpdated)}</strong></div>
-          </div>
-        </aside>
+      <section class="fullRegisterPanel fullRegisterOwnerDetailsPanel">
+        <div class="fullRegisterSectionTitle">
+          <h2>Owner Details</h2>
+        </div>
+        <div class="fullRegisterMetaRows">${renderFullRegisterMetaRows(ownerRows)}</div>
       </section>
 
       <section class="fullRegisterPanel fullRegisterAssetSection">
