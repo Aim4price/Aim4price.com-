@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import styles from './AppHeader.module.css';
@@ -183,6 +184,15 @@ export default function AppHeader({
     <header className={styles.header}>
       <div className={styles.inner}>
         <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
+          <Image
+            src="/brand/aim4price-mark-black.png"
+            alt=""
+            aria-hidden="true"
+            width={72}
+            height={72}
+            className={styles.brandMark}
+            priority
+          />
           <span className={styles.brandTitle}>Aim4price</span>
         </Link>
 
@@ -226,14 +236,15 @@ export default function AppHeader({
                   <div className={styles.accountPopover} role="menu">
                     <div className={styles.accountSummary}>
                       <div className={styles.accountAvatarLarge}>{accountInitials}</div>
-                      <div>
+                      <div className={styles.accountSummaryText}>
                         <strong className={styles.accountName}>{accountName}</strong>
-                        <p className={styles.accountEmail}>{session.email}</p>
                       </div>
                     </div>
+
                     <Link href="/account" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
                       Account details
                     </Link>
+
                     <Link href="/asset-map" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
                       Asset map
                     </Link>
