@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeScanAccess } from '../../../../../lib/scan-auth';
-import { listRecentScanEvents, normalizePublicAssetCode } from '../../../../../lib/scan-assets';
+import { getScanAssetAccessContext, listRecentScanEvents, normalizePublicAssetCode, type ScanSafeAsset } from '../../../../../lib/scan-assets';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,8 +11,46 @@ type RouteContext = {
   };
 };
 
+function buildPreviewAsset(asset: ScanSafeAsset): ScanSafeAsset {
+  return {
+    ...asset,
+    note: '',
+    photos: [],
+    lastKnownLat: null,
+    lastKnownLng: null,
+    lastKnownLocationText: '',
+  };
+}
+
 export async function GET(request: NextRequest, context: RouteContext) {
   const publicAssetCode = normalizePublicAssetCode(context.params?.publicAssetCode);
+  const isPreviewRequest = request.nextUrl.searchParams.get('preview') === '1';
+
+  if (isPreviewRequest) {
+    const previewContext = await getScanAssetAccessContext(publicAssetCode);
+
+    if (!previewContext || !previewContext.asset.id) {
+      return NextResponse.json(
+        { ok: false, error: 'Asset not found.', pinRequired: false },
+        { status: 404 },
+      );
+    }
+
+    if (previewContext.asset.qrStatus === 'deleted') {
+      return NextResponse.json(
+        { ok: false, error: 'This asset QR code is inactive.', pinRequired: false },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+      preview: true,
+      pinRequired: previewContext.scanPinEnabled,
+      asset: buildPreviewAsset(previewContext.asset),
+    });
+  }
+
   const access = await authorizeScanAccess(request, publicAssetCode);
 
   if (!access.ok) {
