@@ -214,6 +214,7 @@ type AssetDraft = {
   financeStatus: AssetStatusChoice;
   insuranceStatus: AssetStatusChoice;
   financeNote: string;
+  insuranceNote: string;
   photos: string[];
   documents: AssetDocument[];
   yearModel: string;
@@ -329,6 +330,7 @@ const initialAssetDraft: AssetDraft = {
   financeStatus: 'unknown',
   insuranceStatus: 'unknown',
   financeNote: '',
+  insuranceNote: '',
   photos: [],
   documents: [],
   yearModel: '',
@@ -590,6 +592,14 @@ function formatMarketplacePriceInput(value: unknown): string {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
+function formatRegisterValueInput(value: unknown): string {
+  return formatMarketplacePriceInput(value);
+}
+
+function parseRegisterValueInput(value: unknown): number {
+  return Math.round(parseMoneyInput(value) ?? 0);
+}
+
 function formatPercent(value: number): string {
   const normalized = Number(value || 0);
   return `${normalized.toFixed(normalized % 1 === 0 ? 0 : 1)}%`;
@@ -770,6 +780,18 @@ function readInsuranceStatusChoice(asset: RegisterAsset): AssetStatusChoice {
     specs.insuranceStatus ?? specs.insurance_status ?? specs.insuredStatus ?? specs.insured_status,
     asset.isInsured ? 'yes' : 'no',
   );
+}
+
+function readInsuranceNote(asset: Pick<RegisterAsset, 'specsJson'>): string {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return String(
+    specs.insuranceNote ??
+      specs.insurance_note ??
+      specs.insuredNote ??
+      specs.insured_note ??
+      '',
+  ).trim();
 }
 
 function statusChoiceLabel(value: AssetStatusChoice): string {
@@ -1051,11 +1073,12 @@ function canProjectFuturePrice(asset: RegisterAsset): boolean {
 function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
   const financeStatus = readFinanceStatusChoice(asset);
   const insuranceStatus = readInsuranceStatusChoice(asset);
+  const insuranceNote = readInsuranceNote(asset);
 
   return {
     kind: normalizeDraftKind(asset.kind),
     title: asset.title,
-    value: String(asset.value || ''),
+    value: formatRegisterValueInput(asset.value || ''),
     note: asset.note,
     serialNumber: asset.serialNumber,
     isFinanced: financeStatus === 'yes',
@@ -1063,6 +1086,7 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     financeStatus,
     insuranceStatus,
     financeNote: financeStatus === 'yes' ? asset.financeNote : '',
+    insuranceNote: insuranceStatus === 'yes' ? insuranceNote : '',
     photos: normalizePhotos(asset.photos),
     documents: assetDocuments(asset),
     yearModel: asset.yearModel === null || typeof asset.yearModel === 'undefined' ? '' : String(asset.yearModel),
@@ -1244,6 +1268,7 @@ function buildSearchableText(asset: RegisterAsset): string {
     asset.serialNumber,
     asset.note,
     asset.financeNote,
+    readInsuranceNote(asset),
     ...assetDocuments(asset).map((document) => document.fileName),
     assetDocuments(asset).length ? 'documents paperwork invoice natis papers' : '',
     asset.isInsured ? 'insured insurance' : 'not insured no insurance',
@@ -1433,6 +1458,8 @@ export default function AssetRegisterClient() {
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
+  const [pendingPhotoFiles, setPendingPhotoFiles] = useState<File[]>([]);
+  const [pendingDocumentFiles, setPendingDocumentFiles] = useState<File[]>([]);
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
   const [detailPhotoIndexByAsset, setDetailPhotoIndexByAsset] = useState<Record<string, number>>({});
   const detailTouchStartXRef = useRef<number | null>(null);
@@ -1845,6 +1872,8 @@ export default function AssetRegisterClient() {
     setAssetDraft(initialAssetDraft);
     setManualAssetStep(1);
     setHasManualAssetKindSelection(false);
+    setPendingPhotoFiles([]);
+    setPendingDocumentFiles([]);
 
     if (photoInputRef.current) {
       photoInputRef.current.value = '';
@@ -1905,11 +1934,12 @@ export default function AssetRegisterClient() {
       ...current,
       insuranceStatus: nextStatus,
       isInsured: nextStatus === 'yes',
+      insuranceNote: nextStatus === 'yes' ? current.insuranceNote : '',
     }));
   }
 
   function validateAssetDetailsDraft(): boolean {
-    const value = Math.round(Number(assetDraft.value) || 0);
+    const value = parseRegisterValueInput(assetDraft.value);
     const hasYearModel = assetDraft.yearModel.trim() !== '';
     const yearModel = hasYearModel ? Number(assetDraft.yearModel) : null;
     const hasHours = assetDraft.hours.trim() !== '';
@@ -2060,7 +2090,7 @@ export default function AssetRegisterClient() {
     }
   }
 
-  async function handlePhotoFilesSelected(event: ChangeEvent<HTMLInputElement>) {
+  function handlePhotoFilesSelected(event: ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.target.files ?? []);
     event.target.value = '';
 
@@ -2068,17 +2098,74 @@ export default function AssetRegisterClient() {
       return;
     }
 
-    const remainingSlots = MAX_PHOTOS - assetDraft.photos.length;
+    const remainingSlots = MAX_PHOTOS - assetDraft.photos.length - pendingPhotoFiles.length;
 
     if (remainingSlots <= 0) {
       setNotice({ tone: 'error', message: `You can upload a maximum of ${MAX_PHOTOS} photos per asset.` });
       return;
     }
 
-    const filesToUpload = selectedFiles.slice(0, remainingSlots);
-    const formData = new FormData();
+    const filesToQueue = selectedFiles.slice(0, remainingSlots);
 
-    filesToUpload.forEach((file) => {
+    setPendingPhotoFiles((current) => [...current, ...filesToQueue]);
+    setNotice({
+      tone: 'success',
+      message: `${filesToQueue.length} photo${filesToQueue.length === 1 ? '' : 's'} ready. Click Save asset to upload.`,
+    });
+  }
+
+  function removeDraftPhoto(photoUrl: string) {
+    setAssetDraft((current) => ({
+      ...current,
+      photos: current.photos.filter((photo) => photo !== photoUrl),
+    }));
+  }
+
+  function removePendingPhotoFile(fileIndex: number) {
+    setPendingPhotoFiles((current) => current.filter((_, index) => index !== fileIndex));
+  }
+
+
+  function handleDocumentFilesSelected(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    event.target.value = '';
+
+    if (!selectedFiles.length) {
+      return;
+    }
+
+    const remainingSlots = MAX_DOCUMENTS - assetDraft.documents.length - pendingDocumentFiles.length;
+
+    if (remainingSlots <= 0) {
+      setNotice({ tone: 'error', message: `You can upload a maximum of ${MAX_DOCUMENTS} documents per asset.` });
+      return;
+    }
+
+    const filesToQueue = selectedFiles.slice(0, remainingSlots);
+
+    setPendingDocumentFiles((current) => [...current, ...filesToQueue]);
+    setNotice({
+      tone: 'success',
+      message: `${filesToQueue.length} document${filesToQueue.length === 1 ? '' : 's'} ready. Click Save asset to upload.`,
+    });
+  }
+
+  function removeDraftDocument(documentId: string) {
+    setAssetDraft((current) => ({
+      ...current,
+      documents: current.documents.filter((document) => document.id !== documentId),
+    }));
+  }
+
+  function removePendingDocumentFile(fileIndex: number) {
+    setPendingDocumentFiles((current) => current.filter((_, index) => index !== fileIndex));
+  }
+
+  async function uploadQueuedPhotoFiles(files: File[]): Promise<string[]> {
+    if (!files.length) return [];
+
+    const formData = new FormData();
+    files.forEach((file) => {
       formData.append('files', file);
     });
 
@@ -2097,55 +2184,19 @@ export default function AssetRegisterClient() {
         throw new Error(data.error ?? 'Failed to upload images.');
       }
 
-      const uploadedUrls = data.uploads.map((entry) => entry.url);
-
-      setAssetDraft((current) => ({
-        ...current,
-        photos: normalizePhotos([...current.photos, ...uploadedUrls]),
-      }));
-
-      setNotice({
-        tone: 'success',
-        message: `${data.uploads.length} photo${data.uploads.length === 1 ? '' : 's'} uploaded.`,
-      });
-    } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Failed to upload images.',
-      });
+      return data.uploads.map((entry) => entry.url);
     } finally {
       setIsUploadingPhotos(false);
     }
   }
 
-  function removeDraftPhoto(photoUrl: string) {
-    setAssetDraft((current) => ({
-      ...current,
-      photos: current.photos.filter((photo) => photo !== photoUrl),
-    }));
-  }
+  async function uploadQueuedDocumentFiles(files: File[]): Promise<AssetDocument[]> {
+    if (!files.length) return [];
 
-
-  async function handleDocumentFilesSelected(event: ChangeEvent<HTMLInputElement>) {
-    const selectedFiles = Array.from(event.target.files ?? []);
-    event.target.value = '';
-
-    if (!selectedFiles.length) {
-      return;
-    }
-
-    const remainingSlots = MAX_DOCUMENTS - assetDraft.documents.length;
-
-    if (remainingSlots <= 0) {
-      setNotice({ tone: 'error', message: `You can upload a maximum of ${MAX_DOCUMENTS} documents per asset.` });
-      return;
-    }
-
-    const filesToUpload = selectedFiles.slice(0, remainingSlots);
     const formData = new FormData();
     formData.append('uploadType', 'document');
 
-    filesToUpload.forEach((file) => {
+    files.forEach((file) => {
       formData.append('files', file);
     });
 
@@ -2164,7 +2215,7 @@ export default function AssetRegisterClient() {
         throw new Error(data.error ?? 'Failed to upload documents.');
       }
 
-      const uploadedDocuments = data.uploads.map((entry) => ({
+      return data.uploads.map((entry) => ({
         id: entry.uploadId || entry.url,
         url: entry.url,
         fileName: entry.fileName,
@@ -2172,31 +2223,9 @@ export default function AssetRegisterClient() {
         byteSize: entry.byteSize,
         uploadedAtIso: new Date().toISOString(),
       }));
-
-      setAssetDraft((current) => ({
-        ...current,
-        documents: normalizeDocuments([...current.documents, ...uploadedDocuments]),
-      }));
-
-      setNotice({
-        tone: 'success',
-        message: `${data.uploads.length} document${data.uploads.length === 1 ? '' : 's'} uploaded.`,
-      });
-    } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Failed to upload documents.',
-      });
     } finally {
       setIsUploadingDocuments(false);
     }
-  }
-
-  function removeDraftDocument(documentId: string) {
-    setAssetDraft((current) => ({
-      ...current,
-      documents: current.documents.filter((document) => document.id !== documentId),
-    }));
   }
 
   async function handleAssetSubmit(event: FormEvent<HTMLFormElement>) {
@@ -2207,9 +2236,7 @@ export default function AssetRegisterClient() {
       return;
     }
 
-    const value = Math.round(Number(assetDraft.value) || 0);
-    const photos = normalizePhotos(assetDraft.photos);
-    const documents = normalizeDocuments(assetDraft.documents);
+    const value = parseRegisterValueInput(assetDraft.value);
     const hasYearModel = assetDraft.yearModel.trim() !== '';
     const yearModel = hasYearModel ? Number(assetDraft.yearModel) : null;
     const hasHours = assetDraft.hours.trim() !== '';
@@ -2274,6 +2301,10 @@ export default function AssetRegisterClient() {
       finance_status: assetDraft.financeStatus,
       insuranceStatus: assetDraft.insuranceStatus,
       insurance_status: assetDraft.insuranceStatus,
+      insuranceNote: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
+      insurance_note: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
+      insuredNote: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
+      insured_note: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
     };
     if (roundedLifeWorkedPercent !== null) {
       specsJson.life_worked_percent = roundedLifeWorkedPercent;
@@ -2284,26 +2315,31 @@ export default function AssetRegisterClient() {
 
     setIsSavingAsset(true);
 
-    const payload = {
-      kind: editingAsset?.valuationRunId ? editingAsset.kind : assetDraft.kind,
-      title: assetDraft.title,
-      value,
-      note: assetDraft.note,
-      serialNumber: assetDraft.serialNumber,
-      isFinanced: assetDraft.financeStatus === 'yes',
-      isInsured: assetDraft.insuranceStatus === 'yes',
-      financeNote: assetDraft.financeStatus === 'yes' ? assetDraft.financeNote : '',
-      photos,
-      documents,
-      yearModel: hasYearModel ? Math.round(Number(yearModel)) : null,
-      hours: showUsageHoursField && hasHours ? Math.round(Number(hours)) : null,
-      usageMetric: showUsageHoursField ? assetDraft.usageMetric : null,
-      lifeWorkedPercent: roundedLifeWorkedPercent,
-      specsJson,
-      condition: showConditionField ? assetDraft.condition || null : null,
-    };
-
     try {
+      const uploadedPhotoUrls = await uploadQueuedPhotoFiles(pendingPhotoFiles);
+      const uploadedDocuments = await uploadQueuedDocumentFiles(pendingDocumentFiles);
+      const photos = normalizePhotos([...assetDraft.photos, ...uploadedPhotoUrls]);
+      const documents = normalizeDocuments([...assetDraft.documents, ...uploadedDocuments]);
+
+      const payload = {
+        kind: editingAsset?.valuationRunId ? editingAsset.kind : assetDraft.kind,
+        title: assetDraft.title,
+        value,
+        note: assetDraft.note,
+        serialNumber: assetDraft.serialNumber,
+        isFinanced: assetDraft.financeStatus === 'yes',
+        isInsured: assetDraft.insuranceStatus === 'yes',
+        financeNote: assetDraft.financeStatus === 'yes' ? assetDraft.financeNote : '',
+        photos,
+        documents,
+        yearModel: hasYearModel ? Math.round(Number(yearModel)) : null,
+        hours: showUsageHoursField && hasHours ? Math.round(Number(hours)) : null,
+        usageMetric: showUsageHoursField ? assetDraft.usageMetric : null,
+        lifeWorkedPercent: roundedLifeWorkedPercent,
+        specsJson,
+        condition: showConditionField ? assetDraft.condition || null : null,
+      };
+
       let assetIdToFocus: string | null = null;
 
       if (editingAssetId !== null) {
@@ -2627,6 +2663,7 @@ export default function AssetRegisterClient() {
       notes: [
         ...(asset.note ? [{ label: 'Notes', value: asset.note }] : []),
         ...(asset.financeNote ? [{ label: 'Finance note', value: asset.financeNote }] : []),
+        ...(readInsuranceNote(asset) ? [{ label: 'Insurance note', value: readInsuranceNote(asset) }] : []),
       ],
       methodCards: buildAssetSheetMethodCards(asset),
       footerNote: 'Aim4price asset sheet. All register values shown exclude VAT.',
@@ -2987,6 +3024,8 @@ export default function AssetRegisterClient() {
           ? 'Choose finance and insurance status.'
           : 'Upload files if needed, then save.';
   const selectedManualAssetType = getManualAssetOption(assetFormKind);
+  const manualDraftDocumentCount = assetDraft.documents.length + pendingDocumentFiles.length;
+  const manualDraftPhotoCount = assetDraft.photos.length + pendingPhotoFiles.length;
   const manualStepPrimaryLabel =
     manualAssetStep === 2
       ? 'Next'
@@ -3371,10 +3410,11 @@ export default function AssetRegisterClient() {
                                       </div>
                                     </div>
 
-                                    {asset.note || asset.financeNote ? (
+                                    {asset.note || asset.financeNote || readInsuranceNote(asset) ? (
                                       <div className={styles.noteStack}>
                                         {asset.note ? <p className={styles.note}>{asset.note}</p> : null}
                                         {asset.financeNote ? <p className={styles.note}>Finance: {asset.financeNote}</p> : null}
+                                        {readInsuranceNote(asset) ? <p className={styles.note}>Insurance: {readInsuranceNote(asset)}</p> : null}
                                       </div>
                                     ) : null}
                                   </div>
@@ -3654,19 +3694,21 @@ export default function AssetRegisterClient() {
 
                       <label className={`${styles.field} ${styles.manualValueField}`}>
                         <span>Value excl. VAT</span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={assetDraft.value}
-                          onChange={(event) =>
-                            setAssetDraft((current) => ({
-                              ...current,
-                              value: event.target.value,
-                            }))
-                          }
-                          placeholder="0"
-                        />
+                        <div className={styles.manualCurrencyInput}>
+                          <span>R</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={formatRegisterValueInput(assetDraft.value)}
+                            onChange={(event) =>
+                              setAssetDraft((current) => ({
+                                ...current,
+                                value: formatRegisterValueInput(event.target.value),
+                              }))
+                            }
+                            placeholder="0"
+                          />
+                        </div>
                       </label>
                     </div>
 
@@ -3835,7 +3877,7 @@ export default function AssetRegisterClient() {
                       </label>
 
                       {assetDraft.financeStatus === 'yes' ? (
-                        <label className={`${styles.field} ${styles.fullWidth}`}>
+                        <label className={`${styles.field} ${styles.manualStatusNoteField}`}>
                           <span>Finance note</span>
                           <input
                             value={assetDraft.financeNote}
@@ -3843,6 +3885,22 @@ export default function AssetRegisterClient() {
                               setAssetDraft((current) => ({
                                 ...current,
                                 financeNote: event.target.value,
+                              }))
+                            }
+                            placeholder="Optional"
+                          />
+                        </label>
+                      ) : null}
+
+                      {assetDraft.insuranceStatus === 'yes' ? (
+                        <label className={`${styles.field} ${styles.manualStatusNoteField}`}>
+                          <span>Insurance note</span>
+                          <input
+                            value={assetDraft.insuranceNote}
+                            onChange={(event) =>
+                              setAssetDraft((current) => ({
+                                ...current,
+                                insuranceNote: event.target.value,
                               }))
                             }
                             placeholder="Optional"
@@ -3870,7 +3928,7 @@ export default function AssetRegisterClient() {
                       </div>
                       <div>
                         <span>Value</span>
-                        <strong>{money(Math.round(Number(assetDraft.value) || 0))}</strong>
+                        <strong>{money(parseRegisterValueInput(assetDraft.value))}</strong>
                       </div>
                     </div>
 
@@ -3886,7 +3944,7 @@ export default function AssetRegisterClient() {
                             multiple
                             className={styles.fileInput}
                             onChange={handleDocumentFilesSelected}
-                            disabled={isUploadingDocuments || assetDraft.documents.length >= MAX_DOCUMENTS}
+                            disabled={isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS}
                           />
 
                           <div className={styles.uploadRow}>
@@ -3894,13 +3952,13 @@ export default function AssetRegisterClient() {
                               type="button"
                               className={styles.secondaryButton}
                               onClick={() => documentInputRef.current?.click()}
-                              disabled={isUploadingDocuments || assetDraft.documents.length >= MAX_DOCUMENTS}
+                              disabled={isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS}
                             >
                               {isUploadingDocuments ? 'Uploading...' : 'Add documents'}
                             </button>
 
                             <span className={styles.uploadCount}>
-                              {assetDraft.documents.length} / {MAX_DOCUMENTS}
+                              {manualDraftDocumentCount} / {MAX_DOCUMENTS}
                             </span>
                           </div>
                         </div>
@@ -3917,7 +3975,7 @@ export default function AssetRegisterClient() {
                             multiple
                             className={styles.fileInput}
                             onChange={handlePhotoFilesSelected}
-                            disabled={isUploadingPhotos || assetDraft.photos.length >= MAX_PHOTOS}
+                            disabled={isUploadingPhotos || manualDraftPhotoCount >= MAX_PHOTOS}
                           />
 
                           <div className={styles.uploadRow}>
@@ -3925,13 +3983,13 @@ export default function AssetRegisterClient() {
                               type="button"
                               className={styles.secondaryButton}
                               onClick={() => photoInputRef.current?.click()}
-                              disabled={isUploadingPhotos || assetDraft.photos.length >= MAX_PHOTOS}
+                              disabled={isUploadingPhotos || manualDraftPhotoCount >= MAX_PHOTOS}
                             >
                               {isUploadingPhotos ? 'Uploading...' : 'Add photos'}
                             </button>
 
                             <span className={styles.uploadCount}>
-                              {assetDraft.photos.length} / {MAX_PHOTOS}
+                              {manualDraftPhotoCount} / {MAX_PHOTOS}
                             </span>
                           </div>
                         </div>
@@ -3960,7 +4018,27 @@ export default function AssetRegisterClient() {
                       </div>
                     ) : null}
 
-                    {assetDraft.photos.length ? (
+
+                    {pendingDocumentFiles.length ? (
+                      <div className={styles.documentDraftList}>
+                        {pendingDocumentFiles.map((file, index) => (
+                          <div className={`${styles.documentDraftRow} ${styles.pendingDraftRow}`} key={`${file.name}-${file.size}-${index}`}>
+                            <span className={styles.documentDraftIcon}>
+                              <DocumentIcon className={styles.buttonIcon} />
+                            </span>
+                            <div>
+                              <strong>{shortDocumentName(file.name)}</strong>
+                              <small>Ready to upload · {formatByteSize(file.size)}</small>
+                            </div>
+                            <button type="button" className={styles.documentRemoveButton} onClick={() => removePendingDocumentFile(index)}>
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    {assetDraft.photos.length || pendingPhotoFiles.length ? (
                       <div className={styles.photoGrid}>
                         {assetDraft.photos.map((photo, index) => (
                           <div className={styles.photoThumb} key={`${photo}-${index}`}>
@@ -3969,6 +4047,22 @@ export default function AssetRegisterClient() {
                               type="button"
                               className={styles.photoRemoveButton}
                               onClick={() => removeDraftPhoto(photo)}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+
+                        {pendingPhotoFiles.map((file, index) => (
+                          <div className={`${styles.photoThumb} ${styles.pendingPhotoThumb}`} key={`${file.name}-${file.size}-${index}`}>
+                            <div className={styles.pendingPhotoPlaceholder}>
+                              <span>Ready</span>
+                              <strong>{shortDocumentName(file.name)}</strong>
+                            </div>
+                            <button
+                              type="button"
+                              className={styles.photoRemoveButton}
+                              onClick={() => removePendingPhotoFile(index)}
                             >
                               Remove
                             </button>

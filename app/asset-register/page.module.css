@@ -10359,3 +10359,217 @@
     width: 100% !important;
   }
 }
+
+/* === Manual Add Asset final usability pass: wider modal, currency input, deferred uploads === */
+.assetFormModal {
+  width: min(100%, 1080px) !important;
+  max-height: min(93vh, calc(100dvh - 1rem)) !important;
+  padding: clamp(1.35rem, 2.2vw, 1.85rem) !important;
+  border-radius: 2rem !important;
+}
+
+.assetFormModalStepOne {
+  width: min(100%, 940px) !important;
+}
+
+.manualWizardHeader h3,
+.assetFormModalHeader h3 {
+  font-size: clamp(1.85rem, 2.45vw, 2.35rem) !important;
+}
+
+.manualWizardHeader p,
+.assetFormModalHeader p {
+  font-size: 1.04rem !important;
+}
+
+.manualStepProgressItem {
+  min-height: 2.9rem !important;
+  padding: 0.56rem 0.74rem !important;
+}
+
+.manualStepProgressItem small {
+  font-size: 0.86rem !important;
+}
+
+.manualCompactStageCard,
+.manualStageCard,
+.manualSingleStageCard {
+  padding: clamp(1.18rem, 1.85vw, 1.55rem) !important;
+  border-radius: 1.48rem !important;
+}
+
+.manualStepIntro h4 {
+  font-size: clamp(1.38rem, 1.85vw, 1.68rem) !important;
+}
+
+.manualStageGrid,
+.manualPrimaryFields,
+.manualOptionalGrid {
+  gap: 0.95rem !important;
+}
+
+.assetFormModal .field > span,
+.assetFormModal .checkboxRow > span,
+.field span,
+.checkboxRow span {
+  font-size: 0.96rem !important;
+}
+
+.assetFormModal .field input,
+.assetFormModal .field select,
+.assetFormModal .field textarea,
+.field input,
+.field select,
+.field textarea {
+  min-height: 3.5rem !important;
+  font-size: 1.06rem !important;
+}
+
+.manualPrimaryFields .field {
+  padding: 1rem !important;
+  border-radius: 1.18rem !important;
+}
+
+.manualCurrencyField {
+  gap: 0.5rem !important;
+}
+
+.manualCurrencyInput {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 0.48rem !important;
+  min-height: 3.5rem !important;
+  padding: 0 0.95rem !important;
+  border-radius: 0.98rem !important;
+  border: 1px solid rgba(190, 224, 206, 0.98) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.manualCurrencyInput:focus-within {
+  border-color: rgba(22, 83, 64, 0.44) !important;
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.manualCurrencyInput > span {
+  color: #124635 !important;
+  font-size: 1.08rem !important;
+  font-weight: 780 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.assetFormModal .manualCurrencyInput input,
+.manualCurrencyInput input {
+  width: 100% !important;
+  min-height: 3.25rem !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #20313b !important;
+  font-size: 1.08rem !important;
+  font-weight: 560 !important;
+}
+
+.assetFormModal .manualCurrencyInput input:focus,
+.manualCurrencyInput input:focus {
+  outline: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.manualStatusNoteField {
+  grid-column: span 1 !important;
+}
+
+.manualReviewStrip > div {
+  min-height: 3.75rem !important;
+}
+
+.manualReviewStrip strong {
+  font-size: 0.98rem !important;
+}
+
+.manualStageCard .documentUploadPanel,
+.manualStageCard .uploadPanel {
+  min-height: 6.4rem !important;
+  padding: 1rem !important;
+}
+
+.manualStageCard .uploadRow .secondaryButton {
+  min-height: 3.05rem !important;
+  padding-inline: 1rem !important;
+  font-size: 0.98rem !important;
+}
+
+.pendingDraftRow {
+  border-style: dashed !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f4faf7 100%) !important;
+  border-color: rgba(190, 224, 206, 0.98) !important;
+}
+
+.pendingDraftRow .documentDraftIcon {
+  color: #124635 !important;
+  background: #edf8f2 !important;
+  border-color: rgba(190, 224, 206, 0.98) !important;
+}
+
+.pendingPhotoThumb {
+  border-style: dashed !important;
+  border-color: rgba(190, 224, 206, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f4faf7 100%) !important;
+}
+
+.pendingPhotoPlaceholder {
+  display: grid !important;
+  place-items: center !important;
+  gap: 0.32rem !important;
+  width: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  padding: 0.85rem !important;
+  border-radius: 0.85rem !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%) !important;
+  border: 1px solid rgba(190, 224, 206, 0.98) !important;
+  text-align: center !important;
+}
+
+.pendingPhotoPlaceholder span {
+  color: #124635 !important;
+  font-size: 0.72rem !important;
+  font-weight: 820 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+.pendingPhotoPlaceholder strong {
+  color: #10352b !important;
+  font-size: 0.84rem !important;
+  font-weight: 680 !important;
+  line-height: 1.25 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.assetFormActions .primaryButton,
+.assetFormActions .secondaryButton {
+  min-height: 3.18rem !important;
+  font-size: 1rem !important;
+}
+
+@media (max-width: 900px) {
+  .assetFormModal,
+  .assetFormModalStepOne {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: min(92vh, calc(100dvh - 1rem)) !important;
+    padding: 1.08rem !important;
+  }
+
+  .manualStatusNoteField {
+    grid-column: 1 / -1 !important;
+  }
+}
