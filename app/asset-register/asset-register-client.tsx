@@ -1183,6 +1183,103 @@ function assetFamilyLabel(asset: RegisterAsset): string {
   return 'Other';
 }
 
+
+function cleanReportText(value: unknown): string {
+  return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function isMeaningfulReportValue(value: string): boolean {
+  const normalized = cleanReportText(value).toLowerCase();
+  return Boolean(normalized && normalized !== '-' && normalized !== '—' && normalized !== 'unknown' && normalized !== 'n/a');
+}
+
+function readTextFromSpecs(specs: Record<string, unknown>, keys: string[]): string {
+  for (const key of keys) {
+    const direct = cleanReportText(specs[key]);
+    if (isMeaningfulReportValue(direct)) return direct;
+  }
+
+  return '';
+}
+
+function removeFirstCaseInsensitive(source: string, part: string): string {
+  const text = cleanReportText(source);
+  const needle = cleanReportText(part);
+  if (!text || !needle) return text;
+
+  const index = text.toLowerCase().indexOf(needle.toLowerCase());
+  if (index < 0) return text;
+
+  return cleanReportText(`${text.slice(0, index)} ${text.slice(index + needle.length)}`);
+}
+
+function removeTrailingFamilyWords(value: string, familyLabel: string): string {
+  let cleaned = cleanReportText(value);
+  const familyWords = cleanReportText(familyLabel)
+    .split(/[^a-zA-Z0-9]+/)
+    .map((word) => word.trim())
+    .filter((word) => word.length > 3);
+
+  for (const word of familyWords) {
+    const variants = [word, word.endsWith('s') ? word.slice(0, -1) : `${word}s`].filter(Boolean);
+    for (const variant of variants) {
+      const pattern = new RegExp(`\\s+${variant.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}$`, 'i');
+      cleaned = cleanReportText(cleaned.replace(pattern, ''));
+    }
+  }
+
+  return cleaned;
+}
+
+function deriveAssetReportModelName(asset: RegisterAsset, reportBrandName = ''): string {
+  const directModel = cleanReportText(asset.modelName) || cleanReportText(asset.typedModelName);
+  if (isMeaningfulReportValue(directModel)) return directModel;
+
+  const fromSpecs = readTextFromSpecs(asset.specsJson ?? {}, [
+    'modelName',
+    'model_name',
+    'typedModelName',
+    'typed_model_name',
+    'model',
+  ]);
+  if (fromSpecs) return fromSpecs;
+
+  const titleWithoutBrand = removeFirstCaseInsensitive(asset.title, reportBrandName);
+  const fallback = removeTrailingFamilyWords(titleWithoutBrand, assetFamilyLabel(asset));
+  return isMeaningfulReportValue(fallback) ? fallback : '—';
+}
+
+function deriveAssetReportBrandName(asset: RegisterAsset, reportModelName = ''): string {
+  const directBrand = cleanReportText(asset.brandName);
+  if (isMeaningfulReportValue(directBrand)) return directBrand;
+
+  const fromSpecs = readTextFromSpecs(asset.specsJson ?? {}, [
+    'brandName',
+    'brand_name',
+    'brand',
+    'make',
+    'makeName',
+    'make_name',
+    'manufacturer',
+    'manufacturerName',
+    'manufacturer_name',
+  ]);
+  if (fromSpecs) return fromSpecs;
+
+  const modelCandidates = [reportModelName, asset.modelName, asset.typedModelName]
+    .map(cleanReportText)
+    .filter(isMeaningfulReportValue)
+    .sort((a, b) => b.length - a.length);
+
+  let inferred = cleanReportText(asset.title);
+  for (const model of modelCandidates) {
+    inferred = removeFirstCaseInsensitive(inferred, model);
+  }
+  inferred = removeTrailingFamilyWords(inferred, assetFamilyLabel(asset));
+
+  return isMeaningfulReportValue(inferred) ? inferred : '—';
+}
+
 function readNumberFromSpecs(specs: Record<string, unknown>, keys: string[]): number | null {
   for (const key of keys) {
     const value = specs[key];
@@ -2650,13 +2747,15 @@ export default function AssetRegisterClient() {
     const ownerName = accountProfile?.businessName?.trim() || accountProfile?.name?.trim() || 'Aim4price client';
     const ownerEmail = accountProfile?.email?.trim() || '—';
     const ownerPhone = accountProfile?.phone?.trim() || '—';
-    const modelValue = asset.modelName || asset.typedModelName || '—';
     const familyLabel = assetKindLabel(asset);
+    const initialModelValue = asset.modelName || asset.typedModelName || '';
+    const reportBrandName = deriveAssetReportBrandName(asset, initialModelValue);
+    const modelValue = deriveAssetReportModelName(asset, reportBrandName);
     const selectedMethodCards = buildAssetSheetMethodCards(asset).filter((card) => card.selected);
     const methodCards = selectedMethodCards.length ? selectedMethodCards : buildAssetSheetMethodCards(asset).slice(0, 1);
     const assetRows = [
       { label: 'Category', value: familyLabel },
-      { label: 'Brand', value: asset.brandName || '—' },
+      { label: 'Brand', value: reportBrandName },
       { label: 'Model', value: modelValue },
       ...(asset.powerKw ? [{ label: 'Power', value: `${asset.powerKw} kW` }] : []),
       ...(asset.tractorType ? [{ label: 'Type', value: formatTractorType(asset.tractorType) }] : []),
