@@ -498,7 +498,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
       setAsset(data.asset);
       setDraft(initialDraft);
       setLocationState('idle');
-      setLocationMessage('Capturing the scan location automatically…');
+      setLocationMessage('Capturing GPS automatically…');
     } finally {
       setIsLoadingAsset(false);
     }
@@ -530,7 +530,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
 
       setPin('');
       await loadUnlockedAsset();
-      setNotice({ tone: 'success', message: 'Asset unlocked. Tap a block to update it.' });
+      setNotice({ tone: 'success', message: 'Asset unlocked.' });
     } catch (error) {
       setAsset(null);
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Incorrect scan PIN.' });
@@ -579,6 +579,47 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
     setDraft((current) => ({ ...current, photoUrls: current.photoUrls.filter((entry) => entry !== url) }));
   }
 
+  function keepCurrentLocation(current: DraftState): DraftState {
+    return {
+      ...initialDraft,
+      latitude: current.latitude,
+      longitude: current.longitude,
+    };
+  }
+
+  function openEditor(nextEditor: EditorKey) {
+    setDraft((current) => {
+      const nextDraft = keepCurrentLocation(current);
+
+      if (!asset) {
+        return nextDraft;
+      }
+
+      if (nextEditor === 'usage') {
+        if (asset.usageMode === 'percent' && asset.lifeWorkedPercent !== null) {
+          return { ...nextDraft, lifeWorkedPercent: String(asset.lifeWorkedPercent) };
+        }
+
+        if ((asset.usageMode === 'hours' || asset.usageMode === 'km') && asset.hours !== null) {
+          return { ...nextDraft, hours: String(Math.round(asset.hours)) };
+        }
+      }
+
+      if (nextEditor === 'fuel' && asset.fuelPercent !== null) {
+        return { ...nextDraft, fuelPercent: String(Math.round(asset.fuelPercent)) };
+      }
+
+      return nextDraft;
+    });
+
+    setActiveEditor(nextEditor);
+  }
+
+  function closeEditor() {
+    setDraft((current) => keepCurrentLocation(current));
+    setActiveEditor(null);
+  }
+
   async function captureLocation(isAutomatic = false) {
     if (typeof window === 'undefined' || !window.isSecureContext) {
       setLocationState('error');
@@ -606,7 +647,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
             longitude,
           }));
           setLocationState('ready');
-          setLocationMessage('Location captured. This QR update will place the asset exactly where it was scanned.');
+          setLocationMessage('GPS captured for this scan.');
           if (!isAutomatic) {
             setNotice({ tone: 'success', message: 'Location captured.' });
           }
@@ -682,7 +723,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
       setActiveEditor(null);
       setNotice({ tone: 'success', message: 'QR update saved.' });
       setLocationState('idle');
-      setLocationMessage('Capturing the next scan location automatically…');
+      setLocationMessage('Capturing GPS for the next scan…');
       void captureLocation(true);
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save the QR update.' });
@@ -705,11 +746,8 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
         <header className={styles.hero}>
           <div className={styles.heroContent}>
             <span className={styles.eyebrow}>Aim4price QR update</span>
-            <h1>{asset?.title || 'Unlock this asset'}</h1>
-            <p>
-              Every public QR scan asks for the farm PIN first. Then the manager can save the correct usage, service note,
-              photos and GPS point without opening the full account.
-            </p>
+            <h1>{asset?.title || 'Asset scan'}</h1>
+            <p>{asset ? 'Tap one big button to update this asset.' : 'Enter the farm PIN to open this asset.'}</p>
           </div>
 
           <div className={styles.heroAside}>
@@ -719,7 +757,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
             </div>
             <div className={styles.heroStat}>
               <span>Location rule</span>
-              <strong>GPS required</strong>
+              <strong>Auto GPS</strong>
             </div>
           </div>
         </header>
@@ -732,8 +770,8 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
           <section className={styles.pinCard}>
             <div className={styles.pinCardCopy}>
               <span className={styles.kicker}>Farm PIN required</span>
-              <h2>Enter the farm scan PIN</h2>
-              <p>This public QR page never opens the finance side. Unlock the asset, then tap one of the update blocks below.</p>
+              <h2>Enter farm PIN</h2>
+              <p>Unlock the asset, then choose what you want to update.</p>
             </div>
 
             <form className={styles.pinForm} onSubmit={handlePinSubmit}>
@@ -751,7 +789,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
 
               <div className={styles.pinActions}>
                 <button type="submit" className={styles.primaryButton} disabled={isSubmittingPin || isLoadingAsset || pin.length < 4}>
-                  {isSubmittingPin || isLoadingAsset ? 'Opening asset…' : 'Open asset'}
+                  {isSubmittingPin || isLoadingAsset ? 'Opening…' : 'Unlock asset'}
                 </button>
                 <Link href="/" className={styles.secondaryButton}>Back to Aim4price</Link>
               </div>
@@ -783,9 +821,9 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
 
                 <div className={styles.assetSummary}>
                   <div>
-                    <span className={styles.kicker}>Operational asset</span>
+                    <span className={styles.kicker}>Asset opened</span>
                     <h2>{asset.title}</h2>
-                    <p>{asset.serialNumber ? `Serial ${asset.serialNumber}` : 'Serial number not saved yet.'}</p>
+                    <p>{asset.serialNumber ? `Serial ${asset.serialNumber}` : asset.equipmentFamilyLabel || 'Ready to update'}</p>
                   </div>
 
                   <div className={styles.summaryGrid}>
@@ -827,8 +865,8 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
                   </span>
                 </div>
                 <div>
-                  <span className={styles.kicker}>Required location</span>
-                  <h3>Every QR update must save where the asset was scanned</h3>
+                  <span className={styles.kicker}>GPS location</span>
+                  <h3>{locationState === 'ready' ? 'Location ready' : 'Location required'}</h3>
                   <p>{locationMessage}</p>
                   {locationReady ? (
                     <p className={styles.metaText}>
@@ -850,7 +888,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
 
             <section className={styles.quickActionGrid}>
               {showUsageAction ? (
-                <button type="button" className={styles.quickActionCard} onClick={() => setActiveEditor('usage')}>
+                <button type="button" className={styles.quickActionCard} onClick={() => openEditor('usage')}>
                   <div className={styles.quickActionIconWrap}>
                     <MeterIcon className={styles.quickActionIcon} />
                   </div>
@@ -863,7 +901,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
               ) : null}
 
               {showFuelAction ? (
-                <button type="button" className={styles.quickActionCard} onClick={() => setActiveEditor('fuel')}>
+                <button type="button" className={styles.quickActionCard} onClick={() => openEditor('fuel')}>
                   <div className={styles.quickActionIconWrap}>
                     <FuelIcon className={styles.quickActionIcon} />
                   </div>
@@ -875,18 +913,18 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
                 </button>
               ) : null}
 
-              <button type="button" className={styles.quickActionCard} onClick={() => setActiveEditor('service')}>
+              <button type="button" className={styles.quickActionCard} onClick={() => openEditor('service')}>
                 <div className={styles.quickActionIconWrap}>
                   <ServiceIcon className={styles.quickActionIcon} />
                 </div>
                 <div className={styles.quickActionCopy}>
-                  <strong>Serviced/Checked</strong>
+                  <strong>Service</strong>
                   <span>{buildEditorSummary('service', draft, asset)}</span>
                 </div>
                 <ChevronRightIcon className={styles.quickActionChevron} />
               </button>
 
-              <button type="button" className={styles.quickActionCard} onClick={() => setActiveEditor('notes')}>
+              <button type="button" className={styles.quickActionCard} onClick={() => openEditor('notes')}>
                 <div className={styles.quickActionIconWrap}>
                   <NotesIcon className={styles.quickActionIcon} />
                 </div>
@@ -897,7 +935,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
                 <ChevronRightIcon className={styles.quickActionChevron} />
               </button>
 
-              <button type="button" className={styles.quickActionCard} onClick={() => setActiveEditor('photos')}>
+              <button type="button" className={styles.quickActionCard} onClick={() => openEditor('photos')}>
                 <div className={styles.quickActionIconWrap}>
                   <CameraIcon className={styles.quickActionIcon} />
                 </div>
@@ -911,30 +949,8 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
 
             <section className={styles.saveBar}>
               <div className={styles.saveBarCopy}>
-                <strong>
-                  {pendingCount
-                    ? `${pendingCount} block${pendingCount === 1 ? '' : 's'} ready to save`
-                    : 'Choose an update block above'}
-                </strong>
-                <span>
-                  {locationReady
-                    ? 'When you save, Aim4price stores the update and the live GPS scan point together.'
-                    : 'GPS must be captured before any QR update can be saved.'}
-                </span>
-              </div>
-
-              <div className={styles.saveBarActions}>
-                <button type="button" className={styles.primaryButton} disabled={!canSave} onClick={() => void handleSaveUpdate()}>
-                  {isSaving ? 'Saving update…' : 'Save QR update'}
-                </button>
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
-                  onClick={() => setDraft((current) => ({ ...initialDraft, latitude: current.latitude, longitude: current.longitude }))}
-                  disabled={isSaving || !hasMeaningfulDraftValue(draft)}
-                >
-                  Clear changes
-                </button>
+                <strong>{locationReady ? 'Ready to scan' : 'GPS needed'}</strong>
+                <span>{locationReady ? 'Choose one update button above. Each save stores the GPS point automatically.' : 'Allow location before saving QR updates.'}</span>
               </div>
             </section>
           </>
@@ -943,7 +959,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
 
       {asset && activeEditor ? (
         <div className={styles.modalOverlay}>
-          <div className={styles.modalBackdrop} onClick={() => setActiveEditor(null)} />
+          <div className={styles.modalBackdrop} onClick={closeEditor} />
 
           <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="scan-editor-title">
             <div className={styles.modalHeader}>
@@ -953,7 +969,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
                 <p>{modalCopy.description}</p>
               </div>
 
-              <button type="button" className={styles.modalCloseButton} onClick={() => setActiveEditor(null)} aria-label="Close editor">
+              <button type="button" className={styles.modalCloseButton} onClick={closeEditor} aria-label="Close editor">
                 <CloseIcon className={styles.buttonIcon} />
               </button>
             </div>
@@ -1065,8 +1081,11 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
             </div>
 
             <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={() => setActiveEditor(null)}>
-                Done
+              <button type="button" className={styles.secondaryButton} onClick={closeEditor} disabled={isSaving}>
+                Cancel
+              </button>
+              <button type="button" className={styles.primaryButton} disabled={!canSave || isUploading} onClick={() => void handleSaveUpdate()}>
+                {isSaving ? 'Saving…' : 'Save update'}
               </button>
             </div>
           </div>
