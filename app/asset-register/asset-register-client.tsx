@@ -1424,6 +1424,7 @@ export default function AssetRegisterClient() {
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
   const [manualAssetStep, setManualAssetStep] = useState<ManualAssetStep>(1);
+  const [hasManualAssetKindSelection, setHasManualAssetKindSelection] = useState(false);
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [copiedScanLinkAssetId, setCopiedScanLinkAssetId] = useState<string | null>(null);
@@ -1843,6 +1844,7 @@ export default function AssetRegisterClient() {
     setEditingAssetId(null);
     setAssetDraft(initialAssetDraft);
     setManualAssetStep(1);
+    setHasManualAssetKindSelection(false);
 
     if (photoInputRef.current) {
       photoInputRef.current.value = '';
@@ -1868,10 +1870,13 @@ export default function AssetRegisterClient() {
     setEditingAssetId(asset.id);
     setAssetDraft(buildDraftFromAsset(asset));
     setManualAssetStep(2);
+    setHasManualAssetKindSelection(true);
     setIsAssetModalOpen(true);
   }
 
   function selectManualAssetKind(nextKind: AssetKind, shouldAdvance = false) {
+    setHasManualAssetKindSelection(true);
+
     setAssetDraft((current) => ({
       ...current,
       kind: nextKind,
@@ -2981,6 +2986,33 @@ export default function AssetRegisterClient() {
         : manualAssetStep === 3
           ? 'Mark whether the asset is financed and insured.'
           : 'Attach optional documents and photos, then save the asset.';
+  const selectedManualAssetType = getManualAssetOption(assetFormKind);
+  const manualStepPrimaryLabel =
+    manualAssetStep === 1
+      ? 'Continue to details'
+      : manualAssetStep === 2
+        ? 'Continue to finance'
+        : manualAssetStep === 3
+          ? 'Continue to documents'
+          : editingAsset
+            ? 'Update asset'
+            : 'Save asset';
+  const manualStepFooterTitle =
+    manualAssetStep === 1
+      ? 'Choose one type to continue.'
+      : manualAssetStep === 2
+        ? 'Title and value are required.'
+        : manualAssetStep === 3
+          ? 'Choose a status or leave Not sure selected.'
+          : 'Documents and photos are optional.';
+  const manualStepFooterHint =
+    manualAssetStep === 1
+      ? 'The next step opens automatically after you select an asset group.'
+      : manualAssetStep === 2
+        ? 'Use a simple asset name and the current value excluding VAT.'
+        : manualAssetStep === 3
+          ? 'These choices make summary totals cleaner for finance and insurance reports.'
+          : 'Save now, or attach supporting files first.';
 
   return (
     <main className={styles.page}>
@@ -3536,12 +3568,14 @@ export default function AssetRegisterClient() {
             aria-modal="true"
             aria-labelledby="asset-form-title"
           >
-            <div className={`${styles.modalHeader} ${styles.assetFormModalHeader}`}>
+            <div className={`${styles.modalHeader} ${styles.assetFormModalHeader} ${styles.manualWizardHeader}`}>
               <div className={styles.modalHeaderText}>
+                <div className={styles.manualWizardHeaderKicker}>
+                  <span>Step {manualAssetStep} of 4</span>
+                  <strong>{currentManualStepMeta.label}</strong>
+                </div>
                 <h3 id="asset-form-title">{editingAsset ? 'Update asset details' : 'Add asset to register'}</h3>
-                <p>
-                  Step {manualAssetStep} of 4 · {currentManualStepMeta.label} · {assetFormStepDescription}
-                </p>
+                <p>{assetFormStepDescription}</p>
               </div>
 
               <button
@@ -3557,29 +3591,32 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalScrollBody} ${styles.manualStepScrollBody} ${manualAssetStep === 1 ? styles.manualStepScrollBodyNoScroll : ''}`}>
               <form className={`${styles.modalForm} ${styles.manualAssetForm} ${styles.manualStepForm}`} onSubmit={handleAssetSubmit}>
                 <div className={styles.manualStepProgress} aria-label="Manual asset progress">
-                  {MANUAL_FORM_STEPS.map((entry) => (
-                    <span
-                      key={entry.step}
-                      className={`${styles.manualStepProgressItem} ${entry.step === manualAssetStep ? styles.manualStepProgressItemActive : ''} ${entry.step < manualAssetStep ? styles.manualStepProgressItemComplete : ''}`}
-                    >
-                      <span>{entry.step}</span>
-                      <small>{entry.label}</small>
-                    </span>
-                  ))}
+                  {MANUAL_FORM_STEPS.map((entry) => {
+                    const isActiveStep = entry.step === manualAssetStep;
+                    const isCompleteStep = entry.step < manualAssetStep;
+
+                    return (
+                      <span
+                        key={entry.step}
+                        className={`${styles.manualStepProgressItem} ${isActiveStep ? styles.manualStepProgressItemActive : ''} ${isCompleteStep ? styles.manualStepProgressItemComplete : ''}`}
+                      >
+                        <span>{isCompleteStep ? '✓' : entry.step}</span>
+                        <small>{entry.label}</small>
+                      </span>
+                    );
+                  })}
                 </div>
 
                 {manualAssetStep === 1 ? (
-                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.fullWidth}`}>
-                    <div className={styles.manualStageHeader}>
-                      <span className={styles.manualStageNumber}>1</span>
-                      <div>
-                        <h4>Equipment type</h4>
-                        <p>Select one asset group. The form will move to details automatically after your selection.</p>
-                      </div>
+                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualStepOneCard} ${styles.fullWidth}`}>
+                    <div className={styles.manualStepIntro}>
+                      <span className={styles.manualStepEyebrow}>Choose asset group</span>
+                      <h4>What type of asset are you adding?</h4>
+                      <p>Pick the closest group. This keeps the register, summaries and PDF sheets easier to read.</p>
                     </div>
 
                     {editingAsset?.valuationRunId ? (
-                      <label className={`${styles.field} ${styles.assetTypeField}`}>
+                      <label className={`${styles.field} ${styles.assetTypeField} ${styles.manualLockedTypeCard}`}>
                         <span>Asset type</span>
                         <input value={kindLabel(editingAsset.kind)} disabled readOnly />
                         <small className={styles.fieldHint}>This asset type comes from the saved valuation and cannot be changed here.</small>
@@ -3587,7 +3624,7 @@ export default function AssetRegisterClient() {
                     ) : (
                       <div className={styles.assetTypeChoiceGrid} role="radiogroup" aria-label="Asset type">
                         {MANUAL_ASSET_TYPE_OPTIONS.map((option) => {
-                          const isSelected = assetFormKind === option.value;
+                          const isSelected = hasManualAssetKindSelection && assetFormKind === option.value;
 
                           return (
                             <button
@@ -3602,28 +3639,42 @@ export default function AssetRegisterClient() {
                                 <strong>{option.label}</strong>
                                 <small>{option.description}</small>
                               </span>
-                              <span className={styles.assetTypeChoiceStatus}>{isSelected ? 'Selected' : 'Select'}</span>
+                              <span className={styles.assetTypeChoiceStatus}>{isSelected ? 'Selected' : 'Choose'}</span>
                             </button>
                           );
                         })}
                       </div>
                     )}
+
+                    <div className={styles.manualStepHelperStrip}>
+                      <strong>No wrong choice.</strong>
+                      <span>Use Other when the asset does not fit the standard groups.</span>
+                    </div>
                   </section>
                 ) : null}
 
                 {manualAssetStep === 2 ? (
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.fullWidth}`}>
-                    <div className={styles.manualStageHeader}>
-                      <span className={styles.manualStageNumber}>2</span>
-                      <div>
-                        <h4>Details, title and value</h4>
-                        <p>Capture the information that should appear on the asset register and asset PDF.</p>
-                      </div>
+                    <div className={styles.manualStepIntro}>
+                      <span className={styles.manualStepEyebrow}>Asset details</span>
+                      <h4>Give the asset a clear name and value</h4>
+                      <p>Keep the title short. Add the value you want stored in the register, excluding VAT.</p>
                     </div>
 
-                    <div className={styles.manualStageGrid}>
-                      <label className={styles.field}>
-                        <span>Title</span>
+                    <div className={styles.manualSelectedTypeStrip}>
+                      <span>Selected type</span>
+                      <strong>{selectedManualAssetType.label}</strong>
+                      <small>{selectedManualAssetType.description}</small>
+                    </div>
+
+                    <div className={styles.manualSectionLabel}>
+                      <strong>Required</strong>
+                      <span>These two fields are needed before you can continue.</span>
+                    </div>
+
+                    <div className={`${styles.manualStageGrid} ${styles.manualPrimaryFields}`}>
+                      <label className={`${styles.field} ${styles.manualTitleField}`}>
+                        <span>Asset title</span>
                         <input
                           value={assetDraft.title}
                           onChange={(event) =>
@@ -3632,12 +3683,14 @@ export default function AssetRegisterClient() {
                               title: event.target.value,
                             }))
                           }
-                          placeholder={getManualAssetOption(assetFormKind).titlePlaceholder}
+                          placeholder={selectedManualAssetType.titlePlaceholder}
+                          autoFocus
                         />
+                        <small className={styles.fieldHint}>Example: “Toyota Hilux farm bakkie” or “Main workshop building”.</small>
                       </label>
 
-                      <label className={styles.field}>
-                        <span>Value</span>
+                      <label className={`${styles.field} ${styles.manualValueField}`}>
+                        <span>Register value excl. VAT</span>
                         <input
                           type="number"
                           min="0"
@@ -3651,8 +3704,16 @@ export default function AssetRegisterClient() {
                           }
                           placeholder="0"
                         />
+                        <small className={styles.fieldHint}>Use the current value you want shown on the register.</small>
                       </label>
+                    </div>
 
+                    <div className={styles.manualSectionLabel}>
+                      <strong>Optional details</strong>
+                      <span>Add what you know now. These can be updated later.</span>
+                    </div>
+
+                    <div className={styles.manualStageGrid}>
                       <label className={styles.field}>
                         <span>Serial / reference</span>
                         <input
@@ -3792,19 +3853,17 @@ export default function AssetRegisterClient() {
 
                 {manualAssetStep === 3 ? (
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.fullWidth}`}>
-                    <div className={styles.manualStageHeader}>
-                      <span className={styles.manualStageNumber}>3</span>
-                      <div>
-                        <h4>Finance and insurance</h4>
-                        <p>Select a clear status for finance and insurance. Use Not sure if you still need to confirm it.</p>
-                      </div>
+                    <div className={styles.manualStepIntro}>
+                      <span className={styles.manualStepEyebrow}>Finance and insurance</span>
+                      <h4>Mark the asset status</h4>
+                      <p>Select one option in each section. Not sure is safe when you still need to confirm the paperwork.</p>
                     </div>
 
                     <div className={styles.statusChoiceStack}>
-                      <div className={styles.statusChoiceGroup}>
+                      <div className={styles.statusChoicePanel}>
                         <div className={styles.statusChoiceHeading}>
                           <h5>Finance status</h5>
-                          <p>Choose the option that best matches the current asset finance position.</p>
+                          <p>This controls the financed asset count and value in your register summary.</p>
                         </div>
 
                         <div className={styles.statusChoiceGrid} role="radiogroup" aria-label="Finance status">
@@ -3819,33 +3878,6 @@ export default function AssetRegisterClient() {
                                 role="radio"
                                 aria-checked={isSelected}
                                 onClick={() => setAssetFinanceStatus(option.value)}
-                              >
-                                <strong>{option.label}</strong>
-                                <small>{option.description}</small>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <div className={styles.statusChoiceGroup}>
-                        <div className={styles.statusChoiceHeading}>
-                          <h5>Insurance status</h5>
-                          <p>Choose the option that best matches the current asset insurance position.</p>
-                        </div>
-
-                        <div className={styles.statusChoiceGrid} role="radiogroup" aria-label="Insurance status">
-                          {INSURANCE_STATUS_OPTIONS.map((option) => {
-                            const isSelected = assetDraft.insuranceStatus === option.value;
-
-                            return (
-                              <button
-                                key={option.value}
-                                type="button"
-                                className={`${styles.statusChoiceButton} ${isSelected ? styles.statusChoiceButtonActive : ''}`}
-                                role="radio"
-                                aria-checked={isSelected}
-                                onClick={() => setAssetInsuranceStatus(option.value)}
                               >
                                 <strong>{option.label}</strong>
                                 <small>{option.description}</small>
@@ -3870,17 +3902,72 @@ export default function AssetRegisterClient() {
                           />
                         </label>
                       ) : null}
+
+                      <div className={styles.statusChoicePanel}>
+                        <div className={styles.statusChoiceHeading}>
+                          <h5>Insurance status</h5>
+                          <p>This controls the insured asset count and value in your register summary.</p>
+                        </div>
+
+                        <div className={styles.statusChoiceGrid} role="radiogroup" aria-label="Insurance status">
+                          {INSURANCE_STATUS_OPTIONS.map((option) => {
+                            const isSelected = assetDraft.insuranceStatus === option.value;
+
+                            return (
+                              <button
+                                key={option.value}
+                                type="button"
+                                className={`${styles.statusChoiceButton} ${isSelected ? styles.statusChoiceButtonActive : ''}`}
+                                role="radio"
+                                aria-checked={isSelected}
+                                onClick={() => setAssetInsuranceStatus(option.value)}
+                              >
+                                <strong>{option.label}</strong>
+                                <small>{option.description}</small>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className={styles.manualStatusSummary}>
+                        <div>
+                          <span>Finance</span>
+                          <strong>{statusChoiceLabel(assetDraft.financeStatus)}</strong>
+                        </div>
+                        <div>
+                          <span>Insurance</span>
+                          <strong>{statusChoiceLabel(assetDraft.insuranceStatus)}</strong>
+                        </div>
+                      </div>
                     </div>
                   </section>
                 ) : null}
 
                 {manualAssetStep === 4 ? (
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.fullWidth}`}>
-                    <div className={styles.manualStageHeader}>
-                      <span className={styles.manualStageNumber}>4</span>
+                    <div className={styles.manualStepIntro}>
+                      <span className={styles.manualStepEyebrow}>Documents and gallery</span>
+                      <h4>Add files, then save</h4>
+                      <p>Documents and photos are optional. Save now, or attach invoices, NATIS papers, insurance documents and asset photos.</p>
+                    </div>
+
+                    <div className={styles.manualReviewStrip}>
                       <div>
-                        <h4>Documents and gallery</h4>
-                        <p>Attach finance documents, invoices, service records, NATIS papers or asset photos.</p>
+                        <span>Type</span>
+                        <strong>{selectedManualAssetType.label}</strong>
+                      </div>
+                      <div>
+                        <span>Title</span>
+                        <strong>{assetDraft.title.trim() || 'No title yet'}</strong>
+                      </div>
+                      <div>
+                        <span>Value</span>
+                        <strong>{money(Math.round(Number(assetDraft.value) || 0))}</strong>
+                      </div>
+                      <div>
+                        <span>Status</span>
+                        <strong>{statusChoiceLabel(assetDraft.financeStatus)} finance · {statusChoiceLabel(assetDraft.insuranceStatus)} insurance</strong>
                       </div>
                     </div>
 
@@ -3914,7 +4001,7 @@ export default function AssetRegisterClient() {
                             </span>
                           </div>
 
-                          <small className={styles.fieldHint}>Upload invoices, NATIS papers, insurance documents, finance contracts or service records.</small>
+                          <small className={styles.fieldHint}>Invoices, NATIS papers, insurance documents, finance contracts or service records.</small>
                         </div>
                       </div>
 
@@ -3946,6 +4033,8 @@ export default function AssetRegisterClient() {
                               {assetDraft.photos.length} / {MAX_PHOTOS} photos
                             </span>
                           </div>
+
+                          <small className={styles.fieldHint}>Photos make the asset sheet and QR history easier to verify.</small>
                         </div>
                       </div>
                     </div>
@@ -3988,21 +4077,31 @@ export default function AssetRegisterClient() {
                         ))}
                       </div>
                     ) : null}
+
+                    <div className={styles.manualSaveNote}>
+                      <strong>Ready to save.</strong>
+                      <span>After saving, Aim4price will open the new asset card and show a green success message.</span>
+                    </div>
                   </section>
                 ) : null}
 
                 <div className={`${styles.formActions} ${styles.assetFormActions} ${styles.manualStepFormActions}`}>
-                  {manualAssetStep === 1 ? (
-                    <button type="button" className={styles.secondaryButton} onClick={closeAssetModal}>
-                      Cancel
-                    </button>
-                  ) : (
-                    <button type="button" className={styles.secondaryButton} onClick={goToPreviousManualAssetStep}>
-                      Back
-                    </button>
-                  )}
+                  <div className={styles.manualStepFooterMeta}>
+                    <strong>{manualStepFooterTitle}</strong>
+                    <span>{manualStepFooterHint}</span>
+                  </div>
 
                   <div className={styles.assetFormActionRight}>
+                    {manualAssetStep === 1 ? (
+                      <button type="button" className={styles.secondaryButton} onClick={closeAssetModal}>
+                        Cancel
+                      </button>
+                    ) : (
+                      <button type="button" className={styles.secondaryButton} onClick={goToPreviousManualAssetStep}>
+                        Back
+                      </button>
+                    )}
+
                     {manualAssetStep > 1 ? (
                       <button type="button" className={styles.secondaryButton} onClick={closeAssetModal}>
                         Cancel
@@ -4010,14 +4109,14 @@ export default function AssetRegisterClient() {
                     ) : null}
 
                     {manualAssetStep < 4 ? (
-                      manualAssetStep > 1 ? (
+                      manualAssetStep > 1 || editingAsset?.valuationRunId ? (
                         <button type="button" className={styles.primaryButton} onClick={goToNextManualAssetStep}>
-                          Next
+                          {manualStepPrimaryLabel}
                         </button>
                       ) : null
                     ) : (
                       <button type="submit" className={styles.primaryButton} disabled={isSavingAsset || isUploadingPhotos || isUploadingDocuments}>
-                        {isSavingAsset ? 'Saving...' : editingAsset ? 'Update asset' : 'Add asset'}
+                        {isSavingAsset ? 'Saving...' : manualStepPrimaryLabel}
                       </button>
                     )}
                   </div>

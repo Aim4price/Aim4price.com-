@@ -9246,3 +9246,717 @@
     align-items: stretch;
   }
 }
+
+/* === Manual Add Asset wizard polish v2: calmer, obvious 4-step flow === */
+.assetFormModal {
+  width: min(100%, 940px) !important;
+  max-height: min(90vh, calc(100dvh - 1.5rem)) !important;
+  padding: clamp(1.15rem, 2vw, 1.55rem) !important;
+  border-radius: 1.85rem !important;
+}
+
+.assetFormModalStepOne {
+  width: min(100%, 860px) !important;
+  max-height: min(88vh, calc(100dvh - 1.5rem)) !important;
+  overflow: hidden !important;
+}
+
+.manualWizardHeader {
+  align-items: flex-start !important;
+  padding-bottom: 0.95rem !important;
+  margin-bottom: 0.9rem !important;
+}
+
+.manualWizardHeader .modalHeaderText {
+  gap: 0.42rem !important;
+}
+
+.manualWizardHeaderKicker {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  color: #65778a;
+  font-size: 0.86rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.manualWizardHeaderKicker span,
+.manualWizardHeaderKicker strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0 0.74rem;
+  border-radius: 999px;
+  border: 1px solid rgba(216, 226, 236, 0.96);
+  background: #ffffff;
+}
+
+.manualWizardHeaderKicker strong {
+  color: #124635;
+  background: #edf8f2;
+  border-color: rgba(190, 224, 206, 0.98);
+  font-weight: 720;
+}
+
+.assetFormModalHeader h3,
+.manualWizardHeader h3 {
+  font-size: clamp(1.58rem, 2.2vw, 2.05rem) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.045em !important;
+  line-height: 1.04 !important;
+}
+
+.assetFormModalHeader p,
+.manualWizardHeader p {
+  max-width: 46rem !important;
+  color: #617286 !important;
+  font-size: 0.98rem !important;
+  font-weight: 560 !important;
+  line-height: 1.5 !important;
+}
+
+.manualStepScrollBody {
+  padding-right: 0.68rem !important;
+  margin-right: -0.18rem !important;
+}
+
+.manualStepScrollBodyNoScroll {
+  overflow-y: auto !important;
+  padding-right: 0.52rem !important;
+  margin-right: -0.16rem !important;
+}
+
+.manualStepForm {
+  gap: 0.92rem !important;
+}
+
+.manualStepProgress {
+  position: relative;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 0.55rem !important;
+  padding: 0 0 0.1rem !important;
+}
+
+.manualStepProgressItem {
+  min-width: 0;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  min-height: 2.65rem !important;
+  padding: 0.48rem 0.62rem !important;
+  border-radius: 1rem !important;
+  color: #68798a !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.96) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+  font-weight: 620 !important;
+}
+
+.manualStepProgressItem > span {
+  flex: 0 0 auto;
+  width: 1.52rem !important;
+  height: 1.52rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  color: #607386 !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(216, 226, 236, 0.96) !important;
+  font-size: 0.76rem !important;
+  font-weight: 740 !important;
+}
+
+.manualStepProgressItem small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit;
+  font-size: 0.78rem !important;
+  font-weight: 640 !important;
+  line-height: 1.2;
+}
+
+.manualStepProgressItemActive,
+.manualStepProgressItemComplete {
+  color: #124635 !important;
+  background: linear-gradient(180deg, #f5fcf8 0%, #edf8f2 100%) !important;
+  border-color: rgba(190, 224, 206, 0.98) !important;
+}
+
+.manualStepProgressItemActive > span,
+.manualStepProgressItemComplete > span {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #1d6048 0%, #124635 100%) !important;
+  border-color: rgba(18, 70, 53, 0.22) !important;
+}
+
+.manualStageCard,
+.manualSingleStageCard {
+  gap: 0.95rem !important;
+  padding: clamp(1rem, 1.7vw, 1.22rem) !important;
+  border-radius: 1.35rem !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  box-shadow:
+    0 12px 26px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.manualStepOneCard {
+  padding: clamp(1.05rem, 1.9vw, 1.35rem) !important;
+}
+
+.manualStepIntro {
+  display: grid;
+  gap: 0.28rem;
+  padding-bottom: 0.86rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.86);
+}
+
+.manualStepEyebrow {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 1.75rem;
+  padding: 0 0.72rem;
+  border-radius: 999px;
+  color: #436153;
+  background: rgba(237, 246, 241, 0.94);
+  border: 1px solid rgba(205, 229, 216, 0.98);
+  font-size: 0.7rem;
+  font-weight: 740;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.manualStepIntro h4 {
+  margin: 0;
+  color: #10352b;
+  font-size: clamp(1.18rem, 1.65vw, 1.42rem);
+  font-weight: 700;
+  line-height: 1.16;
+  letter-spacing: -0.035em;
+}
+
+.manualStepIntro p {
+  max-width: 54rem;
+  margin: 0;
+  color: #617286;
+  font-size: 0.95rem;
+  font-weight: 540;
+  line-height: 1.5;
+}
+
+.assetTypeChoiceGrid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.78rem !important;
+}
+
+.assetTypeChoiceButton {
+  min-height: 5.25rem !important;
+  padding: 0.95rem 1rem !important;
+  border-radius: 1.08rem !important;
+  gap: 0.8rem !important;
+}
+
+.assetTypeChoiceText strong {
+  font-size: 1rem !important;
+  font-weight: 680 !important;
+  letter-spacing: -0.018em !important;
+}
+
+.assetTypeChoiceText small {
+  color: #617286 !important;
+  font-size: 0.86rem !important;
+  font-weight: 540 !important;
+  line-height: 1.4 !important;
+}
+
+.assetTypeChoiceStatus {
+  min-height: 1.78rem !important;
+  padding: 0 0.66rem !important;
+  font-size: 0.74rem !important;
+  font-weight: 700 !important;
+}
+
+.manualLockedTypeCard {
+  max-width: 30rem;
+}
+
+.manualStepHelperStrip,
+.manualSelectedTypeStrip,
+.manualSaveNote {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  padding: 0.82rem 0.92rem;
+  border-radius: 1rem;
+  color: #526577;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  border: 1px solid rgba(216, 226, 236, 0.94);
+  font-size: 0.9rem;
+  font-weight: 540;
+  line-height: 1.42;
+}
+
+.manualStepHelperStrip strong,
+.manualSaveNote strong {
+  color: #10352b;
+  font-weight: 700;
+}
+
+.manualSelectedTypeStrip {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.55rem 0.7rem;
+}
+
+.manualSelectedTypeStrip span,
+.manualReviewStrip span,
+.manualStatusSummary span {
+  color: #728193;
+  font-size: 0.7rem;
+  font-weight: 760;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.manualSelectedTypeStrip strong,
+.manualReviewStrip strong,
+.manualStatusSummary strong {
+  color: #10352b;
+  font-size: 0.94rem;
+  font-weight: 680;
+  line-height: 1.3;
+}
+
+.manualSelectedTypeStrip small {
+  min-width: 0;
+  color: #617286;
+  font-size: 0.86rem;
+  font-weight: 520;
+  line-height: 1.35;
+}
+
+.manualSectionLabel {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 0.8rem;
+  padding-top: 0.16rem;
+}
+
+.manualSectionLabel strong {
+  color: #10352b;
+  font-size: 0.96rem;
+  font-weight: 700;
+  letter-spacing: -0.014em;
+}
+
+.manualSectionLabel span {
+  color: #66778a;
+  font-size: 0.86rem;
+  font-weight: 520;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.manualStageGrid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.9rem !important;
+}
+
+.manualPrimaryFields {
+  align-items: stretch !important;
+}
+
+.manualTitleField,
+.manualValueField {
+  padding: 0.9rem;
+  border-radius: 1.14rem;
+  background: linear-gradient(180deg, #fbfdfe 0%, #f5f8fb 100%);
+  border: 1px solid rgba(216, 226, 236, 0.94);
+}
+
+.manualValueField {
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f2f8f5 100%);
+  border-color: rgba(190, 224, 206, 0.95);
+}
+
+.assetFormModal .field > span,
+.assetFormModal .checkboxRow > span,
+.field span,
+.checkboxRow span {
+  color: #263845 !important;
+  font-size: 0.88rem !important;
+  font-weight: 680 !important;
+  letter-spacing: -0.008em !important;
+}
+
+.assetFormModal .field input,
+.assetFormModal .field select,
+.assetFormModal .field textarea,
+.field input,
+.field select,
+.field textarea {
+  min-height: 3.18rem !important;
+  border-radius: 0.92rem !important;
+  font-size: 0.97rem !important;
+  font-weight: 520 !important;
+}
+
+.assetFormModal .field textarea,
+.field textarea {
+  min-height: 6.4rem !important;
+}
+
+.fieldHint {
+  color: #66778a !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  line-height: 1.45 !important;
+}
+
+.statusChoiceStack {
+  display: grid !important;
+  gap: 0.9rem !important;
+}
+
+.statusChoicePanel {
+  display: grid;
+  gap: 0.68rem;
+  padding: 0.9rem;
+  border-radius: 1.14rem;
+  background: linear-gradient(180deg, #fbfdfe 0%, #f5f8fb 100%);
+  border: 1px solid rgba(216, 226, 236, 0.94);
+}
+
+.statusChoiceHeading {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.statusChoiceHeading h5 {
+  margin: 0;
+  color: #10352b;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.018em;
+}
+
+.statusChoiceHeading p {
+  margin: 0;
+  color: #617286;
+  font-size: 0.88rem;
+  font-weight: 520;
+  line-height: 1.42;
+}
+
+.statusChoiceGrid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0.65rem !important;
+}
+
+.statusChoiceButton {
+  min-height: 4.85rem !important;
+  padding: 0.86rem !important;
+  border-radius: 1rem !important;
+  gap: 0.26rem !important;
+}
+
+.statusChoiceButton strong {
+  font-size: 0.94rem !important;
+  font-weight: 680 !important;
+}
+
+.statusChoiceButton small {
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  line-height: 1.35 !important;
+}
+
+.manualStatusSummary,
+.manualReviewStrip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.72rem;
+}
+
+.manualReviewStrip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.manualStatusSummary > div,
+.manualReviewStrip > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.28rem;
+  align-content: center;
+  min-height: 4.4rem;
+  padding: 0.82rem 0.9rem;
+  border-radius: 1rem;
+  background: #ffffff;
+  border: 1px solid rgba(216, 226, 236, 0.94);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.manualReviewStrip strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.documentUploadPanel,
+.uploadPanel {
+  min-height: 8rem !important;
+  align-content: center !important;
+  border-radius: 1.08rem !important;
+}
+
+.manualSaveNote {
+  justify-content: center;
+  text-align: center;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #eef8f2 100%);
+  border-color: rgba(190, 224, 206, 0.95);
+}
+
+.manualStepFormActions {
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 6 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 0.9rem !important;
+  margin-top: 0.1rem !important;
+  padding: 0.92rem 0 0.02rem !important;
+  border-top: 1px solid rgba(216, 226, 236, 0.88) !important;
+  background:
+    linear-gradient(180deg, rgba(248, 251, 252, 0) 0%, rgba(248, 251, 252, 0.96) 35%, rgba(248, 251, 252, 1) 100%) !important;
+}
+
+.manualStepFooterMeta {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.manualStepFooterMeta strong {
+  color: #10352b;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.manualStepFooterMeta span {
+  color: #617286;
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.assetFormActionRight {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.65rem !important;
+  margin-left: 0 !important;
+}
+
+.assetFormActions .primaryButton,
+.assetFormActions .secondaryButton {
+  min-height: 3.08rem !important;
+  border-radius: 0.96rem !important;
+  padding-inline: 1.06rem !important;
+  font-size: 0.94rem !important;
+  font-weight: 720 !important;
+}
+
+.assetFormActions .primaryButton {
+  min-width: 11.5rem;
+}
+
+.noticeSuccess {
+  color: #0f5f3f !important;
+  background: linear-gradient(180deg, #effbf5 0%, #e3f7ec 100%) !important;
+  border-color: rgba(159, 218, 185, 0.98) !important;
+}
+
+@media (max-width: 900px) {
+  .assetFormModal,
+  .assetFormModalStepOne {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: min(91vh, calc(100dvh - 1rem)) !important;
+    padding: 1rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .manualStepProgress,
+  .assetTypeChoiceGrid,
+  .manualStageGrid,
+  .statusChoiceGrid,
+  .manualStatusSummary,
+  .manualReviewStrip {
+    grid-template-columns: 1fr !important;
+  }
+
+  .manualStepProgressItem small {
+    white-space: normal;
+  }
+
+  .manualSelectedTypeStrip {
+    grid-template-columns: 1fr;
+  }
+
+  .manualSectionLabel {
+    display: grid;
+    align-items: start;
+  }
+
+  .manualSectionLabel span {
+    text-align: left;
+  }
+
+  .manualStepFormActions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .assetFormActionRight {
+    width: 100% !important;
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+  }
+
+  .assetFormActionRight > button,
+  .assetFormActions .primaryButton,
+  .assetFormActions .secondaryButton {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 540px) {
+  .manualWizardHeaderKicker {
+    gap: 0.4rem;
+  }
+
+  .manualWizardHeaderKicker span,
+  .manualWizardHeaderKicker strong {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .manualStepProgress {
+    gap: 0.45rem !important;
+  }
+
+  .manualStageCard,
+  .manualSingleStageCard {
+    padding: 0.88rem !important;
+    border-radius: 1.14rem !important;
+  }
+
+  .assetTypeChoiceButton {
+    grid-template-columns: 1fr !important;
+  }
+
+  .assetTypeChoiceStatus {
+    justify-self: start;
+  }
+}
+
+/* === Manual wizard step 1 desktop fit refinement === */
+@media (min-width: 901px) {
+  .assetFormModalStepOne {
+    width: min(100%, 900px) !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .assetFormModalStepOne .manualStepScrollBodyNoScroll {
+    overflow: visible !important;
+    padding-right: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .assetFormModalStepOne .manualStepForm {
+    gap: 0.72rem !important;
+  }
+
+  .assetFormModalStepOne .manualStepProgress {
+    gap: 0.45rem !important;
+  }
+
+  .assetFormModalStepOne .manualStepProgressItem {
+    min-height: 2.38rem !important;
+    padding: 0.38rem 0.56rem !important;
+  }
+
+  .assetFormModalStepOne .manualStepOneCard {
+    gap: 0.72rem !important;
+    padding: 0.95rem !important;
+  }
+
+  .assetFormModalStepOne .manualStepIntro {
+    padding-bottom: 0.68rem !important;
+  }
+
+  .assetFormModalStepOne .assetTypeChoiceGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0.62rem !important;
+  }
+
+  .assetFormModalStepOne .assetTypeChoiceButton {
+    min-height: 4.55rem !important;
+    grid-template-columns: 1fr !important;
+    align-items: start !important;
+    gap: 0.55rem !important;
+    padding: 0.78rem 0.82rem !important;
+  }
+
+  .assetFormModalStepOne .assetTypeChoiceText {
+    gap: 0.18rem !important;
+  }
+
+  .assetFormModalStepOne .assetTypeChoiceText strong {
+    font-size: 0.95rem !important;
+  }
+
+  .assetFormModalStepOne .assetTypeChoiceText small {
+    font-size: 0.79rem !important;
+    line-height: 1.28 !important;
+  }
+
+  .assetFormModalStepOne .assetTypeChoiceStatus {
+    justify-self: start !important;
+    min-height: 1.55rem !important;
+    padding: 0 0.55rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  .assetFormModalStepOne .manualStepHelperStrip {
+    min-height: 2.7rem !important;
+    padding: 0.6rem 0.78rem !important;
+    font-size: 0.84rem !important;
+  }
+
+  .assetFormModalStepOne .manualStepFormActions {
+    padding-top: 0.68rem !important;
+  }
+}
