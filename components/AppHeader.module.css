@@ -15,7 +15,7 @@
   min-height: 5.75rem;
   padding: 0.82rem 0;
   display: grid;
-  grid-template-columns: minmax(13rem, 1fr) auto minmax(13rem, 1fr);
+  grid-template-columns: minmax(15rem, 1fr) auto minmax(15rem, 1fr);
   align-items: center;
   gap: clamp(1.25rem, 2.2vw, 2.4rem);
 }
@@ -25,26 +25,16 @@
   align-items: center;
   justify-self: start;
   min-width: 0;
-  gap: 0.64rem;
   text-decoration: none;
   color: var(--text-strong);
 }
 
-.brandMark {
+.brandLogo {
   display: block;
-  width: clamp(2.82rem, 2.8vw, 3.08rem);
-  height: clamp(2.82rem, 2.8vw, 3.08rem);
-  flex: 0 0 auto;
+  width: clamp(10.85rem, 13.5vw, 12.8rem);
+  height: auto;
+  max-height: 3.35rem;
   object-fit: contain;
-}
-
-.brandTitle {
-  font-size: 0.98rem;
-  line-height: 1;
-  font-weight: 800;
-  letter-spacing: -0.012em;
-  color: #17362c;
-  white-space: nowrap;
 }
 
 .nav {
@@ -326,6 +316,10 @@
   .accountButton {
     padding: 0 1.12rem;
   }
+
+  .brandLogo {
+    width: clamp(10.25rem, 14vw, 11.8rem);
+  }
 }
 
 @media (max-width: 1040px) {
@@ -349,16 +343,17 @@
   .navRail {
     flex-wrap: wrap;
   }
+
+  .brandLogo {
+    width: 12.2rem;
+    max-height: 3.25rem;
+  }
 }
 
 @media (max-width: 720px) {
-  .brandMark {
-    width: 2.65rem;
-    height: 2.65rem;
-  }
-
-  .brandTitle {
-    font-size: 0.98rem;
+  .brandLogo {
+    width: clamp(10.6rem, 52vw, 12.25rem);
+    max-height: 3.15rem;
   }
 
   .nav,
