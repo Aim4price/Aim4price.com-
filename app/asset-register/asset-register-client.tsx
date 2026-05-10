@@ -236,22 +236,22 @@ const MAX_DOCUMENTS = 20;
 const PAGE_SIZE = 6;
 const FALLBACK_ASSET_IMAGE = '/brand/Tractor.png';
 const MANUAL_ASSET_TYPE_OPTIONS: Array<{
-  value: Extract<AssetKind, 'vehicle' | 'tools' | 'property' | 'equipment'>;
+  value: Extract<AssetKind, 'vehicle' | 'tools' | 'property' | 'equipment' | 'manual'>;
   label: string;
   description: string;
   titlePlaceholder: string;
 }> = [
   {
+    value: 'equipment',
+    label: 'Equipment',
+    description: 'General machines and larger equipment not added through valuation.',
+    titlePlaceholder: 'Example: Water pump trailer',
+  },
+  {
     value: 'vehicle',
     label: 'Vehicle',
     description: 'Bakkies, trucks, trailers and other road or farm vehicles.',
     titlePlaceholder: 'Example: Toyota Hilux farm bakkie',
-  },
-  {
-    value: 'tools',
-    label: 'Tools',
-    description: 'Smaller tools, workshop items and handheld equipment.',
-    titlePlaceholder: 'Example: Workshop tool set',
   },
   {
     value: 'property',
@@ -260,10 +260,16 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
     titlePlaceholder: 'Example: Main workshop building',
   },
   {
-    value: 'equipment',
-    label: 'Equipment',
-    description: 'General machines and larger equipment not added through valuation.',
-    titlePlaceholder: 'Example: Water pump trailer',
+    value: 'tools',
+    label: 'Tools',
+    description: 'Smaller tools, workshop items and handheld equipment.',
+    titlePlaceholder: 'Example: Workshop tool set',
+  },
+  {
+    value: 'manual',
+    label: 'Other',
+    description: 'Any asset that does not fit the standard equipment, vehicle, property or tools groups.',
+    titlePlaceholder: 'Example: Irrigation rights, livestock equipment or custom asset',
   },
 ];
 
@@ -614,7 +620,7 @@ function kindLabel(value: AssetKind): string {
     {
       tractor: 'Tractor',
       equipment: 'Equipment',
-      manual: 'Manual asset',
+      manual: 'Other',
       property: 'Property/Buildings',
       vehicle: 'Vehicle',
       tools: 'Tools',
@@ -623,7 +629,7 @@ function kindLabel(value: AssetKind): string {
 }
 
 function normalizeDraftKind(value: AssetKind): AssetKind {
-  return value === 'manual' ? 'equipment' : value;
+  return value;
 }
 
 function normalizeUsageMetric(value: unknown, kind?: AssetKind): UsageMetric {
@@ -702,7 +708,7 @@ function draftYearLabel(kind: AssetKind): string {
 
 function getManualAssetOption(kind: AssetKind) {
   const normalizedKind = normalizeDraftKind(kind);
-  return MANUAL_ASSET_TYPE_OPTIONS.find((option) => option.value === normalizedKind) ?? MANUAL_ASSET_TYPE_OPTIONS[3];
+  return MANUAL_ASSET_TYPE_OPTIONS.find((option) => option.value === normalizedKind) ?? MANUAL_ASSET_TYPE_OPTIONS[0];
 }
 
 function conditionLabel(value: AssetConditionValue): string {
@@ -1059,7 +1065,7 @@ function assetSectorLabel(asset: RegisterAsset): string {
   if (asset.kind === 'property') return 'Property/Buildings';
   if (asset.kind === 'vehicle') return 'Vehicle';
   if (asset.kind === 'tools') return 'Tools';
-  return 'Manual';
+  return 'Other';
 }
 
 function assetFamilyLabel(asset: RegisterAsset): string {
@@ -1070,7 +1076,7 @@ function assetFamilyLabel(asset: RegisterAsset): string {
   if (asset.kind === 'vehicle') return 'Vehicle';
   if (asset.kind === 'tools') return 'Tools';
   if (isValuedEquipmentAsset(asset)) return 'Valued equipment';
-  return 'Manual asset';
+  return 'Other';
 }
 
 function readNumberFromSpecs(specs: Record<string, unknown>, keys: string[]): number | null {
@@ -3300,12 +3306,11 @@ export default function AssetRegisterClient() {
           <div className={`${styles.modalCard} ${styles.assetFormModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-form-title">
             <div className={`${styles.modalHeader} ${styles.assetFormModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <span className={styles.modalEyebrow}>{editingAsset ? 'Update asset' : 'Manually add asset'}</span>
-                <h3 id="asset-form-title">{editingAsset ? 'Update asset details' : 'Add another asset'}</h3>
+                <h3 id="asset-form-title">{editingAsset ? 'Update asset details' : 'Add asset to register'}</h3>
                 <p>
                   {editingAsset
-                    ? 'Update the saved asset details without leaving the register.'
-                    : 'Choose a type, enter the value, then add notes or photos if needed.'}
+                    ? 'Update the saved asset details in the staged form below.'
+                    : 'Work through the four sections below: equipment type, asset details, finance or insurance, and documents or photos.'}
                 </p>
               </div>
 
@@ -3320,364 +3325,418 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={styles.modalScrollBody}>
-              <form className={styles.modalForm} onSubmit={handleAssetSubmit}>
-              <label className={`${styles.field} ${styles.assetTypeField} ${styles.fullWidth}`}>
-                <span>Asset type</span>
-                {editingAsset?.valuationRunId ? (
-                  <input value={kindLabel(editingAsset.kind)} disabled readOnly />
-                ) : (
-                  <select
-                    value={assetFormKind}
-                    onChange={(event) => {
-                      const nextKind = event.target.value as AssetKind;
-                      setAssetDraft((current) => ({
-                        ...current,
-                        kind: nextKind,
-                        hours: nextKind === 'property' || nextKind === 'tools' ? '' : current.hours,
-                        usageMetric: nextKind === 'vehicle' ? normalizeUsageMetric(current.usageMetric, 'vehicle') : 'hours',
-                        lifeWorkedPercent: nextKind === 'property' || nextKind === 'vehicle' ? '' : current.lifeWorkedPercent,
-                        condition: nextKind === 'property' ? '' : current.condition,
-                      }));
-                    }}
-                  >
-                    {MANUAL_ASSET_TYPE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                <small className={styles.fieldHint}>
-                  {editingAsset?.valuationRunId
-                    ? 'This asset type comes from the saved valuation and cannot be changed here.'
-                    : getManualAssetOption(assetFormKind).description}
-                </small>
-              </label>
-
-              <label className={styles.field}>
-                <span>Title</span>
-                <input
-                  value={assetDraft.title}
-                  onChange={(event) =>
-                    setAssetDraft((current) => ({
-                      ...current,
-                      title: event.target.value,
-                    }))
-                  }
-                  placeholder={getManualAssetOption(assetFormKind).titlePlaceholder}
-                />
-              </label>
-
-              <label className={styles.field}>
-                <span>Value</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={assetDraft.value}
-                  onChange={(event) =>
-                    setAssetDraft((current) => ({
-                      ...current,
-                      value: event.target.value,
-                    }))
-                  }
-                  placeholder="0"
-                />
-              </label>
-
-              <label className={styles.field}>
-                <span>Serial / reference</span>
-                <input
-                  value={assetDraft.serialNumber}
-                  onChange={(event) =>
-                    setAssetDraft((current) => ({
-                      ...current,
-                      serialNumber: event.target.value,
-                    }))
-                  }
-                  placeholder="Serial number or internal reference"
-                />
-              </label>
-
-              <label className={styles.field}>
-                <span>{yearFieldLabel}</span>
-                <input
-                  type="number"
-                  min="1800"
-                  max={new Date().getFullYear() + 1}
-                  step="1"
-                  value={assetDraft.yearModel}
-                  onChange={(event) =>
-                    setAssetDraft((current) => ({
-                      ...current,
-                      yearModel: event.target.value,
-                    }))
-                  }
-                  placeholder={assetFormKind === 'property' ? 'Example: 2012' : 'Example: 2020'}
-                />
-                <small className={styles.fieldHint}>
-                  {assetFormKind === 'property'
-                    ? 'Use the year the property or building was built.'
-                    : 'Use the model year or manufacturing year shown on the asset records.'}
-                </small>
-              </label>
-
-              {assetFormKind === 'vehicle' ? (
-                <label className={styles.field}>
-                  <span>Usage type</span>
-                  <select
-                    value={assetDraft.usageMetric}
-                    onChange={(event) =>
-                      setAssetDraft((current) => ({
-                        ...current,
-                        usageMetric: normalizeUsageMetric(event.target.value, 'vehicle'),
-                      }))
-                    }
-                  >
-                    <option value="km">Kilometres</option>
-                    <option value="hours">Hours</option>
-                  </select>
-                  <small className={styles.fieldHint}>Choose how this vehicle usage must display in Aim4price.</small>
-                </label>
-              ) : null}
-
-              {showUsageHoursField ? (
-                <label className={styles.field}>
-                  <span>{usageFieldLabel}</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={assetDraft.hours}
-                    onChange={(event) =>
-                      setAssetDraft((current) => ({
-                        ...current,
-                        hours: event.target.value,
-                      }))
-                    }
-                    placeholder={usageFieldPlaceholder}
-                  />
-                  <small className={styles.fieldHint}>{usageFieldHint}</small>
-                </label>
-              ) : null}
-
-              {showLifeWorkedPercentField ? (
-                <label className={styles.field}>
-                  <span>Lifetime worked %</span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value={assetDraft.lifeWorkedPercent}
-                    onChange={(event) =>
-                      setAssetDraft((current) => ({
-                        ...current,
-                        lifeWorkedPercent: event.target.value,
-                      }))
-                    }
-                    placeholder="Example: 45"
-                  />
-                  <small className={styles.fieldHint}>Use this when exact hours are unknown or the machine is valued on percentage worked.</small>
-                </label>
-              ) : null}
-
-              {showConditionField ? (
-                <label className={styles.field}>
-                  <span>Condition</span>
-                  <select
-                    value={assetDraft.condition}
-                    onChange={(event) =>
-                      setAssetDraft((current) => ({
-                        ...current,
-                        condition: event.target.value as AssetConditionValue,
-                      }))
-                    }
-                  >
-                    {CONDITION_OPTIONS.map((option) => (
-                      <option key={option.value || 'blank'} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <small className={styles.fieldHint}>Condition feeds through to cleaner asset sheets and better saved asset information.</small>
-                </label>
-              ) : null}
-
-              <label className={`${styles.field} ${styles.fullWidth}`}>
-                <span>Notes</span>
-                <textarea
-                  rows={4}
-                  value={assetDraft.note}
-                  onChange={(event) =>
-                    setAssetDraft((current) => ({
-                      ...current,
-                      note: event.target.value,
-                    }))
-                  }
-                  placeholder="Extra details about the asset"
-                />
-              </label>
-
-              <label className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  checked={assetDraft.isFinanced}
-                  onChange={(event) => {
-                    const checked = event.target.checked;
-                    setAssetDraft((current) => ({
-                      ...current,
-                      isFinanced: checked,
-                      financeNote: checked ? current.financeNote : '',
-                    }));
-                  }}
-                />
-                <span>This asset is financed</span>
-              </label>
-
-              <label className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  checked={assetDraft.isInsured}
-                  onChange={(event) => {
-                    const checked = event.target.checked;
-                    setAssetDraft((current) => ({
-                      ...current,
-                      isInsured: checked,
-                    }));
-                  }}
-                />
-                <span>This asset is insured</span>
-              </label>
-
-              {assetDraft.isFinanced ? (
-                <label className={`${styles.field} ${styles.fullWidth}`}>
-                  <span>Finance note</span>
-                  <input
-                    value={assetDraft.financeNote}
-                    onChange={(event) =>
-                      setAssetDraft((current) => ({
-                        ...current,
-                        financeNote: event.target.value,
-                      }))
-                    }
-                    placeholder="Bank, lender or finance reference"
-                  />
-                </label>
-              ) : null}
-
-              <div className={`${styles.field} ${styles.fullWidth}`}>
-                <span>Documents <small>(optional)</small></span>
-
-                <div className={styles.documentUploadPanel}>
-                  <input
-                    ref={documentInputRef}
-                    type="file"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain,image/jpeg,image/png,image/webp"
-                    multiple
-                    className={styles.fileInput}
-                    onChange={handleDocumentFilesSelected}
-                    disabled={isUploadingDocuments || assetDraft.documents.length >= MAX_DOCUMENTS}
-                  />
-
-                  <div className={styles.uploadRow}>
-                    <button
-                      type="button"
-                      className={styles.secondaryButton}
-                      onClick={() => documentInputRef.current?.click()}
-                      disabled={isUploadingDocuments || assetDraft.documents.length >= MAX_DOCUMENTS}
-                    >
-                      {isUploadingDocuments ? 'Uploading...' : 'Add documents'}
-                    </button>
-
-                    <span className={styles.uploadCount}>
-                      {assetDraft.documents.length} / {MAX_DOCUMENTS} documents
-                    </span>
+              <form className={`${styles.modalForm} ${styles.manualAssetForm}`} onSubmit={handleAssetSubmit}>
+                <section className={`${styles.manualStageCard} ${styles.fullWidth}`}>
+                  <div className={styles.manualStageHeader}>
+                    <span className={styles.manualStageNumber}>1</span>
+                    <div>
+                      <h4>Equipment type</h4>
+                      <p>Select the closest asset group. Use Other when the asset does not fit the standard groups.</p>
+                    </div>
                   </div>
 
-                  <small className={styles.fieldHint}>Upload invoices, NATIS papers, insurance documents, finance contracts or service records.</small>
-                </div>
-              </div>
+                  {editingAsset?.valuationRunId ? (
+                    <label className={`${styles.field} ${styles.assetTypeField}`}>
+                      <span>Asset type</span>
+                      <input value={kindLabel(editingAsset.kind)} disabled readOnly />
+                      <small className={styles.fieldHint}>This asset type comes from the saved valuation and cannot be changed here.</small>
+                    </label>
+                  ) : (
+                    <div className={styles.assetTypeChoiceGrid} role="radiogroup" aria-label="Asset type">
+                      {MANUAL_ASSET_TYPE_OPTIONS.map((option) => {
+                        const isSelected = assetFormKind === option.value;
 
-              {assetDraft.documents.length ? (
-                <div className={styles.documentDraftList}>
-                  {assetDraft.documents.map((document) => (
-                    <div className={styles.documentDraftRow} key={document.id}>
-                      <span className={styles.documentDraftIcon}>
-                        <DocumentIcon className={styles.buttonIcon} />
-                      </span>
-                      <div>
-                        <strong>{shortDocumentName(document.fileName)}</strong>
-                        <small>{formatByteSize(document.byteSize)}</small>
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            className={`${styles.assetTypeChoiceButton} ${isSelected ? styles.assetTypeChoiceButtonActive : ''}`}
+                            role="radio"
+                            aria-checked={isSelected}
+                            onClick={() => {
+                              const nextKind = option.value as AssetKind;
+                              setAssetDraft((current) => ({
+                                ...current,
+                                kind: nextKind,
+                                hours: nextKind === 'property' || nextKind === 'tools' || nextKind === 'manual' ? '' : current.hours,
+                                usageMetric: nextKind === 'vehicle' ? normalizeUsageMetric(current.usageMetric, 'vehicle') : 'hours',
+                                lifeWorkedPercent: nextKind === 'property' || nextKind === 'vehicle' || nextKind === 'manual' ? '' : current.lifeWorkedPercent,
+                                condition: nextKind === 'property' ? '' : current.condition,
+                              }));
+                            }}
+                          >
+                            <span className={styles.assetTypeChoiceText}>
+                              <strong>{option.label}</strong>
+                              <small>{option.description}</small>
+                            </span>
+                            <span className={styles.assetTypeChoiceStatus}>{isSelected ? 'Selected' : 'Choose'}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+
+                <section className={`${styles.manualStageCard} ${styles.fullWidth}`}>
+                  <div className={styles.manualStageHeader}>
+                    <span className={styles.manualStageNumber}>2</span>
+                    <div>
+                      <h4>Details, title and value</h4>
+                      <p>Capture the information that should appear on the asset register and asset PDF.</p>
+                    </div>
+                  </div>
+
+                  <div className={styles.manualStageGrid}>
+                    <label className={styles.field}>
+                      <span>Title</span>
+                      <input
+                        value={assetDraft.title}
+                        onChange={(event) =>
+                          setAssetDraft((current) => ({
+                            ...current,
+                            title: event.target.value,
+                          }))
+                        }
+                        placeholder={getManualAssetOption(assetFormKind).titlePlaceholder}
+                      />
+                    </label>
+
+                    <label className={styles.field}>
+                      <span>Value</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={assetDraft.value}
+                        onChange={(event) =>
+                          setAssetDraft((current) => ({
+                            ...current,
+                            value: event.target.value,
+                          }))
+                        }
+                        placeholder="0"
+                      />
+                    </label>
+
+                    <label className={styles.field}>
+                      <span>Serial / reference</span>
+                      <input
+                        value={assetDraft.serialNumber}
+                        onChange={(event) =>
+                          setAssetDraft((current) => ({
+                            ...current,
+                            serialNumber: event.target.value,
+                          }))
+                        }
+                        placeholder="Serial number or internal reference"
+                      />
+                    </label>
+
+                    <label className={styles.field}>
+                      <span>{yearFieldLabel}</span>
+                      <input
+                        type="number"
+                        min="1800"
+                        max={new Date().getFullYear() + 1}
+                        step="1"
+                        value={assetDraft.yearModel}
+                        onChange={(event) =>
+                          setAssetDraft((current) => ({
+                            ...current,
+                            yearModel: event.target.value,
+                          }))
+                        }
+                        placeholder={assetFormKind === 'property' ? 'Example: 2012' : 'Example: 2020'}
+                      />
+                      <small className={styles.fieldHint}>
+                        {assetFormKind === 'property'
+                          ? 'Use the year the property or building was built.'
+                          : 'Use the model year or manufacturing year shown on the asset records.'}
+                      </small>
+                    </label>
+
+                    {assetFormKind === 'vehicle' ? (
+                      <label className={styles.field}>
+                        <span>Usage type</span>
+                        <select
+                          value={assetDraft.usageMetric}
+                          onChange={(event) =>
+                            setAssetDraft((current) => ({
+                              ...current,
+                              usageMetric: normalizeUsageMetric(event.target.value, 'vehicle'),
+                            }))
+                          }
+                        >
+                          <option value="km">Kilometres</option>
+                          <option value="hours">Hours</option>
+                        </select>
+                        <small className={styles.fieldHint}>Choose how this vehicle usage must display in Aim4price.</small>
+                      </label>
+                    ) : null}
+
+                    {showUsageHoursField ? (
+                      <label className={styles.field}>
+                        <span>{usageFieldLabel}</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={assetDraft.hours}
+                          onChange={(event) =>
+                            setAssetDraft((current) => ({
+                              ...current,
+                              hours: event.target.value,
+                            }))
+                          }
+                          placeholder={usageFieldPlaceholder}
+                        />
+                        <small className={styles.fieldHint}>{usageFieldHint}</small>
+                      </label>
+                    ) : null}
+
+                    {showLifeWorkedPercentField ? (
+                      <label className={styles.field}>
+                        <span>Lifetime worked %</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value={assetDraft.lifeWorkedPercent}
+                          onChange={(event) =>
+                            setAssetDraft((current) => ({
+                              ...current,
+                              lifeWorkedPercent: event.target.value,
+                            }))
+                          }
+                          placeholder="Example: 45"
+                        />
+                        <small className={styles.fieldHint}>Use this when exact hours are unknown or the machine is valued on percentage worked.</small>
+                      </label>
+                    ) : null}
+
+                    {showConditionField ? (
+                      <label className={styles.field}>
+                        <span>Condition</span>
+                        <select
+                          value={assetDraft.condition}
+                          onChange={(event) =>
+                            setAssetDraft((current) => ({
+                              ...current,
+                              condition: event.target.value as AssetConditionValue,
+                            }))
+                          }
+                        >
+                          {CONDITION_OPTIONS.map((option) => (
+                            <option key={option.value || 'blank'} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <small className={styles.fieldHint}>Condition feeds through to cleaner asset sheets and better saved asset information.</small>
+                      </label>
+                    ) : null}
+
+                    <label className={`${styles.field} ${styles.fullWidth}`}>
+                      <span>Notes</span>
+                      <textarea
+                        rows={4}
+                        value={assetDraft.note}
+                        onChange={(event) =>
+                          setAssetDraft((current) => ({
+                            ...current,
+                            note: event.target.value,
+                          }))
+                        }
+                        placeholder="Extra details about the asset"
+                      />
+                    </label>
+                  </div>
+                </section>
+
+                <section className={`${styles.manualStageCard} ${styles.fullWidth}`}>
+                  <div className={styles.manualStageHeader}>
+                    <span className={styles.manualStageNumber}>3</span>
+                    <div>
+                      <h4>Finance and insurance</h4>
+                      <p>Mark whether this asset is financed or insured for cleaner register summaries.</p>
+                    </div>
+                  </div>
+
+                  <div className={styles.manualStatusGrid}>
+                    <label className={styles.checkboxRow}>
+                      <input
+                        type="checkbox"
+                        checked={assetDraft.isFinanced}
+                        onChange={(event) => {
+                          const checked = event.target.checked;
+                          setAssetDraft((current) => ({
+                            ...current,
+                            isFinanced: checked,
+                            financeNote: checked ? current.financeNote : '',
+                          }));
+                        }}
+                      />
+                      <span>This asset is financed</span>
+                    </label>
+
+                    <label className={styles.checkboxRow}>
+                      <input
+                        type="checkbox"
+                        checked={assetDraft.isInsured}
+                        onChange={(event) => {
+                          const checked = event.target.checked;
+                          setAssetDraft((current) => ({
+                            ...current,
+                            isInsured: checked,
+                          }));
+                        }}
+                      />
+                      <span>This asset is insured</span>
+                    </label>
+                  </div>
+
+                  {assetDraft.isFinanced ? (
+                    <label className={`${styles.field} ${styles.fullWidth}`}>
+                      <span>Finance note</span>
+                      <input
+                        value={assetDraft.financeNote}
+                        onChange={(event) =>
+                          setAssetDraft((current) => ({
+                            ...current,
+                            financeNote: event.target.value,
+                          }))
+                        }
+                        placeholder="Bank, lender or finance reference"
+                      />
+                    </label>
+                  ) : null}
+                </section>
+
+                <section className={`${styles.manualStageCard} ${styles.fullWidth}`}>
+                  <div className={styles.manualStageHeader}>
+                    <span className={styles.manualStageNumber}>4</span>
+                    <div>
+                      <h4>Documents and gallery</h4>
+                      <p>Attach finance documents, invoices, service records, NATIS papers or asset photos.</p>
+                    </div>
+                  </div>
+
+                  <div className={styles.manualStageGrid}>
+                    <div className={styles.field}>
+                      <span>Documents <small>(optional)</small></span>
+
+                      <div className={styles.documentUploadPanel}>
+                        <input
+                          ref={documentInputRef}
+                          type="file"
+                          accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain,image/jpeg,image/png,image/webp"
+                          multiple
+                          className={styles.fileInput}
+                          onChange={handleDocumentFilesSelected}
+                          disabled={isUploadingDocuments || assetDraft.documents.length >= MAX_DOCUMENTS}
+                        />
+
+                        <div className={styles.uploadRow}>
+                          <button
+                            type="button"
+                            className={styles.secondaryButton}
+                            onClick={() => documentInputRef.current?.click()}
+                            disabled={isUploadingDocuments || assetDraft.documents.length >= MAX_DOCUMENTS}
+                          >
+                            {isUploadingDocuments ? 'Uploading...' : 'Add documents'}
+                          </button>
+
+                          <span className={styles.uploadCount}>
+                            {assetDraft.documents.length} / {MAX_DOCUMENTS} documents
+                          </span>
+                        </div>
+
+                        <small className={styles.fieldHint}>Upload invoices, NATIS papers, insurance documents, finance contracts or service records.</small>
                       </div>
-                      <a href={document.url} target="_blank" rel="noreferrer" className={styles.documentOpenLink}>
-                        Open
-                      </a>
-                      <button type="button" className={styles.documentRemoveButton} onClick={() => removeDraftDocument(document.id)}>
-                        Remove
-                      </button>
                     </div>
-                  ))}
-                </div>
-              ) : null}
 
-              <div className={`${styles.field} ${styles.fullWidth}`}>
-                <span>Photo gallery <small>(optional)</small></span>
+                    <div className={styles.field}>
+                      <span>Photo gallery <small>(optional)</small></span>
 
-                <div className={styles.uploadPanel}>
-                  <input
-                    ref={photoInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    multiple
-                    className={styles.fileInput}
-                    onChange={handlePhotoFilesSelected}
-                    disabled={isUploadingPhotos || assetDraft.photos.length >= MAX_PHOTOS}
-                  />
+                      <div className={styles.uploadPanel}>
+                        <input
+                          ref={photoInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          multiple
+                          className={styles.fileInput}
+                          onChange={handlePhotoFilesSelected}
+                          disabled={isUploadingPhotos || assetDraft.photos.length >= MAX_PHOTOS}
+                        />
 
-                  <div className={styles.uploadRow}>
-                    <button
-                      type="button"
-                      className={styles.secondaryButton}
-                      onClick={() => photoInputRef.current?.click()}
-                      disabled={isUploadingPhotos || assetDraft.photos.length >= MAX_PHOTOS}
-                    >
-                      {isUploadingPhotos ? 'Uploading...' : 'Add photos'}
-                    </button>
+                        <div className={styles.uploadRow}>
+                          <button
+                            type="button"
+                            className={styles.secondaryButton}
+                            onClick={() => photoInputRef.current?.click()}
+                            disabled={isUploadingPhotos || assetDraft.photos.length >= MAX_PHOTOS}
+                          >
+                            {isUploadingPhotos ? 'Uploading...' : 'Add photos'}
+                          </button>
 
-                    <span className={styles.uploadCount}>
-                      {assetDraft.photos.length} / {MAX_PHOTOS} photos
-                    </span>
+                          <span className={styles.uploadCount}>
+                            {assetDraft.photos.length} / {MAX_PHOTOS} photos
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              {assetDraft.photos.length ? (
-                <div className={styles.photoGrid}>
-                  {assetDraft.photos.map((photo, index) => (
-                    <div className={styles.photoThumb} key={`${photo}-${index}`}>
-                      <img src={photo} alt={`Asset photo ${index + 1}`} />
-                      <button
-                        type="button"
-                        className={styles.photoRemoveButton}
-                        onClick={() => removeDraftPhoto(photo)}
-                      >
-                        Remove
-                      </button>
+                  {assetDraft.documents.length ? (
+                    <div className={styles.documentDraftList}>
+                      {assetDraft.documents.map((document) => (
+                        <div className={styles.documentDraftRow} key={document.id}>
+                          <span className={styles.documentDraftIcon}>
+                            <DocumentIcon className={styles.buttonIcon} />
+                          </span>
+                          <div>
+                            <strong>{shortDocumentName(document.fileName)}</strong>
+                            <small>{formatByteSize(document.byteSize)}</small>
+                          </div>
+                          <a href={document.url} target="_blank" rel="noreferrer" className={styles.documentOpenLink}>
+                            Open
+                          </a>
+                          <button type="button" className={styles.documentRemoveButton} onClick={() => removeDraftDocument(document.id)}>
+                            Remove
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : null}
+
+                  {assetDraft.photos.length ? (
+                    <div className={styles.photoGrid}>
+                      {assetDraft.photos.map((photo, index) => (
+                        <div className={styles.photoThumb} key={`${photo}-${index}`}>
+                          <img src={photo} alt={`Asset photo ${index + 1}`} />
+                          <button
+                            type="button"
+                            className={styles.photoRemoveButton}
+                            onClick={() => removeDraftPhoto(photo)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+
+                <div className={`${styles.formActions} ${styles.assetFormActions}`}>
+                  <button type="button" className={styles.secondaryButton} onClick={closeAssetModal}>
+                    Cancel
+                  </button>
+
+                  <button type="submit" className={styles.primaryButton} disabled={isSavingAsset || isUploadingPhotos || isUploadingDocuments}>
+                    {isSavingAsset ? 'Saving...' : editingAsset ? 'Update asset' : 'Add asset'}
+                  </button>
                 </div>
-              ) : null}
-
-              <div className={`${styles.formActions} ${styles.assetFormActions}`}>
-                <button type="button" className={styles.secondaryButton} onClick={closeAssetModal}>
-                  Cancel
-                </button>
-
-                <button type="submit" className={styles.primaryButton} disabled={isSavingAsset || isUploadingPhotos || isUploadingDocuments}>
-                  {isSavingAsset ? 'Saving...' : editingAsset ? 'Update asset' : 'Add asset'}
-                </button>
-              </div>
               </form>
             </div>
           </div>
