@@ -10966,9 +10966,9 @@
 }
 
 .optionsModal .assetOptionsGrid .optionActionButton:last-child:nth-child(odd) {
-  grid-column: 1 / -1 !important;
-  justify-self: center !important;
-  width: calc((100% - 1rem) / 2) !important;
+  grid-column: auto !important;
+  justify-self: stretch !important;
+  width: 100% !important;
 }
 
 @media (max-width: 900px) {
