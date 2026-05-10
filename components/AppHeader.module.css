@@ -12,10 +12,10 @@
 .inner {
   width: var(--shell-width);
   margin: 0 auto;
-  min-height: 6rem;
-  padding: 0.9rem 0;
+  min-height: 5.75rem;
+  padding: 0.82rem 0;
   display: grid;
-  grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, 1fr);
+  grid-template-columns: minmax(13rem, 1fr) auto minmax(13rem, 1fr);
   align-items: center;
   gap: clamp(1.25rem, 2.2vw, 2.4rem);
 }
@@ -25,15 +25,24 @@
   align-items: center;
   justify-self: start;
   min-width: 0;
+  gap: 0.64rem;
   text-decoration: none;
   color: var(--text-strong);
 }
 
+.brandMark {
+  display: block;
+  width: clamp(2.82rem, 2.8vw, 3.08rem);
+  height: clamp(2.82rem, 2.8vw, 3.08rem);
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
 .brandTitle {
-  font-size: clamp(2.05rem, 2.3vw, 2.58rem);
+  font-size: 0.98rem;
   line-height: 1;
   font-weight: 800;
-  letter-spacing: -0.055em;
+  letter-spacing: -0.012em;
   color: #17362c;
   white-space: nowrap;
 }
@@ -233,7 +242,10 @@
   position: absolute;
   top: calc(100% + 0.6rem);
   right: 0;
-  min-width: 16.5rem;
+  width: max-content;
+  min-width: 17rem;
+  max-width: min(calc(100vw - 2rem), 30rem);
+  box-sizing: border-box;
   padding: 0.55rem;
   display: grid;
   gap: 0.38rem;
@@ -245,26 +257,31 @@
 
 .accountSummary {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.8rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.82rem;
   align-items: center;
-  padding: 0.75rem;
+  width: 100%;
+  padding: 0.78rem;
   border-radius: 0.95rem;
   background: rgba(62, 110, 213, 0.08);
 }
 
-.accountName {
-  display: block;
-  color: #17362c;
-  font-size: 0.98rem;
+.accountSummaryText {
+  min-width: 0;
+  display: flex;
+  align-items: center;
 }
 
-.accountEmail {
-  margin: 0.18rem 0 0;
-  color: #5a6761;
-  font-size: 0.88rem;
-  line-height: 1.45;
-  word-break: break-word;
+.accountName {
+  display: block;
+  max-width: 100%;
+  color: #17362c;
+  font-size: 0.98rem;
+  line-height: 1.25;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .menuLink,
@@ -335,8 +352,13 @@
 }
 
 @media (max-width: 720px) {
+  .brandMark {
+    width: 2.65rem;
+    height: 2.65rem;
+  }
+
   .brandTitle {
-    font-size: 1.85rem;
+    font-size: 0.98rem;
   }
 
   .nav,
@@ -373,6 +395,15 @@
     box-shadow: none;
   }
 
+  .accountMenu {
+    width: 100%;
+    flex: 1 1 0;
+  }
+
+  .accountButton {
+    width: 100%;
+  }
+
   .actionDivider {
     flex: 0 0 auto;
     padding: 0 0.15rem;
@@ -391,7 +422,9 @@
 
   .accountPopover {
     left: 0;
-    right: 0;
+    right: auto;
+    width: 100%;
     min-width: 0;
+    max-width: none;
   }
 }
