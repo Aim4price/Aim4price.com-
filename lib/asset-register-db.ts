@@ -843,6 +843,14 @@ function buildSelectList(schema: TableSchema): string {
   const specsJsonExpression = specsJsonColumn
     ? `coalesce(${specsJsonColumn}, (select vr.specs_json from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1), '{}'::jsonb)`
     : `coalesce((select vr.specs_json from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1), '{}'::jsonb)`;
+  const valuationBrandExpression = `(select nullif(trim(vr.brand_name), '') from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1)`;
+  const valuationModelExpression = `(select nullif(trim(coalesce(vr.model_name, vr.typed_model_name, '')), '') from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1)`;
+  const brandExpression = brandColumn
+    ? `coalesce(nullif(trim(${brandColumn}), ''), ${valuationBrandExpression})`
+    : valuationBrandExpression;
+  const modelExpression = modelColumn
+    ? `coalesce(nullif(trim(${modelColumn}), ''), ${valuationModelExpression})`
+    : valuationModelExpression;
 
   const selectParts = [
     'id',
@@ -866,8 +874,8 @@ function buildSelectList(schema: TableSchema): string {
     valueColumn ? `${valueColumn} as value` : '0::numeric as value',
     selectedMethodColumn ? `${selectedMethodColumn} as selected_method` : `'manual'::text as selected_method`,
     selectedValueColumn ? `${selectedValueColumn} as selected_value_ex_vat` : '0::numeric as selected_value_ex_vat',
-    brandColumn ? `${brandColumn} as brand_name` : 'null::text as brand_name',
-    modelColumn ? `${modelColumn} as model_name` : 'null::text as model_name',
+    `${brandExpression} as brand_name`,
+    `${modelExpression} as model_name`,
     driveColumn ? `${driveColumn} as drive_type` : 'null::text as drive_type',
     tractorTypeColumn ? `${tractorTypeColumn} as tractor_type` : 'null::text as tractor_type',
     cabColumn ? `${cabColumn} as cab_type` : 'null::text as cab_type',

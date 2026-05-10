@@ -1534,11 +1534,18 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
 
       .assetReportHeader {
         display: grid;
-        grid-template-columns: 21mm minmax(0, 1fr) 64mm;
-        gap: 13px;
-        align-items: start;
-        padding-bottom: 9px;
+        grid-template-columns: 22mm minmax(0, 1fr) 62mm;
+        gap: 12px;
+        align-items: center;
+        padding-bottom: 10px;
         border-bottom: 1px solid var(--line-strong);
+      }
+
+      .assetReportLogoWrap {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 18mm;
       }
 
       .assetReportLogo {
@@ -1551,7 +1558,7 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
       .assetReportDocumentTitle strong {
         display: block;
         color: var(--strong);
-        font-size: 15.5px;
+        font-size: 16px;
         line-height: 1.05;
         font-weight: 800;
         letter-spacing: -0.025em;
@@ -1561,7 +1568,7 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
         display: block;
         margin-top: 5px;
         color: var(--muted);
-        font-size: 8.8px;
+        font-size: 8.9px;
         font-weight: 600;
         letter-spacing: 0.01em;
       }
@@ -1708,7 +1715,12 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
         grid-template-columns: minmax(0, 1fr) 62mm;
         gap: 12px;
         align-items: start;
-        margin-top: 14px;
+        margin-top: 12px;
+      }
+
+      .assetReportMainStack {
+        display: grid;
+        gap: 10px;
       }
 
       .assetReportSection,
@@ -1717,7 +1729,6 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
       }
 
       .assetReportSection {
-        margin-bottom: 12px;
         padding: 10px 11px 11px;
         border: 1px solid var(--line-strong);
         background: #ffffff;
@@ -1770,6 +1781,18 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
       .assetReportTechnical .assetReportRow {
         grid-template-columns: 31mm minmax(0, 1fr);
         min-height: 21px;
+      }
+
+      .assetReportClientCard .assetReportRow {
+        grid-template-columns: 31mm minmax(0, 1fr);
+        min-height: 20px;
+        align-items: start;
+        padding: 3px 0;
+      }
+
+      .assetReportClientCard .assetReportRow span,
+      .assetReportClientCard .assetReportRow strong {
+        line-height: 1.35;
       }
 
       .assetReportEmpty {
@@ -1884,10 +1907,10 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
       }
 
       .assetReportDisclaimer {
-        max-width: 165mm;
+        max-width: 166mm;
         color: #323a45;
-        font-size: 6.7px;
-        line-height: 1.25;
+        font-size: 7.35px;
+        line-height: 1.35;
         font-style: italic;
       }
 
@@ -1949,11 +1972,11 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
         .assetReportInner {
           height: 281mm;
           min-height: 0;
-          padding-bottom: 19mm;
+          padding-bottom: 21mm;
         }
 
         .assetReportHeader {
-          grid-template-columns: 21mm minmax(0, 1fr) 64mm;
+          grid-template-columns: 22mm minmax(0, 1fr) 62mm;
         }
 
         .assetReportOverview,
@@ -1979,7 +2002,7 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
     <main class="assetReportPage">
       <div class="assetReportInner">
         <header class="assetReportHeader">
-          <div>${payload.logoUrl ? `<img class="assetReportLogo" src="${escapeHtml(payload.logoUrl)}" alt="Aim4price" />` : ''}</div>
+          <div class="assetReportLogoWrap">${payload.logoUrl ? `<img class="assetReportLogo" src="${escapeHtml(payload.logoUrl)}" alt="Aim4price" />` : ''}</div>
           <div class="assetReportDocumentTitle">
             <strong>Asset Valuation Report</strong>
             <span>Aim4price asset register</span>
@@ -2010,21 +2033,21 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
         </section>
 
         <div class="assetReportContentGrid">
-          <div>
+          <div class="assetReportMainStack">
             <section class="assetReportSection assetReportTechnical">
               <h2>Asset Details</h2>
               ${renderAssetReportRows(detailRows, 'No asset details available.')}
+            </section>
+
+            <section class="assetReportSection assetReportClientCard">
+              <h2>Client / Asset Owner</h2>
+              ${renderAssetReportRows(clientRows, 'No client details available.')}
             </section>
 
             ${renderAssetReportNotes(noteRows)}
           </div>
 
           <aside class="assetReportSide">
-            <section class="assetReportSideCard">
-              <h2>Client / Asset Owner</h2>
-              ${renderAssetReportRows(clientRows, 'No client details available.')}
-            </section>
-
             <section class="assetReportSideCard assetReportRecordRows">
               <h2>Record Summary</h2>
               ${renderAssetReportRows(recordRows, 'No record details available.')}
