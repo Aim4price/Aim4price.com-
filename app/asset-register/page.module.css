@@ -9960,3 +9960,402 @@
     padding-top: 0.68rem !important;
   }
 }
+
+
+/* === Manual Add Asset: compact dropdown wizard === */
+.assetFormModal {
+  width: min(100%, 860px) !important;
+  max-height: min(88vh, calc(100dvh - 1.5rem)) !important;
+  padding: clamp(1rem, 1.7vw, 1.35rem) !important;
+  border-radius: 1.75rem !important;
+}
+
+.assetFormModalStepOne {
+  width: min(100%, 720px) !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.manualWizardHeader {
+  margin-bottom: 0.8rem !important;
+  padding-bottom: 0.82rem !important;
+  align-items: flex-start !important;
+}
+
+.manualWizardHeader .modalHeaderText {
+  gap: 0.34rem !important;
+}
+
+.manualWizardHeaderKicker {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+  width: fit-content !important;
+}
+
+.manualWizardHeaderKicker span,
+.manualWizardHeaderKicker strong {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 1.7rem !important;
+  padding: 0 0.66rem !important;
+  border-radius: 999px !important;
+  font-size: 0.78rem !important;
+  font-weight: 760 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.manualWizardHeaderKicker span {
+  color: #51667a !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(211, 223, 233, 0.98) !important;
+}
+
+.manualWizardHeaderKicker strong {
+  color: #124635 !important;
+  background: #edf8f2 !important;
+  border: 1px solid rgba(190, 224, 206, 0.98) !important;
+}
+
+.manualWizardHeader h3 {
+  font-size: clamp(1.45rem, 2.1vw, 1.9rem) !important;
+  font-weight: 720 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.manualWizardHeader p {
+  max-width: 34rem !important;
+  color: #607286 !important;
+  font-size: 0.96rem !important;
+  font-weight: 590 !important;
+  line-height: 1.4 !important;
+}
+
+.manualStepScrollBody {
+  padding: 0.02rem 0.56rem 0 0 !important;
+  margin-right: -0.2rem !important;
+}
+
+.manualStepScrollBodyNoScroll {
+  overflow: visible !important;
+  padding-right: 0 !important;
+  margin-right: 0 !important;
+}
+
+.manualStepForm {
+  gap: 0.82rem !important;
+}
+
+.manualStepProgress {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 0.46rem !important;
+  padding: 0 !important;
+}
+
+.manualStepProgressItem {
+  min-height: 2.3rem !important;
+  padding: 0.36rem 0.55rem !important;
+  border-radius: 0.9rem !important;
+  gap: 0.42rem !important;
+}
+
+.manualStepProgressItem > span {
+  width: 1.35rem !important;
+  height: 1.35rem !important;
+  font-size: 0.72rem !important;
+}
+
+.manualStepProgressItem small {
+  font-size: 0.76rem !important;
+  font-weight: 720 !important;
+}
+
+.manualCompactStageCard,
+.manualStageCard {
+  gap: 0.82rem !important;
+  padding: clamp(0.9rem, 1.35vw, 1.08rem) !important;
+  border-radius: 1.22rem !important;
+}
+
+.manualStepIntro {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.8rem !important;
+  padding: 0 0 0.7rem !important;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.86) !important;
+}
+
+.manualStepIntro h4 {
+  margin: 0 !important;
+  color: #10352b !important;
+  font-size: clamp(1.08rem, 1.6vw, 1.28rem) !important;
+  font-weight: 720 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.028em !important;
+}
+
+.manualStepIntro p,
+.manualStepEyebrow,
+.manualSectionLabel,
+.manualStepHelperStrip,
+.manualSaveNote,
+.manualStatusSummary {
+  display: none !important;
+}
+
+.manualCompactSelectField {
+  width: 100% !important;
+  max-width: 100% !important;
+  gap: 0.5rem !important;
+}
+
+.manualCompactSelectField select,
+.assetFormModal .field select,
+.assetFormModal .field input,
+.assetFormModal .field textarea {
+  min-height: 3.12rem !important;
+  border-radius: 0.95rem !important;
+  font-size: 0.98rem !important;
+  font-weight: 560 !important;
+}
+
+.manualCompactSelectField select {
+  min-height: 3.55rem !important;
+  font-size: 1.04rem !important;
+}
+
+.assetFormModal .field {
+  gap: 0.38rem !important;
+}
+
+.assetFormModal .field > span,
+.assetFormModal .checkboxRow > span {
+  color: #263845 !important;
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.006em !important;
+}
+
+.assetFormModal .field > span small {
+  color: #708094 !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+}
+
+.assetFormModal .fieldHint {
+  display: none !important;
+}
+
+.manualSelectedTypeStrip {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.55rem !important;
+  min-height: 2.75rem !important;
+  padding: 0 0.9rem !important;
+  border-radius: 0.92rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.96) !important;
+}
+
+.manualSelectedTypeStrip span {
+  color: #6b7b8d !important;
+  font-size: 0.72rem !important;
+  font-weight: 820 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+.manualSelectedTypeStrip strong {
+  color: #10352b !important;
+  font-size: 0.95rem !important;
+  font-weight: 760 !important;
+}
+
+.manualSelectedTypeStrip small {
+  display: none !important;
+}
+
+.manualStageGrid,
+.manualPrimaryFields,
+.manualOptionalGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.74rem !important;
+}
+
+.manualPrimaryFields {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.manualPrimaryFields .field {
+  padding: 0.85rem !important;
+  border-radius: 1.02rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.96) !important;
+}
+
+.manualValueField {
+  border-color: rgba(190, 224, 206, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f3fbf6 100%) !important;
+}
+
+.assetFormModal .field textarea {
+  min-height: 5.65rem !important;
+  resize: vertical !important;
+}
+
+.statusChoiceStack {
+  display: grid !important;
+  gap: 0.75rem !important;
+}
+
+.statusChoicePanel,
+.statusChoiceGroup {
+  display: block !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.statusChoiceHeading,
+.statusChoiceGrid,
+.statusChoiceButton {
+  display: none !important;
+}
+
+.manualReviewStrip {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0.62rem !important;
+}
+
+.manualReviewStrip > div {
+  min-height: 3.2rem !important;
+  padding: 0.75rem 0.82rem !important;
+  border-radius: 0.96rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.96) !important;
+}
+
+.manualReviewStrip span {
+  color: #6b7b8d !important;
+  font-size: 0.68rem !important;
+  font-weight: 820 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+.manualReviewStrip strong {
+  display: block !important;
+  margin-top: 0.18rem !important;
+  color: #10352b !important;
+  font-size: 0.9rem !important;
+  font-weight: 720 !important;
+  line-height: 1.22 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.manualStageCard .documentUploadPanel,
+.manualStageCard .uploadPanel {
+  min-height: 5.4rem !important;
+  padding: 0.85rem !important;
+  border-radius: 1rem !important;
+}
+
+.manualStageCard .uploadRow {
+  gap: 0.62rem !important;
+}
+
+.manualStageCard .uploadRow .secondaryButton {
+  min-height: 2.8rem !important;
+}
+
+.manualStageCard .uploadCount {
+  min-height: 2.2rem !important;
+  padding: 0 0.7rem !important;
+  font-size: 0.8rem !important;
+}
+
+.documentDraftList,
+.photoGrid {
+  margin-top: 0 !important;
+}
+
+.assetFormActions,
+.manualStepFormActions {
+  position: static !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  margin-top: 0 !important;
+  padding: 0.82rem 0 0 !important;
+  border-top: 1px solid rgba(216, 226, 236, 0.88) !important;
+  background: transparent !important;
+}
+
+.assetFormActionRight {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 0.62rem !important;
+  margin-left: auto !important;
+}
+
+.assetFormActions .primaryButton,
+.assetFormActions .secondaryButton {
+  min-height: 2.95rem !important;
+  border-radius: 0.95rem !important;
+  padding-inline: 1.05rem !important;
+  font-size: 0.94rem !important;
+  font-weight: 760 !important;
+}
+
+@media (max-width: 900px) {
+  .assetFormModal,
+  .assetFormModalStepOne {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: min(90vh, calc(100dvh - 1rem)) !important;
+    overflow: hidden !important;
+    padding: 1rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .manualStepScrollBodyNoScroll {
+    overflow-y: auto !important;
+    padding-right: 0.56rem !important;
+    margin-right: -0.18rem !important;
+  }
+
+  .manualStageGrid,
+  .manualPrimaryFields,
+  .manualOptionalGrid,
+  .manualReviewStrip {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .manualWizardHeader {
+    gap: 0.75rem !important;
+  }
+
+  .manualStepProgress {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .assetFormActionRight {
+    width: 100% !important;
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+  }
+
+  .assetFormActionRight > button {
+    width: 100% !important;
+  }
+}
