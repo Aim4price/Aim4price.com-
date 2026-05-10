@@ -600,6 +600,14 @@ function parseRegisterValueInput(value: unknown): number {
   return Math.round(parseMoneyInput(value) ?? 0);
 }
 
+function formatUsageAmountInput(value: unknown): string {
+  return formatMarketplacePriceInput(value);
+}
+
+function parseUsageAmountInput(value: unknown): number {
+  return Math.round(parseMoneyInput(value) ?? 0);
+}
+
 function formatPercent(value: number): string {
   const normalized = Number(value || 0);
   return `${normalized.toFixed(normalized % 1 === 0 ? 0 : 1)}%`;
@@ -1090,7 +1098,7 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     photos: normalizePhotos(asset.photos),
     documents: assetDocuments(asset),
     yearModel: asset.yearModel === null || typeof asset.yearModel === 'undefined' ? '' : String(asset.yearModel),
-    hours: asset.hours === null || typeof asset.hours === 'undefined' ? '' : String(asset.hours),
+    hours: asset.hours === null || typeof asset.hours === 'undefined' ? '' : formatUsageAmountInput(asset.hours),
     usageMetric: getAssetUsageMetric(asset),
     lifeWorkedPercent: getAssetLifeWorkedPercent(asset) === null ? '' : String(getAssetLifeWorkedPercent(asset)),
     condition: asset.condition,
@@ -1943,7 +1951,7 @@ export default function AssetRegisterClient() {
     const hasYearModel = assetDraft.yearModel.trim() !== '';
     const yearModel = hasYearModel ? Number(assetDraft.yearModel) : null;
     const hasHours = assetDraft.hours.trim() !== '';
-    const hours = hasHours ? Number(assetDraft.hours) : null;
+    const hours = hasHours ? parseUsageAmountInput(assetDraft.hours) : null;
     const hasLifeWorkedPercent = assetDraft.lifeWorkedPercent.trim() !== '';
     const lifeWorkedPercent = hasLifeWorkedPercent ? Number(assetDraft.lifeWorkedPercent) : null;
     const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
@@ -2110,7 +2118,7 @@ export default function AssetRegisterClient() {
     setPendingPhotoFiles((current) => [...current, ...filesToQueue]);
     setNotice({
       tone: 'success',
-      message: `${filesToQueue.length} photo${filesToQueue.length === 1 ? '' : 's'} ready. Click Save asset to upload.`,
+      message: `${filesToQueue.length} photo${filesToQueue.length === 1 ? '' : 's'} ready. Click Add asset to upload.`,
     });
   }
 
@@ -2146,7 +2154,7 @@ export default function AssetRegisterClient() {
     setPendingDocumentFiles((current) => [...current, ...filesToQueue]);
     setNotice({
       tone: 'success',
-      message: `${filesToQueue.length} document${filesToQueue.length === 1 ? '' : 's'} ready. Click Save asset to upload.`,
+      message: `${filesToQueue.length} document${filesToQueue.length === 1 ? '' : 's'} ready. Click Add asset to upload.`,
     });
   }
 
@@ -2228,8 +2236,12 @@ export default function AssetRegisterClient() {
     }
   }
 
-  async function handleAssetSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function handleAssetSubmit(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+
+    if (manualAssetStep !== 4) {
+      return;
+    }
 
     if (!validateAssetDetailsDraft()) {
       setManualAssetStep(2);
@@ -2240,7 +2252,7 @@ export default function AssetRegisterClient() {
     const hasYearModel = assetDraft.yearModel.trim() !== '';
     const yearModel = hasYearModel ? Number(assetDraft.yearModel) : null;
     const hasHours = assetDraft.hours.trim() !== '';
-    const hours = hasHours ? Number(assetDraft.hours) : null;
+    const hours = hasHours ? parseUsageAmountInput(assetDraft.hours) : null;
     const hasLifeWorkedPercent = assetDraft.lifeWorkedPercent.trim() !== '';
     const lifeWorkedPercent = hasLifeWorkedPercent ? Number(assetDraft.lifeWorkedPercent) : null;
     const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
@@ -3022,7 +3034,7 @@ export default function AssetRegisterClient() {
         ? 'Add the basic asset details.'
         : manualAssetStep === 3
           ? 'Choose finance and insurance status.'
-          : 'Upload files if needed, then save.';
+          : 'Upload files if needed, then add the asset.';
   const selectedManualAssetType = getManualAssetOption(assetFormKind);
   const manualDraftDocumentCount = assetDraft.documents.length + pendingDocumentFiles.length;
   const manualDraftPhotoCount = assetDraft.photos.length + pendingPhotoFiles.length;
@@ -3033,7 +3045,7 @@ export default function AssetRegisterClient() {
         ? 'Next'
         : editingAsset
           ? 'Update asset'
-          : 'Save asset';
+          : 'Add asset';
 
   return (
     <main className={styles.page}>
@@ -3611,7 +3623,7 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.manualStepScrollBody} ${manualAssetStep === 1 ? styles.manualStepScrollBodyNoScroll : ''}`}>
-              <form className={`${styles.modalForm} ${styles.manualAssetForm} ${styles.manualStepForm}`} onSubmit={handleAssetSubmit}>
+              <form className={`${styles.modalForm} ${styles.manualAssetForm} ${styles.manualStepForm}`} onSubmit={(event) => event.preventDefault()}>
                 <div className={styles.manualStepProgress} aria-label="Manual asset progress">
                   {MANUAL_FORM_STEPS.map((entry) => {
                     const isActiveStep = entry.step === manualAssetStep;
@@ -3767,14 +3779,13 @@ export default function AssetRegisterClient() {
                         <label className={styles.field}>
                           <span>{usageFieldLabel}</span>
                           <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={assetDraft.hours}
+                            type="text"
+                            inputMode="numeric"
+                            value={formatUsageAmountInput(assetDraft.hours)}
                             onChange={(event) =>
                               setAssetDraft((current) => ({
                                 ...current,
-                                hours: event.target.value,
+                                hours: formatUsageAmountInput(event.target.value),
                               }))
                             }
                             placeholder="Optional"
@@ -3937,25 +3948,21 @@ export default function AssetRegisterClient() {
                         <span>Documents <small>(optional)</small></span>
 
                         <div className={styles.documentUploadPanel}>
-                          <input
-                            ref={documentInputRef}
-                            type="file"
-                            accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain,image/jpeg,image/png,image/webp"
-                            multiple
-                            className={styles.fileInput}
-                            onChange={handleDocumentFilesSelected}
-                            disabled={isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS}
-                          />
-
                           <div className={styles.uploadRow}>
-                            <button
-                              type="button"
-                              className={styles.secondaryButton}
-                              onClick={() => documentInputRef.current?.click()}
-                              disabled={isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS}
+                            <label
+                              className={`${styles.secondaryButton} ${styles.filePickerButton} ${isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS ? styles.filePickerButtonDisabled : ''}`}
                             >
-                              {isUploadingDocuments ? 'Uploading...' : 'Add documents'}
-                            </button>
+                              <span>{isUploadingDocuments ? 'Uploading...' : 'Add documents'}</span>
+                              <input
+                                ref={documentInputRef}
+                                type="file"
+                                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain,image/jpeg,image/png,image/webp"
+                                multiple
+                                className={styles.fileInput}
+                                onChange={handleDocumentFilesSelected}
+                                disabled={isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS}
+                              />
+                            </label>
 
                             <span className={styles.uploadCount}>
                               {manualDraftDocumentCount} / {MAX_DOCUMENTS}
@@ -3968,25 +3975,21 @@ export default function AssetRegisterClient() {
                         <span>Photos <small>(optional)</small></span>
 
                         <div className={styles.uploadPanel}>
-                          <input
-                            ref={photoInputRef}
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            multiple
-                            className={styles.fileInput}
-                            onChange={handlePhotoFilesSelected}
-                            disabled={isUploadingPhotos || manualDraftPhotoCount >= MAX_PHOTOS}
-                          />
-
                           <div className={styles.uploadRow}>
-                            <button
-                              type="button"
-                              className={styles.secondaryButton}
-                              onClick={() => photoInputRef.current?.click()}
-                              disabled={isUploadingPhotos || manualDraftPhotoCount >= MAX_PHOTOS}
+                            <label
+                              className={`${styles.secondaryButton} ${styles.filePickerButton} ${isUploadingPhotos || manualDraftPhotoCount >= MAX_PHOTOS ? styles.filePickerButtonDisabled : ''}`}
                             >
-                              {isUploadingPhotos ? 'Uploading...' : 'Add photos'}
-                            </button>
+                              <span>{isUploadingPhotos ? 'Uploading...' : 'Add photos'}</span>
+                              <input
+                                ref={photoInputRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                multiple
+                                className={styles.fileInput}
+                                onChange={handlePhotoFilesSelected}
+                                disabled={isUploadingPhotos || manualDraftPhotoCount >= MAX_PHOTOS}
+                              />
+                            </label>
 
                             <span className={styles.uploadCount}>
                               {manualDraftPhotoCount} / {MAX_PHOTOS}
@@ -4098,7 +4101,12 @@ export default function AssetRegisterClient() {
                         </button>
                       ) : null
                     ) : (
-                      <button type="submit" className={styles.primaryButton} disabled={isSavingAsset || isUploadingPhotos || isUploadingDocuments}>
+                      <button
+                        type="button"
+                        className={styles.primaryButton}
+                        onClick={() => void handleAssetSubmit()}
+                        disabled={isSavingAsset || isUploadingPhotos || isUploadingDocuments}
+                      >
                         {isSavingAsset ? 'Saving...' : manualStepPrimaryLabel}
                       </button>
                     )}
