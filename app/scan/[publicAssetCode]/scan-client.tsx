@@ -366,7 +366,7 @@ function getModalCopy(editor: EditorKey | null, asset: ScanSafeAsset | null): { 
       return {
         eyebrow: 'Lifetime worked',
         title: 'Update the worked percentage',
-        description: 'This asset was valued by percentage worked, so QR updates cannot use hours.',
+        description: 'Enter the current percentage worked.',
       };
     }
 
@@ -374,14 +374,14 @@ function getModalCopy(editor: EditorKey | null, asset: ScanSafeAsset | null): { 
       return {
         eyebrow: 'Odometer',
         title: 'Capture the latest kilometres',
-        description: 'Use the current odometer reading. It cannot be lower than the saved reading.',
+        description: 'Enter the current odometer reading.',
       };
     }
 
     return {
       eyebrow: 'Hour meter',
       title: 'Capture the latest hours',
-      description: 'Use the current reading from the machine’s hour meter only.',
+      description: 'Enter the current hour-meter reading.',
     };
   }
 
@@ -389,7 +389,7 @@ function getModalCopy(editor: EditorKey | null, asset: ScanSafeAsset | null): { 
     return {
       eyebrow: 'Fuel',
       title: 'Capture the tank level',
-      description: 'Choose the percentage that best matches the tank right now.',
+      description: 'Choose the fuel level right now.',
     };
   }
 
@@ -397,7 +397,7 @@ function getModalCopy(editor: EditorKey | null, asset: ScanSafeAsset | null): { 
     return {
       eyebrow: 'Serviced / checked',
       title: 'Add a service or check note',
-      description: 'Record what was checked, serviced, repaired, or confirmed by the operator.',
+      description: 'Write what was serviced, checked or repaired.',
     };
   }
 
@@ -405,14 +405,14 @@ function getModalCopy(editor: EditorKey | null, asset: ScanSafeAsset | null): { 
     return {
       eyebrow: 'Notes',
       title: 'Add a short operational note',
-      description: 'Keep it short and useful for the owner or manager.',
+      description: 'Add a short note for the owner or manager.',
     };
   }
 
   return {
     eyebrow: 'Photos',
     title: 'Add fresh photos',
-    description: 'Use clear photos that show the asset or the issue quickly.',
+    description: 'Add clear photos of the asset or issue.',
   };
 }
 
@@ -647,7 +647,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
             longitude,
           }));
           setLocationState('ready');
-          setLocationMessage('GPS captured for this scan.');
+          setLocationMessage('GPS is ready for this update.');
           if (!isAutomatic) {
             setNotice({ tone: 'success', message: 'Location captured.' });
           }
@@ -723,7 +723,7 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
       setActiveEditor(null);
       setNotice({ tone: 'success', message: 'QR update saved.' });
       setLocationState('idle');
-      setLocationMessage('Capturing GPS for the next scan…');
+      setLocationMessage('Capturing GPS again…');
       void captureLocation(true);
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save the QR update.' });
@@ -736,18 +736,17 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
   const canSave = locationReady && hasMeaningfulDraftValue(draft) && !isSaving;
   const pendingCount = countPendingDraftSections(draft);
   const modalCopy = getModalCopy(activeEditor, asset);
-  const assetPhoto = asset?.photos?.[0] ?? null;
   const showUsageAction = asset ? asset.usageMode !== 'none' : false;
   const showFuelAction = Boolean(asset?.canUpdateFuel);
 
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
-        <header className={styles.hero}>
+        <header className={`${styles.hero} ${asset ? styles.heroUnlocked : styles.heroLocked}`}>
           <div className={styles.heroContent}>
             <span className={styles.eyebrow}>Aim4price QR update</span>
             <h1>{asset?.title || 'Asset scan'}</h1>
-            <p>{asset ? 'Tap one big button to update this asset.' : 'Enter the farm PIN to open this asset.'}</p>
+            <p>{asset ? 'Choose what you want to update.' : 'Enter the farm PIN to open this asset.'}</p>
           </div>
 
           <div className={styles.heroAside}>
@@ -808,45 +807,33 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
         {asset ? (
           <>
             <section className={styles.assetCard}>
-              <div className={styles.assetTopRow}>
-                <div className={styles.assetMediaWrap}>
-                  {assetPhoto ? (
-                    <img src={assetPhoto} alt={`${asset.title} preview`} className={styles.assetPhoto} />
-                  ) : (
-                    <div className={styles.assetPlaceholder}>
-                      <span className={styles.assetPlaceholderLabel}>{assetPlaceholderLabel(asset)}</span>
-                    </div>
-                  )}
+              <div className={styles.assetQuickHeader}>
+                <div className={styles.assetQuickBadge}>
+                  <span>{assetPlaceholderLabel(asset)}</span>
                 </div>
 
-                <div className={styles.assetSummary}>
-                  <div>
-                    <span className={styles.kicker}>Asset opened</span>
-                    <h2>{asset.title}</h2>
-                    <p>{asset.serialNumber ? `Serial ${asset.serialNumber}` : asset.equipmentFamilyLabel || 'Ready to update'}</p>
-                  </div>
-
-                  <div className={styles.summaryGrid}>
-                    <article className={styles.summaryTile}>
-                      <span>Plate label</span>
-                      <strong>{asset.plateLabel || 'Pending'}</strong>
-                    </article>
-                    <article className={styles.summaryTile}>
-                      <span>Last scan</span>
-                      <strong>{formatDate(asset.lastScannedAtIso)}</strong>
-                    </article>
-                    <article className={styles.summaryTile}>
-                      <span>{usageTitle(asset)}</span>
-                      <strong>{formatUsage(asset)}</strong>
-                    </article>
-                    {asset.canUpdateFuel ? (
-                      <article className={styles.summaryTile}>
-                        <span>Saved fuel</span>
-                        <strong>{formatFuel(asset.fuelPercent)}</strong>
-                      </article>
-                    ) : null}
-                  </div>
+                <div className={styles.assetQuickCopy}>
+                  <span className={styles.kicker}>Asset opened</span>
+                  <h2>{asset.title}</h2>
+                  <p>{asset.serialNumber ? `Serial ${asset.serialNumber}` : asset.equipmentFamilyLabel || asset.plateLabel || 'Ready to update'}</p>
                 </div>
+              </div>
+
+              <div className={styles.summaryGrid}>
+                <article className={styles.summaryTile}>
+                  <span>Last scan</span>
+                  <strong>{formatDate(asset.lastScannedAtIso)}</strong>
+                </article>
+                <article className={styles.summaryTile}>
+                  <span>{usageTitle(asset)}</span>
+                  <strong>{formatUsage(asset)}</strong>
+                </article>
+                {asset.canUpdateFuel ? (
+                  <article className={styles.summaryTile}>
+                    <span>Fuel</span>
+                    <strong>{formatFuel(asset.fuelPercent)}</strong>
+                  </article>
+                ) : null}
               </div>
             </section>
 
@@ -886,7 +873,13 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
               </button>
             </section>
 
-            <section className={styles.quickActionGrid}>
+            <section className={styles.quickPanel}>
+              <div className={styles.quickPanelHeader}>
+                <h2>Update this asset</h2>
+                <span>{locationReady ? 'GPS ready' : 'GPS needed'}</span>
+              </div>
+
+              <div className={styles.quickActionGrid}>
               {showUsageAction ? (
                 <button type="button" className={styles.quickActionCard} onClick={() => openEditor('usage')}>
                   <div className={styles.quickActionIconWrap}>
@@ -945,12 +938,6 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
                 </div>
                 <ChevronRightIcon className={styles.quickActionChevron} />
               </button>
-            </section>
-
-            <section className={styles.saveBar}>
-              <div className={styles.saveBarCopy}>
-                <strong>{locationReady ? 'Ready to scan' : 'GPS needed'}</strong>
-                <span>{locationReady ? 'Choose one update button above. Each save stores the GPS point automatically.' : 'Allow location before saving QR updates.'}</span>
               </div>
             </section>
           </>
@@ -993,8 +980,8 @@ export default function ScanClient({ publicAssetCode }: { publicAssetCode: strin
                   />
                   <p className={styles.helperText}>
                     {asset.usageMode === 'percent'
-                      ? 'Only percentage worked can be changed for this asset. Hours are blocked for this QR page.'
-                      : 'This reading cannot be lower than the reading already saved on this asset.'}
+                      ? 'Only percentage worked is tracked for this asset.'
+                      : 'Use the latest reading shown on the machine.'}
                   </p>
                 </label>
               ) : null}
