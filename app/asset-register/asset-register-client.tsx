@@ -2946,28 +2946,61 @@ export default function AssetRegisterClient() {
 
   async function handleExportPdf() {
     const profile = await ensureAccountProfile();
+    const profileLocation = [profile?.townCity, profile?.province].filter(Boolean).join(' ');
+    const profileAddress = [profile?.addressLine1, profile?.addressLine2, profileLocation].filter(Boolean).join(' ');
+    const ownerName = buildOwnerName(profile);
+    const ownerEmail = profile?.email?.trim() || '—';
+    const ownerPhone = profile?.phone?.trim() || '—';
+
     const didOpen = openAssetRegisterSummaryPrint({
-      logoUrl: toAbsoluteUrl('/brand/aim4price-mark-white.png') ?? '',
+      logoUrl: toAbsoluteUrl('/brand/aim4price-mark-black.png') ?? '',
       generatedAt: formatDate(new Date().toISOString()),
-      ownerName: buildOwnerName(profile),
+      ownerName,
       ownerMeta: buildOwnerMeta(profile),
-      intro: 'Complete asset register snapshot for sharing, printing or record keeping.',
-      stats: [
-        { label: 'Register value', value: money(totalValue), note: 'Saved values exclude VAT.' },
-        { label: 'Aim4price valued equipment', value: String(aim4priceValuedEquipmentCount), note: 'Assets saved from Aim4price valuations.' },
-        { label: 'Total assets', value: String(assets.length), note: 'Full saved register count.' },
-        { label: 'Assets financed', value: money(financedAssetStats.value), note: `${financedAssetStats.count} marked as financed.` },
-        { label: 'Assets insured', value: money(insuredAssetStats.value), note: `${insuredAssetStats.count} marked as insured.` },
+      intro: 'Complete saved asset register snapshot.',
+      registerValue: money(totalValue),
+      registerValueNote: 'Total saved asset value - VAT excluded',
+      ownerRows: [
+        { label: 'Name', value: ownerName },
+        { label: 'Email', value: ownerEmail },
+        { label: 'Phone', value: ownerPhone },
+        { label: 'Address', value: profileAddress || '—' },
       ],
-      rows: assets.map((asset) => ({
-        asset: asset.title,
-        type: assetKindLabel(asset),
-        method: methodLabel(asset.selectedMethod),
-        detail: buildExportDetail(asset),
-        value: money(asset.value),
-        status: assetStatusDateLabel(asset),
-      })),
-      footerNote: 'Aim4price asset register. All register values shown exclude VAT.',
+      stats: [
+        { label: 'Total assets', value: String(assets.length), note: 'Saved register items.' },
+        { label: 'Register value', value: money(totalValue), note: 'VAT excluded.' },
+        { label: 'Aim4price values', value: String(aim4priceValuedEquipmentCount), note: `${money(aim4priceValuedEquipmentValue)} total value.` },
+        { label: 'Insured assets', value: String(insuredAssetStats.count), note: `${money(insuredAssetStats.value)} marked insured.` },
+        { label: 'Financed assets', value: String(financedAssetStats.count), note: `${money(financedAssetStats.value)} marked financed.` },
+      ],
+      rows: assets.map((asset) => {
+        const initialModelValue = asset.modelName || asset.typedModelName || '';
+        const reportBrandName = deriveAssetReportBrandName(asset, initialModelValue);
+        const reportModelName = deriveAssetReportModelName(asset, reportBrandName);
+        const documentsCount = assetDocuments(asset).length;
+
+        return {
+          asset: asset.title,
+          type: assetKindLabel(asset),
+          method: methodLabel(asset.selectedMethod),
+          detail: buildExportDetail(asset),
+          value: money(asset.value),
+          status: assetStatusDateLabel(asset),
+          brand: reportBrandName,
+          model: reportModelName,
+          year: asset.yearModel ? String(asset.yearModel) : '—',
+          usage: buildAssetUsageValue(asset),
+          condition: conditionLabel(asset.condition),
+          serial: asset.serialNumber || '—',
+          insured: asset.isInsured ? 'Yes' : 'No',
+          financed: asset.isFinanced ? 'Yes' : 'No',
+          documents: documentsCount ? `${documentsCount} saved` : 'None',
+          updated: assetStatusDateLabel(asset),
+          photoUrl: toAbsoluteUrl(assetPreviewImage(asset)) ?? null,
+        };
+      }),
+      footerNote:
+        'Values are indicative estimates based on saved Aim4price asset-register information and available pricing inputs. Values exclude VAT unless stated otherwise. This is not a certified valuation, inspection report or guarantee of selling price. Final values remain subject to physical inspection, documents, attachments, condition, location and live market demand.',
     });
 
     if (!didOpen) {
