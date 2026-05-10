@@ -2645,84 +2645,81 @@ export default function AssetRegisterClient() {
       .map((photo) => toAbsoluteUrl(photo))
       .filter((photoUrl): photoUrl is string => Boolean(photoUrl));
     const documentsCount = assetDocuments(asset).length;
+    const profileLocation = [accountProfile?.townCity, accountProfile?.province].filter(Boolean).join(' ');
+    const profileAddress = [accountProfile?.addressLine1, accountProfile?.addressLine2, profileLocation].filter(Boolean).join(' ');
+    const ownerName = accountProfile?.businessName?.trim() || accountProfile?.name?.trim() || 'Aim4price client';
+    const ownerEmail = accountProfile?.email?.trim() || '—';
+    const ownerPhone = accountProfile?.phone?.trim() || '—';
+    const modelValue = asset.modelName || asset.typedModelName || '—';
+    const familyLabel = assetKindLabel(asset);
+    const qrUrl = asset.publicAssetCode ? toAbsoluteUrl(buildAssetQrSvgUrl(asset)) : null;
+    const scanUrl = buildAssetScanUrl(asset);
+    const assetRows = [
+      { label: 'Asset', value: asset.title || '—' },
+      { label: 'Asset Type', value: familyLabel },
+      { label: 'Brand', value: asset.brandName || '—' },
+      { label: 'Model', value: modelValue },
+      ...(asset.powerKw ? [{ label: 'Power', value: `${asset.powerKw} kW` }] : []),
+      ...(asset.tractorType ? [{ label: 'Type', value: formatTractorType(asset.tractorType) }] : []),
+      ...(asset.drive ? [{ label: 'Drive', value: formatDrive(asset.drive) }] : []),
+      ...(asset.cab ? [{ label: 'Cab', value: formatCab(asset.cab) }] : []),
+      { label: asset.kind === 'property' ? 'Year built' : 'Year', value: asset.yearModel ? String(asset.yearModel) : '—' },
+      { label: 'Usage', value: buildAssetUsageValue(asset) },
+      { label: 'Condition', value: conditionLabel(asset.condition) },
+      { label: 'Serial', value: asset.serialNumber || '—' },
+      { label: 'Insured', value: asset.isInsured ? 'Yes' : 'No' },
+      { label: 'Financed', value: asset.isFinanced ? 'Yes' : 'No' },
+      { label: 'Value Basis', value: methodLabel(asset.selectedMethod) },
+      { label: 'Documents', value: documentsCount ? `${documentsCount} saved` : 'None' },
+      { label: 'QR Plate', value: asset.plateLabel || 'Pending' },
+      { label: 'QR Status', value: formatQrStatus(asset.qrStatus) },
+      { label: 'Updated', value: assetStatusDateLabel(asset) },
+    ];
 
     const didOpen = openAssetSheetPrint({
-      logoUrl: toAbsoluteUrl('/brand/aim4price-mark-white.png') ?? '',
+      logoUrl: toAbsoluteUrl('/brand/aim4price-mark-black.png') ?? '',
       generatedAt: formatDate(new Date().toISOString()),
-      assetBadge: assetKindLabel(asset),
+      assetBadge: familyLabel,
       heroTitle: asset.title,
       heroMeta: buildAssetMeta(asset),
-      valueLabel: `${methodLabel(asset.selectedMethod)} value`,
+      valueLabel: `${methodLabel(asset.selectedMethod)} Register Value`,
       value: money(asset.value),
       valueNote: 'Saved register value',
       statusLabel: assetStatusDateLabel(asset),
+      issuerName: 'Aim4price',
+      issuerAddress: 'Asset Register Report',
+      issuerPhone: accountProfile?.phone?.trim() || '',
+      issuerEmail: accountProfile?.email?.trim() || 'aim4price@gmail.com',
+      clientRows: [
+        { label: 'Name', value: ownerName },
+        { label: 'Email', value: ownerEmail },
+        { label: 'Phone', value: ownerPhone },
+        ...(profileAddress ? [{ label: 'Address', value: profileAddress }] : []),
+      ],
+      summaryItems: [
+        { label: 'Brand', value: asset.brandName || '—' },
+        { label: 'Model', value: modelValue },
+        { label: 'Year', value: asset.yearModel ? String(asset.yearModel) : '—' },
+      ],
       photoUrl: assetPhotoUrls[0] ?? null,
       photoUrls: assetPhotoUrls,
-      facts: [
-        { label: asset.kind === 'property' ? 'Year built' : 'Year', value: asset.yearModel ? String(asset.yearModel) : '—' },
-        { label: 'Usage', value: buildAssetUsageValue(asset) },
-        { label: 'Condition', value: conditionLabel(asset.condition) },
-        { label: 'Serial', value: asset.serialNumber || '—' },
-        { label: 'Insured', value: asset.isInsured ? 'Yes' : 'No' },
-        { label: 'Financed', value: asset.isFinanced ? 'Yes' : 'No' },
-        { label: 'Asset type', value: assetKindLabel(asset) },
-        { label: 'Brand', value: asset.brandName || '—' },
-        { label: 'Model', value: asset.modelName || asset.typedModelName || '—' },
-        { label: 'Value basis', value: methodLabel(asset.selectedMethod) },
-        { label: 'Documents', value: documentsCount ? `${documentsCount} saved` : 'None' },
-        { label: 'Updated', value: assetStatusDateLabel(asset) },
-      ],
+      qrUrl,
+      scanUrl,
+      facts: assetRows,
       notes: [
         ...(asset.note ? [{ label: 'Asset notes', value: asset.note }] : []),
         ...(asset.financeNote ? [{ label: 'Finance note', value: asset.financeNote }] : []),
         ...(readInsuranceNote(asset) ? [{ label: 'Insurance note', value: readInsuranceNote(asset) }] : []),
       ],
       methodCards: buildAssetSheetMethodCards(asset),
-      footerNote: 'Aim4price asset sheet. All register values shown exclude VAT.',
+      footerNote:
+        'This valuation is generated using Aim4price.com\'s asset-register data and pricing model, designed to support a consistent and fair pricing standard across the industry. Aim4price.com is not liable for any loss, damage, or claim arising from use of or reliance on this report. The end user remains solely responsible for independent verification and any final decision.',
     });
 
     if (!didOpen) {
       setNotice({
         tone: 'error',
-        message: 'Unable to open the asset sheet PDF window. Please allow pop-ups and try again.',
-      });
-      return;
-    }
-
-    closeActionDialog();
-  }
-
-  async function handleCopyScanLink(asset: RegisterAsset) {
-    const scanUrl = buildAssetScanUrl(asset);
-
-    if (!scanUrl) {
-      setNotice({ tone: 'error', message: 'This asset does not have a scan link yet.' });
-      return;
-    }
-
-    function markScanLinkCopied() {
-      setCopiedScanLinkAssetId(asset.id);
-      window.setTimeout(() => {
-        setCopiedScanLinkAssetId((current) => (current === asset.id ? null : current));
-      }, 2200);
-    }
-
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(scanUrl);
-        markScanLinkCopied();
-        setNotice({ tone: 'success', message: 'Scan link copied.' });
-        return;
-      }
-
-      window.prompt('Copy this asset scan link', scanUrl);
-      markScanLinkCopied();
-      setNotice({ tone: 'success', message: 'Scan link ready to copy.' });
-    } catch (error) {
-      setCopiedScanLinkAssetId(null);
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Failed to copy the scan link.',
+        message: 'Unable to open the asset PDF. Please allow pop-ups and try again.',
       });
     }
   }
@@ -2743,6 +2740,26 @@ export default function AssetRegisterClient() {
       tone: 'success',
       message: 'QR scan report opened in a new tab. Use Print to save it as a PDF.',
     });
+  }
+
+  async function handleCopyScanLink(asset: RegisterAsset) {
+    const scanUrl = buildAssetScanUrl(asset);
+
+    if (!scanUrl) {
+      setNotice({ tone: 'error', message: 'This asset does not have a scan link yet.' });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(scanUrl);
+      setCopiedScanLinkAssetId(asset.id);
+      window.setTimeout(() => {
+        setCopiedScanLinkAssetId((current) => (current === asset.id ? null : current));
+      }, 1600);
+      setNotice({ tone: 'success', message: 'Asset scan link copied.' });
+    } catch {
+      setNotice({ tone: 'error', message: 'Unable to copy the scan link. Please copy it manually from the QR modal.' });
+    }
   }
 
   async function handleDownloadQr(asset: RegisterAsset) {
@@ -4165,11 +4182,11 @@ export default function AssetRegisterClient() {
                     </span>
                   </button>
 
-                  <button type="button" className={styles.optionActionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
+                  <button type="button" className={styles.optionActionButton} onClick={() => void handlePrintAssetSheet(activeAsset)}>
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Download asset PDF</strong>
-                      <small>Open a clean asset sheet for records.</small>
+                      <small>Open a professional asset report for records.</small>
                     </span>
                   </button>
 
