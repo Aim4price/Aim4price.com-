@@ -70,6 +70,17 @@ export type AssetRegisterSummaryRow = {
   detail: string;
   value: string;
   status: string;
+  brand?: string;
+  model?: string;
+  year?: string;
+  usage?: string;
+  condition?: string;
+  serial?: string;
+  insured?: string;
+  financed?: string;
+  documents?: string;
+  updated?: string;
+  photoUrl?: string | null;
 };
 
 export type AssetRegisterSummaryPayload = {
@@ -78,6 +89,9 @@ export type AssetRegisterSummaryPayload = {
   ownerName: string;
   ownerMeta: string;
   intro: string;
+  registerValue?: string;
+  registerValueNote?: string;
+  ownerRows?: ReportKeyValue[];
   stats: Array<{
     label: string;
     value: string;
@@ -2125,103 +2139,822 @@ export function openAssetSheetPrint(payload: AssetSheetPayload): boolean {
   );
 }
 
+function sanitizeRegisterDisplayValue(value: unknown): string {
+  const text = String(value ?? '').replace(/\s+/g, ' ').trim();
+  return text && text !== '—' ? text : '-';
+}
+
+function renderFullRegisterMetaRows(rows: ReportKeyValue[]): string {
+  const visibleRows = rows.filter((row) => String(row.label ?? '').trim());
+
+  if (!visibleRows.length) {
+    return '<div class="fullRegisterEmpty">No account details saved.</div>';
+  }
+
+  return visibleRows
+    .map(
+      (row) => `
+        <div class="fullRegisterMetaRow${String(row.label ?? '').toLowerCase() === 'address' ? ' fullRegisterMetaRowTall' : ''}">
+          <span>${escapeHtml(row.label)}</span>
+          <strong>${escapeHtml(sanitizeRegisterDisplayValue(row.value))}</strong>
+        </div>
+      `,
+    )
+    .join('');
+}
+
+function renderFullRegisterStats(payload: AssetRegisterSummaryPayload): string {
+  const stats = payload.stats.filter((stat) => String(stat.label ?? '').trim()).slice(0, 6);
+
+  if (!stats.length) {
+    return '';
+  }
+
+  return `
+    <section class="fullRegisterStatsGrid" aria-label="Asset register summary">
+      ${stats
+        .map(
+          (stat) => `
+            <article class="fullRegisterStatCard">
+              <span>${escapeHtml(stat.label)}</span>
+              <strong>${escapeHtml(stat.value)}</strong>
+              ${stat.note ? `<small>${escapeHtml(stat.note)}</small>` : ''}
+            </article>
+          `,
+        )
+        .join('')}
+    </section>
+  `;
+}
+
+function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[]): string {
+  if (!rows.length) {
+    return '<div class="fullRegisterEmpty">No assets are currently saved in this register.</div>';
+  }
+
+  return `
+    <div class="fullRegisterAssetList">
+      ${rows
+        .map((row, index) => {
+          const title = sanitizeRegisterDisplayValue(row.asset);
+          const photoUrl = String(row.photoUrl ?? '').trim();
+          const brand = sanitizeRegisterDisplayValue(row.brand);
+          const model = sanitizeRegisterDisplayValue(row.model);
+          const year = sanitizeRegisterDisplayValue(row.year);
+          const usage = sanitizeRegisterDisplayValue(row.usage);
+          const condition = sanitizeRegisterDisplayValue(row.condition);
+          const serial = sanitizeRegisterDisplayValue(row.serial);
+          const insured = sanitizeRegisterDisplayValue(row.insured);
+          const financed = sanitizeRegisterDisplayValue(row.financed);
+          const documents = sanitizeRegisterDisplayValue(row.documents);
+          const updated = sanitizeRegisterDisplayValue(row.updated || row.status);
+          const method = sanitizeRegisterDisplayValue(row.method);
+          const type = sanitizeRegisterDisplayValue(row.type);
+          const value = sanitizeRegisterDisplayValue(row.value);
+
+          return `
+            <article class="fullRegisterAssetCard">
+              <div class="fullRegisterAssetMain">
+                <div class="fullRegisterAssetThumb" aria-hidden="true">
+                  ${photoUrl ? `<img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(title)}" />` : `<span>${String(index + 1).padStart(2, '0')}</span>`}
+                </div>
+
+                <div class="fullRegisterAssetIdentity">
+                  <span class="fullRegisterAssetType">${escapeHtml(type)}</span>
+                  <h3>${escapeHtml(title)}</h3>
+                  <div class="fullRegisterAssetMeta">
+                    <span>Brand: <strong>${escapeHtml(brand)}</strong></span>
+                    <span>Model: <strong>${escapeHtml(model)}</strong></span>
+                    <span>Year: <strong>${escapeHtml(year)}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fullRegisterAssetDetails">
+                <div><span>Usage</span><strong>${escapeHtml(usage)}</strong></div>
+                <div><span>Condition</span><strong>${escapeHtml(condition)}</strong></div>
+                <div><span>Serial</span><strong>${escapeHtml(serial)}</strong></div>
+              </div>
+
+              <div class="fullRegisterAssetStatus">
+                <div><span>Insured</span><strong>${escapeHtml(insured)}</strong></div>
+                <div><span>Financed</span><strong>${escapeHtml(financed)}</strong></div>
+                <div><span>Documents</span><strong>${escapeHtml(documents)}</strong></div>
+              </div>
+
+              <div class="fullRegisterAssetValue">
+                <span>Value</span>
+                <strong>${escapeHtml(value)}</strong>
+                <small>VAT excluded</small>
+                <em>${escapeHtml(method)}</em>
+                <i>${escapeHtml(updated)}</i>
+              </div>
+            </article>
+          `;
+        })
+        .join('')}
+    </div>
+  `;
+}
+
 export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPayload): boolean {
-  const contentHtml = `
-    <div class="page">
-      <header class="pageHeader">
-        ${renderLogoBlock(payload.logoUrl, 'Asset register summary')}
-        <div class="documentMeta">
-          <span class="documentMetaLabel">Generated</span>
-          <span class="documentMetaValue">${escapeHtml(payload.generatedAt)}</span>
+  const registerValue = payload.registerValue || payload.stats.find((stat) => stat.label.toLowerCase().includes('register value'))?.value || '-';
+  const ownerRows = payload.ownerRows?.length
+    ? payload.ownerRows
+    : [
+        { label: 'Account', value: payload.ownerName },
+        { label: 'Details', value: payload.ownerMeta },
+      ];
+  const latestUpdated = payload.rows
+    .map((row) => sanitizeRegisterDisplayValue(row.updated || row.status))
+    .find((value) => value !== '-') || payload.generatedAt;
+  const footerNote =
+    payload.footerNote ??
+    'Values are indicative estimates based on saved Aim4price asset-register information and available pricing inputs. Values exclude VAT unless stated otherwise. This is not a certified valuation, inspection report or guarantee of selling price. Final values remain subject to physical inspection, documents, attachments, condition, location and live market demand.';
+
+  const html = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(payload.ownerName)} - Aim4price asset register report</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #111827;
+        --strong: #05070c;
+        --muted: #5d6675;
+        --faint: #8a94a3;
+        --line: #c9d1db;
+        --line-strong: #aeb8c6;
+        --paper: #ffffff;
+        --soft: #f6f7f9;
+        --blue: #0f7bdc;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      @page {
+        size: A4 landscape;
+        margin: 10mm;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #e9edf2;
+        color: var(--ink);
+        font-family: Montserrat, Arial, Helvetica, sans-serif;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .screenBar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.95rem 1.2rem;
+        background: rgba(255, 255, 255, 0.94);
+        border-bottom: 1px solid #d6dce5;
+        backdrop-filter: blur(14px);
+      }
+
+      .screenBarText {
+        color: #667085;
+        font-size: 0.95rem;
+        line-height: 1.45;
+      }
+
+      .screenBarActions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+      }
+
+      .screenButton {
+        border: 1px solid #cbd5e1;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #101828;
+        min-height: 2.65rem;
+        padding: 0 1.25rem;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .screenButtonPrimary {
+        background: #05070c;
+        color: #ffffff;
+        border-color: #05070c;
+      }
+
+      .fullRegisterPage {
+        width: 277mm;
+        min-height: 190mm;
+        margin: 14px auto;
+        padding: 15mm 15mm 10mm;
+        background: var(--paper);
+        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.14);
+      }
+
+      .fullRegisterHeader {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 16mm;
+        padding-bottom: 7mm;
+        border-bottom: 1px solid var(--line-strong);
+      }
+
+      .fullRegisterBrand {
+        display: flex;
+        align-items: center;
+        gap: 5mm;
+        min-width: 0;
+      }
+
+      .fullRegisterLogo {
+        width: 22mm;
+        height: 22mm;
+        object-fit: contain;
+        flex: 0 0 auto;
+      }
+
+      .fullRegisterTitleBlock h1 {
+        margin: 0 0 1.5mm;
+        color: var(--strong);
+        font-size: 17pt;
+        line-height: 1.04;
+        font-weight: 800;
+        letter-spacing: -0.05em;
+      }
+
+      .fullRegisterTitleBlock p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 8pt;
+        line-height: 1.35;
+        font-weight: 600;
+      }
+
+      .fullRegisterHeaderMeta {
+        display: grid;
+        grid-template-columns: auto auto;
+        column-gap: 7mm;
+        row-gap: 1.8mm;
+        min-width: 80mm;
+        font-size: 7.5pt;
+      }
+
+      .fullRegisterHeaderMeta span {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .fullRegisterHeaderMeta strong {
+        color: var(--strong);
+        font-weight: 800;
+        text-align: right;
+      }
+
+      .fullRegisterHero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(66mm, 0.72fr);
+        gap: 5mm;
+        margin-top: 5mm;
+      }
+
+      .fullRegisterPanel,
+      .fullRegisterValuePanel,
+      .fullRegisterStatCard,
+      .fullRegisterAssetCard {
+        border: 1px solid var(--line-strong);
+        background: #ffffff;
+      }
+
+      .fullRegisterPanel {
+        padding: 5mm;
+      }
+
+      .fullRegisterPanelLabel,
+      .fullRegisterValuePanel span,
+      .fullRegisterStatCard span,
+      .fullRegisterAssetType,
+      .fullRegisterSectionTitle span {
+        display: block;
+        color: #344054;
+        font-size: 6.8pt;
+        line-height: 1.2;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+
+      .fullRegisterOwnerName {
+        margin: 2mm 0 1.5mm;
+        color: var(--strong);
+        font-size: 18pt;
+        line-height: 1.04;
+        font-weight: 800;
+        letter-spacing: -0.055em;
+      }
+
+      .fullRegisterOwnerMeta {
+        margin: 0;
+        color: var(--muted);
+        font-size: 8pt;
+        line-height: 1.45;
+        font-weight: 600;
+        max-width: 142mm;
+      }
+
+      .fullRegisterValuePanel {
+        padding: 5mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .fullRegisterValuePanel strong {
+        display: block;
+        margin: 2mm 0 1mm;
+        color: var(--strong);
+        font-size: 24pt;
+        line-height: 0.95;
+        font-weight: 800;
+        letter-spacing: -0.07em;
+      }
+
+      .fullRegisterValuePanel small {
+        color: var(--muted);
+        font-size: 7.4pt;
+        line-height: 1.35;
+        font-weight: 600;
+      }
+
+      .fullRegisterStatsGrid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 3mm;
+        margin-top: 4mm;
+      }
+
+      .fullRegisterStatCard {
+        min-height: 21mm;
+        padding: 3.8mm;
+      }
+
+      .fullRegisterStatCard strong {
+        display: block;
+        margin-top: 2mm;
+        color: var(--strong);
+        font-size: 13pt;
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: -0.045em;
+      }
+
+      .fullRegisterStatCard small {
+        display: block;
+        margin-top: 1.6mm;
+        color: var(--muted);
+        font-size: 6.9pt;
+        line-height: 1.3;
+        font-weight: 600;
+      }
+
+      .fullRegisterTopGrid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(74mm, 0.36fr);
+        gap: 5mm;
+        margin-top: 5mm;
+        align-items: start;
+      }
+
+      .fullRegisterAssetSection {
+        margin-top: 5mm;
+      }
+
+      .fullRegisterSectionTitle {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 5mm;
+        margin: 0 0 3mm;
+      }
+
+      .fullRegisterSectionTitle h2 {
+        margin: 0;
+        color: var(--strong);
+        font-size: 11pt;
+        line-height: 1.1;
+        font-weight: 800;
+        letter-spacing: -0.035em;
+      }
+
+      .fullRegisterMetaRows {
+        display: grid;
+        gap: 0;
+      }
+
+      .fullRegisterMetaRow {
+        display: grid;
+        grid-template-columns: 28mm minmax(0, 1fr);
+        min-height: 7mm;
+        align-items: center;
+        border-top: 1px solid var(--line);
+        font-size: 7.4pt;
+        line-height: 1.25;
+      }
+
+      .fullRegisterMetaRow:first-child {
+        border-top: none;
+      }
+
+      .fullRegisterMetaRowTall {
+        min-height: 12mm;
+        align-items: start;
+        padding-top: 1.8mm;
+        padding-bottom: 1.8mm;
+      }
+
+      .fullRegisterMetaRow span {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .fullRegisterMetaRow strong {
+        color: var(--strong);
+        font-weight: 800;
+        overflow-wrap: anywhere;
+      }
+
+      .fullRegisterAssetList {
+        display: grid;
+        gap: 3mm;
+      }
+
+      .fullRegisterAssetCard {
+        display: grid;
+        grid-template-columns: minmax(74mm, 1.15fr) minmax(62mm, 0.92fr) minmax(50mm, 0.72fr) minmax(44mm, 0.58fr);
+        gap: 0;
+        min-height: 28mm;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .fullRegisterAssetMain,
+      .fullRegisterAssetDetails,
+      .fullRegisterAssetStatus,
+      .fullRegisterAssetValue {
+        padding: 3mm;
+        border-left: 1px solid var(--line);
+      }
+
+      .fullRegisterAssetMain {
+        display: grid;
+        grid-template-columns: 16mm minmax(0, 1fr);
+        gap: 3mm;
+        border-left: none;
+        align-items: center;
+      }
+
+      .fullRegisterAssetThumb {
+        width: 16mm;
+        height: 16mm;
+        border: 1px solid var(--line);
+        background: var(--soft);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      .fullRegisterAssetThumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .fullRegisterAssetThumb span {
+        color: var(--faint);
+        font-size: 7pt;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+      }
+
+      .fullRegisterAssetIdentity h3 {
+        margin: 1.4mm 0 1.6mm;
+        color: var(--strong);
+        font-size: 10.6pt;
+        line-height: 1.1;
+        font-weight: 800;
+        letter-spacing: -0.045em;
+      }
+
+      .fullRegisterAssetMeta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.1mm 3mm;
+        color: var(--muted);
+        font-size: 6.8pt;
+        line-height: 1.25;
+        font-weight: 600;
+      }
+
+      .fullRegisterAssetMeta strong {
+        color: var(--strong);
+        font-weight: 800;
+      }
+
+      .fullRegisterAssetDetails,
+      .fullRegisterAssetStatus {
+        display: grid;
+        gap: 1.4mm;
+      }
+
+      .fullRegisterAssetDetails div,
+      .fullRegisterAssetStatus div {
+        display: grid;
+        grid-template-columns: 18mm minmax(0, 1fr);
+        gap: 2mm;
+        align-items: baseline;
+        color: var(--muted);
+        font-size: 6.9pt;
+        line-height: 1.2;
+        font-weight: 600;
+      }
+
+      .fullRegisterAssetDetails span,
+      .fullRegisterAssetStatus span {
+        color: var(--muted);
+      }
+
+      .fullRegisterAssetDetails strong,
+      .fullRegisterAssetStatus strong {
+        color: var(--strong);
+        font-weight: 800;
+        overflow-wrap: anywhere;
+      }
+
+      .fullRegisterAssetValue {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        text-align: right;
+      }
+
+      .fullRegisterAssetValue span {
+        color: var(--muted);
+        font-size: 6.7pt;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+
+      .fullRegisterAssetValue strong {
+        display: block;
+        margin-top: 1.1mm;
+        color: var(--strong);
+        font-size: 12pt;
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: -0.045em;
+      }
+
+      .fullRegisterAssetValue small,
+      .fullRegisterAssetValue em,
+      .fullRegisterAssetValue i {
+        display: block;
+        margin-top: 1mm;
+        color: var(--muted);
+        font-size: 6.4pt;
+        line-height: 1.25;
+        font-style: normal;
+        font-weight: 600;
+      }
+
+      .fullRegisterAssetValue em {
+        color: var(--strong);
+        font-weight: 800;
+      }
+
+      .fullRegisterAssetValue i {
+        color: var(--faint);
+      }
+
+      .fullRegisterEmpty {
+        border: 1px solid var(--line-strong);
+        padding: 7mm;
+        color: var(--muted);
+        font-size: 8pt;
+        font-weight: 600;
+      }
+
+      .fullRegisterFooter {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12mm;
+        align-items: end;
+        margin-top: 9mm;
+        padding-top: 3mm;
+        border-top: 1px solid var(--line-strong);
+      }
+
+      .fullRegisterPowered {
+        margin: 0 0 1.5mm;
+        color: var(--strong);
+        font-size: 7.2pt;
+        line-height: 1.2;
+        font-weight: 800;
+      }
+
+      .fullRegisterDisclaimer {
+        max-width: 218mm;
+        color: #344054;
+        font-size: 6.2pt;
+        line-height: 1.45;
+        font-weight: 500;
+      }
+
+      .fullRegisterFooterRight {
+        color: var(--strong);
+        font-size: 7pt;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      @media screen and (max-width: 980px) {
+        .fullRegisterPage {
+          width: calc(100% - 24px);
+          padding: 28px;
+          overflow-x: auto;
+        }
+      }
+
+      @media print {
+        html,
+        body {
+          background: #ffffff;
+        }
+
+        .screenBar {
+          display: none !important;
+        }
+
+        .fullRegisterPage {
+          width: auto;
+          min-height: auto;
+          margin: 0;
+          padding: 0;
+          box-shadow: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="screenBar">
+      <div class="screenBarText">Choose <strong>Save as PDF</strong> in the print dialog to download this asset register report.</div>
+      <div class="screenBarActions">
+        <button type="button" class="screenButton" onclick="window.close()">Close</button>
+        <button type="button" class="screenButton screenButtonPrimary" onclick="window.print()">Print / Save PDF</button>
+      </div>
+    </div>
+
+    <main class="fullRegisterPage">
+      <header class="fullRegisterHeader">
+        <div class="fullRegisterBrand">
+          <img class="fullRegisterLogo" src="${escapeHtml(payload.logoUrl)}" alt="Aim4price" />
+          <div class="fullRegisterTitleBlock">
+            <h1>Asset Register Report</h1>
+            <p>Aim4price asset register</p>
+          </div>
+        </div>
+
+        <div class="fullRegisterHeaderMeta">
+          <span>Generated</span>
+          <strong>${escapeHtml(payload.generatedAt)}</strong>
+          <span>Assets</span>
+          <strong>${escapeHtml(String(payload.rows.length))}</strong>
         </div>
       </header>
 
-      <section class="hero">
-        <div>
-          <span class="documentKicker">Asset register</span>
-          <h1 class="heroTitle">${escapeHtml(payload.ownerName)}</h1>
-          <p class="heroMeta">${escapeHtml(payload.ownerMeta)}</p>
+      <section class="fullRegisterHero">
+        <div class="fullRegisterPanel">
+          <span class="fullRegisterPanelLabel">Asset owner</span>
+          <h2 class="fullRegisterOwnerName">${escapeHtml(payload.ownerName)}</h2>
+          <p class="fullRegisterOwnerMeta">${escapeHtml(payload.ownerMeta)}</p>
         </div>
 
-        <aside class="heroValueCard">
-          <span class="heroValueLabel">Document overview</span>
-          <strong class="heroValueAmount">Short summary</strong>
-          <div class="heroBadgeRow">
-            <span class="heroBadge">Asset register</span>
-            <span class="heroBadge">Excl. VAT values</span>
-          </div>
-          <div class="heroValueMeta">${escapeHtml(payload.intro)}</div>
+        <aside class="fullRegisterValuePanel">
+          <span>Register Value</span>
+          <strong>${escapeHtml(registerValue)}</strong>
+          <small>${escapeHtml(payload.registerValueNote || 'Total saved asset value - VAT excluded')}</small>
         </aside>
       </section>
 
-      <main class="content">
-        <section class="statsGrid">
-          ${payload.stats
-            .map(
-              (stat) => `
-                <article class="statCard">
-                  <strong class="statValue">${escapeHtml(stat.value)}</strong>
-                  <span class="statLabel">${escapeHtml(stat.label)}</span>
-                  ${stat.note ? `<span class="statNote">${escapeHtml(stat.note)}</span>` : ''}
-                </article>
-              `,
-            )
-            .join('')}
+      ${renderFullRegisterStats(payload)}
+
+      <section class="fullRegisterTopGrid">
+        <section class="fullRegisterPanel">
+          <div class="fullRegisterSectionTitle">
+            <h2>Owner Details</h2>
+          </div>
+          <div class="fullRegisterMetaRows">${renderFullRegisterMetaRows(ownerRows)}</div>
         </section>
 
-        <section class="card">
-          <h2 class="cardTitle">Register contents</h2>
-          ${
-            payload.rows.length
-              ? `
-                <div class="tableWrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Asset</th>
-                        <th>Type</th>
-                        <th>Method</th>
-                        <th>Detail</th>
-                        <th>Value</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${payload.rows
-                        .map(
-                          (row) => `
-                            <tr>
-                              <td><strong>${escapeHtml(row.asset)}</strong></td>
-                              <td>${escapeHtml(row.type)}</td>
-                              <td>${escapeHtml(row.method)}</td>
-                              <td>${escapeHtml(row.detail)}</td>
-                              <td><strong>${escapeHtml(row.value)}</strong></td>
-                              <td>${escapeHtml(row.status)}</td>
-                            </tr>
-                          `,
-                        )
-                        .join('')}
-                    </tbody>
-                  </table>
-                </div>
-              `
-              : '<div class="emptyState">No assets are currently saved in the register.</div>'
+        <aside class="fullRegisterPanel">
+          <div class="fullRegisterSectionTitle">
+            <h2>Register Summary</h2>
+          </div>
+          <div class="fullRegisterMetaRows">
+            <div class="fullRegisterMetaRow"><span>Total value</span><strong>${escapeHtml(registerValue)}</strong></div>
+            <div class="fullRegisterMetaRow"><span>Total assets</span><strong>${escapeHtml(String(payload.rows.length))}</strong></div>
+            <div class="fullRegisterMetaRow"><span>Last updated</span><strong>${escapeHtml(latestUpdated)}</strong></div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="fullRegisterPanel fullRegisterAssetSection">
+        <div class="fullRegisterSectionTitle">
+          <h2>Asset Register</h2>
+          <span>${escapeHtml(String(payload.rows.length))} saved ${payload.rows.length === 1 ? 'asset' : 'assets'}</span>
+        </div>
+        ${renderFullRegisterAssetRows(payload.rows)}
+      </section>
+
+      <footer class="fullRegisterFooter">
+        <div>
+          <p class="fullRegisterPowered">Powered by Aim4price.com</p>
+          <div class="fullRegisterDisclaimer">${escapeHtml(footerNote)}</div>
+        </div>
+        <div class="fullRegisterFooterRight">Asset Register Report</div>
+      </footer>
+    </main>
+
+    <script>
+      (function () {
+        function waitForImages() {
+          var images = Array.prototype.slice.call(document.images || []);
+          if (!images.length) {
+            return Promise.resolve();
           }
-        </section>
-      </main>
 
-      <footer class="footer">${escapeHtml(
-        payload.footerNote ?? 'Aim4price asset register summary. All values shown exclude VAT.',
-      )}</footer>
-    </div>
-  `;
+          return Promise.all(images.map(function (image) {
+            if (image.complete) {
+              return Promise.resolve();
+            }
+
+            return new Promise(function (resolve) {
+              image.addEventListener('load', resolve, { once: true });
+              image.addEventListener('error', resolve, { once: true });
+            });
+          }));
+        }
+
+        function waitForFonts() {
+          if (document.fonts && document.fonts.ready) {
+            return Promise.race([
+              document.fonts.ready.catch(function () { return undefined; }),
+              new Promise(function (resolve) { window.setTimeout(resolve, 900); }),
+            ]);
+          }
+
+          return Promise.resolve();
+        }
+
+        function openPrintDialog() {
+          Promise.all([waitForImages(), waitForFonts()]).then(function () {
+            window.setTimeout(function () {
+              window.focus();
+              window.print();
+            }, 250);
+          });
+        }
+
+        if (document.readyState === 'complete') {
+          openPrintDialog();
+        } else {
+          window.addEventListener('load', openPrintDialog, { once: true });
+        }
+      })();
+    </script>
+  </body>
+</html>`;
 
   return openPrintWindow(
-    `${payload.ownerName} - Aim4price asset register summary`,
-    renderDocumentShell({
-      title: `${payload.ownerName} - Aim4price asset register summary`,
-      orientation: 'landscape',
-      contentHtml,
-    }),
+    `${payload.ownerName} - Aim4price asset register report`,
+    html,
   );
 }
