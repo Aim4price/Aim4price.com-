@@ -2641,6 +2641,11 @@ export default function AssetRegisterClient() {
   }
 
   function handlePrintAssetSheet(asset: RegisterAsset) {
+    const assetPhotoUrls = asset.photos
+      .map((photo) => toAbsoluteUrl(photo))
+      .filter((photoUrl): photoUrl is string => Boolean(photoUrl));
+    const documentsCount = assetDocuments(asset).length;
+
     const didOpen = openAssetSheetPrint({
       logoUrl: toAbsoluteUrl('/brand/aim4price-mark-white.png') ?? '',
       generatedAt: formatDate(new Date().toISOString()),
@@ -2649,31 +2654,26 @@ export default function AssetRegisterClient() {
       heroMeta: buildAssetMeta(asset),
       valueLabel: `${methodLabel(asset.selectedMethod)} value`,
       value: money(asset.value),
-      valueNote: 'Saved asset register snapshot.',
+      valueNote: 'Saved register value',
       statusLabel: assetStatusDateLabel(asset),
-      photoUrl: toAbsoluteUrl(asset.photos[0] || FALLBACK_ASSET_IMAGE) ?? null,
+      photoUrl: assetPhotoUrls[0] ?? null,
+      photoUrls: assetPhotoUrls,
       facts: [
-        { label: 'Asset type', value: assetKindLabel(asset) },
-        { label: 'Method', value: methodLabel(asset.selectedMethod) },
-        { label: 'Brand', value: asset.brandName || '—' },
-        { label: 'Model', value: asset.modelName || '—' },
-        { label: 'Drive', value: asset.drive ? formatDrive(asset.drive) : '—' },
-        { label: 'Cab', value: asset.cab ? formatCab(asset.cab) : '—' },
-        { label: 'Power', value: asset.powerKw !== null && typeof asset.powerKw !== 'undefined' ? `${asset.powerKw} kW` : '—' },
-        { label: asset.kind === 'property' ? 'Year built' : 'Year model', value: asset.yearModel ? String(asset.yearModel) : '—' },
-        {
-          label: 'Usage',
-          value: buildAssetUsageValue(asset),
-        },
+        { label: asset.kind === 'property' ? 'Year built' : 'Year', value: asset.yearModel ? String(asset.yearModel) : '—' },
+        { label: 'Usage', value: buildAssetUsageValue(asset) },
         { label: 'Condition', value: conditionLabel(asset.condition) },
         { label: 'Serial', value: asset.serialNumber || '—' },
-        { label: 'Finance', value: asset.isFinanced ? 'Financed' : 'Not financed' },
-        { label: 'Insurance', value: asset.isInsured ? 'Insured' : 'Not insured' },
-        { label: 'Documents', value: assetDocuments(asset).length ? `${assetDocuments(asset).length} saved` : 'No documents' },
+        { label: 'Insured', value: asset.isInsured ? 'Yes' : 'No' },
+        { label: 'Financed', value: asset.isFinanced ? 'Yes' : 'No' },
+        { label: 'Asset type', value: assetKindLabel(asset) },
+        { label: 'Brand', value: asset.brandName || '—' },
+        { label: 'Model', value: asset.modelName || asset.typedModelName || '—' },
+        { label: 'Value basis', value: methodLabel(asset.selectedMethod) },
+        { label: 'Documents', value: documentsCount ? `${documentsCount} saved` : 'None' },
         { label: 'Updated', value: assetStatusDateLabel(asset) },
       ],
       notes: [
-        ...(asset.note ? [{ label: 'Notes', value: asset.note }] : []),
+        ...(asset.note ? [{ label: 'Asset notes', value: asset.note }] : []),
         ...(asset.financeNote ? [{ label: 'Finance note', value: asset.financeNote }] : []),
         ...(readInsuranceNote(asset) ? [{ label: 'Insurance note', value: readInsuranceNote(asset) }] : []),
       ],
