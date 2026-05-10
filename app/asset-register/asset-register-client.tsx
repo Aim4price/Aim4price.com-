@@ -16,6 +16,8 @@ type AssetMethod = 'aim4price' | 'market' | 'manual';
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
 type UsageMetric = 'hours' | 'km';
+type AssetStatusChoice = 'yes' | 'no' | 'unknown';
+type ManualAssetStep = 1 | 2 | 3 | 4;
 type ExportFormat = 'pdf' | 'xlsx';
 type AssetFilterKey =
   | 'all'
@@ -209,6 +211,8 @@ type AssetDraft = {
   serialNumber: string;
   isFinanced: boolean;
   isInsured: boolean;
+  financeStatus: AssetStatusChoice;
+  insuranceStatus: AssetStatusChoice;
   financeNote: string;
   photos: string[];
   documents: AssetDocument[];
@@ -273,6 +277,25 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   },
 ];
 
+const FINANCE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; description: string }> = [
+  { value: 'yes', label: 'Is financed', description: 'This asset has active finance or a lender linked to it.' },
+  { value: 'no', label: 'Is not financed', description: 'This asset is fully owned and has no finance balance.' },
+  { value: 'unknown', label: 'Not sure', description: 'You can confirm the finance status later.' },
+];
+
+const INSURANCE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; description: string }> = [
+  { value: 'yes', label: 'Is insured', description: 'This asset is covered on an insurance policy.' },
+  { value: 'no', label: 'Is not insured', description: 'This asset is not currently insured.' },
+  { value: 'unknown', label: 'Not sure', description: 'You can confirm the insurance status later.' },
+];
+
+const MANUAL_FORM_STEPS: Array<{ step: ManualAssetStep; label: string }> = [
+  { step: 1, label: 'Equipment type' },
+  { step: 2, label: 'Details' },
+  { step: 3, label: 'Finance' },
+  { step: 4, label: 'Documents' },
+];
+
 const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = [
   { value: '', label: 'Select condition' },
   { value: 'excellent', label: 'Excellent' },
@@ -303,6 +326,8 @@ const initialAssetDraft: AssetDraft = {
   serialNumber: '',
   isFinanced: false,
   isInsured: false,
+  financeStatus: 'unknown',
+  insuranceStatus: 'unknown',
   financeNote: '',
   photos: [],
   documents: [],
@@ -711,6 +736,48 @@ function getManualAssetOption(kind: AssetKind) {
   return MANUAL_ASSET_TYPE_OPTIONS.find((option) => option.value === normalizedKind) ?? MANUAL_ASSET_TYPE_OPTIONS[0];
 }
 
+function normalizeAssetStatusChoice(value: unknown, fallback: AssetStatusChoice = 'unknown'): AssetStatusChoice {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (['yes', 'y', 'true', 'financed', 'insured', 'is_financed', 'is_insured'].includes(normalized)) {
+    return 'yes';
+  }
+
+  if (['no', 'n', 'false', 'not_financed', 'not-financed', 'not insured', 'not_insured', 'not-insured', 'unfinanced', 'uninsured'].includes(normalized)) {
+    return 'no';
+  }
+
+  if (['unknown', 'not sure', 'not_sure', 'unsure', 'maybe', ''].includes(normalized)) {
+    return normalized ? 'unknown' : fallback;
+  }
+
+  return fallback;
+}
+
+function readFinanceStatusChoice(asset: RegisterAsset): AssetStatusChoice {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.financeStatus ?? specs.finance_status ?? specs.financedStatus ?? specs.financed_status,
+    asset.isFinanced ? 'yes' : 'no',
+  );
+}
+
+function readInsuranceStatusChoice(asset: RegisterAsset): AssetStatusChoice {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.insuranceStatus ?? specs.insurance_status ?? specs.insuredStatus ?? specs.insured_status,
+    asset.isInsured ? 'yes' : 'no',
+  );
+}
+
+function statusChoiceLabel(value: AssetStatusChoice): string {
+  if (value === 'yes') return 'Yes';
+  if (value === 'no') return 'No';
+  return 'Not sure';
+}
+
 function conditionLabel(value: AssetConditionValue): string {
   return (
     {
@@ -982,15 +1049,20 @@ function canProjectFuturePrice(asset: RegisterAsset): boolean {
 }
 
 function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
+  const financeStatus = readFinanceStatusChoice(asset);
+  const insuranceStatus = readInsuranceStatusChoice(asset);
+
   return {
     kind: normalizeDraftKind(asset.kind),
     title: asset.title,
     value: String(asset.value || ''),
     note: asset.note,
     serialNumber: asset.serialNumber,
-    isFinanced: asset.isFinanced,
-    isInsured: asset.isInsured,
-    financeNote: asset.financeNote,
+    isFinanced: financeStatus === 'yes',
+    isInsured: insuranceStatus === 'yes',
+    financeStatus,
+    insuranceStatus,
+    financeNote: financeStatus === 'yes' ? asset.financeNote : '',
     photos: normalizePhotos(asset.photos),
     documents: assetDocuments(asset),
     yearModel: asset.yearModel === null || typeof asset.yearModel === 'undefined' ? '' : String(asset.yearModel),
@@ -1351,6 +1423,7 @@ export default function AssetRegisterClient() {
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
+  const [manualAssetStep, setManualAssetStep] = useState<ManualAssetStep>(1);
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [copiedScanLinkAssetId, setCopiedScanLinkAssetId] = useState<string | null>(null);
@@ -1769,6 +1842,7 @@ export default function AssetRegisterClient() {
   function resetEditor() {
     setEditingAssetId(null);
     setAssetDraft(initialAssetDraft);
+    setManualAssetStep(1);
 
     if (photoInputRef.current) {
       photoInputRef.current.value = '';
@@ -1781,6 +1855,7 @@ export default function AssetRegisterClient() {
 
   function openCreateModal() {
     resetEditor();
+    setManualAssetStep(1);
     setIsAssetModalOpen(true);
   }
 
@@ -1792,7 +1867,125 @@ export default function AssetRegisterClient() {
   function openUpdater(asset: RegisterAsset) {
     setEditingAssetId(asset.id);
     setAssetDraft(buildDraftFromAsset(asset));
+    setManualAssetStep(2);
     setIsAssetModalOpen(true);
+  }
+
+  function selectManualAssetKind(nextKind: AssetKind, shouldAdvance = false) {
+    setAssetDraft((current) => ({
+      ...current,
+      kind: nextKind,
+      hours: nextKind === 'property' || nextKind === 'tools' || nextKind === 'manual' ? '' : current.hours,
+      usageMetric: nextKind === 'vehicle' ? normalizeUsageMetric(current.usageMetric, 'vehicle') : 'hours',
+      lifeWorkedPercent: nextKind === 'property' || nextKind === 'vehicle' || nextKind === 'manual' ? '' : current.lifeWorkedPercent,
+      condition: nextKind === 'property' ? '' : current.condition,
+    }));
+
+    if (shouldAdvance) {
+      setManualAssetStep(2);
+    }
+  }
+
+  function setAssetFinanceStatus(nextStatus: AssetStatusChoice) {
+    setAssetDraft((current) => ({
+      ...current,
+      financeStatus: nextStatus,
+      isFinanced: nextStatus === 'yes',
+      financeNote: nextStatus === 'yes' ? current.financeNote : '',
+    }));
+  }
+
+  function setAssetInsuranceStatus(nextStatus: AssetStatusChoice) {
+    setAssetDraft((current) => ({
+      ...current,
+      insuranceStatus: nextStatus,
+      isInsured: nextStatus === 'yes',
+    }));
+  }
+
+  function validateAssetDetailsDraft(): boolean {
+    const value = Math.round(Number(assetDraft.value) || 0);
+    const hasYearModel = assetDraft.yearModel.trim() !== '';
+    const yearModel = hasYearModel ? Number(assetDraft.yearModel) : null;
+    const hasHours = assetDraft.hours.trim() !== '';
+    const hours = hasHours ? Number(assetDraft.hours) : null;
+    const hasLifeWorkedPercent = assetDraft.lifeWorkedPercent.trim() !== '';
+    const lifeWorkedPercent = hasLifeWorkedPercent ? Number(assetDraft.lifeWorkedPercent) : null;
+    const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
+
+    if (!assetDraft.title.trim() || value <= 0) {
+      setNotice({ tone: 'error', message: 'Asset title and value are required before moving to the next step.' });
+      return false;
+    }
+
+    if (hasYearModel && (!Number.isFinite(yearModel) || Number(yearModel) < 1800 || Number(yearModel) > new Date().getFullYear() + 1)) {
+      setNotice({ tone: 'error', message: `${yearFieldLabel} must be a valid year.` });
+      return false;
+    }
+
+    if (hasHours && (!Number.isFinite(hours) || Number(hours) < 0)) {
+      setNotice({ tone: 'error', message: `${usageErrorLabel} must be zero or greater.` });
+      return false;
+    }
+
+    if (hasLifeWorkedPercent && (!Number.isFinite(lifeWorkedPercent) || Number(lifeWorkedPercent) < 0 || Number(lifeWorkedPercent) > 100)) {
+      setNotice({ tone: 'error', message: 'Lifetime worked must be between 0% and 100%.' });
+      return false;
+    }
+
+    if (
+      editingAsset &&
+      hasHours &&
+      editingAsset.hours !== null &&
+      typeof editingAsset.hours !== 'undefined' &&
+      Number(hours) < Number(editingAsset.hours)
+    ) {
+      setNotice({
+        tone: 'error',
+        message: `${usageErrorLabel} cannot be lower than the reading already saved on this asset.`,
+      });
+      return false;
+    }
+
+    const currentLifeWorkedPercent = editingAsset ? getAssetLifeWorkedPercent(editingAsset) : null;
+    if (
+      editingAsset &&
+      hasLifeWorkedPercent &&
+      currentLifeWorkedPercent !== null &&
+      Number(lifeWorkedPercent) < currentLifeWorkedPercent
+    ) {
+      setNotice({
+        tone: 'error',
+        message: 'Lifetime worked cannot be lower than the percentage already saved on this asset.',
+      });
+      return false;
+    }
+
+    return true;
+  }
+
+  function goToPreviousManualAssetStep() {
+    setManualAssetStep((current) => {
+      if (current <= 1) return 1;
+      return (current - 1) as ManualAssetStep;
+    });
+  }
+
+  function goToNextManualAssetStep() {
+    if (manualAssetStep === 2 && !validateAssetDetailsDraft()) {
+      return;
+    }
+
+    setManualAssetStep((current) => {
+      if (current >= 4) return 4;
+      return (current + 1) as ManualAssetStep;
+    });
+  }
+
+  function scrollToAssetCard(assetId: string) {
+    window.setTimeout(() => {
+      document.getElementById(`asset-card-${assetId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 180);
   }
 
   function openActionDialog(asset: RegisterAsset) {
@@ -2004,6 +2197,11 @@ export default function AssetRegisterClient() {
   async function handleAssetSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (!validateAssetDetailsDraft()) {
+      setManualAssetStep(2);
+      return;
+    }
+
     const value = Math.round(Number(assetDraft.value) || 0);
     const photos = normalizePhotos(assetDraft.photos);
     const documents = normalizeDocuments(assetDraft.documents);
@@ -2066,7 +2264,12 @@ export default function AssetRegisterClient() {
     const roundedLifeWorkedPercent = showLifeWorkedPercentField && hasLifeWorkedPercent
       ? Math.round(Number(lifeWorkedPercent) * 10) / 10
       : null;
-    const specsJson: Record<string, unknown> = {};
+    const specsJson: Record<string, unknown> = {
+      financeStatus: assetDraft.financeStatus,
+      finance_status: assetDraft.financeStatus,
+      insuranceStatus: assetDraft.insuranceStatus,
+      insurance_status: assetDraft.insuranceStatus,
+    };
     if (roundedLifeWorkedPercent !== null) {
       specsJson.life_worked_percent = roundedLifeWorkedPercent;
       specsJson.worked_percent = roundedLifeWorkedPercent;
@@ -2082,9 +2285,9 @@ export default function AssetRegisterClient() {
       value,
       note: assetDraft.note,
       serialNumber: assetDraft.serialNumber,
-      isFinanced: assetDraft.isFinanced,
-      isInsured: assetDraft.isInsured,
-      financeNote: assetDraft.financeNote,
+      isFinanced: assetDraft.financeStatus === 'yes',
+      isInsured: assetDraft.insuranceStatus === 'yes',
+      financeNote: assetDraft.financeStatus === 'yes' ? assetDraft.financeNote : '',
       photos,
       documents,
       yearModel: hasYearModel ? Math.round(Number(yearModel)) : null,
@@ -2096,6 +2299,8 @@ export default function AssetRegisterClient() {
     };
 
     try {
+      let assetIdToFocus: string | null = null;
+
       if (editingAssetId !== null) {
         const response = await fetch('/api/asset-register', {
           method: 'PUT',
@@ -2125,7 +2330,9 @@ export default function AssetRegisterClient() {
           setProjectionAsset(data.item);
         }
 
-        setNotice({ tone: 'success', message: 'Asset updated.' });
+        assetIdToFocus = data.item.id;
+        setExpandedAssetId(data.item.id);
+        setNotice({ tone: 'success', message: 'Asset updated successfully.' });
       } else {
         const response = await fetch('/api/asset-register', {
           method: 'POST',
@@ -2142,11 +2349,21 @@ export default function AssetRegisterClient() {
           throw new Error(data.error ?? 'Failed to add asset.');
         }
 
-        setAssets((current) => [data.item as RegisterAsset, ...current]);
-        setNotice({ tone: 'success', message: 'Asset added to the register.' });
+        const savedAsset = data.item as RegisterAsset;
+        setAssets((current) => [savedAsset, ...current]);
+        setSearchTerm('');
+        setAssetFilter('all');
+        setCurrentPage(1);
+        setExpandedAssetId(savedAsset.id);
+        assetIdToFocus = savedAsset.id;
+        setNotice({ tone: 'success', message: 'Asset added successfully.' });
       }
 
       closeAssetModal();
+
+      if (assetIdToFocus) {
+        scrollToAssetCard(assetIdToFocus);
+      }
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -2755,6 +2972,15 @@ export default function AssetRegisterClient() {
     : searchTerm.trim() || hasActiveAssetFilter
       ? 'No assets match the current search or filter.'
       : 'No saved assets yet.';
+  const currentManualStepMeta = MANUAL_FORM_STEPS.find((entry) => entry.step === manualAssetStep) ?? MANUAL_FORM_STEPS[0];
+  const assetFormStepDescription =
+    manualAssetStep === 1
+      ? 'Choose the type of asset you want to add.'
+      : manualAssetStep === 2
+        ? 'Add the asset title, value and key register details.'
+        : manualAssetStep === 3
+          ? 'Mark whether the asset is financed and insured.'
+          : 'Attach optional documents and photos, then save the asset.';
 
   return (
     <main className={styles.page}>
@@ -2935,6 +3161,7 @@ export default function AssetRegisterClient() {
 
                     return (
                       <article
+                        id={`asset-card-${asset.id}`}
                         className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''}`}
                         key={asset.id}
                       >
@@ -3121,11 +3348,11 @@ export default function AssetRegisterClient() {
                                       <div className={styles.assetStatusDetails}>
                                         <div className={styles.assetStatusRow}>
                                           <span>Financed</span>
-                                          <strong>{asset.isFinanced ? 'Yes' : 'No'}</strong>
+                                          <strong>{statusChoiceLabel(readFinanceStatusChoice(asset))}</strong>
                                         </div>
                                         <div className={styles.assetStatusRow}>
                                           <span>Insured</span>
-                                          <strong>{asset.isInsured ? 'Yes' : 'No'}</strong>
+                                          <strong>{statusChoiceLabel(readInsuranceStatusChoice(asset))}</strong>
                                         </div>
                                       </div>
                                     </div>
@@ -3238,7 +3465,7 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalHeader} ${styles.summaryModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-register-summary-title">Register summary</h3>
-                <p>Live totals calculated from the saved assets in this register. Financed and insured totals update when those asset checkboxes are changed.</p>
+                <p>Live totals calculated from the saved assets in this register. Financed and insured totals update when those asset statuses are changed.</p>
               </div>
 
               <button
@@ -3303,14 +3530,17 @@ export default function AssetRegisterClient() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeAssetModal} />
 
-          <div className={`${styles.modalCard} ${styles.assetFormModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-form-title">
+          <div
+            className={`${styles.modalCard} ${styles.assetFormModal} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="asset-form-title"
+          >
             <div className={`${styles.modalHeader} ${styles.assetFormModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-form-title">{editingAsset ? 'Update asset details' : 'Add asset to register'}</h3>
                 <p>
-                  {editingAsset
-                    ? 'Update the saved asset details in the staged form below.'
-                    : 'Work through the four sections below: equipment type, asset details, finance or insurance, and documents or photos.'}
+                  Step {manualAssetStep} of 4 · {currentManualStepMeta.label} · {assetFormStepDescription}
                 </p>
               </div>
 
@@ -3324,418 +3554,473 @@ export default function AssetRegisterClient() {
               </button>
             </div>
 
-            <div className={styles.modalScrollBody}>
-              <form className={`${styles.modalForm} ${styles.manualAssetForm}`} onSubmit={handleAssetSubmit}>
-                <section className={`${styles.manualStageCard} ${styles.fullWidth}`}>
-                  <div className={styles.manualStageHeader}>
-                    <span className={styles.manualStageNumber}>1</span>
-                    <div>
-                      <h4>Equipment type</h4>
-                      <p>Select the closest asset group. Use Other when the asset does not fit the standard groups.</p>
+            <div className={`${styles.modalScrollBody} ${styles.manualStepScrollBody} ${manualAssetStep === 1 ? styles.manualStepScrollBodyNoScroll : ''}`}>
+              <form className={`${styles.modalForm} ${styles.manualAssetForm} ${styles.manualStepForm}`} onSubmit={handleAssetSubmit}>
+                <div className={styles.manualStepProgress} aria-label="Manual asset progress">
+                  {MANUAL_FORM_STEPS.map((entry) => (
+                    <span
+                      key={entry.step}
+                      className={`${styles.manualStepProgressItem} ${entry.step === manualAssetStep ? styles.manualStepProgressItemActive : ''} ${entry.step < manualAssetStep ? styles.manualStepProgressItemComplete : ''}`}
+                    >
+                      <span>{entry.step}</span>
+                      <small>{entry.label}</small>
+                    </span>
+                  ))}
+                </div>
+
+                {manualAssetStep === 1 ? (
+                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.fullWidth}`}>
+                    <div className={styles.manualStageHeader}>
+                      <span className={styles.manualStageNumber}>1</span>
+                      <div>
+                        <h4>Equipment type</h4>
+                        <p>Select one asset group. The form will move to details automatically after your selection.</p>
+                      </div>
                     </div>
-                  </div>
 
-                  {editingAsset?.valuationRunId ? (
-                    <label className={`${styles.field} ${styles.assetTypeField}`}>
-                      <span>Asset type</span>
-                      <input value={kindLabel(editingAsset.kind)} disabled readOnly />
-                      <small className={styles.fieldHint}>This asset type comes from the saved valuation and cannot be changed here.</small>
-                    </label>
-                  ) : (
-                    <div className={styles.assetTypeChoiceGrid} role="radiogroup" aria-label="Asset type">
-                      {MANUAL_ASSET_TYPE_OPTIONS.map((option) => {
-                        const isSelected = assetFormKind === option.value;
+                    {editingAsset?.valuationRunId ? (
+                      <label className={`${styles.field} ${styles.assetTypeField}`}>
+                        <span>Asset type</span>
+                        <input value={kindLabel(editingAsset.kind)} disabled readOnly />
+                        <small className={styles.fieldHint}>This asset type comes from the saved valuation and cannot be changed here.</small>
+                      </label>
+                    ) : (
+                      <div className={styles.assetTypeChoiceGrid} role="radiogroup" aria-label="Asset type">
+                        {MANUAL_ASSET_TYPE_OPTIONS.map((option) => {
+                          const isSelected = assetFormKind === option.value;
 
-                        return (
-                          <button
-                            key={option.value}
-                            type="button"
-                            className={`${styles.assetTypeChoiceButton} ${isSelected ? styles.assetTypeChoiceButtonActive : ''}`}
-                            role="radio"
-                            aria-checked={isSelected}
-                            onClick={() => {
-                              const nextKind = option.value as AssetKind;
-                              setAssetDraft((current) => ({
-                                ...current,
-                                kind: nextKind,
-                                hours: nextKind === 'property' || nextKind === 'tools' || nextKind === 'manual' ? '' : current.hours,
-                                usageMetric: nextKind === 'vehicle' ? normalizeUsageMetric(current.usageMetric, 'vehicle') : 'hours',
-                                lifeWorkedPercent: nextKind === 'property' || nextKind === 'vehicle' || nextKind === 'manual' ? '' : current.lifeWorkedPercent,
-                                condition: nextKind === 'property' ? '' : current.condition,
-                              }));
-                            }}
-                          >
-                            <span className={styles.assetTypeChoiceText}>
-                              <strong>{option.label}</strong>
-                              <small>{option.description}</small>
-                            </span>
-                            <span className={styles.assetTypeChoiceStatus}>{isSelected ? 'Selected' : 'Choose'}</span>
-                          </button>
-                        );
-                      })}
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              className={`${styles.assetTypeChoiceButton} ${isSelected ? styles.assetTypeChoiceButtonActive : ''}`}
+                              role="radio"
+                              aria-checked={isSelected}
+                              onClick={() => selectManualAssetKind(option.value as AssetKind, true)}
+                            >
+                              <span className={styles.assetTypeChoiceText}>
+                                <strong>{option.label}</strong>
+                                <small>{option.description}</small>
+                              </span>
+                              <span className={styles.assetTypeChoiceStatus}>{isSelected ? 'Selected' : 'Select'}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </section>
+                ) : null}
+
+                {manualAssetStep === 2 ? (
+                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.fullWidth}`}>
+                    <div className={styles.manualStageHeader}>
+                      <span className={styles.manualStageNumber}>2</span>
+                      <div>
+                        <h4>Details, title and value</h4>
+                        <p>Capture the information that should appear on the asset register and asset PDF.</p>
+                      </div>
                     </div>
-                  )}
-                </section>
 
-                <section className={`${styles.manualStageCard} ${styles.fullWidth}`}>
-                  <div className={styles.manualStageHeader}>
-                    <span className={styles.manualStageNumber}>2</span>
-                    <div>
-                      <h4>Details, title and value</h4>
-                      <p>Capture the information that should appear on the asset register and asset PDF.</p>
-                    </div>
-                  </div>
-
-                  <div className={styles.manualStageGrid}>
-                    <label className={styles.field}>
-                      <span>Title</span>
-                      <input
-                        value={assetDraft.title}
-                        onChange={(event) =>
-                          setAssetDraft((current) => ({
-                            ...current,
-                            title: event.target.value,
-                          }))
-                        }
-                        placeholder={getManualAssetOption(assetFormKind).titlePlaceholder}
-                      />
-                    </label>
-
-                    <label className={styles.field}>
-                      <span>Value</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={assetDraft.value}
-                        onChange={(event) =>
-                          setAssetDraft((current) => ({
-                            ...current,
-                            value: event.target.value,
-                          }))
-                        }
-                        placeholder="0"
-                      />
-                    </label>
-
-                    <label className={styles.field}>
-                      <span>Serial / reference</span>
-                      <input
-                        value={assetDraft.serialNumber}
-                        onChange={(event) =>
-                          setAssetDraft((current) => ({
-                            ...current,
-                            serialNumber: event.target.value,
-                          }))
-                        }
-                        placeholder="Serial number or internal reference"
-                      />
-                    </label>
-
-                    <label className={styles.field}>
-                      <span>{yearFieldLabel}</span>
-                      <input
-                        type="number"
-                        min="1800"
-                        max={new Date().getFullYear() + 1}
-                        step="1"
-                        value={assetDraft.yearModel}
-                        onChange={(event) =>
-                          setAssetDraft((current) => ({
-                            ...current,
-                            yearModel: event.target.value,
-                          }))
-                        }
-                        placeholder={assetFormKind === 'property' ? 'Example: 2012' : 'Example: 2020'}
-                      />
-                      <small className={styles.fieldHint}>
-                        {assetFormKind === 'property'
-                          ? 'Use the year the property or building was built.'
-                          : 'Use the model year or manufacturing year shown on the asset records.'}
-                      </small>
-                    </label>
-
-                    {assetFormKind === 'vehicle' ? (
+                    <div className={styles.manualStageGrid}>
                       <label className={styles.field}>
-                        <span>Usage type</span>
-                        <select
-                          value={assetDraft.usageMetric}
+                        <span>Title</span>
+                        <input
+                          value={assetDraft.title}
                           onChange={(event) =>
                             setAssetDraft((current) => ({
                               ...current,
-                              usageMetric: normalizeUsageMetric(event.target.value, 'vehicle'),
+                              title: event.target.value,
                             }))
                           }
-                        >
-                          <option value="km">Kilometres</option>
-                          <option value="hours">Hours</option>
-                        </select>
-                        <small className={styles.fieldHint}>Choose how this vehicle usage must display in Aim4price.</small>
+                          placeholder={getManualAssetOption(assetFormKind).titlePlaceholder}
+                        />
                       </label>
-                    ) : null}
 
-                    {showUsageHoursField ? (
                       <label className={styles.field}>
-                        <span>{usageFieldLabel}</span>
+                        <span>Value</span>
                         <input
                           type="number"
                           min="0"
                           step="1"
-                          value={assetDraft.hours}
+                          value={assetDraft.value}
                           onChange={(event) =>
                             setAssetDraft((current) => ({
                               ...current,
-                              hours: event.target.value,
+                              value: event.target.value,
                             }))
                           }
-                          placeholder={usageFieldPlaceholder}
+                          placeholder="0"
                         />
-                        <small className={styles.fieldHint}>{usageFieldHint}</small>
                       </label>
-                    ) : null}
 
-                    {showLifeWorkedPercentField ? (
                       <label className={styles.field}>
-                        <span>Lifetime worked %</span>
+                        <span>Serial / reference</span>
+                        <input
+                          value={assetDraft.serialNumber}
+                          onChange={(event) =>
+                            setAssetDraft((current) => ({
+                              ...current,
+                              serialNumber: event.target.value,
+                            }))
+                          }
+                          placeholder="Serial number or internal reference"
+                        />
+                      </label>
+
+                      <label className={styles.field}>
+                        <span>{yearFieldLabel}</span>
                         <input
                           type="number"
-                          min="0"
-                          max="100"
-                          step="0.1"
-                          value={assetDraft.lifeWorkedPercent}
+                          min="1800"
+                          max={new Date().getFullYear() + 1}
+                          step="1"
+                          value={assetDraft.yearModel}
                           onChange={(event) =>
                             setAssetDraft((current) => ({
                               ...current,
-                              lifeWorkedPercent: event.target.value,
+                              yearModel: event.target.value,
                             }))
                           }
-                          placeholder="Example: 45"
+                          placeholder={assetFormKind === 'property' ? 'Example: 2012' : 'Example: 2020'}
                         />
-                        <small className={styles.fieldHint}>Use this when exact hours are unknown or the machine is valued on percentage worked.</small>
+                        <small className={styles.fieldHint}>
+                          {assetFormKind === 'property'
+                            ? 'Use the year the property or building was built.'
+                            : 'Use the model year or manufacturing year shown on the asset records.'}
+                        </small>
                       </label>
-                    ) : null}
 
-                    {showConditionField ? (
-                      <label className={styles.field}>
-                        <span>Condition</span>
-                        <select
-                          value={assetDraft.condition}
+                      {assetFormKind === 'vehicle' ? (
+                        <label className={styles.field}>
+                          <span>Usage type</span>
+                          <select
+                            value={assetDraft.usageMetric}
+                            onChange={(event) =>
+                              setAssetDraft((current) => ({
+                                ...current,
+                                usageMetric: normalizeUsageMetric(event.target.value, 'vehicle'),
+                              }))
+                            }
+                          >
+                            <option value="km">Kilometres</option>
+                            <option value="hours">Hours</option>
+                          </select>
+                          <small className={styles.fieldHint}>Choose how this vehicle usage must display in Aim4price.</small>
+                        </label>
+                      ) : null}
+
+                      {showUsageHoursField ? (
+                        <label className={styles.field}>
+                          <span>{usageFieldLabel}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={assetDraft.hours}
+                            onChange={(event) =>
+                              setAssetDraft((current) => ({
+                                ...current,
+                                hours: event.target.value,
+                              }))
+                            }
+                            placeholder={usageFieldPlaceholder}
+                          />
+                          <small className={styles.fieldHint}>{usageFieldHint}</small>
+                        </label>
+                      ) : null}
+
+                      {showLifeWorkedPercentField ? (
+                        <label className={styles.field}>
+                          <span>Lifetime worked %</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            value={assetDraft.lifeWorkedPercent}
+                            onChange={(event) =>
+                              setAssetDraft((current) => ({
+                                ...current,
+                                lifeWorkedPercent: event.target.value,
+                              }))
+                            }
+                            placeholder="Example: 45"
+                          />
+                          <small className={styles.fieldHint}>Use this when exact hours are unknown or the machine is valued on percentage worked.</small>
+                        </label>
+                      ) : null}
+
+                      {showConditionField ? (
+                        <label className={styles.field}>
+                          <span>Condition</span>
+                          <select
+                            value={assetDraft.condition}
+                            onChange={(event) =>
+                              setAssetDraft((current) => ({
+                                ...current,
+                                condition: event.target.value as AssetConditionValue,
+                              }))
+                            }
+                          >
+                            {CONDITION_OPTIONS.map((option) => (
+                              <option key={option.value || 'blank'} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                          <small className={styles.fieldHint}>Condition feeds through to cleaner asset sheets and better saved asset information.</small>
+                        </label>
+                      ) : null}
+
+                      <label className={`${styles.field} ${styles.fullWidth}`}>
+                        <span>Notes</span>
+                        <textarea
+                          rows={4}
+                          value={assetDraft.note}
                           onChange={(event) =>
                             setAssetDraft((current) => ({
                               ...current,
-                              condition: event.target.value as AssetConditionValue,
+                              note: event.target.value,
                             }))
                           }
-                        >
-                          {CONDITION_OPTIONS.map((option) => (
-                            <option key={option.value || 'blank'} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                        <small className={styles.fieldHint}>Condition feeds through to cleaner asset sheets and better saved asset information.</small>
-                      </label>
-                    ) : null}
-
-                    <label className={`${styles.field} ${styles.fullWidth}`}>
-                      <span>Notes</span>
-                      <textarea
-                        rows={4}
-                        value={assetDraft.note}
-                        onChange={(event) =>
-                          setAssetDraft((current) => ({
-                            ...current,
-                            note: event.target.value,
-                          }))
-                        }
-                        placeholder="Extra details about the asset"
-                      />
-                    </label>
-                  </div>
-                </section>
-
-                <section className={`${styles.manualStageCard} ${styles.fullWidth}`}>
-                  <div className={styles.manualStageHeader}>
-                    <span className={styles.manualStageNumber}>3</span>
-                    <div>
-                      <h4>Finance and insurance</h4>
-                      <p>Mark whether this asset is financed or insured for cleaner register summaries.</p>
-                    </div>
-                  </div>
-
-                  <div className={styles.manualStatusGrid}>
-                    <label className={styles.checkboxRow}>
-                      <input
-                        type="checkbox"
-                        checked={assetDraft.isFinanced}
-                        onChange={(event) => {
-                          const checked = event.target.checked;
-                          setAssetDraft((current) => ({
-                            ...current,
-                            isFinanced: checked,
-                            financeNote: checked ? current.financeNote : '',
-                          }));
-                        }}
-                      />
-                      <span>This asset is financed</span>
-                    </label>
-
-                    <label className={styles.checkboxRow}>
-                      <input
-                        type="checkbox"
-                        checked={assetDraft.isInsured}
-                        onChange={(event) => {
-                          const checked = event.target.checked;
-                          setAssetDraft((current) => ({
-                            ...current,
-                            isInsured: checked,
-                          }));
-                        }}
-                      />
-                      <span>This asset is insured</span>
-                    </label>
-                  </div>
-
-                  {assetDraft.isFinanced ? (
-                    <label className={`${styles.field} ${styles.fullWidth}`}>
-                      <span>Finance note</span>
-                      <input
-                        value={assetDraft.financeNote}
-                        onChange={(event) =>
-                          setAssetDraft((current) => ({
-                            ...current,
-                            financeNote: event.target.value,
-                          }))
-                        }
-                        placeholder="Bank, lender or finance reference"
-                      />
-                    </label>
-                  ) : null}
-                </section>
-
-                <section className={`${styles.manualStageCard} ${styles.fullWidth}`}>
-                  <div className={styles.manualStageHeader}>
-                    <span className={styles.manualStageNumber}>4</span>
-                    <div>
-                      <h4>Documents and gallery</h4>
-                      <p>Attach finance documents, invoices, service records, NATIS papers or asset photos.</p>
-                    </div>
-                  </div>
-
-                  <div className={styles.manualStageGrid}>
-                    <div className={styles.field}>
-                      <span>Documents <small>(optional)</small></span>
-
-                      <div className={styles.documentUploadPanel}>
-                        <input
-                          ref={documentInputRef}
-                          type="file"
-                          accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain,image/jpeg,image/png,image/webp"
-                          multiple
-                          className={styles.fileInput}
-                          onChange={handleDocumentFilesSelected}
-                          disabled={isUploadingDocuments || assetDraft.documents.length >= MAX_DOCUMENTS}
+                          placeholder="Extra details about the asset"
                         />
+                      </label>
+                    </div>
+                  </section>
+                ) : null}
 
-                        <div className={styles.uploadRow}>
-                          <button
-                            type="button"
-                            className={styles.secondaryButton}
-                            onClick={() => documentInputRef.current?.click()}
+                {manualAssetStep === 3 ? (
+                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.fullWidth}`}>
+                    <div className={styles.manualStageHeader}>
+                      <span className={styles.manualStageNumber}>3</span>
+                      <div>
+                        <h4>Finance and insurance</h4>
+                        <p>Select a clear status for finance and insurance. Use Not sure if you still need to confirm it.</p>
+                      </div>
+                    </div>
+
+                    <div className={styles.statusChoiceStack}>
+                      <div className={styles.statusChoiceGroup}>
+                        <div className={styles.statusChoiceHeading}>
+                          <h5>Finance status</h5>
+                          <p>Choose the option that best matches the current asset finance position.</p>
+                        </div>
+
+                        <div className={styles.statusChoiceGrid} role="radiogroup" aria-label="Finance status">
+                          {FINANCE_STATUS_OPTIONS.map((option) => {
+                            const isSelected = assetDraft.financeStatus === option.value;
+
+                            return (
+                              <button
+                                key={option.value}
+                                type="button"
+                                className={`${styles.statusChoiceButton} ${isSelected ? styles.statusChoiceButtonActive : ''}`}
+                                role="radio"
+                                aria-checked={isSelected}
+                                onClick={() => setAssetFinanceStatus(option.value)}
+                              >
+                                <strong>{option.label}</strong>
+                                <small>{option.description}</small>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className={styles.statusChoiceGroup}>
+                        <div className={styles.statusChoiceHeading}>
+                          <h5>Insurance status</h5>
+                          <p>Choose the option that best matches the current asset insurance position.</p>
+                        </div>
+
+                        <div className={styles.statusChoiceGrid} role="radiogroup" aria-label="Insurance status">
+                          {INSURANCE_STATUS_OPTIONS.map((option) => {
+                            const isSelected = assetDraft.insuranceStatus === option.value;
+
+                            return (
+                              <button
+                                key={option.value}
+                                type="button"
+                                className={`${styles.statusChoiceButton} ${isSelected ? styles.statusChoiceButtonActive : ''}`}
+                                role="radio"
+                                aria-checked={isSelected}
+                                onClick={() => setAssetInsuranceStatus(option.value)}
+                              >
+                                <strong>{option.label}</strong>
+                                <small>{option.description}</small>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {assetDraft.financeStatus === 'yes' ? (
+                        <label className={`${styles.field} ${styles.fullWidth}`}>
+                          <span>Finance note</span>
+                          <input
+                            value={assetDraft.financeNote}
+                            onChange={(event) =>
+                              setAssetDraft((current) => ({
+                                ...current,
+                                financeNote: event.target.value,
+                              }))
+                            }
+                            placeholder="Bank, lender or finance reference"
+                          />
+                        </label>
+                      ) : null}
+                    </div>
+                  </section>
+                ) : null}
+
+                {manualAssetStep === 4 ? (
+                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.fullWidth}`}>
+                    <div className={styles.manualStageHeader}>
+                      <span className={styles.manualStageNumber}>4</span>
+                      <div>
+                        <h4>Documents and gallery</h4>
+                        <p>Attach finance documents, invoices, service records, NATIS papers or asset photos.</p>
+                      </div>
+                    </div>
+
+                    <div className={styles.manualStageGrid}>
+                      <div className={styles.field}>
+                        <span>Documents <small>(optional)</small></span>
+
+                        <div className={styles.documentUploadPanel}>
+                          <input
+                            ref={documentInputRef}
+                            type="file"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain,image/jpeg,image/png,image/webp"
+                            multiple
+                            className={styles.fileInput}
+                            onChange={handleDocumentFilesSelected}
                             disabled={isUploadingDocuments || assetDraft.documents.length >= MAX_DOCUMENTS}
-                          >
-                            {isUploadingDocuments ? 'Uploading...' : 'Add documents'}
-                          </button>
+                          />
 
-                          <span className={styles.uploadCount}>
-                            {assetDraft.documents.length} / {MAX_DOCUMENTS} documents
-                          </span>
-                        </div>
+                          <div className={styles.uploadRow}>
+                            <button
+                              type="button"
+                              className={styles.secondaryButton}
+                              onClick={() => documentInputRef.current?.click()}
+                              disabled={isUploadingDocuments || assetDraft.documents.length >= MAX_DOCUMENTS}
+                            >
+                              {isUploadingDocuments ? 'Uploading...' : 'Add documents'}
+                            </button>
 
-                        <small className={styles.fieldHint}>Upload invoices, NATIS papers, insurance documents, finance contracts or service records.</small>
-                      </div>
-                    </div>
-
-                    <div className={styles.field}>
-                      <span>Photo gallery <small>(optional)</small></span>
-
-                      <div className={styles.uploadPanel}>
-                        <input
-                          ref={photoInputRef}
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          multiple
-                          className={styles.fileInput}
-                          onChange={handlePhotoFilesSelected}
-                          disabled={isUploadingPhotos || assetDraft.photos.length >= MAX_PHOTOS}
-                        />
-
-                        <div className={styles.uploadRow}>
-                          <button
-                            type="button"
-                            className={styles.secondaryButton}
-                            onClick={() => photoInputRef.current?.click()}
-                            disabled={isUploadingPhotos || assetDraft.photos.length >= MAX_PHOTOS}
-                          >
-                            {isUploadingPhotos ? 'Uploading...' : 'Add photos'}
-                          </button>
-
-                          <span className={styles.uploadCount}>
-                            {assetDraft.photos.length} / {MAX_PHOTOS} photos
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {assetDraft.documents.length ? (
-                    <div className={styles.documentDraftList}>
-                      {assetDraft.documents.map((document) => (
-                        <div className={styles.documentDraftRow} key={document.id}>
-                          <span className={styles.documentDraftIcon}>
-                            <DocumentIcon className={styles.buttonIcon} />
-                          </span>
-                          <div>
-                            <strong>{shortDocumentName(document.fileName)}</strong>
-                            <small>{formatByteSize(document.byteSize)}</small>
+                            <span className={styles.uploadCount}>
+                              {assetDraft.documents.length} / {MAX_DOCUMENTS} documents
+                            </span>
                           </div>
-                          <a href={document.url} target="_blank" rel="noreferrer" className={styles.documentOpenLink}>
-                            Open
-                          </a>
-                          <button type="button" className={styles.documentRemoveButton} onClick={() => removeDraftDocument(document.id)}>
-                            Remove
-                          </button>
+
+                          <small className={styles.fieldHint}>Upload invoices, NATIS papers, insurance documents, finance contracts or service records.</small>
                         </div>
-                      ))}
-                    </div>
-                  ) : null}
+                      </div>
 
-                  {assetDraft.photos.length ? (
-                    <div className={styles.photoGrid}>
-                      {assetDraft.photos.map((photo, index) => (
-                        <div className={styles.photoThumb} key={`${photo}-${index}`}>
-                          <img src={photo} alt={`Asset photo ${index + 1}`} />
-                          <button
-                            type="button"
-                            className={styles.photoRemoveButton}
-                            onClick={() => removeDraftPhoto(photo)}
-                          >
-                            Remove
-                          </button>
+                      <div className={styles.field}>
+                        <span>Photo gallery <small>(optional)</small></span>
+
+                        <div className={styles.uploadPanel}>
+                          <input
+                            ref={photoInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            multiple
+                            className={styles.fileInput}
+                            onChange={handlePhotoFilesSelected}
+                            disabled={isUploadingPhotos || assetDraft.photos.length >= MAX_PHOTOS}
+                          />
+
+                          <div className={styles.uploadRow}>
+                            <button
+                              type="button"
+                              className={styles.secondaryButton}
+                              onClick={() => photoInputRef.current?.click()}
+                              disabled={isUploadingPhotos || assetDraft.photos.length >= MAX_PHOTOS}
+                            >
+                              {isUploadingPhotos ? 'Uploading...' : 'Add photos'}
+                            </button>
+
+                            <span className={styles.uploadCount}>
+                              {assetDraft.photos.length} / {MAX_PHOTOS} photos
+                            </span>
+                          </div>
                         </div>
-                      ))}
+                      </div>
                     </div>
-                  ) : null}
-                </section>
 
-                <div className={`${styles.formActions} ${styles.assetFormActions}`}>
-                  <button type="button" className={styles.secondaryButton} onClick={closeAssetModal}>
-                    Cancel
-                  </button>
+                    {assetDraft.documents.length ? (
+                      <div className={styles.documentDraftList}>
+                        {assetDraft.documents.map((document) => (
+                          <div className={styles.documentDraftRow} key={document.id}>
+                            <span className={styles.documentDraftIcon}>
+                              <DocumentIcon className={styles.buttonIcon} />
+                            </span>
+                            <div>
+                              <strong>{shortDocumentName(document.fileName)}</strong>
+                              <small>{formatByteSize(document.byteSize)}</small>
+                            </div>
+                            <a href={document.url} target="_blank" rel="noreferrer" className={styles.documentOpenLink}>
+                              Open
+                            </a>
+                            <button type="button" className={styles.documentRemoveButton} onClick={() => removeDraftDocument(document.id)}>
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
 
-                  <button type="submit" className={styles.primaryButton} disabled={isSavingAsset || isUploadingPhotos || isUploadingDocuments}>
-                    {isSavingAsset ? 'Saving...' : editingAsset ? 'Update asset' : 'Add asset'}
-                  </button>
+                    {assetDraft.photos.length ? (
+                      <div className={styles.photoGrid}>
+                        {assetDraft.photos.map((photo, index) => (
+                          <div className={styles.photoThumb} key={`${photo}-${index}`}>
+                            <img src={photo} alt={`Asset photo ${index + 1}`} />
+                            <button
+                              type="button"
+                              className={styles.photoRemoveButton}
+                              onClick={() => removeDraftPhoto(photo)}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </section>
+                ) : null}
+
+                <div className={`${styles.formActions} ${styles.assetFormActions} ${styles.manualStepFormActions}`}>
+                  {manualAssetStep === 1 ? (
+                    <button type="button" className={styles.secondaryButton} onClick={closeAssetModal}>
+                      Cancel
+                    </button>
+                  ) : (
+                    <button type="button" className={styles.secondaryButton} onClick={goToPreviousManualAssetStep}>
+                      Back
+                    </button>
+                  )}
+
+                  <div className={styles.assetFormActionRight}>
+                    {manualAssetStep > 1 ? (
+                      <button type="button" className={styles.secondaryButton} onClick={closeAssetModal}>
+                        Cancel
+                      </button>
+                    ) : null}
+
+                    {manualAssetStep < 4 ? (
+                      manualAssetStep > 1 ? (
+                        <button type="button" className={styles.primaryButton} onClick={goToNextManualAssetStep}>
+                          Next
+                        </button>
+                      ) : null
+                    ) : (
+                      <button type="submit" className={styles.primaryButton} disabled={isSavingAsset || isUploadingPhotos || isUploadingDocuments}>
+                        {isSavingAsset ? 'Saving...' : editingAsset ? 'Update asset' : 'Add asset'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </form>
             </div>
