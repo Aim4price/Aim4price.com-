@@ -2668,7 +2668,6 @@ export default function AssetRegisterClient() {
       { label: 'Serial Number', value: asset.serialNumber || '—' },
       { label: 'Insured', value: asset.isInsured ? 'Yes' : 'No' },
       { label: 'Financed', value: asset.isFinanced ? 'Yes' : 'No' },
-      { label: 'Value Basis', value: methodLabel(asset.selectedMethod) },
       { label: 'Documents', value: documentsCount ? `${documentsCount} saved` : 'None' },
       { label: 'Last Updated', value: assetStatusDateLabel(asset) },
     ];
@@ -2679,12 +2678,12 @@ export default function AssetRegisterClient() {
       assetBadge: familyLabel,
       heroTitle: asset.title,
       heroMeta: buildAssetMeta(asset),
-      valueLabel: 'Estimated Register Value',
+      valueLabel: 'Estimated Value',
       value: money(asset.value),
-      valueNote: `${methodLabel(asset.selectedMethod)} value basis`,
+      valueNote: methodLabel(asset.selectedMethod),
       statusLabel: assetStatusDateLabel(asset),
       issuerName: 'Aim4price',
-      issuerAddress: 'Asset valuation report',
+      issuerAddress: 'Saved asset register data',
       issuerPhone: '',
       issuerEmail: 'aim4price@gmail.com',
       clientRows: [
@@ -2703,7 +2702,7 @@ export default function AssetRegisterClient() {
       ],
       methodCards,
       footerNote:
-        'This report is generated from saved Aim4price asset-register information and pricing inputs. Values are indicative estimates only and are not a certified valuation, inspection report or guarantee of selling price. Final market value, insurance acceptance and finance decisions remain subject to physical inspection, document checks, attachments, repairs, location and live market demand.',
+        'Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition, location and live market demand.',
     });
 
     if (!didOpen) {
