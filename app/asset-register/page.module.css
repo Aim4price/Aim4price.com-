@@ -10842,3 +10842,83 @@
   text-overflow: clip !important;
   white-space: nowrap !important;
 }
+
+/* === Manual Add Asset Step 4: centred upload controls === */
+.manualStageCard .documentUploadPanel,
+.manualStageCard .uploadPanel {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 7.8rem !important;
+  padding: 1.2rem !important;
+}
+
+.manualStageCard .documentUploadPanel .uploadRow,
+.manualStageCard .uploadPanel .uploadRow {
+  width: 100% !important;
+  max-width: 20rem !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 5.55rem !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  gap: 0.9rem !important;
+  margin: 0 auto !important;
+}
+
+.manualStageCard .documentUploadPanel .filePickerButton,
+.manualStageCard .uploadPanel .filePickerButton {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 3.5rem !important;
+  height: 3.5rem !important;
+  padding-inline: 1.1rem !important;
+  border-radius: 1.05rem !important;
+}
+
+.manualStageCard .documentUploadPanel .filePickerButton > span,
+.manualStageCard .uploadPanel .filePickerButton > span {
+  width: 100% !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+.manualStageCard .documentUploadPanel .uploadCount,
+.manualStageCard .uploadPanel .uploadCount {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 3.5rem !important;
+  min-height: 3.5rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 0.8rem !important;
+  border-radius: 1.05rem !important;
+  color: #21394a !important;
+  background: linear-gradient(180deg, #f7fbff 0%, #edf4fb 100%) !important;
+  border: 1px solid rgba(210, 222, 237, 0.98) !important;
+  box-shadow:
+    0 8px 18px rgba(16, 31, 28, 0.028),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  font-size: 0.98rem !important;
+  font-weight: 820 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 720px) {
+  .manualStageCard .documentUploadPanel .uploadRow,
+  .manualStageCard .uploadPanel .uploadRow {
+    max-width: 100% !important;
+    grid-template-columns: minmax(0, 1fr) 5.35rem !important;
+    gap: 0.75rem !important;
+  }
+}
+
+@media (max-width: 460px) {
+  .manualStageCard .documentUploadPanel .uploadRow,
+  .manualStageCard .uploadPanel .uploadRow {
+    grid-template-columns: 1fr !important;
+  }
+}
