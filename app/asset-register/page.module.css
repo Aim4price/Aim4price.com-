@@ -10763,3 +10763,82 @@
     width: 100% !important;
   }
 }
+
+/* === Manual Add Asset final spacing + VAT label pass === */
+.manualReviewValueTile strong {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 0.45rem !important;
+  min-width: 0 !important;
+}
+
+.manualReviewValueTile strong small {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 1.35rem !important;
+  padding: 0 0.46rem !important;
+  border-radius: 999px !important;
+  color: #64778a !important;
+  background: #eef4f7 !important;
+  border: 1px solid rgba(216, 226, 236, 0.96) !important;
+  font-size: 0.7rem !important;
+  font-weight: 780 !important;
+  line-height: 1 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.manualStageCard .documentUploadPanel,
+.manualStageCard .uploadPanel {
+  min-height: 6.9rem !important;
+  padding: 1.15rem 1.25rem !important;
+}
+
+.manualStageCard .uploadRow {
+  justify-content: flex-start !important;
+  align-items: center !important;
+  gap: 1rem !important;
+}
+
+.manualStageCard .uploadCount {
+  margin-left: 0 !important;
+  min-width: 4.9rem !important;
+  min-height: 3rem !important;
+  padding: 0 1rem !important;
+  justify-content: center !important;
+  border-radius: 1rem !important;
+  font-size: 0.95rem !important;
+  font-weight: 780 !important;
+}
+
+.filePickerButton {
+  min-width: 10.2rem !important;
+  min-height: 3.3rem !important;
+}
+
+@media (max-width: 720px) {
+  .manualReviewValueTile strong {
+    flex-wrap: wrap !important;
+  }
+
+  .manualStageCard .uploadRow {
+    justify-content: space-between !important;
+    gap: 0.8rem !important;
+  }
+
+  .filePickerButton {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+
+  .manualStageCard .uploadCount {
+    flex: 0 0 auto !important;
+  }
+}
+
+.manualReviewValueTile strong {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+}

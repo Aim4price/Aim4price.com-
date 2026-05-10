@@ -3937,9 +3937,12 @@ export default function AssetRegisterClient() {
                         <span>Title</span>
                         <strong>{assetDraft.title.trim() || 'No title'}</strong>
                       </div>
-                      <div>
+                      <div className={styles.manualReviewValueTile}>
                         <span>Value</span>
-                        <strong>{money(parseRegisterValueInput(assetDraft.value))}</strong>
+                        <strong>
+                          {money(parseRegisterValueInput(assetDraft.value))}
+                          <small>Excl. VAT</small>
+                        </strong>
                       </div>
                     </div>
 
