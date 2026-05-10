@@ -10922,3 +10922,69 @@
     grid-template-columns: 1fr !important;
   }
 }
+/* === Asset Options modal: centred option layout final pass === */
+.optionsModal .assetOptionsGrid {
+  justify-content: center !important;
+  align-items: stretch !important;
+  gap: 1rem !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: left !important;
+  gap: 1rem !important;
+  min-height: 6.3rem !important;
+  padding: 1.18rem 1.25rem !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton > .buttonIcon {
+  flex: 0 0 auto !important;
+  width: 1.42rem !important;
+  height: 1.42rem !important;
+  margin: 0 !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton > span {
+  display: grid !important;
+  justify-items: start !important;
+  align-content: center !important;
+  gap: 0.32rem !important;
+  width: fit-content !important;
+  max-width: min(100%, 25rem) !important;
+  min-width: 0 !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton strong,
+.optionsModal .assetOptionsGrid .optionActionButton small {
+  text-align: left !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton small {
+  max-width: 24rem !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton:last-child:nth-child(odd) {
+  grid-column: 1 / -1 !important;
+  justify-self: center !important;
+  width: calc((100% - 1rem) / 2) !important;
+}
+
+@media (max-width: 900px) {
+  .optionsModal .assetOptionsGrid .optionActionButton:last-child:nth-child(odd) {
+    grid-column: auto !important;
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .optionsModal .assetOptionsGrid .optionActionButton {
+    justify-content: flex-start !important;
+    align-items: center !important;
+  }
+
+  .optionsModal .assetOptionsGrid .optionActionButton > span {
+    width: 100% !important;
+  }
+}
