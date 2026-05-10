@@ -1400,8 +1400,6 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
   const rawPhotoUrls = payload.photoUrls?.length ? payload.photoUrls : payload.photoUrl ? [payload.photoUrl] : [];
   const photoUrls = rawPhotoUrls.map((url) => String(url ?? '').trim()).filter(Boolean);
   const safeTitle = escapeHtml(payload.heroTitle);
-  const issuerName = String(payload.issuerName ?? '').trim() || 'Aim4price';
-  const issuerAddress = String(payload.issuerAddress ?? '').trim();
   const issuerPhone = String(payload.issuerPhone ?? '').trim();
   const issuerEmail = String(payload.issuerEmail ?? '').trim();
   const updatedLabel = payload.statusLabel || getAssetSheetValue(payload.facts, 'Last Updated') || payload.generatedAt;
@@ -1443,13 +1441,15 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
     <style>
       :root {
         color-scheme: light;
-        --ink: #151923;
-        --muted: #626b78;
+        --ink: #111827;
+        --strong: #070b12;
+        --muted: #5f6b7a;
+        --faint: #8b95a3;
+        --paper: #ffffff;
         --soft: #f5f6f8;
-        --soft-2: #fafafa;
+        --soft-2: #fafbfc;
         --line: #d7dde5;
-        --line-dark: #bfc7d1;
-        --black: #0b0f16;
+        --line-strong: #b9c2ce;
       }
 
       * {
@@ -1460,7 +1460,7 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
 
       @page {
         size: A4;
-        margin: 9mm 10mm 8mm;
+        margin: 8mm 9mm 8mm;
       }
 
       html,
@@ -1470,8 +1470,8 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
         background: #eef1f4;
         color: var(--ink);
         font-family: "Montserrat", "Segoe UI", Arial, Helvetica, sans-serif;
-        font-size: 9.8px;
-        line-height: 1.24;
+        font-size: 9.6px;
+        line-height: 1.35;
       }
 
       .assetReportScreenBar {
@@ -1512,8 +1512,8 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
       }
 
       .assetReportButtonPrimary {
-        border-color: var(--black);
-        background: var(--black);
+        border-color: var(--strong);
+        background: var(--strong);
         color: #ffffff;
       }
 
@@ -1521,164 +1521,169 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
         width: min(100%, 210mm);
         min-height: 297mm;
         margin: 18px auto;
-        padding: 10mm 10mm 8mm;
-        background: #ffffff;
+        padding: 11mm 11mm 9mm;
+        background: var(--paper);
         box-shadow: 0 16px 44px rgba(17, 24, 39, 0.13);
       }
 
       .assetReportInner {
         position: relative;
-        min-height: calc(297mm - 18mm);
-        padding-bottom: 18mm;
+        min-height: calc(297mm - 20mm);
+        padding-bottom: 20mm;
       }
 
       .assetReportHeader {
         display: grid;
-        grid-template-columns: 22mm minmax(0, 1fr) 62mm;
-        gap: 12px;
+        grid-template-columns: 21mm minmax(0, 1fr) 64mm;
+        gap: 13px;
         align-items: start;
-        padding-bottom: 8px;
-        border-bottom: 1px solid var(--line);
+        padding-bottom: 9px;
+        border-bottom: 1px solid var(--line-strong);
       }
 
       .assetReportLogo {
         display: block;
-        width: 17mm;
+        width: 18mm;
         height: auto;
         object-fit: contain;
       }
 
       .assetReportDocumentTitle strong {
         display: block;
-        color: var(--black);
-        font-size: 14.2px;
-        line-height: 1.1;
+        color: var(--strong);
+        font-size: 15.5px;
+        line-height: 1.05;
         font-weight: 800;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.025em;
       }
 
       .assetReportDocumentTitle span {
         display: block;
-        margin-top: 2px;
+        margin-top: 5px;
         color: var(--muted);
         font-size: 8.8px;
-        font-weight: 500;
+        font-weight: 600;
+        letter-spacing: 0.01em;
       }
 
       .assetReportHeaderMeta {
         display: grid;
-        gap: 3px;
+        gap: 4px;
         color: var(--muted);
-        font-size: 8.4px;
+        font-size: 8.3px;
       }
 
       .assetReportMetaLine {
         display: grid;
-        grid-template-columns: 22mm minmax(0, 1fr);
+        grid-template-columns: 21mm minmax(0, 1fr);
         gap: 7px;
         align-items: baseline;
       }
 
       .assetReportMetaLine span {
         color: var(--muted);
-        font-weight: 500;
+        font-weight: 600;
       }
 
       .assetReportMetaLine strong {
-        color: var(--black);
+        color: var(--strong);
         font-weight: 700;
         text-align: right;
         word-break: break-word;
       }
 
-      .assetReportTopGrid {
+      .assetReportOverview {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 61mm;
-        gap: 11px;
-        align-items: start;
+        grid-template-columns: minmax(0, 1fr) 62mm;
+        align-items: stretch;
         margin-top: 11px;
+        border: 1px solid var(--line-strong);
+        background: #ffffff;
       }
 
       .assetReportIdentity {
         min-width: 0;
-        padding: 10px 11px;
-        border: 1px solid var(--line);
-        background: #ffffff;
+        padding: 11px 13px 12px;
       }
 
       .assetReportKicker {
-        margin: 0 0 5px;
+        margin: 0 0 6px;
         color: var(--muted);
-        font-size: 8.3px;
+        font-size: 8.1px;
         font-weight: 800;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
       }
 
       .assetReportTitle {
         margin: 0;
-        color: var(--black);
-        font-size: 20px;
-        line-height: 1.04;
+        color: var(--strong);
+        font-size: 21.5px;
+        line-height: 1.05;
         font-weight: 800;
-        letter-spacing: -0.04em;
+        letter-spacing: -0.045em;
       }
 
       .assetReportMeta {
-        margin: 5px 0 0;
+        margin: 7px 0 0;
         color: #3f4652;
-        font-size: 9.6px;
+        font-size: 9.2px;
+        line-height: 1.35;
         font-weight: 600;
       }
 
       .assetReportValuationCard {
-        padding: 10px 11px;
-        border: 1px solid var(--line-dark);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 11px 12px;
+        border-left: 1px solid var(--line-strong);
         background: var(--soft-2);
       }
 
       .assetReportValuationCard h2 {
-        margin: 0 0 5px;
+        margin: 0 0 6px;
         color: #2b313b;
-        font-size: 9px;
+        font-size: 8.8px;
         line-height: 1.1;
-        font-weight: 700;
-        letter-spacing: 0.04em;
+        font-weight: 800;
+        letter-spacing: 0.07em;
         text-transform: uppercase;
       }
 
       .assetReportValue {
         display: block;
         margin: 0;
-        color: var(--black);
-        font-size: 28px;
-        line-height: 0.98;
+        color: var(--strong);
+        font-size: 30px;
+        line-height: 0.96;
         font-weight: 800;
         letter-spacing: -0.055em;
+        white-space: nowrap;
       }
 
       .assetReportVat {
         display: block;
-        margin-top: 3px;
+        margin-top: 4px;
         color: var(--muted);
-        font-size: 8.7px;
-        font-weight: 500;
+        font-size: 8.5px;
+        font-weight: 600;
       }
 
       .assetReportValueMeta {
         display: grid;
-        gap: 3px;
-        margin-top: 9px;
-        padding-top: 7px;
+        gap: 4px;
+        margin-top: 10px;
+        padding-top: 8px;
         border-top: 1px solid var(--line);
       }
 
       .assetReportValueMeta div,
       .assetReportRecordRows .assetReportRow {
         display: grid;
-        grid-template-columns: 20mm minmax(0, 1fr);
+        grid-template-columns: 22mm minmax(0, 1fr);
         gap: 7px;
-        min-height: 15px;
+        min-height: 17px;
         align-items: baseline;
       }
 
@@ -1686,24 +1691,24 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
       .assetReportRecordRows .assetReportRow span {
         color: var(--muted);
         font-size: 8.2px;
-        font-weight: 600;
+        font-weight: 700;
       }
 
       .assetReportValueMeta strong,
       .assetReportRecordRows .assetReportRow strong {
-        color: var(--black);
-        font-size: 8.4px;
+        color: var(--strong);
+        font-size: 8.3px;
         font-weight: 700;
         text-align: right;
         word-break: break-word;
       }
 
-      .assetReportMainGrid {
+      .assetReportContentGrid {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 61mm;
-        gap: 11px;
+        grid-template-columns: minmax(0, 1fr) 62mm;
+        gap: 12px;
         align-items: start;
-        margin-top: 10px;
+        margin-top: 14px;
       }
 
       .assetReportSection,
@@ -1712,14 +1717,17 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
       }
 
       .assetReportSection {
-        margin-bottom: 10px;
+        margin-bottom: 12px;
+        padding: 10px 11px 11px;
+        border: 1px solid var(--line-strong);
+        background: #ffffff;
       }
 
       .assetReportSection h2,
       .assetReportSideCard h2 {
-        margin: 0 0 6px;
-        color: var(--black);
-        font-size: 10.5px;
+        margin: 0 0 8px;
+        color: var(--strong);
+        font-size: 10.8px;
         line-height: 1.1;
         font-weight: 800;
         letter-spacing: -0.01em;
@@ -1727,54 +1735,75 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
 
       .assetReportRows {
         width: 100%;
+        border-top: 1px solid var(--line);
       }
 
       .assetReportRow {
         display: grid;
-        grid-template-columns: 28mm minmax(0, 1fr);
-        min-height: 16px;
-        align-items: baseline;
+        grid-template-columns: 30mm minmax(0, 1fr);
+        min-height: 20px;
+        align-items: center;
         border-bottom: 1px solid var(--line);
       }
 
       .assetReportRow span {
-        color: #303744;
-        font-size: 8.7px;
+        color: #38404c;
+        font-size: 8.8px;
+        line-height: 1.3;
         font-weight: 600;
       }
 
       .assetReportRow strong {
-        color: var(--black);
-        font-size: 8.7px;
+        color: var(--strong);
+        font-size: 9px;
+        line-height: 1.3;
         font-weight: 700;
         word-break: break-word;
       }
 
       .assetReportTechnical .assetReportRows {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        column-gap: 10px;
+        grid-template-columns: 1fr;
+        border-top: 1px solid var(--line);
       }
 
       .assetReportTechnical .assetReportRow {
-        grid-template-columns: 20mm minmax(0, 1fr);
+        grid-template-columns: 31mm minmax(0, 1fr);
+        min-height: 21px;
       }
 
       .assetReportEmpty {
-        padding: 5px 0;
+        padding: 6px 0;
         color: var(--muted);
-        font-size: 8.7px;
+        font-size: 8.8px;
       }
 
       .assetReportSide {
         display: grid;
-        gap: 9px;
+        gap: 10px;
       }
 
       .assetReportSideCard {
-        padding: 9px;
-        border: 1px solid var(--line);
+        padding: 10px 10px 9px;
+        border: 1px solid var(--line-strong);
         background: #ffffff;
+      }
+
+      .assetReportSideCard .assetReportRows {
+        border-top: 1px solid var(--line);
+      }
+
+      .assetReportSideCard .assetReportRow {
+        grid-template-columns: 21mm minmax(0, 1fr);
+        min-height: 17.5px;
+      }
+
+      .assetReportSideCard .assetReportRow span {
+        font-size: 8.1px;
+      }
+
+      .assetReportSideCard .assetReportRow strong {
+        font-size: 8.2px;
       }
 
       .assetReportRecordRows .assetReportRows {
@@ -1782,22 +1811,18 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
         gap: 0;
       }
 
-      .assetReportRecordRows .assetReportRow {
-        border-bottom: 1px solid var(--line);
-      }
-
       .assetReportRecordRows .assetReportRow:last-child {
         border-bottom: 0;
       }
 
       .assetReportMediaCard {
-        padding: 9px;
+        padding: 10px;
       }
 
       .assetReportMediaGrid {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 6px;
+        gap: 7px;
       }
 
       .assetReportMediaTile {
@@ -1811,16 +1836,16 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
       .assetReportMediaTile img {
         display: block;
         width: 100%;
-        height: 22mm;
+        height: 23mm;
         object-fit: cover;
       }
 
       .assetReportMediaCount1 .assetReportMediaTile img {
-        height: 43mm;
+        height: 45mm;
       }
 
       .assetReportMediaCount2 .assetReportMediaTile img {
-        height: 22mm;
+        height: 23mm;
       }
 
       .assetReportMediaTile figcaption {
@@ -1828,14 +1853,14 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
       }
 
       .assetReportMediaNote {
-        margin: 5px 0 0;
+        margin: 6px 0 0;
         color: var(--muted);
-        font-size: 7.5px;
-        line-height: 1.2;
+        font-size: 7.4px;
+        line-height: 1.25;
       }
 
       .assetReportNotesSection .assetReportRow {
-        grid-template-columns: 28mm minmax(0, 1fr);
+        grid-template-columns: 30mm minmax(0, 1fr);
       }
 
       .assetReportFooter {
@@ -1848,40 +1873,45 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
         gap: 10px;
         align-items: end;
         padding-top: 8px;
-        border-top: 1px solid var(--line);
+        border-top: 1px solid var(--line-strong);
       }
 
       .assetReportPowered {
-        margin: 0 0 3px;
-        color: var(--black);
-        font-size: 8.5px;
-        font-weight: 600;
+        margin: 0 0 4px;
+        color: var(--strong);
+        font-size: 8.2px;
+        font-weight: 700;
       }
 
       .assetReportDisclaimer {
-        max-width: 166mm;
-        color: #2f3742;
-        font-size: 6.8px;
-        line-height: 1.22;
+        max-width: 165mm;
+        color: #323a45;
+        font-size: 6.7px;
+        line-height: 1.25;
         font-style: italic;
       }
 
       .assetReportPageNumber {
-        color: var(--black);
+        color: var(--strong);
         font-size: 8px;
-        font-weight: 600;
+        font-weight: 700;
         white-space: nowrap;
       }
 
-      @media (max-width: 760px) {
+      @media screen and (max-width: 760px) {
         .assetReportPage {
           padding: 24px;
         }
 
         .assetReportHeader,
-        .assetReportTopGrid,
-        .assetReportMainGrid {
+        .assetReportOverview,
+        .assetReportContentGrid {
           grid-template-columns: 1fr;
+        }
+
+        .assetReportValuationCard {
+          border-left: 0;
+          border-top: 1px solid var(--line-strong);
         }
 
         .assetReportHeaderMeta,
@@ -1908,7 +1938,7 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
 
         .assetReportPage {
           width: auto;
-          height: 280mm;
+          height: 281mm;
           min-height: 0;
           margin: 0;
           padding: 0;
@@ -1917,9 +1947,22 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
         }
 
         .assetReportInner {
-          height: 280mm;
+          height: 281mm;
           min-height: 0;
-          padding-bottom: 18mm;
+          padding-bottom: 19mm;
+        }
+
+        .assetReportHeader {
+          grid-template-columns: 21mm minmax(0, 1fr) 64mm;
+        }
+
+        .assetReportOverview,
+        .assetReportContentGrid {
+          grid-template-columns: minmax(0, 1fr) 62mm;
+        }
+
+        .assetReportTechnical .assetReportRows {
+          grid-template-columns: 1fr;
         }
       }
     </style>
@@ -1939,6 +1982,7 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
           <div>${payload.logoUrl ? `<img class="assetReportLogo" src="${escapeHtml(payload.logoUrl)}" alt="Aim4price" />` : ''}</div>
           <div class="assetReportDocumentTitle">
             <strong>Asset Valuation Report</strong>
+            <span>Aim4price asset register</span>
           </div>
           <div class="assetReportHeaderMeta">
             <div class="assetReportMetaLine"><span>Generated</span><strong>${escapeHtml(payload.generatedAt)}</strong></div>
@@ -1947,7 +1991,7 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
           </div>
         </header>
 
-        <section class="assetReportTopGrid">
+        <section class="assetReportOverview">
           <div class="assetReportIdentity">
             <p class="assetReportKicker">${escapeHtml(payload.assetBadge || 'Asset')}</p>
             <h1 class="assetReportTitle">${safeTitle}</h1>
@@ -1965,13 +2009,8 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
           </aside>
         </section>
 
-        <div class="assetReportMainGrid">
+        <div class="assetReportContentGrid">
           <div>
-            <section class="assetReportSection">
-              <h2>Client / Asset Owner</h2>
-              ${renderAssetReportRows(clientRows, 'No client details available.')}
-            </section>
-
             <section class="assetReportSection assetReportTechnical">
               <h2>Asset Details</h2>
               ${renderAssetReportRows(detailRows, 'No asset details available.')}
@@ -1981,10 +2020,16 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
           </div>
 
           <aside class="assetReportSide">
+            <section class="assetReportSideCard">
+              <h2>Client / Asset Owner</h2>
+              ${renderAssetReportRows(clientRows, 'No client details available.')}
+            </section>
+
             <section class="assetReportSideCard assetReportRecordRows">
               <h2>Record Summary</h2>
               ${renderAssetReportRows(recordRows, 'No record details available.')}
             </section>
+
             ${photoSection}
           </aside>
         </div>
