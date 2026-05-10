@@ -47,6 +47,7 @@ export type AssetSheetPayload = {
   valueNote: string;
   statusLabel: string;
   photoUrl?: string | null;
+  photoUrls?: string[] | null;
   facts: ReportKeyValue[];
   notes?: ReportKeyValue[];
   methodCards?: ReportMethodCard[];
@@ -1275,87 +1276,697 @@ export function openValuationReportPrint(payload: ValuationReportPayload): boole
   );
 }
 
-export function openAssetSheetPrint(payload: AssetSheetPayload): boolean {
-  const combinedRows = [...(payload.contactRows ?? []), ...(payload.notes ?? [])];
+function renderAssetSheetFactCards(rows: ReportKeyValue[]): string {
+  if (!rows.length) {
+    return '<div class="assetSheetEmpty">No asset details were available for this sheet.</div>';
+  }
 
-  const contentHtml = `
-    <div class="page">
-      <header class="pageHeader">
-        ${renderLogoBlock(payload.logoUrl, 'Asset sheet')}
-        <div class="documentMeta">
-          <span class="documentMetaLabel">Generated</span>
-          <span class="documentMetaValue">${escapeHtml(payload.generatedAt)}</span>
-        </div>
-      </header>
-
-      <section class="hero">
-        <div>
-          <span class="documentKicker">${escapeHtml(payload.assetBadge)}</span>
-          <h1 class="heroTitle">${escapeHtml(payload.heroTitle)}</h1>
-          <p class="heroMeta">${escapeHtml(payload.heroMeta)}</p>
-        </div>
-
-        <aside class="heroValueCard">
-          <span class="heroValueLabel">${escapeHtml(payload.valueLabel)}</span>
-          <strong class="heroValueAmount">${escapeHtml(payload.value)}</strong>
-          <div class="heroBadgeRow">
-            <span class="heroBadge">${escapeHtml(payload.statusLabel)}</span>
-            <span class="heroBadge">Excl. VAT</span>
-          </div>
-          <div class="heroValueMeta">${escapeHtml(payload.valueNote)}</div>
-        </aside>
-      </section>
-
-      <main class="content">
-        <div class="gridTwo">
-          <section class="card">
-            <h2 class="cardTitle">Asset details</h2>
-            ${renderKeyValueRows(payload.facts)}
-          </section>
-
-          <section class="card">
-            <h2 class="cardTitle">Contact & notes</h2>
-            ${renderKeyValueRows(combinedRows)}
-          </section>
-        </div>
-
-        ${
-          payload.photoUrl
-            ? `
-              <section class="card">
-                <h2 class="cardTitle">Asset image</h2>
-                <div class="photoFrame">
-                  <img src="${escapeHtml(payload.photoUrl)}" alt="${escapeHtml(payload.heroTitle)}" />
-                </div>
-              </section>
-            `
-            : ''
-        }
-
-        ${
-          payload.methodCards?.length
-            ? `
-              <section class="card">
-                <h2 class="cardTitle">Valuation snapshot</h2>
-                ${renderMethodCards(payload.methodCards)}
-              </section>
-            `
-            : ''
-        }
-      </main>
-
-      <footer class="footer">${escapeHtml(
-        payload.footerNote ?? 'Aim4price asset sheet. All register values shown exclude VAT.',
-      )}</footer>
+  return `
+    <div class="assetSheetFactGrid">
+      ${rows
+        .map(
+          (row) => `
+            <div class="assetSheetFactCard">
+              <span class="assetSheetFactLabel">${escapeHtml(row.label)}</span>
+              <strong class="assetSheetFactValue">${escapeHtml(row.value)}</strong>
+            </div>
+          `,
+        )
+        .join('')}
     </div>
   `;
+}
 
+function renderAssetSheetNotes(rows: ReportKeyValue[]): string {
+  if (!rows.length) {
+    return '';
+  }
+
+  return `
+    <section class="assetSheetSection assetSheetAvoidBreak">
+      <h2>Notes</h2>
+      <div class="assetSheetNotes">
+        ${rows
+          .map(
+            (row) => `
+              <div class="assetSheetNote">
+                <span>${escapeHtml(row.label)}</span>
+                <p>${escapeHtml(row.value)}</p>
+              </div>
+            `,
+          )
+          .join('')}
+      </div>
+    </section>
+  `;
+}
+
+function renderAssetSheetPhotos(photoUrls: string[], title: string): string {
+  if (!photoUrls.length) {
+    return `
+      <div class="assetSheetPhotoEmpty">
+        <span>No photos saved</span>
+        <small>Add photos to the asset register item to include them on this PDF.</small>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="assetSheetPhotoGrid${photoUrls.length === 1 ? ' assetSheetPhotoGridSingle' : ''}">
+      ${photoUrls
+        .map(
+          (url, index) => `
+            <figure class="assetSheetPhotoTile">
+              <img src="${escapeHtml(url)}" alt="${escapeHtml(`${title} photo ${index + 1}`)}" />
+              <figcaption>Photo ${index + 1}</figcaption>
+            </figure>
+          `,
+        )
+        .join('')}
+    </div>
+  `;
+}
+
+function renderAssetSheetDocument(payload: AssetSheetPayload): string {
+  const rawPhotoUrls = payload.photoUrls?.length ? payload.photoUrls : payload.photoUrl ? [payload.photoUrl] : [];
+  const photoUrls = rawPhotoUrls
+    .map((url) => String(url ?? '').trim())
+    .filter(Boolean);
+  const noteRows = [...(payload.contactRows ?? []), ...(payload.notes ?? [])].filter((row) => String(row.value ?? '').trim());
+  const safeTitle = escapeHtml(payload.heroTitle);
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${safeTitle} - Aim4price asset PDF</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+
+      :root {
+        color-scheme: light;
+        --asset-bg: #eef4f2;
+        --asset-paper: #ffffff;
+        --asset-soft: #f6f9f8;
+        --asset-soft-2: #edf4f1;
+        --asset-text: #0b3028;
+        --asset-muted: #61756f;
+        --asset-line: #cddcd7;
+        --asset-line-strong: #b9d0c8;
+        --asset-brand: #0f372f;
+        --asset-brand-2: #193f73;
+      }
+
+      * {
+        box-sizing: border-box;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      @page {
+        size: A4;
+        margin: 12mm;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--asset-bg);
+        color: var(--asset-text);
+        font-family: Montserrat, Arial, Helvetica, sans-serif;
+      }
+
+      body {
+        min-height: 100vh;
+      }
+
+      .assetSheetScreenBar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.85rem 1.1rem;
+        background: rgba(255, 255, 255, 0.94);
+        border-bottom: 1px solid rgba(15, 55, 47, 0.1);
+        backdrop-filter: blur(14px);
+      }
+
+      .assetSheetScreenText {
+        color: var(--asset-muted);
+        font-size: 0.86rem;
+        line-height: 1.45;
+      }
+
+      .assetSheetScreenActions {
+        display: flex;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+      }
+
+      .assetSheetButton {
+        appearance: none;
+        min-height: 2.65rem;
+        padding: 0 1rem;
+        border: 1px solid rgba(15, 55, 47, 0.14);
+        border-radius: 999px;
+        background: #ffffff;
+        color: var(--asset-text);
+        font: inherit;
+        font-size: 0.86rem;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .assetSheetButtonPrimary {
+        border-color: transparent;
+        background: var(--asset-brand);
+        color: #ffffff;
+      }
+
+      .assetSheetPage {
+        width: min(100%, 1060px);
+        margin: 1.25rem auto 2rem;
+        padding: 0 1rem;
+      }
+
+      .assetSheetTopbar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.85rem;
+      }
+
+      .assetSheetBrand {
+        display: grid;
+        gap: 0.15rem;
+      }
+
+      .assetSheetBrandName {
+        color: var(--asset-brand);
+        font-size: 1.55rem;
+        line-height: 1;
+        font-weight: 900;
+        letter-spacing: -0.055em;
+      }
+
+      .assetSheetDocumentType {
+        color: var(--asset-muted);
+        font-size: 0.68rem;
+        line-height: 1.4;
+        font-weight: 800;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+      }
+
+      .assetSheetGenerated {
+        text-align: right;
+        color: var(--asset-muted);
+        font-size: 0.72rem;
+        font-weight: 700;
+        line-height: 1.45;
+      }
+
+      .assetSheetGenerated strong {
+        display: block;
+        color: var(--asset-text);
+        font-size: 0.9rem;
+        font-weight: 900;
+      }
+
+      .assetSheetCard {
+        overflow: hidden;
+        border: 1.5px solid var(--asset-line-strong);
+        border-radius: 1.45rem;
+        background: var(--asset-paper);
+        box-shadow: 0 22px 48px rgba(15, 55, 47, 0.08);
+      }
+
+      .assetSheetHero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 1.2rem;
+        align-items: start;
+        padding: 1.35rem 1.45rem 1.05rem;
+      }
+
+      .assetSheetBadge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 1.65rem;
+        padding: 0 0.75rem;
+        border: 1px solid rgba(15, 55, 47, 0.12);
+        border-radius: 999px;
+        background: var(--asset-soft-2);
+        color: var(--asset-brand);
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .assetSheetTitle {
+        margin: 0.62rem 0 0.45rem;
+        color: var(--asset-text);
+        font-size: clamp(1.7rem, 4vw, 2.35rem);
+        line-height: 1.03;
+        font-weight: 900;
+        letter-spacing: -0.06em;
+      }
+
+      .assetSheetMeta {
+        margin: 0;
+        color: var(--asset-muted);
+        font-size: 0.92rem;
+        font-weight: 750;
+        line-height: 1.55;
+      }
+
+      .assetSheetValueBlock {
+        min-width: 13rem;
+        text-align: right;
+      }
+
+      .assetSheetValueLabel {
+        display: block;
+        color: var(--asset-muted);
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .assetSheetValue {
+        display: block;
+        margin-top: 0.35rem;
+        color: var(--asset-text);
+        font-size: clamp(1.75rem, 4vw, 2.45rem);
+        line-height: 0.95;
+        font-weight: 900;
+        letter-spacing: -0.07em;
+      }
+
+      .assetSheetVat {
+        display: block;
+        margin-top: 0.35rem;
+        color: var(--asset-muted);
+        font-size: 0.72rem;
+        font-weight: 900;
+      }
+
+      .assetSheetValueNote {
+        display: inline-flex;
+        margin-top: 0.75rem;
+        padding: 0.42rem 0.65rem;
+        border-radius: 999px;
+        background: var(--asset-soft-2);
+        color: var(--asset-brand);
+        font-size: 0.72rem;
+        font-weight: 850;
+      }
+
+      .assetSheetDivider {
+        height: 1px;
+        margin: 0 1.45rem;
+        background: var(--asset-line);
+      }
+
+      .assetSheetMain {
+        display: grid;
+        grid-template-columns: minmax(16rem, 0.82fr) minmax(0, 1.18fr);
+        gap: 1.15rem;
+        padding: 1.15rem 1.45rem 1.35rem;
+      }
+
+      .assetSheetSection {
+        min-width: 0;
+      }
+
+      .assetSheetSection h2 {
+        margin: 0 0 0.7rem;
+        color: var(--asset-text);
+        font-size: 0.92rem;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+      }
+
+      .assetSheetPhotoGrid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.65rem;
+      }
+
+      .assetSheetPhotoGridSingle {
+        grid-template-columns: 1fr;
+      }
+
+      .assetSheetPhotoTile {
+        min-width: 0;
+        margin: 0;
+        overflow: hidden;
+        border: 1px solid var(--asset-line);
+        border-radius: 1.05rem;
+        background: var(--asset-soft);
+        break-inside: avoid;
+      }
+
+      .assetSheetPhotoTile img {
+        display: block;
+        width: 100%;
+        height: 9.5rem;
+        object-fit: cover;
+      }
+
+      .assetSheetPhotoGridSingle .assetSheetPhotoTile img {
+        height: 16.5rem;
+      }
+
+      .assetSheetPhotoTile figcaption {
+        padding: 0.45rem 0.65rem;
+        color: var(--asset-muted);
+        font-size: 0.68rem;
+        font-weight: 800;
+      }
+
+      .assetSheetPhotoEmpty {
+        display: grid;
+        place-items: center;
+        min-height: 14.5rem;
+        padding: 1rem;
+        border: 1px solid var(--asset-line);
+        border-radius: 1.05rem;
+        background: linear-gradient(180deg, #f8fbfa 0%, #edf4f1 100%);
+        color: var(--asset-muted);
+        text-align: center;
+      }
+
+      .assetSheetPhotoEmpty span {
+        display: block;
+        color: var(--asset-text);
+        font-size: 0.86rem;
+        font-weight: 900;
+      }
+
+      .assetSheetPhotoEmpty small {
+        display: block;
+        max-width: 15rem;
+        margin-top: 0.35rem;
+        font-size: 0.72rem;
+        font-weight: 650;
+        line-height: 1.5;
+      }
+
+      .assetSheetFactGrid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.65rem;
+      }
+
+      .assetSheetFactCard {
+        display: grid;
+        grid-template-columns: minmax(5.85rem, 0.42fr) minmax(0, 1fr);
+        min-height: 3.2rem;
+        overflow: hidden;
+        border: 1px solid var(--asset-line);
+        border-radius: 0.82rem;
+        background: #ffffff;
+        break-inside: avoid;
+      }
+
+      .assetSheetFactLabel {
+        display: flex;
+        align-items: center;
+        padding: 0.62rem 0.72rem;
+        border-right: 1px solid var(--asset-line);
+        background: var(--asset-soft);
+        color: #203f71;
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: -0.01em;
+        text-transform: uppercase;
+      }
+
+      .assetSheetFactValue {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        padding: 0.62rem 0.78rem;
+        color: var(--asset-text);
+        font-size: 0.86rem;
+        font-weight: 900;
+        line-height: 1.35;
+        word-break: break-word;
+      }
+
+      .assetSheetNotes {
+        display: grid;
+        gap: 0.65rem;
+      }
+
+      .assetSheetNote {
+        border: 1px solid var(--asset-line);
+        border-radius: 0.95rem;
+        background: var(--asset-soft);
+        padding: 0.75rem 0.85rem;
+      }
+
+      .assetSheetNote span {
+        display: block;
+        color: #203f71;
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .assetSheetNote p {
+        margin: 0.32rem 0 0;
+        color: var(--asset-text);
+        font-size: 0.84rem;
+        font-weight: 650;
+        line-height: 1.55;
+        white-space: pre-wrap;
+      }
+
+      .assetSheetLower {
+        display: grid;
+        gap: 0.9rem;
+        padding: 0 1.45rem 1.35rem;
+      }
+
+      .assetSheetDisclaimer {
+        border-top: 1px solid var(--asset-line);
+        padding: 1rem 1.45rem 1.15rem;
+        background: #fbfdfc;
+        color: var(--asset-muted);
+        font-size: 0.68rem;
+        line-height: 1.6;
+      }
+
+      .assetSheetDisclaimer strong {
+        color: var(--asset-text);
+        font-weight: 900;
+      }
+
+      .assetSheetDisclaimer ul {
+        margin: 0.45rem 0 0;
+        padding-left: 1rem;
+      }
+
+      .assetSheetDisclaimer li + li {
+        margin-top: 0.22rem;
+      }
+
+      .assetSheetEmpty {
+        padding: 0.9rem;
+        border: 1px solid var(--asset-line);
+        border-radius: 0.95rem;
+        background: var(--asset-soft);
+        color: var(--asset-muted);
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+
+      .assetSheetAvoidBreak {
+        break-inside: avoid;
+      }
+
+      @media (max-width: 860px) {
+        .assetSheetTopbar,
+        .assetSheetHero,
+        .assetSheetMain {
+          grid-template-columns: 1fr;
+        }
+
+        .assetSheetTopbar {
+          align-items: flex-start;
+        }
+
+        .assetSheetGenerated,
+        .assetSheetValueBlock {
+          text-align: left;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .assetSheetPage {
+          padding: 0 0.7rem;
+        }
+
+        .assetSheetFactGrid,
+        .assetSheetPhotoGrid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media print {
+        html,
+        body {
+          background: #ffffff;
+        }
+
+        .assetSheetScreenBar {
+          display: none !important;
+        }
+
+        .assetSheetPage {
+          width: auto;
+          margin: 0;
+          padding: 0;
+        }
+
+        .assetSheetCard {
+          border-radius: 1rem;
+          box-shadow: none;
+        }
+
+        .assetSheetPhotoTile img {
+          max-height: 9.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="assetSheetScreenBar">
+      <div class="assetSheetScreenText">Choose <strong>Save as PDF</strong> in the print dialog to download this asset PDF.</div>
+      <div class="assetSheetScreenActions">
+        <button type="button" class="assetSheetButton" onclick="window.close()">Close</button>
+        <button type="button" class="assetSheetButton assetSheetButtonPrimary" onclick="window.print()">Print / Save PDF</button>
+      </div>
+    </div>
+
+    <main class="assetSheetPage">
+      <div class="assetSheetTopbar">
+        <div class="assetSheetBrand">
+          <span class="assetSheetBrandName">Aim4price</span>
+          <span class="assetSheetDocumentType">Asset register PDF</span>
+        </div>
+        <div class="assetSheetGenerated">
+          Generated
+          <strong>${escapeHtml(payload.generatedAt)}</strong>
+        </div>
+      </div>
+
+      <article class="assetSheetCard">
+        <section class="assetSheetHero assetSheetAvoidBreak">
+          <div>
+            <span class="assetSheetBadge">${escapeHtml(payload.assetBadge)}</span>
+            <h1 class="assetSheetTitle">${safeTitle}</h1>
+            <p class="assetSheetMeta">${escapeHtml(payload.heroMeta)}</p>
+          </div>
+
+          <aside class="assetSheetValueBlock" aria-label="Asset value">
+            <span class="assetSheetValueLabel">${escapeHtml(payload.valueLabel)}</span>
+            <strong class="assetSheetValue">${escapeHtml(payload.value)}</strong>
+            <span class="assetSheetVat">Excl. VAT</span>
+            <span class="assetSheetValueNote">${escapeHtml(payload.valueNote)}</span>
+          </aside>
+        </section>
+
+        <div class="assetSheetDivider"></div>
+
+        <section class="assetSheetMain">
+          <div class="assetSheetSection assetSheetAvoidBreak">
+            <h2>Photos</h2>
+            ${renderAssetSheetPhotos(photoUrls, payload.heroTitle)}
+          </div>
+
+          <div class="assetSheetSection">
+            <h2>Asset details</h2>
+            ${renderAssetSheetFactCards(payload.facts)}
+          </div>
+        </section>
+
+        <div class="assetSheetLower">
+          ${renderAssetSheetNotes(noteRows)}
+        </div>
+
+        <footer class="assetSheetDisclaimer">
+          <strong>Disclaimer.</strong>
+          <ul>
+            <li>Aim4price values are indicative asset-register estimates and are not a certified valuation, inspection report or guarantee of selling price.</li>
+            <li>All values shown on this sheet exclude VAT unless stated otherwise.</li>
+            <li>Final market value can change after physical inspection, document checks, repairs, attachments, finance status, location and live market demand.</li>
+          </ul>
+        </footer>
+      </article>
+    </main>
+
+    <script>
+      (function () {
+        function waitForImages() {
+          var images = Array.prototype.slice.call(document.images || []);
+          if (!images.length) {
+            return Promise.resolve();
+          }
+
+          return Promise.all(images.map(function (image) {
+            if (image.complete) {
+              return Promise.resolve();
+            }
+
+            return new Promise(function (resolve) {
+              image.addEventListener('load', resolve, { once: true });
+              image.addEventListener('error', resolve, { once: true });
+            });
+          }));
+        }
+
+        function openPrintDialog() {
+          waitForImages().then(function () {
+            window.setTimeout(function () {
+              window.focus();
+              window.print();
+            }, 220);
+          });
+        }
+
+        if (document.readyState === 'complete') {
+          openPrintDialog();
+        } else {
+          window.addEventListener('load', openPrintDialog, { once: true });
+        }
+
+        window.addEventListener('afterprint', function () {
+          window.setTimeout(function () {
+            window.close();
+          }, 120);
+        });
+      })();
+    </script>
+  </body>
+</html>`;
+}
+
+export function openAssetSheetPrint(payload: AssetSheetPayload): boolean {
   return openPrintWindow(
-    `${payload.heroTitle} - Aim4price asset sheet`,
-    renderDocumentShell({
-      title: `${payload.heroTitle} - Aim4price asset sheet`,
-      contentHtml,
-    }),
+    `${payload.heroTitle} - Aim4price asset PDF`,
+    renderAssetSheetDocument(payload),
   );
 }
 
