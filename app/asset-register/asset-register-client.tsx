@@ -19,6 +19,7 @@ type UsageMetric = 'hours' | 'km';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown';
 type ManualAssetStep = 1 | 2 | 3 | 4;
 type ExportFormat = 'pdf' | 'xlsx';
+type ExportStep = 'format' | 'pdf-report';
 type PdfReportKind = 'full' | 'financed' | 'insured' | 'not-financed' | 'not-insured';
 
 type PdfReportOption = {
@@ -669,6 +670,10 @@ function formatPercent(value: number): string {
 function formatRatioPercent(value: number): string {
   const normalized = Number(value || 0) * 100;
   return `${normalized.toFixed(normalized % 1 === 0 ? 0 : 1)}%`;
+}
+
+function isPdfReportKind(value: string): value is PdfReportKind {
+  return PDF_REPORT_OPTIONS.some((option) => option.value === value);
 }
 
 function getPdfReportOption(reportKind: PdfReportKind): PdfReportOption {
@@ -1673,7 +1678,9 @@ export default function AssetRegisterClient() {
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
+  const [exportStep, setExportStep] = useState<ExportStep>('format');
   const [pdfReportKind, setPdfReportKind] = useState<PdfReportKind>('full');
+  const [pdfReportSelection, setPdfReportSelection] = useState<PdfReportKind | ''>('');
   const [isExporting, setIsExporting] = useState(false);
   const [projectionAsset, setProjectionAsset] = useState<RegisterAsset | null>(null);
   const [projectionForm, setProjectionForm] = useState<ProjectionFormState>(createDefaultProjectionForm());
@@ -3026,13 +3033,47 @@ export default function AssetRegisterClient() {
     }
 
     setExportFormat('pdf');
+    setExportStep('format');
     setPdfReportKind('full');
+    setPdfReportSelection('');
     setIsExportModalOpen(true);
   }
 
   function closeExportModal() {
     if (isExporting) return;
+
     setIsExportModalOpen(false);
+    setExportStep('format');
+    setPdfReportSelection('');
+  }
+
+  function selectExportFormat(nextFormat: ExportFormat) {
+    setExportFormat(nextFormat);
+    setExportStep('format');
+    setPdfReportSelection('');
+  }
+
+  function openPdfReportChooser() {
+    setExportStep('pdf-report');
+    setPdfReportSelection('');
+  }
+
+  function closePdfReportChooser() {
+    if (isExporting) return;
+
+    setExportStep('format');
+    setPdfReportSelection('');
+  }
+
+  function handlePdfReportSelectionChange(event: ChangeEvent<HTMLSelectElement>) {
+    const nextReportKind = event.target.value;
+
+    if (!isPdfReportKind(nextReportKind)) {
+      return;
+    }
+
+    setPdfReportSelection(nextReportKind);
+    void handleExportPdfReport(nextReportKind);
   }
 
   async function handleExportPdf(reportKind: PdfReportKind = pdfReportKind) {
@@ -3131,6 +3172,7 @@ export default function AssetRegisterClient() {
         message: `${reportOption.label} PDF opened.`,
       });
     } catch (error) {
+      setPdfReportSelection('');
       setNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'Failed to export the asset register PDF.',
@@ -3170,23 +3212,17 @@ export default function AssetRegisterClient() {
       return;
     }
 
+    if (exportFormat === 'pdf') {
+      openPdfReportChooser();
+      return;
+    }
+
     setIsExporting(true);
 
     try {
-      if (exportFormat === 'xlsx') {
-        await handleExportXlsx();
-      } else {
-        await handleExportPdf();
-      }
-
+      await handleExportXlsx();
       setIsExportModalOpen(false);
-      setNotice({
-        tone: 'success',
-        message:
-          exportFormat === 'xlsx'
-            ? 'Asset register XLSX downloaded.'
-            : `${getPdfReportOption(pdfReportKind).label} PDF opened.`,
-      });
+      setNotice({ tone: 'success', message: 'Asset register XLSX downloaded.' });
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -3337,9 +3373,6 @@ export default function AssetRegisterClient() {
         : editingAsset
           ? 'Update asset'
           : 'Add asset';
-  const selectedPdfReportOption = getPdfReportOption(pdfReportKind);
-  const selectedPdfReportAssets = filterAssetsByPdfReportKind(assets, pdfReportKind);
-  const selectedPdfReportValue = sumAssetValues(selectedPdfReportAssets);
 
   return (
     <main className={styles.page}>
@@ -4587,122 +4620,100 @@ export default function AssetRegisterClient() {
 
             <div className={`${styles.modalScrollBody} ${styles.exportModalScrollBody}`}>
               <div className={styles.exportModalBody}>
-                <div className={styles.exportChoices}>
-                  <button
-                    type="button"
-                    className={`${styles.exportOption} ${exportFormat === 'pdf' ? styles.exportOptionActive : ''}`}
-                    onClick={() => setExportFormat('pdf')}
-                    aria-pressed={exportFormat === 'pdf'}
-                  >
-                    <div className={styles.exportOptionTop}>
-                      <span className={styles.exportGraphic}>
-                        <ExportGraphic src="/brand/pdf.png" alt="PDF export" icon={<PdfIcon className={styles.exportOptionIcon} />} />
-                      </span>
+                {exportStep === 'format' ? (
+                  <>
+                    <div className={styles.exportChoices}>
+                      <button
+                        type="button"
+                        className={`${styles.exportOption} ${exportFormat === 'pdf' ? styles.exportOptionActive : ''}`}
+                        onClick={() => selectExportFormat('pdf')}
+                        aria-pressed={exportFormat === 'pdf'}
+                      >
+                        <div className={styles.exportOptionTop}>
+                          <span className={styles.exportGraphic}>
+                            <ExportGraphic src="/brand/pdf.png" alt="PDF export" icon={<PdfIcon className={styles.exportOptionIcon} />} />
+                          </span>
 
-                      <div className={styles.exportOptionTitleBlock}>
-                        <strong>PDF summary</strong>
-                        <span className={styles.exportOptionStatus}>{exportFormat === 'pdf' ? 'Selected' : 'Select'}</span>
-                      </div>
+                          <div className={styles.exportOptionTitleBlock}>
+                            <strong>PDF summary</strong>
+                            <span className={styles.exportOptionStatus}>{exportFormat === 'pdf' ? 'Selected' : 'Select'}</span>
+                          </div>
+                        </div>
+
+                        <ul className={styles.exportFeatureList}>
+                          <li>Choose one of five filtered PDF reports</li>
+                          <li>Totals recalculate per selected report</li>
+                          <li>Clean client / bank handover</li>
+                        </ul>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`${styles.exportOption} ${exportFormat === 'xlsx' ? styles.exportOptionActive : ''}`}
+                        onClick={() => selectExportFormat('xlsx')}
+                        aria-pressed={exportFormat === 'xlsx'}
+                      >
+                        <div className={styles.exportOptionTop}>
+                          <span className={styles.exportGraphic}>
+                            <ExportGraphic src="/brand/sheet.png" alt="Spreadsheet export" icon={<SpreadsheetIcon className={styles.exportOptionIcon} />} />
+                          </span>
+
+                          <div className={styles.exportOptionTitleBlock}>
+                            <strong>XLSX workbook</strong>
+                            <span className={styles.exportOptionStatus}>{exportFormat === 'xlsx' ? 'Selected' : 'Select'}</span>
+                          </div>
+                        </div>
+
+                        <ul className={styles.exportFeatureList}>
+                          <li>Detailed register rows</li>
+                          <li>Spreadsheet-friendly data</li>
+                          <li>Easy offline editing</li>
+                        </ul>
+                      </button>
                     </div>
 
-                    <ul className={styles.exportFeatureList}>
-                      <li>Choose one of five filtered PDF reports</li>
-                      <li>Totals recalculate per selected report</li>
-                      <li>Clean client / bank handover</li>
-                    </ul>
-                  </button>
+                    <div className={`${styles.formActions} ${styles.exportActions}`}>
+                      <button type="button" className={styles.primaryButton} onClick={handleConfirmExport} disabled={isExporting}>
+                        {exportFormat === 'pdf' ? <ChevronRightIcon className={styles.buttonIcon} /> : <DownloadIcon className={styles.buttonIcon} />}
+                        <span>{exportFormat === 'pdf' ? 'Next' : isExporting ? 'Preparing export...' : 'Download XLSX'}</span>
+                      </button>
 
-                  <button
-                    type="button"
-                    className={`${styles.exportOption} ${exportFormat === 'xlsx' ? styles.exportOptionActive : ''}`}
-                    onClick={() => setExportFormat('xlsx')}
-                    aria-pressed={exportFormat === 'xlsx'}
-                  >
-                    <div className={styles.exportOptionTop}>
-                      <span className={styles.exportGraphic}>
-                        <ExportGraphic src="/brand/sheet.png" alt="Spreadsheet export" icon={<SpreadsheetIcon className={styles.exportOptionIcon} />} />
-                      </span>
-
-                      <div className={styles.exportOptionTitleBlock}>
-                        <strong>XLSX workbook</strong>
-                        <span className={styles.exportOptionStatus}>{exportFormat === 'xlsx' ? 'Selected' : 'Select'}</span>
-                      </div>
+                      <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className={styles.pdfReportDropdownPanel}>
+                      <select
+                        className={styles.pdfReportDropdown}
+                        value={pdfReportSelection}
+                        onChange={handlePdfReportSelectionChange}
+                        disabled={isExporting}
+                        aria-label="Choose PDF summary option"
+                      >
+                        <option value="" disabled>Choose option</option>
+                        {PDF_REPORT_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDownIcon className={styles.pdfReportDropdownIcon} />
                     </div>
 
-                    <ul className={styles.exportFeatureList}>
-                      <li>Detailed register rows</li>
-                      <li>Spreadsheet-friendly data</li>
-                      <li>Easy offline editing</li>
-                    </ul>
-                  </button>
-                </div>
+                    <div className={`${styles.formActions} ${styles.exportActions}`}>
+                      <button type="button" className={styles.secondaryButton} onClick={closePdfReportChooser} disabled={isExporting}>
+                        Back
+                      </button>
 
-                {exportFormat === 'pdf' ? (
-                  <div className={styles.pdfReportSelector}>
-                    <div className={styles.exportFormatHeader}>
-                      <div>
-                        <span>PDF report type</span>
-                        <strong>Choose the summary PDF to open</strong>
-                      </div>
-                      <span>{selectedPdfReportAssets.length} {selectedPdfReportAssets.length === 1 ? 'asset' : 'assets'}</span>
+                      <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
+                        Cancel
+                      </button>
                     </div>
-
-                    <div className={styles.pdfReportChoices}>
-                      {PDF_REPORT_OPTIONS.map((option) => {
-                        const optionAssets = filterAssetsByPdfReportKind(assets, option.value);
-                        const optionValue = sumAssetValues(optionAssets);
-                        const isSelectedReport = pdfReportKind === option.value;
-
-                        return (
-                          <button
-                            type="button"
-                            key={option.value}
-                            className={`${styles.pdfReportOption} ${isSelectedReport ? styles.pdfReportOptionActive : ''}`}
-                            onClick={() => void handleExportPdfReport(option.value)}
-                            disabled={isExporting}
-                            aria-pressed={isSelectedReport}
-                          >
-                            <span className={styles.pdfReportOptionMain}>
-                              <strong>{option.label}</strong>
-                              <small>{option.description}</small>
-                            </span>
-                            <span className={styles.pdfReportOptionMeta}>
-                              <strong>{optionAssets.length}</strong>
-                              <small>{money(optionValue)}</small>
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className={styles.exportHelp}>
-                  {exportFormat === 'pdf' ? (
-                    <>
-                      <strong>{selectedPdfReportOption.label}: {selectedPdfReportAssets.length} {selectedPdfReportAssets.length === 1 ? 'asset' : 'assets'} · {money(selectedPdfReportValue)} ex VAT.</strong>
-                      <span>Click a PDF report option above to open that filtered PDF with recalculated totals and summaries.</span>
-                    </>
-                  ) : (
-                    <>
-                      <strong>Ready to export {assets.length} {assets.length === 1 ? 'asset' : 'assets'}.</strong>
-                      <span>The XLSX download uses the full saved register.</span>
-                    </>
-                  )}
-                </div>
-
-                <div className={`${styles.formActions} ${styles.exportActions}`}>
-                  {exportFormat === 'xlsx' ? (
-                    <button type="button" className={styles.primaryButton} onClick={handleConfirmExport} disabled={isExporting}>
-                      <DownloadIcon className={styles.buttonIcon} />
-                      <span>{isExporting ? 'Preparing export...' : 'Download XLSX'}</span>
-                    </button>
-                  ) : null}
-
-                  <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
-                    Cancel
-                  </button>
-                </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
