@@ -19,6 +19,59 @@ type UsageMetric = 'hours' | 'km';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown';
 type ManualAssetStep = 1 | 2 | 3 | 4;
 type ExportFormat = 'pdf' | 'xlsx';
+type PdfReportKind = 'full' | 'financed' | 'insured' | 'not-financed' | 'not-insured';
+
+type PdfReportOption = {
+  value: PdfReportKind;
+  label: string;
+  description: string;
+  intro: string;
+  sectionTitle: string;
+  emptyLabel: string;
+};
+
+const PDF_REPORT_OPTIONS: PdfReportOption[] = [
+  {
+    value: 'full',
+    label: 'Full Asset Register',
+    description: 'All saved register assets with full register totals.',
+    intro: 'Complete saved asset register snapshot.',
+    sectionTitle: 'Asset Register',
+    emptyLabel: 'No saved assets are currently available for this report.',
+  },
+  {
+    value: 'financed',
+    label: 'Financed',
+    description: 'Only assets marked as financed.',
+    intro: 'Filtered asset register snapshot showing only financed assets.',
+    sectionTitle: 'Financed Assets',
+    emptyLabel: 'No financed assets are currently saved in this register.',
+  },
+  {
+    value: 'insured',
+    label: 'Insured',
+    description: 'Only assets marked as insured.',
+    intro: 'Filtered asset register snapshot showing only insured assets.',
+    sectionTitle: 'Insured Assets',
+    emptyLabel: 'No insured assets are currently saved in this register.',
+  },
+  {
+    value: 'not-financed',
+    label: 'Not Financed',
+    description: 'Only assets not marked as financed.',
+    intro: 'Filtered asset register snapshot showing only assets not marked as financed.',
+    sectionTitle: 'Not Financed Assets',
+    emptyLabel: 'No assets without finance are currently saved in this register.',
+  },
+  {
+    value: 'not-insured',
+    label: 'Not Insured',
+    description: 'Only assets not marked as insured.',
+    intro: 'Filtered asset register snapshot showing only assets not marked as insured.',
+    sectionTitle: 'Not Insured Assets',
+    emptyLabel: 'No assets without insurance are currently saved in this register.',
+  },
+];
 type AssetFilterKey =
   | 'all'
   | 'insured'
@@ -616,6 +669,42 @@ function formatPercent(value: number): string {
 function formatRatioPercent(value: number): string {
   const normalized = Number(value || 0) * 100;
   return `${normalized.toFixed(normalized % 1 === 0 ? 0 : 1)}%`;
+}
+
+function getPdfReportOption(reportKind: PdfReportKind): PdfReportOption {
+  return PDF_REPORT_OPTIONS.find((option) => option.value === reportKind) ?? PDF_REPORT_OPTIONS[0];
+}
+
+function filterAssetsByPdfReportKind(assetList: RegisterAsset[], reportKind: PdfReportKind): RegisterAsset[] {
+  switch (reportKind) {
+    case 'financed':
+      return assetList.filter((asset) => asset.isFinanced);
+    case 'insured':
+      return assetList.filter((asset) => asset.isInsured);
+    case 'not-financed':
+      return assetList.filter((asset) => !asset.isFinanced);
+    case 'not-insured':
+      return assetList.filter((asset) => !asset.isInsured);
+    case 'full':
+    default:
+      return assetList;
+  }
+}
+
+function sumAssetValues(assetList: RegisterAsset[]): number {
+  return assetList.reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
+}
+
+function calculateAssetStats(
+  assetList: RegisterAsset[],
+  predicate?: (asset: RegisterAsset) => boolean,
+): { count: number; value: number } {
+  const matchingAssets = predicate ? assetList.filter(predicate) : assetList;
+
+  return {
+    count: matchingAssets.length,
+    value: sumAssetValues(matchingAssets),
+  };
 }
 
 function formatDate(value?: string | null): string {
@@ -1584,6 +1673,7 @@ export default function AssetRegisterClient() {
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
+  const [pdfReportKind, setPdfReportKind] = useState<PdfReportKind>('full');
   const [isExporting, setIsExporting] = useState(false);
   const [projectionAsset, setProjectionAsset] = useState<RegisterAsset | null>(null);
   const [projectionForm, setProjectionForm] = useState<ProjectionFormState>(createDefaultProjectionForm());
@@ -2936,6 +3026,7 @@ export default function AssetRegisterClient() {
     }
 
     setExportFormat('pdf');
+    setPdfReportKind('full');
     setIsExportModalOpen(true);
   }
 
@@ -2944,7 +3035,14 @@ export default function AssetRegisterClient() {
     setIsExportModalOpen(false);
   }
 
-  async function handleExportPdf() {
+  async function handleExportPdf(reportKind: PdfReportKind = pdfReportKind) {
+    const reportOption = getPdfReportOption(reportKind);
+    const reportAssets = filterAssetsByPdfReportKind(assets, reportKind);
+    const reportValue = sumAssetValues(reportAssets);
+    const reportValueInclVat = Math.round(reportValue * 1.15);
+    const reportAim4priceStats = calculateAssetStats(reportAssets, isAim4priceValuedAsset);
+    const reportInsuredStats = calculateAssetStats(reportAssets, (asset) => asset.isInsured);
+    const reportFinancedStats = calculateAssetStats(reportAssets, (asset) => asset.isFinanced);
     const profile = await ensureAccountProfile();
     const profileLocation = [profile?.townCity, profile?.province].filter(Boolean).join(' ');
     const profileAddress = [profile?.addressLine1, profile?.addressLine2, profileLocation].filter(Boolean).join(' ');
@@ -2955,11 +3053,16 @@ export default function AssetRegisterClient() {
     const didOpen = openAssetRegisterSummaryPrint({
       logoUrl: toAbsoluteUrl('/brand/aim4price-mark-black.png') ?? '',
       generatedAt: formatDate(new Date().toISOString()),
+      reportTitle: `${reportOption.label} Report`,
+      reportSubtitle: 'Aim4price asset register',
+      valueLabel: reportKind === 'full' ? 'Register Value' : 'Filtered Register Value',
+      assetSectionTitle: reportOption.sectionTitle,
+      emptyStateMessage: reportOption.emptyLabel,
       ownerName,
       ownerMeta: buildOwnerMeta(profile),
-      intro: 'Complete saved asset register snapshot.',
-      registerValue: money(totalValue),
-      registerValueNote: 'Total saved asset value - VAT excluded',
+      intro: reportOption.intro,
+      registerValue: money(reportValue),
+      registerValueNote: `VAT excluded · ${money(reportValueInclVat)} incl. VAT`,
       ownerRows: [
         { label: 'Name', value: ownerName },
         { label: 'Email', value: ownerEmail },
@@ -2967,13 +3070,14 @@ export default function AssetRegisterClient() {
         { label: 'Address', value: profileAddress || '—' },
       ],
       stats: [
-        { label: 'Total assets', value: String(assets.length), note: 'Saved register items.' },
-        { label: 'Register value', value: money(totalValue), note: 'VAT excluded.' },
-        { label: 'Aim4price values', value: String(aim4priceValuedEquipmentCount), note: `${money(aim4priceValuedEquipmentValue)} total value.` },
-        { label: 'Insured assets', value: String(insuredAssetStats.count), note: `${money(insuredAssetStats.value)} marked insured.` },
-        { label: 'Financed assets', value: String(financedAssetStats.count), note: `${money(financedAssetStats.value)} marked financed.` },
+        { label: 'Assets', value: String(reportAssets.length), note: reportKind === 'full' ? 'Saved register items.' : reportOption.description },
+        { label: 'Value ex VAT', value: money(reportValue), note: 'Filtered report total excluding VAT.' },
+        { label: 'Value incl VAT', value: money(reportValueInclVat), note: 'Filtered report total including 15% VAT.' },
+        { label: 'Aim4price values', value: String(reportAim4priceStats.count), note: `${money(reportAim4priceStats.value)} total value.` },
+        { label: 'Insured assets', value: String(reportInsuredStats.count), note: `${money(reportInsuredStats.value)} marked insured.` },
+        { label: 'Financed assets', value: String(reportFinancedStats.count), note: `${money(reportFinancedStats.value)} marked financed.` },
       ],
-      rows: assets.map((asset) => {
+      rows: reportAssets.map((asset) => {
         const initialModelValue = asset.modelName || asset.typedModelName || '';
         const reportBrandName = deriveAssetReportBrandName(asset, initialModelValue);
         const reportModelName = deriveAssetReportModelName(asset, reportBrandName);
@@ -3004,7 +3108,35 @@ export default function AssetRegisterClient() {
     });
 
     if (!didOpen) {
-      throw new Error('Unable to open the full asset register PDF. Please allow pop-ups and try again.');
+      throw new Error(`Unable to open the ${reportOption.label.toLowerCase()} PDF. Please allow pop-ups and try again.`);
+    }
+  }
+
+  async function handleExportPdfReport(reportKind: PdfReportKind) {
+    if (!assets.length || isExporting) {
+      return;
+    }
+
+    const reportOption = getPdfReportOption(reportKind);
+
+    setExportFormat('pdf');
+    setPdfReportKind(reportKind);
+    setIsExporting(true);
+
+    try {
+      await handleExportPdf(reportKind);
+      setIsExportModalOpen(false);
+      setNotice({
+        tone: 'success',
+        message: `${reportOption.label} PDF opened.`,
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to export the asset register PDF.',
+      });
+    } finally {
+      setIsExporting(false);
     }
   }
 
@@ -3050,7 +3182,10 @@ export default function AssetRegisterClient() {
       setIsExportModalOpen(false);
       setNotice({
         tone: 'success',
-        message: exportFormat === 'xlsx' ? 'Asset register XLSX downloaded.' : 'Asset register PDF opened.',
+        message:
+          exportFormat === 'xlsx'
+            ? 'Asset register XLSX downloaded.'
+            : `${getPdfReportOption(pdfReportKind).label} PDF opened.`,
       });
     } catch (error) {
       setNotice({
@@ -3202,6 +3337,9 @@ export default function AssetRegisterClient() {
         : editingAsset
           ? 'Update asset'
           : 'Add asset';
+  const selectedPdfReportOption = getPdfReportOption(pdfReportKind);
+  const selectedPdfReportAssets = filterAssetsByPdfReportKind(assets, pdfReportKind);
+  const selectedPdfReportValue = sumAssetValues(selectedPdfReportAssets);
 
   return (
     <main className={styles.page}>
@@ -4468,9 +4606,9 @@ export default function AssetRegisterClient() {
                     </div>
 
                     <ul className={styles.exportFeatureList}>
-                      <li>Printable register summary</li>
+                      <li>Choose one of five filtered PDF reports</li>
+                      <li>Totals recalculate per selected report</li>
                       <li>Clean client / bank handover</li>
-                      <li>Fast visual review</li>
                     </ul>
                   </button>
 
@@ -4499,16 +4637,67 @@ export default function AssetRegisterClient() {
                   </button>
                 </div>
 
+                {exportFormat === 'pdf' ? (
+                  <div className={styles.pdfReportSelector}>
+                    <div className={styles.exportFormatHeader}>
+                      <div>
+                        <span>PDF report type</span>
+                        <strong>Choose the summary PDF to open</strong>
+                      </div>
+                      <span>{selectedPdfReportAssets.length} {selectedPdfReportAssets.length === 1 ? 'asset' : 'assets'}</span>
+                    </div>
+
+                    <div className={styles.pdfReportChoices}>
+                      {PDF_REPORT_OPTIONS.map((option) => {
+                        const optionAssets = filterAssetsByPdfReportKind(assets, option.value);
+                        const optionValue = sumAssetValues(optionAssets);
+                        const isSelectedReport = pdfReportKind === option.value;
+
+                        return (
+                          <button
+                            type="button"
+                            key={option.value}
+                            className={`${styles.pdfReportOption} ${isSelectedReport ? styles.pdfReportOptionActive : ''}`}
+                            onClick={() => void handleExportPdfReport(option.value)}
+                            disabled={isExporting}
+                            aria-pressed={isSelectedReport}
+                          >
+                            <span className={styles.pdfReportOptionMain}>
+                              <strong>{option.label}</strong>
+                              <small>{option.description}</small>
+                            </span>
+                            <span className={styles.pdfReportOptionMeta}>
+                              <strong>{optionAssets.length}</strong>
+                              <small>{money(optionValue)}</small>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className={styles.exportHelp}>
-                  <strong>Ready to export {assets.length} {assets.length === 1 ? 'asset' : 'assets'}.</strong>
-                  <span>The download uses the full saved register.</span>
+                  {exportFormat === 'pdf' ? (
+                    <>
+                      <strong>{selectedPdfReportOption.label}: {selectedPdfReportAssets.length} {selectedPdfReportAssets.length === 1 ? 'asset' : 'assets'} · {money(selectedPdfReportValue)} ex VAT.</strong>
+                      <span>Click a PDF report option above to open that filtered PDF with recalculated totals and summaries.</span>
+                    </>
+                  ) : (
+                    <>
+                      <strong>Ready to export {assets.length} {assets.length === 1 ? 'asset' : 'assets'}.</strong>
+                      <span>The XLSX download uses the full saved register.</span>
+                    </>
+                  )}
                 </div>
 
                 <div className={`${styles.formActions} ${styles.exportActions}`}>
-                  <button type="button" className={styles.primaryButton} onClick={handleConfirmExport} disabled={isExporting}>
-                    <DownloadIcon className={styles.buttonIcon} />
-                    <span>{isExporting ? 'Preparing export...' : exportFormat === 'xlsx' ? 'Download XLSX' : 'Open PDF summary'}</span>
-                  </button>
+                  {exportFormat === 'xlsx' ? (
+                    <button type="button" className={styles.primaryButton} onClick={handleConfirmExport} disabled={isExporting}>
+                      <DownloadIcon className={styles.buttonIcon} />
+                      <span>{isExporting ? 'Preparing export...' : 'Download XLSX'}</span>
+                    </button>
+                  ) : null}
 
                   <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
                     Cancel

@@ -4688,6 +4688,118 @@
   min-width: 12.5rem;
 }
 
+.pdfReportSelector {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.pdfReportChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.72rem;
+}
+
+.pdfReportOption {
+  appearance: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 4.9rem;
+  padding: 0.88rem 0.95rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  color: #11342a;
+  text-align: left;
+  cursor: pointer;
+  box-shadow:
+    0 8px 18px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.pdfReportOption:hover {
+  border-color: rgba(176, 199, 215, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #f1f7fb 100%);
+}
+
+.pdfReportOption:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.11),
+    0 8px 18px rgba(16, 31, 28, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.pdfReportOption:disabled {
+  cursor: progress;
+  opacity: 0.72;
+}
+
+.pdfReportOptionActive {
+  border-color: rgba(149, 204, 178, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #eef8f2 100%);
+  box-shadow:
+    0 12px 26px rgba(18, 66, 51, 0.1),
+    inset 0 0 0 2px rgba(22, 83, 64, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.pdfReportOptionMain {
+  min-width: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.pdfReportOptionMain strong {
+  color: #0f3329;
+  font-size: 0.98rem;
+  font-weight: 830;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.pdfReportOptionMain small {
+  color: #637489;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.pdfReportOptionMeta {
+  display: grid;
+  justify-items: end;
+  gap: 0.2rem;
+  white-space: nowrap;
+}
+
+.pdfReportOptionMeta strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.1rem;
+  min-height: 2.1rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: #eef4f8;
+  color: #11342a;
+  font-size: 0.92rem;
+  font-weight: 880;
+}
+
+.pdfReportOptionActive .pdfReportOptionMeta strong {
+  color: #ffffff;
+  background: linear-gradient(180deg, #1d6048 0%, #124635 100%);
+}
+
+.pdfReportOptionMeta small {
+  color: #526577;
+  font-size: 0.74rem;
+  font-weight: 780;
+}
+
 @media (max-width: 760px) {
   .exportModal {
     width: min(100%, calc(100vw - 1rem)) !important;
@@ -4705,7 +4817,8 @@
     font-size: 1.62rem;
   }
 
-  .exportChoices {
+  .exportChoices,
+  .pdfReportChoices {
     grid-template-columns: 1fr;
   }
 
