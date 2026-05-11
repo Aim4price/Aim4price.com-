@@ -1,154 +1,144 @@
 .page {
-  --bg: #f1f6f8;
+  --bg: #eef4f6;
   --surface: #ffffff;
   --surface-soft: #f7fafb;
-  --line: #dce7ee;
-  --line-strong: #cbd9e3;
-  --text: #0f3329;
-  --text-muted: #5f7184;
-  --blue-text: #1d3b62;
-  --blue-soft: #eff5fb;
-  --green: #165340;
-  --green-strong: #104434;
-  --green-soft: #eef8f3;
-  --green-line: #c9e5d6;
+  --line: #dbe7ee;
+  --line-strong: #c9d9e3;
+  --text: #0d3b2e;
+  --text-soft: #526579;
+  --blue-text: #17395f;
+  --green: #176b4f;
+  --green-strong: #0f4e3b;
+  --green-soft: #ecf8f2;
   --red: #9b3030;
-  --red-soft: #fff1f1;
-  --red-line: #efcaca;
+  --red-soft: #fff2f2;
   min-height: 100dvh;
   background:
-    radial-gradient(circle at 12% 0%, rgba(22, 83, 64, 0.08), transparent 32%),
-    radial-gradient(circle at 96% 14%, rgba(29, 59, 98, 0.08), transparent 28%),
-    linear-gradient(180deg, #fbfdfd 0%, var(--bg) 100%);
+    radial-gradient(circle at 10% 0%, rgba(23, 107, 79, 0.08), transparent 30%),
+    linear-gradient(180deg, #fbfcfc 0%, var(--bg) 100%);
+  color: var(--text);
 }
 
 .shell {
   width: min(calc(100% - 0.9rem), 720px);
   margin: 0 auto;
-  padding: 0.55rem 0 1.35rem;
+  padding: 0.55rem 0 1.2rem;
   display: grid;
-  gap: 0.72rem;
+  gap: 0.75rem;
 }
 
-.prePinAssetCard,
+.assetPreviewCard,
 .pinCard,
 .unavailableCard,
-.scanReadyHeader,
-.quickActionCard,
+.assetOpenedCard,
+.actionCard,
 .notice,
-.modalCard {
+.locationReminderModal,
+.editorCard,
+.thankYouScreen {
   border: 1px solid rgba(205, 220, 230, 0.96);
+  border-radius: 1.28rem;
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 38%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+    radial-gradient(circle at top left, rgba(23, 107, 79, 0.05), transparent 40%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
   box-shadow:
     0 18px 42px rgba(15, 30, 45, 0.08),
     0 8px 18px rgba(15, 30, 45, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
-  border-radius: 1.28rem;
 }
 
-.prePinAssetCard,
+.assetPreviewCard,
 .pinCard,
 .unavailableCard,
-.scanReadyHeader {
+.assetOpenedCard {
   padding: clamp(1rem, 4vw, 1.25rem);
 }
 
-.prePinAssetHeader,
-.pinCardCopy,
-.quickPanel,
-.gpsInlineCopy,
-.quickActionCopy,
-.modalStack {
+.assetPreviewCard {
   display: grid;
+  gap: 0.85rem;
 }
 
-.prePinAssetHeader,
+.assetPreviewHeader,
 .pinCardCopy {
-  gap: 0.38rem;
+  display: grid;
+  gap: 0.35rem;
 }
 
-.prePinAssetHeader h1,
+.assetPreviewHeader h1,
 .pinCard h2,
 .unavailableCard h2,
-.scanReadyHeader h1,
-.modalHeader h3 {
+.assetOpenedCard h1,
+.editorHeader h3,
+.locationReminderModal h3,
+.thankYouScreen h1 {
   margin: 0;
   color: var(--text);
+  font-weight: 850;
   line-height: 0.98;
-  font-weight: 840;
   letter-spacing: -0.055em;
 }
 
-.prePinAssetHeader h1 {
-  font-size: clamp(2rem, 9vw, 2.8rem);
+.assetPreviewHeader h1,
+.assetOpenedCard h1,
+.thankYouScreen h1 {
+  font-size: clamp(1.85rem, 8vw, 2.65rem);
 }
 
 .pinCard h2,
 .unavailableCard h2,
-.scanReadyHeader h1,
-.modalHeader h3 {
-  font-size: clamp(1.68rem, 7vw, 2.34rem);
+.editorHeader h3,
+.locationReminderModal h3 {
+  font-size: clamp(1.55rem, 7vw, 2.2rem);
 }
 
-.prePinAssetHeader p,
+.assetPreviewHeader p,
 .pinCard p,
 .unavailableCard p,
-.scanReadyHeader p,
-.modalHeader p,
+.assetOpenedCard p,
+.editorHeader p,
 .helperText,
-.quickActionCopy span,
-.gpsInlineCopy span {
+.locationReminderModal p,
+.thankYouScreen p {
   margin: 0;
-  color: var(--text-muted);
-  font-weight: 630;
+  color: var(--text-soft);
+  font-size: 1rem;
+  font-weight: 640;
   line-height: 1.42;
 }
 
-.kicker {
-  display: inline-flex;
-  width: fit-content;
-  color: #617485;
-  font-size: 0.72rem;
-  font-weight: 850;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-
-.prePinDetailGrid {
+.previewDetailGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
-  margin-top: 0.15rem;
+  gap: 0.58rem;
 }
 
-.prePinDetailGrid > div {
+.previewDetailGrid > div {
   min-width: 0;
   display: grid;
+  gap: 0.23rem;
   align-content: center;
-  gap: 0.28rem;
-  min-height: 4.35rem;
+  min-height: 4.25rem;
   padding: 0.82rem 0.9rem;
-  border: 1px solid rgba(216, 226, 236, 0.96);
   border-radius: 1rem;
   background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
+  border: 1px solid rgba(216, 226, 236, 0.96);
 }
 
-.prePinDetailGrid span,
+.previewDetailGrid span,
 .field span {
   color: #6c7d8f;
   font-size: 0.72rem;
-  font-weight: 860;
-  letter-spacing: 0.06em;
+  font-weight: 850;
+  letter-spacing: 0.055em;
   text-transform: uppercase;
 }
 
-.prePinDetailGrid strong {
+.previewDetailGrid strong {
   min-width: 0;
   color: var(--text);
-  font-size: 1.08rem;
-  font-weight: 830;
+  font-size: 1rem;
+  font-weight: 820;
   line-height: 1.18;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -156,9 +146,9 @@
 }
 
 .notice {
-  min-height: 3rem;
-  padding: 0.86rem 1rem;
-  font-weight: 760;
+  min-height: 3.1rem;
+  padding: 0.9rem 1rem;
+  font-weight: 790;
   line-height: 1.35;
 }
 
@@ -174,75 +164,74 @@
   border-color: rgba(239, 196, 196, 0.98);
 }
 
-.pinCard {
+.pinCard,
+.pinForm,
+.field,
+.modalStack,
+.centerStack {
   display: grid;
-  gap: 1rem;
+  gap: 0.85rem;
 }
 
-.pinForm,
 .field {
-  display: grid;
-  gap: 0.58rem;
+  gap: 0.55rem;
 }
 
 .field input,
 .field textarea {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 1rem;
+  border-radius: 1.05rem;
   background: #ffffff;
-  color: #1f303b;
+  color: #1e2f3d;
   font: inherit;
-  font-size: 1.06rem;
-  font-weight: 640;
+  font-size: 1.05rem;
+  font-weight: 680;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
 .field input {
-  min-height: 3.66rem;
+  min-height: 3.75rem;
   padding: 0 1rem;
 }
 
 .field textarea {
-  min-height: 8.25rem;
+  min-height: 8.5rem;
   padding: 0.95rem 1rem;
-  line-height: 1.48;
+  line-height: 1.45;
   resize: vertical;
 }
 
 .field input:focus,
 .field textarea:focus {
   outline: none;
-  border-color: rgba(22, 83, 64, 0.42);
-  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.10);
+  border-color: rgba(23, 107, 79, 0.45);
+  box-shadow: 0 0 0 4px rgba(23, 107, 79, 0.10);
 }
 
 .field input::placeholder,
 .field textarea::placeholder {
-  color: #8b98a6;
-  font-weight: 560;
+  color: #94a0ad;
+  font-weight: 590;
 }
 
 .primaryButton,
 .secondaryButton,
-.quickOptionButton,
 .choiceButton,
-.checkOptionButton,
-.photoPickerButton,
-.removePhotoButton,
-.modalCloseButton,
-.gpsRefreshButton {
+.doneButton,
+.iconButton,
+.removePhotoButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
   border: 1px solid transparent;
-  border-radius: 1rem;
-  min-height: 3.35rem;
+  border-radius: 1.05rem;
+  min-height: 3.55rem;
   padding: 0 1.05rem;
   font: inherit;
   font-size: 1rem;
-  font-weight: 810;
+  font-weight: 820;
   text-decoration: none;
   cursor: pointer;
   transition:
@@ -255,31 +244,26 @@
 
 .primaryButton:hover,
 .secondaryButton:hover,
-.quickOptionButton:hover,
 .choiceButton:hover,
-.checkOptionButton:hover,
-.photoPickerButton:hover,
-.removePhotoButton:hover,
-.modalCloseButton:hover,
-.gpsRefreshButton:hover {
+.doneButton:hover,
+.iconButton:hover,
+.removePhotoButton:hover {
   transform: translateY(-1px);
 }
 
 .primaryButton:disabled,
 .secondaryButton:disabled,
-.quickOptionButton:disabled,
 .choiceButton:disabled,
-.checkOptionButton:disabled,
-.photoPickerButton:disabled,
-.removePhotoButton:disabled,
-.modalCloseButton:disabled,
-.gpsRefreshButton:disabled {
-  opacity: 0.55;
+.doneButton:disabled,
+.iconButton:disabled,
+.removePhotoButton:disabled {
+  opacity: 0.56;
   cursor: not-allowed;
   transform: none;
 }
 
-.primaryButton {
+.primaryButton,
+.doneButton {
   color: #ffffff;
   background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
   border-color: rgba(16, 68, 52, 0.32);
@@ -289,100 +273,98 @@
 }
 
 .secondaryButton,
-.quickOptionButton,
-.choiceButton,
-.checkOptionButton,
-.photoPickerButton,
-.gpsRefreshButton {
+.choiceButton {
   color: var(--blue-text);
-  background: linear-gradient(180deg, #ffffff 0%, var(--blue-soft) 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #eff5fb 100%);
   border-color: #d5e2ef;
   box-shadow:
     0 9px 18px rgba(23, 45, 75, 0.045),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
-.pinActions {
-  display: grid;
-}
-
-.pinActions .primaryButton {
-  min-height: 3.85rem;
-  font-size: 1.06rem;
-}
-
-.quickPanel {
-  gap: 0.72rem;
-}
-
-.scanReadyHeader {
-  display: grid;
-  gap: 0.7rem;
-}
-
-.gpsInlineStatus {
+.assetOpenedCard {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.78rem;
+  gap: 0.8rem;
+  align-items: start;
+}
+
+.assetOpenedCard h1 {
+  padding-right: 0.2rem;
+}
+
+.gpsButton {
+  display: inline-flex;
   align-items: center;
-  margin-top: 0.12rem;
-  padding: 0.78rem 0.86rem;
-  border: 1px solid rgba(216, 226, 236, 0.96);
-  border-radius: 1rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
-}
-
-.gpsInlineCopy {
-  gap: 0.14rem;
-  min-width: 0;
-}
-
-.gpsInlineCopy strong {
-  color: var(--text);
-  font-size: 0.95rem;
-  font-weight: 820;
-  line-height: 1.2;
-}
-
-.gpsInlineCopy span {
-  font-size: 0.84rem;
-}
-
-.gpsRefreshButton {
-  min-height: 2.8rem;
-  border-radius: 0.9rem;
+  justify-content: center;
+  gap: 0.42rem;
+  min-height: 2.65rem;
+  padding: 0 0.85rem;
+  border: 1px solid #d5e2ef;
+  border-radius: 999px;
+  color: var(--blue-text);
+  background: linear-gradient(180deg, #ffffff 0%, #eff5fb 100%);
+  box-shadow:
+    0 8px 16px rgba(23, 45, 75, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 840;
   white-space: nowrap;
+  cursor: pointer;
 }
 
-.quickActionGrid {
+.gpsButtonReady {
+  color: #124635;
+  background: var(--green-soft);
+  border-color: #c6e5d4;
+}
+
+.gpsButtonError {
+  color: var(--red);
+  background: var(--red-soft);
+  border-color: #efcaca;
+}
+
+.gpsButton:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.gpsButtonIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.actionGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.68rem;
 }
 
-.quickActionCard {
-  width: 100%;
-  min-height: 6.7rem;
+.actionCard {
+  min-height: 7rem;
   display: grid;
-  grid-template-columns: 1fr;
   align-content: start;
-  gap: 0.56rem;
-  padding: 0.92rem;
-  text-align: left;
+  justify-items: start;
+  gap: 0.55rem;
+  padding: 0.95rem;
   color: inherit;
+  text-align: left;
   cursor: pointer;
 }
 
-.quickActionCard:hover {
+.actionCard:hover {
   transform: translateY(-1px);
-  border-color: rgba(22, 83, 64, 0.28);
+  border-color: rgba(23, 107, 79, 0.28);
   box-shadow:
     0 20px 42px rgba(15, 30, 45, 0.10),
     0 8px 18px rgba(15, 30, 45, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
-.quickActionIconWrap {
+.actionIconWrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -391,41 +373,41 @@
   border-radius: 1rem;
   color: #145340;
   background: var(--green-soft);
-  border: 1px solid var(--green-line);
+  border: 1px solid #c6e5d4;
 }
 
-.quickActionIcon {
+.actionIcon {
   width: 1.35rem;
   height: 1.35rem;
 }
 
-.quickActionCopy {
-  gap: 0.22rem;
-  min-width: 0;
-}
-
-.quickActionCopy strong {
+.actionCard strong {
   color: var(--text);
   font-size: 1.12rem;
-  font-weight: 830;
+  font-weight: 850;
   line-height: 1.08;
   letter-spacing: -0.025em;
 }
 
-.quickActionCopy span {
+.actionCard small {
   display: -webkit-box;
   overflow: hidden;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  font-size: 0.82rem;
-  line-height: 1.28;
+  color: var(--text-soft);
+  font-size: 0.84rem;
+  font-weight: 650;
+  line-height: 1.3;
 }
 
-.quickActionChevron {
-  display: none;
+.doneButton {
+  width: 100%;
+  min-height: 3.85rem;
+  font-size: 1.06rem;
 }
 
-.modalOverlay {
+.locationReminderOverlay,
+.editorOverlay {
   position: fixed;
   inset: 0;
   z-index: 200;
@@ -442,102 +424,130 @@
   backdrop-filter: blur(14px);
 }
 
-.modalCard {
+.locationReminderModal {
   position: relative;
   z-index: 1;
-  width: min(100%, 640px);
-  max-height: min(88vh, calc(100dvh - 2rem));
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 1.1rem;
+  width: min(calc(100% - 1rem), 430px);
+  display: grid;
+  gap: 0.78rem;
+  justify-items: center;
+  text-align: center;
+  padding: 1.25rem;
   border-radius: 1.55rem;
 }
 
-.editorModalCard {
-  width: min(100%, 680px);
+.locationReminderIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.1rem;
+  height: 4.1rem;
+  border-radius: 1.22rem;
+  color: #ffffff;
+  background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
+  box-shadow: 0 14px 28px rgba(16, 68, 52, 0.18);
 }
 
-.modalHeader {
+.locationReminderSvg {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.locationReminderModal .primaryButton {
+  width: 100%;
+}
+
+.editorOverlay {
+  align-items: stretch;
+  padding: 0;
+  background: rgba(14, 22, 32, 0.52);
+  backdrop-filter: blur(12px);
+}
+
+.editorCard {
+  width: min(100%, 720px);
+  min-height: 100dvh;
+  max-height: 100dvh;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.9rem;
-  padding-bottom: 0.92rem;
-  border-bottom: 1px solid rgba(216, 226, 236, 0.94);
+  flex-direction: column;
+  border-radius: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
 }
 
-.modalHeader > div {
+.editorHeader {
   display: grid;
-  gap: 0.36rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: start;
+  padding: 1.1rem 1rem 0.95rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.96);
+}
+
+.editorTitleBlock {
+  display: grid;
+  gap: 0.35rem;
   min-width: 0;
 }
 
-.modalHeader p {
-  font-size: 0.94rem;
-}
-
-.modalCloseButton {
-  width: 3.22rem;
-  min-width: 3.22rem;
-  height: 3.22rem;
-  min-height: 3.22rem;
+.iconButton {
+  width: 3.35rem;
+  height: 3.35rem;
+  min-height: 3.35rem;
   padding: 0;
-  border-radius: 1rem;
+  flex: 0 0 3.35rem;
+  border-radius: 999px;
   color: var(--blue-text);
-  background: linear-gradient(180deg, #ffffff 0%, var(--blue-soft) 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #eff5fb 100%);
   border-color: #d5e2ef;
 }
 
-.buttonIcon {
-  width: 1.1rem;
-  height: 1.1rem;
+.closeIcon {
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
-.modalBody {
+.editorBody {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  padding: 1rem;
   display: grid;
   align-content: start;
-  gap: 0.95rem;
-  padding: 0.95rem 0.2rem 1rem 0;
+  gap: 0.9rem;
 }
 
-.modalStack {
-  gap: 0.88rem;
+.centerStack {
+  justify-items: center;
+  text-align: center;
 }
 
-.modalFooter {
-  flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid rgba(216, 226, 236, 0.94);
+.centerStack .field {
+  width: 100%;
+  text-align: left;
 }
 
-.modalFooter .primaryButton,
-.modalFooter .secondaryButton {
-  min-height: 3.55rem;
-}
-
-.helperText {
-  font-size: 0.9rem;
+.largeInput {
+  min-height: 4.35rem !important;
+  font-size: clamp(1.5rem, 8vw, 2.4rem) !important;
+  text-align: center;
+  font-weight: 840 !important;
+  letter-spacing: -0.03em;
 }
 
 .fuelReadout {
+  width: 100%;
   display: grid;
   place-items: center;
-  min-height: 6rem;
+  min-height: 6.2rem;
   border-radius: 1.25rem;
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 40%),
+    radial-gradient(circle at top left, rgba(23, 107, 79, 0.08), transparent 40%),
     linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
-  border: 1px solid var(--green-line);
-  font-size: clamp(2.9rem, 14vw, 4.3rem);
-  font-weight: 870;
+  border: 1px solid #c6e5d4;
+  font-size: clamp(3rem, 16vw, 4.4rem);
+  font-weight: 860;
   line-height: 1;
   letter-spacing: -0.06em;
 }
@@ -547,62 +557,44 @@
   accent-color: var(--green);
 }
 
-.quickOptionRow,
-.serviceTypeGrid,
-.photoActionGrid,
-.inlineFieldGrid {
+.quickOptionGrid,
+.choiceGrid,
+.choiceGridTwo,
+.uploadChoiceGrid {
   display: grid;
-  gap: 0.65rem;
+  gap: 0.62rem;
 }
 
-.quickOptionRow {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.serviceTypeGrid,
-.photoActionGrid,
-.inlineFieldGrid {
+.quickOptionGrid,
+.uploadChoiceGrid,
+.choiceGridTwo {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.quickOptionButton {
-  min-height: 3.4rem;
-  padding: 0 0.7rem;
+.choiceGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.quickOptionButtonActive,
-.choiceButtonActive,
-.checkOptionButtonActive {
+.choiceButton {
+  min-height: 3.45rem;
+  padding: 0.55rem 0.75rem;
+  line-height: 1.18;
+  text-align: center;
+}
+
+.choiceButtonActive {
   color: #ffffff;
   background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
   border-color: rgba(16, 68, 52, 0.32);
 }
 
-.checklistGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
-}
-
-.checkOptionButton,
-.choiceButton {
-  min-height: 3.15rem;
-  padding: 0.72rem 0.82rem;
-  text-align: center;
-  line-height: 1.18;
-}
-
-.photoPickerButton {
-  min-height: 4.1rem;
-  position: relative;
-  overflow: hidden;
-}
-
-.photoPickerButton input {
-  position: absolute;
-  inset: 0;
+.hiddenFileInput {
+  position: fixed;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
   opacity: 0;
-  cursor: pointer;
+  pointer-events: none;
 }
 
 .photoGrid {
@@ -616,7 +608,7 @@
   gap: 0.5rem;
   padding: 0.5rem;
   border-radius: 1rem;
-  background: #f7fafb;
+  background: #ffffff;
   border: 1px solid rgba(216, 226, 236, 0.96);
 }
 
@@ -629,141 +621,113 @@
 }
 
 .removePhotoButton {
-  min-height: 2.5rem;
+  min-height: 2.45rem;
   color: var(--red);
   background: var(--red-soft);
-  border-color: var(--red-line);
-  font-size: 0.86rem;
+  border-color: #efcaca;
+  font-size: 0.84rem;
 }
 
-.locationReminderOverlay {
-  align-items: center;
-  justify-content: center;
-}
-
-.locationReminderModal {
-  width: min(calc(100% - 1rem), 430px);
+.editorFooter {
+  flex: 0 0 auto;
   display: grid;
-  gap: 0.78rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem 1rem;
+  border-top: 1px solid rgba(216, 226, 236, 0.96);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.thankYouScreen {
+  min-height: 100dvh;
+  border: 0;
+  border-radius: 0;
+  display: grid;
+  place-content: center;
   justify-items: center;
-  text-align: center;
+  gap: 0.6rem;
   padding: 1.25rem;
-  border-radius: 1.55rem;
-  box-shadow:
-    0 28px 72px rgba(11, 21, 34, 0.24),
-    0 10px 26px rgba(11, 21, 34, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  text-align: center;
+  box-shadow: none;
 }
 
-.locationReminderIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 4rem;
-  height: 4rem;
-  border-radius: 1.22rem;
-  color: #ffffff;
-  background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
-  box-shadow: 0 14px 28px rgba(16, 68, 52, 0.18);
+.thankYouScreen h1 {
+  font-size: clamp(2rem, 10vw, 3rem);
 }
 
-.locationReminderIcon .buttonIcon {
-  width: 1.45rem;
-  height: 1.45rem;
-}
-
-.locationReminderModal h3 {
-  margin: 0;
-  color: var(--text);
-  font-size: clamp(1.45rem, 6vw, 1.9rem);
-  font-weight: 840;
-  line-height: 1.05;
-  letter-spacing: -0.045em;
-}
-
-.locationReminderModal p {
-  max-width: 22rem;
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.96rem;
-  font-weight: 630;
-  line-height: 1.45;
-}
-
-.locationReminderModal .primaryButton {
-  width: 100%;
-  min-height: 3.65rem;
-}
-
-@media (max-width: 620px) {
-  .shell {
-    width: min(calc(100% - 0.8rem), 720px);
-    padding-top: 0.45rem;
+@media (min-width: 760px) {
+  .editorOverlay {
+    align-items: center;
+    padding: 1.2rem;
   }
 
-  .prePinAssetCard,
+  .editorCard {
+    min-height: auto;
+    max-height: min(90dvh, 760px);
+    border-radius: 1.55rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .shell {
+    width: min(calc(100% - 0.75rem), 720px);
+    padding-top: 0.42rem;
+    gap: 0.65rem;
+  }
+
+  .assetPreviewCard,
   .pinCard,
   .unavailableCard,
-  .scanReadyHeader {
-    border-radius: 1.18rem;
+  .assetOpenedCard {
+    border-radius: 1.15rem;
   }
 
-  .prePinDetailGrid,
-  .quickActionGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .quickActionCard {
-    min-height: 5.95rem;
-  }
-
-  .quickActionIconWrap {
-    width: 2.85rem;
-    height: 2.85rem;
-  }
-
-  .editorModalOverlay {
-    align-items: stretch;
-    justify-content: stretch;
-    padding: 0;
-  }
-
-  .editorModalOverlay .modalBackdrop {
-    display: none;
-  }
-
-  .editorModalCard {
-    width: 100%;
-    height: 100dvh;
-    max-height: none;
-    border-radius: 0;
-    border-left: 0;
-    border-right: 0;
-    padding: 1rem;
-  }
-
-  .modalHeader {
-    padding-top: max(0.2rem, env(safe-area-inset-top));
-  }
-
-  .modalCloseButton {
-    width: 3.35rem;
-    min-width: 3.35rem;
-    height: 3.35rem;
-    min-height: 3.35rem;
-  }
-
-  .modalFooter {
+  .assetOpenedCard {
     grid-template-columns: 1fr;
-    padding-bottom: max(0.2rem, env(safe-area-inset-bottom));
   }
 
-  .quickOptionRow,
-  .checklistGrid,
-  .serviceTypeGrid,
-  .photoActionGrid,
-  .inlineFieldGrid {
+  .gpsButton {
+    width: fit-content;
+  }
+
+  .actionGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.58rem;
+  }
+
+  .actionCard {
+    min-height: 6.55rem;
+    padding: 0.85rem;
+    border-radius: 1.12rem;
+  }
+
+  .actionIconWrap {
+    width: 2.78rem;
+    height: 2.78rem;
+  }
+
+  .actionCard strong {
+    font-size: 1.02rem;
+  }
+
+  .actionCard small {
+    font-size: 0.78rem;
+  }
+
+  .editorHeader {
+    padding-top: 1rem;
+  }
+
+  .editorFooter {
+    grid-template-columns: 1fr;
+  }
+
+  .editorFooter .secondaryButton {
+    order: 2;
+  }
+
+  .editorFooter .primaryButton {
+    order: 1;
   }
 
   .photoGrid {
@@ -771,41 +735,13 @@
   }
 }
 
-@media (max-width: 410px) {
-  .gpsInlineStatus {
-    grid-template-columns: 1fr;
-  }
-
-  .gpsRefreshButton {
-    width: 100%;
-  }
-
-  .quickActionGrid,
-  .prePinDetailGrid {
-    gap: 0.56rem;
-  }
-
-  .quickActionCard {
-    padding: 0.82rem;
-  }
-
-  .quickActionCopy strong {
-    font-size: 1.04rem;
-  }
-
-  .quickActionCopy span {
-    font-size: 0.78rem;
-  }
-}
-
-@media (max-width: 350px) {
-  .quickActionGrid,
-  .prePinDetailGrid,
-  .quickOptionRow,
-  .checklistGrid,
-  .serviceTypeGrid,
-  .photoActionGrid,
-  .inlineFieldGrid {
+@media (max-width: 370px) {
+  .previewDetailGrid,
+  .actionGrid,
+  .choiceGrid,
+  .choiceGridTwo,
+  .quickOptionGrid,
+  .uploadChoiceGrid {
     grid-template-columns: 1fr;
   }
 }
