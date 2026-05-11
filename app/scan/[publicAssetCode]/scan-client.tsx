@@ -97,29 +97,29 @@ const MAX_QR_PHOTOS = 12;
 const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
 
 const CHECKED_OPTIONS = [
-  "Oil level",
-  "Tyres",
-  "Safety",
-  "Lights",
-  "Brakes",
-  "Hydraulics",
-  "Battery",
-  "Coolant",
-  "Belts",
-  "Leaks",
+  { label: "Oil level", description: "Dipstick / sight glass checked." },
+  { label: "Tyres", description: "Pressure, tread and visible damage checked." },
+  { label: "Safety", description: "Guards, warning lights and obvious risks checked." },
+  { label: "Lights", description: "Working lights and indicators checked." },
+  { label: "Brakes", description: "Brake response and pedal feel checked." },
+  { label: "Hydraulics", description: "Hoses, rams and leaks checked." },
+  { label: "Battery", description: "Terminals, charge and mounting checked." },
+  { label: "Coolant", description: "Level and visible leaks checked." },
+  { label: "Belts", description: "Wear, cracks and tension checked." },
+  { label: "Leaks", description: "Oil, diesel, coolant and hydraulic leaks checked." },
 ] as const;
 
 const SERVICED_OPTIONS = [
-  "Changed engine oil",
-  "Changed hydraulic oil",
-  "Changed air filters",
-  "Changed oil filters",
-  "Changed diesel filters",
-  "Greased machine",
-  "Coolant top-up",
-  "Replaced belts",
-  "Tyre repair",
-  "Battery service",
+  { label: "Changed engine oil", description: "Engine oil drained and replaced." },
+  { label: "Changed hydraulic oil", description: "Hydraulic oil serviced or replaced." },
+  { label: "Changed air filters", description: "Air filter elements cleaned or replaced." },
+  { label: "Changed oil filters", description: "Engine oil filters replaced." },
+  { label: "Changed diesel filters", description: "Fuel / diesel filters replaced." },
+  { label: "Greased machine", description: "Grease points completed." },
+  { label: "Coolant top-up", description: "Coolant topped up or replaced." },
+  { label: "Replaced belts", description: "Worn belts replaced or adjusted." },
+  { label: "Tyre repair", description: "Tyre puncture, valve or pressure repair." },
+  { label: "Battery service", description: "Battery serviced, replaced or terminals cleaned." },
 ] as const;
 
 const initialDraft: DraftState = {
@@ -333,6 +333,33 @@ function ServiceIcon({ className }: IconProps) {
       <path d="m14.7 6.3 3 3" />
       <path d="M9 18.5 4.5 14l2.1-2.1L9 14.3 17.4 6l2.1 2.1z" />
       <path d="M4 21h16" />
+    </svg>
+  );
+}
+
+function CheckCircleIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8.5 12.2 2.2 2.2 4.8-5" />
+    </svg>
+  );
+}
+
+function WrenchIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M14.7 6.3a4 4 0 0 0-5.1 5.1L4 17v3h3l5.6-5.6a4 4 0 0 0 5.1-5.1l-2.6 2.6-2.8-2.8z" />
+    </svg>
+  );
+}
+
+function UploadIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M12 16V4" />
+      <path d="m7 9 5-5 5 5" />
+      <path d="M5 20h14" />
     </svg>
   );
 }
@@ -908,6 +935,11 @@ export default function ScanClient({
   const showFuelAction = Boolean(asset?.canUpdateFuel);
   const prePinAsset = assetPreview;
   const canPressSave = !isSaving && !isUploading;
+  const saveButtonLabel = isSaving
+    ? "Saving…"
+    : activeEditor === "service" && draft.serviceMode === "serviced" && !showServiceDetailsStep
+      ? "Next: company details"
+      : "Save update";
 
   if (isDone) {
     return (
@@ -1200,59 +1232,94 @@ export default function ScanClient({
 
               {activeEditor === "service" ? (
                 <div className={styles.modalStack}>
-                  <div className={styles.choiceGridTwo}>
+                  <div className={styles.serviceModeGrid}>
                     <button
                       type="button"
-                      className={`${styles.choiceButton} ${draft.serviceMode === "checked" ? styles.choiceButtonActive : ""}`}
-                      onClick={() =>
+                      className={`${styles.serviceModeCard} ${draft.serviceMode === "checked" ? styles.serviceModeCardActive : ""}`}
+                      onClick={() => {
+                        setShowServiceDetailsStep(false);
                         setDraft((current) => ({
                           ...current,
                           serviceMode: "checked",
                           servicedItems: [],
                           serviceCompany: "",
                           mechanicName: "",
-                        }))
-                      }
+                        }));
+                      }}
                       disabled={isSaving}
                     >
-                      Checked
+                      <span className={styles.serviceModeIcon}>
+                        <CheckCircleIcon className={styles.serviceModeSvg} />
+                      </span>
+                      <span className={styles.serviceModeText}>
+                        <strong>Checked</strong>
+                        <small>Quick driver or manager inspection.</small>
+                      </span>
                     </button>
+
                     <button
                       type="button"
-                      className={`${styles.choiceButton} ${draft.serviceMode === "serviced" ? styles.choiceButtonActive : ""}`}
-                      onClick={() =>
+                      className={`${styles.serviceModeCard} ${draft.serviceMode === "serviced" ? styles.serviceModeCardActive : ""}`}
+                      onClick={() => {
+                        setShowServiceDetailsStep(false);
                         setDraft((current) => ({
                           ...current,
                           serviceMode: "serviced",
                           checkedItems: [],
-                        }))
-                      }
+                        }));
+                      }}
                       disabled={isSaving}
                     >
-                      Serviced
+                      <span className={styles.serviceModeIcon}>
+                        <WrenchIcon className={styles.serviceModeSvg} />
+                      </span>
+                      <span className={styles.serviceModeText}>
+                        <strong>Serviced</strong>
+                        <small>Dealer, workshop or mechanic job.</small>
+                      </span>
                     </button>
                   </div>
 
                   {draft.serviceMode === "checked" ? (
-                    <>
-                      <div className={styles.choiceGrid}>
-                        {CHECKED_OPTIONS.map((option) => (
-                          <button
-                            type="button"
-                            key={option}
-                            className={`${styles.choiceButton} ${draft.checkedItems.includes(option) ? styles.choiceButtonActive : ""}`}
-                            onClick={() =>
-                              setDraft((current) => ({
-                                ...current,
-                                checkedItems: toggleValue(current.checkedItems, option),
-                              }))
-                            }
-                            disabled={isSaving}
-                          >
-                            {option}
-                          </button>
-                        ))}
+                    <div className={styles.servicePanel}>
+                      <div className={styles.serviceSectionHeader}>
+                        <strong>What was checked?</strong>
+                        <small>Select every item that was inspected.</small>
                       </div>
+
+                      <div className={styles.optionList}>
+                        {CHECKED_OPTIONS.map((option) => {
+                          const selected = draft.checkedItems.includes(option.label);
+
+                          return (
+                            <button
+                              type="button"
+                              key={option.label}
+                              className={`${styles.listOptionButton} ${selected ? styles.listOptionActive : ""}`}
+                              onClick={() =>
+                                setDraft((current) => ({
+                                  ...current,
+                                  checkedItems: toggleValue(current.checkedItems, option.label),
+                                }))
+                              }
+                              disabled={isSaving}
+                            >
+                              <span className={styles.listOptionText}>
+                                <strong>{option.label}</strong>
+                                <small>{option.description}</small>
+                              </span>
+                              <span className={styles.listOptionCheck}>{selected ? "✓" : ""}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {draft.checkedItems.length ? (
+                        <p className={styles.selectedSummary}>
+                          {draft.checkedItems.length} checked item{draft.checkedItems.length === 1 ? "" : "s"} selected.
+                        </p>
+                      ) : null}
+
                       <label className={styles.field}>
                         <span>Notes</span>
                         <textarea
@@ -1262,31 +1329,51 @@ export default function ScanClient({
                           disabled={isSaving}
                         />
                       </label>
-                    </>
+                    </div>
                   ) : null}
 
                   {draft.serviceMode === "serviced" ? (
-                    <>
+                    <div className={styles.servicePanel}>
                       {!showServiceDetailsStep ? (
                         <>
-                          <div className={styles.choiceGrid}>
-                            {SERVICED_OPTIONS.map((option) => (
-                              <button
-                                type="button"
-                                key={option}
-                                className={`${styles.choiceButton} ${draft.servicedItems.includes(option) ? styles.choiceButtonActive : ""}`}
-                                onClick={() =>
-                                  setDraft((current) => ({
-                                    ...current,
-                                    servicedItems: toggleValue(current.servicedItems, option),
-                                  }))
-                                }
-                                disabled={isSaving}
-                              >
-                                {option}
-                              </button>
-                            ))}
+                          <div className={styles.serviceSectionHeader}>
+                            <strong>What was serviced?</strong>
+                            <small>Select all work completed, then continue to company details.</small>
                           </div>
+
+                          <div className={styles.optionList}>
+                            {SERVICED_OPTIONS.map((option) => {
+                              const selected = draft.servicedItems.includes(option.label);
+
+                              return (
+                                <button
+                                  type="button"
+                                  key={option.label}
+                                  className={`${styles.listOptionButton} ${selected ? styles.listOptionActive : ""}`}
+                                  onClick={() =>
+                                    setDraft((current) => ({
+                                      ...current,
+                                      servicedItems: toggleValue(current.servicedItems, option.label),
+                                    }))
+                                  }
+                                  disabled={isSaving}
+                                >
+                                  <span className={styles.listOptionText}>
+                                    <strong>{option.label}</strong>
+                                    <small>{option.description}</small>
+                                  </span>
+                                  <span className={styles.listOptionCheck}>{selected ? "✓" : ""}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {draft.servicedItems.length ? (
+                            <p className={styles.selectedSummary}>
+                              {draft.servicedItems.length} service item{draft.servicedItems.length === 1 ? "" : "s"} selected.
+                            </p>
+                          ) : null}
+
                           <label className={styles.field}>
                             <span>Notes</span>
                             <textarea
@@ -1298,8 +1385,18 @@ export default function ScanClient({
                           </label>
                         </>
                       ) : (
-                        <div className={styles.modalStack}>
-                          <p className={styles.helperText}>Enter who completed the service before saving.</p>
+                        <div className={styles.serviceDetailsCard}>
+                          <div className={styles.serviceSectionHeader}>
+                            <strong>Who completed the service?</strong>
+                            <small>Add the company and mechanic name before saving.</small>
+                          </div>
+
+                          {draft.servicedItems.length ? (
+                            <p className={styles.selectedSummary}>
+                              Selected: {draft.servicedItems.join(", ")}
+                            </p>
+                          ) : null}
+
                           <label className={styles.field}>
                             <span>Company / Dealer</span>
                             <input
@@ -1323,29 +1420,41 @@ export default function ScanClient({
                           </button>
                         </div>
                       )}
-                    </>
+                    </div>
                   ) : null}
                 </div>
               ) : null}
 
               {activeEditor === "photos" ? (
                 <div className={styles.modalStack}>
-                  <div className={styles.uploadChoiceGrid}>
+                  <div className={styles.mediaChoiceGrid}>
                     <button
                       type="button"
-                      className={styles.secondaryButton}
+                      className={styles.mediaButton}
                       onClick={() => galleryInputRef.current?.click()}
                       disabled={isUploading || isSaving || draft.photoUrls.length >= MAX_QR_PHOTOS}
                     >
-                      Upload photos
+                      <span className={styles.mediaButtonIcon}>
+                        <UploadIcon className={styles.mediaButtonSvg} />
+                      </span>
+                      <span>
+                        <strong>Upload photos</strong>
+                        <small>Choose from gallery</small>
+                      </span>
                     </button>
                     <button
                       type="button"
-                      className={styles.secondaryButton}
+                      className={styles.mediaButton}
                       onClick={() => cameraInputRef.current?.click()}
                       disabled={isUploading || isSaving || draft.photoUrls.length >= MAX_QR_PHOTOS}
                     >
-                      Take photos
+                      <span className={styles.mediaButtonIcon}>
+                        <CameraIcon className={styles.mediaButtonSvg} />
+                      </span>
+                      <span>
+                        <strong>Take photos</strong>
+                        <small>Open camera</small>
+                      </span>
                     </button>
                   </div>
 
@@ -1395,7 +1504,7 @@ export default function ScanClient({
                 Cancel
               </button>
               <button type="button" className={styles.primaryButton} disabled={!canPressSave} onClick={() => void handleSaveUpdate()}>
-                {isSaving ? "Saving…" : "Save update"}
+                {saveButtonLabel}
               </button>
             </div>
           </div>
