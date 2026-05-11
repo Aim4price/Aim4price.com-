@@ -18,12 +18,13 @@ type SheetDefinition = {
 
 const TABLE_HEADER_ROW = 11;
 const DATA_START_ROW = TABLE_HEADER_ROW + 1;
-const TABLE_COLUMN_COUNT = 31;
+const TABLE_COLUMN_COUNT = 21;
 
-const CURRENCY_COLUMN = 'V';
-const FINANCE_STATUS_COLUMN = 'Q';
-const INSURANCE_STATUS_COLUMN = 'S';
-const DOCUMENTS_COUNT_COLUMN = 'T';
+const REGISTER_VALUE_COLUMN = 'Q';
+const AIM4PRICE_VALUE_COLUMN = 'R';
+const MARKET_VALUE_COLUMN = 'S';
+const FINANCE_STATUS_COLUMN = 'N';
+const INSURANCE_STATUS_COLUMN = 'P';
 
 const TABLE_HEADERS = [
   'Asset #',
@@ -34,10 +35,7 @@ const TABLE_HEADERS = [
   'Year model / built',
   'Serial / VIN',
   'Plate / QR code',
-  'Tractor type',
   'Drive',
-  'Cab',
-  'Power kW',
   'Usage value',
   'Usage unit',
   'Life worked %',
@@ -45,18 +43,11 @@ const TABLE_HEADERS = [
   'Finance status',
   'Finance notes',
   'Insurance status',
-  'Documents count',
-  'Documents',
   'Register value ex VAT',
   'Aim4price value ex VAT',
   'Market value ex VAT',
   'Selected method',
   'Last scanned',
-  'Last known location',
-  'Fuel %',
-  'Notes',
-  'Created',
-  'Updated',
 ] as const;
 
 const WORKBOOK_COLUMN_WIDTHS = [
@@ -68,28 +59,18 @@ const WORKBOOK_COLUMN_WIDTHS = [
   15,
   18,
   18,
-  15,
   12,
   14,
-  11,
-  13,
   12,
   13,
   18,
   17,
   28,
   17,
-  16,
-  32,
   18,
   20,
   18,
   18,
-  15,
-  28,
-  12,
-  34,
-  15,
   15,
 ];
 
@@ -104,9 +85,9 @@ function textCell(value: unknown, style: XlsxCellStyle = 'text'): XlsxCellValue 
   return { value: String(value ?? '').trim(), style };
 }
 
-function numberCell(value: unknown, style: 'integer' | 'decimal' = 'integer'): XlsxCellValue {
+function numberCell(value: unknown): XlsxCellValue {
   const numeric = Number(value);
-  return { value: Number.isFinite(numeric) ? numeric : null, style };
+  return { value: Number.isFinite(numeric) ? numeric : null, style: 'integer' };
 }
 
 function moneyCell(value: unknown): XlsxCellValue {
@@ -141,35 +122,6 @@ function blankCell(style: 'text' | 'currency' | 'integer' | 'decimal' | 'date' |
   return { value: null, style };
 }
 
-function formatDate(value?: string | null): string {
-  if (!value) return '—';
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return '—';
-
-  return new Intl.DateTimeFormat('en-ZA', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(parsed);
-}
-
-function wasUpdatedAfterCreate(asset: AssetRegisterItem): boolean {
-  const createdAt = new Date(asset.createdAtIso).getTime();
-  const updatedAt = new Date(asset.updatedAtIso).getTime();
-
-  if (!Number.isFinite(createdAt) || !Number.isFinite(updatedAt)) {
-    return false;
-  }
-
-  return updatedAt - createdAt > 1000;
-}
-
-function assetStatusDateLabel(asset: AssetRegisterItem): string {
-  return wasUpdatedAfterCreate(asset)
-    ? `Updated ${formatDate(asset.updatedAtIso)}`
-    : `Saved ${formatDate(asset.createdAtIso)}`;
-}
 
 function methodLabel(value: AssetRegisterItem['selectedMethod']): string {
   return (
@@ -236,17 +188,6 @@ function formatDrive(value: string): string {
   return value || '';
 }
 
-function formatCab(value: string): string {
-  if (value === 'open-station') return 'Open station';
-  if (value === 'cab') return 'Cab';
-  return value || '';
-}
-
-function formatTractorType(value: string): string {
-  if (value === 'field') return 'Field';
-  if (value === 'orchard') return 'Orchard';
-  return value || '';
-}
 
 function buildOwnerName(profile: AccountProfileResult | null): string {
   if (!profile) return 'Aim4price account';
@@ -272,10 +213,6 @@ function buildOwnerMeta(profile: AccountProfileResult | null): string {
   return parts.join(' • ') || 'Aim4price asset register export';
 }
 
-function documentSummary(item: AssetRegisterItem): string {
-  if (!item.documents.length) return '';
-  return item.documents.map((document) => document.fileName).filter(Boolean).join(', ') || `${item.documents.length} document${item.documents.length === 1 ? '' : 's'}`;
-}
 
 function registerValueTotal(items: AssetRegisterItem[]): number {
   return items.reduce((sum, item) => sum + Math.round(Number(item.value || 0)), 0);
@@ -297,22 +234,6 @@ function countInsured(items: AssetRegisterItem[]): number {
   return items.filter((item) => item.isInsured).length;
 }
 
-function countDocuments(items: AssetRegisterItem[]): number {
-  return items.reduce((sum, item) => sum + item.documents.length, 0);
-}
-
-function buildLocationText(item: AssetRegisterItem): string {
-  const locationText = String(item.lastKnownLocationText ?? '').trim();
-  if (locationText) return locationText;
-
-  const lat = Number(item.lastKnownLat);
-  const lng = Number(item.lastKnownLng);
-  if (Number.isFinite(lat) && Number.isFinite(lng)) {
-    return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-  }
-
-  return '';
-}
 
 function buildPlateOrQrCode(item: AssetRegisterItem): string {
   return item.plateLabel || item.publicAssetCode || '';
@@ -333,7 +254,6 @@ function buildTableHeaderRow(): XlsxCellValue[] {
 
 function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] {
   const amount = usageAmount(item);
-  const fuelPercent = Number(item.fuelPercent);
   const lifeWorkedPercent = Number(item.lifeWorkedPercent);
 
   return [
@@ -345,10 +265,7 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
     item.yearModel ? numberCell(item.yearModel) : blankCell('integer'),
     textCell(item.serialNumber || ''),
     textCell(buildPlateOrQrCode(item)),
-    textCell(formatTractorType(item.tractorType)),
     textCell(formatDrive(item.drive)),
-    textCell(formatCab(item.cab)),
-    item.powerKw === null || typeof item.powerKw === 'undefined' ? blankCell('decimal') : numberCell(item.powerKw, 'decimal'),
     amount === null ? blankCell('integer') : numberCell(amount),
     textCell(amount === null ? '' : usageUnit(item)),
     Number.isFinite(lifeWorkedPercent) ? percentCell(lifeWorkedPercent) : blankCell('percent'),
@@ -356,18 +273,11 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
     statusCell(item.isFinanced ? 'Financed' : 'Not financed', item.isFinanced),
     textCell(item.financeNote || '', 'note'),
     statusCell(item.isInsured ? 'Insured' : 'Not insured', item.isInsured),
-    numberCell(item.documents.length),
-    textCell(documentSummary(item), 'note'),
     moneyCell(item.value),
     item.aim4priceValueExVat === null ? blankCell('currency') : optionalMoneyCell(item.aim4priceValueExVat),
     item.marketMidExVat === null ? blankCell('currency') : optionalMoneyCell(item.marketMidExVat),
     textCell(methodLabel(item.selectedMethod)),
     item.lastScannedAtIso ? dateCell(item.lastScannedAtIso) : blankCell('date'),
-    textCell(buildLocationText(item), 'note'),
-    Number.isFinite(fuelPercent) ? percentCell(fuelPercent) : blankCell('percent'),
-    textCell(item.note || '', 'note'),
-    dateCell(item.createdAtIso),
-    dateCell(item.updatedAtIso),
   ];
 }
 
@@ -378,26 +288,25 @@ function buildFormulaRange(column: string, dataRowCount: number): string | null 
 }
 
 function buildSummaryMetricCells(items: AssetRegisterItem[]): XlsxCellValue[] {
-  const valueRange = buildFormulaRange(CURRENCY_COLUMN, items.length);
+  const registerValueRange = buildFormulaRange(REGISTER_VALUE_COLUMN, items.length);
+  const aim4priceValueRange = buildFormulaRange(AIM4PRICE_VALUE_COLUMN, items.length);
+  const marketValueRange = buildFormulaRange(MARKET_VALUE_COLUMN, items.length);
   const financeRange = buildFormulaRange(FINANCE_STATUS_COLUMN, items.length);
   const insuranceRange = buildFormulaRange(INSURANCE_STATUS_COLUMN, items.length);
-  const documentsRange = buildFormulaRange(DOCUMENTS_COUNT_COLUMN, items.length);
 
   return [
     textCell('Assets', 'metaLabel'),
     items.length > 0 ? formulaCell(`COUNTA(B${DATA_START_ROW}:B${DATA_START_ROW + items.length - 1})`, items.length) : numberCell(0),
     textCell('Register value ex VAT', 'metaLabel'),
-    valueRange ? formulaCell(`SUM(${valueRange})`, registerValueTotal(items), 'currency') : moneyCell(0),
+    registerValueRange ? formulaCell(`SUM(${registerValueRange})`, registerValueTotal(items), 'currency') : moneyCell(0),
     textCell('Financed assets', 'metaLabel'),
     financeRange ? formulaCell(`COUNTIF(${financeRange},"Financed")`, countFinanced(items)) : numberCell(0),
     textCell('Insured assets', 'metaLabel'),
     insuranceRange ? formulaCell(`COUNTIF(${insuranceRange},"Insured")`, countInsured(items)) : numberCell(0),
-    textCell('Documents', 'metaLabel'),
-    documentsRange ? formulaCell(`SUM(${documentsRange})`, countDocuments(items)) : numberCell(0),
     textCell('Aim4price values', 'metaLabel'),
-    moneyCell(aim4priceValueTotal(items)),
+    aim4priceValueRange ? formulaCell(`SUM(${aim4priceValueRange})`, aim4priceValueTotal(items), 'currency') : moneyCell(0),
     textCell('Market values', 'metaLabel'),
-    moneyCell(marketValueTotal(items)),
+    marketValueRange ? formulaCell(`SUM(${marketValueRange})`, marketValueTotal(items), 'currency') : moneyCell(0),
   ];
 }
 
@@ -446,7 +355,6 @@ function buildWorkbookSheet(definition: SheetDefinition, profile: AccountProfile
     rows,
     columns: WORKBOOK_COLUMN_WIDTHS,
     merges: buildSheetMerges(),
-    freezeRow: TABLE_HEADER_ROW,
     autoFilter: {
       fromRow: TABLE_HEADER_ROW,
       fromColumn: 1,
