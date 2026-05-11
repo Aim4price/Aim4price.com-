@@ -137,7 +137,7 @@ function statusCell(value: string, positive: boolean): XlsxCellValue {
   return { value, style: positive ? 'statusGood' : 'statusWarn' };
 }
 
-function blankCell(style: 'text' | 'currency' | 'integer' | 'date' | 'percent' = 'text'): XlsxCellValue {
+function blankCell(style: 'text' | 'currency' | 'integer' | 'decimal' | 'date' | 'percent' = 'text'): XlsxCellValue {
   return { value: null, style };
 }
 
