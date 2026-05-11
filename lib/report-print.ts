@@ -86,6 +86,11 @@ export type AssetRegisterSummaryRow = {
 export type AssetRegisterSummaryPayload = {
   logoUrl: string;
   generatedAt: string;
+  reportTitle?: string;
+  reportSubtitle?: string;
+  valueLabel?: string;
+  assetSectionTitle?: string;
+  emptyStateMessage?: string;
   ownerName: string;
   ownerMeta: string;
   intro: string;
@@ -2187,9 +2192,9 @@ function renderFullRegisterStats(payload: AssetRegisterSummaryPayload): string {
   `;
 }
 
-function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[]): string {
+function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[], emptyMessage?: string): string {
   if (!rows.length) {
-    return '<div class="fullRegisterEmpty">No assets are currently saved in this register.</div>';
+    return `<div class="fullRegisterEmpty">${escapeHtml(emptyMessage || 'No assets are currently saved in this register.')}</div>`;
   }
 
   return `
@@ -2258,6 +2263,10 @@ function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[]): string {
 }
 
 export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPayload): boolean {
+  const reportTitle = payload.reportTitle || 'Asset Register Report';
+  const reportSubtitle = payload.reportSubtitle || 'Aim4price asset register';
+  const valueLabel = payload.valueLabel || 'Register Value';
+  const assetSectionTitle = payload.assetSectionTitle || 'Asset Register';
   const registerValue = payload.registerValue || payload.stats.find((stat) => stat.label.toLowerCase().includes('register value'))?.value || '-';
   const ownerRows = payload.ownerRows?.length
     ? payload.ownerRows
@@ -2274,7 +2283,7 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${escapeHtml(payload.ownerName)} - Aim4price asset register report</title>
+    <title>${escapeHtml(payload.ownerName)} - ${escapeHtml(reportTitle)}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -2471,6 +2480,15 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
         margin: 0;
         color: var(--muted);
         font-size: 8pt;
+        line-height: 1.45;
+        font-weight: 600;
+        max-width: 142mm;
+      }
+
+      .fullRegisterIntro {
+        margin: 2mm 0 0;
+        color: #344054;
+        font-size: 7.4pt;
         line-height: 1.45;
         font-weight: 600;
         max-width: 142mm;
@@ -2857,8 +2875,8 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
         <div class="fullRegisterBrand">
           <img class="fullRegisterLogo" src="${escapeHtml(payload.logoUrl)}" alt="Aim4price" />
           <div class="fullRegisterTitleBlock">
-            <h1>Asset Register Report</h1>
-            <p>Aim4price asset register</p>
+            <h1>${escapeHtml(reportTitle)}</h1>
+            <p>${escapeHtml(reportSubtitle)}</p>
           </div>
         </div>
 
@@ -2875,10 +2893,11 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
           <span class="fullRegisterPanelLabel">Asset owner</span>
           <h2 class="fullRegisterOwnerName">${escapeHtml(payload.ownerName)}</h2>
           <p class="fullRegisterOwnerMeta">${escapeHtml(payload.ownerMeta)}</p>
+          <p class="fullRegisterIntro">${escapeHtml(payload.intro)}</p>
         </div>
 
         <aside class="fullRegisterValuePanel">
-          <span>Register Value</span>
+          <span>${escapeHtml(valueLabel)}</span>
           <strong>${escapeHtml(registerValue)}</strong>
           <small>${escapeHtml(payload.registerValueNote || 'Total saved asset value - VAT excluded')}</small>
         </aside>
@@ -2895,10 +2914,10 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
 
       <section class="fullRegisterPanel fullRegisterAssetSection">
         <div class="fullRegisterSectionTitle">
-          <h2>Asset Register</h2>
-          <span>${escapeHtml(String(payload.rows.length))} saved ${payload.rows.length === 1 ? 'asset' : 'assets'}</span>
+          <h2>${escapeHtml(assetSectionTitle)}</h2>
+          <span>${escapeHtml(String(payload.rows.length))} ${payload.rows.length === 1 ? 'asset' : 'assets'}</span>
         </div>
-        ${renderFullRegisterAssetRows(payload.rows)}
+        ${renderFullRegisterAssetRows(payload.rows, payload.emptyStateMessage)}
       </section>
 
       <footer class="fullRegisterFooter">
@@ -2906,7 +2925,7 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
           <p class="fullRegisterPowered">Powered by Aim4price.com</p>
           <div class="fullRegisterDisclaimer">${escapeHtml(footerNote)}</div>
         </div>
-        <div class="fullRegisterFooterRight">Asset Register Report</div>
+        <div class="fullRegisterFooterRight">${escapeHtml(reportTitle)}</div>
       </footer>
     </main>
 
