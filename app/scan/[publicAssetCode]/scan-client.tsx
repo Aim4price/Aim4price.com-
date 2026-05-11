@@ -708,8 +708,8 @@ export default function ScanClient({
         }
       }
 
-      if (nextEditor === "fuel" && asset.fuelPercent !== null) {
-        return { ...nextDraft, fuelPercent: String(Math.round(asset.fuelPercent)) };
+      if (nextEditor === "fuel") {
+        return { ...nextDraft, fuelPercent: String(Math.round(asset.fuelPercent ?? 100)) };
       }
 
       return nextDraft;
@@ -934,12 +934,35 @@ export default function ScanClient({
   const showUsageAction = asset ? asset.usageMode !== "none" : false;
   const showFuelAction = Boolean(asset?.canUpdateFuel);
   const prePinAsset = assetPreview;
-  const canPressSave = !isSaving && !isUploading;
+  const hasServiceSelection = draft.serviceMode === "checked"
+    ? draft.checkedItems.length > 0 || Boolean(draft.note.trim())
+    : draft.serviceMode === "serviced"
+      ? draft.servicedItems.length > 0 || Boolean(draft.note.trim())
+      : false;
+  const serviceDetailsMissing = draft.serviceMode === "serviced"
+    && showServiceDetailsStep
+    && (!draft.serviceCompany.trim() || !draft.mechanicName.trim());
+  const saveBlockedByEmptyDraft = activeEditor === "photos"
+    ? draft.photoUrls.length === 0
+    : activeEditor === "service"
+      ? !draft.serviceMode || !hasServiceSelection || serviceDetailsMissing
+      : false;
+  const canPressSave = !isSaving && !isUploading && !saveBlockedByEmptyDraft;
   const saveButtonLabel = isSaving
     ? "Saving…"
-    : activeEditor === "service" && draft.serviceMode === "serviced" && !showServiceDetailsStep
-      ? "Next: company details"
-      : "Save update";
+    : activeEditor === "photos" && !draft.photoUrls.length
+      ? "Add photos first"
+      : activeEditor === "service" && !draft.serviceMode
+        ? "Choose update type"
+        : activeEditor === "service" && !hasServiceSelection
+          ? draft.serviceMode === "checked"
+            ? "Select checked items"
+            : "Select service items"
+          : serviceDetailsMissing
+            ? "Complete details"
+            : activeEditor === "service" && draft.serviceMode === "serviced" && !showServiceDetailsStep
+              ? "Next: company details"
+              : "Save update";
 
   if (isDone) {
     return (
@@ -1139,7 +1162,13 @@ export default function ScanClient({
                     : activeEditor === "fuel"
                       ? "Current tank level"
                       : activeEditor === "service"
-                        ? "Checked or serviced"
+                        ? draft.serviceMode === "checked"
+                          ? "Machine check"
+                          : draft.serviceMode === "serviced"
+                            ? showServiceDetailsStep
+                              ? "Service details"
+                              : "Machine service"
+                            : "Checked or serviced"
                         : "Add fresh photos"}
                 </h3>
                 <p>
@@ -1150,7 +1179,13 @@ export default function ScanClient({
                     : activeEditor === "fuel"
                       ? "Save the tank level as it is now."
                       : activeEditor === "service"
-                        ? "Capture a checked item or service record."
+                        ? draft.serviceMode === "checked"
+                          ? "Tap each item that was inspected."
+                          : draft.serviceMode === "serviced"
+                            ? showServiceDetailsStep
+                              ? "Add the company and mechanic details."
+                              : "Tap each job that was completed."
+                            : "Choose whether this was checked or serviced."
                         : "Upload from gallery or take photos with the camera."}
                 </p>
               </div>
@@ -1253,7 +1288,7 @@ export default function ScanClient({
                       </span>
                       <span className={styles.serviceModeText}>
                         <strong>Checked</strong>
-                        <small>Quick driver or manager inspection.</small>
+                        <small>Driver or manager inspection.</small>
                       </span>
                     </button>
 
