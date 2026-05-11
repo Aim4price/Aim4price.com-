@@ -1,8 +1,55 @@
-export type XlsxCellValue = string | number | boolean | Date | null | undefined;
+export type XlsxPrimitiveCellValue = string | number | boolean | Date | null | undefined;
+
+export type XlsxCellStyle =
+  | 'default'
+  | 'title'
+  | 'subtitle'
+  | 'metaLabel'
+  | 'metaValue'
+  | 'section'
+  | 'tableHeader'
+  | 'text'
+  | 'muted'
+  | 'integer'
+  | 'decimal'
+  | 'currency'
+  | 'date'
+  | 'percent'
+  | 'statusGood'
+  | 'statusWarn'
+  | 'statusBad'
+  | 'note';
+
+export type XlsxStyledCell = {
+  value?: XlsxPrimitiveCellValue;
+  formula?: string;
+  style?: XlsxCellStyle;
+};
+
+export type XlsxCellValue = XlsxPrimitiveCellValue | XlsxStyledCell;
+
+export type XlsxMergeRange = {
+  fromRow: number;
+  fromColumn: number;
+  toRow: number;
+  toColumn: number;
+};
+
+export type XlsxAutoFilterRange = {
+  fromRow: number;
+  fromColumn: number;
+  toRow: number;
+  toColumn: number;
+};
 
 export type XlsxSheet = {
   name: string;
   rows: XlsxCellValue[][];
+  columns?: Array<number | null | undefined>;
+  merges?: XlsxMergeRange[];
+  freezeRow?: number;
+  autoFilter?: XlsxAutoFilterRange;
+  tabColor?: string;
 };
 
 type ZipEntry = {
@@ -10,6 +57,27 @@ type ZipEntry = {
   data: Buffer;
   crc32: number;
   offset: number;
+};
+
+const CELL_STYLE_IDS: Record<XlsxCellStyle, number> = {
+  default: 0,
+  title: 1,
+  subtitle: 2,
+  metaLabel: 3,
+  metaValue: 4,
+  section: 5,
+  tableHeader: 6,
+  text: 7,
+  muted: 8,
+  integer: 9,
+  decimal: 10,
+  currency: 11,
+  date: 12,
+  percent: 13,
+  statusGood: 14,
+  statusWarn: 15,
+  statusBad: 16,
+  note: 17,
 };
 
 function escapeXml(value: unknown): string {
@@ -44,7 +112,7 @@ function sanitizeSheetName(value: string, usedNames: Set<string>): string {
 
 function excelColumnName(index: number): string {
   let column = '';
-  let current = index;
+  let current = Math.max(1, Math.floor(index));
 
   while (current > 0) {
     const remainder = (current - 1) % 26;
@@ -55,37 +123,123 @@ function excelColumnName(index: number): string {
   return column;
 }
 
+function cellReference(row: number, column: number): string {
+  return `${excelColumnName(column)}${row}`;
+}
+
+function rangeReference(range: XlsxMergeRange | XlsxAutoFilterRange): string {
+  return `${cellReference(range.fromRow, range.fromColumn)}:${cellReference(range.toRow, range.toColumn)}`;
+}
+
 function normalizeCellText(value: string): string {
   const normalized = value.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   return /^[=+\-@]/.test(normalized) ? `'${normalized}` : normalized;
 }
 
-function toCellXml(value: XlsxCellValue, reference: string): string {
+function isStyledCell(value: XlsxCellValue): value is XlsxStyledCell {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !(value instanceof Date) &&
+    !Array.isArray(value) &&
+    ('value' in value || 'formula' in value || 'style' in value)
+  );
+}
+
+function normalizeCell(value: XlsxCellValue): XlsxStyledCell {
+  return isStyledCell(value) ? value : { value };
+}
+
+function styleAttribute(style?: XlsxCellStyle): string {
+  const styleId = CELL_STYLE_IDS[style ?? 'default'] ?? 0;
+  return styleId > 0 ? ` s="${styleId}"` : '';
+}
+
+function excelSerialDate(value: Date): number {
+  const utc = Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate());
+  return Math.floor((utc - Date.UTC(1899, 11, 30)) / 86_400_000);
+}
+
+function valueToCellValueXml(value: XlsxPrimitiveCellValue): string {
   if (value === null || typeof value === 'undefined') {
     return '';
   }
 
   if (typeof value === 'number' && Number.isFinite(value)) {
-    return `<c r="${reference}"><v>${value}</v></c>`;
+    return `<v>${value}</v>`;
   }
 
   if (typeof value === 'boolean') {
-    return `<c r="${reference}" t="b"><v>${value ? 1 : 0}</v></c>`;
+    return `<v>${value ? 1 : 0}</v>`;
   }
 
-  const text = value instanceof Date ? value.toISOString() : normalizeCellText(String(value));
-  return `<c r="${reference}" t="inlineStr"><is><t xml:space="preserve">${escapeXml(text)}</t></is></c>`;
+  if (value instanceof Date) {
+    return `<v>${excelSerialDate(value)}</v>`;
+  }
+
+  return `<is><t xml:space="preserve">${escapeXml(normalizeCellText(String(value)))}</t></is>`;
+}
+
+function cellTypeAttribute(value: XlsxPrimitiveCellValue, hasFormula: boolean): string {
+  if (hasFormula) {
+    return '';
+  }
+
+  if (typeof value === 'boolean') {
+    return ' t="b"';
+  }
+
+  if (typeof value === 'string') {
+    return ' t="inlineStr"';
+  }
+
+  return '';
+}
+
+function toCellXml(input: XlsxCellValue, reference: string): string {
+  const cell = normalizeCell(input);
+  const value = cell.value;
+  const formula = String(cell.formula ?? '').trim();
+  const hasFormula = Boolean(formula);
+  const hasValue = !(value === null || typeof value === 'undefined');
+  const hasStyle = Boolean(cell.style && cell.style !== 'default');
+
+  if (!hasFormula && !hasValue && !hasStyle) {
+    return '';
+  }
+
+  const typeAttribute = cellTypeAttribute(value, hasFormula);
+  const style = styleAttribute(cell.style);
+
+  if (hasFormula) {
+    const cachedValueXml = hasValue ? valueToCellValueXml(value) : '';
+    return `<c r="${reference}"${style}><f>${escapeXml(formula)}</f>${cachedValueXml}</c>`;
+  }
+
+  if (!hasValue) {
+    return `<c r="${reference}"${style}/>`;
+  }
+
+  return `<c r="${reference}"${typeAttribute}${style}>${valueToCellValueXml(value)}</c>`;
 }
 
 function estimateColumnWidth(value: XlsxCellValue): number {
-  if (value === null || typeof value === 'undefined') return 0;
-  if (typeof value === 'number') return String(Math.round(value)).length + 2;
-  if (typeof value === 'boolean') return 6;
-  if (value instanceof Date) return 20;
-  return Math.min(48, Math.max(8, String(value).length + 2));
+  const cell = normalizeCell(value);
+  const rawValue = cell.value;
+
+  if (rawValue === null || typeof rawValue === 'undefined') return 0;
+  if (typeof rawValue === 'number') return String(Math.round(rawValue)).length + 3;
+  if (typeof rawValue === 'boolean') return 8;
+  if (rawValue instanceof Date) return 14;
+
+  const longestLine = String(rawValue)
+    .split(/\r\n|\r|\n/)
+    .reduce((longest, line) => Math.max(longest, line.length), 0);
+
+  return Math.min(54, Math.max(8, longestLine + 2));
 }
 
-function buildWorksheetXml(rows: XlsxCellValue[][]): string {
+function buildColumnsXml(rows: XlsxCellValue[][], configuredWidths: XlsxSheet['columns']): string {
   const columnWidths: number[] = [];
 
   rows.forEach((row) => {
@@ -94,31 +248,107 @@ function buildWorksheetXml(rows: XlsxCellValue[][]): string {
     });
   });
 
-  const colsXml = columnWidths.length
-    ? `<cols>${columnWidths
-        .map(
-          (width, index) =>
-            `<col min="${index + 1}" max="${index + 1}" width="${Math.min(48, Math.max(10, width))}" customWidth="1"/>`,
-        )
-        .join('')}</cols>`
-    : '';
+  configuredWidths?.forEach((width, index) => {
+    if (typeof width === 'number' && Number.isFinite(width) && width > 0) {
+      columnWidths[index] = Math.max(columnWidths[index] ?? 0, width);
+    }
+  });
+
+  if (!columnWidths.length) {
+    return '';
+  }
+
+  return `<cols>${columnWidths
+    .map((width, index) => {
+      const safeWidth = Math.min(64, Math.max(8, width || 10));
+      return `<col min="${index + 1}" max="${index + 1}" width="${safeWidth}" customWidth="1"/>`;
+    })
+    .join('')}</cols>`;
+}
+
+function buildSheetViewsXml(sheet: XlsxSheet): string {
+  const color = String(sheet.tabColor ?? '').replace(/[^a-fA-F0-9]/g, '').slice(0, 6);
+  const tabColorXml = color ? `<tabColor rgb="FF${color.toUpperCase()}"/>` : '';
+  const freezeRow = Math.max(0, Math.floor(Number(sheet.freezeRow ?? 0)));
+
+  if (freezeRow > 0) {
+    const topLeftCell = cellReference(freezeRow + 1, 1);
+    return `<sheetViews><sheetView workbookViewId="0" tabSelected="0">${tabColorXml}<pane ySplit="${freezeRow}" topLeftCell="${topLeftCell}" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="${topLeftCell}" sqref="${topLeftCell}"/></sheetView></sheetViews>`;
+  }
+
+  return `<sheetViews><sheetView workbookViewId="0">${tabColorXml}</sheetView></sheetViews>`;
+}
+
+function buildMergeCellsXml(merges: XlsxMergeRange[] | undefined): string {
+  const safeMerges = (merges ?? []).filter(
+    (merge) =>
+      merge.fromRow > 0 &&
+      merge.fromColumn > 0 &&
+      merge.toRow >= merge.fromRow &&
+      merge.toColumn >= merge.fromColumn &&
+      (merge.toRow > merge.fromRow || merge.toColumn > merge.fromColumn),
+  );
+
+  if (!safeMerges.length) {
+    return '';
+  }
+
+  return `<mergeCells count="${safeMerges.length}">${safeMerges
+    .map((merge) => `<mergeCell ref="${rangeReference(merge)}"/>`)
+    .join('')}</mergeCells>`;
+}
+
+function buildAutoFilterXml(autoFilter: XlsxSheet['autoFilter']): string {
+  if (!autoFilter) {
+    return '';
+  }
+
+  if (
+    autoFilter.fromRow < 1 ||
+    autoFilter.fromColumn < 1 ||
+    autoFilter.toRow < autoFilter.fromRow ||
+    autoFilter.toColumn < autoFilter.fromColumn
+  ) {
+    return '';
+  }
+
+  return `<autoFilter ref="${rangeReference(autoFilter)}"/>`;
+}
+
+function buildWorksheetXml(sheet: XlsxSheet): string {
+  const rows = sheet.rows ?? [];
+  const maxColumnCount = Math.max(1, ...rows.map((row) => row.length), sheet.columns?.length ?? 0);
+  const maxRowCount = Math.max(1, rows.length);
+  const dimension = `A1:${cellReference(maxRowCount, maxColumnCount)}`;
+  const colsXml = buildColumnsXml(rows, sheet.columns);
+  const sheetViewsXml = buildSheetViewsXml(sheet);
+  const mergesXml = buildMergeCellsXml(sheet.merges);
+  const autoFilterXml = buildAutoFilterXml(sheet.autoFilter);
 
   const rowsXml = rows
     .map((row, rowIndex) => {
       const rowNumber = rowIndex + 1;
+      const rowHeight = rowNumber === 1 ? ' ht="26" customHeight="1"' : rowNumber === 11 ? ' ht="24" customHeight="1"' : '';
       const cells = row
-        .map((value, colIndex) => toCellXml(value, `${excelColumnName(colIndex + 1)}${rowNumber}`))
+        .map((value, colIndex) => toCellXml(value, cellReference(rowNumber, colIndex + 1)))
         .filter(Boolean)
         .join('');
 
-      return `<row r="${rowNumber}">${cells}</row>`;
+      return `<row r="${rowNumber}"${rowHeight}>${cells}</row>`;
     })
     .join('');
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <dimension ref="${dimension}"/>
+  ${sheetViewsXml}
+  <sheetFormatPr defaultRowHeight="17"/>
   ${colsXml}
   <sheetData>${rowsXml}</sheetData>
+  ${autoFilterXml}
+  ${mergesXml}
+  <pageMargins left="0.35" right="0.35" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>
+  <pageSetup orientation="landscape" paperSize="9" fitToWidth="1" fitToHeight="0"/>
 </worksheet>`;
 }
 
@@ -159,7 +389,9 @@ function buildWorkbookXml(sheetNames: string[]): string {
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <workbookPr date1904="false"/>
   <sheets>${sheetsXml}</sheets>
+  <calcPr calcId="0" fullCalcOnLoad="1" forceFullCalc="1"/>
 </workbook>`;
 }
 
@@ -177,27 +409,68 @@ function buildWorkbookRelationships(sheetCount: number): string {
 }
 
 function buildStylesXml(): string {
+  const accountingRandFormat = '_-"R" * #,##0_-;[Red]_-"R" * -#,##0_-;_-"R" * "-"_-;_-@_-';
+
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <fonts count="1">
-    <font>
-      <sz val="11"/>
-      <name val="Calibri"/>
-      <family val="2"/>
-    </font>
+  <numFmts count="4">
+    <numFmt numFmtId="164" formatCode="${escapeXml(accountingRandFormat)}"/>
+    <numFmt numFmtId="165" formatCode="#,##0.00"/>
+    <numFmt numFmtId="166" formatCode="dd mmm yyyy"/>
+    <numFmt numFmtId="167" formatCode="0%"/>
+  </numFmts>
+  <fonts count="8">
+    <font><sz val="11"/><color rgb="FF111827"/><name val="Calibri"/><family val="2"/></font>
+    <font><b/><sz val="11"/><color rgb="FF111827"/><name val="Calibri"/><family val="2"/></font>
+    <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font>
+    <font><b/><sz val="18"/><color rgb="FF05070C"/><name val="Calibri"/><family val="2"/></font>
+    <font><sz val="10"/><color rgb="FF5D6675"/><name val="Calibri"/><family val="2"/></font>
+    <font><b/><sz val="11"/><color rgb="FF0F6A46"/><name val="Calibri"/><family val="2"/></font>
+    <font><b/><sz val="11"/><color rgb="FF8A6500"/><name val="Calibri"/><family val="2"/></font>
+    <font><b/><sz val="11"/><color rgb="FFA3271B"/><name val="Calibri"/><family val="2"/></font>
   </fonts>
-  <fills count="2">
+  <fills count="8">
     <fill><patternFill patternType="none"/></fill>
     <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF10382F"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFF3F6F5"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFE3F3EA"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFFF1CD"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFDE1DE"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFE8F4EF"/><bgColor indexed="64"/></patternFill></fill>
   </fills>
-  <borders count="1">
+  <borders count="2">
     <border><left/><right/><top/><bottom/><diagonal/></border>
+    <border>
+      <left style="thin"><color rgb="FFD9E4DF"/></left>
+      <right style="thin"><color rgb="FFD9E4DF"/></right>
+      <top style="thin"><color rgb="FFD9E4DF"/></top>
+      <bottom style="thin"><color rgb="FFD9E4DF"/></bottom>
+      <diagonal/>
+    </border>
   </borders>
   <cellStyleXfs count="1">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
   </cellStyleXfs>
-  <cellXfs count="1">
+  <cellXfs count="18">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"><alignment vertical="center"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"><alignment wrapText="1" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment wrapText="1" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment wrapText="1" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" wrapText="1" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment wrapText="1" vertical="top"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"><alignment wrapText="1" vertical="top"/></xf>
+    <xf numFmtId="3" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="166" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="left" vertical="center"/></xf>
+    <xf numFmtId="167" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="5" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="6" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="7" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment wrapText="1" vertical="top"/></xf>
   </cellXfs>
   <cellStyles count="1">
     <cellStyle name="Normal" xfId="0" builtinId="0"/>
@@ -211,14 +484,14 @@ function buildCoreXml(): string {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <dc:title>Aim4price Asset Register</dc:title>
-  <dc:creator>OpenAI</dc:creator>
-  <cp:lastModifiedBy>OpenAI</cp:lastModifiedBy>
+  <dc:creator>Aim4price</dc:creator>
+  <cp:lastModifiedBy>Aim4price</cp:lastModifiedBy>
   <dcterms:created xsi:type="dcterms:W3CDTF">${createdIso}</dcterms:created>
   <dcterms:modified xsi:type="dcterms:W3CDTF">${createdIso}</dcterms:modified>
 </cp:coreProperties>`;
 }
 
-function buildAppXml(sheetCount: number): string {
+function buildAppXml(sheetNames: string[]): string {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
   <Application>Aim4price</Application>
@@ -227,12 +500,12 @@ function buildAppXml(sheetCount: number): string {
   <HeadingPairs>
     <vt:vector size="2" baseType="variant">
       <vt:variant><vt:lpstr>Worksheets</vt:lpstr></vt:variant>
-      <vt:variant><vt:i4>${sheetCount}</vt:i4></vt:variant>
+      <vt:variant><vt:i4>${sheetNames.length}</vt:i4></vt:variant>
     </vt:vector>
   </HeadingPairs>
   <TitlesOfParts>
-    <vt:vector size="${sheetCount}" baseType="lpstr">
-      ${Array.from({ length: sheetCount }, (_, index) => `<vt:lpstr>Sheet ${index + 1}</vt:lpstr>`).join('')}
+    <vt:vector size="${sheetNames.length}" baseType="lpstr">
+      ${sheetNames.map((name) => `<vt:lpstr>${escapeXml(name)}</vt:lpstr>`).join('')}
     </vt:vector>
   </TitlesOfParts>
   <Company>Aim4price</Company>
@@ -350,7 +623,7 @@ export function createXlsxWorkbook(sheets: XlsxSheet[]): Buffer {
     { name: '[Content_Types].xml', data: buildContentTypes(safeSheets.length) },
     { name: '_rels/.rels', data: buildRootRelationships() },
     { name: 'docProps/core.xml', data: buildCoreXml() },
-    { name: 'docProps/app.xml', data: buildAppXml(safeSheets.length) },
+    { name: 'docProps/app.xml', data: buildAppXml(sheetNames) },
     { name: 'xl/workbook.xml', data: buildWorkbookXml(sheetNames) },
     { name: 'xl/_rels/workbook.xml.rels', data: buildWorkbookRelationships(safeSheets.length) },
     { name: 'xl/styles.xml', data: buildStylesXml() },
@@ -359,7 +632,7 @@ export function createXlsxWorkbook(sheets: XlsxSheet[]): Buffer {
   safeSheets.forEach((sheet, index) => {
     entries.push({
       name: `xl/worksheets/sheet${index + 1}.xml`,
-      data: buildWorksheetXml(sheet.rows),
+      data: buildWorksheetXml(sheet),
     });
   });
 
