@@ -22,39 +22,48 @@ const EXPORT_NOTE_START_ROW = EXPORT_NOTE_SECTION_ROW + 1;
 const SUMMARY_SECTION_ROW = 17;
 const TABLE_HEADER_ROW = 25;
 const DATA_START_ROW = TABLE_HEADER_ROW + 1;
-const TABLE_COLUMN_COUNT = 21;
+const TABLE_COLUMN_COUNT = 24;
+const VAT_RATE = 0.15;
+const VAT_MULTIPLIER = 1 + VAT_RATE;
 
-const REGISTER_VALUE_COLUMN = 'Q';
-const AIM4PRICE_VALUE_COLUMN = 'R';
-const MARKET_VALUE_COLUMN = 'S';
-const FINANCE_STATUS_COLUMN = 'N';
-const INSURANCE_STATUS_COLUMN = 'P';
+const REGISTER_VALUE_EX_VAT_COLUMN = 'N';
+const REGISTER_VALUE_INCL_VAT_COLUMN = 'O';
+const AIM4PRICE_VALUE_EX_VAT_COLUMN = 'P';
+const AIM4PRICE_VALUE_INCL_VAT_COLUMN = 'Q';
+const MARKET_VALUE_EX_VAT_COLUMN = 'R';
+const MARKET_VALUE_INCL_VAT_COLUMN = 'S';
+const FINANCE_STATUS_COLUMN = 'V';
+const INSURANCE_STATUS_COLUMN = 'X';
 
 const TABLE_HEADERS = [
+  'Serial / VIN',
   'Asset #',
   'Asset title',
   'Asset type',
   'Brand',
   'Model / description',
   'Year model / built',
-  'Serial / VIN',
   'Plate / QR code',
   'Drive',
   'Usage value',
   'Usage unit',
   'Life worked %',
   'Condition',
+  'Register value ex VAT',
+  'Register value incl VAT',
+  'Aim4price value ex VAT',
+  'Aim4price value incl VAT',
+  'Market value ex VAT',
+  'Market value incl VAT',
+  'Selected method',
+  'Last scanned',
   'Finance status',
   'Finance notes',
   'Insurance status',
-  'Register value ex VAT',
-  'Aim4price value ex VAT',
-  'Market value ex VAT',
-  'Selected method',
-  'Last scanned',
 ] as const;
 
 const WORKBOOK_COLUMN_WIDTHS = [
+  18,
   9,
   34,
   22,
@@ -62,20 +71,22 @@ const WORKBOOK_COLUMN_WIDTHS = [
   30,
   15,
   18,
-  18,
   12,
   14,
   12,
   13,
   18,
-  17,
-  28,
-  17,
   18,
+  18,
+  20,
   20,
   18,
   18,
+  18,
   15,
+  17,
+  28,
+  17,
 ];
 
 function unauthorized() {
@@ -99,6 +110,21 @@ function moneyCell(value: unknown): XlsxCellValue {
 function optionalMoneyCell(value: unknown): XlsxCellValue {
   const numeric = Number(value);
   return { value: Number.isFinite(numeric) ? Math.round(numeric) : null, style: 'currency' };
+}
+
+function moneyInclVatTotal(value: unknown): number {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.round(numeric * VAT_MULTIPLIER) : 0;
+}
+
+function vatIncludedFormulaCell(exVatColumn: string, rowNumber: number, exVatValue: unknown): XlsxCellValue {
+  const numeric = Number(exVatValue);
+
+  return {
+    formula: `IF(${exVatColumn}${rowNumber}="","",${exVatColumn}${rowNumber}*${VAT_MULTIPLIER})`,
+    value: Number.isFinite(numeric) ? Math.round(numeric * VAT_MULTIPLIER) : null,
+    style: 'currency',
+  };
 }
 
 function percentCell(value: unknown): XlsxCellValue {
@@ -206,12 +232,24 @@ function registerValueTotal(items: AssetRegisterItem[]): number {
   return items.reduce((sum, item) => sum + Math.round(Number(item.value || 0)), 0);
 }
 
+function registerValueInclVatTotal(items: AssetRegisterItem[]): number {
+  return items.reduce((sum, item) => sum + moneyInclVatTotal(item.value), 0);
+}
+
 function aim4priceValueTotal(items: AssetRegisterItem[]): number {
   return items.reduce((sum, item) => sum + Math.round(Number(item.aim4priceValueExVat || 0)), 0);
 }
 
+function aim4priceValueInclVatTotal(items: AssetRegisterItem[]): number {
+  return items.reduce((sum, item) => sum + moneyInclVatTotal(item.aim4priceValueExVat), 0);
+}
+
 function marketValueTotal(items: AssetRegisterItem[]): number {
   return items.reduce((sum, item) => sum + Math.round(Number(item.marketMidExVat || 0)), 0);
+}
+
+function marketValueInclVatTotal(items: AssetRegisterItem[]): number {
+  return items.reduce((sum, item) => sum + moneyInclVatTotal(item.marketMidExVat), 0);
 }
 
 function countFinanced(items: AssetRegisterItem[]): number {
@@ -269,29 +307,37 @@ function buildTableHeaderRow(): XlsxCellValue[] {
 function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] {
   const amount = usageAmount(item);
   const lifeWorkedPercent = Number(item.lifeWorkedPercent);
+  const rowNumber = DATA_START_ROW + index;
 
   return [
+    textCell(item.serialNumber || ''),
     numberCell(index + 1),
     textCell(item.title),
     textCell(kindLabel(item)),
     textCell(item.brandName || ''),
     textCell(item.modelName || item.typedModelName || ''),
     item.yearModel ? numberCell(item.yearModel) : blankCell('integer'),
-    textCell(item.serialNumber || ''),
     textCell(buildPlateOrQrCode(item)),
     textCell(formatDrive(item.drive)),
     amount === null ? blankCell('integer') : numberCell(amount),
     textCell(amount === null ? '' : usageUnit(item)),
     Number.isFinite(lifeWorkedPercent) ? percentCell(lifeWorkedPercent) : blankCell('percent'),
     textCell(conditionLabel(item.condition)),
+    moneyCell(item.value),
+    vatIncludedFormulaCell(REGISTER_VALUE_EX_VAT_COLUMN, rowNumber, item.value),
+    item.aim4priceValueExVat === null ? blankCell('currency') : optionalMoneyCell(item.aim4priceValueExVat),
+    item.aim4priceValueExVat === null
+      ? blankCell('currency')
+      : vatIncludedFormulaCell(AIM4PRICE_VALUE_EX_VAT_COLUMN, rowNumber, item.aim4priceValueExVat),
+    item.marketMidExVat === null ? blankCell('currency') : optionalMoneyCell(item.marketMidExVat),
+    item.marketMidExVat === null
+      ? blankCell('currency')
+      : vatIncludedFormulaCell(MARKET_VALUE_EX_VAT_COLUMN, rowNumber, item.marketMidExVat),
+    textCell(methodLabel(item.selectedMethod)),
+    item.lastScannedAtIso ? dateCell(item.lastScannedAtIso) : blankCell('date'),
     statusCell(item.isFinanced ? 'Financed' : 'Not financed', item.isFinanced),
     textCell(item.financeNote || '', 'note'),
     statusCell(item.isInsured ? 'Insured' : 'Not insured', item.isInsured),
-    moneyCell(item.value),
-    item.aim4priceValueExVat === null ? blankCell('currency') : optionalMoneyCell(item.aim4priceValueExVat),
-    item.marketMidExVat === null ? blankCell('currency') : optionalMoneyCell(item.marketMidExVat),
-    textCell(methodLabel(item.selectedMethod)),
-    item.lastScannedAtIso ? dateCell(item.lastScannedAtIso) : blankCell('date'),
   ];
 }
 
@@ -302,9 +348,12 @@ function buildFormulaRange(column: string, dataRowCount: number): string | null 
 }
 
 function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
-  const registerValueRange = buildFormulaRange(REGISTER_VALUE_COLUMN, items.length);
-  const aim4priceValueRange = buildFormulaRange(AIM4PRICE_VALUE_COLUMN, items.length);
-  const marketValueRange = buildFormulaRange(MARKET_VALUE_COLUMN, items.length);
+  const registerValueExVatRange = buildFormulaRange(REGISTER_VALUE_EX_VAT_COLUMN, items.length);
+  const registerValueInclVatRange = buildFormulaRange(REGISTER_VALUE_INCL_VAT_COLUMN, items.length);
+  const aim4priceValueExVatRange = buildFormulaRange(AIM4PRICE_VALUE_EX_VAT_COLUMN, items.length);
+  const aim4priceValueInclVatRange = buildFormulaRange(AIM4PRICE_VALUE_INCL_VAT_COLUMN, items.length);
+  const marketValueExVatRange = buildFormulaRange(MARKET_VALUE_EX_VAT_COLUMN, items.length);
+  const marketValueInclVatRange = buildFormulaRange(MARKET_VALUE_INCL_VAT_COLUMN, items.length);
   const financeRange = buildFormulaRange(FINANCE_STATUS_COLUMN, items.length);
   const insuranceRange = buildFormulaRange(INSURANCE_STATUS_COLUMN, items.length);
 
@@ -315,7 +364,13 @@ function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
     ],
     [
       textCell('Register value ex VAT', 'metaLabel'),
-      registerValueRange ? formulaCell(`SUM(${registerValueRange})`, registerValueTotal(items), 'currency') : moneyCell(0),
+      registerValueExVatRange ? formulaCell(`SUM(${registerValueExVatRange})`, registerValueTotal(items), 'currency') : moneyCell(0),
+    ],
+    [
+      textCell('Register value incl VAT', 'metaLabel'),
+      registerValueInclVatRange
+        ? formulaCell(`SUM(${registerValueInclVatRange})`, registerValueInclVatTotal(items), 'currency')
+        : moneyCell(0),
     ],
     [
       textCell('Financed assets', 'metaLabel'),
@@ -327,11 +382,25 @@ function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
     ],
     [
       textCell('Aim4price values ex VAT', 'metaLabel'),
-      aim4priceValueRange ? formulaCell(`SUM(${aim4priceValueRange})`, aim4priceValueTotal(items), 'currency') : moneyCell(0),
+      aim4priceValueExVatRange
+        ? formulaCell(`SUM(${aim4priceValueExVatRange})`, aim4priceValueTotal(items), 'currency')
+        : moneyCell(0),
+    ],
+    [
+      textCell('Aim4price values incl VAT', 'metaLabel'),
+      aim4priceValueInclVatRange
+        ? formulaCell(`SUM(${aim4priceValueInclVatRange})`, aim4priceValueInclVatTotal(items), 'currency')
+        : moneyCell(0),
     ],
     [
       textCell('Market values ex VAT', 'metaLabel'),
-      marketValueRange ? formulaCell(`SUM(${marketValueRange})`, marketValueTotal(items), 'currency') : moneyCell(0),
+      marketValueExVatRange ? formulaCell(`SUM(${marketValueExVatRange})`, marketValueTotal(items), 'currency') : moneyCell(0),
+    ],
+    [
+      textCell('Market values incl VAT', 'metaLabel'),
+      marketValueInclVatRange
+        ? formulaCell(`SUM(${marketValueInclVatRange})`, marketValueInclVatTotal(items), 'currency')
+        : moneyCell(0),
     ],
   ];
 }
@@ -358,7 +427,7 @@ function buildWorkbookSheet(definition: SheetDefinition, profile: AccountProfile
     [textCell('Export note', 'section')],
     [
       textCell(
-        'Values exclude VAT unless stated otherwise. This workbook is editable and intended for owners, financiers and insurance companies.',
+        'Values are shown both excluding VAT and including VAT at 15%. This workbook is editable and intended for owners, financiers and insurance companies.',
         'subtitle',
       ),
     ],
