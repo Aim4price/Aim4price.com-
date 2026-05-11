@@ -1267,52 +1267,74 @@ export default function ScanClient({
 
               {activeEditor === "service" ? (
                 <div className={styles.modalStack}>
-                  <div className={styles.serviceModeGrid}>
-                    <button
-                      type="button"
-                      className={`${styles.serviceModeCard} ${draft.serviceMode === "checked" ? styles.serviceModeCardActive : ""}`}
-                      onClick={() => {
-                        setShowServiceDetailsStep(false);
-                        setDraft((current) => ({
-                          ...current,
-                          serviceMode: "checked",
-                          servicedItems: [],
-                          serviceCompany: "",
-                          mechanicName: "",
-                        }));
-                      }}
-                      disabled={isSaving}
-                    >
-                      <span className={styles.serviceModeIcon}>
-                        <CheckCircleIcon className={styles.serviceModeSvg} />
-                      </span>
-                      <span className={styles.serviceModeText}>
-                        <strong>Checked</strong>
-                        <small>Driver or manager inspection.</small>
-                      </span>
-                    </button>
+                  <div className={`${styles.serviceModeGrid} ${draft.serviceMode ? styles.serviceModeGridLocked : ""}`}>
+                    {!draft.serviceMode ? (
+                      <>
+                        <button
+                          type="button"
+                          className={styles.serviceModeCard}
+                          onClick={() => {
+                            setShowServiceDetailsStep(false);
+                            setDraft((current) => ({
+                              ...current,
+                              serviceMode: "checked",
+                              servicedItems: [],
+                              serviceCompany: "",
+                              mechanicName: "",
+                            }));
+                          }}
+                          disabled={isSaving}
+                        >
+                          <span className={styles.serviceModeIcon}>
+                            <CheckCircleIcon className={styles.serviceModeSvg} />
+                          </span>
+                          <span className={styles.serviceModeText}>
+                            <strong>Checked</strong>
+                            <small>Quick driver or manager inspection.</small>
+                          </span>
+                        </button>
 
-                    <button
-                      type="button"
-                      className={`${styles.serviceModeCard} ${draft.serviceMode === "serviced" ? styles.serviceModeCardActive : ""}`}
-                      onClick={() => {
-                        setShowServiceDetailsStep(false);
-                        setDraft((current) => ({
-                          ...current,
-                          serviceMode: "serviced",
-                          checkedItems: [],
-                        }));
-                      }}
-                      disabled={isSaving}
-                    >
-                      <span className={styles.serviceModeIcon}>
-                        <WrenchIcon className={styles.serviceModeSvg} />
-                      </span>
-                      <span className={styles.serviceModeText}>
-                        <strong>Serviced</strong>
-                        <small>Dealer, workshop or mechanic job.</small>
-                      </span>
-                    </button>
+                        <button
+                          type="button"
+                          className={styles.serviceModeCard}
+                          onClick={() => {
+                            setShowServiceDetailsStep(false);
+                            setDraft((current) => ({
+                              ...current,
+                              serviceMode: "serviced",
+                              checkedItems: [],
+                            }));
+                          }}
+                          disabled={isSaving}
+                        >
+                          <span className={styles.serviceModeIcon}>
+                            <WrenchIcon className={styles.serviceModeSvg} />
+                          </span>
+                          <span className={styles.serviceModeText}>
+                            <strong>Serviced</strong>
+                            <small>Dealer, workshop or mechanic job.</small>
+                          </span>
+                        </button>
+                      </>
+                    ) : (
+                      <div className={`${styles.serviceModeCard} ${styles.serviceModeCardActive} ${styles.serviceModeCardLocked}`}>
+                        <span className={styles.serviceModeIcon}>
+                          {draft.serviceMode === "checked" ? (
+                            <CheckCircleIcon className={styles.serviceModeSvg} />
+                          ) : (
+                            <WrenchIcon className={styles.serviceModeSvg} />
+                          )}
+                        </span>
+                        <span className={styles.serviceModeText}>
+                          <strong>{draft.serviceMode === "checked" ? "Checked" : "Serviced"}</strong>
+                          <small>
+                            {draft.serviceMode === "checked"
+                              ? "Complete this checked record before starting another update."
+                              : "Complete this service record before starting another update."}
+                          </small>
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {draft.serviceMode === "checked" ? (
