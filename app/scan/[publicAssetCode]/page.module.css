@@ -1,191 +1,164 @@
 .page {
-  --bg: #f2f6f8;
+  --bg: #f1f6f8;
   --surface: #ffffff;
   --surface-soft: #f7fafb;
-  --surface-muted: #edf3f6;
   --line: #dce7ee;
-  --line-strong: #cddbe5;
+  --line-strong: #cbd9e3;
   --text: #0f3329;
   --text-muted: #5f7184;
   --blue-text: #1d3b62;
   --blue-soft: #eff5fb;
   --green: #165340;
   --green-strong: #104434;
-  --green-soft: #edf8f2;
-  --green-line: #c6e5d4;
+  --green-soft: #eef8f3;
+  --green-line: #c9e5d6;
   --red: #9b3030;
   --red-soft: #fff1f1;
   --red-line: #efcaca;
-  min-height: 100vh;
+  min-height: 100dvh;
   background:
-    radial-gradient(circle at 15% 0%, rgba(22, 83, 64, 0.10), transparent 30%),
-    radial-gradient(circle at 90% 12%, rgba(29, 59, 98, 0.10), transparent 28%),
-    linear-gradient(180deg, #f7fafb 0%, var(--bg) 100%);
+    radial-gradient(circle at 12% 0%, rgba(22, 83, 64, 0.08), transparent 32%),
+    radial-gradient(circle at 96% 14%, rgba(29, 59, 98, 0.08), transparent 28%),
+    linear-gradient(180deg, #fbfdfd 0%, var(--bg) 100%);
 }
 
 .shell {
-  width: min(calc(100% - 1rem), 760px);
+  width: min(calc(100% - 0.9rem), 720px);
   margin: 0 auto;
-  padding: 0.75rem 0 1.6rem;
+  padding: 0.55rem 0 1.35rem;
   display: grid;
-  gap: 0.78rem;
+  gap: 0.72rem;
 }
 
-.hero,
+.prePinAssetCard,
 .pinCard,
 .unavailableCard,
-.assetCard,
-.locationCard,
+.scanReadyHeader,
 .quickActionCard,
-.saveBar,
 .notice,
 .modalCard {
   border: 1px solid rgba(205, 220, 230, 0.96);
-  border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 38%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
   box-shadow:
     0 18px 42px rgba(15, 30, 45, 0.08),
     0 8px 18px rgba(15, 30, 45, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  border-radius: 1.28rem;
 }
 
-.hero {
+.prePinAssetCard,
+.pinCard,
+.unavailableCard,
+.scanReadyHeader {
+  padding: clamp(1rem, 4vw, 1.25rem);
+}
+
+.prePinAssetHeader,
+.pinCardCopy,
+.quickPanel,
+.gpsInlineCopy,
+.quickActionCopy,
+.modalStack {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.9rem;
-  align-items: stretch;
-  padding: 1rem;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(36, 125, 92, 0.18), transparent 42%),
-    linear-gradient(135deg, #12382f 0%, #153f36 55%, #1d4f41 100%);
-  border-color: rgba(16, 68, 52, 0.38);
-  color: #ffffff;
 }
 
-.heroContent {
-  min-width: 0;
-  display: grid;
-  align-content: center;
-  gap: 0.35rem;
+.prePinAssetHeader,
+.pinCardCopy {
+  gap: 0.38rem;
 }
 
-.heroContent h1,
+.prePinAssetHeader h1,
 .pinCard h2,
 .unavailableCard h2,
-.assetSummary h2,
-.locationCopy h3,
+.scanReadyHeader h1,
 .modalHeader h3 {
   margin: 0;
   color: var(--text);
-  line-height: 1.03;
-  letter-spacing: -0.045em;
+  line-height: 0.98;
+  font-weight: 840;
+  letter-spacing: -0.055em;
 }
 
-.heroContent h1 {
-  color: #ffffff;
-  font-size: clamp(1.9rem, 8vw, 2.65rem);
-  font-weight: 820;
+.prePinAssetHeader h1 {
+  font-size: clamp(2rem, 9vw, 2.8rem);
 }
 
-.heroContent p,
+.pinCard h2,
+.unavailableCard h2,
+.scanReadyHeader h1,
+.modalHeader h3 {
+  font-size: clamp(1.68rem, 7vw, 2.34rem);
+}
+
+.prePinAssetHeader p,
 .pinCard p,
 .unavailableCard p,
-.assetSummary p,
-.locationCopy p,
+.scanReadyHeader p,
 .modalHeader p,
 .helperText,
-.metaText,
-.saveBarCopy span,
-.quickActionCopy span {
+.quickActionCopy span,
+.gpsInlineCopy span {
   margin: 0;
   color: var(--text-muted);
-  line-height: 1.48;
-  font-weight: 610;
+  font-weight: 630;
+  line-height: 1.42;
 }
 
-.heroContent p {
-  max-width: 28rem;
-  color: rgba(238, 247, 243, 0.9);
-  font-size: 1rem;
-}
-
-.eyebrow,
-.kicker,
-.locationPill,
-.modalEyebrow {
+.kicker {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: fit-content;
-  min-height: 1.85rem;
-  padding: 0 0.76rem;
-  border-radius: 999px;
+  color: #617485;
   font-size: 0.72rem;
-  font-weight: 830;
-  letter-spacing: 0.065em;
+  font-weight: 850;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
 }
 
-.eyebrow {
-  color: rgba(255, 255, 255, 0.95);
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-.kicker,
-.modalEyebrow {
-  color: #416153;
-  background: var(--green-soft);
-  border: 1px solid var(--green-line);
-}
-
-.heroAside {
-  min-width: 148px;
+.prePinDetailGrid {
   display: grid;
-  gap: 0.55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.15rem;
 }
 
-.heroStat,
-.summaryTile {
-  display: grid;
-  gap: 0.22rem;
-  align-content: center;
+.prePinDetailGrid > div {
   min-width: 0;
-  padding: 0.8rem;
+  display: grid;
+  align-content: center;
+  gap: 0.28rem;
+  min-height: 4.35rem;
+  padding: 0.82rem 0.9rem;
+  border: 1px solid rgba(216, 226, 236, 0.96);
   border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
 }
 
-.heroStat {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.heroStat span,
-.summaryTile span,
+.prePinDetailGrid span,
 .field span {
   color: #6c7d8f;
-  font-size: 0.74rem;
-  font-weight: 850;
-  letter-spacing: 0.05em;
+  font-size: 0.72rem;
+  font-weight: 860;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.heroStat span {
-  color: rgba(233, 245, 239, 0.78);
-}
-
-.heroStat strong {
-  color: #ffffff;
-  font-size: 0.98rem;
-  font-weight: 820;
-  line-height: 1.16;
-  word-break: break-word;
+.prePinDetailGrid strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 1.08rem;
+  font-weight: 830;
+  line-height: 1.18;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .notice {
   min-height: 3rem;
-  padding: 0.85rem 1rem;
-  font-weight: 740;
+  padding: 0.86rem 1rem;
+  font-weight: 760;
   line-height: 1.35;
 }
 
@@ -201,34 +174,12 @@
   border-color: rgba(239, 196, 196, 0.98);
 }
 
-.pinCard,
-.unavailableCard,
-.assetCard,
-.locationCard {
-  padding: 1rem;
-}
-
 .pinCard {
   display: grid;
   gap: 1rem;
 }
 
-.pinCardCopy {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.pinCard h2,
-.unavailableCard h2,
-.assetSummary h2,
-.locationCopy h3,
-.modalHeader h3 {
-  font-size: clamp(1.45rem, 6vw, 2rem);
-  font-weight: 760;
-}
-
 .pinForm,
-.modalStack,
 .field {
   display: grid;
   gap: 0.58rem;
@@ -243,17 +194,17 @@
   color: #1f303b;
   font: inherit;
   font-size: 1.06rem;
-  font-weight: 630;
+  font-weight: 640;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
 .field input {
-  min-height: 3.55rem;
+  min-height: 3.66rem;
   padding: 0 1rem;
 }
 
 .field textarea {
-  min-height: 9rem;
+  min-height: 8.25rem;
   padding: 0.95rem 1rem;
   line-height: 1.48;
   resize: vertical;
@@ -275,20 +226,23 @@
 .primaryButton,
 .secondaryButton,
 .quickOptionButton,
-.uploadButton,
+.choiceButton,
+.checkOptionButton,
+.photoPickerButton,
 .removePhotoButton,
-.modalCloseButton {
+.modalCloseButton,
+.gpsRefreshButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
   border: 1px solid transparent;
   border-radius: 1rem;
-  min-height: 3.25rem;
+  min-height: 3.35rem;
   padding: 0 1.05rem;
   font: inherit;
   font-size: 1rem;
-  font-weight: 780;
+  font-weight: 810;
   text-decoration: none;
   cursor: pointer;
   transition:
@@ -302,19 +256,25 @@
 .primaryButton:hover,
 .secondaryButton:hover,
 .quickOptionButton:hover,
-.uploadButton:hover,
+.choiceButton:hover,
+.checkOptionButton:hover,
+.photoPickerButton:hover,
 .removePhotoButton:hover,
-.modalCloseButton:hover {
+.modalCloseButton:hover,
+.gpsRefreshButton:hover {
   transform: translateY(-1px);
 }
 
 .primaryButton:disabled,
 .secondaryButton:disabled,
 .quickOptionButton:disabled,
-.uploadButton:disabled,
+.choiceButton:disabled,
+.checkOptionButton:disabled,
+.photoPickerButton:disabled,
 .removePhotoButton:disabled,
-.modalCloseButton:disabled {
-  opacity: 0.56;
+.modalCloseButton:disabled,
+.gpsRefreshButton:disabled {
+  opacity: 0.55;
   cursor: not-allowed;
   transform: none;
 }
@@ -330,7 +290,10 @@
 
 .secondaryButton,
 .quickOptionButton,
-.uploadButton {
+.choiceButton,
+.checkOptionButton,
+.photoPickerButton,
+.gpsRefreshButton {
   color: var(--blue-text);
   background: linear-gradient(180deg, #ffffff 0%, var(--blue-soft) 100%);
   border-color: #d5e2ef;
@@ -339,177 +302,72 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
-.pinActions,
-.saveBarActions,
-.quickOptionRow,
-.uploadRow,
-.modalFooter {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-}
-
-.pinActions > *,
-.saveBarActions > *,
-.modalFooter > * {
-  flex: 1 1 0;
-}
-
-.assetTopRow {
+.pinActions {
   display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
-  gap: 0.85rem;
-  align-items: start;
 }
 
-.assetMediaWrap {
-  overflow: hidden;
-  border-radius: 1rem;
-  background: var(--surface-muted);
-  border: 1px solid rgba(205, 220, 230, 0.96);
+.pinActions .primaryButton {
+  min-height: 3.85rem;
+  font-size: 1.06rem;
 }
 
-.assetPhoto,
-.assetPlaceholder {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1 / 1;
+.quickPanel {
+  gap: 0.72rem;
 }
 
-.assetPhoto {
-  object-fit: cover;
-}
-
-.assetPlaceholder {
+.scanReadyHeader {
   display: grid;
-  place-items: center;
-  padding: 0.5rem;
-  background: linear-gradient(180deg, #f8fbfc 0%, #edf3f6 100%);
+  gap: 0.7rem;
 }
 
-.assetPlaceholderLabel {
-  max-width: 100%;
-  padding: 0.35rem 0.45rem;
-  border-radius: 999px;
-  color: #66758d;
-  background: #eef2f8;
-  border: 1px solid #dde4ee;
-  font-size: 0.68rem;
-  font-weight: 850;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  text-align: center;
-}
-
-.assetSummary {
-  display: grid;
-  gap: 0.82rem;
-  min-width: 0;
-}
-
-.assetSummary h2 {
-  margin-top: 0.34rem;
-  font-size: clamp(1.35rem, 5.8vw, 2.05rem);
-}
-
-.summaryGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
-}
-
-.summaryTile {
-  min-height: 4.2rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
-  border: 1px solid rgba(216, 226, 236, 0.96);
-}
-
-.summaryTile strong {
-  min-width: 0;
-  color: var(--text);
-  font-size: 0.98rem;
-  line-height: 1.25;
-  font-weight: 780;
-  word-break: break-word;
-}
-
-.locationCard {
+.gpsInlineStatus {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.9rem;
-  align-items: center;
-}
-
-.locationCopy {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
   gap: 0.78rem;
   align-items: center;
-}
-
-.locationCopy h3 {
-  font-size: 1.08rem;
-  letter-spacing: -0.028em;
-}
-
-.locationPill {
-  min-width: 3.15rem;
-  min-height: 3.15rem;
-  padding: 0;
+  margin-top: 0.12rem;
+  padding: 0.78rem 0.86rem;
+  border: 1px solid rgba(216, 226, 236, 0.96);
   border-radius: 1rem;
-  color: #657386;
-  background: #f4f8fb;
-  border-color: #d9e4ed;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
 }
 
-.locationPill span {
-  display: none;
+.gpsInlineCopy {
+  gap: 0.14rem;
+  min-width: 0;
 }
 
-.locationPillIcon {
-  width: 1.28rem;
-  height: 1.28rem;
+.gpsInlineCopy strong {
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 820;
+  line-height: 1.2;
 }
 
-.locationPillReady {
-  color: #ffffff;
-  background: linear-gradient(180deg, #1f7656 0%, #104434 100%);
-  border-color: rgba(16, 68, 52, 0.26);
+.gpsInlineCopy span {
+  font-size: 0.84rem;
 }
 
-.locationPillLoading {
-  color: #1d3b62;
-  background: linear-gradient(180deg, #ffffff 0%, #edf5ff 100%);
-}
-
-.locationPillError {
-  color: var(--red);
-  background: var(--red-soft);
-  border-color: var(--red-line);
-}
-
-.metaText {
-  margin-top: 0.22rem !important;
-  color: #385349 !important;
-  font-size: 0.85rem;
-  font-weight: 720 !important;
+.gpsRefreshButton {
+  min-height: 2.8rem;
+  border-radius: 0.9rem;
+  white-space: nowrap;
 }
 
 .quickActionGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.72rem;
+  gap: 0.68rem;
 }
 
 .quickActionCard {
   width: 100%;
-  min-height: 7.4rem;
+  min-height: 6.7rem;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 0.82rem;
-  align-items: center;
-  padding: 1rem;
+  grid-template-columns: 1fr;
+  align-content: start;
+  gap: 0.56rem;
+  padding: 0.92rem;
   text-align: left;
   color: inherit;
   cursor: pointer;
@@ -517,7 +375,7 @@
 
 .quickActionCard:hover {
   transform: translateY(-1px);
-  border-color: rgba(22, 83, 64, 0.26);
+  border-color: rgba(22, 83, 64, 0.28);
   box-shadow:
     0 20px 42px rgba(15, 30, 45, 0.10),
     0 8px 18px rgba(15, 30, 45, 0.04),
@@ -528,8 +386,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3.2rem;
-  height: 3.2rem;
+  width: 3rem;
+  height: 3rem;
   border-radius: 1rem;
   color: #145340;
   background: var(--green-soft);
@@ -537,12 +395,11 @@
 }
 
 .quickActionIcon {
-  width: 1.45rem;
-  height: 1.45rem;
+  width: 1.35rem;
+  height: 1.35rem;
 }
 
 .quickActionCopy {
-  display: grid;
   gap: 0.22rem;
   min-width: 0;
 }
@@ -550,9 +407,9 @@
 .quickActionCopy strong {
   color: var(--text);
   font-size: 1.12rem;
-  font-weight: 800;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  font-weight: 830;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
 }
 
 .quickActionCopy span {
@@ -560,37 +417,12 @@
   overflow: hidden;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
+  line-height: 1.28;
 }
 
 .quickActionChevron {
-  width: 1rem;
-  height: 1rem;
-  color: #7b8ca0;
-}
-
-.saveBar {
-  display: grid;
-  padding: 0.95rem 1rem;
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.05), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f5f9fb 100%);
-}
-
-.saveBarCopy {
-  display: grid;
-  gap: 0.22rem;
-}
-
-.saveBarCopy strong {
-  color: var(--text);
-  font-size: 1rem;
-  font-weight: 780;
-}
-
-.buttonIcon {
-  width: 1.05rem;
-  height: 1.05rem;
+  display: none;
 }
 
 .modalOverlay {
@@ -598,61 +430,68 @@
   inset: 0;
   z-index: 200;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding: 0.75rem;
+  padding: 1rem;
 }
 
 .modalBackdrop {
   position: absolute;
   inset: 0;
-  background: rgba(14, 22, 32, 0.46);
-  backdrop-filter: blur(12px);
+  background: rgba(14, 22, 32, 0.52);
+  backdrop-filter: blur(14px);
 }
 
 .modalCard {
   position: relative;
   z-index: 1;
   width: min(100%, 640px);
-  max-height: min(88vh, calc(100dvh - 1.5rem));
+  max-height: min(88vh, calc(100dvh - 2rem));
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 1rem;
-  border-radius: 1.45rem;
+  padding: 1.1rem;
+  border-radius: 1.55rem;
+}
+
+.editorModalCard {
+  width: min(100%, 680px);
 }
 
 .modalHeader {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 0.8rem;
-  padding-bottom: 0.85rem;
+  gap: 0.9rem;
+  padding-bottom: 0.92rem;
   border-bottom: 1px solid rgba(216, 226, 236, 0.94);
 }
 
 .modalHeader > div {
   display: grid;
-  gap: 0.34rem;
+  gap: 0.36rem;
   min-width: 0;
 }
 
-.modalHeader h3 {
-  font-size: clamp(1.45rem, 6vw, 2rem);
-}
-
 .modalHeader p {
-  font-size: 0.92rem;
+  font-size: 0.94rem;
 }
 
 .modalCloseButton {
-  width: 3.1rem;
-  min-width: 3.1rem;
-  min-height: 3.1rem;
+  width: 3.22rem;
+  min-width: 3.22rem;
+  height: 3.22rem;
+  min-height: 3.22rem;
   padding: 0;
-  border-radius: 999px;
+  border-radius: 1rem;
   color: var(--blue-text);
   background: linear-gradient(180deg, #ffffff 0%, var(--blue-soft) 100%);
   border-color: #d5e2ef;
+}
+
+.buttonIcon {
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 .modalBody {
@@ -660,15 +499,31 @@
   min-height: 0;
   overflow-y: auto;
   display: grid;
-  gap: 0.85rem;
-  padding: 0.9rem 0.2rem 0.95rem 0;
+  align-content: start;
+  gap: 0.95rem;
+  padding: 0.95rem 0.2rem 1rem 0;
+}
+
+.modalStack {
+  gap: 0.88rem;
 }
 
 .modalFooter {
   flex: 0 0 auto;
-  justify-content: flex-end;
-  padding-top: 0.82rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  padding-top: 0.85rem;
   border-top: 1px solid rgba(216, 226, 236, 0.94);
+}
+
+.modalFooter .primaryButton,
+.modalFooter .secondaryButton {
+  min-height: 3.55rem;
+}
+
+.helperText {
+  font-size: 0.9rem;
 }
 
 .fuelReadout {
@@ -681,8 +536,8 @@
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 40%),
     linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
   border: 1px solid var(--green-line);
-  font-size: clamp(2.7rem, 14vw, 4.2rem);
-  font-weight: 850;
+  font-size: clamp(2.9rem, 14vw, 4.3rem);
+  font-weight: 870;
   line-height: 1;
   letter-spacing: -0.06em;
 }
@@ -692,9 +547,22 @@
   accent-color: var(--green);
 }
 
-.quickOptionRow {
+.quickOptionRow,
+.serviceTypeGrid,
+.photoActionGrid,
+.inlineFieldGrid {
   display: grid;
+  gap: 0.65rem;
+}
+
+.quickOptionRow {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.serviceTypeGrid,
+.photoActionGrid,
+.inlineFieldGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .quickOptionButton {
@@ -702,20 +570,35 @@
   padding: 0 0.7rem;
 }
 
-.quickOptionButtonActive {
+.quickOptionButtonActive,
+.choiceButtonActive,
+.checkOptionButtonActive {
   color: #ffffff;
   background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
   border-color: rgba(16, 68, 52, 0.32);
 }
 
-.uploadButton {
-  min-height: 3.6rem;
-  padding: 0 1.2rem;
-  overflow: hidden;
-  position: relative;
+.checklistGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
 }
 
-.uploadButton input {
+.checkOptionButton,
+.choiceButton {
+  min-height: 3.15rem;
+  padding: 0.72rem 0.82rem;
+  text-align: center;
+  line-height: 1.18;
+}
+
+.photoPickerButton {
+  min-height: 4.1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.photoPickerButton input {
   position: absolute;
   inset: 0;
   opacity: 0;
@@ -753,784 +636,23 @@
   font-size: 0.86rem;
 }
 
-.helperText {
-  font-size: 0.88rem;
-}
-
-@media (min-width: 760px) {
-  .modalOverlay {
-    align-items: center;
-  }
-
-  .modalCard {
-    border-radius: 1.6rem;
-    padding: 1.15rem;
-  }
-}
-
-@media (max-width: 620px) {
-  .shell {
-    width: min(calc(100% - 0.8rem), 760px);
-    padding-top: 0.45rem;
-    gap: 0.66rem;
-  }
-
-  .hero {
-    grid-template-columns: 1fr;
-    padding: 0.92rem;
-    border-radius: 1.2rem;
-  }
-
-  .heroAside {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    min-width: 0;
-  }
-
-  .pinCard,
-  .unavailableCard,
-  .assetCard,
-  .locationCard,
-  .saveBar {
-    padding: 0.9rem;
-    border-radius: 1.15rem;
-  }
-
-  .assetTopRow {
-    grid-template-columns: 78px minmax(0, 1fr);
-    gap: 0.75rem;
-  }
-
-  .summaryGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .locationCard {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-
-  .locationCard .secondaryButton {
-    width: 100%;
-  }
-
-  .quickActionGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .quickActionCard {
-    min-height: 6.9rem;
-    border-radius: 1.18rem;
-  }
-
-  .modalOverlay {
-    padding: 0;
-  }
-
-  .modalCard {
-    width: 100%;
-    max-height: min(92vh, calc(100dvh - 0.75rem));
-    border-radius: 1.45rem 1.45rem 0 0;
-    padding: 1rem;
-  }
-
-  .pinActions,
-  .modalFooter {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-
-  .pinActions > *,
-  .modalFooter > * {
-    width: 100%;
-    flex: 1 1 auto;
-  }
-
-  .quickOptionRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .photoGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/* === QR scanner refinement: faster, cleaner mobile workflow === */
-.heroUnlocked {
-  grid-template-columns: 1fr;
-  gap: 0.8rem;
-  padding: clamp(0.95rem, 3.8vw, 1.15rem);
-  border-radius: 1.35rem;
-}
-
-.heroUnlocked .heroContent {
-  gap: 0.28rem;
-}
-
-.heroUnlocked .heroContent h1 {
-  font-size: clamp(1.72rem, 7.2vw, 2.42rem);
-  line-height: 0.98;
-}
-
-.heroUnlocked .heroContent p {
-  font-size: 0.94rem;
-  font-weight: 620;
-}
-
-.heroUnlocked .heroAside {
-  min-width: 0;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
-}
-
-.heroUnlocked .heroStat {
-  min-height: 3.75rem;
-  padding: 0.72rem 0.82rem;
-  border-radius: 1rem;
-}
-
-.heroUnlocked .heroStat span {
-  font-size: 0.64rem;
-  letter-spacing: 0.055em;
-}
-
-.heroUnlocked .heroStat strong {
-  font-size: 0.92rem;
-  line-height: 1.12;
-}
-
-.assetCard {
-  display: grid;
-  gap: 0.78rem;
-  padding: 0.92rem !important;
-  border-radius: 1.22rem !important;
-}
-
-.assetQuickHeader {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.75rem;
-  align-items: center;
-}
-
-.assetQuickBadge {
-  width: 4.15rem;
-  height: 4.15rem;
-  display: grid;
-  place-items: center;
-  border-radius: 1.05rem;
-  color: #516174;
-  background: linear-gradient(180deg, #f9fbfc 0%, #edf3f6 100%);
-  border: 1px solid rgba(216, 226, 236, 0.98);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98);
-}
-
-.assetQuickBadge span {
-  max-width: 3.45rem;
-  padding: 0.24rem 0.38rem;
-  border-radius: 999px;
-  color: #66758d;
-  background: #eef2f8;
-  border: 1px solid #dde4ee;
-  font-size: 0.58rem;
-  font-weight: 860;
-  line-height: 1.08;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.assetQuickCopy {
-  min-width: 0;
-  display: grid;
-  gap: 0.16rem;
-}
-
-.assetQuickCopy h2 {
-  margin: 0;
-  color: var(--text);
-  font-size: clamp(1.26rem, 5.6vw, 1.78rem);
-  font-weight: 790;
-  line-height: 1.04;
-  letter-spacing: -0.038em;
-}
-
-.assetQuickCopy p {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.92rem;
-  font-weight: 650;
-  line-height: 1.28;
-}
-
-.assetCard .summaryGrid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5rem;
-}
-
-.assetCard .summaryTile {
-  min-height: 3.7rem;
-  padding: 0.72rem 0.76rem;
-  border-radius: 0.95rem;
-}
-
-.assetCard .summaryTile span {
-  font-size: 0.62rem;
-  letter-spacing: 0.055em;
-}
-
-.assetCard .summaryTile strong {
-  font-size: 0.92rem;
-  line-height: 1.16;
-  font-weight: 780;
-}
-
-.locationCard {
-  padding: 0.82rem 0.9rem !important;
-  border-radius: 1.18rem !important;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.75rem;
-}
-
-.locationCopy {
-  gap: 0.65rem;
-}
-
-.locationCopy h3 {
-  font-size: 1.02rem;
-}
-
-.locationCopy p {
-  font-size: 0.9rem;
-  line-height: 1.34;
-}
-
-.locationCard .secondaryButton {
-  min-height: 2.85rem;
-  padding-inline: 0.9rem;
-  border-radius: 0.9rem;
-  white-space: nowrap;
-}
-
-.quickPanel {
-  display: grid;
-  gap: 0.65rem;
-}
-
-.quickPanelHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem;
-  padding: 0 0.1rem;
-}
-
-.quickPanelHeader h2 {
-  margin: 0;
-  color: var(--text);
-  font-size: clamp(1.18rem, 5vw, 1.45rem);
-  font-weight: 760;
-  line-height: 1.08;
-  letter-spacing: -0.035em;
-}
-
-.quickPanelHeader span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2rem;
-  padding: 0 0.75rem;
-  border-radius: 999px;
-  color: #124635;
-  background: var(--green-soft);
-  border: 1px solid var(--green-line);
-  font-size: 0.76rem;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.quickActionGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.62rem;
-}
-
-.quickActionCard {
-  min-height: 6.05rem;
-  grid-template-columns: 3rem minmax(0, 1fr);
-  gap: 0.7rem;
-  padding: 0.82rem;
-  border-radius: 1.16rem;
-}
-
-.quickActionIconWrap {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 0.96rem;
-}
-
-.quickActionIcon {
-  width: 1.32rem;
-  height: 1.32rem;
-}
-
-.quickActionCopy strong {
-  font-size: 1.02rem;
-  line-height: 1.1;
-  font-weight: 790;
-}
-
-.quickActionCopy span {
-  -webkit-line-clamp: 2;
-  font-size: 0.79rem;
-  line-height: 1.28;
-  font-weight: 620;
-}
-
-.quickActionChevron {
-  display: none;
-}
-
-.saveBar {
-  display: none !important;
-}
-
-.modalCard {
-  border-radius: 1.65rem 1.65rem 0 0;
-  padding: 1.05rem;
-}
-
-.modalHeader h3 {
-  font-size: clamp(1.38rem, 6vw, 1.86rem);
-}
-
-.modalHeader p {
-  font-size: 0.9rem;
-}
-
-.modalFooter .primaryButton,
-.modalFooter .secondaryButton {
-  min-height: 3.45rem;
-}
-
-.fuelReadout {
-  min-height: 5.3rem;
-}
-
-.pinCard {
-  padding: clamp(1rem, 4vw, 1.15rem) !important;
-}
-
-.pinActions {
-  flex-direction: column-reverse;
-  align-items: stretch;
-}
-
-.pinActions > * {
-  width: 100%;
-}
-
-@media (max-width: 620px) {
-  .shell {
-    width: min(calc(100% - 0.9rem), 760px);
-    padding-top: 0.45rem;
-    gap: 0.62rem;
-  }
-
-  .heroUnlocked {
-    padding: 0.88rem;
-  }
-
-  .heroUnlocked .heroAside {
-    gap: 0.48rem;
-  }
-
-  .pinCard,
-  .unavailableCard,
-  .assetCard,
-  .locationCard {
-    padding: 0.86rem !important;
-  }
-
-  .summaryGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .assetCard .summaryGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .locationCard {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .locationCard .secondaryButton {
-    width: auto;
-    min-width: 6.4rem;
-  }
-
-  .quickActionGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .quickActionCard {
-    min-height: 5.85rem;
-  }
-}
-
-@media (max-width: 430px) {
-  .heroUnlocked .heroContent h1 {
-    font-size: clamp(1.62rem, 8vw, 2.2rem);
-  }
-
-  .assetQuickBadge {
-    width: 3.85rem;
-    height: 3.85rem;
-  }
-
-  .assetCard .summaryGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .quickActionGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.55rem;
-  }
-
-  .quickActionCard {
-    min-height: 5.55rem;
-    grid-template-columns: 1fr;
-    align-content: start;
-    gap: 0.54rem;
-  }
-
-  .quickActionIconWrap {
-    width: 2.75rem;
-    height: 2.75rem;
-  }
-
-  .quickActionCopy span {
-    font-size: 0.76rem;
-  }
-}
-
-@media (max-width: 360px) {
-  .quickActionGrid,
-  .assetCard .summaryGrid,
-  .heroUnlocked .heroAside {
-    grid-template-columns: 1fr;
-  }
-
-  .locationCard {
-    grid-template-columns: 1fr;
-  }
-
-  .locationCard .secondaryButton {
-    width: 100%;
-  }
-}
-
-/* === QR Scanner: simplified PIN + update flow === */
-.scanIntroCard,
-.scanAssetHeader,
-.doneCard,
-.doneActionBar {
-  border: 1px solid rgba(205, 220, 230, 0.96);
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 38%),
-    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
-  box-shadow:
-    0 18px 42px rgba(15, 30, 45, 0.08),
-    0 8px 18px rgba(15, 30, 45, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
-  border-radius: 1.35rem;
-}
-
-.scanIntroCard {
-  display: grid;
-  gap: 0.78rem;
-  padding: clamp(1rem, 4vw, 1.25rem);
-}
-
-.scanIntroCard h1,
-.scanAssetHeader h1,
-.doneCard h1 {
-  margin: 0;
-  color: var(--text);
-  font-size: clamp(1.75rem, 8vw, 2.65rem);
-  font-weight: 820;
-  line-height: 0.98;
-  letter-spacing: -0.055em;
-}
-
-.scanIntroCard p,
-.scanAssetHeader p,
-.doneCard p {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 1rem;
-  font-weight: 620;
-  line-height: 1.42;
-}
-
-.scanIntroPills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  padding-top: 0.1rem;
-}
-
-.scanIntroPills span {
-  display: inline-flex;
+.locationReminderOverlay {
   align-items: center;
   justify-content: center;
-  min-height: 2.15rem;
-  padding: 0 0.74rem;
-  border-radius: 999px;
-  color: #124635;
-  background: var(--green-soft);
-  border: 1px solid var(--green-line);
-  font-size: 0.82rem;
-  font-weight: 760;
-  line-height: 1;
-}
-
-.pinCard {
-  gap: 0.9rem !important;
-}
-
-.pinCardCopy p {
-  max-width: 28rem;
-}
-
-.pinActions {
-  display: grid !important;
-  grid-template-columns: 1fr !important;
-}
-
-.pinActions .primaryButton {
-  min-height: 3.72rem;
-  font-size: 1.06rem;
-}
-
-.scanAssetHeader {
-  display: grid;
-  gap: 0.72rem;
-  padding: clamp(1rem, 4vw, 1.2rem);
-}
-
-.scanAssetHeader h1 {
-  font-size: clamp(1.55rem, 7vw, 2.28rem);
-}
-
-.scanStatusGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.58rem;
-  padding-top: 0.12rem;
-}
-
-.scanStatusGrid > div {
-  min-width: 0;
-  display: grid;
-  gap: 0.22rem;
-  align-content: center;
-  min-height: 4.25rem;
-  padding: 0.78rem 0.82rem;
-  border-radius: 1rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
-  border: 1px solid rgba(216, 226, 236, 0.96);
-}
-
-.scanStatusGrid span {
-  color: #6c7d8f;
-  font-size: 0.68rem;
-  font-weight: 850;
-  letter-spacing: 0.055em;
-  text-transform: uppercase;
-}
-
-.scanStatusGrid strong {
-  min-width: 0;
-  color: var(--text);
-  font-size: 0.94rem;
-  font-weight: 820;
-  line-height: 1.16;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.quickPanel {
-  gap: 0.68rem !important;
-}
-
-.quickPanelHeader {
-  padding: 0 0.12rem !important;
-}
-
-.quickPanelHeader h2 {
-  font-size: clamp(1.22rem, 5.4vw, 1.58rem) !important;
-}
-
-.gpsStatusButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.35rem;
-  padding: 0 0.85rem;
-  border: 1px solid #d5e2ef;
-  border-radius: 999px;
-  color: var(--blue-text);
-  background: linear-gradient(180deg, #ffffff 0%, var(--blue-soft) 100%);
-  box-shadow:
-    0 8px 16px rgba(23, 45, 75, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 820;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.gpsStatusButtonReady {
-  color: #124635;
-  background: var(--green-soft);
-  border-color: var(--green-line);
-}
-
-.quickActionGrid {
-  gap: 0.68rem !important;
-}
-
-.quickActionCard {
-  min-height: 6.55rem !important;
-  padding: 0.9rem !important;
-  border-radius: 1.22rem !important;
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.035), transparent 36%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
-}
-
-.quickActionIconWrap {
-  width: 3.15rem !important;
-  height: 3.15rem !important;
-  border-radius: 1.05rem !important;
-}
-
-.quickActionCopy strong {
-  font-size: 1.08rem !important;
-}
-
-.quickActionCopy span {
-  font-size: 0.82rem !important;
-  line-height: 1.3 !important;
-}
-
-.doneActionBar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.8rem;
-  align-items: center;
-  padding: 0.9rem;
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.065), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
-  border-color: rgba(190, 224, 206, 0.98);
-}
-
-.doneActionBar > div {
-  display: grid;
-  gap: 0.15rem;
-  min-width: 0;
-}
-
-.doneActionBar strong {
-  color: var(--text);
-  font-size: 0.98rem;
-  font-weight: 820;
-  line-height: 1.2;
-}
-
-.doneActionBar span {
-  color: var(--text-muted);
-  font-size: 0.84rem;
-  font-weight: 620;
-  line-height: 1.32;
-}
-
-.doneButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 8.8rem;
-  min-height: 3.4rem;
-  padding: 0 1.15rem;
-  border: 1px solid rgba(16, 68, 52, 0.32);
-  border-radius: 1rem;
-  color: #ffffff;
-  background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
-  box-shadow:
-    0 14px 28px rgba(16, 68, 52, 0.20),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16);
-  font: inherit;
-  font-size: 1.02rem;
-  font-weight: 820;
-  cursor: pointer;
-}
-
-.doneButton:disabled {
-  opacity: 0.56;
-  cursor: not-allowed;
-}
-
-.doneCard {
-  display: grid;
-  gap: 0.8rem;
-  padding: clamp(1.15rem, 5vw, 1.5rem);
-  text-align: left;
-  background:
-    radial-gradient(circle at top left, rgba(31, 118, 86, 0.12), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #eaf8f0 100%);
-  border-color: rgba(190, 224, 206, 0.98);
-}
-
-.doneCard h1 {
-  font-size: clamp(1.8rem, 8vw, 2.65rem);
-}
-
-.doneAssetBox {
-  display: grid;
-  gap: 0.25rem;
-  min-height: 4.35rem;
-  align-content: center;
-  padding: 0.9rem 1rem;
-  border-radius: 1rem;
-  background: #ffffff;
-  border: 1px solid rgba(190, 224, 206, 0.98);
-}
-
-.doneAssetBox span {
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  font-weight: 780;
-  line-height: 1.25;
-}
-
-.doneAssetBox strong {
-  color: var(--text);
-  font-size: 1.1rem;
-  font-weight: 840;
-  line-height: 1.2;
 }
 
 .locationReminderModal {
-  width: min(calc(100% - 1rem), 430px) !important;
-  display: grid !important;
-  gap: 0.75rem !important;
+  width: min(calc(100% - 1rem), 430px);
+  display: grid;
+  gap: 0.78rem;
   justify-items: center;
   text-align: center;
-  padding: 1.2rem !important;
-  border-radius: 1.5rem !important;
+  padding: 1.25rem;
+  border-radius: 1.55rem;
+  box-shadow:
+    0 28px 72px rgba(11, 21, 34, 0.24),
+    0 10px 26px rgba(11, 21, 34, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
 .locationReminderIcon {
@@ -1554,7 +676,7 @@
   margin: 0;
   color: var(--text);
   font-size: clamp(1.45rem, 6vw, 1.9rem);
-  font-weight: 820;
+  font-weight: 840;
   line-height: 1.05;
   letter-spacing: -0.045em;
 }
@@ -1563,313 +685,127 @@
   max-width: 22rem;
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.95rem;
-  font-weight: 620;
+  font-size: 0.96rem;
+  font-weight: 630;
   line-height: 1.45;
 }
 
 .locationReminderModal .primaryButton {
   width: 100%;
-  min-height: 3.45rem;
-}
-
-@media (max-width: 620px) {
-  .scanIntroCard,
-  .scanAssetHeader,
-  .doneCard,
-  .doneActionBar {
-    border-radius: 1.18rem;
-  }
-
-  .scanStatusGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem;
-  }
-
-  .quickActionGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-
-  .quickActionCard {
-    min-height: 5.85rem !important;
-    grid-template-columns: 1fr !important;
-    align-content: start !important;
-    gap: 0.52rem !important;
-  }
-
-  .quickActionIconWrap {
-    width: 2.85rem !important;
-    height: 2.85rem !important;
-  }
-
-  .doneActionBar {
-    grid-template-columns: 1fr;
-  }
-
-  .doneButton {
-    width: 100%;
-  }
-}
-
-@media (max-width: 360px) {
-  .scanStatusGrid,
-  .quickActionGrid {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-/* === QR scanner dial-in: asset-first PIN screen, centered GPS modal, no footer === */
-.page {
-  min-height: 100dvh !important;
-  background:
-    radial-gradient(circle at 16% 0%, rgba(22, 83, 64, 0.08), transparent 28%),
-    linear-gradient(180deg, #f9fbfb 0%, #eef4f6 100%) !important;
-}
-
-.shell {
-  width: min(calc(100% - 0.9rem), 720px) !important;
-  padding: 0.55rem 0 1rem !important;
-  gap: 0.68rem !important;
-}
-
-.prePinAssetCard,
-.scanReadyHeader {
-  border: 1px solid rgba(205, 220, 230, 0.96);
-  border-radius: 1.28rem;
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 40%),
-    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
-  box-shadow:
-    0 18px 42px rgba(15, 30, 45, 0.075),
-    0 8px 18px rgba(15, 30, 45, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-}
-
-.prePinAssetCard {
-  display: grid;
-  gap: 0.82rem;
-  padding: clamp(1rem, 4vw, 1.25rem);
-}
-
-.prePinAssetHeader {
-  display: grid;
-  gap: 0.36rem;
-}
-
-.prePinAssetHeader h1,
-.scanReadyHeader h1 {
-  margin: 0;
-  color: var(--text);
-  font-size: clamp(1.78rem, 8vw, 2.45rem);
-  font-weight: 820;
-  line-height: 0.98;
-  letter-spacing: -0.055em;
-}
-
-.prePinAssetHeader p,
-.scanReadyHeader p {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 1rem;
-  font-weight: 620;
-  line-height: 1.4;
-}
-
-.prePinDetailGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.55rem;
-}
-
-.prePinDetailGrid > div {
-  min-width: 0;
-  display: grid;
-  gap: 0.22rem;
-  align-content: center;
-  min-height: 4.05rem;
-  padding: 0.78rem 0.82rem;
-  border-radius: 1rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
-  border: 1px solid rgba(216, 226, 236, 0.96);
-}
-
-.prePinDetailGrid span {
-  color: #6c7d8f;
-  font-size: 0.68rem;
-  font-weight: 850;
-  letter-spacing: 0.055em;
-  text-transform: uppercase;
-}
-
-.prePinDetailGrid strong {
-  min-width: 0;
-  color: var(--text);
-  font-size: 0.94rem;
-  font-weight: 820;
-  line-height: 1.18;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pinCard {
-  padding: clamp(1rem, 4vw, 1.18rem) !important;
-  border-radius: 1.28rem !important;
-}
-
-.pinCardCopy {
-  gap: 0.36rem !important;
-}
-
-.pinCard h2 {
-  font-size: clamp(1.62rem, 7vw, 2.15rem) !important;
-}
-
-.field input {
-  min-height: 3.72rem !important;
-  border-radius: 1rem !important;
-}
-
-.pinActions .primaryButton {
-  min-height: 3.85rem !important;
-  border-radius: 1.05rem !important;
-}
-
-.quickPanel {
-  display: grid !important;
-  gap: 0.72rem !important;
-}
-
-.scanReadyHeader {
-  position: relative;
-  display: grid;
-  gap: 0.36rem;
-  padding: clamp(1rem, 4vw, 1.22rem);
-}
-
-.scanReadyHeader .gpsStatusButton {
-  position: absolute;
-  right: 0.9rem;
-  top: 0.9rem;
-}
-
-.scanReadyHeader h1 {
-  padding-right: 7.2rem;
-  font-size: clamp(1.62rem, 7vw, 2.28rem);
-}
-
-.quickActionGrid {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 0.68rem !important;
-}
-
-.quickActionCard {
-  min-height: 6.65rem !important;
-  display: grid !important;
-  grid-template-columns: 1fr !important;
-  align-content: start !important;
-  gap: 0.55rem !important;
-  padding: 0.92rem !important;
-  border-radius: 1.2rem !important;
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 38%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
-}
-
-.quickActionCard:hover {
-  border-color: rgba(22, 83, 64, 0.28) !important;
-}
-
-.quickActionIconWrap {
-  width: 3rem !important;
-  height: 3rem !important;
-  border-radius: 1rem !important;
-}
-
-.quickActionCopy strong {
-  font-size: 1.1rem !important;
-  font-weight: 820 !important;
-  line-height: 1.08 !important;
-}
-
-.quickActionCopy span {
-  font-size: 0.82rem !important;
-  line-height: 1.28 !important;
-  font-weight: 620 !important;
-}
-
-.doneActionBar,
-.doneCard,
-.scanIntroCard,
-.scanAssetHeader {
-  display: none !important;
-}
-
-.locationReminderOverlay {
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 1rem !important;
-}
-
-.locationReminderOverlay .modalBackdrop {
-  background: rgba(14, 22, 32, 0.52) !important;
-  backdrop-filter: blur(14px) !important;
-}
-
-.locationReminderModal {
-  width: min(calc(100% - 1rem), 420px) !important;
-  border-radius: 1.55rem !important;
-  padding: 1.25rem !important;
-  box-shadow:
-    0 28px 72px rgba(11, 21, 34, 0.24),
-    0 10px 26px rgba(11, 21, 34, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
-}
-
-.locationReminderModal .primaryButton {
-  min-height: 3.65rem !important;
-  border-radius: 1.08rem !important;
+  min-height: 3.65rem;
 }
 
 @media (max-width: 620px) {
   .shell {
-    width: min(calc(100% - 0.8rem), 720px) !important;
-    padding-top: 0.4rem !important;
+    width: min(calc(100% - 0.8rem), 720px);
+    padding-top: 0.45rem;
   }
 
   .prePinAssetCard,
   .pinCard,
+  .unavailableCard,
   .scanReadyHeader {
-    border-radius: 1.18rem !important;
+    border-radius: 1.18rem;
   }
 
-  .prePinDetailGrid {
+  .prePinDetailGrid,
+  .quickActionGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .scanReadyHeader h1 {
-    padding-right: 6.5rem;
+  .quickActionCard {
+    min-height: 5.95rem;
   }
 
-  .quickActionGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  .quickActionIconWrap {
+    width: 2.85rem;
+    height: 2.85rem;
+  }
+
+  .editorModalOverlay {
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+  }
+
+  .editorModalOverlay .modalBackdrop {
+    display: none;
+  }
+
+  .editorModalCard {
+    width: 100%;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    padding: 1rem;
+  }
+
+  .modalHeader {
+    padding-top: max(0.2rem, env(safe-area-inset-top));
+  }
+
+  .modalCloseButton {
+    width: 3.35rem;
+    min-width: 3.35rem;
+    height: 3.35rem;
+    min-height: 3.35rem;
+  }
+
+  .modalFooter {
+    grid-template-columns: 1fr;
+    padding-bottom: max(0.2rem, env(safe-area-inset-bottom));
+  }
+
+  .quickOptionRow,
+  .checklistGrid,
+  .serviceTypeGrid,
+  .photoActionGrid,
+  .inlineFieldGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .photoGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 410px) {
+  .gpsInlineStatus {
+    grid-template-columns: 1fr;
+  }
+
+  .gpsRefreshButton {
+    width: 100%;
+  }
+
+  .quickActionGrid,
+  .prePinDetailGrid {
+    gap: 0.56rem;
+  }
+
+  .quickActionCard {
+    padding: 0.82rem;
+  }
+
+  .quickActionCopy strong {
+    font-size: 1.04rem;
+  }
+
+  .quickActionCopy span {
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 350px) {
+  .quickActionGrid,
   .prePinDetailGrid,
-  .quickActionGrid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .scanReadyHeader .gpsStatusButton {
-    position: static;
-    width: fit-content;
-    margin-top: 0.35rem;
-  }
-
-  .scanReadyHeader h1 {
-    padding-right: 0;
+  .quickOptionRow,
+  .checklistGrid,
+  .serviceTypeGrid,
+  .photoActionGrid,
+  .inlineFieldGrid {
+    grid-template-columns: 1fr;
   }
 }
