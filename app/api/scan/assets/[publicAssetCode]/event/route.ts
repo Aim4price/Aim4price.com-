@@ -17,6 +17,7 @@ type ScanEventRequest = {
   lifeWorkedPercent?: unknown;
   fuelPercent?: unknown;
   note?: unknown;
+  operatorName?: unknown;
   photoUrls?: unknown;
   latitude?: unknown;
   longitude?: unknown;
@@ -24,6 +25,10 @@ type ScanEventRequest = {
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizeOperatorName(value: unknown): string {
+  return asText(value).replace(/\s+/g, ' ').slice(0, 80);
 }
 
 function normalizeHours(value: unknown): number | null {
@@ -106,6 +111,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     lifeWorkedPercent: normalizeLifeWorkedPercent(body.lifeWorkedPercent),
     fuelPercent: normalizeFuelPercent(body.fuelPercent),
     note: asText(body.note),
+    operatorName: normalizeOperatorName(body.operatorName),
     photoUrls: normalizePhotoUrls(body.photoUrls),
     latitude: normalizeCoordinates(body.latitude, 90),
     longitude: normalizeCoordinates(body.longitude, 180),
@@ -113,6 +119,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   if (!hasMeaningfulUpdate(payload)) {
     return NextResponse.json({ ok: false, error: 'Add at least one QR update before saving.' }, { status: 400 });
+  }
+
+  if (payload.operatorName.length < 2) {
+    return NextResponse.json(
+      { ok: false, error: 'Enter your name before saving this QR update.' },
+      { status: 400 },
+    );
   }
 
   if (payload.latitude === null || payload.longitude === null) {
@@ -128,7 +141,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const saved = await saveScanAssetEvent({
       publicAssetCode,
       actorType: access.accessMode,
-      operatorName: null,
+      operatorName: payload.operatorName,
       hours: payload.hours,
       lifeWorkedPercent: payload.lifeWorkedPercent,
       fuelPercent: payload.fuelPercent,
