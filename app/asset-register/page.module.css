@@ -11151,3 +11151,276 @@
     width: 100% !important;
   }
 }
+
+/* === Asset Options: unified PDF reports + QR final layout === */
+.assetReportModal {
+  width: min(100%, 640px) !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: clamp(1.25rem, 2vw, 1.65rem) !important;
+  border-radius: 1.9rem !important;
+}
+
+.assetReportModalHeader {
+  margin-bottom: 1rem !important;
+  padding-bottom: 1rem !important;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9) !important;
+}
+
+.assetReportModalHeader h3 {
+  margin: 0 !important;
+  color: #0f3329 !important;
+  font-size: clamp(1.65rem, 2.7vw, 2.05rem) !important;
+  font-weight: 790 !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.055em !important;
+}
+
+.assetReportModalHeader p {
+  margin: 0.38rem 0 0 !important;
+  color: #637287 !important;
+  font-size: 0.98rem !important;
+  font-weight: 680 !important;
+  line-height: 1.35 !important;
+}
+
+.assetReportModalBody {
+  overflow: visible !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.assetReportOptionsGrid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0.85rem !important;
+}
+
+.assetReportOptionButton {
+  width: 100% !important;
+  min-height: 5.8rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 1rem !important;
+  padding: 1.12rem 1.2rem !important;
+  border-radius: 1.18rem !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  cursor: pointer !important;
+  color: #1d3b62 !important;
+  text-align: left !important;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease !important;
+}
+
+.assetReportOptionButton:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(184, 202, 218, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eef5fb 100%) !important;
+  box-shadow:
+    0 16px 30px rgba(16, 31, 28, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetReportOptionButton > .buttonIcon {
+  flex: 0 0 auto !important;
+  width: 1.45rem !important;
+  height: 1.45rem !important;
+  color: #1d3b62 !important;
+}
+
+.assetReportOptionButton > span {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 0.28rem !important;
+}
+
+.assetReportOptionButton strong {
+  color: #10352b !important;
+  font-size: 1.04rem !important;
+  font-weight: 850 !important;
+  line-height: 1.16 !important;
+  letter-spacing: -0.027em !important;
+}
+
+.assetReportOptionButton small {
+  color: #627386 !important;
+  font-size: 0.84rem !important;
+  font-weight: 620 !important;
+  line-height: 1.34 !important;
+}
+
+.qrModal {
+  width: min(100%, 860px) !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: clamp(1.35rem, 2vw, 1.7rem) !important;
+  border-radius: 1.95rem !important;
+}
+
+.qrModalHeader {
+  margin-bottom: 1rem !important;
+  padding-bottom: 1rem !important;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9) !important;
+}
+
+.qrModalScrollBody {
+  overflow: visible !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.qrModalBody {
+  display: grid !important;
+  grid-template-columns: minmax(250px, 300px) minmax(0, 1fr) !important;
+  gap: 1rem !important;
+  align-items: stretch !important;
+  margin: 0 !important;
+}
+
+.qrPreviewCard {
+  min-height: 0 !important;
+  align-self: stretch !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  gap: 0.85rem !important;
+  padding: 1rem !important;
+  border-radius: 1.25rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.qrPreviewFrame {
+  min-height: 238px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0.9rem !important;
+  border-radius: 1.1rem !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+}
+
+.qrPreviewFrame img {
+  width: 100% !important;
+  max-width: 214px !important;
+  height: auto !important;
+}
+
+.qrPrimaryActionsCard {
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0.95rem !important;
+  padding: 1rem !important;
+  border-radius: 1.25rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.qrPrimaryActionButton {
+  width: 100% !important;
+  min-height: 5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.9rem !important;
+  padding: 1rem 1.2rem !important;
+  border-radius: 1.16rem !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%) !important;
+  color: #1d3b62 !important;
+  box-shadow:
+    0 9px 18px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+  cursor: pointer !important;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease !important;
+}
+
+.qrPrimaryActionButton:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(184, 202, 218, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eef5fb 100%) !important;
+  box-shadow:
+    0 16px 30px rgba(16, 31, 28, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.qrPrimaryActionButton > .buttonIcon {
+  flex: 0 0 auto !important;
+  width: 1.35rem !important;
+  height: 1.35rem !important;
+  color: #1d3b62 !important;
+}
+
+.qrPrimaryActionButton > span {
+  color: #10352b !important;
+  font-size: clamp(1.14rem, 2vw, 1.48rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.04em !important;
+  text-align: center !important;
+}
+
+.qrPrimaryActionButton.qrCopiedButton,
+.qrPrimaryActionButton.qrCopiedButton:hover {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #1a5a45 0%, #124233 100%) !important;
+  border-color: rgba(17, 70, 52, 0.3) !important;
+  box-shadow:
+    0 14px 26px rgba(17, 70, 52, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+.qrPrimaryActionButton.qrCopiedButton > .buttonIcon,
+.qrPrimaryActionButton.qrCopiedButton > span {
+  color: #ffffff !important;
+}
+
+@media (max-width: 760px) {
+  .assetReportModal,
+  .qrModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: min(88vh, calc(100dvh - 1rem)) !important;
+    overflow: hidden !important;
+    padding: 1rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .assetReportModalBody,
+  .qrModalScrollBody {
+    overflow-y: auto !important;
+    padding-right: 0.55rem !important;
+    margin-right: -0.2rem !important;
+  }
+
+  .qrModalBody {
+    grid-template-columns: 1fr !important;
+  }
+
+  .qrPrimaryActionsCard {
+    grid-template-rows: none !important;
+  }
+
+  .qrPrimaryActionButton,
+  .assetReportOptionButton {
+    min-height: 4.8rem !important;
+  }
+}

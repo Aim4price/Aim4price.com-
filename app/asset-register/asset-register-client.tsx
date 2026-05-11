@@ -1650,6 +1650,7 @@ export default function AssetRegisterClient() {
   const [manualAssetStep, setManualAssetStep] = useState<ManualAssetStep>(1);
   const [hasManualAssetKindSelection, setHasManualAssetKindSelection] = useState(false);
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
+  const [isAssetReportModalOpen, setIsAssetReportModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [copiedScanLinkAssetId, setCopiedScanLinkAssetId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
@@ -1838,6 +1839,7 @@ export default function AssetRegisterClient() {
     isAssetModalOpen ||
     Boolean(activeAsset) ||
     Boolean(deleteCandidateAsset) ||
+    isAssetReportModalOpen ||
     isQrModalOpen ||
     isSummaryModalOpen ||
     isExportModalOpen ||
@@ -1859,6 +1861,11 @@ export default function AssetRegisterClient() {
 
       if (deleteCandidateAsset) {
         closeDeleteConfirmDialog();
+        return;
+      }
+
+      if (isAssetReportModalOpen) {
+        closeAssetReportDialog();
         return;
       }
 
@@ -1903,7 +1910,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAssetModalOpen, isExportModalOpen, isQrModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isQrModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset]);
 
   const totalValue = useMemo(() => {
     return assets.reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
@@ -2230,6 +2237,7 @@ export default function AssetRegisterClient() {
   }
 
   function closeActionDialog() {
+    setIsAssetReportModalOpen(false);
     setIsQrModalOpen(false);
     setCopiedScanLinkAssetId(null);
     setDeleteCandidateAsset(null);
@@ -2245,7 +2253,18 @@ export default function AssetRegisterClient() {
     setDeleteCandidateAsset(null);
   }
 
+  function openAssetReportDialog() {
+    setIsQrModalOpen(false);
+    setCopiedScanLinkAssetId(null);
+    setIsAssetReportModalOpen(true);
+  }
+
+  function closeAssetReportDialog() {
+    setIsAssetReportModalOpen(false);
+  }
+
   function openQrDialog() {
+    setIsAssetReportModalOpen(false);
     setIsQrModalOpen(true);
   }
 
@@ -2904,7 +2923,7 @@ export default function AssetRegisterClient() {
     if (!didOpen) {
       setNotice({
         tone: 'error',
-        message: 'Unable to open the asset PDF. Please allow pop-ups and try again.',
+        message: 'Unable to open the asset valuation report. Please allow pop-ups and try again.',
       });
       return;
     }
@@ -2947,22 +2966,31 @@ export default function AssetRegisterClient() {
     }
   }
 
-  function handleOpenScanReport(asset: RegisterAsset) {
+  function handleOpenScanReport(asset: RegisterAsset): boolean {
     const reportUrl = buildAssetScanReportUrl(asset);
     const opened = window.open(reportUrl, '_blank', 'noopener,noreferrer');
 
     if (!opened) {
       setNotice({
         tone: 'error',
-        message: 'Unable to open the QR scan report. Please allow pop-ups and try again.',
+        message: 'Unable to open the scan report. Please allow pop-ups and try again.',
       });
-      return;
+      return false;
     }
 
     setNotice({
       tone: 'success',
-      message: 'QR scan report opened in a new tab. Use Print to save it as a PDF.',
+      message: 'Scan report opened in a new tab. Use Print to save it as a PDF.',
     });
+    return true;
+  }
+
+  function handleDownloadScanReport(asset: RegisterAsset) {
+    const didOpen = handleOpenScanReport(asset);
+
+    if (didOpen) {
+      closeActionDialog();
+    }
   }
 
   async function handleDownloadQr(asset: RegisterAsset) {
@@ -4484,19 +4512,19 @@ export default function AssetRegisterClient() {
                     </span>
                   </button>
 
+                  <button type="button" className={styles.optionActionButton} onClick={openAssetReportDialog}>
+                    <DownloadIcon className={styles.buttonIcon} />
+                    <span>
+                      <strong>Download PDF report</strong>
+                      <small>Choose the valuation PDF or scan report.</small>
+                    </span>
+                  </button>
+
                   <button type="button" className={styles.optionActionButton} onClick={openQrDialog}>
                     <QrIcon className={styles.buttonIcon} />
                     <span>
                       <strong>QR code</strong>
                       <small>Copy, download or print the asset QR label.</small>
-                    </span>
-                  </button>
-
-                  <button type="button" className={styles.optionActionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
-                    <DownloadIcon className={styles.buttonIcon} />
-                    <span>
-                      <strong>Download asset PDF</strong>
-                      <small>Open a clean asset sheet for records.</small>
                     </span>
                   </button>
 
@@ -4548,6 +4576,45 @@ export default function AssetRegisterClient() {
                     </span>
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {activeAsset && isAssetReportModalOpen ? (
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={closeAssetReportDialog} />
+
+          <div className={`${styles.modalCard} ${styles.assetReportModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-report-title">
+            <div className={`${styles.modalHeader} ${styles.assetReportModalHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="asset-report-title">Download PDF report</h3>
+                <p>{activeAsset.title}</p>
+              </div>
+
+              <button type="button" className={styles.modalCloseButton} onClick={closeAssetReportDialog} aria-label="Close PDF report options">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${styles.modalScrollBody} ${styles.assetReportModalBody}`}>
+              <div className={styles.assetReportOptionsGrid}>
+                <button type="button" className={styles.assetReportOptionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
+                  <PdfIcon className={styles.buttonIcon} />
+                  <span>
+                    <strong>Download asset valuation</strong>
+                    <small>Asset details, value summary, notes and saved documents.</small>
+                  </span>
+                </button>
+
+                <button type="button" className={styles.assetReportOptionButton} onClick={() => handleDownloadScanReport(activeAsset)}>
+                  <DocumentIcon className={styles.buttonIcon} />
+                  <span>
+                    <strong>Download scan report</strong>
+                    <small>QR scan history, latest position, hours, fuel, notes and photos.</small>
+                  </span>
+                </button>
               </div>
             </div>
           </div>
@@ -4911,45 +4978,26 @@ export default function AssetRegisterClient() {
                   </div>
                 </div>
 
-                <div className={styles.qrDetailsCard}>
-                  <span className={styles.qrPreviewEyebrow}>Scanner details</span>
+                <div className={styles.qrPrimaryActionsCard}>
+                  <button
+                    type="button"
+                    className={`${styles.qrPrimaryActionButton} ${copiedScanLinkAssetId === activeAsset.id ? styles.qrCopiedButton : ''}`}
+                    onClick={() => void handleCopyScanLink(activeAsset)}
+                  >
+                    <CopyIcon className={styles.buttonIcon} />
+                    <span>{copiedScanLinkAssetId === activeAsset.id ? 'Copied' : 'Copy scan link'}</span>
+                  </button>
 
-                  <div className={styles.qrDetailRow}>
-                    <span>Plate label</span>
-                    <strong>{activeAsset.plateLabel || 'Pending'}</strong>
-                  </div>
+                  <button type="button" className={styles.qrPrimaryActionButton} onClick={() => handlePrintQrSheet(activeAsset)}>
+                    <PrintIcon className={styles.buttonIcon} />
+                    <span>Print QR label</span>
+                  </button>
 
-                  <div className={styles.qrDetailRow}>
-                    <span>Last scanned</span>
-                    <strong>{activeAsset.lastScannedAtIso ? formatDate(activeAsset.lastScannedAtIso) : 'No QR updates yet'}</strong>
-                  </div>
+                  <button type="button" className={styles.qrPrimaryActionButton} onClick={() => void handleDownloadQr(activeAsset)}>
+                    <QrIcon className={styles.buttonIcon} />
+                    <span>Download QR</span>
+                  </button>
                 </div>
-              </div>
-
-              <div className={`${styles.optionsGrid} ${styles.qrActionsGrid}`}>
-                <button type="button" className={styles.optionActionButton} onClick={() => handleOpenScanReport(activeAsset)}>
-                  <PdfIcon className={styles.buttonIcon} />
-                  <span>QR scan report</span>
-                </button>
-
-                <button
-                  type="button"
-                  className={`${styles.optionActionButton} ${copiedScanLinkAssetId === activeAsset.id ? styles.qrCopiedButton : ''}`}
-                  onClick={() => void handleCopyScanLink(activeAsset)}
-                >
-                  <CopyIcon className={styles.buttonIcon} />
-                  <span>{copiedScanLinkAssetId === activeAsset.id ? 'Copied' : 'Copy scan link'}</span>
-                </button>
-
-                <button type="button" className={styles.optionActionButton} onClick={() => void handleDownloadQr(activeAsset)}>
-                  <QrIcon className={styles.buttonIcon} />
-                  <span>Download QR Image</span>
-                </button>
-
-                <button type="button" className={styles.optionActionButton} onClick={() => handlePrintQrSheet(activeAsset)}>
-                  <PrintIcon className={styles.buttonIcon} />
-                  <span>Print QR label</span>
-                </button>
               </div>
             </div>
           </div>
