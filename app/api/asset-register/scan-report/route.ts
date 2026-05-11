@@ -160,11 +160,6 @@ function renderPhotoStrip(photoUrls: string[]): string {
 
 function buildEventFlags(event: ScanEventRecord): string[] {
   const flags: string[] = [formatActorType(event.actorType)];
-  const operatorName = asText(event.operatorName);
-
-  if (operatorName) {
-    flags.unshift(`By ${operatorName}`);
-  }
 
   if (event.photoUrls.length) {
     flags.push(`${event.photoUrls.length} photo${event.photoUrls.length === 1 ? '' : 's'}`);
@@ -185,7 +180,6 @@ function renderEventCard(event: ScanEventRecord, index: number): string {
   const locationText = formatLocationText(event.locationText, event.latitude, event.longitude);
   const mapsUrl = buildGoogleMapsUrl(event.latitude, event.longitude);
   const flags = buildEventFlags(event);
-  const operatorName = asText(event.operatorName);
 
   return `
     <article class="timelineCard">
@@ -193,7 +187,6 @@ function renderEventCard(event: ScanEventRecord, index: number): string {
         <div>
           <span class="timelineEyebrow">Update ${index + 1}</span>
           <h3>${escapeHtml(formatDateTime(event.createdAtIso))}</h3>
-          ${operatorName ? `<p class="timelineOperator">Updated by ${escapeHtml(operatorName)}</p>` : ''}
         </div>
         <div class="timelineFlagRow">
           ${flags.map((flag) => `<span class="timelineFlag">${escapeHtml(flag)}</span>`).join('')}
@@ -201,6 +194,10 @@ function renderEventCard(event: ScanEventRecord, index: number): string {
       </div>
 
       <div class="timelineStats">
+        <div class="timelineStat">
+          <span>Updated by</span>
+          <strong>${escapeHtml(asText(event.operatorName) || 'Not captured')}</strong>
+        </div>
         <div class="timelineStat">
           <span>Hour meter</span>
           <strong>${escapeHtml(formatInteger(event.hours))}</strong>
@@ -421,7 +418,6 @@ function buildHtml(options: {
       .timelineHeader { display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; align-items:flex-start; }
       .timelineEyebrow { display:block; color: var(--muted); font-size:0.76rem; font-weight:800; letter-spacing:0.09em; text-transform:uppercase; }
       .timelineHeader h3 { margin:0.32rem 0 0; font-size:1.25rem; line-height:1.15; letter-spacing:-0.03em; }
-      .timelineOperator { margin:0.32rem 0 0; color:var(--muted); font-size:0.86rem; font-weight:700; line-height:1.45; }
       .timelineFlagRow { display:flex; gap:0.5rem; flex-wrap:wrap; }
       .timelineFlag { display:inline-flex; align-items:center; min-height:1.85rem; padding:0 0.76rem; border-radius:999px; background:#f1f6f4; color:#245347; border:1px solid rgba(28,90,76,0.12); font-size:0.74rem; font-weight:800; }
       .timelineStats { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:0.75rem; margin-top:0.95rem; }
