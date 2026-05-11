@@ -16,29 +16,36 @@ type SheetDefinition = {
   tabColor: string;
 };
 
+type UsageDisplay = {
+  value: number | null;
+  unit: 'hours' | 'km' | 'percentage' | null;
+};
+
+const NA_VALUE = 'N/A';
+const VAT_RATE = 0.15;
+const VAT_MULTIPLIER = 1 + VAT_RATE;
+
 const EXPORT_DETAILS_SECTION_ROW = 5;
 const EXPORT_NOTE_SECTION_ROW = 13;
 const EXPORT_NOTE_START_ROW = EXPORT_NOTE_SECTION_ROW + 1;
 const SUMMARY_SECTION_ROW = 17;
-const TABLE_HEADER_ROW = 25;
+const SUMMARY_ROW_COUNT = 9;
+const TABLE_HEADER_ROW = SUMMARY_SECTION_ROW + 1 + SUMMARY_ROW_COUNT + 1;
 const DATA_START_ROW = TABLE_HEADER_ROW + 1;
-const TABLE_COLUMN_COUNT = 24;
-const VAT_RATE = 0.15;
-const VAT_MULTIPLIER = 1 + VAT_RATE;
 
-const REGISTER_VALUE_EX_VAT_COLUMN = 'N';
-const REGISTER_VALUE_INCL_VAT_COLUMN = 'O';
-const AIM4PRICE_VALUE_EX_VAT_COLUMN = 'P';
-const AIM4PRICE_VALUE_INCL_VAT_COLUMN = 'Q';
-const MARKET_VALUE_EX_VAT_COLUMN = 'R';
-const MARKET_VALUE_INCL_VAT_COLUMN = 'S';
-const FINANCE_STATUS_COLUMN = 'V';
-const INSURANCE_STATUS_COLUMN = 'X';
+const REGISTER_VALUE_EX_VAT_COLUMN = 'M';
+const REGISTER_VALUE_INCL_VAT_COLUMN = 'N';
+const AIM4PRICE_VALUE_EX_VAT_COLUMN = 'O';
+const AIM4PRICE_VALUE_INCL_VAT_COLUMN = 'P';
+const MARKET_VALUE_EX_VAT_COLUMN = 'Q';
+const MARKET_VALUE_INCL_VAT_COLUMN = 'R';
+const FINANCE_STATUS_COLUMN = 'T';
+const INSURANCE_STATUS_COLUMN = 'V';
 
 const TABLE_HEADERS = [
+  'Asset title',
   'Serial / VIN',
   'Asset #',
-  'Asset title',
   'Asset type',
   'Brand',
   'Model / description',
@@ -47,7 +54,6 @@ const TABLE_HEADERS = [
   'Drive',
   'Usage value',
   'Usage unit',
-  'Life worked %',
   'Condition',
   'Register value ex VAT',
   'Register value incl VAT',
@@ -56,16 +62,16 @@ const TABLE_HEADERS = [
   'Market value ex VAT',
   'Market value incl VAT',
   'Selected method',
-  'Last scanned',
   'Finance status',
   'Finance notes',
   'Insurance status',
+  'Insurance notes',
 ] as const;
 
 const WORKBOOK_COLUMN_WIDTHS = [
+  34,
   18,
   9,
-  34,
   22,
   18,
   30,
@@ -73,8 +79,7 @@ const WORKBOOK_COLUMN_WIDTHS = [
   18,
   12,
   14,
-  12,
-  13,
+  14,
   18,
   18,
   18,
@@ -83,58 +88,76 @@ const WORKBOOK_COLUMN_WIDTHS = [
   18,
   18,
   18,
-  15,
   17,
   28,
   17,
+  28,
 ];
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
 }
 
+function cleanText(value: unknown): string {
+  return String(value ?? '').trim();
+}
+
+function textOrNa(value: unknown): string {
+  const cleaned = cleanText(value);
+  return cleaned || NA_VALUE;
+}
+
 function textCell(value: unknown, style: XlsxCellStyle = 'text'): XlsxCellValue {
-  return { value: String(value ?? '').trim(), style };
+  return { value: cleanText(value), style };
+}
+
+function naCell(style: XlsxCellStyle = 'muted'): XlsxCellValue {
+  return { value: NA_VALUE, style };
+}
+
+function textOrNaCell(value: unknown, style: XlsxCellStyle = 'text'): XlsxCellValue {
+  return { value: textOrNa(value), style };
+}
+
+function numericValue(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') return null;
+
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
 }
 
 function numberCell(value: unknown): XlsxCellValue {
-  const numeric = Number(value);
-  return { value: Number.isFinite(numeric) ? numeric : null, style: 'integer' };
+  const numeric = numericValue(value);
+  return numeric === null ? naCell() : { value: numeric, style: 'integer' };
 }
 
 function moneyCell(value: unknown): XlsxCellValue {
-  const numeric = Number(value);
-  return { value: Number.isFinite(numeric) ? Math.round(numeric) : null, style: 'currency' };
-}
-
-function optionalMoneyCell(value: unknown): XlsxCellValue {
-  const numeric = Number(value);
-  return { value: Number.isFinite(numeric) ? Math.round(numeric) : null, style: 'currency' };
+  const numeric = numericValue(value);
+  return numeric === null ? naCell() : { value: Math.round(numeric), style: 'currency' };
 }
 
 function moneyInclVatTotal(value: unknown): number {
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? Math.round(numeric * VAT_MULTIPLIER) : 0;
+  const numeric = numericValue(value);
+  return numeric === null ? 0 : Math.round(numeric * VAT_MULTIPLIER);
 }
 
 function vatIncludedFormulaCell(exVatColumn: string, rowNumber: number, exVatValue: unknown): XlsxCellValue {
-  const numeric = Number(exVatValue);
+  const numeric = numericValue(exVatValue);
+
+  if (numeric === null) {
+    return naCell();
+  }
 
   return {
-    formula: `IF(${exVatColumn}${rowNumber}="","",${exVatColumn}${rowNumber}*${VAT_MULTIPLIER})`,
-    value: Number.isFinite(numeric) ? Math.round(numeric * VAT_MULTIPLIER) : null,
+    formula: `ROUND(${exVatColumn}${rowNumber}*${VAT_MULTIPLIER},0)`,
+    value: Math.round(numeric * VAT_MULTIPLIER),
     style: 'currency',
   };
 }
 
-function percentCell(value: unknown): XlsxCellValue {
-  const numeric = Number(value);
-  return { value: Number.isFinite(numeric) ? numeric / 100 : null, style: 'percent' };
-}
-
 function dateCell(value?: string | Date | null): XlsxCellValue {
   const parsed = value instanceof Date ? value : value ? new Date(value) : null;
-  return { value: parsed && !Number.isNaN(parsed.getTime()) ? parsed : null, style: 'date' };
+  return parsed && !Number.isNaN(parsed.getTime()) ? { value: parsed, style: 'date' } : naCell();
 }
 
 function formulaCell(formula: string, value: number, style: 'integer' | 'currency' = 'integer'): XlsxCellValue {
@@ -145,8 +168,8 @@ function statusCell(value: string, positive: boolean): XlsxCellValue {
   return { value, style: positive ? 'statusGood' : 'statusWarn' };
 }
 
-function blankCell(style: 'text' | 'currency' | 'integer' | 'decimal' | 'date' | 'percent' = 'text'): XlsxCellValue {
-  return { value: null, style };
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function methodLabel(value: AssetRegisterItem['selectedMethod']): string {
@@ -182,29 +205,56 @@ function conditionLabel(value: AssetRegisterItem['condition']): string {
   );
 }
 
-function usageUnit(item: AssetRegisterItem): 'hours' | 'km' {
-  const specs = item.specsJson && typeof item.specsJson === 'object' && !Array.isArray(item.specsJson) ? item.specsJson : {};
-  const normalized = String(
-    specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit ?? '',
+function normalizedUsageMetric(item: AssetRegisterItem): string {
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+
+  return String(
+    specs.usageMetric ??
+      specs.usage_metric ??
+      specs.usageUnit ??
+      specs.usage_unit ??
+      specs.usageType ??
+      specs.usage_type ??
+      '',
   )
     .trim()
     .toLowerCase();
-
-  if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') {
-    return 'km';
-  }
-
-  return item.kind === 'vehicle' ? 'km' : 'hours';
 }
 
-function usageAmount(item: AssetRegisterItem): number | null {
-  const hours = Number(item.hours);
-  if (Number.isFinite(hours) && hours > 0) return Math.round(hours);
+function usageDisplay(item: AssetRegisterItem): UsageDisplay {
+  const normalized = normalizedUsageMetric(item);
+  const lifeWorkedPercent = numericValue(item.lifeWorkedPercent);
 
-  const estimatedHours = Number(item.estimatedHours);
-  if (Number.isFinite(estimatedHours) && estimatedHours > 0) return Math.round(estimatedHours);
+  if (
+    ['percent', 'percentage', '%', 'percent_used', 'percent used', 'life_worked_percent', 'life worked percent'].includes(
+      normalized,
+    )
+  ) {
+    return {
+      value: lifeWorkedPercent === null ? null : Math.round(lifeWorkedPercent),
+      unit: 'percentage',
+    };
+  }
 
-  return null;
+  const hours = numericValue(item.hours);
+  if (hours !== null && hours > 0) {
+    return { value: Math.round(hours), unit: item.kind === 'vehicle' ? 'km' : 'hours' };
+  }
+
+  if (lifeWorkedPercent !== null) {
+    return { value: Math.round(lifeWorkedPercent), unit: 'percentage' };
+  }
+
+  const estimatedHours = numericValue(item.estimatedHours);
+  if (estimatedHours !== null && estimatedHours > 0) {
+    return { value: Math.round(estimatedHours), unit: item.kind === 'vehicle' ? 'km' : 'hours' };
+  }
+
+  if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') {
+    return { value: null, unit: 'km' };
+  }
+
+  return { value: null, unit: null };
 }
 
 function formatDrive(value: string): string {
@@ -212,6 +262,18 @@ function formatDrive(value: string): string {
   if (value === '2wd') return '2WD';
   if (value === 'tracks') return 'Tracks';
   return value || '';
+}
+
+function readInsuranceNote(item: AssetRegisterItem): string {
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+
+  return cleanText(
+    specs.insuranceNote ??
+      specs.insurance_note ??
+      specs.insuredNote ??
+      specs.insured_note ??
+      '',
+  );
 }
 
 function buildOwnerName(profile: AccountProfileResult | null): string {
@@ -223,13 +285,13 @@ function buildOwnerAddress(profile: AccountProfileResult | null): string {
   if (!profile) return '';
 
   return [profile.addressLine1, profile.addressLine2, profile.townCity, profile.province]
-    .map((part) => String(part ?? '').trim())
+    .map((part) => cleanText(part))
     .filter(Boolean)
     .join(', ');
 }
 
 function registerValueTotal(items: AssetRegisterItem[]): number {
-  return items.reduce((sum, item) => sum + Math.round(Number(item.value || 0)), 0);
+  return items.reduce((sum, item) => sum + Math.round(numericValue(item.value) ?? 0), 0);
 }
 
 function registerValueInclVatTotal(items: AssetRegisterItem[]): number {
@@ -237,7 +299,7 @@ function registerValueInclVatTotal(items: AssetRegisterItem[]): number {
 }
 
 function aim4priceValueTotal(items: AssetRegisterItem[]): number {
-  return items.reduce((sum, item) => sum + Math.round(Number(item.aim4priceValueExVat || 0)), 0);
+  return items.reduce((sum, item) => sum + Math.round(numericValue(item.aim4priceValueExVat) ?? 0), 0);
 }
 
 function aim4priceValueInclVatTotal(items: AssetRegisterItem[]): number {
@@ -245,7 +307,7 @@ function aim4priceValueInclVatTotal(items: AssetRegisterItem[]): number {
 }
 
 function marketValueTotal(items: AssetRegisterItem[]): number {
-  return items.reduce((sum, item) => sum + Math.round(Number(item.marketMidExVat || 0)), 0);
+  return items.reduce((sum, item) => sum + Math.round(numericValue(item.marketMidExVat) ?? 0), 0);
 }
 
 function marketValueInclVatTotal(items: AssetRegisterItem[]): number {
@@ -265,11 +327,11 @@ function buildPlateOrQrCode(item: AssetRegisterItem): string {
 }
 
 function assetDedupeKey(item: AssetRegisterItem): string {
-  const primaryKey = String(item.id || item.publicAssetCode || '').trim();
+  const primaryKey = cleanText(item.id || item.publicAssetCode || '');
   if (primaryKey) return primaryKey;
 
   return [item.title, item.serialNumber, item.plateLabel, item.brandName, item.modelName, item.yearModel]
-    .map((part) => String(part ?? '').trim().toLowerCase())
+    .map((part) => cleanText(part).toLowerCase())
     .join('|');
 }
 
@@ -305,39 +367,35 @@ function buildTableHeaderRow(): XlsxCellValue[] {
 }
 
 function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] {
-  const amount = usageAmount(item);
-  const lifeWorkedPercent = Number(item.lifeWorkedPercent);
+  const usage = usageDisplay(item);
   const rowNumber = DATA_START_ROW + index;
+  const aim4priceValue = numericValue(item.aim4priceValueExVat);
+  const marketValue = numericValue(item.marketMidExVat);
 
   return [
-    textCell(item.serialNumber || ''),
+    textOrNaCell(item.title),
+    textOrNaCell(item.serialNumber),
     numberCell(index + 1),
-    textCell(item.title),
-    textCell(kindLabel(item)),
-    textCell(item.brandName || ''),
-    textCell(item.modelName || item.typedModelName || ''),
-    item.yearModel ? numberCell(item.yearModel) : blankCell('integer'),
-    textCell(buildPlateOrQrCode(item)),
-    textCell(formatDrive(item.drive)),
-    amount === null ? blankCell('integer') : numberCell(amount),
-    textCell(amount === null ? '' : usageUnit(item)),
-    Number.isFinite(lifeWorkedPercent) ? percentCell(lifeWorkedPercent) : blankCell('percent'),
-    textCell(conditionLabel(item.condition)),
+    textOrNaCell(kindLabel(item)),
+    textOrNaCell(item.brandName),
+    textOrNaCell(item.modelName || item.typedModelName),
+    item.yearModel ? numberCell(item.yearModel) : naCell(),
+    textOrNaCell(buildPlateOrQrCode(item)),
+    textOrNaCell(formatDrive(item.drive)),
+    usage.value === null ? naCell() : numberCell(usage.value),
+    textOrNaCell(usage.unit),
+    textOrNaCell(conditionLabel(item.condition)),
     moneyCell(item.value),
     vatIncludedFormulaCell(REGISTER_VALUE_EX_VAT_COLUMN, rowNumber, item.value),
-    item.aim4priceValueExVat === null ? blankCell('currency') : optionalMoneyCell(item.aim4priceValueExVat),
-    item.aim4priceValueExVat === null
-      ? blankCell('currency')
-      : vatIncludedFormulaCell(AIM4PRICE_VALUE_EX_VAT_COLUMN, rowNumber, item.aim4priceValueExVat),
-    item.marketMidExVat === null ? blankCell('currency') : optionalMoneyCell(item.marketMidExVat),
-    item.marketMidExVat === null
-      ? blankCell('currency')
-      : vatIncludedFormulaCell(MARKET_VALUE_EX_VAT_COLUMN, rowNumber, item.marketMidExVat),
-    textCell(methodLabel(item.selectedMethod)),
-    item.lastScannedAtIso ? dateCell(item.lastScannedAtIso) : blankCell('date'),
+    aim4priceValue === null ? naCell() : moneyCell(aim4priceValue),
+    aim4priceValue === null ? naCell() : vatIncludedFormulaCell(AIM4PRICE_VALUE_EX_VAT_COLUMN, rowNumber, aim4priceValue),
+    marketValue === null ? naCell() : moneyCell(marketValue),
+    marketValue === null ? naCell() : vatIncludedFormulaCell(MARKET_VALUE_EX_VAT_COLUMN, rowNumber, marketValue),
+    textOrNaCell(methodLabel(item.selectedMethod)),
     statusCell(item.isFinanced ? 'Financed' : 'Not financed', item.isFinanced),
-    textCell(item.financeNote || '', 'note'),
+    textOrNaCell(item.financeNote, 'note'),
     statusCell(item.isInsured ? 'Insured' : 'Not insured', item.isInsured),
+    textOrNaCell(readInsuranceNote(item), 'note'),
   ];
 }
 
@@ -360,7 +418,7 @@ function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
   return [
     [
       textCell('Total assets', 'metaLabel'),
-      items.length > 0 ? formulaCell(`COUNTA(B${DATA_START_ROW}:B${DATA_START_ROW + items.length - 1})`, items.length) : numberCell(0),
+      items.length > 0 ? formulaCell(`COUNTA(A${DATA_START_ROW}:A${DATA_START_ROW + items.length - 1})`, items.length) : numberCell(0),
     ],
     [
       textCell('Register value ex VAT', 'metaLabel'),
@@ -418,11 +476,11 @@ function buildWorkbookSheet(definition: SheetDefinition, profile: AccountProfile
     [],
     [textCell('Export details', 'section')],
     [textCell('Generated', 'metaLabel'), { value: generatedAt, style: 'date' }],
-    [textCell('Owner', 'metaLabel'), textCell(ownerName, 'metaValue')],
-    [textCell('Address', 'metaLabel'), textCell(ownerAddress, 'metaValue')],
-    [textCell('Email', 'metaLabel'), textCell(ownerEmail, 'metaValue')],
-    [textCell('Phone', 'metaLabel'), textCell(ownerPhone, 'metaValue')],
-    [textCell('VAT number', 'metaLabel'), textCell(ownerVatNumber, 'metaValue')],
+    [textCell('Owner', 'metaLabel'), textOrNaCell(ownerName, 'metaValue')],
+    [textCell('Address', 'metaLabel'), textOrNaCell(ownerAddress, 'metaValue')],
+    [textCell('Email', 'metaLabel'), textOrNaCell(ownerEmail, 'metaValue')],
+    [textCell('Phone', 'metaLabel'), textOrNaCell(ownerPhone, 'metaValue')],
+    [textCell('VAT number', 'metaLabel'), textOrNaCell(ownerVatNumber, 'metaValue')],
     [],
     [textCell('Export note', 'section')],
     [
@@ -445,19 +503,11 @@ function buildWorkbookSheet(definition: SheetDefinition, profile: AccountProfile
     ...definition.items.map(buildAssetRow),
   ];
 
-  const lastRow = Math.max(TABLE_HEADER_ROW, DATA_START_ROW + definition.items.length - 1);
-
   return {
     name: definition.name,
     rows,
     columns: WORKBOOK_COLUMN_WIDTHS,
     merges: buildSheetMerges(),
-    autoFilter: {
-      fromRow: TABLE_HEADER_ROW,
-      fromColumn: 1,
-      toRow: lastRow,
-      toColumn: TABLE_COLUMN_COUNT,
-    },
     tabColor: definition.tabColor,
   };
 }
