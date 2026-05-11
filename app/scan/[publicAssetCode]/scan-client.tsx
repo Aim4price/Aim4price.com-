@@ -96,7 +96,14 @@ type DraftState = {
 const MAX_QR_PHOTOS = 12;
 const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
 
-const CHECKED_OPTIONS = [
+type ServiceOption = {
+  label: string;
+  description: string;
+};
+
+type AssetServiceProfile = "propelled" | "implement";
+
+const PROPELLED_CHECKED_OPTIONS: readonly ServiceOption[] = [
   { label: "Oil level", description: "Dipstick / sight glass checked." },
   { label: "Tyres", description: "Pressure, tread and visible damage checked." },
   { label: "Safety", description: "Guards, warning lights and obvious risks checked." },
@@ -109,7 +116,7 @@ const CHECKED_OPTIONS = [
   { label: "Leaks", description: "Oil, diesel, coolant and hydraulic leaks checked." },
 ] as const;
 
-const SERVICED_OPTIONS = [
+const PROPELLED_SERVICED_OPTIONS: readonly ServiceOption[] = [
   { label: "Changed engine oil", description: "Engine oil drained and replaced." },
   { label: "Changed hydraulic oil", description: "Hydraulic oil serviced or replaced." },
   { label: "Changed air filters", description: "Air filter elements cleaned or replaced." },
@@ -120,6 +127,87 @@ const SERVICED_OPTIONS = [
   { label: "Replaced belts", description: "Worn belts replaced or adjusted." },
   { label: "Tyre repair", description: "Tyre puncture, valve or pressure repair." },
   { label: "Battery service", description: "Battery serviced, replaced or terminals cleaned." },
+] as const;
+
+const IMPLEMENT_CHECKED_OPTIONS: readonly ServiceOption[] = [
+  { label: "Nuts and bolts", description: "Loose, missing or damaged bolts checked." },
+  { label: "Pins and bushes", description: "Wear, play and locking clips checked." },
+  { label: "Frame and welds", description: "Cracks, bent sections and welds checked." },
+  { label: "Hitch / drawbar", description: "Hitch points, hooks and drawbar checked." },
+  { label: "Hydraulic hoses", description: "Hoses, couplers, rams and leaks checked." },
+  { label: "Bearings", description: "Noise, heat, play and visible wear checked." },
+  { label: "Wear parts", description: "Blades, points, discs, tines or shoes checked." },
+  { label: "PTO / guards", description: "PTO shaft, covers and safety guards checked." },
+  { label: "Wheels / hubs", description: "Wheel nuts, hubs, bearings and tyres checked." },
+  { label: "Grease points", description: "Grease nipples and moving joints checked." },
+  { label: "Safety decals", description: "Warnings, reflectors and visible markings checked." },
+] as const;
+
+const IMPLEMENT_SERVICED_OPTIONS: readonly ServiceOption[] = [
+  { label: "Tightened bolts", description: "Loose fasteners tightened or replaced." },
+  { label: "Replaced pins / bushes", description: "Worn pins, bushes or clips replaced." },
+  { label: "Repaired frame / welds", description: "Cracks, bends or welds repaired." },
+  { label: "Replaced wear parts", description: "Blades, points, discs, tines or shoes replaced." },
+  { label: "Serviced hydraulics", description: "Hydraulic hoses, couplers or cylinders repaired." },
+  { label: "Replaced bearings", description: "Bearings, seals or hubs replaced." },
+  { label: "Greased implement", description: "Grease points and moving joints serviced." },
+  { label: "Serviced PTO / guards", description: "PTO shaft, covers or guards repaired." },
+  { label: "Adjusted setup", description: "Depth, angle, calibration or working setup adjusted." },
+  { label: "Wheel / hub service", description: "Wheel nuts, tyres, hubs or axles serviced." },
+  { label: "Cleaned implement", description: "Mud, crop material or residue removed." },
+] as const;
+
+const IMPLEMENT_HINTS = [
+  "implement",
+  "implements",
+  "tool",
+  "tools",
+  "attachment",
+  "attachments",
+  "trailer",
+  "trailers",
+  "header",
+  "headers",
+  "plough",
+  "plow",
+  "ripper",
+  "cultivator",
+  "harrow",
+  "disc",
+  "disk",
+  "planter",
+  "seeder",
+  "seed drill",
+  "fertilizer spreader",
+  "spreader",
+  "baler",
+  "mower",
+  "slasher",
+  "mulcher",
+  "roller",
+  "auger",
+  "fork",
+  "blade",
+] as const;
+
+const PROPELLED_HINTS = [
+  "vehicle",
+  "bakkie",
+  "truck",
+  "tractor",
+  "combine",
+  "harvester",
+  "self propelled",
+  "self-propelled",
+  "loader",
+  "telehandler",
+  "forklift",
+  "excavator",
+  "dozer",
+  "bulldozer",
+  "grader",
+  "skid steer",
+  "tlb",
 ] as const;
 
 const initialDraft: DraftState = {
@@ -243,6 +331,105 @@ function usagePlaceholder(asset: ScanSafeAsset): string {
 function assetPlaceholderLabel(asset: ScanSafeAsset): string {
   const label = asset.equipmentFamilyLabel || asset.kind || "Asset";
   return label.replace(/[_-]+/g, " ").trim() || "Asset";
+}
+
+function normalizeClassifierText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function assetClassifierText(asset: ScanSafeAsset): string {
+  return normalizeClassifierText([
+    asset.kind,
+    asset.equipmentFamilyKey,
+    asset.equipmentFamilyLabel,
+    asset.title,
+  ].join(" "));
+}
+
+function containsAnyHint(text: string, hints: readonly string[]): boolean {
+  return hints.some((hint) => text.includes(hint));
+}
+
+function resolveAssetServiceProfile(asset: ScanSafeAsset | null): AssetServiceProfile {
+  if (!asset) return "propelled";
+
+  if (asset.isPropelled || asset.canUpdateFuel || asset.kind === "vehicle" || asset.kind === "tractor") {
+    return "propelled";
+  }
+
+  const classifierText = assetClassifierText(asset);
+
+  if (containsAnyHint(classifierText, IMPLEMENT_HINTS)) {
+    return "implement";
+  }
+
+  if (asset.usageMode === "percent") {
+    return "implement";
+  }
+
+  if (containsAnyHint(classifierText, PROPELLED_HINTS) || asset.usageMode === "km" || asset.usageMode === "hours") {
+    return "propelled";
+  }
+
+  return "implement";
+}
+
+function checkedOptionsForProfile(profile: AssetServiceProfile): readonly ServiceOption[] {
+  return profile === "implement" ? IMPLEMENT_CHECKED_OPTIONS : PROPELLED_CHECKED_OPTIONS;
+}
+
+function servicedOptionsForProfile(profile: AssetServiceProfile): readonly ServiceOption[] {
+  return profile === "implement" ? IMPLEMENT_SERVICED_OPTIONS : PROPELLED_SERVICED_OPTIONS;
+}
+
+function serviceCopyForProfile(profile: AssetServiceProfile) {
+  if (profile === "implement") {
+    return {
+      checkedDescription: "Quick implement or tool inspection.",
+      servicedDescription: "Repair, wear-part or workshop job.",
+      checkedTitle: "Implement check",
+      servicedTitle: "Implement service",
+      checkedPrompt: "Tap each implement item that was inspected.",
+      servicedPrompt: "Tap each job, repair or replacement that was completed.",
+      checkedHeader: "What was checked?",
+      checkedSubheader: "Select every implement item that was inspected.",
+      servicedHeader: "What was serviced?",
+      servicedSubheader: "Select all work completed, then continue to workshop details.",
+      detailsHeader: "Who completed the work?",
+      detailsSubheader: "Add the company and technician name before saving.",
+      companyLabel: "Company / Workshop",
+      companyPlaceholder: "Company or workshop name",
+      mechanicLabel: "Mechanic / Technician name",
+      mechanicPlaceholder: "Mechanic or technician name",
+      checkedNotePlaceholder: "Example: Bolts checked, pins checked, no visible cracks.",
+      servicedNotePlaceholder: "Example: Replaced worn points, tightened bolts and greased pins.",
+    };
+  }
+
+  return {
+    checkedDescription: "Quick driver or manager inspection.",
+    servicedDescription: "Dealer, workshop or mechanic job.",
+    checkedTitle: "Machine check",
+    servicedTitle: "Machine service",
+    checkedPrompt: "Tap each item that was inspected.",
+    servicedPrompt: "Tap each job that was completed.",
+    checkedHeader: "What was checked?",
+    checkedSubheader: "Select every item that was inspected.",
+    servicedHeader: "What was serviced?",
+    servicedSubheader: "Select all work completed, then continue to company details.",
+    detailsHeader: "Who completed the service?",
+    detailsSubheader: "Add the company and mechanic name before saving.",
+    companyLabel: "Company / Dealer",
+    companyPlaceholder: "Company or dealer name",
+    mechanicLabel: "Mechanic name",
+    mechanicPlaceholder: "Mechanic name",
+    checkedNotePlaceholder: "Example: Oil checked, tyres checked, no visible leaks.",
+    servicedNotePlaceholder: "Example: Full service completed, oil and filters replaced.",
+  };
 }
 
 function buildEditorSummary(editor: EditorKey, asset: ScanSafeAsset | null): string {
@@ -818,6 +1005,8 @@ export default function ScanClient({
     if (activeEditor === "service") {
       if (!draft.serviceMode) return { ok: false, message: "Choose Checked or Serviced." };
 
+      const validationServiceCopy = serviceCopyForProfile(resolveAssetServiceProfile(asset));
+
       if (draft.serviceMode === "checked") {
         if (!draft.checkedItems.length && !draft.note.trim()) {
           return { ok: false, message: "Select what was checked or add a note." };
@@ -834,8 +1023,12 @@ export default function ScanClient({
         return { ok: false };
       }
 
-      if (!draft.serviceCompany.trim()) return { ok: false, message: "Enter the company or dealer name." };
-      if (!draft.mechanicName.trim()) return { ok: false, message: "Enter the mechanic name." };
+      if (!draft.serviceCompany.trim()) {
+        return { ok: false, message: `Enter the ${validationServiceCopy.companyLabel.toLowerCase()}.` };
+      }
+      if (!draft.mechanicName.trim()) {
+        return { ok: false, message: `Enter the ${validationServiceCopy.mechanicLabel.toLowerCase()}.` };
+      }
       return { ok: true };
     }
 
@@ -933,6 +1126,10 @@ export default function ScanClient({
   const locationReady = hasLocationCaptured(draft);
   const showUsageAction = asset ? asset.usageMode !== "none" : false;
   const showFuelAction = Boolean(asset?.canUpdateFuel);
+  const serviceProfile = useMemo(() => resolveAssetServiceProfile(asset), [asset]);
+  const checkedOptions = useMemo(() => checkedOptionsForProfile(serviceProfile), [serviceProfile]);
+  const servicedOptions = useMemo(() => servicedOptionsForProfile(serviceProfile), [serviceProfile]);
+  const serviceCopy = useMemo(() => serviceCopyForProfile(serviceProfile), [serviceProfile]);
   const prePinAsset = assetPreview;
   const hasServiceSelection = draft.serviceMode === "checked"
     ? draft.checkedItems.length > 0 || Boolean(draft.note.trim())
@@ -961,7 +1158,9 @@ export default function ScanClient({
           : serviceDetailsMissing
             ? "Complete details"
             : activeEditor === "service" && draft.serviceMode === "serviced" && !showServiceDetailsStep
-              ? "Next: company details"
+              ? serviceProfile === "implement"
+                ? "Next: workshop details"
+                : "Next: company details"
               : "Save update";
 
   if (isDone) {
@@ -1163,11 +1362,11 @@ export default function ScanClient({
                       ? "Current tank level"
                       : activeEditor === "service"
                         ? draft.serviceMode === "checked"
-                          ? "Machine check"
+                          ? serviceCopy.checkedTitle
                           : draft.serviceMode === "serviced"
                             ? showServiceDetailsStep
                               ? "Service details"
-                              : "Machine service"
+                              : serviceCopy.servicedTitle
                             : "Checked or serviced"
                         : "Add fresh photos"}
                 </h3>
@@ -1180,11 +1379,11 @@ export default function ScanClient({
                       ? "Save the tank level as it is now."
                       : activeEditor === "service"
                         ? draft.serviceMode === "checked"
-                          ? "Tap each item that was inspected."
+                          ? serviceCopy.checkedPrompt
                           : draft.serviceMode === "serviced"
                             ? showServiceDetailsStep
-                              ? "Add the company and mechanic details."
-                              : "Tap each job that was completed."
+                              ? serviceCopy.detailsSubheader
+                              : serviceCopy.servicedPrompt
                             : "Choose whether this was checked or serviced."
                         : "Upload from gallery or take photos with the camera."}
                 </p>
@@ -1290,7 +1489,7 @@ export default function ScanClient({
                           </span>
                           <span className={styles.serviceModeText}>
                             <strong>Checked</strong>
-                            <small>Quick driver or manager inspection.</small>
+                            <small>{serviceCopy.checkedDescription}</small>
                           </span>
                         </button>
 
@@ -1312,7 +1511,7 @@ export default function ScanClient({
                           </span>
                           <span className={styles.serviceModeText}>
                             <strong>Serviced</strong>
-                            <small>Dealer, workshop or mechanic job.</small>
+                            <small>{serviceCopy.servicedDescription}</small>
                           </span>
                         </button>
                       </>
@@ -1340,12 +1539,12 @@ export default function ScanClient({
                   {draft.serviceMode === "checked" ? (
                     <div className={styles.servicePanel}>
                       <div className={styles.serviceSectionHeader}>
-                        <strong>What was checked?</strong>
-                        <small>Select every item that was inspected.</small>
+                        <strong>{serviceCopy.checkedHeader}</strong>
+                        <small>{serviceCopy.checkedSubheader}</small>
                       </div>
 
                       <div className={styles.optionList}>
-                        {CHECKED_OPTIONS.map((option) => {
+                        {checkedOptions.map((option) => {
                           const selected = draft.checkedItems.includes(option.label);
 
                           return (
@@ -1380,7 +1579,7 @@ export default function ScanClient({
                       <label className={styles.field}>
                         <span>Notes</span>
                         <textarea
-                          placeholder="Example: Oil checked, tyres checked, no visible leaks."
+                          placeholder={serviceCopy.checkedNotePlaceholder}
                           value={draft.note}
                           onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
                           disabled={isSaving}
@@ -1394,12 +1593,12 @@ export default function ScanClient({
                       {!showServiceDetailsStep ? (
                         <>
                           <div className={styles.serviceSectionHeader}>
-                            <strong>What was serviced?</strong>
-                            <small>Select all work completed, then continue to company details.</small>
+                            <strong>{serviceCopy.servicedHeader}</strong>
+                            <small>{serviceCopy.servicedSubheader}</small>
                           </div>
 
                           <div className={styles.optionList}>
-                            {SERVICED_OPTIONS.map((option) => {
+                            {servicedOptions.map((option) => {
                               const selected = draft.servicedItems.includes(option.label);
 
                               return (
@@ -1434,7 +1633,7 @@ export default function ScanClient({
                           <label className={styles.field}>
                             <span>Notes</span>
                             <textarea
-                              placeholder="Example: Full service completed, oil and filters replaced."
+                              placeholder={serviceCopy.servicedNotePlaceholder}
                               value={draft.note}
                               onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
                               disabled={isSaving}
@@ -1444,8 +1643,8 @@ export default function ScanClient({
                       ) : (
                         <div className={styles.serviceDetailsCard}>
                           <div className={styles.serviceSectionHeader}>
-                            <strong>Who completed the service?</strong>
-                            <small>Add the company and mechanic name before saving.</small>
+                            <strong>{serviceCopy.detailsHeader}</strong>
+                            <small>{serviceCopy.detailsSubheader}</small>
                           </div>
 
                           {draft.servicedItems.length ? (
@@ -1455,18 +1654,18 @@ export default function ScanClient({
                           ) : null}
 
                           <label className={styles.field}>
-                            <span>Company / Dealer</span>
+                            <span>{serviceCopy.companyLabel}</span>
                             <input
-                              placeholder="Company or dealer name"
+                              placeholder={serviceCopy.companyPlaceholder}
                               value={draft.serviceCompany}
                               onChange={(event) => setDraft((current) => ({ ...current, serviceCompany: event.target.value.slice(0, 120) }))}
                               disabled={isSaving}
                             />
                           </label>
                           <label className={styles.field}>
-                            <span>Mechanic name</span>
+                            <span>{serviceCopy.mechanicLabel}</span>
                             <input
-                              placeholder="Mechanic name"
+                              placeholder={serviceCopy.mechanicPlaceholder}
                               value={draft.mechanicName}
                               onChange={(event) => setDraft((current) => ({ ...current, mechanicName: event.target.value.slice(0, 120) }))}
                               disabled={isSaving}
