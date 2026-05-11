@@ -16,7 +16,11 @@ type SheetDefinition = {
   tabColor: string;
 };
 
-const TABLE_HEADER_ROW = 11;
+const EXPORT_DETAILS_SECTION_ROW = 5;
+const EXPORT_NOTE_SECTION_ROW = 13;
+const EXPORT_NOTE_START_ROW = EXPORT_NOTE_SECTION_ROW + 1;
+const SUMMARY_SECTION_ROW = 17;
+const TABLE_HEADER_ROW = 25;
 const DATA_START_ROW = TABLE_HEADER_ROW + 1;
 const TABLE_COLUMN_COUNT = 21;
 
@@ -74,9 +78,6 @@ const WORKBOOK_COLUMN_WIDTHS = [
   15,
 ];
 
-const EXPORT_DISCLAIMER =
-  'Values are indicative estimates based on saved Aim4price asset-register information and available pricing inputs. Values exclude VAT unless stated otherwise. This spreadsheet is intended as an editable offline asset register for owners, financiers and insurance companies. It is not a certified valuation, inspection report or guarantee of selling price.';
-
 function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
 }
@@ -121,7 +122,6 @@ function statusCell(value: string, positive: boolean): XlsxCellValue {
 function blankCell(style: 'text' | 'currency' | 'integer' | 'decimal' | 'date' | 'percent' = 'text'): XlsxCellValue {
   return { value: null, style };
 }
-
 
 function methodLabel(value: AssetRegisterItem['selectedMethod']): string {
   return (
@@ -188,7 +188,6 @@ function formatDrive(value: string): string {
   return value || '';
 }
 
-
 function buildOwnerName(profile: AccountProfileResult | null): string {
   if (!profile) return 'Aim4price account';
   return profile.businessName || profile.name || 'Aim4price account';
@@ -202,17 +201,6 @@ function buildOwnerAddress(profile: AccountProfileResult | null): string {
     .filter(Boolean)
     .join(', ');
 }
-
-function buildOwnerMeta(profile: AccountProfileResult | null): string {
-  if (!profile) return 'Aim4price asset register export';
-
-  const location = [profile.townCity, profile.province].filter(Boolean).join(', ');
-  const address = [profile.addressLine1, profile.addressLine2].filter(Boolean).join(', ');
-  const parts = [profile.email, profile.phone, location, address].filter(Boolean);
-
-  return parts.join(' • ') || 'Aim4price asset register export';
-}
-
 
 function registerValueTotal(items: AssetRegisterItem[]): number {
   return items.reduce((sum, item) => sum + Math.round(Number(item.value || 0)), 0);
@@ -234,17 +222,43 @@ function countInsured(items: AssetRegisterItem[]): number {
   return items.filter((item) => item.isInsured).length;
 }
 
-
 function buildPlateOrQrCode(item: AssetRegisterItem): string {
   return item.plateLabel || item.publicAssetCode || '';
 }
 
+function assetDedupeKey(item: AssetRegisterItem): string {
+  const primaryKey = String(item.id || item.publicAssetCode || '').trim();
+  if (primaryKey) return primaryKey;
+
+  return [item.title, item.serialNumber, item.plateLabel, item.brandName, item.modelName, item.yearModel]
+    .map((part) => String(part ?? '').trim().toLowerCase())
+    .join('|');
+}
+
+function dedupeAssetItems(items: AssetRegisterItem[]): AssetRegisterItem[] {
+  const seen = new Set<string>();
+
+  return items.filter((item) => {
+    const key = assetDedupeKey(item);
+
+    if (!key) return true;
+    if (seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  });
+}
+
 function buildSheetMerges(): XlsxSheet['merges'] {
   return [
-    { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 7 },
-    { fromRow: 1, fromColumn: 8, toRow: 1, toColumn: 12 },
-    { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 12 },
-    { fromRow: 8, fromColumn: 1, toRow: 8, toColumn: 6 },
+    { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 8 },
+    { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 8 },
+    { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: 8 },
+    { fromRow: EXPORT_DETAILS_SECTION_ROW, fromColumn: 1, toRow: EXPORT_DETAILS_SECTION_ROW, toColumn: 2 },
+    { fromRow: EXPORT_NOTE_SECTION_ROW, fromColumn: 1, toRow: EXPORT_NOTE_SECTION_ROW, toColumn: 2 },
+    { fromRow: EXPORT_NOTE_START_ROW, fromColumn: 1, toRow: EXPORT_NOTE_START_ROW, toColumn: 8 },
+    { fromRow: EXPORT_NOTE_START_ROW + 1, fromColumn: 1, toRow: EXPORT_NOTE_START_ROW + 1, toColumn: 8 },
+    { fromRow: SUMMARY_SECTION_ROW, fromColumn: 1, toRow: SUMMARY_SECTION_ROW, toColumn: 2 },
   ];
 }
 
@@ -287,7 +301,7 @@ function buildFormulaRange(column: string, dataRowCount: number): string | null 
   return `${column}${DATA_START_ROW}:${column}${lastDataRow}`;
 }
 
-function buildSummaryMetricCells(items: AssetRegisterItem[]): XlsxCellValue[] {
+function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
   const registerValueRange = buildFormulaRange(REGISTER_VALUE_COLUMN, items.length);
   const aim4priceValueRange = buildFormulaRange(AIM4PRICE_VALUE_COLUMN, items.length);
   const marketValueRange = buildFormulaRange(MARKET_VALUE_COLUMN, items.length);
@@ -295,54 +309,68 @@ function buildSummaryMetricCells(items: AssetRegisterItem[]): XlsxCellValue[] {
   const insuranceRange = buildFormulaRange(INSURANCE_STATUS_COLUMN, items.length);
 
   return [
-    textCell('Assets', 'metaLabel'),
-    items.length > 0 ? formulaCell(`COUNTA(B${DATA_START_ROW}:B${DATA_START_ROW + items.length - 1})`, items.length) : numberCell(0),
-    textCell('Register value ex VAT', 'metaLabel'),
-    registerValueRange ? formulaCell(`SUM(${registerValueRange})`, registerValueTotal(items), 'currency') : moneyCell(0),
-    textCell('Financed assets', 'metaLabel'),
-    financeRange ? formulaCell(`COUNTIF(${financeRange},"Financed")`, countFinanced(items)) : numberCell(0),
-    textCell('Insured assets', 'metaLabel'),
-    insuranceRange ? formulaCell(`COUNTIF(${insuranceRange},"Insured")`, countInsured(items)) : numberCell(0),
-    textCell('Aim4price values', 'metaLabel'),
-    aim4priceValueRange ? formulaCell(`SUM(${aim4priceValueRange})`, aim4priceValueTotal(items), 'currency') : moneyCell(0),
-    textCell('Market values', 'metaLabel'),
-    marketValueRange ? formulaCell(`SUM(${marketValueRange})`, marketValueTotal(items), 'currency') : moneyCell(0),
+    [
+      textCell('Total assets', 'metaLabel'),
+      items.length > 0 ? formulaCell(`COUNTA(B${DATA_START_ROW}:B${DATA_START_ROW + items.length - 1})`, items.length) : numberCell(0),
+    ],
+    [
+      textCell('Register value ex VAT', 'metaLabel'),
+      registerValueRange ? formulaCell(`SUM(${registerValueRange})`, registerValueTotal(items), 'currency') : moneyCell(0),
+    ],
+    [
+      textCell('Financed assets', 'metaLabel'),
+      financeRange ? formulaCell(`COUNTIF(${financeRange},"Financed")`, countFinanced(items)) : numberCell(0),
+    ],
+    [
+      textCell('Insured assets', 'metaLabel'),
+      insuranceRange ? formulaCell(`COUNTIF(${insuranceRange},"Insured")`, countInsured(items)) : numberCell(0),
+    ],
+    [
+      textCell('Aim4price values ex VAT', 'metaLabel'),
+      aim4priceValueRange ? formulaCell(`SUM(${aim4priceValueRange})`, aim4priceValueTotal(items), 'currency') : moneyCell(0),
+    ],
+    [
+      textCell('Market values ex VAT', 'metaLabel'),
+      marketValueRange ? formulaCell(`SUM(${marketValueRange})`, marketValueTotal(items), 'currency') : moneyCell(0),
+    ],
   ];
 }
 
 function buildWorkbookSheet(definition: SheetDefinition, profile: AccountProfileResult | null, generatedAt: Date): XlsxSheet {
   const ownerName = buildOwnerName(profile);
   const ownerAddress = buildOwnerAddress(profile);
-  const ownerMeta = buildOwnerMeta(profile);
   const ownerEmail = profile?.email?.trim() || '';
   const ownerPhone = profile?.phone?.trim() || '';
   const ownerVatNumber = profile?.vatNumber?.trim() || '';
   const rows: XlsxCellValue[][] = [
-    [textCell('Aim4price Asset Register', 'title'), null, null, null, null, null, null, textCell(definition.name, 'section')],
+    [textCell('Aim4price Asset Register', 'title')],
+    [textCell(definition.name, 'section')],
     [textCell(definition.description, 'subtitle')],
     [],
+    [textCell('Export details', 'section')],
+    [textCell('Generated', 'metaLabel'), { value: generatedAt, style: 'date' }],
+    [textCell('Owner', 'metaLabel'), textCell(ownerName, 'metaValue')],
+    [textCell('Address', 'metaLabel'), textCell(ownerAddress, 'metaValue')],
+    [textCell('Email', 'metaLabel'), textCell(ownerEmail, 'metaValue')],
+    [textCell('Phone', 'metaLabel'), textCell(ownerPhone, 'metaValue')],
+    [textCell('VAT number', 'metaLabel'), textCell(ownerVatNumber, 'metaValue')],
+    [],
+    [textCell('Export note', 'section')],
     [
-      textCell('Generated', 'metaLabel'),
-      { value: generatedAt, style: 'date' },
-      textCell('Owner', 'metaLabel'),
-      textCell(ownerName, 'metaValue'),
-      textCell('Email', 'metaLabel'),
-      textCell(ownerEmail, 'metaValue'),
-      textCell('Phone', 'metaLabel'),
-      textCell(ownerPhone, 'metaValue'),
+      textCell(
+        'Values exclude VAT unless stated otherwise. This workbook is editable and intended for owners, financiers and insurance companies.',
+        'subtitle',
+      ),
     ],
     [
-      textCell('Address', 'metaLabel'),
-      textCell(ownerAddress, 'metaValue'),
-      textCell('VAT number', 'metaLabel'),
-      textCell(ownerVatNumber, 'metaValue'),
-      textCell('Owner details', 'metaLabel'),
-      textCell(ownerMeta, 'metaValue'),
+      textCell(
+        'Indicative estimates only. Not a certified valuation, inspection report or guarantee of selling price.',
+        'subtitle',
+      ),
     ],
     [],
-    [textCell(EXPORT_DISCLAIMER, 'subtitle')],
     [textCell('Workbook summary', 'section')],
-    buildSummaryMetricCells(definition.items),
+    ...buildSummaryRows(definition.items),
     [],
     buildTableHeaderRow(),
     ...definition.items.map(buildAssetRow),
@@ -367,35 +395,36 @@ function buildWorkbookSheet(definition: SheetDefinition, profile: AccountProfile
 
 function buildWorkbookSheets(items: AssetRegisterItem[], profile: AccountProfileResult | null): XlsxSheet[] {
   const generatedAt = new Date();
+  const uniqueItems = dedupeAssetItems(items);
   const definitions: SheetDefinition[] = [
     {
       name: 'Full Asset Register',
       description: 'Complete editable register with every saved asset and key supporting fields.',
-      items,
+      items: uniqueItems,
       tabColor: '10382F',
     },
     {
       name: 'Financed Sheet',
       description: 'Only assets marked as financed. Useful for finance agreements, lender checks and offline updates.',
-      items: items.filter((item) => item.isFinanced),
+      items: uniqueItems.filter((item) => item.isFinanced),
       tabColor: '355FBA',
     },
     {
       name: 'Insured Sheet',
       description: 'Only assets marked as insured. Useful for insurance schedules and policy reviews.',
-      items: items.filter((item) => item.isInsured),
+      items: uniqueItems.filter((item) => item.isInsured),
       tabColor: '0F6A46',
     },
     {
       name: 'Not Financed Sheet',
       description: 'Only assets currently marked as not financed.',
-      items: items.filter((item) => !item.isFinanced),
+      items: uniqueItems.filter((item) => !item.isFinanced),
       tabColor: '8A6500',
     },
     {
       name: 'Not Insured Sheet',
       description: 'Only assets currently marked as not insured. Useful for finding insurance gaps quickly.',
-      items: items.filter((item) => !item.isInsured),
+      items: uniqueItems.filter((item) => !item.isInsured),
       tabColor: 'A3271B',
     },
   ];
