@@ -45,6 +45,10 @@ function normalizeKind(value: unknown): AssetRegisterItemKind {
   return 'manual';
 }
 
+function normalizeLicenseRegistrationNumber(value: unknown): string {
+  return String(value ?? '').replace(/\s+/g, ' ').trim().toUpperCase();
+}
+
 function normalizeHours(value: unknown): number | null {
   if (value === null || typeof value === 'undefined') {
     return null;
@@ -316,6 +320,9 @@ export async function POST(request: NextRequest) {
   const title = String(body.title ?? '').trim();
   const value = Math.round(Number(body.value) || 0);
   const usageMetric = normalizeUsageMetric(body.usageMetric);
+  const licenseRegistrationNumber = Boolean(body.isLicensed)
+    ? normalizeLicenseRegistrationNumber((body as { licenseRegistrationNumber?: unknown }).licenseRegistrationNumber)
+    : null;
   const lifeWorkedPercent = normalizeLifeWorkedPercent((body as { lifeWorkedPercent?: unknown }).lifeWorkedPercent);
 
   if (!title || value <= 0) {
@@ -338,6 +345,7 @@ export async function POST(request: NextRequest) {
       isFinanced: Boolean(body.isFinanced),
       isInsured: Boolean(body.isInsured),
       isLicensed: Boolean(body.isLicensed),
+      licenseRegistrationNumber,
       financeNote: body.financeNote ?? null,
       photos: normalizePhotos(body.photos),
       documents: normalizeDocuments(body.documents),
@@ -371,6 +379,9 @@ export async function PUT(request: NextRequest) {
   const title = String(body.title ?? '').trim();
   const value = Math.round(Number(body.value) || 0);
   const usageMetric = normalizeUsageMetric(body.usageMetric);
+  const licenseRegistrationNumber = Boolean(body.isLicensed)
+    ? normalizeLicenseRegistrationNumber((body as { licenseRegistrationNumber?: unknown }).licenseRegistrationNumber)
+    : null;
   const lifeWorkedPercent = normalizeLifeWorkedPercent((body as { lifeWorkedPercent?: unknown }).lifeWorkedPercent);
 
   if (!assetId) {
@@ -412,6 +423,7 @@ export async function PUT(request: NextRequest) {
       isFinanced: Boolean(body.isFinanced),
       isInsured: Boolean(body.isInsured),
       isLicensed: Boolean(body.isLicensed),
+      licenseRegistrationNumber,
       financeNote: body.financeNote ?? null,
       photos: nextPhotos,
       documents: nextDocuments,
