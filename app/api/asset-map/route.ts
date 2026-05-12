@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
-import { listAssetRegisterItems } from '../../../lib/asset-register-db';
+import { listAssetRegisterItems, type AssetRegisterItem } from '../../../lib/asset-register-db';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 
 type AssetMapItem = {
   id: string;
@@ -14,6 +16,9 @@ type AssetMapItem = {
   publicAssetCode: string;
   qrStatus: string;
   condition: string;
+  financeStatus: AssetStatusChoice;
+  insuranceStatus: AssetStatusChoice;
+  licenseStatus: AssetStatusChoice;
   hours: number | null;
   fuelPercent: number | null;
   serialNumber: string;
@@ -48,7 +53,67 @@ function titleCase(value: string): string {
     .join(' ');
 }
 
-function buildAssetTypeLabel(item: Awaited<ReturnType<typeof listAssetRegisterItems>>[number]): string {
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizeAssetStatusChoice(value: unknown, fallback: AssetStatusChoice = 'unknown'): AssetStatusChoice {
+  const normalized = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+  if (['yes', 'y', 'true', 'financed', 'insured', 'licensed', 'licenced'].includes(normalized)) {
+    return 'yes';
+  }
+
+  if (['no', 'n', 'false', 'not_financed', 'not_insured', 'not_licensed', 'not_licenced', 'unfinanced', 'uninsured', 'unlicensed', 'unlicenced'].includes(normalized)) {
+    return 'no';
+  }
+
+  if (['na', 'n_a', 'not_applicable', 'not_aplicable', 'not_relevant', 'does_not_apply'].includes(normalized)) {
+    return 'not_applicable';
+  }
+
+  if (['unknown', 'not_sure', 'unsure', 'maybe', ''].includes(normalized)) {
+    return normalized ? 'unknown' : fallback;
+  }
+
+  return fallback;
+}
+
+function readFinanceStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.financeStatus ?? specs.finance_status ?? specs.financedStatus ?? specs.financed_status,
+    item.isFinanced ? 'yes' : 'no',
+  );
+}
+
+function readInsuranceStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.insuranceStatus ?? specs.insurance_status ?? specs.insuredStatus ?? specs.insured_status,
+    item.isInsured ? 'yes' : 'no',
+  );
+}
+
+function readLicenseStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.licenseStatus ??
+      specs.license_status ??
+      specs.licensedStatus ??
+      specs.licensed_status ??
+      specs.licenceStatus ??
+      specs.licence_status ??
+      specs.licencedStatus ??
+      specs.licenced_status,
+    item.isLicensed ? 'yes' : 'no',
+  );
+}
+
+function buildAssetTypeLabel(item: AssetRegisterItem): string {
   const family = String(item.equipmentFamilyLabel ?? '').trim();
   if (family) return family;
 
@@ -58,7 +123,7 @@ function buildAssetTypeLabel(item: Awaited<ReturnType<typeof listAssetRegisterIt
   return 'Asset';
 }
 
-function mapAssetForMap(item: Awaited<ReturnType<typeof listAssetRegisterItems>>[number]): AssetMapItem {
+function mapAssetForMap(item: AssetRegisterItem): AssetMapItem {
   return {
     id: item.id,
     title: item.title,
@@ -68,6 +133,9 @@ function mapAssetForMap(item: Awaited<ReturnType<typeof listAssetRegisterItems>>
     publicAssetCode: item.publicAssetCode,
     qrStatus: item.qrStatus,
     condition: item.condition,
+    financeStatus: readFinanceStatusChoice(item),
+    insuranceStatus: readInsuranceStatusChoice(item),
+    licenseStatus: readLicenseStatusChoice(item),
     hours: item.hours,
     fuelPercent: item.fuelPercent,
     serialNumber: item.serialNumber,
