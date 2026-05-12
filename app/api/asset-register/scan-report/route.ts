@@ -184,6 +184,17 @@ function formatActorType(value: string): string {
   );
 }
 
+
+function formatOperatorLabel(event: ScanEventRecord): string {
+  return asText(event.operatorName) || formatActorType(event.actorType);
+}
+
+function formatPhotoCount(event: ScanEventRecord): string {
+  const count = event.photoUrls.length;
+  if (!count) return '-';
+  return count === 1 ? '1 photo' : `${count} photos`;
+}
+
 function formatCondition(value: string): string {
   const normalized = String(value ?? '').trim().toLowerCase();
 
@@ -376,22 +387,30 @@ function parseMaintenanceEvent(event: ScanEventRecord): MaintenanceEntry | null 
 function summarizeScanEvent(asset: AssetRegisterItem, event: ScanEventRecord): string {
   const maintenanceEntry = parseMaintenanceEvent(event);
   if (maintenanceEntry) {
+    const label = maintenanceEntry.label;
     const items = maintenanceEntry.items.length ? `: ${maintenanceEntry.items.join(', ')}` : '';
-    return `${maintenanceEntry.label}${items}`;
+    const extra = [maintenanceEntry.company, maintenanceEntry.mechanic, maintenanceEntry.notes].filter(Boolean).join(' • ');
+    return [ `${label}${items}`, extra ].filter(Boolean).join(' • ');
   }
 
   const note = normalizeSpaces(event.note);
-  if (note) {
-    return note.length > 180 ? `${note.slice(0, 177)}...` : note;
-  }
-
   const parts = [
-    formatEventUsage(asset, event) !== '-' ? `Usage ${formatEventUsage(asset, event)}` : '',
-    formatFuel(event.fuelPercent) !== '-' ? `Fuel ${formatFuel(event.fuelPercent)}` : '',
-    formatCondition(event.condition) !== '-' ? `Condition ${formatCondition(event.condition)}` : '',
+    note,
+    formatCondition(event.condition) !== '-' ? `Condition: ${formatCondition(event.condition)}` : '',
+    event.photoUrls.length > 0 ? `${formatPhotoCount(event)} added` : '',
   ].filter(Boolean);
 
-  return parts.join(' • ') || 'QR scan recorded';
+  if (parts.length) {
+    const summary = parts.join(' • ');
+    return summary.length > 260 ? `${summary.slice(0, 257)}...` : summary;
+  }
+
+  const fallbackParts = [
+    formatEventUsage(asset, event) !== '-' ? 'Usage reading updated' : '',
+    formatFuel(event.fuelPercent) !== '-' ? 'Fuel reading captured' : '',
+  ].filter(Boolean);
+
+  return fallbackParts.join(' • ') || 'QR scan recorded';
 }
 
 function renderRows(rows: KeyValueRow[], emptyText = 'No details available.'): string {
@@ -575,6 +594,7 @@ function buildMaintenanceReportSummary(asset: AssetRegisterItem, entries: Mainte
 function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): string {
   const rows = events.map((event) => [
     escapeHtml(formatDateTime(event.createdAtIso)),
+    escapeHtml(formatOperatorLabel(event)),
     escapeHtml(formatEventUsage(asset, event)),
     `<strong>${escapeHtml(formatFuel(event.fuelPercent))}</strong>`,
     escapeHtml(formatLocationText(event.locationText, event.latitude, event.longitude)),
@@ -582,9 +602,16 @@ function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
 
   return `
     <section class="assetReportSection assetReportWideSection">
-      <h2>Fuel Readings</h2>
+      <div class="assetReportSectionHeading">
+        <div>
+          <h2>Fuel Readings</h2>
+          <p>Each line shows the QR fuel percentage captured against the machine usage reading, operator and scan position.</p>
+        </div>
+        <strong>${escapeHtml(formatNumber(events.length))} ${events.length === 1 ? 'entry' : 'entries'}</strong>
+      </div>
       ${renderTable({
-        headers: ['Date', 'Usage', 'Fuel', 'Scan Location'],
+        className: 'assetReportFuelTable',
+        headers: ['Date / Time', 'Updated By', 'Usage Reading', 'Fuel %', 'Scan Location'],
         rows,
         emptyText: 'No fuel readings have been recorded for this asset yet.',
       })}
@@ -595,6 +622,7 @@ function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
 function buildScanBody(asset: AssetRegisterItem, events: ScanEventRecord[]): string {
   const rows = events.map((event) => [
     escapeHtml(formatDateTime(event.createdAtIso)),
+    escapeHtml(formatOperatorLabel(event)),
     escapeHtml(formatEventUsage(asset, event)),
     escapeHtml(formatFuel(event.fuelPercent)),
     escapeHtml(summarizeScanEvent(asset, event)),
@@ -603,10 +631,16 @@ function buildScanBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
 
   return `
     <section class="assetReportSection assetReportWideSection">
-      <h2>QR Scan Updates</h2>
+      <div class="assetReportSectionHeading">
+        <div>
+          <h2>QR Scan Updates</h2>
+          <p>Full QR activity trail showing who updated the asset, what changed, and where the scan was captured.</p>
+        </div>
+        <strong>${escapeHtml(formatNumber(events.length))} ${events.length === 1 ? 'scan' : 'scans'}</strong>
+      </div>
       ${renderTable({
         className: 'assetReportScanTable',
-        headers: ['Date', 'Usage', 'Fuel', 'Update Summary', 'Location'],
+        headers: ['Date / Time', 'Updated By', 'Usage', 'Fuel', 'Update Summary', 'Scan Location'],
         rows,
         emptyText: 'No QR scan updates have been recorded for this asset yet.',
       })}
@@ -614,26 +648,89 @@ function buildScanBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
   `;
 }
 
-function buildMaintenanceBody(asset: AssetRegisterItem, entries: MaintenanceEntry[]): string {
-  const rows = entries.map((entry) => [
-    escapeHtml(formatDateTime(entry.event.createdAtIso)),
-    escapeHtml(entry.label),
-    escapeHtml(formatEventUsage(asset, entry.event)),
-    escapeHtml(entry.items.length ? entry.items.join(', ') : '-'),
-    escapeHtml(entry.company || '-'),
-    escapeHtml(entry.mechanic || '-'),
-    escapeHtml(entry.notes || formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude)),
-  ]);
+function renderMaintenanceCards(asset: AssetRegisterItem, entries: MaintenanceEntry[]): string {
+  if (!entries.length) {
+    return '<div class="assetReportEmpty">No maintenance records have been captured for this asset yet.</div>';
+  }
 
   return `
+    <div class="assetReportMaintenanceList">
+      ${entries
+        .map((entry) => {
+          const detailLabel = entry.kind === 'checked' ? 'Checked Items' : 'Work Completed';
+          const detailText = entry.items.length ? entry.items.join(', ') : '-';
+          const location = formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude);
+          const notes = entry.notes || '-';
+          const company = entry.company || '-';
+          const mechanic = entry.mechanic || '-';
+          const photos = formatPhotoCount(entry.event);
+
+          return `
+            <article class="assetReportMaintenanceCard">
+              <div class="assetReportMaintenanceHeader">
+                <div>
+                  <span>Record Type</span>
+                  <strong>${escapeHtml(entry.label)}</strong>
+                </div>
+                <div>
+                  <span>Date / Time</span>
+                  <strong>${escapeHtml(formatDateTime(entry.event.createdAtIso))}</strong>
+                </div>
+                <div>
+                  <span>Updated By</span>
+                  <strong>${escapeHtml(formatOperatorLabel(entry.event))}</strong>
+                </div>
+                <div>
+                  <span>Usage Reading</span>
+                  <strong>${escapeHtml(formatEventUsage(asset, entry.event))}</strong>
+                </div>
+              </div>
+
+              <div class="assetReportMaintenanceDetails">
+                <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
+                  <span>${escapeHtml(detailLabel)}</span>
+                  <strong>${escapeHtml(detailText)}</strong>
+                </div>
+                <div class="assetReportMaintenanceDetail">
+                  <span>Company / Dealer</span>
+                  <strong>${escapeHtml(company)}</strong>
+                </div>
+                <div class="assetReportMaintenanceDetail">
+                  <span>Mechanic / Technician</span>
+                  <strong>${escapeHtml(mechanic)}</strong>
+                </div>
+                <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
+                  <span>Notes</span>
+                  <strong>${escapeHtml(notes)}</strong>
+                </div>
+                <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
+                  <span>Scan Location</span>
+                  <strong>${escapeHtml(location)}</strong>
+                </div>
+                <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
+                  <span>Photos</span>
+                  <strong>${escapeHtml(photos)}</strong>
+                </div>
+              </div>
+            </article>
+          `;
+        })
+        .join('')}
+    </div>
+  `;
+}
+
+function buildMaintenanceBody(asset: AssetRegisterItem, entries: MaintenanceEntry[]): string {
+  return `
     <section class="assetReportSection assetReportWideSection">
-      <h2>Maintenance Records</h2>
-      ${renderTable({
-        className: 'assetReportMaintenanceTable',
-        headers: ['Date', 'Type', 'Usage', 'Checked / Serviced', 'Company', 'Mechanic', 'Notes / Location'],
-        rows,
-        emptyText: 'No maintenance records have been captured for this asset yet.',
-      })}
+      <div class="assetReportSectionHeading">
+        <div>
+          <h2>Maintenance Records</h2>
+          <p>Readable check, service and repair trail captured from QR updates. Each record shows the work, person/company, notes and scan location.</p>
+        </div>
+        <strong>${escapeHtml(formatNumber(entries.length))} ${entries.length === 1 ? 'record' : 'records'}</strong>
+      </div>
+      ${renderMaintenanceCards(asset, entries)}
     </section>
   `;
 }
@@ -764,8 +861,9 @@ function buildReportHtml(options: {
 
       .assetReportInner {
         position: relative;
+        display: flex;
         min-height: calc(297mm - 20mm);
-        padding-bottom: 20mm;
+        flex-direction: column;
       }
 
       .assetReportHeader {
@@ -954,9 +1052,14 @@ function buildReportHtml(options: {
         margin-top: 12px;
       }
 
-      .assetReportMainStack {
+      .assetReportMainStack,
+      .assetReportFullStack {
         display: grid;
         gap: 10px;
+      }
+
+      .assetReportFullStack {
+        margin-top: 10px;
       }
 
       .assetReportSection,
@@ -1075,12 +1178,50 @@ function buildReportHtml(options: {
       }
 
       .assetReportWideSection {
+        width: 100%;
         break-inside: auto;
+      }
+
+      .assetReportSectionHeading {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: start;
+        margin-bottom: 8px;
+      }
+
+      .assetReportSectionHeading h2 {
+        margin-bottom: 4px;
+      }
+
+      .assetReportSectionHeading p {
+        margin: 0;
+        max-width: 140mm;
+        color: var(--muted);
+        font-size: 8px;
+        line-height: 1.35;
+        font-weight: 600;
+      }
+
+      .assetReportSectionHeading > strong {
+        display: inline-flex;
+        min-width: 24mm;
+        min-height: 22px;
+        align-items: center;
+        justify-content: center;
+        padding: 3px 8px;
+        border: 1px solid var(--line);
+        background: var(--soft-2);
+        color: var(--strong);
+        font-size: 8px;
+        font-weight: 800;
+        text-transform: uppercase;
+        white-space: nowrap;
       }
 
       .assetReportTableWrap {
         width: 100%;
-        overflow: hidden;
+        overflow: visible;
         border-top: 1px solid var(--line);
       }
 
@@ -1092,21 +1233,23 @@ function buildReportHtml(options: {
 
       .assetReportTable th,
       .assetReportTable td {
-        padding: 5px 5px 5px 0;
+        padding: 6px 6px 6px 0;
         border-bottom: 1px solid var(--line);
         color: #38404c;
-        font-size: 7.7px;
-        line-height: 1.35;
+        font-size: 8px;
+        line-height: 1.42;
         text-align: left;
         vertical-align: top;
-        word-break: break-word;
+        overflow-wrap: anywhere;
+        word-break: normal;
       }
 
       .assetReportTable th {
         color: var(--strong);
-        font-size: 7.4px;
+        font-size: 7.35px;
+        line-height: 1.2;
         font-weight: 800;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.045em;
         text-transform: uppercase;
       }
 
@@ -1115,22 +1258,125 @@ function buildReportHtml(options: {
         font-weight: 800;
       }
 
+      .assetReportFuelTable th:nth-child(1),
+      .assetReportFuelTable td:nth-child(1) {
+        width: 27mm;
+      }
+
+      .assetReportFuelTable th:nth-child(2),
+      .assetReportFuelTable td:nth-child(2) {
+        width: 27mm;
+      }
+
+      .assetReportFuelTable th:nth-child(3),
+      .assetReportFuelTable td:nth-child(3) {
+        width: 24mm;
+      }
+
+      .assetReportFuelTable th:nth-child(4),
+      .assetReportFuelTable td:nth-child(4) {
+        width: 14mm;
+      }
+
       .assetReportScanTable th:nth-child(1),
-      .assetReportScanTable td:nth-child(1),
-      .assetReportMaintenanceTable th:nth-child(1),
-      .assetReportMaintenanceTable td:nth-child(1) {
-        width: 22mm;
+      .assetReportScanTable td:nth-child(1) {
+        width: 25mm;
       }
 
       .assetReportScanTable th:nth-child(2),
-      .assetReportScanTable td:nth-child(2),
+      .assetReportScanTable td:nth-child(2) {
+        width: 25mm;
+      }
+
       .assetReportScanTable th:nth-child(3),
-      .assetReportScanTable td:nth-child(3),
-      .assetReportMaintenanceTable th:nth-child(2),
-      .assetReportMaintenanceTable td:nth-child(2),
-      .assetReportMaintenanceTable th:nth-child(3),
-      .assetReportMaintenanceTable td:nth-child(3) {
-        width: 17mm;
+      .assetReportScanTable td:nth-child(3) {
+        width: 22mm;
+      }
+
+      .assetReportScanTable th:nth-child(4),
+      .assetReportScanTable td:nth-child(4) {
+        width: 13mm;
+      }
+
+      .assetReportScanTable th:nth-child(6),
+      .assetReportScanTable td:nth-child(6) {
+        width: 43mm;
+      }
+
+      .assetReportMaintenanceList {
+        display: grid;
+        gap: 8px;
+      }
+
+      .assetReportMaintenanceCard {
+        break-inside: avoid;
+        border: 1px solid var(--line);
+        background: #ffffff;
+      }
+
+      .assetReportMaintenanceHeader {
+        display: grid;
+        grid-template-columns: 31mm 36mm 35mm minmax(0, 1fr);
+        gap: 0;
+        border-bottom: 1px solid var(--line);
+        background: var(--soft-2);
+      }
+
+      .assetReportMaintenanceHeader div {
+        min-width: 0;
+        padding: 7px 8px;
+        border-right: 1px solid var(--line);
+      }
+
+      .assetReportMaintenanceHeader div:last-child {
+        border-right: 0;
+      }
+
+      .assetReportMaintenanceHeader span,
+      .assetReportMaintenanceDetail span {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--muted);
+        font-size: 7.3px;
+        line-height: 1.15;
+        font-weight: 800;
+        letter-spacing: 0.045em;
+        text-transform: uppercase;
+      }
+
+      .assetReportMaintenanceHeader strong,
+      .assetReportMaintenanceDetail strong {
+        display: block;
+        color: var(--strong);
+        font-size: 8.6px;
+        line-height: 1.35;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+      }
+
+      .assetReportMaintenanceDetails {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .assetReportMaintenanceDetail {
+        min-width: 0;
+        padding: 7px 8px;
+        border-right: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .assetReportMaintenanceDetail:nth-child(2n) {
+        border-right: 0;
+      }
+
+      .assetReportMaintenanceDetailWide {
+        grid-column: 1 / -1;
+        border-right: 0;
+      }
+
+      .assetReportMaintenanceDetail:last-child {
+        border-bottom: 0;
       }
 
       a {
@@ -1144,15 +1390,12 @@ function buildReportHtml(options: {
       }
 
       .assetReportFooter {
-        position: absolute;
-        right: 0;
-        bottom: 0;
-        left: 0;
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         gap: 10px;
         align-items: end;
-        padding-top: 8px;
+        margin-top: auto;
+        padding-top: 12px;
         border-top: 1px solid var(--line-strong);
       }
 
@@ -1200,6 +1443,17 @@ function buildReportHtml(options: {
         .assetReportRecordRows .assetReportRow strong {
           text-align: left;
         }
+
+        .assetReportMaintenanceHeader,
+        .assetReportMaintenanceDetails,
+        .assetReportSectionHeading {
+          grid-template-columns: 1fr;
+        }
+
+        .assetReportMaintenanceHeader div,
+        .assetReportMaintenanceDetail {
+          border-right: 0;
+        }
       }
 
       @media print {
@@ -1223,7 +1477,6 @@ function buildReportHtml(options: {
 
         .assetReportInner {
           min-height: 281mm;
-          padding-bottom: 21mm;
         }
 
         .assetReportHeader {
@@ -1289,8 +1542,6 @@ function buildReportHtml(options: {
               <h2>Client / Asset Owner</h2>
               ${renderRows(buildClientRows({ ownerName: options.ownerName, ownerEmail: options.ownerEmail, asset }), 'No client details available.')}
             </section>
-
-            ${options.bodyHtml}
           </div>
 
           <aside class="assetReportSide">
@@ -1304,6 +1555,10 @@ function buildReportHtml(options: {
               ${renderRows(buildLocationRows(asset), 'No location captured yet.')}
             </section>
           </aside>
+        </div>
+
+        <div class="assetReportFullStack">
+          ${options.bodyHtml}
         </div>
 
         <footer class="assetReportFooter">
