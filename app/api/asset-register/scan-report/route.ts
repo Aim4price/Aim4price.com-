@@ -8,6 +8,8 @@ export const dynamic = 'force-dynamic';
 
 type ScanReportKind = 'scan' | 'fuel' | 'maintenance';
 
+type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
+
 type KeyValueRow = {
   label: string;
   value: string;
@@ -60,6 +62,75 @@ function normalizeSpaces(value: unknown): string {
 function displayValue(value: unknown, fallback = '-'): string {
   const text = normalizeSpaces(value);
   return text || fallback;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizeAssetStatusChoice(value: unknown, fallback: AssetStatusChoice = 'unknown'): AssetStatusChoice {
+  const normalized = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+  if (['yes', 'y', 'true', 'financed', 'insured', 'licensed', 'licenced'].includes(normalized)) {
+    return 'yes';
+  }
+
+  if (['no', 'n', 'false', 'not_financed', 'not_insured', 'not_licensed', 'not_licenced', 'unfinanced', 'uninsured', 'unlicensed', 'unlicenced'].includes(normalized)) {
+    return 'no';
+  }
+
+  if (['na', 'n_a', 'not_applicable', 'not_aplicable', 'not_relevant', 'does_not_apply'].includes(normalized)) {
+    return 'not_applicable';
+  }
+
+  if (['unknown', 'not_sure', 'unsure', 'maybe', ''].includes(normalized)) {
+    return normalized ? 'unknown' : fallback;
+  }
+
+  return fallback;
+}
+
+function readFinanceStatusChoice(asset: AssetRegisterItem): AssetStatusChoice {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.financeStatus ?? specs.finance_status ?? specs.financedStatus ?? specs.financed_status,
+    asset.isFinanced ? 'yes' : 'no',
+  );
+}
+
+function readInsuranceStatusChoice(asset: AssetRegisterItem): AssetStatusChoice {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.insuranceStatus ?? specs.insurance_status ?? specs.insuredStatus ?? specs.insured_status,
+    asset.isInsured ? 'yes' : 'no',
+  );
+}
+
+function readLicenseStatusChoice(asset: AssetRegisterItem): AssetStatusChoice {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.licenseStatus ??
+      specs.license_status ??
+      specs.licensedStatus ??
+      specs.licensed_status ??
+      specs.licenceStatus ??
+      specs.licence_status ??
+      specs.licencedStatus ??
+      specs.licenced_status,
+    asset.isLicensed ? 'yes' : 'no',
+  );
+}
+
+function statusChoiceReportLabel(value: AssetStatusChoice): string {
+  const normalized = normalizeAssetStatusChoice(value);
+
+  if (normalized === 'yes') return 'Yes';
+  if (normalized === 'no') return 'No';
+  if (normalized === 'not_applicable') return 'Not applicable';
+  return 'Not sure';
 }
 
 function slugifyFileSegment(value: string): string {
@@ -471,6 +542,9 @@ function buildAssetDetailRows(asset: AssetRegisterItem): KeyValueRow[] {
     { label: 'Year', value: typeof asset.yearModel === 'number' ? String(asset.yearModel) : '-' },
     { label: 'Usage', value: formatLatestUsage(asset) },
     { label: 'Condition', value: formatCondition(asset.condition) },
+    { label: 'Financed', value: statusChoiceReportLabel(readFinanceStatusChoice(asset)) },
+    { label: 'Insured', value: statusChoiceReportLabel(readInsuranceStatusChoice(asset)) },
+    { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
   ];
 }
 
@@ -511,6 +585,7 @@ function buildScanRecordRows(asset: AssetRegisterItem, events: ScanEventRecord[]
 
   return [
     { label: 'Serial Number', value: asset.serialNumber || '-' },
+    { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
     { label: 'QR Status', value: formatQrStatus(asset.qrStatus) },
     { label: 'Total Scans', value: String(events.length) },
     { label: 'Fuel Entries', value: String(fuelEvents.length) },
@@ -529,6 +604,7 @@ function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventReco
 
   return [
     { label: 'Serial Number', value: asset.serialNumber || '-' },
+    { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
     { label: 'Fuel Entries', value: String(fuelEvents.length) },
     { label: 'Latest Fuel', value: formatFuel(fuelEvents[0]?.fuelPercent) },
     { label: 'Lowest Fuel', value: formatFuel(fuelValues.length ? Math.min(...fuelValues) : null) },
@@ -552,6 +628,7 @@ function buildMaintenanceRecordRows(asset: AssetRegisterItem, entries: Maintenan
 
   return [
     { label: 'Serial Number', value: asset.serialNumber || '-' },
+    { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
     { label: 'Records', value: String(entries.length) },
     { label: 'Checked', value: String(checkedCount) },
     { label: 'Serviced', value: String(servicedCount) },
