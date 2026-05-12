@@ -668,35 +668,38 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
 
       .assetMapReportSection {
         display: grid;
-        gap: 8px;
-        padding: 9px 10px 10px;
+        gap: 10px;
+        padding: 10px 11px 12px;
         break-inside: avoid;
       }
 
       .assetMapReportKeyRows {
         display: grid;
-        gap: 0;
-        border-top: 1px solid var(--line);
+        gap: 7px;
+        border-top: 0;
       }
 
       .assetMapReportKeyRow {
         display: grid;
         grid-template-columns: 10mm minmax(43mm, 1.15fr) minmax(18mm, 0.42fr) minmax(21mm, 0.5fr) minmax(18mm, 0.36fr) minmax(35mm, 0.75fr) minmax(35mm, 0.75fr);
-        gap: 7px;
-        min-height: 26px;
+        gap: 8px;
+        min-height: 34px;
         align-items: center;
-        border-bottom: 1px solid var(--line);
+        padding: 7px 9px;
+        border: 1px solid var(--line);
+        background: var(--soft-2);
+        break-inside: avoid;
       }
 
       .assetMapReportMarkerNumber {
         display: grid;
         place-items: center;
-        width: 22px;
-        height: 22px;
+        width: 24px;
+        height: 24px;
         border-radius: 999px;
         color: #ffffff;
         background: var(--brand);
-        font-size: 8.6px;
+        font-size: 8.7px;
         font-weight: 800;
       }
 
@@ -704,7 +707,7 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
       .assetMapReportCell {
         min-width: 0;
         display: grid;
-        gap: 1px;
+        gap: 2px;
       }
 
       .assetMapReportAssetCell strong,
@@ -894,8 +897,18 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
           min-height: ${singleAsset ? '89mm' : '94mm'};
         }
 
+        .assetMapReportSection {
+          gap: 6px;
+          padding: 8px 9px 9px;
+        }
+
+        .assetMapReportKeyRows {
+          gap: 5px;
+        }
+
         .assetMapReportKeyRow {
-          min-height: 24px;
+          min-height: 31px;
+          padding: 6px 8px;
         }
       }
     </style>
