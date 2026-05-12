@@ -564,8 +564,6 @@ export default function AssetMapClient() {
     };
   }, []);
 
-  const assetsAwaitingLocation = useMemo(() => Math.max(0, assets.length - mappedAssets.length), [assets.length, mappedAssets.length]);
-  const scannedAssetCount = useMemo(() => assets.filter((asset) => Boolean(asset.lastScannedAtIso)).length, [assets]);
   const lastUpdatedText = lastLoadedAtIso ? formatDate(lastLoadedAtIso) : 'Waiting for first refresh';
   const selectedGoogleMapsHref =
     selectedAsset && hasCoordinates(selectedAsset)
@@ -608,24 +606,12 @@ export default function AssetMapClient() {
       <section className={styles.shell}>
         <div className={styles.topStrip}>
           <div className={styles.mapTitleBlock}>
-            <span>Fleet visibility</span>
             <h1>Asset map</h1>
-            <p>{visibleAssets.length} mapped asset{visibleAssets.length === 1 ? '' : 's'} currently visible.</p>
-          </div>
-
-          <div className={styles.topStats} aria-label="Asset map summary">
-            <div>
-              <span>Mapped</span>
-              <strong>{summary?.assetsWithLocation ?? mappedAssets.length}</strong>
-            </div>
-            <div>
-              <span>No GPS</span>
-              <strong>{summary?.assetsWithoutLocation ?? assetsAwaitingLocation}</strong>
-            </div>
-            <div>
-              <span>Scanned</span>
-              <strong>{scannedAssetCount}</strong>
-            </div>
+            <p>
+              {visibleAssets.length} mapped asset{visibleAssets.length === 1 ? '' : 's'} visible
+              <span aria-hidden="true"> · </span>
+              Updated {lastUpdatedText}
+            </p>
           </div>
 
           <div className={styles.topActions}>
@@ -665,34 +651,32 @@ export default function AssetMapClient() {
             <div className={styles.mapCanvas} ref={mapElementRef} aria-label="Asset map canvas" />
 
             <div
-              className={styles.searchOverlay}
+              className={styles.mapControls}
               onPointerDown={(event) => event.stopPropagation()}
               onDoubleClick={(event) => event.stopPropagation()}
               onWheel={(event) => event.stopPropagation()}
             >
-              <span>Search scanned assets</span>
-              <input
-                value={search}
-                onChange={(event) => handleSearchChange(event.target.value)}
-                placeholder="Search title, serial number, plate, QR code or location"
-              />
-            </div>
+              <label className={styles.searchControl}>
+                <span>Search scanned assets</span>
+                <input
+                  value={search}
+                  onChange={(event) => handleSearchChange(event.target.value)}
+                  placeholder="Search title, serial number, plate, QR code or location"
+                />
+              </label>
 
-            <div
-              className={styles.layerOverlay}
-              onPointerDown={(event) => event.stopPropagation()}
-              onDoubleClick={(event) => event.stopPropagation()}
-            >
-              {BASEMAP_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={`${styles.layerButton} ${basemapMode === option.value ? styles.layerButtonActive : ''}`}
-                  onClick={() => setBasemapMode(option.value)}
-                >
-                  {option.label}
-                </button>
-              ))}
+              <div className={styles.layerControl} aria-label="Map style">
+                {BASEMAP_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`${styles.layerButton} ${basemapMode === option.value ? styles.layerButtonActive : ''}`}
+                    onClick={() => setBasemapMode(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <aside
@@ -716,7 +700,12 @@ export default function AssetMapClient() {
               {selectedAsset ? (
                 <div className={styles.assetInfoCard}>
                   <div className={styles.assetInfoHeader}>
-                    <span>{selectedVisiblePosition ? `Marker ${selectedVisiblePosition}` : 'Selected asset'}</span>
+                    <div className={styles.assetInfoTop}>
+                      <span>{selectedVisiblePosition ? `Marker ${selectedVisiblePosition}` : 'Selected asset'}</span>
+                      <button type="button" onClick={() => handleChooseAsset('all')}>
+                        Show all
+                      </button>
+                    </div>
                     <h2>{selectedAsset.title}</h2>
                     <p>{selectedAsset.plateLabel || selectedAsset.publicAssetCode || 'No plate label saved'}</p>
                   </div>
@@ -772,15 +761,24 @@ export default function AssetMapClient() {
                     <strong>{visibleAssets.length}</strong>
                     <p>All currently visible assets are shown as numbered markers.</p>
                   </div>
-                  <small>Click a marker to open the asset information card.</small>
+
+                  {visibleAssets.length ? (
+                    <div className={styles.visibleAssetsList} aria-label="Visible mapped assets">
+                      {visibleAssets.slice(0, 5).map((asset, index) => (
+                        <button key={asset.publicAssetCode} type="button" onClick={() => handleChooseAsset(asset.publicAssetCode)}>
+                          <span>Marker {index + 1}</span>
+                          <strong>{asset.title}</strong>
+                          <small>{asset.plateLabel || asset.publicAssetCode || 'No plate saved'}</small>
+                        </button>
+                      ))}
+                      {visibleAssets.length > 5 ? <em>+ {visibleAssets.length - 5} more asset{visibleAssets.length - 5 === 1 ? '' : 's'}</em> : null}
+                    </div>
+                  ) : null}
+
+                  <small>Click a marker or choose a row to open the asset information card.</small>
                 </div>
               )}
             </aside>
-
-            <div className={styles.mapStatusDock}>
-              <span>Updated {lastUpdatedText}</span>
-              <span>{visibleAssets.length} visible</span>
-            </div>
           </div>
         </section>
       </section>

@@ -1,109 +1,61 @@
 .page {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 10% 0%, rgba(23, 77, 62, 0.07), transparent 24rem),
-    radial-gradient(circle at 92% 8%, rgba(62, 110, 213, 0.06), transparent 25rem),
-    linear-gradient(180deg, #f8faf9 0%, #eef4f2 100%);
+    radial-gradient(circle at 8% 0%, rgba(18, 75, 61, 0.08), transparent 26rem),
+    radial-gradient(circle at 94% 12%, rgba(58, 105, 206, 0.065), transparent 28rem),
+    linear-gradient(180deg, #f8faf9 0%, #edf4f1 100%);
 }
 
 .shell {
-  width: min(calc(100% - 2rem), 1540px);
+  width: min(calc(100% - 2rem), 1560px);
   margin: 0 auto;
-  padding: 0.9rem 0 2rem;
+  padding: 0.82rem 0 2rem;
   display: grid;
-  gap: 0.9rem;
+  gap: 0.82rem;
 }
 
 .topStrip,
 .mapShell,
 .notice {
   border: 1px solid rgba(18, 45, 37, 0.08);
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.88);
   box-shadow:
-    0 18px 45px rgba(18, 45, 37, 0.07),
-    0 4px 14px rgba(18, 45, 37, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    0 18px 44px rgba(18, 45, 37, 0.07),
+    0 4px 14px rgba(18, 45, 37, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(18px);
 }
 
 .topStrip {
   display: grid;
-  grid-template-columns: minmax(16rem, 1fr) auto auto;
+  grid-template-columns: minmax(16rem, 1fr) auto;
   align-items: center;
-  gap: 0.95rem;
-  padding: 0.72rem;
-  border-radius: 1.4rem;
+  gap: 1rem;
+  padding: 0.86rem 0.94rem;
+  border-radius: 1.35rem;
 }
 
 .mapTitleBlock {
   min-width: 0;
   display: grid;
-  gap: 0.16rem;
-  padding-left: 0.22rem;
-}
-
-.mapTitleBlock span,
-.searchOverlay span,
-.assetSelectBlock span,
-.assetInfoHeader span,
-.assetFacts span,
-.gpsBox span,
-.allAssetsCard span,
-.topStats span {
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  color: #65747b;
-  font-size: 0.66rem;
-  font-weight: 850;
-  letter-spacing: 0.105em;
-  text-transform: uppercase;
-}
-
-.mapTitleBlock span {
-  color: #164f42;
+  gap: 0.18rem;
 }
 
 .mapTitleBlock h1 {
   margin: 0;
-  color: #112f2b;
+  color: #102f2a;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.42rem, 2vw, 1.95rem);
-  line-height: 1;
+  font-size: clamp(1.34rem, 2vw, 1.9rem);
+  line-height: 0.98;
   letter-spacing: -0.058em;
 }
 
 .mapTitleBlock p {
   margin: 0;
-  color: #65737a;
-  font-size: 0.86rem;
-  line-height: 1.38;
-  font-weight: 650;
-}
-
-.topStats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(4.75rem, 1fr));
-  gap: 0.48rem;
-}
-
-.topStats div {
-  display: grid;
-  align-content: center;
-  gap: 0.1rem;
-  min-height: 3.62rem;
-  padding: 0.5rem 0.68rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 250, 249, 0.9));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-.topStats strong {
-  color: #132d2d;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 1.36rem;
-  line-height: 1;
-  letter-spacing: -0.05em;
+  color: #617178;
+  font-size: 0.84rem;
+  line-height: 1.34;
+  font-weight: 680;
 }
 
 .topActions {
@@ -126,7 +78,7 @@
   text-decoration: none;
   white-space: nowrap;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-weight: 800;
+  font-weight: 820;
   letter-spacing: -0.012em;
   line-height: 1;
   cursor: pointer;
@@ -140,10 +92,10 @@
 
 .primaryAction,
 .secondaryAction {
-  min-height: 3.05rem;
+  min-height: 2.86rem;
   padding: 0 1.18rem;
-  border-radius: 1rem;
-  font-size: 0.9rem;
+  border-radius: 0.94rem;
+  font-size: 0.88rem;
 }
 
 .primaryAction,
@@ -165,7 +117,10 @@
 .primaryAction:hover,
 .secondaryAction:hover,
 .primaryActionCompact:hover,
-.secondaryActionCompact:hover {
+.secondaryActionCompact:hover,
+.layerButton:hover,
+.visibleAssetsList button:hover,
+.assetInfoTop button:hover {
   transform: translateY(-1px);
 }
 
@@ -173,7 +128,9 @@
 .secondaryAction:active,
 .primaryActionCompact:active,
 .secondaryActionCompact:active,
-.layerButton:active {
+.layerButton:active,
+.visibleAssetsList button:active,
+.assetInfoTop button:active {
   transform: translateY(0);
 }
 
@@ -187,7 +144,7 @@
 }
 
 .notice {
-  border-radius: 1.08rem;
+  border-radius: 1.05rem;
   padding: 0.9rem 1rem;
   color: #8e2626;
   background: rgba(255, 247, 247, 0.9);
@@ -196,16 +153,16 @@
 }
 
 .mapShell {
-  padding: 0.78rem;
-  border-radius: 1.55rem;
+  padding: 0.72rem;
+  border-radius: 1.5rem;
 }
 
 .mapFrame {
   position: relative;
-  height: clamp(30rem, 57vh, 38.5rem);
-  min-height: 30rem;
+  height: clamp(27rem, 49vh, 33rem);
+  min-height: 27rem;
   overflow: hidden;
-  border-radius: 1.18rem;
+  border-radius: 1.12rem;
   border: 1px solid rgba(18, 45, 37, 0.1);
   background: #dfe8e2;
   isolation: isolate;
@@ -219,8 +176,8 @@
   z-index: 410;
   border-radius: inherit;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.36),
-    inset 0 -48px 78px rgba(13, 32, 30, 0.055);
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -44px 76px rgba(13, 32, 30, 0.055);
 }
 
 .mapCanvas {
@@ -230,14 +187,26 @@
   min-height: 100%;
 }
 
-.searchOverlay,
-.layerOverlay,
-.assetOverlay,
-.mapStatusDock {
+.mapControls,
+.assetOverlay {
   position: absolute;
   z-index: 850;
+}
+
+.mapControls {
+  top: 0.92rem;
+  left: 0.92rem;
+  right: 27.35rem;
+  display: flex;
+  align-items: stretch;
+  gap: 0.62rem;
+}
+
+.searchControl,
+.layerControl,
+.assetOverlay {
   border: 1px solid rgba(18, 45, 37, 0.1);
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.91);
   box-shadow:
     0 18px 42px rgba(18, 41, 52, 0.12),
     0 4px 14px rgba(18, 41, 52, 0.06),
@@ -245,21 +214,35 @@
   backdrop-filter: blur(18px);
 }
 
-.searchOverlay {
-  left: 1rem;
-  top: 1rem;
-  width: min(40.5rem, calc(100% - 30rem));
+.searchControl {
+  flex: 1 1 24rem;
+  min-width: 16rem;
   display: grid;
   gap: 0.36rem;
-  padding: 0.68rem;
-  border-radius: 1.06rem;
+  padding: 0.66rem;
+  border-radius: 1.02rem;
 }
 
-.searchOverlay input,
+.searchControl span,
+.assetSelectBlock span,
+.assetInfoHeader span,
+.assetFacts span,
+.gpsBox span,
+.allAssetsCard span,
+.visibleAssetsList button span {
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  color: #65747b;
+  font-size: 0.64rem;
+  font-weight: 850;
+  letter-spacing: 0.105em;
+  text-transform: uppercase;
+}
+
+.searchControl input,
 .assetSelectBlock select {
   width: 100%;
-  min-height: 2.78rem;
-  border-radius: 0.86rem;
+  min-height: 2.68rem;
+  border-radius: 0.84rem;
   border: 1px solid rgba(18, 45, 37, 0.12);
   background: rgba(255, 255, 255, 0.97);
   color: #132d2d;
@@ -272,13 +255,13 @@
     background 170ms ease;
 }
 
-.searchOverlay input {
+.searchControl input {
   padding: 0 0.88rem;
 }
 
-.searchOverlay input::placeholder {
+.searchControl input::placeholder {
   color: #7a8386;
-  font-weight: 700;
+  font-weight: 720;
 }
 
 .assetSelectBlock select {
@@ -286,34 +269,33 @@
   cursor: pointer;
 }
 
-.searchOverlay input:focus,
+.searchControl input:focus,
 .assetSelectBlock select:focus {
   border-color: rgba(16, 71, 59, 0.34);
   box-shadow: 0 0 0 4px rgba(16, 71, 59, 0.1);
 }
 
-.layerOverlay {
-  top: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
+.layerControl {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 0.34rem;
+  gap: 0.3rem;
   padding: 0.34rem;
-  border-radius: 1.06rem;
+  border-radius: 1.02rem;
+  align-self: end;
 }
 
 .layerButton {
   appearance: none;
-  min-height: 2.58rem;
-  padding: 0 1.04rem;
-  border-radius: 0.82rem;
+  min-height: 2.62rem;
+  padding: 0 1rem;
+  border-radius: 0.78rem;
   border: 1px solid transparent;
   background: transparent;
   color: #52616b;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.88rem;
-  font-weight: 800;
+  font-size: 0.86rem;
+  font-weight: 830;
   letter-spacing: -0.012em;
   cursor: pointer;
   transition:
@@ -327,45 +309,40 @@
 .layerButton:hover {
   color: #143a32;
   background: rgba(23, 77, 62, 0.06);
-  transform: translateY(-1px);
 }
 
-.layerButtonActive {
+.layerButtonActive,
+.layerButtonActive:hover {
   color: #ffffff;
   background: #103f35;
   border-color: rgba(16, 71, 59, 0.18);
   box-shadow: 0 12px 22px rgba(16, 71, 59, 0.17);
 }
 
-.layerButtonActive:hover {
-  color: #ffffff;
-  background: #103f35;
-}
-
 .assetOverlay {
-  top: 1rem;
-  right: 1rem;
-  width: min(25.5rem, calc(100% - 2rem));
-  max-height: calc(100% - 2rem);
+  top: 0.92rem;
+  right: 0.92rem;
+  width: min(25.45rem, calc(100% - 1.84rem));
+  max-height: calc(100% - 1.84rem);
   display: grid;
-  gap: 0.72rem;
-  padding: 0.72rem;
-  border-radius: 1.25rem;
+  gap: 0.66rem;
+  padding: 0.68rem;
+  border-radius: 1.18rem;
   overflow-y: auto;
   scrollbar-width: thin;
 }
 
 .assetSelectBlock {
   display: grid;
-  gap: 0.36rem;
+  gap: 0.34rem;
 }
 
 .assetInfoCard,
 .allAssetsCard {
   display: grid;
-  gap: 0.72rem;
-  padding: 0.8rem;
-  border-radius: 1.02rem;
+  gap: 0.68rem;
+  padding: 0.76rem;
+  border-radius: 0.98rem;
   border: 1px solid rgba(18, 45, 37, 0.08);
   background:
     linear-gradient(180deg, rgba(248, 251, 250, 0.98), rgba(255, 255, 255, 0.94));
@@ -379,12 +356,41 @@
   padding-bottom: 0.08rem;
 }
 
+.assetInfoTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.assetInfoTop button {
+  appearance: none;
+  border: 1px solid rgba(16, 71, 59, 0.13);
+  border-radius: 999px;
+  min-height: 1.85rem;
+  padding: 0 0.72rem;
+  color: #123f35;
+  background: rgba(16, 71, 59, 0.06);
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: 0.68rem;
+  font-weight: 850;
+  cursor: pointer;
+  transition:
+    transform 170ms ease,
+    background 170ms ease,
+    border-color 170ms ease;
+}
+
+.assetInfoTop button:hover {
+  background: rgba(16, 71, 59, 0.1);
+}
+
 .assetInfoHeader h2 {
   margin: 0;
   color: #112f2b;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.22rem, 1.65vw, 1.62rem);
-  line-height: 1.02;
+  font-size: clamp(1.16rem, 1.55vw, 1.48rem);
+  line-height: 1.03;
   letter-spacing: -0.055em;
 }
 
@@ -400,7 +406,7 @@
 .assetFacts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.52rem;
+  gap: 0.5rem;
 }
 
 .assetFacts div,
@@ -408,8 +414,8 @@
   min-width: 0;
   display: grid;
   gap: 0.18rem;
-  padding: 0.62rem;
-  border-radius: 0.86rem;
+  padding: 0.58rem;
+  border-radius: 0.82rem;
   border: 1px solid rgba(18, 45, 37, 0.075);
   background: rgba(255, 255, 255, 0.78);
 }
@@ -420,14 +426,14 @@
   overflow-wrap: anywhere;
   color: #132d2d;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.92rem;
-  line-height: 1.22;
+  font-size: 0.9rem;
+  line-height: 1.2;
   letter-spacing: -0.025em;
 }
 
 .gpsBox small {
   color: #627278;
-  font-size: 0.81rem;
+  font-size: 0.8rem;
   line-height: 1.32;
   font-weight: 650;
 }
@@ -435,45 +441,88 @@
 .assetActions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0.62rem;
+  gap: 0.58rem;
   align-items: stretch;
 }
 
 .primaryActionCompact,
 .secondaryActionCompact {
-  min-height: 2.86rem;
-  padding: 0 0.8rem;
-  border-radius: 0.9rem;
-  font-size: 0.86rem;
+  min-height: 2.72rem;
+  padding: 0 0.78rem;
+  border-radius: 0.86rem;
+  font-size: 0.84rem;
   text-align: center;
 }
 
 .allAssetsCard strong {
   display: block;
-  margin: 0.16rem 0 0.22rem;
+  margin: 0.14rem 0 0.2rem;
   color: #112f2b;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 2.16rem;
+  font-size: 1.95rem;
   line-height: 0.9;
   letter-spacing: -0.06em;
 }
 
-.mapStatusDock {
-  left: 1rem;
-  bottom: 1rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.7rem;
-  min-height: 2.42rem;
-  padding: 0 0.82rem;
-  border-radius: 999px;
-  color: #5f6f75;
-  font-size: 0.76rem;
-  font-weight: 850;
+.visibleAssetsList {
+  display: grid;
+  gap: 0.46rem;
 }
 
-.mapStatusDock span + span {
-  color: #133e34;
+.visibleAssetsList button {
+  appearance: none;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.1rem 0.5rem;
+  padding: 0.58rem 0.64rem;
+  border-radius: 0.78rem;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background: rgba(255, 255, 255, 0.78);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 170ms ease,
+    border-color 170ms ease,
+    background 170ms ease,
+    box-shadow 170ms ease;
+}
+
+.visibleAssetsList button:hover {
+  border-color: rgba(16, 71, 59, 0.2);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 20px rgba(18, 45, 37, 0.06);
+}
+
+.visibleAssetsList button span {
+  grid-column: 1 / -1;
+}
+
+.visibleAssetsList button strong {
+  margin: 0;
+  overflow: hidden;
+  color: #132d2d;
+  font-size: 0.88rem;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visibleAssetsList button small {
+  align-self: center;
+  color: #64747b;
+  font-size: 0.76rem;
+  line-height: 1.2;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.visibleAssetsList em {
+  color: #63737a;
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 760;
 }
 
 .mapEmpty {
@@ -519,8 +568,8 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
   color: #ffffff;
   background: var(--marker-bg, #159063);
@@ -538,8 +587,8 @@
   position: absolute;
   left: 50%;
   bottom: -5px;
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border-right: 3px solid rgba(255, 255, 255, 0.96);
   border-bottom: 3px solid rgba(255, 255, 255, 0.96);
   background: var(--marker-bg, #159063);
@@ -551,13 +600,13 @@
   position: relative;
   z-index: 2;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 850;
   letter-spacing: -0.02em;
 }
 
 .mapFrame :global(.aim4priceMapMarker--active .aim4priceMapMarkerPin) {
-  transform: translateY(-4px) scale(1.1);
+  transform: translateY(-4px) scale(1.08);
   box-shadow:
     0 0 0 8px rgba(16, 71, 59, 0.17),
     0 18px 34px var(--marker-shadow, rgba(22, 130, 88, 0.34));
@@ -595,6 +644,14 @@
   box-shadow: 0 12px 22px rgba(19, 39, 54, 0.12);
 }
 
+.mapFrame :global(.leaflet-control-attribution) {
+  border-radius: 0.55rem 0 0 0;
+  background: rgba(255, 255, 255, 0.72);
+  color: rgba(48, 64, 69, 0.72);
+  font-size: 0.62rem;
+  line-height: 1.25;
+}
+
 @media (max-width: 1220px) {
   .topStrip {
     grid-template-columns: 1fr;
@@ -604,56 +661,58 @@
     justify-content: flex-start;
   }
 
-  .searchOverlay {
-    width: min(35rem, calc(100% - 29rem));
+  .mapFrame {
+    height: 38rem;
+  }
+
+  .mapControls {
+    right: 0.92rem;
+  }
+
+  .assetOverlay {
+    top: 6.78rem;
+    max-height: calc(100% - 7.7rem);
   }
 }
 
 @media (max-width: 980px) {
   .shell {
-    width: min(calc(100% - 1rem), 1540px);
+    width: min(calc(100% - 1rem), 1560px);
   }
 
   .mapFrame {
-    height: 42rem;
-    min-height: 42rem;
+    height: 43rem;
+    min-height: 43rem;
   }
 
-  .searchOverlay {
+  .mapControls {
     left: 0.75rem;
     right: 0.75rem;
-    width: auto;
+    top: 0.75rem;
+    flex-wrap: wrap;
   }
 
-  .layerOverlay {
-    top: 6.75rem;
-    left: 0.75rem;
-    right: auto;
-    transform: none;
+  .searchControl {
+    flex-basis: 100%;
+  }
+
+  .layerControl {
+    align-self: start;
   }
 
   .assetOverlay {
-    top: 10.55rem;
+    top: 8.72rem;
     left: 0.75rem;
     right: 0.75rem;
     width: auto;
-    max-height: 23rem;
-  }
-
-  .mapStatusDock {
-    left: 0.75rem;
-    bottom: 0.75rem;
+    max-height: 23.5rem;
   }
 }
 
 @media (max-width: 680px) {
   .topStrip,
   .mapShell {
-    border-radius: 1.15rem;
-  }
-
-  .topStats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-radius: 1.12rem;
   }
 
   .topActions,
@@ -671,22 +730,29 @@
   }
 
   .mapFrame {
-    min-height: 43rem;
-    height: 43rem;
-    border-radius: 0.95rem;
+    min-height: 44rem;
+    height: 44rem;
+    border-radius: 0.92rem;
   }
 
-  .layerOverlay {
-    overflow-x: auto;
-    max-width: calc(100% - 1.5rem);
+  .mapControls {
+    gap: 0.5rem;
+  }
+
+  .layerControl {
+    width: 100%;
+  }
+
+  .layerButton {
+    flex: 1 1 0;
   }
 
   .assetFacts {
     grid-template-columns: 1fr;
   }
 
-  .mapStatusDock {
-    right: 0.75rem;
-    justify-content: space-between;
+  .assetOverlay {
+    top: 12rem;
+    max-height: 26rem;
   }
 }
