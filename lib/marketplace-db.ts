@@ -1,4 +1,5 @@
 import { getDb } from './db';
+import { ensureAccountProfileColumns } from './account-profile';
 import type { MarketplaceListing } from './marketplace';
 
 const FALLBACK_MARKETPLACE_IMAGE = '/brand/Tractor.png';
@@ -10,6 +11,7 @@ type MarketplaceAssetRow = Record<string, unknown> & {
   profile_phone?: unknown;
   profile_province?: unknown;
   profile_town_city?: unknown;
+  profile_location?: unknown;
   profile_name?: unknown;
   profile_email?: unknown;
 };
@@ -119,6 +121,8 @@ async function ensureMarketplaceColumns(): Promise<void> {
   if (marketplaceColumnsEnsured) {
     return;
   }
+
+  await ensureAccountProfileColumns();
 
   const db = getDb();
 
@@ -295,7 +299,7 @@ async function createMarketplaceListingSnapshot(row: MarketplaceAssetRow): Promi
         description,
         Math.round(asNumber(pick(row, ['marketplace_price_ex_vat', 'selected_value_ex_vat', 'value']), 0)),
         asText(pick(row, ['marketplace_province'])) || asText(row.profile_province) || null,
-        asText(pick(row, ['marketplace_area'])) || asText(row.profile_town_city) || null,
+        asText(pick(row, ['marketplace_area'])) || asText(row.profile_location) || asText(row.profile_town_city) || null,
         asText(pick(row, ['marketplace_seller_name'])) || asText(row.profile_name) || asText(row.profile_business_name) || 'Aim4price seller',
         asText(pick(row, ['marketplace_seller_company'])) || asText(row.profile_business_name),
         asText(pick(row, ['seller_phone'])) || asText(row.profile_phone),
@@ -343,8 +347,11 @@ function buildMarketplaceListing(
       0,
     ),
   );
+  const explicitProfileLocation = asText(row.profile_location);
   const province = titleCase(asText(pick(row, ['marketplace_province'])) || asText(row.profile_province) || 'South Africa');
-  const area = titleCase(asText(pick(row, ['marketplace_area'])) || asText(row.profile_town_city) || 'Undisclosed');
+  const area = titleCase(
+    asText(pick(row, ['marketplace_area'])) || explicitProfileLocation || asText(row.profile_town_city) || 'Undisclosed',
+  );
   const sellerCompany = asText(pick(row, ['marketplace_seller_company'])) || asText(row.profile_business_name) || undefined;
   const sellerName = asText(pick(row, ['marketplace_seller_name'])) || sellerCompany || asText(row.profile_name) || 'Aim4price seller';
   const sellerPhone = options.exposeContact
@@ -375,7 +382,7 @@ function buildMarketplaceListing(
     usageUnit: listingUsageUnit(row),
     province,
     area,
-    location: `${area}, ${province}`,
+    location: explicitProfileLocation || `${area}, ${province}`,
     sourceName: 'Aim4price Asset Register',
     description,
     sellerName,
@@ -414,11 +421,12 @@ export async function listPublishedMarketplaceAssetListings(options: {
       select
         a.*, 
         p.business_name as profile_business_name,
-        p.phone as profile_phone,
+        coalesce(nullif(p.marketplace_phone, ''), nullif(p.phone, '')) as profile_phone,
         p.province as profile_province,
         p.town_city as profile_town_city,
-        null::text as profile_name,
-        null::text as profile_email
+        nullif(p.marketplace_location, '') as profile_location,
+        coalesce(nullif(p.marketplace_seller_name, ''), nullif(p.display_name, '')) as profile_name,
+        nullif(p.marketplace_email, '') as profile_email
       from asset_register_items a
       left join account_profiles p on p.user_id = a.user_id
       where coalesce(a.marketplace_status, 'draft') = 'live'
@@ -449,11 +457,12 @@ export async function publishAssetRegisterItemToMarketplace(input: {
       select
         a.*, 
         p.business_name as profile_business_name,
-        p.phone as profile_phone,
+        coalesce(nullif(p.marketplace_phone, ''), nullif(p.phone, '')) as profile_phone,
         p.province as profile_province,
         p.town_city as profile_town_city,
-        null::text as profile_name,
-        null::text as profile_email
+        nullif(p.marketplace_location, '') as profile_location,
+        coalesce(nullif(p.marketplace_seller_name, ''), nullif(p.display_name, '')) as profile_name,
+        nullif(p.marketplace_email, '') as profile_email
       from asset_register_items a
       left join account_profiles p on p.user_id = a.user_id
       where a.user_id = $1 and a.id = $2
@@ -510,7 +519,7 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   const sellerCompany = asText(input.sellerCompany) || asText(row.profile_business_name);
   const sellerEmail = asText(input.sellerEmail) || asText(row.profile_email);
   const province = asText(input.province) || asText(row.profile_province);
-  const area = asText(input.area) || asText(row.profile_town_city);
+  const area = asText(input.area) || asText(row.profile_location) || asText(row.profile_town_city);
 
   const updated = await db.query<MarketplaceAssetRow>(
     `
@@ -544,6 +553,7 @@ export async function publishAssetRegisterItemToMarketplace(input: {
     profile_phone: row.profile_phone,
     profile_province: row.profile_province,
     profile_town_city: row.profile_town_city,
+    profile_location: row.profile_location,
     profile_name: row.profile_name,
     profile_email: row.profile_email,
   };
