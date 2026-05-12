@@ -198,6 +198,33 @@ function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function normalizeAssetNoteText(value: unknown): string {
+  return String(value ?? '').replace(/\r\n/g, '\n').trim();
+}
+
+function isQrOperationalAssetNote(value: unknown): boolean {
+  const note = normalizeAssetNoteText(value);
+  if (!note) return false;
+
+  const compact = note.replace(/\s+/g, ' ').trim().toLowerCase();
+
+  return (
+    compact.includes('lifetime worked updated to') ||
+    compact.includes('checked items:') ||
+    compact.includes('serviced items:') ||
+    compact.includes('service items:') ||
+    compact.includes('work done:') ||
+    /^checked(?:\b|$)/.test(compact) ||
+    /^serviced(?:\b|$)/.test(compact) ||
+    /^repaired(?:\b|$)/.test(compact)
+  );
+}
+
+function cleanAssetRegisterNote(value: unknown): string {
+  const note = normalizeAssetNoteText(value);
+  return isQrOperationalAssetNote(note) ? '' : note;
+}
+
 function normalizeUsageMetric(value: unknown, kind?: AssetRegisterItemKind): 'hours' | 'km' {
   const normalized = String(value ?? '').trim().toLowerCase();
 
@@ -676,7 +703,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     condition: normalizeCondition(row.condition),
     aim4priceValueExVat: asNumber(row.aim4price_value_ex_vat),
     marketMidExVat: asNumber(row.market_mid_ex_vat),
-    note: asText(row.note),
+    note: cleanAssetRegisterNote(row.note),
     serialNumber: asText(row.serial_number),
     isFinanced: Boolean(row.is_financed),
     isInsured: Boolean(row.is_insured),
@@ -1068,7 +1095,7 @@ function buildRequiredFallbackField(meta: ColumnMetaRow, context: RequiredFieldC
   }
 
   if (column === 'note' || column === 'notes' || column === 'description') {
-    return buildFieldFromMeta(meta, asText(context.note) || '');
+    return buildFieldFromMeta(meta, cleanAssetRegisterNote(context.note) || '');
   }
 
   if (column === 'brand_name' || column === 'brand') {
@@ -1342,7 +1369,7 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], 'manual');
   pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], nextValue);
   pushField(fields, schema, ['source_type', 'source', 'origin', 'entry_source'], 'manual');
-  pushField(fields, schema, ['note', 'notes', 'description'], asText(input.note) || null);
+  pushField(fields, schema, ['note', 'notes', 'description'], cleanAssetRegisterNote(input.note) || null);
   pushField(fields, schema, ['serial_number', 'serial', 'vin'], asText(input.serialNumber) || null);
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
   pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured));
@@ -1364,7 +1391,7 @@ export async function createManualAssetRegisterItem(
     kind: nextKind,
     selectedMethod: 'manual',
     selectedValueExVat: nextValue,
-    note: input.note ?? null,
+    note: cleanAssetRegisterNote(input.note) || null,
     year: input.yearModel ?? null,
     hours: input.hours ?? null,
     condition: input.condition ?? null,
@@ -1432,7 +1459,7 @@ export async function updateAssetRegisterItem(
   pushField(fields, schema, ['title', 'name', 'asset_name'], asText(input.title));
   pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], nextValue);
   pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], nextValue);
-  pushField(fields, schema, ['note', 'notes', 'description'], asText(input.note) || null);
+  pushField(fields, schema, ['note', 'notes', 'description'], cleanAssetRegisterNote(input.note) || null);
   pushField(fields, schema, ['serial_number', 'serial', 'vin'], asText(input.serialNumber) || null);
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
   pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured));
@@ -1711,7 +1738,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['condition'], typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good');
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(valuationResult.marketMid));
-  pushField(fields, schema, ['note', 'notes', 'description'], asText(input.note) || null);
+  pushField(fields, schema, ['note', 'notes', 'description'], cleanAssetRegisterNote(input.note) || null);
   pushPhotoField(fields, schema, []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
@@ -1723,7 +1750,7 @@ export async function createAssetRegisterItemFromValuation(input: {
     kind: 'tractor',
     selectedMethod: input.selectedMethod,
     selectedValueExVat,
-    note: input.note ?? null,
+    note: cleanAssetRegisterNote(input.note) || null,
     brandName: model.brandName,
     modelName: model.modelName,
     drive: model.drive,
@@ -1803,7 +1830,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['condition'], valuationResult.condition);
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(valuationResult.marketAverageExVat));
-  pushField(fields, schema, ['note', 'notes', 'description'], asText(input.note) || null);
+  pushField(fields, schema, ['note', 'notes', 'description'], cleanAssetRegisterNote(input.note) || null);
   pushPhotoField(fields, schema, []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
@@ -1815,7 +1842,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
     kind: 'equipment',
     selectedMethod: input.selectedMethod,
     selectedValueExVat,
-    note: input.note ?? null,
+    note: cleanAssetRegisterNote(input.note) || null,
     brandName: valuationResult.brand.name,
     modelName: valuationResult.typedModelName || 'Specs-based valuation',
     year: valuationResult.year,
