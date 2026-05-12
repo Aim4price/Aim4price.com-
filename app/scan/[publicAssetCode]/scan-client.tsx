@@ -15,7 +15,7 @@ type EditorKey = "usage" | "fuel" | "service" | "photos";
 type LocationState = "idle" | "capturing" | "ready" | "error";
 type ScanAssetUsageMode = "hours" | "percent" | "km" | "none";
 type ScanAssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
-type ServiceMode = "" | "checked" | "serviced";
+type ServiceMode = "" | "checked" | "serviced" | "repaired";
 
 type ScanSafeAsset = {
   id: string;
@@ -94,12 +94,16 @@ type DraftState = {
   serviceMode: ServiceMode;
   checkedItems: string[];
   servicedItems: string[];
+  repairDetails: string;
   serviceCompany: string;
   mechanicName: string;
 };
 
 const MAX_QR_PHOTOS = 12;
 const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
+const QR_PHOTO_MAX_DIMENSION = 1400;
+const QR_PHOTO_JPEG_QUALITY = 0.72;
+const QR_PHOTO_SKIP_COMPRESSION_BYTES = 700 * 1024;
 
 type ServiceOption = {
   label: string;
@@ -226,6 +230,7 @@ const initialDraft: DraftState = {
   serviceMode: "",
   checkedItems: [],
   servicedItems: [],
+  repairDetails: "",
   serviceCompany: "",
   mechanicName: "",
 };
@@ -259,6 +264,72 @@ function normalizePercentInput(value: string): string {
 
 function normalizeOperatorName(value: string): string {
   return value.replace(/\s+/g, " ").slice(0, 80);
+}
+
+function imageFileNameAsJpeg(fileName: string): string {
+  const cleanName = String(fileName || "qr-photo").trim() || "qr-photo";
+  return cleanName.replace(/\.[a-z0-9]+$/i, "") + ".jpg";
+}
+
+function loadImageElement(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const objectUrl = window.URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = () => {
+      window.URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+
+    image.onerror = () => {
+      window.URL.revokeObjectURL(objectUrl);
+      reject(new Error("Could not prepare this photo."));
+    };
+
+    image.src = objectUrl;
+  });
+}
+
+async function compressQrPhoto(file: File): Promise<File> {
+  if (typeof window === "undefined" || typeof document === "undefined") return file;
+  if (!file.type.toLowerCase().startsWith("image/")) return file;
+  if (file.size <= QR_PHOTO_SKIP_COMPRESSION_BYTES && file.type.toLowerCase() === "image/jpeg") return file;
+
+  try {
+    const image = await loadImageElement(file);
+    const sourceWidth = image.naturalWidth || image.width;
+    const sourceHeight = image.naturalHeight || image.height;
+
+    if (!sourceWidth || !sourceHeight) return file;
+
+    const scale = Math.min(1, QR_PHOTO_MAX_DIMENSION / Math.max(sourceWidth, sourceHeight));
+    const targetWidth = Math.max(1, Math.round(sourceWidth * scale));
+    const targetHeight = Math.max(1, Math.round(sourceHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    const context = canvas.getContext("2d", { alpha: false });
+    if (!context) return file;
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, targetWidth, targetHeight);
+    context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/jpeg", QR_PHOTO_JPEG_QUALITY);
+    });
+
+    if (!blob || !blob.size) return file;
+    if (blob.size >= file.size) return file;
+
+    return new File([blob], imageFileNameAsJpeg(file.name), {
+      type: "image/jpeg",
+      lastModified: Date.now(),
+    });
+  } catch {
+    return file;
+  }
 }
 
 function hasLocationCaptured(draft: DraftState): boolean {
@@ -402,15 +473,20 @@ function serviceCopyForProfile(profile: AssetServiceProfile) {
   if (profile === "implement") {
     return {
       checkedDescription: "Quick implement or tool inspection.",
-      servicedDescription: "Repair, wear-part or workshop job.",
+      servicedDescription: "Routine service, workshop job or wear-part replacement.",
+      repairedDescription: "Breakage, fault or repair completed.",
       checkedTitle: "Implement check",
       servicedTitle: "Implement service",
+      repairedTitle: "Implement repair",
       checkedPrompt: "Tap each implement item that was inspected.",
-      servicedPrompt: "Tap each job, repair or replacement that was completed.",
+      servicedPrompt: "Tap each job or replacement that was completed.",
+      repairedPrompt: "Explain exactly what was repaired before saving the maintenance record.",
       checkedHeader: "What was checked?",
       checkedSubheader: "Select every implement item that was inspected.",
       servicedHeader: "What was serviced?",
       servicedSubheader: "Select all work completed, then continue to workshop details.",
+      repairedHeader: "What was repaired?",
+      repairedSubheader: "Write a clear repair note. Example: what failed, what was fixed and what was replaced.",
       detailsHeader: "Who completed the work?",
       detailsSubheader: "Add the company and technician name before saving.",
       companyLabel: "Company / Workshop",
@@ -419,20 +495,27 @@ function serviceCopyForProfile(profile: AssetServiceProfile) {
       mechanicPlaceholder: "Mechanic or technician name",
       checkedNotePlaceholder: "Example: Bolts checked, pins checked, no visible cracks.",
       servicedNotePlaceholder: "Example: Replaced worn points, tightened bolts and greased pins.",
+      repairedNotePlaceholder: "Example: Repaired cracked bracket, replaced two bushes and checked welds.",
+      repairedExtraNotePlaceholder: "Optional: add extra repair notes, parts used or follow-up needed.",
     };
   }
 
   return {
     checkedDescription: "Quick driver or manager inspection.",
-    servicedDescription: "Dealer, workshop or mechanic job.",
+    servicedDescription: "Routine service, dealer or mechanic job.",
+    repairedDescription: "Breakage, fault or repair completed.",
     checkedTitle: "Machine check",
     servicedTitle: "Machine service",
+    repairedTitle: "Machine repair",
     checkedPrompt: "Tap each item that was inspected.",
     servicedPrompt: "Tap each job that was completed.",
+    repairedPrompt: "Explain exactly what was repaired before saving the maintenance record.",
     checkedHeader: "What was checked?",
     checkedSubheader: "Select every item that was inspected.",
     servicedHeader: "What was serviced?",
     servicedSubheader: "Select all work completed, then continue to company details.",
+    repairedHeader: "What was repaired?",
+    repairedSubheader: "Write a clear repair note. Example: what failed, what was fixed and what was replaced.",
     detailsHeader: "Who completed the service?",
     detailsSubheader: "Add the company and mechanic name before saving.",
     companyLabel: "Company / Dealer",
@@ -441,6 +524,8 @@ function serviceCopyForProfile(profile: AssetServiceProfile) {
     mechanicPlaceholder: "Mechanic name",
     checkedNotePlaceholder: "Example: Oil checked, tyres checked, no visible leaks.",
     servicedNotePlaceholder: "Example: Full service completed, oil and filters replaced.",
+    repairedNotePlaceholder: "Example: Repaired hydraulic leak, replaced hose and tested pressure.",
+    repairedExtraNotePlaceholder: "Optional: add extra repair notes, parts used or follow-up needed.",
   };
 }
 
@@ -453,7 +538,7 @@ function buildEditorSummary(editor: EditorKey, asset: ScanSafeAsset | null): str
       : "Capture current tank level";
   }
 
-  if (editor === "service") return "Checked or serviced update";
+  if (editor === "service") return "Maintenance update";
 
   if (asset?.photos.length) {
     return `${asset.photos.length} photo${asset.photos.length === 1 ? "" : "s"} stored`;
@@ -501,6 +586,18 @@ function buildServiceNote(draft: DraftState): string {
       .join("\n");
   }
 
+  if (draft.serviceMode === "repaired") {
+    return [
+      "Repaired",
+      draft.repairDetails.trim() ? `Repair details: ${draft.repairDetails.trim()}` : "",
+      draft.serviceCompany.trim() ? `Company: ${draft.serviceCompany.trim()}` : "",
+      draft.mechanicName.trim() ? `Mechanic: ${draft.mechanicName.trim()}` : "",
+      note ? `Notes: ${note}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
   return note;
 }
 
@@ -508,82 +605,103 @@ type IconProps = { className?: string };
 
 function MeterIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="M4 16a8 8 0 1 1 16 0" />
-      <path d="M12 13l4-4" />
-      <path d="M12 16h.01" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M4 17a8 8 0 1 1 16 0" />
+      <path d="M7 17h10" />
+      <path d="M12 17l4.2-5.2" />
+      <path d="M7.7 10.4l.8.8" />
+      <path d="M16.3 10.4l-.8.8" />
+      <path d="M12 8.2v1.2" />
     </svg>
   );
 }
 
 function FuelIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="M5 4h10v16H5z" />
-      <path d="M15 8h2.5l1.5 2v6a2 2 0 0 1-2 2h-2" />
-      <path d="M8 8h4" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M6 3.8h8.2a1.4 1.4 0 0 1 1.4 1.4V21H6z" />
+      <path d="M8.3 7h5" />
+      <path d="M15.6 8h2.1l2.3 2.8V17a2 2 0 0 1-2 2h-2.4" />
+      <path d="M19.7 11h-2.4a1.2 1.2 0 0 1-1.2-1.2V8" />
+      <path d="M8.4 17h4.7" />
     </svg>
   );
 }
 
 function ServiceIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="m14.7 6.3 3 3" />
-      <path d="M9 18.5 4.5 14l2.1-2.1L9 14.3 17.4 6l2.1 2.1z" />
-      <path d="M4 21h16" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.1 2.1-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V20h-3v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-2.1-2.1.1-.1A1.7 1.7 0 0 0 5 14.6a1.7 1.7 0 0 0-1.6-1H3v-3h.4A1.7 1.7 0 0 0 5 9.6a1.7 1.7 0 0 0-.3-1.9l-.1-.1 2.1-2.1.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V4h3v.3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 2.1 2.1-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.4v3H21a1.7 1.7 0 0 0-1.6 1.4z" />
+      <path d="m9.4 12.1 1.7 1.7 3.5-3.8" />
     </svg>
   );
 }
 
 function CheckCircleIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
       <circle cx="12" cy="12" r="9" />
-      <path d="m8.5 12.2 2.2 2.2 4.8-5" />
+      <path d="m8.4 12.3 2.3 2.3 5-5.2" />
     </svg>
   );
 }
 
 function WrenchIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="M14.7 6.3a4 4 0 0 0-5.1 5.1L4 17v3h3l5.6-5.6a4 4 0 0 0 5.1-5.1l-2.6 2.6-2.8-2.8z" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M14.7 6.2a4.5 4.5 0 0 0-5.4 5.6L4.4 16.7a1.6 1.6 0 0 0 0 2.2l.7.7a1.6 1.6 0 0 0 2.2 0l4.9-4.9a4.5 4.5 0 0 0 5.6-5.4l-3 3-3.1-3.1z" />
+      <path d="M5.8 18.2h.01" />
+    </svg>
+  );
+}
+
+function RepairIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="m14.5 5.5 4 4" />
+      <path d="m12 8 4 4" />
+      <path d="M4.5 19.5 10.8 13" />
+      <path d="m8.8 11 4.2 4.2" />
+      <path d="M15.8 4.2a2 2 0 0 1 2.8 0l1.2 1.2a2 2 0 0 1 0 2.8l-8.9 8.9-4.2-4.2z" />
+      <path d="M4 20h7" />
     </svg>
   );
 }
 
 function UploadIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="M12 16V4" />
-      <path d="m7 9 5-5 5 5" />
-      <path d="M5 20h14" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M12 15.5V4.5" />
+      <path d="m7.2 9.2 4.8-4.8 4.8 4.8" />
+      <path d="M5 19.5h14" />
+      <path d="M7 16.5h10" />
     </svg>
   );
 }
 
 function CameraIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="M4 7h3l2-2h6l2 2h3v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7z" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M4 8a2 2 0 0 1 2-2h2.6l1.4-2h4l1.4 2H18a2 2 0 0 1 2 2v9.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
       <circle cx="12" cy="13" r="4" />
+      <path d="M17 9h.01" />
     </svg>
   );
 }
 
 function LocationIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="M12 21s-6-4.35-6-10a6 6 0 1 1 12 0c0 5.65-6 10-6 10z" />
-      <circle cx="12" cy="11" r="2.5" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M12 21s-6.5-4.4-6.5-10.2a6.5 6.5 0 1 1 13 0C18.5 16.6 12 21 12 21z" />
+      <circle cx="12" cy="10.8" r="2.4" />
     </svg>
   );
 }
 
 function CloseIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
       <path d="M6 6l12 12" />
       <path d="M18 6 6 18" />
     </svg>
@@ -844,9 +962,10 @@ export default function ScanClient({
     setIsUploading(true);
 
     try {
+      const compressedFiles = await Promise.all(files.map((file) => compressQrPhoto(file)));
       const formData = new FormData();
       formData.set("publicAssetCode", normalizedCode);
-      files.forEach((file) => formData.append("files", file));
+      compressedFiles.forEach((file) => formData.append("files", file));
 
       const response = await fetch("/api/scan/uploads", {
         method: "POST",
@@ -1015,7 +1134,7 @@ export default function ScanClient({
     }
 
     if (activeEditor === "service") {
-      if (!draft.serviceMode) return { ok: false, message: "Choose Checked or Serviced." };
+      if (!draft.serviceMode) return { ok: false, message: "Choose a maintenance type." };
 
       const validationServiceCopy = serviceCopyForProfile(resolveAssetServiceProfile(asset));
 
@@ -1026,8 +1145,16 @@ export default function ScanClient({
         return { ok: true };
       }
 
-      if (!draft.servicedItems.length && !draft.note.trim()) {
-        return { ok: false, message: "Select what was serviced or add a note." };
+      if (draft.serviceMode === "serviced") {
+        if (!draft.servicedItems.length && !draft.note.trim()) {
+          return { ok: false, message: "Select what was serviced or add a note." };
+        }
+      }
+
+      if (draft.serviceMode === "repaired") {
+        if (!draft.repairDetails.trim()) {
+          return { ok: false, message: "Explain exactly what was repaired." };
+        }
       }
 
       if (!showServiceDetailsStep && (!draft.serviceCompany.trim() || !draft.mechanicName.trim())) {
@@ -1147,8 +1274,10 @@ export default function ScanClient({
     ? draft.checkedItems.length > 0 || Boolean(draft.note.trim())
     : draft.serviceMode === "serviced"
       ? draft.servicedItems.length > 0 || Boolean(draft.note.trim())
-      : false;
-  const serviceDetailsMissing = draft.serviceMode === "serviced"
+      : draft.serviceMode === "repaired"
+        ? Boolean(draft.repairDetails.trim())
+        : false;
+  const serviceDetailsMissing = (draft.serviceMode === "serviced" || draft.serviceMode === "repaired")
     && showServiceDetailsStep
     && (!draft.serviceCompany.trim() || !draft.mechanicName.trim());
   const saveBlockedByEmptyDraft = activeEditor === "photos"
@@ -1162,14 +1291,16 @@ export default function ScanClient({
     : activeEditor === "photos" && !draft.photoUrls.length
       ? "Add photos first"
       : activeEditor === "service" && !draft.serviceMode
-        ? "Choose update type"
+        ? "Choose maintenance type"
         : activeEditor === "service" && !hasServiceSelection
           ? draft.serviceMode === "checked"
             ? "Select checked items"
-            : "Select service items"
+            : draft.serviceMode === "repaired"
+              ? "Explain repair"
+              : "Select service items"
           : serviceDetailsMissing
             ? "Complete details"
-            : activeEditor === "service" && draft.serviceMode === "serviced" && !showServiceDetailsStep
+            : activeEditor === "service" && (draft.serviceMode === "serviced" || draft.serviceMode === "repaired") && !showServiceDetailsStep
               ? serviceProfile === "implement"
                 ? "Next: workshop details"
                 : "Next: company details"
@@ -1213,19 +1344,11 @@ export default function ScanClient({
                   <strong>{formatUsage(prePinAsset)}</strong>
                 </div>
                 <div>
-                  <span>Financed</span>
-                  <strong>{formatAssetStatusChoice(prePinAsset.financeStatus)}</strong>
-                </div>
-                <div>
-                  <span>Insured</span>
-                  <strong>{formatAssetStatusChoice(prePinAsset.insuranceStatus)}</strong>
-                </div>
-                <div>
-                  <span>Licensed</span>
-                  <strong>{formatAssetStatusChoice(prePinAsset.licenseStatus)}</strong>
+                  <span>Serial</span>
+                  <strong>{prePinAsset.serialNumber || "—"}</strong>
                 </div>
                 {prePinAsset.licenseStatus === "yes" && prePinAsset.licenseRegistrationNumber ? (
-                  <div>
+                  <div className={styles.registrationDetailCell}>
                     <span>Registration</span>
                     <strong>{prePinAsset.licenseRegistrationNumber}</strong>
                   </div>
@@ -1302,7 +1425,6 @@ export default function ScanClient({
             <section className={styles.assetOpenedCard}>
               <div>
                 <h1>{asset.title}</h1>
-                <p>Tap one button to update what changed.</p>
               </div>
               <button
                 type="button"
@@ -1321,40 +1443,6 @@ export default function ScanClient({
               </button>
             </section>
 
-            <section className={styles.assetInfoCard} aria-label="Asset information">
-              <div className={styles.assetInfoGrid}>
-                <div>
-                  <span>Type</span>
-                  <strong>{assetPlaceholderLabel(asset)}</strong>
-                </div>
-                <div>
-                  <span>Serial</span>
-                  <strong>{asset.serialNumber || "—"}</strong>
-                </div>
-                <div>
-                  <span>{usageTitle(asset)}</span>
-                  <strong>{formatUsage(asset)}</strong>
-                </div>
-                <div>
-                  <span>Financed</span>
-                  <strong>{formatAssetStatusChoice(asset.financeStatus)}</strong>
-                </div>
-                <div>
-                  <span>Insured</span>
-                  <strong>{formatAssetStatusChoice(asset.insuranceStatus)}</strong>
-                </div>
-                <div>
-                  <span>Licensed</span>
-                  <strong>{formatAssetStatusChoice(asset.licenseStatus)}</strong>
-                </div>
-                {asset.licenseStatus === "yes" && asset.licenseRegistrationNumber ? (
-                  <div>
-                    <span>Registration</span>
-                    <strong>{asset.licenseRegistrationNumber}</strong>
-                  </div>
-                ) : null}
-              </div>
-            </section>
 
             <section className={styles.actionGrid}>
               {showUsageAction ? (
@@ -1375,7 +1463,7 @@ export default function ScanClient({
 
               <button type="button" className={styles.actionCard} onClick={() => openEditor("service")}>
                 <span className={styles.actionIconWrap}><ServiceIcon className={styles.actionIcon} /></span>
-                <strong>Checked / Serviced</strong>
+                <strong>Maintenance</strong>
                 <small>{buildEditorSummary("service", asset)}</small>
               </button>
 
@@ -1432,7 +1520,11 @@ export default function ScanClient({
                             ? showServiceDetailsStep
                               ? "Service details"
                               : serviceCopy.servicedTitle
-                            : "Checked or serviced"
+                            : draft.serviceMode === "repaired"
+                              ? showServiceDetailsStep
+                                ? "Repair details"
+                                : serviceCopy.repairedTitle
+                              : "Maintenance"
                         : "Add fresh photos"}
                 </h3>
                 <p>
@@ -1449,7 +1541,11 @@ export default function ScanClient({
                             ? showServiceDetailsStep
                               ? serviceCopy.detailsSubheader
                               : serviceCopy.servicedPrompt
-                            : "Choose whether this was checked or serviced."
+                            : draft.serviceMode === "repaired"
+                              ? showServiceDetailsStep
+                                ? serviceCopy.detailsSubheader
+                                : serviceCopy.repairedPrompt
+                              : "Choose the maintenance update type."
                         : "Upload from gallery or take photos with the camera."}
                 </p>
               </div>
@@ -1543,6 +1639,7 @@ export default function ScanClient({
                               ...current,
                               serviceMode: "checked",
                               servicedItems: [],
+                              repairDetails: "",
                               serviceCompany: "",
                               mechanicName: "",
                             }));
@@ -1567,6 +1664,7 @@ export default function ScanClient({
                               ...current,
                               serviceMode: "serviced",
                               checkedItems: [],
+                              repairDetails: "",
                             }));
                           }}
                           disabled={isSaving}
@@ -1579,22 +1677,55 @@ export default function ScanClient({
                             <small>{serviceCopy.servicedDescription}</small>
                           </span>
                         </button>
+
+                        <button
+                          type="button"
+                          className={styles.serviceModeCard}
+                          onClick={() => {
+                            setShowServiceDetailsStep(false);
+                            setDraft((current) => ({
+                              ...current,
+                              serviceMode: "repaired",
+                              checkedItems: [],
+                              servicedItems: [],
+                            }));
+                          }}
+                          disabled={isSaving}
+                        >
+                          <span className={styles.serviceModeIcon}>
+                            <RepairIcon className={styles.serviceModeSvg} />
+                          </span>
+                          <span className={styles.serviceModeText}>
+                            <strong>Repaired</strong>
+                            <small>{serviceCopy.repairedDescription}</small>
+                          </span>
+                        </button>
                       </>
                     ) : (
                       <div className={`${styles.serviceModeCard} ${styles.serviceModeCardActive} ${styles.serviceModeCardLocked}`}>
                         <span className={styles.serviceModeIcon}>
                           {draft.serviceMode === "checked" ? (
                             <CheckCircleIcon className={styles.serviceModeSvg} />
+                          ) : draft.serviceMode === "repaired" ? (
+                            <RepairIcon className={styles.serviceModeSvg} />
                           ) : (
                             <WrenchIcon className={styles.serviceModeSvg} />
                           )}
                         </span>
                         <span className={styles.serviceModeText}>
-                          <strong>{draft.serviceMode === "checked" ? "Checked" : "Serviced"}</strong>
+                          <strong>
+                            {draft.serviceMode === "checked"
+                              ? "Checked"
+                              : draft.serviceMode === "repaired"
+                                ? "Repaired"
+                                : "Serviced"}
+                          </strong>
                           <small>
                             {draft.serviceMode === "checked"
                               ? "Complete this checked record before starting another update."
-                              : "Complete this service record before starting another update."}
+                              : draft.serviceMode === "repaired"
+                                ? "Complete this repair record before starting another update."
+                                : "Complete this service record before starting another update."}
                           </small>
                         </span>
                       </div>
@@ -1743,6 +1874,74 @@ export default function ScanClient({
                       )}
                     </div>
                   ) : null}
+
+                  {draft.serviceMode === "repaired" ? (
+                    <div className={styles.servicePanel}>
+                      {!showServiceDetailsStep ? (
+                        <>
+                          <div className={styles.serviceSectionHeader}>
+                            <strong>{serviceCopy.repairedHeader}</strong>
+                            <small>{serviceCopy.repairedSubheader}</small>
+                          </div>
+
+                          <label className={styles.field}>
+                            <span>Repair details</span>
+                            <textarea
+                              placeholder={serviceCopy.repairedNotePlaceholder}
+                              value={draft.repairDetails}
+                              onChange={(event) => setDraft((current) => ({ ...current, repairDetails: event.target.value.slice(0, 1600) }))}
+                              disabled={isSaving}
+                            />
+                          </label>
+
+                          <label className={styles.field}>
+                            <span>Extra notes</span>
+                            <textarea
+                              placeholder={serviceCopy.repairedExtraNotePlaceholder}
+                              value={draft.note}
+                              onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
+                              disabled={isSaving}
+                            />
+                          </label>
+                        </>
+                      ) : (
+                        <div className={styles.serviceDetailsCard}>
+                          <div className={styles.serviceSectionHeader}>
+                            <strong>Who completed the repair?</strong>
+                            <small>{serviceCopy.detailsSubheader}</small>
+                          </div>
+
+                          {draft.repairDetails.trim() ? (
+                            <p className={styles.selectedSummary}>
+                              Repair: {draft.repairDetails.trim()}
+                            </p>
+                          ) : null}
+
+                          <label className={styles.field}>
+                            <span>{serviceCopy.companyLabel}</span>
+                            <input
+                              placeholder={serviceCopy.companyPlaceholder}
+                              value={draft.serviceCompany}
+                              onChange={(event) => setDraft((current) => ({ ...current, serviceCompany: event.target.value.slice(0, 120) }))}
+                              disabled={isSaving}
+                            />
+                          </label>
+                          <label className={styles.field}>
+                            <span>{serviceCopy.mechanicLabel}</span>
+                            <input
+                              placeholder={serviceCopy.mechanicPlaceholder}
+                              value={draft.mechanicName}
+                              onChange={(event) => setDraft((current) => ({ ...current, mechanicName: event.target.value.slice(0, 120) }))}
+                              disabled={isSaving}
+                            />
+                          </label>
+                          <button type="button" className={styles.secondaryButton} onClick={() => setShowServiceDetailsStep(false)} disabled={isSaving}>
+                            Back to repair details
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
 
@@ -1800,7 +1999,7 @@ export default function ScanClient({
 
                   <p className={styles.helperText}>
                     {isUploading
-                      ? "Uploading photos…"
+                      ? "Preparing and uploading photos…"
                       : `${draft.photoUrls.length} of ${MAX_QR_PHOTOS} photos ready for this update.`}
                   </p>
 
