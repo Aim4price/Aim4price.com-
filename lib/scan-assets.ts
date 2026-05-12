@@ -780,16 +780,16 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         )
         values (
           $1,
-          $2,
-          $3,
-          $4,
-          $5,
-          $6,
-          $7,
+          $2::text,
+          $3::text,
+          $4::numeric,
+          $5::integer,
+          $6::text,
+          $7::text,
           $8::jsonb,
-          $9,
-          $10,
-          $11,
+          $9::double precision,
+          $10::double precision,
+          $11::text,
           now()
         )
         returning
@@ -827,17 +827,17 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         with updated as (
           update asset_register_items
           set
-            hours = case when $11::numeric is null then coalesce($2, hours) else hours end,
-            life_worked_percent = coalesce($11, life_worked_percent),
-            life_remaining_percent = case when $11::numeric is null then life_remaining_percent else greatest(0, 100 - $11::numeric) end,
-            fuel_percent = coalesce($3, fuel_percent),
-            condition = coalesce($4, condition),
-            photo_urls = $6::jsonb,
+            hours = case when $10::numeric is null then coalesce($2::numeric, hours) else hours end,
+            life_worked_percent = coalesce($10::numeric, life_worked_percent),
+            life_remaining_percent = case when $10::numeric is null then life_remaining_percent else greatest(0, 100 - $10::numeric) end,
+            fuel_percent = coalesce($3::integer, fuel_percent),
+            condition = coalesce($4::text, condition),
+            photo_urls = $5::jsonb,
             last_scanned_at = now(),
-            last_known_lat = coalesce($7, last_known_lat),
-            last_known_lng = coalesce($8, last_known_lng),
-            last_known_location_text = coalesce($9, last_known_location_text),
-            specs_json = $10::jsonb,
+            last_known_lat = coalesce($6::double precision, last_known_lat),
+            last_known_lng = coalesce($7::double precision, last_known_lng),
+            last_known_location_text = coalesce($8::text, last_known_location_text),
+            specs_json = $9::jsonb,
             updated_at = now()
           where id = $1
           returning *
@@ -891,7 +891,6 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         nextHours,
         nextFuelPercent,
         nextCondition,
-        nextNote,
         JSON.stringify(mergedPhotos),
         nextLatitude,
         nextLongitude,
