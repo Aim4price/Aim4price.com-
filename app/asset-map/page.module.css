@@ -7,7 +7,7 @@
 }
 
 .shell {
-  width: min(calc(100% - 2rem), 1560px);
+  width: min(calc(100% - 2rem), 1380px);
   margin: 0 auto;
   padding: 0.82rem 0 2rem;
   display: grid;
@@ -159,8 +159,8 @@
 
 .mapFrame {
   position: relative;
-  height: clamp(27rem, 49vh, 33rem);
-  min-height: 27rem;
+  height: clamp(35.5rem, 64vh, 41rem);
+  min-height: 35.5rem;
   overflow: hidden;
   border-radius: 1.12rem;
   border: 1px solid rgba(18, 45, 37, 0.1);
@@ -188,6 +188,7 @@
 }
 
 .mapControls,
+.layerControl,
 .assetOverlay {
   position: absolute;
   z-index: 850;
@@ -196,10 +197,8 @@
 .mapControls {
   top: 0.92rem;
   left: 0.92rem;
-  right: 27.35rem;
-  display: flex;
-  align-items: stretch;
-  gap: 0.62rem;
+  width: min(36rem, calc(100% - 31rem));
+  display: block;
 }
 
 .searchControl,
@@ -215,11 +214,9 @@
 }
 
 .searchControl {
-  flex: 1 1 24rem;
-  min-width: 16rem;
-  display: grid;
-  gap: 0.36rem;
-  padding: 0.66rem;
+  width: 100%;
+  display: block;
+  padding: 0.52rem;
   border-radius: 1.02rem;
 }
 
@@ -241,7 +238,7 @@
 .searchControl input,
 .assetSelectBlock select {
   width: 100%;
-  min-height: 2.68rem;
+  min-height: 2.72rem;
   border-radius: 0.84rem;
   border: 1px solid rgba(18, 45, 37, 0.12);
   background: rgba(255, 255, 255, 0.97);
@@ -264,9 +261,34 @@
   font-weight: 720;
 }
 
+.selectShell {
+  position: relative;
+}
+
+.selectShell::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 1.05rem;
+  width: 0.48rem;
+  height: 0.48rem;
+  border-right: 2px solid #123f35;
+  border-bottom: 2px solid #123f35;
+  transform: translateY(-64%) rotate(45deg);
+  pointer-events: none;
+}
+
 .assetSelectBlock select {
-  padding: 0 2.35rem 0 0.88rem;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0 2.7rem 0 0.9rem;
   cursor: pointer;
+  font-weight: 820;
+  line-height: 1.1;
+}
+
+.assetSelectBlock select::-ms-expand {
+  display: none;
 }
 
 .searchControl input:focus,
@@ -276,13 +298,15 @@
 }
 
 .layerControl {
-  flex: 0 0 auto;
+  top: 0.92rem;
+  left: 50%;
+  transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.3rem;
   padding: 0.34rem;
   border-radius: 1.02rem;
-  align-self: end;
 }
 
 .layerButton {
@@ -322,14 +346,12 @@
 .assetOverlay {
   top: 0.92rem;
   right: 0.92rem;
-  width: min(25.45rem, calc(100% - 1.84rem));
-  max-height: calc(100% - 1.84rem);
+  width: min(23.8rem, calc(100% - 1.84rem));
   display: grid;
-  gap: 0.66rem;
-  padding: 0.68rem;
+  gap: 0.58rem;
+  padding: 0.64rem;
   border-radius: 1.18rem;
-  overflow-y: auto;
-  scrollbar-width: thin;
+  overflow: visible;
 }
 
 .assetSelectBlock {
@@ -340,8 +362,8 @@
 .assetInfoCard,
 .allAssetsCard {
   display: grid;
-  gap: 0.68rem;
-  padding: 0.76rem;
+  gap: 0.58rem;
+  padding: 0.68rem;
   border-radius: 0.98rem;
   border: 1px solid rgba(18, 45, 37, 0.08);
   background:
@@ -406,7 +428,7 @@
 .assetFacts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
+  gap: 0.44rem;
 }
 
 .assetFacts div,
@@ -414,7 +436,7 @@
   min-width: 0;
   display: grid;
   gap: 0.18rem;
-  padding: 0.58rem;
+  padding: 0.52rem;
   border-radius: 0.82rem;
   border: 1px solid rgba(18, 45, 37, 0.075);
   background: rgba(255, 255, 255, 0.78);
@@ -447,7 +469,7 @@
 
 .primaryActionCompact,
 .secondaryActionCompact {
-  min-height: 2.72rem;
+  min-height: 2.56rem;
   padding: 0 0.78rem;
   border-radius: 0.86rem;
   font-size: 0.84rem;
@@ -662,50 +684,48 @@
   }
 
   .mapFrame {
-    height: 38rem;
+    height: 39.5rem;
   }
 
   .mapControls {
-    right: 0.92rem;
+    width: min(30rem, calc(100% - 27rem));
   }
 
   .assetOverlay {
-    top: 6.78rem;
-    max-height: calc(100% - 7.7rem);
+    width: min(22.8rem, calc(100% - 1.84rem));
+    overflow: visible;
   }
 }
 
 @media (max-width: 980px) {
   .shell {
-    width: min(calc(100% - 1rem), 1560px);
+    width: min(calc(100% - 1rem), 1380px);
   }
 
   .mapFrame {
-    height: 43rem;
-    min-height: 43rem;
+    height: 46rem;
+    min-height: 46rem;
   }
 
   .mapControls {
     left: 0.75rem;
-    right: 0.75rem;
     top: 0.75rem;
-    flex-wrap: wrap;
-  }
-
-  .searchControl {
-    flex-basis: 100%;
+    width: calc(100% - 1.5rem);
   }
 
   .layerControl {
-    align-self: start;
+    top: 4.98rem;
+    left: 0.75rem;
+    transform: none;
   }
 
   .assetOverlay {
-    top: 8.72rem;
+    top: 8.95rem;
     left: 0.75rem;
     right: 0.75rem;
     width: auto;
-    max-height: 23.5rem;
+    max-height: 31rem;
+    overflow-y: auto;
   }
 }
 
@@ -730,17 +750,13 @@
   }
 
   .mapFrame {
-    min-height: 44rem;
-    height: 44rem;
+    min-height: 48rem;
+    height: 48rem;
     border-radius: 0.92rem;
   }
 
-  .mapControls {
-    gap: 0.5rem;
-  }
-
   .layerControl {
-    width: 100%;
+    width: calc(100% - 1.5rem);
   }
 
   .layerButton {
@@ -753,6 +769,7 @@
 
   .assetOverlay {
     top: 12rem;
-    max-height: 26rem;
+    max-height: 30rem;
+    overflow-y: auto;
   }
 }
