@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getAccountProfile } from '../../../lib/account-profile';
 import { getServerSession } from '../../../lib/auth-session';
 
 export const runtime = 'nodejs';
@@ -14,12 +15,26 @@ export async function GET() {
     });
   }
 
+  let displayName = session.user.name;
+
+  try {
+    const profile = await getAccountProfile({
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    });
+
+    displayName = profile.name || displayName;
+  } catch (error) {
+    console.error('Failed to load account profile for session menu', error);
+  }
+
   return NextResponse.json({
     ok: true,
     signedIn: true,
     user: {
       id: session.user.id,
-      name: session.user.name,
+      name: displayName,
       email: session.user.email,
     },
   });
