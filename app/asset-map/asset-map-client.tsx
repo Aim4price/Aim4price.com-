@@ -8,6 +8,7 @@ import styles from './page.module.css';
 type NoticeTone = 'error';
 type RecencyFilter = 'all' | '7' | '30' | '90';
 type BasemapMode = 'road' | 'satellite';
+type MarkerTone = 'recent' | 'warm' | 'older';
 
 type AssetMapItem = {
   id: string;
@@ -203,43 +204,52 @@ function matchesRecency(asset: AssetMapItem, filter: RecencyFilter): boolean {
   return Number.isFinite(limit) ? ageDays <= limit : true;
 }
 
-function getMarkerColors(asset: AssetMapItem): { fill: string; stroke: string } {
+function getMarkerTone(asset: AssetMapItem): MarkerTone {
   if (asset.lastScannedAtIso) {
     const parsed = new Date(asset.lastScannedAtIso).getTime();
     if (!Number.isNaN(parsed)) {
       const ageDays = (Date.now() - parsed) / (1000 * 60 * 60 * 24);
-      if (ageDays <= 7) {
-        return { fill: '#1f8f63', stroke: '#145843' };
-      }
-      if (ageDays <= 30) {
-        return { fill: '#3d6bd6', stroke: '#24438a' };
-      }
+      if (ageDays <= 7) return 'recent';
+      if (ageDays <= 30) return 'warm';
     }
   }
 
-  return { fill: '#7b8797', stroke: '#506070' };
+  return 'older';
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function buildMarkerLabel(asset: AssetMapItem, index: number): string {
+  const raw = String(asset.title || asset.plateLabel || asset.publicAssetCode || '').trim();
+  const initials = raw
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+
+  return initials || String(index + 1);
 }
 
 function buildPopupHtml(asset: AssetMapItem): string {
-  const escape = (value: string) =>
-    value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-
-  const title = escape(asset.title || 'Saved asset');
-  const plate = escape(asset.plateLabel || 'No plate label');
-  const location = escape(asset.lastKnownLocationText || 'No location note saved');
-  const scanned = escape(formatDate(asset.lastScannedAtIso));
+  const title = escapeHtml(asset.title || 'Saved asset');
+  const plate = escapeHtml(asset.plateLabel || 'No plate label');
+  const location = escapeHtml(asset.lastKnownLocationText || 'No location note saved');
+  const scanned = escapeHtml(formatDate(asset.lastScannedAtIso));
 
   return `
-    <div style="min-width: 180px; font-family: Inter, Arial, sans-serif; color: #183033;">
-      <div style="font-weight: 800; font-size: 15px; line-height: 1.2; margin-bottom: 6px;">${title}</div>
-      <div style="font-size: 12px; color: #526268; margin-bottom: 4px;">${plate}</div>
-      <div style="font-size: 12px; color: #526268; margin-bottom: 4px;">${location}</div>
-      <div style="font-size: 12px; color: #526268;">Last scanned: ${scanned}</div>
+    <div style="min-width: 210px; font-family: Inter, Arial, sans-serif; color: #16312f;">
+      <div style="font-weight: 900; font-size: 15px; line-height: 1.18; margin-bottom: 7px; letter-spacing: -0.02em;">${title}</div>
+      <div style="font-size: 12px; color: #5b6a70; margin-bottom: 5px;">${plate}</div>
+      <div style="font-size: 12px; color: #5b6a70; margin-bottom: 5px;">${location}</div>
+      <div style="font-size: 12px; color: #5b6a70;">Last scanned: ${scanned}</div>
     </div>
   `;
 }
@@ -364,6 +374,12 @@ export default function AssetMapClient() {
     return filteredAssets.find((asset) => asset.publicAssetCode === selectedCode) ?? filteredAssets[0] ?? null;
   }, [filteredAssets, selectedCode]);
 
+  const selectedAssetPosition = useMemo(() => {
+    if (!selectedAsset) return 0;
+    const index = filteredAssets.findIndex((asset) => asset.publicAssetCode === selectedAsset.publicAssetCode);
+    return index >= 0 ? index + 1 : 0;
+  }, [filteredAssets, selectedAsset]);
+
   useEffect(() => {
     if (!selectedAsset) {
       if (selectedCode !== null) {
@@ -393,9 +409,11 @@ export default function AssetMapClient() {
       leafletRef.current = L;
 
       const map = L.map(mapElementRef.current, {
-        zoomControl: true,
+        zoomControl: false,
         attributionControl: true,
       });
+
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
 
       const roadLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -472,40 +490,44 @@ export default function AssetMapClient() {
 
     const bounds: Array<[number, number]> = [];
 
-    for (const asset of filteredAssets) {
+    filteredAssets.forEach((asset, index) => {
       const lat = asset.lastKnownLat as number;
       const lng = asset.lastKnownLng as number;
-      const colors = getMarkerColors(asset);
+      const markerTone = getMarkerTone(asset);
+      const isActive = asset.publicAssetCode === selectedCode;
+      const label = escapeHtml(buildMarkerLabel(asset, index));
 
-      const marker = L.circleMarker([lat, lng], {
-        radius: 10,
-        color: colors.stroke,
-        weight: 2,
-        fillColor: colors.fill,
-        fillOpacity: 0.95,
+      const icon = L.divIcon({
+        className: `aim4priceMapMarker aim4priceMapMarker--${markerTone}${isActive ? ' aim4priceMapMarker--active' : ''}`,
+        html: `<span class="aim4priceMapMarkerPin"><b>${label}</b></span>`,
+        iconSize: [36, 42],
+        iconAnchor: [18, 38],
+        popupAnchor: [0, -34],
       });
+
+      const marker = L.marker([lat, lng], { icon, title: asset.title || asset.plateLabel || 'Saved asset' });
 
       marker.bindPopup(buildPopupHtml(asset));
       marker.on('click', () => setSelectedCode(asset.publicAssetCode));
       marker.addTo(markerLayer);
       markersByCodeRef.current.set(asset.publicAssetCode, marker);
       bounds.push([lat, lng]);
-    }
+    });
 
     const signature = filteredAssets.map((asset) => asset.publicAssetCode).join('|');
     if (signature !== lastBoundsSignatureRef.current) {
       lastBoundsSignatureRef.current = signature;
 
       if (bounds.length === 1) {
-        map.setView(bounds[0], 11);
+        map.setView(bounds[0], 12);
       } else {
         map.fitBounds(bounds, {
-          padding: [44, 44],
+          padding: [58, 58],
           maxZoom: 12,
         });
       }
     }
-  }, [filteredAssets]);
+  }, [filteredAssets, selectedCode]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -516,7 +538,7 @@ export default function AssetMapClient() {
     }
 
     const latLng = marker.getLatLng();
-    map.panTo(latLng, { animate: true, duration: 0.6 });
+    map.panTo(latLng, { animate: true, duration: 0.55 });
     marker.openPopup();
   }, [selectedCode]);
 
@@ -541,6 +563,7 @@ export default function AssetMapClient() {
 
   const assetsAwaitingLocation = useMemo(() => Math.max(0, assets.length - mappedAssets.length), [assets.length, mappedAssets.length]);
   const scannedAssetCount = useMemo(() => assets.filter((asset) => Boolean(asset.lastScannedAtIso)).length, [assets]);
+  const lastUpdatedText = lastLoadedAtIso ? formatDate(lastLoadedAtIso) : 'Waiting for first refresh';
   const selectedGoogleMapsHref =
     selectedAsset && hasCoordinates(selectedAsset)
       ? `https://www.google.com/maps/search/?api=1&query=${selectedAsset.lastKnownLat},${selectedAsset.lastKnownLng}`
@@ -551,250 +574,226 @@ export default function AssetMapClient() {
       <AppHeader active="asset-register" />
 
       <section className={styles.shell}>
-        <div className={styles.hero}>
-          <div className={styles.heroContent}>
+        <section className={styles.commandBar}>
+          <div className={styles.commandTitle}>
             <span className={styles.eyebrow}>Fleet visibility</span>
             <h1>Asset map</h1>
-            <p>
-              See the latest saved scan locations for your assets in one place. The map now gives you a
-              larger field view, quick marker focusing and a downloadable scan-location report.
-            </p>
-
-            <div className={styles.heroActions}>
-              {scannedAssetCount > 0 ? (
-                <a href={REPORT_DOWNLOAD_HREF} className={styles.primaryButton}>
-                  Download scan report
-                </a>
-              ) : (
-                <button type="button" className={`${styles.primaryButton} ${styles.buttonDisabled}`} disabled>
-                  No scan report yet
-                </button>
-              )}
-              <span className={styles.heroActionMeta}>
-                {scannedAssetCount} {scannedAssetCount === 1 ? 'scanned asset' : 'scanned assets'} ready for reporting
-              </span>
-            </div>
+            <p>Clean QR scan-location view with marker focus, quick filters and a scanned-assets export.</p>
           </div>
 
-          <div className={styles.heroAside}>
-            <div className={styles.heroStat}>
-              <span>Assets on map</span>
+          <div className={styles.statStrip} aria-label="Asset map summary">
+            <div className={styles.statPill}>
+              <span>Mapped</span>
               <strong>{summary?.assetsWithLocation ?? mappedAssets.length}</strong>
             </div>
-            <div className={styles.heroStat}>
-              <span>Awaiting location</span>
+            <div className={styles.statPill}>
+              <span>No GPS</span>
               <strong>{summary?.assetsWithoutLocation ?? assetsAwaitingLocation}</strong>
             </div>
-            <div className={styles.heroStat}>
-              <span>Scanned in 30 days</span>
+            <div className={styles.statPill}>
+              <span>30 days</span>
               <strong>{summary?.scannedLast30Days ?? 0}</strong>
             </div>
+            <div className={styles.statPill}>
+              <span>Report</span>
+              <strong>{scannedAssetCount}</strong>
+            </div>
           </div>
-        </div>
+
+          <div className={styles.commandActions}>
+            {scannedAssetCount > 0 ? (
+              <a href={REPORT_DOWNLOAD_HREF} className={styles.darkButton}>
+                Export scan report
+              </a>
+            ) : (
+              <button type="button" className={`${styles.darkButton} ${styles.buttonDisabled}`} disabled>
+                No report yet
+              </button>
+            )}
+            <button type="button" className={styles.lightButton} onClick={() => void fetchMapData('refresh')} disabled={isRefreshing || isLoading}>
+              {isRefreshing ? 'Refreshing…' : 'Refresh'}
+            </button>
+          </div>
+        </section>
 
         {notice ? <div className={styles.notice}>{notice.message}</div> : null}
 
-        <div className={styles.toolbar}>
-          <label className={styles.searchField}>
-            <span>Search assets</span>
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by title, plate label, code or location"
-            />
-          </label>
+        <section className={styles.mapConsole}>
+          <div className={styles.mapFrame}>
+            {isLoading ? <div className={styles.mapEmpty}>Loading the asset map...</div> : null}
+            {!isLoading && !mappedAssets.length ? (
+              <div className={styles.mapEmpty}>
+                <strong>No asset locations saved yet.</strong>
+                <span>Scan an asset and save a GPS location to place the first marker on the map.</span>
+              </div>
+            ) : null}
+            {!isLoading && mappedAssets.length && !filteredAssets.length ? (
+              <div className={styles.mapEmpty}>
+                <strong>No mapped assets match this view.</strong>
+                <span>Clear the search or choose a wider time filter.</span>
+              </div>
+            ) : null}
 
-          <div className={styles.toolbarAside}>
-            <div className={styles.filterRail}>
-              {RECENCY_OPTIONS.map((option) => (
+            <div className={styles.mapCanvas} ref={mapElementRef} aria-label="Asset map canvas" />
+
+            <div
+              className={styles.controlDock}
+              onPointerDown={(event) => event.stopPropagation()}
+              onDoubleClick={(event) => event.stopPropagation()}
+              onWheel={(event) => event.stopPropagation()}
+            >
+              <label className={styles.searchControl}>
+                <span>Search</span>
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Asset title, plate, code or location"
+                />
+              </label>
+
+              <div className={styles.filterGroup} aria-label="Scan age filter">
+                {RECENCY_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`${styles.filterChip} ${recencyFilter === option.value ? styles.filterChipActive : ''}`}
+                    onClick={() => setRecencyFilter(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div
+              className={styles.layerDock}
+              onPointerDown={(event) => event.stopPropagation()}
+              onDoubleClick={(event) => event.stopPropagation()}
+            >
+              {BASEMAP_OPTIONS.map((option) => (
                 <button
                   key={option.value}
                   type="button"
-                  className={`${styles.filterChip} ${recencyFilter === option.value ? styles.filterChipActive : ''}`}
-                  onClick={() => setRecencyFilter(option.value)}
+                  className={`${styles.layerButton} ${basemapMode === option.value ? styles.layerButtonActive : ''}`}
+                  onClick={() => setBasemapMode(option.value)}
                 >
                   {option.label}
                 </button>
               ))}
             </div>
 
-            <div className={styles.toolbarStatus}>
-              <span>{lastLoadedAtIso ? `Updated ${formatDate(lastLoadedAtIso)}` : 'Waiting for the first refresh'}</span>
-              <button type="button" className={styles.secondaryButton} onClick={() => void fetchMapData('refresh')} disabled={isRefreshing || isLoading}>
-                {isRefreshing ? 'Refreshing…' : 'Refresh map'}
-              </button>
+            {!isLoading && filteredAssets.length ? (
+              <label
+                className={styles.assetPicker}
+                onPointerDown={(event) => event.stopPropagation()}
+                onDoubleClick={(event) => event.stopPropagation()}
+              >
+                <span>Choose scanned asset</span>
+                <select
+                  value={selectedAsset?.publicAssetCode ?? ''}
+                  onChange={(event) => setSelectedCode(event.target.value || null)}
+                  aria-label="Choose scanned asset on the map"
+                >
+                  {filteredAssets.map((asset) => (
+                    <option key={asset.publicAssetCode} value={asset.publicAssetCode}>
+                      {asset.title} {asset.plateLabel ? `• ${asset.plateLabel}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
+            {selectedAsset ? (
+              <aside
+                className={styles.assetPreview}
+                onPointerDown={(event) => event.stopPropagation()}
+                onDoubleClick={(event) => event.stopPropagation()}
+              >
+                <div className={styles.assetPreviewTop}>
+                  <span>
+                    {selectedAssetPosition || 1}/{filteredAssets.length || 1}
+                  </span>
+                  <strong>{selectedAsset.title}</strong>
+                  <p>{selectedAsset.plateLabel || selectedAsset.publicAssetCode || 'No plate label'}</p>
+                </div>
+
+                <div className={styles.previewStats}>
+                  <div>
+                    <span>Condition</span>
+                    <strong>{formatCondition(selectedAsset.condition)}</strong>
+                  </div>
+                  <div>
+                    <span>Usage</span>
+                    <strong>{formatHours(selectedAsset.hours)}</strong>
+                  </div>
+                  <div>
+                    <span>Fuel</span>
+                    <strong>{formatFuel(selectedAsset.fuelPercent)}</strong>
+                  </div>
+                </div>
+
+                <div className={styles.lastScanBox}>
+                  <span>Last scanned</span>
+                  <strong>{formatDate(selectedAsset.lastScannedAtIso)}</strong>
+                  <small>{selectedAsset.lastKnownLocationText || `${selectedAsset.lastKnownLat}, ${selectedAsset.lastKnownLng}`}</small>
+                </div>
+
+                <div className={styles.previewActions}>
+                  {selectedGoogleMapsHref ? (
+                    <a href={selectedGoogleMapsHref} target="_blank" rel="noreferrer" className={styles.darkButton}>
+                      Google Maps
+                    </a>
+                  ) : null}
+                  <Link href="/asset-register" className={styles.lightButton}>
+                    Open register
+                  </Link>
+                </div>
+              </aside>
+            ) : null}
+
+            <div className={styles.mapFooterDock}>
+              <span>Updated {lastUpdatedText}</span>
+              <div className={styles.legend}>
+                <span><i className={styles.legendRecent} /> 7 days</span>
+                <span><i className={styles.legendWarm} /> 30 days</span>
+                <span><i className={styles.legendOlder} /> Older</span>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className={styles.layout}>
-          <section className={styles.mapCard}>
-            <div className={styles.sectionHeader}>
-              <div>
-                <span className={styles.kicker}>Latest marker view</span>
-                <h2>Asset location map</h2>
-                <p>Markers are based on the most recent saved latitude and longitude for each asset.</p>
-              </div>
-
-              <div className={styles.mapControlRail}>
-                <div className={styles.basemapToggle} role="group" aria-label="Map layer toggle">
-                  {BASEMAP_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      className={`${styles.basemapButton} ${basemapMode === option.value ? styles.basemapButtonActive : ''}`}
-                      onClick={() => setBasemapMode(option.value)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className={styles.legend}>
-                  <span><i className={styles.legendRecent} /> 7 days</span>
-                  <span><i className={styles.legendWarm} /> 30 days</span>
-                  <span><i className={styles.legendOlder} /> Older</span>
-                </div>
-              </div>
+        <section className={styles.assetDrawer}>
+          <div className={styles.drawerHeader}>
+            <div>
+              <span className={styles.eyebrowSoft}>Mapped assets</span>
+              <h2>{filteredAssets.length} visible</h2>
             </div>
+            <p>Tap any asset to centre it on the map.</p>
+          </div>
 
-            <div className={styles.mapFrame}>
-              {isLoading ? <div className={styles.mapEmpty}>Loading the asset map...</div> : null}
-              {!isLoading && !mappedAssets.length ? (
-                <div className={styles.mapEmpty}>
-                  <strong>No asset locations saved yet.</strong>
-                  <span>Scan an asset and save a real GPS location to place the first marker on the map.</span>
-                </div>
-              ) : null}
-              {!isLoading && mappedAssets.length && !filteredAssets.length ? (
-                <div className={styles.mapEmpty}>
-                  <strong>No mapped assets match this filter.</strong>
-                  <span>Clear or widen the search to bring your saved markers back into view.</span>
-                </div>
-              ) : null}
-              <div className={styles.mapCanvas} ref={mapElementRef} aria-label="Asset map canvas" />
-              {!isLoading && filteredAssets.length ? (
-                <label
-                  className={styles.mapAssetPicker}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onDoubleClick={(event) => event.stopPropagation()}
-                >
-                  <span>Choose scanned asset</span>
-                  <select
-                    value={selectedAsset?.publicAssetCode ?? ''}
-                    onChange={(event) => setSelectedCode(event.target.value || null)}
-                    aria-label="Choose scanned asset on the map"
+          <div className={styles.assetRail}>
+            {filteredAssets.length ? (
+              filteredAssets.map((asset) => {
+                const isActive = asset.publicAssetCode === selectedAsset?.publicAssetCode;
+                return (
+                  <button
+                    key={asset.id}
+                    type="button"
+                    className={`${styles.assetRailItem} ${isActive ? styles.assetRailItemActive : ''}`}
+                    onClick={() => setSelectedCode(asset.publicAssetCode)}
                   >
-                    {filteredAssets.map((asset) => (
-                      <option key={asset.publicAssetCode} value={asset.publicAssetCode}>
-                        {asset.title} {asset.plateLabel ? `• ${asset.plateLabel}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <em>{filteredAssets.length} visible on this map view</em>
-                </label>
-              ) : null}
-            </div>
-          </section>
-
-          <aside className={styles.sidebar}>
-            <section className={styles.sidebarCard}>
-              <div className={styles.sectionHeader}>
-                <div>
-                  <span className={styles.kicker}>Selected asset</span>
-                  <h2>{selectedAsset?.title ?? 'No asset selected'}</h2>
-                  <p>
-                    {selectedAsset
-                      ? 'This card reflects the latest saved scan position and current operational snapshot.'
-                      : 'Choose a marker or asset row to inspect the latest saved location.'}
-                  </p>
-                </div>
-              </div>
-
-              {selectedAsset ? (
-                <div className={styles.selectedStack}>
-                  <div className={styles.metricGrid}>
-                    <div className={styles.metricTile}>
-                      <span>Plate label</span>
-                      <strong>{selectedAsset.plateLabel || 'Pending'}</strong>
-                    </div>
-                    <div className={styles.metricTile}>
-                      <span>Condition</span>
-                      <strong>{formatCondition(selectedAsset.condition)}</strong>
-                    </div>
-                    <div className={styles.metricTile}>
-                      <span>Hours</span>
-                      <strong>{formatHours(selectedAsset.hours)}</strong>
-                    </div>
-                    <div className={styles.metricTile}>
-                      <span>Fuel</span>
-                      <strong>{formatFuel(selectedAsset.fuelPercent)}</strong>
-                    </div>
-                  </div>
-
-                  <div className={styles.detailCard}>
-                    <span>Last scanned</span>
-                    <strong>{formatDate(selectedAsset.lastScannedAtIso)}</strong>
-                    <p>{selectedAsset.lastKnownLocationText || 'No location note saved on this asset yet.'}</p>
-                    <small>
-                      {selectedAsset.lastKnownLat}, {selectedAsset.lastKnownLng}
-                    </small>
-                  </div>
-
-                  <div className={styles.inlineActions}>
-                    {selectedGoogleMapsHref ? (
-                      <a href={selectedGoogleMapsHref} target="_blank" rel="noreferrer" className={styles.primaryButton}>
-                        Open in Google Maps
-                      </a>
-                    ) : null}
-                    <Link href="/asset-register" className={styles.secondaryButton}>
-                      Open asset register
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                <div className={styles.emptyPanel}>Pick any marker to see the latest location details here.</div>
-              )}
-            </section>
-
-            <section className={styles.sidebarCard}>
-              <div className={styles.sectionHeader}>
-                <div>
-                  <span className={styles.kicker}>Mapped assets</span>
-                  <h2>{filteredAssets.length}</h2>
-                  <p>Click a row to focus that asset on the map.</p>
-                </div>
-              </div>
-
-              <div className={styles.assetList}>
-                {filteredAssets.length ? (
-                  filteredAssets.map((asset) => {
-                    const isActive = asset.publicAssetCode === selectedAsset?.publicAssetCode;
-                    return (
-                      <button
-                        key={asset.id}
-                        type="button"
-                        className={`${styles.assetListItem} ${isActive ? styles.assetListItemActive : ''}`}
-                        onClick={() => setSelectedCode(asset.publicAssetCode)}
-                      >
-                        <div className={styles.assetListHeader}>
-                          <strong>{asset.title}</strong>
-                          <span>{asset.plateLabel || 'Pending'}</span>
-                        </div>
-                        <div className={styles.assetListMeta}>
-                          <span>{formatDate(asset.lastScannedAtIso)}</span>
-                          <span>{asset.lastKnownLocationText || 'No location note'}</span>
-                        </div>
-                      </button>
-                    );
-                  })
-                ) : (
-                  <div className={styles.emptyPanel}>No mapped assets match the current search or time filter.</div>
-                )}
-              </div>
-            </section>
-          </aside>
-        </div>
+                    <span>{asset.plateLabel || asset.publicAssetCode || 'Pending plate'}</span>
+                    <strong>{asset.title}</strong>
+                    <small>{formatDate(asset.lastScannedAtIso)}</small>
+                    <em>{asset.lastKnownLocationText || 'No location note'}</em>
+                  </button>
+                );
+              })
+            ) : (
+              <div className={styles.emptyRail}>No mapped assets match the current search or time filter.</div>
+            )}
+          </div>
+        </section>
       </section>
     </main>
   );
