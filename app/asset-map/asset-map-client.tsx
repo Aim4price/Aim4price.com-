@@ -663,147 +663,115 @@ export default function AssetMapClient() {
             <div className={styles.mapCanvas} ref={mapElementRef} aria-label="Asset map canvas" />
 
             <div
-              className={styles.mapControls}
+              className={styles.controlRow}
               onPointerDown={(event) => event.stopPropagation()}
               onDoubleClick={(event) => event.stopPropagation()}
               onWheel={(event) => event.stopPropagation()}
             >
-              <label className={styles.searchControl} aria-label="Search scanned assets">
-                <input
-                  value={search}
-                  onChange={(event) => handleSearchChange(event.target.value)}
-                  placeholder="Search title, serial number, plate, QR code or location"
-                />
-              </label>
-            </div>
+              <div className={styles.mapControls}>
+                <label className={styles.searchControl} aria-label="Search scanned assets">
+                  <input
+                    value={search}
+                    onChange={(event) => handleSearchChange(event.target.value)}
+                    placeholder="Search title, serial number, plate, QR code or location"
+                  />
+                </label>
+              </div>
 
-            <div
-              className={styles.layerControl}
-              aria-label="Map style"
-              onPointerDown={(event) => event.stopPropagation()}
-              onDoubleClick={(event) => event.stopPropagation()}
-              onWheel={(event) => event.stopPropagation()}
-            >
-              {BASEMAP_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={`${styles.layerButton} ${basemapMode === option.value ? styles.layerButtonActive : ''}`}
-                  onClick={() => setBasemapMode(option.value)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+              <div className={styles.layerControl} aria-label="Map style">
+                {BASEMAP_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`${styles.layerButton} ${basemapMode === option.value ? styles.layerButtonActive : ''}`}
+                    onClick={() => setBasemapMode(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
 
-            <aside
-              className={styles.assetOverlay}
-              onPointerDown={(event) => event.stopPropagation()}
-              onDoubleClick={(event) => event.stopPropagation()}
-              onWheel={(event) => event.stopPropagation()}
-            >
-              <label className={styles.assetSelectBlock} aria-label="Choose asset on the map">
-                <div className={styles.selectShell}>
-                  <select value={chosenCode} onChange={(event) => handleChooseAsset(event.target.value)} aria-label="Choose asset on the map">
-                    <option value="all">All assets on map</option>
-                    {mappedAssets.map((asset) => (
-                      <option key={asset.publicAssetCode} value={asset.publicAssetCode}>
-                        {buildAssetOptionLabel(asset)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </label>
-
-              {selectedAsset ? (
-                <div className={styles.assetInfoCard}>
-                  <div className={styles.assetInfoHeader}>
-                    <div className={styles.assetInfoTop}>
-                      <span>{selectedVisiblePosition ? `Marker ${selectedVisiblePosition}` : 'Selected asset'}</span>
-                      <button type="button" onClick={() => handleChooseAsset('all')}>
-                        Show all
-                      </button>
-                    </div>
-                    <h2>{selectedAsset.title}</h2>
-                    <p>
-                      {selectedAsset.yearModel ? `${formatYearModel(selectedAsset.yearModel)} · ` : ''}
-                      {selectedAsset.plateLabel || selectedAsset.publicAssetCode || 'No plate label saved'}
-                    </p>
-                  </div>
-
-                  <div className={styles.assetFacts}>
-                    <div>
-                      <span>Asset type</span>
-                      <strong>{selectedAsset.assetTypeLabel || selectedAsset.kind || 'Asset'}</strong>
-                    </div>
-                    <div>
-                      <span>Year model</span>
-                      <strong>{formatYearModel(selectedAsset.yearModel)}</strong>
-                    </div>
-                    <div>
-                      <span>Serial</span>
-                      <strong>{selectedAsset.serialNumber || '—'}</strong>
-                    </div>
-                    <div>
-                      <span>Fuel</span>
-                      <strong>{formatFuel(selectedAsset.fuelPercent)}</strong>
-                    </div>
-                    <div>
-                      <span>Usage</span>
-                      <strong>{formatHours(selectedAsset.hours)}</strong>
-                    </div>
-                    <div>
-                      <span>Condition</span>
-                      <strong>{formatCondition(selectedAsset.condition)}</strong>
-                    </div>
-                    <div>
-                      <span>Last scanned</span>
-                      <strong>{formatDate(selectedAsset.lastScannedAtIso)}</strong>
-                    </div>
-                  </div>
-
-                  <div className={styles.gpsBox}>
-                    <span>GPS location</span>
-                    <strong>{formatLatLng(selectedAsset)}</strong>
-                    <small>{selectedAsset.lastKnownLocationText || 'No written location note saved.'}</small>
-                  </div>
-
-                  <div className={styles.assetActions}>
-                    <Link href="/asset-register" className={styles.primaryActionCompact}>
-                      Asset register
-                    </Link>
-                    {selectedGoogleMapsHref ? (
-                      <a href={selectedGoogleMapsHref} target="_blank" rel="noreferrer" className={styles.secondaryActionCompact}>
-                        Google Maps
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
-              ) : (
-                <div className={styles.allAssetsCard}>
-                  <div>
-                    <span>All-assets view</span>
-                    <strong>{visibleAssets.length}</strong>
-                    <p>All currently visible assets are shown as numbered markers.</p>
-                  </div>
-
-                  {visibleAssets.length ? (
-                    <div className={styles.visibleAssetsList} aria-label="Visible mapped assets">
-                      {visibleAssets.slice(0, 5).map((asset, index) => (
-                        <button key={asset.publicAssetCode} type="button" onClick={() => handleChooseAsset(asset.publicAssetCode)}>
-                          <span>Marker {index + 1}</span>
-                          <strong>{asset.title}</strong>
-                          <small>{asset.plateLabel || asset.publicAssetCode || 'No plate saved'}</small>
-                        </button>
+              <aside className={styles.assetOverlay}>
+                <label className={styles.assetSelectBlock} aria-label="Choose asset on the map">
+                  <div className={styles.selectShell}>
+                    <select value={chosenCode} onChange={(event) => handleChooseAsset(event.target.value)} aria-label="Choose asset on the map">
+                      <option value="all">All assets on map</option>
+                      {mappedAssets.map((asset) => (
+                        <option key={asset.publicAssetCode} value={asset.publicAssetCode}>
+                          {buildAssetOptionLabel(asset)}
+                        </option>
                       ))}
-                      {visibleAssets.length > 5 ? <em>+ {visibleAssets.length - 5} more asset{visibleAssets.length - 5 === 1 ? '' : 's'}</em> : null}
-                    </div>
-                  ) : null}
+                    </select>
+                  </div>
+                </label>
 
-                  <small>Click a marker or choose an asset from the dropdown to open the information card.</small>
-                </div>
-              )}
-            </aside>
+                {selectedAsset ? (
+                  <div className={styles.assetInfoCard}>
+                    <div className={styles.assetInfoHeader}>
+                      <div className={styles.assetInfoTop}>
+                        <span>{selectedVisiblePosition ? `Marker ${selectedVisiblePosition}` : 'Selected asset'}</span>
+                        <button type="button" onClick={() => handleChooseAsset('all')}>
+                          Show all
+                        </button>
+                      </div>
+                      <h2>{selectedAsset.title}</h2>
+                      <p>
+                        {selectedAsset.yearModel ? `${formatYearModel(selectedAsset.yearModel)} · ` : ''}
+                        {selectedAsset.plateLabel || selectedAsset.publicAssetCode || 'No plate label saved'}
+                      </p>
+                    </div>
+
+                    <div className={styles.assetFacts}>
+                      <div>
+                        <span>Asset type</span>
+                        <strong>{selectedAsset.assetTypeLabel || selectedAsset.kind || 'Asset'}</strong>
+                      </div>
+                      <div>
+                        <span>Year model</span>
+                        <strong>{formatYearModel(selectedAsset.yearModel)}</strong>
+                      </div>
+                      <div>
+                        <span>Serial</span>
+                        <strong>{selectedAsset.serialNumber || '—'}</strong>
+                      </div>
+                      <div>
+                        <span>Fuel</span>
+                        <strong>{formatFuel(selectedAsset.fuelPercent)}</strong>
+                      </div>
+                      <div>
+                        <span>Usage</span>
+                        <strong>{formatHours(selectedAsset.hours)}</strong>
+                      </div>
+                      <div>
+                        <span>Condition</span>
+                        <strong>{formatCondition(selectedAsset.condition)}</strong>
+                      </div>
+                      <div>
+                        <span>Last scanned</span>
+                        <strong>{formatDate(selectedAsset.lastScannedAtIso)}</strong>
+                      </div>
+                    </div>
+
+                    <div className={styles.gpsBox}>
+                      <span>GPS location</span>
+                      <strong>{formatLatLng(selectedAsset)}</strong>
+                      <small>{selectedAsset.lastKnownLocationText || 'No written location note saved.'}</small>
+                    </div>
+
+                    <div className={styles.assetActions}>
+                      <Link href="/asset-register" className={styles.primaryActionCompact}>
+                        Asset register
+                      </Link>
+                      {selectedGoogleMapsHref ? (
+                        <a href={selectedGoogleMapsHref} target="_blank" rel="noreferrer" className={styles.secondaryActionCompact}>
+                          Google Maps
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+              </aside>
+            </div>
           </div>
         </section>
       </section>
