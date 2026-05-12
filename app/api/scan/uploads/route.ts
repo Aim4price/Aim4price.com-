@@ -11,12 +11,38 @@ import { normalizePublicAssetCode } from '../../../../lib/scan-assets';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+type PreparedUploadFile = {
+  file: File;
+  contentType: string;
+};
+
 function isFile(value: FormDataEntryValue): value is File {
   return typeof value !== 'string';
 }
 
 function typeLabel(): string {
   return 'JPG, PNG and WEBP';
+}
+
+function validateImageFile(file: File): PreparedUploadFile | { error: string; status: number } {
+  const contentType = String(file.type ?? '').trim().toLowerCase();
+
+  if (!ALLOWED_ASSET_REGISTER_IMAGE_TYPES.has(contentType)) {
+    return { error: `Only ${typeLabel()} files are allowed.`, status: 400 };
+  }
+
+  if (!file.size) {
+    return { error: 'One of the files is empty.', status: 400 };
+  }
+
+  if (file.size > MAX_ASSET_REGISTER_UPLOAD_BYTES) {
+    return {
+      error: `Each image must be ${Math.round(MAX_ASSET_REGISTER_UPLOAD_BYTES / (1024 * 1024))} MB or smaller.`,
+      status: 400,
+    };
+  }
+
+  return { file, contentType };
 }
 
 export async function POST(request: NextRequest) {
@@ -48,39 +74,31 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const uploads: Array<{ uploadId: string; url: string; fileName: string; contentType: string; byteSize: number }> = [];
+  const preparedFiles: PreparedUploadFile[] = [];
 
   for (const file of files) {
-    const contentType = String(file.type ?? '').trim().toLowerCase();
+    const validation = validateImageFile(file);
 
-    if (!ALLOWED_ASSET_REGISTER_IMAGE_TYPES.has(contentType)) {
-      return NextResponse.json({ ok: false, error: `Only ${typeLabel()} files are allowed.` }, { status: 400 });
+    if ('error' in validation) {
+      return NextResponse.json({ ok: false, error: validation.error }, { status: validation.status });
     }
 
-    if (!file.size) {
-      return NextResponse.json({ ok: false, error: 'One of the files is empty.' }, { status: 400 });
-    }
-
-    if (file.size > MAX_ASSET_REGISTER_UPLOAD_BYTES) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: `Each image must be ${Math.round(MAX_ASSET_REGISTER_UPLOAD_BYTES / (1024 * 1024))} MB or smaller.`,
-        },
-        { status: 400 },
-      );
-    }
-
-    const saved = await createAssetRegisterUpload({ userId: access.ownerUserId, file });
-
-    uploads.push({
-      uploadId: saved.id,
-      url: saved.url,
-      fileName: saved.fileName,
-      contentType: saved.contentType,
-      byteSize: saved.byteSize,
-    });
+    preparedFiles.push(validation);
   }
+
+  const uploads = await Promise.all(
+    preparedFiles.map(async ({ file }) => {
+      const saved = await createAssetRegisterUpload({ userId: access.ownerUserId, file });
+
+      return {
+        uploadId: saved.id,
+        url: saved.url,
+        fileName: saved.fileName,
+        contentType: saved.contentType,
+        byteSize: saved.byteSize,
+      };
+    }),
+  );
 
   return NextResponse.json({ ok: true, uploads });
 }
