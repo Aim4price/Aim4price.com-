@@ -57,6 +57,7 @@ const LEAFLET_CSS_ID = 'aim4price-leaflet-css';
 const DEFAULT_CENTER: [number, number] = [-29.0, 24.0];
 const DEFAULT_ZOOM = 5;
 const BASEMAP_STORAGE_KEY = 'aim4price-asset-map-basemap';
+const REPORT_DOWNLOAD_HREF = '/api/asset-map/report';
 const RECENCY_OPTIONS: Array<{ value: RecencyFilter; label: string }> = [
   { value: 'all', label: 'All mapped' },
   { value: '7', label: '7 days' },
@@ -539,6 +540,7 @@ export default function AssetMapClient() {
   }, []);
 
   const assetsAwaitingLocation = useMemo(() => Math.max(0, assets.length - mappedAssets.length), [assets.length, mappedAssets.length]);
+  const scannedAssetCount = useMemo(() => assets.filter((asset) => Boolean(asset.lastScannedAtIso)).length, [assets]);
   const selectedGoogleMapsHref =
     selectedAsset && hasCoordinates(selectedAsset)
       ? `https://www.google.com/maps/search/?api=1&query=${selectedAsset.lastKnownLat},${selectedAsset.lastKnownLng}`
@@ -546,7 +548,7 @@ export default function AssetMapClient() {
 
   return (
     <main className={styles.page}>
-      <AppHeader active="none" />
+      <AppHeader active="asset-register" />
 
       <section className={styles.shell}>
         <div className={styles.hero}>
@@ -554,9 +556,24 @@ export default function AssetMapClient() {
             <span className={styles.eyebrow}>Fleet visibility</span>
             <h1>Asset map</h1>
             <p>
-              See the latest saved scan locations for your assets in one place. This first version keeps one
-              marker per asset and shows the last known scan position only.
+              See the latest saved scan locations for your assets in one place. The map now gives you a
+              larger field view, quick marker focusing and a downloadable scan-location report.
             </p>
+
+            <div className={styles.heroActions}>
+              {scannedAssetCount > 0 ? (
+                <a href={REPORT_DOWNLOAD_HREF} className={styles.primaryButton}>
+                  Download scan report
+                </a>
+              ) : (
+                <button type="button" className={`${styles.primaryButton} ${styles.buttonDisabled}`} disabled>
+                  No scan report yet
+                </button>
+              )}
+              <span className={styles.heroActionMeta}>
+                {scannedAssetCount} {scannedAssetCount === 1 ? 'scanned asset' : 'scanned assets'} ready for reporting
+              </span>
+            </div>
           </div>
 
           <div className={styles.heroAside}>
@@ -656,6 +673,27 @@ export default function AssetMapClient() {
                 </div>
               ) : null}
               <div className={styles.mapCanvas} ref={mapElementRef} aria-label="Asset map canvas" />
+              {!isLoading && filteredAssets.length ? (
+                <label
+                  className={styles.mapAssetPicker}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onDoubleClick={(event) => event.stopPropagation()}
+                >
+                  <span>Choose scanned asset</span>
+                  <select
+                    value={selectedAsset?.publicAssetCode ?? ''}
+                    onChange={(event) => setSelectedCode(event.target.value || null)}
+                    aria-label="Choose scanned asset on the map"
+                  >
+                    {filteredAssets.map((asset) => (
+                      <option key={asset.publicAssetCode} value={asset.publicAssetCode}>
+                        {asset.title} {asset.plateLabel ? `• ${asset.plateLabel}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <em>{filteredAssets.length} visible on this map view</em>
+                </label>
+              ) : null}
             </div>
           </section>
 
