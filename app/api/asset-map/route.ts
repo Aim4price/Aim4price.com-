@@ -19,6 +19,7 @@ type AssetMapItem = {
   financeStatus: AssetStatusChoice;
   insuranceStatus: AssetStatusChoice;
   licenseStatus: AssetStatusChoice;
+  licenseRegistrationNumber: string;
   hours: number | null;
   fuelPercent: number | null;
   serialNumber: string;
@@ -113,6 +114,33 @@ function readLicenseStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
   );
 }
 
+function readLicenseRegistrationNumber(item: AssetRegisterItem): string {
+  const direct = String(item.licenseRegistrationNumber ?? '').replace(/\s+/g, ' ').trim().toUpperCase();
+  if (direct) return direct;
+
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+
+  return String(
+    specs.licenseRegistrationNumber ??
+      specs.license_registration_number ??
+      specs.licenceRegistrationNumber ??
+      specs.licence_registration_number ??
+      specs.licenseRegistration ??
+      specs.license_registration ??
+      specs.licenceRegistration ??
+      specs.licence_registration ??
+      specs.registrationNumber ??
+      specs.registration_number ??
+      specs.numberPlate ??
+      specs.number_plate ??
+      specs.numberplate ??
+      '',
+  )
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+}
+
 function buildAssetTypeLabel(item: AssetRegisterItem): string {
   const family = String(item.equipmentFamilyLabel ?? '').trim();
   if (family) return family;
@@ -136,6 +164,7 @@ function mapAssetForMap(item: AssetRegisterItem): AssetMapItem {
     financeStatus: readFinanceStatusChoice(item),
     insuranceStatus: readInsuranceStatusChoice(item),
     licenseStatus: readLicenseStatusChoice(item),
+    licenseRegistrationNumber: readLicenseRegistrationNumber(item),
     hours: item.hours,
     fuelPercent: item.fuelPercent,
     serialNumber: item.serialNumber,
