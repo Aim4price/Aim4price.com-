@@ -1163,6 +1163,29 @@ function assetKindLabel(asset: RegisterAsset): string {
   return assetFamilyLabel(asset);
 }
 
+function normalizeAssetNoteText(value: string | null | undefined): string {
+  return String(value ?? '').replace(/\r\n/g, '\n').trim();
+}
+
+function isQrOperationalAssetNote(value: string | null | undefined): boolean {
+  const note = normalizeAssetNoteText(value);
+  if (!note) return false;
+
+  const compact = note.replace(/\s+/g, ' ').trim().toLowerCase();
+
+  return (
+    compact.includes('lifetime worked updated to') ||
+    (/^checked\b/.test(compact) && compact.includes('checked items:')) ||
+    (/^serviced\b/.test(compact) && (compact.includes('serviced items:') || compact.includes('service items:') || compact.includes('work done:'))) ||
+    (/^repaired\b/.test(compact) && (compact.includes('work done:') || compact.includes('mechanic:') || compact.includes('company:')))
+  );
+}
+
+function getManualAssetNote(value: string | null | undefined): string {
+  const note = normalizeAssetNoteText(value);
+  return isQrOperationalAssetNote(note) ? '' : note;
+}
+
 function canProjectFuturePrice(asset: RegisterAsset): boolean {
   return Boolean(
     isTractorAsset(asset) &&
@@ -1182,7 +1205,7 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     kind: normalizeDraftKind(asset.kind),
     title: asset.title,
     value: formatRegisterValueInput(asset.value || ''),
-    note: asset.note,
+    note: '',
     serialNumber: asset.serialNumber,
     isFinanced: financeStatus === 'yes',
     isInsured: insuranceStatus === 'yes',
@@ -1220,7 +1243,7 @@ function buildSavedItemFromAsset(asset: RegisterAsset) {
     hours: asset.hours ?? undefined,
     aim4priceValueExVat: asset.aim4priceValueExVat,
     marketMidExVat: asset.marketMidExVat,
-    note: asset.note || undefined,
+    note: getManualAssetNote(asset.note) || undefined,
     createdAtIso: asset.createdAtIso,
     updatedAtIso: asset.updatedAtIso,
     serialNumber: asset.serialNumber || undefined,
@@ -1241,7 +1264,7 @@ function createMarketplaceDraft(asset: RegisterAsset, profile: AccountProfile | 
     province: profile?.province?.trim() || '',
     area: profile?.townCity?.trim() || '',
     askingPriceExVat: '',
-    description: (asset.marketplaceNotes || asset.note || '').trim(),
+    description: '',
   };
 }
 
@@ -1466,7 +1489,6 @@ function buildSearchableText(asset: RegisterAsset): string {
     asset.equipmentFamilyLabel,
     asset.equipmentFamilyKey,
     asset.serialNumber,
-    asset.note,
     asset.financeNote,
     readInsuranceNote(asset),
     ...assetDocuments(asset).map((document) => document.fileName),
@@ -2551,7 +2573,7 @@ export default function AssetRegisterClient() {
         kind: editingAsset?.valuationRunId ? editingAsset.kind : assetDraft.kind,
         title: assetDraft.title,
         value,
-        note: assetDraft.note,
+        note: assetDraft.note.trim(),
         serialNumber: assetDraft.serialNumber,
         isFinanced: assetDraft.financeStatus === 'yes',
         isInsured: assetDraft.insuranceStatus === 'yes',
@@ -2912,7 +2934,7 @@ export default function AssetRegisterClient() {
       photoUrls: assetPhotoUrls,
       facts: assetRows,
       notes: [
-        ...(asset.note ? [{ label: 'Asset Notes', value: asset.note }] : []),
+        ...(getManualAssetNote(asset.note) ? [{ label: 'Asset Notes', value: getManualAssetNote(asset.note) }] : []),
         ...(asset.financeNote ? [{ label: 'Finance Note', value: asset.financeNote }] : []),
         ...(readInsuranceNote(asset) ? [{ label: 'Insurance Note', value: readInsuranceNote(asset) }] : []),
       ],
@@ -3552,7 +3574,7 @@ export default function AssetRegisterClient() {
                 className={styles.searchInput}
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search by asset, brand, model, serial or note"
+                placeholder="Search by asset, brand, model or serial"
                 aria-label="Search asset register"
               />
 
@@ -3785,13 +3807,6 @@ export default function AssetRegisterClient() {
                                       </div>
                                     </div>
 
-                                    {asset.note || asset.financeNote || readInsuranceNote(asset) ? (
-                                      <div className={styles.noteStack}>
-                                        {asset.note ? <p className={styles.note}>{asset.note}</p> : null}
-                                        {asset.financeNote ? <p className={styles.note}>Finance: {asset.financeNote}</p> : null}
-                                        {readInsuranceNote(asset) ? <p className={styles.note}>Insurance: {readInsuranceNote(asset)}</p> : null}
-                                      </div>
-                                    ) : null}
                                   </div>
                                 </>
                               );
