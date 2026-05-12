@@ -6707,6 +6707,19 @@
   text-transform: uppercase;
 }
 
+.assetRegistrationRow {
+  grid-template-columns: minmax(6.2rem, 0.72fr) minmax(0, 1fr);
+}
+
+.assetRegistrationRow strong {
+  justify-content: flex-start;
+  padding: 0 0.86rem;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: #ffffff;
+}
+
 .statusMarkYes {
   background: linear-gradient(180deg, #23c766 0%, #14a64f 100%) !important;
 }

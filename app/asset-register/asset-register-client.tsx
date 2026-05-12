@@ -151,6 +151,7 @@ type RegisterAsset = {
   isFinanced: boolean;
   isInsured: boolean;
   isLicensed: boolean;
+  licenseRegistrationNumber: string;
   financeNote: string;
   sellerPhone: string;
   marketplaceNotes: string;
@@ -295,6 +296,7 @@ type AssetDraft = {
   financeStatus: AssetStatusChoice;
   insuranceStatus: AssetStatusChoice;
   licenseStatus: AssetStatusChoice;
+  licenseRegistrationNumber: string;
   financeNote: string;
   insuranceNote: string;
   photos: string[];
@@ -424,6 +426,7 @@ const initialAssetDraft: AssetDraft = {
   financeStatus: 'unknown',
   insuranceStatus: 'unknown',
   licenseStatus: 'unknown',
+  licenseRegistrationNumber: '',
   financeNote: '',
   insuranceNote: '',
   photos: [],
@@ -949,6 +952,33 @@ function readLicenseStatusChoice(asset: RegisterAsset): AssetStatusChoice {
   );
 }
 
+function normalizeLicenseRegistrationText(value: unknown): string {
+  return String(value ?? '').replace(/\s+/g, ' ').trim().toUpperCase();
+}
+
+function readLicenseRegistrationNumber(asset: Pick<RegisterAsset, 'licenseRegistrationNumber' | 'specsJson'>): string {
+  const direct = normalizeLicenseRegistrationText(asset.licenseRegistrationNumber);
+  if (direct) return direct;
+
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return normalizeLicenseRegistrationText(
+    specs.licenseRegistrationNumber ??
+      specs.license_registration_number ??
+      specs.licenceRegistrationNumber ??
+      specs.licence_registration_number ??
+      specs.licenseRegistration ??
+      specs.license_registration ??
+      specs.licenceRegistration ??
+      specs.licence_registration ??
+      specs.registrationNumber ??
+      specs.registration_number ??
+      specs.numberPlate ??
+      specs.number_plate ??
+      specs.numberplate,
+  );
+}
+
 function readInsuranceNote(asset: Pick<RegisterAsset, 'specsJson'>): string {
   const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
 
@@ -1300,6 +1330,7 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     financeStatus,
     insuranceStatus,
     licenseStatus,
+    licenseRegistrationNumber: licenseStatus === 'yes' ? readLicenseRegistrationNumber(asset) : '',
     financeNote: financeStatus === 'yes' ? asset.financeNote : '',
     insuranceNote: insuranceStatus === 'yes' ? insuranceNote : '',
     photos: normalizePhotos(asset.photos),
@@ -1339,6 +1370,7 @@ function buildSavedItemFromAsset(asset: RegisterAsset) {
     isFinanced: asset.isFinanced,
     isInsured: asset.isInsured,
     isLicensed: asset.isLicensed,
+    licenseRegistrationNumber: readLicenseRegistrationNumber(asset) || undefined,
     financeNote: asset.financeNote || undefined,
     photos: asset.photos,
     documents: assetDocuments(asset),
@@ -1585,6 +1617,7 @@ function buildSearchableText(asset: RegisterAsset): string {
     asset.serialNumber,
     asset.financeNote,
     readInsuranceNote(asset),
+    readLicenseRegistrationNumber(asset),
     statusChoiceReportLabel(readFinanceStatusChoice(asset)),
     statusChoiceReportLabel(readInsuranceStatusChoice(asset)),
     statusChoiceReportLabel(readLicenseStatusChoice(asset)),
@@ -1617,6 +1650,7 @@ function buildExportDetail(asset: RegisterAsset): string {
     `Insurance: ${statusChoiceReportLabel(readInsuranceStatusChoice(asset))}`,
     `Finance: ${statusChoiceReportLabel(readFinanceStatusChoice(asset))}`,
     `License: ${statusChoiceReportLabel(readLicenseStatusChoice(asset))}`,
+    readLicenseRegistrationNumber(asset) ? `Registration: ${readLicenseRegistrationNumber(asset)}` : '',
     assetDocuments(asset).length ? `Documents: ${assetDocuments(asset).length}` : '',
   ].filter(Boolean);
 
@@ -2298,6 +2332,7 @@ export default function AssetRegisterClient() {
       ...current,
       licenseStatus: nextStatus,
       isLicensed: nextStatus === 'yes',
+      licenseRegistrationNumber: nextStatus === 'yes' ? current.licenseRegistrationNumber : '',
     }));
   }
 
@@ -2675,6 +2710,9 @@ export default function AssetRegisterClient() {
     const roundedLifeWorkedPercent = showLifeWorkedPercentField && hasLifeWorkedPercent
       ? Math.round(Number(lifeWorkedPercent) * 10) / 10
       : null;
+    const licenseRegistrationNumber = assetDraft.licenseStatus === 'yes'
+      ? normalizeLicenseRegistrationText(assetDraft.licenseRegistrationNumber)
+      : '';
     const specsJson: Record<string, unknown> = {
       financeStatus: assetDraft.financeStatus,
       finance_status: assetDraft.financeStatus,
@@ -2688,6 +2726,16 @@ export default function AssetRegisterClient() {
       licence_status: assetDraft.licenseStatus,
       licencedStatus: assetDraft.licenseStatus,
       licenced_status: assetDraft.licenseStatus,
+      licenseRegistrationNumber,
+      license_registration_number: licenseRegistrationNumber,
+      licenceRegistrationNumber: licenseRegistrationNumber,
+      licence_registration_number: licenseRegistrationNumber,
+      licenseRegistration: licenseRegistrationNumber,
+      license_registration: licenseRegistrationNumber,
+      registrationNumber: licenseRegistrationNumber,
+      registration_number: licenseRegistrationNumber,
+      numberPlate: licenseRegistrationNumber,
+      number_plate: licenseRegistrationNumber,
       insuranceNote: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
       insurance_note: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
       insuredNote: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
@@ -2717,6 +2765,7 @@ export default function AssetRegisterClient() {
         isFinanced: assetDraft.financeStatus === 'yes',
         isInsured: assetDraft.insuranceStatus === 'yes',
         isLicensed: assetDraft.licenseStatus === 'yes',
+        licenseRegistrationNumber,
         financeNote: assetDraft.financeStatus === 'yes' ? assetDraft.financeNote : '',
         photos,
         documents,
@@ -3047,6 +3096,9 @@ export default function AssetRegisterClient() {
       { label: 'Insured', value: statusChoiceReportLabel(readInsuranceStatusChoice(asset)) },
       { label: 'Financed', value: statusChoiceReportLabel(readFinanceStatusChoice(asset)) },
       { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
+      ...(readLicenseStatusChoice(asset) === 'yes' && readLicenseRegistrationNumber(asset)
+        ? [{ label: 'Registration', value: readLicenseRegistrationNumber(asset) }]
+        : []),
       { label: 'Documents', value: documentsCount ? `${documentsCount} saved` : 'None' },
       { label: 'Last Updated', value: assetStatusDateLabel(asset) },
     ];
@@ -3341,6 +3393,7 @@ export default function AssetRegisterClient() {
           insured: statusChoiceReportLabel(readInsuranceStatusChoice(asset)),
           financed: statusChoiceReportLabel(readFinanceStatusChoice(asset)),
           licensed: statusChoiceReportLabel(readLicenseStatusChoice(asset)),
+          licenseRegistrationNumber: readLicenseRegistrationNumber(asset) || undefined,
           documents: documentsCount ? `${documentsCount} saved` : 'None',
           updated: assetStatusDateLabel(asset),
           photoUrl: toAbsoluteUrl(assetPreviewImage(asset)) ?? null,
@@ -3952,6 +4005,12 @@ export default function AssetRegisterClient() {
                                           <span>Licensed</span>
                                           {renderAssetStatusMark(readLicenseStatusChoice(asset))}
                                         </div>
+                                        {readLicenseStatusChoice(asset) === 'yes' && readLicenseRegistrationNumber(asset) ? (
+                                          <div className={`${styles.assetStatusRow} ${styles.assetRegistrationRow}`}>
+                                            <span>Registration</span>
+                                            <strong>{readLicenseRegistrationNumber(asset)}</strong>
+                                          </div>
+                                        ) : null}
                                       </div>
                                     </div>
 
@@ -4435,6 +4494,22 @@ export default function AssetRegisterClient() {
                           ))}
                         </select>
                       </label>
+
+                      {assetDraft.licenseStatus === 'yes' ? (
+                        <label className={`${styles.field} ${styles.manualStatusNoteField}`}>
+                          <span>Numberplate / registration</span>
+                          <input
+                            value={assetDraft.licenseRegistrationNumber}
+                            onChange={(event) =>
+                              setAssetDraft((current) => ({
+                                ...current,
+                                licenseRegistrationNumber: event.target.value.toUpperCase(),
+                              }))
+                            }
+                            placeholder="Example: CA 123-456"
+                          />
+                        </label>
+                      ) : null}
 
                       {assetDraft.financeStatus === 'yes' ? (
                         <label className={`${styles.field} ${styles.manualStatusNoteField}`}>
