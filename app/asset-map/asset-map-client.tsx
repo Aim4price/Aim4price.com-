@@ -22,6 +22,7 @@ type AssetMapItem = {
   financeStatus: AssetStatusChoice;
   insuranceStatus: AssetStatusChoice;
   licenseStatus: AssetStatusChoice;
+  licenseRegistrationNumber: string;
   hours: number | null;
   fuelPercent: number | null;
   serialNumber: string;
@@ -184,7 +185,8 @@ function buildAssetOptionLabel(asset: AssetMapItem): string {
   const title = asset.title || asset.plateLabel || asset.publicAssetCode || 'Saved asset';
   const yearPrefix = asset.yearModel ? `${formatYearModel(asset.yearModel)} ` : '';
   const plate = asset.plateLabel || asset.publicAssetCode;
-  return `${yearPrefix}${title}${plate ? ` • ${plate}` : ''}`;
+  const registration = asset.licenseRegistrationNumber ? ` • Reg: ${asset.licenseRegistrationNumber}` : '';
+  return `${yearPrefix}${title}${plate ? ` • ${plate}` : ''}${registration}`;
 }
 
 function formatLatLng(asset: AssetMapItem): string {
@@ -219,6 +221,7 @@ function matchesSearch(asset: AssetMapItem, search: string): boolean {
     asset.brandName,
     asset.modelName,
     asset.typedModelName,
+    asset.licenseRegistrationNumber,
     formatAssetStatusChoice(asset.financeStatus),
     formatAssetStatusChoice(asset.insuranceStatus),
     formatAssetStatusChoice(asset.licenseStatus),
@@ -257,6 +260,10 @@ function buildPopupHtml(asset: AssetMapItem, markerNumber: number): string {
   const assetType = escapeHtml(asset.assetTypeLabel || 'Asset');
   const fuel = escapeHtml(formatFuel(asset.fuelPercent));
   const licensed = escapeHtml(formatAssetStatusChoice(asset.licenseStatus));
+  const registration = escapeHtml(asset.licenseRegistrationNumber || '');
+  const registrationRow = asset.licenseStatus === 'yes' && registration
+    ? `<div><strong style="color:#132d2d;">Registration:</strong> ${registration}</div>`
+    : '';
   const gps = escapeHtml(formatLatLng(asset));
 
   return `
@@ -268,6 +275,7 @@ function buildPopupHtml(asset: AssetMapItem, markerNumber: number): string {
         <div><strong style="color:#132d2d;">Asset type:</strong> ${assetType}</div>
         <div><strong style="color:#132d2d;">Fuel:</strong> ${fuel}</div>
         <div><strong style="color:#132d2d;">Licensed:</strong> ${licensed}</div>
+        ${registrationRow}
         <div><strong style="color:#132d2d;">GPS:</strong> ${gps}</div>
       </div>
     </div>
@@ -774,6 +782,12 @@ export default function AssetMapClient() {
                         <span>Licensed</span>
                         <strong>{formatAssetStatusChoice(selectedAsset.licenseStatus)}</strong>
                       </div>
+                      {selectedAsset.licenseStatus === 'yes' && selectedAsset.licenseRegistrationNumber ? (
+                        <div>
+                          <span>Registration</span>
+                          <strong>{selectedAsset.licenseRegistrationNumber}</strong>
+                        </div>
+                      ) : null}
                       <div>
                         <span>Last scanned</span>
                         <strong>{formatDate(selectedAsset.lastScannedAtIso)}</strong>
