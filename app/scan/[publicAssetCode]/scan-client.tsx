@@ -14,6 +14,7 @@ type NoticeTone = "success" | "error";
 type EditorKey = "usage" | "fuel" | "service" | "photos";
 type LocationState = "idle" | "capturing" | "ready" | "error";
 type ScanAssetUsageMode = "hours" | "percent" | "km" | "none";
+type ScanAssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
 type ServiceMode = "" | "checked" | "serviced";
 
 type ScanSafeAsset = {
@@ -27,6 +28,9 @@ type ScanSafeAsset = {
   equipmentFamilyKey: string;
   equipmentFamilyLabel: string;
   serialNumber: string;
+  financeStatus: ScanAssetStatusChoice;
+  insuranceStatus: ScanAssetStatusChoice;
+  licenseStatus: ScanAssetStatusChoice;
   hours: number | null;
   usageMode: ScanAssetUsageMode;
   usageMetric: "hours" | "km";
@@ -274,6 +278,13 @@ function formatPercent(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return "—";
   const rounded = Math.round(value * 10) / 10;
   return `${Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)}%`;
+}
+
+function formatAssetStatusChoice(value?: ScanAssetStatusChoice | null): string {
+  if (value === "yes") return "Yes";
+  if (value === "no") return "No";
+  if (value === "not_applicable") return "Not applicable";
+  return "Not sure";
 }
 
 function formatUsage(asset: ScanSafeAsset | null): string {
@@ -1200,6 +1211,18 @@ export default function ScanClient({
                   <span>{usageTitle(prePinAsset)}</span>
                   <strong>{formatUsage(prePinAsset)}</strong>
                 </div>
+                <div>
+                  <span>Financed</span>
+                  <strong>{formatAssetStatusChoice(prePinAsset.financeStatus)}</strong>
+                </div>
+                <div>
+                  <span>Insured</span>
+                  <strong>{formatAssetStatusChoice(prePinAsset.insuranceStatus)}</strong>
+                </div>
+                <div>
+                  <span>Licensed</span>
+                  <strong>{formatAssetStatusChoice(prePinAsset.licenseStatus)}</strong>
+                </div>
               </div>
             ) : null}
           </section>
@@ -1289,6 +1312,35 @@ export default function ScanClient({
                       : "GPS required"}
                 </span>
               </button>
+            </section>
+
+            <section className={styles.assetInfoCard} aria-label="Asset information">
+              <div className={styles.assetInfoGrid}>
+                <div>
+                  <span>Type</span>
+                  <strong>{assetPlaceholderLabel(asset)}</strong>
+                </div>
+                <div>
+                  <span>Serial</span>
+                  <strong>{asset.serialNumber || "—"}</strong>
+                </div>
+                <div>
+                  <span>{usageTitle(asset)}</span>
+                  <strong>{formatUsage(asset)}</strong>
+                </div>
+                <div>
+                  <span>Financed</span>
+                  <strong>{formatAssetStatusChoice(asset.financeStatus)}</strong>
+                </div>
+                <div>
+                  <span>Insured</span>
+                  <strong>{formatAssetStatusChoice(asset.insuranceStatus)}</strong>
+                </div>
+                <div>
+                  <span>Licensed</span>
+                  <strong>{formatAssetStatusChoice(asset.licenseStatus)}</strong>
+                </div>
+              </div>
             </section>
 
             <section className={styles.actionGrid}>
