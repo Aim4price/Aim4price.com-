@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
 import Link from 'next/link';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
@@ -10,7 +10,9 @@ type NoticeTone = 'success' | 'error';
 type AccountProfile = {
   userId: string;
   name: string;
+  displayName: string;
   email: string;
+  logoUrl: string;
   businessName: string;
   phone: string;
   accountType: string;
@@ -20,6 +22,10 @@ type AccountProfile = {
   addressLine1: string;
   addressLine2: string;
   notes: string;
+  marketplaceSellerName: string;
+  marketplacePhone: string;
+  marketplaceEmail: string;
+  marketplaceLocation: string;
   createdAtIso: string | null;
   updatedAtIso: string | null;
 };
@@ -43,6 +49,8 @@ type ScanPinApiResponse = {
 };
 
 type ProfileDraft = {
+  displayName: string;
+  logoUrl: string;
   businessName: string;
   phone: string;
   accountType: string;
@@ -52,9 +60,15 @@ type ProfileDraft = {
   addressLine1: string;
   addressLine2: string;
   notes: string;
+  marketplaceSellerName: string;
+  marketplacePhone: string;
+  marketplaceEmail: string;
+  marketplaceLocation: string;
 };
 
 const initialProfileDraft: ProfileDraft = {
+  displayName: '',
+  logoUrl: '',
   businessName: '',
   phone: '',
   accountType: 'owner',
@@ -64,6 +78,10 @@ const initialProfileDraft: ProfileDraft = {
   addressLine1: '',
   addressLine2: '',
   notes: '',
+  marketplaceSellerName: '',
+  marketplacePhone: '',
+  marketplaceEmail: '',
+  marketplaceLocation: '',
 };
 
 const initialScanPinStatus: AccountScanPinStatus = {
@@ -73,6 +91,8 @@ const initialScanPinStatus: AccountScanPinStatus = {
 };
 
 const PROFILE_COMPLETION_TOTAL = 6;
+const MAX_LOGO_UPLOAD_BYTES = 2 * 1024 * 1024;
+const ALLOWED_LOGO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   owner: 'Owner / Farmer',
@@ -82,12 +102,24 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   bank: 'Bank',
 };
 
+function buildProfileLocation(profile: AccountProfile): string {
+  return [profile.addressLine1, profile.townCity, profile.province]
+    .map((value) => String(value ?? '').trim())
+    .filter(Boolean)
+    .join(', ');
+}
+
 function buildProfileDraft(profile: AccountProfile | null): ProfileDraft {
   if (!profile) {
     return initialProfileDraft;
   }
 
+  const displayName = profile.displayName || profile.name;
+  const fallbackLocation = buildProfileLocation(profile);
+
   return {
+    displayName,
+    logoUrl: profile.logoUrl,
     businessName: profile.businessName,
     phone: profile.phone,
     accountType: profile.accountType || 'owner',
@@ -97,6 +129,10 @@ function buildProfileDraft(profile: AccountProfile | null): ProfileDraft {
     addressLine1: profile.addressLine1,
     addressLine2: profile.addressLine2,
     notes: profile.notes,
+    marketplaceSellerName: profile.marketplaceSellerName || profile.businessName || displayName,
+    marketplacePhone: profile.marketplacePhone || profile.phone,
+    marketplaceEmail: profile.marketplaceEmail || profile.email,
+    marketplaceLocation: profile.marketplaceLocation || fallbackLocation,
   };
 }
 
@@ -113,11 +149,15 @@ function formatDate(value?: string | null): string {
   }).format(parsed);
 }
 
+function formatUploadSize(bytes: number): string {
+  return `${Math.round(bytes / (1024 * 1024))} MB`;
+}
+
 function countCompletedFields(profile: ProfileDraft): number {
   return [
+    profile.displayName,
     profile.businessName,
     profile.phone,
-    profile.accountType,
     profile.province,
     profile.townCity,
     profile.addressLine1,
@@ -156,6 +196,20 @@ function buildInitials(value: string): string {
   }
 
   return parts.map((part) => part.charAt(0).toUpperCase()).join('');
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      result ? resolve(result) : reject(new Error('Failed to read logo file.'));
+    };
+
+    reader.onerror = () => reject(new Error('Failed to read logo file.'));
+    reader.readAsDataURL(file);
+  });
 }
 
 async function readResponsePayload(response: Response): Promise<unknown> {
@@ -207,6 +261,7 @@ export default function AccountClient() {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isReadingLogo, setIsReadingLogo] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -328,18 +383,61 @@ export default function AccountClient() {
       ? 'Ready for reports, exports and marketplace listings.'
       : `${PROFILE_COMPLETION_TOTAL - completedFields} profile details still open.`;
   const addressLines = useMemo(() => buildAddressLines(profileDraft), [profileDraft]);
-  const marketplaceSellerName = useMemo(() => {
-    return profileDraft.businessName.trim() || profile?.name || 'No seller name saved yet';
-  }, [profile?.name, profileDraft.businessName]);
   const accountTypeLabel = useMemo(() => formatAccountTypeLabel(profileDraft.accountType), [profileDraft.accountType]);
+  const accountDisplayName = profileDraft.displayName.trim() || profile?.name || 'Aim4price user';
   const profileInitials = useMemo(
-    () => buildInitials(profile?.name || profileDraft.businessName || 'Aim4price'),
-    [profile?.name, profileDraft.businessName],
+    () => buildInitials(accountDisplayName || profileDraft.businessName || 'Aim4price'),
+    [accountDisplayName, profileDraft.businessName],
   );
   const scanPinStatusLabel = scanPinStatus.enabled ? 'Active' : 'Disabled';
   const scanPinSummary = scanPinStatus.enabled
     ? 'QR scan access is on. Anyone with the farm PIN can open the scan page.'
     : 'QR scan access is off until a scan PIN is saved.';
+  const logoUrl = profileDraft.logoUrl.trim();
+  const marketplaceSellerName =
+    profileDraft.marketplaceSellerName.trim() || profileDraft.businessName.trim() || accountDisplayName;
+  const marketplacePhone = profileDraft.marketplacePhone.trim() || profileDraft.phone.trim() || 'No phone saved yet';
+  const marketplaceEmail = profileDraft.marketplaceEmail.trim() || profile?.email || 'No email found';
+  const marketplaceLocation =
+    profileDraft.marketplaceLocation.trim() || (addressLines.length ? addressLines.join(', ') : 'No location saved yet');
+
+  async function handleLogoFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    event.target.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    const fileType = String(file.type ?? '').trim().toLowerCase();
+
+    if (!ALLOWED_LOGO_TYPES.has(fileType)) {
+      setNotice({ tone: 'error', message: 'Upload a JPG, PNG or WEBP logo.' });
+      return;
+    }
+
+    if (file.size > MAX_LOGO_UPLOAD_BYTES) {
+      setNotice({ tone: 'error', message: `Logo must be ${formatUploadSize(MAX_LOGO_UPLOAD_BYTES)} or smaller.` });
+      return;
+    }
+
+    setIsReadingLogo(true);
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setProfileDraft((current) => ({ ...current, logoUrl: dataUrl }));
+      setNotice({ tone: 'success', message: 'Logo selected. Save account details to keep it.' });
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to read logo file.' });
+    } finally {
+      setIsReadingLogo(false);
+    }
+  }
+
+  function handleRemoveLogo() {
+    setProfileDraft((current) => ({ ...current, logoUrl: '' }));
+    setNotice({ tone: 'success', message: 'Logo removed. Save account details to apply the change.' });
+  }
 
   async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -533,10 +631,12 @@ export default function AccountClient() {
       <section className={styles.shell}>
         <div className={styles.hero}>
           <div className={styles.heroContent}>
-            <span className={styles.eyebrow}>Profile</span>
+            <div className={styles.heroLogoMark} aria-label="Current account logo">
+              {logoUrl ? <img src={logoUrl} alt="Account logo" /> : <span>{profileInitials}</span>}
+            </div>
             <h1>Account details</h1>
             <p>
-              Keep your business, scan access and marketplace contact details in one clean workspace.
+              Keep your business identity, scan access and marketplace buyer details in one clean workspace.
               This profile feeds reports, exports and published equipment.
             </p>
           </div>
@@ -548,7 +648,7 @@ export default function AccountClient() {
               </span>
               <div className={styles.profileSummary}>
                 <span>Signed in as</span>
-                <strong>{profile?.name || 'Aim4price user'}</strong>
+                <strong>{accountDisplayName}</strong>
                 <small>{profile?.email || 'Account email loading'}</small>
               </div>
             </div>
@@ -586,9 +686,8 @@ export default function AccountClient() {
             <section className={styles.card}>
               <div className={styles.cardHeader}>
                 <div>
-                  <span className={styles.kicker}>Account profile</span>
                   <h2>Business and contact details</h2>
-                  <p>Use this page for the information you want tied to reports, exports and seller contact details.</p>
+                  <p>Edit the details used across your account, reports and owner workspace.</p>
                 </div>
               </div>
 
@@ -596,9 +695,44 @@ export default function AccountClient() {
                 <p className={styles.loading}>Loading account details...</p>
               ) : (
                 <form className={styles.form} onSubmit={handleProfileSubmit}>
+                  <div className={`${styles.logoPanel} ${styles.fullWidth}`}>
+                    <div className={styles.logoPreview} aria-label="Business logo preview">
+                      {logoUrl ? <img src={logoUrl} alt="Business logo" /> : <span>{profileInitials}</span>}
+                    </div>
+                    <div className={styles.logoCopy}>
+                      <strong>Business logo</strong>
+                      <span>Upload your own logo for a cleaner business profile. JPG, PNG or WEBP up to 2 MB.</span>
+                    </div>
+                    <div className={styles.logoActions}>
+                      <label className={`${styles.secondaryButton} ${styles.uploadButton}`}>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={handleLogoFileChange}
+                          disabled={isReadingLogo || isSavingProfile}
+                        />
+                        {isReadingLogo ? 'Reading logo...' : logoUrl ? 'Change logo' : 'Upload logo'}
+                      </label>
+                      <button
+                        type="button"
+                        className={styles.ghostButton}
+                        onClick={handleRemoveLogo}
+                        disabled={!logoUrl || isSavingProfile}
+                      >
+                        Remove logo
+                      </button>
+                    </div>
+                  </div>
+
                   <label className={`${styles.field} ${styles.halfField}`}>
                     <span>Full name</span>
-                    <input value={profile?.name ?? ''} disabled />
+                    <input
+                      value={profileDraft.displayName}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, displayName: event.target.value }))
+                      }
+                      placeholder="Full name"
+                    />
                   </label>
 
                   <label className={`${styles.field} ${styles.halfField}`}>
@@ -607,7 +741,7 @@ export default function AccountClient() {
                   </label>
 
                   <label className={`${styles.field} ${styles.halfField}`}>
-                    <span>Business / farm / dealership</span>
+                    <span>Business name</span>
                     <input
                       value={profileDraft.businessName}
                       onChange={(event) =>
@@ -627,21 +761,13 @@ export default function AccountClient() {
                     />
                   </label>
 
-                  <label className={`${styles.field} ${styles.thirdField}`}>
+                  <div className={`${styles.field} ${styles.thirdField}`}>
                     <span>Account type</span>
-                    <select
-                      value={profileDraft.accountType}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({ ...current, accountType: event.target.value }))
-                      }
-                    >
-                      <option value="owner">Owner / Farmer</option>
-                      <option value="dealer">Dealer</option>
-                      <option value="broker">Broker</option>
-                      <option value="insurer">Insurer</option>
-                      <option value="bank">Bank</option>
-                    </select>
-                  </label>
+                    <div className={styles.readOnlyValue} aria-readonly="true">
+                      {accountTypeLabel}
+                    </div>
+                    <small className={styles.fieldHint}>Locked to your current account setup.</small>
+                  </div>
 
                   <label className={`${styles.field} ${styles.thirdField}`}>
                     <span>Province</span>
@@ -672,7 +798,7 @@ export default function AccountClient() {
                     />
                   </label>
                   <div className={styles.actionsRow}>
-                    <button type="submit" className={styles.primaryButton} disabled={isSavingProfile}>
+                    <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
                       {isSavingProfile ? 'Saving...' : 'Save account details'}
                     </button>
                     <Link href="/asset-register" className={styles.secondaryButton}>
@@ -686,36 +812,94 @@ export default function AccountClient() {
               )}
             </section>
 
-            <section className={`${styles.card} ${styles.previewCard}`}>
+            <section className={`${styles.card} ${styles.marketplaceCard}`}>
               <div className={styles.cardHeader}>
                 <div>
-                  <span className={styles.kicker}>Seller preview</span>
                   <h2>Marketplace contact</h2>
-                  <p>This is the contact footprint buyers will rely on when you publish equipment.</p>
+                  <p>Edit the buyer-facing details shown when your equipment is published on the marketplace.</p>
                 </div>
               </div>
 
-              <div className={styles.previewGrid}>
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Seller</span>
-                  <div className={styles.summaryList}>
-                    <strong>{marketplaceSellerName}</strong>
-                    <span>{profile?.email || 'No email found'}</span>
+              {isLoading ? (
+                <p className={styles.loading}>Loading marketplace contact...</p>
+              ) : (
+                <form className={styles.marketplaceEditor} onSubmit={handleProfileSubmit}>
+                  <div className={styles.marketplacePreview}>
+                    <div className={styles.previewLogo} aria-hidden="true">
+                      {logoUrl ? <img src={logoUrl} alt="" /> : <span>{profileInitials}</span>}
+                    </div>
+                    <div className={styles.previewContent}>
+                      <span>Buyer preview</span>
+                      <strong>{marketplaceSellerName}</strong>
+                      <small>{marketplaceEmail}</small>
+                    </div>
+                    <div className={styles.previewDetails}>
+                      <div>
+                        <span>Phone</span>
+                        <strong>{marketplacePhone}</strong>
+                      </div>
+                      <div>
+                        <span>Location</span>
+                        <strong>{marketplaceLocation}</strong>
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Phone</span>
-                  <span className={styles.summaryValue}>{profileDraft.phone.trim() || 'No phone saved yet'}</span>
-                </div>
+                  <div className={styles.marketplaceFields}>
+                    <label className={styles.field}>
+                      <span>Seller display name</span>
+                      <input
+                        value={profileDraft.marketplaceSellerName}
+                        onChange={(event) =>
+                          setProfileDraft((current) => ({ ...current, marketplaceSellerName: event.target.value }))
+                        }
+                        placeholder="Name buyers should see"
+                      />
+                    </label>
 
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Location</span>
-                  <span className={styles.summaryValue}>
-                    {addressLines.length ? addressLines.join(', ') : 'No address saved yet'}
-                  </span>
-                </div>
-              </div>
+                    <label className={styles.field}>
+                      <span>Marketplace phone</span>
+                      <input
+                        type="tel"
+                        value={profileDraft.marketplacePhone}
+                        onChange={(event) =>
+                          setProfileDraft((current) => ({ ...current, marketplacePhone: event.target.value }))
+                        }
+                        placeholder="Buyer contact number"
+                      />
+                    </label>
+
+                    <label className={styles.field}>
+                      <span>Marketplace email</span>
+                      <input
+                        type="email"
+                        value={profileDraft.marketplaceEmail}
+                        onChange={(event) =>
+                          setProfileDraft((current) => ({ ...current, marketplaceEmail: event.target.value }))
+                        }
+                        placeholder="Buyer contact email"
+                      />
+                    </label>
+
+                    <label className={styles.field}>
+                      <span>Marketplace location</span>
+                      <input
+                        value={profileDraft.marketplaceLocation}
+                        onChange={(event) =>
+                          setProfileDraft((current) => ({ ...current, marketplaceLocation: event.target.value }))
+                        }
+                        placeholder="Town, province or branch location"
+                      />
+                    </label>
+
+                    <div className={styles.marketplaceActions}>
+                      <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
+                        {isSavingProfile ? 'Saving...' : 'Save marketplace contact'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
             </section>
           </div>
 
@@ -723,9 +907,8 @@ export default function AccountClient() {
             <section className={styles.sidebarCard}>
               <div className={styles.cardHeader}>
                 <div>
-                  <span className={styles.kicker}>Scan access</span>
                   <h2>QR scan PIN</h2>
-                  <p>This PIN is used on scanned asset pages. It keeps the operational side separate from valuations.</p>
+                  <p>This PIN is used on scanned asset pages. It keeps operational updates separate from valuations.</p>
                 </div>
               </div>
 
@@ -799,7 +982,6 @@ export default function AccountClient() {
 
             <section className={`${styles.sidebarCard} ${styles.dangerCard}`}>
               <div className={styles.dangerCopy}>
-                <span className={styles.dangerKicker}>Danger zone</span>
                 <h2>Delete account</h2>
                 <p>
                   Permanently remove your login, saved valuations, asset register items and account
@@ -819,7 +1001,6 @@ export default function AccountClient() {
         <div className={styles.modalBackdrop} onClick={closeDeleteDialog}>
           <section className={styles.modalCard} onClick={(event) => event.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <span className={styles.dangerKicker}>Delete account</span>
               <h2>Confirm permanent removal</h2>
               <p>
                 This removes your full Aim4price workspace, including saved valuations, asset register
