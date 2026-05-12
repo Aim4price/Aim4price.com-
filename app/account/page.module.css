@@ -1388,3 +1388,155 @@
     width: 100%;
   }
 }
+
+/* 2026-05-12: final account page interaction polish */
+.heroLogoUploader {
+  width: min(100%, 34rem);
+  min-height: clamp(15.5rem, 24vw, 21rem);
+  padding: clamp(1.25rem, 2.2vw, 1.85rem);
+}
+
+.heroLogoPreview {
+  position: relative;
+  width: clamp(11.5rem, 17vw, 15.5rem);
+  height: clamp(11.5rem, 17vw, 15.5rem);
+  border-radius: clamp(1.7rem, 2.5vw, 2.25rem);
+}
+
+.heroLogoPreview img {
+  padding: clamp(1.05rem, 1.8vw, 1.45rem);
+}
+
+.heroLogoPreview span {
+  font-size: clamp(2.8rem, 5.2vw, 4.1rem);
+}
+
+.heroLogoOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 1rem;
+  border-radius: inherit;
+  background: rgba(3, 18, 25, 0.58);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.985);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    background 180ms ease;
+}
+
+.heroLogoPreview:hover .heroLogoOverlay,
+.heroLogoPreview:focus-within .heroLogoOverlay,
+.logoEmpty .heroLogoOverlay {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.logoEmpty .heroLogoOverlay {
+  background: rgba(3, 18, 25, 0.32);
+}
+
+.heroLogoOverlayButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.95rem;
+  min-width: 8rem;
+  padding: 0 1.05rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+  font: inherit;
+  font-weight: 850;
+  line-height: 1;
+  text-decoration: none;
+  box-shadow: 0 12px 28px rgba(2, 12, 20, 0.2);
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition:
+    transform 170ms ease,
+    background 170ms ease,
+    opacity 170ms ease;
+}
+
+.heroLogoOverlayButton:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.heroLogoOverlayButton:disabled {
+  opacity: 0.5;
+  transform: none;
+  cursor: not-allowed;
+}
+
+.actionsRow,
+.marketplaceActions {
+  justify-content: flex-end;
+}
+
+.actionsRow .primaryButton,
+.marketplaceActions .primaryButton {
+  min-width: 10rem;
+}
+
+.inlineActions {
+  justify-content: center;
+  align-items: center;
+}
+
+.inlineActions .primaryButton,
+.inlineActions .secondaryButton {
+  min-width: 8.8rem;
+}
+
+.deletePrompt {
+  margin: 0;
+  color: #5f6d76;
+  font-weight: 850;
+  line-height: 1.4;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .heroLogoUploader {
+    min-height: 15rem;
+  }
+
+  .heroLogoPreview {
+    width: min(100%, 13rem);
+    height: min(100vw - 4rem, 13rem);
+  }
+
+  .heroLogoOverlay {
+    flex-direction: column;
+  }
+
+  .heroLogoOverlayButton {
+    width: min(100%, 10.5rem);
+  }
+
+  .actionsRow,
+  .marketplaceActions,
+  .inlineActions {
+    justify-content: stretch;
+  }
+}
+
+@media (hover: none) {
+  .heroLogoOverlay {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1);
+    background: rgba(3, 18, 25, 0.42);
+  }
+}
