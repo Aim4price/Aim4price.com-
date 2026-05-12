@@ -31,6 +31,7 @@ type ScanSafeAsset = {
   financeStatus: ScanAssetStatusChoice;
   insuranceStatus: ScanAssetStatusChoice;
   licenseStatus: ScanAssetStatusChoice;
+  licenseRegistrationNumber: string;
   hours: number | null;
   usageMode: ScanAssetUsageMode;
   usageMetric: "hours" | "km";
@@ -1223,6 +1224,12 @@ export default function ScanClient({
                   <span>Licensed</span>
                   <strong>{formatAssetStatusChoice(prePinAsset.licenseStatus)}</strong>
                 </div>
+                {prePinAsset.licenseStatus === "yes" && prePinAsset.licenseRegistrationNumber ? (
+                  <div>
+                    <span>Registration</span>
+                    <strong>{prePinAsset.licenseRegistrationNumber}</strong>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </section>
@@ -1340,6 +1347,12 @@ export default function ScanClient({
                   <span>Licensed</span>
                   <strong>{formatAssetStatusChoice(asset.licenseStatus)}</strong>
                 </div>
+                {asset.licenseStatus === "yes" && asset.licenseRegistrationNumber ? (
+                  <div>
+                    <span>Registration</span>
+                    <strong>{asset.licenseRegistrationNumber}</strong>
+                  </div>
+                ) : null}
               </div>
             </section>
 
