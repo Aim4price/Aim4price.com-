@@ -9,6 +9,7 @@ type MarketplacePageProps = {
     model?: SearchParamValue;
     drive?: SearchParamValue;
     type?: SearchParamValue;
+    query?: SearchParamValue;
   };
 };
 
@@ -29,7 +30,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
     <MarketplaceClient
       isSignedIn={Boolean(session)}
       initialFilters={{
-        brand: pick(searchParams?.brand),
+        brand: pick(searchParams?.brand) || pick(searchParams?.query),
         model: pick(searchParams?.model),
         drive: pick(searchParams?.drive),
         type: pick(searchParams?.type),
