@@ -16,11 +16,11 @@ type AssetMethod = 'aim4price' | 'market' | 'manual';
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
 type UsageMetric = 'hours' | 'km';
-type AssetStatusChoice = 'yes' | 'no' | 'unknown';
+type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 type ManualAssetStep = 1 | 2 | 3 | 4;
 type ExportFormat = 'pdf' | 'xlsx';
 type ExportStep = 'format' | 'pdf-report';
-type PdfReportKind = 'full' | 'financed' | 'insured' | 'not-financed' | 'not-insured';
+type PdfReportKind = 'full' | 'financed' | 'insured' | 'licensed' | 'not-financed' | 'not-insured' | 'not-licensed';
 type AssetScanReportKind = 'fuel' | 'scan' | 'maintenance';
 
 type PdfReportOption = {
@@ -58,6 +58,14 @@ const PDF_REPORT_OPTIONS: PdfReportOption[] = [
     emptyLabel: 'No insured assets are currently saved in this register.',
   },
   {
+    value: 'licensed',
+    label: 'Licensed',
+    description: 'Only assets marked as licensed.',
+    intro: 'Filtered asset register snapshot showing only licensed assets.',
+    sectionTitle: 'Licensed Assets',
+    emptyLabel: 'No licensed assets are currently saved in this register.',
+  },
+  {
     value: 'not-financed',
     label: 'Not Financed',
     description: 'Only assets not marked as financed.',
@@ -73,6 +81,14 @@ const PDF_REPORT_OPTIONS: PdfReportOption[] = [
     sectionTitle: 'Not Insured Assets',
     emptyLabel: 'No assets without insurance are currently saved in this register.',
   },
+  {
+    value: 'not-licensed',
+    label: 'Not Licensed',
+    description: 'Only assets not marked as licensed.',
+    intro: 'Filtered asset register snapshot showing only assets not marked as licensed.',
+    sectionTitle: 'Not Licensed Assets',
+    emptyLabel: 'No assets without licensing are currently saved in this register.',
+  },
 ];
 type AssetFilterKey =
   | 'all'
@@ -80,6 +96,8 @@ type AssetFilterKey =
   | 'not-insured'
   | 'financed'
   | 'not-financed'
+  | 'licensed'
+  | 'not-licensed'
   | 'highest-value'
   | 'lowest-value'
   | 'aim4price-value'
@@ -132,6 +150,7 @@ type RegisterAsset = {
   serialNumber: string;
   isFinanced: boolean;
   isInsured: boolean;
+  isLicensed: boolean;
   financeNote: string;
   sellerPhone: string;
   marketplaceNotes: string;
@@ -272,8 +291,10 @@ type AssetDraft = {
   serialNumber: string;
   isFinanced: boolean;
   isInsured: boolean;
+  isLicensed: boolean;
   financeStatus: AssetStatusChoice;
   insuranceStatus: AssetStatusChoice;
+  licenseStatus: AssetStatusChoice;
   financeNote: string;
   insuranceNote: string;
   photos: string[];
@@ -342,19 +363,28 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
 const FINANCE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; description: string }> = [
   { value: 'yes', label: 'Is financed', description: 'This asset has active finance or a lender linked to it.' },
   { value: 'no', label: 'Is not financed', description: 'This asset is fully owned and has no finance balance.' },
+  { value: 'not_applicable', label: 'Not applicable', description: 'Finance status does not apply to this asset.' },
   { value: 'unknown', label: 'Not sure', description: 'You can confirm the finance status later.' },
 ];
 
 const INSURANCE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; description: string }> = [
   { value: 'yes', label: 'Is insured', description: 'This asset is covered on an insurance policy.' },
   { value: 'no', label: 'Is not insured', description: 'This asset is not currently insured.' },
+  { value: 'not_applicable', label: 'Not applicable', description: 'Insurance status does not apply to this asset.' },
   { value: 'unknown', label: 'Not sure', description: 'You can confirm the insurance status later.' },
+];
+
+const LICENSE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; description: string }> = [
+  { value: 'yes', label: 'Is licensed', description: 'This asset has an active licence or road-use registration.' },
+  { value: 'no', label: 'Is not licensed', description: 'This asset is not currently licensed.' },
+  { value: 'not_applicable', label: 'Not applicable', description: 'Licensing does not apply to this asset.' },
+  { value: 'unknown', label: 'Not sure', description: 'You can confirm the licence status later.' },
 ];
 
 const MANUAL_FORM_STEPS: Array<{ step: ManualAssetStep; label: string }> = [
   { step: 1, label: 'Equipment type' },
   { step: 2, label: 'Details' },
-  { step: 3, label: 'Finance' },
+  { step: 3, label: 'Status' },
   { step: 4, label: 'Documents' },
 ];
 
@@ -373,6 +403,8 @@ const ASSET_FILTER_OPTIONS: Array<{ value: AssetFilterKey; label: string }> = [
   { value: 'not-insured', label: 'Not insured' },
   { value: 'financed', label: 'Financed' },
   { value: 'not-financed', label: 'Not financed' },
+  { value: 'licensed', label: 'Licensed' },
+  { value: 'not-licensed', label: 'Not licensed' },
   { value: 'highest-value', label: 'Highest value' },
   { value: 'lowest-value', label: 'Lowest value' },
   { value: 'aim4price-value', label: 'Aim4price value' },
@@ -388,8 +420,10 @@ const initialAssetDraft: AssetDraft = {
   serialNumber: '',
   isFinanced: false,
   isInsured: false,
+  isLicensed: false,
   financeStatus: 'unknown',
   insuranceStatus: 'unknown',
+  licenseStatus: 'unknown',
   financeNote: '',
   insuranceNote: '',
   photos: [],
@@ -690,13 +724,17 @@ function getPdfReportOption(reportKind: PdfReportKind): PdfReportOption {
 function filterAssetsByPdfReportKind(assetList: RegisterAsset[], reportKind: PdfReportKind): RegisterAsset[] {
   switch (reportKind) {
     case 'financed':
-      return assetList.filter((asset) => asset.isFinanced);
+      return assetList.filter((asset) => readFinanceStatusChoice(asset) === 'yes');
     case 'insured':
-      return assetList.filter((asset) => asset.isInsured);
+      return assetList.filter((asset) => readInsuranceStatusChoice(asset) === 'yes');
+    case 'licensed':
+      return assetList.filter((asset) => readLicenseStatusChoice(asset) === 'yes');
     case 'not-financed':
-      return assetList.filter((asset) => !asset.isFinanced);
+      return assetList.filter((asset) => readFinanceStatusChoice(asset) === 'no');
     case 'not-insured':
-      return assetList.filter((asset) => !asset.isInsured);
+      return assetList.filter((asset) => readInsuranceStatusChoice(asset) === 'no');
+    case 'not-licensed':
+      return assetList.filter((asset) => readLicenseStatusChoice(asset) === 'no');
     case 'full':
     default:
       return assetList;
@@ -856,17 +894,21 @@ function getManualAssetOption(kind: AssetKind) {
 }
 
 function normalizeAssetStatusChoice(value: unknown, fallback: AssetStatusChoice = 'unknown'): AssetStatusChoice {
-  const normalized = String(value ?? '').trim().toLowerCase();
+  const normalized = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
 
-  if (['yes', 'y', 'true', 'financed', 'insured', 'is_financed', 'is_insured'].includes(normalized)) {
+  if (['yes', 'y', 'true', 'financed', 'insured', 'licensed', 'licenced', 'is_financed', 'is_insured', 'is_licensed'].includes(normalized)) {
     return 'yes';
   }
 
-  if (['no', 'n', 'false', 'not_financed', 'not-financed', 'not insured', 'not_insured', 'not-insured', 'unfinanced', 'uninsured'].includes(normalized)) {
+  if (['no', 'n', 'false', 'not_financed', 'not_insured', 'not_licensed', 'not_licenced', 'unfinanced', 'uninsured', 'unlicensed', 'unlicenced'].includes(normalized)) {
     return 'no';
   }
 
-  if (['unknown', 'not sure', 'not_sure', 'unsure', 'maybe', ''].includes(normalized)) {
+  if (['na', 'n_a', 'not_applicable', 'not_aplicable', 'not_relevant', 'does_not_apply'].includes(normalized)) {
+    return 'not_applicable';
+  }
+
+  if (['unknown', 'not_sure', 'unsure', 'maybe', ''].includes(normalized)) {
     return normalized ? 'unknown' : fallback;
   }
 
@@ -891,6 +933,22 @@ function readInsuranceStatusChoice(asset: RegisterAsset): AssetStatusChoice {
   );
 }
 
+function readLicenseStatusChoice(asset: RegisterAsset): AssetStatusChoice {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.licenseStatus ??
+      specs.license_status ??
+      specs.licensedStatus ??
+      specs.licensed_status ??
+      specs.licenceStatus ??
+      specs.licence_status ??
+      specs.licencedStatus ??
+      specs.licenced_status,
+    asset.isLicensed ? 'yes' : 'no',
+  );
+}
+
 function readInsuranceNote(asset: Pick<RegisterAsset, 'specsJson'>): string {
   const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
 
@@ -906,7 +964,29 @@ function readInsuranceNote(asset: Pick<RegisterAsset, 'specsJson'>): string {
 function statusChoiceLabel(value: AssetStatusChoice): string {
   if (value === 'yes') return 'Yes';
   if (value === 'no') return 'No';
+  if (value === 'not_applicable') return 'N/A';
   return 'Not sure';
+}
+
+function statusChoiceReportLabel(value: AssetStatusChoice): string {
+  if (value === 'not_applicable') return 'Not applicable';
+  return statusChoiceLabel(value);
+}
+
+function renderAssetStatusMark(value: AssetStatusChoice) {
+  const status = normalizeAssetStatusChoice(value);
+  const config = {
+    yes: { label: '✓', className: styles.statusMarkYes, title: 'Yes' },
+    no: { label: '×', className: styles.statusMarkNo, title: 'No' },
+    unknown: { label: '?', className: styles.statusMarkUnknown, title: 'Not sure' },
+    not_applicable: { label: 'N/A', className: styles.statusMarkNotApplicable, title: 'Not applicable' },
+  }[status];
+
+  return (
+    <strong className={`${styles.assetStatusMark} ${config.className}`} aria-label={config.title} title={config.title}>
+      {config.label}
+    </strong>
+  );
 }
 
 function conditionLabel(value: AssetConditionValue): string {
@@ -1205,6 +1285,7 @@ function canProjectFuturePrice(asset: RegisterAsset): boolean {
 function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
   const financeStatus = readFinanceStatusChoice(asset);
   const insuranceStatus = readInsuranceStatusChoice(asset);
+  const licenseStatus = readLicenseStatusChoice(asset);
   const insuranceNote = readInsuranceNote(asset);
 
   return {
@@ -1215,8 +1296,10 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     serialNumber: asset.serialNumber,
     isFinanced: financeStatus === 'yes',
     isInsured: insuranceStatus === 'yes',
+    isLicensed: licenseStatus === 'yes',
     financeStatus,
     insuranceStatus,
+    licenseStatus,
     financeNote: financeStatus === 'yes' ? asset.financeNote : '',
     insuranceNote: insuranceStatus === 'yes' ? insuranceNote : '',
     photos: normalizePhotos(asset.photos),
@@ -1255,6 +1338,7 @@ function buildSavedItemFromAsset(asset: RegisterAsset) {
     serialNumber: asset.serialNumber || undefined,
     isFinanced: asset.isFinanced,
     isInsured: asset.isInsured,
+    isLicensed: asset.isLicensed,
     financeNote: asset.financeNote || undefined,
     photos: asset.photos,
     documents: assetDocuments(asset),
@@ -1501,9 +1585,14 @@ function buildSearchableText(asset: RegisterAsset): string {
     asset.serialNumber,
     asset.financeNote,
     readInsuranceNote(asset),
+    statusChoiceReportLabel(readFinanceStatusChoice(asset)),
+    statusChoiceReportLabel(readInsuranceStatusChoice(asset)),
+    statusChoiceReportLabel(readLicenseStatusChoice(asset)),
     ...assetDocuments(asset).map((document) => document.fileName),
     assetDocuments(asset).length ? 'documents paperwork invoice natis papers' : '',
-    asset.isInsured ? 'insured insurance' : 'not insured no insurance',
+    readInsuranceStatusChoice(asset) === 'yes' ? 'insured insurance' : readInsuranceStatusChoice(asset) === 'no' ? 'not insured no insurance' : '',
+    readFinanceStatusChoice(asset) === 'yes' ? 'financed finance' : readFinanceStatusChoice(asset) === 'no' ? 'not financed no finance' : '',
+    readLicenseStatusChoice(asset) === 'yes' ? 'licensed licence license registered' : readLicenseStatusChoice(asset) === 'no' ? 'not licensed no licence no license' : readLicenseStatusChoice(asset) === 'not_applicable' ? 'not applicable n/a licence license' : '',
     asset.tractorType,
     asset.drive,
     asset.cab,
@@ -1525,7 +1614,9 @@ function buildExportDetail(asset: RegisterAsset): string {
   const parts = [
     buildAssetMeta(asset),
     asset.serialNumber ? `Serial: ${asset.serialNumber}` : '',
-    `Insurance: ${asset.isInsured ? 'Insured' : 'Not insured'}`,
+    `Insurance: ${statusChoiceReportLabel(readInsuranceStatusChoice(asset))}`,
+    `Finance: ${statusChoiceReportLabel(readFinanceStatusChoice(asset))}`,
+    `License: ${statusChoiceReportLabel(readLicenseStatusChoice(asset))}`,
     assetDocuments(asset).length ? `Documents: ${assetDocuments(asset).length}` : '',
   ].filter(Boolean);
 
@@ -1965,7 +2056,7 @@ export default function AssetRegisterClient() {
   const financedAssetStats = useMemo(() => {
     return assets.reduce(
       (stats, asset) => {
-        if (!asset.isFinanced) {
+        if (readFinanceStatusChoice(asset) !== 'yes') {
           return stats;
         }
 
@@ -1981,7 +2072,23 @@ export default function AssetRegisterClient() {
   const insuredAssetStats = useMemo(() => {
     return assets.reduce(
       (stats, asset) => {
-        if (!asset.isInsured) {
+        if (readInsuranceStatusChoice(asset) !== 'yes') {
+          return stats;
+        }
+
+        return {
+          count: stats.count + 1,
+          value: stats.value + Math.round(Number(asset.value || 0)),
+        };
+      },
+      { count: 0, value: 0 },
+    );
+  }, [assets]);
+
+  const licensedAssetStats = useMemo(() => {
+    return assets.reduce(
+      (stats, asset) => {
+        if (readLicenseStatusChoice(asset) !== 'yes') {
           return stats;
         }
 
@@ -2053,16 +2160,22 @@ export default function AssetRegisterClient() {
 
     switch (assetFilter) {
       case 'insured':
-        nextAssets = nextAssets.filter((asset) => asset.isInsured);
+        nextAssets = nextAssets.filter((asset) => readInsuranceStatusChoice(asset) === 'yes');
         break;
       case 'not-insured':
-        nextAssets = nextAssets.filter((asset) => !asset.isInsured);
+        nextAssets = nextAssets.filter((asset) => readInsuranceStatusChoice(asset) === 'no');
         break;
       case 'financed':
-        nextAssets = nextAssets.filter((asset) => asset.isFinanced);
+        nextAssets = nextAssets.filter((asset) => readFinanceStatusChoice(asset) === 'yes');
         break;
       case 'not-financed':
-        nextAssets = nextAssets.filter((asset) => !asset.isFinanced);
+        nextAssets = nextAssets.filter((asset) => readFinanceStatusChoice(asset) === 'no');
+        break;
+      case 'licensed':
+        nextAssets = nextAssets.filter((asset) => readLicenseStatusChoice(asset) === 'yes');
+        break;
+      case 'not-licensed':
+        nextAssets = nextAssets.filter((asset) => readLicenseStatusChoice(asset) === 'no');
         break;
       case 'highest-value':
         nextAssets = [...nextAssets].sort((left, right) => Number(right.value || 0) - Number(left.value || 0));
@@ -2177,6 +2290,14 @@ export default function AssetRegisterClient() {
       insuranceStatus: nextStatus,
       isInsured: nextStatus === 'yes',
       insuranceNote: nextStatus === 'yes' ? current.insuranceNote : '',
+    }));
+  }
+
+  function setAssetLicenseStatus(nextStatus: AssetStatusChoice) {
+    setAssetDraft((current) => ({
+      ...current,
+      licenseStatus: nextStatus,
+      isLicensed: nextStatus === 'yes',
     }));
   }
 
@@ -2559,6 +2680,14 @@ export default function AssetRegisterClient() {
       finance_status: assetDraft.financeStatus,
       insuranceStatus: assetDraft.insuranceStatus,
       insurance_status: assetDraft.insuranceStatus,
+      licenseStatus: assetDraft.licenseStatus,
+      license_status: assetDraft.licenseStatus,
+      licensedStatus: assetDraft.licenseStatus,
+      licensed_status: assetDraft.licenseStatus,
+      licenceStatus: assetDraft.licenseStatus,
+      licence_status: assetDraft.licenseStatus,
+      licencedStatus: assetDraft.licenseStatus,
+      licenced_status: assetDraft.licenseStatus,
       insuranceNote: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
       insurance_note: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
       insuredNote: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
@@ -2587,6 +2716,7 @@ export default function AssetRegisterClient() {
         serialNumber: assetDraft.serialNumber,
         isFinanced: assetDraft.financeStatus === 'yes',
         isInsured: assetDraft.insuranceStatus === 'yes',
+        isLicensed: assetDraft.licenseStatus === 'yes',
         financeNote: assetDraft.financeStatus === 'yes' ? assetDraft.financeNote : '',
         photos,
         documents,
@@ -2914,8 +3044,9 @@ export default function AssetRegisterClient() {
       { label: 'Usage', value: buildAssetUsageValue(asset) },
       { label: 'Condition', value: conditionLabel(asset.condition) },
       { label: 'Serial Number', value: asset.serialNumber || '—' },
-      { label: 'Insured', value: asset.isInsured ? 'Yes' : 'No' },
-      { label: 'Financed', value: asset.isFinanced ? 'Yes' : 'No' },
+      { label: 'Insured', value: statusChoiceReportLabel(readInsuranceStatusChoice(asset)) },
+      { label: 'Financed', value: statusChoiceReportLabel(readFinanceStatusChoice(asset)) },
+      { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
       { label: 'Documents', value: documentsCount ? `${documentsCount} saved` : 'None' },
       { label: 'Last Updated', value: assetStatusDateLabel(asset) },
     ];
@@ -3150,8 +3281,9 @@ export default function AssetRegisterClient() {
     const reportValue = sumAssetValues(reportAssets);
     const reportValueInclVat = Math.round(reportValue * 1.15);
     const reportAim4priceStats = calculateAssetStats(reportAssets, isAim4priceValuedAsset);
-    const reportInsuredStats = calculateAssetStats(reportAssets, (asset) => asset.isInsured);
-    const reportFinancedStats = calculateAssetStats(reportAssets, (asset) => asset.isFinanced);
+    const reportInsuredStats = calculateAssetStats(reportAssets, (asset) => readInsuranceStatusChoice(asset) === 'yes');
+    const reportFinancedStats = calculateAssetStats(reportAssets, (asset) => readFinanceStatusChoice(asset) === 'yes');
+    const reportLicensedStats = calculateAssetStats(reportAssets, (asset) => readLicenseStatusChoice(asset) === 'yes');
     const profile = await ensureAccountProfile();
     const profileLocation = [profile?.townCity, profile?.province].filter(Boolean).join(' ');
     const profileAddress = [profile?.addressLine1, profile?.addressLine2, profileLocation].filter(Boolean).join(' ');
@@ -3185,6 +3317,7 @@ export default function AssetRegisterClient() {
         { label: 'Aim4price values', value: String(reportAim4priceStats.count), note: `${money(reportAim4priceStats.value)} total value.` },
         { label: 'Insured assets', value: String(reportInsuredStats.count), note: `${money(reportInsuredStats.value)} marked insured.` },
         { label: 'Financed assets', value: String(reportFinancedStats.count), note: `${money(reportFinancedStats.value)} marked financed.` },
+        { label: 'Licensed assets', value: String(reportLicensedStats.count), note: `${money(reportLicensedStats.value)} marked licensed.` },
       ],
       rows: reportAssets.map((asset) => {
         const initialModelValue = asset.modelName || asset.typedModelName || '';
@@ -3205,8 +3338,9 @@ export default function AssetRegisterClient() {
           usage: buildAssetUsageValue(asset),
           condition: conditionLabel(asset.condition),
           serial: asset.serialNumber || '—',
-          insured: asset.isInsured ? 'Yes' : 'No',
-          financed: asset.isFinanced ? 'Yes' : 'No',
+          insured: statusChoiceReportLabel(readInsuranceStatusChoice(asset)),
+          financed: statusChoiceReportLabel(readFinanceStatusChoice(asset)),
+          licensed: statusChoiceReportLabel(readLicenseStatusChoice(asset)),
           documents: documentsCount ? `${documentsCount} saved` : 'None',
           updated: assetStatusDateLabel(asset),
           photoUrl: toAbsoluteUrl(assetPreviewImage(asset)) ?? null,
@@ -3808,11 +3942,15 @@ export default function AssetRegisterClient() {
                                       <div className={styles.assetStatusDetails}>
                                         <div className={styles.assetStatusRow}>
                                           <span>Financed</span>
-                                          <strong>{statusChoiceLabel(readFinanceStatusChoice(asset))}</strong>
+                                          {renderAssetStatusMark(readFinanceStatusChoice(asset))}
                                         </div>
                                         <div className={styles.assetStatusRow}>
                                           <span>Insured</span>
-                                          <strong>{statusChoiceLabel(readInsuranceStatusChoice(asset))}</strong>
+                                          {renderAssetStatusMark(readInsuranceStatusChoice(asset))}
+                                        </div>
+                                        <div className={styles.assetStatusRow}>
+                                          <span>Licensed</span>
+                                          {renderAssetStatusMark(readLicenseStatusChoice(asset))}
                                         </div>
                                       </div>
                                     </div>
@@ -3919,7 +4057,7 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalHeader} ${styles.summaryModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-register-summary-title">Register summary</h3>
-                <p>Live totals calculated from the saved assets in this register. Financed and insured totals update when those asset statuses are changed.</p>
+                <p>Live totals calculated from the saved assets in this register. Financed, insured and licensed totals update when those asset statuses are changed.</p>
               </div>
 
               <button
@@ -3954,7 +4092,7 @@ export default function AssetRegisterClient() {
                   </article>
                 </section>
 
-                <section className={styles.summaryStatusGrid} aria-label="Finance and insurance totals">
+                <section className={styles.summaryStatusGrid} aria-label="Finance, insurance and licensing totals">
                   <article className={`${styles.summaryStatusCard} ${styles.summaryStatusCardFinanced}`}>
                     <div className={styles.summaryStatusHeader}>
                       <span>Assets financed</span>
@@ -3971,6 +4109,15 @@ export default function AssetRegisterClient() {
                     </div>
                     <div className={styles.summaryStatusValue}>{money(insuredAssetStats.value)}</div>
                     <p>{assets.length ? formatRatioPercent(insuredAssetStats.count / assets.length) : '0%'} of assets · {money(Math.round(insuredAssetStats.value * 1.15))} incl. VAT</p>
+                  </article>
+
+                  <article className={`${styles.summaryStatusCard} ${styles.summaryStatusCardLicensed}`}>
+                    <div className={styles.summaryStatusHeader}>
+                      <span>Assets licensed</span>
+                      <strong>{licensedAssetStats.count}</strong>
+                    </div>
+                    <div className={styles.summaryStatusValue}>{money(licensedAssetStats.value)}</div>
+                    <p>{assets.length ? formatRatioPercent(licensedAssetStats.count / assets.length) : '0%'} of assets · {money(Math.round(licensedAssetStats.value * 1.15))} incl. VAT</p>
                   </article>
                 </section>
 
@@ -4243,7 +4390,7 @@ export default function AssetRegisterClient() {
                 {manualAssetStep === 3 ? (
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.fullWidth}`}>
                     <div className={styles.manualStepIntro}>
-                      <h4>Finance and insurance</h4>
+                      <h4>Finance, insurance and license</h4>
                     </div>
 
                     <div className={styles.manualStageGrid}>
@@ -4268,6 +4415,20 @@ export default function AssetRegisterClient() {
                           onChange={(event) => setAssetInsuranceStatus(event.target.value as AssetStatusChoice)}
                         >
                           {INSURANCE_STATUS_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className={styles.field}>
+                        <span>License status</span>
+                        <select
+                          value={assetDraft.licenseStatus}
+                          onChange={(event) => setAssetLicenseStatus(event.target.value as AssetStatusChoice)}
+                        >
+                          {LICENSE_STATUS_OPTIONS.map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
                             </option>

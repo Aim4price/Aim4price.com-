@@ -6687,6 +6687,44 @@
   text-transform: uppercase;
 }
 
+.assetStatusMark {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center !important;
+  width: 100%;
+  min-height: 3.08rem;
+  height: 100%;
+  padding: 0 !important;
+  color: #ffffff !important;
+  border-radius: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.24);
+  background: #64748b;
+  font-size: 1.55rem !important;
+  font-weight: 950 !important;
+  line-height: 1;
+  letter-spacing: 0 !important;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.statusMarkYes {
+  background: linear-gradient(180deg, #23c766 0%, #14a64f 100%) !important;
+}
+
+.statusMarkNo {
+  background: linear-gradient(180deg, #ff2d2d 0%, #ef1818 100%) !important;
+}
+
+.statusMarkUnknown {
+  background: linear-gradient(180deg, #ff8a34 0%, #ff7417 100%) !important;
+}
+
+.statusMarkNotApplicable {
+  background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 100%) !important;
+  font-size: 0.88rem !important;
+  letter-spacing: 0.035em !important;
+}
+
 .assetDetailsPanel .noteStack {
   margin-top: 0.05rem;
 }
@@ -6739,6 +6777,11 @@
   .assetStatusRow strong {
     min-height: 2.65rem;
     justify-content: flex-start;
+  }
+
+  .assetStatusMark {
+    justify-content: center !important;
+    border-left: 0;
   }
 }
 
@@ -7526,7 +7569,7 @@
 
 .summaryStatusGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.9rem;
 }
 
@@ -7549,6 +7592,13 @@
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.09), transparent 42%),
     linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
   border-color: rgba(190, 224, 206, 0.98);
+}
+
+.summaryStatusCardLicensed {
+  background:
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.09), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #eef8ff 100%);
+  border-color: rgba(186, 230, 253, 0.98);
 }
 
 .summaryStatusHeader {
