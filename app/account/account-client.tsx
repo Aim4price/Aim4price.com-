@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
-import Link from 'next/link';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
@@ -422,8 +421,9 @@ export default function AccountClient() {
 
     try {
       const dataUrl = await readFileAsDataUrl(file);
-      setProfileDraft((current) => ({ ...current, logoUrl: dataUrl }));
-      setNotice({ tone: 'success', message: 'Logo selected. Save account details to keep it.' });
+      const nextDraft = { ...profileDraft, logoUrl: dataUrl };
+      setProfileDraft(nextDraft);
+      await saveProfileDraft(nextDraft, 'Logo saved.');
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to read logo file.' });
     } finally {
@@ -431,13 +431,13 @@ export default function AccountClient() {
     }
   }
 
-  function handleRemoveLogo() {
-    setProfileDraft((current) => ({ ...current, logoUrl: '' }));
-    setNotice({ tone: 'success', message: 'Logo removed. Save account details to apply the change.' });
+  async function handleRemoveLogo() {
+    const nextDraft = { ...profileDraft, logoUrl: '' };
+    setProfileDraft(nextDraft);
+    await saveProfileDraft(nextDraft, 'Logo removed.');
   }
 
-  async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function saveProfileDraft(nextDraft: ProfileDraft, successMessage = 'Account details saved.') {
     setIsSavingProfile(true);
 
     try {
@@ -447,7 +447,7 @@ export default function AccountClient() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(profileDraft),
+        body: JSON.stringify(nextDraft),
       });
 
       const data = (await response.json()) as ProfileApiResponse;
@@ -458,7 +458,7 @@ export default function AccountClient() {
 
       setProfile(data.profile);
       setProfileDraft(buildProfileDraft(data.profile));
-      setNotice({ tone: 'success', message: 'Account details saved.' });
+      setNotice({ tone: 'success', message: successMessage });
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -467,6 +467,11 @@ export default function AccountClient() {
     } finally {
       setIsSavingProfile(false);
     }
+  }
+
+  async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await saveProfileDraft(profileDraft);
   }
 
   async function handleScanPinSubmit(event: FormEvent<HTMLFormElement>) {
@@ -628,18 +633,36 @@ export default function AccountClient() {
       <section className={styles.shell}>
         <div className={styles.hero}>
           <div className={styles.heroContent}>
-            <div className={styles.heroLogoMark} aria-label="Current account logo">
-              {logoUrl ? <img src={logoUrl} alt="Account logo" /> : <span>{profileInitials}</span>}
+            <div className={styles.heroLogoUploader}>
+              <div className={styles.heroLogoPreview} aria-label="Business logo preview">
+                {logoUrl ? <img src={logoUrl} alt="Business logo" /> : <span>{profileInitials}</span>}
+              </div>
+
+              <div className={styles.heroLogoActions}>
+                <label className={`${styles.primaryButton} ${styles.uploadButton}`}>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleLogoFileChange}
+                    disabled={isReadingLogo || isSavingProfile}
+                  />
+                  {isReadingLogo ? 'Reading...' : logoUrl ? 'Change logo' : 'Upload logo'}
+                </label>
+
+                <button
+                  type="button"
+                  className={styles.heroRemoveButton}
+                  onClick={handleRemoveLogo}
+                  disabled={!logoUrl || isSavingProfile}
+                >
+                  Remove
+                </button>
+              </div>
             </div>
-            <h1>Account</h1>
-            <p>Logo, contact, QR PIN and marketplace details.</p>
           </div>
 
           <div className={styles.heroAside}>
             <div className={styles.heroProfileCard}>
-              <span className={styles.profileAvatar} aria-hidden="true">
-                {profileInitials}
-              </span>
               <div className={styles.profileSummary}>
                 <span>Profile</span>
                 <strong>{accountDisplayName}</strong>
@@ -688,35 +711,6 @@ export default function AccountClient() {
                 <p className={styles.loading}>Loading account details...</p>
               ) : (
                 <form className={styles.form} onSubmit={handleProfileSubmit}>
-                  <div className={`${styles.logoPanel} ${styles.fullWidth}`}>
-                    <div className={styles.logoPreview} aria-label="Business logo preview">
-                      {logoUrl ? <img src={logoUrl} alt="Business logo" /> : <span>{profileInitials}</span>}
-                    </div>
-                    <div className={styles.logoCopy}>
-                      <strong>Logo</strong>
-                      <span>JPG, PNG or WEBP. Max 2 MB.</span>
-                    </div>
-                    <div className={styles.logoActions}>
-                      <label className={`${styles.secondaryButton} ${styles.uploadButton}`}>
-                        <input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          onChange={handleLogoFileChange}
-                          disabled={isReadingLogo || isSavingProfile}
-                        />
-                        {isReadingLogo ? 'Reading...' : logoUrl ? 'Change' : 'Upload'}
-                      </label>
-                      <button
-                        type="button"
-                        className={styles.ghostButton}
-                        onClick={handleRemoveLogo}
-                        disabled={!logoUrl || isSavingProfile}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-
                   <label className={`${styles.field} ${styles.halfField}`}>
                     <span>Full name</span>
                     <input
@@ -794,12 +788,6 @@ export default function AccountClient() {
                     <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
                       {isSavingProfile ? 'Saving...' : 'Save'}
                     </button>
-                    <Link href="/asset-register" className={styles.secondaryButton}>
-                      Asset register
-                    </Link>
-                    <Link href="/asset-map" className={styles.secondaryButton}>
-                      Asset map
-                    </Link>
                   </div>
                 </form>
               )}
@@ -942,10 +930,6 @@ export default function AccountClient() {
             </section>
 
             <section className={`${styles.sidebarCard} ${styles.dangerCard}`}>
-              <div className={styles.dangerCopy}>
-                <h2>Delete account</h2>
-              </div>
-
               <button type="button" className={styles.dangerButton} onClick={() => setIsDeleteDialogOpen(true)}>
                 Delete account
               </button>
