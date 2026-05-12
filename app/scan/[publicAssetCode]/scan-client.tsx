@@ -99,6 +99,20 @@ type DraftState = {
   mechanicName: string;
 };
 
+type PendingScanUpdate = {
+  hours: string;
+  lifeWorkedPercent: string;
+  fuelPercent: string;
+  notes: string[];
+  photoUrls: string[];
+  latitude: string;
+  longitude: string;
+  hasUsage: boolean;
+  hasFuel: boolean;
+  hasService: boolean;
+  hasPhotos: boolean;
+};
+
 const MAX_QR_PHOTOS = 12;
 const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
 const QR_PHOTO_MAX_DIMENSION = 1400;
@@ -233,6 +247,20 @@ const initialDraft: DraftState = {
   repairDetails: "",
   serviceCompany: "",
   mechanicName: "",
+};
+
+const initialPendingUpdate: PendingScanUpdate = {
+  hours: "",
+  lifeWorkedPercent: "",
+  fuelPercent: "",
+  notes: [],
+  photoUrls: [],
+  latitude: "",
+  longitude: "",
+  hasUsage: false,
+  hasFuel: false,
+  hasService: false,
+  hasPhotos: false,
 };
 
 function normalizePublicAssetCode(value: string): string {
@@ -538,7 +566,7 @@ function buildEditorSummary(editor: EditorKey, asset: ScanSafeAsset | null): str
       : "Capture current tank level";
   }
 
-  if (editor === "service") return "Maintenance update";
+  if (editor === "service") return "Check asset, note service, or note repairs.";
 
   if (asset?.photos.length) {
     return `${asset.photos.length} photo${asset.photos.length === 1 ? "" : "s"} stored`;
@@ -551,6 +579,24 @@ function toggleValue(values: string[], value: string): string[] {
   return values.includes(value)
     ? values.filter((entry) => entry !== value)
     : [...values, value];
+}
+
+function mergeUniqueStrings(values: string[], limit?: number): string[] {
+  const seen = new Set<string>();
+  const merged = values
+    .map((entry) => String(entry ?? "").trim())
+    .filter(Boolean)
+    .filter((entry) => {
+      if (seen.has(entry)) return false;
+      seen.add(entry);
+      return true;
+    });
+
+  return typeof limit === "number" ? merged.slice(0, limit) : merged;
+}
+
+function hasPendingScanUpdate(update: PendingScanUpdate): boolean {
+  return update.hasUsage || update.hasFuel || update.hasService || update.hasPhotos;
 }
 
 function keepCurrentLocation(current: DraftState): DraftState {
@@ -619,11 +665,11 @@ function MeterIcon({ className }: IconProps) {
 function FuelIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="M6 3.8h8.2a1.4 1.4 0 0 1 1.4 1.4V21H6z" />
-      <path d="M8.3 7h5" />
-      <path d="M15.6 8h2.1l2.3 2.8V17a2 2 0 0 1-2 2h-2.4" />
-      <path d="M19.7 11h-2.4a1.2 1.2 0 0 1-1.2-1.2V8" />
-      <path d="M8.4 17h4.7" />
+      <path d="M6.5 21V5.5A2.5 2.5 0 0 1 9 3h5a2.5 2.5 0 0 1 2.5 2.5V21" />
+      <path d="M7 21h10" />
+      <path d="M9 7h5" />
+      <path d="M16.5 8h1.4l2.1 2.5V17a2 2 0 0 1-2 2h-1.5" />
+      <path d="M20 10.5h-2.2a1.3 1.3 0 0 1-1.3-1.3V8" />
     </svg>
   );
 }
@@ -631,9 +677,15 @@ function FuelIcon({ className }: IconProps) {
 function ServiceIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.1 2.1-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V20h-3v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-2.1-2.1.1-.1A1.7 1.7 0 0 0 5 14.6a1.7 1.7 0 0 0-1.6-1H3v-3h.4A1.7 1.7 0 0 0 5 9.6a1.7 1.7 0 0 0-.3-1.9l-.1-.1 2.1-2.1.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V4h3v.3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 2.1 2.1-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.4v3H21a1.7 1.7 0 0 0-1.6 1.4z" />
-      <path d="m9.4 12.1 1.7 1.7 3.5-3.8" />
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M12 2.8v2.1" />
+      <path d="M12 19.1v2.1" />
+      <path d="M4.9 4.9 6.4 6.4" />
+      <path d="m17.6 17.6 1.5 1.5" />
+      <path d="M2.8 12h2.1" />
+      <path d="M19.1 12h2.1" />
+      <path d="m4.9 19.1 1.5-1.5" />
+      <path d="m17.6 6.4 1.5-1.5" />
     </svg>
   );
 }
@@ -658,13 +710,8 @@ function WrenchIcon({ className }: IconProps) {
 
 function RepairIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="m14.5 5.5 4 4" />
-      <path d="m12 8 4 4" />
-      <path d="M4.5 19.5 10.8 13" />
-      <path d="m8.8 11 4.2 4.2" />
-      <path d="M15.8 4.2a2 2 0 0 1 2.8 0l1.2 1.2a2 2 0 0 1 0 2.8l-8.9 8.9-4.2-4.2z" />
-      <path d="M4 20h7" />
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M13.4 2.8 4.8 13.3c-.5.6-.1 1.5.7 1.5h5.1l-1.2 6.1c-.2 1 .9 1.6 1.6.8l8.6-10.8c.5-.6 0-1.5-.7-1.5h-5.1l1.2-5.8c.2-1-.9-1.6-1.6-.8z" />
     </svg>
   );
 }
@@ -719,8 +766,10 @@ export default function ScanClient({
   );
 
   const [asset, setAsset] = useState<ScanSafeAsset | null>(null);
+  const [savedAsset, setSavedAsset] = useState<ScanSafeAsset | null>(null);
   const [assetPreview, setAssetPreview] = useState<ScanSafeAsset | null>(null);
   const [draft, setDraft] = useState<DraftState>(initialDraft);
+  const [pendingUpdate, setPendingUpdate] = useState<PendingScanUpdate>(initialPendingUpdate);
   const [pin, setPin] = useState("");
   const [operatorName, setOperatorName] = useState("");
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
@@ -772,8 +821,10 @@ export default function ScanClient({
 
   useEffect(() => {
     setAsset(null);
+    setSavedAsset(null);
     setAssetPreview(null);
     setDraft(initialDraft);
+    setPendingUpdate(initialPendingUpdate);
     setPin("");
     setIsUnavailable(false);
     setIsSubmittingPin(false);
@@ -886,8 +937,10 @@ export default function ScanClient({
       }
 
       setAsset(data.asset);
+      setSavedAsset(data.asset);
       setAssetPreview(data.asset);
       setDraft(initialDraft);
+      setPendingUpdate(initialPendingUpdate);
       setIsDone(false);
       setShowLocationReminder(true);
       setLocationState("idle");
@@ -1017,17 +1070,37 @@ export default function ScanClient({
       if (!asset) return nextDraft;
 
       if (nextEditor === "usage") {
-        if (asset.usageMode === "percent" && asset.lifeWorkedPercent !== null) {
-          return { ...nextDraft, lifeWorkedPercent: String(asset.lifeWorkedPercent) };
+        if (asset.usageMode === "percent") {
+          const stagedPercent = pendingUpdate.hasUsage && pendingUpdate.lifeWorkedPercent
+            ? pendingUpdate.lifeWorkedPercent
+            : asset.lifeWorkedPercent !== null
+              ? String(asset.lifeWorkedPercent)
+              : "";
+
+          return { ...nextDraft, lifeWorkedPercent: stagedPercent };
         }
 
-        if ((asset.usageMode === "hours" || asset.usageMode === "km") && asset.hours !== null) {
-          return { ...nextDraft, hours: String(Math.round(asset.hours)) };
+        if (asset.usageMode === "hours" || asset.usageMode === "km") {
+          const stagedHours = pendingUpdate.hasUsage && pendingUpdate.hours
+            ? pendingUpdate.hours
+            : asset.hours !== null
+              ? String(Math.round(asset.hours))
+              : "";
+
+          return { ...nextDraft, hours: stagedHours };
         }
       }
 
       if (nextEditor === "fuel") {
-        return { ...nextDraft, fuelPercent: String(Math.round(asset.fuelPercent ?? 100)) };
+        const stagedFuel = pendingUpdate.hasFuel && pendingUpdate.fuelPercent
+          ? pendingUpdate.fuelPercent
+          : String(Math.round(asset.fuelPercent ?? 100));
+
+        return { ...nextDraft, fuelPercent: stagedFuel };
+      }
+
+      if (nextEditor === "photos") {
+        return { ...nextDraft, photoUrls: pendingUpdate.photoUrls };
       }
 
       return nextDraft;
@@ -1093,6 +1166,8 @@ export default function ScanClient({
   function validateDraftForSave(): { ok: boolean; message?: string } {
     if (!asset || !activeEditor) return { ok: false, message: "Choose an update first." };
 
+    const persistedAsset = savedAsset ?? asset;
+
     if (operatorName.trim().length < 2) {
       return { ok: false, message: "Enter your name before saving." };
     }
@@ -1108,7 +1183,7 @@ export default function ScanClient({
       if (asset.usageMode === "percent") {
         if (!draft.lifeWorkedPercent.trim()) return { ok: false, message: "Enter the current worked percentage." };
         const nextPercent = Number(draft.lifeWorkedPercent);
-        if (asset.lifeWorkedPercent !== null && nextPercent < asset.lifeWorkedPercent) {
+        if (persistedAsset.lifeWorkedPercent !== null && nextPercent < persistedAsset.lifeWorkedPercent) {
           return { ok: false, message: "The new percentage cannot be lower than the saved percentage." };
         }
         return { ok: true };
@@ -1116,7 +1191,7 @@ export default function ScanClient({
 
       if (!draft.hours.trim()) return { ok: false, message: "Enter the current reading." };
       const nextHours = Number(draft.hours);
-      if (asset.hours !== null && nextHours < asset.hours) {
+      if (persistedAsset.hours !== null && nextHours < persistedAsset.hours) {
         return {
           ok: false,
           message:
@@ -1179,7 +1254,7 @@ export default function ScanClient({
     return { ok: false, message: "Choose an update first." };
   }
 
-  async function handleSaveUpdate() {
+  function handleSaveUpdate() {
     if (!asset || !activeEditor) return;
 
     const validation = validateDraftForSave();
@@ -1188,65 +1263,91 @@ export default function ScanClient({
       return;
     }
 
-    setIsSaving(true);
-
     const savedLatitude = draft.latitude;
     const savedLongitude = draft.longitude;
 
-    try {
-      const response = await fetch(
-        `/api/scan/assets/${encodeURIComponent(normalizedCode)}/event`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            operatorName: operatorName.trim(),
-            hours:
-              activeEditor === "usage" && (asset.usageMode === "hours" || asset.usageMode === "km")
-                ? draft.hours
-                : "",
-            lifeWorkedPercent:
-              activeEditor === "usage" && asset.usageMode === "percent"
-                ? draft.lifeWorkedPercent
-                : "",
-            fuelPercent: activeEditor === "fuel" && asset.canUpdateFuel ? draft.fuelPercent : "",
-            note: activeEditor === "service" ? buildServiceNote(draft) : "",
-            photoUrls: activeEditor === "photos" ? draft.photoUrls : [],
-            latitude: draft.latitude,
-            longitude: draft.longitude,
-          }),
-        },
-      );
-      const data = (await response.json().catch(() => null)) as SaveScanEventResponse | null;
+    if (activeEditor === "usage") {
+      if (asset.usageMode === "percent") {
+        const stagedPercent = draft.lifeWorkedPercent.trim();
+        const parsedPercent = Number(stagedPercent);
 
-      if (!response.ok || !data?.ok || !data.asset) {
-        throw new Error(data?.error ?? "Failed to save the QR update.");
+        setPendingUpdate((current) => ({
+          ...current,
+          hours: "",
+          lifeWorkedPercent: stagedPercent,
+          latitude: savedLatitude || current.latitude,
+          longitude: savedLongitude || current.longitude,
+          hasUsage: true,
+        }));
+        setAsset((current) => current ? { ...current, lifeWorkedPercent: parsedPercent } : current);
+      } else if (asset.usageMode === "hours" || asset.usageMode === "km") {
+        const stagedHours = draft.hours.trim();
+        const parsedHours = Number(stagedHours);
+
+        setPendingUpdate((current) => ({
+          ...current,
+          hours: stagedHours,
+          lifeWorkedPercent: "",
+          latitude: savedLatitude || current.latitude,
+          longitude: savedLongitude || current.longitude,
+          hasUsage: true,
+        }));
+        setAsset((current) => current ? { ...current, hours: parsedHours } : current);
       }
-
-      const successMessage = activeEditor === "usage" || activeEditor === "fuel"
-        ? "Successfully updated."
-        : "Successfully saved.";
-
-      setAsset(data.asset);
-      setDraft({ ...initialDraft, latitude: savedLatitude, longitude: savedLongitude });
-      setActiveEditor(null);
-      setShowServiceDetailsStep(false);
-      setNotice({ tone: "success", message: successMessage });
-      setLocationState("ready");
-      setLocationMessage("GPS is ready for this update.");
-      void captureLocation(true);
-    } catch (error) {
-      setNotice({
-        tone: "error",
-        message: error instanceof Error ? error.message : "Failed to save the QR update.",
-      });
-    } finally {
-      setIsSaving(false);
     }
+
+    if (activeEditor === "fuel") {
+      const stagedFuel = draft.fuelPercent.trim();
+      const parsedFuel = Number(stagedFuel);
+
+      setPendingUpdate((current) => ({
+        ...current,
+        fuelPercent: stagedFuel,
+        latitude: savedLatitude || current.latitude,
+        longitude: savedLongitude || current.longitude,
+        hasFuel: true,
+      }));
+      setAsset((current) => current ? { ...current, fuelPercent: parsedFuel } : current);
+    }
+
+    if (activeEditor === "service") {
+      const serviceNote = buildServiceNote(draft);
+
+      setPendingUpdate((current) => ({
+        ...current,
+        notes: mergeUniqueStrings([...current.notes, serviceNote]),
+        latitude: savedLatitude || current.latitude,
+        longitude: savedLongitude || current.longitude,
+        hasService: true,
+      }));
+    }
+
+    if (activeEditor === "photos") {
+      const stagedPhotos = mergeUniqueStrings(draft.photoUrls, MAX_QR_PHOTOS);
+
+      setPendingUpdate((current) => ({
+        ...current,
+        photoUrls: mergeUniqueStrings([...current.photoUrls, ...stagedPhotos], MAX_QR_PHOTOS),
+        latitude: savedLatitude || current.latitude,
+        longitude: savedLongitude || current.longitude,
+        hasPhotos: stagedPhotos.length > 0 || current.hasPhotos,
+      }));
+      setAsset((current) => current
+        ? { ...current, photos: mergeUniqueStrings([...current.photos, ...stagedPhotos], MAX_QR_PHOTOS) }
+        : current,
+      );
+    }
+
+    setDraft({ ...initialDraft, latitude: savedLatitude, longitude: savedLongitude });
+    setActiveEditor(null);
+    setShowServiceDetailsStep(false);
+    setNotice({ tone: "success", message: "Update added. Tap Done to save it to the asset register." });
+    setLocationState("ready");
+    setLocationMessage("GPS is ready for this update.");
+    void captureLocation(true);
   }
 
-  function handleDone() {
+  function closeDoneSession() {
     setActiveEditor(null);
     setShowLocationReminder(false);
     setIsDone(true);
@@ -1260,6 +1361,80 @@ export default function ScanClient({
     window.setTimeout(() => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }, 80);
+  }
+
+  async function handleDone() {
+    if (!asset) {
+      closeDoneSession();
+      return;
+    }
+
+    if (!hasPendingScanUpdate(pendingUpdate)) {
+      closeDoneSession();
+      return;
+    }
+
+    const finalLatitude = pendingUpdate.latitude || draft.latitude;
+    const finalLongitude = pendingUpdate.longitude || draft.longitude;
+
+    if (operatorName.trim().length < 2) {
+      setNotice({ tone: "error", message: "Enter your name before saving." });
+      return;
+    }
+
+    if (!finalLatitude.trim() || !finalLongitude.trim()) {
+      setNotice({ tone: "error", message: "Location is required. Allow GPS before tapping Done." });
+      void captureLocation(false);
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const response = await fetch(
+        `/api/scan/assets/${encodeURIComponent(normalizedCode)}/event`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            operatorName: operatorName.trim(),
+            hours:
+              pendingUpdate.hasUsage && (asset.usageMode === "hours" || asset.usageMode === "km")
+                ? pendingUpdate.hours
+                : "",
+            lifeWorkedPercent:
+              pendingUpdate.hasUsage && asset.usageMode === "percent"
+                ? pendingUpdate.lifeWorkedPercent
+                : "",
+            fuelPercent: pendingUpdate.hasFuel && asset.canUpdateFuel ? pendingUpdate.fuelPercent : "",
+            note: pendingUpdate.notes.join("\n\n---\n\n"),
+            photoUrls: pendingUpdate.photoUrls,
+            latitude: finalLatitude,
+            longitude: finalLongitude,
+          }),
+        },
+      );
+      const data = (await response.json().catch(() => null)) as SaveScanEventResponse | null;
+
+      if (!response.ok || !data?.ok || !data.asset) {
+        throw new Error(data?.error ?? "Failed to save the QR update.");
+      }
+
+      setAsset(data.asset);
+      setSavedAsset(data.asset);
+      setAssetPreview(data.asset);
+      setPendingUpdate(initialPendingUpdate);
+      setDraft(initialDraft);
+      closeDoneSession();
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "Failed to save the QR update.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   const locationReady = hasLocationCaptured(draft);
@@ -1304,7 +1479,7 @@ export default function ScanClient({
               ? serviceProfile === "implement"
                 ? "Next: workshop details"
                 : "Next: company details"
-              : "Save update";
+              : "Add update";
 
   if (isDone) {
     return (
@@ -1448,7 +1623,7 @@ export default function ScanClient({
               {showUsageAction ? (
                 <button type="button" className={styles.actionCard} onClick={() => openEditor("usage")}>
                   <span className={styles.actionIconWrap}><MeterIcon className={styles.actionIcon} /></span>
-                  <strong>{usageTitle(asset)}</strong>
+                  <strong>Update Meter</strong>
                   <small>{buildEditorSummary("usage", asset)}</small>
                 </button>
               ) : null}
@@ -1456,7 +1631,7 @@ export default function ScanClient({
               {showFuelAction ? (
                 <button type="button" className={styles.actionCard} onClick={() => openEditor("fuel")}>
                   <span className={styles.actionIconWrap}><FuelIcon className={styles.actionIcon} /></span>
-                  <strong>Fuel</strong>
+                  <strong>Update Fuel</strong>
                   <small>{buildEditorSummary("fuel", asset)}</small>
                 </button>
               ) : null}
@@ -1474,8 +1649,8 @@ export default function ScanClient({
               </button>
             </section>
 
-            <button type="button" className={styles.doneButton} onClick={handleDone}>
-              Done
+            <button type="button" className={styles.doneButton} onClick={() => void handleDone()} disabled={isSaving || isUploading}>
+              {isSaving && hasPendingScanUpdate(pendingUpdate) ? "Saving…" : "Done"}
             </button>
           </>
         ) : null}
