@@ -24,7 +24,7 @@ type ReportSummary = {
   updated: string;
 };
 
-type MaintenanceKind = 'checked' | 'serviced';
+type MaintenanceKind = 'checked' | 'serviced' | 'repaired';
 
 type MaintenanceEntry = {
   kind: MaintenanceKind;
@@ -434,7 +434,7 @@ function splitItems(value: string): string[] {
 }
 
 function extractLabeledValue(text: string, label: string): string {
-  const labels = ['Checked items', 'Work done', 'Company', 'Mechanic', 'Notes'];
+  const labels = ['Checked items', 'Work done', 'Repair details', 'Company', 'Mechanic', 'Notes'];
   const otherLabels = labels.filter((entry) => entry.toLowerCase() !== label.toLowerCase()).map((entry) => `${entry}:`).join('|');
   const pattern = new RegExp(`${label}:\\s*([\\s\\S]*?)(?=\\s+(?:${otherLabels})|$)`, 'i');
   const match = text.match(pattern);
@@ -463,21 +463,29 @@ function parseMaintenanceEvent(event: ScanEventRecord): MaintenanceEntry | null 
     kind = 'serviced';
   }
 
+  if (/^repaired\b/i.test(compactNote) || firstLine.includes('repaired') || /repair details:/i.test(compactNote)) {
+    kind = 'repaired';
+  }
+
   if (!kind) {
     return null;
   }
 
   const checkedItems = extractLabeledValue(note, 'Checked items');
   const workDone = extractLabeledValue(note, 'Work done');
-  const items = splitItems(kind === 'checked' ? checkedItems : workDone);
+  const repairDetails = extractLabeledValue(note, 'Repair details');
+  const items = kind === 'checked'
+    ? splitItems(checkedItems)
+    : kind === 'repaired'
+      ? [repairDetails].filter(Boolean)
+      : splitItems(workDone);
   const company = extractLabeledValue(note, 'Company');
   const mechanic = extractLabeledValue(note, 'Mechanic');
   const notes = extractLabeledValue(note, 'Notes');
-  const hasRepairWork = kind === 'serviced' && items.some((item) => /repair|repaired|replace|replaced|tyre|bearing|weld/i.test(item));
 
   return {
     kind,
-    label: kind === 'checked' ? 'Checked' : hasRepairWork ? 'Serviced / repaired' : 'Serviced',
+    label: kind === 'checked' ? 'Checked' : kind === 'repaired' ? 'Repaired' : 'Serviced',
     items,
     company,
     mechanic,
@@ -651,6 +659,7 @@ function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventReco
 function buildMaintenanceRecordRows(asset: AssetRegisterItem, entries: MaintenanceEntry[]): KeyValueRow[] {
   const checkedCount = entries.filter((entry) => entry.kind === 'checked').length;
   const servicedCount = entries.filter((entry) => entry.kind === 'serviced').length;
+  const repairedCount = entries.filter((entry) => entry.kind === 'repaired').length;
   const gpsCount = entries.filter(
     (entry) =>
       typeof entry.event.latitude === 'number' &&
@@ -667,6 +676,7 @@ function buildMaintenanceRecordRows(asset: AssetRegisterItem, entries: Maintenan
     { label: 'Records', value: String(entries.length) },
     { label: 'Checked', value: String(checkedCount) },
     { label: 'Serviced', value: String(servicedCount) },
+    { label: 'Repaired', value: String(repairedCount) },
     { label: 'GPS Locations', value: String(gpsCount) },
     { label: 'Photo Records', value: String(photoCount) },
     { label: 'Updated', value: formatDate(entries[0]?.event.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso) },
@@ -697,7 +707,7 @@ function buildMaintenanceReportSummary(asset: AssetRegisterItem, entries: Mainte
   return {
     label: 'Maintenance',
     value: formatNumber(entries.length),
-    subtext: entries.length === 1 ? 'check / service record' : 'check / service records',
+    subtext: entries.length === 1 ? 'check / service / repair record' : 'check / service / repair records',
     basis: 'QR Maintenance',
     updated: formatDate(entries[0]?.event.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso),
   };
@@ -769,7 +779,7 @@ function renderMaintenanceCards(asset: AssetRegisterItem, entries: MaintenanceEn
     <div class="assetReportMaintenanceList">
       ${entries
         .map((entry) => {
-          const detailLabel = entry.kind === 'checked' ? 'Checked Items' : 'Work Completed';
+          const detailLabel = entry.kind === 'checked' ? 'Checked Items' : entry.kind === 'repaired' ? 'Repair Details' : 'Work Completed';
           const detailText = entry.items.length ? entry.items.join(', ') : '-';
           const location = formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude);
           const notes = entry.notes || '-';
