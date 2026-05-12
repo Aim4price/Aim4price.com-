@@ -8,6 +8,8 @@ export const dynamic = 'force-dynamic';
 type AssetMapItem = {
   id: string;
   title: string;
+  kind: string;
+  assetTypeLabel: string;
   plateLabel: string;
   publicAssetCode: string;
   qrStatus: string;
@@ -15,6 +17,10 @@ type AssetMapItem = {
   hours: number | null;
   fuelPercent: number | null;
   serialNumber: string;
+  brandName: string;
+  modelName: string;
+  typedModelName: string;
+  yearModel: number | null;
   lastScannedAtIso: string | null;
   lastKnownLat: number | null;
   lastKnownLng: number | null;
@@ -34,10 +40,30 @@ function hasCoordinates(lat: number | null, lng: number | null): boolean {
   return true;
 }
 
+function titleCase(value: string): string {
+  return value
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function buildAssetTypeLabel(item: Awaited<ReturnType<typeof listAssetRegisterItems>>[number]): string {
+  const family = String(item.equipmentFamilyLabel ?? '').trim();
+  if (family) return family;
+
+  const kind = String(item.kind ?? '').trim();
+  if (kind) return titleCase(kind);
+
+  return 'Asset';
+}
+
 function mapAssetForMap(item: Awaited<ReturnType<typeof listAssetRegisterItems>>[number]): AssetMapItem {
   return {
     id: item.id,
     title: item.title,
+    kind: item.kind,
+    assetTypeLabel: buildAssetTypeLabel(item),
     plateLabel: item.plateLabel,
     publicAssetCode: item.publicAssetCode,
     qrStatus: item.qrStatus,
@@ -45,6 +71,10 @@ function mapAssetForMap(item: Awaited<ReturnType<typeof listAssetRegisterItems>>
     hours: item.hours,
     fuelPercent: item.fuelPercent,
     serialNumber: item.serialNumber,
+    brandName: item.brandName,
+    modelName: item.modelName,
+    typedModelName: item.typedModelName,
+    yearModel: item.yearModel,
     lastScannedAtIso: item.lastScannedAtIso,
     lastKnownLat: item.lastKnownLat,
     lastKnownLng: item.lastKnownLng,
