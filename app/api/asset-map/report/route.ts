@@ -12,6 +12,7 @@ type PrintableAsset = {
   publicAssetCode: string;
   serialNumber: string;
   assetTypeLabel: string;
+  yearModel: string;
   fuel: string;
   usage: string;
   condition: string;
@@ -43,6 +44,21 @@ function safeScriptJson(value: unknown): string {
   return JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
 }
 
+function formatDate(value = new Date()): string {
+  return new Intl.DateTimeFormat('en-ZA', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(value);
+}
+
+function formatTime(value = new Date()): string {
+  return new Intl.DateTimeFormat('en-ZA', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(value);
+}
+
 function formatDateTime(value?: string | null): string {
   if (!value) return 'Not scanned';
 
@@ -51,21 +67,11 @@ function formatDateTime(value?: string | null): string {
 
   return new Intl.DateTimeFormat('en-ZA', {
     day: 'numeric',
-    month: 'short',
+    month: 'long',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
   }).format(parsed);
-}
-
-function formatGeneratedAt(value = new Date()): string {
-  return new Intl.DateTimeFormat('en-ZA', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(value);
 }
 
 function formatFileDate(value = new Date()): string {
@@ -140,6 +146,11 @@ function assetTypeLabel(asset: AssetRegisterItem): string {
   return 'Asset';
 }
 
+function formatYearModel(value: number | null): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 'Not saved';
+  return String(Math.round(value));
+}
+
 function hasCoordinates(asset: AssetRegisterItem): boolean {
   const { lastKnownLat: lat, lastKnownLng: lng } = asset;
   if (lat === null || lng === null) return false;
@@ -171,6 +182,7 @@ function toPrintableAsset(asset: AssetRegisterItem, index: number): PrintableAss
     publicAssetCode: asset.publicAssetCode,
     serialNumber: asset.serialNumber || 'Not saved',
     assetTypeLabel: assetTypeLabel(asset),
+    yearModel: formatYearModel(asset.yearModel),
     fuel: formatFuel(asset.fuelPercent),
     usage: formatUsage(asset),
     condition: formatCondition(asset.condition),
@@ -191,10 +203,10 @@ function filterAssetsByCodes(assets: AssetRegisterItem[], codes: string[]): Asse
   return codes.map((code) => byCode.get(code)).filter((asset): asset is AssetRegisterItem => Boolean(asset));
 }
 
-function renderRows(assets: PrintableAsset[]): string {
+function renderKeyRows(assets: PrintableAsset[]): string {
   if (!assets.length) {
     return `
-      <div class="emptyState">
+      <div class="assetMapReportEmpty">
         <strong>No mapped assets in this report.</strong>
         <span>Go back to the asset map and choose at least one scanned asset with saved GPS coordinates.</span>
       </div>
@@ -204,25 +216,29 @@ function renderRows(assets: PrintableAsset[]): string {
   return assets
     .map(
       (asset) => `
-        <article class="assetRow">
-          <div class="rowNumber">${asset.number}</div>
-          <div class="rowMain">
+        <article class="assetMapReportKeyRow">
+          <div class="assetMapReportMarkerNumber">${asset.number}</div>
+          <div class="assetMapReportAssetCell">
             <strong>${escapeHtml(asset.title)}</strong>
             <span>${escapeHtml(asset.plateLabel)} · ${escapeHtml(asset.assetTypeLabel)}</span>
           </div>
-          <div class="rowDetail">
+          <div class="assetMapReportCell">
+            <span>Year model</span>
+            <strong>${escapeHtml(asset.yearModel)}</strong>
+          </div>
+          <div class="assetMapReportCell">
             <span>Serial</span>
             <strong>${escapeHtml(asset.serialNumber)}</strong>
           </div>
-          <div class="rowDetail">
+          <div class="assetMapReportCell">
             <span>Fuel</span>
             <strong>${escapeHtml(asset.fuel)}</strong>
           </div>
-          <div class="rowDetail wide">
+          <div class="assetMapReportCell assetMapReportGpsCell">
             <span>GPS</span>
             <strong>${escapeHtml(asset.latLngText)}</strong>
           </div>
-          <div class="rowDetail wide">
+          <div class="assetMapReportCell">
             <span>Last scanned</span>
             <strong>${escapeHtml(asset.lastScanned)}</strong>
           </div>
@@ -232,413 +248,834 @@ function renderRows(assets: PrintableAsset[]): string {
     .join('');
 }
 
-function buildReportHtml(assets: PrintableAsset[], generatedAt: string): string {
-  const title = assets.length === 1 ? `${assets[0].title} Asset Map` : 'Aim4price Asset Map';
-  const subtitle = assets.length === 1 ? 'Single asset map report' : `${assets.length} mapped assets shown and numbered`;
+function renderSelectedAssetRows(asset: PrintableAsset): string {
+  const rows: Array<[string, string]> = [
+    ['Asset type', asset.assetTypeLabel],
+    ['Plate label', asset.plateLabel],
+    ['Serial number', asset.serialNumber],
+    ['Year model', asset.yearModel],
+    ['Usage', asset.usage],
+    ['Fuel', asset.fuel],
+    ['Condition', asset.condition],
+    ['GPS location', asset.latLngText],
+    ['Last scanned', asset.lastScanned],
+  ];
+
+  return rows
+    .map(
+      ([label, value]) => `
+        <div class="assetMapReportDetailRow">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+        </div>
+      `,
+    )
+    .join('');
+}
+
+function buildReportHtml(assets: PrintableAsset[], generatedDate: string, generatedTime: string, ownerEmail: string): string {
+  const singleAsset = assets.length === 1 ? assets[0] : null;
+  const documentTitle = 'Asset Map Report';
+  const heroTitle = singleAsset ? singleAsset.title : 'Fleet Location Map';
+  const heroBadge = singleAsset ? singleAsset.assetTypeLabel : 'Mapped Assets';
+  const heroMeta = singleAsset
+    ? `${singleAsset.plateLabel} · Year model ${singleAsset.yearModel} · GPS ${singleAsset.latLngText}`
+    : `${assets.length} mapped assets shown and numbered. Markers match the location key below.`;
   const mapData = safeScriptJson(assets);
-  const rowsHtml = renderRows(assets);
+  const rowsHtml = renderKeyRows(assets);
+  const selectedAssetRows = singleAsset ? renderSelectedAssetRows(singleAsset) : '';
 
   return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${escapeHtml(title)}</title>
+    <title>${escapeHtml(singleAsset ? `${singleAsset.title} - Aim4price asset map` : 'Aim4price Asset Map Report')}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
       :root {
         color-scheme: light;
-        --bg: #eef3f1;
+        --ink: #111827;
+        --strong: #070b12;
+        --muted: #5f6b7a;
+        --faint: #8b95a3;
         --paper: #ffffff;
-        --paper-soft: #f7faf8;
-        --text: #12332b;
-        --muted: #62736d;
-        --line: #dce7e2;
+        --soft: #f5f6f8;
+        --soft-2: #fafbfc;
+        --line: #d7dde5;
+        --line-strong: #b9c2ce;
         --brand: #103f35;
-        --brand-2: #176b56;
-        --blue: #3768d5;
       }
 
-      * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
 
       @page {
         size: A4 landscape;
-        margin: 10mm;
+        margin: 8mm 9mm 8mm;
       }
 
       html,
       body {
         margin: 0;
         padding: 0;
-        background: var(--bg);
-        color: var(--text);
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #eef1f4;
+        color: var(--ink);
+        font-family: "Montserrat", "Segoe UI", Arial, Helvetica, sans-serif;
+        font-size: 9.6px;
+        line-height: 1.35;
       }
 
-      .screenBar {
+      .assetMapReportScreenBar {
         position: sticky;
         top: 0;
-        z-index: 50;
+        z-index: 10;
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        gap: 1rem;
-        padding: 0.85rem 1rem;
-        background: rgba(255, 255, 255, 0.94);
-        border-bottom: 1px solid rgba(17, 56, 45, 0.08);
-        backdrop-filter: blur(14px);
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 18px;
+        background: rgba(255, 255, 255, 0.96);
+        border-bottom: 1px solid #d7dce2;
       }
 
-      .screenBar strong { color: var(--text); }
-
-      .screenBar span {
+      .assetMapReportScreenText {
         color: var(--muted);
-        font-size: 0.9rem;
+        font-size: 13px;
       }
 
-      .screenActions { display: flex; gap: 0.65rem; flex-wrap: wrap; }
+      .assetMapReportScreenActions {
+        display: flex;
+        gap: 10px;
+      }
 
-      .button {
+      .assetMapReportButton {
         appearance: none;
-        min-height: 2.7rem;
-        border: 1px solid rgba(16, 56, 47, 0.12);
+        min-height: 38px;
+        padding: 0 16px;
+        border: 1px solid #cfd5dd;
         border-radius: 999px;
         background: #ffffff;
-        color: var(--text);
-        padding: 0 1rem;
+        color: var(--ink);
         font: inherit;
-        font-weight: 850;
+        font-size: 13px;
+        font-weight: 700;
         cursor: pointer;
       }
 
-      .buttonPrimary {
+      .assetMapReportButtonPrimary {
+        border-color: var(--strong);
+        background: var(--strong);
         color: #ffffff;
-        border-color: transparent;
-        background: linear-gradient(135deg, var(--brand), var(--brand-2));
       }
 
-      .page {
-        width: min(100% - 1.5rem, 1120px);
-        margin: 1rem auto 1.4rem;
-        display: grid;
-        gap: 0.75rem;
-      }
-
-      .reportHeader,
-      .mapCard,
-      .keyCard {
-        border: 1px solid rgba(18, 49, 43, 0.08);
+      .assetMapReportPage {
+        width: min(100%, 297mm);
+        min-height: 210mm;
+        margin: 18px auto;
+        padding: 9mm 10mm 8mm;
         background: var(--paper);
-        box-shadow: 0 20px 52px rgba(24, 45, 55, 0.08);
+        box-shadow: 0 16px 44px rgba(17, 24, 39, 0.13);
       }
 
-      .reportHeader {
+      .assetMapReportInner {
+        display: grid;
+        min-height: calc(210mm - 17mm);
+        gap: 8px;
+      }
+
+      .assetMapReportHeader {
+        display: grid;
+        grid-template-columns: 22mm minmax(0, 1fr) 74mm;
+        gap: 12px;
+        align-items: center;
+        padding-bottom: 9px;
+        border-bottom: 1px solid var(--line-strong);
+      }
+
+      .assetMapReportLogoWrap {
         display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 0.85rem 1rem;
-        border-radius: 1.3rem;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 17mm;
       }
 
-      .brandBlock { display: grid; gap: 0.18rem; }
+      .assetMapReportLogo {
+        display: block;
+        width: 18mm;
+        height: auto;
+        object-fit: contain;
+      }
 
-      .kicker {
-        width: fit-content;
-        color: var(--brand);
-        font-size: 0.68rem;
-        font-weight: 950;
-        letter-spacing: 0.09em;
+      .assetMapReportDocumentTitle strong {
+        display: block;
+        color: var(--strong);
+        font-size: 16px;
+        line-height: 1.05;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+      }
+
+      .assetMapReportDocumentTitle span {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 8.9px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+      }
+
+      .assetMapReportHeaderMeta {
+        display: grid;
+        gap: 4px;
+        color: var(--muted);
+        font-size: 8.3px;
+      }
+
+      .assetMapReportMetaLine {
+        display: grid;
+        grid-template-columns: 23mm minmax(0, 1fr);
+        gap: 7px;
+        align-items: baseline;
+      }
+
+      .assetMapReportMetaLine span {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .assetMapReportMetaLine strong {
+        color: var(--strong);
+        font-weight: 700;
+        text-align: right;
+        word-break: break-word;
+      }
+
+      .assetMapReportOverview {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 74mm;
+        align-items: stretch;
+        border: 1px solid var(--line-strong);
+        background: #ffffff;
+      }
+
+      .assetMapReportIdentity {
+        min-width: 0;
+        padding: 10px 13px 11px;
+      }
+
+      .assetMapReportKicker {
+        margin: 0 0 6px;
+        color: var(--muted);
+        font-size: 8.1px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
       }
 
-      h1 {
+      .assetMapReportTitle {
         margin: 0;
-        color: var(--text);
-        font-size: 2rem;
-        line-height: 1;
-        letter-spacing: -0.06em;
+        color: var(--strong);
+        font-size: 21.5px;
+        line-height: 1.05;
+        font-weight: 800;
+        letter-spacing: -0.045em;
       }
 
-      .subtitle,
-      .meta {
+      .assetMapReportHeroMeta {
+        margin: 7px 0 0;
+        color: #3f4652;
+        font-size: 9.2px;
+        line-height: 1.35;
+        font-weight: 600;
+      }
+
+      .assetMapReportSummaryCard {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 10px 12px;
+        border-left: 1px solid var(--line-strong);
+        background: var(--soft-2);
+      }
+
+      .assetMapReportSummaryCard h2 {
+        margin: 0 0 6px;
+        color: #2b313b;
+        font-size: 8.8px;
+        line-height: 1.1;
+        font-weight: 800;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .assetMapReportCount {
+        display: block;
         margin: 0;
+        color: var(--strong);
+        font-size: 30px;
+        line-height: 0.96;
+        font-weight: 800;
+        letter-spacing: -0.055em;
+        white-space: nowrap;
+      }
+
+      .assetMapReportCountLabel {
+        display: block;
+        margin-top: 4px;
         color: var(--muted);
-        font-size: 0.88rem;
-        line-height: 1.4;
-        font-weight: 650;
+        font-size: 8.5px;
+        font-weight: 600;
       }
 
-      .meta { text-align: right; }
+      .assetMapReportValueMeta {
+        display: grid;
+        gap: 4px;
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px solid var(--line);
+      }
 
-      .mapCard {
+      .assetMapReportValueMeta div {
+        display: grid;
+        grid-template-columns: 22mm minmax(0, 1fr);
+        gap: 7px;
+        min-height: 17px;
+        align-items: baseline;
+      }
+
+      .assetMapReportValueMeta span {
+        color: var(--muted);
+        font-size: 8.2px;
+        font-weight: 700;
+      }
+
+      .assetMapReportValueMeta strong {
+        color: var(--strong);
+        font-size: 8.3px;
+        font-weight: 700;
+        text-align: right;
+        word-break: break-word;
+      }
+
+      .assetMapReportContentGrid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) ${singleAsset ? '74mm' : '0'};
+        gap: ${singleAsset ? '12px' : '0'};
+        align-items: stretch;
+      }
+
+      .assetMapReportMapSection,
+      .assetMapReportSection,
+      .assetMapReportSideCard {
+        border: 1px solid var(--line-strong);
+        background: #ffffff;
+      }
+
+      .assetMapReportMapSection {
+        min-width: 0;
+        display: grid;
+        grid-template-rows: auto 1fr;
         overflow: hidden;
-        border-radius: 1.35rem;
+      }
+
+      .assetMapReportSectionHeader {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 10px 7px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .assetMapReportSectionHeader h2 {
+        margin: 0;
+        color: var(--strong);
+        font-size: 10.8px;
+        line-height: 1.1;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+
+      .assetMapReportSectionHeader span {
+        color: var(--muted);
+        font-size: 8px;
+        line-height: 1.2;
+        font-weight: 700;
+        text-align: right;
       }
 
       #map {
         width: 100%;
-        height: 445px;
+        height: 86mm;
+        min-height: 86mm;
         background: #dfe8e2;
       }
 
-      .keyCard {
-        display: grid;
-        gap: 0.52rem;
-        padding: 0.72rem;
-        border-radius: 1.25rem;
+      .assetMapReportSide {
+        display: ${singleAsset ? 'grid' : 'none'};
+        gap: 8px;
       }
 
-      .keyHeader {
-        display: flex;
-        align-items: end;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 0 0.2rem 0.18rem;
+      .assetMapReportSideCard {
+        padding: 10px 10px 9px;
       }
 
-      .keyHeader h2 {
-        margin: 0;
-        color: var(--text);
-        font-size: 1rem;
-        letter-spacing: -0.03em;
-      }
-
-      .keyHeader span {
-        color: var(--muted);
-        font-size: 0.78rem;
+      .assetMapReportSideCard h2,
+      .assetMapReportSection h2 {
+        margin: 0 0 8px;
+        color: var(--strong);
+        font-size: 10.8px;
+        line-height: 1.1;
         font-weight: 800;
+        letter-spacing: -0.01em;
       }
 
-      .assetRows {
-        display: grid;
-        gap: 0.42rem;
+      .assetMapReportDetailRows {
+        width: 100%;
+        border-top: 1px solid var(--line);
       }
 
-      .assetRow {
+      .assetMapReportDetailRow {
         display: grid;
-        grid-template-columns: auto minmax(12rem, 1fr) minmax(7rem, 0.55fr) minmax(5rem, 0.36fr) minmax(9rem, 0.7fr) minmax(9rem, 0.7fr);
-        gap: 0.48rem;
+        grid-template-columns: 23mm minmax(0, 1fr);
+        min-height: 18px;
         align-items: center;
-        padding: 0.52rem;
-        border-radius: 0.9rem;
-        border: 1px solid rgba(18, 49, 43, 0.07);
-        background: var(--paper-soft);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .assetMapReportDetailRow span {
+        color: #38404c;
+        font-size: 8.1px;
+        line-height: 1.3;
+        font-weight: 600;
+      }
+
+      .assetMapReportDetailRow strong {
+        color: var(--strong);
+        font-size: 8.2px;
+        line-height: 1.3;
+        font-weight: 700;
+        text-align: right;
+        word-break: break-word;
+      }
+
+      .assetMapReportSection {
+        display: grid;
+        gap: 8px;
+        padding: 9px 10px 10px;
         break-inside: avoid;
       }
 
-      .rowNumber {
+      .assetMapReportKeyRows {
+        display: grid;
+        gap: 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .assetMapReportKeyRow {
+        display: grid;
+        grid-template-columns: 10mm minmax(43mm, 1.15fr) minmax(18mm, 0.42fr) minmax(21mm, 0.5fr) minmax(18mm, 0.36fr) minmax(35mm, 0.75fr) minmax(35mm, 0.75fr);
+        gap: 7px;
+        min-height: 26px;
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .assetMapReportMarkerNumber {
         display: grid;
         place-items: center;
-        width: 2rem;
-        height: 2rem;
+        width: 22px;
+        height: 22px;
         border-radius: 999px;
         color: #ffffff;
         background: var(--brand);
-        font-weight: 950;
-      }
-
-      .rowMain,
-      .rowDetail {
-        min-width: 0;
-        display: grid;
-        gap: 0.1rem;
-      }
-
-      .rowMain strong,
-      .rowDetail strong {
-        min-width: 0;
-        overflow-wrap: anywhere;
-        color: var(--text);
-        font-size: 0.82rem;
-        line-height: 1.25;
-      }
-
-      .rowMain span,
-      .rowDetail span {
-        min-width: 0;
-        overflow-wrap: anywhere;
-        color: var(--muted);
-        font-size: 0.68rem;
-        line-height: 1.25;
+        font-size: 8.6px;
         font-weight: 800;
       }
 
-      .emptyState {
+      .assetMapReportAssetCell,
+      .assetMapReportCell {
+        min-width: 0;
         display: grid;
-        place-items: center;
-        gap: 0.35rem;
-        min-height: 9rem;
-        text-align: center;
-        color: var(--muted);
+        gap: 1px;
       }
 
-      .emptyState strong { color: var(--text); }
+      .assetMapReportAssetCell strong,
+      .assetMapReportCell strong {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        color: var(--strong);
+        font-size: 8.4px;
+        line-height: 1.25;
+        font-weight: 700;
+      }
 
-      .leaflet-container { font-family: inherit; }
-      .leaflet-control-attribution { font-size: 9px; }
+      .assetMapReportAssetCell span,
+      .assetMapReportCell span {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        color: #38404c;
+        font-size: 7.7px;
+        line-height: 1.25;
+        font-weight: 600;
+      }
 
-      .reportMarker { background: transparent; border: 0; }
+      .assetMapReportGpsCell strong {
+        font-size: 7.9px;
+      }
+
+      .assetMapReportEmpty {
+        display: grid;
+        place-items: center;
+        gap: 5px;
+        min-height: 35mm;
+        text-align: center;
+        color: var(--muted);
+        font-size: 9px;
+      }
+
+      .assetMapReportEmpty strong {
+        color: var(--strong);
+      }
+
+      .assetMapReportFooter {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: end;
+        padding-top: 8px;
+        border-top: 1px solid var(--line-strong);
+      }
+
+      .assetMapReportPowered {
+        margin: 0 0 4px;
+        color: var(--strong);
+        font-size: 8.2px;
+        font-weight: 700;
+      }
+
+      .assetMapReportDisclaimer {
+        max-width: 190mm;
+        color: #323a45;
+        font-size: 7.35px;
+        line-height: 1.35;
+        font-style: italic;
+      }
+
+      .assetMapReportPageNumber {
+        color: var(--strong);
+        font-size: 8px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .leaflet-container {
+        font-family: inherit;
+      }
+
+      .leaflet-control-attribution {
+        font-size: 7px;
+      }
+
+      .leaflet-popup-content-wrapper,
+      .leaflet-popup-tip {
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .reportMarker {
+        background: transparent;
+        border: 0;
+      }
+
       .reportMarkerPin {
         position: relative;
         display: grid;
         place-items: center;
-        width: 34px;
-        height: 34px;
+        width: 30px;
+        height: 30px;
         border-radius: 999px;
         color: #ffffff;
         background: var(--brand);
         border: 3px solid #ffffff;
-        box-shadow: 0 12px 22px rgba(16, 63, 53, 0.3);
+        box-shadow: 0 9px 18px rgba(16, 63, 53, 0.3);
       }
+
       .reportMarkerPin::after {
         content: '';
         position: absolute;
         left: 50%;
         bottom: -5px;
-        width: 10px;
-        height: 10px;
+        width: 9px;
+        height: 9px;
         border-right: 3px solid #ffffff;
         border-bottom: 3px solid #ffffff;
         background: var(--brand);
         transform: translateX(-50%) rotate(45deg);
         border-radius: 0 0 3px 0;
       }
+
       .reportMarkerPin b {
         position: relative;
         z-index: 2;
-        font-size: 0.84rem;
-        font-weight: 950;
+        font-size: 8.4px;
+        font-weight: 800;
+      }
+
+      @media screen and (max-width: 900px) {
+        .assetMapReportPage {
+          width: min(100% - 24px, 297mm);
+        }
+
+        .assetMapReportHeader,
+        .assetMapReportOverview,
+        .assetMapReportContentGrid {
+          grid-template-columns: 1fr;
+        }
+
+        .assetMapReportSummaryCard {
+          border-left: 0;
+          border-top: 1px solid var(--line-strong);
+        }
+
+        .assetMapReportHeaderMeta,
+        .assetMapReportMetaLine strong,
+        .assetMapReportValueMeta strong,
+        .assetMapReportDetailRow strong {
+          text-align: left;
+        }
       }
 
       @media print {
         html,
-        body { background: #ffffff; }
-        .screenBar { display: none; }
-        .page {
-          width: 100%;
-          margin: 0;
-          gap: 0.55rem;
+        body {
+          background: #ffffff;
         }
-        .reportHeader,
-        .mapCard,
-        .keyCard {
+
+        .assetMapReportScreenBar {
+          display: none !important;
+        }
+
+        .assetMapReportPage {
+          width: auto;
+          min-height: 0;
+          margin: 0;
+          padding: 0;
           box-shadow: none;
         }
-        #map { height: 420px; }
-        .assetRow {
-          grid-template-columns: auto minmax(11rem, 1fr) minmax(6rem, 0.48fr) minmax(4.6rem, 0.32fr) minmax(8.4rem, 0.64fr) minmax(8.4rem, 0.64fr);
-          padding: 0.42rem;
+
+        .assetMapReportInner {
+          min-height: 0;
+          gap: 7px;
+        }
+
+        .assetMapReportHeader {
+          grid-template-columns: 22mm minmax(0, 1fr) 74mm;
+        }
+
+        .assetMapReportOverview {
+          grid-template-columns: minmax(0, 1fr) 74mm;
+        }
+
+        .assetMapReportContentGrid {
+          grid-template-columns: minmax(0, 1fr) ${singleAsset ? '74mm' : '0'};
+          gap: ${singleAsset ? '12px' : '0'};
+        }
+
+        #map {
+          height: ${singleAsset ? '89mm' : '94mm'};
+          min-height: ${singleAsset ? '89mm' : '94mm'};
+        }
+
+        .assetMapReportKeyRow {
+          min-height: 24px;
         }
       }
     </style>
   </head>
   <body>
-    <div class="screenBar">
-      <span><strong>Asset map report is ready.</strong> Choose Save as PDF in the print dialog.</span>
-      <div class="screenActions">
-        <button type="button" class="button" onclick="window.close()">Close</button>
-        <button type="button" class="button buttonPrimary" onclick="window.print()">Print / Save PDF</button>
+    <div class="assetMapReportScreenBar">
+      <div class="assetMapReportScreenText">Choose <strong>Save as PDF</strong> in the print dialog to download this asset map report.</div>
+      <div class="assetMapReportScreenActions">
+        <button type="button" class="assetMapReportButton" onclick="window.close()">Close</button>
+        <button type="button" class="assetMapReportButton assetMapReportButtonPrimary" onclick="window.print()">Print / Save PDF</button>
       </div>
     </div>
 
-    <main class="page">
-      <header class="reportHeader">
-        <div class="brandBlock">
-          <span class="kicker">Aim4price fleet visibility</span>
-          <h1>${escapeHtml(title)}</h1>
-          <p class="subtitle">${escapeHtml(subtitle)}</p>
-        </div>
-        <p class="meta">Generated ${escapeHtml(generatedAt)}<br />${assets.length === 1 ? 'Single selected asset' : 'Markers are numbered to match the key below.'}</p>
-      </header>
+    <main class="assetMapReportPage">
+      <div class="assetMapReportInner">
+        <header class="assetMapReportHeader">
+          <div class="assetMapReportLogoWrap"><img class="assetMapReportLogo" src="/brand/aim4price-mark-black.png" alt="Aim4price" /></div>
+          <div class="assetMapReportDocumentTitle">
+            <strong>${escapeHtml(documentTitle)}</strong>
+            <span>Aim4price fleet visibility</span>
+          </div>
+          <div class="assetMapReportHeaderMeta">
+            <div class="assetMapReportMetaLine"><span>Generated</span><strong>${escapeHtml(generatedDate)}</strong></div>
+            <div class="assetMapReportMetaLine"><span>Time</span><strong>${escapeHtml(generatedTime)}</strong></div>
+            ${ownerEmail ? `<div class="assetMapReportMetaLine"><span>Email</span><strong>${escapeHtml(ownerEmail)}</strong></div>` : ''}
+          </div>
+        </header>
 
-      <section class="mapCard">
-        <div id="map" aria-label="Asset map report"></div>
-      </section>
+        <section class="assetMapReportOverview">
+          <div class="assetMapReportIdentity">
+            <p class="assetMapReportKicker">${escapeHtml(heroBadge)}</p>
+            <h1 class="assetMapReportTitle">${escapeHtml(heroTitle)}</h1>
+            <p class="assetMapReportHeroMeta">${escapeHtml(heroMeta)}</p>
+          </div>
 
-      <section class="keyCard">
-        <div class="keyHeader">
-          <h2>Map key</h2>
-          <span>${assets.length} asset${assets.length === 1 ? '' : 's'}</span>
+          <aside class="assetMapReportSummaryCard">
+            <h2>Mapped assets</h2>
+            <strong class="assetMapReportCount">${assets.length}</strong>
+            <span class="assetMapReportCountLabel">${assets.length === 1 ? 'Selected mapped asset' : 'Visible mapped assets'}</span>
+            <div class="assetMapReportValueMeta">
+              <div><span>Report basis</span><strong>${assets.length === 1 ? 'Selected asset' : 'Current map view'}</strong></div>
+              <div><span>Marker key</span><strong>${assets.length ? 'Numbered' : 'No markers'}</strong></div>
+            </div>
+          </aside>
+        </section>
+
+        <div class="assetMapReportContentGrid">
+          <section class="assetMapReportMapSection">
+            <div class="assetMapReportSectionHeader">
+              <h2>Asset Location Map</h2>
+              <span>${assets.length === 1 ? 'One GPS marker shown' : 'Markers are numbered to match the location key'}</span>
+            </div>
+            <div id="map" aria-label="Asset map report"></div>
+          </section>
+
+          <aside class="assetMapReportSide">
+            <section class="assetMapReportSideCard">
+              <h2>Selected Asset Details</h2>
+              <div class="assetMapReportDetailRows">${selectedAssetRows}</div>
+            </section>
+          </aside>
         </div>
-        <div class="assetRows">${rowsHtml}</div>
-      </section>
+
+        <section class="assetMapReportSection">
+          <h2>Location Key</h2>
+          <div class="assetMapReportKeyRows">${rowsHtml}</div>
+        </section>
+
+        <footer class="assetMapReportFooter">
+          <div>
+            <p class="assetMapReportPowered">Powered by Aim4price.com</p>
+            <div class="assetMapReportDisclaimer">This report reflects the latest saved QR scan GPS position for each mapped asset at the time it was generated. Use the coordinates and marker numbers as a location aid, not as a legal survey record.</div>
+          </div>
+          <div class="assetMapReportPageNumber">Page 1</div>
+        </footer>
+      </div>
     </main>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-      const assets = ${mapData};
+      (function () {
+        var assets = ${mapData};
 
-      function initMap() {
-        const mapEl = document.getElementById('map');
-        if (!mapEl || !window.L) {
-          return;
-        }
+        function initMap() {
+          var mapEl = document.getElementById('map');
+          if (!mapEl || !window.L) {
+            return;
+          }
 
-        const map = L.map(mapEl, {
-          zoomControl: false,
-          attributionControl: true,
-          scrollWheelZoom: false,
-          dragging: false,
-          doubleClickZoom: false,
-          boxZoom: false,
-          keyboard: false,
-          tap: false,
-        });
-
-        const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '&copy; OpenStreetMap contributors',
-        }).addTo(map);
-
-        if (!assets.length) {
-          map.setView([-29.0, 24.0], 5);
-          setTimeout(() => window.print(), 900);
-          return;
-        }
-
-        const bounds = [];
-        const escapePopup = (value) => String(value ?? '')
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-
-        assets.forEach((asset) => {
-          const icon = L.divIcon({
-            className: 'reportMarker',
-            html: '<span class="reportMarkerPin"><b>' + asset.number + '</b></span>',
-            iconSize: [38, 44],
-            iconAnchor: [19, 40],
-            popupAnchor: [0, -34],
+          var map = L.map(mapEl, {
+            zoomControl: false,
+            attributionControl: true,
+            scrollWheelZoom: false,
+            dragging: false,
+            doubleClickZoom: false,
+            boxZoom: false,
+            keyboard: false,
+            tap: false,
           });
 
-          const marker = L.marker([asset.latitude, asset.longitude], { icon }).addTo(map);
-          marker.bindPopup('<strong>' + escapePopup(asset.title) + '</strong><br />' + escapePopup(asset.plateLabel) + '<br />GPS ' + escapePopup(asset.latLngText));
-          bounds.push([asset.latitude, asset.longitude]);
-        });
+          var tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors',
+          }).addTo(map);
 
-        if (bounds.length === 1) {
-          map.setView(bounds[0], 13);
-        } else {
-          map.fitBounds(bounds, { padding: [56, 56], maxZoom: 13 });
+          if (!assets.length) {
+            map.setView([-29.0, 24.0], 5);
+            schedulePrint(tiles);
+            return;
+          }
+
+          var bounds = [];
+          var escapePopup = function (value) {
+            return String(value == null ? '' : value)
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+          };
+
+          assets.forEach(function (asset) {
+            var icon = L.divIcon({
+              className: 'reportMarker',
+              html: '<span class="reportMarkerPin"><b>' + asset.number + '</b></span>',
+              iconSize: [34, 40],
+              iconAnchor: [17, 36],
+              popupAnchor: [0, -31],
+            });
+
+            var marker = L.marker([asset.latitude, asset.longitude], { icon: icon }).addTo(map);
+            marker.bindPopup('<strong>' + escapePopup(asset.title) + '</strong><br />' + escapePopup(asset.plateLabel) + '<br />GPS ' + escapePopup(asset.latLngText));
+            bounds.push([asset.latitude, asset.longitude]);
+          });
+
+          if (bounds.length === 1) {
+            map.setView(bounds[0], 13);
+          } else {
+            map.fitBounds(bounds, { padding: [44, 44], maxZoom: 13 });
+          }
+
+          schedulePrint(tiles);
         }
 
-        let printed = false;
-        const printReport = () => {
-          if (printed) return;
-          printed = true;
-          setTimeout(() => window.print(), 850);
-        };
-        tiles.once('load', printReport);
-        setTimeout(printReport, 1800);
-      }
+        function waitForFonts() {
+          if (document.fonts && document.fonts.ready) {
+            return Promise.race([
+              document.fonts.ready.catch(function () { return undefined; }),
+              new Promise(function (resolve) { window.setTimeout(resolve, 900); }),
+            ]);
+          }
 
-      if (document.readyState === 'complete') {
-        initMap();
-      } else {
-        window.addEventListener('load', initMap, { once: true });
-      }
+          return Promise.resolve();
+        }
+
+        function schedulePrint(tiles) {
+          var printed = false;
+          var printReport = function () {
+            if (printed) return;
+            printed = true;
+            waitForFonts().then(function () {
+              window.setTimeout(function () {
+                window.focus();
+                window.print();
+              }, 350);
+            });
+          };
+
+          if (tiles && typeof tiles.once === 'function') {
+            tiles.once('load', function () { window.setTimeout(printReport, 650); });
+          }
+          window.setTimeout(printReport, 2300);
+        }
+
+        if (document.readyState === 'complete') {
+          initMap();
+        } else {
+          window.addEventListener('load', initMap, { once: true });
+        }
+      })();
     </script>
   </body>
 </html>`;
@@ -663,8 +1100,9 @@ export async function GET(request: Request) {
     const mappedItems = items.filter(hasCoordinates);
     const reportItems = filterAssetsByCodes(mappedItems, requestedCodes);
     const printableAssets = reportItems.map(toPrintableAsset);
-    const html = buildReportHtml(printableAssets, formatGeneratedAt());
-    const filename = `aim4price-asset-map-${formatFileDate()}.html`;
+    const now = new Date();
+    const html = buildReportHtml(printableAssets, formatDate(now), formatTime(now), asText(session.user.email));
+    const filename = `aim4price-asset-map-${formatFileDate(now)}.html`;
 
     return new NextResponse(html, {
       status: 200,
