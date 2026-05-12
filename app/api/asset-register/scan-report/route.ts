@@ -124,6 +124,37 @@ function readLicenseStatusChoice(asset: AssetRegisterItem): AssetStatusChoice {
   );
 }
 
+function readLicenseRegistrationNumber(asset: AssetRegisterItem): string {
+  const direct = normalizeSpaces(asset.licenseRegistrationNumber).toUpperCase();
+  if (direct) return direct;
+
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return normalizeSpaces(
+    specs.licenseRegistrationNumber ??
+      specs.license_registration_number ??
+      specs.licenceRegistrationNumber ??
+      specs.licence_registration_number ??
+      specs.licenseRegistration ??
+      specs.license_registration ??
+      specs.licenceRegistration ??
+      specs.licence_registration ??
+      specs.registrationNumber ??
+      specs.registration_number ??
+      specs.numberPlate ??
+      specs.number_plate ??
+      specs.numberplate,
+  ).toUpperCase();
+}
+
+function licenseRegistrationRows(asset: AssetRegisterItem): KeyValueRow[] {
+  const registration = readLicenseRegistrationNumber(asset);
+
+  return readLicenseStatusChoice(asset) === 'yes' && registration
+    ? [{ label: 'Registration', value: registration }]
+    : [];
+}
+
 function statusChoiceReportLabel(value: AssetStatusChoice): string {
   const normalized = normalizeAssetStatusChoice(value);
 
@@ -545,6 +576,7 @@ function buildAssetDetailRows(asset: AssetRegisterItem): KeyValueRow[] {
     { label: 'Financed', value: statusChoiceReportLabel(readFinanceStatusChoice(asset)) },
     { label: 'Insured', value: statusChoiceReportLabel(readInsuranceStatusChoice(asset)) },
     { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
+    ...licenseRegistrationRows(asset),
   ];
 }
 
@@ -586,6 +618,7 @@ function buildScanRecordRows(asset: AssetRegisterItem, events: ScanEventRecord[]
   return [
     { label: 'Serial Number', value: asset.serialNumber || '-' },
     { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
+    ...licenseRegistrationRows(asset),
     { label: 'QR Status', value: formatQrStatus(asset.qrStatus) },
     { label: 'Total Scans', value: String(events.length) },
     { label: 'Fuel Entries', value: String(fuelEvents.length) },
@@ -605,6 +638,7 @@ function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventReco
   return [
     { label: 'Serial Number', value: asset.serialNumber || '-' },
     { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
+    ...licenseRegistrationRows(asset),
     { label: 'Fuel Entries', value: String(fuelEvents.length) },
     { label: 'Latest Fuel', value: formatFuel(fuelEvents[0]?.fuelPercent) },
     { label: 'Lowest Fuel', value: formatFuel(fuelValues.length ? Math.min(...fuelValues) : null) },
@@ -629,6 +663,7 @@ function buildMaintenanceRecordRows(asset: AssetRegisterItem, entries: Maintenan
   return [
     { label: 'Serial Number', value: asset.serialNumber || '-' },
     { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
+    ...licenseRegistrationRows(asset),
     { label: 'Records', value: String(entries.length) },
     { label: 'Checked', value: String(checkedCount) },
     { label: 'Serviced', value: String(servicedCount) },
