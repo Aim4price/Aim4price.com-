@@ -922,3 +922,295 @@
     width: 100%;
   }
 }
+
+/* 2026-05-12: simplified account page polish */
+.shell {
+  padding-top: clamp(0.9rem, 1.5vw, 1.2rem);
+  gap: clamp(0.9rem, 1.45vw, 1.15rem);
+}
+
+.hero {
+  min-height: 0;
+  padding: clamp(1.1rem, 1.9vw, 1.55rem);
+  border-radius: 1.7rem;
+  grid-template-columns: minmax(0, 0.95fr) minmax(360px, 0.85fr);
+  gap: clamp(1rem, 1.7vw, 1.4rem);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(51, 185, 131, 0.22) 0, transparent 21rem),
+    linear-gradient(135deg, #102a23 0%, #15392f 48%, #183b60 100%);
+}
+
+.heroLogoMark {
+  width: clamp(4.1rem, 5vw, 4.75rem);
+  height: clamp(4.1rem, 5vw, 4.75rem);
+  border-radius: 1.1rem;
+}
+
+.heroContent {
+  align-content: center;
+}
+
+.heroContent h1 {
+  max-width: 100%;
+  margin-top: 0.9rem;
+  font-size: clamp(2.85rem, 4.7vw, 4.15rem);
+  letter-spacing: -0.065em;
+}
+
+.heroContent p {
+  max-width: 34rem;
+  margin-top: 0.7rem;
+  font-size: clamp(0.98rem, 1.05vw, 1.05rem);
+  line-height: 1.55;
+}
+
+.heroAside {
+  gap: 0.7rem;
+}
+
+.heroProfileCard,
+.heroStat {
+  border-radius: 1.05rem;
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.heroProfileCard,
+.heroStat {
+  padding: 0.85rem;
+}
+
+.profileAvatar {
+  width: 3.35rem;
+  height: 3.35rem;
+  border-radius: 0.95rem;
+}
+
+.profileSummary span,
+.heroStat span {
+  font-size: 0.7rem;
+  letter-spacing: 0.045em;
+}
+
+.profileSummary strong,
+.heroStat strong {
+  font-size: clamp(1.12rem, 1.45vw, 1.42rem);
+}
+
+.heroStat small {
+  display: none;
+}
+
+.heroStatGrid {
+  gap: 0.7rem;
+}
+
+.heroStatGrid .heroStat {
+  min-height: 5.25rem;
+}
+
+.progressTrack {
+  height: 0.42rem;
+}
+
+.layout {
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  gap: clamp(0.9rem, 1.45vw, 1.15rem);
+}
+
+.mainColumn,
+.sidebar {
+  gap: clamp(0.9rem, 1.45vw, 1.15rem);
+}
+
+.card,
+.sidebarCard {
+  border-radius: 1.35rem;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow:
+    0 18px 42px rgba(18, 45, 37, 0.07),
+    0 5px 14px rgba(18, 45, 37, 0.035);
+}
+
+.card::before,
+.sidebarCard::before {
+  height: 0.22rem;
+  opacity: 0.62;
+}
+
+.card,
+.sidebarCard {
+  padding: clamp(1rem, 1.65vw, 1.35rem);
+}
+
+.cardHeader {
+  margin-bottom: 0.9rem;
+}
+
+.cardHeader h2,
+.sidebarCard h2,
+.modalHeader h2 {
+  font-size: clamp(1.55rem, 2.35vw, 2rem);
+  letter-spacing: -0.055em;
+}
+
+.form {
+  gap: 0.82rem 0.9rem;
+}
+
+.field,
+.modalField,
+.checkboxField {
+  gap: 0.38rem;
+}
+
+.field span,
+.modalField span,
+.checkboxField span {
+  font-size: 0.72rem;
+  letter-spacing: 0.045em;
+}
+
+.field input,
+.field select,
+.field textarea,
+.modalField input,
+.modalField textarea,
+.readOnlyValue {
+  min-height: 3.05rem;
+  border-radius: 0.86rem;
+  padding: 0.75rem 0.9rem;
+}
+
+.logoPanel {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 0.82rem;
+  border-radius: 1rem;
+  background: #f7faf8;
+}
+
+.logoPreview {
+  width: 4.25rem;
+  height: 4.25rem;
+  border-radius: 0.92rem;
+}
+
+.logoCopy strong {
+  font-size: 1rem;
+}
+
+.logoCopy span {
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton,
+.ghostButton {
+  min-height: 3.05rem;
+  border-radius: 0.88rem;
+  padding-inline: 1rem;
+}
+
+.actionsRow,
+.inlineActions,
+.logoActions,
+.marketplaceActions {
+  gap: 0.55rem;
+}
+
+.marketplaceCard {
+  background: rgba(255, 255, 255, 0.97);
+}
+
+.marketplaceFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.82rem 0.9rem;
+  align-items: start;
+}
+
+.marketplaceFields .field:last-of-type,
+.marketplaceActions {
+  grid-column: 1 / -1;
+}
+
+.summaryStack {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 0;
+}
+
+.summaryRow {
+  min-height: auto;
+  padding: 0.82rem;
+  border-radius: 0.95rem;
+}
+
+.summaryLabel {
+  font-size: 0.68rem;
+  letter-spacing: 0.055em;
+}
+
+.summaryValue {
+  color: #15342d;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.pinForm {
+  gap: 0.82rem;
+}
+
+.pinGrid {
+  gap: 0.7rem;
+}
+
+.dangerCard {
+  gap: 0.82rem;
+}
+
+.dangerCard .dangerButton {
+  margin-top: 0;
+}
+
+@media (max-width: 1080px) {
+  .hero,
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .heroAside {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .hero {
+    padding: 0.95rem;
+    border-radius: 1.25rem;
+  }
+
+  .heroContent h1 {
+    font-size: clamp(2.4rem, 13vw, 3.2rem);
+  }
+
+  .heroContent p {
+    font-size: 0.96rem;
+  }
+
+  .heroStatGrid,
+  .summaryStack,
+  .marketplaceFields,
+  .pinGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .logoPanel {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .logoActions {
+    grid-column: 1 / -1;
+  }
+}

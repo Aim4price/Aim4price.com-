@@ -95,7 +95,7 @@ const MAX_LOGO_UPLOAD_BYTES = 2 * 1024 * 1024;
 const ALLOWED_LOGO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
-  owner: 'Owner / Farmer',
+  owner: 'Owner',
   dealer: 'Dealer',
   broker: 'Broker',
   insurer: 'Insurer',
@@ -178,7 +178,7 @@ function formatAccountTypeLabel(value: string): string {
   const normalized = String(value ?? '').trim();
 
   if (!normalized) {
-    return 'Owner / Farmer';
+    return 'Owner';
   }
 
   return ACCOUNT_TYPE_LABELS[normalized] ?? normalized;
@@ -380,8 +380,8 @@ export default function AccountClient() {
   const completionPercentage = Math.round((completedFields / PROFILE_COMPLETION_TOTAL) * 100);
   const completionLabel =
     completedFields >= PROFILE_COMPLETION_TOTAL
-      ? 'Ready for reports, exports and marketplace listings.'
-      : `${PROFILE_COMPLETION_TOTAL - completedFields} profile details still open.`;
+      ? 'Complete'
+      : `${PROFILE_COMPLETION_TOTAL - completedFields} left`;
   const addressLines = useMemo(() => buildAddressLines(profileDraft), [profileDraft]);
   const accountTypeLabel = useMemo(() => formatAccountTypeLabel(profileDraft.accountType), [profileDraft.accountType]);
   const accountDisplayName = profileDraft.displayName.trim() || profile?.name || 'Aim4price user';
@@ -390,9 +390,6 @@ export default function AccountClient() {
     [accountDisplayName, profileDraft.businessName],
   );
   const scanPinStatusLabel = scanPinStatus.enabled ? 'Active' : 'Disabled';
-  const scanPinSummary = scanPinStatus.enabled
-    ? 'QR scan access is on. Anyone with the farm PIN can open the scan page.'
-    : 'QR scan access is off until a scan PIN is saved.';
   const logoUrl = profileDraft.logoUrl.trim();
   const marketplaceSellerName =
     profileDraft.marketplaceSellerName.trim() || profileDraft.businessName.trim() || accountDisplayName;
@@ -634,11 +631,8 @@ export default function AccountClient() {
             <div className={styles.heroLogoMark} aria-label="Current account logo">
               {logoUrl ? <img src={logoUrl} alt="Account logo" /> : <span>{profileInitials}</span>}
             </div>
-            <h1>Account details</h1>
-            <p>
-              Keep your business identity, scan access and marketplace buyer details in one clean workspace.
-              This profile feeds reports, exports and published equipment.
-            </p>
+            <h1>Account</h1>
+            <p>Logo, contact, QR PIN and marketplace details.</p>
           </div>
 
           <div className={styles.heroAside}>
@@ -647,14 +641,14 @@ export default function AccountClient() {
                 {profileInitials}
               </span>
               <div className={styles.profileSummary}>
-                <span>Signed in as</span>
+                <span>Profile</span>
                 <strong>{accountDisplayName}</strong>
-                <small>{profile?.email || 'Account email loading'}</small>
+                <small>{profile?.email || 'Loading email'}</small>
               </div>
             </div>
 
             <div className={styles.heroStat}>
-              <span>Profile completion</span>
+              <span>Profile</span>
               <strong>{completedFields}/{PROFILE_COMPLETION_TOTAL}</strong>
               <div className={styles.progressTrack} aria-hidden="true">
                 <span style={{ width: `${completionPercentage}%` }} />
@@ -668,7 +662,7 @@ export default function AccountClient() {
                 <strong>{accountTypeLabel}</strong>
               </div>
               <div className={styles.heroStat}>
-                <span>Scan access</span>
+                <span>QR PIN</span>
                 <strong>{scanPinStatusLabel}</strong>
               </div>
             </div>
@@ -686,8 +680,7 @@ export default function AccountClient() {
             <section className={styles.card}>
               <div className={styles.cardHeader}>
                 <div>
-                  <h2>Business and contact details</h2>
-                  <p>Edit the details used across your account, reports and owner workspace.</p>
+                  <h2>Business details</h2>
                 </div>
               </div>
 
@@ -700,8 +693,8 @@ export default function AccountClient() {
                       {logoUrl ? <img src={logoUrl} alt="Business logo" /> : <span>{profileInitials}</span>}
                     </div>
                     <div className={styles.logoCopy}>
-                      <strong>Business logo</strong>
-                      <span>Upload your own logo for a cleaner business profile. JPG, PNG or WEBP up to 2 MB.</span>
+                      <strong>Logo</strong>
+                      <span>JPG, PNG or WEBP. Max 2 MB.</span>
                     </div>
                     <div className={styles.logoActions}>
                       <label className={`${styles.secondaryButton} ${styles.uploadButton}`}>
@@ -711,7 +704,7 @@ export default function AccountClient() {
                           onChange={handleLogoFileChange}
                           disabled={isReadingLogo || isSavingProfile}
                         />
-                        {isReadingLogo ? 'Reading logo...' : logoUrl ? 'Change logo' : 'Upload logo'}
+                        {isReadingLogo ? 'Reading...' : logoUrl ? 'Change' : 'Upload'}
                       </label>
                       <button
                         type="button"
@@ -719,7 +712,7 @@ export default function AccountClient() {
                         onClick={handleRemoveLogo}
                         disabled={!logoUrl || isSavingProfile}
                       >
-                        Remove logo
+                        Remove
                       </button>
                     </div>
                   </div>
@@ -766,7 +759,7 @@ export default function AccountClient() {
                     <div className={styles.readOnlyValue} aria-readonly="true">
                       {accountTypeLabel}
                     </div>
-                    <small className={styles.fieldHint}>Locked to your current account setup.</small>
+
                   </div>
 
                   <label className={`${styles.field} ${styles.thirdField}`}>
@@ -799,13 +792,13 @@ export default function AccountClient() {
                   </label>
                   <div className={styles.actionsRow}>
                     <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
-                      {isSavingProfile ? 'Saving...' : 'Save account details'}
+                      {isSavingProfile ? 'Saving...' : 'Save'}
                     </button>
                     <Link href="/asset-register" className={styles.secondaryButton}>
-                      Open asset register
+                      Asset register
                     </Link>
                     <Link href="/asset-map" className={styles.secondaryButton}>
-                      Open asset map
+                      Asset map
                     </Link>
                   </div>
                 </form>
@@ -816,87 +809,63 @@ export default function AccountClient() {
               <div className={styles.cardHeader}>
                 <div>
                   <h2>Marketplace contact</h2>
-                  <p>Edit the buyer-facing details shown when your equipment is published on the marketplace.</p>
                 </div>
               </div>
 
               {isLoading ? (
                 <p className={styles.loading}>Loading marketplace contact...</p>
               ) : (
-                <form className={styles.marketplaceEditor} onSubmit={handleProfileSubmit}>
-                  <div className={styles.marketplacePreview}>
-                    <div className={styles.previewLogo} aria-hidden="true">
-                      {logoUrl ? <img src={logoUrl} alt="" /> : <span>{profileInitials}</span>}
-                    </div>
-                    <div className={styles.previewContent}>
-                      <span>Buyer preview</span>
-                      <strong>{marketplaceSellerName}</strong>
-                      <small>{marketplaceEmail}</small>
-                    </div>
-                    <div className={styles.previewDetails}>
-                      <div>
-                        <span>Phone</span>
-                        <strong>{marketplacePhone}</strong>
-                      </div>
-                      <div>
-                        <span>Location</span>
-                        <strong>{marketplaceLocation}</strong>
-                      </div>
-                    </div>
-                  </div>
+                <form className={styles.marketplaceFields} onSubmit={handleProfileSubmit}>
+                  <label className={styles.field}>
+                    <span>Seller name</span>
+                    <input
+                      value={profileDraft.marketplaceSellerName}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, marketplaceSellerName: event.target.value }))
+                      }
+                      placeholder={marketplaceSellerName}
+                    />
+                  </label>
 
-                  <div className={styles.marketplaceFields}>
-                    <label className={styles.field}>
-                      <span>Seller display name</span>
-                      <input
-                        value={profileDraft.marketplaceSellerName}
-                        onChange={(event) =>
-                          setProfileDraft((current) => ({ ...current, marketplaceSellerName: event.target.value }))
-                        }
-                        placeholder="Name buyers should see"
-                      />
-                    </label>
+                  <label className={styles.field}>
+                    <span>Phone</span>
+                    <input
+                      type="tel"
+                      value={profileDraft.marketplacePhone}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, marketplacePhone: event.target.value }))
+                      }
+                      placeholder={marketplacePhone}
+                    />
+                  </label>
 
-                    <label className={styles.field}>
-                      <span>Marketplace phone</span>
-                      <input
-                        type="tel"
-                        value={profileDraft.marketplacePhone}
-                        onChange={(event) =>
-                          setProfileDraft((current) => ({ ...current, marketplacePhone: event.target.value }))
-                        }
-                        placeholder="Buyer contact number"
-                      />
-                    </label>
+                  <label className={styles.field}>
+                    <span>Email</span>
+                    <input
+                      type="email"
+                      value={profileDraft.marketplaceEmail}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, marketplaceEmail: event.target.value }))
+                      }
+                      placeholder={marketplaceEmail}
+                    />
+                  </label>
 
-                    <label className={styles.field}>
-                      <span>Marketplace email</span>
-                      <input
-                        type="email"
-                        value={profileDraft.marketplaceEmail}
-                        onChange={(event) =>
-                          setProfileDraft((current) => ({ ...current, marketplaceEmail: event.target.value }))
-                        }
-                        placeholder="Buyer contact email"
-                      />
-                    </label>
+                  <label className={styles.field}>
+                    <span>Location</span>
+                    <input
+                      value={profileDraft.marketplaceLocation}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, marketplaceLocation: event.target.value }))
+                      }
+                      placeholder={marketplaceLocation}
+                    />
+                  </label>
 
-                    <label className={styles.field}>
-                      <span>Marketplace location</span>
-                      <input
-                        value={profileDraft.marketplaceLocation}
-                        onChange={(event) =>
-                          setProfileDraft((current) => ({ ...current, marketplaceLocation: event.target.value }))
-                        }
-                        placeholder="Town, province or branch location"
-                      />
-                    </label>
-
-                    <div className={styles.marketplaceActions}>
-                      <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
-                        {isSavingProfile ? 'Saving...' : 'Save marketplace contact'}
-                      </button>
-                    </div>
+                  <div className={styles.marketplaceActions}>
+                    <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
+                      {isSavingProfile ? 'Saving...' : 'Save marketplace'}
+                    </button>
                   </div>
                 </form>
               )}
@@ -908,7 +877,6 @@ export default function AccountClient() {
               <div className={styles.cardHeader}>
                 <div>
                   <h2>QR scan PIN</h2>
-                  <p>This PIN is used on scanned asset pages. It keeps operational updates separate from valuations.</p>
                 </div>
               </div>
 
@@ -919,10 +887,7 @@ export default function AccountClient() {
                   <div className={styles.summaryStack}>
                     <div className={styles.summaryRow}>
                       <span className={styles.summaryLabel}>Status</span>
-                      <div className={styles.summaryList}>
-                        <strong>{scanPinStatusLabel}</strong>
-                        <span>{scanPinSummary}</span>
-                      </div>
+                      <strong className={styles.summaryValue}>{scanPinStatusLabel}</strong>
                     </div>
 
                     <div className={styles.summaryRow}>
@@ -958,13 +923,9 @@ export default function AccountClient() {
                       </label>
                     </div>
 
-                    <p className={styles.helperText}>
-                      Use a simple farm PIN that trusted staff can use when scanning a metal QR tag in the field.
-                    </p>
-
                     <div className={styles.inlineActions}>
                       <button type="submit" className={styles.primaryButton} disabled={isSavingScanPin}>
-                        {isSavingScanPin ? 'Saving scan PIN...' : scanPinStatus.hasPin ? 'Update scan PIN' : 'Save scan PIN'}
+                        {isSavingScanPin ? 'Saving...' : scanPinStatus.hasPin ? 'Update PIN' : 'Save PIN'}
                       </button>
                       <button
                         type="button"
@@ -972,7 +933,7 @@ export default function AccountClient() {
                         onClick={handleDisableScanPin}
                         disabled={isDisablingScanPin || !scanPinStatus.hasPin}
                       >
-                        {isDisablingScanPin ? 'Disabling...' : 'Disable scan PIN'}
+                        {isDisablingScanPin ? 'Disabling...' : 'Disable PIN'}
                       </button>
                     </div>
                   </form>
@@ -983,14 +944,10 @@ export default function AccountClient() {
             <section className={`${styles.sidebarCard} ${styles.dangerCard}`}>
               <div className={styles.dangerCopy}>
                 <h2>Delete account</h2>
-                <p>
-                  Permanently remove your login, saved valuations, asset register items and account
-                  profile from Aim4price.
-                </p>
               </div>
 
               <button type="button" className={styles.dangerButton} onClick={() => setIsDeleteDialogOpen(true)}>
-                Delete my account
+                Delete account
               </button>
             </section>
           </aside>
