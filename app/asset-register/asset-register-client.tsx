@@ -187,7 +187,9 @@ type MarketplaceApiResponse = {
 type AccountProfile = {
   userId: string;
   name: string;
+  displayName?: string;
   email: string;
+  logoUrl?: string;
   businessName: string;
   phone: string;
   accountType: string;
@@ -197,6 +199,10 @@ type AccountProfile = {
   addressLine1: string;
   addressLine2: string;
   notes: string;
+  marketplaceSellerName?: string;
+  marketplacePhone?: string;
+  marketplaceEmail?: string;
+  marketplaceLocation?: string;
   createdAtIso: string | null;
   updatedAtIso: string | null;
 };
@@ -1257,12 +1263,16 @@ function buildSavedItemFromAsset(asset: RegisterAsset) {
 
 function createMarketplaceDraft(asset: RegisterAsset, profile: AccountProfile | null): MarketplacePublishDraft {
   return {
-    sellerName: profile?.name?.trim() || profile?.businessName?.trim() || 'Aim4price seller',
+    sellerName:
+      profile?.marketplaceSellerName?.trim() ||
+      profile?.name?.trim() ||
+      profile?.businessName?.trim() ||
+      'Aim4price seller',
     sellerCompany: profile?.businessName?.trim() || '',
-    sellerPhone: asset.sellerPhone?.trim() || profile?.phone?.trim() || '',
-    sellerEmail: profile?.email?.trim() || '',
+    sellerPhone: asset.sellerPhone?.trim() || profile?.marketplacePhone?.trim() || profile?.phone?.trim() || '',
+    sellerEmail: profile?.marketplaceEmail?.trim() || profile?.email?.trim() || '',
     province: profile?.province?.trim() || '',
-    area: profile?.townCity?.trim() || '',
+    area: profile?.marketplaceLocation?.trim() || profile?.townCity?.trim() || '',
     askingPriceExVat: '',
     description: '',
   };
@@ -2911,7 +2921,7 @@ export default function AssetRegisterClient() {
     ];
 
     const didOpen = openAssetSheetPrint({
-      logoUrl: toAbsoluteUrl('/brand/aim4price-mark-black.png') ?? '',
+      logoUrl: toAbsoluteUrl(accountProfile?.logoUrl) ?? toAbsoluteUrl('/brand/aim4price-mark-black.png') ?? '',
       generatedAt: formatDate(new Date().toISOString()),
       assetBadge: familyLabel,
       heroTitle: asset.title,
@@ -3150,7 +3160,7 @@ export default function AssetRegisterClient() {
     const ownerPhone = profile?.phone?.trim() || '—';
 
     const didOpen = openAssetRegisterSummaryPrint({
-      logoUrl: toAbsoluteUrl('/brand/aim4price-mark-black.png') ?? '',
+      logoUrl: toAbsoluteUrl(profile?.logoUrl) ?? toAbsoluteUrl('/brand/aim4price-mark-black.png') ?? '',
       generatedAt: formatDate(new Date().toISOString()),
       reportTitle: `${reportOption.label} Report`,
       reportSubtitle: 'Aim4price asset register',
