@@ -9,6 +9,8 @@ export const dynamic = 'force-dynamic';
 
 type AccountProfileResult = Awaited<ReturnType<typeof getAccountProfile>>;
 
+type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
+
 type SheetDefinition = {
   name: string;
   description: string;
@@ -29,7 +31,7 @@ const EXPORT_DETAILS_SECTION_ROW = 5;
 const EXPORT_NOTE_SECTION_ROW = 13;
 const EXPORT_NOTE_START_ROW = EXPORT_NOTE_SECTION_ROW + 1;
 const SUMMARY_SECTION_ROW = 17;
-const SUMMARY_ROW_COUNT = 9;
+const SUMMARY_ROW_COUNT = 10;
 const TABLE_HEADER_ROW = SUMMARY_SECTION_ROW + 1 + SUMMARY_ROW_COUNT + 1;
 const DATA_START_ROW = TABLE_HEADER_ROW + 1;
 
@@ -41,6 +43,7 @@ const MARKET_VALUE_EX_VAT_COLUMN = 'Q';
 const MARKET_VALUE_INCL_VAT_COLUMN = 'R';
 const FINANCE_STATUS_COLUMN = 'T';
 const INSURANCE_STATUS_COLUMN = 'V';
+const LICENSE_STATUS_COLUMN = 'X';
 
 const TABLE_HEADERS = [
   'Asset title',
@@ -66,6 +69,7 @@ const TABLE_HEADERS = [
   'Finance notes',
   'Insurance status',
   'Insurance notes',
+  'License status',
 ] as const;
 
 const WORKBOOK_COLUMN_WIDTHS = [
@@ -92,6 +96,7 @@ const WORKBOOK_COLUMN_WIDTHS = [
   28,
   17,
   28,
+  17,
 ];
 
 function unauthorized() {
@@ -164,12 +169,84 @@ function formulaCell(formula: string, value: number, style: 'integer' | 'currenc
   return { formula, value, style };
 }
 
-function statusCell(value: string, positive: boolean): XlsxCellValue {
-  return { value, style: positive ? 'statusGood' : 'statusWarn' };
+function normalizeAssetStatusChoice(value: unknown, fallback: AssetStatusChoice = 'unknown'): AssetStatusChoice {
+  const normalized = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+  if (['yes', 'y', 'true', 'financed', 'insured', 'licensed', 'licenced'].includes(normalized)) {
+    return 'yes';
+  }
+
+  if (['no', 'n', 'false', 'not_financed', 'not_insured', 'not_licensed', 'not_licenced', 'unfinanced', 'uninsured', 'unlicensed', 'unlicenced'].includes(normalized)) {
+    return 'no';
+  }
+
+  if (['na', 'n_a', 'not_applicable', 'not_aplicable', 'not_relevant', 'does_not_apply'].includes(normalized)) {
+    return 'not_applicable';
+  }
+
+  if (['unknown', 'not_sure', 'unsure', 'maybe', ''].includes(normalized)) {
+    return normalized ? 'unknown' : fallback;
+  }
+
+  return fallback;
+}
+
+function statusCellForChoice(status: AssetStatusChoice, positiveLabel: string, negativeLabel: string): XlsxCellValue {
+  const normalized = normalizeAssetStatusChoice(status);
+  const value = normalized === 'yes'
+    ? positiveLabel
+    : normalized === 'no'
+      ? negativeLabel
+      : normalized === 'not_applicable'
+        ? NA_VALUE
+        : 'Not sure';
+  const style: XlsxCellStyle = normalized === 'yes'
+    ? 'statusGood'
+    : normalized === 'no'
+      ? 'statusBad'
+      : normalized === 'not_applicable'
+        ? 'statusInfo'
+        : 'statusWarn';
+
+  return { value, style };
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function readFinanceStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.financeStatus ?? specs.finance_status ?? specs.financedStatus ?? specs.financed_status,
+    item.isFinanced ? 'yes' : 'no',
+  );
+}
+
+function readInsuranceStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.insuranceStatus ?? specs.insurance_status ?? specs.insuredStatus ?? specs.insured_status,
+    item.isInsured ? 'yes' : 'no',
+  );
+}
+
+function readLicenseStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.licenseStatus ??
+      specs.license_status ??
+      specs.licensedStatus ??
+      specs.licensed_status ??
+      specs.licenceStatus ??
+      specs.licence_status ??
+      specs.licencedStatus ??
+      specs.licenced_status,
+    item.isLicensed ? 'yes' : 'no',
+  );
 }
 
 function methodLabel(value: AssetRegisterItem['selectedMethod']): string {
@@ -315,11 +392,15 @@ function marketValueInclVatTotal(items: AssetRegisterItem[]): number {
 }
 
 function countFinanced(items: AssetRegisterItem[]): number {
-  return items.filter((item) => item.isFinanced).length;
+  return items.filter((item) => readFinanceStatusChoice(item) === 'yes').length;
 }
 
 function countInsured(items: AssetRegisterItem[]): number {
-  return items.filter((item) => item.isInsured).length;
+  return items.filter((item) => readInsuranceStatusChoice(item) === 'yes').length;
+}
+
+function countLicensed(items: AssetRegisterItem[]): number {
+  return items.filter((item) => readLicenseStatusChoice(item) === 'yes').length;
 }
 
 function buildPlateOrQrCode(item: AssetRegisterItem): string {
@@ -371,6 +452,9 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
   const rowNumber = DATA_START_ROW + index;
   const aim4priceValue = numericValue(item.aim4priceValueExVat);
   const marketValue = numericValue(item.marketMidExVat);
+  const financeStatus = readFinanceStatusChoice(item);
+  const insuranceStatus = readInsuranceStatusChoice(item);
+  const licenseStatus = readLicenseStatusChoice(item);
 
   return [
     textOrNaCell(item.title),
@@ -392,10 +476,11 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
     marketValue === null ? naCell() : moneyCell(marketValue),
     marketValue === null ? naCell() : vatIncludedFormulaCell(MARKET_VALUE_EX_VAT_COLUMN, rowNumber, marketValue),
     textOrNaCell(methodLabel(item.selectedMethod)),
-    statusCell(item.isFinanced ? 'Financed' : 'Not financed', item.isFinanced),
+    statusCellForChoice(financeStatus, 'Financed', 'Not financed'),
     textOrNaCell(item.financeNote, 'note'),
-    statusCell(item.isInsured ? 'Insured' : 'Not insured', item.isInsured),
+    statusCellForChoice(insuranceStatus, 'Insured', 'Not insured'),
     textOrNaCell(readInsuranceNote(item), 'note'),
+    statusCellForChoice(licenseStatus, 'Licensed', 'Not licensed'),
   ];
 }
 
@@ -414,6 +499,7 @@ function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
   const marketValueInclVatRange = buildFormulaRange(MARKET_VALUE_INCL_VAT_COLUMN, items.length);
   const financeRange = buildFormulaRange(FINANCE_STATUS_COLUMN, items.length);
   const insuranceRange = buildFormulaRange(INSURANCE_STATUS_COLUMN, items.length);
+  const licenseRange = buildFormulaRange(LICENSE_STATUS_COLUMN, items.length);
 
   return [
     [
@@ -437,6 +523,10 @@ function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
     [
       textCell('Insured assets', 'metaLabel'),
       insuranceRange ? formulaCell(`COUNTIF(${insuranceRange},"Insured")`, countInsured(items)) : numberCell(0),
+    ],
+    [
+      textCell('Licensed assets', 'metaLabel'),
+      licenseRange ? formulaCell(`COUNTIF(${licenseRange},"Licensed")`, countLicensed(items)) : numberCell(0),
     ],
     [
       textCell('Aim4price values ex VAT', 'metaLabel'),
@@ -525,26 +615,38 @@ function buildWorkbookSheets(items: AssetRegisterItem[], profile: AccountProfile
     {
       name: 'Financed Sheet',
       description: 'Only assets marked as financed. Useful for finance agreements, lender checks and offline updates.',
-      items: uniqueItems.filter((item) => item.isFinanced),
+      items: uniqueItems.filter((item) => readFinanceStatusChoice(item) === 'yes'),
       tabColor: '355FBA',
     },
     {
       name: 'Insured Sheet',
       description: 'Only assets marked as insured. Useful for insurance schedules and policy reviews.',
-      items: uniqueItems.filter((item) => item.isInsured),
+      items: uniqueItems.filter((item) => readInsuranceStatusChoice(item) === 'yes'),
       tabColor: '0F6A46',
+    },
+    {
+      name: 'Licensed Sheet',
+      description: 'Only assets marked as licensed. Useful for roadworthy and compliance follow-ups.',
+      items: uniqueItems.filter((item) => readLicenseStatusChoice(item) === 'yes'),
+      tabColor: '0284C7',
     },
     {
       name: 'Not Financed Sheet',
       description: 'Only assets currently marked as not financed.',
-      items: uniqueItems.filter((item) => !item.isFinanced),
+      items: uniqueItems.filter((item) => readFinanceStatusChoice(item) === 'no'),
       tabColor: '8A6500',
     },
     {
       name: 'Not Insured Sheet',
       description: 'Only assets currently marked as not insured. Useful for finding insurance gaps quickly.',
-      items: uniqueItems.filter((item) => !item.isInsured),
+      items: uniqueItems.filter((item) => readInsuranceStatusChoice(item) === 'no'),
       tabColor: 'A3271B',
+    },
+    {
+      name: 'Not Licensed Sheet',
+      description: 'Only assets currently marked as not licensed.',
+      items: uniqueItems.filter((item) => readLicenseStatusChoice(item) === 'no'),
+      tabColor: 'BA3B1D',
     },
   ];
 
