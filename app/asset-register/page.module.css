@@ -6708,16 +6708,19 @@
 }
 
 .assetRegistrationRow {
-  grid-template-columns: minmax(6.2rem, 0.72fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .assetRegistrationRow strong {
   justify-content: flex-start;
-  padding: 0 0.86rem;
-  font-size: 0.92rem;
-  letter-spacing: 0.02em;
+  width: 100%;
+  padding: 0 1rem;
+  font-size: 0.96rem;
+  letter-spacing: 0.025em;
   text-transform: uppercase;
   background: #ffffff;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .statusMarkYes {

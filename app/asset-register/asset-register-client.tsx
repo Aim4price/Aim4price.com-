@@ -4007,7 +4007,6 @@ export default function AssetRegisterClient() {
                                         </div>
                                         {readLicenseStatusChoice(asset) === 'yes' && readLicenseRegistrationNumber(asset) ? (
                                           <div className={`${styles.assetStatusRow} ${styles.assetRegistrationRow}`}>
-                                            <span>Registration</span>
                                             <strong>{readLicenseRegistrationNumber(asset)}</strong>
                                           </div>
                                         ) : null}
