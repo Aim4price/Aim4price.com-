@@ -70,6 +70,7 @@ const TABLE_HEADERS = [
   'Insurance status',
   'Insurance notes',
   'License status',
+  'License registration',
 ] as const;
 
 const WORKBOOK_COLUMN_WIDTHS = [
@@ -97,6 +98,7 @@ const WORKBOOK_COLUMN_WIDTHS = [
   17,
   28,
   17,
+  24,
 ];
 
 function unauthorized() {
@@ -247,6 +249,29 @@ function readLicenseStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
       specs.licenced_status,
     item.isLicensed ? 'yes' : 'no',
   );
+}
+
+function readLicenseRegistrationNumber(item: AssetRegisterItem): string {
+  const direct = cleanText(item.licenseRegistrationNumber).toUpperCase();
+  if (direct) return direct;
+
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+
+  return cleanText(
+    specs.licenseRegistrationNumber ??
+      specs.license_registration_number ??
+      specs.licenceRegistrationNumber ??
+      specs.licence_registration_number ??
+      specs.licenseRegistration ??
+      specs.license_registration ??
+      specs.licenceRegistration ??
+      specs.licence_registration ??
+      specs.registrationNumber ??
+      specs.registration_number ??
+      specs.numberPlate ??
+      specs.number_plate ??
+      specs.numberplate,
+  ).toUpperCase();
 }
 
 function methodLabel(value: AssetRegisterItem['selectedMethod']): string {
@@ -481,6 +506,7 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
     statusCellForChoice(insuranceStatus, 'Insured', 'Not insured'),
     textOrNaCell(readInsuranceNote(item), 'note'),
     statusCellForChoice(licenseStatus, 'Licensed', 'Not licensed'),
+    licenseStatus === 'yes' ? textOrNaCell(readLicenseRegistrationNumber(item)) : naCell(),
   ];
 }
 
