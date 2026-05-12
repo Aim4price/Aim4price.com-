@@ -233,9 +233,9 @@ function buildPopupHtml(asset: AssetMapItem, markerNumber: number): string {
   const gps = escapeHtml(formatLatLng(asset));
 
   return `
-    <div style="min-width: 226px; font-family: Inter, Arial, sans-serif; color: #122f2a;">
+    <div style="min-width: 226px; font-family: Montserrat, Inter, Arial, sans-serif; color: #122f2a;">
       <div style="display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:999px; color:#fff; background:#103f35; font-size:12px; font-weight:900; margin-bottom:8px;">${markerNumber}</div>
-      <div style="font-weight: 900; font-size: 16px; line-height: 1.15; margin-bottom: 6px; letter-spacing: -0.03em;">${title}</div>
+      <div style="font-weight: 850; font-size: 16px; line-height: 1.15; margin-bottom: 6px; letter-spacing: -0.03em;">${title}</div>
       <div style="font-size: 12px; color: #5b6a70; margin-bottom: 9px;">${plate}</div>
       <div style="display:grid; gap:6px; font-size:12px; color:#53666b;">
         <div><strong style="color:#132d2d;">Asset type:</strong> ${assetType}</div>
