@@ -21,6 +21,7 @@ type ManualAssetStep = 1 | 2 | 3 | 4;
 type ExportFormat = 'pdf' | 'xlsx';
 type ExportStep = 'format' | 'pdf-report';
 type PdfReportKind = 'full' | 'financed' | 'insured' | 'not-financed' | 'not-insured';
+type AssetScanReportKind = 'fuel' | 'scan' | 'maintenance';
 
 type PdfReportOption = {
   value: PdfReportKind;
@@ -1550,8 +1551,8 @@ function buildAssetQrSvgUrl(asset: RegisterAsset): string {
   return `/api/asset-register/qr?assetId=${encodeURIComponent(asset.id)}&format=svg`;
 }
 
-function buildAssetScanReportUrl(asset: RegisterAsset): string {
-  return `/api/asset-register/scan-report?assetId=${encodeURIComponent(asset.id)}`;
+function buildAssetScanReportUrl(asset: RegisterAsset, reportKind: AssetScanReportKind = 'scan'): string {
+  return `/api/asset-register/scan-report?assetId=${encodeURIComponent(asset.id)}&report=${encodeURIComponent(reportKind)}`;
 }
 
 function buildAssetQrPrintUrl(asset: RegisterAsset): string {
@@ -2966,27 +2967,34 @@ export default function AssetRegisterClient() {
     }
   }
 
-  function handleOpenScanReport(asset: RegisterAsset): boolean {
-    const reportUrl = buildAssetScanReportUrl(asset);
+  function scanReportLabel(reportKind: AssetScanReportKind): string {
+    if (reportKind === 'fuel') return 'Fuel report';
+    if (reportKind === 'maintenance') return 'Maintenance report';
+    return 'Scan report';
+  }
+
+  function handleOpenScanReport(asset: RegisterAsset, reportKind: AssetScanReportKind = 'scan'): boolean {
+    const reportUrl = buildAssetScanReportUrl(asset, reportKind);
     const opened = window.open(reportUrl, '_blank', 'noopener,noreferrer');
+    const reportLabel = scanReportLabel(reportKind);
 
     if (!opened) {
       setNotice({
         tone: 'error',
-        message: 'Unable to open the scan report. Please allow pop-ups and try again.',
+        message: `Unable to open the ${reportLabel.toLowerCase()}. Please allow pop-ups and try again.`,
       });
       return false;
     }
 
     setNotice({
       tone: 'success',
-      message: 'Scan report opened in a new tab. Use Print to save it as a PDF.',
+      message: `${reportLabel} opened in a new tab. Use Print to save it as a PDF.`,
     });
     return true;
   }
 
-  function handleDownloadScanReport(asset: RegisterAsset) {
-    const didOpen = handleOpenScanReport(asset);
+  function handleDownloadScanReport(asset: RegisterAsset, reportKind: AssetScanReportKind = 'scan') {
+    const didOpen = handleOpenScanReport(asset, reportKind);
 
     if (didOpen) {
       closeActionDialog();
@@ -4516,7 +4524,7 @@ export default function AssetRegisterClient() {
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Download PDF report</strong>
-                      <small>Choose the valuation PDF or scan report.</small>
+                      <small>Choose valuation, fuel, scan or maintenance reports.</small>
                     </span>
                   </button>
 
@@ -4608,11 +4616,27 @@ export default function AssetRegisterClient() {
                   </span>
                 </button>
 
-                <button type="button" className={styles.assetReportOptionButton} onClick={() => handleDownloadScanReport(activeAsset)}>
+                <button type="button" className={styles.assetReportOptionButton} onClick={() => handleDownloadScanReport(activeAsset, 'fuel')}>
+                  <DocumentIcon className={styles.buttonIcon} />
+                  <span>
+                    <strong>Download fuel report</strong>
+                    <small>Date, usage reading, tank percentage, operator and scan location.</small>
+                  </span>
+                </button>
+
+                <button type="button" className={styles.assetReportOptionButton} onClick={() => handleDownloadScanReport(activeAsset, 'scan')}>
                   <DocumentIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Download scan report</strong>
-                    <small>QR scan history, latest position, hours, fuel, notes and photos.</small>
+                    <small>Full QR scan history, updates, usage, fuel, notes, photos and locations.</small>
+                  </span>
+                </button>
+
+                <button type="button" className={styles.assetReportOptionButton} onClick={() => handleDownloadScanReport(activeAsset, 'maintenance')}>
+                  <DocumentIcon className={styles.buttonIcon} />
+                  <span>
+                    <strong>Download maintenance report</strong>
+                    <small>Checks, services, repairs, company details, mechanic details and locations.</small>
                   </span>
                 </button>
               </div>
