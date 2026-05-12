@@ -19,6 +19,7 @@ type PrintableAsset = {
   financed: string;
   insured: string;
   licensed: string;
+  licenseRegistrationNumber: string;
   usage: string;
   condition: string;
   lastScanned: string;
@@ -175,6 +176,29 @@ function readLicenseStatusChoice(asset: AssetRegisterItem): AssetStatusChoice {
   );
 }
 
+function readLicenseRegistrationNumber(asset: AssetRegisterItem): string {
+  const direct = asText(asset.licenseRegistrationNumber).toUpperCase();
+  if (direct) return direct;
+
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return asText(
+    specs.licenseRegistrationNumber ??
+      specs.license_registration_number ??
+      specs.licenceRegistrationNumber ??
+      specs.licence_registration_number ??
+      specs.licenseRegistration ??
+      specs.license_registration ??
+      specs.licenceRegistration ??
+      specs.licence_registration ??
+      specs.registrationNumber ??
+      specs.registration_number ??
+      specs.numberPlate ??
+      specs.number_plate ??
+      specs.numberplate,
+  ).toUpperCase();
+}
+
 function formatAssetStatusChoice(value: AssetStatusChoice): string {
   if (value === 'yes') return 'Yes';
   if (value === 'no') return 'No';
@@ -259,6 +283,7 @@ function toPrintableAsset(asset: AssetRegisterItem, index: number): PrintableAss
     financed: formatAssetStatusChoice(readFinanceStatusChoice(asset)),
     insured: formatAssetStatusChoice(readInsuranceStatusChoice(asset)),
     licensed: formatAssetStatusChoice(readLicenseStatusChoice(asset)),
+    licenseRegistrationNumber: readLicenseStatusChoice(asset) === 'yes' ? readLicenseRegistrationNumber(asset) : '',
     usage: formatUsage(asset),
     condition: formatCondition(asset.condition),
     lastScanned: formatDateTime(asset.lastScannedAtIso),
@@ -312,6 +337,7 @@ function renderKeyRows(assets: PrintableAsset[]): string {
           <div class="assetMapReportCell">
             <span>Licensed</span>
             <strong>${escapeHtml(asset.licensed)}</strong>
+            ${asset.licenseRegistrationNumber ? `<small>Reg: ${escapeHtml(asset.licenseRegistrationNumber)}</small>` : ''}
           </div>
           <div class="assetMapReportCell assetMapReportGpsCell">
             <span>GPS</span>
@@ -339,6 +365,7 @@ function renderSelectedAssetRows(asset: PrintableAsset): string {
     ['Financed', asset.financed],
     ['Insured', asset.insured],
     ['Licensed', asset.licensed],
+    ...(asset.licenseRegistrationNumber ? [['Registration', asset.licenseRegistrationNumber] as [string, string]] : []),
     ['GPS location', asset.latLngText],
     ['Last scanned', asset.lastScanned],
   ];
@@ -810,6 +837,15 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         font-size: 7.7px;
         line-height: 1.25;
         font-weight: 600;
+      }
+
+      .assetMapReportCell small {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        color: #5f7370;
+        font-size: 7.2px;
+        line-height: 1.25;
+        font-weight: 700;
       }
 
       .assetMapReportGpsCell strong {
