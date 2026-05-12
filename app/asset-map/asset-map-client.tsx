@@ -164,6 +164,18 @@ function formatHours(value: number | null): string {
   return new Intl.NumberFormat('en-ZA').format(Math.round(value));
 }
 
+function formatYearModel(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return '—';
+  return String(Math.round(value));
+}
+
+function buildAssetOptionLabel(asset: AssetMapItem): string {
+  const title = asset.title || asset.plateLabel || asset.publicAssetCode || 'Saved asset';
+  const yearPrefix = asset.yearModel ? `${formatYearModel(asset.yearModel)} ` : '';
+  const plate = asset.plateLabel || asset.publicAssetCode;
+  return `${yearPrefix}${title}${plate ? ` • ${plate}` : ''}`;
+}
+
 function formatLatLng(asset: AssetMapItem): string {
   if (!hasCoordinates(asset)) return '—';
   return `${Number(asset.lastKnownLat).toFixed(6)}, ${Number(asset.lastKnownLng).toFixed(6)}`;
@@ -644,7 +656,7 @@ export default function AssetMapClient() {
             {!isLoading && mappedAssets.length > 0 && !visibleAssets.length ? (
               <div className={styles.mapEmpty}>
                 <strong>No mapped assets match this view.</strong>
-                <span>Clear the search or choose All scanned assets in the dropdown.</span>
+                <span>Clear the search or choose All assets on map in the dropdown.</span>
               </div>
             ) : null}
 
@@ -656,27 +668,32 @@ export default function AssetMapClient() {
               onDoubleClick={(event) => event.stopPropagation()}
               onWheel={(event) => event.stopPropagation()}
             >
-              <label className={styles.searchControl}>
-                <span>Search scanned assets</span>
+              <label className={styles.searchControl} aria-label="Search scanned assets">
                 <input
                   value={search}
                   onChange={(event) => handleSearchChange(event.target.value)}
                   placeholder="Search title, serial number, plate, QR code or location"
                 />
               </label>
+            </div>
 
-              <div className={styles.layerControl} aria-label="Map style">
-                {BASEMAP_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`${styles.layerButton} ${basemapMode === option.value ? styles.layerButtonActive : ''}`}
-                    onClick={() => setBasemapMode(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
+            <div
+              className={styles.layerControl}
+              aria-label="Map style"
+              onPointerDown={(event) => event.stopPropagation()}
+              onDoubleClick={(event) => event.stopPropagation()}
+              onWheel={(event) => event.stopPropagation()}
+            >
+              {BASEMAP_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`${styles.layerButton} ${basemapMode === option.value ? styles.layerButtonActive : ''}`}
+                  onClick={() => setBasemapMode(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
 
             <aside
@@ -685,16 +702,17 @@ export default function AssetMapClient() {
               onDoubleClick={(event) => event.stopPropagation()}
               onWheel={(event) => event.stopPropagation()}
             >
-              <label className={styles.assetSelectBlock}>
-                <span>Choose asset</span>
-                <select value={chosenCode} onChange={(event) => handleChooseAsset(event.target.value)} aria-label="Choose asset on the map">
-                  <option value="all">All scanned assets</option>
-                  {mappedAssets.map((asset) => (
-                    <option key={asset.publicAssetCode} value={asset.publicAssetCode}>
-                      {asset.title} {asset.plateLabel ? `• ${asset.plateLabel}` : ''}
-                    </option>
-                  ))}
-                </select>
+              <label className={styles.assetSelectBlock} aria-label="Choose asset on the map">
+                <div className={styles.selectShell}>
+                  <select value={chosenCode} onChange={(event) => handleChooseAsset(event.target.value)} aria-label="Choose asset on the map">
+                    <option value="all">All assets on map</option>
+                    {mappedAssets.map((asset) => (
+                      <option key={asset.publicAssetCode} value={asset.publicAssetCode}>
+                        {buildAssetOptionLabel(asset)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </label>
 
               {selectedAsset ? (
@@ -707,13 +725,20 @@ export default function AssetMapClient() {
                       </button>
                     </div>
                     <h2>{selectedAsset.title}</h2>
-                    <p>{selectedAsset.plateLabel || selectedAsset.publicAssetCode || 'No plate label saved'}</p>
+                    <p>
+                      {selectedAsset.yearModel ? `${formatYearModel(selectedAsset.yearModel)} · ` : ''}
+                      {selectedAsset.plateLabel || selectedAsset.publicAssetCode || 'No plate label saved'}
+                    </p>
                   </div>
 
                   <div className={styles.assetFacts}>
                     <div>
                       <span>Asset type</span>
                       <strong>{selectedAsset.assetTypeLabel || selectedAsset.kind || 'Asset'}</strong>
+                    </div>
+                    <div>
+                      <span>Year model</span>
+                      <strong>{formatYearModel(selectedAsset.yearModel)}</strong>
                     </div>
                     <div>
                       <span>Serial</span>
@@ -775,7 +800,7 @@ export default function AssetMapClient() {
                     </div>
                   ) : null}
 
-                  <small>Click a marker or choose a row to open the asset information card.</small>
+                  <small>Click a marker or choose an asset from the dropdown to open the information card.</small>
                 </div>
               )}
             </aside>
