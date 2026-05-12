@@ -74,6 +74,14 @@ const initialScanPinStatus: AccountScanPinStatus = {
 
 const PROFILE_COMPLETION_TOTAL = 6;
 
+const ACCOUNT_TYPE_LABELS: Record<string, string> = {
+  owner: 'Owner / Farmer',
+  dealer: 'Dealer',
+  broker: 'Broker',
+  insurer: 'Insurer',
+  bank: 'Bank',
+};
+
 function buildProfileDraft(profile: AccountProfile | null): ProfileDraft {
   if (!profile) {
     return initialProfileDraft;
@@ -124,6 +132,30 @@ function buildAddressLines(profile: ProfileDraft): string[] {
 
 function normalizePinInput(value: string): string {
   return value.replace(/\D+/g, '').slice(0, 8);
+}
+
+function formatAccountTypeLabel(value: string): string {
+  const normalized = String(value ?? '').trim();
+
+  if (!normalized) {
+    return 'Owner / Farmer';
+  }
+
+  return ACCOUNT_TYPE_LABELS[normalized] ?? normalized;
+}
+
+function buildInitials(value: string): string {
+  const parts = value
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  if (!parts.length) {
+    return 'A4';
+  }
+
+  return parts.map((part) => part.charAt(0).toUpperCase()).join('');
 }
 
 async function readResponsePayload(response: Response): Promise<unknown> {
@@ -290,10 +322,20 @@ export default function AccountClient() {
   }, [isDeleteDialogOpen, isDeletingAccount]);
 
   const completedFields = useMemo(() => countCompletedFields(profileDraft), [profileDraft]);
+  const completionPercentage = Math.round((completedFields / PROFILE_COMPLETION_TOTAL) * 100);
+  const completionLabel =
+    completedFields >= PROFILE_COMPLETION_TOTAL
+      ? 'Ready for reports, exports and marketplace listings.'
+      : `${PROFILE_COMPLETION_TOTAL - completedFields} profile details still open.`;
   const addressLines = useMemo(() => buildAddressLines(profileDraft), [profileDraft]);
   const marketplaceSellerName = useMemo(() => {
     return profileDraft.businessName.trim() || profile?.name || 'No seller name saved yet';
   }, [profile?.name, profileDraft.businessName]);
+  const accountTypeLabel = useMemo(() => formatAccountTypeLabel(profileDraft.accountType), [profileDraft.accountType]);
+  const profileInitials = useMemo(
+    () => buildInitials(profile?.name || profileDraft.businessName || 'Aim4price'),
+    [profile?.name, profileDraft.businessName],
+  );
   const scanPinStatusLabel = scanPinStatus.enabled ? 'Active' : 'Disabled';
   const scanPinSummary = scanPinStatus.enabled
     ? 'QR scan access is on. Anyone with the farm PIN can open the scan page.'
@@ -494,23 +536,41 @@ export default function AccountClient() {
             <span className={styles.eyebrow}>Profile</span>
             <h1>Account details</h1>
             <p>
-              Keep your business and contact details in one clean workspace. This is the
-              seller profile that feeds the rest of Aim4price.
+              Keep your business, scan access and marketplace contact details in one clean workspace.
+              This profile feeds reports, exports and published equipment.
             </p>
           </div>
 
           <div className={styles.heroAside}>
+            <div className={styles.heroProfileCard}>
+              <span className={styles.profileAvatar} aria-hidden="true">
+                {profileInitials}
+              </span>
+              <div className={styles.profileSummary}>
+                <span>Signed in as</span>
+                <strong>{profile?.name || 'Aim4price user'}</strong>
+                <small>{profile?.email || 'Account email loading'}</small>
+              </div>
+            </div>
+
             <div className={styles.heroStat}>
               <span>Profile completion</span>
               <strong>{completedFields}/{PROFILE_COMPLETION_TOTAL}</strong>
+              <div className={styles.progressTrack} aria-hidden="true">
+                <span style={{ width: `${completionPercentage}%` }} />
+              </div>
+              <small>{completionLabel}</small>
             </div>
-            <div className={styles.heroStat}>
-              <span>Account type</span>
-              <strong>{profileDraft.accountType || 'owner'}</strong>
-            </div>
-            <div className={styles.heroStat}>
-              <span>Last updated</span>
-              <strong>{formatDate(profile?.updatedAtIso)}</strong>
+
+            <div className={styles.heroStatGrid}>
+              <div className={styles.heroStat}>
+                <span>Account type</span>
+                <strong>{accountTypeLabel}</strong>
+              </div>
+              <div className={styles.heroStat}>
+                <span>Scan access</span>
+                <strong>{scanPinStatusLabel}</strong>
+              </div>
             </div>
           </div>
         </div>
@@ -522,108 +582,142 @@ export default function AccountClient() {
         ) : null}
 
         <div className={styles.layout}>
-          <section className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div>
-                <span className={styles.kicker}>Account profile</span>
-                <h2>Business and contact details</h2>
-                <p>Use this page for the information you want tied to reports, exports and seller contact details.</p>
-              </div>
-            </div>
-
-            {isLoading ? (
-              <p className={styles.loading}>Loading account details...</p>
-            ) : (
-              <form className={styles.form} onSubmit={handleProfileSubmit}>
-                <label className={`${styles.field} ${styles.halfField}`}>
-                  <span>Full name</span>
-                  <input value={profile?.name ?? ''} disabled />
-                </label>
-
-                <label className={`${styles.field} ${styles.halfField}`}>
-                  <span>Email</span>
-                  <input value={profile?.email ?? ''} disabled />
-                </label>
-
-                <label className={`${styles.field} ${styles.halfField}`}>
-                  <span>Business / farm / dealership</span>
-                  <input
-                    value={profileDraft.businessName}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({ ...current, businessName: event.target.value }))
-                    }
-                    placeholder="Business name"
-                  />
-                </label>
-
-                <label className={`${styles.field} ${styles.halfField}`}>
-                  <span>Phone</span>
-                  <input
-                    type="tel"
-                    value={profileDraft.phone}
-                    onChange={(event) => setProfileDraft((current) => ({ ...current, phone: event.target.value }))}
-                    placeholder="Phone number"
-                  />
-                </label>
-
-                <label className={`${styles.field} ${styles.thirdField}`}>
-                  <span>Account type</span>
-                  <select
-                    value={profileDraft.accountType}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({ ...current, accountType: event.target.value }))
-                    }
-                  >
-                    <option value="owner">Owner / Farmer</option>
-                    <option value="dealer">Dealer</option>
-                    <option value="broker">Broker</option>
-                    <option value="insurer">Insurer</option>
-                    <option value="bank">Bank</option>
-                  </select>
-                </label>
-
-                <label className={`${styles.field} ${styles.thirdField}`}>
-                  <span>Province</span>
-                  <input
-                    value={profileDraft.province}
-                    onChange={(event) => setProfileDraft((current) => ({ ...current, province: event.target.value }))}
-                    placeholder="Province"
-                  />
-                </label>
-
-                <label className={`${styles.field} ${styles.thirdField}`}>
-                  <span>Town / city</span>
-                  <input
-                    value={profileDraft.townCity}
-                    onChange={(event) => setProfileDraft((current) => ({ ...current, townCity: event.target.value }))}
-                    placeholder="Town or city"
-                  />
-                </label>
-
-                <label className={`${styles.field} ${styles.fullWidth}`}>
-                  <span>Address line 1</span>
-                  <input
-                    value={profileDraft.addressLine1}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({ ...current, addressLine1: event.target.value }))
-                    }
-                    placeholder="Address line 1"
-                  />
-                </label>
-                <div className={styles.actionsRow}>
-                  <button type="submit" className={styles.primaryButton} disabled={isSavingProfile}>
-                    {isSavingProfile ? 'Saving...' : 'Save account details'}
-                  </button>
-                  <Link href="/asset-register" className={styles.secondaryButton}>
-                    Open asset register
-                  </Link>
-                  <Link href="/asset-map" className={styles.secondaryButton}>
-                    Open asset map
-                  </Link>
+          <div className={styles.mainColumn}>
+            <section className={styles.card}>
+              <div className={styles.cardHeader}>
+                <div>
+                  <span className={styles.kicker}>Account profile</span>
+                  <h2>Business and contact details</h2>
+                  <p>Use this page for the information you want tied to reports, exports and seller contact details.</p>
                 </div>
-              </form>
-            )}
-          </section>
+              </div>
+
+              {isLoading ? (
+                <p className={styles.loading}>Loading account details...</p>
+              ) : (
+                <form className={styles.form} onSubmit={handleProfileSubmit}>
+                  <label className={`${styles.field} ${styles.halfField}`}>
+                    <span>Full name</span>
+                    <input value={profile?.name ?? ''} disabled />
+                  </label>
+
+                  <label className={`${styles.field} ${styles.halfField}`}>
+                    <span>Email</span>
+                    <input value={profile?.email ?? ''} disabled />
+                  </label>
+
+                  <label className={`${styles.field} ${styles.halfField}`}>
+                    <span>Business / farm / dealership</span>
+                    <input
+                      value={profileDraft.businessName}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, businessName: event.target.value }))
+                      }
+                      placeholder="Business name"
+                    />
+                  </label>
+
+                  <label className={`${styles.field} ${styles.halfField}`}>
+                    <span>Phone</span>
+                    <input
+                      type="tel"
+                      value={profileDraft.phone}
+                      onChange={(event) => setProfileDraft((current) => ({ ...current, phone: event.target.value }))}
+                      placeholder="Phone number"
+                    />
+                  </label>
+
+                  <label className={`${styles.field} ${styles.thirdField}`}>
+                    <span>Account type</span>
+                    <select
+                      value={profileDraft.accountType}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, accountType: event.target.value }))
+                      }
+                    >
+                      <option value="owner">Owner / Farmer</option>
+                      <option value="dealer">Dealer</option>
+                      <option value="broker">Broker</option>
+                      <option value="insurer">Insurer</option>
+                      <option value="bank">Bank</option>
+                    </select>
+                  </label>
+
+                  <label className={`${styles.field} ${styles.thirdField}`}>
+                    <span>Province</span>
+                    <input
+                      value={profileDraft.province}
+                      onChange={(event) => setProfileDraft((current) => ({ ...current, province: event.target.value }))}
+                      placeholder="Province"
+                    />
+                  </label>
+
+                  <label className={`${styles.field} ${styles.thirdField}`}>
+                    <span>Town / city</span>
+                    <input
+                      value={profileDraft.townCity}
+                      onChange={(event) => setProfileDraft((current) => ({ ...current, townCity: event.target.value }))}
+                      placeholder="Town or city"
+                    />
+                  </label>
+
+                  <label className={`${styles.field} ${styles.fullWidth}`}>
+                    <span>Address line 1</span>
+                    <input
+                      value={profileDraft.addressLine1}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, addressLine1: event.target.value }))
+                      }
+                      placeholder="Address line 1"
+                    />
+                  </label>
+                  <div className={styles.actionsRow}>
+                    <button type="submit" className={styles.primaryButton} disabled={isSavingProfile}>
+                      {isSavingProfile ? 'Saving...' : 'Save account details'}
+                    </button>
+                    <Link href="/asset-register" className={styles.secondaryButton}>
+                      Open asset register
+                    </Link>
+                    <Link href="/asset-map" className={styles.secondaryButton}>
+                      Open asset map
+                    </Link>
+                  </div>
+                </form>
+              )}
+            </section>
+
+            <section className={`${styles.card} ${styles.previewCard}`}>
+              <div className={styles.cardHeader}>
+                <div>
+                  <span className={styles.kicker}>Seller preview</span>
+                  <h2>Marketplace contact</h2>
+                  <p>This is the contact footprint buyers will rely on when you publish equipment.</p>
+                </div>
+              </div>
+
+              <div className={styles.previewGrid}>
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Seller</span>
+                  <div className={styles.summaryList}>
+                    <strong>{marketplaceSellerName}</strong>
+                    <span>{profile?.email || 'No email found'}</span>
+                  </div>
+                </div>
+
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Phone</span>
+                  <span className={styles.summaryValue}>{profileDraft.phone.trim() || 'No phone saved yet'}</span>
+                </div>
+
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Location</span>
+                  <span className={styles.summaryValue}>
+                    {addressLines.length ? addressLines.join(', ') : 'No address saved yet'}
+                  </span>
+                </div>
+              </div>
+            </section>
+          </div>
 
           <aside className={styles.sidebar}>
             <section className={styles.sidebarCard}>
@@ -701,38 +795,6 @@ export default function AccountClient() {
                   </form>
                 </>
               )}
-            </section>
-
-            <section className={styles.sidebarCard}>
-              <div className={styles.cardHeader}>
-                <div>
-                  <span className={styles.kicker}>Seller preview</span>
-                  <h2>Marketplace contact</h2>
-                  <p>This is the contact footprint buyers will rely on when you publish equipment.</p>
-                </div>
-              </div>
-
-              <div className={styles.summaryStack}>
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Seller</span>
-                  <div className={styles.summaryList}>
-                    <strong>{marketplaceSellerName}</strong>
-                    <span>{profile?.email || 'No email found'}</span>
-                  </div>
-                </div>
-
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Phone</span>
-                  <span className={styles.summaryValue}>{profileDraft.phone.trim() || 'No phone saved yet'}</span>
-                </div>
-
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Location</span>
-                  <span className={styles.summaryValue}>
-                    {addressLines.length ? addressLines.join(', ') : 'No address saved yet'}
-                  </span>
-                </div>
-              </div>
             </section>
 
             <section className={`${styles.sidebarCard} ${styles.dangerCard}`}>
