@@ -27,6 +27,8 @@ export type SavedItem = {
   updatedAtIso?: string;
   serialNumber?: string;
   isFinanced?: boolean;
+  isInsured?: boolean;
+  isLicensed?: boolean;
   financeNote?: string;
   photos?: string[];
   sellerPhone?: string;
@@ -147,6 +149,8 @@ export function normalizeSavedItem(value: unknown): SavedItem | null {
     updatedAtIso,
     serialNumber: asOptionalText(value.serialNumber),
     isFinanced: asOptionalBoolean(value.isFinanced) ?? false,
+    isInsured: asOptionalBoolean(value.isInsured) ?? false,
+    isLicensed: asOptionalBoolean(value.isLicensed) ?? false,
     financeNote: asOptionalText(value.financeNote),
     photos: asStringArray(value.photos) ?? [],
     sellerPhone: asOptionalText(value.sellerPhone),

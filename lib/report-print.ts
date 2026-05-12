@@ -78,6 +78,7 @@ export type AssetRegisterSummaryRow = {
   serial?: string;
   insured?: string;
   financed?: string;
+  licensed?: string;
   documents?: string;
   updated?: string;
   photoUrl?: string | null;
@@ -1436,12 +1437,13 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
         { label: 'Phone', value: '-' },
       ]
   ).filter((row) => String(row.label ?? '').trim());
-  const hiddenFactLabels = new Set(['value basis', 'last updated', 'serial number', 'insured', 'financed', 'documents']);
+  const hiddenFactLabels = new Set(['value basis', 'last updated', 'serial number', 'insured', 'financed', 'licensed', 'documents']);
   const detailRows = payload.facts.filter((row) => !hiddenFactLabels.has(String(row.label ?? '').trim().toLowerCase()));
   const recordRows: ReportKeyValue[] = [
     { label: 'Serial Number', value: getAssetSheetValue(payload.facts, 'Serial Number') },
     { label: 'Insured', value: getAssetSheetValue(payload.facts, 'Insured') },
     { label: 'Financed', value: getAssetSheetValue(payload.facts, 'Financed') },
+    { label: 'Licensed', value: getAssetSheetValue(payload.facts, 'Licensed') },
     { label: 'Documents', value: getAssetSheetValue(payload.facts, 'Documents') },
     { label: 'Updated', value: updatedLabel },
   ];
@@ -2169,7 +2171,7 @@ function renderFullRegisterMetaRows(rows: ReportKeyValue[]): string {
 }
 
 function renderFullRegisterStats(payload: AssetRegisterSummaryPayload): string {
-  const stats = payload.stats.filter((stat) => String(stat.label ?? '').trim()).slice(0, 6);
+  const stats = payload.stats.filter((stat) => String(stat.label ?? '').trim()).slice(0, 7);
 
   if (!stats.length) {
     return '';
@@ -2211,6 +2213,7 @@ function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[], emptyMessa
           const serial = sanitizeRegisterDisplayValue(row.serial);
           const insured = sanitizeRegisterDisplayValue(row.insured);
           const financed = sanitizeRegisterDisplayValue(row.financed);
+          const licensed = sanitizeRegisterDisplayValue(row.licensed);
           const documents = sanitizeRegisterDisplayValue(row.documents);
           const updated = sanitizeRegisterDisplayValue(row.updated || row.status);
           const method = sanitizeRegisterDisplayValue(row.method);
@@ -2244,6 +2247,7 @@ function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[], emptyMessa
               <div class="fullRegisterAssetStatus">
                 <div><span>Insured</span><strong>${escapeHtml(insured)}</strong></div>
                 <div><span>Financed</span><strong>${escapeHtml(financed)}</strong></div>
+                <div><span>Licensed</span><strong>${escapeHtml(licensed)}</strong></div>
                 <div><span>Documents</span><strong>${escapeHtml(documents)}</strong></div>
               </div>
 
@@ -2520,7 +2524,7 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
 
       .fullRegisterStatsGrid {
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(30mm, 1fr));
         gap: 3mm;
         margin-top: 3.8mm;
       }

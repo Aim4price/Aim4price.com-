@@ -18,6 +18,7 @@ export type XlsxCellStyle =
   | 'statusGood'
   | 'statusWarn'
   | 'statusBad'
+  | 'statusInfo'
   | 'note';
 
 export type XlsxStyledCell = {
@@ -78,6 +79,7 @@ const CELL_STYLE_IDS: Record<XlsxCellStyle, number> = {
   statusWarn: 15,
   statusBad: 16,
   note: 17,
+  statusInfo: 18,
 };
 
 function escapeXml(value: unknown): string {
@@ -419,7 +421,7 @@ function buildStylesXml(): string {
     <numFmt numFmtId="166" formatCode="dd mmm yyyy"/>
     <numFmt numFmtId="167" formatCode="0%"/>
   </numFmts>
-  <fonts count="8">
+  <fonts count="9">
     <font><sz val="11"/><color rgb="FF111827"/><name val="Calibri"/><family val="2"/></font>
     <font><b/><sz val="11"/><color rgb="FF111827"/><name val="Calibri"/><family val="2"/></font>
     <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font>
@@ -428,8 +430,9 @@ function buildStylesXml(): string {
     <font><b/><sz val="11"/><color rgb="FF0F6A46"/><name val="Calibri"/><family val="2"/></font>
     <font><b/><sz val="11"/><color rgb="FF8A6500"/><name val="Calibri"/><family val="2"/></font>
     <font><b/><sz val="11"/><color rgb="FFA3271B"/><name val="Calibri"/><family val="2"/></font>
+    <font><b/><sz val="11"/><color rgb="FF0369A1"/><name val="Calibri"/><family val="2"/></font>
   </fonts>
-  <fills count="8">
+  <fills count="9">
     <fill><patternFill patternType="none"/></fill>
     <fill><patternFill patternType="gray125"/></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FF10382F"/><bgColor indexed="64"/></patternFill></fill>
@@ -438,6 +441,7 @@ function buildStylesXml(): string {
     <fill><patternFill patternType="solid"><fgColor rgb="FFFFF1CD"/><bgColor indexed="64"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFFDE1DE"/><bgColor indexed="64"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFE8F4EF"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFE0F2FE"/><bgColor indexed="64"/></patternFill></fill>
   </fills>
   <borders count="2">
     <border><left/><right/><top/><bottom/><diagonal/></border>
@@ -452,7 +456,7 @@ function buildStylesXml(): string {
   <cellStyleXfs count="1">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
   </cellStyleXfs>
-  <cellXfs count="18">
+  <cellXfs count="19">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
     <xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"><alignment vertical="center"/></xf>
     <xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"><alignment wrapText="1" vertical="center"/></xf>
@@ -471,6 +475,7 @@ function buildStylesXml(): string {
     <xf numFmtId="0" fontId="6" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
     <xf numFmtId="0" fontId="7" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
     <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment wrapText="1" vertical="top"/></xf>
+    <xf numFmtId="0" fontId="8" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
   </cellXfs>
   <cellStyles count="1">
     <cellStyle name="Normal" xfId="0" builtinId="0"/>

@@ -55,6 +55,7 @@ export type AssetRegisterItem = {
   serialNumber: string;
   isFinanced: boolean;
   isInsured: boolean;
+  isLicensed: boolean;
   financeNote: string;
   sellerPhone: string;
   marketplaceNotes: string;
@@ -81,6 +82,7 @@ export type CreateManualAssetInput = {
   serialNumber?: string | null;
   isFinanced?: boolean;
   isInsured?: boolean;
+  isLicensed?: boolean;
   financeNote?: string | null;
   photos?: string[];
   documents?: AssetRegisterDocument[];
@@ -101,6 +103,7 @@ export type UpdateAssetRegisterItemInput = {
   serialNumber?: string | null;
   isFinanced?: boolean;
   isInsured?: boolean;
+  isLicensed?: boolean;
   financeNote?: string | null;
   photos?: string[];
   documents?: AssetRegisterDocument[];
@@ -149,6 +152,7 @@ type AssetRegisterRow = {
   serial_number: string | null;
   is_financed: boolean | null;
   is_insured: boolean | null;
+  is_licensed: boolean | null;
   finance_note: string | null;
   seller_phone: string | null;
   marketplace_notes: string | null;
@@ -707,6 +711,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     serialNumber: asText(row.serial_number),
     isFinanced: Boolean(row.is_financed),
     isInsured: Boolean(row.is_insured),
+    isLicensed: Boolean(row.is_licensed),
     financeNote: asText(row.finance_note),
     sellerPhone: asText(row.seller_phone),
     marketplaceNotes: asText(row.marketplace_notes),
@@ -841,6 +846,7 @@ function buildSelectList(schema: TableSchema): string {
   const serialColumn = resolveColumn(schema, 'serial_number', 'serial', 'vin');
   const financedColumn = resolveColumn(schema, 'is_financed', 'financed');
   const insuredColumn = resolveColumn(schema, 'is_insured', 'insured');
+  const licensedColumn = resolveColumn(schema, 'is_licensed', 'licensed', 'licenced');
   const financeNoteColumn = resolveColumn(schema, 'finance_note', 'finance_notes', 'finance_status');
   const sellerPhoneColumn = resolveColumn(schema, 'seller_phone', 'phone', 'contact_phone');
   const marketplaceNotesColumn = resolveColumn(schema, 'marketplace_notes', 'listing_notes');
@@ -916,6 +922,7 @@ function buildSelectList(schema: TableSchema): string {
     serialColumn ? `${serialColumn} as serial_number` : 'null::text as serial_number',
     financedColumn ? `${financedColumn} as is_financed` : 'false as is_financed',
     insuredColumn ? `${insuredColumn} as is_insured` : 'false as is_insured',
+    licensedColumn ? `${licensedColumn} as is_licensed` : 'false as is_licensed',
     financeNoteColumn ? `${financeNoteColumn} as finance_note` : 'null::text as finance_note',
     sellerPhoneColumn ? `${sellerPhoneColumn} as seller_phone` : 'null::text as seller_phone',
     marketplaceNotesColumn ? `${marketplaceNotesColumn} as marketplace_notes` : 'null::text as marketplace_notes',
@@ -1373,6 +1380,7 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['serial_number', 'serial', 'vin'], asText(input.serialNumber) || null);
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
   pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured));
+  pushField(fields, schema, ['is_licensed', 'licensed', 'licenced'], Boolean(input.isLicensed));
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
   pushField(fields, schema, ['year_model', 'year'], input.yearModel === null || input.yearModel === undefined ? null : Math.max(0, Math.round(input.yearModel)));
   pushField(fields, schema, ['specs_json'], nextSpecsJson, '::jsonb');
@@ -1463,6 +1471,7 @@ export async function updateAssetRegisterItem(
   pushField(fields, schema, ['serial_number', 'serial', 'vin'], asText(input.serialNumber) || null);
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
   pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured));
+  pushField(fields, schema, ['is_licensed', 'licensed', 'licenced'], Boolean(input.isLicensed));
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
   pushField(fields, schema, ['year_model', 'year'], nextYearModel);
   pushField(fields, schema, ['specs_json'], nextSpecsJson, '::jsonb');

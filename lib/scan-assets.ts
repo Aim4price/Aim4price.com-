@@ -3,6 +3,7 @@ import { MAX_ASSET_REGISTER_PHOTOS } from './asset-register-uploads';
 
 export type ScanAssetQrStatus = 'active' | 'transferred' | 'retired' | 'deleted' | '';
 export type ScanAssetUsageMode = 'hours' | 'percent' | 'km' | 'none';
+export type ScanAssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 export type ScanAccessMode = 'owner_session' | 'scan_pin';
 export type ScanEventActorType = ScanAccessMode | 'admin_session';
 
@@ -17,6 +18,9 @@ export type ScanSafeAsset = {
   equipmentFamilyKey: string;
   equipmentFamilyLabel: string;
   serialNumber: string;
+  financeStatus: ScanAssetStatusChoice;
+  insuranceStatus: ScanAssetStatusChoice;
+  licenseStatus: ScanAssetStatusChoice;
   hours: number | null;
   usageMode: ScanAssetUsageMode;
   usageMetric: 'hours' | 'km';
@@ -90,6 +94,9 @@ type ScanAccessRow = {
   family_is_propelled: boolean | string | number | null;
   family_usage_metric_type: string | null;
   serial_number: string | null;
+  is_financed: unknown;
+  is_insured: unknown;
+  is_licensed: unknown;
   hours: string | number | null;
   fuel_percent: string | number | null;
   condition: string | null;
@@ -209,6 +216,48 @@ function asRecord(value: unknown): Record<string, unknown> {
   }
 
   return {};
+}
+
+function normalizeAssetStatusChoice(value: unknown, fallback: ScanAssetStatusChoice = 'unknown'): ScanAssetStatusChoice {
+  const normalized = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+  if (['yes', 'y', 'true', 'financed', 'insured', 'licensed', 'licenced'].includes(normalized)) {
+    return 'yes';
+  }
+
+  if (['no', 'n', 'false', 'not_financed', 'not_insured', 'not_licensed', 'not_licenced', 'unfinanced', 'uninsured', 'unlicensed', 'unlicenced'].includes(normalized)) {
+    return 'no';
+  }
+
+  if (['na', 'n_a', 'not_applicable', 'not_aplicable', 'not_relevant', 'does_not_apply'].includes(normalized)) {
+    return 'not_applicable';
+  }
+
+  if (['unknown', 'not_sure', 'unsure', 'maybe', ''].includes(normalized)) {
+    return normalized ? 'unknown' : fallback;
+  }
+
+  return fallback;
+}
+
+function statusFallbackFromBoolean(value: unknown): ScanAssetStatusChoice {
+  const parsed = asBoolean(value);
+  if (parsed === null) return 'unknown';
+  return parsed ? 'yes' : 'no';
+}
+
+function readStatusFromSpecs(
+  specs: Record<string, unknown>,
+  keys: string[],
+  fallback: ScanAssetStatusChoice,
+): ScanAssetStatusChoice {
+  for (const key of keys) {
+    if (Object.prototype.hasOwnProperty.call(specs, key)) {
+      return normalizeAssetStatusChoice(specs[key], fallback);
+    }
+  }
+
+  return fallback;
 }
 
 function percentFromSpecs(specs: Record<string, unknown>): number | null {
@@ -389,6 +438,9 @@ function mapScanSafeAsset(row: ScanAccessRow): ScanSafeAsset {
     equipmentFamilyKey: asText(row.equipment_family_key),
     equipmentFamilyLabel: asText(row.equipment_family_label),
     serialNumber: asText(row.serial_number),
+    financeStatus: readStatusFromSpecs(specs, ['financeStatus', 'finance_status', 'financedStatus', 'financed_status'], statusFallbackFromBoolean(row.is_financed)),
+    insuranceStatus: readStatusFromSpecs(specs, ['insuranceStatus', 'insurance_status', 'insuredStatus', 'insured_status'], statusFallbackFromBoolean(row.is_insured)),
+    licenseStatus: readStatusFromSpecs(specs, ['licenseStatus', 'license_status', 'licensedStatus', 'licensed_status', 'licenceStatus', 'licence_status', 'licencedStatus', 'licenced_status'], statusFallbackFromBoolean(row.is_licensed)),
     hours: asNumber(row.hours),
     usageMode: inferScanUsageMode(row),
     usageMetric,
@@ -460,6 +512,9 @@ export async function getScanAssetAccessContext(publicAssetCode: string): Promis
         ef.is_propelled as family_is_propelled,
         ef.usage_metric_type as family_usage_metric_type,
         a.serial_number,
+        to_jsonb(a)->>'is_financed' as is_financed,
+        to_jsonb(a)->>'is_insured' as is_insured,
+        to_jsonb(a)->>'is_licensed' as is_licensed,
         a.hours,
         a.fuel_percent,
         a.condition,
@@ -573,6 +628,9 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           ef.is_propelled as family_is_propelled,
           ef.usage_metric_type as family_usage_metric_type,
           a.serial_number,
+          to_jsonb(a)->>'is_financed' as is_financed,
+          to_jsonb(a)->>'is_insured' as is_insured,
+          to_jsonb(a)->>'is_licensed' as is_licensed,
           a.hours,
           a.fuel_percent,
           a.condition,
@@ -775,6 +833,9 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           ef.is_propelled as family_is_propelled,
           ef.usage_metric_type as family_usage_metric_type,
           u.serial_number,
+          to_jsonb(u)->>'is_financed' as is_financed,
+          to_jsonb(u)->>'is_insured' as is_insured,
+          to_jsonb(u)->>'is_licensed' as is_licensed,
           u.hours,
           u.fuel_percent,
           u.condition,
