@@ -8,6 +8,7 @@ import styles from './page.module.css';
 type NoticeTone = 'error';
 type BasemapMode = 'road' | 'satellite';
 type MarkerTone = 'recent' | 'warm' | 'older';
+type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 
 type AssetMapItem = {
   id: string;
@@ -18,6 +19,9 @@ type AssetMapItem = {
   publicAssetCode: string;
   qrStatus: string;
   condition: string;
+  financeStatus: AssetStatusChoice;
+  insuranceStatus: AssetStatusChoice;
+  licenseStatus: AssetStatusChoice;
   hours: number | null;
   fuelPercent: number | null;
   serialNumber: string;
@@ -169,6 +173,13 @@ function formatYearModel(value: number | null): string {
   return String(Math.round(value));
 }
 
+function formatAssetStatusChoice(value?: AssetStatusChoice | null): string {
+  if (value === 'yes') return 'Yes';
+  if (value === 'no') return 'No';
+  if (value === 'not_applicable') return 'Not applicable';
+  return 'Not sure';
+}
+
 function buildAssetOptionLabel(asset: AssetMapItem): string {
   const title = asset.title || asset.plateLabel || asset.publicAssetCode || 'Saved asset';
   const yearPrefix = asset.yearModel ? `${formatYearModel(asset.yearModel)} ` : '';
@@ -208,6 +219,9 @@ function matchesSearch(asset: AssetMapItem, search: string): boolean {
     asset.brandName,
     asset.modelName,
     asset.typedModelName,
+    formatAssetStatusChoice(asset.financeStatus),
+    formatAssetStatusChoice(asset.insuranceStatus),
+    formatAssetStatusChoice(asset.licenseStatus),
     asset.yearModel ? String(asset.yearModel) : '',
   ]
     .join(' ')
@@ -242,6 +256,7 @@ function buildPopupHtml(asset: AssetMapItem, markerNumber: number): string {
   const plate = escapeHtml(asset.plateLabel || asset.publicAssetCode || 'No plate label');
   const assetType = escapeHtml(asset.assetTypeLabel || 'Asset');
   const fuel = escapeHtml(formatFuel(asset.fuelPercent));
+  const licensed = escapeHtml(formatAssetStatusChoice(asset.licenseStatus));
   const gps = escapeHtml(formatLatLng(asset));
 
   return `
@@ -252,6 +267,7 @@ function buildPopupHtml(asset: AssetMapItem, markerNumber: number): string {
       <div style="display:grid; gap:6px; font-size:12px; color:#53666b;">
         <div><strong style="color:#132d2d;">Asset type:</strong> ${assetType}</div>
         <div><strong style="color:#132d2d;">Fuel:</strong> ${fuel}</div>
+        <div><strong style="color:#132d2d;">Licensed:</strong> ${licensed}</div>
         <div><strong style="color:#132d2d;">GPS:</strong> ${gps}</div>
       </div>
     </div>
@@ -745,6 +761,18 @@ export default function AssetMapClient() {
                       <div>
                         <span>Condition</span>
                         <strong>{formatCondition(selectedAsset.condition)}</strong>
+                      </div>
+                      <div>
+                        <span>Financed</span>
+                        <strong>{formatAssetStatusChoice(selectedAsset.financeStatus)}</strong>
+                      </div>
+                      <div>
+                        <span>Insured</span>
+                        <strong>{formatAssetStatusChoice(selectedAsset.insuranceStatus)}</strong>
+                      </div>
+                      <div>
+                        <span>Licensed</span>
+                        <strong>{formatAssetStatusChoice(selectedAsset.licenseStatus)}</strong>
                       </div>
                       <div>
                         <span>Last scanned</span>
