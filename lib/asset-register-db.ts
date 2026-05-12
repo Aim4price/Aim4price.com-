@@ -56,6 +56,7 @@ export type AssetRegisterItem = {
   isFinanced: boolean;
   isInsured: boolean;
   isLicensed: boolean;
+  licenseRegistrationNumber: string;
   financeNote: string;
   sellerPhone: string;
   marketplaceNotes: string;
@@ -83,6 +84,7 @@ export type CreateManualAssetInput = {
   isFinanced?: boolean;
   isInsured?: boolean;
   isLicensed?: boolean;
+  licenseRegistrationNumber?: string | null;
   financeNote?: string | null;
   photos?: string[];
   documents?: AssetRegisterDocument[];
@@ -104,6 +106,7 @@ export type UpdateAssetRegisterItemInput = {
   isFinanced?: boolean;
   isInsured?: boolean;
   isLicensed?: boolean;
+  licenseRegistrationNumber?: string | null;
   financeNote?: string | null;
   photos?: string[];
   documents?: AssetRegisterDocument[];
@@ -153,6 +156,7 @@ type AssetRegisterRow = {
   is_financed: boolean | null;
   is_insured: boolean | null;
   is_licensed: boolean | null;
+  license_registration_number: string | null;
   finance_note: string | null;
   seller_phone: string | null;
   marketplace_notes: string | null;
@@ -200,6 +204,28 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizeLicenseRegistrationNumber(value: unknown): string {
+  return String(value ?? '').replace(/\s+/g, ' ').trim().toUpperCase();
+}
+
+function readLicenseRegistrationFromSpecs(specs: Record<string, unknown>): string {
+  return normalizeLicenseRegistrationNumber(
+    specs.licenseRegistrationNumber ??
+      specs.license_registration_number ??
+      specs.licenceRegistrationNumber ??
+      specs.licence_registration_number ??
+      specs.licenseRegistration ??
+      specs.license_registration ??
+      specs.licenceRegistration ??
+      specs.licence_registration ??
+      specs.registrationNumber ??
+      specs.registration_number ??
+      specs.numberPlate ??
+      specs.number_plate ??
+      specs.numberplate,
+  );
 }
 
 function normalizeAssetNoteText(value: unknown): string {
@@ -258,6 +284,13 @@ function buildManualSpecsJson(
   const explicitLifeWorkedPercent = input.lifeWorkedPercent === null || typeof input.lifeWorkedPercent === 'undefined'
     ? null
     : Math.max(0, Math.min(100, Number(input.lifeWorkedPercent)));
+  const hasIncomingLicenseStatus = Object.prototype.hasOwnProperty.call(input, 'isLicensed');
+  const hasIncomingLicenseRegistration = Object.prototype.hasOwnProperty.call(input, 'licenseRegistrationNumber');
+  const licenseRegistrationNumber = hasIncomingLicenseStatus && !Boolean(input.isLicensed)
+    ? ''
+    : hasIncomingLicenseRegistration
+      ? normalizeLicenseRegistrationNumber(input.licenseRegistrationNumber)
+      : readLicenseRegistrationFromSpecs(specs);
   const lifeWorkedPercent = Number.isFinite(explicitLifeWorkedPercent as number)
     ? explicitLifeWorkedPercent
     : percentFromSpecs(specs);
@@ -275,6 +308,16 @@ function buildManualSpecsJson(
     usageMetric,
     usage_metric: usageMetric,
     usage_unit: usageMetric,
+    licenseRegistrationNumber,
+    license_registration_number: licenseRegistrationNumber,
+    licenceRegistrationNumber: licenseRegistrationNumber,
+    licence_registration_number: licenseRegistrationNumber,
+    licenseRegistration: licenseRegistrationNumber,
+    license_registration: licenseRegistrationNumber,
+    registrationNumber: licenseRegistrationNumber,
+    registration_number: licenseRegistrationNumber,
+    numberPlate: licenseRegistrationNumber,
+    number_plate: licenseRegistrationNumber,
   };
 }
 
@@ -712,6 +755,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     isFinanced: Boolean(row.is_financed),
     isInsured: Boolean(row.is_insured),
     isLicensed: Boolean(row.is_licensed),
+    licenseRegistrationNumber: normalizeLicenseRegistrationNumber(row.license_registration_number) || readLicenseRegistrationFromSpecs(specsJson),
     financeNote: asText(row.finance_note),
     sellerPhone: asText(row.seller_phone),
     marketplaceNotes: asText(row.marketplace_notes),
@@ -847,6 +891,14 @@ function buildSelectList(schema: TableSchema): string {
   const financedColumn = resolveColumn(schema, 'is_financed', 'financed');
   const insuredColumn = resolveColumn(schema, 'is_insured', 'insured');
   const licensedColumn = resolveColumn(schema, 'is_licensed', 'licensed', 'licenced');
+  const licenseRegistrationNumberColumn = resolveColumn(
+    schema,
+    'license_registration_number',
+    'licence_registration_number',
+    'registration_number',
+    'number_plate',
+    'numberplate',
+  );
   const financeNoteColumn = resolveColumn(schema, 'finance_note', 'finance_notes', 'finance_status');
   const sellerPhoneColumn = resolveColumn(schema, 'seller_phone', 'phone', 'contact_phone');
   const marketplaceNotesColumn = resolveColumn(schema, 'marketplace_notes', 'listing_notes');
@@ -923,6 +975,7 @@ function buildSelectList(schema: TableSchema): string {
     financedColumn ? `${financedColumn} as is_financed` : 'false as is_financed',
     insuredColumn ? `${insuredColumn} as is_insured` : 'false as is_insured',
     licensedColumn ? `${licensedColumn} as is_licensed` : 'false as is_licensed',
+    licenseRegistrationNumberColumn ? `${licenseRegistrationNumberColumn} as license_registration_number` : 'null::text as license_registration_number',
     financeNoteColumn ? `${financeNoteColumn} as finance_note` : 'null::text as finance_note',
     sellerPhoneColumn ? `${sellerPhoneColumn} as seller_phone` : 'null::text as seller_phone',
     marketplaceNotesColumn ? `${marketplaceNotesColumn} as marketplace_notes` : 'null::text as marketplace_notes',
@@ -1365,6 +1418,7 @@ export async function createManualAssetRegisterItem(
   const nextValue = Math.round(Number(input.value) || 0);
   const nextKind = normalizeKind(input.kind);
   const nextSpecsJson = buildManualSpecsJson(input, nextKind);
+  const nextLicenseRegistrationNumber = Boolean(input.isLicensed) ? normalizeLicenseRegistrationNumber(input.licenseRegistrationNumber) : null;
   const nextLifeWorkedPercent = percentFromSpecs(nextSpecsJson);
   const fields: SqlField[] = [];
 
@@ -1381,6 +1435,7 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
   pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured));
   pushField(fields, schema, ['is_licensed', 'licensed', 'licenced'], Boolean(input.isLicensed));
+  pushField(fields, schema, ['license_registration_number', 'licence_registration_number', 'registration_number', 'number_plate', 'numberplate'], nextLicenseRegistrationNumber);
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
   pushField(fields, schema, ['year_model', 'year'], input.yearModel === null || input.yearModel === undefined ? null : Math.max(0, Math.round(input.yearModel)));
   pushField(fields, schema, ['specs_json'], nextSpecsJson, '::jsonb');
@@ -1438,6 +1493,7 @@ export async function updateAssetRegisterItem(
   const nextHours = existing.valuationRunId && incomingHours === null ? existing.hours : incomingHours;
   const nextCondition = input.condition ?? existing.condition ?? null;
   const baseSpecsJson = buildManualSpecsJson(input, nextKind, existing.specsJson);
+  const nextLicenseRegistrationNumber = Boolean(input.isLicensed) ? normalizeLicenseRegistrationNumber(input.licenseRegistrationNumber) : null;
   const nextLifeWorkedPercent = percentFromSpecs(baseSpecsJson);
   const existingLifeWorkedPercent = existing.lifeWorkedPercent ?? percentFromSpecs(existing.specsJson);
   const fields: SqlField[] = [];
@@ -1472,6 +1528,7 @@ export async function updateAssetRegisterItem(
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
   pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured));
   pushField(fields, schema, ['is_licensed', 'licensed', 'licenced'], Boolean(input.isLicensed));
+  pushField(fields, schema, ['license_registration_number', 'licence_registration_number', 'registration_number', 'number_plate', 'numberplate'], nextLicenseRegistrationNumber);
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
   pushField(fields, schema, ['year_model', 'year'], nextYearModel);
   pushField(fields, schema, ['specs_json'], nextSpecsJson, '::jsonb');

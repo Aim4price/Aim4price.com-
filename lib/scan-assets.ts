@@ -21,6 +21,7 @@ export type ScanSafeAsset = {
   financeStatus: ScanAssetStatusChoice;
   insuranceStatus: ScanAssetStatusChoice;
   licenseStatus: ScanAssetStatusChoice;
+  licenseRegistrationNumber: string;
   hours: number | null;
   usageMode: ScanAssetUsageMode;
   usageMetric: 'hours' | 'km';
@@ -97,6 +98,7 @@ type ScanAccessRow = {
   is_financed: unknown;
   is_insured: unknown;
   is_licensed: unknown;
+  license_registration_number: string | null;
   hours: string | number | null;
   fuel_percent: string | number | null;
   condition: string | null;
@@ -132,6 +134,10 @@ type ScanEventRow = {
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizeLicenseRegistrationNumber(value: unknown): string {
+  return String(value ?? '').replace(/\s+/g, ' ').trim().toUpperCase();
 }
 
 function asId(value: unknown): string {
@@ -258,6 +264,24 @@ function readStatusFromSpecs(
   }
 
   return fallback;
+}
+
+function readLicenseRegistrationFromSpecs(specs: Record<string, unknown>): string {
+  return normalizeLicenseRegistrationNumber(
+    specs.licenseRegistrationNumber ??
+      specs.license_registration_number ??
+      specs.licenceRegistrationNumber ??
+      specs.licence_registration_number ??
+      specs.licenseRegistration ??
+      specs.license_registration ??
+      specs.licenceRegistration ??
+      specs.licence_registration ??
+      specs.registrationNumber ??
+      specs.registration_number ??
+      specs.numberPlate ??
+      specs.number_plate ??
+      specs.numberplate,
+  );
 }
 
 function percentFromSpecs(specs: Record<string, unknown>): number | null {
@@ -441,6 +465,7 @@ function mapScanSafeAsset(row: ScanAccessRow): ScanSafeAsset {
     financeStatus: readStatusFromSpecs(specs, ['financeStatus', 'finance_status', 'financedStatus', 'financed_status'], statusFallbackFromBoolean(row.is_financed)),
     insuranceStatus: readStatusFromSpecs(specs, ['insuranceStatus', 'insurance_status', 'insuredStatus', 'insured_status'], statusFallbackFromBoolean(row.is_insured)),
     licenseStatus: readStatusFromSpecs(specs, ['licenseStatus', 'license_status', 'licensedStatus', 'licensed_status', 'licenceStatus', 'licence_status', 'licencedStatus', 'licenced_status'], statusFallbackFromBoolean(row.is_licensed)),
+    licenseRegistrationNumber: normalizeLicenseRegistrationNumber(row.license_registration_number) || readLicenseRegistrationFromSpecs(specs),
     hours: asNumber(row.hours),
     usageMode: inferScanUsageMode(row),
     usageMetric,
@@ -515,6 +540,7 @@ export async function getScanAssetAccessContext(publicAssetCode: string): Promis
         to_jsonb(a)->>'is_financed' as is_financed,
         to_jsonb(a)->>'is_insured' as is_insured,
         to_jsonb(a)->>'is_licensed' as is_licensed,
+        to_jsonb(a)->>'license_registration_number' as license_registration_number,
         a.hours,
         a.fuel_percent,
         a.condition,
@@ -631,6 +657,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           to_jsonb(a)->>'is_financed' as is_financed,
           to_jsonb(a)->>'is_insured' as is_insured,
           to_jsonb(a)->>'is_licensed' as is_licensed,
+          to_jsonb(a)->>'license_registration_number' as license_registration_number,
           a.hours,
           a.fuel_percent,
           a.condition,
@@ -836,6 +863,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           to_jsonb(u)->>'is_financed' as is_financed,
           to_jsonb(u)->>'is_insured' as is_insured,
           to_jsonb(u)->>'is_licensed' as is_licensed,
+          to_jsonb(u)->>'license_registration_number' as license_registration_number,
           u.hours,
           u.fuel_percent,
           u.condition,
