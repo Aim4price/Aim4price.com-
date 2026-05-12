@@ -453,27 +453,27 @@
   font-size: 1.1rem;
 }
 
-:global(.aim4priceMapMarker) {
+.mapFrame :global(.aim4priceMapMarker) {
   background: transparent;
   border: 0;
 }
 
-:global(.aim4priceMapMarker--recent) {
+.mapFrame :global(.aim4priceMapMarker--recent) {
   --marker-bg: #159063;
   --marker-shadow: rgba(22, 130, 88, 0.34);
 }
 
-:global(.aim4priceMapMarker--warm) {
+.mapFrame :global(.aim4priceMapMarker--warm) {
   --marker-bg: #3768d5;
   --marker-shadow: rgba(55, 104, 213, 0.3);
 }
 
-:global(.aim4priceMapMarker--older) {
+.mapFrame :global(.aim4priceMapMarker--older) {
   --marker-bg: #7d8996;
   --marker-shadow: rgba(87, 102, 118, 0.28);
 }
 
-:global(.aim4priceMapMarkerPin) {
+.mapFrame :global(.aim4priceMapMarkerPin) {
   position: relative;
   display: grid;
   place-items: center;
@@ -491,7 +491,7 @@
     box-shadow 170ms ease;
 }
 
-:global(.aim4priceMapMarkerPin::after) {
+.mapFrame :global(.aim4priceMapMarkerPin::after) {
   content: '';
   position: absolute;
   left: 50%;
@@ -505,7 +505,7 @@
   border-radius: 0 0 3px 0;
 }
 
-:global(.aim4priceMapMarkerPin b) {
+.mapFrame :global(.aim4priceMapMarkerPin b) {
   position: relative;
   z-index: 2;
   font-family: Inter, Arial, sans-serif;
@@ -514,7 +514,7 @@
   letter-spacing: -0.03em;
 }
 
-:global(.aim4priceMapMarker--active .aim4priceMapMarkerPin) {
+.mapFrame :global(.aim4priceMapMarker--active .aim4priceMapMarkerPin) {
   transform: translateY(-5px) scale(1.12);
   box-shadow:
     0 0 0 8px rgba(16, 71, 59, 0.18),
