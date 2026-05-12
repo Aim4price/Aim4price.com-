@@ -94,6 +94,35 @@ function normalizeTractorType(value: unknown): 'field' | 'orchard' {
   return asText(value).toLowerCase() === 'orchard' ? 'orchard' : 'field';
 }
 
+function normalizeSectorKey(value: unknown): string {
+  const normalized = asText(value).toLowerCase().replace(/[_\s-]+/g, '-');
+
+  if (normalized === 'agriculture' || normalized === 'agricultural') return 'agricultural';
+  if (normalized === 'construction') return 'construction';
+  if (normalized === 'industrial' || normalized === 'industry') return 'industrial';
+  return '';
+}
+
+function normalizeConditionKey(value: unknown): string {
+  const normalized = asText(value).toLowerCase().replace(/[_-]+/g, ' ');
+
+  if (normalized === 'excellent') return 'excellent';
+  if (normalized === 'good') return 'good';
+  if (normalized === 'fair') return 'fair';
+  if (normalized === 'used') return 'used';
+  if (normalized === 'serious' || normalized === 'serious wear') return 'serious';
+  return '';
+}
+
+function conditionLabel(value: string): string {
+  if (value === 'excellent') return 'Excellent';
+  if (value === 'good') return 'Good';
+  if (value === 'fair') return 'Fair';
+  if (value === 'used') return 'Used';
+  if (value === 'serious') return 'Serious Wear';
+  return '';
+}
+
 function buildPhotoList(row: Record<string, unknown>): string[] {
   const photos = asStringArray(pick(row, ['photo_urls', 'photos', 'image_urls', 'images'])).map((entry) =>
     safeImage(entry),
@@ -361,6 +390,15 @@ function buildMarketplaceListing(
     asText(pick(row, ['marketplace_notes', 'note', 'notes', 'description'])) ||
     `${brandName} ${modelName} available on the Aim4price marketplace.`;
   const imageUrls = buildPhotoList(row);
+  const sectorKey =
+    normalizeSectorKey(pick(row, ['equipment_sector_key', 'sector_key', 'sector'])) ||
+    'agricultural';
+  const sectorLabel =
+    asText(pick(row, ['equipment_sector_label', 'sector_label'])) ||
+    (sectorKey === 'construction' ? 'Construction' : sectorKey === 'industrial' ? 'Industrial' : 'Agriculture');
+  const familyLabel = asText(pick(row, ['equipment_family_label', 'family_label'])) || 'Tractors';
+  const familyKey = asText(pick(row, ['equipment_family_key', 'family_key'])) || slugify(familyLabel);
+  const conditionKey = normalizeConditionKey(pick(row, ['condition', 'valuation_last_condition']));
 
   return {
     id: `asset-${assetId}`,
@@ -397,6 +435,12 @@ function buildMarketplaceListing(
     price: askingPriceExVat,
     imageSrc: imageUrls[0] ?? FALLBACK_MARKETPLACE_IMAGE,
     imageUrls,
+    sectorKey,
+    sectorLabel,
+    familyKey,
+    familyLabel,
+    conditionKey: conditionKey || undefined,
+    conditionLabel: conditionLabel(conditionKey) || undefined,
     publishedBy: 'asset-register',
     canManage: Boolean(options.viewerUserId && options.viewerUserId === asText(row.user_id)),
   };
@@ -419,7 +463,11 @@ export async function listPublishedMarketplaceAssetListings(options: {
   const result = await db.query<MarketplaceAssetRow>(
     `
       select
-        a.*, 
+        a.*,
+        s.sector_key as equipment_sector_key,
+        s.sector_label as equipment_sector_label,
+        ef.family_key as equipment_family_key,
+        ef.family_label as equipment_family_label,
         p.business_name as profile_business_name,
         coalesce(nullif(p.marketplace_phone, ''), nullif(p.phone, '')) as profile_phone,
         p.province as profile_province,
@@ -428,6 +476,8 @@ export async function listPublishedMarketplaceAssetListings(options: {
         coalesce(nullif(p.marketplace_seller_name, ''), nullif(p.display_name, '')) as profile_name,
         nullif(p.marketplace_email, '') as profile_email
       from asset_register_items a
+      left join public.equipment_families ef on ef.id = a.equipment_family_id
+      left join public.sectors s on s.id = coalesce(a.sector_id, ef.sector_id)
       left join account_profiles p on p.user_id = a.user_id
       where coalesce(a.marketplace_status, 'draft') = 'live'
       order by coalesce(a.updated_at, a.created_at) desc, a.id desc
@@ -455,7 +505,11 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   const current = await db.query<MarketplaceAssetRow>(
     `
       select
-        a.*, 
+        a.*,
+        s.sector_key as equipment_sector_key,
+        s.sector_label as equipment_sector_label,
+        ef.family_key as equipment_family_key,
+        ef.family_label as equipment_family_label,
         p.business_name as profile_business_name,
         coalesce(nullif(p.marketplace_phone, ''), nullif(p.phone, '')) as profile_phone,
         p.province as profile_province,
@@ -464,6 +518,8 @@ export async function publishAssetRegisterItemToMarketplace(input: {
         coalesce(nullif(p.marketplace_seller_name, ''), nullif(p.display_name, '')) as profile_name,
         nullif(p.marketplace_email, '') as profile_email
       from asset_register_items a
+      left join public.equipment_families ef on ef.id = a.equipment_family_id
+      left join public.sectors s on s.id = coalesce(a.sector_id, ef.sector_id)
       left join account_profiles p on p.user_id = a.user_id
       where a.user_id = $1 and a.id = $2
       limit 1
@@ -556,6 +612,10 @@ export async function publishAssetRegisterItemToMarketplace(input: {
     profile_location: row.profile_location,
     profile_name: row.profile_name,
     profile_email: row.profile_email,
+    equipment_sector_key: row.equipment_sector_key,
+    equipment_sector_label: row.equipment_sector_label,
+    equipment_family_key: row.equipment_family_key,
+    equipment_family_label: row.equipment_family_label,
   };
 
   await createMarketplaceListingSnapshot(listingRow);

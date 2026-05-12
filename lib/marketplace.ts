@@ -50,6 +50,12 @@ export type MarketplaceListing = {
   imageUrls: string[];
   publishedBy: 'seed' | 'asset-register';
   canManage?: boolean;
+  sectorKey?: string;
+  sectorLabel?: string;
+  familyKey?: string;
+  familyLabel?: string;
+  conditionKey?: string;
+  conditionLabel?: string;
 };
 
 export type PublishMarketplaceInput = {
@@ -106,6 +112,26 @@ function titleCase(value: string): string {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join(' ');
+}
+
+function normalizeConditionKey(value: unknown): string {
+  const normalized = cleanUnknownText(value).toLowerCase().replace(/[_-]+/g, ' ');
+
+  if (normalized === 'excellent') return 'excellent';
+  if (normalized === 'good') return 'good';
+  if (normalized === 'fair') return 'fair';
+  if (normalized === 'used') return 'used';
+  if (normalized === 'serious' || normalized === 'serious wear') return 'serious';
+  return '';
+}
+
+function conditionLabel(value: string): string {
+  if (value === 'excellent') return 'Excellent';
+  if (value === 'good') return 'Good';
+  if (value === 'fair') return 'Fair';
+  if (value === 'used') return 'Used';
+  if (value === 'serious') return 'Serious Wear';
+  return '';
 }
 
 function safeImage(src?: string): string {
@@ -216,6 +242,12 @@ function fromMarketVaultListing(
     price: listing.price,
     imageSrc,
     imageUrls: [imageSrc],
+    sectorKey: 'agricultural',
+    sectorLabel: 'Agriculture',
+    familyKey: 'tractors',
+    familyLabel: 'Tractors',
+    conditionKey: 'good',
+    conditionLabel: 'Good',
     publishedBy: 'seed',
   };
 }
@@ -279,6 +311,12 @@ function normalizeStoredListing(value: unknown): MarketplaceListing | null {
     price: Math.round(cleanUnknownNumber(value.price ?? value.priceExVat ?? value.askingPriceExVat, 0)),
     imageSrc,
     imageUrls: normalizeImageUrls(value.imageUrls, imageSrc),
+    sectorKey: cleanUnknownText(value.sectorKey ?? value.sector_key) || undefined,
+    sectorLabel: cleanUnknownText(value.sectorLabel ?? value.sector_label) || undefined,
+    familyKey: cleanUnknownText(value.familyKey ?? value.family_key) || undefined,
+    familyLabel: cleanUnknownText(value.familyLabel ?? value.family_label) || undefined,
+    conditionKey: normalizeConditionKey(value.conditionKey ?? value.condition_key ?? value.condition) || undefined,
+    conditionLabel: conditionLabel(normalizeConditionKey(value.conditionKey ?? value.condition_key ?? value.condition)) || undefined,
     publishedBy: cleanUnknownText(value.publishedBy) === 'seed' ? 'seed' : 'asset-register',
   };
 }
@@ -422,6 +460,12 @@ export function publishRegisterItemToMarketplace(
     price: askingPrice,
     imageSrc: imageUrls[0] ?? FALLBACK_MARKETPLACE_IMAGE,
     imageUrls,
+    sectorKey: 'agricultural',
+    sectorLabel: 'Agriculture',
+    familyKey: 'tractors',
+    familyLabel: 'Tractors',
+    conditionKey: 'good',
+    conditionLabel: 'Good',
     publishedBy: 'asset-register',
   };
 
