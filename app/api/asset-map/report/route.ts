@@ -5,6 +5,8 @@ import { listAssetRegisterItems, type AssetRegisterItem } from '../../../../lib/
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
+
 type PrintableAsset = {
   number: number;
   title: string;
@@ -14,6 +16,9 @@ type PrintableAsset = {
   assetTypeLabel: string;
   yearModel: string;
   fuel: string;
+  financed: string;
+  insured: string;
+  licensed: string;
   usage: string;
   condition: string;
   lastScanned: string;
@@ -29,6 +34,10 @@ function unauthorized() {
 
 function asText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function escapeHtml(value: unknown): string {
@@ -110,8 +119,71 @@ function titleCase(value: string): string {
     .join(' ');
 }
 
+function normalizeAssetStatusChoice(value: unknown, fallback: AssetStatusChoice = 'unknown'): AssetStatusChoice {
+  const normalized = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+  if (['yes', 'y', 'true', 'financed', 'insured', 'licensed', 'licenced'].includes(normalized)) {
+    return 'yes';
+  }
+
+  if (['no', 'n', 'false', 'not_financed', 'not_insured', 'not_licensed', 'not_licenced', 'unfinanced', 'uninsured', 'unlicensed', 'unlicenced'].includes(normalized)) {
+    return 'no';
+  }
+
+  if (['na', 'n_a', 'not_applicable', 'not_aplicable', 'not_relevant', 'does_not_apply'].includes(normalized)) {
+    return 'not_applicable';
+  }
+
+  if (['unknown', 'not_sure', 'unsure', 'maybe', ''].includes(normalized)) {
+    return normalized ? 'unknown' : fallback;
+  }
+
+  return fallback;
+}
+
+function readFinanceStatusChoice(asset: AssetRegisterItem): AssetStatusChoice {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.financeStatus ?? specs.finance_status ?? specs.financedStatus ?? specs.financed_status,
+    asset.isFinanced ? 'yes' : 'no',
+  );
+}
+
+function readInsuranceStatusChoice(asset: AssetRegisterItem): AssetStatusChoice {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.insuranceStatus ?? specs.insurance_status ?? specs.insuredStatus ?? specs.insured_status,
+    asset.isInsured ? 'yes' : 'no',
+  );
+}
+
+function readLicenseStatusChoice(asset: AssetRegisterItem): AssetStatusChoice {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.licenseStatus ??
+      specs.license_status ??
+      specs.licensedStatus ??
+      specs.licensed_status ??
+      specs.licenceStatus ??
+      specs.licence_status ??
+      specs.licencedStatus ??
+      specs.licenced_status,
+    asset.isLicensed ? 'yes' : 'no',
+  );
+}
+
+function formatAssetStatusChoice(value: AssetStatusChoice): string {
+  if (value === 'yes') return 'Yes';
+  if (value === 'no') return 'No';
+  if (value === 'not_applicable') return 'Not applicable';
+  return 'Not sure';
+}
+
 function getUsageUnit(asset: AssetRegisterItem): 'hours' | 'km' {
-  const specs = asset.specsJson && typeof asset.specsJson === 'object' ? asset.specsJson : {};
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
   const rawUsage = String(
     specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit ?? specs.usageMetricType ?? specs.usage_metric_type ?? '',
   )
@@ -184,6 +256,9 @@ function toPrintableAsset(asset: AssetRegisterItem, index: number): PrintableAss
     assetTypeLabel: assetTypeLabel(asset),
     yearModel: formatYearModel(asset.yearModel),
     fuel: formatFuel(asset.fuelPercent),
+    financed: formatAssetStatusChoice(readFinanceStatusChoice(asset)),
+    insured: formatAssetStatusChoice(readInsuranceStatusChoice(asset)),
+    licensed: formatAssetStatusChoice(readLicenseStatusChoice(asset)),
     usage: formatUsage(asset),
     condition: formatCondition(asset.condition),
     lastScanned: formatDateTime(asset.lastScannedAtIso),
@@ -234,6 +309,10 @@ function renderKeyRows(assets: PrintableAsset[]): string {
             <span>Fuel</span>
             <strong>${escapeHtml(asset.fuel)}</strong>
           </div>
+          <div class="assetMapReportCell">
+            <span>Licensed</span>
+            <strong>${escapeHtml(asset.licensed)}</strong>
+          </div>
           <div class="assetMapReportCell assetMapReportGpsCell">
             <span>GPS</span>
             <strong>${escapeHtml(asset.latLngText)}</strong>
@@ -257,6 +336,9 @@ function renderSelectedAssetRows(asset: PrintableAsset): string {
     ['Usage', asset.usage],
     ['Fuel', asset.fuel],
     ['Condition', asset.condition],
+    ['Financed', asset.financed],
+    ['Insured', asset.insured],
+    ['Licensed', asset.licensed],
     ['GPS location', asset.latLngText],
     ['Last scanned', asset.lastScanned],
   ];
@@ -681,7 +763,7 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
 
       .assetMapReportKeyRow {
         display: grid;
-        grid-template-columns: 10mm minmax(43mm, 1.15fr) minmax(18mm, 0.42fr) minmax(21mm, 0.5fr) minmax(18mm, 0.36fr) minmax(35mm, 0.75fr) minmax(35mm, 0.75fr);
+        grid-template-columns: 10mm minmax(38mm, 1fr) minmax(16mm, 0.35fr) minmax(20mm, 0.45fr) minmax(16mm, 0.35fr) minmax(18mm, 0.4fr) minmax(31mm, 0.65fr) minmax(31mm, 0.65fr);
         gap: 8px;
         min-height: 34px;
         align-items: center;
