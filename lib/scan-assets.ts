@@ -747,7 +747,6 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
             life_remaining_percent = case when $11::numeric is null then life_remaining_percent else greatest(0, 100 - $11::numeric) end,
             fuel_percent = coalesce($3, fuel_percent),
             condition = coalesce($4, condition),
-            note = coalesce($5, note),
             photo_urls = $6::jsonb,
             last_scanned_at = now(),
             last_known_lat = coalesce($7, last_known_lat),
