@@ -634,29 +634,35 @@ export default function AccountClient() {
         <div className={styles.hero}>
           <div className={styles.heroContent}>
             <div className={styles.heroLogoUploader}>
-              <div className={styles.heroLogoPreview} aria-label="Business logo preview">
+              <div
+                className={`${styles.heroLogoPreview} ${!logoUrl ? styles.logoEmpty : ''}`}
+                aria-label="Business logo preview"
+                tabIndex={0}
+              >
                 {logoUrl ? <img src={logoUrl} alt="Business logo" /> : <span>{profileInitials}</span>}
-              </div>
 
-              <div className={styles.heroLogoActions}>
-                <label className={`${styles.primaryButton} ${styles.uploadButton}`}>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={handleLogoFileChange}
-                    disabled={isReadingLogo || isSavingProfile}
-                  />
-                  {isReadingLogo ? 'Reading...' : logoUrl ? 'Change logo' : 'Upload logo'}
-                </label>
+                <div className={styles.heroLogoOverlay}>
+                  <label className={`${styles.heroLogoOverlayButton} ${styles.uploadButton}`}>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleLogoFileChange}
+                      disabled={isReadingLogo || isSavingProfile}
+                    />
+                    {isReadingLogo ? 'Reading...' : logoUrl ? 'Change logo' : 'Upload logo'}
+                  </label>
 
-                <button
-                  type="button"
-                  className={styles.heroRemoveButton}
-                  onClick={handleRemoveLogo}
-                  disabled={!logoUrl || isSavingProfile}
-                >
-                  Remove
-                </button>
+                  {logoUrl ? (
+                    <button
+                      type="button"
+                      className={styles.heroLogoOverlayButton}
+                      onClick={handleRemoveLogo}
+                      disabled={isSavingProfile}
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
@@ -930,6 +936,7 @@ export default function AccountClient() {
             </section>
 
             <section className={`${styles.sidebarCard} ${styles.dangerCard}`}>
+              <p className={styles.deletePrompt}>Want to delete your account?</p>
               <button type="button" className={styles.dangerButton} onClick={() => setIsDeleteDialogOpen(true)}>
                 Delete account
               </button>

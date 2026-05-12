@@ -1540,3 +1540,115 @@
     background: rgba(3, 18, 25, 0.42);
   }
 }
+
+/* 2026-05-12: force logo controls onto the logo image itself */
+.heroLogoUploader {
+  width: min(100%, 40rem);
+  min-height: clamp(18rem, 29vw, 25rem);
+  padding: clamp(1.2rem, 2.2vw, 1.8rem);
+}
+
+.heroLogoPreview {
+  position: relative;
+  width: clamp(16.5rem, 25vw, 23rem);
+  height: clamp(16.5rem, 25vw, 23rem);
+  max-width: 100%;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: clamp(1.8rem, 2.6vw, 2.4rem);
+}
+
+.heroLogoPreview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: clamp(0.25rem, 0.75vw, 0.65rem);
+  background: #ffffff;
+}
+
+.heroLogoPreview .heroLogoOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  padding: clamp(0.85rem, 1.4vw, 1.2rem);
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(3, 18, 25, 0) 30%, rgba(3, 18, 25, 0.76) 100%);
+  opacity: 0;
+  pointer-events: none;
+  transform: none;
+  transition: opacity 160ms ease;
+}
+
+.heroLogoPreview:hover .heroLogoOverlay,
+.heroLogoPreview:focus-within .heroLogoOverlay,
+.heroLogoPreview:focus .heroLogoOverlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.heroLogoPreview.logoEmpty .heroLogoOverlay,
+.logoEmpty.heroLogoPreview .heroLogoOverlay {
+  align-items: center;
+  background: rgba(3, 18, 25, 0.38);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.heroLogoPreview .heroLogoOverlayButton {
+  min-height: 2.85rem;
+  min-width: 8.35rem;
+  padding: 0 1rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  color: #12342b;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 28px rgba(2, 12, 20, 0.24);
+}
+
+.heroLogoPreview .heroLogoOverlayButton:hover {
+  color: #08271f;
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.heroLogoPreview.logoEmpty .heroLogoOverlayButton,
+.logoEmpty.heroLogoPreview .heroLogoOverlayButton {
+  color: #ffffff;
+  background: linear-gradient(135deg, #137b5e 0%, #1a946f 100%);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+@media (max-width: 760px) {
+  .heroLogoUploader {
+    min-height: clamp(16rem, 72vw, 21rem);
+  }
+
+  .heroLogoPreview {
+    width: min(100%, 18rem);
+    height: min(100vw - 3rem, 18rem);
+  }
+
+  .heroLogoPreview .heroLogoOverlay {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+
+  .heroLogoPreview .heroLogoOverlayButton {
+    width: auto;
+    min-width: 7.75rem;
+  }
+}
+
+@media (hover: none) {
+  .heroLogoPreview .heroLogoOverlay {
+    opacity: 1;
+    pointer-events: auto;
+    background: linear-gradient(180deg, rgba(3, 18, 25, 0) 35%, rgba(3, 18, 25, 0.72) 100%);
+  }
+}
