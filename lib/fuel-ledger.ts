@@ -4,6 +4,7 @@ import type { NextRequest, NextResponse } from 'next/server';
 import { getDb } from './db';
 import { hashScanPin, verifyScanPin } from './scan-pin';
 import { revalueAssetRegisterItem } from './asset-register-revaluation';
+import { ensureAccountProfileColumns } from './account-profile';
 
 export const FUEL_SCAN_COOKIE_NAME = 'aim4price_fuel_scan';
 export const FUEL_SCAN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
@@ -92,12 +93,14 @@ export type FuelStoragePublicPreview = {
   name: string;
   fuelType: string;
   publicFuelStorageCode: string;
+  accountBusinessName: string;
   pinRequired: boolean;
   status: FuelStorageStatus;
 };
 
 export type FuelScanPayload = {
   storage: FuelLedgerStorage;
+  accountBusinessName: string;
   assets: FuelLedgerAsset[];
   recentEvents: FuelLedgerEvent[];
 };
@@ -515,6 +518,30 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
     locationText: asText(row.location_text),
     createdAtIso: row.created_at ?? new Date().toISOString(),
   };
+}
+
+
+async function getFuelAccountBusinessName(userId: string): Promise<string> {
+  const normalizedUserId = asText(userId);
+
+  if (!normalizedUserId) {
+    return 'Aim4price account';
+  }
+
+  await ensureAccountProfileColumns();
+  const db = getDb();
+  const result = await db.query<{ business_name: string | null; display_name: string | null }>(
+    `
+      select business_name, display_name
+      from public.account_profiles
+      where user_id = $1
+      limit 1
+    `,
+    [normalizedUserId],
+  );
+
+  const row = result.rows[0];
+  return asText(row?.business_name) || asText(row?.display_name) || 'Aim4price account';
 }
 
 function titleCase(value: string): string {
@@ -1648,11 +1675,14 @@ export async function getFuelStoragePublicPreview(publicFuelStorageCode: string)
     return null;
   }
 
+  const accountBusinessName = await getFuelAccountBusinessName(storage.userId);
+
   return {
     id: storage.id,
     name: storage.name,
     fuelType: storage.fuelType,
     publicFuelStorageCode: storage.publicFuelStorageCode,
+    accountBusinessName,
     pinRequired: storage.pinEnabled,
     status: storage.status,
   };
@@ -1765,12 +1795,13 @@ export async function getFuelScanPayload(userId: string, storageId: string): Pro
     throw new Error('Fuel storage not found.');
   }
 
-  const [assets, recentEvents] = await Promise.all([
+  const [accountBusinessName, assets, recentEvents] = await Promise.all([
+    getFuelAccountBusinessName(userId),
     listFuelAssetsForUser(userId),
     listFuelEvents(userId, { storageId, limit: 20 }),
   ]);
 
-  return { storage, assets, recentEvents };
+  return { storage, accountBusinessName, assets, recentEvents };
 }
 
 export async function listFuelEventsForReport(
