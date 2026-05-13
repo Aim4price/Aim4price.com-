@@ -1,0 +1,233 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from '../../../../lib/auth-session';
+import { getFuelStorageById, listFuelEventsForReport, listFuelLedger, type FuelLedgerEvent } from '../../../../lib/fuel-ledger';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+function asText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatDateTime(value: string): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+
+  return new Intl.DateTimeFormat('en-ZA', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Africa/Johannesburg',
+  }).format(date);
+}
+
+function formatLitres(value: number | null | undefined): string {
+  const parsed = Number(value ?? 0);
+  if (!Number.isFinite(parsed)) return '0 L';
+  return `${parsed.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L`;
+}
+
+function formatPercent(value: number | null | undefined): string {
+  return value === null || typeof value === 'undefined' ? '—' : `${value}%`;
+}
+
+function formatLocation(event: FuelLedgerEvent): string {
+  if (event.locationText) return event.locationText;
+  if (event.latitude !== null && event.longitude !== null) {
+    return `GPS ${event.latitude.toFixed(6)}, ${event.longitude.toFixed(6)}`;
+  }
+  return '—';
+}
+
+function eventTypeLabel(value: string): string {
+  if (value === 'opening_balance') return 'Opening balance';
+  if (value === 'stock_in') return 'Stock in';
+  if (value === 'asset_issue') return 'Asset issue';
+  if (value === 'dip') return 'Manual dip';
+  return 'Adjustment';
+}
+
+function slugifyFileSegment(value: string): string {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return normalized || 'fuel-ledger';
+}
+
+function buildReportHtml(options: {
+  title: string;
+  subtitle: string;
+  generatedAt: string;
+  totalIssued: number;
+  totalStockIn: number;
+  currentLitres: number;
+  storageCount: number;
+  events: FuelLedgerEvent[];
+}): string {
+  const rows = options.events
+    .map((event) => {
+      const asset = event.assetTitle || event.assetPlateLabel || '—';
+      return `<tr>
+        <td>${escapeHtml(formatDateTime(event.createdAtIso))}</td>
+        <td>${escapeHtml(eventTypeLabel(event.eventType))}</td>
+        <td>${escapeHtml(event.storageName)}</td>
+        <td>${escapeHtml(asset)}</td>
+        <td class="num">${escapeHtml(formatLitres(event.litres))}</td>
+        <td class="num">${escapeHtml(formatLitres(event.storageLevelBefore))}</td>
+        <td class="num">${escapeHtml(formatLitres(event.storageLevelAfter))}</td>
+        <td class="num">${escapeHtml(formatPercent(event.assetFuelPercentAfter))}</td>
+        <td>${escapeHtml(event.operatorName || '—')}</td>
+        <td>${escapeHtml(formatLocation(event))}</td>
+        <td>${escapeHtml(event.note || '—')}</td>
+      </tr>`;
+    })
+    .join('');
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(options.title)}</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap");
+      :root { color-scheme: light; --brand:#113d31; --muted:#667587; --line:#dce6ee; --paper:#fff; --page:#eef3f5; }
+      * { box-sizing: border-box; }
+      body { margin:0; padding:28px; font-family: Montserrat, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; background:var(--page); color:#142f28; }
+      .shell { width:min(100%, 1180px); margin:0 auto; display:grid; gap:18px; }
+      .toolbar { display:flex; justify-content:space-between; gap:14px; align-items:center; flex-wrap:wrap; }
+      h1 { margin:0; color:var(--brand); font-size:clamp(32px, 4vw, 52px); line-height:.94; letter-spacing:-.06em; }
+      .subtitle { margin:8px 0 0; color:var(--muted); font-weight:650; line-height:1.55; }
+      button { min-height:48px; padding:0 20px; border-radius:999px; border:1px solid var(--line); background:#fff; color:#173d31; font:inherit; font-weight:850; cursor:pointer; box-shadow:0 12px 26px rgba(18,45,37,.08); }
+      .cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+      .card { padding:18px; border-radius:22px; border:1px solid var(--line); background:#fff; box-shadow:0 16px 36px rgba(18,45,37,.06); }
+      .card span { display:block; color:var(--muted); font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:.08em; }
+      .card strong { display:block; margin-top:8px; color:var(--brand); font-size:24px; font-weight:900; letter-spacing:-.04em; }
+      .tableWrap { overflow:auto; border-radius:24px; border:1px solid var(--line); background:#fff; box-shadow:0 18px 42px rgba(18,45,37,.07); }
+      table { width:100%; border-collapse:collapse; min-width:1120px; }
+      th, td { padding:13px 14px; border-bottom:1px solid #edf2f5; text-align:left; vertical-align:top; font-size:12px; line-height:1.45; }
+      th { position:sticky; top:0; background:#f8fbfa; color:#49625a; font-size:10px; font-weight:900; letter-spacing:.075em; text-transform:uppercase; }
+      td { color:#263a34; font-weight:650; }
+      .num { text-align:right; white-space:nowrap; }
+      .empty { padding:34px; text-align:center; color:var(--muted); font-weight:800; }
+      @media print {
+        body { padding:0; background:#fff; }
+        .toolbar button { display:none; }
+        .shell { width:100%; }
+        .cards { grid-template-columns:repeat(4,1fr); }
+        .card, .tableWrap { box-shadow:none; }
+        th { position:static; }
+        table { min-width:0; }
+      }
+      @media (max-width: 860px) { .cards { grid-template-columns:repeat(2,minmax(0,1fr)); } body { padding:16px; } }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <div class="toolbar">
+        <div>
+          <h1>${escapeHtml(options.title)}</h1>
+          <p class="subtitle">${escapeHtml(options.subtitle)} Generated ${escapeHtml(options.generatedAt)}.</p>
+        </div>
+        <button type="button" onclick="window.print()">Print / Save PDF</button>
+      </div>
+
+      <section class="cards" aria-label="Fuel report summary">
+        <div class="card"><span>Current storage</span><strong>${escapeHtml(formatLitres(options.currentLitres))}</strong></div>
+        <div class="card"><span>Fuel issued</span><strong>${escapeHtml(formatLitres(options.totalIssued))}</strong></div>
+        <div class="card"><span>Fuel filled</span><strong>${escapeHtml(formatLitres(options.totalStockIn))}</strong></div>
+        <div class="card"><span>Storage units</span><strong>${options.storageCount.toLocaleString('en-ZA')}</strong></div>
+      </section>
+
+      <section class="tableWrap" aria-label="Fuel event ledger">
+        ${options.events.length ? `<table>
+          <thead>
+            <tr>
+              <th>Date</th><th>Type</th><th>Storage</th><th>Asset</th><th class="num">Litres</th><th class="num">Before</th><th class="num">After</th><th class="num">Asset fuel</th><th>Operator</th><th>Location</th><th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>` : '<div class="empty">No fuel entries captured yet.</div>'}
+      </section>
+    </main>
+  </body>
+</html>`;
+}
+
+export async function GET(request: NextRequest) {
+  const session = await getServerSession();
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
+  }
+
+  const storageId = asText(request.nextUrl.searchParams.get('storageId'));
+
+  try {
+    const [ledger, events, storage] = await Promise.all([
+      listFuelLedger(session.user.id),
+      listFuelEventsForReport(session.user.id, storageId || undefined),
+      storageId ? getFuelStorageById(session.user.id, storageId) : Promise.resolve(null),
+    ]);
+
+    if (storageId && !storage) {
+      return NextResponse.json({ ok: false, error: 'Fuel storage not found.' }, { status: 404 });
+    }
+
+    const totalIssued = events
+      .filter((event) => event.eventType === 'asset_issue')
+      .reduce((sum, event) => sum + event.litres, 0);
+    const totalStockIn = events
+      .filter((event) => event.eventType === 'stock_in' || event.eventType === 'opening_balance')
+      .reduce((sum, event) => sum + event.litres, 0);
+    const title = storage ? `${storage.name} fuel report` : 'Fuel Ledger report';
+    const subtitle = storage
+      ? `Storage report for ${storage.fuelType.toUpperCase()} (${storage.publicFuelStorageCode}).`
+      : 'All fuel storage and fuel issue transactions.';
+    const generatedAt = new Intl.DateTimeFormat('en-ZA', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'Africa/Johannesburg',
+    }).format(new Date());
+
+    const html = buildReportHtml({
+      title,
+      subtitle,
+      generatedAt,
+      totalIssued,
+      totalStockIn,
+      currentLitres: storage ? storage.currentLitres : ledger.summary.currentLitres,
+      storageCount: storage ? 1 : ledger.summary.totalStorageUnits,
+      events,
+    });
+
+    return new NextResponse(html, {
+      status: 200,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+        'content-disposition': `inline; filename="${slugifyFileSegment(title)}.html"`,
+      },
+    });
+  } catch (error) {
+    console.error('fuel report failed', error);
+    return NextResponse.json(
+      { ok: false, error: error instanceof Error ? error.message : 'Failed to build fuel report.' },
+      { status: 500 },
+    );
+  }
+}

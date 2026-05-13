@@ -1,0 +1,350 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from '../../../../../../lib/auth-session';
+import { getFuelStorageById } from '../../../../../../lib/fuel-ledger';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+type RouteContext = {
+  params: {
+    storageId: string;
+  };
+};
+
+type QrFormat = 'svg' | 'png' | 'print';
+
+function asText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function unauthorized() {
+  return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
+}
+
+function normalizeFormat(value: string | null): QrFormat {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (normalized === 'print') return 'print';
+  if (normalized === 'png' || normalized === 'image' || normalized === 'jpg' || normalized === 'jpeg') return 'png';
+
+  return 'svg';
+}
+
+function slugifyFileSegment(value: string): string {
+  const normalized = String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return normalized || 'fuel-storage';
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function normalizeOriginCandidate(value?: string | null): string | null {
+  const text = asText(value);
+
+  if (!text) {
+    return null;
+  }
+
+  try {
+    const url = text.includes('://') ? new URL(text) : new URL(`https://${text}`);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return null;
+  }
+}
+
+function isInternalRuntimeHost(value?: string | null): boolean {
+  const text = asText(value).toLowerCase();
+
+  return (
+    text === '0.0.0.0:8080' ||
+    text === '0.0.0.0' ||
+    text === '127.0.0.1:8080' ||
+    text === '127.0.0.1' ||
+    text === 'localhost:8080'
+  );
+}
+
+function isLocalHost(value?: string | null): boolean {
+  const text = asText(value).toLowerCase();
+  return text.startsWith('localhost') || text.startsWith('127.0.0.1') || text.startsWith('0.0.0.0');
+}
+
+function resolvePublicOrigin(request: NextRequest): string {
+  const forwardedHost = asText(request.headers.get('x-forwarded-host')).split(',')[0]?.trim() ?? '';
+  const forwardedProto = asText(request.headers.get('x-forwarded-proto')).split(',')[0]?.trim() ?? '';
+
+  if (forwardedHost && !isInternalRuntimeHost(forwardedHost)) {
+    const forwardedOrigin = normalizeOriginCandidate(`${forwardedProto || 'https'}://${forwardedHost}`);
+
+    if (forwardedOrigin) {
+      return forwardedOrigin;
+    }
+  }
+
+  const envOrigin =
+    normalizeOriginCandidate(process.env.NEXT_PUBLIC_APP_URL) ||
+    normalizeOriginCandidate(process.env.APP_URL) ||
+    normalizeOriginCandidate(process.env.BETTER_AUTH_URL) ||
+    normalizeOriginCandidate(
+      process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '',
+    );
+
+  if (envOrigin) {
+    return envOrigin;
+  }
+
+  const host = asText(request.headers.get('host')).split(',')[0]?.trim() ?? '';
+
+  if (host && !isInternalRuntimeHost(host)) {
+    const scheme = forwardedProto || (isLocalHost(host) ? 'http' : 'https');
+    const hostOrigin = normalizeOriginCandidate(`${scheme}://${host}`);
+
+    if (hostOrigin) {
+      return hostOrigin;
+    }
+  }
+
+  const requestOrigin = normalizeOriginCandidate(request.nextUrl.origin);
+
+  if (requestOrigin) {
+    try {
+      const requestHost = new URL(requestOrigin).host;
+
+      if (!isInternalRuntimeHost(requestHost)) {
+        return requestOrigin;
+      }
+    } catch {
+      // ignore and fall through to the hard fallback
+    }
+  }
+
+  return 'https://aim4pricecom-production.up.railway.app';
+}
+
+function buildFuelScanUrl(origin: string, publicFuelStorageCode: string): string {
+  return new URL(`/fuel-scan/${encodeURIComponent(publicFuelStorageCode)}`, origin).toString();
+}
+
+function buildExternalQrImageUrl(scanUrl: string, size: number, format: 'svg' | 'png'): string {
+  const url = new URL('https://api.qrserver.com/v1/create-qr-code/');
+  url.searchParams.set('data', scanUrl);
+  url.searchParams.set('size', `${size}x${size}`);
+  url.searchParams.set('format', format);
+  url.searchParams.set('margin', '18');
+  return url.toString();
+}
+
+function buildQrFileName(storageName: string, publicFuelStorageCode: string, extension: 'svg' | 'png'): string {
+  return `${slugifyFileSegment(storageName)}-${slugifyFileSegment(publicFuelStorageCode)}-fuel-qr.${extension}`;
+}
+
+function formatLitres(value: number | null): string {
+  if (value === null) return 'Not set';
+  return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 0 })} L`;
+}
+
+function buildPrintHtml(options: {
+  storageName: string;
+  fuelType: string;
+  publicFuelStorageCode: string;
+  capacityLitres: number | null;
+  qrImageUrl: string;
+}): string {
+  const storageName = escapeHtml(options.storageName);
+  const fuelType = escapeHtml(options.fuelType.toUpperCase());
+  const publicFuelStorageCode = escapeHtml(options.publicFuelStorageCode);
+  const capacity = escapeHtml(formatLitres(options.capacityLitres));
+  const qrImageUrl = escapeHtml(options.qrImageUrl);
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${storageName} fuel QR label</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap");
+      :root {
+        color-scheme: light;
+        --brand-dark: #10382f;
+        --brand-mid: #165340;
+        --line: #d9e3eb;
+        --text: #102f27;
+        --muted: #617286;
+        --page: #eef3f5;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 24px;
+        font-family: Montserrat, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        background: radial-gradient(circle at top left, rgba(22, 83, 64, 0.09), transparent 34%), var(--page);
+        color: var(--text);
+      }
+      .shell { width: min(100%, 880px); margin: 0 auto; display: grid; gap: 18px; }
+      .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
+      h1 { margin: 0; color: var(--brand-dark); font-size: clamp(30px, 4vw, 42px); line-height: .98; letter-spacing: -.055em; }
+      p { margin: 6px 0 0; color: var(--muted); font-size: 16px; font-weight: 650; line-height: 1.5; }
+      button { min-height: 48px; padding: 0 20px; border-radius: 999px; border: 1px solid rgba(210, 222, 237, .98); background: #fff; color: #1d3b62; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 12px 24px rgba(23,45,75,.07); }
+      .preview { display: grid; justify-items: center; padding: 24px; border-radius: 32px; background: rgba(255,255,255,.84); border: 1px solid rgba(217,227,235,.96); box-shadow: 0 26px 70px rgba(16,31,28,.08); }
+      .qrLabel { width: min(100%, 590px); min-height: 270px; display: grid; grid-template-columns: 188px minmax(0,1fr); gap: 18px; align-items: stretch; padding: 16px; border-radius: 28px; border: 1px solid #cbd9d1; background: linear-gradient(180deg,#fff 0%,#f7faf8 100%); box-shadow: 0 16px 36px rgba(16,31,28,.08), inset 0 1px 0 rgba(255,255,255,.96); }
+      .qrFrame { display: grid; place-items: center; padding: 11px; border-radius: 22px; background: #fff; border: 1px solid #d9e4dc; }
+      .qrFrame img { width: 100%; max-width: 158px; aspect-ratio: 1 / 1; object-fit: contain; display: block; }
+      .copy { min-width: 0; display: grid; align-content: center; gap: 12px; }
+      .eyebrow { width: max-content; padding: 7px 10px; border-radius: 999px; background: #eaf5ef; color: #174d3e; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+      h2 { margin: 0; color: var(--brand-dark); font-size: 33px; font-weight: 900; line-height: 1; letter-spacing: -.06em; }
+      .meta { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+      .box { padding: 12px 14px; border-radius: 17px; background: #fff; border: 1px solid #d5e2da; display: grid; gap: 4px; }
+      .box span, .help span { color: #718195; font-size: 10px; font-weight: 900; letter-spacing: .075em; text-transform: uppercase; }
+      .box strong { color: var(--brand-dark); font-size: 17px; font-weight: 900; line-height: 1; }
+      .help { display: grid; gap: 4px; color: var(--muted); font-size: 12.5px; font-weight: 700; line-height: 1.42; }
+      .code { margin-top: 2px; color: #8794a3; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 8.5px; line-height: 1.3; overflow-wrap: anywhere; }
+      @page { size: A4; margin: 12mm; }
+      @media print {
+        body { padding: 0; background: #fff; }
+        .toolbar { display: none; }
+        .shell { width: 100%; margin: 0; }
+        .preview { display: block; padding: 0; border: none; box-shadow: none; background: #fff; }
+        .qrLabel { width: 125mm; min-height: 66mm; grid-template-columns: 43mm minmax(0,1fr); padding: 4mm; gap: 4mm; border-radius: 7mm; box-shadow: none; break-inside: avoid; }
+        .qrFrame { border-radius: 5.5mm; padding: 2.5mm; }
+        .qrFrame img { max-width: 36mm; }
+        h2 { font-size: 18pt; }
+        .box span, .help span { font-size: 7pt; }
+        .box strong { font-size: 12pt; }
+        .help { font-size: 8pt; }
+        .code { font-size: 5.8pt; }
+      }
+      @media (max-width: 640px) {
+        body { padding: 12px; }
+        .preview { padding: 12px; border-radius: 24px; }
+        .qrLabel { grid-template-columns: 1fr; width: 100%; }
+        .qrFrame img { max-width: 210px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="toolbar">
+        <div>
+          <h1>Aim4price fuel QR label</h1>
+          <p>Print this label and attach it to the fuel storage point.</p>
+        </div>
+        <button type="button" onclick="window.print()">Print fuel QR</button>
+      </div>
+      <main class="preview">
+        <section class="qrLabel" aria-label="Printable Aim4price fuel QR label">
+          <div class="qrFrame"><img src="${qrImageUrl}" alt="QR code for ${storageName}" /></div>
+          <div class="copy">
+            <div class="eyebrow">Fuel Ledger</div>
+            <h2>${storageName}</h2>
+            <div class="meta">
+              <div class="box"><span>Fuel type</span><strong>${fuelType}</strong></div>
+              <div class="box"><span>Capacity</span><strong>${capacity}</strong></div>
+            </div>
+            <div class="help">
+              <span>Scan access</span>
+              <div>Scan to issue litres to an asset. Fuel storage PIN required.</div>
+              <div class="code">${publicFuelStorageCode}</div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>`;
+}
+
+export async function GET(request: NextRequest, context: RouteContext) {
+  const session = await getServerSession();
+
+  if (!session?.user?.id) {
+    return unauthorized();
+  }
+
+  const storage = await getFuelStorageById(session.user.id, context.params.storageId);
+
+  if (!storage) {
+    return NextResponse.json({ ok: false, error: 'Fuel storage not found.' }, { status: 404 });
+  }
+
+  const format = normalizeFormat(request.nextUrl.searchParams.get('format'));
+  const shouldDownload = request.nextUrl.searchParams.get('download') === '1';
+  const scanOrigin = resolvePublicOrigin(request);
+  const scanUrl = buildFuelScanUrl(scanOrigin, storage.publicFuelStorageCode);
+
+  if (format === 'print') {
+    try {
+      const qrImageUrl = buildExternalQrImageUrl(scanUrl, 640, 'png');
+      const qrResponse = await fetch(qrImageUrl, { cache: 'no-store' });
+
+      if (!qrResponse.ok) {
+        throw new Error(`QR render service returned ${qrResponse.status}.`);
+      }
+
+      const qrBuffer = Buffer.from(await qrResponse.arrayBuffer());
+      const embeddedQrImageUrl = `data:image/png;base64,${qrBuffer.toString('base64')}`;
+
+      return new NextResponse(
+        buildPrintHtml({
+          storageName: storage.name,
+          fuelType: storage.fuelType,
+          publicFuelStorageCode: storage.publicFuelStorageCode,
+          capacityLitres: storage.capacityLitres,
+          qrImageUrl: embeddedQrImageUrl,
+        }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'text/html; charset=utf-8',
+            'cache-control': 'no-store',
+          },
+        },
+      );
+    } catch (error) {
+      console.error('fuel QR print render failed', error);
+      return NextResponse.json(
+        { ok: false, error: 'Failed to render the fuel QR label right now.' },
+        { status: 502 },
+      );
+    }
+  }
+
+  try {
+    const qrImageUrl = buildExternalQrImageUrl(scanUrl, format === 'png' ? 1200 : 840, format);
+    const qrResponse = await fetch(qrImageUrl, { cache: 'no-store' });
+
+    if (!qrResponse.ok) {
+      throw new Error(`QR render service returned ${qrResponse.status}.`);
+    }
+
+    const body = await qrResponse.arrayBuffer();
+    const fileName = buildQrFileName(storage.name, storage.publicFuelStorageCode, format);
+
+    return new NextResponse(body, {
+      status: 200,
+      headers: {
+        'content-type': format === 'png' ? 'image/png' : 'image/svg+xml; charset=utf-8',
+        'cache-control': 'no-store',
+        'content-disposition': `${shouldDownload ? 'attachment' : 'inline'}; filename="${fileName}"`,
+      },
+    });
+  } catch (error) {
+    console.error('fuel QR render failed', error);
+    return NextResponse.json(
+      { ok: false, error: 'Failed to render the fuel QR code right now.' },
+      { status: 502 },
+    );
+  }
+}
