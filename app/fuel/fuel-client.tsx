@@ -628,7 +628,7 @@ export default function FuelClient() {
           <form className={styles.modalCard} onSubmit={handleStorageSubmit}>
             <div className={styles.modalHeader}>
               <div>
-                <span className={styles.modalEyebrow}>{modalMode === 'create-storage' ? 'Add Storage Tank' : 'Manage Storage Tank'}</span>
+                {modalMode === 'create-storage' ? <span className={styles.modalEyebrow}>Add Storage Tank</span> : null}
                 <h2>{modalMode === 'create-storage' ? 'Add Fuel Storage' : selectedStorage?.name ?? 'Manage Fuel Storage'}</h2>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal}>×</button>

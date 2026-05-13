@@ -1,10 +1,10 @@
 .pageShell {
   --bg: #f3f6f8;
   --surface: #ffffff;
-  --surface-soft: #f7fafc;
-  --surface-muted: #f2f5f8;
-  --line: #e5ebf1;
-  --line-strong: #d8e1ea;
+  --surface-soft: #f8fbfc;
+  --surface-muted: #f1f5f7;
+  --line: #e1e9f0;
+  --line-strong: #d2dee8;
   --text: #10352b;
   --text-muted: #617286;
   --text-soft: #7f8a98;
@@ -22,45 +22,47 @@
   --danger-line: #eed3d3;
   --danger-text: #a03535;
   min-height: calc(100vh - 4rem);
-  background: linear-gradient(180deg, #f5f7f8 0%, #eef3f5 100%);
-  padding: 1.35rem 0 3rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 34%),
+    linear-gradient(180deg, #f6f8f9 0%, #eef3f5 100%);
+  padding: 1.45rem 0 3.5rem;
 }
 
 .ledgerPanel {
   width: min(calc(100% - 2rem), 1320px);
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(225, 233, 241, 0.95);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(225, 233, 241, 0.98);
   border-radius: 2rem;
   box-shadow:
-    0 28px 70px rgba(16, 31, 28, 0.06),
-    0 10px 22px rgba(16, 31, 28, 0.04);
-  padding: 1.35rem;
+    0 30px 74px rgba(16, 31, 28, 0.065),
+    0 10px 24px rgba(16, 31, 28, 0.04);
+  padding: clamp(1.15rem, 2vw, 1.55rem);
   display: grid;
-  gap: 1rem;
+  gap: 1.05rem;
 }
 
 .panelHeader {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 1rem;
+  gap: 1rem 1.25rem;
+  padding: 0.15rem 0.15rem 0.35rem;
 }
 
 .pageTitleBlock {
-  min-height: 3.35rem;
-  display: flex;
-  align-items: center;
-  padding: 0 0.25rem;
+  min-width: 0;
+  display: grid;
+  gap: 0.25rem;
 }
 
 .pageTitleBlock h1 {
   margin: 0;
   color: var(--brand-dark);
-  font-size: clamp(1.55rem, 2.6vw, 2.35rem);
-  font-weight: 820;
-  line-height: 1.05;
-  letter-spacing: -0.055em;
+  font-size: clamp(2rem, 3.4vw, 2.65rem);
+  font-weight: 850;
+  line-height: 0.98;
+  letter-spacing: -0.06em;
 }
 
 .topActions {
@@ -80,14 +82,15 @@
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
-  min-height: 3rem;
-  padding: 0 1rem;
-  border-radius: 1rem;
+  min-height: 3.1rem;
+  padding: 0 1.08rem;
+  border-radius: 1.05rem;
   border: 1px solid transparent;
   font: inherit;
-  font-weight: 760;
+  font-weight: 780;
   cursor: pointer;
   text-decoration: none;
+  white-space: nowrap;
   transition:
     transform 160ms ease,
     box-shadow 160ms ease,
@@ -119,13 +122,14 @@
   color: #ffffff;
   background: linear-gradient(180deg, #1a5a45 0%, #124233 100%);
   border-color: rgba(18, 66, 51, 0.2);
-  box-shadow: 0 12px 24px rgba(18, 66, 51, 0.16);
+  box-shadow: 0 13px 26px rgba(18, 66, 51, 0.17);
 }
 
 .secondaryButton {
   color: var(--blue-text);
-  background: var(--blue-soft);
+  background: linear-gradient(180deg, #f7fbff 0%, var(--blue-soft) 100%);
   border-color: var(--blue-soft-border);
+  box-shadow: 0 10px 20px rgba(30, 55, 86, 0.045);
 }
 
 .buttonIcon {
@@ -138,7 +142,7 @@
   padding: 0.95rem 1rem;
   border-radius: 1rem;
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 720;
   border: 1px solid transparent;
 }
 
@@ -157,90 +161,95 @@
 .summaryGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.8rem;
+  gap: 0.85rem;
 }
 
 .summaryCard {
-  min-height: 8.25rem;
-  padding: 1.15rem 1.25rem;
-  border-radius: 1.2rem;
-  background: linear-gradient(180deg, #f7fafb 0%, #f2f5f8 100%);
+  min-height: 7.8rem;
+  padding: 1.25rem 1.35rem;
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 42%),
+    linear-gradient(180deg, #f8fbfc 0%, #f2f6f8 100%);
   border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
   display: grid;
   align-content: center;
-  gap: 0.28rem;
+  gap: 0.25rem;
 }
 
 .summaryCard span {
   color: var(--text-muted);
-  font-size: 0.86rem;
+  font-size: 0.9rem;
   font-weight: 760;
 }
 
 .summaryCard strong {
   color: var(--text);
-  font-size: 1.45rem;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
+  font-size: clamp(1.7rem, 2.4vw, 2rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
 }
 
 .summaryCard small {
   color: var(--text-muted);
-  font-size: 0.84rem;
-  font-weight: 650;
+  font-size: 0.86rem;
+  font-weight: 680;
 }
 
 .storageList {
   display: grid;
-  gap: 1rem;
+  gap: 0.9rem;
 }
 
 .storageCard {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(250px, 330px);
-  gap: clamp(1rem, 2vw, 1.6rem);
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: clamp(1rem, 2vw, 1.45rem);
   align-items: center;
-  padding: 1.25rem 1.35rem;
-  border-radius: 1.65rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(249, 252, 253, 0.98) 100%);
+  padding: clamp(1.15rem, 1.8vw, 1.45rem);
+  border-radius: 1.7rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.035), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(249, 252, 253, 0.99) 100%);
   border: 1px solid var(--line);
-  box-shadow: 0 12px 24px rgba(20, 36, 33, 0.03);
+  box-shadow: 0 14px 28px rgba(20, 36, 33, 0.035);
 }
 
 .storageCardLow {
   border-color: rgba(235, 203, 203, 0.98);
   background:
-    radial-gradient(circle at top left, rgba(160, 53, 53, 0.07), transparent 36%),
+    radial-gradient(circle at top left, rgba(166, 58, 58, 0.08), transparent 38%),
     linear-gradient(180deg, #fffafa 0%, #fff7f7 100%);
 }
 
 .storageInfo {
   min-width: 0;
   display: grid;
-  gap: 0.95rem;
+  gap: 0.9rem;
 }
 
 .storageTitleBlock {
   min-width: 0;
   display: grid;
-  gap: 0.42rem;
+  gap: 0.4rem;
 }
 
 .storageTitleBlock h2 {
   margin: 0;
   color: var(--text);
-  font-size: clamp(1.45rem, 2.2vw, 2rem);
-  font-weight: 820;
-  line-height: 1.04;
-  letter-spacing: -0.055em;
+  font-size: clamp(1.7rem, 2.6vw, 2.25rem);
+  font-weight: 850;
+  line-height: 1.02;
+  letter-spacing: -0.06em;
 }
 
 .storageDetails {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.48rem 0.75rem;
+  gap: 0.42rem 0.72rem;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.94rem;
   font-weight: 690;
 }
 
@@ -252,19 +261,19 @@
 
 .storageDetails span:first-child {
   color: var(--brand-mid);
-  font-weight: 820;
+  font-weight: 850;
 }
 
 .storageDetails span:not(:last-child)::after {
   content: '•';
-  margin-left: 0.75rem;
+  margin-left: 0.72rem;
   color: var(--line-strong);
 }
 
 .storageProgressBlock {
-  width: min(100%, 560px);
+  width: min(100%, 620px);
   display: grid;
-  gap: 0.48rem;
+  gap: 0.45rem;
 }
 
 .progressTrack {
@@ -292,27 +301,27 @@
   justify-content: space-between;
   gap: 1rem;
   color: var(--text-muted);
-  font-size: 0.84rem;
-  font-weight: 700;
+  font-size: 0.86rem;
+  font-weight: 740;
 }
 
 .progressMeta span:last-child {
   color: var(--text);
-  font-weight: 800;
+  font-weight: 850;
 }
 
 .unitActions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
+  gap: 0.7rem;
   align-self: center;
 }
 
 .unitButton {
-  min-height: 3.15rem;
+  min-height: 3.35rem;
   border-radius: 1rem;
   color: var(--blue-text);
-  background: var(--surface);
+  background: #ffffff;
   border-color: var(--line-strong);
   box-shadow: 0 10px 18px rgba(20, 36, 33, 0.035);
   letter-spacing: 0;
@@ -321,7 +330,7 @@
 
 .deleteUnitButton {
   color: var(--danger-text);
-  background: var(--danger-bg);
+  background: linear-gradient(180deg, #fffafa 0%, var(--danger-bg) 100%);
   border-color: var(--danger-line);
 }
 
@@ -350,26 +359,28 @@
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(9, 30, 24, 0.45);
+  background: rgba(9, 30, 24, 0.44);
   backdrop-filter: blur(10px);
 }
 
 .modalCard,
 .modalCardSmall {
-  width: min(100%, 760px);
-  max-height: min(90vh, 860px);
+  width: min(100%, 920px);
+  max-height: min(92vh, 780px);
   overflow: auto;
   display: grid;
-  gap: 1.15rem;
-  padding: clamp(1.1rem, 3vw, 1.6rem);
+  gap: 0.9rem;
+  padding: clamp(1.05rem, 2vw, 1.45rem);
   border-radius: 1.7rem;
   background: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 36px 90px rgba(10, 30, 24, 0.26);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 83, 64, 0.28) transparent;
 }
 
 .modalCardSmall {
-  width: min(100%, 560px);
+  width: min(100%, 610px);
 }
 
 .modalHeader {
@@ -381,28 +392,28 @@
 
 .modalHeader > div {
   display: grid;
-  gap: 0.55rem;
+  gap: 0.42rem;
 }
 
 .modalHeader h2 {
   margin: 0;
   color: var(--text);
-  font-size: clamp(1.65rem, 3vw, 2.5rem);
+  font-size: clamp(1.9rem, 3.2vw, 2.55rem);
   line-height: 0.98;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.055em;
 }
 
 .modalEyebrow {
   display: inline-flex;
   align-items: center;
   width: fit-content;
-  min-height: 2rem;
+  min-height: 1.95rem;
   padding: 0 0.85rem;
   border-radius: 999px;
   color: var(--text-muted);
   background: var(--surface-muted);
   border: 1px solid var(--line-strong);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 850;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -424,8 +435,8 @@
 .formGrid,
 .formGridSingle {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.9rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.72rem 0.85rem;
 }
 
 .formGridSingle {
@@ -437,7 +448,7 @@
 .pinField {
   min-width: 0;
   display: grid;
-  gap: 0.42rem;
+  gap: 0.34rem;
   color: #253b34;
   font-size: 0.82rem;
   font-weight: 800;
@@ -450,18 +461,38 @@
 .formGridSingle select,
 .pinField input {
   width: 100%;
+  min-height: 3.05rem;
   border: 1px solid rgba(18, 45, 37, 0.11);
   border-radius: 1rem;
   background: #fbfdfc;
   color: #19352d;
-  padding: 0.9rem 0.95rem;
+  padding: 0.82rem 0.95rem;
   font: inherit;
   font-size: 0.98rem;
   font-weight: 650;
   outline: none;
 }
 
+.formGrid select,
+.formGridSingle select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 3.25rem;
+  background-color: #fbfdfc;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2319352d' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.1rem center;
+  background-size: 1.05rem;
+  cursor: pointer;
+}
+
+.formGrid select::-ms-expand,
+.formGridSingle select::-ms-expand {
+  display: none;
+}
+
 .formGrid textarea {
+  min-height: 4.8rem;
   resize: vertical;
 }
 
@@ -485,6 +516,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 0.7rem;
+  padding-top: 0.15rem;
 }
 
 .confirmDeleteOverlay {
@@ -528,8 +560,8 @@
   margin: 0;
   max-width: 42rem;
   color: #10352b;
-  font-size: clamp(1.58rem, 2.65vw, 2rem);
-  font-weight: 760;
+  font-size: clamp(1.58rem, 2.65vw, 2.05rem);
+  font-weight: 780;
   line-height: 1.06;
   letter-spacing: -0.045em;
 }
@@ -605,7 +637,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1060px) {
   .panelHeader,
   .storageCard {
     grid-template-columns: 1fr;
@@ -620,13 +652,14 @@
     flex: 1 1 auto;
   }
 
-  .unitActions {
-    justify-content: stretch;
-    width: 100%;
-  }
-
   .storageProgressBlock {
     width: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .formGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
