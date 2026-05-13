@@ -68,7 +68,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     return NextResponse.json({ ok: true, ...ledger });
   } catch (error) {
     return NextResponse.json(
-      { ok: false, error: errorMessage(error, 'Failed to archive fuel storage.') },
+      { ok: false, error: errorMessage(error, 'Failed to delete fuel storage.') },
       { status: 400 },
     );
   }
