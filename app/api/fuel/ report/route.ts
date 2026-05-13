@@ -68,6 +68,38 @@ function slugifyFileSegment(value: string): string {
   return normalized || 'fuel-ledger';
 }
 
+function parseReportYear(value: string): number | null {
+  if (!/^\d{4}$/.test(value)) return null;
+  const year = Number(value);
+  return year >= 2000 && year <= 2100 ? year : null;
+}
+
+function parseReportMonth(value: string): number | null {
+  if (!/^\d{1,2}$/.test(value)) return null;
+  const month = Number(value);
+  return month >= 1 && month <= 12 ? month : null;
+}
+
+function buildReportDateRange(year: number | null, month: number | null): { fromIso?: string; toIso?: string; label: string } {
+  if (!year) {
+    return { label: 'All available entries' };
+  }
+
+  if (month) {
+    const from = new Date(Date.UTC(year, month - 1, 1));
+    const to = new Date(Date.UTC(year, month, 1));
+    const label = new Intl.DateTimeFormat('en-ZA', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(from);
+    return { fromIso: from.toISOString(), toIso: to.toISOString(), label };
+  }
+
+  return {
+    fromIso: new Date(Date.UTC(year, 0, 1)).toISOString(),
+    toIso: new Date(Date.UTC(year + 1, 0, 1)).toISOString(),
+    label: String(year),
+  };
+}
+
+
 function buildReportHtml(options: {
   title: string;
   subtitle: string;
@@ -176,11 +208,18 @@ export async function GET(request: NextRequest) {
   }
 
   const storageId = asText(request.nextUrl.searchParams.get('storageId'));
+  const year = parseReportYear(asText(request.nextUrl.searchParams.get('year')));
+  const month = year ? parseReportMonth(asText(request.nextUrl.searchParams.get('month'))) : null;
+  const dateRange = buildReportDateRange(year, month);
 
   try {
     const [ledger, events, storage] = await Promise.all([
       listFuelLedger(session.user.id),
-      listFuelEventsForReport(session.user.id, storageId || undefined),
+      listFuelEventsForReport(session.user.id, {
+        storageId: storageId || undefined,
+        fromIso: dateRange.fromIso,
+        toIso: dateRange.toIso,
+      }),
       storageId ? getFuelStorageById(session.user.id, storageId) : Promise.resolve(null),
     ]);
 
@@ -196,8 +235,8 @@ export async function GET(request: NextRequest) {
       .reduce((sum, event) => sum + event.litres, 0);
     const title = storage ? `${storage.name} fuel report` : 'Fuel Ledger report';
     const subtitle = storage
-      ? `Storage report for ${storage.fuelType.toUpperCase()} (${storage.publicFuelStorageCode}).`
-      : 'All fuel storage and fuel issue transactions.';
+      ? `Storage report for ${storage.fuelType.toUpperCase()} (${storage.publicFuelStorageCode}) · ${dateRange.label}.`
+      : `All fuel storage and fuel issue transactions · ${dateRange.label}.`;
     const generatedAt = new Intl.DateTimeFormat('en-ZA', {
       dateStyle: 'medium',
       timeStyle: 'short',
