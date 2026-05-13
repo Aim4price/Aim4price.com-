@@ -840,7 +840,7 @@ export async function listFuelAssetsForUser(userId: string): Promise<FuelLedgerA
   return result.rows.map(mapFuelAssetRow);
 }
 
-async function listFuelEvents(userId: string, options: { storageId?: string; limit?: number } = {}): Promise<FuelLedgerEvent[]> {
+async function listFuelEvents(userId: string, options: { storageId?: string; limit?: number; fromIso?: string; toIso?: string } = {}): Promise<FuelLedgerEvent[]> {
   await ensureFuelLedgerTables();
   const db = getDb();
   const limit = Math.max(1, Math.min(500, Math.round(options.limit ?? 80)));
@@ -850,6 +850,16 @@ async function listFuelEvents(userId: string, options: { storageId?: string; lim
   if (options.storageId) {
     params.push(options.storageId);
     filter += ` and e.storage_id::text = $${params.length}`;
+  }
+
+  if (options.fromIso) {
+    params.push(options.fromIso);
+    filter += ` and e.created_at >= $${params.length}::timestamptz`;
+  }
+
+  if (options.toIso) {
+    params.push(options.toIso);
+    filter += ` and e.created_at < $${params.length}::timestamptz`;
   }
 
   const result = await db.query<FuelEventRow>(
@@ -1168,6 +1178,61 @@ export async function archiveFuelStorage(userId: string, storageId: string): Pro
     `,
     [userId, storageId],
   );
+}
+
+export async function deleteFuelStorage(userId: string, storageId: string): Promise<void> {
+  await ensureFuelLedgerTables();
+  const db = getDb();
+  const client = await db.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const storageResult = await client.query<{ id: string }>(
+      `
+        select id::text
+        from public.fuel_storage_units
+        where user_id = $1 and id::text = $2
+        limit 1
+      `,
+      [userId, storageId],
+    );
+
+    if (!storageResult.rows[0]) {
+      throw new Error('Fuel storage not found.');
+    }
+
+    await client.query(
+      `
+        delete from public.asset_scan_events
+        where fuel_storage_id::text = $1
+      `,
+      [storageId],
+    );
+
+    await client.query(
+      `
+        delete from public.fuel_storage_events
+        where user_id = $1 and storage_id::text = $2
+      `,
+      [userId, storageId],
+    );
+
+    await client.query(
+      `
+        delete from public.fuel_storage_units
+        where user_id = $1 and id::text = $2
+      `,
+      [userId, storageId],
+    );
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function recordFuelStorageStock(
@@ -1708,6 +1773,16 @@ export async function getFuelScanPayload(userId: string, storageId: string): Pro
   return { storage, assets, recentEvents };
 }
 
-export async function listFuelEventsForReport(userId: string, storageId?: string): Promise<FuelLedgerEvent[]> {
-  return listFuelEvents(userId, { storageId, limit: 500 });
+export async function listFuelEventsForReport(
+  userId: string,
+  storageIdOrOptions?: string | { storageId?: string; fromIso?: string; toIso?: string; limit?: number },
+): Promise<FuelLedgerEvent[]> {
+  const options = typeof storageIdOrOptions === 'string' ? { storageId: storageIdOrOptions } : storageIdOrOptions ?? {};
+
+  return listFuelEvents(userId, {
+    storageId: options.storageId,
+    fromIso: options.fromIso,
+    toIso: options.toIso,
+    limit: options.limit ?? 2000,
+  });
 }
