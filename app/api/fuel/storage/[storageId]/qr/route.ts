@@ -162,6 +162,12 @@ function formatFuelTypeForLabel(value: string): string {
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
+function buildFuelLabelCode(publicFuelStorageCode: string): string {
+  const normalized = publicFuelStorageCode.trim().toUpperCase().replace(/^FUEL-/, '');
+  const shortCode = normalized.slice(0, 6) || 'STOCK';
+  return `FUEL-${shortCode}`;
+}
+
 function buildPrintHtml(options: {
   storageName: string;
   fuelType: string;
@@ -172,6 +178,7 @@ function buildPrintHtml(options: {
   const storageName = escapeHtml(options.storageName);
   const fuelType = escapeHtml(formatFuelTypeForLabel(options.fuelType));
   const publicFuelStorageCode = escapeHtml(options.publicFuelStorageCode);
+  const fuelLabelCode = escapeHtml(buildFuelLabelCode(options.publicFuelStorageCode));
   const capacity = escapeHtml(formatLitres(options.capacityLitres));
   const qrImageUrl = escapeHtml(options.qrImageUrl);
 
@@ -345,7 +352,7 @@ function buildPrintHtml(options: {
       .plateBlock strong {
         min-width: 0;
         color: var(--brand-dark);
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 900;
         line-height: 1;
         letter-spacing: -0.035em;
@@ -488,12 +495,12 @@ function buildPrintHtml(options: {
 
             <div class="plateBlock">
               <span>Fuel label</span>
-              <strong>${publicFuelStorageCode}</strong>
+              <strong>${fuelLabelCode}</strong>
             </div>
 
             <div class="helpText">
               <span>Scan access</span>
-              <div>Scan to issue litres to assets. Fuel PIN required.</div>
+              <div>Scan to issue litres to assets. PIN required.</div>
               <div>${fuelType} · Capacity ${capacity}</div>
               <div class="publicCode">${publicFuelStorageCode}</div>
             </div>
