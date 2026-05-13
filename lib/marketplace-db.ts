@@ -402,13 +402,64 @@ function listingUsageUnit(
   return 'hours';
 }
 
+function formatMarketplacePercent(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function formatMarketplaceUsageDetail(
+  usageUnit: MarketplaceUsageUnit,
+  hours: number,
+  lifeWorkedPercent: number | null,
+): string {
+  if (usageUnit === 'percent') {
+    return lifeWorkedPercent === null ? '' : `${formatMarketplacePercent(lifeWorkedPercent)}% worked`;
+  }
+
+  if (!Number.isFinite(hours) || hours <= 0) {
+    return '';
+  }
+
+  return `${Math.round(hours).toLocaleString('en-ZA')} ${usageUnit === 'km' ? 'km' : 'hours'}`;
+}
+
+function buildMarketplaceListingTitle(row: MarketplaceAssetRow, fallbackTitle?: string): string {
+  const { brandName, modelName } = deriveBrandAndModel(row);
+  const baseTitle =
+    asText(fallbackTitle) ||
+    asText(pick(row, ['title', 'name', 'asset_name'])) ||
+    `${brandName} ${modelName}`.trim() ||
+    'Aim4price listing';
+  const specs = pickJsonObject(pick(row, ['specs_json']));
+  const lifeWorkedPercent = listingWorkedPercent(row, specs);
+  const usageUnit = listingUsageUnit(row, specs, lifeWorkedPercent);
+  const hours = Math.max(0, Math.round(asNumber(pick(row, ['hours', 'engine_hours']), 0)));
+  const yearModel = Math.round(asNumber(pick(row, ['year_model', 'year']), 0));
+  const conditionKey = normalizeConditionKey(pick(row, ['condition', 'valuation_last_condition']));
+  const details = [
+    yearModel > 0 ? String(yearModel) : '',
+    formatMarketplaceUsageDetail(usageUnit, hours, lifeWorkedPercent),
+    conditionLabel(conditionKey),
+  ].filter(Boolean);
+
+  if (!details.length) {
+    return baseTitle;
+  }
+
+  const normalizedBase = baseTitle.toLowerCase();
+  const uniqueDetails = details.filter((detail) => !normalizedBase.includes(detail.toLowerCase()));
+
+  return uniqueDetails.length ? `${baseTitle} · ${uniqueDetails.join(' · ')}` : baseTitle;
+}
+
 async function createMarketplaceListingSnapshot(row: MarketplaceAssetRow): Promise<void> {
   try {
     const db = getDb();
     const assetId = asText(row.id);
     const userId = asText(row.user_id);
     const { brandName, modelName } = deriveBrandAndModel(row);
-    const title = asText(pick(row, ['title', 'name', 'asset_name'])) || `${brandName} ${modelName}`.trim() || 'Aim4price listing';
+    const rawTitle = asText(pick(row, ['title', 'name', 'asset_name'])) || `${brandName} ${modelName}`.trim() || 'Aim4price listing';
+    const title = buildMarketplaceListingTitle(row, rawTitle);
     const imageUrls = buildPhotoList(row);
     const description =
       asText(pick(row, ['marketplace_notes', 'note', 'notes', 'description'])) ||
@@ -481,7 +532,8 @@ function buildMarketplaceListing(
 ): MarketplaceListing {
   const assetId = asText(row.id);
   const { brandName, modelName } = deriveBrandAndModel(row);
-  const title = asText(pick(row, ['title', 'name', 'asset_name'])) || `${brandName} ${modelName}`.trim();
+  const rawTitle = asText(pick(row, ['title', 'name', 'asset_name'])) || `${brandName} ${modelName}`.trim();
+  const title = buildMarketplaceListingTitle(row, rawTitle);
   const powerKw = Math.round(asNumber(pick(row, ['power_kw', 'kw', 'power']), 0));
   const powerHp = Math.round(powerKw * 1.341);
   const specs = pickJsonObject(pick(row, ['specs_json']));
