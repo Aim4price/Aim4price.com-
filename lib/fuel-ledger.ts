@@ -3,6 +3,7 @@ import type { PoolClient } from 'pg';
 import type { NextRequest, NextResponse } from 'next/server';
 import { getDb } from './db';
 import { hashScanPin, verifyScanPin } from './scan-pin';
+import { revalueAssetRegisterItem } from './asset-register-revaluation';
 
 export const FUEL_SCAN_COOKIE_NAME = 'aim4price_fuel_scan';
 export const FUEL_SCAN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
@@ -213,6 +214,34 @@ function asRecord(value: unknown): Record<string, unknown> {
   }
 
   return {};
+}
+
+function markFuelAssetValuationNeedsUpdate(specs: Record<string, unknown>, reasons: string[]): Record<string, unknown> {
+  const uniqueReasons = Array.from(new Set(reasons.map((reason) => reason.trim()).filter(Boolean)));
+
+  if (!uniqueReasons.length) {
+    return specs;
+  }
+
+  const nowIso = new Date().toISOString();
+  const existingSince = asText(specs.valuation_stale_since) || asText(specs.valuationStaleSince) || nowIso;
+
+  return {
+    ...specs,
+    valuationNeedsUpdate: true,
+    valuation_needs_update: true,
+    valuationStaleSince: existingSince,
+    valuation_stale_since: existingSince,
+    valuationStaleReason: uniqueReasons.join(', '),
+    valuation_stale_reason: uniqueReasons.join(', '),
+    valuationStaleReasons: uniqueReasons,
+    valuation_stale_reasons: uniqueReasons,
+  };
+}
+
+function hasSavedFuelAssetValuation(row: { valuation_run_id?: unknown; selected_method?: unknown }): boolean {
+  const selectedMethod = asText(row.selected_method).toLowerCase();
+  return Boolean(row.valuation_run_id) && selectedMethod !== 'manual';
 }
 
 function roundLitres(value: number): number {
@@ -849,7 +878,8 @@ export async function listFuelLedger(userId: string): Promise<FuelLedgerData> {
         select ${fuelStorageSelectSql()}
         from public.fuel_storage_units
         where user_id = $1
-        order by case when status = 'active' then 0 else 1 end, lower(name), created_at desc
+          and status = 'active'
+        order by lower(name), created_at desc
       `,
       [userId],
     ),
@@ -1379,6 +1409,9 @@ export async function recordFuelAssetIssue(
       public_asset_code: string | null;
       hours: string | number | null;
       fuel_percent: string | number | null;
+      valuation_run_id: string | number | null;
+      selected_method: string | null;
+      specs_json: unknown;
     }>(
       `
         select
@@ -1387,7 +1420,10 @@ export async function recordFuelAssetIssue(
           to_jsonb(a)->>'plate_label' as plate_label,
           to_jsonb(a)->>'public_asset_code' as public_asset_code,
           a.hours,
-          to_jsonb(a)->>'fuel_percent' as fuel_percent
+          to_jsonb(a)->>'fuel_percent' as fuel_percent,
+          a.valuation_run_id,
+          a.selected_method,
+          coalesce(a.specs_json, '{}'::jsonb) as specs_json
         from public.asset_register_items a
         where a.user_id = $1 and a.id::text = $2
         for update
@@ -1404,6 +1440,12 @@ export async function recordFuelAssetIssue(
     if (assetUsageReading !== null && currentUsageReading !== null && assetUsageReading < currentUsageReading) {
       throw new Error('The usage reading cannot be lower than the reading already saved on this asset.');
     }
+
+    const usageReadingChanged = assetUsageReading !== null && assetUsageReading !== currentUsageReading;
+    const shouldTryRevalueAfterCommit = usageReadingChanged && hasSavedFuelAssetValuation(asset);
+    const nextSpecsJson = shouldTryRevalueAfterCommit
+      ? markFuelAssetValuationNeedsUpdate(asRecord(asset.specs_json), ['usage changed'])
+      : asRecord(asset.specs_json);
 
     const storageBefore = storage.currentLitres;
     const storageAfter = roundLitres(storageBefore - litres);
@@ -1449,10 +1491,11 @@ export async function recordFuelAssetIssue(
           last_known_lat = $5::double precision,
           last_known_lng = $6::double precision,
           last_known_location_text = $7,
+          specs_json = $8::jsonb,
           updated_at = now()
         where user_id = $1 and id::text = $2
       `,
-      [input.userId, input.assetId, assetFuelPercentAfter, assetUsageReading, latitude, longitude, locationText],
+      [input.userId, input.assetId, assetFuelPercentAfter, assetUsageReading, latitude, longitude, locationText, JSON.stringify(nextSpecsJson)],
     );
 
     await client.query(
@@ -1504,6 +1547,17 @@ export async function recordFuelAssetIssue(
 
     await client.query('COMMIT');
     committed = true;
+
+    if (shouldTryRevalueAfterCommit) {
+      try {
+        await revalueAssetRegisterItem({
+          userId: input.userId,
+          assetId: input.assetId,
+        });
+      } catch (error) {
+        console.warn('fuel ledger automatic asset revaluation failed', error);
+      }
+    }
 
     const assets = await listFuelAssetsForUser(input.userId);
 
