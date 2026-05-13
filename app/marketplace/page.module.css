@@ -549,9 +549,10 @@
 .priceWithVat {
   display: inline-flex;
   align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.42rem;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
   color: #050505;
+  white-space: nowrap;
 }
 
 .priceWithVat > span {
@@ -568,12 +569,12 @@
 }
 
 .cardPrice {
-  font-size: clamp(1.2rem, 1.35vw, 1.48rem);
-  line-height: 1.06;
+  font-size: clamp(1.55rem, 1.85vw, 2.08rem);
+  line-height: 0.98;
 }
 
 .cardPrice em {
-  font-size: 0.9em;
+  font-size: 0.86em;
 }
 
 .cardBody h3 {
@@ -858,14 +859,16 @@
 }
 
 .modalPrice {
-  display: flex;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.72rem;
   color: #050505;
-  font-size: clamp(2.6rem, 3.35vw, 3.65rem);
-  line-height: 0.94;
+  font-size: clamp(3.15rem, 4.5vw, 4.95rem);
+  line-height: 0.9;
 }
 
 .modalPrice em {
-  font-size: 0.58em;
+  font-size: 0.5em;
 }
 
 .modalTitleArea h2 {
@@ -1196,15 +1199,15 @@
 }
 
 .sharePrice {
-  display: flex;
+  display: inline-flex;
   margin-top: 0.18rem;
-  font-size: 1.02rem;
+  font-size: 1.08rem;
   line-height: 1.18;
   white-space: nowrap;
 }
 
 .sharePrice em {
-  font-size: 0.82em;
+  font-size: 0.84em;
 }
 
 .sharePreviewCard small {
@@ -1379,7 +1382,16 @@
   }
 
   .cardPrice {
-    font-size: 1.16rem;
+    font-size: 1.42rem;
+  }
+
+  .cardPrice em {
+    font-size: 0.82em;
+  }
+
+  .modalPrice {
+    font-size: clamp(2.55rem, 10vw, 3.3rem);
+    gap: 0.5rem;
   }
 
   .cardBody h3,

@@ -297,23 +297,97 @@ function ListingImage({
   return <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />;
 }
 
-function listingDisplayTitle(listing: MarketplaceListing): string {
+function PriceWithVat({
+  value,
+  className = '',
+}: {
+  value: number;
+  className?: string;
+}) {
   return (
-    String(listing.title ?? '').trim() ||
-    `${String(listing.brandName ?? '').trim()} ${String(listing.modelName ?? '').trim()}`.trim() ||
-    'Marketplace listing'
+    <span className={`${styles.priceWithVat} ${className}`.trim()}>
+      <span>{money(value)}</span>
+      <em>+ VAT</em>
+    </span>
   );
 }
 
-function getListingNote(listing: MarketplaceListing): string {
-  const note = String(listing.description ?? '').trim();
+function isListingTitleMetaPart(value: string): boolean {
+  const part = value.trim().toLowerCase();
 
-  if (note) {
-    return note;
+  if (!part) {
+    return true;
   }
 
-  return `${listingDisplayTitle(listing)} listed in ${formatLocation(listing)}.`;
+  if (/^(19|20)\d{2}$/.test(part)) {
+    return true;
+  }
+
+  if (/^\d[\d\s,.]*(?:km|hrs?|hours)$/.test(part)) {
+    return true;
+  }
+
+  if (/^\d+(?:\.\d+)?%\s*worked$/.test(part)) {
+    return true;
+  }
+
+  return ['excellent', 'good', 'fair', 'used', 'serious wear', 'requires attention'].includes(part);
 }
+
+function cleanListingTitleMeta(value: string): string {
+  const parts = value
+    .split(/\s*[·•]\s*/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length <= 1) {
+    return value.trim();
+  }
+
+  const [baseTitle, ...details] = parts;
+
+  if (details.every(isListingTitleMetaPart)) {
+    return baseTitle;
+  }
+
+  const usefulDetails = details.filter((detail) => !isListingTitleMetaPart(detail));
+  return [baseTitle, ...usefulDetails].join(' · ').trim();
+}
+
+function listingDisplayTitle(listing: MarketplaceListing): string {
+  const rawTitle =
+    String(listing.title ?? '').trim() ||
+    `${String(listing.brandName ?? '').trim()} ${String(listing.modelName ?? '').trim()}`.trim() ||
+    'Marketplace listing';
+
+  return cleanListingTitleMeta(rawTitle) || 'Marketplace listing';
+}
+
+function getListingNote(listing: MarketplaceListing): string {
+  const note = String(listing.description ?? '').replace(/\s+/g, ' ').trim();
+
+  if (!note) {
+    return '';
+  }
+
+  const normalizedNote = note.toLowerCase();
+  const normalizedTitle = listingDisplayTitle(listing).toLowerCase();
+
+  if (normalizedNote === normalizedTitle) {
+    return '';
+  }
+
+  if (
+    normalizedNote.includes('available on the aim4price marketplace') ||
+    normalizedNote.includes('listed on the aim4price marketplace') ||
+    normalizedNote.includes('prototype aim4price marketplace listing')
+  ) {
+    return '';
+  }
+
+  return note;
+}
+
 
 function formatTypeLabel(value: string): string {
   return value === 'orchard' ? 'Orchard' : 'Field';
@@ -363,7 +437,7 @@ function listingUsageLabel(listing: MarketplaceListing): string {
     return 'Usage';
   }
 
-  return 'Engine hours';
+  return normalize(listing.assetKind) === 'vehicle' ? 'Vehicle hours' : 'Engine hours';
 }
 
 function formatPercent(value: number): string {
@@ -413,7 +487,7 @@ function inferSectorFromListing(listing: MarketplaceListing): SectorKey {
     return explicit;
   }
 
-  const searchText = [listing.title, listing.description, listing.modelName, listing.brandName]
+  const searchText = [listing.title, listing.description, listing.modelName, listing.brandName, listing.assetKind]
     .join(' ')
     .toLowerCase();
 
@@ -440,8 +514,17 @@ function inferFamilyLabel(listing: MarketplaceListing): string {
     return explicit;
   }
 
+  const assetKind = normalize(listing.assetKind);
+
+  if (assetKind === 'vehicle') return 'Vehicles';
+  if (assetKind === 'tools' || assetKind === 'tool') return 'Tools';
+  if (assetKind === 'equipment') return 'Equipment';
+  if (assetKind === 'manual' || assetKind === 'other') return 'Other';
+  if (assetKind === 'property') return 'Property/Buildings';
+
   const modelText = [listing.title, listing.modelName, listing.description].join(' ').toLowerCase();
 
+  if (/vehicle|bakkie|hilux|truck|ldv|pickup|ute|car/.test(modelText)) return 'Vehicles';
   if (/combine/.test(modelText)) return 'Combines';
   if (/baler/.test(modelText)) return 'Balers';
   if (/sprayer/.test(modelText)) return 'Sprayers';
@@ -463,6 +546,30 @@ function getListingFamilyLabel(listing: MarketplaceListing): string {
   return inferFamilyLabel(listing);
 }
 
+function getListingAssetKind(listing: MarketplaceListing): string {
+  return normalize(listing.assetKind);
+}
+
+function isTractorListing(listing: MarketplaceListing): boolean {
+  const familyKey = getListingFamilyKey(listing);
+  const familyLabel = normalize(getListingFamilyLabel(listing));
+  const assetKind = getListingAssetKind(listing);
+
+  return assetKind === 'tractor' || familyKey === 'tractors' || familyLabel === 'tractors';
+}
+
+function getListingPrimaryFamilyLabel(listing: MarketplaceListing): string {
+  const assetKind = getListingAssetKind(listing);
+
+  if (assetKind === 'vehicle') return 'Vehicles';
+  if (assetKind === 'tools' || assetKind === 'tool') return 'Tools';
+  if (assetKind === 'equipment') return 'Equipment';
+  if (assetKind === 'manual' || assetKind === 'other') return 'Other';
+  if (assetKind === 'property') return 'Property/Buildings';
+
+  return getListingFamilyLabel(listing);
+}
+
 function getListingConditionKey(listing: MarketplaceListing): ConditionFilterValue | 'not-set' {
   const normalized = normalize(listing.conditionKey ?? listing.conditionLabel);
 
@@ -476,14 +583,13 @@ function getListingConditionKey(listing: MarketplaceListing): ConditionFilterVal
 }
 
 function buildListingSpecLine(listing: MarketplaceListing): string {
-  const familyLabel = getListingFamilyLabel(listing);
+  const familyLabel = getListingPrimaryFamilyLabel(listing);
   const powerKw = Number(listing.powerKw || 0);
   const drive = String(listing.drive ?? '').trim();
   const cab = String(listing.cab ?? '').trim();
-
   const parts = [familyLabel];
 
-  if (familyLabel.toLowerCase() === 'tractors' || powerKw > 0) {
+  if (isTractorListing(listing)) {
     parts.push(`${formatTypeLabel(String(listing.tractorType ?? 'field'))} tractor`);
 
     if (drive) {
@@ -501,6 +607,7 @@ function buildListingSpecLine(listing: MarketplaceListing): string {
 
   return Array.from(new Set(parts.filter(Boolean))).join(' • ');
 }
+
 
 function buildSearchText(listing: MarketplaceListing): string {
   return [
@@ -525,6 +632,7 @@ function buildSearchText(listing: MarketplaceListing): string {
     listing.sellerCompany,
     listing.sourceName,
     listing.sourceUrl,
+    listing.assetKind,
     listing.sectorKey,
     listing.sectorLabel,
     listing.familyKey,
@@ -626,7 +734,7 @@ function buildListingShareUrl(listing: MarketplaceListing): string {
 function buildListingShareText(listing: MarketplaceListing): string {
   return [
     listingDisplayTitle(listing),
-    `${money(listing.askingPriceExVat)} excl. VAT`,
+    `${money(listing.askingPriceExVat)} + VAT`,
     formatLocation(listing),
     'View this listing on Aim4price.',
   ].join(' • ');
@@ -1382,16 +1490,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
         </aside>
 
         <section className={styles.resultsArea}>
-          <div className={styles.resultsBar}>
-            <div className={styles.resultsTitleBlock}>
-              <p>{buildLocationSummary(locationFilter, distanceFilter)}</p>
-              <h2>{query.trim() ? `Results for “${query.trim()}”` : 'Today\'s picks'}</h2>
-              <span>
-                {visible.length} listing{visible.length === 1 ? '' : 's'} found
-              </span>
-            </div>
-          </div>
-
           {activeFilterChips.length ? (
             <div className={styles.activeFilters}>
               {activeFilterChips.map((chip) => (
@@ -1441,7 +1539,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
                     </div>
 
                     <div className={styles.cardBody}>
-                      <strong className={styles.cardPrice}>{money(listing.askingPriceExVat)}</strong>
+                      <PriceWithVat value={listing.askingPriceExVat} className={styles.cardPrice} />
                       <h3>{listingDisplayTitle(listing)}</h3>
                       <p className={styles.cardLocation}>{formatLocation(listing)}</p>
                       <p className={styles.cardMeta}>
@@ -1551,7 +1649,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
 
             <aside ref={modalDetailsRef} className={styles.modalDetails} onScroll={updateModalScrollRail}>
               <div className={styles.modalTitleArea}>
-                <strong>{money(activeListing.askingPriceExVat)}</strong>
+                <PriceWithVat value={activeListing.askingPriceExVat} className={styles.modalPrice} />
                 <h2 id="marketplace-listing-title">{listingDisplayTitle(activeListing)}</h2>
                 <p>{formatLocation(activeListing)}</p>
               </div>
@@ -1588,14 +1686,14 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
                 </div>
                 <div className={styles.detailItem}>
                   <span>Family</span>
-                  <strong>{getListingFamilyLabel(activeListing)}</strong>
+                  <strong>{getListingPrimaryFamilyLabel(activeListing)}</strong>
                 </div>
               </div>
 
               <section className={styles.modalSection}>
                 <h3>Details</h3>
                 <p>{buildListingSpecLine(activeListing)}</p>
-                <p>{getListingNote(activeListing)}</p>
+                {getListingNote(activeListing) ? <p>{getListingNote(activeListing)}</p> : null}
                 <small>Listed {formatPublishedDate(activeListing.dateAdvertised || activeListing.publishedAtIso)}</small>
               </section>
 
@@ -1724,7 +1822,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
               />
               <div className={styles.sharePreviewMeta}>
                 <strong>{listingDisplayTitle(shareListing)}</strong>
-                <span>{money(shareListing.askingPriceExVat)} excl. VAT</span>
+                <PriceWithVat value={shareListing.askingPriceExVat} className={styles.sharePrice} />
                 <small>{formatLocation(shareListing)}</small>
               </div>
             </div>
