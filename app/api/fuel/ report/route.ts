@@ -137,35 +137,198 @@ function buildReportHtml(options: {
     <title>${escapeHtml(options.title)}</title>
     <style>
       @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap");
-      :root { color-scheme: light; --brand:#113d31; --muted:#667587; --line:#dce6ee; --paper:#fff; --page:#eef3f5; }
-      * { box-sizing: border-box; }
-      body { margin:0; padding:28px; font-family: Montserrat, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; background:var(--page); color:#142f28; }
-      .shell { width:min(100%, 1180px); margin:0 auto; display:grid; gap:18px; }
-      .toolbar { display:flex; justify-content:space-between; gap:14px; align-items:center; flex-wrap:wrap; }
-      h1 { margin:0; color:var(--brand); font-size:clamp(32px, 4vw, 52px); line-height:.94; letter-spacing:-.06em; }
-      .subtitle { margin:8px 0 0; color:var(--muted); font-weight:650; line-height:1.55; }
-      button { min-height:48px; padding:0 20px; border-radius:999px; border:1px solid var(--line); background:#fff; color:#173d31; font:inherit; font-weight:850; cursor:pointer; box-shadow:0 12px 26px rgba(18,45,37,.08); }
-      .cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
-      .card { padding:18px; border-radius:22px; border:1px solid var(--line); background:#fff; box-shadow:0 16px 36px rgba(18,45,37,.06); }
-      .card span { display:block; color:var(--muted); font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:.08em; }
-      .card strong { display:block; margin-top:8px; color:var(--brand); font-size:24px; font-weight:900; letter-spacing:-.04em; }
-      .tableWrap { overflow:auto; border-radius:24px; border:1px solid var(--line); background:#fff; box-shadow:0 18px 42px rgba(18,45,37,.07); }
-      table { width:100%; border-collapse:collapse; min-width:1120px; }
-      th, td { padding:13px 14px; border-bottom:1px solid #edf2f5; text-align:left; vertical-align:top; font-size:12px; line-height:1.45; }
-      th { position:sticky; top:0; background:#f8fbfa; color:#49625a; font-size:10px; font-weight:900; letter-spacing:.075em; text-transform:uppercase; }
-      td { color:#263a34; font-weight:650; }
-      .num { text-align:right; white-space:nowrap; }
-      .empty { padding:34px; text-align:center; color:var(--muted); font-weight:800; }
-      @media print {
-        body { padding:0; background:#fff; }
-        .toolbar button { display:none; }
-        .shell { width:100%; }
-        .cards { grid-template-columns:repeat(4,1fr); }
-        .card, .tableWrap { box-shadow:none; }
-        th { position:static; }
-        table { min-width:0; }
+
+      :root {
+        color-scheme: light;
+        --brand: #10382f;
+        --brand-mid: #165340;
+        --muted: #617286;
+        --line: #dce6ee;
+        --paper: #ffffff;
+        --soft: #f7fafc;
+        --page: #eef3f5;
       }
-      @media (max-width: 860px) { .cards { grid-template-columns:repeat(2,minmax(0,1fr)); } body { padding:16px; } }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        padding: 30px;
+        font-family: Montserrat, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 30%),
+          var(--page);
+        color: #142f28;
+      }
+
+      .shell {
+        width: min(100%, 1240px);
+        margin: 0 auto;
+        display: grid;
+        gap: 18px;
+      }
+
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      h1 {
+        margin: 0;
+        color: var(--brand);
+        font-size: clamp(36px, 4.6vw, 58px);
+        line-height: 0.95;
+        letter-spacing: -0.065em;
+      }
+
+      .subtitle {
+        max-width: 780px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 15px;
+        font-weight: 680;
+        line-height: 1.55;
+      }
+
+      button {
+        min-height: 52px;
+        padding: 0 24px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, #ffffff 0%, #f2f7fb 100%);
+        color: #173d31;
+        font: inherit;
+        font-size: 15px;
+        font-weight: 850;
+        cursor: pointer;
+        box-shadow: 0 14px 28px rgba(18, 45, 37, 0.08);
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .card {
+        min-height: 98px;
+        padding: 20px 22px;
+        border-radius: 24px;
+        border: 1px solid var(--line);
+        background:
+          radial-gradient(circle at top left, rgba(22, 83, 64, 0.04), transparent 40%),
+          var(--paper);
+        box-shadow: 0 16px 36px rgba(18, 45, 37, 0.06);
+      }
+
+      .card span {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .card strong {
+        display: block;
+        margin-top: 10px;
+        color: var(--brand);
+        font-size: 28px;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: -0.045em;
+      }
+
+      .tableWrap {
+        overflow: auto;
+        border-radius: 26px;
+        border: 1px solid var(--line);
+        background: var(--paper);
+        box-shadow: 0 18px 42px rgba(18, 45, 37, 0.07);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1120px;
+      }
+
+      th,
+      td {
+        padding: 15px 16px;
+        border-bottom: 1px solid #edf2f5;
+        text-align: left;
+        vertical-align: top;
+        font-size: 12.5px;
+        line-height: 1.5;
+      }
+
+      th {
+        position: sticky;
+        top: 0;
+        background: #f8fbfa;
+        color: #49625a;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.075em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      td {
+        color: #263a34;
+        font-weight: 680;
+      }
+
+      tbody tr:nth-child(even) td {
+        background: #fbfdfd;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+
+      .num {
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .empty {
+        padding: 38px;
+        text-align: center;
+        color: var(--muted);
+        font-weight: 800;
+      }
+
+      @page {
+        size: A4 landscape;
+        margin: 10mm;
+      }
+
+      @media print {
+        body { padding: 0; background: #fff; }
+        .toolbar button { display: none; }
+        .shell { width: 100%; gap: 12px; }
+        .cards { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .card, .tableWrap { box-shadow: none; }
+        .card { min-height: auto; padding: 11px 12px; border-radius: 14px; }
+        .card strong { font-size: 18px; }
+        h1 { font-size: 28px; }
+        .subtitle { font-size: 10px; margin-top: 3px; }
+        th { position: static; }
+        th, td { padding: 6px 7px; font-size: 8px; line-height: 1.35; }
+        th { font-size: 7px; }
+        table { min-width: 0; }
+      }
+
+      @media (max-width: 860px) {
+        body { padding: 16px; }
+        .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
     </style>
   </head>
   <body>
@@ -233,7 +396,7 @@ export async function GET(request: NextRequest) {
     const totalStockIn = events
       .filter((event) => event.eventType === 'stock_in' || event.eventType === 'opening_balance')
       .reduce((sum, event) => sum + event.litres, 0);
-    const title = storage ? `${storage.name} fuel report` : 'Fuel Ledger report';
+    const title = storage ? `${storage.name} Fuel Report` : 'Fuel Ledger Report';
     const subtitle = storage
       ? `Storage report for ${storage.fuelType.toUpperCase()} (${storage.publicFuelStorageCode}) · ${dateRange.label}.`
       : `All fuel storage and fuel issue transactions · ${dateRange.label}.`;
