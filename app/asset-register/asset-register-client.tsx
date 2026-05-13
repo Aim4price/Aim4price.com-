@@ -482,28 +482,38 @@ function OptionsIcon({ className }: IconProps) {
 
 function ManageIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="M10 4.5A3.5 3.5 0 0 0 6.5 8v1.15A3.7 3.7 0 0 0 8.2 20H10z" />
-      <path d="M14 4.5A3.5 3.5 0 0 1 17.5 8v1.15A3.7 3.7 0 0 1 15.8 20H14z" />
-      <path d="M10 8H8.8" />
-      <path d="M14 8h1.2" />
-      <path d="M10 12H8" />
-      <path d="M14 12h2" />
-      <path d="M10 16H8.6" />
-      <path d="M14 16h1.4" />
-      <path d="M12 5v15" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
+      <circle cx="12" cy="12" r="3" />
     </svg>
   );
 }
 
 function UpdateAssetIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="M21 12a9 9 0 0 1-15.36 6.36" />
-      <path d="M3 12A9 9 0 0 1 18.36 5.64" />
-      <path d="M18 2v4h4" />
-      <path d="M6 22v-4H2" />
-      <path d="M9 12.2 11 14l4-4.5" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M6.2 8.1h9.35c2.55 0 4.6 2.05 4.6 4.6 0 1.14-.42 2.18-1.1 2.98" />
+      <path d="M16.35 4.5 20.1 8.1l-3.75 3.6" />
+      <path d="M17.8 15.9H8.45c-2.55 0-4.6-2.05-4.6-4.6 0-1.14.42-2.18 1.1-2.98" />
+      <path d="M7.65 19.5 3.9 15.9l3.75-3.6" />
     </svg>
   );
 }
@@ -4253,9 +4263,8 @@ export default function AssetRegisterClient() {
           <div className={`${styles.modalCard} ${styles.addAssetChoiceModal}`} role="dialog" aria-modal="true" aria-labelledby="add-asset-choice-title">
             <div className={`${styles.modalHeader} ${styles.addAssetChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
-                <span className={styles.modalEyebrow}>Add Asset</span>
                 <h3 id="add-asset-choice-title">Choose how to add the asset</h3>
-                <p>Use Aim4price Value when you want the estimate flow, or Manual Entry when you already know the asset details and value.</p>
+                <p>Use Aim4price Value when you want a live estimate, or Manual Entry when you already know the asset details and value.</p>
               </div>
 
               <button
@@ -4273,7 +4282,7 @@ export default function AssetRegisterClient() {
                 <TrendIcon className={styles.buttonIcon} />
                 <span>
                   <strong>Aim4price Value</strong>
-                  <small>Estimate the asset with Aim4price and then save the valuation to this register.</small>
+                  <small>Estimate with Aim4price, save it to this register, and allow pricing to auto-update when the asset gets updated.</small>
                 </span>
               </Link>
 
