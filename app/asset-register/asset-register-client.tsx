@@ -4893,8 +4893,8 @@ export default function AssetRegisterClient() {
                   <button type="button" className={styles.optionActionButton} onClick={openAssetReportDialog}>
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>
-                      <strong>Download PDF report</strong>
-                      <small>Choose valuation, fuel, scan or maintenance reports.</small>
+                      <strong>Download PDF Reports</strong>
+                      <small>Valuation, Fuel, QR Scan, Maintenance</small>
                     </span>
                   </button>
 
@@ -4936,7 +4936,7 @@ export default function AssetRegisterClient() {
                       <CartIcon className={styles.buttonIcon} />
                       <span>
                         <strong>{busyMarketplaceRemoveId === activeAsset.id ? 'Removing...' : 'Remove from marketplace'}</strong>
-                        <small>Withdraw the live listing but keep this asset in the register.</small>
+                        <small>Withdraw the live listing</small>
                       </span>
                     </button>
                   ) : null}
@@ -4967,7 +4967,7 @@ export default function AssetRegisterClient() {
           <div className={`${styles.modalCard} ${styles.assetReportModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-report-title">
             <div className={`${styles.modalHeader} ${styles.assetReportModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-report-title">Download PDF report</h3>
+                <h3 id="asset-report-title">Download PDF Reports</h3>
                 <p>{activeAsset.title}</p>
               </div>
 
