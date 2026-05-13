@@ -296,10 +296,6 @@ function listingDisplayTitle(listing: MarketplaceListing): string {
   );
 }
 
-function getListingTag(listing: MarketplaceListing): string {
-  return listing.publishedBy === 'asset-register' ? 'Aim4price listing' : 'Market listing';
-}
-
 function getListingNote(listing: MarketplaceListing): string {
   const note = String(listing.description ?? '').trim();
 
@@ -1185,7 +1181,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
             ) : null}
           </label>
 
-          <a href={isSignedIn ? '/asset-register' : '/auth#login'} className={styles.createButton}>
+          <a href={isSignedIn ? '/asset-register' : '/auth#signup'} className={styles.createButton}>
             <span className={styles.createIcon} aria-hidden="true">
               <IconPlus />
             </span>
@@ -1337,11 +1333,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
                 {visible.length} listing{visible.length === 1 ? '' : 's'} found
               </span>
             </div>
-
-            <a href={isSignedIn ? '/asset-register' : '/auth#login'} className={styles.desktopCreateButton}>
-              <IconPlus />
-              Create listing
-            </a>
           </div>
 
           {activeFilterChips.length ? (
@@ -1432,7 +1423,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
       {activeListing ? (
         <div className={styles.modalOverlay} onClick={closeListing}>
           <div
-            className={styles.listingModal}
+            className={`${styles.listingModal} ${activeImages.length ? '' : styles.listingModalNoMedia}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="marketplace-listing-title"
@@ -1503,7 +1494,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
 
             <aside className={styles.modalDetails}>
               <div className={styles.modalTitleArea}>
-                <span>{getListingTag(activeListing)}</span>
                 <strong>{money(activeListing.askingPriceExVat)}</strong>
                 <h2 id="marketplace-listing-title">{listingDisplayTitle(activeListing)}</h2>
                 <p>{formatLocation(activeListing)}</p>
@@ -1632,7 +1622,9 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
               <p>No inside messaging is used. Share to WhatsApp, Facebook or copy the direct link.</p>
             </div>
 
-            <div className={styles.sharePreviewCard}>
+            <div
+              className={`${styles.sharePreviewCard} ${getListingImages(shareListing).length ? '' : styles.sharePreviewCardNoMedia}`}
+            >
               <ListingImage
                 src={getListingImages(shareListing)[0]}
                 listing={shareListing}
@@ -1640,7 +1632,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
                 className={styles.sharePreviewImage}
                 variant="share"
               />
-              <div>
+              <div className={styles.sharePreviewMeta}>
                 <strong>{listingDisplayTitle(shareListing)}</strong>
                 <span>{money(shareListing.askingPriceExVat)} excl. VAT</span>
                 <small>{formatLocation(shareListing)}</small>
