@@ -41,7 +41,8 @@
 .pinCard,
 .issueCard,
 .notice,
-.assetPickerSheet {
+.assetPickerSheet,
+.thankYouScreen {
   border: 1px solid rgba(200, 217, 228, 0.96);
   border-radius: 1.45rem;
   background:
@@ -57,7 +58,8 @@
 .accountCard,
 .storageOpenCard,
 .pinCard,
-.issueCard {
+.issueCard,
+.thankYouScreen {
   padding: clamp(1.15rem, 4.5vw, 1.7rem);
 }
 
@@ -65,7 +67,8 @@
 .accountCard h1,
 .storageOpenCard h1,
 .titleBlock h2,
-.assetPickerHeader h2 {
+.assetPickerHeader h2,
+.thankYouScreen h1 {
   margin: 0;
   color: var(--text);
   font-weight: 900;
@@ -80,7 +83,8 @@
 }
 
 .titleBlock h2,
-.assetPickerHeader h2 {
+.assetPickerHeader h2,
+.thankYouScreen h1 {
   font-size: clamp(1.9rem, 8vw, 2.8rem);
 }
 
@@ -118,7 +122,8 @@
 .accountCard p,
 .storageOpenCard p,
 .titleBlock p,
-.assetPickerHeader p {
+.assetPickerHeader p,
+.thankYouScreen p {
   margin: 0;
   color: var(--text-soft);
   font-size: clamp(1.02rem, 3.5vw, 1.22rem);
@@ -463,6 +468,29 @@
   font-size: 1rem;
   font-weight: 900;
   box-shadow: 0 8px 18px rgba(18, 45, 37, 0.06);
+}
+
+.thankYouScreen {
+  min-height: 100dvh;
+  border: 0;
+  border-radius: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.78rem;
+  text-align: center;
+  box-shadow: none;
+  background:
+    radial-gradient(circle at top left, rgba(23, 107, 79, 0.10), transparent 38%),
+    linear-gradient(180deg, #ffffff 0%, #eef5f7 100%);
+}
+
+.thankYouScreen h1 {
+  font-size: clamp(2.35rem, 11vw, 3.45rem);
+}
+
+.thankYouScreen p {
+  max-width: 28rem;
 }
 
 .assetPickerOverlay {

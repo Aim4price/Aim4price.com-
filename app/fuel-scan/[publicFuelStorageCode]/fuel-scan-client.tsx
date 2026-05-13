@@ -175,6 +175,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDone, setIsDone] = useState(false);
 
   const selectedAsset = useMemo(() => assets.find((asset) => asset.id === assetId) ?? null, [assetId, assets]);
   const selectedAssetName = selectedAsset ? assetDisplayName(selectedAsset) : '';
@@ -281,6 +282,18 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   }, []);
 
   useEffect(() => {
+    setIsDone(false);
+    setStorage(null);
+    setAssets([]);
+    setAssetId('');
+    setAssetSearch('');
+    setIsAssetPickerOpen(false);
+    setLitres('');
+    setAssetFuelPercentAfter('');
+    setAssetUsageReading('');
+    setNote('');
+    setCoordinates(null);
+    setLocationStatus('GPS will be captured automatically after unlocking.');
     void loadPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [normalizedCode]);
@@ -380,15 +393,19 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       setPreview(data.storage);
       setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || accountBusinessName);
       setAssets(data.assets ?? []);
-      setAssetId('');
-      setAssetSearch('');
       setIsAssetPickerOpen(false);
-      setLitres('');
-      setAssetFuelPercentAfter('');
-      setAssetUsageReading('');
-      setNote('');
-      setNotice({ tone: 'success', message: `Fuel issue saved${selectedAssetName ? ` for ${selectedAssetName}` : ''}.` });
-      captureLocation();
+      setNotice(null);
+      setIsDone(true);
+
+      try {
+        window.history.replaceState({ aim4priceFuelQrDone: true }, '', window.location.href);
+      } catch {
+        // Ignore history replacement errors.
+      }
+
+      window.setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 80);
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save fuel issue.' });
     } finally {
@@ -408,6 +425,17 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
         <div className={styles.scanShell}>
           <section className={styles.card}><h1>Loading fuel access...</h1></section>
         </div>
+      </main>
+    );
+  }
+
+  if (isDone) {
+    return (
+      <main className={styles.scanPage}>
+        <section className={styles.thankYouScreen}>
+          <h1>Thank you.</h1>
+          <p>The fuel issue has been saved and this QR session is closed.</p>
+        </section>
       </main>
     );
   }
