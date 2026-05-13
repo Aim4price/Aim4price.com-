@@ -16,24 +16,26 @@
 
 .marketplaceShell {
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: 340px minmax(0, 1fr);
   align-items: start;
-  min-height: calc(100vh - 76px);
+  min-height: calc(100dvh - 7.35rem);
 }
 
 .sidebar {
   position: sticky;
-  top: 76px;
-  height: calc(100vh - 76px);
-  overflow-y: auto;
-  padding: 1.2rem 1.05rem 1.6rem;
+  top: 7.35rem;
+  align-self: start;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  padding: 0.82rem 0.95rem 1.05rem;
   background: #ffffff;
   border-right: 1px solid #dadde1;
   box-shadow: 5px 0 14px rgba(0, 0, 0, 0.03);
 }
 
 .sidebarHeader {
-  margin-bottom: 1rem;
+  margin-bottom: 0.72rem;
 }
 
 .sidebarHeader span,
@@ -51,9 +53,9 @@
 .modalTitleArea h2,
 .shareHeader h2,
 .emptyState h2 {
-  margin: 0.2rem 0 0;
+  margin: 0.18rem 0 0;
   color: #050505;
-  font-size: 1.7rem;
+  font-size: 1.58rem;
   line-height: 1.08;
   letter-spacing: -0.04em;
 }
@@ -62,9 +64,9 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.58rem;
-  min-height: 3rem;
-  padding: 0 0.95rem;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  padding: 0 0.9rem;
   border-radius: 999px;
   background: #f0f2f5;
   border: 1px solid transparent;
@@ -148,8 +150,8 @@
 
 .createButton,
 .desktopCreateButton {
-  min-height: 2.95rem;
-  margin-top: 0.8rem;
+  min-height: 2.68rem;
+  margin-top: 0.62rem;
   width: 100%;
   gap: 0.52rem;
   border: 0;
@@ -173,12 +175,12 @@
 
 .sidebarDivider {
   height: 1px;
-  margin: 1rem 0;
+  margin: 0.72rem 0;
   background: #dadde1;
 }
 
 .sidebarSection {
-  padding: 0.65rem 0 1.05rem;
+  padding: 0.48rem 0 0.72rem;
 }
 
 .sidebarSection + .sidebarSection {
@@ -189,8 +191,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  margin: 0.65rem 0 0.62rem;
+  gap: 0.7rem;
+  margin: 0.35rem 0 0.48rem;
 }
 
 .sidebarSectionHead h2,
@@ -198,7 +200,7 @@
 .ownerActions h3 {
   margin: 0;
   color: #050505;
-  font-size: 1.08rem;
+  font-size: 1rem;
   line-height: 1.2;
   letter-spacing: -0.02em;
 }
@@ -221,12 +223,12 @@
 
 .categoryButton {
   display: grid;
-  grid-template-columns: 2.35rem minmax(0, 1fr);
+  grid-template-columns: 2.1rem minmax(0, 1fr);
   align-items: center;
-  gap: 0.72rem;
-  min-height: 3.35rem;
-  padding: 0.45rem 0.52rem;
-  border-radius: 0.85rem;
+  gap: 0.62rem;
+  min-height: 2.85rem;
+  padding: 0.35rem 0.48rem;
+  border-radius: 0.78rem;
 }
 
 .categoryButton:hover,
@@ -243,8 +245,8 @@
 }
 
 .categoryIcon {
-  width: 2.35rem;
-  height: 2.35rem;
+  width: 2.1rem;
+  height: 2.1rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -278,10 +280,10 @@
 }
 
 .familyButton {
-  min-height: 2.6rem;
-  padding: 0.62rem 0.78rem;
-  border-radius: 0.55rem;
-  font-size: 0.92rem;
+  min-height: 2.28rem;
+  padding: 0.48rem 0.68rem;
+  border-radius: 0.52rem;
+  font-size: 0.9rem;
   font-weight: 700;
 }
 
@@ -296,8 +298,8 @@
 
 .selectField select {
   width: 100%;
-  min-height: 2.75rem;
-  padding: 0 0.78rem;
+  min-height: 2.52rem;
+  padding: 0 0.75rem;
   border: 1px solid #ccd0d5;
   border-radius: 0.55rem;
   color: #050505;
@@ -312,8 +314,8 @@
 }
 
 .resetButton {
-  min-height: 2.55rem;
-  margin-top: 0.2rem;
+  min-height: 2.38rem;
+  margin-top: 0.1rem;
   padding: 0.62rem 0.72rem;
   border-radius: 0.55rem;
   background: #f0f2f5;
@@ -334,7 +336,7 @@
 .resultsBar {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 1.2rem;
   margin-bottom: 1.15rem;
 }
@@ -615,16 +617,16 @@
   z-index: 80;
   display: grid;
   place-items: center;
-  padding: 1.25rem;
+  padding: 1.05rem;
   background: rgba(0, 0, 0, 0.58);
 }
 
 .listingModal {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
-  width: min(1180px, 100%);
-  max-height: min(780px, calc(100vh - 2rem));
+  grid-template-columns: minmax(520px, 1fr) minmax(420px, 460px);
+  width: min(1240px, calc(100vw - 2.1rem));
+  max-height: min(720px, calc(100dvh - 2.1rem));
   overflow: hidden;
   border-radius: 1rem;
   background: #ffffff;
@@ -635,10 +637,10 @@
 .shareCloseButton {
   position: absolute;
   z-index: 4;
-  top: 0.82rem;
-  right: 0.82rem;
-  width: 2.65rem;
-  height: 2.65rem;
+  top: 0.72rem;
+  right: 0.72rem;
+  width: 2.45rem;
+  height: 2.45rem;
   border: 0;
   border-radius: 999px;
   color: #050505;
@@ -741,37 +743,26 @@
 .modalDetails {
   min-width: 0;
   overflow-y: auto;
-  padding: 1.25rem;
+  padding: 1.05rem 1.18rem 1.15rem;
   background: #ffffff;
 }
 
 .modalTitleArea {
-  padding-right: 2.5rem;
-}
-
-.modalTitleArea span {
-  display: inline-flex;
-  margin-bottom: 0.55rem;
-  padding: 0.28rem 0.58rem;
-  border-radius: 999px;
-  background: #f0f2f5;
-  color: #65676b;
-  font-size: 0.78rem;
-  font-weight: 900;
+  padding-right: 2.55rem;
 }
 
 .modalTitleArea strong {
   display: block;
   color: #050505;
-  font-size: 1.85rem;
-  line-height: 1.05;
-  letter-spacing: -0.045em;
+  font-size: clamp(2.25rem, 3.2vw, 3rem);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
 }
 
 .modalTitleArea h2 {
-  margin-top: 0.35rem;
-  font-size: 1.4rem;
-  line-height: 1.16;
+  margin-top: 0.42rem;
+  font-size: 1.34rem;
+  line-height: 1.14;
 }
 
 .modalTitleArea p {
@@ -783,13 +774,13 @@
 
 .modalActionRow {
   display: flex;
-  gap: 0.65rem;
-  margin-top: 1.1rem;
+  gap: 0.62rem;
+  margin-top: 0.92rem;
 }
 
 .modalShareButton,
 .modalSourceButton {
-  min-height: 2.65rem;
+  min-height: 2.45rem;
   flex: 1 1 0;
   gap: 0.45rem;
   border: 0;
@@ -819,14 +810,14 @@
 .detailGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.7rem;
-  margin-top: 1.1rem;
+  gap: 0.58rem;
+  margin-top: 0.9rem;
 }
 
 .detailItem {
   min-width: 0;
-  padding: 0.82rem;
-  border-radius: 0.65rem;
+  padding: 0.68rem;
+  border-radius: 0.62rem;
   background: #f0f2f5;
 }
 
@@ -853,15 +844,15 @@
 }
 
 .modalSection {
-  margin-top: 1.15rem;
-  padding-top: 1.15rem;
+  margin-top: 0.95rem;
+  padding-top: 0.95rem;
   border-top: 1px solid #dadde1;
 }
 
 .modalSection p {
-  margin: 0.55rem 0 0;
+  margin: 0.42rem 0 0;
   color: #050505;
-  line-height: 1.6;
+  line-height: 1.48;
 }
 
 .modalSection p + p {
@@ -877,8 +868,8 @@
 
 .contactRows {
   display: grid;
-  gap: 0.45rem;
-  margin-top: 0.65rem;
+  gap: 0.34rem;
+  margin-top: 0.55rem;
 }
 
 .contactRow {
@@ -886,7 +877,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.62rem 0;
+  padding: 0.46rem 0;
   border-bottom: 1px solid #edf0f2;
 }
 
@@ -974,11 +965,11 @@
 
 .shareDialog {
   position: relative;
-  width: min(520px, 100%);
-  max-height: calc(100vh - 2rem);
+  width: min(720px, calc(100vw - 2.1rem));
+  max-height: calc(100dvh - 2.1rem);
   overflow-y: auto;
-  padding: 1.35rem;
-  border-radius: 0.85rem;
+  padding: 1.5rem;
+  border-radius: 1rem;
   background: #ffffff;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
 }
@@ -991,37 +982,43 @@
 }
 
 .shareHeader {
-  padding-right: 3rem;
+  padding-right: 3.1rem;
 }
 
 .shareHeader h2 {
-  max-width: 15ch;
-  font-size: 1.55rem;
+  max-width: none;
+  font-size: clamp(1.55rem, 2.4vw, 2rem);
+  white-space: nowrap;
 }
 
 .shareHeader p {
+  max-width: 44rem;
   margin: 0.5rem 0 0;
   color: #65676b;
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
 .sharePreviewCard {
   display: grid;
-  grid-template-columns: 6rem minmax(0, 1fr);
-  gap: 0.75rem;
+  grid-template-columns: 7.4rem minmax(0, 1fr);
+  gap: 1rem;
   align-items: center;
-  margin-top: 1.1rem;
-  padding: 0.65rem;
-  border-radius: 0.7rem;
+  margin-top: 1.15rem;
+  padding: 0.78rem;
+  border-radius: 0.85rem;
   background: #f0f2f5;
 }
 
 .sharePreviewImage,
 .sharePreviewCard img {
-  width: 6rem;
-  height: 5rem;
-  border-radius: 0.55rem;
+  width: 7.4rem;
+  height: 5.35rem;
+  border-radius: 0.65rem;
   object-fit: cover;
+}
+
+.sharePreviewMeta {
+  min-width: 0;
 }
 
 .sharePreviewCard strong,
@@ -1035,29 +1032,34 @@
   color: #050505;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 1.02rem;
 }
 
 .sharePreviewCard span {
-  margin-top: 0.15rem;
+  margin-top: 0.16rem;
   color: #050505;
   font-weight: 900;
+  white-space: nowrap;
 }
 
 .sharePreviewCard small {
-  margin-top: 0.15rem;
+  margin-top: 0.16rem;
+  overflow: hidden;
   color: #65676b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .shareGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.7rem;
-  margin-top: 1.1rem;
+  gap: 0.82rem;
+  margin-top: 1.15rem;
 }
 
 .shareGrid button {
-  min-height: 4.8rem;
-  padding: 0.7rem;
+  min-height: 5.05rem;
+  padding: 0.78rem;
   flex-direction: column;
   gap: 0.45rem;
   border: 0;
@@ -1085,9 +1087,9 @@
 
 .shareLinkField input {
   width: 100%;
-  min-height: 2.75rem;
-  margin-top: 0.4rem;
-  padding: 0 0.75rem;
+  min-height: 2.85rem;
+  margin-top: 0.42rem;
+  padding: 0 0.82rem;
   border: 1px solid #ccd0d5;
   border-radius: 0.55rem;
   color: #050505;
@@ -1105,7 +1107,7 @@
 
 @media (max-width: 1180px) {
   .marketplaceShell {
-    grid-template-columns: 320px minmax(0, 1fr);
+    grid-template-columns: 318px minmax(0, 1fr);
   }
 
   .listingGrid {
@@ -1121,6 +1123,8 @@
   .sidebar {
     position: static;
     height: auto;
+    max-height: none;
+    overflow: visible;
     border-right: 0;
     border-bottom: 1px solid #dadde1;
   }
@@ -1139,7 +1143,8 @@
 
   .listingModal {
     grid-template-columns: 1fr;
-    max-height: calc(100vh - 1rem);
+    width: min(760px, calc(100vw - 1rem));
+    max-height: calc(100dvh - 1rem);
   }
 
   .modalGallery {
@@ -1199,8 +1204,19 @@
   }
 
   .detailGrid,
-  .shareGrid {
+  .shareGrid,
+  .sharePreviewCard {
     grid-template-columns: 1fr;
+  }
+
+  .shareHeader h2 {
+    white-space: normal;
+  }
+
+  .sharePreviewImage,
+  .sharePreviewCard img {
+    width: 100%;
+    height: 8.5rem;
   }
 
   .ownerActions,
