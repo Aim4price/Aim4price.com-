@@ -1216,11 +1216,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
 
       <div className={styles.marketplaceShell}>
         <aside className={styles.sidebar} aria-label="Marketplace filters">
-          <div className={styles.sidebarHeader}>
-            <span>Marketplace</span>
-            <h1>Search results</h1>
-          </div>
-
           <label className={styles.searchBox}>
             <span className={styles.searchIcon} aria-hidden="true">
               <IconSearch />

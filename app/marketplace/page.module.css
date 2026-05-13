@@ -1,8 +1,8 @@
 .page {
   min-height: 100vh;
-  background: #f0f2f5;
-  color: #050505;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  background: #f3f6f8;
+  color: #17362c;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
 .topBand {
@@ -28,10 +28,10 @@
   height: auto;
   max-height: none;
   overflow: visible;
-  padding: 1.05rem 1rem 1.15rem;
+  padding: 1.15rem 1rem 1.2rem;
   background: #ffffff;
-  border-right: 1px solid #dadde1;
-  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.035);
+  border-right: 1px solid #dde5eb;
+  box-shadow: 4px 0 16px rgba(16, 31, 28, 0.035);
 }
 
 .sidebarHeader {
@@ -44,7 +44,7 @@
   display: block;
   color: #65676b;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.15;
 }
 
@@ -57,7 +57,7 @@
   color: #050505;
   font-size: 1.54rem;
   line-height: 1.05;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.035em;
 }
 
 .searchBox {
@@ -75,8 +75,8 @@
 
 .searchBox:focus-within {
   background: #ffffff;
-  border-color: #1877f2;
-  box-shadow: 0 0 0 4px rgba(24, 119, 242, 0.12);
+  border-color: #165340;
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.12);
 }
 
 .searchIcon,
@@ -129,12 +129,12 @@
   background: transparent;
   color: #050505;
   font-size: 0.98rem;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .searchBox input::placeholder {
   color: #65676b;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .searchClearButton {
@@ -156,16 +156,16 @@
   gap: 0.55rem;
   border: 0;
   border-radius: 0.78rem;
-  background: #e7f3ff;
-  color: #0866ff;
+  background: #edf6f1;
+  color: #165340;
   font-size: 0.98rem;
-  font-weight: 900;
+  font-weight: 700;
   text-decoration: none;
 }
 
 .createButton:hover,
 .desktopCreateButton:hover {
-  background: #dbeeff;
+  background: #dceee4;
 }
 
 .createIcon {
@@ -176,7 +176,7 @@
 .sidebarDivider {
   height: 1px;
   margin: 0.9rem 0;
-  background: #dadde1;
+  background: #dde5eb;
 }
 
 .sidebarSection {
@@ -240,7 +240,7 @@
 
 .categoryButtonActive .categoryIcon,
 .categoryButton:hover .categoryIcon {
-  background: #1877f2;
+  background: #165340;
   color: #ffffff;
 }
 
@@ -254,7 +254,7 @@
   background: #e4e6eb;
   color: #050505;
   font-size: 0.9rem;
-  font-weight: 900;
+  font-weight: 700;
   transition: background 160ms ease, color 160ms ease;
 }
 
@@ -285,11 +285,11 @@
   padding: 0.48rem 0.7rem;
   border-radius: 0.64rem;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .familyButtonActive {
-  color: #0866ff;
+  color: #165340;
 }
 
 .selectField {
@@ -306,7 +306,7 @@
   color: #050505;
   background: #ffffff;
   font-size: 0.96rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .selectField select:disabled {
@@ -320,9 +320,9 @@
   padding: 0.52rem 0.68rem;
   border-radius: 0.55rem;
   background: #f0f2f5;
-  color: #0866ff;
+  color: #165340;
   font-size: 0.88rem;
-  font-weight: 900;
+  font-weight: 700;
   text-align: center;
 }
 
@@ -332,7 +332,7 @@
 
 .resultsArea {
   min-width: 0;
-  padding: 1.75rem clamp(1.4rem, 2.7vw, 3rem) 2.6rem;
+  padding: 1.75rem clamp(1.25rem, 2.25vw, 2.2rem) 2.6rem;
 }
 
 .resultsBar {
@@ -352,7 +352,7 @@
   margin-top: 0.34rem;
   color: #65676b;
   font-size: 0.96rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .desktopCreateButton {
@@ -374,10 +374,10 @@
   padding: 0.32rem 0.62rem 0.32rem 0.74rem;
   border: 0;
   border-radius: 999px;
-  background: #e7f3ff;
-  color: #0866ff;
+  background: #edf6f1;
+  color: #165340;
   font-size: 0.86rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .filterChip strong {
@@ -387,15 +387,15 @@
   width: 1.22rem;
   height: 1.22rem;
   border-radius: 999px;
-  background: rgba(8, 102, 255, 0.12);
+  background: rgba(22, 83, 64, 0.12);
   font-size: 0.95rem;
   line-height: 1;
 }
 
 .listingGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 286px));
-  gap: 1.55rem 1.45rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 255px), 1fr));
+  gap: 1.65rem 1.55rem;
   align-items: start;
 }
 
@@ -405,6 +405,7 @@
   min-width: 0;
   border-radius: 1rem;
   background: transparent;
+  cursor: pointer;
   transition: transform 150ms ease;
 }
 
@@ -458,7 +459,7 @@
   border: 1px solid #dde4ee;
   box-shadow: 0 10px 20px rgba(16, 31, 28, 0.04);
   font-size: 0.76rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.075em;
   line-height: 1.25;
   text-transform: uppercase;
@@ -512,7 +513,7 @@
   background: rgba(0, 0, 0, 0.62);
   color: #ffffff;
   font-size: 0.74rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .cardShareButton {
@@ -541,7 +542,7 @@
   color: #050505;
   font-size: 1.24rem;
   line-height: 1.12;
-  font-weight: 950;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
@@ -552,7 +553,7 @@
   color: #050505;
   font-size: 1.02rem;
   line-height: 1.24;
-  font-weight: 780;
+  font-weight: 600;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -602,14 +603,14 @@
   padding: 0 1rem;
   border: 0;
   border-radius: 0.55rem;
-  background: #1877f2;
+  background: #165340;
   color: #ffffff;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .emptyState button:hover,
 .showMoreButton:hover {
-  background: #0866ff;
+  background: #123b30;
 }
 
 .showMoreWrap {
@@ -732,7 +733,7 @@
   background: rgba(0, 0, 0, 0.62);
   color: #ffffff;
   font-size: 0.8rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .thumbnailRail {
@@ -755,7 +756,7 @@
 }
 
 .thumbnailButtonActive {
-  border-color: #1877f2;
+  border-color: #165340;
 }
 
 .thumbnailButton img {
@@ -844,7 +845,7 @@
   margin: 0.42rem 0 0;
   color: #65676b;
   font-size: 0.98rem;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.42;
 }
 
@@ -861,10 +862,10 @@
   gap: 0.5rem;
   border: 0;
   border-radius: 0.74rem;
-  background: #e7f3ff;
-  color: #0866ff;
+  background: #edf6f1;
+  color: #165340;
   font-size: 1rem;
-  font-weight: 900;
+  font-weight: 700;
   text-decoration: none;
 }
 
@@ -877,7 +878,7 @@
 }
 
 .modalShareButton:hover {
-  background: #dbeeff;
+  background: #dceee4;
 }
 
 .modalSourceButton:hover {
@@ -905,7 +906,7 @@
   display: block;
   color: #65676b;
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.055em;
   text-transform: uppercase;
 }
@@ -944,7 +945,7 @@
   margin-top: 0.58rem;
   color: #65676b;
   font-size: 0.86rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .contactRows {
@@ -972,7 +973,7 @@
 }
 
 .contactRow a {
-  color: #0866ff;
+  color: #165340;
   text-decoration: none;
 }
 
@@ -1050,9 +1051,9 @@
   justify-content: center;
   min-height: 2.45rem;
   border-radius: 0.55rem;
-  background: #1877f2;
+  background: #165340;
   color: #ffffff;
-  font-weight: 900;
+  font-weight: 700;
   text-decoration: none;
 }
 
@@ -1086,7 +1087,7 @@
   border-radius: 0.68rem;
   background: #d93025;
   color: #ffffff;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .shareDialog {
@@ -1165,7 +1166,7 @@
 .sharePreviewCard span {
   margin-top: 0.16rem;
   color: #050505;
-  font-weight: 950;
+  font-weight: 700;
   line-height: 1.18;
   white-space: nowrap;
 }
@@ -1194,7 +1195,7 @@
   border-radius: 0.78rem;
   background: #f0f2f5;
   color: #050505;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .shareGrid button:hover {
@@ -1222,16 +1223,16 @@
   border-radius: 0.66rem;
   color: #050505;
   background: #ffffff;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .shareFeedback {
   margin: 0.75rem 0 0;
   padding: 0.62rem 0.75rem;
   border-radius: 0.55rem;
-  background: #e7f3ff;
-  color: #0866ff;
-  font-weight: 800;
+  background: #edf6f1;
+  color: #165340;
+  font-weight: 600;
 }
 
 @media (max-width: 1180px) {
@@ -1240,7 +1241,7 @@
   }
 
   .listingGrid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 252px));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   }
 
   .listingModal {
