@@ -5,8 +5,8 @@ import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
 type FuelStorageStatus = 'active' | 'archived';
-type FuelStorageEventType = 'opening_balance' | 'stock_in' | 'asset_issue' | 'dip' | 'adjustment';
-type ModalMode = 'create-storage' | 'edit-storage' | 'stock' | 'pin' | null;
+type ModalMode = 'create-storage' | 'edit-storage' | 'pin' | null;
+type FilterMode = 'all' | 'low' | 'empty' | 'full';
 
 type FuelLedgerStorage = {
   id: string;
@@ -27,43 +27,6 @@ type FuelLedgerStorage = {
   updatedAtIso: string;
 };
 
-type FuelLedgerEvent = {
-  id: string;
-  storageId: string;
-  storageName: string;
-  storagePublicCode: string;
-  eventType: FuelStorageEventType;
-  assetId: string;
-  assetTitle: string;
-  assetPlateLabel: string;
-  litres: number;
-  storageLevelBefore: number | null;
-  storageLevelAfter: number | null;
-  assetFuelPercentBefore: number | null;
-  assetFuelPercentAfter: number | null;
-  assetUsageReading: number | null;
-  operatorName: string;
-  note: string;
-  latitude: number | null;
-  longitude: number | null;
-  locationText: string;
-  createdAtIso: string;
-};
-
-type FuelLedgerAsset = {
-  id: string;
-  title: string;
-  kind: string;
-  assetTypeLabel: string;
-  brandName: string;
-  modelName: string;
-  plateLabel: string;
-  publicAssetCode: string;
-  hours: number | null;
-  fuelPercent: number | null;
-  canReceiveFuel: boolean;
-};
-
 type FuelLedgerSummary = {
   totalStorageUnits: number;
   totalCapacityLitres: number;
@@ -78,8 +41,8 @@ type FuelLedgerSummary = {
 type FuelLedgerResponse = {
   ok: boolean;
   storages?: FuelLedgerStorage[];
-  recentEvents?: FuelLedgerEvent[];
-  assets?: FuelLedgerAsset[];
+  recentEvents?: unknown[];
+  assets?: unknown[];
   summary?: FuelLedgerSummary;
   error?: string;
 };
@@ -93,14 +56,6 @@ type StorageDraft = {
   locationLabel: string;
   notes: string;
   pin: string;
-};
-
-type StockDraft = {
-  mode: 'stock_in' | 'dip';
-  litres: string;
-  currentLitres: string;
-  operatorName: string;
-  note: string;
 };
 
 type Notice = {
@@ -119,14 +74,6 @@ const emptyStorageDraft: StorageDraft = {
   pin: '',
 };
 
-const emptyStockDraft: StockDraft = {
-  mode: 'stock_in',
-  litres: '',
-  currentLitres: '',
-  operatorName: '',
-  note: '',
-};
-
 function formatLitres(value: number | null | undefined): string {
   if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return '—';
   return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L`;
@@ -137,26 +84,11 @@ function formatPercent(value: number | null | undefined): string {
   return `${Math.round(value)}%`;
 }
 
-function formatDateTime(value?: string | null): string {
-  if (!value) return '—';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return '—';
-
-  return new Intl.DateTimeFormat('en-ZA', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(parsed);
-}
-
-function eventTypeLabel(value: FuelStorageEventType): string {
-  if (value === 'opening_balance') return 'Opening balance';
-  if (value === 'stock_in') return 'Stock in';
-  if (value === 'asset_issue') return 'Asset issue';
-  if (value === 'dip') return 'Manual dip';
-  return 'Adjustment';
+function formatFuelType(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'adblue') return 'AdBlue';
+  if (!normalized) return 'Fuel';
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
 function buildStorageDraft(storage?: FuelLedgerStorage): StorageDraft {
@@ -191,16 +123,28 @@ function isLowStorage(storage: FuelLedgerStorage): boolean {
   return storage.reorderLevelLitres !== null && storage.currentLitres <= storage.reorderLevelLitres;
 }
 
-function getStorageTone(storage: FuelLedgerStorage): string {
-  if (storage.status === 'archived') return styles.storageCardArchived;
-  if (isLowStorage(storage)) return styles.storageCardLow;
-  return '';
+function getProgressPercent(storage: FuelLedgerStorage): number {
+  const rawPercent = storage.stockPercent ?? (storage.currentLitres > 0 ? 100 : 0);
+  return Math.max(0, Math.min(100, rawPercent));
+}
+
+function matchesFilter(storage: FuelLedgerStorage, filterMode: FilterMode, searchTerm: string): boolean {
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const searchableText = [storage.name, storage.fuelType, storage.locationLabel, storage.publicFuelStorageCode].join(' ').toLowerCase();
+
+  if (normalizedSearch && !searchableText.includes(normalizedSearch)) {
+    return false;
+  }
+
+  if (filterMode === 'low') return isLowStorage(storage);
+  if (filterMode === 'empty') return storage.currentLitres <= 0;
+  if (filterMode === 'full') return storage.stockPercent !== null && storage.stockPercent >= 95;
+
+  return true;
 }
 
 export default function FuelClient() {
   const [storages, setStorages] = useState<FuelLedgerStorage[]>([]);
-  const [events, setEvents] = useState<FuelLedgerEvent[]>([]);
-  const [assets, setAssets] = useState<FuelLedgerAsset[]>([]);
   const [summary, setSummary] = useState<FuelLedgerSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -208,14 +152,20 @@ export default function FuelClient() {
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [selectedStorageId, setSelectedStorageId] = useState<string | null>(null);
   const [storageDraft, setStorageDraft] = useState<StorageDraft>(emptyStorageDraft);
-  const [stockDraft, setStockDraft] = useState<StockDraft>(emptyStockDraft);
   const [pinDraft, setPinDraft] = useState('');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterMode, setFilterMode] = useState<FilterMode>('all');
+  const [filterText, setFilterText] = useState('');
 
   const selectedStorage = useMemo(
     () => storages.find((storage) => storage.id === selectedStorageId) ?? null,
     [selectedStorageId, storages],
   );
-  const fuelAssets = useMemo(() => assets.filter((asset) => asset.canReceiveFuel), [assets]);
+
+  const visibleStorages = useMemo(
+    () => storages.filter((storage) => matchesFilter(storage, filterMode, filterText)),
+    [filterMode, filterText, storages],
+  );
 
   async function loadLedger(options: { silent?: boolean } = {}) {
     if (!options.silent) {
@@ -231,8 +181,6 @@ export default function FuelClient() {
       }
 
       setStorages(data.storages ?? []);
-      setEvents(data.recentEvents ?? []);
-      setAssets(data.assets ?? []);
       setSummary(data.summary ?? null);
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load Fuel Ledger.' });
@@ -261,17 +209,6 @@ export default function FuelClient() {
     setModalMode('edit-storage');
   }
 
-  function openStock(storage: FuelLedgerStorage, mode: 'stock_in' | 'dip' = 'stock_in') {
-    setSelectedStorageId(storage.id);
-    setStockDraft({
-      ...emptyStockDraft,
-      mode,
-      currentLitres: mode === 'dip' ? String(storage.currentLitres) : '',
-    });
-    setNotice(null);
-    setModalMode('stock');
-  }
-
   function openPin(storage: FuelLedgerStorage) {
     setSelectedStorageId(storage.id);
     setPinDraft('');
@@ -284,7 +221,6 @@ export default function FuelClient() {
     setModalMode(null);
     setSelectedStorageId(null);
     setStorageDraft(emptyStorageDraft);
-    setStockDraft(emptyStockDraft);
     setPinDraft('');
   }
 
@@ -296,8 +232,6 @@ export default function FuelClient() {
     }
 
     if (data.storages) setStorages(data.storages);
-    if (data.recentEvents) setEvents(data.recentEvents);
-    if (data.assets) setAssets(data.assets);
     if (data.summary) setSummary(data.summary);
   }
 
@@ -320,36 +254,6 @@ export default function FuelClient() {
       closeModal();
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save fuel storage.' });
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  async function handleStockSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!selectedStorage) return;
-    setIsSaving(true);
-    setNotice(null);
-
-    try {
-      const response = await fetch(`/api/fuel/storage/${selectedStorage.id}/stock`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: stockDraft.mode,
-          litres: stockDraft.litres === '' ? null : Number(stockDraft.litres),
-          currentLitres: stockDraft.currentLitres === '' ? null : Number(stockDraft.currentLitres),
-          operatorName: stockDraft.operatorName,
-          note: stockDraft.note,
-        }),
-      });
-
-      await applyLedgerResponse(response);
-      setNotice({ tone: 'success', message: stockDraft.mode === 'stock_in' ? 'Fuel stock added.' : 'Fuel dip captured.' });
-      closeModal();
-    } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save stock entry.' });
     } finally {
       setIsSaving(false);
     }
@@ -406,169 +310,135 @@ export default function FuelClient() {
     }
   }
 
+  const hasActiveFilters = filterMode !== 'all' || filterText.trim().length > 0;
+
   return (
     <>
       <AppHeader active="none" />
       <main className={styles.pageShell}>
-        <section className={styles.heroSection}>
-          <div className={styles.heroCopy}>
-            <span className={styles.eyebrow}>Fuel Ledger</span>
-            <h1>Track fuel from the tank to the machine.</h1>
-            <p>
-              Create QR-coded fuel storage units, issue litres to assets through a PIN-protected scan page, and keep one clean ledger for stock, consumption, GPS and fuel reports.
-            </p>
-          </div>
-          <div className={styles.heroActions}>
-            <button type="button" className={styles.primaryButton} onClick={openCreateStorage}>
-              Add Fuel Storage
+        <section className={styles.ledgerPanel}>
+          <div className={styles.topActions}>
+            <button type="button" className={styles.secondaryButton} onClick={() => setIsFilterOpen((current) => !current)}>
+              Filter{hasActiveFilters ? ' active' : ''}
             </button>
             <a href="/api/fuel/report" target="_blank" rel="noreferrer" className={styles.secondaryButton}>
               Fuel Report
             </a>
+            <button type="button" className={styles.primaryButton} onClick={openCreateStorage}>
+              Add Storage
+            </button>
           </div>
-        </section>
 
-        {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
-
-        <section className={styles.summaryGrid} aria-label="Fuel Ledger summary">
-          <article className={styles.summaryCard}>
-            <span>Total storage</span>
-            <strong>{formatLitres(summary?.currentLitres ?? 0)}</strong>
-            <small>{formatPercent(summary?.currentStockPercent ?? null)} of known capacity</small>
-          </article>
-          <article className={styles.summaryCard}>
-            <span>Fuel issued · 30 days</span>
-            <strong>{formatLitres(summary?.issuedLitres30Days ?? 0)}</strong>
-            <small>Captured from QR fuel entries</small>
-          </article>
-          <article className={styles.summaryCard}>
-            <span>Fuel filled · 30 days</span>
-            <strong>{formatLitres(summary?.filledLitres30Days ?? 0)}</strong>
-            <small>Stock in and opening balances</small>
-          </article>
-          <article className={`${styles.summaryCard} ${(summary?.lowStorageCount ?? 0) > 0 ? styles.summaryWarning : ''}`}>
-            <span>Low storage</span>
-            <strong>{summary?.lowStorageCount ?? 0}</strong>
-            <small>{summary?.totalStorageUnits ?? 0} active storage units</small>
-          </article>
-        </section>
-
-        <section className={styles.contentGrid}>
-          <div className={styles.mainColumn}>
-            <div className={styles.sectionHeader}>
-              <div>
-                <h2>Fuel storage units</h2>
-                <p>Main tanks, diesel bowsers, service trailers and drums that can issue fuel by QR scan.</p>
+          {isFilterOpen ? (
+            <div className={styles.filterPanel}>
+              <label>
+                Search storage
+                <input value={filterText} onChange={(event) => setFilterText(event.target.value)} placeholder="Main tank, bowser, diesel..." />
+              </label>
+              <div className={styles.filterSegments}>
+                <button type="button" className={filterMode === 'all' ? styles.filterActive : ''} onClick={() => setFilterMode('all')}>All</button>
+                <button type="button" className={filterMode === 'low' ? styles.filterActive : ''} onClick={() => setFilterMode('low')}>Low</button>
+                <button type="button" className={filterMode === 'empty' ? styles.filterActive : ''} onClick={() => setFilterMode('empty')}>Empty</button>
+                <button type="button" className={filterMode === 'full' ? styles.filterActive : ''} onClick={() => setFilterMode('full')}>Full</button>
               </div>
-              <button type="button" className={styles.compactButton} onClick={() => void loadLedger({ silent: true })}>
-                Refresh
+            </div>
+          ) : null}
+
+          {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
+
+          <section className={styles.summaryGrid} aria-label="Fuel Ledger summary">
+            <article className={styles.summaryCard}>
+              <span>Total storage</span>
+              <strong>{summary?.totalStorageUnits ?? 0}</strong>
+              <small>{summary?.lowStorageCount ?? 0} low storage</small>
+            </article>
+            <article className={styles.summaryCard}>
+              <span>Fuel issued · 30 days</span>
+              <strong>{formatLitres(summary?.issuedLitres30Days ?? 0)}</strong>
+              <small>QR fuel entries</small>
+            </article>
+            <article className={styles.summaryCard}>
+              <span>Total Stock</span>
+              <strong>{formatLitres(summary?.currentLitres ?? 0)}</strong>
+              <small>{formatPercent(summary?.currentStockPercent ?? null)} of known capacity</small>
+            </article>
+          </section>
+
+          {isLoading ? <div className={styles.emptyState}>Loading Fuel Ledger...</div> : null}
+
+          {!isLoading && !storages.length ? (
+            <div className={styles.emptyState}>
+              <strong>No fuel storage yet.</strong>
+              <span>Add your first tank, bowser or storage unit.</span>
+              <button type="button" className={styles.primaryButton} onClick={openCreateStorage}>
+                Add Storage
               </button>
             </div>
+          ) : null}
 
-            {isLoading ? <div className={styles.emptyState}>Loading Fuel Ledger...</div> : null}
+          {!isLoading && storages.length > 0 && visibleStorages.length === 0 ? (
+            <div className={styles.emptyState}>
+              <strong>No storage matches the filter.</strong>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => {
+                  setFilterMode('all');
+                  setFilterText('');
+                }}
+              >
+                Clear Filter
+              </button>
+            </div>
+          ) : null}
 
-            {!isLoading && !storages.length ? (
-              <div className={styles.emptyState}>
-                <strong>No fuel storage yet.</strong>
-                <span>Add your main tank or diesel bowser first. The storage QR then becomes the entry point for fuel issues.</span>
-                <button type="button" className={styles.primaryButton} onClick={openCreateStorage}>
-                  Add first storage
-                </button>
-              </div>
-            ) : null}
+          <div className={styles.storageList}>
+            {visibleStorages.map((storage) => {
+              const progress = getProgressPercent(storage);
+              const storageIsLow = isLowStorage(storage);
 
-            <div className={styles.storageGrid}>
-              {storages.map((storage) => (
-                <article key={storage.id} className={`${styles.storageCard} ${getStorageTone(storage)}`}>
-                  <div className={styles.storageTopRow}>
+              return (
+                <article key={storage.id} className={`${styles.storageCard} ${storageIsLow ? styles.storageCardLow : ''}`}>
+                  <div className={styles.storageInfo}>
                     <div className={styles.storageTitleBlock}>
-                      <span className={styles.storageType}>{storage.fuelType.toUpperCase()}</span>
-                      <h3>{storage.name}</h3>
-                      <p>{storage.locationLabel || storage.publicFuelStorageCode}</p>
+                      <span className={styles.storageType}>{formatFuelType(storage.fuelType)}</span>
+                      <h2>{storage.name}</h2>
+                      <div className={styles.storageDetails}>
+                        <span>{formatLitres(storage.currentLitres)} available</span>
+                        <span>{storage.capacityLitres === null ? 'Capacity not set' : `${formatLitres(storage.capacityLitres)} capacity`}</span>
+                        <span>{storage.locationLabel || storage.publicFuelStorageCode}</span>
+                      </div>
                     </div>
-                    <span className={styles.statusPill}>{storage.status === 'archived' ? 'Archived' : isLowStorage(storage) ? 'Low' : 'Active'}</span>
+
+                    <div className={styles.storageProgressBlock}>
+                      <div className={styles.progressTrack} aria-hidden="true">
+                        <span style={{ width: `${progress}%` }} />
+                      </div>
+                      <div className={styles.progressMeta}>
+                        <span>{formatPercent(storage.stockPercent)}</span>
+                        <span>{storageIsLow ? 'Low stock' : storage.reorderLevelLitres === null ? 'No reorder level' : `Low at ${formatLitres(storage.reorderLevelLitres)}`}</span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className={styles.levelBlock}>
-                    <div className={styles.levelHeader}>
-                      <span>Available fuel</span>
-                      <strong>{formatLitres(storage.currentLitres)}</strong>
-                    </div>
-                    <div className={styles.progressTrack} aria-hidden="true">
-                      <span style={{ width: `${Math.max(0, Math.min(100, storage.stockPercent ?? 0))}%` }} />
-                    </div>
-                    <div className={styles.levelFooter}>
-                      <span>{storage.capacityLitres === null ? 'Capacity not set' : `Capacity ${formatLitres(storage.capacityLitres)}`}</span>
-                      <span>{storage.reorderLevelLitres === null ? 'No reorder level' : `Low at ${formatLitres(storage.reorderLevelLitres)}`}</span>
-                    </div>
-                  </div>
-
-                  <div className={styles.storageMetaGrid}>
-                    <div><span>QR code</span><strong>{storage.publicFuelStorageCode}</strong></div>
-                    <div><span>PIN</span><strong>{storage.pinEnabled ? 'Enabled' : 'Needs PIN'}</strong></div>
-                    <div><span>Updated</span><strong>{formatDateTime(storage.updatedAtIso)}</strong></div>
-                    <div><span>Report</span><strong>{storage.status === 'active' ? 'Live' : 'Stopped'}</strong></div>
-                  </div>
-
-                  <div className={styles.actionGrid}>
-                    <button type="button" onClick={() => openStock(storage, 'stock_in')} disabled={storage.status !== 'active' || isSaving}>
-                      Add stock
-                    </button>
-                    <button type="button" onClick={() => openStock(storage, 'dip')} disabled={storage.status !== 'active' || isSaving}>
-                      Dip level
-                    </button>
-                    <a href={`/api/fuel/storage/${storage.id}/qr?format=print`} target="_blank" rel="noreferrer">Print QR</a>
-                    <a href={`/api/fuel/report?storageId=${encodeURIComponent(storage.id)}`} target="_blank" rel="noreferrer">Report</a>
-                    <button type="button" onClick={() => openPin(storage)} disabled={storage.status !== 'active' || isSaving}>
-                      Change PIN
-                    </button>
-                    <button type="button" onClick={() => openEditStorage(storage)} disabled={isSaving}>
+                  <div className={styles.unitActions}>
+                    <button type="button" className={styles.unitButton} onClick={() => openEditStorage(storage)} disabled={isSaving}>
                       Manage
                     </button>
-                  </div>
-
-                  {storage.status === 'active' ? (
-                    <button type="button" className={styles.deleteButton} onClick={() => void handleDeleteStorage(storage)} disabled={isSaving}>
-                      Delete storage
+                    <a className={styles.unitButton} href={`/api/fuel/storage/${storage.id}/qr?format=print`} target="_blank" rel="noreferrer">
+                      QR Code
+                    </a>
+                    <button type="button" className={styles.unitButton} onClick={() => openPin(storage)} disabled={isSaving}>
+                      Change PIN
                     </button>
-                  ) : null}
+                    <button type="button" className={`${styles.unitButton} ${styles.deleteUnitButton}`} onClick={() => void handleDeleteStorage(storage)} disabled={isSaving}>
+                      Delete Unit
+                    </button>
+                  </div>
                 </article>
-              ))}
-            </div>
+              );
+            })}
           </div>
-
-          <aside className={styles.sideColumn}>
-            <section className={styles.sidePanel}>
-              <h2>V1 logic</h2>
-              <div className={styles.logicList}>
-                <div><strong>1</strong><span>Fuel arrives into storage with stock in or opening balance.</span></div>
-                <div><strong>2</strong><span>Manager scans storage QR and enters the storage PIN.</span></div>
-                <div><strong>3</strong><span>Manager selects an account asset, litres issued and the asset fuel percentage.</span></div>
-                <div><strong>4</strong><span>Aim4price reduces tank stock, updates the asset fuel %, GPS and fuel report trail.</span></div>
-              </div>
-            </section>
-
-            <section className={styles.sidePanel}>
-              <h2>Fuel-ready assets</h2>
-              <p>{fuelAssets.length} of {assets.length} assets are marked as self-propelled or likely fuel-using.</p>
-            </section>
-
-            <section className={styles.sidePanel}>
-              <h2>Recent fuel movement</h2>
-              <div className={styles.eventList}>
-                {events.slice(0, 10).map((event) => (
-                  <article key={event.id} className={styles.eventItem}>
-                    <div>
-                      <strong>{eventTypeLabel(event.eventType)}</strong>
-                      <span>{event.assetTitle || event.storageName}</span>
-                    </div>
-                    <p>{formatLitres(event.litres)} · {formatDateTime(event.createdAtIso)}</p>
-                  </article>
-                ))}
-                {!events.length ? <div className={styles.mutedText}>No fuel movement captured yet.</div> : null}
-              </div>
-            </section>
-          </aside>
         </section>
       </main>
 
@@ -577,9 +447,8 @@ export default function FuelClient() {
           <form className={styles.modalCard} onSubmit={handleStorageSubmit}>
             <div className={styles.modalHeader}>
               <div>
-                <span className={styles.eyebrow}>{modalMode === 'create-storage' ? 'New storage' : 'Manage storage'}</span>
-                <h2>{modalMode === 'create-storage' ? 'Add Fuel Storage' : 'Update Fuel Storage'}</h2>
-                <p>Use names like Main Tank, Diesel Bowser, Workshop Tank or Trailer Bowser.</p>
+                <span className={styles.modalEyebrow}>{modalMode === 'create-storage' ? 'Add Storage' : 'Manage Storage'}</span>
+                <h2>{modalMode === 'create-storage' ? 'Add Fuel Storage' : selectedStorage?.name ?? 'Manage Fuel Storage'}</h2>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal}>×</button>
             </div>
@@ -628,54 +497,7 @@ export default function FuelClient() {
 
             <div className={styles.modalActions}>
               <button type="button" className={styles.secondaryButton} onClick={closeModal} disabled={isSaving}>Cancel</button>
-              <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save storage'}</button>
-            </div>
-          </form>
-        </div>
-      ) : null}
-
-      {modalMode === 'stock' && selectedStorage ? (
-        <div className={styles.modalOverlay} role="dialog" aria-modal="true">
-          <form className={styles.modalCard} onSubmit={handleStockSubmit}>
-            <div className={styles.modalHeader}>
-              <div>
-                <span className={styles.eyebrow}>{stockDraft.mode === 'stock_in' ? 'Stock in' : 'Tank dip'}</span>
-                <h2>{selectedStorage.name}</h2>
-                <p>Current system level: {formatLitres(selectedStorage.currentLitres)}.</p>
-              </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal}>×</button>
-            </div>
-
-            <div className={styles.segmentedControl}>
-              <button type="button" className={stockDraft.mode === 'stock_in' ? styles.segmentActive : ''} onClick={() => setStockDraft((current) => ({ ...current, mode: 'stock_in' }))}>Add fuel</button>
-              <button type="button" className={stockDraft.mode === 'dip' ? styles.segmentActive : ''} onClick={() => setStockDraft((current) => ({ ...current, mode: 'dip', currentLitres: String(selectedStorage.currentLitres) }))}>Correct by dip</button>
-            </div>
-
-            <div className={styles.formGrid}>
-              {stockDraft.mode === 'stock_in' ? (
-                <label>
-                  Litres filled
-                  <input type="number" min="0" step="0.01" value={stockDraft.litres} onChange={(event) => setStockDraft((current) => ({ ...current, litres: event.target.value }))} required />
-                </label>
-              ) : (
-                <label>
-                  Actual current litres
-                  <input type="number" min="0" step="0.01" value={stockDraft.currentLitres} onChange={(event) => setStockDraft((current) => ({ ...current, currentLitres: event.target.value }))} required />
-                </label>
-              )}
-              <label>
-                Operator / manager
-                <input value={stockDraft.operatorName} onChange={(event) => setStockDraft((current) => ({ ...current, operatorName: event.target.value }))} placeholder="Name" />
-              </label>
-              <label className={styles.fullField}>
-                Note
-                <textarea value={stockDraft.note} onChange={(event) => setStockDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Invoice number, supplier or manual reason" rows={3} />
-              </label>
-            </div>
-
-            <div className={styles.modalActions}>
-              <button type="button" className={styles.secondaryButton} onClick={closeModal} disabled={isSaving}>Cancel</button>
-              <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save entry'}</button>
+              <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Storage'}</button>
             </div>
           </form>
         </div>
@@ -686,9 +508,8 @@ export default function FuelClient() {
           <form className={styles.modalCardSmall} onSubmit={handlePinSubmit}>
             <div className={styles.modalHeader}>
               <div>
-                <span className={styles.eyebrow}>Fuel QR PIN</span>
+                <span className={styles.modalEyebrow}>Change PIN</span>
                 <h2>{selectedStorage.name}</h2>
-                <p>Changing the PIN expires old scan sessions for this fuel storage QR code.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal}>×</button>
             </div>
