@@ -329,21 +329,6 @@ export default function FuelClient() {
             </button>
           </div>
 
-          {isFilterOpen ? (
-            <div className={styles.filterPanel}>
-              <label>
-                Search storage
-                <input value={filterText} onChange={(event) => setFilterText(event.target.value)} placeholder="Main tank, bowser, diesel..." />
-              </label>
-              <div className={styles.filterSegments}>
-                <button type="button" className={filterMode === 'all' ? styles.filterActive : ''} onClick={() => setFilterMode('all')}>All</button>
-                <button type="button" className={filterMode === 'low' ? styles.filterActive : ''} onClick={() => setFilterMode('low')}>Low</button>
-                <button type="button" className={filterMode === 'empty' ? styles.filterActive : ''} onClick={() => setFilterMode('empty')}>Empty</button>
-                <button type="button" className={filterMode === 'full' ? styles.filterActive : ''} onClick={() => setFilterMode('full')}>Full</button>
-              </div>
-            </div>
-          ) : null}
-
           {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
 
           <section className={styles.summaryGrid} aria-label="Fuel Ledger summary">
@@ -363,6 +348,31 @@ export default function FuelClient() {
               <small>{formatPercent(summary?.currentStockPercent ?? null)} of known capacity</small>
             </article>
           </section>
+
+          {isFilterOpen ? (
+            <div className={styles.filterPanel}>
+              <div className={styles.searchWrap}>
+                <span className={styles.searchIcon} aria-hidden="true">⌕</span>
+                <input
+                  className={styles.searchInput}
+                  value={filterText}
+                  onChange={(event) => setFilterText(event.target.value)}
+                  placeholder="Search by tank, bowser, fuel type or location"
+                />
+                {filterText ? (
+                  <button type="button" className={styles.clearSearchButton} onClick={() => setFilterText('')} aria-label="Clear search">
+                    ×
+                  </button>
+                ) : null}
+              </div>
+              <div className={styles.filterSegments}>
+                <button type="button" className={filterMode === 'all' ? styles.filterActive : ''} onClick={() => setFilterMode('all')}>All</button>
+                <button type="button" className={filterMode === 'low' ? styles.filterActive : ''} onClick={() => setFilterMode('low')}>Low</button>
+                <button type="button" className={filterMode === 'empty' ? styles.filterActive : ''} onClick={() => setFilterMode('empty')}>Empty</button>
+                <button type="button" className={filterMode === 'full' ? styles.filterActive : ''} onClick={() => setFilterMode('full')}>Full</button>
+              </div>
+            </div>
+          ) : null}
 
           {isLoading ? <div className={styles.emptyState}>Loading Fuel Ledger...</div> : null}
 
