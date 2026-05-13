@@ -53,6 +53,9 @@ export type ScanEventRecord = {
   operatorName: string;
   hours: number | null;
   fuelPercent: number | null;
+  fuelLitres: number | null;
+  fuelStorageId: string;
+  fuelStorageEventId: string;
   condition: string;
   note: string;
   photoUrls: string[];
@@ -123,6 +126,9 @@ type ScanEventRow = {
   operator_name: string | null;
   hours: string | number | null;
   fuel_percent: string | number | null;
+  fuel_litres: string | number | null;
+  fuel_storage_id: string | number | null;
+  fuel_storage_event_id: string | number | null;
   condition: string | null;
   note: string | null;
   photo_urls: unknown;
@@ -492,6 +498,9 @@ function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
     operatorName: asText(row.operator_name),
     hours: asNumber(row.hours),
     fuelPercent: asNumber(row.fuel_percent),
+    fuelLitres: asNumber(row.fuel_litres),
+    fuelStorageId: asId(row.fuel_storage_id),
+    fuelStorageEventId: asId(row.fuel_storage_event_id),
     condition: normalizeCondition(row.condition),
     note: asText(row.note),
     photoUrls: normalizePhotos(row.photo_urls),
@@ -591,21 +600,24 @@ export async function listScanEventsForAsset(assetId: string, limit = 250): Prom
   const result = await db.query<ScanEventRow>(
     `
       select
-        id,
-        actor_type,
-        operator_name,
-        hours,
-        fuel_percent,
-        condition,
-        note,
-        photo_urls,
-        latitude,
-        longitude,
-        location_text,
-        created_at
-      from asset_scan_events
-      where asset_id = $1
-      order by created_at desc, id desc
+        e.id,
+        e.actor_type,
+        e.operator_name,
+        e.hours,
+        e.fuel_percent,
+        to_jsonb(e)->>'fuel_litres' as fuel_litres,
+        to_jsonb(e)->>'fuel_storage_id' as fuel_storage_id,
+        to_jsonb(e)->>'fuel_storage_event_id' as fuel_storage_event_id,
+        e.condition,
+        e.note,
+        e.photo_urls,
+        e.latitude,
+        e.longitude,
+        e.location_text,
+        e.created_at
+      from asset_scan_events e
+      where e.asset_id = $1
+      order by e.created_at desc, e.id desc
       limit ${safeLimit}
     `,
     [assetId],

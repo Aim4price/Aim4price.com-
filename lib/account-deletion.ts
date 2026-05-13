@@ -1,6 +1,6 @@
 import { getDb } from './db';
 
-const USER_DATA_TABLES = ['asset_register_items', 'valuation_runs', 'account_profiles'] as const;
+const USER_DATA_TABLES = ['fuel_storage_events', 'fuel_storage_units', 'asset_register_items', 'valuation_runs', 'account_profiles'] as const;
 
 export async function deleteUserWorkspaceData(userId: string): Promise<void> {
   const db = getDb();
