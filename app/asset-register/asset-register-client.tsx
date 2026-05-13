@@ -1746,6 +1746,21 @@ function buildAssetMeta(asset: RegisterAsset): string {
   return parts.join(' • ') || 'No key details saved yet';
 }
 
+function buildMarketplaceListingTitle(asset: RegisterAsset, includeMissingDetails = false): string {
+  const baseTitle =
+    String(asset.title ?? '').trim() ||
+    [asset.brandName, asset.modelName].map((part) => part.trim()).filter(Boolean).join(' ') ||
+    'Marketplace listing';
+  const usageValue = buildAssetUsageValue(asset);
+  const titleDetails = [
+    asset.yearModel ? String(asset.yearModel) : includeMissingDetails ? 'Year not set' : '',
+    usageValue !== '—' ? usageValue : includeMissingDetails ? 'Usage not set' : '',
+    asset.condition ? conditionLabel(asset.condition) : includeMissingDetails ? 'Condition not set' : '',
+  ].filter(Boolean);
+
+  return titleDetails.length ? `${baseTitle} · ${titleDetails.join(' · ')}` : baseTitle;
+}
+
 function buildSearchableText(asset: RegisterAsset): string {
   return [
     asset.title,
@@ -3871,6 +3886,13 @@ export default function AssetRegisterClient() {
         : editingAsset
           ? 'Update asset'
           : 'Add asset';
+  const marketplacePhotoUrls = marketplaceAsset ? normalizePhotos(marketplaceAsset.photos) : [];
+  const marketplaceListingTitle = marketplaceAsset ? buildMarketplaceListingTitle(marketplaceAsset, true) : '';
+  const marketplaceModalTitle = marketplaceAsset
+    ? isLiveOnMarketplace(marketplaceAsset)
+      ? 'Update marketplace listing'
+      : 'Send to marketplace'
+    : '';
 
   return (
     <main className={styles.page}>
@@ -5113,8 +5135,8 @@ export default function AssetRegisterClient() {
                     <button type="button" className={styles.optionActionButton} onClick={() => handlePublishFromDialog(activeAsset)}>
                       <CartIcon className={styles.buttonIcon} />
                       <span>
-                        <strong>{isLiveOnMarketplace(activeAsset) ? 'Update marketplace' : 'Send to marketplace'}</strong>
-                        <small>{isLiveOnMarketplace(activeAsset) ? 'Refresh the live listing details.' : 'Create a marketplace listing from this asset.'}</small>
+                        <strong>{isLiveOnMarketplace(activeAsset) ? 'Update marketplace listing' : 'Send to marketplace'}</strong>
+                        <small>{isLiveOnMarketplace(activeAsset) ? 'Refresh the live marketplace listing.' : 'Create a marketplace listing from this asset.'}</small>
                       </span>
                     </button>
                   ) : null}
@@ -5381,7 +5403,8 @@ export default function AssetRegisterClient() {
           <div className={`${styles.modalCard} ${styles.marketplaceModal}`} role="dialog" aria-modal="true" aria-labelledby="marketplace-confirm-title">
             <div className={`${styles.modalHeader} ${styles.marketplaceModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="marketplace-confirm-title">Send this asset to marketplace</h3>
+                <h3 id="marketplace-confirm-title">{marketplaceModalTitle}</h3>
+                <p>Check the listing title, asking price, photos and seller details before it goes live.</p>
               </div>
 
               <button type="button" className={styles.modalCloseButton} onClick={closeMarketplaceModal} aria-label="Close marketplace modal">
@@ -5392,9 +5415,10 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalScrollBody} ${styles.marketplaceModalScrollBody}`}>
               <form className={styles.marketplaceForm} onSubmit={handleConfirmMarketplacePublish}>
                 <section className={styles.marketplaceAssetSummary}>
-                  <div className={styles.marketplaceAssetSummaryMain}>
-                    <span>Asset</span>
-                    <strong>{marketplaceAsset.title}</strong>
+                  <div className={styles.marketplaceTitlePreview}>
+                    <span>Listing title</span>
+                    <strong>{marketplaceListingTitle}</strong>
+                    <small>Year model, usage and condition are included in the marketplace title.</small>
                   </div>
 
                   <div className={styles.marketplaceAssetSummaryValue}>
@@ -5425,27 +5449,64 @@ export default function AssetRegisterClient() {
                                 current ? { ...current, askingPriceExVat: formatMarketplacePriceInput(current.askingPriceExVat) } : current,
                               )
                             }
-                            placeholder=""
+                            placeholder="0"
                             autoFocus
                             aria-label="Marketplace price excluding VAT"
                           />
                         </div>
+                        <small className={styles.marketplacePriceHint}>The entered price is saved as the listing asking price excluding VAT.</small>
                       </label>
                     </section>
 
+                    <section className={styles.marketplacePhotosPanel}>
+                      <div className={styles.marketplacePanelHeading}>
+                        <span>Photos</span>
+                        <small>
+                          {marketplacePhotoUrls.length
+                            ? `${marketplacePhotoUrls.length} uploaded photo${marketplacePhotoUrls.length === 1 ? '' : 's'} will be shown on the listing.`
+                            : 'No photos are uploaded for this asset yet.'}
+                        </small>
+                      </div>
+
+                      {marketplacePhotoUrls.length ? (
+                        <div className={styles.marketplacePhotoPreview}>
+                          <img
+                            src={marketplacePhotoUrls[0]}
+                            alt={`${marketplaceAsset.title} main marketplace photo`}
+                            className={styles.marketplaceMainPhoto}
+                          />
+
+                          {marketplacePhotoUrls.length > 1 ? (
+                            <div className={styles.marketplacePhotoStrip} aria-label="Marketplace listing photos">
+                              {marketplacePhotoUrls.slice(0, 6).map((photoUrl, index) => (
+                                <img key={`${photoUrl}-${index}`} src={photoUrl} alt={`${marketplaceAsset.title} photo ${index + 1}`} />
+                              ))}
+                              {marketplacePhotoUrls.length > 6 ? <span>+{marketplacePhotoUrls.length - 6}</span> : null}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div className={styles.marketplaceNoPhotos}>
+                          <strong>No photos uploaded</strong>
+                          <span>Add photos in Update asset to show real asset photos on the marketplace.</span>
+                        </div>
+                      )}
+                    </section>
+
                     <label className={`${styles.field} ${styles.marketplaceNotesField}`}>
-                      <span>Notes</span>
+                      <span>Listing notes</span>
                       <textarea
                         value={marketplaceDraft.description}
                         onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, description: event.target.value } : current))}
-                        placeholder=""
+                        placeholder="Add important buyer notes, extras, service history or known issues."
                       />
                     </label>
                   </div>
 
                   <section className={styles.marketplaceSellerPanel}>
                     <div className={styles.marketplaceSellerHeader}>
-                      <h4>Seller details</h4>
+                      <h4>Edit seller details</h4>
+                      <span>Shown to signed-in marketplace users</span>
                     </div>
 
                     <div className={styles.marketplaceSellerGrid}>
