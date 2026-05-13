@@ -1,8 +1,10 @@
 'use client';
 
 import {
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -716,6 +718,8 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
   const [locationFilter, setLocationFilter] = useState('south-africa');
   const [distanceFilter, setDistanceFilter] = useState<DistanceFilterValue>('all');
   const [visibleCount, setVisibleCount] = useState(LISTINGS_PER_LOAD);
+  const modalDetailsRef = useRef<HTMLElement | null>(null);
+  const [modalScrollState, setModalScrollState] = useState({ visible: false, top: 0, height: 100 });
 
   useEffect(() => {
     let mounted = true;
@@ -929,6 +933,57 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
   ].filter(Boolean) as ActiveFilterChip[];
 
   const canDeleteActiveListing = Boolean(activeListing?.canManage && activeListing?.sourceAssetId);
+
+  const updateModalScrollRail = useCallback(() => {
+    const node = modalDetailsRef.current;
+
+    if (!node) {
+      setModalScrollState({ visible: false, top: 0, height: 100 });
+      return;
+    }
+
+    const scrollableDistance = node.scrollHeight - node.clientHeight;
+
+    if (scrollableDistance <= 2) {
+      setModalScrollState({ visible: false, top: 0, height: 100 });
+      return;
+    }
+
+    const nextHeight = Math.max(16, Math.min(72, (node.clientHeight / node.scrollHeight) * 100));
+    const maxTop = 100 - nextHeight;
+    const nextTop = Math.min(maxTop, Math.max(0, (node.scrollTop / scrollableDistance) * maxTop));
+
+    setModalScrollState((current) => {
+      if (
+        current.visible &&
+        Math.abs(current.top - nextTop) < 0.2 &&
+        Math.abs(current.height - nextHeight) < 0.2
+      ) {
+        return current;
+      }
+
+      return { visible: true, top: nextTop, height: nextHeight };
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!activeListing) {
+      setModalScrollState({ visible: false, top: 0, height: 100 });
+      return undefined;
+    }
+
+    const syncScrollRail = () => updateModalScrollRail();
+    const animationFrame = window.requestAnimationFrame(syncScrollRail);
+    const timeout = window.setTimeout(syncScrollRail, 120);
+
+    window.addEventListener('resize', syncScrollRail);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      window.clearTimeout(timeout);
+      window.removeEventListener('resize', syncScrollRail);
+    };
+  }, [activeImages.length, activeListing, canDeleteActiveListing, isSignedIn, updateModalScrollRail]);
 
   useEffect(() => {
     setVisibleCount(LISTINGS_PER_LOAD);
@@ -1499,7 +1554,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
               ) : null}
             </div>
 
-            <aside className={styles.modalDetails}>
+            <aside ref={modalDetailsRef} className={styles.modalDetails} onScroll={updateModalScrollRail}>
               <div className={styles.modalTitleArea}>
                 <strong>{money(activeListing.askingPriceExVat)}</strong>
                 <h2 id="marketplace-listing-title">{listingDisplayTitle(activeListing)}</h2>
@@ -1630,6 +1685,15 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
                 </section>
               ) : null}
             </aside>
+
+            {modalScrollState.visible ? (
+              <div className={styles.modalScrollRail} aria-hidden="true">
+                <span
+                  className={styles.modalScrollThumb}
+                  style={{ top: `${modalScrollState.top}%`, height: `${modalScrollState.height}%` }}
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

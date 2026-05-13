@@ -638,6 +638,7 @@
   display: grid;
   grid-template-columns: minmax(500px, 1fr) minmax(430px, 470px);
   width: min(1160px, calc(100vw - 1.56rem));
+  height: min(660px, calc(100dvh - 1.56rem));
   max-height: min(660px, calc(100dvh - 1.56rem));
   overflow: hidden;
   border-radius: 1rem;
@@ -648,6 +649,7 @@
 .listingModalNoMedia {
   grid-template-columns: minmax(300px, 0.72fr) minmax(500px, 1fr);
   width: min(980px, calc(100vw - 1.56rem));
+  height: min(620px, calc(100dvh - 1.56rem));
   max-height: min(620px, calc(100dvh - 1.56rem));
 }
 
@@ -764,10 +766,12 @@
 
 .modalDetails {
   min-width: 0;
+  min-height: 0;
+  height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
-  padding: 1rem 1rem 1.1rem 1.15rem;
+  padding: 1rem 1.85rem 1.1rem 1.15rem;
   background: #ffffff;
   scrollbar-width: thin;
   scrollbar-color: #165340 #eef4f1;
@@ -795,8 +799,32 @@
 }
 
 .listingModalNoMedia .modalDetails {
-  padding: 1rem 1.2rem 1.1rem;
+  padding: 1rem 2rem 1.1rem 1.2rem;
 }
+
+.modalScrollRail {
+  position: absolute;
+  z-index: 5;
+  top: 3.95rem;
+  right: 0.52rem;
+  bottom: 1rem;
+  width: 0.5rem;
+  border-radius: 999px;
+  background: rgba(10, 59, 47, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(10, 59, 47, 0.1);
+  pointer-events: none;
+}
+
+.modalScrollThumb {
+  position: absolute;
+  left: 0.08rem;
+  right: 0.08rem;
+  min-height: 2.7rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #1f8a6b 0%, #0f4d3b 100%);
+  box-shadow: 0 0.35rem 0.8rem rgba(15, 77, 59, 0.25);
+}
+
 
 .modalTitleArea {
   padding-right: 2.55rem;
@@ -1256,6 +1284,7 @@
   .listingModalNoMedia {
     grid-template-columns: 1fr;
     width: min(740px, calc(100vw - 1rem));
+    height: auto;
     max-height: calc(100dvh - 1rem);
   }
 
@@ -1269,6 +1298,13 @@
 
   .modalDetails {
     max-height: 58vh;
+  }
+
+  .modalScrollRail {
+    top: auto;
+    right: 0.42rem;
+    bottom: 0.78rem;
+    height: min(48vh, calc(100% - 1.5rem));
   }
 }
 
