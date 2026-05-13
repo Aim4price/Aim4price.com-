@@ -11712,3 +11712,185 @@
     text-align: left !important;
   }
 }
+
+/* === Asset Register add/manage flow polish: 13 May 2026 === */
+.addAssetChoiceModal {
+  width: min(100%, 760px) !important;
+  max-height: min(86vh, calc(100dvh - 2rem)) !important;
+  overflow: hidden !important;
+  padding: clamp(1.35rem, 2.2vw, 1.75rem) !important;
+  border-radius: 2rem !important;
+}
+
+.addAssetChoiceHeader {
+  margin-bottom: 1.15rem !important;
+  padding-bottom: 1.05rem !important;
+}
+
+.addAssetChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.addAssetChoiceButton {
+  appearance: none;
+  min-height: 9rem;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 3.35rem minmax(0, 1fr);
+  align-items: center;
+  justify-items: center;
+  gap: 1.05rem;
+  padding: 1.35rem;
+  border-radius: 1.35rem;
+  color: #1d3b62;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  background:
+    radial-gradient(circle at top left, rgba(46, 111, 90, 0.055), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  box-shadow:
+    0 14px 28px rgba(16, 31, 28, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.addAssetChoiceButton:hover {
+  transform: translateY(-2px);
+  border-color: rgba(175, 199, 217, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(46, 111, 90, 0.08), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #eef5fb 100%);
+  box-shadow:
+    0 18px 34px rgba(16, 31, 28, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.addAssetChoiceButton:focus-visible {
+  outline: 3px solid rgba(22, 83, 64, 0.24);
+  outline-offset: 3px;
+}
+
+.addAssetChoiceButton .buttonIcon {
+  width: 1.65rem;
+  height: 1.65rem;
+  justify-self: center;
+  color: #1d3b62;
+}
+
+.addAssetChoiceButton > span {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 0.38rem;
+}
+
+.addAssetChoiceButton strong {
+  color: #10352b;
+  font-size: 1.18rem;
+  font-weight: 860;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.addAssetChoiceButton small {
+  max-width: 24rem;
+  color: #627386;
+  font-size: 0.93rem;
+  font-weight: 630;
+  line-height: 1.42;
+}
+
+.addAssetChoiceButtonPrimary {
+  color: #124635;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.13), transparent 45%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  border-color: rgba(190, 224, 206, 0.98);
+}
+
+.addAssetChoiceButtonPrimary .buttonIcon,
+.addAssetChoiceButtonPrimary strong {
+  color: #124635;
+}
+
+.optionsModal .assetOptionsGrid {
+  align-items: stretch !important;
+  gap: 1rem !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton {
+  display: grid !important;
+  grid-template-columns: 3.15rem minmax(0, 1fr) !important;
+  align-items: center !important;
+  justify-items: center !important;
+  justify-content: stretch !important;
+  text-align: left !important;
+  gap: 1.05rem !important;
+  min-height: 6.4rem !important;
+  padding: 1.15rem 1.25rem !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton > .buttonIcon {
+  grid-column: 1 !important;
+  width: 1.48rem !important;
+  height: 1.48rem !important;
+  justify-self: center !important;
+  align-self: center !important;
+  margin: 0 !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton > span {
+  grid-column: 2 !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  display: grid !important;
+  align-content: center !important;
+  justify-items: start !important;
+  gap: 0.32rem !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton strong,
+.optionsModal .assetOptionsGrid .optionActionButton small {
+  text-align: left !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton small {
+  max-width: 24rem !important;
+}
+
+@media (max-width: 720px) {
+  .addAssetChoiceModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: min(88vh, calc(100dvh - 1rem)) !important;
+    padding: 1rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .addAssetChoiceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .addAssetChoiceButton {
+    min-height: 7.65rem;
+    padding: 1.15rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .addAssetChoiceButton,
+  .optionsModal .assetOptionsGrid .optionActionButton {
+    grid-template-columns: 2.65rem minmax(0, 1fr) !important;
+    gap: 0.85rem !important;
+  }
+}

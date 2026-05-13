@@ -480,6 +480,45 @@ function OptionsIcon({ className }: IconProps) {
   );
 }
 
+function ManageIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M10 4.5A3.5 3.5 0 0 0 6.5 8v1.15A3.7 3.7 0 0 0 8.2 20H10z" />
+      <path d="M14 4.5A3.5 3.5 0 0 1 17.5 8v1.15A3.7 3.7 0 0 1 15.8 20H14z" />
+      <path d="M10 8H8.8" />
+      <path d="M14 8h1.2" />
+      <path d="M10 12H8" />
+      <path d="M14 12h2" />
+      <path d="M10 16H8.6" />
+      <path d="M14 16h1.4" />
+      <path d="M12 5v15" />
+    </svg>
+  );
+}
+
+function UpdateAssetIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M21 12a9 9 0 0 1-15.36 6.36" />
+      <path d="M3 12A9 9 0 0 1 18.36 5.64" />
+      <path d="M18 2v4h4" />
+      <path d="M6 22v-4H2" />
+      <path d="M9 12.2 11 14l4-4.5" />
+    </svg>
+  );
+}
+
+function CartIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M3 4h2l2.2 10.4a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.95-1.56L20 8H6.2" />
+      <path d="M8 8h12" />
+      <circle cx="9" cy="20" r="1.4" />
+      <circle cx="18" cy="20" r="1.4" />
+    </svg>
+  );
+}
+
 function DownloadIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
@@ -1805,6 +1844,7 @@ export default function AssetRegisterClient() {
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
+  const [isAddChoiceModalOpen, setIsAddChoiceModalOpen] = useState(false);
   const [manualAssetStep, setManualAssetStep] = useState<ManualAssetStep>(1);
   const [hasManualAssetKindSelection, setHasManualAssetKindSelection] = useState(false);
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
@@ -1994,6 +2034,7 @@ export default function AssetRegisterClient() {
   }, [isAssetFilterOpen]);
 
   const anyModalOpen =
+    isAddChoiceModalOpen ||
     isAssetModalOpen ||
     Boolean(activeAsset) ||
     Boolean(deleteCandidateAsset) ||
@@ -2047,6 +2088,11 @@ export default function AssetRegisterClient() {
         return;
       }
 
+      if (isAddChoiceModalOpen) {
+        closeAddAssetChoiceModal();
+        return;
+      }
+
       if (isSummaryModalOpen) {
         closeSummaryModal();
         return;
@@ -2068,7 +2114,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isQrModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isQrModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset]);
 
   const totalValue = useMemo(() => {
     return assets.reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
@@ -2273,10 +2319,25 @@ export default function AssetRegisterClient() {
     }
   }
 
+  function openAddAssetChoiceModal() {
+    setNotice(null);
+    setIsAssetFilterOpen(false);
+    setIsAddChoiceModalOpen(true);
+  }
+
+  function closeAddAssetChoiceModal() {
+    setIsAddChoiceModalOpen(false);
+  }
+
   function openCreateModal() {
     resetEditor();
     setManualAssetStep(1);
     setIsAssetModalOpen(true);
+  }
+
+  function openManualEntryFromChoice() {
+    closeAddAssetChoiceModal();
+    openCreateModal();
   }
 
   function closeAssetModal() {
@@ -3787,9 +3848,9 @@ export default function AssetRegisterClient() {
               ) : null}
             </label>
 
-            <button type="button" className={`${styles.primaryButton} ${styles.toolbarPrimaryButton}`} onClick={openCreateModal}>
+            <button type="button" className={`${styles.primaryButton} ${styles.toolbarPrimaryButton}`} onClick={openAddAssetChoiceModal}>
               <PlusIcon className={styles.buttonIcon} />
-              <span>Manually add asset</span>
+              <span>Add Asset</span>
             </button>
           </div>
 
@@ -3865,8 +3926,8 @@ export default function AssetRegisterClient() {
                                 className={styles.optionsButton}
                                 onClick={() => openActionDialog(asset)}
                               >
-                                <OptionsIcon className={styles.buttonIcon} />
-                                <span>Options</span>
+                                <ManageIcon className={styles.buttonIcon} />
+                                <span>Manage</span>
                               </button>
                             </div>
                           </div>
@@ -4097,9 +4158,9 @@ export default function AssetRegisterClient() {
                 <Link href="/valuation" className={styles.secondaryButton}>
                   Go to valuation
                 </Link>
-                <button type="button" className={styles.primaryButton} onClick={openCreateModal}>
+                <button type="button" className={styles.primaryButton} onClick={openAddAssetChoiceModal}>
                   <PlusIcon className={styles.buttonIcon} />
-                  <span>Manually add asset</span>
+                  <span>Add Asset</span>
                 </button>
               </div>
             </div>
@@ -4180,6 +4241,49 @@ export default function AssetRegisterClient() {
                 </section>
 
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isAddChoiceModalOpen ? (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBackdrop} onClick={closeAddAssetChoiceModal} />
+
+          <div className={`${styles.modalCard} ${styles.addAssetChoiceModal}`} role="dialog" aria-modal="true" aria-labelledby="add-asset-choice-title">
+            <div className={`${styles.modalHeader} ${styles.addAssetChoiceHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <span className={styles.modalEyebrow}>Add Asset</span>
+                <h3 id="add-asset-choice-title">Choose how to add the asset</h3>
+                <p>Use Aim4price Value when you want the estimate flow, or Manual Entry when you already know the asset details and value.</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={closeAddAssetChoiceModal}
+                aria-label="Close add asset options"
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={styles.addAssetChoiceGrid}>
+              <Link href="/valuation" className={`${styles.addAssetChoiceButton} ${styles.addAssetChoiceButtonPrimary}`}>
+                <TrendIcon className={styles.buttonIcon} />
+                <span>
+                  <strong>Aim4price Value</strong>
+                  <small>Estimate the asset with Aim4price and then save the valuation to this register.</small>
+                </span>
+              </Link>
+
+              <button type="button" className={styles.addAssetChoiceButton} onClick={openManualEntryFromChoice}>
+                <DocumentIcon className={styles.buttonIcon} />
+                <span>
+                  <strong>Manual Entry</strong>
+                  <small>Add a known value, asset details, documents, photos and status information yourself.</small>
+                </span>
+              </button>
             </div>
           </div>
         </div>
@@ -4748,10 +4852,10 @@ export default function AssetRegisterClient() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeActionDialog} />
 
-          <div className={styles.optionsModal} role="dialog" aria-modal="true" aria-labelledby="asset-options-title">
+          <div className={styles.optionsModal} role="dialog" aria-modal="true" aria-labelledby="asset-manage-title">
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-options-title">{activeAsset.title}</h3>
+                <h3 id="asset-manage-title">{activeAsset.title}</h3>
                 <p>{buildAssetMeta(activeAsset)}</p>
               </div>
 
@@ -4759,7 +4863,7 @@ export default function AssetRegisterClient() {
                 type="button"
                 className={styles.modalCloseButton}
                 onClick={closeActionDialog}
-                aria-label="Close asset options"
+                aria-label="Close asset management"
               >
                 <CloseIcon className={styles.buttonIcon} />
               </button>
@@ -4773,7 +4877,7 @@ export default function AssetRegisterClient() {
                     className={`${styles.optionActionButton} ${styles.optionFeaturedButton}`}
                     onClick={() => { closeActionDialog(); openUpdater(activeAsset); }}
                   >
-                    <EditIcon className={styles.buttonIcon} />
+                    <UpdateAssetIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Update asset</strong>
                       <small>Edit details, documents, photos and status.</small>
@@ -4808,7 +4912,7 @@ export default function AssetRegisterClient() {
 
                   {isMarketplaceEligible(activeAsset) ? (
                     <button type="button" className={styles.optionActionButton} onClick={() => handlePublishFromDialog(activeAsset)}>
-                      <StoreIcon className={styles.buttonIcon} />
+                      <CartIcon className={styles.buttonIcon} />
                       <span>
                         <strong>{isLiveOnMarketplace(activeAsset) ? 'Update marketplace' : 'Send to marketplace'}</strong>
                         <small>{isLiveOnMarketplace(activeAsset) ? 'Refresh the live listing details.' : 'Create a marketplace listing from this asset.'}</small>
@@ -4823,7 +4927,7 @@ export default function AssetRegisterClient() {
                       disabled={busyMarketplaceRemoveId === activeAsset.id}
                       onClick={() => void handleRemoveFromMarketplace(activeAsset)}
                     >
-                      <StoreIcon className={styles.buttonIcon} />
+                      <CartIcon className={styles.buttonIcon} />
                       <span>
                         <strong>{busyMarketplaceRemoveId === activeAsset.id ? 'Removing...' : 'Remove from marketplace'}</strong>
                         <small>Withdraw the live listing but keep this asset in the register.</small>
