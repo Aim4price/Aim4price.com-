@@ -509,10 +509,16 @@ function buildMarketplaceListing(
   const area = titleCase(
     asText(pick(row, ['marketplace_area'])) || explicitProfileLocation || asText(row.profile_town_city) || 'Undisclosed',
   );
-  const sellerCompany = asText(pick(row, ['marketplace_seller_company'])) || asText(row.profile_business_name) || undefined;
-  const sellerName = asText(pick(row, ['marketplace_seller_name'])) || sellerCompany || asText(row.profile_name) || 'Aim4price seller';
+  const rawSellerCompany = asText(pick(row, ['marketplace_seller_company'])) || asText(row.profile_business_name) || undefined;
+  const rawSellerName =
+    asText(pick(row, ['marketplace_seller_name'])) || rawSellerCompany || asText(row.profile_name) || 'Aim4price seller';
+  const sellerCompany = options.exposeContact ? rawSellerCompany : undefined;
+  const sellerName = options.exposeContact ? rawSellerName : 'Aim4price seller';
   const sellerPhone = options.exposeContact
     ? asText(pick(row, ['seller_phone'])) || asText(row.profile_phone)
+    : '';
+  const sellerEmail = options.exposeContact
+    ? asText(pick(row, ['marketplace_seller_email'])) || asText(row.profile_email)
     : '';
   const description =
     asText(pick(row, ['marketplace_notes', 'note', 'notes', 'description'])) ||
@@ -555,7 +561,7 @@ function buildMarketplaceListing(
     sellerName,
     sellerCompany,
     sellerPhone,
-    sellerEmail: asText(pick(row, ['marketplace_seller_email'])) || asText(row.profile_email) || undefined,
+    sellerEmail: sellerEmail || undefined,
     dateAdvertised: publishedAtIso.slice(0, 10),
     publishedAtIso,
     askingPriceExVat,
