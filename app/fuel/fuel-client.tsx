@@ -211,7 +211,6 @@ export default function FuelClient() {
   const [stockDraft, setStockDraft] = useState<StockDraft>(emptyStockDraft);
   const [pinDraft, setPinDraft] = useState('');
 
-  const activeStorages = useMemo(() => storages.filter((storage) => storage.status === 'active'), [storages]);
   const selectedStorage = useMemo(
     () => storages.find((storage) => storage.id === selectedStorageId) ?? null,
     [selectedStorageId, storages],
@@ -385,9 +384,9 @@ export default function FuelClient() {
     }
   }
 
-  async function handleArchiveStorage(storage: FuelLedgerStorage) {
-    const shouldArchive = window.confirm(`Archive ${storage.name}? The old QR code will stop accepting fuel entries.`);
-    if (!shouldArchive) return;
+  async function handleDeleteStorage(storage: FuelLedgerStorage) {
+    const shouldDelete = window.confirm(`Delete ${storage.name}? Its QR code will stop accepting fuel entries, but old fuel history stays in reports.`);
+    if (!shouldDelete) return;
 
     setIsSaving(true);
     setNotice(null);
@@ -399,9 +398,9 @@ export default function FuelClient() {
       });
 
       await applyLedgerResponse(response);
-      setNotice({ tone: 'success', message: 'Fuel storage archived.' });
+      setNotice({ tone: 'success', message: 'Fuel storage deleted.' });
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to archive storage.' });
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to delete storage.' });
     } finally {
       setIsSaving(false);
     }
@@ -529,8 +528,8 @@ export default function FuelClient() {
                   </div>
 
                   {storage.status === 'active' ? (
-                    <button type="button" className={styles.archiveButton} onClick={() => void handleArchiveStorage(storage)} disabled={isSaving}>
-                      Archive storage
+                    <button type="button" className={styles.deleteButton} onClick={() => void handleDeleteStorage(storage)} disabled={isSaving}>
+                      Delete storage
                     </button>
                   ) : null}
                 </article>
