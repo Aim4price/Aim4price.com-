@@ -1,0 +1,326 @@
+.scanShell {
+  min-height: 100vh;
+  width: min(calc(100% - 1.7rem), 1040px);
+  margin: 0 auto;
+  padding: clamp(1rem, 4vw, 2.6rem) 0 clamp(2rem, 6vw, 4rem);
+  display: grid;
+  gap: 1rem;
+}
+
+.heroCard,
+.card,
+.notice {
+  border-radius: 1.55rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  box-shadow: 0 22px 52px rgba(18, 45, 37, 0.08);
+}
+
+.heroCard {
+  padding: clamp(1.2rem, 4vw, 2rem);
+  display: grid;
+  gap: 0.75rem;
+  background:
+    radial-gradient(circle at top left, rgba(23, 77, 62, 0.13), transparent 38%),
+    linear-gradient(135deg, #ffffff 0%, #f4faf7 100%);
+}
+
+.eyebrow {
+  width: max-content;
+  min-height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  background: rgba(23, 77, 62, 0.1);
+  color: #174d3e;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.heroCard h1,
+.sectionTitle h2,
+.card h1 {
+  margin: 0;
+  color: #123b30;
+  font-weight: 900;
+  letter-spacing: -0.055em;
+}
+
+.heroCard h1 {
+  font-size: clamp(2.6rem, 11vw, 6.8rem);
+  line-height: 0.86;
+}
+
+.heroCard p,
+.sectionTitle p,
+.emptyText {
+  margin: 0;
+  color: #687771;
+  font-size: 1rem;
+  font-weight: 680;
+  line-height: 1.55;
+}
+
+.notice {
+  padding: 1rem 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 780;
+  line-height: 1.45;
+}
+
+.noticeSuccess {
+  color: #16523c;
+  background: rgba(41, 127, 82, 0.1);
+  border-color: rgba(41, 127, 82, 0.18);
+}
+
+.noticeError {
+  color: #842424;
+  background: rgba(166, 45, 45, 0.1);
+  border-color: rgba(166, 45, 45, 0.18);
+}
+
+.gridLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+  gap: 1rem;
+  align-items: start;
+}
+
+.card {
+  min-width: 0;
+  padding: clamp(1.1rem, 3.4vw, 1.6rem);
+  display: grid;
+  gap: 1.05rem;
+}
+
+.sectionTitle {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.sectionTitle h2,
+.card h1 {
+  font-size: clamp(1.8rem, 5vw, 3.1rem);
+  line-height: 0.94;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.formField {
+  min-width: 0;
+  display: grid;
+  gap: 0.45rem;
+  color: #243a33;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.formField input,
+.formField select,
+.formField textarea {
+  width: 100%;
+  border: 1px solid rgba(18, 45, 37, 0.11);
+  border-radius: 1rem;
+  background: #fbfdfc;
+  color: #19352d;
+  padding: 0.95rem 1rem;
+  font-size: 1rem;
+  font-weight: 720;
+  outline: none;
+}
+
+.formField textarea {
+  resize: vertical;
+}
+
+.formField input:focus,
+.formField select:focus,
+.formField textarea:focus {
+  border-color: rgba(23, 77, 62, 0.38);
+  box-shadow: 0 0 0 4px rgba(23, 77, 62, 0.08);
+}
+
+.primaryButton,
+.gpsBox button {
+  min-height: 3.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 1.25rem;
+  background: linear-gradient(135deg, #174d3e 0%, #246b55 100%);
+  color: #ffffff;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 16px 32px rgba(23, 77, 62, 0.22);
+}
+
+.primaryButton:disabled {
+  opacity: 0.52;
+}
+
+.storageLevel,
+.assetSnapshot,
+.gpsBox {
+  padding: 1rem;
+  border-radius: 1.15rem;
+  background: #f7fbf8;
+  border: 1px solid rgba(18, 45, 37, 0.07);
+}
+
+.storageLevel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.storageLevel > span,
+.assetSnapshot span,
+.gpsBox span {
+  color: #6f7d77;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.storageLevel strong {
+  color: #123b30;
+  font-size: 2rem;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+}
+
+.progressTrack {
+  height: 0.72rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e4ece8;
+}
+
+.progressTrack i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #174d3e 0%, #3f9273 100%);
+}
+
+.assetSnapshot {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.assetSnapshot div {
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.assetSnapshot strong {
+  min-width: 0;
+  color: #17362c;
+  font-size: 1rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.gpsBox {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.gpsBox div {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.gpsBox strong {
+  color: #123b30;
+  font-weight: 900;
+}
+
+.gpsBox button {
+  min-height: 2.9rem;
+  background: #ffffff;
+  color: #17362c;
+  border: 1px solid rgba(18, 45, 37, 0.09);
+  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.06);
+  flex: 0 0 auto;
+}
+
+.eventList {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.eventItem {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.9rem;
+  border-radius: 1rem;
+  background: #f8fbfa;
+  border: 1px solid rgba(18, 45, 37, 0.06);
+}
+
+.eventItem div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.eventItem strong {
+  color: #123b30;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.eventItem span,
+.eventItem p,
+.eventItem small {
+  margin: 0;
+  color: #687771;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .gridLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .heroCard,
+  .card,
+  .notice {
+    border-radius: 1.25rem;
+  }
+
+  .formGrid,
+  .assetSnapshot {
+    grid-template-columns: 1fr;
+  }
+
+  .gpsBox {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .gpsBox button,
+  .primaryButton {
+    width: 100%;
+  }
+}
