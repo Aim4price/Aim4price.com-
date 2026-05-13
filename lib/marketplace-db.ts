@@ -4,6 +4,8 @@ import type { MarketplaceListing } from './marketplace';
 
 const FALLBACK_MARKETPLACE_IMAGE = '/brand/Tractor.png';
 
+type MarketplaceUsageUnit = MarketplaceListing['usageUnit'];
+
 let marketplaceColumnsEnsured = false;
 
 type MarketplaceAssetRow = Record<string, unknown> & {
@@ -70,8 +72,7 @@ function titleCase(value: string): string {
 }
 
 function safeImage(src: string): string {
-  const next = asText(src);
-  return next || FALLBACK_MARKETPLACE_IMAGE;
+  return asText(src);
 }
 
 function normalizeDrive(value: unknown): '2wd' | '4wd' | 'tracks' {
@@ -124,11 +125,11 @@ function conditionLabel(value: string): string {
 }
 
 function buildPhotoList(row: Record<string, unknown>): string[] {
-  const photos = asStringArray(pick(row, ['photo_urls', 'photos', 'image_urls', 'images'])).map((entry) =>
-    safeImage(entry),
-  );
+  const photos = asStringArray(pick(row, ['photo_urls', 'photos', 'image_urls', 'images']))
+    .map((entry) => safeImage(entry))
+    .filter(Boolean);
 
-  return photos.length ? Array.from(new Set(photos)) : [FALLBACK_MARKETPLACE_IMAGE];
+  return Array.from(new Set(photos));
 }
 
 function deriveBrandAndModel(row: Record<string, unknown>): { brandName: string; modelName: string } {
@@ -265,16 +266,140 @@ function pickJsonObject(value: unknown): Record<string, unknown> {
   return {};
 }
 
-function listingUsageUnit(row: MarketplaceAssetRow): 'hours' | 'km' {
-  const specs = pickJsonObject(pick(row, ['specs_json']));
-  const normalized = asText(specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit).toLowerCase();
-  const kind = asText(pick(row, ['kind', 'equipment_type', 'asset_type', 'item_type'])).toLowerCase();
+function asOptionalNumber(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') {
+    return null;
+  }
 
-  if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function clampPercent(value: number | null): number | null {
+  return value === null ? null : Math.min(100, Math.max(0, value));
+}
+
+function readFirstNumber(row: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const parsed = asOptionalNumber(pick(row, [key]));
+
+    if (parsed !== null) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function readFirstSpecNumber(specs: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const parsed = asOptionalNumber(specs[key]);
+
+    if (parsed !== null) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function listingWorkedPercent(
+  row: MarketplaceAssetRow,
+  specs: Record<string, unknown>,
+): number | null {
+  return clampPercent(
+    readFirstNumber(row, [
+      'life_worked_percent',
+      'worked_percent',
+      'percent_worked',
+      'lifetime_worked_percent',
+      'lifetime_used_percent',
+    ]) ??
+      readFirstSpecNumber(specs, [
+        'life_worked_percent',
+        'worked_percent',
+        'percent_worked',
+        'lifetime_worked_percent',
+        'lifetime_used_percent',
+      ]),
+  );
+}
+
+function normalizeUsageMode(value: unknown): string {
+  return asText(value).toLowerCase().replace(/[\s-]+/g, '_');
+}
+
+function isPercentUsageMode(value: unknown): boolean {
+  const normalized = normalizeUsageMode(value);
+
+  return (
+    normalized === 'percent' ||
+    normalized === 'percentage' ||
+    normalized === 'percent_used' ||
+    normalized === 'percentage_depreciation' ||
+    normalized === 'wear_class'
+  );
+}
+
+function isKilometreUsageMode(value: unknown): boolean {
+  const normalized = normalizeUsageMode(value);
+  return normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers';
+}
+
+function isHourUsageMode(value: unknown): boolean {
+  const normalized = normalizeUsageMode(value);
+  return normalized === 'hours' || normalized === 'hour' || normalized === 'hrs' || normalized === 'engine_hours';
+}
+
+function listingUsageUnit(
+  row: MarketplaceAssetRow,
+  specs: Record<string, unknown>,
+  lifeWorkedPercent: number | null,
+): MarketplaceUsageUnit {
+  const explicitUsageMetric =
+    specs.usageMetric ??
+    specs.usage_metric ??
+    specs.usageUnit ??
+    specs.usage_unit ??
+    specs.usage_measure ??
+    pick(row, ['usage_metric', 'usage_metric_type', 'equipment_family_usage_metric_type']);
+  const explicitUsageMode =
+    specs.usageMode ??
+    specs.usage_mode ??
+    specs.usageMetricType ??
+    specs.usage_metric_type ??
+    specs.valuationMode ??
+    specs.valuation_mode ??
+    pick(row, ['valuation_mode', 'equipment_family_valuation_mode']);
+  const kind = asText(pick(row, ['kind', 'equipment_type', 'asset_type', 'item_type'])).toLowerCase();
+  const depreciationMethod = asText(pick(row, ['depreciation_method_used'])).toLowerCase();
+  const hours = Math.max(0, Math.round(asNumber(pick(row, ['hours', 'engine_hours']), 0)));
+
+  if (isPercentUsageMode(explicitUsageMetric) || isPercentUsageMode(explicitUsageMode)) {
+    return 'percent';
+  }
+
+  if (isKilometreUsageMode(explicitUsageMetric)) {
     return 'km';
   }
 
-  return kind === 'vehicle' ? 'km' : 'hours';
+  if (isHourUsageMode(explicitUsageMetric)) {
+    return 'hours';
+  }
+
+  if (kind === 'vehicle') {
+    return 'km';
+  }
+
+  if (depreciationMethod === 'semi_depreciation' || depreciationMethod === 'percentage_depreciation') {
+    return 'percent';
+  }
+
+  if (lifeWorkedPercent !== null && hours <= 0) {
+    return 'percent';
+  }
+
+  return 'hours';
 }
 
 async function createMarketplaceListingSnapshot(row: MarketplaceAssetRow): Promise<void> {
@@ -333,7 +458,7 @@ async function createMarketplaceListingSnapshot(row: MarketplaceAssetRow): Promi
         asText(pick(row, ['marketplace_seller_company'])) || asText(row.profile_business_name),
         asText(pick(row, ['seller_phone'])) || asText(row.profile_phone),
         asText(pick(row, ['marketplace_seller_email'])) || asText(row.profile_email),
-        imageUrls[0] ?? FALLBACK_MARKETPLACE_IMAGE,
+        imageUrls[0] ?? '',
         JSON.stringify(imageUrls),
         pick(row, ['sector_id']),
         pick(row, ['equipment_family_id']),
@@ -359,6 +484,9 @@ function buildMarketplaceListing(
   const title = asText(pick(row, ['title', 'name', 'asset_name'])) || `${brandName} ${modelName}`.trim();
   const powerKw = Math.round(asNumber(pick(row, ['power_kw', 'kw', 'power']), 0));
   const powerHp = Math.round(powerKw * 1.341);
+  const specs = pickJsonObject(pick(row, ['specs_json']));
+  const lifeWorkedPercent = listingWorkedPercent(row, specs);
+  const usageUnit = listingUsageUnit(row, specs, lifeWorkedPercent);
   const yearModel = Math.round(asNumber(pick(row, ['year_model', 'year']), new Date().getFullYear()));
   const hours = Math.max(0, Math.round(asNumber(pick(row, ['hours', 'engine_hours']), 0)));
   const publishedAtIso =
@@ -417,7 +545,8 @@ function buildMarketplaceListing(
     yearModel,
     year: yearModel,
     hours,
-    usageUnit: listingUsageUnit(row),
+    usageUnit,
+    lifeWorkedPercent,
     province,
     area,
     location: explicitProfileLocation || `${area}, ${province}`,
@@ -433,7 +562,7 @@ function buildMarketplaceListing(
     advertisedPriceExVat: askingPriceExVat,
     priceExVat: askingPriceExVat,
     price: askingPriceExVat,
-    imageSrc: imageUrls[0] ?? FALLBACK_MARKETPLACE_IMAGE,
+    imageSrc: imageUrls[0] ?? '',
     imageUrls,
     sectorKey,
     sectorLabel,
@@ -468,6 +597,8 @@ export async function listPublishedMarketplaceAssetListings(options: {
         s.sector_label as equipment_sector_label,
         ef.family_key as equipment_family_key,
         ef.family_label as equipment_family_label,
+        ef.usage_metric_type as equipment_family_usage_metric_type,
+        ef.valuation_mode as equipment_family_valuation_mode,
         p.business_name as profile_business_name,
         coalesce(nullif(p.marketplace_phone, ''), nullif(p.phone, '')) as profile_phone,
         p.province as profile_province,
@@ -510,6 +641,8 @@ export async function publishAssetRegisterItemToMarketplace(input: {
         s.sector_label as equipment_sector_label,
         ef.family_key as equipment_family_key,
         ef.family_label as equipment_family_label,
+        ef.usage_metric_type as equipment_family_usage_metric_type,
+        ef.valuation_mode as equipment_family_valuation_mode,
         p.business_name as profile_business_name,
         coalesce(nullif(p.marketplace_phone, ''), nullif(p.phone, '')) as profile_phone,
         p.province as profile_province,
@@ -616,6 +749,8 @@ export async function publishAssetRegisterItemToMarketplace(input: {
     equipment_sector_label: row.equipment_sector_label,
     equipment_family_key: row.equipment_family_key,
     equipment_family_label: row.equipment_family_label,
+    equipment_family_usage_metric_type: row.equipment_family_usage_metric_type,
+    equipment_family_valuation_mode: row.equipment_family_valuation_mode,
   };
 
   await createMarketplaceListingSnapshot(listingRow);

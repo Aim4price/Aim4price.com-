@@ -29,7 +29,8 @@ export type MarketplaceListing = {
   yearModel: number;
   year: number;
   hours: number;
-  usageUnit: 'hours' | 'km';
+  usageUnit: 'hours' | 'km' | 'percent';
+  lifeWorkedPercent?: number | null;
   province: string;
   area: string;
   location: string;
@@ -125,6 +126,40 @@ function normalizeConditionKey(value: unknown): string {
   return '';
 }
 
+function normalizeUsageUnit(value: unknown): MarketplaceListing['usageUnit'] {
+  const normalized = cleanUnknownText(value).toLowerCase().replace(/[\s-]+/g, '_');
+
+  if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') {
+    return 'km';
+  }
+
+  if (
+    normalized === 'percent' ||
+    normalized === 'percentage' ||
+    normalized === 'percent_used' ||
+    normalized === 'percentage_depreciation' ||
+    normalized === 'wear_class'
+  ) {
+    return 'percent';
+  }
+
+  return 'hours';
+}
+
+function cleanPercent(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') {
+    return null;
+  }
+
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return Math.min(100, Math.max(0, parsed));
+}
+
 function conditionLabel(value: string): string {
   if (value === 'excellent') return 'Excellent';
   if (value === 'good') return 'Good';
@@ -135,13 +170,15 @@ function conditionLabel(value: string): string {
 }
 
 function safeImage(src?: string): string {
-  const next = String(src ?? '').trim();
-  return next || FALLBACK_MARKETPLACE_IMAGE;
+  return String(src ?? '').trim();
 }
 
 function buildImageList(primaryImage: string, imageUrls?: string[]): string[] {
-  const cleaned = (imageUrls ?? []).map((item) => safeImage(item)).filter(Boolean);
-  return cleaned.length ? cleaned : [safeImage(primaryImage)];
+  const cleaned = [primaryImage, ...(imageUrls ?? [])]
+    .map((item) => safeImage(item))
+    .filter(Boolean);
+
+  return Array.from(new Set(cleaned));
 }
 
 function createPrototypeSeller(area: string, index: number) {
@@ -189,15 +226,16 @@ function normalizeTractorType(value: unknown): TractorType {
 
 function normalizeImageUrls(value: unknown, imageSrc: string): string[] {
   if (!Array.isArray(value)) {
-    return [imageSrc];
+    return imageSrc ? [imageSrc] : [];
   }
 
-  const urls = value
+  const urls = [imageSrc, ...value]
     .map((entry) => cleanUnknownText(entry))
     .filter(Boolean)
-    .map((entry) => safeImage(entry));
+    .map((entry) => safeImage(entry))
+    .filter(Boolean);
 
-  return urls.length ? urls : [imageSrc];
+  return Array.from(new Set(urls));
 }
 
 function fromMarketVaultListing(
@@ -241,7 +279,7 @@ function fromMarketVaultListing(
     priceExVat: listing.priceExVat,
     price: listing.price,
     imageSrc,
-    imageUrls: [imageSrc],
+    imageUrls: imageSrc ? [imageSrc] : [],
     sectorKey: 'agricultural',
     sectorLabel: 'Agriculture',
     familyKey: 'tractors',
@@ -292,7 +330,17 @@ function normalizeStoredListing(value: unknown): MarketplaceListing | null {
     yearModel: Math.round(cleanUnknownNumber(value.yearModel ?? value.year, new Date().getFullYear())),
     year: Math.round(cleanUnknownNumber(value.year ?? value.yearModel, new Date().getFullYear())),
     hours: Math.round(cleanUnknownNumber(value.hours, 0)),
-    usageUnit: cleanUnknownText(value.usageUnit ?? value.usage_unit).toLowerCase() === 'km' ? 'km' : 'hours',
+    usageUnit: normalizeUsageUnit(value.usageUnit ?? value.usage_unit),
+    lifeWorkedPercent: cleanPercent(
+      value.lifeWorkedPercent ??
+        value.life_worked_percent ??
+        value.workedPercent ??
+        value.worked_percent ??
+        value.percentWorked ??
+        value.percent_worked ??
+        value.lifetimeWorkedPercent ??
+        value.lifetime_worked_percent,
+    ),
     province: cleanUnknownText(value.province, 'South Africa'),
     area: cleanUnknownText(value.area, 'Undisclosed'),
     location: cleanUnknownText(value.location, `${cleanUnknownText(value.area, 'Undisclosed')}, ${cleanUnknownText(value.province, 'South Africa')}`),
@@ -458,7 +506,7 @@ export function publishRegisterItemToMarketplace(
     advertisedPriceExVat: askingPrice,
     priceExVat: askingPrice,
     price: askingPrice,
-    imageSrc: imageUrls[0] ?? FALLBACK_MARKETPLACE_IMAGE,
+    imageSrc: imageUrls[0] ?? '',
     imageUrls,
     sectorKey: 'agricultural',
     sectorLabel: 'Agriculture',
