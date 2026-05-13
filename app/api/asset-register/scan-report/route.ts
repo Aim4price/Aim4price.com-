@@ -248,6 +248,14 @@ function formatFuel(value: number | null | undefined): string {
   return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
 }
 
+function formatLitres(value: number | null | undefined): string {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return '-';
+  }
+
+  return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L`;
+}
+
 function formatPercent(value: number | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return '-';
@@ -517,6 +525,7 @@ function summarizeScanEvent(asset: AssetRegisterItem, event: ScanEventRecord): s
 
   const fallbackParts = [
     formatEventUsage(asset, event) !== '-' ? 'Usage reading updated' : '',
+    formatLitres(event.fuelLitres) !== '-' ? `Fuel issued: ${formatLitres(event.fuelLitres)}` : '',
     formatFuel(event.fuelPercent) !== '-' ? 'Fuel reading captured' : '',
   ].filter(Boolean);
 
@@ -641,6 +650,10 @@ function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventReco
   const fuelValues = fuelEvents
     .map((event) => event.fuelPercent)
     .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+  const litreValues = fuelEvents
+    .map((event) => event.fuelLitres)
+    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0);
+  const totalLitres = litreValues.length ? litreValues.reduce((sum, value) => sum + value, 0) : null;
   const averageFuel = fuelValues.length ? fuelValues.reduce((sum, value) => sum + value, 0) / fuelValues.length : null;
 
   return [
@@ -648,6 +661,7 @@ function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventReco
     { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
     ...licenseRegistrationRows(asset),
     { label: 'Fuel Entries', value: String(fuelEvents.length) },
+    { label: 'Total Litres', value: formatLitres(totalLitres) },
     { label: 'Latest Fuel', value: formatFuel(fuelEvents[0]?.fuelPercent) },
     { label: 'Lowest Fuel', value: formatFuel(fuelValues.length ? Math.min(...fuelValues) : null) },
     { label: 'Highest Fuel', value: formatFuel(fuelValues.length ? Math.max(...fuelValues) : null) },
@@ -697,8 +711,8 @@ function buildFuelReportSummary(asset: AssetRegisterItem, fuelEvents: ScanEventR
   return {
     label: 'Fuel Entries',
     value: formatNumber(fuelEvents.length),
-    subtext: fuelEvents.length === 1 ? 'QR fuel reading' : 'QR fuel readings',
-    basis: 'QR Fuel',
+    subtext: fuelEvents.length === 1 ? 'QR / Fuel Ledger entry' : 'QR / Fuel Ledger entries',
+    basis: 'QR Fuel Ledger',
     updated: formatDate(fuelEvents[0]?.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso),
   };
 }
@@ -714,10 +728,15 @@ function buildMaintenanceReportSummary(asset: AssetRegisterItem, entries: Mainte
 }
 
 function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): string {
+  const totalLitres = events
+    .map((event) => event.fuelLitres)
+    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0)
+    .reduce((sum, value) => sum + value, 0);
   const rows = events.map((event) => [
     escapeHtml(formatDateTime(event.createdAtIso)),
     escapeHtml(formatOperatorLabel(event)),
     escapeHtml(formatEventUsage(asset, event)),
+    escapeHtml(formatLitres(event.fuelLitres)),
     `<strong>${escapeHtml(formatFuel(event.fuelPercent))}</strong>`,
     escapeHtml(formatLocationText(event.locationText, event.latitude, event.longitude)),
   ]);
@@ -727,13 +746,13 @@ function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
       <div class="assetReportSectionHeading">
         <div>
           <h2>Fuel Readings</h2>
-          <p>Each line shows the QR fuel percentage captured against the machine usage reading, operator and scan position.</p>
+          <p>Each line shows QR fuel percentage plus Fuel Ledger litres where the fuel was issued from a storage QR code.</p>
         </div>
-        <strong>${escapeHtml(formatNumber(events.length))} ${events.length === 1 ? 'entry' : 'entries'}</strong>
+        <strong>${escapeHtml(formatNumber(events.length))} ${events.length === 1 ? 'entry' : 'entries'}${totalLitres > 0 ? ` • ${escapeHtml(formatLitres(totalLitres))}` : ''}</strong>
       </div>
       ${renderTable({
         className: 'assetReportFuelTable',
-        headers: ['Date / Time', 'Updated By', 'Usage Reading', 'Fuel %', 'Scan Location'],
+        headers: ['Date / Time', 'Updated By', 'Usage Reading', 'Litres', 'Fuel %', 'Scan Location'],
         rows,
         emptyText: 'No fuel readings have been recorded for this asset yet.',
       })}
@@ -859,7 +878,7 @@ function buildMaintenanceBody(asset: AssetRegisterItem, entries: MaintenanceEntr
 
 function buildReportDisclaimer(reportKind: ScanReportKind): string {
   if (reportKind === 'fuel') {
-    return 'Fuel readings are operational records captured from QR scan updates. They are intended to support internal asset management and future Fuel Tracker workflows. Final fuel use remains subject to physical verification.';
+    return 'Fuel readings and litres are operational records captured from asset QR updates and Fuel Ledger storage QR entries. They support internal asset management and fuel-control workflows. Final fuel use remains subject to physical verification.';
   }
 
   if (reportKind === 'maintenance') {
