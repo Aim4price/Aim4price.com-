@@ -4894,7 +4894,7 @@ export default function AssetRegisterClient() {
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Download PDF Reports</strong>
-                      <small>Valuation, Fuel, QR Scan, Maintenance</small>
+                      <small>Valuation, Fuel, QR Scan, Maintenance.</small>
                     </span>
                   </button>
 
@@ -4936,7 +4936,7 @@ export default function AssetRegisterClient() {
                       <CartIcon className={styles.buttonIcon} />
                       <span>
                         <strong>{busyMarketplaceRemoveId === activeAsset.id ? 'Removing...' : 'Remove from marketplace'}</strong>
-                        <small>Withdraw the live listing</small>
+                        <small>Withdraw the live listing.</small>
                       </span>
                     </button>
                   ) : null}
