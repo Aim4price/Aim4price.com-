@@ -259,9 +259,16 @@ function ListingPlaceholder({
   listing: MarketplaceListing;
   variant: 'card' | 'modal' | 'share';
 }) {
+  const shouldShowLabel = variant !== 'share';
+
   return (
-    <div className={`${styles.placeholder} ${styles[`${variant}Placeholder`]}`}>
-      <span className={styles.placeholderPill}>{formatPlaceholderLabel(listing)}</span>
+    <div
+      className={`${styles.placeholder} ${styles[`${variant}Placeholder`]}`}
+      aria-label={variant === 'share' ? 'No listing photo available' : undefined}
+    >
+      {shouldShowLabel ? (
+        <span className={styles.placeholderPill}>{formatPlaceholderLabel(listing)}</span>
+      ) : null}
     </div>
   );
 }
@@ -1577,11 +1584,35 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
                     ) : null}
                   </div>
                 ) : (
-                  <div className={styles.lockedContact}>
-                    <p>Login to see seller phone and email details. Listings can still be shared without messaging inside Aim4price.</p>
-                    <div className={styles.lockedActions}>
-                      <a href="/auth#login">Login</a>
-                      <a href="/auth#signup">Create account</a>
+                  <div className={styles.blurredContactCard}>
+                    <div className={`${styles.contactRows} ${styles.contactRowsBlurred}`} aria-hidden="true">
+                      <div className={styles.contactRow}>
+                        <span>Seller</span>
+                        <strong>{activeListing.sellerName || 'Aim4price seller'}</strong>
+                      </div>
+                      {activeListing.sellerCompany ? (
+                        <div className={styles.contactRow}>
+                          <span>Company</span>
+                          <strong>{activeListing.sellerCompany}</strong>
+                        </div>
+                      ) : null}
+                      <div className={styles.contactRow}>
+                        <span>Phone</span>
+                        <strong>{activeListing.sellerPhone || '+27 00 000 0000'}</strong>
+                      </div>
+                      <div className={styles.contactRow}>
+                        <span>Email</span>
+                        <strong>{activeListing.sellerEmail || 'seller@aim4price.co.za'}</strong>
+                      </div>
+                    </div>
+
+                    <div className={styles.contactBlurOverlay}>
+                      <strong>Sign in to view seller details.</strong>
+                      <p>Seller contact information is hidden until you are signed in.</p>
+                      <div className={styles.lockedActions}>
+                        <a href="/auth#login">Login</a>
+                        <a href="/auth#signup">Create account</a>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1619,7 +1650,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
             <div className={styles.shareHeader}>
               <span>Share listing</span>
               <h2 id="share-listing-title">Send this listing outside Aim4price.</h2>
-              <p>No inside messaging is used. Share to WhatsApp, Facebook or copy the direct link.</p>
+              <p>Share to WhatsApp, Facebook or copy the direct link.</p>
             </div>
 
             <div
