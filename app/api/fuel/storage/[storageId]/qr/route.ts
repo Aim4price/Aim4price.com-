@@ -155,6 +155,13 @@ function formatLitres(value: number | null): string {
   return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 0 })} L`;
 }
 
+function formatFuelTypeForLabel(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'adblue') return 'AdBlue';
+  if (!normalized) return 'Fuel';
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
 function buildPrintHtml(options: {
   storageName: string;
   fuelType: string;
@@ -163,7 +170,7 @@ function buildPrintHtml(options: {
   qrImageUrl: string;
 }): string {
   const storageName = escapeHtml(options.storageName);
-  const fuelType = escapeHtml(options.fuelType.toUpperCase());
+  const fuelType = escapeHtml(formatFuelTypeForLabel(options.fuelType));
   const publicFuelStorageCode = escapeHtml(options.publicFuelStorageCode);
   const capacity = escapeHtml(formatLitres(options.capacityLitres));
   const qrImageUrl = escapeHtml(options.qrImageUrl);
@@ -173,90 +180,322 @@ function buildPrintHtml(options: {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${storageName} fuel QR label</title>
+    <title>${storageName} QR label</title>
     <style>
       @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap");
+
       :root {
         color-scheme: light;
         --brand-dark: #10382f;
         --brand-mid: #165340;
+        --brand-soft: #edf6f1;
         --line: #d9e3eb;
         --text: #102f27;
         --muted: #617286;
         --page: #eef3f5;
       }
-      * { box-sizing: border-box; }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         margin: 0;
         padding: 24px;
         font-family: Montserrat, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-        background: radial-gradient(circle at top left, rgba(22, 83, 64, 0.09), transparent 34%), var(--page);
+        background:
+          radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 32%),
+          var(--page);
         color: var(--text);
       }
-      .shell { width: min(100%, 880px); margin: 0 auto; display: grid; gap: 18px; }
-      .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
-      h1 { margin: 0; color: var(--brand-dark); font-size: clamp(30px, 4vw, 42px); line-height: .98; letter-spacing: -.055em; }
-      p { margin: 6px 0 0; color: var(--muted); font-size: 16px; font-weight: 650; line-height: 1.5; }
-      button { min-height: 48px; padding: 0 20px; border-radius: 999px; border: 1px solid rgba(210, 222, 237, .98); background: #fff; color: #1d3b62; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 12px 24px rgba(23,45,75,.07); }
-      .preview { display: grid; justify-items: center; padding: 24px; border-radius: 32px; background: rgba(255,255,255,.84); border: 1px solid rgba(217,227,235,.96); box-shadow: 0 26px 70px rgba(16,31,28,.08); }
-      .qrLabel { width: min(100%, 590px); min-height: 270px; display: grid; grid-template-columns: 188px minmax(0,1fr); gap: 18px; align-items: stretch; padding: 16px; border-radius: 28px; border: 1px solid #cbd9d1; background: linear-gradient(180deg,#fff 0%,#f7faf8 100%); box-shadow: 0 16px 36px rgba(16,31,28,.08), inset 0 1px 0 rgba(255,255,255,.96); }
-      .qrFrame { display: grid; place-items: center; padding: 11px; border-radius: 22px; background: #fff; border: 1px solid #d9e4dc; }
-      .qrFrame img { width: 100%; max-width: 158px; aspect-ratio: 1 / 1; object-fit: contain; display: block; }
-      .copy { min-width: 0; display: grid; align-content: center; gap: 12px; }
-      .eyebrow { width: max-content; padding: 7px 10px; border-radius: 999px; background: #eaf5ef; color: #174d3e; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-      h2 { margin: 0; color: var(--brand-dark); font-size: 33px; font-weight: 900; line-height: 1; letter-spacing: -.06em; }
-      .meta { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
-      .box { padding: 12px 14px; border-radius: 17px; background: #fff; border: 1px solid #d5e2da; display: grid; gap: 4px; }
-      .box span, .help span { color: #718195; font-size: 10px; font-weight: 900; letter-spacing: .075em; text-transform: uppercase; }
-      .box strong { color: var(--brand-dark); font-size: 17px; font-weight: 900; line-height: 1; }
-      .help { display: grid; gap: 4px; color: var(--muted); font-size: 12.5px; font-weight: 700; line-height: 1.42; }
-      .code { margin-top: 2px; color: #8794a3; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 8.5px; line-height: 1.3; overflow-wrap: anywhere; }
-      @page { size: A4; margin: 12mm; }
-      @media print {
-        body { padding: 0; background: #fff; }
-        .toolbar { display: none; }
-        .shell { width: 100%; margin: 0; }
-        .preview { display: block; padding: 0; border: none; box-shadow: none; background: #fff; }
-        .qrLabel { width: 125mm; min-height: 66mm; grid-template-columns: 43mm minmax(0,1fr); padding: 4mm; gap: 4mm; border-radius: 7mm; box-shadow: none; break-inside: avoid; }
-        .qrFrame { border-radius: 5.5mm; padding: 2.5mm; }
-        .qrFrame img { max-width: 36mm; }
-        h2 { font-size: 18pt; }
-        .box span, .help span { font-size: 7pt; }
-        .box strong { font-size: 12pt; }
-        .help { font-size: 8pt; }
-        .code { font-size: 5.8pt; }
+
+      .shell {
+        width: min(100%, 880px);
+        margin: 0 auto;
+        display: grid;
+        gap: 18px;
       }
+
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      .titleBlock {
+        display: grid;
+        gap: 5px;
+      }
+
+      .titleBlock h1 {
+        margin: 0;
+        color: var(--brand-dark);
+        font-size: clamp(30px, 4vw, 42px);
+        line-height: 0.98;
+        letter-spacing: -0.055em;
+      }
+
+      .titleBlock p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 16px;
+        font-weight: 620;
+        line-height: 1.5;
+      }
+
+      .toolbar button {
+        min-height: 48px;
+        padding: 0 20px;
+        border-radius: 999px;
+        border: 1px solid rgba(210, 222, 237, 0.98);
+        background: linear-gradient(180deg, #ffffff 0%, #eef4fb 100%);
+        color: #1d3b62;
+        font: inherit;
+        font-size: 15px;
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: 0 12px 24px rgba(23, 45, 75, 0.07);
+      }
+
+      .previewArea {
+        display: grid;
+        justify-items: center;
+        padding: 24px;
+        border-radius: 32px;
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid rgba(217, 227, 235, 0.96);
+        box-shadow: 0 26px 70px rgba(16, 31, 28, 0.08);
+      }
+
+      .qrLabel {
+        width: min(100%, 560px);
+        min-height: 262px;
+        display: grid;
+        grid-template-columns: 184px minmax(0, 1fr);
+        gap: 18px;
+        align-items: stretch;
+        padding: 16px;
+        border-radius: 26px;
+        border: 1px solid #cbd9d1;
+        background:
+          radial-gradient(circle at top left, rgba(22, 83, 64, 0.075), transparent 34%),
+          linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
+        box-shadow:
+          0 16px 36px rgba(16, 31, 28, 0.08),
+          inset 0 1px 0 rgba(255, 255, 255, 0.96);
+      }
+
+      .qrFrame {
+        display: grid;
+        place-items: center;
+        min-width: 0;
+        padding: 11px;
+        border-radius: 22px;
+        background: #ffffff;
+        border: 1px solid #d9e4dc;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+      }
+
+      .qrFrame img {
+        width: 100%;
+        max-width: 154px;
+        aspect-ratio: 1 / 1;
+        object-fit: contain;
+        display: block;
+      }
+
+      .labelCopy {
+        min-width: 0;
+        display: grid;
+        align-content: center;
+        gap: 11px;
+      }
+
+      .assetTitle {
+        margin: 0;
+        color: var(--brand-dark);
+        font-size: 33px;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: -0.06em;
+      }
+
+      .plateBlock {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 17px;
+        background: #ffffff;
+        border: 1px solid #d5e2da;
+      }
+
+      .plateBlock span,
+      .helpText span {
+        color: #718195;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.075em;
+        text-transform: uppercase;
+      }
+
+      .plateBlock strong {
+        min-width: 0;
+        color: var(--brand-dark);
+        font-size: 22px;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: -0.035em;
+        text-align: right;
+      }
+
+      .helpText {
+        display: grid;
+        gap: 4px;
+        padding-top: 2px;
+        color: var(--muted);
+        font-size: 12.5px;
+        font-weight: 700;
+        line-height: 1.42;
+      }
+
+      .publicCode {
+        margin-top: 2px;
+        color: #8794a3;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 8.5px;
+        line-height: 1.3;
+        overflow-wrap: anywhere;
+      }
+
+      @page {
+        size: A4;
+        margin: 12mm;
+      }
+
+      @media print {
+        body {
+          padding: 0;
+          background: #ffffff;
+        }
+
+        .toolbar {
+          display: none;
+        }
+
+        .shell {
+          width: 100%;
+          margin: 0;
+        }
+
+        .previewArea {
+          display: block;
+          padding: 0;
+          border: none;
+          box-shadow: none;
+          background: #ffffff;
+        }
+
+        .qrLabel {
+          width: 118mm;
+          min-height: 64mm;
+          grid-template-columns: 42mm minmax(0, 1fr);
+          padding: 4mm;
+          gap: 4mm;
+          border-radius: 7mm;
+          box-shadow: none;
+          break-inside: avoid;
+        }
+
+        .qrFrame {
+          border-radius: 5.5mm;
+          padding: 2.5mm;
+        }
+
+        .qrFrame img {
+          max-width: 35mm;
+        }
+
+        .assetTitle {
+          font-size: 19pt;
+        }
+
+        .plateBlock {
+          border-radius: 4.5mm;
+          padding: 3mm 3.5mm;
+        }
+
+        .plateBlock span,
+        .helpText span {
+          font-size: 7pt;
+        }
+
+        .plateBlock strong {
+          font-size: 15pt;
+        }
+
+        .helpText {
+          font-size: 8.4pt;
+        }
+
+        .publicCode {
+          font-size: 5.8pt;
+        }
+      }
+
       @media (max-width: 640px) {
-        body { padding: 12px; }
-        .preview { padding: 12px; border-radius: 24px; }
-        .qrLabel { grid-template-columns: 1fr; width: 100%; }
-        .qrFrame img { max-width: 210px; }
+        body {
+          padding: 12px;
+        }
+
+        .previewArea {
+          padding: 12px;
+          border-radius: 24px;
+        }
+
+        .qrLabel {
+          grid-template-columns: 1fr;
+          width: 100%;
+        }
+
+        .qrFrame img {
+          max-width: 210px;
+        }
       }
     </style>
   </head>
   <body>
     <div class="shell">
       <div class="toolbar">
-        <div>
-          <h1>Aim4price fuel QR label</h1>
-          <p>Print this label and attach it to the fuel storage point.</p>
+        <div class="titleBlock">
+          <h1>Aim4price QR label</h1>
+          <p>Print this compact label and attach it to the fuel storage tank.</p>
         </div>
-        <button type="button" onclick="window.print()">Print fuel QR</button>
+        <button type="button" onclick="window.print()">Print QR label</button>
       </div>
-      <main class="preview">
+
+      <main class="previewArea">
         <section class="qrLabel" aria-label="Printable Aim4price fuel QR label">
-          <div class="qrFrame"><img src="${qrImageUrl}" alt="QR code for ${storageName}" /></div>
-          <div class="copy">
-            <div class="eyebrow">Fuel Ledger</div>
-            <h2>${storageName}</h2>
-            <div class="meta">
-              <div class="box"><span>Fuel type</span><strong>${fuelType}</strong></div>
-              <div class="box"><span>Capacity</span><strong>${capacity}</strong></div>
+          <div class="qrFrame">
+            <img src="${qrImageUrl}" alt="QR code for ${storageName}" />
+          </div>
+
+          <div class="labelCopy">
+            <h2 class="assetTitle">${storageName}</h2>
+
+            <div class="plateBlock">
+              <span>Fuel label</span>
+              <strong>${publicFuelStorageCode}</strong>
             </div>
-            <div class="help">
+
+            <div class="helpText">
               <span>Scan access</span>
-              <div>Scan to issue litres to an asset. Fuel storage PIN required.</div>
-              <div class="code">${publicFuelStorageCode}</div>
+              <div>Scan to issue litres to assets. Fuel PIN required.</div>
+              <div>${fuelType} · Capacity ${capacity}</div>
+              <div class="publicCode">${publicFuelStorageCode}</div>
             </div>
           </div>
         </section>
@@ -265,6 +504,7 @@ function buildPrintHtml(options: {
   </body>
 </html>`;
 }
+
 
 export async function GET(request: NextRequest, context: RouteContext) {
   const session = await getServerSession();
