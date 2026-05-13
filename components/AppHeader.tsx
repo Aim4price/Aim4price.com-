@@ -247,6 +247,10 @@ export default function AppHeader({
                       Asset map
                     </Link>
 
+                    <Link href="/fuel" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                      Fuel ledger
+                    </Link>
+
                     <button
                       type="button"
                       className={styles.menuDangerButton}
