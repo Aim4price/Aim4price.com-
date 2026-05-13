@@ -227,21 +227,65 @@ function titleCase(value: string): string {
     .join(' ');
 }
 
-function safeImage(src?: string): string {
+function isFallbackMarketplaceImage(src?: string): boolean {
   const value = String(src ?? '').trim();
-  return value || FALLBACK_MARKETPLACE_IMAGE;
+
+  if (!value) {
+    return true;
+  }
+
+  return value === FALLBACK_MARKETPLACE_IMAGE || value.endsWith('/brand/Tractor.png');
 }
 
-function getImages(listing: MarketplaceListing): string[] {
+function getListingImages(listing: MarketplaceListing): string[] {
   const raw = [
     ...(Array.isArray(listing.imageUrls) ? listing.imageUrls : []),
     listing.imageSrc,
   ]
-    .map((item) => safeImage(item))
-    .filter(Boolean);
+    .map((item) => String(item ?? '').trim())
+    .filter((item) => !isFallbackMarketplaceImage(item));
 
-  const unique = Array.from(new Set(raw));
-  return unique.length ? unique : [FALLBACK_MARKETPLACE_IMAGE];
+  return Array.from(new Set(raw));
+}
+
+function formatPlaceholderLabel(listing: MarketplaceListing): string {
+  return getListingFamilyLabel(listing).toUpperCase();
+}
+
+function ListingPlaceholder({
+  listing,
+  variant,
+}: {
+  listing: MarketplaceListing;
+  variant: 'card' | 'modal' | 'share';
+}) {
+  return (
+    <div className={`${styles.placeholder} ${styles[`${variant}Placeholder`]}`}>
+      <span className={styles.placeholderPill}>{formatPlaceholderLabel(listing)}</span>
+    </div>
+  );
+}
+
+function ListingImage({
+  src,
+  listing,
+  className,
+  variant,
+  alt,
+}: {
+  src?: string;
+  listing: MarketplaceListing;
+  className: string;
+  variant: 'card' | 'modal' | 'share';
+  alt: string;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (!src || failed || isFallbackMarketplaceImage(src)) {
+    return <ListingPlaceholder listing={listing} variant={variant} />;
+  }
+
+  return <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />;
 }
 
 function listingDisplayTitle(listing: MarketplaceListing): string {
@@ -306,10 +350,38 @@ function formatLocation(listing: MarketplaceListing): string {
 }
 
 function listingUsageLabel(listing: MarketplaceListing): string {
-  return listing.usageUnit === 'km' ? 'Kilometres' : 'Engine hours';
+  if (listing.usageUnit === 'km') {
+    return 'Kilometres';
+  }
+
+  if (listing.usageUnit === 'percent') {
+    return 'Usage';
+  }
+
+  return 'Engine hours';
+}
+
+function formatPercent(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function getListingWorkedPercent(listing: MarketplaceListing): number | null {
+  const direct = Number(listing.lifeWorkedPercent);
+
+  if (Number.isFinite(direct)) {
+    return Math.min(100, Math.max(0, direct));
+  }
+
+  return null;
 }
 
 function formatUsage(listing: MarketplaceListing): string {
+  if (listing.usageUnit === 'percent') {
+    const percent = getListingWorkedPercent(listing);
+    return percent === null ? 'Percentage not set' : `${formatPercent(percent)}% worked`;
+  }
+
   const amount = Number(listing.hours || 0);
   const suffix = listing.usageUnit === 'km' ? 'km' : 'hrs';
 
@@ -435,6 +507,9 @@ function buildSearchText(listing: MarketplaceListing): string {
     listing.location,
     listing.description,
     listing.yearModel,
+    listing.hours,
+    listing.lifeWorkedPercent,
+    listing.usageUnit,
     listing.drive,
     listing.tractorType,
     listing.cab,
@@ -791,7 +866,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
   const canShowMore = visibleCount < visible.length;
 
   const activeImages = useMemo(
-    () => (activeListing ? getImages(activeListing) : [FALLBACK_MARKETPLACE_IMAGE]),
+    () => (activeListing ? getListingImages(activeListing) : []),
     [activeListing],
   );
 
@@ -983,10 +1058,18 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
   }
 
   function showPreviousImage() {
+    if (!activeImages.length) {
+      return;
+    }
+
     setActiveImageIndex((current) => (current - 1 + activeImages.length) % activeImages.length);
   }
 
   function showNextImage() {
+    if (!activeImages.length) {
+      return;
+    }
+
     setActiveImageIndex((current) => (current + 1) % activeImages.length);
   }
 
@@ -1275,7 +1358,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
           {visibleListings.length > 0 ? (
             <div className={styles.listingGrid}>
               {visibleListings.map((listing) => {
-                const images = getImages(listing);
+                const images = getListingImages(listing);
                 const conditionKey = getListingConditionKey(listing);
 
                 return (
@@ -1288,13 +1371,12 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
                     onKeyDown={(event) => handleCardKeyDown(event, listing)}
                   >
                     <div className={styles.cardImageFrame}>
-                      <img
-                        src={images[0] ?? FALLBACK_MARKETPLACE_IMAGE}
+                      <ListingImage
+                        src={images[0]}
+                        listing={listing}
                         alt={listingDisplayTitle(listing)}
                         className={styles.cardImage}
-                        onError={(event) => {
-                          event.currentTarget.src = FALLBACK_MARKETPLACE_IMAGE;
-                        }}
+                        variant="card"
                       />
                       {images.length > 1 ? <span className={styles.photoPill}>{images.length} photos</span> : null}
                       <button
@@ -1362,14 +1444,17 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
 
             <div className={styles.modalGallery}>
               <div className={styles.modalImageFrame}>
-                <img
-                  src={activeImages[activeImageIndex] ?? FALLBACK_MARKETPLACE_IMAGE}
-                  alt={listingDisplayTitle(activeListing)}
-                  className={styles.modalImage}
-                  onError={(event) => {
-                    event.currentTarget.src = FALLBACK_MARKETPLACE_IMAGE;
-                  }}
-                />
+                {activeImages.length ? (
+                  <ListingImage
+                    src={activeImages[activeImageIndex]}
+                    listing={activeListing}
+                    alt={listingDisplayTitle(activeListing)}
+                    className={styles.modalImage}
+                    variant="modal"
+                  />
+                ) : (
+                  <ListingPlaceholder listing={activeListing} variant="modal" />
+                )}
 
                 {activeImages.length > 1 ? (
                   <>
@@ -1392,9 +1477,11 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
                   </>
                 ) : null}
 
-                <span className={styles.modalPhotoCount}>
-                  {activeImageIndex + 1} / {activeImages.length}
-                </span>
+                {activeImages.length ? (
+                  <span className={styles.modalPhotoCount}>
+                    {activeImageIndex + 1} / {activeImages.length}
+                  </span>
+                ) : null}
               </div>
 
               {activeImages.length > 1 ? (
@@ -1407,13 +1494,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
                       onClick={() => setActiveImageIndex(index)}
                       aria-label={`Show photo ${index + 1}`}
                     >
-                      <img
-                        src={imageSrc}
-                        alt=""
-                        onError={(event) => {
-                          event.currentTarget.src = FALLBACK_MARKETPLACE_IMAGE;
-                        }}
-                      />
+                      <img src={imageSrc} alt="" />
                     </button>
                   ))}
                 </div>
@@ -1552,12 +1633,12 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
             </div>
 
             <div className={styles.sharePreviewCard}>
-              <img
-                src={getImages(shareListing)[0] ?? FALLBACK_MARKETPLACE_IMAGE}
+              <ListingImage
+                src={getListingImages(shareListing)[0]}
+                listing={shareListing}
                 alt={listingDisplayTitle(shareListing)}
-                onError={(event) => {
-                  event.currentTarget.src = FALLBACK_MARKETPLACE_IMAGE;
-                }}
+                className={styles.sharePreviewImage}
+                variant="share"
               />
               <div>
                 <strong>{listingDisplayTitle(shareListing)}</strong>

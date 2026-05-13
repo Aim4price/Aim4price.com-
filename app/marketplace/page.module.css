@@ -2,6 +2,7 @@
   min-height: 100vh;
   background: #f0f2f5;
   color: #050505;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
 .topBand {
@@ -25,14 +26,14 @@
   top: 76px;
   height: calc(100vh - 76px);
   overflow-y: auto;
-  padding: 1rem 1rem 1.5rem;
+  padding: 1.2rem 1.05rem 1.6rem;
   background: #ffffff;
   border-right: 1px solid #dadde1;
   box-shadow: 5px 0 14px rgba(0, 0, 0, 0.03);
 }
 
 .sidebarHeader {
-  margin-bottom: 0.8rem;
+  margin-bottom: 1rem;
 }
 
 .sidebarHeader span,
@@ -50,7 +51,7 @@
 .modalTitleArea h2,
 .shareHeader h2,
 .emptyState h2 {
-  margin: 0.12rem 0 0;
+  margin: 0.2rem 0 0;
   color: #050505;
   font-size: 1.7rem;
   line-height: 1.08;
@@ -62,8 +63,8 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.58rem;
-  min-height: 2.8rem;
-  padding: 0 0.85rem;
+  min-height: 3rem;
+  padding: 0 0.95rem;
   border-radius: 999px;
   background: #f0f2f5;
   border: 1px solid transparent;
@@ -78,6 +79,7 @@
 
 .searchIcon,
 .searchClearButton,
+.createButton,
 .createIcon,
 .cardShareButton,
 .modalCloseButton,
@@ -146,12 +148,12 @@
 
 .createButton,
 .desktopCreateButton {
-  min-height: 2.75rem;
-  margin-top: 0.7rem;
+  min-height: 2.95rem;
+  margin-top: 0.8rem;
   width: 100%;
   gap: 0.52rem;
   border: 0;
-  border-radius: 0.55rem;
+  border-radius: 0.72rem;
   background: #e7f3ff;
   color: #0866ff;
   font-size: 0.98rem;
@@ -171,12 +173,12 @@
 
 .sidebarDivider {
   height: 1px;
-  margin: 0.8rem 0;
+  margin: 1rem 0;
   background: #dadde1;
 }
 
 .sidebarSection {
-  padding: 0.45rem 0 0.9rem;
+  padding: 0.65rem 0 1.05rem;
 }
 
 .sidebarSection + .sidebarSection {
@@ -188,7 +190,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin: 0.55rem 0 0.5rem;
+  margin: 0.65rem 0 0.62rem;
 }
 
 .sidebarSectionHead h2,
@@ -204,7 +206,7 @@
 .categoryList,
 .familyList {
   display: grid;
-  gap: 0.18rem;
+  gap: 0.28rem;
 }
 
 .categoryButton,
@@ -222,9 +224,9 @@
   grid-template-columns: 2.35rem minmax(0, 1fr);
   align-items: center;
   gap: 0.72rem;
-  min-height: 3.15rem;
-  padding: 0.35rem 0.45rem;
-  border-radius: 0.65rem;
+  min-height: 3.35rem;
+  padding: 0.45rem 0.52rem;
+  border-radius: 0.85rem;
 }
 
 .categoryButton:hover,
@@ -276,8 +278,8 @@
 }
 
 .familyButton {
-  min-height: 2.45rem;
-  padding: 0.55rem 0.72rem;
+  min-height: 2.6rem;
+  padding: 0.62rem 0.78rem;
   border-radius: 0.55rem;
   font-size: 0.92rem;
   font-weight: 700;
@@ -326,15 +328,15 @@
 
 .resultsArea {
   min-width: 0;
-  padding: 1.05rem clamp(1rem, 2vw, 2rem) 2.5rem;
+  padding: 1.35rem clamp(1.15rem, 2.2vw, 2.4rem) 2.8rem;
 }
 
 .resultsBar {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.9rem;
+  gap: 1.2rem;
+  margin-bottom: 1.15rem;
 }
 
 .resultsTitleBlock h2 {
@@ -359,8 +361,8 @@
 .activeFilters {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
-  margin: 0 0 0.9rem;
+  gap: 0.55rem;
+  margin: 0 0 1.1rem;
 }
 
 .filterChip {
@@ -391,15 +393,15 @@
 
 .listingGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
-  gap: 1.05rem;
+  grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+  gap: 1.35rem;
 }
 
 .listingCard {
   position: relative;
   overflow: hidden;
   min-width: 0;
-  border-radius: 0.55rem;
+  border-radius: 0.85rem;
   background: transparent;
   transition: transform 150ms ease;
 }
@@ -412,7 +414,7 @@
   position: relative;
   overflow: hidden;
   aspect-ratio: 1 / 1;
-  border-radius: 0.55rem;
+  border-radius: 0.85rem;
   background: #e4e6eb;
 }
 
@@ -425,6 +427,66 @@
 
 .listingCard:hover .cardImage {
   transform: scale(1.02);
+}
+
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 38%),
+    linear-gradient(180deg, #fbfdfd 0%, #edf4f1 100%);
+  border: 1px solid rgba(205, 229, 216, 0.98);
+  text-align: center;
+}
+
+.placeholderPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 86%;
+  min-height: 2.65rem;
+  padding: 0.48rem 1rem;
+  border-radius: 999px;
+  color: #66758d;
+  background: #eef2f8;
+  border: 1px solid #dde4ee;
+  box-shadow: 0 10px 20px rgba(16, 31, 28, 0.04);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.075em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.cardPlaceholder {
+  min-height: 100%;
+}
+
+.modalPlaceholder {
+  min-height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+
+.modalPlaceholder .placeholderPill {
+  min-height: 3.2rem;
+  padding-inline: 1.25rem;
+  font-size: 0.88rem;
+}
+
+.sharePlaceholder {
+  min-height: 5rem;
+  border-radius: 0.55rem;
+}
+
+.sharePlaceholder .placeholderPill {
+  min-height: 2.2rem;
+  padding-inline: 0.72rem;
+  font-size: 0.62rem;
 }
 
 .photoPill {
@@ -457,7 +519,7 @@
 }
 
 .cardBody {
-  padding: 0.52rem 0.1rem 0.2rem;
+  padding: 0.68rem 0.08rem 0.25rem;
 }
 
 .cardPrice {
@@ -483,7 +545,7 @@
 
 .cardLocation,
 .cardMeta {
-  margin: 0.16rem 0 0;
+  margin: 0.2rem 0 0;
   overflow: hidden;
   color: #65676b;
   font-size: 0.85rem;
@@ -504,8 +566,8 @@
 .emptyState {
   display: grid;
   place-items: center;
-  min-height: 24rem;
-  padding: 2rem;
+  min-height: 26rem;
+  padding: 2.4rem;
   border-radius: 0.85rem;
   background: #ffffff;
   border: 1px solid #dadde1;
@@ -553,8 +615,8 @@
   z-index: 80;
   display: grid;
   place-items: center;
-  padding: 1rem;
-  background: rgba(0, 0, 0, 0.55);
+  padding: 1.25rem;
+  background: rgba(0, 0, 0, 0.58);
 }
 
 .listingModal {
@@ -564,9 +626,9 @@
   width: min(1180px, 100%);
   max-height: min(780px, calc(100vh - 2rem));
   overflow: hidden;
-  border-radius: 0.85rem;
+  border-radius: 1rem;
   background: #ffffff;
-  box-shadow: 0 26px 76px rgba(0, 0, 0, 0.32);
+  box-shadow: 0 28px 82px rgba(0, 0, 0, 0.34);
 }
 
 .modalCloseButton,
@@ -679,7 +741,7 @@
 .modalDetails {
   min-width: 0;
   overflow-y: auto;
-  padding: 1.1rem;
+  padding: 1.25rem;
   background: #ffffff;
 }
 
@@ -721,8 +783,8 @@
 
 .modalActionRow {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  gap: 0.65rem;
+  margin-top: 1.1rem;
 }
 
 .modalShareButton,
@@ -757,13 +819,13 @@
 .detailGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
-  margin-top: 1rem;
+  gap: 0.7rem;
+  margin-top: 1.1rem;
 }
 
 .detailItem {
   min-width: 0;
-  padding: 0.72rem;
+  padding: 0.82rem;
   border-radius: 0.65rem;
   background: #f0f2f5;
 }
@@ -791,8 +853,8 @@
 }
 
 .modalSection {
-  margin-top: 1rem;
-  padding-top: 1rem;
+  margin-top: 1.15rem;
+  padding-top: 1.15rem;
   border-top: 1px solid #dadde1;
 }
 
@@ -915,7 +977,7 @@
   width: min(520px, 100%);
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
-  padding: 1.2rem;
+  padding: 1.35rem;
   border-radius: 0.85rem;
   background: #ffffff;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
@@ -948,12 +1010,13 @@
   grid-template-columns: 6rem minmax(0, 1fr);
   gap: 0.75rem;
   align-items: center;
-  margin-top: 1rem;
-  padding: 0.55rem;
+  margin-top: 1.1rem;
+  padding: 0.65rem;
   border-radius: 0.7rem;
   background: #f0f2f5;
 }
 
+.sharePreviewImage,
 .sharePreviewCard img {
   width: 6rem;
   height: 5rem;
@@ -988,8 +1051,8 @@
 .shareGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.55rem;
-  margin-top: 1rem;
+  gap: 0.7rem;
+  margin-top: 1.1rem;
 }
 
 .shareGrid button {
