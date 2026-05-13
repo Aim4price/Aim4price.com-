@@ -324,3 +324,82 @@
     width: 100%;
   }
 }
+
+.fuelSliderField {
+  grid-column: 1 / -1;
+}
+
+.fuelSliderPanel {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at top left, rgba(23, 107, 79, 0.1), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  border: 1px solid rgba(23, 77, 62, 0.13);
+}
+
+.fuelReadout {
+  min-height: 6rem;
+  display: grid;
+  place-items: center;
+  color: #123b30;
+  font-size: clamp(3.2rem, 15vw, 5.8rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.065em;
+}
+
+.rangeInput {
+  width: 100%;
+  height: 2.35rem;
+  accent-color: #174d3e;
+}
+
+.rangeInput::-webkit-slider-runnable-track {
+  height: 0.68rem;
+  border-radius: 999px;
+}
+
+.rangeInput::-webkit-slider-thumb {
+  width: 2.1rem;
+  height: 2.1rem;
+  margin-top: -0.72rem;
+}
+
+.quickFuelGrid {
+  width: min(100%, 380px);
+  justify-self: center;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.quickFuelButton {
+  min-height: 3.25rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.1);
+  background: #ffffff;
+  color: #17362c;
+  font-size: 1rem;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.055);
+}
+
+.quickFuelButtonActive {
+  color: #ffffff;
+  background: linear-gradient(135deg, #174d3e 0%, #246b55 100%);
+  border-color: rgba(16, 68, 52, 0.32);
+  box-shadow: 0 14px 28px rgba(16, 68, 52, 0.18);
+}
+
+.quickFuelButton:disabled {
+  opacity: 0.56;
+}
+
+@media (max-width: 520px) {
+  .quickFuelGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

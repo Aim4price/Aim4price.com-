@@ -97,6 +97,12 @@ type FuelScanClientProps = {
   publicFuelStorageCode: string;
 };
 
+const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
+
+function normalizeIntegerInput(value: string): string {
+  return value.replace(/\D+/g, '');
+}
+
 function normalizeFuelCode(value: string): string {
   return value.trim().replace(/\s+/g, '').toUpperCase();
 }
@@ -164,7 +170,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   const [isSaving, setIsSaving] = useState(false);
 
   const selectedAsset = useMemo(() => assets.find((asset) => asset.id === assetId) ?? null, [assetId, assets]);
-  const fuelAssets = useMemo(() => assets.filter((asset) => asset.canReceiveFuel), [assets]);
+  const selectableAssets = assets;
   const unauthenticated = !storage;
 
   function captureLocation() {
@@ -237,16 +243,18 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   }, [normalizedCode]);
 
   useEffect(() => {
-    if (!assetId) return;
+    if (!assetId) {
+      setAssetFuelPercentAfter('');
+      setAssetUsageReading('');
+      return;
+    }
+
     const asset = assets.find((entry) => entry.id === assetId);
     if (!asset) return;
-    if (asset.fuelPercent !== null && assetFuelPercentAfter === '') {
-      setAssetFuelPercentAfter(String(asset.fuelPercent));
-    }
-    if (asset.hours !== null && assetUsageReading === '') {
-      setAssetUsageReading(String(asset.hours));
-    }
-  }, [assetId, assets, assetFuelPercentAfter, assetUsageReading]);
+
+    setAssetFuelPercentAfter(asset.fuelPercent !== null ? String(asset.fuelPercent) : '0');
+    setAssetUsageReading(asset.hours !== null ? String(asset.hours) : '');
+  }, [assetId, assets]);
 
   async function handlePinSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -315,7 +323,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       setAssetFuelPercentAfter('');
       setAssetUsageReading('');
       setNote('');
-      setNotice({ tone: 'success', message: 'Fuel issue saved. Asset fuel percentage and fuel report have been updated.' });
+      setNotice({ tone: 'success', message: 'Fuel issue saved. Asset fuel %, hours and reports have been updated. If this asset has an Aim4price valuation, the estimate is refreshed automatically when hours changed.' });
       captureLocation();
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save fuel issue.' });
@@ -372,7 +380,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
               Asset that received fuel
               <select value={assetId} onChange={(event) => setAssetId(event.target.value)} required>
                 <option value="">Choose asset</option>
-                {fuelAssets.map((asset) => (
+                {selectableAssets.map((asset) => (
                   <option key={asset.id} value={asset.id}>{buildAssetLabel(asset)}</option>
                 ))}
               </select>
@@ -391,10 +399,35 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
                 Litres issued
                 <input type="number" min="0" step="0.01" value={litres} onChange={(event) => setLitres(event.target.value)} required />
               </label>
-              <label className={styles.formField}>
-                Asset fuel % after fill
-                <input type="number" min="0" max="100" step="1" value={assetFuelPercentAfter} onChange={(event) => setAssetFuelPercentAfter(event.target.value)} required />
-              </label>
+              <div className={`${styles.formField} ${styles.fuelSliderField}`}>
+                <span>Asset fuel % after fill</span>
+                <div className={styles.fuelSliderPanel}>
+                  <strong className={styles.fuelReadout}>{assetFuelPercentAfter || '0'}%</strong>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    className={styles.rangeInput}
+                    value={assetFuelPercentAfter || '0'}
+                    onChange={(event) => setAssetFuelPercentAfter(normalizeIntegerInput(event.target.value).slice(0, 3))}
+                    required
+                  />
+                  <div className={styles.quickFuelGrid}>
+                    {QUICK_FUEL_OPTIONS.map((option) => (
+                      <button
+                        type="button"
+                        key={option}
+                        className={`${styles.quickFuelButton} ${assetFuelPercentAfter === String(option) ? styles.quickFuelButtonActive : ''}`}
+                        onClick={() => setAssetFuelPercentAfter(String(option))}
+                        disabled={isSaving}
+                      >
+                        {option}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
               <label className={styles.formField}>
                 Hour / km reading
                 <input type="number" min="0" step="1" value={assetUsageReading} onChange={(event) => setAssetUsageReading(event.target.value)} placeholder="Optional" />
