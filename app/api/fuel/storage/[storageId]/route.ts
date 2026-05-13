@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../../lib/auth-session';
-import { archiveFuelStorage, listFuelLedger, updateFuelStorage } from '../../../../../lib/fuel-ledger';
+import { deleteFuelStorage, listFuelLedger, updateFuelStorage } from '../../../../../lib/fuel-ledger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -63,7 +63,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
   }
 
   try {
-    await archiveFuelStorage(session.user.id, context.params.storageId);
+    await deleteFuelStorage(session.user.id, context.params.storageId);
     const ledger = await listFuelLedger(session.user.id);
     return NextResponse.json({ ok: true, ...ledger });
   } catch (error) {
