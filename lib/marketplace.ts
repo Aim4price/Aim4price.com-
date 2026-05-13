@@ -50,6 +50,7 @@ export type MarketplaceListing = {
   imageSrc: string;
   imageUrls: string[];
   publishedBy: 'seed' | 'asset-register';
+  assetKind?: string;
   canManage?: boolean;
   sectorKey?: string;
   sectorLabel?: string;
@@ -282,6 +283,7 @@ function fromMarketVaultListing(
     imageUrls: imageSrc ? [imageSrc] : [],
     sectorKey: 'agricultural',
     sectorLabel: 'Agriculture',
+    assetKind: 'tractor',
     familyKey: 'tractors',
     familyLabel: 'Tractors',
     conditionKey: 'good',
@@ -359,6 +361,7 @@ function normalizeStoredListing(value: unknown): MarketplaceListing | null {
     price: Math.round(cleanUnknownNumber(value.price ?? value.priceExVat ?? value.askingPriceExVat, 0)),
     imageSrc,
     imageUrls: normalizeImageUrls(value.imageUrls, imageSrc),
+    assetKind: cleanUnknownText(value.assetKind ?? value.asset_kind ?? value.kind) || undefined,
     sectorKey: cleanUnknownText(value.sectorKey ?? value.sector_key) || undefined,
     sectorLabel: cleanUnknownText(value.sectorLabel ?? value.sector_label) || undefined,
     familyKey: cleanUnknownText(value.familyKey ?? value.family_key) || undefined,
@@ -510,6 +513,7 @@ export function publishRegisterItemToMarketplace(
     imageUrls,
     sectorKey: 'agricultural',
     sectorLabel: 'Agriculture',
+    assetKind: 'tractor',
     familyKey: 'tractors',
     familyLabel: 'Tractors',
     conditionKey: 'good',

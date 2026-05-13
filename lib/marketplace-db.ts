@@ -124,6 +124,60 @@ function conditionLabel(value: string): string {
   return '';
 }
 
+function normalizeAssetKind(value: unknown): string {
+  const normalized = asText(value).toLowerCase().replace(/[_\s-]+/g, '-');
+
+  if (normalized === 'tractor') return 'tractor';
+  if (normalized === 'equipment') return 'equipment';
+  if (normalized === 'vehicle') return 'vehicle';
+  if (normalized === 'tools' || normalized === 'tool') return 'tools';
+  if (normalized === 'property' || normalized === 'property-buildings' || normalized === 'buildings') return 'property';
+  if (normalized === 'manual' || normalized === 'other') return 'manual';
+  return normalized;
+}
+
+function familyLabelFromAssetKind(value: unknown): string {
+  const kind = normalizeAssetKind(value);
+
+  if (kind === 'tractor') return 'Tractors';
+  if (kind === 'equipment') return 'Equipment';
+  if (kind === 'vehicle') return 'Vehicles';
+  if (kind === 'tools') return 'Tools';
+  if (kind === 'property') return 'Property/Buildings';
+  if (kind === 'manual') return 'Other';
+  return 'Other';
+}
+
+function readAssetKind(row: Record<string, unknown>): string {
+  const specs = pickJsonObject(pick(row, ['specs_json']));
+  const candidates = [
+    row.kind,
+    row.equipment_type,
+    row.asset_type,
+    row.item_type,
+    specs.assetKind,
+    specs.asset_kind,
+    specs.kind,
+    specs.equipmentType,
+    specs.equipment_type,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeAssetKind(candidate);
+
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return '';
+}
+
+function isManualAssetRow(row: Record<string, unknown>): boolean {
+  const method = asText(pick(row, ['selected_method', 'method', 'valuation_method'])).toLowerCase();
+  return method === 'manual';
+}
+
 function buildPhotoList(row: Record<string, unknown>): string[] {
   const photos = asStringArray(pick(row, ['photo_urls', 'photos', 'image_urls', 'images']))
     .map((entry) => safeImage(entry))
@@ -371,7 +425,7 @@ function listingUsageUnit(
     specs.valuationMode ??
     specs.valuation_mode ??
     pick(row, ['valuation_mode', 'equipment_family_valuation_mode']);
-  const kind = asText(pick(row, ['kind', 'equipment_type', 'asset_type', 'item_type'])).toLowerCase();
+  const kind = readAssetKind(row);
   const depreciationMethod = asText(pick(row, ['depreciation_method_used'])).toLowerCase();
   const hours = Math.max(0, Math.round(asNumber(pick(row, ['hours', 'engine_hours']), 0)));
 
@@ -429,28 +483,12 @@ function buildMarketplaceListingTitle(row: MarketplaceAssetRow, fallbackTitle?: 
     asText(fallbackTitle) ||
     asText(pick(row, ['title', 'name', 'asset_name'])) ||
     `${brandName} ${modelName}`.trim() ||
+    familyLabelFromAssetKind(readAssetKind(row)) ||
     'Aim4price listing';
-  const specs = pickJsonObject(pick(row, ['specs_json']));
-  const lifeWorkedPercent = listingWorkedPercent(row, specs);
-  const usageUnit = listingUsageUnit(row, specs, lifeWorkedPercent);
-  const hours = Math.max(0, Math.round(asNumber(pick(row, ['hours', 'engine_hours']), 0)));
-  const yearModel = Math.round(asNumber(pick(row, ['year_model', 'year']), 0));
-  const conditionKey = normalizeConditionKey(pick(row, ['condition', 'valuation_last_condition']));
-  const details = [
-    yearModel > 0 ? String(yearModel) : '',
-    formatMarketplaceUsageDetail(usageUnit, hours, lifeWorkedPercent),
-    conditionLabel(conditionKey),
-  ].filter(Boolean);
 
-  if (!details.length) {
-    return baseTitle;
-  }
-
-  const normalizedBase = baseTitle.toLowerCase();
-  const uniqueDetails = details.filter((detail) => !normalizedBase.includes(detail.toLowerCase()));
-
-  return uniqueDetails.length ? `${baseTitle} · ${uniqueDetails.join(' · ')}` : baseTitle;
+  return baseTitle.replace(/\s+/g, ' ').trim();
 }
+
 
 async function createMarketplaceListingSnapshot(row: MarketplaceAssetRow): Promise<void> {
   try {
@@ -582,8 +620,16 @@ function buildMarketplaceListing(
   const sectorLabel =
     asText(pick(row, ['equipment_sector_label', 'sector_label'])) ||
     (sectorKey === 'construction' ? 'Construction' : sectorKey === 'industrial' ? 'Industrial' : 'Agriculture');
-  const familyLabel = asText(pick(row, ['equipment_family_label', 'family_label'])) || 'Tractors';
-  const familyKey = asText(pick(row, ['equipment_family_key', 'family_key'])) || slugify(familyLabel);
+  const assetKind = readAssetKind(row);
+  const linkedFamilyLabel = asText(pick(row, ['equipment_family_label', 'family_label']));
+  const linkedFamilyKey = asText(pick(row, ['equipment_family_key', 'family_key']));
+  const assetKindFamilyLabel = familyLabelFromAssetKind(assetKind);
+  const shouldPreferAssetKindFamily =
+    Boolean(assetKind) &&
+    assetKind !== 'tractor' &&
+    (isManualAssetRow(row) || assetKind === 'vehicle' || assetKind === 'tools' || assetKind === 'property' || assetKind === 'manual');
+  const familyLabel = shouldPreferAssetKindFamily ? assetKindFamilyLabel : linkedFamilyLabel || assetKindFamilyLabel;
+  const familyKey = shouldPreferAssetKindFamily ? slugify(assetKindFamilyLabel) : linkedFamilyKey || slugify(familyLabel);
   const conditionKey = normalizeConditionKey(pick(row, ['condition', 'valuation_last_condition']));
 
   return {
@@ -629,15 +675,19 @@ function buildMarketplaceListing(
     conditionKey: conditionKey || undefined,
     conditionLabel: conditionLabel(conditionKey) || undefined,
     publishedBy: 'asset-register',
+    assetKind: assetKind || undefined,
     canManage: Boolean(options.viewerUserId && options.viewerUserId === asText(row.user_id)),
   };
 }
 
 function isPublishableEquipment(row: Record<string, unknown>): boolean {
-  const kind = asText(pick(row, ['kind', 'equipment_type', 'asset_type', 'item_type'])).toLowerCase();
+  const kind = readAssetKind(row);
   const title = asText(pick(row, ['title', 'name', 'asset_name']));
   const { brandName, modelName } = deriveBrandAndModel(row);
-  return kind !== 'property' && Boolean(title || brandName || modelName || kind === 'tractor' || kind === 'equipment' || kind === 'manual');
+  return (
+    kind !== 'property' &&
+    Boolean(title || brandName || modelName || ['tractor', 'equipment', 'manual', 'vehicle', 'tools'].includes(kind))
+  );
 }
 
 export async function listPublishedMarketplaceAssetListings(options: {
