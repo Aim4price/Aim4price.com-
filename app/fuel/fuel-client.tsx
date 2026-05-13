@@ -672,7 +672,7 @@ export default function FuelClient() {
               ) : null}
               <label className={styles.fullField}>
                 Notes
-                <textarea value={storageDraft.notes} onChange={(event) => setStorageDraft((current) => ({ ...current, notes: event.target.value }))} placeholder="Optional storage notes" rows={3} />
+                <textarea value={storageDraft.notes} onChange={(event) => setStorageDraft((current) => ({ ...current, notes: event.target.value }))} placeholder="Optional storage notes" rows={2} />
               </label>
             </div>
 
