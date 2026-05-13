@@ -330,17 +330,18 @@ function buildPrintHtml(options: {
       }
 
       .plateBlock {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr);
+        display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 12px 14px;
+        justify-content: flex-start;
+        min-height: 50px;
+        padding: 12px 16px;
         border-radius: 17px;
-        background: #ffffff;
+        background:
+          linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
         border: 1px solid #d5e2da;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
       }
 
-      .plateBlock span,
       .helpText span {
         color: #718195;
         font-size: 10px;
@@ -352,11 +353,12 @@ function buildPrintHtml(options: {
       .plateBlock strong {
         min-width: 0;
         color: var(--brand-dark);
-        font-size: 20px;
+        font-size: 21px;
         font-weight: 900;
         line-height: 1;
-        letter-spacing: -0.035em;
-        text-align: right;
+        letter-spacing: -0.025em;
+        text-align: left;
+        white-space: nowrap;
       }
 
       .helpText {
@@ -435,7 +437,6 @@ function buildPrintHtml(options: {
           padding: 3mm 3.5mm;
         }
 
-        .plateBlock span,
         .helpText span {
           font-size: 7pt;
         }
@@ -493,8 +494,7 @@ function buildPrintHtml(options: {
           <div class="labelCopy">
             <h2 class="assetTitle">${storageName}</h2>
 
-            <div class="plateBlock">
-              <span>Fuel label</span>
+            <div class="plateBlock" aria-label="Fuel storage QR code label">
               <strong>${fuelLabelCode}</strong>
             </div>
 
