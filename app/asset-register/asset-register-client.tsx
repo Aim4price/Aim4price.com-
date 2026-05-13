@@ -504,16 +504,14 @@ function UpdateAssetIcon({ className }: IconProps) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2.25"
+      strokeWidth="2.15"
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
       aria-hidden="true"
     >
-      <path d="M6.2 8.1h9.35c2.55 0 4.6 2.05 4.6 4.6 0 1.14-.42 2.18-1.1 2.98" />
-      <path d="M16.35 4.5 20.1 8.1l-3.75 3.6" />
-      <path d="M17.8 15.9H8.45c-2.55 0-4.6-2.05-4.6-4.6 0-1.14.42-2.18 1.1-2.98" />
-      <path d="M7.65 19.5 3.9 15.9l3.75-3.6" />
+      <path d="M12 20h9" />
+      <path d="m16.5 3.5 4 4L8 20l-5 1 1-5z" />
     </svg>
   );
 }
@@ -4264,7 +4262,6 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalHeader} ${styles.addAssetChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="add-asset-choice-title">Choose how to add the asset</h3>
-                <p>Use Aim4price Value when you want a live estimate, or Manual Entry when you already know the asset details and value.</p>
               </div>
 
               <button
