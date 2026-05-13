@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type SVGProps } from 'react';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
 type FuelStorageStatus = 'active' | 'archived';
-type ModalMode = 'create-storage' | 'edit-storage' | 'pin' | null;
+type ModalMode = 'create-storage' | 'edit-storage' | 'pin' | 'filter' | 'report' | null;
 type FilterMode = 'all' | 'low' | 'empty' | 'full';
 
 type FuelLedgerStorage = {
@@ -27,6 +27,15 @@ type FuelLedgerStorage = {
   updatedAtIso: string;
 };
 
+type FuelLedgerEvent = {
+  id: string;
+  storageId: string;
+  storageName: string;
+  eventType: string;
+  litres: number;
+  createdAtIso: string;
+};
+
 type FuelLedgerSummary = {
   totalStorageUnits: number;
   totalCapacityLitres: number;
@@ -41,7 +50,7 @@ type FuelLedgerSummary = {
 type FuelLedgerResponse = {
   ok: boolean;
   storages?: FuelLedgerStorage[];
-  recentEvents?: unknown[];
+  recentEvents?: FuelLedgerEvent[];
   assets?: unknown[];
   summary?: FuelLedgerSummary;
   error?: string;
@@ -73,6 +82,68 @@ const emptyStorageDraft: StorageDraft = {
   notes: '',
   pin: '',
 };
+
+const MONTH_LABELS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+function IconBase(props: SVGProps<SVGSVGElement>) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props} />;
+}
+
+function GearIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 15.4a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8Z" />
+      <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2.15 2.15 0 1 1-3.04 3.04l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.08 1.65V21.4a2.15 2.15 0 1 1-4.3 0v-.09a1.8 1.8 0 0 0-1.08-1.65 1.8 1.8 0 0 0-1.98.36l-.04.04a2.15 2.15 0 1 1-3.04-3.04l.04-.04A1.8 1.8 0 0 0 4.6 15a1.8 1.8 0 0 0-1.65-1.08h-.1a2.15 2.15 0 1 1 0-4.3h.1A1.8 1.8 0 0 0 4.6 8.54a1.8 1.8 0 0 0-.36-1.98l-.04-.04a2.15 2.15 0 1 1 3.04-3.04l.04.04a1.8 1.8 0 0 0 1.98.36A1.8 1.8 0 0 0 10.34 2.2V2.1a2.15 2.15 0 1 1 4.3 0v.1a1.8 1.8 0 0 0 1.08 1.65 1.8 1.8 0 0 0 1.98-.36l.04-.04a2.15 2.15 0 1 1 3.04 3.04l-.04.04a1.8 1.8 0 0 0-.36 1.98 1.8 1.8 0 0 0 1.65 1.08h.1a2.15 2.15 0 1 1 0 4.3h-.1A1.8 1.8 0 0 0 19.4 15Z" />
+    </IconBase>
+  );
+}
+
+function QrIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 4h6v6H4z" />
+      <path d="M14 4h6v6h-6z" />
+      <path d="M4 14h6v6H4z" />
+      <path d="M14 14h2v2h-2z" />
+      <path d="M18 14h2v4h-2z" />
+      <path d="M14 18h4v2h-4z" />
+    </IconBase>
+  );
+}
+
+function LockIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="4" y="10" width="16" height="10" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </IconBase>
+  );
+}
+
+function TrashIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v5" />
+      <path d="M14 11v5" />
+    </IconBase>
+  );
+}
 
 function formatLitres(value: number | null | undefined): string {
   if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return '—';
@@ -143,19 +214,96 @@ function matchesFilter(storage: FuelLedgerStorage, filterMode: FilterMode, searc
   return true;
 }
 
+function eventDateParts(event: FuelLedgerEvent): { year: string; month: string } | null {
+  const date = new Date(event.createdAtIso);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return {
+    year: String(date.getFullYear()),
+    month: String(date.getMonth() + 1).padStart(2, '0'),
+  };
+}
+
+function matchesPeriod(event: FuelLedgerEvent, year: string, month: string): boolean {
+  const parts = eventDateParts(event);
+  if (!parts) return false;
+  if (year !== 'all' && parts.year !== year) return false;
+  if (month !== 'all' && parts.month !== month) return false;
+  return true;
+}
+
+function getMonthOptions(events: FuelLedgerEvent[], year: string): string[] {
+  const months = new Set<string>();
+
+  for (const event of events) {
+    const parts = eventDateParts(event);
+    if (!parts) continue;
+    if (year !== 'all' && parts.year !== year) continue;
+    months.add(parts.month);
+  }
+
+  return Array.from(months).sort((a, b) => Number(a) - Number(b));
+}
+
+function getYearOptions(events: FuelLedgerEvent[]): string[] {
+  const years = new Set<string>();
+
+  for (const event of events) {
+    const parts = eventDateParts(event);
+    if (parts) years.add(parts.year);
+  }
+
+  if (!years.size) {
+    years.add(String(new Date().getFullYear()));
+  }
+
+  return Array.from(years).sort((a, b) => Number(b) - Number(a));
+}
+
+function periodLabel(year: string, month: string): string {
+  if (year === 'all') return '30 days';
+  if (month !== 'all') return `${MONTH_LABELS[Number(month) - 1] ?? 'Month'} ${year}`;
+  return year;
+}
+
+function buildReportUrl(storageId: string, year: string, month: string): string {
+  const url = new URL('/api/fuel/report', window.location.origin);
+
+  if (storageId !== 'all') {
+    url.searchParams.set('storageId', storageId);
+  }
+
+  if (year !== 'all') {
+    url.searchParams.set('year', year);
+  }
+
+  if (year !== 'all' && month !== 'all') {
+    url.searchParams.set('month', month);
+  }
+
+  return url.toString();
+}
+
 export default function FuelClient() {
   const [storages, setStorages] = useState<FuelLedgerStorage[]>([]);
+  const [recentEvents, setRecentEvents] = useState<FuelLedgerEvent[]>([]);
   const [summary, setSummary] = useState<FuelLedgerSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [selectedStorageId, setSelectedStorageId] = useState<string | null>(null);
+  const [deleteCandidateStorage, setDeleteCandidateStorage] = useState<FuelLedgerStorage | null>(null);
+  const [busyDeleteId, setBusyDeleteId] = useState<string | null>(null);
   const [storageDraft, setStorageDraft] = useState<StorageDraft>(emptyStorageDraft);
   const [pinDraft, setPinDraft] = useState('');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [filterText, setFilterText] = useState('');
+  const [filterYear, setFilterYear] = useState('all');
+  const [filterMonth, setFilterMonth] = useState('all');
+  const [reportStorageId, setReportStorageId] = useState('all');
+  const [reportYear, setReportYear] = useState('all');
+  const [reportMonth, setReportMonth] = useState('all');
 
   const selectedStorage = useMemo(
     () => storages.find((storage) => storage.id === selectedStorageId) ?? null,
@@ -166,6 +314,23 @@ export default function FuelClient() {
     () => storages.filter((storage) => matchesFilter(storage, filterMode, filterText)),
     [filterMode, filterText, storages],
   );
+
+  const yearOptions = useMemo(() => getYearOptions(recentEvents), [recentEvents]);
+  const filterMonthOptions = useMemo(() => getMonthOptions(recentEvents, filterYear), [filterYear, recentEvents]);
+  const reportMonthOptions = useMemo(() => getMonthOptions(recentEvents, reportYear), [recentEvents, reportYear]);
+
+  const periodEvents = useMemo(
+    () => recentEvents.filter((event) => matchesPeriod(event, filterYear, filterMonth)),
+    [filterMonth, filterYear, recentEvents],
+  );
+
+  const periodIssuedLitres = useMemo(
+    () => periodEvents.filter((event) => event.eventType === 'asset_issue').reduce((sum, event) => sum + Number(event.litres || 0), 0),
+    [periodEvents],
+  );
+
+  const issuedLitres = filterYear === 'all' && filterMonth === 'all' ? summary?.issuedLitres30Days ?? 0 : periodIssuedLitres;
+  const issuedPeriodLabel = periodLabel(filterYear, filterMonth);
 
   async function loadLedger(options: { silent?: boolean } = {}) {
     if (!options.silent) {
@@ -181,6 +346,7 @@ export default function FuelClient() {
       }
 
       setStorages(data.storages ?? []);
+      setRecentEvents(data.recentEvents ?? []);
       setSummary(data.summary ?? null);
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load Fuel Ledger.' });
@@ -216,12 +382,32 @@ export default function FuelClient() {
     setModalMode('pin');
   }
 
+  function openFilterModal() {
+    setNotice(null);
+    setModalMode('filter');
+  }
+
+  function openReportModal() {
+    setReportYear(filterYear);
+    setReportMonth(filterYear === 'all' ? 'all' : filterMonth);
+    setReportStorageId('all');
+    setNotice(null);
+    setModalMode('report');
+  }
+
   function closeModal() {
     if (isSaving) return;
     setModalMode(null);
     setSelectedStorageId(null);
     setStorageDraft(emptyStorageDraft);
     setPinDraft('');
+  }
+
+  function clearFilters() {
+    setFilterMode('all');
+    setFilterText('');
+    setFilterYear('all');
+    setFilterMonth('all');
   }
 
   async function applyLedgerResponse(response: Response) {
@@ -232,6 +418,7 @@ export default function FuelClient() {
     }
 
     if (data.storages) setStorages(data.storages);
+    if (data.recentEvents) setRecentEvents(data.recentEvents);
     if (data.summary) setSummary(data.summary);
   }
 
@@ -288,45 +475,57 @@ export default function FuelClient() {
     }
   }
 
-  async function handleDeleteStorage(storage: FuelLedgerStorage) {
-    const shouldDelete = window.confirm(`Delete ${storage.name}? Its QR code will stop accepting fuel entries, but old fuel history stays in reports.`);
-    if (!shouldDelete) return;
+  async function handleConfirmDeleteStorage() {
+    if (!deleteCandidateStorage) return;
 
-    setIsSaving(true);
+    setBusyDeleteId(deleteCandidateStorage.id);
     setNotice(null);
 
     try {
-      const response = await fetch(`/api/fuel/storage/${storage.id}`, {
+      const response = await fetch(`/api/fuel/storage/${deleteCandidateStorage.id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
 
       await applyLedgerResponse(response);
-      setNotice({ tone: 'success', message: 'Fuel storage deleted.' });
+      setNotice({ tone: 'success', message: 'Fuel storage unit deleted.' });
+      setDeleteCandidateStorage(null);
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to delete storage.' });
     } finally {
-      setIsSaving(false);
+      setBusyDeleteId(null);
     }
   }
 
-  const hasActiveFilters = filterMode !== 'all' || filterText.trim().length > 0;
+  function handleOpenReport() {
+    const normalizedMonth = reportYear === 'all' ? 'all' : reportMonth;
+    window.open(buildReportUrl(reportStorageId, reportYear, normalizedMonth), '_blank', 'noopener,noreferrer');
+    closeModal();
+  }
+
+  const hasActiveFilters = filterMode !== 'all' || filterText.trim().length > 0 || filterYear !== 'all' || filterMonth !== 'all';
 
   return (
     <>
       <AppHeader active="none" />
       <main className={styles.pageShell}>
         <section className={styles.ledgerPanel}>
-          <div className={styles.topActions}>
-            <button type="button" className={styles.secondaryButton} onClick={() => setIsFilterOpen((current) => !current)}>
-              Filter{hasActiveFilters ? ' active' : ''}
-            </button>
-            <a href="/api/fuel/report" target="_blank" rel="noreferrer" className={styles.secondaryButton}>
-              Fuel Report
-            </a>
-            <button type="button" className={styles.primaryButton} onClick={openCreateStorage}>
-              Add Storage
-            </button>
+          <div className={styles.panelHeader}>
+            <div className={styles.pageTitleBlock}>
+              <h1>Aim4price Fuel Tracking System</h1>
+            </div>
+
+            <div className={styles.topActions}>
+              <button type="button" className={styles.secondaryButton} onClick={openFilterModal}>
+                Filter{hasActiveFilters ? ' active' : ''}
+              </button>
+              <button type="button" className={styles.secondaryButton} onClick={openReportModal}>
+                Fuel Report
+              </button>
+              <button type="button" className={styles.primaryButton} onClick={openCreateStorage}>
+                + Add Storage Tank
+              </button>
+            </div>
           </div>
 
           {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
@@ -338,8 +537,8 @@ export default function FuelClient() {
               <small>{summary?.lowStorageCount ?? 0} low storage</small>
             </article>
             <article className={styles.summaryCard}>
-              <span>Fuel issued · 30 days</span>
-              <strong>{formatLitres(summary?.issuedLitres30Days ?? 0)}</strong>
+              <span>Fuel issued · {issuedPeriodLabel}</span>
+              <strong>{formatLitres(issuedLitres)}</strong>
               <small>QR fuel entries</small>
             </article>
             <article className={styles.summaryCard}>
@@ -349,31 +548,6 @@ export default function FuelClient() {
             </article>
           </section>
 
-          {isFilterOpen ? (
-            <div className={styles.filterPanel}>
-              <div className={styles.searchWrap}>
-                <span className={styles.searchIcon} aria-hidden="true">⌕</span>
-                <input
-                  className={styles.searchInput}
-                  value={filterText}
-                  onChange={(event) => setFilterText(event.target.value)}
-                  placeholder="Search by tank, bowser, fuel type or location"
-                />
-                {filterText ? (
-                  <button type="button" className={styles.clearSearchButton} onClick={() => setFilterText('')} aria-label="Clear search">
-                    ×
-                  </button>
-                ) : null}
-              </div>
-              <div className={styles.filterSegments}>
-                <button type="button" className={filterMode === 'all' ? styles.filterActive : ''} onClick={() => setFilterMode('all')}>All</button>
-                <button type="button" className={filterMode === 'low' ? styles.filterActive : ''} onClick={() => setFilterMode('low')}>Low</button>
-                <button type="button" className={filterMode === 'empty' ? styles.filterActive : ''} onClick={() => setFilterMode('empty')}>Empty</button>
-                <button type="button" className={filterMode === 'full' ? styles.filterActive : ''} onClick={() => setFilterMode('full')}>Full</button>
-              </div>
-            </div>
-          ) : null}
-
           {isLoading ? <div className={styles.emptyState}>Loading Fuel Ledger...</div> : null}
 
           {!isLoading && !storages.length ? (
@@ -381,7 +555,7 @@ export default function FuelClient() {
               <strong>No fuel storage yet.</strong>
               <span>Add your first tank, bowser or storage unit.</span>
               <button type="button" className={styles.primaryButton} onClick={openCreateStorage}>
-                Add Storage
+                + Add Storage Tank
               </button>
             </div>
           ) : null}
@@ -389,14 +563,7 @@ export default function FuelClient() {
           {!isLoading && storages.length > 0 && visibleStorages.length === 0 ? (
             <div className={styles.emptyState}>
               <strong>No storage matches the filter.</strong>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={() => {
-                  setFilterMode('all');
-                  setFilterText('');
-                }}
-              >
+              <button type="button" className={styles.secondaryButton} onClick={clearFilters}>
                 Clear Filter
               </button>
             </div>
@@ -411,9 +578,9 @@ export default function FuelClient() {
                 <article key={storage.id} className={`${styles.storageCard} ${storageIsLow ? styles.storageCardLow : ''}`}>
                   <div className={styles.storageInfo}>
                     <div className={styles.storageTitleBlock}>
-                      <span className={styles.storageType}>{formatFuelType(storage.fuelType)}</span>
                       <h2>{storage.name}</h2>
                       <div className={styles.storageDetails}>
+                        <span>{formatFuelType(storage.fuelType)}</span>
                         <span>{formatLitres(storage.currentLitres)} available</span>
                         <span>{storage.capacityLitres === null ? 'Capacity not set' : `${formatLitres(storage.capacityLitres)} capacity`}</span>
                         <span>{storage.locationLabel || storage.publicFuelStorageCode}</span>
@@ -425,24 +592,28 @@ export default function FuelClient() {
                         <span style={{ width: `${progress}%` }} />
                       </div>
                       <div className={styles.progressMeta}>
+                        <span>{storage.reorderLevelLitres === null ? 'No low level set' : `Low at ${formatLitres(storage.reorderLevelLitres)}`}</span>
                         <span>{formatPercent(storage.stockPercent)}</span>
-                        <span>{storageIsLow ? 'Low stock' : storage.reorderLevelLitres === null ? 'No reorder level' : `Low at ${formatLitres(storage.reorderLevelLitres)}`}</span>
                       </div>
                     </div>
                   </div>
 
                   <div className={styles.unitActions}>
                     <button type="button" className={styles.unitButton} onClick={() => openEditStorage(storage)} disabled={isSaving}>
-                      Manage
+                      <GearIcon className={styles.buttonIcon} />
+                      <span>Manage</span>
                     </button>
                     <a className={styles.unitButton} href={`/api/fuel/storage/${storage.id}/qr?format=print`} target="_blank" rel="noreferrer">
-                      QR Code
+                      <QrIcon className={styles.buttonIcon} />
+                      <span>QR Code</span>
                     </a>
                     <button type="button" className={styles.unitButton} onClick={() => openPin(storage)} disabled={isSaving}>
-                      Change PIN
+                      <LockIcon className={styles.buttonIcon} />
+                      <span>Change PIN</span>
                     </button>
-                    <button type="button" className={`${styles.unitButton} ${styles.deleteUnitButton}`} onClick={() => void handleDeleteStorage(storage)} disabled={isSaving}>
-                      Delete Unit
+                    <button type="button" className={`${styles.unitButton} ${styles.deleteUnitButton}`} onClick={() => setDeleteCandidateStorage(storage)} disabled={isSaving}>
+                      <TrashIcon className={styles.buttonIcon} />
+                      <span>Delete Unit</span>
                     </button>
                   </div>
                 </article>
@@ -457,7 +628,7 @@ export default function FuelClient() {
           <form className={styles.modalCard} onSubmit={handleStorageSubmit}>
             <div className={styles.modalHeader}>
               <div>
-                <span className={styles.modalEyebrow}>{modalMode === 'create-storage' ? 'Add Storage' : 'Manage Storage'}</span>
+                <span className={styles.modalEyebrow}>{modalMode === 'create-storage' ? 'Add Storage Tank' : 'Manage Storage Tank'}</span>
                 <h2>{modalMode === 'create-storage' ? 'Add Fuel Storage' : selectedStorage?.name ?? 'Manage Fuel Storage'}</h2>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal}>×</button>
@@ -532,6 +703,154 @@ export default function FuelClient() {
               <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save PIN'}</button>
             </div>
           </form>
+        </div>
+      ) : null}
+
+      {modalMode === 'filter' ? (
+        <div className={styles.modalOverlay} role="dialog" aria-modal="true">
+          <div className={styles.modalCardSmall}>
+            <div className={styles.modalHeader}>
+              <div>
+                <span className={styles.modalEyebrow}>Filter</span>
+                <h2>Filter fuel view</h2>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={closeModal}>×</button>
+            </div>
+
+            <div className={styles.formGridSingle}>
+              <label>
+                Storage search
+                <input value={filterText} onChange={(event) => setFilterText(event.target.value)} placeholder="Main tank, diesel, Farm 1..." />
+              </label>
+              <label>
+                Stock status
+                <select value={filterMode} onChange={(event) => setFilterMode(event.target.value as FilterMode)}>
+                  <option value="all">All storage</option>
+                  <option value="low">Low storage</option>
+                  <option value="empty">Empty storage</option>
+                  <option value="full">Full storage</option>
+                </select>
+              </label>
+              <label>
+                Year available
+                <select
+                  value={filterYear}
+                  onChange={(event) => {
+                    setFilterYear(event.target.value);
+                    setFilterMonth('all');
+                  }}
+                >
+                  <option value="all">All years</option>
+                  {yearOptions.map((year) => <option key={year} value={year}>{year}</option>)}
+                </select>
+              </label>
+              <label>
+                Month available
+                <select value={filterMonth} onChange={(event) => setFilterMonth(event.target.value)} disabled={filterYear === 'all'}>
+                  <option value="all">All months</option>
+                  {filterMonthOptions.map((month) => (
+                    <option key={month} value={month}>{MONTH_LABELS[Number(month) - 1]}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.secondaryButton} onClick={clearFilters}>Clear filters</button>
+              <button type="button" className={styles.primaryButton} onClick={closeModal}>Apply filters</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {modalMode === 'report' ? (
+        <div className={styles.modalOverlay} role="dialog" aria-modal="true">
+          <div className={styles.modalCardSmall}>
+            <div className={styles.modalHeader}>
+              <div>
+                <span className={styles.modalEyebrow}>Fuel Report</span>
+                <h2>Choose report filters</h2>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={closeModal}>×</button>
+            </div>
+
+            <div className={styles.formGridSingle}>
+              <label>
+                Storage unit
+                <select value={reportStorageId} onChange={(event) => setReportStorageId(event.target.value)}>
+                  <option value="all">All storage units</option>
+                  {storages.map((storage) => <option key={storage.id} value={storage.id}>{storage.name}</option>)}
+                </select>
+              </label>
+              <label>
+                Year available
+                <select
+                  value={reportYear}
+                  onChange={(event) => {
+                    setReportYear(event.target.value);
+                    setReportMonth('all');
+                  }}
+                >
+                  <option value="all">All years</option>
+                  {yearOptions.map((year) => <option key={year} value={year}>{year}</option>)}
+                </select>
+              </label>
+              <label>
+                Month available
+                <select value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} disabled={reportYear === 'all'}>
+                  <option value="all">All months</option>
+                  {reportMonthOptions.map((month) => (
+                    <option key={month} value={month}>{MONTH_LABELS[Number(month) - 1]}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
+              <button type="button" className={styles.primaryButton} onClick={handleOpenReport}>Open Fuel Report</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {deleteCandidateStorage ? (
+        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`} role="alertdialog" aria-modal="true" aria-labelledby="delete-fuel-title" aria-describedby="delete-fuel-copy">
+          <div className={styles.deleteConfirmModal}>
+            <div className={styles.deleteConfirmIcon}>
+              <TrashIcon className={styles.buttonIcon} />
+            </div>
+
+            <div className={styles.deleteConfirmContent}>
+              <h3 id="delete-fuel-title">Are you sure you want to delete this?</h3>
+              <p id="delete-fuel-copy">
+                All data will be lost. This permanently removes <strong>{deleteCandidateStorage.name}</strong> from your Fuel Ledger,
+                including stock records, QR access, issue history and fuel report data.
+              </p>
+
+              <div className={styles.deleteConfirmAsset}>
+                <span>Selected storage unit</span>
+                <strong>{deleteCandidateStorage.name}</strong>
+                <small>{formatFuelType(deleteCandidateStorage.fuelType)} · {formatLitres(deleteCandidateStorage.currentLitres)} available · {deleteCandidateStorage.locationLabel || deleteCandidateStorage.publicFuelStorageCode}</small>
+              </div>
+
+              <div className={styles.deleteConfirmActions}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setDeleteCandidateStorage(null)} disabled={busyDeleteId === deleteCandidateStorage.id}>
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.primaryButton} ${styles.deleteConfirmButton}`}
+                  onClick={() => void handleConfirmDeleteStorage()}
+                  disabled={busyDeleteId === deleteCandidateStorage.id}
+                >
+                  <TrashIcon className={styles.buttonIcon} />
+                  <span>{busyDeleteId === deleteCandidateStorage.id ? 'Deleting...' : 'Yes, delete unit'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       ) : null}
     </>

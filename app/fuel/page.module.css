@@ -5,8 +5,8 @@
   --surface-muted: #f2f5f8;
   --line: #e5ebf1;
   --line-strong: #d8e1ea;
-  --text: #17362c;
-  --text-muted: #677586;
+  --text: #10352b;
+  --text-muted: #617286;
   --text-soft: #7f8a98;
   --brand-dark: #10382f;
   --brand-mid: #165340;
@@ -40,6 +40,29 @@
   gap: 1rem;
 }
 
+.panelHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pageTitleBlock {
+  min-height: 3.35rem;
+  display: flex;
+  align-items: center;
+  padding: 0 0.25rem;
+}
+
+.pageTitleBlock h1 {
+  margin: 0;
+  color: var(--brand-dark);
+  font-size: clamp(1.55rem, 2.6vw, 2.35rem);
+  font-weight: 820;
+  line-height: 1.05;
+  letter-spacing: -0.055em;
+}
+
 .topActions {
   display: flex;
   justify-content: flex-end;
@@ -52,8 +75,7 @@
 .secondaryButton,
 .unitButton,
 .closeButton,
-.clearSearchButton,
-.filterSegments button {
+.clearSearchButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -63,7 +85,7 @@
   border-radius: 1rem;
   border: 1px solid transparent;
   font: inherit;
-  font-weight: 700;
+  font-weight: 760;
   cursor: pointer;
   text-decoration: none;
   transition:
@@ -79,8 +101,7 @@
 .secondaryButton:hover,
 .unitButton:hover,
 .closeButton:hover,
-.clearSearchButton:hover,
-.filterSegments button:hover {
+.clearSearchButton:hover {
   transform: translateY(-1px);
 }
 
@@ -88,8 +109,7 @@
 .secondaryButton:disabled,
 .unitButton:disabled,
 .closeButton:disabled,
-.clearSearchButton:disabled,
-.filterSegments button:disabled {
+.clearSearchButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
@@ -98,6 +118,7 @@
 .primaryButton {
   color: #ffffff;
   background: linear-gradient(180deg, #1a5a45 0%, #124233 100%);
+  border-color: rgba(18, 66, 51, 0.2);
   box-shadow: 0 12px 24px rgba(18, 66, 51, 0.16);
 }
 
@@ -105,6 +126,12 @@
   color: var(--blue-text);
   background: var(--blue-soft);
   border-color: var(--blue-soft-border);
+}
+
+.buttonIcon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
 }
 
 .notice {
@@ -134,20 +161,20 @@
 }
 
 .summaryCard {
-  min-height: 8.4rem;
-  padding: 1rem 1.05rem;
+  min-height: 8.25rem;
+  padding: 1.15rem 1.25rem;
   border-radius: 1.2rem;
   background: linear-gradient(180deg, #f7fafb 0%, #f2f5f8 100%);
   border: 1px solid var(--line);
   display: grid;
   align-content: center;
-  gap: 0.25rem;
+  gap: 0.28rem;
 }
 
 .summaryCard span {
   color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 0.86rem;
+  font-weight: 760;
 }
 
 .summaryCard strong {
@@ -159,98 +186,8 @@
 
 .summaryCard small {
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 650;
-}
-
-.filterPanel {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.85rem;
-  align-items: center;
-}
-
-.searchWrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  min-height: 3.25rem;
-  border-radius: 1.1rem;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  padding: 0 0.8rem 0 0.95rem;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-}
-
-.searchWrap:focus-within {
-  border-color: #c7d5e5;
-  box-shadow: 0 0 0 4px rgba(199, 213, 229, 0.24);
-}
-
-.searchIcon {
-  color: var(--text-soft);
-  width: 1.05rem;
-  height: 1.05rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-.searchInput {
-  width: 100%;
-  min-width: 0;
-  min-height: 3rem;
-  border: 0;
-  background: transparent;
-  color: #20313b;
-  font: inherit;
-  padding: 0 0.65rem;
-}
-
-.searchInput:focus {
-  outline: none;
-}
-
-.searchInput::placeholder {
-  color: #8a95a2;
-}
-
-.clearSearchButton {
-  width: 2.4rem;
-  min-width: 2.4rem;
-  min-height: 2.4rem;
-  padding: 0;
-  border-radius: 999px;
-  color: var(--blue-text);
-  background: var(--blue-soft);
-  border-color: var(--blue-soft-border);
-  font-size: 1.25rem;
-  line-height: 1;
-}
-
-.filterSegments {
-  display: flex;
-  align-items: stretch;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.filterSegments button {
-  min-height: 3.25rem;
-  padding-inline: 0.9rem;
-  color: var(--blue-text);
-  background: var(--surface);
-  border-color: var(--line);
-}
-
-.filterSegments .filterActive {
-  color: var(--brand-mid);
-  background: var(--brand-soft);
-  border-color: var(--brand-soft-border);
 }
 
 .storageList {
@@ -260,10 +197,10 @@
 
 .storageCard {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
-  gap: 1rem;
-  align-items: start;
-  padding: 1rem 1rem 1.05rem;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 330px);
+  gap: clamp(1rem, 2vw, 1.6rem);
+  align-items: center;
+  padding: 1.25rem 1.35rem;
   border-radius: 1.65rem;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(249, 252, 253, 0.98) 100%);
   border: 1px solid var(--line);
@@ -271,53 +208,40 @@
 }
 
 .storageCardLow {
-  border-color: rgba(210, 147, 48, 0.35);
-  background: linear-gradient(180deg, #fffaf0 0%, rgba(255, 255, 255, 0.98) 100%);
+  border-color: rgba(235, 203, 203, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(160, 53, 53, 0.07), transparent 36%),
+    linear-gradient(180deg, #fffafa 0%, #fff7f7 100%);
 }
 
 .storageInfo {
   min-width: 0;
   display: grid;
-  gap: 0.85rem;
+  gap: 0.95rem;
 }
 
 .storageTitleBlock {
   min-width: 0;
   display: grid;
-  gap: 0.45rem;
-}
-
-.storageType {
-  width: fit-content;
-  min-height: 2rem;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 0.85rem;
-  border-radius: 999px;
-  color: var(--success-text);
-  background: var(--success-bg);
-  border: 1px solid var(--success-line);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  gap: 0.42rem;
 }
 
 .storageTitleBlock h2 {
   margin: 0;
   color: var(--text);
-  font-size: 1.18rem;
-  line-height: 1.12;
-  letter-spacing: -0.03em;
+  font-size: clamp(1.45rem, 2.2vw, 2rem);
+  font-weight: 820;
+  line-height: 1.04;
+  letter-spacing: -0.055em;
 }
 
 .storageDetails {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem 0.8rem;
+  gap: 0.48rem 0.75rem;
   color: var(--text-muted);
-  font-size: 0.88rem;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 690;
 }
 
 .storageDetails span {
@@ -326,16 +250,21 @@
   min-width: 0;
 }
 
+.storageDetails span:first-child {
+  color: var(--brand-mid);
+  font-weight: 820;
+}
+
 .storageDetails span:not(:last-child)::after {
   content: '•';
-  margin-left: 0.8rem;
+  margin-left: 0.75rem;
   color: var(--line-strong);
 }
 
 .storageProgressBlock {
-  width: min(100%, 520px);
+  width: min(100%, 560px);
   display: grid;
-  gap: 0.45rem;
+  gap: 0.48rem;
 }
 
 .progressTrack {
@@ -351,6 +280,11 @@
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #1a5a45 0%, #1fb364 100%);
+  transition: width 220ms ease;
+}
+
+.storageCardLow .progressTrack span {
+  background: linear-gradient(90deg, #af3d3d 0%, #e15f5f 100%);
 }
 
 .progressMeta {
@@ -358,19 +292,24 @@
   justify-content: space-between;
   gap: 1rem;
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 700;
+}
+
+.progressMeta span:last-child {
+  color: var(--text);
+  font-weight: 800;
 }
 
 .unitActions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.65rem;
-  align-self: end;
+  align-self: center;
 }
 
 .unitButton {
-  min-height: 3rem;
+  min-height: 3.15rem;
   border-radius: 1rem;
   color: var(--blue-text);
   background: var(--surface);
@@ -430,7 +369,7 @@
 }
 
 .modalCardSmall {
-  width: min(100%, 520px);
+  width: min(100%, 560px);
 }
 
 .modalHeader {
@@ -448,8 +387,8 @@
 .modalHeader h2 {
   margin: 0;
   color: var(--text);
-  font-size: clamp(1.9rem, 4vw, 3rem);
-  line-height: 0.94;
+  font-size: clamp(1.65rem, 3vw, 2.5rem);
+  line-height: 0.98;
   letter-spacing: -0.05em;
 }
 
@@ -464,7 +403,7 @@
   background: var(--surface-muted);
   border: 1px solid var(--line-strong);
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: 850;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -482,13 +421,19 @@
   line-height: 1;
 }
 
-.formGrid {
+.formGrid,
+.formGridSingle {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.9rem;
 }
 
+.formGridSingle {
+  grid-template-columns: 1fr;
+}
+
 .formGrid label,
+.formGridSingle label,
 .pinField {
   min-width: 0;
   display: grid;
@@ -501,6 +446,8 @@
 .formGrid input,
 .formGrid select,
 .formGrid textarea,
+.formGridSingle input,
+.formGridSingle select,
 .pinField input {
   width: 100%;
   border: 1px solid rgba(18, 45, 37, 0.11);
@@ -521,6 +468,8 @@
 .formGrid input:focus,
 .formGrid select:focus,
 .formGrid textarea:focus,
+.formGridSingle input:focus,
+.formGridSingle select:focus,
 .pinField input:focus {
   border-color: rgba(23, 77, 62, 0.36);
   box-shadow: 0 0 0 4px rgba(23, 77, 62, 0.08);
@@ -538,13 +487,139 @@
   gap: 0.7rem;
 }
 
+.confirmDeleteOverlay {
+  z-index: 190;
+}
+
+.deleteConfirmModal {
+  width: min(100%, 760px);
+  display: grid;
+  grid-template-columns: 3.8rem minmax(0, 1fr);
+  gap: 1.35rem;
+  padding: clamp(1.65rem, 2.3vw, 2rem);
+  border-radius: 1.9rem;
+  background:
+    radial-gradient(circle at top left, rgba(160, 53, 53, 0.07), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #fffafa 100%);
+  border: 1px solid rgba(235, 203, 203, 0.98);
+  box-shadow:
+    0 34px 86px rgba(42, 20, 20, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.deleteConfirmIcon {
+  width: 3.8rem;
+  height: 3.8rem;
+  border-radius: 1.18rem;
+  display: grid;
+  place-items: center;
+  color: #a63a3a;
+  background: #fff5f5;
+  border: 1px solid rgba(235, 203, 203, 0.98);
+}
+
+.deleteConfirmContent {
+  min-width: 0;
+  display: grid;
+  gap: 1.05rem;
+}
+
+.deleteConfirmContent h3 {
+  margin: 0;
+  max-width: 42rem;
+  color: #10352b;
+  font-size: clamp(1.58rem, 2.65vw, 2rem);
+  font-weight: 760;
+  line-height: 1.06;
+  letter-spacing: -0.045em;
+}
+
+.deleteConfirmContent p {
+  margin: 0;
+  max-width: 41.5rem;
+  color: #617286;
+  font-size: 1.03rem;
+  font-weight: 600;
+  line-height: 1.68;
+}
+
+.deleteConfirmContent p strong {
+  color: #10352b;
+  font-weight: 850;
+}
+
+.deleteConfirmAsset {
+  display: grid;
+  gap: 0.42rem;
+  padding: 1.18rem 1.25rem;
+  border-radius: 1.22rem;
+  background: #ffffff;
+  border: 1px solid rgba(235, 203, 203, 0.92);
+}
+
+.deleteConfirmAsset span {
+  color: #8c6767;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.deleteConfirmAsset strong {
+  color: #10352b;
+  font-size: 1.12rem;
+  font-weight: 820;
+  line-height: 1.28;
+}
+
+.deleteConfirmAsset small {
+  color: #617286;
+  font-size: 0.94rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.deleteConfirmActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+.deleteConfirmActions .secondaryButton,
+.deleteConfirmActions .deleteConfirmButton {
+  min-height: 3.25rem;
+  padding-inline: 1.25rem;
+  border-radius: 1.05rem;
+}
+
+.deleteConfirmButton {
+  min-width: 13.5rem;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #bd4545 0%, #922f2f 100%) !important;
+  border-color: rgba(146, 47, 47, 0.34) !important;
+  box-shadow:
+    0 14px 26px rgba(160, 53, 53, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
 @media (max-width: 980px) {
-  .filterPanel,
+  .panelHeader,
   .storageCard {
     grid-template-columns: 1fr;
   }
 
-  .filterSegments,
+  .topActions {
+    justify-content: stretch;
+    width: 100%;
+  }
+
+  .topActions > * {
+    flex: 1 1 auto;
+  }
+
   .unitActions {
     justify-content: stretch;
     width: 100%;
@@ -567,12 +642,14 @@
   }
 
   .topActions,
-  .modalActions {
+  .modalActions,
+  .deleteConfirmActions {
     justify-content: stretch;
   }
 
   .topActions > *,
-  .modalActions > * {
+  .modalActions > *,
+  .deleteConfirmActions > * {
     flex: 1 1 100%;
   }
 
@@ -599,5 +676,11 @@
 
   .fullField {
     grid-column: auto;
+  }
+
+  .deleteConfirmModal {
+    width: min(100%, calc(100vw - 1.25rem));
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }
