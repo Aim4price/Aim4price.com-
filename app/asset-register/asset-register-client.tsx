@@ -308,6 +308,26 @@ type AssetDraft = {
   condition: AssetConditionValue;
 };
 
+type PendingPhotoFile = {
+  id: string;
+  file: File;
+  previewUrl: string;
+};
+
+type MainPhotoSelection =
+  | { source: 'saved'; url: string }
+  | { source: 'pending'; id: string };
+
+type DraftPhotoItem = {
+  key: string;
+  source: 'saved' | 'pending';
+  label: string;
+  previewUrl: string;
+  url?: string;
+  pendingId?: string;
+  isMain: boolean;
+};
+
 type ProjectionFormState = {
   targetYear: string;
   inflationRatePct: string;
@@ -1115,6 +1135,79 @@ function normalizePhotos(value: string[]): string[] {
     .slice(0, MAX_PHOTOS);
 }
 
+function savedDraftPhotoKey(url: string): string {
+  return `saved:${url}`;
+}
+
+function pendingDraftPhotoKey(id: string): string {
+  return `pending:${id}`;
+}
+
+function mainPhotoSelectionKey(selection: MainPhotoSelection | null): string | null {
+  if (!selection) return null;
+  return selection.source === 'saved' ? savedDraftPhotoKey(selection.url) : pendingDraftPhotoKey(selection.id);
+}
+
+function createPendingPhotoId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function createPhotoPreviewUrl(file: File): string {
+  if (typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') {
+    return '';
+  }
+
+  return URL.createObjectURL(file);
+}
+
+function revokePhotoPreviewUrl(previewUrl: string): void {
+  if (!previewUrl || !previewUrl.startsWith('blob:')) return;
+  if (typeof URL === 'undefined' || typeof URL.revokeObjectURL !== 'function') return;
+
+  URL.revokeObjectURL(previewUrl);
+}
+
+function buildDraftPhotoItems(
+  savedPhotos: string[],
+  pendingPhotos: PendingPhotoFile[],
+  selection: MainPhotoSelection | null,
+): DraftPhotoItem[] {
+  const savedItems: DraftPhotoItem[] = normalizePhotos(savedPhotos).map((photo, index) => ({
+    key: savedDraftPhotoKey(photo),
+    source: 'saved',
+    label: `Saved photo ${index + 1}`,
+    previewUrl: photo,
+    url: photo,
+    isMain: false,
+  }));
+
+  const pendingItems: DraftPhotoItem[] = pendingPhotos.map((entry, index) => ({
+    key: pendingDraftPhotoKey(entry.id),
+    source: 'pending',
+    label: entry.file.name || `Queued photo ${index + 1}`,
+    previewUrl: entry.previewUrl,
+    pendingId: entry.id,
+    isMain: false,
+  }));
+
+  const items = [...savedItems, ...pendingItems];
+  if (!items.length) return [];
+
+  const preferredKey = mainPhotoSelectionKey(selection);
+  const mainKey = preferredKey && items.some((item) => item.key === preferredKey) ? preferredKey : items[0].key;
+  const mainItem = items.find((item) => item.key === mainKey);
+  const orderedItems = mainItem ? [mainItem, ...items.filter((item) => item.key !== mainKey)] : items;
+
+  return orderedItems.map((item, index) => ({
+    ...item,
+    isMain: index === 0,
+  }));
+}
+
 
 function normalizeDocuments(value: unknown): AssetDocument[] {
   const rawItems = Array.isArray(value) ? value : [];
@@ -1864,7 +1957,9 @@ export default function AssetRegisterClient() {
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
-  const [pendingPhotoFiles, setPendingPhotoFiles] = useState<File[]>([]);
+  const [pendingPhotoFiles, setPendingPhotoFiles] = useState<PendingPhotoFile[]>([]);
+  const [mainPhotoSelection, setMainPhotoSelection] = useState<MainPhotoSelection | null>(null);
+  const pendingPhotoFilesRef = useRef<PendingPhotoFile[]>([]);
   const [pendingDocumentFiles, setPendingDocumentFiles] = useState<File[]>([]);
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
   const [detailPhotoIndexByAsset, setDetailPhotoIndexByAsset] = useState<Record<string, number>>({});
@@ -1902,6 +1997,17 @@ export default function AssetRegisterClient() {
   const projectionYearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 16 }, (_, index) => currentYear + index);
+  }, []);
+
+  useEffect(() => {
+    pendingPhotoFilesRef.current = pendingPhotoFiles;
+  }, [pendingPhotoFiles]);
+
+  useEffect(() => {
+    return () => {
+      pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
+      pendingPhotoFilesRef.current = [];
+    };
   }, []);
 
   function getDetailPhotos(asset: RegisterAsset): string[] {
@@ -2311,10 +2417,14 @@ export default function AssetRegisterClient() {
   }, [expandedAssetId, filteredAssets, pageStart]);
 
   function resetEditor() {
+    pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
+    pendingPhotoFilesRef.current = [];
+
     setEditingAssetId(null);
     setAssetDraft(initialAssetDraft);
     setManualAssetStep(1);
     setHasManualAssetKindSelection(false);
+    setMainPhotoSelection(null);
     setPendingPhotoFiles([]);
     setPendingDocumentFiles([]);
 
@@ -2354,6 +2464,12 @@ export default function AssetRegisterClient() {
   }
 
   function openUpdater(asset: RegisterAsset) {
+    pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
+    pendingPhotoFilesRef.current = [];
+
+    setPendingPhotoFiles([]);
+    setPendingDocumentFiles([]);
+    setMainPhotoSelection(null);
     setEditingAssetId(asset.id);
     setAssetDraft(buildDraftFromAsset(asset));
     setManualAssetStep(2);
@@ -2584,13 +2700,32 @@ export default function AssetRegisterClient() {
       return;
     }
 
-    const filesToQueue = selectedFiles.slice(0, remainingSlots);
+    const filesToQueue = selectedFiles.slice(0, remainingSlots).map((file) => ({
+      id: createPendingPhotoId(),
+      file,
+      previewUrl: createPhotoPreviewUrl(file),
+    }));
 
-    setPendingPhotoFiles((current) => [...current, ...filesToQueue]);
+    setPendingPhotoFiles((current) => {
+      const next = [...current, ...filesToQueue];
+      pendingPhotoFilesRef.current = next;
+      return next;
+    });
     setNotice({
       tone: 'success',
-      message: `${filesToQueue.length} photo${filesToQueue.length === 1 ? '' : 's'} ready. Click Add asset to upload.`,
+      message: `${filesToQueue.length} photo${filesToQueue.length === 1 ? '' : 's'} ready. Choose Make main to show one first everywhere.`,
     });
+  }
+
+  function selectMainDraftPhoto(item: DraftPhotoItem) {
+    if (item.source === 'saved' && item.url) {
+      setMainPhotoSelection({ source: 'saved', url: item.url });
+      return;
+    }
+
+    if (item.source === 'pending' && item.pendingId) {
+      setMainPhotoSelection({ source: 'pending', id: item.pendingId });
+    }
   }
 
   function removeDraftPhoto(photoUrl: string) {
@@ -2598,10 +2733,23 @@ export default function AssetRegisterClient() {
       ...current,
       photos: current.photos.filter((photo) => photo !== photoUrl),
     }));
+
+    setMainPhotoSelection((current) => (current?.source === 'saved' && current.url === photoUrl ? null : current));
   }
 
-  function removePendingPhotoFile(fileIndex: number) {
-    setPendingPhotoFiles((current) => current.filter((_, index) => index !== fileIndex));
+  function removePendingPhotoFile(photoId: string) {
+    setPendingPhotoFiles((current) => {
+      const removed = current.find((entry) => entry.id === photoId);
+      if (removed) {
+        revokePhotoPreviewUrl(removed.previewUrl);
+      }
+
+      const next = current.filter((entry) => entry.id !== photoId);
+      pendingPhotoFilesRef.current = next;
+      return next;
+    });
+
+    setMainPhotoSelection((current) => (current?.source === 'pending' && current.id === photoId ? null : current));
   }
 
 
@@ -2640,12 +2788,12 @@ export default function AssetRegisterClient() {
     setPendingDocumentFiles((current) => current.filter((_, index) => index !== fileIndex));
   }
 
-  async function uploadQueuedPhotoFiles(files: File[]): Promise<string[]> {
-    if (!files.length) return [];
+  async function uploadQueuedPhotoFiles(files: PendingPhotoFile[]): Promise<Map<string, string>> {
+    if (!files.length) return new Map<string, string>();
 
     const formData = new FormData();
-    files.forEach((file) => {
-      formData.append('files', file);
+    files.forEach((entry) => {
+      formData.append('files', entry.file);
     });
 
     setIsUploadingPhotos(true);
@@ -2663,7 +2811,14 @@ export default function AssetRegisterClient() {
         throw new Error(data.error ?? 'Failed to upload images.');
       }
 
-      return data.uploads.map((entry) => entry.url);
+      return new Map(
+        data.uploads
+          .map((entry, index) => {
+            const pendingPhoto = files[index];
+            return pendingPhoto ? ([pendingPhoto.id, entry.url] as const) : null;
+          })
+          .filter((entry): entry is readonly [string, string] => entry !== null),
+      );
     } finally {
       setIsUploadingPhotos(false);
     }
@@ -2820,9 +2975,24 @@ export default function AssetRegisterClient() {
     setIsSavingAsset(true);
 
     try {
-      const uploadedPhotoUrls = await uploadQueuedPhotoFiles(pendingPhotoFiles);
+      const orderedDraftPhotos = buildDraftPhotoItems(assetDraft.photos, pendingPhotoFiles, mainPhotoSelection);
+      const uploadedPhotoUrlsById = await uploadQueuedPhotoFiles(pendingPhotoFiles);
       const uploadedDocuments = await uploadQueuedDocumentFiles(pendingDocumentFiles);
-      const photos = normalizePhotos([...assetDraft.photos, ...uploadedPhotoUrls]);
+      const photoUrlsByKey = new Map<string, string>();
+
+      assetDraft.photos.forEach((photo) => {
+        photoUrlsByKey.set(savedDraftPhotoKey(photo), photo);
+      });
+
+      uploadedPhotoUrlsById.forEach((url, pendingId) => {
+        photoUrlsByKey.set(pendingDraftPhotoKey(pendingId), url);
+      });
+
+      const photos = normalizePhotos(
+        orderedDraftPhotos
+          .map((photo) => photoUrlsByKey.get(photo.key) ?? '')
+          .filter(Boolean),
+      );
       const documents = normalizeDocuments([...assetDraft.documents, ...uploadedDocuments]);
 
       const payload = {
@@ -3689,6 +3859,10 @@ export default function AssetRegisterClient() {
   const selectedManualAssetType = getManualAssetOption(assetFormKind);
   const manualDraftDocumentCount = assetDraft.documents.length + pendingDocumentFiles.length;
   const manualDraftPhotoCount = assetDraft.photos.length + pendingPhotoFiles.length;
+  const draftPhotoItems = useMemo(
+    () => buildDraftPhotoItems(assetDraft.photos, pendingPhotoFiles, mainPhotoSelection),
+    [assetDraft.photos, mainPhotoSelection, pendingPhotoFiles],
+  );
   const manualStepPrimaryLabel =
     manualAssetStep === 2
       ? 'Next'
@@ -4777,36 +4951,55 @@ export default function AssetRegisterClient() {
                       </div>
                     ) : null}
 
-                    {assetDraft.photos.length || pendingPhotoFiles.length ? (
-                      <div className={styles.photoGrid}>
-                        {assetDraft.photos.map((photo, index) => (
-                          <div className={styles.photoThumb} key={`${photo}-${index}`}>
-                            <img src={photo} alt={`Asset photo ${index + 1}`} />
-                            <button
-                              type="button"
-                              className={styles.photoRemoveButton}
-                              onClick={() => removeDraftPhoto(photo)}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ))}
+                    {draftPhotoItems.length ? (
+                      <div className={styles.photoDraftSection}>
+                        <div className={styles.photoMainHelp}>
+                          <strong>Main photo</strong>
+                          <span>The first photo below is used first on the asset card, PDFs and marketplace listing.</span>
+                        </div>
 
-                        {pendingPhotoFiles.map((file, index) => (
-                          <div className={`${styles.photoThumb} ${styles.pendingPhotoThumb}`} key={`${file.name}-${file.size}-${index}`}>
-                            <div className={styles.pendingPhotoPlaceholder}>
-                              <span>Ready</span>
-                              <strong>{shortDocumentName(file.name)}</strong>
-                            </div>
-                            <button
-                              type="button"
-                              className={styles.photoRemoveButton}
-                              onClick={() => removePendingPhotoFile(index)}
+                        <div className={styles.photoGrid}>
+                          {draftPhotoItems.map((photoItem, index) => (
+                            <div
+                              className={`${styles.photoThumb} ${photoItem.isMain ? styles.photoThumbMain : ''} ${photoItem.source === 'pending' ? styles.pendingPhotoThumb : ''}`}
+                              key={photoItem.key}
                             >
-                              Remove
-                            </button>
-                          </div>
-                        ))}
+                              <div className={styles.photoThumbMedia}>
+                                <img
+                                  src={photoItem.previewUrl || FALLBACK_ASSET_IMAGE}
+                                  alt={photoItem.isMain ? 'Main asset photo' : `Asset photo ${index + 1}`}
+                                />
+                                {photoItem.isMain ? <span className={styles.photoMainBadge}>Main photo</span> : null}
+                                {photoItem.source === 'pending' ? <span className={styles.photoPendingBadge}>Ready</span> : null}
+                              </div>
+
+                              <div className={styles.photoThumbActions}>
+                                <button
+                                  type="button"
+                                  className={`${styles.photoMakeMainButton} ${photoItem.isMain ? styles.photoMakeMainButtonActive : ''}`}
+                                  onClick={() => selectMainDraftPhoto(photoItem)}
+                                  disabled={photoItem.isMain}
+                                >
+                                  {photoItem.isMain ? 'Main' : 'Make main'}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className={styles.photoRemoveButton}
+                                  onClick={() =>
+                                    photoItem.source === 'saved' && photoItem.url
+                                      ? removeDraftPhoto(photoItem.url)
+                                      : photoItem.pendingId
+                                        ? removePendingPhotoFile(photoItem.pendingId)
+                                        : undefined
+                                  }
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ) : null}
                   </section>
