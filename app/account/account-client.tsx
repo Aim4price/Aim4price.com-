@@ -1013,15 +1013,17 @@ export default function AccountClient() {
               <small>{completionLabel}</small>
             </div>
 
-            <div className={styles.heroStatGrid}>
+            <div className={`${styles.heroStatGrid} ${!isOwnerAccount ? styles.heroStatGridSingle : ''}`}>
               <div className={styles.heroStat}>
                 <span>Account type</span>
                 <strong>{accountTypeLabel}</strong>
               </div>
-              <div className={styles.heroStat}>
-                <span>QR PIN</span>
-                <strong>{scanPinStatusLabel}</strong>
-              </div>
+              {isOwnerAccount ? (
+                <div className={styles.heroStat}>
+                  <span>QR PIN</span>
+                  <strong>{scanPinStatusLabel}</strong>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
