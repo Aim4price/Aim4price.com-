@@ -1701,3 +1701,234 @@
   color: #60736c;
   line-height: 1.58;
 }
+
+/* 2026-05-15: partner directory map-pin selector */
+.partnerMapField {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 0.95rem;
+  border-radius: 1.16rem;
+  border: 1px solid rgba(18, 45, 37, 0.1);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(31, 138, 102, 0.07), transparent 18rem),
+    linear-gradient(180deg, rgba(249, 252, 251, 0.98) 0%, rgba(244, 248, 247, 0.98) 100%);
+}
+
+.partnerMapHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.partnerMapHeader > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 0.32rem;
+}
+
+.partnerMapHeader span {
+  color: #344a43;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.partnerMapHeader strong {
+  color: #12362d;
+  font-size: clamp(1.08rem, 1.45vw, 1.28rem);
+  line-height: 1.16;
+  letter-spacing: -0.035em;
+}
+
+.partnerMapHeader p {
+  max-width: 43rem;
+  margin: 0;
+  color: #667771;
+  line-height: 1.5;
+}
+
+.partnerMapActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+}
+
+.partnerMapActions .secondaryButton,
+.partnerMapActions .ghostButton {
+  min-height: 2.75rem;
+  white-space: nowrap;
+}
+
+.partnerMapCanvas {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  min-height: clamp(21rem, 38vw, 31rem);
+  border-radius: 1.08rem;
+  border: 1px solid rgba(18, 45, 37, 0.12);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(31, 138, 102, 0.08), transparent 14rem),
+    #edf4f1;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 14px 30px rgba(18, 45, 37, 0.055);
+}
+
+.partnerMapCanvas::before {
+  content: 'Click anywhere on the map to drop your partner pin.';
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 0;
+  transform: translate(-50%, -50%);
+  width: min(100% - 2rem, 25rem);
+  color: #70817a;
+  font-weight: 850;
+  line-height: 1.45;
+  text-align: center;
+  pointer-events: none;
+}
+
+.partnerMapCanvas :global(.leaflet-container) {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  background: transparent;
+  font-family: inherit;
+}
+
+.partnerMapCanvas :global(.leaflet-control-zoom) {
+  overflow: hidden;
+  border: 1px solid rgba(18, 45, 37, 0.12);
+  border-radius: 0.8rem;
+  box-shadow: 0 10px 24px rgba(18, 45, 37, 0.12);
+}
+
+.partnerMapCanvas :global(.leaflet-control-zoom a) {
+  border: 0;
+  color: #173b62;
+  font-weight: 900;
+}
+
+.partnerMapCanvas :global(.leaflet-popup-content-wrapper) {
+  border-radius: 0.9rem;
+  box-shadow: 0 14px 28px rgba(18, 45, 37, 0.16);
+}
+
+.partnerMapCanvas :global(.leaflet-popup-content) {
+  margin: 0.75rem 0.85rem;
+  color: #17362c;
+  font-family: inherit;
+  line-height: 1.42;
+}
+
+.partnerMapCanvas :global(.leaflet-popup-tip) {
+  box-shadow: 0 14px 28px rgba(18, 45, 37, 0.1);
+}
+
+.partnerMapCanvas :global(.leaflet-control-attribution) {
+  border-radius: 0.65rem 0 0 0;
+  color: #61716b;
+  font-size: 0.64rem;
+}
+
+.partnerMapCanvas :global(.accountPartnerMapMarker) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.partnerMapCanvas :global(.accountPartnerMapMarkerPin) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 999px 999px 999px 0;
+  color: #ffffff;
+  background: linear-gradient(135deg, #1f8a66 0%, #155942 100%);
+  border: 0.22rem solid #ffffff;
+  box-shadow: 0 14px 26px rgba(15, 59, 45, 0.3);
+  transform: rotate(-45deg);
+}
+
+.partnerMapCanvas :global(.accountPartnerMapMarkerPin::after) {
+  content: '';
+  position: absolute;
+  inset: 0.52rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.partnerMapCanvas :global(.accountPartnerMapMarkerPin b) {
+  position: relative;
+  z-index: 1;
+  display: block;
+  transform: rotate(45deg);
+  color: #ffffff;
+  font-size: 0.55rem;
+  font-weight: 950;
+  letter-spacing: 0.035em;
+}
+
+.partnerMapFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  min-height: 2.9rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.partnerMapFooter span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #5f6d76;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.partnerMapFooter strong {
+  flex: 0 0 auto;
+  color: #1f6c53;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 760px) {
+  .partnerMapHeader,
+  .partnerMapFooter {
+    display: grid;
+  }
+
+  .partnerMapActions {
+    justify-content: stretch;
+  }
+
+  .partnerMapActions .secondaryButton,
+  .partnerMapActions .ghostButton {
+    width: 100%;
+  }
+
+  .partnerMapCanvas {
+    min-height: 23rem;
+  }
+
+  .partnerMapFooter strong {
+    justify-self: start;
+  }
+}

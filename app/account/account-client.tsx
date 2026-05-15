@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
@@ -117,6 +117,14 @@ const PROFILE_COMPLETION_TOTAL = 6;
 const MAX_LOGO_UPLOAD_BYTES = 2 * 1024 * 1024;
 const ALLOWED_LOGO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
+const DEFAULT_PARTNER_MAP_CENTER: [number, number] = [-29.0, 24.0];
+const DEFAULT_PARTNER_MAP_ZOOM = 5;
+const SELECTED_PARTNER_MAP_ZOOM = 11;
+const LEAFLET_SCRIPT_ID = 'aim4price-leaflet-script';
+const LEAFLET_CSS_ID = 'aim4price-leaflet-css';
+
+let leafletLoaderPromise: Promise<any> | null = null;
+
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   owner: 'Machine Owner',
   dealer: 'Dealer',
@@ -126,6 +134,104 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   insurer: 'Insurance',
   bank: 'Finance',
 };
+
+function loadLeaflet(): Promise<any> {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('Leaflet can only load in the browser.'));
+  }
+
+  const existingLeaflet = (window as any).L;
+
+  if (existingLeaflet) {
+    return Promise.resolve(existingLeaflet);
+  }
+
+  if (leafletLoaderPromise) {
+    return leafletLoaderPromise;
+  }
+
+  leafletLoaderPromise = new Promise((resolve, reject) => {
+    if (!document.getElementById(LEAFLET_CSS_ID)) {
+      const link = document.createElement('link');
+      link.id = LEAFLET_CSS_ID;
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      link.integrity = 'sha256-p4NxAoJBhIINfQDe6nD5PxyhY7PZN0jMl7gDXu0tdcs=';
+      link.crossOrigin = '';
+      document.head.appendChild(link);
+    }
+
+    const resolveIfReady = () => {
+      const nextLeaflet = (window as any).L;
+
+      if (nextLeaflet) {
+        resolve(nextLeaflet);
+        return true;
+      }
+
+      return false;
+    };
+
+    if (resolveIfReady()) {
+      return;
+    }
+
+    let script = document.getElementById(LEAFLET_SCRIPT_ID) as HTMLScriptElement | null;
+
+    if (!script) {
+      script = document.createElement('script');
+      script.id = LEAFLET_SCRIPT_ID;
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+      script.crossOrigin = '';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+
+    script.addEventListener('load', () => {
+      if (!resolveIfReady()) {
+        reject(new Error('Leaflet did not initialise correctly.'));
+      }
+    });
+    script.addEventListener('error', () => reject(new Error('Failed to load the map.')));
+  });
+
+  return leafletLoaderPromise;
+}
+
+function parseCoordinate(value: string): number | null {
+  const numeric = Number(String(value ?? '').trim());
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function readPartnerPin(profile: ProfileDraft): { lat: number; lng: number } | null {
+  const lat = parseCoordinate(profile.partnerLatitude);
+  const lng = parseCoordinate(profile.partnerLongitude);
+
+  if (lat === null || lng === null) {
+    return null;
+  }
+
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return null;
+  }
+
+  return { lat, lng };
+}
+
+function formatCoordinate(value: number): string {
+  return value.toFixed(6).replace(/0+$/, '').replace(/\.$/, '');
+}
+
+function readServiceRadiusKm(value: string): number | null {
+  const numeric = Number(String(value ?? '').trim());
+
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return null;
+  }
+
+  return Math.min(Math.round(numeric), 2500);
+}
 
 function buildProfileLocation(profile: AccountProfile): string {
   return [profile.addressLine1, profile.townCity, profile.province]
@@ -295,6 +401,10 @@ export default function AccountClient() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isReadingLogo, setIsReadingLogo] = useState(false);
+  const partnerMapElementRef = useRef<HTMLDivElement | null>(null);
+  const partnerLeafletMapRef = useRef<any>(null);
+  const partnerPinMarkerRef = useRef<any>(null);
+  const partnerRadiusCircleRef = useRef<any>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -431,6 +541,170 @@ export default function AccountClient() {
   const marketplaceEmail = profileDraft.marketplaceEmail.trim() || profile?.email || 'No email found';
   const marketplaceLocation =
     profileDraft.marketplaceLocation.trim() || (addressLines.length ? addressLines.join(', ') : 'No location saved yet');
+  const partnerDirectoryPin = useMemo(
+    () => readPartnerPin(profileDraft),
+    [profileDraft.partnerLatitude, profileDraft.partnerLongitude],
+  );
+  const partnerDirectoryPinLabel = partnerDirectoryPin
+    ? `${formatCoordinate(partnerDirectoryPin.lat)}, ${formatCoordinate(partnerDirectoryPin.lng)}`
+    : 'No map pin selected yet';
+
+  useEffect(() => {
+    if (isLoading || !isPartnerAccount || !partnerMapElementRef.current) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function renderPartnerMap() {
+      try {
+        const L = await loadLeaflet();
+
+        if (cancelled || !partnerMapElementRef.current) {
+          return;
+        }
+
+        const selectedPin = readPartnerPin(profileDraft);
+        const center = selectedPin ? [selectedPin.lat, selectedPin.lng] : DEFAULT_PARTNER_MAP_CENTER;
+        const zoom = selectedPin ? SELECTED_PARTNER_MAP_ZOOM : DEFAULT_PARTNER_MAP_ZOOM;
+
+        if (!partnerLeafletMapRef.current) {
+          partnerLeafletMapRef.current = L.map(partnerMapElementRef.current, {
+            zoomControl: true,
+            scrollWheelZoom: true,
+          }).setView(center, zoom);
+
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19,
+          }).addTo(partnerLeafletMapRef.current);
+
+          partnerLeafletMapRef.current.on('click', (event: any) => {
+            setPartnerMapPin(event.latlng.lat, event.latlng.lng);
+          });
+        }
+
+        if (partnerPinMarkerRef.current) {
+          partnerPinMarkerRef.current.remove();
+          partnerPinMarkerRef.current = null;
+        }
+
+        if (partnerRadiusCircleRef.current) {
+          partnerRadiusCircleRef.current.remove();
+          partnerRadiusCircleRef.current = null;
+        }
+
+        if (selectedPin) {
+          const icon = L.divIcon({
+            className: 'accountPartnerMapMarker',
+            html: '<span class="accountPartnerMapMarkerPin"><b>PIN</b></span>',
+            iconSize: [46, 46],
+            iconAnchor: [23, 46],
+            popupAnchor: [0, -40],
+          });
+
+          const marker = L.marker([selectedPin.lat, selectedPin.lng], {
+            draggable: true,
+            icon,
+            title: 'Partner directory pin',
+          }).addTo(partnerLeafletMapRef.current);
+
+          marker.on('dragend', () => {
+            const next = marker.getLatLng();
+            setPartnerMapPin(next.lat, next.lng);
+          });
+
+          marker.bindPopup(
+            `<strong>${accountDisplayName.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</strong><br />Partner directory pin`,
+          );
+
+          partnerPinMarkerRef.current = marker;
+
+          const radiusKm = readServiceRadiusKm(profileDraft.partnerServiceRadiusKm);
+
+          if (radiusKm) {
+            partnerRadiusCircleRef.current = L.circle([selectedPin.lat, selectedPin.lng], {
+              radius: radiusKm * 1000,
+              color: '#1f8a66',
+              fillColor: '#1f8a66',
+              fillOpacity: 0.08,
+              opacity: 0.38,
+              weight: 2,
+            }).addTo(partnerLeafletMapRef.current);
+          }
+
+          partnerLeafletMapRef.current.setView([selectedPin.lat, selectedPin.lng], Math.max(partnerLeafletMapRef.current.getZoom(), 8));
+        }
+
+        window.setTimeout(() => partnerLeafletMapRef.current?.invalidateSize(), 80);
+      } catch (error) {
+        if (!cancelled) {
+          setNotice({
+            tone: 'error',
+            message: error instanceof Error ? error.message : 'Failed to load the map.',
+          });
+        }
+      }
+    }
+
+    void renderPartnerMap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    accountDisplayName,
+    isLoading,
+    isPartnerAccount,
+    profileDraft.partnerLatitude,
+    profileDraft.partnerLongitude,
+    profileDraft.partnerServiceRadiusKm,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (partnerLeafletMapRef.current) {
+        partnerLeafletMapRef.current.remove();
+        partnerLeafletMapRef.current = null;
+        partnerPinMarkerRef.current = null;
+        partnerRadiusCircleRef.current = null;
+      }
+    };
+  }, []);
+
+  function setPartnerMapPin(lat: number, lng: number) {
+    setProfileDraft((current) => ({
+      ...current,
+      partnerLatitude: lat.toFixed(6),
+      partnerLongitude: lng.toFixed(6),
+    }));
+  }
+
+  function clearPartnerMapPin() {
+    setProfileDraft((current) => ({
+      ...current,
+      partnerLatitude: '',
+      partnerLongitude: '',
+    }));
+  }
+
+  function handleUseCurrentLocation() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setNotice({ tone: 'error', message: 'Current location is not available in this browser.' });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setPartnerMapPin(position.coords.latitude, position.coords.longitude);
+        setNotice({ tone: 'success', message: 'Map pin set to your current location. Click Save directory to store it.' });
+      },
+      () => {
+        setNotice({ tone: 'error', message: 'Could not read your current location. Drop the pin manually on the map.' });
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    );
+  }
 
   async function handleLogoFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
@@ -872,29 +1146,33 @@ export default function AccountClient() {
                     />
                   </label>
 
-                  <label className={`${styles.field} ${styles.thirdField}`}>
-                    <span>Latitude</span>
-                    <input
-                      inputMode="decimal"
-                      value={profileDraft.partnerLatitude}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({ ...current, partnerLatitude: event.target.value }))
-                      }
-                      placeholder="-33.9249"
-                    />
-                  </label>
+                  <div className={`${styles.partnerMapField} ${styles.fullWidth}`}>
+                    <div className={styles.partnerMapHeader}>
+                      <div>
+                        <span>Partner map pin</span>
+                        <strong>Drop your public directory pin</strong>
+                        <p>Click the map or drag the pin to the exact place owners should see.</p>
+                      </div>
 
-                  <label className={`${styles.field} ${styles.thirdField}`}>
-                    <span>Longitude</span>
-                    <input
-                      inputMode="decimal"
-                      value={profileDraft.partnerLongitude}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({ ...current, partnerLongitude: event.target.value }))
-                      }
-                      placeholder="18.4241"
-                    />
-                  </label>
+                      <div className={styles.partnerMapActions}>
+                        <button type="button" className={styles.secondaryButton} onClick={handleUseCurrentLocation}>
+                          Use current location
+                        </button>
+                        {partnerDirectoryPin ? (
+                          <button type="button" className={styles.ghostButton} onClick={clearPartnerMapPin}>
+                            Clear pin
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div ref={partnerMapElementRef} className={styles.partnerMapCanvas} aria-label="Partner directory map pin" />
+
+                    <div className={styles.partnerMapFooter}>
+                      <span>{partnerDirectoryPinLabel}</span>
+                      <strong>{partnerDirectoryPin ? 'Ready to save' : 'Click the map to place your pin'}</strong>
+                    </div>
+                  </div>
 
                   <label className={`${styles.field} ${styles.thirdField}`}>
                     <span>Service radius km</span>
