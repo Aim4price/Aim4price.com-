@@ -127,13 +127,6 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   bank: 'Finance',
 };
 
-const ACCOUNT_TYPE_OPTIONS = [
-  { value: 'owner', label: 'Machine Owner' },
-  { value: 'dealer', label: 'Dealer' },
-  { value: 'finance', label: 'Finance / Bank' },
-  { value: 'insurance', label: 'Insurance / Broker' },
-] as const;
-
 function buildProfileLocation(profile: AccountProfile): string {
   return [profile.addressLine1, profile.townCity, profile.province]
     .map((value) => String(value ?? '').trim())
@@ -798,24 +791,10 @@ export default function AccountClient() {
 
                   <label className={`${styles.field} ${styles.thirdField}`}>
                     <span>Account type</span>
-                    <select
-                      value={profileDraft.accountType}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({
-                          ...current,
-                          accountType: event.target.value,
-                          partnerDirectoryEnabled: event.target.value === 'owner' ? false : current.partnerDirectoryEnabled,
-                        }))
-                      }
-                    >
-                      {ACCOUNT_TYPE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                    <div className={styles.readOnlyValue}>{accountTypeLabel}</div>
                     <small className={styles.fieldHint}>
-                      Owners manage assets. Partners can receive shared registers and quote leads.
+                      Account type is locked after signup. Contact Aim4price if this account must become a dealer,
+                      finance or insurance partner.
                     </small>
                   </label>
 
@@ -860,7 +839,7 @@ export default function AccountClient() {
               <div className={styles.cardHeader}>
                 <div>
                   <h2>Partner directory</h2>
-                  <p>Control whether this account appears as a selectable Aim4price partner for shared registers and quote leads.</p>
+                  <p>Control whether this partner account appears as a selectable Aim4price partner for shared registers and quote leads.</p>
                 </div>
               </div>
 
@@ -960,7 +939,7 @@ export default function AccountClient() {
               ) : (
                 <div className={styles.emptyDirectoryCard}>
                   <strong>Partner directory is disabled for machine-owner accounts.</strong>
-                  <p>Change account type to Dealer, Finance or Insurance if this account should receive shared registers or quote leads.</p>
+                  <p>Machine-owner accounts can share their Asset Register with trusted partners, but they do not appear in the partner directory.</p>
                 </div>
               )}
             </section>
