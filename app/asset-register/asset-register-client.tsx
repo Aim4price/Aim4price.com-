@@ -496,7 +496,7 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     partnerType: 'finance',
     title: 'Get finance offer',
     shortTitle: 'Finance offer',
-    description: 'Send this asset to a bank or finance partner for a finance or refinance discussion.',
+    description: 'Send this asset to a bank or finance partner for finance or refinance.',
     mapTitle: 'Choose a finance partner',
     sendLabel: 'Send finance request',
     emptyPartnerText: 'No listed finance partners found yet. Finance partners must enable their directory listing under Account details.',
@@ -506,7 +506,7 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     partnerType: 'insurance',
     title: 'Get insurance quote',
     shortTitle: 'Insurance quote',
-    description: 'Send this asset to an insurance partner or broker for a cover and insured-value review.',
+    description: 'Send this asset to an insurer or broker for cover and insured-value review.',
     mapTitle: 'Choose an insurance partner',
     sendLabel: 'Send insurance request',
     emptyPartnerText: 'No listed insurance partners found yet. Insurance partners must enable their directory listing under Account details.',
@@ -516,7 +516,7 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     partnerType: 'dealer',
     title: 'Get replacement quote',
     shortTitle: 'Replacement quote',
-    description: 'Send this asset to a machinery dealer for a new or replacement machine quote.',
+    description: 'Send this asset to a dealer for a new or replacement machine quote.',
     mapTitle: 'Choose a dealer',
     sendLabel: 'Send replacement quote request',
     emptyPartnerText: 'No listed dealers found yet. Dealer accounts must enable their directory listing under Account details.',
@@ -5597,11 +5597,14 @@ export default function AssetRegisterClient() {
                         className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard}`}
                         onClick={() => openQuotePartnerPicker(option.leadType)}
                       >
-                        {renderQuoteOptionIcon(option.leadType, styles.buttonIcon)}
-                        <span>
+                        <span className={styles.assetQuoteChoiceIconTile}>
+                          {renderQuoteOptionIcon(option.leadType, styles.assetQuoteChoiceIcon)}
+                        </span>
+                        <span className={styles.assetQuoteChoiceText}>
                           <strong>{option.title}</strong>
                           <small>{option.description}</small>
                         </span>
+                        <ChevronRightIcon className={styles.assetQuoteChoiceChevron} />
                       </button>
                     ))}
                   </div>
