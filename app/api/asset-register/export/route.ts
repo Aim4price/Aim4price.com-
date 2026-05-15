@@ -3,6 +3,7 @@ import { getServerSession } from '../../../../lib/auth-session';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { listAssetRegisterItems, type AssetRegisterItem } from '../../../../lib/asset-register-db';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
+import { canViewOwnerRegister } from '../../../../lib/partner-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -686,7 +687,10 @@ export async function GET(request: NextRequest) {
     return unauthorized();
   }
 
-  const format = new URL(request.url).searchParams.get('format');
+  const params = new URL(request.url).searchParams;
+  const format = params.get('format');
+  const requestedOwnerUserId = String(params.get('ownerUserId') ?? '').trim();
+  const targetUserId = requestedOwnerUserId || session.user.id;
 
   if (format !== 'xlsx') {
     return NextResponse.json(
@@ -696,15 +700,27 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const items = await listAssetRegisterItems(session.user.id);
+    if (targetUserId !== session.user.id) {
+      const canView = await canViewOwnerRegister(session.user.id, targetUserId);
+
+      if (!canView) {
+        return NextResponse.json({ ok: false, error: 'You do not have access to this shared register.' }, { status: 403 });
+      }
+    }
+
+    const items = await listAssetRegisterItems(targetUserId);
 
     let profile: AccountProfileResult | null = null;
     try {
-      profile = await getAccountProfile({
-        id: session.user.id,
-        name: session.user.name,
-        email: session.user.email,
-      });
+      profile = await getAccountProfile(
+        targetUserId === session.user.id
+          ? {
+              id: session.user.id,
+              name: session.user.name,
+              email: session.user.email,
+            }
+          : { id: targetUserId },
+      );
     } catch (profileError) {
       console.error('asset register export profile lookup failed', profileError);
     }
