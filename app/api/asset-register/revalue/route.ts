@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { revalueAssetRegisterItem } from '../../../../lib/asset-register-revaluation';
+import { attachOpenPartnerNotesToAssets } from '../../../../lib/partner-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -95,9 +96,11 @@ export async function POST(request: NextRequest) {
       selectedMethod: body.selectedMethod,
     });
 
+    const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [result.item]);
+
     return NextResponse.json<RevalueAssetResponse>({
       ok: true,
-      item: result.item,
+      item: itemWithPartnerNote ?? result.item,
       valuationRunId: result.valuationRunId,
       selectedMethod: result.selectedMethod,
       oldValueExVat: result.oldValueExVat,
