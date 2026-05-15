@@ -225,10 +225,20 @@ export function normalizeLeadType(value: unknown): LeadType | null {
   return LEAD_TYPES.has(normalized as LeadType) ? (normalized as LeadType) : null;
 }
 
+export function partnerTypesForLeadType(leadType: LeadType): PartnerType[] {
+  if (leadType === 'replacement_quote') return ['dealer'];
+  if (leadType === 'insurance') return ['finance', 'insurance'];
+  return ['finance'];
+}
+
 export function partnerTypeForLeadType(leadType: LeadType): PartnerType {
-  if (leadType === 'replacement_quote') return 'dealer';
-  if (leadType === 'insurance') return 'insurance';
-  return 'finance';
+  return partnerTypesForLeadType(leadType)[0];
+}
+
+function canUsePartnerForRequestedType(actualType: PartnerType | null, requestedType: PartnerType): boolean {
+  if (!actualType) return false;
+  if (requestedType === 'insurance') return actualType === 'insurance' || actualType === 'finance';
+  return actualType === requestedType;
 }
 
 export function normalizeLeadStatus(value: unknown): AssetLeadStatus | null {
@@ -646,8 +656,12 @@ export async function listPartnerDirectory(input: {
   ];
 
   if (partnerType) {
-    params.push(partnerType);
-    filters.push(`account_type = $${params.length}`);
+    if (partnerType === 'insurance') {
+      filters.push(`account_type in ('finance', 'insurance')`);
+    } else {
+      params.push(partnerType);
+      filters.push(`account_type = $${params.length}`);
+    }
   }
 
   if (search) {
@@ -802,7 +816,7 @@ export async function createSharedAccessRequest(input: {
   const partner = await getPartnerProfileForShare(input.partnerUserId);
   const actualPartnerType = normalizePartnerType(partner?.account_type);
 
-  if (!partner || actualPartnerType !== input.partnerType) {
+  if (!partner || !canUsePartnerForRequestedType(actualPartnerType, input.partnerType)) {
     throw new Error('PARTNER_NOT_FOUND');
   }
 
@@ -1051,11 +1065,11 @@ export async function createAssetLead(input: {
   includedSections?: Record<string, unknown> | null;
 }): Promise<AssetLead> {
   await ensurePartnerAccessTables();
-  const requiredPartnerType = partnerTypeForLeadType(input.leadType);
+  const allowedPartnerTypes = partnerTypesForLeadType(input.leadType);
   const partner = await getPartnerProfileForShare(input.partnerUserId);
   const actualPartnerType = normalizePartnerType(partner?.account_type);
 
-  if (!partner || actualPartnerType !== requiredPartnerType) {
+  if (!partner || !actualPartnerType || !allowedPartnerTypes.includes(actualPartnerType)) {
     throw new Error('PARTNER_NOT_FOUND');
   }
 

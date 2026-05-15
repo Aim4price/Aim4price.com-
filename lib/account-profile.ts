@@ -110,11 +110,25 @@ function asText(value: unknown): string {
 }
 
 function normalizeAccountType(value: unknown): string {
-  const normalized = asText(value).toLowerCase();
+  const normalized = asText(value).toLowerCase().replace(/[\s_]+/g, '-');
 
-  if (normalized === 'bank') return 'finance';
-  if (normalized === 'broker' || normalized === 'insurer') return 'insurance';
-  if (normalized === 'dealer' || normalized === 'finance' || normalized === 'insurance') return normalized;
+  if (
+    normalized === 'bank' ||
+    normalized === 'finance-house' ||
+    normalized === 'accountant' ||
+    normalized === 'accounting' ||
+    normalized === 'finance'
+  ) {
+    return 'finance';
+  }
+
+  if (normalized === 'auction-house' || normalized === 'auctioneer' || normalized === 'dealer') {
+    return 'dealer';
+  }
+
+  if (normalized === 'broker' || normalized === 'insurer' || normalized === 'insurance') {
+    return 'insurance';
+  }
 
   return 'owner';
 }
@@ -293,6 +307,32 @@ function mapAccountScanPinRow(row?: AccountScanPinRow): AccountScanPinStatus {
   };
 }
 
+export async function createInitialAccountProfile(
+  user: { id: string; name?: string | null; email?: string | null },
+  input?: { accountType?: unknown },
+): Promise<void> {
+  await ensureAccountProfileColumns();
+
+  const db = getDb();
+  const initialAccountType = normalizeAccountType(input?.accountType);
+
+  await db.query(
+    `
+      insert into account_profiles (
+        user_id,
+        display_name,
+        account_type,
+        marketplace_email,
+        created_at,
+        updated_at
+      )
+      values ($1, $2, $3, $4, now(), now())
+      on conflict (user_id) do nothing
+    `,
+    [user.id, asText(user.name) || null, initialAccountType, asText(user.email).toLowerCase() || null],
+  );
+}
+
 export async function getAccountProfile(user: {
   id: string;
   name?: string | null;
@@ -361,7 +401,7 @@ export async function upsertAccountProfile(
 
   const normalizedAccountType = existingAccountTypeResult.rows[0]
     ? normalizeAccountType(existingAccountTypeResult.rows[0].account_type)
-    : 'owner';
+    : normalizeAccountType(input.accountType);
   const normalizedMarketplaceEmail = asText(input.marketplaceEmail).toLowerCase();
   const normalizedLatitude = asNullableNumber(input.partnerLatitude);
   const normalizedLongitude = asNullableNumber(input.partnerLongitude);
