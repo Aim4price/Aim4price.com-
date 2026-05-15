@@ -651,6 +651,45 @@ function BankIcon({ className }: IconProps) {
   );
 }
 
+function MoneyBagIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M8.2 4.2c.55 1.35 1.7 2.1 3.8 2.1s3.25-.75 3.8-2.1" />
+      <path d="M9.15 3.2h5.7l1.55 2.25-1.85 1.85h-5.1L7.6 5.45z" />
+      <path d="M7.35 8.05c-2.65 2.2-4.1 5.15-4.1 8.25 0 3.15 2.5 4.5 8.75 4.5s8.75-1.35 8.75-4.5c0-3.1-1.45-6.05-4.1-8.25" />
+      <path d="M12 10.1v7.1" />
+      <path d="M14.4 11.65h-3.2c-.9 0-1.55.52-1.55 1.25s.58 1.12 1.55 1.32l1.6.34c.97.2 1.55.6 1.55 1.32s-.65 1.25-1.55 1.25H9.45" />
+    </svg>
+  );
+}
+
+function ReplacementQuoteIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.35"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
 function ShieldIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
@@ -2184,9 +2223,9 @@ function extractApiError(payload: unknown, fallback: string): string {
 }
 
 function renderQuoteOptionIcon(leadType: AssetLeadType, className?: string) {
-  if (leadType === 'finance') return <BankIcon className={className} />;
+  if (leadType === 'finance') return <MoneyBagIcon className={className} />;
   if (leadType === 'insurance') return <ShieldIcon className={className} />;
-  return <QuoteMachineIcon className={className} />;
+  return <ReplacementQuoteIcon className={className} />;
 }
 
 export default function AssetRegisterClient() {
@@ -5604,7 +5643,6 @@ export default function AssetRegisterClient() {
                           <strong>{option.title}</strong>
                           <small>{option.description}</small>
                         </span>
-                        <ChevronRightIcon className={styles.assetQuoteChoiceChevron} />
                       </button>
                     ))}
                   </div>

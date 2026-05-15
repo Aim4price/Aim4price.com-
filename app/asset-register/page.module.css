@@ -13349,3 +13349,151 @@
     white-space: normal !important;
   }
 }
+
+/* === Asset quote options modal: centered card redo === */
+.assetQuoteModal {
+  width: min(100%, 1160px) !important;
+  padding: clamp(1.65rem, 2.8vw, 2.35rem) !important;
+}
+
+.assetQuoteModalHeader {
+  padding-bottom: clamp(1.18rem, 1.9vw, 1.45rem) !important;
+  border-bottom-color: rgba(204, 219, 232, 0.92) !important;
+}
+
+.assetQuoteModalHeader .modalHeaderText {
+  gap: 0.52rem !important;
+}
+
+.assetQuoteModalHeader h3 {
+  font-size: clamp(2rem, 2.95vw, 2.65rem) !important;
+  line-height: 1.02 !important;
+}
+
+.assetQuoteModalHeader p {
+  font-size: clamp(1rem, 1.12vw, 1.1rem) !important;
+  line-height: 1.45 !important;
+}
+
+.assetQuoteScrollBody {
+  padding: clamp(1.55rem, 2.5vw, 2.2rem) clamp(0.15rem, 0.55vw, 0.45rem) clamp(0.25rem, 0.75vw, 0.55rem) !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: clamp(1.15rem, 1.85vw, 1.55rem) !important;
+  align-items: stretch !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: auto auto auto !important;
+  justify-items: center !important;
+  align-content: start !important;
+  gap: 1.05rem !important;
+  min-height: 14.1rem !important;
+  padding: clamp(1.65rem, 2.2vw, 2rem) clamp(1.2rem, 1.75vw, 1.55rem) !important;
+  text-align: center !important;
+  border-radius: 1.55rem !important;
+}
+
+.assetQuoteChoiceIconTile {
+  grid-column: 1 !important;
+  width: 5.05rem !important;
+  height: 5.05rem !important;
+  margin: 0 auto 0.1rem !important;
+  border-radius: 1.35rem !important;
+}
+
+.assetQuoteChoiceIcon {
+  width: 2.05rem !important;
+  height: 2.05rem !important;
+}
+
+.assetQuoteChoiceText {
+  grid-column: 1 !important;
+  width: 100% !important;
+  max-width: 17.5rem !important;
+  display: grid !important;
+  justify-items: center !important;
+  align-content: start !important;
+  gap: 0.62rem !important;
+  text-align: center !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard strong,
+.assetQuoteChoiceText strong {
+  display: block !important;
+  width: 100% !important;
+  color: #10352b !important;
+  font-size: clamp(1.08rem, 1.28vw, 1.22rem) !important;
+  font-weight: 850 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.035em !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard small,
+.assetQuoteChoiceText small {
+  display: block !important;
+  width: 100% !important;
+  max-width: 14.8rem !important;
+  margin: 0 auto !important;
+  color: #5f7084 !important;
+  font-size: clamp(0.92rem, 1.02vw, 0.99rem) !important;
+  font-weight: 650 !important;
+  line-height: 1.48 !important;
+  text-align: center !important;
+}
+
+.assetQuoteChoiceChevron {
+  display: none !important;
+}
+
+@media (max-width: 1060px) {
+  .optionsModal .assetQuoteChoiceGrid {
+    grid-template-columns: 1fr !important;
+    max-width: 34rem !important;
+    margin-inline: auto !important;
+  }
+
+  .optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard {
+    min-height: 12.2rem !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .assetQuoteModal {
+    padding: 1.05rem !important;
+  }
+
+  .assetQuoteModalHeader p {
+    white-space: normal !important;
+  }
+
+  .optionsModal .assetQuoteChoiceGrid {
+    max-width: none !important;
+  }
+
+  .optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard {
+    min-height: 11.7rem !important;
+    padding: 1.3rem 1rem !important;
+  }
+
+  .assetQuoteChoiceIconTile {
+    width: 4.35rem !important;
+    height: 4.35rem !important;
+  }
+
+  .assetQuoteChoiceIcon {
+    width: 1.82rem !important;
+    height: 1.82rem !important;
+  }
+
+  .optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard strong,
+  .assetQuoteChoiceText strong {
+    white-space: normal !important;
+  }
+}
