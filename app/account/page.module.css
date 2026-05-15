@@ -1652,3 +1652,52 @@
     background: linear-gradient(180deg, rgba(3, 18, 25, 0) 35%, rgba(3, 18, 25, 0.72) 100%);
   }
 }
+
+/* 2026-05-15: partner access profile fields */
+.toggleField {
+  display: flex;
+  align-items: center;
+  gap: 0.78rem;
+  min-height: 3.45rem;
+  padding: 0.88rem 1.02rem;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(18, 45, 37, 0.1);
+  background: linear-gradient(180deg, rgba(247, 251, 249, 0.98) 0%, rgba(241, 247, 245, 0.96) 100%);
+  color: #17362c;
+  font-weight: 850;
+}
+
+.toggleField input {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: #1f8a66;
+}
+
+.toggleField span {
+  font-size: 0.92rem;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: #17362c;
+}
+
+.emptyDirectoryCard {
+  display: grid;
+  gap: 0.42rem;
+  padding: 1.05rem;
+  border-radius: 1.15rem;
+  border: 1px solid rgba(62, 110, 213, 0.13);
+  background: rgba(62, 110, 213, 0.075);
+}
+
+.emptyDirectoryCard strong {
+  color: #173b62;
+  font-size: 1.02rem;
+  letter-spacing: -0.02em;
+}
+
+.emptyDirectoryCard p {
+  margin: 0;
+  color: #60736c;
+  line-height: 1.58;
+}

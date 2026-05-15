@@ -25,6 +25,14 @@ type AccountProfile = {
   marketplacePhone: string;
   marketplaceEmail: string;
   marketplaceLocation: string;
+  partnerDirectoryEnabled: boolean;
+  partnerDirectoryStatus: string;
+  partnerDescription: string;
+  partnerLatitude: number | null;
+  partnerLongitude: number | null;
+  partnerServiceRadiusKm: number | null;
+  partnerBrandFocus: string;
+  partnerServices: string;
   createdAtIso: string | null;
   updatedAtIso: string | null;
 };
@@ -63,6 +71,14 @@ type ProfileDraft = {
   marketplacePhone: string;
   marketplaceEmail: string;
   marketplaceLocation: string;
+  partnerDirectoryEnabled: boolean;
+  partnerDirectoryStatus: string;
+  partnerDescription: string;
+  partnerLatitude: string;
+  partnerLongitude: string;
+  partnerServiceRadiusKm: string;
+  partnerBrandFocus: string;
+  partnerServices: string;
 };
 
 const initialProfileDraft: ProfileDraft = {
@@ -81,6 +97,14 @@ const initialProfileDraft: ProfileDraft = {
   marketplacePhone: '',
   marketplaceEmail: '',
   marketplaceLocation: '',
+  partnerDirectoryEnabled: false,
+  partnerDirectoryStatus: 'approved',
+  partnerDescription: '',
+  partnerLatitude: '',
+  partnerLongitude: '',
+  partnerServiceRadiusKm: '',
+  partnerBrandFocus: '',
+  partnerServices: '',
 };
 
 const initialScanPinStatus: AccountScanPinStatus = {
@@ -94,12 +118,21 @@ const MAX_LOGO_UPLOAD_BYTES = 2 * 1024 * 1024;
 const ALLOWED_LOGO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
-  owner: 'Owner',
+  owner: 'Machine Owner',
   dealer: 'Dealer',
-  broker: 'Broker',
-  insurer: 'Insurer',
-  bank: 'Bank',
+  finance: 'Finance',
+  insurance: 'Insurance',
+  broker: 'Insurance',
+  insurer: 'Insurance',
+  bank: 'Finance',
 };
+
+const ACCOUNT_TYPE_OPTIONS = [
+  { value: 'owner', label: 'Machine Owner' },
+  { value: 'dealer', label: 'Dealer' },
+  { value: 'finance', label: 'Finance / Bank' },
+  { value: 'insurance', label: 'Insurance / Broker' },
+] as const;
 
 function buildProfileLocation(profile: AccountProfile): string {
   return [profile.addressLine1, profile.townCity, profile.province]
@@ -132,6 +165,14 @@ function buildProfileDraft(profile: AccountProfile | null): ProfileDraft {
     marketplacePhone: profile.marketplacePhone || profile.phone,
     marketplaceEmail: profile.marketplaceEmail || profile.email,
     marketplaceLocation: profile.marketplaceLocation || fallbackLocation,
+    partnerDirectoryEnabled: Boolean(profile.partnerDirectoryEnabled),
+    partnerDirectoryStatus: profile.partnerDirectoryStatus || 'approved',
+    partnerDescription: profile.partnerDescription,
+    partnerLatitude: profile.partnerLatitude === null ? '' : String(profile.partnerLatitude),
+    partnerLongitude: profile.partnerLongitude === null ? '' : String(profile.partnerLongitude),
+    partnerServiceRadiusKm: profile.partnerServiceRadiusKm === null ? '' : String(profile.partnerServiceRadiusKm),
+    partnerBrandFocus: profile.partnerBrandFocus,
+    partnerServices: profile.partnerServices,
   };
 }
 
@@ -383,6 +424,7 @@ export default function AccountClient() {
       : `${PROFILE_COMPLETION_TOTAL - completedFields} left`;
   const addressLines = useMemo(() => buildAddressLines(profileDraft), [profileDraft]);
   const accountTypeLabel = useMemo(() => formatAccountTypeLabel(profileDraft.accountType), [profileDraft.accountType]);
+  const isPartnerAccount = profileDraft.accountType !== 'owner';
   const accountDisplayName = profileDraft.displayName.trim() || profile?.name || 'Aim4price user';
   const profileInitials = useMemo(
     () => buildInitials(accountDisplayName || profileDraft.businessName || 'Aim4price'),
@@ -754,13 +796,28 @@ export default function AccountClient() {
                     />
                   </label>
 
-                  <div className={`${styles.field} ${styles.thirdField}`}>
+                  <label className={`${styles.field} ${styles.thirdField}`}>
                     <span>Account type</span>
-                    <div className={styles.readOnlyValue} aria-readonly="true">
-                      {accountTypeLabel}
-                    </div>
-
-                  </div>
+                    <select
+                      value={profileDraft.accountType}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({
+                          ...current,
+                          accountType: event.target.value,
+                          partnerDirectoryEnabled: event.target.value === 'owner' ? false : current.partnerDirectoryEnabled,
+                        }))
+                      }
+                    >
+                      {ACCOUNT_TYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <small className={styles.fieldHint}>
+                      Owners manage assets. Partners can receive shared registers and quote leads.
+                    </small>
+                  </label>
 
                   <label className={`${styles.field} ${styles.thirdField}`}>
                     <span>Province</span>
@@ -796,6 +853,115 @@ export default function AccountClient() {
                     </button>
                   </div>
                 </form>
+              )}
+            </section>
+
+            <section className={styles.card}>
+              <div className={styles.cardHeader}>
+                <div>
+                  <h2>Partner directory</h2>
+                  <p>Control whether this account appears as a selectable Aim4price partner for shared registers and quote leads.</p>
+                </div>
+              </div>
+
+              {isLoading ? (
+                <p className={styles.loading}>Loading partner directory settings...</p>
+              ) : isPartnerAccount ? (
+                <form className={styles.form} onSubmit={handleProfileSubmit}>
+                  <label className={`${styles.toggleField} ${styles.fullWidth}`}>
+                    <input
+                      type="checkbox"
+                      checked={profileDraft.partnerDirectoryEnabled}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({
+                          ...current,
+                          partnerDirectoryEnabled: event.target.checked,
+                        }))
+                      }
+                    />
+                    <span>Show this account in the Aim4price partner directory</span>
+                  </label>
+
+                  <label className={`${styles.field} ${styles.fullWidth}`}>
+                    <span>Partner description</span>
+                    <textarea
+                      value={profileDraft.partnerDescription}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, partnerDescription: event.target.value }))
+                      }
+                      placeholder="Example: Finance partner for agricultural machinery, asset-backed finance and refinancing discussions."
+                    />
+                  </label>
+
+                  <label className={`${styles.field} ${styles.thirdField}`}>
+                    <span>Latitude</span>
+                    <input
+                      inputMode="decimal"
+                      value={profileDraft.partnerLatitude}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, partnerLatitude: event.target.value }))
+                      }
+                      placeholder="-33.9249"
+                    />
+                  </label>
+
+                  <label className={`${styles.field} ${styles.thirdField}`}>
+                    <span>Longitude</span>
+                    <input
+                      inputMode="decimal"
+                      value={profileDraft.partnerLongitude}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, partnerLongitude: event.target.value }))
+                      }
+                      placeholder="18.4241"
+                    />
+                  </label>
+
+                  <label className={`${styles.field} ${styles.thirdField}`}>
+                    <span>Service radius km</span>
+                    <input
+                      inputMode="numeric"
+                      value={profileDraft.partnerServiceRadiusKm}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, partnerServiceRadiusKm: event.target.value }))
+                      }
+                      placeholder="250"
+                    />
+                  </label>
+
+                  <label className={`${styles.field} ${styles.halfField}`}>
+                    <span>Brand focus</span>
+                    <input
+                      value={profileDraft.partnerBrandFocus}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, partnerBrandFocus: event.target.value }))
+                      }
+                      placeholder="John Deere, Case IH, New Holland"
+                    />
+                  </label>
+
+                  <label className={`${styles.field} ${styles.halfField}`}>
+                    <span>Services</span>
+                    <input
+                      value={profileDraft.partnerServices}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({ ...current, partnerServices: event.target.value }))
+                      }
+                      placeholder="Finance, insurance, replacements, trade-ins"
+                    />
+                  </label>
+
+                  <div className={styles.actionsRow}>
+                    <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
+                      {isSavingProfile ? 'Saving...' : 'Save directory'}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className={styles.emptyDirectoryCard}>
+                  <strong>Partner directory is disabled for machine-owner accounts.</strong>
+                  <p>Change account type to Dealer, Finance or Insurance if this account should receive shared registers or quote leads.</p>
+                </div>
               )}
             </section>
 
