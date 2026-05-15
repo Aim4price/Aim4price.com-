@@ -130,7 +130,7 @@ function normalizeAccountType(value: unknown): string {
     return 'dealer';
   }
 
-  if (normalized === 'broker' || normalized === 'insurer' || normalized === 'insurance') {
+  if (normalized === 'broker' || normalized === 'insurer' || normalized === 'insurance' || normalized === 'short-term-insurer') {
     return 'insurance';
   }
 
@@ -141,22 +141,44 @@ function normalizeAccountSubtype(accountType: string, value: unknown): string {
   const normalized = asText(value).toLowerCase().replace(/[\s_]+/g, '-');
   const allowedByType: Record<string, Set<string>> = {
     owner: new Set(['farmer', 'contractor', 'construction-company', 'asset-owner']),
-    finance: new Set(['bank', 'finance-house', 'insurer', 'accountant']),
-    insurance: new Set(['insurer', 'broker', 'insurance-broker']),
-    dealer: new Set(['machinery-dealer', 'auction-house']),
+    finance: new Set(['bank', 'finance-house', 'accountant']),
+    insurance: new Set(['short-term-insurer', 'insurer', 'broker', 'insurance-broker']),
+    dealer: new Set(['machinery-dealer', 'auctioneer', 'auction-house']),
   };
   const defaults: Record<string, string> = {
     owner: 'farmer',
     finance: 'bank',
-    insurance: 'insurer',
+    insurance: 'short-term-insurer',
     dealer: 'machinery-dealer',
   };
+
+  if (accountType === 'insurance' && ['insurer', 'broker', 'insurance-broker'].includes(normalized)) {
+    return 'short-term-insurer';
+  }
+
+  if (accountType === 'dealer' && normalized === 'auction-house') {
+    return 'auctioneer';
+  }
 
   if (allowedByType[accountType]?.has(normalized)) {
     return normalized;
   }
 
   return defaults[accountType] ?? 'farmer';
+}
+
+function resolveAccountType(accountType: unknown, accountSubtype: unknown): string {
+  const normalizedType = normalizeAccountType(accountType);
+  const normalizedSubtype = asText(accountSubtype).toLowerCase().replace(/[\s_]+/g, '-');
+
+  if (
+    normalizedType === 'finance' &&
+    ['insurer', 'insurance', 'short-term-insurer', 'broker', 'insurance-broker'].includes(normalizedSubtype)
+  ) {
+    return 'insurance';
+  }
+
+  return normalizedType;
 }
 
 function normalizeDirectoryStatus(value: unknown): string {
@@ -291,6 +313,7 @@ function mapAccountProfileRow(
 ): AccountProfile {
   const fallbackName = asText(user.name);
   const displayName = asText(row?.display_name) || fallbackName;
+  const accountType = resolveAccountType(row?.account_type, row?.account_subtype);
 
   return {
     userId: user.id,
@@ -300,8 +323,8 @@ function mapAccountProfileRow(
     logoUrl: sanitizeLogoUrl(row?.logo_url),
     businessName: asText(row?.business_name),
     phone: asText(row?.phone),
-    accountType: normalizeAccountType(row?.account_type),
-    accountSubtype: normalizeAccountSubtype(normalizeAccountType(row?.account_type), row?.account_subtype),
+    accountType,
+    accountSubtype: normalizeAccountSubtype(accountType, row?.account_subtype),
     vatNumber: asText(row?.vat_number),
     province: asText(row?.province),
     townCity: asText(row?.town_city),
@@ -433,8 +456,8 @@ export async function upsertAccountProfile(
 
   const existingAccount = existingAccountTypeResult.rows[0];
   const normalizedAccountType = existingAccount
-    ? normalizeAccountType(existingAccount.account_type)
-    : normalizeAccountType(input.accountType);
+    ? resolveAccountType(existingAccount.account_type, existingAccount.account_subtype)
+    : resolveAccountType(input.accountType, input.accountSubtype);
   const normalizedAccountSubtype = normalizeAccountSubtype(
     normalizedAccountType,
     asText(existingAccount?.account_subtype) || input.accountSubtype,

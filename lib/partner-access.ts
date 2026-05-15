@@ -91,6 +91,22 @@ export type AssetLead = {
   updatedAtIso: string;
 };
 
+export type AssetPartnerNoteStatus = 'open' | 'noted';
+
+export type AssetPartnerNote = {
+  id: string;
+  ownerUserId: string;
+  partnerUserId: string;
+  assetRegisterItemId: string;
+  noteText: string;
+  status: AssetPartnerNoteStatus;
+  partnerName: string;
+  partnerBusinessName: string;
+  createdAtIso: string;
+  notedAtIso: string | null;
+  updatedAtIso: string;
+};
+
 type AccountPartnerProfileRow = {
   user_id: string;
   display_name: string | null;
@@ -168,6 +184,20 @@ type LeadRow = {
   updated_at: string | null;
 };
 
+type AssetPartnerNoteRow = {
+  id: string;
+  owner_user_id: string;
+  partner_user_id: string;
+  asset_register_item_id: string;
+  note_text: string | null;
+  status: string | null;
+  partner_display_name: string | null;
+  partner_business_name: string | null;
+  created_at: string | null;
+  noted_at: string | null;
+  updated_at: string | null;
+};
+
 type PinRow = {
   scan_pin_hash: string | null;
   scan_pin_enabled: boolean | null;
@@ -178,6 +208,7 @@ const PARTNER_TYPES = new Set<PartnerType>(['dealer', 'finance', 'insurance']);
 const ACCESS_STATUSES = new Set<SharedAccessStatus>(['pending', 'active', 'revoked', 'declined']);
 const LEAD_TYPES = new Set<LeadType>(['finance', 'insurance', 'replacement_quote']);
 const LEAD_STATUSES = new Set<AssetLeadStatus>(['sent', 'viewed', 'accepted', 'quoted', 'declined', 'closed']);
+const ASSET_PARTNER_NOTE_STATUSES = new Set<AssetPartnerNoteStatus>(['open', 'noted']);
 
 let partnerAccessTablesEnsured = false;
 
@@ -208,7 +239,7 @@ export function normalizeAccountRole(value: unknown): AccountRole {
   const normalized = asText(value).toLowerCase();
 
   if (normalized === 'bank') return 'finance';
-  if (normalized === 'broker' || normalized === 'insurer') return 'insurance';
+  if (normalized === 'broker' || normalized === 'insurer' || normalized === 'short-term-insurer') return 'insurance';
   if (ACCOUNT_ROLES.has(normalized as AccountRole)) return normalized as AccountRole;
 
   return 'owner';
@@ -227,7 +258,7 @@ export function normalizeLeadType(value: unknown): LeadType | null {
 
 export function partnerTypesForLeadType(leadType: LeadType): PartnerType[] {
   if (leadType === 'replacement_quote') return ['dealer'];
-  if (leadType === 'insurance') return ['finance', 'insurance'];
+  if (leadType === 'insurance') return ['insurance'];
   return ['finance'];
 }
 
@@ -237,7 +268,6 @@ export function partnerTypeForLeadType(leadType: LeadType): PartnerType {
 
 function canUsePartnerForRequestedType(actualType: PartnerType | null, requestedType: PartnerType): boolean {
   if (!actualType) return false;
-  if (requestedType === 'insurance') return actualType === 'insurance' || actualType === 'finance';
   return actualType === requestedType;
 }
 
@@ -291,6 +321,19 @@ export async function ensurePartnerAccessTables(): Promise<void> {
     where account_type is null
        or lower(trim(account_type)) not in ('owner', 'dealer', 'finance', 'insurance')
        or lower(trim(account_type)) in ('bank', 'broker', 'insurer')
+  `);
+
+  await db.query(`
+    update account_profiles
+    set account_type = 'insurance', account_subtype = 'short-term-insurer'
+    where lower(trim(coalesce(account_subtype, ''))) in ('insurer', 'short-term-insurer', 'insurance-broker', 'broker')
+  `);
+
+  await db.query(`
+    update account_profiles
+    set account_subtype = 'auctioneer'
+    where account_type = 'dealer'
+      and lower(trim(coalesce(account_subtype, ''))) in ('auction-house', 'auctioneer')
   `);
 
   await db.query(`
@@ -378,6 +421,32 @@ export async function ensurePartnerAccessTables(): Promise<void> {
   `);
 
   await db.query(`
+    create table if not exists asset_partner_notes (
+      id uuid primary key default gen_random_uuid(),
+      owner_user_id text not null,
+      partner_user_id text not null,
+      asset_register_item_id uuid not null,
+      note_text text not null,
+      status text not null default 'open',
+      created_at timestamptz not null default now(),
+      noted_at timestamptz,
+      updated_at timestamptz not null default now()
+    )
+  `);
+
+  await db.query(`
+    alter table asset_partner_notes
+      add column if not exists owner_user_id text,
+      add column if not exists partner_user_id text,
+      add column if not exists asset_register_item_id uuid,
+      add column if not exists note_text text,
+      add column if not exists status text not null default 'open',
+      add column if not exists created_at timestamptz not null default now(),
+      add column if not exists noted_at timestamptz,
+      add column if not exists updated_at timestamptz not null default now()
+  `);
+
+  await db.query(`
     create table if not exists access_audit_events (
       id uuid primary key default gen_random_uuid(),
       owner_user_id text,
@@ -419,6 +488,21 @@ export async function ensurePartnerAccessTables(): Promise<void> {
   await db.query(`
     create index if not exists idx_asset_leads_partner_status
       on asset_leads(partner_user_id, status, created_at desc)
+  `);
+
+  await db.query(`
+    create index if not exists idx_asset_partner_notes_owner_status
+      on asset_partner_notes(owner_user_id, status, created_at desc)
+  `);
+
+  await db.query(`
+    create index if not exists idx_asset_partner_notes_partner_status
+      on asset_partner_notes(partner_user_id, status, created_at desc)
+  `);
+
+  await db.query(`
+    create index if not exists idx_asset_partner_notes_asset_open
+      on asset_partner_notes(asset_register_item_id, status, created_at desc)
   `);
 
   await db.query(`
@@ -602,6 +686,50 @@ function leadSelectSql(whereClause: string): string {
   `;
 }
 
+function normalizeAssetPartnerNoteStatus(value: unknown): AssetPartnerNoteStatus {
+  const normalized = asText(value).toLowerCase();
+  return ASSET_PARTNER_NOTE_STATUSES.has(normalized as AssetPartnerNoteStatus) ? (normalized as AssetPartnerNoteStatus) : 'open';
+}
+
+function mapAssetPartnerNoteRow(row: AssetPartnerNoteRow): AssetPartnerNote {
+  const partnerBusinessName = asText(row.partner_business_name);
+  const partnerName = asText(row.partner_display_name) || partnerBusinessName || 'Aim4price partner';
+
+  return {
+    id: row.id,
+    ownerUserId: row.owner_user_id,
+    partnerUserId: row.partner_user_id,
+    assetRegisterItemId: row.asset_register_item_id,
+    noteText: asText(row.note_text),
+    status: normalizeAssetPartnerNoteStatus(row.status),
+    partnerName,
+    partnerBusinessName,
+    createdAtIso: isoNowFallback(row.created_at),
+    notedAtIso: row.noted_at,
+    updatedAtIso: isoNowFallback(row.updated_at),
+  };
+}
+
+function assetPartnerNoteSelectSql(whereClause: string): string {
+  return `
+    select
+      n.id::text,
+      n.owner_user_id,
+      n.partner_user_id,
+      n.asset_register_item_id::text,
+      n.note_text,
+      n.status,
+      partner.display_name as partner_display_name,
+      partner.business_name as partner_business_name,
+      n.created_at::text,
+      n.noted_at::text,
+      n.updated_at::text
+    from asset_partner_notes n
+    left join account_profiles partner on partner.user_id = n.partner_user_id
+    ${whereClause}
+  `;
+}
+
 async function writeAuditEvent(input: {
   ownerUserId?: string | null;
   actorUserId: string;
@@ -656,12 +784,8 @@ export async function listPartnerDirectory(input: {
   ];
 
   if (partnerType) {
-    if (partnerType === 'insurance') {
-      filters.push(`account_type in ('finance', 'insurance')`);
-    } else {
-      params.push(partnerType);
-      filters.push(`account_type = $${params.length}`);
-    }
+    params.push(partnerType);
+    filters.push(`account_type = $${params.length}`);
   }
 
   if (search) {
@@ -994,10 +1118,43 @@ export async function canViewOwnerRegister(currentUserId: string, ownerUserId: s
   return Boolean(result.rows[0]?.exists);
 }
 
+export async function attachOpenPartnerNotesToAssets<T extends { id: string }>(
+  ownerUserId: string,
+  assets: T[],
+): Promise<Array<T & { openPartnerNote: AssetPartnerNote | null }>> {
+  if (!assets.length) {
+    return [];
+  }
+
+  await ensurePartnerAccessTables();
+  const db = getDb();
+  const result = await db.query<AssetPartnerNoteRow>(
+    `
+      ${assetPartnerNoteSelectSql("where n.owner_user_id = $1 and n.asset_register_item_id = any($2::uuid[]) and n.status = 'open'")}
+      order by n.asset_register_item_id, n.created_at desc
+    `,
+    [ownerUserId, assets.map((asset) => asset.id)],
+  );
+
+  const notesByAssetId = new Map<string, AssetPartnerNote>();
+
+  result.rows.forEach((row) => {
+    const note = mapAssetPartnerNoteRow(row);
+    if (!notesByAssetId.has(note.assetRegisterItemId)) {
+      notesByAssetId.set(note.assetRegisterItemId, note);
+    }
+  });
+
+  return assets.map((asset) => ({
+    ...asset,
+    openPartnerNote: notesByAssetId.get(asset.id) ?? null,
+  }));
+}
+
 export async function listSharedRegisterAssets(input: {
   currentUserId: string;
   ownerUserId: string;
-}): Promise<AssetRegisterItem[]> {
+}): Promise<Array<AssetRegisterItem & { openPartnerNote: AssetPartnerNote | null }>> {
   const canView = await canViewOwnerRegister(input.currentUserId, input.ownerUserId);
 
   if (!canView) {
@@ -1015,7 +1172,137 @@ export async function listSharedRegisterAssets(input: {
     [input.ownerUserId, input.currentUserId],
   );
 
-  return listAssetRegisterItems(input.ownerUserId);
+  const assets = await listAssetRegisterItems(input.ownerUserId);
+  return attachOpenPartnerNotesToAssets(input.ownerUserId, assets);
+}
+
+export async function createSharedAssetNote(input: {
+  currentUserId: string;
+  ownerUserId: string;
+  assetId: string;
+  noteText: unknown;
+}): Promise<AssetPartnerNote> {
+  await ensurePartnerAccessTables();
+  const noteText = asText(input.noteText);
+
+  if (!noteText) {
+    throw new Error('NOTE_REQUIRED');
+  }
+
+  if (input.currentUserId === input.ownerUserId) {
+    throw new Error('PARTNER_NOTE_FORBIDDEN');
+  }
+
+  const profile = await getAccountProfile({ id: input.currentUserId });
+  if (!normalizePartnerType(profile.accountType)) {
+    throw new Error('PARTNER_NOTE_FORBIDDEN');
+  }
+
+  const canView = await canViewOwnerRegister(input.currentUserId, input.ownerUserId);
+  if (!canView) {
+    throw new Error('SHARED_REGISTER_FORBIDDEN');
+  }
+
+  const asset = await getAssetRegisterItemById(input.ownerUserId, input.assetId);
+  if (!asset) {
+    throw new Error('ASSET_NOT_FOUND');
+  }
+
+  const db = getDb();
+  const created = await db.query<AssetPartnerNoteRow>(
+    `
+      insert into asset_partner_notes (
+        owner_user_id,
+        partner_user_id,
+        asset_register_item_id,
+        note_text,
+        status,
+        created_at,
+        updated_at
+      )
+      values ($1, $2, $3::uuid, $4, 'open', now(), now())
+      returning
+        id::text,
+        owner_user_id,
+        partner_user_id,
+        asset_register_item_id::text,
+        note_text,
+        status,
+        null::text as partner_display_name,
+        null::text as partner_business_name,
+        created_at::text,
+        noted_at::text,
+        updated_at::text
+    `,
+    [input.ownerUserId, input.currentUserId, input.assetId, noteText],
+  );
+
+  const createdRow = created.rows[0];
+  if (!createdRow) {
+    throw new Error('ASSET_NOTE_NOT_CREATED');
+  }
+
+  const note = mapAssetPartnerNoteRow({
+    ...createdRow,
+    partner_display_name: profile.displayName || profile.name,
+    partner_business_name: profile.businessName,
+  });
+
+  await writeAuditEvent({
+    ownerUserId: input.ownerUserId,
+    actorUserId: input.currentUserId,
+    eventType: 'asset_note_left',
+    entityType: 'asset_partner_note',
+    entityId: note.id,
+    metadata: { assetId: input.assetId },
+  });
+
+  return note;
+}
+
+export async function markSharedAssetNoteNoted(input: {
+  currentUserId: string;
+  noteId: string;
+}): Promise<AssetPartnerNote> {
+  await ensurePartnerAccessTables();
+  const db = getDb();
+  const current = await db.query<AssetPartnerNoteRow>(`${assetPartnerNoteSelectSql('where n.id = $1::uuid')} limit 1`, [input.noteId]);
+  const note = current.rows[0] ? mapAssetPartnerNoteRow(current.rows[0]) : null;
+
+  if (!note) {
+    throw new Error('ASSET_NOTE_NOT_FOUND');
+  }
+
+  if (note.ownerUserId !== input.currentUserId && note.partnerUserId !== input.currentUserId) {
+    throw new Error('ASSET_NOTE_FORBIDDEN');
+  }
+
+  await db.query(
+    `
+      update asset_partner_notes
+      set status = 'noted', noted_at = coalesce(noted_at, now()), updated_at = now()
+      where id = $1::uuid
+    `,
+    [input.noteId],
+  );
+
+  const updated = await db.query<AssetPartnerNoteRow>(`${assetPartnerNoteSelectSql('where n.id = $1::uuid')} limit 1`, [input.noteId]);
+  const updatedRow = updated.rows[0];
+  if (!updatedRow) {
+    throw new Error('ASSET_NOTE_NOT_FOUND');
+  }
+  const updatedNote = mapAssetPartnerNoteRow(updatedRow);
+
+  await writeAuditEvent({
+    ownerUserId: updatedNote.ownerUserId,
+    actorUserId: input.currentUserId,
+    eventType: 'asset_note_noted',
+    entityType: 'asset_partner_note',
+    entityId: updatedNote.id,
+    metadata: { assetId: updatedNote.assetRegisterItemId },
+  });
+
+  return updatedNote;
 }
 
 function buildAssetLeadSnapshot(asset: AssetRegisterItem): Record<string, unknown> {
@@ -1202,4 +1489,36 @@ export async function updateAssetLeadStatus(input: {
   });
 
   return updatedLead;
+}
+
+export async function deleteDeclinedAssetLead(input: {
+  currentUserId: string;
+  leadId: string;
+}): Promise<void> {
+  await ensurePartnerAccessTables();
+  const db = getDb();
+  const current = await db.query<LeadRow>(`${leadSelectSql('where l.id = $1::uuid')} limit 1`, [input.leadId]);
+  const lead = current.rows[0] ? mapLeadRow(current.rows[0]) : null;
+
+  if (!lead) {
+    throw new Error('LEAD_NOT_FOUND');
+  }
+
+  if (lead.partnerUserId !== input.currentUserId) {
+    throw new Error('LEAD_FORBIDDEN');
+  }
+
+  if (lead.status !== 'declined') {
+    throw new Error('LEAD_DELETE_REQUIRES_DECLINED');
+  }
+
+  await db.query('delete from asset_leads where id = $1::uuid', [input.leadId]);
+
+  await writeAuditEvent({
+    ownerUserId: lead.ownerUserId,
+    actorUserId: input.currentUserId,
+    eventType: 'lead_deleted',
+    entityType: 'asset_lead',
+    entityId: lead.id,
+  });
 }
