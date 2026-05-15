@@ -1,13 +1,13 @@
 import { redirect } from 'next/navigation';
 import { getAccountProfile } from '../../lib/account-profile';
 import { getServerSession } from '../../lib/auth-session';
-import SharedRegistersClient from './shared-registers-client';
+import LeadsClient from './leads-client';
 
 export const runtime = 'nodejs';
 
 const PARTNER_ACCOUNT_TYPES = new Set(['dealer', 'finance', 'insurance']);
 
-export default async function SharedRegistersPage() {
+export default async function LeadsPage() {
   const session = await getServerSession();
 
   if (!session) {
@@ -21,8 +21,8 @@ export default async function SharedRegistersPage() {
   });
 
   if (!PARTNER_ACCOUNT_TYPES.has(profile.accountType)) {
-    redirect('/shared-access');
+    redirect('/account');
   }
 
-  return <SharedRegistersClient />;
+  return <LeadsClient />;
 }
