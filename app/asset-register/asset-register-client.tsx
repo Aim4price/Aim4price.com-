@@ -11,6 +11,55 @@ import {
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
+type PartnerType = 'dealer' | 'finance' | 'insurance';
+type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote';
+
+type PartnerDirectoryEntry = {
+  userId: string;
+  partnerType: PartnerType;
+  displayName: string;
+  businessName: string;
+  phone: string;
+  province: string;
+  townCity: string;
+  addressLine1: string;
+  description: string;
+  latitude: number | null;
+  longitude: number | null;
+  serviceRadiusKm: number | null;
+  brandFocus: string;
+  services: string;
+};
+
+type PartnerDirectoryApiResponse = {
+  ok: boolean;
+  partners?: PartnerDirectoryEntry[];
+  error?: string;
+};
+
+type AssetLeadApiResponse = {
+  ok: boolean;
+  lead?: unknown;
+  error?: string;
+};
+
+type AssetQuoteOption = {
+  leadType: AssetLeadType;
+  partnerType: PartnerType;
+  title: string;
+  shortTitle: string;
+  description: string;
+  mapTitle: string;
+  sendLabel: string;
+  emptyPartnerText: string;
+};
+
+declare global {
+  interface Window {
+    L?: any;
+  }
+}
+
 type AssetKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools';
 type AssetMethod = 'aim4price' | 'market' | 'manual';
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
@@ -434,6 +483,47 @@ const ASSET_FILTER_OPTIONS: Array<{ value: AssetFilterKey; label: string }> = [
   { value: 'marketplace', label: 'Marketplace' },
 ];
 
+const LEAFLET_SCRIPT_ID = 'aim4price-leaflet-script';
+const LEAFLET_CSS_ID = 'aim4price-leaflet-css';
+const DEFAULT_PARTNER_MAP_CENTER: [number, number] = [-29, 24];
+const DEFAULT_PARTNER_MAP_ZOOM = 5;
+
+let leafletLoaderPromise: Promise<any> | null = null;
+
+const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
+  {
+    leadType: 'finance',
+    partnerType: 'finance',
+    title: 'Get finance offer',
+    shortTitle: 'Finance offer',
+    description: 'Send this asset to a bank or finance partner for a finance or refinance discussion.',
+    mapTitle: 'Choose a finance partner',
+    sendLabel: 'Send finance request',
+    emptyPartnerText: 'No listed finance partners found yet. Finance partners must enable their directory listing under Account details.',
+  },
+  {
+    leadType: 'insurance',
+    partnerType: 'insurance',
+    title: 'Get insurance quote',
+    shortTitle: 'Insurance quote',
+    description: 'Send this asset to an insurance partner or broker for a cover and insured-value review.',
+    mapTitle: 'Choose an insurance partner',
+    sendLabel: 'Send insurance request',
+    emptyPartnerText: 'No listed insurance partners found yet. Insurance partners must enable their directory listing under Account details.',
+  },
+  {
+    leadType: 'replacement_quote',
+    partnerType: 'dealer',
+    title: 'Get replacement quote',
+    shortTitle: 'Replacement quote',
+    description: 'Send this asset to a machinery dealer for a new or replacement machine quote.',
+    mapTitle: 'Choose a dealer',
+    sendLabel: 'Send replacement quote request',
+    emptyPartnerText: 'No listed dealers found yet. Dealer accounts must enable their directory listing under Account details.',
+  },
+];
+
+
 const initialAssetDraft: AssetDraft = {
   kind: 'equipment',
   title: '',
@@ -543,6 +633,43 @@ function CartIcon({ className }: IconProps) {
       <path d="M8 8h12" />
       <circle cx="9" cy="20" r="1.4" />
       <circle cx="18" cy="20" r="1.4" />
+    </svg>
+  );
+}
+
+function BankIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M3 10h18" />
+      <path d="M5 10v8" />
+      <path d="M9 10v8" />
+      <path d="M15 10v8" />
+      <path d="M19 10v8" />
+      <path d="M4 18h16" />
+      <path d="M12 3 4 8h16z" />
+    </svg>
+  );
+}
+
+function ShieldIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M12 3 20 6v5c0 5.2-3.3 8.7-8 10-4.7-1.3-8-4.8-8-10V6z" />
+      <path d="m9 12 2 2 4-5" />
+    </svg>
+  );
+}
+
+function QuoteMachineIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M4 15h3l2-5h5l2 5h4" />
+      <path d="M7 15h10" />
+      <circle cx="7" cy="18" r="2" />
+      <circle cx="17" cy="18" r="2" />
+      <path d="M10 10V7h4v3" />
+      <path d="M19 6v4" />
+      <path d="M17 8h4" />
     </svg>
   );
 }
@@ -1954,6 +2081,114 @@ function downloadBlob(blob: Blob, fileName: string) {
   window.URL.revokeObjectURL(objectUrl);
 }
 
+function loadLeaflet(): Promise<any> {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('Leaflet can only load in the browser.'));
+  }
+
+  if (window.L) {
+    return Promise.resolve(window.L);
+  }
+
+  if (leafletLoaderPromise) {
+    return leafletLoaderPromise;
+  }
+
+  leafletLoaderPromise = new Promise((resolve, reject) => {
+    if (!document.getElementById(LEAFLET_CSS_ID)) {
+      const link = document.createElement('link');
+      link.id = LEAFLET_CSS_ID;
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      link.crossOrigin = '';
+      document.head.appendChild(link);
+    }
+
+    const existingScript = document.getElementById(LEAFLET_SCRIPT_ID) as HTMLScriptElement | null;
+
+    const handleLoaded = () => {
+      if (window.L) {
+        resolve(window.L);
+        return;
+      }
+
+      reject(new Error('The partner map did not initialise correctly.'));
+    };
+
+    if (existingScript) {
+      existingScript.addEventListener('load', handleLoaded, { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Failed to load the partner map.')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = LEAFLET_SCRIPT_ID;
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.async = true;
+    script.crossOrigin = '';
+    script.addEventListener('load', handleLoaded, { once: true });
+    script.addEventListener('error', () => reject(new Error('Failed to load the partner map.')), { once: true });
+    document.body.appendChild(script);
+  });
+
+  return leafletLoaderPromise;
+}
+
+function quoteOptionForLeadType(leadType: AssetLeadType | null): AssetQuoteOption | null {
+  if (!leadType) return null;
+  return ASSET_QUOTE_OPTIONS.find((option) => option.leadType === leadType) ?? null;
+}
+
+function formatQuotePartnerType(value: PartnerType): string {
+  if (value === 'dealer') return 'Dealer';
+  if (value === 'finance') return 'Finance';
+  return 'Insurance';
+}
+
+function quotePartnerName(partner: PartnerDirectoryEntry): string {
+  return partner.businessName || partner.displayName || 'Aim4price partner';
+}
+
+function quotePartnerLocation(partner: PartnerDirectoryEntry): string {
+  return [partner.townCity, partner.province].filter(Boolean).join(', ') || 'Location not saved';
+}
+
+function hasQuotePartnerCoordinates(partner: PartnerDirectoryEntry): boolean {
+  return (
+    partner.latitude !== null &&
+    partner.longitude !== null &&
+    Number.isFinite(partner.latitude) &&
+    Number.isFinite(partner.longitude) &&
+    Math.abs(partner.latitude) <= 90 &&
+    Math.abs(partner.longitude) <= 180
+  );
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function extractApiError(payload: unknown, fallback: string): string {
+  if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>;
+    if (typeof record.error === 'string' && record.error.trim()) return record.error;
+    if (typeof record.message === 'string' && record.message.trim()) return record.message;
+  }
+
+  return fallback;
+}
+
+function renderQuoteOptionIcon(leadType: AssetLeadType, className?: string) {
+  if (leadType === 'finance') return <BankIcon className={className} />;
+  if (leadType === 'insurance') return <ShieldIcon className={className} />;
+  return <QuoteMachineIcon className={className} />;
+}
+
 export default function AssetRegisterClient() {
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
@@ -1964,6 +2199,20 @@ export default function AssetRegisterClient() {
   const [manualAssetStep, setManualAssetStep] = useState<ManualAssetStep>(1);
   const [hasManualAssetKindSelection, setHasManualAssetKindSelection] = useState(false);
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
+  const [quoteAsset, setQuoteAsset] = useState<RegisterAsset | null>(null);
+  const [selectedQuoteLeadType, setSelectedQuoteLeadType] = useState<AssetLeadType | null>(null);
+  const [quotePartners, setQuotePartners] = useState<PartnerDirectoryEntry[]>([]);
+  const [selectedQuotePartnerId, setSelectedQuotePartnerId] = useState('');
+  const [quotePartnerSearch, setQuotePartnerSearch] = useState('');
+  const [quoteOwnerMessage, setQuoteOwnerMessage] = useState('');
+  const [quoteIncludePhotos, setQuoteIncludePhotos] = useState(true);
+  const [quoteIncludeDocuments, setQuoteIncludeDocuments] = useState(true);
+  const [quoteIncludeScanHistory, setQuoteIncludeScanHistory] = useState(false);
+  const [isLoadingQuotePartners, setIsLoadingQuotePartners] = useState(false);
+  const [isSendingQuoteLead, setIsSendingQuoteLead] = useState(false);
+  const quoteMapElementRef = useRef<HTMLDivElement | null>(null);
+  const quoteLeafletMapRef = useRef<any>(null);
+  const quoteMarkerLayerRef = useRef<any>(null);
   const [isAssetReportModalOpen, setIsAssetReportModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [copiedScanLinkAssetId, setCopiedScanLinkAssetId] = useState<string | null>(null);
@@ -2013,6 +2262,13 @@ export default function AssetRegisterClient() {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 16 }, (_, index) => currentYear + index);
   }, []);
+
+  const selectedQuoteOption = useMemo(() => quoteOptionForLeadType(selectedQuoteLeadType), [selectedQuoteLeadType]);
+  const selectedQuotePartner = useMemo(
+    () => quotePartners.find((partner) => partner.userId === selectedQuotePartnerId) ?? null,
+    [quotePartners, selectedQuotePartnerId],
+  );
+  const quotePartnersWithCoordinates = useMemo(() => quotePartners.filter(hasQuotePartnerCoordinates), [quotePartners]);
 
   useEffect(() => {
     pendingPhotoFilesRef.current = pendingPhotoFiles;
@@ -2166,6 +2422,7 @@ export default function AssetRegisterClient() {
     isAddChoiceModalOpen ||
     isAssetModalOpen ||
     Boolean(activeAsset) ||
+    Boolean(quoteAsset) ||
     Boolean(deleteCandidateAsset) ||
     isAssetReportModalOpen ||
     isQrModalOpen ||
@@ -2212,6 +2469,11 @@ export default function AssetRegisterClient() {
         return;
       }
 
+      if (quoteAsset) {
+        closeAssetQuoteModal();
+        return;
+      }
+
       if (activeAsset) {
         closeActionDialog();
         return;
@@ -2243,7 +2505,84 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isQrModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isQrModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, quoteAsset]);
+
+  useEffect(() => {
+    if (!quoteAsset || !selectedQuoteLeadType) return;
+    void loadQuotePartners(selectedQuoteLeadType, '');
+  }, [quoteAsset, selectedQuoteLeadType]);
+
+  useEffect(() => {
+    if (!quoteAsset || !selectedQuoteOption || !quoteMapElementRef.current || !quotePartnersWithCoordinates.length) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function setupQuoteMap() {
+      try {
+        const L = await loadLeaflet();
+        if (cancelled || !quoteMapElementRef.current) return;
+
+        if (!quoteLeafletMapRef.current) {
+          quoteLeafletMapRef.current = L.map(quoteMapElementRef.current, { zoomControl: true }).setView(
+            DEFAULT_PARTNER_MAP_CENTER,
+            DEFAULT_PARTNER_MAP_ZOOM,
+          );
+
+          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19,
+          }).addTo(quoteLeafletMapRef.current);
+        }
+
+        if (quoteMarkerLayerRef.current) {
+          quoteMarkerLayerRef.current.clearLayers();
+        } else {
+          quoteMarkerLayerRef.current = L.layerGroup().addTo(quoteLeafletMapRef.current);
+        }
+
+        const bounds = L.latLngBounds([]);
+
+        quotePartnersWithCoordinates.forEach((partner) => {
+          const lat = Number(partner.latitude);
+          const lng = Number(partner.longitude);
+          const marker = L.marker([lat, lng]).addTo(quoteMarkerLayerRef.current);
+          marker.bindPopup(`<strong>${escapeHtml(quotePartnerName(partner))}</strong><br />${escapeHtml(quotePartnerLocation(partner))}`);
+          marker.on('click', () => setSelectedQuotePartnerId(partner.userId));
+          bounds.extend([lat, lng]);
+        });
+
+        if (bounds.isValid()) {
+          quoteLeafletMapRef.current.fitBounds(bounds.pad(0.22));
+        }
+
+        window.setTimeout(() => quoteLeafletMapRef.current?.invalidateSize(), 80);
+      } catch (error) {
+        setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load the partner map.' });
+      }
+    }
+
+    void setupQuoteMap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [quoteAsset, selectedQuoteOption, quotePartnersWithCoordinates]);
+
+  useEffect(() => {
+    if (quoteAsset && selectedQuoteOption && quotePartnersWithCoordinates.length) {
+      return undefined;
+    }
+
+    if (quoteLeafletMapRef.current) {
+      quoteLeafletMapRef.current.remove();
+      quoteLeafletMapRef.current = null;
+      quoteMarkerLayerRef.current = null;
+    }
+
+    return undefined;
+  }, [quoteAsset, selectedQuoteOption, quotePartnersWithCoordinates.length]);
 
   const totalValue = useMemo(() => {
     return assets.reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
@@ -2631,6 +2970,150 @@ export default function AssetRegisterClient() {
     setCopiedScanLinkAssetId(null);
     setDeleteCandidateAsset(null);
     setActiveAsset(null);
+  }
+
+  function resetAssetQuoteState() {
+    setSelectedQuoteLeadType(null);
+    setQuotePartners([]);
+    setSelectedQuotePartnerId('');
+    setQuotePartnerSearch('');
+    setQuoteOwnerMessage('');
+    setQuoteIncludePhotos(true);
+    setQuoteIncludeDocuments(true);
+    setQuoteIncludeScanHistory(false);
+    setIsLoadingQuotePartners(false);
+    setIsSendingQuoteLead(false);
+
+    if (quoteLeafletMapRef.current) {
+      quoteLeafletMapRef.current.remove();
+      quoteLeafletMapRef.current = null;
+      quoteMarkerLayerRef.current = null;
+    }
+  }
+
+  function openAssetQuoteOptions(asset: RegisterAsset) {
+    setNotice(null);
+    setIsAssetFilterOpen(false);
+    setQuoteAsset(asset);
+    resetAssetQuoteState();
+  }
+
+  function closeAssetQuoteModal() {
+    if (isSendingQuoteLead) return;
+    setQuoteAsset(null);
+    resetAssetQuoteState();
+  }
+
+  async function loadQuotePartners(leadType: AssetLeadType | null = selectedQuoteLeadType, searchValue = quotePartnerSearch) {
+    const option = quoteOptionForLeadType(leadType);
+
+    if (!option) {
+      setQuotePartners([]);
+      setSelectedQuotePartnerId('');
+      return;
+    }
+
+    setIsLoadingQuotePartners(true);
+
+    try {
+      const params = new URLSearchParams({ type: option.partnerType });
+      if (searchValue.trim()) params.set('search', searchValue.trim());
+
+      const response = await fetch(`/api/partners?${params.toString()}`, { cache: 'no-store', credentials: 'include' });
+      const payload = await response.json().catch(() => null);
+      const data = payload as PartnerDirectoryApiResponse | null;
+
+      if (!response.ok || !data?.ok || !Array.isArray(data.partners)) {
+        throw new Error(extractApiError(payload, 'Failed to load partner directory.'));
+      }
+
+      setQuotePartners(data.partners);
+      setSelectedQuotePartnerId((current) => (data.partners?.some((partner) => partner.userId === current) ? current : ''));
+    } catch (error) {
+      setQuotePartners([]);
+      setSelectedQuotePartnerId('');
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load partner directory.' });
+    } finally {
+      setIsLoadingQuotePartners(false);
+    }
+  }
+
+  function openQuotePartnerPicker(leadType: AssetLeadType) {
+    setSelectedQuoteLeadType(leadType);
+    setSelectedQuotePartnerId('');
+    setQuotePartnerSearch('');
+    setQuoteOwnerMessage('');
+    setQuotePartners([]);
+    setQuoteIncludePhotos(true);
+    setQuoteIncludeDocuments(true);
+    setQuoteIncludeScanHistory(false);
+  }
+
+  function goBackToQuoteOptions() {
+    setSelectedQuoteLeadType(null);
+    setQuotePartners([]);
+    setSelectedQuotePartnerId('');
+    setQuotePartnerSearch('');
+
+    if (quoteLeafletMapRef.current) {
+      quoteLeafletMapRef.current.remove();
+      quoteLeafletMapRef.current = null;
+      quoteMarkerLayerRef.current = null;
+    }
+  }
+
+  async function handleSendAssetQuoteLead() {
+    if (!quoteAsset || !selectedQuoteOption) {
+      setNotice({ tone: 'error', message: 'Choose a quote option first.' });
+      return;
+    }
+
+    if (!selectedQuotePartner) {
+      setNotice({ tone: 'error', message: `Choose a ${formatQuotePartnerType(selectedQuoteOption.partnerType).toLowerCase()} partner first.` });
+      return;
+    }
+
+    setIsSendingQuoteLead(true);
+
+    try {
+      const response = await fetch('/api/asset-leads', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetId: quoteAsset.id,
+          partnerUserId: selectedQuotePartner.userId,
+          leadType: selectedQuoteOption.leadType,
+          ownerMessage: quoteOwnerMessage,
+          includedSections: {
+            assetDetails: true,
+            valuationSummary: true,
+            mainPhoto: true,
+            photos: quoteIncludePhotos,
+            documents: quoteIncludeDocuments,
+            scanHistory: quoteIncludeScanHistory,
+            source: 'asset_register_options',
+          },
+        }),
+      });
+
+      const payload = await response.json().catch(() => null);
+      const data = payload as AssetLeadApiResponse | null;
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(extractApiError(payload, 'Failed to send asset lead.'));
+      }
+
+      setNotice({
+        tone: 'success',
+        message: `${selectedQuoteOption.shortTitle} request sent to ${quotePartnerName(selectedQuotePartner)}.`,
+      });
+      closeAssetQuoteModal();
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to send asset lead.' });
+    } finally {
+      setIsSendingQuoteLead(false);
+    }
   }
 
   function openDeleteConfirmDialog(asset: RegisterAsset) {
@@ -4116,6 +4599,15 @@ export default function AssetRegisterClient() {
 
                               <button
                                 type="button"
+                                className={`${styles.optionsButton} ${styles.assetQuoteOpenButton}`}
+                                onClick={() => openAssetQuoteOptions(asset)}
+                              >
+                                <OptionsIcon className={styles.buttonIcon} />
+                                <span>Options</span>
+                              </button>
+
+                              <button
+                                type="button"
                                 className={styles.expandButton}
                                 onClick={() => setExpandedAssetId((current) => (current === asset.id ? null : asset.id))}
                                 aria-expanded={isExpanded}
@@ -5065,6 +5557,201 @@ export default function AssetRegisterClient() {
                 </div>
               </form>
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {quoteAsset ? (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBackdrop} onClick={closeAssetQuoteModal} />
+
+          <div className={`${styles.optionsModal} ${styles.assetQuoteModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-quote-title">
+            <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <span className={styles.modalEyebrow}>Asset options</span>
+                <h3 id="asset-quote-title">{selectedQuoteOption ? selectedQuoteOption.mapTitle : 'Request quotes for this asset'}</h3>
+                <p>{quoteAsset.title} · {buildAssetMeta(quoteAsset)} · {money(quoteAsset.value)} excl. VAT</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={closeAssetQuoteModal}
+                aria-label="Close asset options"
+                disabled={isSendingQuoteLead}
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.assetQuoteScrollBody}`}>
+              {!selectedQuoteOption ? (
+                <div className={styles.assetQuoteContent}>
+                  <div className={styles.assetQuoteIntroCard}>
+                    <div className={styles.assetQuoteIntroMedia}>
+                      <img src={assetPreviewImage(quoteAsset) || FALLBACK_ASSET_IMAGE} alt={quoteAsset.title} />
+                    </div>
+                    <div>
+                      <span className={styles.assetQuoteKicker}>Send a controlled asset lead</span>
+                      <h4>{quoteAsset.title}</h4>
+                      <p>
+                        Choose what you need. Aim4price will send this asset as a structured lead to the selected partner.
+                        The partner does not receive access to your full Asset Register from these buttons.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={styles.assetQuoteChoiceGrid}>
+                    {ASSET_QUOTE_OPTIONS.map((option) => (
+                      <button
+                        key={option.leadType}
+                        type="button"
+                        className={styles.assetQuoteChoiceCard}
+                        onClick={() => openQuotePartnerPicker(option.leadType)}
+                      >
+                        <span className={styles.assetQuoteChoiceIcon}>{renderQuoteOptionIcon(option.leadType, styles.buttonIcon)}</span>
+                        <span>
+                          <strong>{option.title}</strong>
+                          <small>{option.description}</small>
+                        </span>
+                        <ChevronRightIcon className={styles.buttonIcon} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.assetQuoteContent}>
+                  <div className={styles.assetQuoteStepBar}>
+                    <button type="button" className={styles.secondaryButton} onClick={goBackToQuoteOptions} disabled={isSendingQuoteLead}>
+                      <ChevronLeftIcon className={styles.buttonIcon} />
+                      <span>Back</span>
+                    </button>
+                    <div>
+                      <strong>{selectedQuoteOption.shortTitle}</strong>
+                      <span>Showing {formatQuotePartnerType(selectedQuoteOption.partnerType).toLowerCase()} partner accounts.</span>
+                    </div>
+                  </div>
+
+                  <form
+                    className={styles.assetQuoteSearchBar}
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void loadQuotePartners(selectedQuoteOption.leadType, quotePartnerSearch);
+                    }}
+                  >
+                    <label className={styles.field}>
+                      <span>Search partner directory</span>
+                      <input
+                        value={quotePartnerSearch}
+                        onChange={(event) => setQuotePartnerSearch(event.target.value)}
+                        placeholder="Search by business, town, province, service or brand"
+                      />
+                    </label>
+                    <button type="submit" className={styles.secondaryButton} disabled={isLoadingQuotePartners}>
+                      <SearchIcon className={styles.buttonIcon} />
+                      <span>{isLoadingQuotePartners ? 'Searching...' : 'Search'}</span>
+                    </button>
+                  </form>
+
+                  <div className={styles.assetQuotePartnerGrid}>
+                    <div className={styles.assetQuotePartnerList}>
+                      {isLoadingQuotePartners ? (
+                        <p className={styles.assetQuoteEmptyState}>Loading partners...</p>
+                      ) : quotePartners.length ? (
+                        quotePartners.map((partner) => (
+                          <button
+                            key={partner.userId}
+                            type="button"
+                            className={`${styles.assetQuotePartnerCard} ${selectedQuotePartnerId === partner.userId ? styles.assetQuotePartnerCardActive : ''}`}
+                            onClick={() => setSelectedQuotePartnerId(partner.userId)}
+                          >
+                            <span className={styles.assetQuotePartnerHeader}>
+                              <strong>{quotePartnerName(partner)}</strong>
+                              <small>{formatQuotePartnerType(partner.partnerType)}</small>
+                            </span>
+                            <span className={styles.assetQuotePartnerMeta}>
+                              <span>{quotePartnerLocation(partner)}</span>
+                              {partner.serviceRadiusKm ? <span>{partner.serviceRadiusKm} km radius</span> : null}
+                            </span>
+                            {partner.description ? <span className={styles.assetQuotePartnerCopy}>{partner.description}</span> : null}
+                            {partner.brandFocus ? <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span> : null}
+                          </button>
+                        ))
+                      ) : (
+                        <p className={styles.assetQuoteEmptyState}>{selectedQuoteOption.emptyPartnerText}</p>
+                      )}
+                    </div>
+
+                    <div className={styles.assetQuoteMapShell}>
+                      {quotePartnersWithCoordinates.length ? (
+                        <div ref={quoteMapElementRef} className={styles.assetQuoteMapCanvas} aria-label="Partner map" />
+                      ) : (
+                        <div className={styles.assetQuoteMapFallback}>
+                          <OptionsIcon className={styles.buttonIcon} />
+                          <p>Partners with saved latitude and longitude will appear on this map.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={styles.assetQuoteLeadPanel}>
+                    <div className={styles.assetQuoteLeadPanelHeader}>
+                      <strong>Lead contents</strong>
+                      <span>This sends one asset only. It does not share the full register.</span>
+                    </div>
+
+                    <div className={styles.assetQuoteCheckboxGrid}>
+                      <label className={styles.assetQuoteCheckbox}>
+                        <input type="checkbox" checked readOnly />
+                        <span>Asset details and valuation summary</span>
+                      </label>
+                      <label className={styles.assetQuoteCheckbox}>
+                        <input type="checkbox" checked={quoteIncludePhotos} onChange={(event) => setQuoteIncludePhotos(event.target.checked)} />
+                        <span>Photos</span>
+                      </label>
+                      <label className={styles.assetQuoteCheckbox}>
+                        <input type="checkbox" checked={quoteIncludeDocuments} onChange={(event) => setQuoteIncludeDocuments(event.target.checked)} />
+                        <span>Saved documents</span>
+                      </label>
+                      <label className={styles.assetQuoteCheckbox}>
+                        <input type="checkbox" checked={quoteIncludeScanHistory} onChange={(event) => setQuoteIncludeScanHistory(event.target.checked)} />
+                        <span>QR scan history</span>
+                      </label>
+                    </div>
+
+                    <label className={styles.field}>
+                      <span>Message to partner</span>
+                      <textarea
+                        value={quoteOwnerMessage}
+                        onChange={(event) => setQuoteOwnerMessage(event.target.value)}
+                        placeholder="Optional note, for example: Please contact me about refinancing this tractor."
+                      />
+                    </label>
+                  </div>
+
+                  <div className={styles.assetQuoteDisclaimer}>
+                    By sending this lead, you allow the selected partner to view the asset information included above and contact you outside Aim4price.
+                    This does not create a finance, insurance, valuation or sales agreement.
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {selectedQuoteOption ? (
+              <div className={styles.assetQuoteFooter}>
+                <button type="button" className={styles.secondaryButton} onClick={closeAssetQuoteModal} disabled={isSendingQuoteLead}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={() => void handleSendAssetQuoteLead()}
+                  disabled={isSendingQuoteLead || !selectedQuotePartner}
+                >
+                  {isSendingQuoteLead ? 'Sending...' : selectedQuotePartner ? `${selectedQuoteOption.sendLabel} to ${quotePartnerName(selectedQuotePartner)}` : 'Choose partner'}
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
