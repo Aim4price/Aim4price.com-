@@ -192,6 +192,27 @@ function hasCoordinates(partner: PartnerDirectoryEntry): boolean {
   );
 }
 
+function escapePopupText(value: string): string {
+  return value.replace(/[&<>\"']/g, (character) => {
+    const replacements: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+
+    return replacements[character] ?? character;
+  });
+}
+
+function buildPartnerPopupHtml(partner: PartnerDirectoryEntry, markerNumber: number): string {
+  const name = escapePopupText(partnerName(partner));
+  const location = escapePopupText(partnerLocation(partner));
+  const type = escapePopupText(formatPartnerType(partner.partnerType));
+  return `<strong>${markerNumber}. ${name}</strong><br /><span>${type}</span><br /><small>${location}</small>`;
+}
+
 function extractError(payload: unknown, fallback: string): string {
   if (payload && typeof payload === 'object') {
     const record = payload as Record<string, unknown>;
@@ -206,6 +227,7 @@ export default function SharedAccessClient() {
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const leafletMapRef = useRef<any>(null);
   const markerLayerRef = useRef<any>(null);
+  const partnerMarkersByIdRef = useRef<Map<string, any>>(new Map());
 
   const [grants, setGrants] = useState<SharedAccessGrant[]>([]);
   const [partners, setPartners] = useState<PartnerDirectoryEntry[]>([]);
@@ -217,6 +239,7 @@ export default function SharedAccessClient() {
   const [includeDocuments, setIncludeDocuments] = useState(true);
   const [includeScanHistory, setIncludeScanHistory] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isShareConfirmOpen, setIsShareConfirmOpen] = useState(false);
   const [isLoadingGrants, setIsLoadingGrants] = useState(true);
   const [isLoadingPartners, setIsLoadingPartners] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -226,6 +249,8 @@ export default function SharedAccessClient() {
     () => partners.find((partner) => partner.userId === selectedPartnerId) ?? null,
     [partners, selectedPartnerId],
   );
+
+  const partnersWithCoordinates = useMemo(() => partners.filter(hasCoordinates), [partners]);
 
   const grantStats = useMemo(() => {
     const active = grants.filter((grant) => grant.status === 'active').length;
@@ -297,12 +322,6 @@ export default function SharedAccessClient() {
     let cancelled = false;
 
     async function setupMap() {
-      const partnersWithCoords = partners.filter(hasCoordinates);
-
-      if (!partnersWithCoords.length || !mapElementRef.current) {
-        return;
-      }
-
       try {
         const L = await loadLeaflet();
         if (cancelled || !mapElementRef.current) return;
@@ -321,20 +340,48 @@ export default function SharedAccessClient() {
           markerLayerRef.current = L.layerGroup().addTo(leafletMapRef.current);
         }
 
+        partnerMarkersByIdRef.current.clear();
         const bounds = L.latLngBounds([]);
 
-        partnersWithCoords.forEach((partner) => {
+        partnersWithCoordinates.forEach((partner, index) => {
           const lat = Number(partner.latitude);
           const lng = Number(partner.longitude);
-          const marker = L.marker([lat, lng]).addTo(markerLayerRef.current);
-          marker.bindPopup(`<strong>${partnerName(partner)}</strong><br />${partnerLocation(partner)}`);
-          marker.on('click', () => setSelectedPartnerId(partner.userId));
+          const markerNumber = index + 1;
+          const isActive = selectedPartnerId === partner.userId;
+          const icon = L.divIcon({
+            className: `shareMapMarker${isActive ? ' shareMapMarkerActive' : ''}`,
+            html: `<span class="shareMapMarkerPin"><b>${markerNumber}</b></span>`,
+            iconSize: [42, 48],
+            iconAnchor: [21, 44],
+            popupAnchor: [0, -38],
+          });
+          const marker = L.marker([lat, lng], { icon, title: partnerName(partner) }).addTo(markerLayerRef.current);
+          marker.bindPopup(buildPartnerPopupHtml(partner, markerNumber));
+          marker.on('click', () => {
+            setSelectedPartnerId(partner.userId);
+            setIsShareConfirmOpen(true);
+          });
+          partnerMarkersByIdRef.current.set(partner.userId, marker);
           bounds.extend([lat, lng]);
         });
 
         if (bounds.isValid()) {
-          leafletMapRef.current.fitBounds(bounds.pad(0.2));
+          leafletMapRef.current.fitBounds(bounds.pad(0.18), { maxZoom: 12 });
+        } else {
+          leafletMapRef.current.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
         }
+
+        const selectedMarker = selectedPartnerId ? partnerMarkersByIdRef.current.get(selectedPartnerId) : null;
+        if (selectedMarker) {
+          window.setTimeout(() => {
+            if (!cancelled) {
+              selectedMarker.openPopup();
+              leafletMapRef.current?.panTo(selectedMarker.getLatLng(), { animate: true, duration: 0.35 });
+            }
+          }, 120);
+        }
+
+        window.setTimeout(() => leafletMapRef.current?.invalidateSize(), 80);
       } catch (error) {
         setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load map.' });
       }
@@ -345,7 +392,7 @@ export default function SharedAccessClient() {
     return () => {
       cancelled = true;
     };
-  }, [isModalOpen, partners]);
+  }, [isModalOpen, partnersWithCoordinates, selectedPartnerId]);
 
   useEffect(() => {
     if (isModalOpen) return undefined;
@@ -354,6 +401,7 @@ export default function SharedAccessClient() {
       leafletMapRef.current.remove();
       leafletMapRef.current = null;
       markerLayerRef.current = null;
+      partnerMarkersByIdRef.current.clear();
     }
 
     return undefined;
@@ -367,12 +415,24 @@ export default function SharedAccessClient() {
     setOwnerMessage('');
     setIncludeDocuments(true);
     setIncludeScanHistory(true);
+    setIsShareConfirmOpen(false);
     setIsModalOpen(true);
   }
 
   function closeShareModal() {
     if (isSharing) return;
+    setIsShareConfirmOpen(false);
     setIsModalOpen(false);
+  }
+
+  function openShareConfirm(partner: PartnerDirectoryEntry) {
+    setSelectedPartnerId(partner.userId);
+    setIsShareConfirmOpen(true);
+  }
+
+  function closeShareConfirm() {
+    if (isSharing) return;
+    setIsShareConfirmOpen(false);
   }
 
   async function handleShare() {
@@ -414,6 +474,7 @@ export default function SharedAccessClient() {
         return [data.grant as SharedAccessGrant, ...withoutDuplicate];
       });
       setNotice({ tone: 'success', message: `Access request sent to ${partnerName(selectedPartner)}.` });
+      setIsShareConfirmOpen(false);
       setIsModalOpen(false);
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to share register.' });
@@ -525,146 +586,204 @@ export default function SharedAccessClient() {
 
       {isModalOpen ? (
         <div className={styles.modalBackdrop} onClick={closeShareModal}>
-          <section className={styles.modalCard} onClick={(event) => event.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2>Share Asset Register</h2>
-              <p>Choose a partner type, select an approved partner, then confirm with your Account PIN.</p>
+          <section className={`${styles.modalCard} ${styles.shareMapModal}`} onClick={(event) => event.stopPropagation()}>
+            <div className={`${styles.modalHeader} ${styles.shareModalHeader}`}>
+              <div>
+                <h2>Share Asset Register</h2>
+                <p>Choose a partner on the left, then confirm access with your Account PIN.</p>
+              </div>
+              <button type="button" className={styles.modalCloseButton} onClick={closeShareModal} aria-label="Close share register modal" disabled={isSharing}>
+                ×
+              </button>
             </div>
 
-            <div className={styles.modalScroll}>
-              <div className={styles.stack}>
-                <div className={styles.partnerTypeGrid}>
+            <form
+              className={styles.shareSearchBar}
+              onSubmit={(event) => {
+                event.preventDefault();
+                void loadPartners();
+              }}
+            >
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search by business, town, province, service or brand"
+                aria-label="Search partner directory"
+              />
+              <button type="submit" className={styles.secondaryButton} disabled={isLoadingPartners}>
+                {isLoadingPartners ? 'Searching...' : 'Search'}
+              </button>
+            </form>
+
+            <div className={styles.shareMapStage}>
+              <aside className={styles.shareSidebar} aria-label="Share register partner options">
+                <div className={styles.shareTypeGrid}>
                   {PARTNER_TYPES.map((entry) => (
                     <button
                       key={entry.value}
                       type="button"
-                      className={`${styles.typeButton} ${selectedPartnerType === entry.value ? styles.typeButtonActive : ''}`}
+                      className={`${styles.shareTypeButton} ${selectedPartnerType === entry.value ? styles.shareTypeButtonActive : ''}`}
                       onClick={() => {
                         setSelectedPartnerType(entry.value);
                         setSelectedPartnerId('');
+                        setIsShareConfirmOpen(false);
                       }}
                     >
-                      <span>
-                        <strong>{entry.title}</strong>
-                        <small>{entry.description}</small>
-                      </span>
+                      <strong>{entry.title}</strong>
+                      <small>{entry.description}</small>
                     </button>
                   ))}
                 </div>
 
-                <div className={styles.filters}>
-                  <label className={styles.field}>
-                    <span>Search partner directory</span>
-                    <input
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder="Search by business, town, province, service or brand"
-                    />
-                  </label>
-                  <button type="button" className={styles.secondaryButton} onClick={() => void loadPartners()}>
-                    Search
-                  </button>
+                <div className={styles.shareSidebarHeader}>
+                  <div>
+                    <strong>{formatPartnerType(selectedPartnerType)} partners</strong>
+                    <small>{partners.length ? `${partners.length} listed partner${partners.length === 1 ? '' : 's'} found` : 'Choose a listed partner'}</small>
+                  </div>
+                  {selectedPartner ? <span>Selected</span> : null}
                 </div>
 
-                <div className={styles.grid}>
-                  <div className={styles.partnerList}>
-                    {isLoadingPartners ? (
-                      <p className={styles.emptyState}>Loading partners...</p>
-                    ) : partners.length ? (
-                      partners.map((partner) => (
-                        <button
-                          key={partner.userId}
-                          type="button"
-                          className={`${styles.partnerCard} ${selectedPartnerId === partner.userId ? styles.partnerCardActive : ''}`}
-                          onClick={() => setSelectedPartnerId(partner.userId)}
-                        >
-                          <div className={styles.cardTitleRow}>
+                <div className={styles.sharePartnerList}>
+                  {isLoadingPartners ? (
+                    <p className={styles.emptyState}>Loading partners...</p>
+                  ) : partners.length ? (
+                    partners.map((partner, index) => (
+                      <button
+                        key={partner.userId}
+                        type="button"
+                        className={`${styles.sharePartnerCard} ${selectedPartnerId === partner.userId ? styles.sharePartnerCardActive : ''}`}
+                        onClick={() => openShareConfirm(partner)}
+                      >
+                        <span className={styles.sharePartnerNumber}>{index + 1}</span>
+                        <span className={styles.sharePartnerBody}>
+                          <span className={styles.sharePartnerTitleRow}>
                             <strong>{partnerName(partner)}</strong>
-                            <span className={styles.statusPill}>{formatPartnerType(partner.partnerType)}</span>
-                          </div>
-                          <div className={styles.cardMetaRow}>
+                            <small>{formatPartnerType(partner.partnerType)}</small>
+                          </span>
+                          <span className={styles.sharePartnerMeta}>
                             <span>{partnerLocation(partner)}</span>
                             {partner.serviceRadiusKm ? <span>{partner.serviceRadiusKm} km radius</span> : null}
-                          </div>
-                          {partner.description ? <p>{partner.description}</p> : null}
-                          {partner.brandFocus ? <p>Brands: {partner.brandFocus}</p> : null}
-                        </button>
-                      ))
-                    ) : (
-                      <p className={styles.emptyState}>
-                        No listed {formatPartnerType(selectedPartnerType).toLowerCase()} partners found yet. Partner accounts must enable their directory listing under Account details.
-                      </p>
-                    )}
-                  </div>
-
-                  <div className={styles.mapShell}>
-                    {partners.some(hasCoordinates) ? (
-                      <div ref={mapElementRef} className={styles.mapCanvas} aria-label="Partner map" />
-                    ) : (
-                      <div className={styles.mapFallback}>
-                        <p>Partners with saved latitude and longitude will appear on this map.</p>
-                      </div>
-                    )}
-                  </div>
+                          </span>
+                          {partner.description ? <span className={styles.sharePartnerCopy}>{partner.description}</span> : null}
+                          {partner.brandFocus ? <span className={styles.sharePartnerCopy}>Brands: {partner.brandFocus}</span> : null}
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className={styles.emptyState}>
+                      No listed {formatPartnerType(selectedPartnerType).toLowerCase()} partners found yet. Partner accounts must enable their directory listing under Account details.
+                    </p>
+                  )}
                 </div>
+              </aside>
 
-                <div className={styles.disclaimer}>
-                  You are giving the selected partner view access to your Asset Register, including asset details,
-                  saved values, photos and selected history. This does not create a finance, insurance, valuation or
-                  sales agreement. You can revoke access at any time.
-                </div>
-
-                <label className={styles.checkboxField}>
-                  <input
-                    type="checkbox"
-                    checked={includeDocuments}
-                    onChange={(event) => setIncludeDocuments(event.target.checked)}
-                  />
-                  <span>Include asset documents where saved</span>
-                </label>
-
-                <label className={styles.checkboxField}>
-                  <input
-                    type="checkbox"
-                    checked={includeScanHistory}
-                    onChange={(event) => setIncludeScanHistory(event.target.checked)}
-                  />
-                  <span>Include QR scan and update history where available</span>
-                </label>
-
-                <label className={styles.field}>
-                  <span>Message to partner</span>
-                  <textarea
-                    value={ownerMessage}
-                    onChange={(event) => setOwnerMessage(event.target.value)}
-                    placeholder="Optional note explaining why you are sharing this register."
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Account PIN</span>
-                  <input
-                    type="password"
-                    inputMode="numeric"
-                    value={pin}
-                    onChange={(event) => setPin(event.target.value.replace(/\D+/g, '').slice(0, 8))}
-                    placeholder="Enter your 4 to 8 digit Account PIN"
-                  />
-                </label>
+              <div className={styles.shareMapShell}>
+                <div ref={mapElementRef} className={styles.shareMapCanvas} aria-label="Partner map" />
+                {!partnersWithCoordinates.length ? (
+                  <div className={styles.shareMapFallback}>
+                    <p>Partners with saved latitude and longitude will appear on this map.</p>
+                  </div>
+                ) : null}
               </div>
             </div>
 
-            <div className={styles.modalActions}>
-              <button type="button" className={styles.ghostButton} onClick={closeShareModal} disabled={isSharing}>
-                Cancel
-              </button>
-              <button type="button" className={styles.primaryButton} onClick={() => void handleShare()} disabled={isSharing}>
-                {isSharing ? 'Sharing...' : selectedPartner ? `Share with ${partnerName(selectedPartner)}` : 'Choose partner'}
-              </button>
+            <div className={styles.shareModalActions}>
+              <span>{selectedPartner ? `Selected: ${partnerName(selectedPartner)}` : 'Choose a partner from the sidebar or the map.'}</span>
+              <div>
+                <button type="button" className={styles.ghostButton} onClick={closeShareModal} disabled={isSharing}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={() => selectedPartner ? setIsShareConfirmOpen(true) : setNotice({ tone: 'error', message: 'Choose a partner first.' })}
+                  disabled={isSharing}
+                >
+                  Continue
+                </button>
+              </div>
             </div>
+
+            {isShareConfirmOpen && selectedPartner ? (
+              <div className={styles.shareConfirmOverlay}>
+                <button
+                  type="button"
+                  className={styles.shareConfirmBackdrop}
+                  onClick={closeShareConfirm}
+                  aria-label="Close share confirmation"
+                  disabled={isSharing}
+                />
+
+                <section className={styles.shareConfirmModal} aria-live="polite">
+                  <div className={styles.shareConfirmHeader}>
+                    <div>
+                      <span>{partnerName(selectedPartner)}</span>
+                      <h3>Confirm register access</h3>
+                    </div>
+                    <button type="button" className={styles.modalCloseButton} onClick={closeShareConfirm} aria-label="Close share confirmation" disabled={isSharing}>
+                      ×
+                    </button>
+                  </div>
+
+                  <div className={styles.shareConfirmBody}>
+                    <div className={styles.disclaimer}>
+                      You are giving the selected partner view access to your Asset Register, including asset details, saved values, photos and selected history. This does not create a finance, insurance, valuation or sales agreement. You can revoke access at any time.
+                    </div>
+
+                    <label className={styles.checkboxField}>
+                      <input
+                        type="checkbox"
+                        checked={includeDocuments}
+                        onChange={(event) => setIncludeDocuments(event.target.checked)}
+                      />
+                      <span>Include asset documents where saved</span>
+                    </label>
+
+                    <label className={styles.checkboxField}>
+                      <input
+                        type="checkbox"
+                        checked={includeScanHistory}
+                        onChange={(event) => setIncludeScanHistory(event.target.checked)}
+                      />
+                      <span>Include QR scan and update history where available</span>
+                    </label>
+
+                    <label className={styles.field}>
+                      <span>Message to partner</span>
+                      <textarea
+                        value={ownerMessage}
+                        onChange={(event) => setOwnerMessage(event.target.value)}
+                        placeholder="Optional note explaining why you are sharing this register."
+                      />
+                    </label>
+
+                    <label className={styles.field}>
+                      <span>Account PIN</span>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        value={pin}
+                        onChange={(event) => setPin(event.target.value.replace(/\D+/g, '').slice(0, 8))}
+                        placeholder="Enter your 4 to 8 digit Account PIN"
+                      />
+                    </label>
+                  </div>
+
+                  <div className={styles.shareConfirmActions}>
+                    <button type="button" className={styles.ghostButton} onClick={closeShareConfirm} disabled={isSharing}>
+                      Back
+                    </button>
+                    <button type="button" className={styles.primaryButton} onClick={() => void handleShare()} disabled={isSharing}>
+                      {isSharing ? 'Sharing...' : `Share with ${partnerName(selectedPartner)}`}
+                    </button>
+                  </div>
+                </section>
+              </div>
+            ) : null}
           </section>
         </div>
       ) : null}
+
     </main>
   );
 }

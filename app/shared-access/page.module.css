@@ -736,3 +736,656 @@
     flex-direction: column;
   }
 }
+
+/* === 2026-05-16: map-first share-register modal === */
+.modalCloseButton {
+  appearance: none;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(204, 219, 232, 0.95);
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  background: rgba(248, 252, 255, 0.96);
+  color: #173f61;
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(20, 42, 58, 0.08);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, opacity 180ms ease;
+}
+
+.modalCloseButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(173, 193, 211, 0.98);
+  box-shadow: 0 16px 34px rgba(20, 42, 58, 0.12);
+}
+
+.modalCloseButton:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.shareMapModal {
+  width: min(98vw, 1580px);
+  height: min(94dvh, 980px);
+  max-height: calc(100dvh - 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.9rem, 1.3vw, 1.2rem);
+  padding: clamp(1.25rem, 2vw, 2rem);
+  overflow: hidden;
+  border-radius: 2rem;
+}
+
+.shareMapModal::before {
+  height: 0.28rem;
+}
+
+.shareModalHeader {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: clamp(0.85rem, 1.25vw, 1.1rem);
+  border-bottom: 1px solid rgba(204, 219, 232, 0.84);
+}
+
+.shareModalHeader h2 {
+  font-size: clamp(2.05rem, 3.2vw, 3.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.06em;
+}
+
+.shareModalHeader p {
+  max-width: 58rem;
+  margin-top: 0.45rem;
+  font-size: clamp(0.98rem, 1.1vw, 1.08rem);
+  line-height: 1.5;
+}
+
+.shareSearchBar {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: clamp(0.8rem, 1.2vw, 1.05rem);
+  align-items: stretch;
+}
+
+.shareSearchBar input {
+  width: 100%;
+  min-height: 4.15rem;
+  border: 1px solid rgba(204, 219, 232, 0.95);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.98);
+  color: #123130;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  padding: 0 1.35rem;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 620;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.shareSearchBar input::placeholder {
+  color: rgba(91, 106, 118, 0.76);
+}
+
+.shareSearchBar input:focus {
+  border-color: rgba(31, 108, 83, 0.48);
+  box-shadow:
+    0 0 0 4px rgba(31, 108, 83, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.shareSearchBar .secondaryButton {
+  min-height: 4.15rem;
+  min-width: 9.5rem;
+  border-radius: 1.25rem;
+}
+
+.shareMapStage {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(20rem, 24rem) minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid rgba(204, 219, 232, 0.96);
+  border-radius: 1.65rem;
+  background: #edf5f1;
+  box-shadow:
+    0 22px 58px rgba(18, 45, 37, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.shareSidebar {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  border-right: 1px solid rgba(204, 219, 232, 0.96);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 252, 250, 0.94)),
+    radial-gradient(circle at top left, rgba(31, 108, 83, 0.1), transparent 15rem);
+}
+
+.shareTypeGrid {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem;
+  border-bottom: 1px solid rgba(204, 219, 232, 0.86);
+}
+
+.shareTypeButton {
+  appearance: none;
+  width: 100%;
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.88rem 0.95rem;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(204, 219, 232, 0.96);
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
+  color: #173b62;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, background 180ms ease;
+}
+
+.shareTypeButton:hover {
+  transform: translateY(-1px);
+  border-color: rgba(174, 195, 211, 0.95);
+  box-shadow: 0 12px 24px rgba(19, 39, 54, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.shareTypeButton strong {
+  color: #12352b;
+  font-size: 0.98rem;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
+.shareTypeButton small {
+  color: #657685;
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.32;
+}
+
+.shareTypeButtonActive {
+  border-color: rgba(31, 108, 83, 0.38);
+  background:
+    radial-gradient(circle at top left, rgba(31, 108, 83, 0.13), transparent 58%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f3 100%);
+  box-shadow: 0 0 0 4px rgba(31, 108, 83, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.shareSidebarHeader {
+  min-height: 4.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(204, 219, 232, 0.86);
+}
+
+.shareSidebarHeader div {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.shareSidebarHeader strong {
+  color: #10352b;
+  font-size: 0.96rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.shareSidebarHeader small {
+  color: #6c7c88;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.shareSidebarHeader > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.85rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  background: rgba(31, 108, 83, 0.1);
+  color: #166b4c;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.sharePartnerList {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 0.86rem;
+  padding: 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(102, 124, 136, 0.45) transparent;
+}
+
+.sharePartnerList::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+.sharePartnerList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sharePartnerList::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(102, 124, 136, 0.35);
+}
+
+.sharePartnerCard {
+  appearance: none;
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.88rem;
+  border-radius: 1.15rem;
+  border: 1px solid rgba(204, 219, 232, 0.96);
+  background: rgba(255, 255, 255, 0.9);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.04);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.sharePartnerCard:hover,
+.sharePartnerCardActive {
+  transform: translateY(-1px);
+  border-color: rgba(31, 108, 83, 0.38);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(31, 108, 83, 0.09), 0 14px 30px rgba(16, 31, 28, 0.07);
+}
+
+.sharePartnerNumber {
+  display: grid;
+  place-items: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #159063;
+  font-size: 0.82rem;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(21, 144, 99, 0.24);
+}
+
+.sharePartnerBody {
+  min-width: 0;
+  display: grid;
+  gap: 0.42rem;
+}
+
+.sharePartnerTitleRow {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.sharePartnerTitleRow strong {
+  color: #102f27;
+  font-size: 0.98rem;
+  line-height: 1.14;
+  letter-spacing: -0.025em;
+}
+
+.sharePartnerTitleRow small {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.55rem;
+  padding: 0 0.56rem;
+  border-radius: 999px;
+  background: rgba(23, 77, 62, 0.08);
+  color: #174d3e;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.sharePartnerMeta {
+  display: grid;
+  gap: 0.28rem;
+  color: #627183;
+  font-size: 0.82rem;
+  line-height: 1.34;
+}
+
+.sharePartnerCopy {
+  color: #667581;
+  font-size: 0.82rem;
+  line-height: 1.42;
+}
+
+.shareMapShell {
+  position: relative;
+  min-width: 0;
+  min-height: 100%;
+  height: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 25% 20%, rgba(31, 108, 83, 0.12), transparent 18rem),
+    #e3ece7;
+}
+
+.shareMapCanvas {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+}
+
+.shareMapFallback {
+  position: absolute;
+  inset: auto 1rem 1rem 1rem;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(204, 219, 232, 0.86);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.88);
+  color: #60736c;
+  text-align: center;
+  box-shadow: 0 16px 34px rgba(19, 39, 54, 0.12);
+}
+
+.shareMapFallback p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.shareMapShell :global(.leaflet-container) {
+  width: 100%;
+  height: 100%;
+  font-family: inherit;
+  background: #dfe8e2;
+}
+
+.shareMapShell :global(.leaflet-control-zoom) {
+  border: 0;
+  border-radius: 0.9rem;
+  overflow: hidden;
+  box-shadow: 0 13px 28px rgba(19, 39, 54, 0.16);
+}
+
+.shareMapShell :global(.leaflet-control-zoom a) {
+  border: 0;
+  color: #123130;
+  background: rgba(255, 255, 255, 0.94);
+  font-weight: 900;
+}
+
+.shareMapShell :global(.leaflet-popup-content-wrapper) {
+  border-radius: 1rem;
+  box-shadow: 0 18px 36px rgba(19, 39, 54, 0.16);
+}
+
+.shareMapShell :global(.leaflet-popup-content) {
+  margin: 0.9rem;
+  line-height: 1.38;
+}
+
+.shareMapShell :global(.leaflet-control-attribution) {
+  border-radius: 0.55rem 0 0 0;
+  background: rgba(255, 255, 255, 0.72);
+  color: rgba(48, 64, 69, 0.72);
+  font-size: 0.62rem;
+  line-height: 1.25;
+}
+
+.shareMapShell :global(.shareMapMarker) {
+  background: transparent;
+  border: 0;
+}
+
+.shareMapShell :global(.shareMapMarkerPin) {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #159063;
+  border: 3px solid rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 13px 24px rgba(22, 130, 88, 0.34),
+    0 0 0 6px rgba(255, 255, 255, 0.32);
+  transition: transform 170ms ease, box-shadow 170ms ease;
+}
+
+.shareMapShell :global(.shareMapMarkerPin::after) {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 11px;
+  height: 11px;
+  border-right: 3px solid rgba(255, 255, 255, 0.96);
+  border-bottom: 3px solid rgba(255, 255, 255, 0.96);
+  background: #159063;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 0 0 3px 0;
+}
+
+.shareMapShell :global(.shareMapMarkerPin b) {
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: 0.8rem;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.shareMapShell :global(.shareMapMarkerActive .shareMapMarkerPin) {
+  transform: translateY(-4px) scale(1.08);
+  box-shadow:
+    0 0 0 8px rgba(16, 71, 59, 0.17),
+    0 18px 34px rgba(22, 130, 88, 0.34);
+}
+
+.shareMapShell :global(.leaflet-pane),
+.shareMapShell :global(.leaflet-top),
+.shareMapShell :global(.leaflet-bottom),
+.shareMapShell :global(.leaflet-control-container) {
+  z-index: 20;
+}
+
+.shareModalActions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.1rem;
+}
+
+.shareModalActions > span {
+  color: #5d6f68;
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.shareModalActions > div,
+.shareConfirmActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.shareConfirmOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.shareConfirmBackdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(9, 24, 19, 0.42);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+
+.shareConfirmBackdrop:disabled {
+  cursor: not-allowed;
+}
+
+.shareConfirmModal {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 44rem);
+  max-height: min(88vh, calc(100% - 1rem));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(204, 219, 232, 0.96);
+  border-radius: 1.65rem;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 32px 80px rgba(9, 24, 19, 0.22);
+}
+
+.shareConfirmHeader {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(1.3rem, 2vw, 1.75rem) clamp(1.35rem, 2.2vw, 2rem) 1rem;
+  border-bottom: 1px solid rgba(204, 219, 232, 0.84);
+}
+
+.shareConfirmHeader span {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #5e7180;
+  font-size: 0.84rem;
+  font-weight: 850;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.shareConfirmHeader h3 {
+  margin: 0;
+  color: #10352b;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(1.65rem, 2.35vw, 2.15rem);
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+}
+
+.shareConfirmBody {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.25rem, 2vw, 1.7rem) clamp(1.35rem, 2.2vw, 2rem);
+}
+
+.shareConfirmBody .field textarea {
+  min-height: 8rem;
+}
+
+.shareConfirmActions {
+  flex: 0 0 auto;
+  padding: 1rem clamp(1.35rem, 2.2vw, 2rem) clamp(1.25rem, 2vw, 1.6rem);
+  border-top: 1px solid rgba(204, 219, 232, 0.84);
+  background: rgba(248, 251, 250, 0.9);
+}
+
+.shareConfirmActions .primaryButton,
+.shareConfirmActions .ghostButton,
+.shareModalActions .primaryButton,
+.shareModalActions .ghostButton {
+  min-height: 3.25rem;
+  border-radius: 1rem;
+}
+
+@media (max-width: 980px) {
+  .shareMapModal {
+    width: calc(100vw - 0.75rem);
+    height: calc(100dvh - 0.75rem);
+    padding: 1rem;
+    border-radius: 1.45rem;
+  }
+
+  .shareSearchBar {
+    grid-template-columns: 1fr;
+  }
+
+  .shareSearchBar .secondaryButton {
+    width: 100%;
+  }
+
+  .shareMapStage {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(16rem, 42vh) minmax(0, 1fr);
+  }
+
+  .shareSidebar {
+    order: 2;
+    border-right: 0;
+    border-top: 1px solid rgba(204, 219, 232, 0.96);
+  }
+
+  .shareMapShell {
+    order: 1;
+  }
+
+  .shareTypeGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .modalBackdrop {
+    padding: 0.35rem;
+  }
+
+  .shareModalHeader h2 {
+    font-size: clamp(1.85rem, 8vw, 2.45rem);
+  }
+
+  .shareModalActions,
+  .shareModalActions > div,
+  .shareConfirmActions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .shareModalActions .primaryButton,
+  .shareModalActions .ghostButton,
+  .shareConfirmActions .primaryButton,
+  .shareConfirmActions .ghostButton {
+    width: 100%;
+  }
+}
