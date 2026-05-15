@@ -14585,3 +14585,50 @@
     width: 100%;
   }
 }
+
+
+/* 2026-05-15: quote option modal polish and Leaflet overlay stacking fix */
+.optionsModal .assetOptionsGrid .optionActionButton,
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard {
+  justify-items: center !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton > span,
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard > span,
+.optionsModal .assetQuoteChoiceText {
+  align-items: center !important;
+  justify-items: center !important;
+  text-align: center !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton strong,
+.optionsModal .assetOptionsGrid .optionActionButton small,
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard strong,
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard small,
+.assetQuoteChoiceText strong,
+.assetQuoteChoiceText small,
+.assetQuoteChoiceText small span {
+  text-align: center !important;
+}
+
+.assetQuoteStepOverlay {
+  z-index: 5000 !important;
+  pointer-events: auto !important;
+}
+
+.assetQuoteStepBackdrop {
+  z-index: 5000 !important;
+}
+
+.assetQuoteStepModal {
+  z-index: 5001 !important;
+}
+
+.assetQuoteMapShell :global(.leaflet-pane),
+.assetQuoteMapShell :global(.leaflet-top),
+.assetQuoteMapShell :global(.leaflet-bottom),
+.assetQuoteMapShell :global(.leaflet-control-container) {
+  z-index: 20 !important;
+}

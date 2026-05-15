@@ -2693,7 +2693,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
           });
           const marker = L.marker([lat, lng], { icon, title: quotePartnerName(partner) }).addTo(quoteMarkerLayerRef.current);
           marker.bindPopup(buildQuotePartnerPopupHtml(partner, markerNumber));
-          marker.on('click', () => setSelectedQuotePartnerId(partner.userId));
+          marker.on('click', () => openQuoteLeadMessage(partner));
           quoteMarkersByPartnerRef.current.set(partner.userId, marker);
           bounds.extend([lat, lng]);
         });
@@ -2740,11 +2740,12 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
       if (!partner) return;
 
       event.preventDefault();
+      event.stopPropagation();
       openQuoteLeadMessage(partner);
     };
 
-    document.addEventListener('click', handleQuotePopupSelect);
-    return () => document.removeEventListener('click', handleQuotePopupSelect);
+    document.addEventListener('click', handleQuotePopupSelect, true);
+    return () => document.removeEventListener('click', handleQuotePopupSelect, true);
   }, [quoteAsset, selectedQuoteOption, quotePartners]);
 
   useEffect(() => {
