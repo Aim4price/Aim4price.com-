@@ -194,7 +194,6 @@ export default function AppHeader({
   const accountInitials = useMemo(() => getInitials(accountName), [accountName]);
   const accountType = session?.accountType ?? 'owner';
   const isOwnerAccount = accountType === 'owner';
-  const isDealerAccount = accountType === 'dealer';
   const navItems = useMemo(() => buildNavItems(session?.accountType ?? null), [session?.accountType]);
 
   async function handleSignOut() {
@@ -288,17 +287,6 @@ export default function AppHeader({
                       </Link>
                     ) : null}
 
-                    {isDealerAccount ? (
-                      <>
-                        <Link href="/shared-registers" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                          Shared access
-                        </Link>
-
-                        <Link href="/leads" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                          Leads
-                        </Link>
-                      </>
-                    ) : null}
 
                     {isOwnerAccount ? (
                       <>
