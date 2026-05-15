@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
-import { canViewOwnerRegister } from '../../../lib/partner-access';
+import { canViewOwnerRegister, createSharedAssetNote } from '../../../lib/partner-access';
 import {
   listPublishedMarketplaceAssetListings,
   publishAssetRegisterItemToMarketplace,
@@ -122,6 +122,7 @@ export async function POST(request: NextRequest) {
   let sellerEmail = String(body.sellerEmail ?? '').trim();
   let province = String(body.province ?? '').trim();
   let area = String(body.area ?? '').trim();
+  let sharedMarketplaceNoteText = '';
 
   try {
     const profile = await getAccountProfile({
@@ -145,7 +146,8 @@ export async function POST(request: NextRequest) {
       }
 
       const dealerLabel = profile.businessName || profile.displayName || profile.name || 'Aim4price';
-      marketplaceNotes = [`Sent to marketplace by ${dealerLabel} dealer.`, marketplaceNotes].filter(Boolean).join('\n\n');
+      sharedMarketplaceNoteText = `Sent to marketplace by ${dealerLabel} dealer.`;
+      marketplaceNotes = [sharedMarketplaceNoteText, marketplaceNotes].filter(Boolean).join('\n\n');
       sellerName = sellerName || profile.marketplaceSellerName || profile.displayName || profile.name;
       sellerCompany = sellerCompany || profile.businessName || profile.marketplaceSellerName || profile.displayName || profile.name;
       sellerPhone = sellerPhone || profile.marketplacePhone || profile.phone;
@@ -172,11 +174,21 @@ export async function POST(request: NextRequest) {
       area: area || null,
     });
 
+    const note = sharedMarketplaceNoteText
+      ? await createSharedAssetNote({
+          currentUserId: session.user.id,
+          ownerUserId,
+          assetId,
+          noteText: sharedMarketplaceNoteText,
+        })
+      : null;
+
     return NextResponse.json({
       ok: true,
       assetId,
       marketplaceStatus: 'live',
       listing,
+      note,
     });
   } catch (error) {
     const message = formatUnknownError(error, 'Failed to send asset to marketplace.');
