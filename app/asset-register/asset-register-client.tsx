@@ -507,9 +507,9 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     title: 'Get insurance quote',
     shortTitle: 'Insurance quote',
     descriptionLines: ['Send this asset to an insurer or broker.', 'Request cover or value review.'],
-    mapTitle: 'Choose an insurance partner',
+    mapTitle: 'Choose an insurance or finance partner',
     sendLabel: 'Send insurance request',
-    emptyPartnerText: 'No listed insurance partners found yet. Insurance partners must enable their directory listing under Account details.',
+    emptyPartnerText: 'No listed insurance or finance partners found yet. Partners must enable their directory listing under Account details.',
   },
   {
     leadType: 'replacement_quote',
