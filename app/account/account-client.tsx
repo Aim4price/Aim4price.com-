@@ -126,7 +126,7 @@ const LEAFLET_CSS_ID = 'aim4price-leaflet-css';
 let leafletLoaderPromise: Promise<any> | null = null;
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
-  owner: 'Machine Owner',
+  owner: 'Owner',
   dealer: 'Dealer',
   finance: 'Finance',
   insurance: 'Insurance',
