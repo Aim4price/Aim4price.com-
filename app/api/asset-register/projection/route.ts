@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { calculateFuturePriceForAsset } from '../../../../lib/asset-register-projection';
+import { canViewOwnerRegister } from '../../../../lib/partner-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,12 +23,14 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json()) as Partial<{
     assetId: string;
+    ownerUserId: string;
     targetYear: number;
     inflationRatePct: number;
     extraHours: number;
   }>;
 
   const assetId = String(body.assetId ?? '').trim();
+  const ownerUserId = String(body.ownerUserId ?? session.user.id).trim() || session.user.id;
   const targetYear = Math.round(Number(body.targetYear));
   const inflationRatePct = Number(body.inflationRatePct);
   const extraHours = Number(body.extraHours ?? 0);
@@ -48,9 +51,16 @@ export async function POST(request: NextRequest) {
     return badRequest('Extra hours must be zero or greater.');
   }
 
+  if (ownerUserId !== session.user.id) {
+    const canView = await canViewOwnerRegister(session.user.id, ownerUserId);
+    if (!canView) {
+      return NextResponse.json({ ok: false, error: 'You do not have access to this register.' }, { status: 403 });
+    }
+  }
+
   try {
     const projection = await calculateFuturePriceForAsset({
-      userId: session.user.id,
+      userId: ownerUserId,
       assetId,
       targetYear,
       inflationRatePct,
