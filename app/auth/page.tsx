@@ -5,6 +5,7 @@ import Link from 'next/link';
 import styles from './page.module.css';
 
 type Mode = 'signup' | 'login';
+type SignupAccountType = 'owner' | 'finance' | 'dealer';
 type NoticeTone = 'success' | 'error' | 'info';
 
 type AuthNotice = {
@@ -14,6 +15,7 @@ type AuthNotice = {
 } | null;
 
 type SignupFormState = {
+  accountType: SignupAccountType;
   name: string;
   email: string;
   password: string;
@@ -30,7 +32,30 @@ type LoginFormState = {
 const AUTH_BASE_PATH = '/api/auth';
 const POST_LOGIN_REDIRECT = '/asset-register';
 
+const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<{
+  value: SignupAccountType;
+  title: string;
+  description: string;
+}> = [
+  {
+    value: 'owner',
+    title: 'Owner',
+    description: 'Farmer / Contractor / Construction Company / Asset Owner',
+  },
+  {
+    value: 'finance',
+    title: 'Finance',
+    description: 'Bank / Finance House / Insurer / Accountant',
+  },
+  {
+    value: 'dealer',
+    title: 'Dealer',
+    description: 'Machinery Dealer / Auction House',
+  },
+];
+
 const initialSignupState: SignupFormState = {
+  accountType: 'owner',
   name: '',
   email: '',
   password: '',
@@ -161,6 +186,20 @@ async function postAuth(path: string, body: Record<string, unknown>) {
   return payload;
 }
 
+async function saveSignupProfileFallback(accountType: SignupAccountType, displayName: string) {
+  await fetch('/api/account-profile', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+      accountType,
+      displayName,
+    }),
+  }).catch(() => null);
+}
+
 export default function AuthPage() {
   const [mode, setMode] = useState<Mode>('signup');
   const [showSignupPassword, setShowSignupPassword] = useState(false);
@@ -191,7 +230,7 @@ export default function AuthPage() {
       mode === 'signup'
         ? {
             title: 'Create your Aim4price account',
-            text: 'Save valuations, organise your asset register, and keep your machinery workflow in one place.',
+            text: 'Choose the correct account type, then save valuations, manage records and connect with trusted partners.',
             action: 'Create account',
             footer: 'Already have an account?',
             footerAction: 'Log in',
@@ -272,10 +311,13 @@ export default function AuthPage() {
         name,
         email,
         password: signupForm.password,
+        accountType: signupForm.accountType,
         callbackURL: getCallbackUrl(),
       });
 
       const redirectUrl = extractRedirectUrl(payload);
+
+      await saveSignupProfileFallback(signupForm.accountType, name);
 
       setSignupForm(initialSignupState);
       setNotice({
@@ -388,7 +430,6 @@ export default function AuthPage() {
             </div>
 
             <div className={styles.authHeader}>
-              <p className={styles.authEyebrow}>Email &amp; password access</p>
               <h1 id="auth-heading" className={styles.authTitle}>
                 {copy.title}
               </h1>
@@ -414,6 +455,37 @@ export default function AuthPage() {
 
             {mode === 'signup' ? (
               <form className={styles.form} onSubmit={handleSignupSubmit} noValidate>
+                <fieldset className={styles.accountTypeFieldset}>
+                  <legend className={styles.accountTypeLegend}>Choose account type</legend>
+                  <div className={styles.accountTypeGrid}>
+                    {SIGNUP_ACCOUNT_TYPE_OPTIONS.map((option) => {
+                      const isSelected = signupForm.accountType === option.value;
+
+                      return (
+                        <label
+                          key={option.value}
+                          className={`${styles.accountTypeOption} ${
+                            isSelected ? styles.accountTypeOptionSelected : ''
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="accountType"
+                            value={option.value}
+                            className={styles.accountTypeRadio}
+                            checked={isSelected}
+                            onChange={() =>
+                              setSignupForm((current) => ({ ...current, accountType: option.value }))
+                            }
+                          />
+                          <span className={styles.accountTypeOptionTitle}>{option.title}</span>
+                          <span className={styles.accountTypeOptionText}>{option.description}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+
                 <label className={styles.field}>
                   <span className={styles.label}>Full name</span>
                   <input

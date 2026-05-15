@@ -679,3 +679,173 @@
     padding: 0.35rem 0.8rem;
   }
 }
+
+/* Refined account access layout */
+.topBar {
+  width: min(100%, 42.5rem);
+  margin: 0 auto 1.15rem;
+}
+
+.frame {
+  width: min(100%, 42.5rem);
+  padding: 1.08rem;
+  border-radius: 2.05rem;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.authCard {
+  gap: 1.22rem;
+  padding: 1.66rem;
+  border-radius: 1.62rem;
+}
+
+.authHeader {
+  gap: 0.62rem;
+  padding: 0.08rem 0.08rem 0;
+}
+
+.authTitle {
+  max-width: none;
+  font-size: clamp(2.32rem, 5.2vw, 3.28rem);
+  line-height: 1.01;
+  letter-spacing: -0.058em;
+}
+
+.authText {
+  max-width: 38rem;
+  font-size: 1rem;
+  line-height: 1.62;
+}
+
+.form {
+  gap: 1.05rem;
+}
+
+.accountTypeFieldset {
+  display: grid;
+  gap: 0.72rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.accountTypeLegend {
+  margin: 0;
+  padding: 0;
+  color: #32443d;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.accountTypeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.72rem;
+}
+
+.accountTypeOption {
+  position: relative;
+  min-width: 0;
+  min-height: 8.1rem;
+  display: grid;
+  align-content: start;
+  gap: 0.56rem;
+  padding: 1rem 0.95rem 1.05rem;
+  border-radius: 1.08rem;
+  border: 1px solid rgba(18, 45, 37, 0.1);
+  background:
+    radial-gradient(circle at top left, rgba(24, 77, 61, 0.055), transparent 42%),
+    #ffffff;
+  box-shadow: 0 12px 24px rgba(18, 45, 37, 0.045);
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.accountTypeOption:hover {
+  transform: translateY(-1px);
+  border-color: rgba(23, 77, 62, 0.2);
+  box-shadow: 0 16px 30px rgba(18, 45, 37, 0.07);
+}
+
+.accountTypeOptionSelected {
+  border-color: rgba(22, 92, 66, 0.34);
+  background:
+    linear-gradient(180deg, rgba(239, 249, 244, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%),
+    #ffffff;
+  box-shadow:
+    0 0 0 4px rgba(22, 92, 66, 0.075),
+    0 16px 30px rgba(18, 45, 37, 0.07);
+}
+
+.accountTypeOptionSelected::after {
+  content: '';
+  position: absolute;
+  top: 0.86rem;
+  right: 0.86rem;
+  width: 0.58rem;
+  height: 0.58rem;
+  border-radius: 50%;
+  background: #1b6048;
+  box-shadow: 0 0 0 5px rgba(27, 96, 72, 0.12);
+}
+
+.accountTypeRadio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.accountTypeOptionTitle {
+  padding-right: 1.15rem;
+  color: #19372e;
+  font-size: 1.04rem;
+  line-height: 1.2;
+  font-weight: 900;
+}
+
+.accountTypeOptionText {
+  color: #61706a;
+  font-size: 0.84rem;
+  line-height: 1.48;
+  font-weight: 700;
+}
+
+.accountTypeOption:focus-within {
+  outline: 3px solid rgba(23, 77, 62, 0.18);
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .topBar,
+  .frame {
+    width: min(100%, calc(100vw - 1.3rem));
+  }
+
+  .frame {
+    padding: 0.82rem;
+    border-radius: 1.56rem;
+  }
+
+  .authCard {
+    gap: 1.08rem;
+    padding: 1.16rem;
+    border-radius: 1.32rem;
+  }
+
+  .authTitle {
+    font-size: clamp(2rem, 8vw, 2.72rem);
+  }
+
+  .accountTypeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .accountTypeOption {
+    min-height: 0;
+  }
+}
