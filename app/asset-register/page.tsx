@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { getAccountProfile } from '../../lib/account-profile';
 import { getServerSession } from '../../lib/auth-session';
 import AssetRegisterClient from './asset-register-client';
 
@@ -9,6 +10,16 @@ export default async function AssetRegisterPage() {
 
   if (!session) {
     redirect('/auth#signup');
+  }
+
+  const profile = await getAccountProfile({
+    id: session.user.id,
+    name: session.user.name,
+    email: session.user.email,
+  });
+
+  if (profile.accountType !== 'owner') {
+    redirect('/shared-registers');
   }
 
   return <AssetRegisterClient />;

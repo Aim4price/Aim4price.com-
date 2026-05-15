@@ -163,6 +163,20 @@ type AssetDocument = {
   uploadedAtIso: string;
 };
 
+type OpenPartnerNote = {
+  id: string;
+  ownerUserId: string;
+  partnerUserId: string;
+  assetRegisterItemId: string;
+  noteText: string;
+  status: 'open' | 'noted';
+  partnerName: string;
+  partnerBusinessName: string;
+  createdAtIso: string;
+  notedAtIso: string | null;
+  updatedAtIso: string;
+};
+
 type RegisterAsset = {
   id: string;
   userId: string;
@@ -218,6 +232,7 @@ type RegisterAsset = {
   fuelPercent: number | null;
   createdAtIso: string;
   updatedAtIso: string;
+  openPartnerNote?: OpenPartnerNote | null;
 };
 
 type AssetRegisterApiResponse = {
@@ -3962,6 +3977,32 @@ export default function AssetRegisterClient() {
     }
   }
 
+  async function handleMarkPartnerNoteNoted(noteId: string, assetId: string) {
+    try {
+      const response = await fetch(`/api/asset-notes/${encodeURIComponent(noteId)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'noted' }),
+      });
+      const data = (await response.json()) as { ok: boolean; error?: string };
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? 'Failed to mark note as noted.');
+      }
+
+      setAssets((current) => current.map((entry) => (entry.id === assetId ? { ...entry, openPartnerNote: null } : entry)));
+      setActiveAsset((current) => (current?.id === assetId ? { ...current, openPartnerNote: null } : current));
+      setMarketplaceAsset((current) => (current?.id === assetId ? { ...current, openPartnerNote: null } : current));
+      setNotice({ tone: 'success', message: 'Partner note marked as noted.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to mark note as noted.',
+      });
+    }
+  }
+
   function handlePrintAssetSheet(asset: RegisterAsset) {
     const assetPhotoUrls = asset.photos
       .map((photo) => toAbsoluteUrl(photo))
@@ -4713,21 +4754,24 @@ export default function AssetRegisterClient() {
                     const isExpanded = expandedAssetId === asset.id;
                     const detailDocuments = assetDocuments(asset);
                     const estimateNeedsUpdate = doesEstimateNeedUpdate(asset) && isValuationUpdateAvailable(asset);
+                    const openPartnerNote = asset.openPartnerNote ?? null;
+                    const partnerNoteAuthor = openPartnerNote?.partnerBusinessName || openPartnerNote?.partnerName || 'Aim4price partner';
 
                     return (
                       <article
                         id={`asset-card-${asset.id}`}
-                        className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''}`}
+                        className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? styles.assetCardPartnerNote : ''}`}
                         key={asset.id}
                       >
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
-                            {isLive || estimateNeedsUpdate ? (
+                            {isLive || estimateNeedsUpdate || openPartnerNote ? (
                               <div className={styles.badgeRow}>
                                 {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
                                 {estimateNeedsUpdate ? (
                                   <span className={`${styles.badge} ${styles.badgeWarning}`}>Estimate needs update</span>
                                 ) : null}
+                                {openPartnerNote ? <span className={`${styles.badge} ${styles.badgeInfo}`}>Partner note</span> : null}
                               </div>
                             ) : null}
                             <h2>{asset.title}</h2>
@@ -4736,6 +4780,22 @@ export default function AssetRegisterClient() {
                               <span className={styles.assetValueMethodLabel}>{methodLabel(asset.selectedMethod)} value</span>
                               <span className={styles.assetSavedDateLabel}>{assetStatusDateLabel(asset)}</span>
                             </div>
+
+                            {openPartnerNote ? (
+                              <div className={styles.partnerNoteBanner}>
+                                <div className={styles.partnerNoteText}>
+                                  <strong>Note from {partnerNoteAuthor}</strong>
+                                  <p>{openPartnerNote.noteText}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  className={styles.partnerNoteButton}
+                                  onClick={() => void handleMarkPartnerNoteNoted(openPartnerNote.id, asset.id)}
+                                >
+                                  Noted
+                                </button>
+                              </div>
+                            ) : null}
                           </div>
 
                           <div className={styles.assetHeaderAside}>
