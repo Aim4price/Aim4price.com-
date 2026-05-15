@@ -14632,3 +14632,115 @@
 .assetQuoteMapShell :global(.leaflet-control-container) {
   z-index: 20 !important;
 }
+
+
+/* === 2026-05-16: final modal spacing fixes === */
+.optionsModal .assetOptionsGrid .optionActionButton {
+  display: grid !important;
+  grid-template-columns: 3.25rem minmax(0, 1fr) !important;
+  align-items: center !important;
+  justify-items: stretch !important;
+  justify-content: stretch !important;
+  gap: 0.95rem !important;
+  min-height: 5.6rem !important;
+  padding: 1rem 1.15rem !important;
+  text-align: left !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton > .buttonIcon {
+  grid-column: 1 !important;
+  justify-self: center !important;
+  align-self: center !important;
+  width: 1.35rem !important;
+  height: 1.35rem !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton > span {
+  grid-column: 2 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  justify-items: start !important;
+  gap: 0.26rem !important;
+  text-align: left !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton strong,
+.optionsModal .assetOptionsGrid .optionActionButton small {
+  width: 100% !important;
+  text-align: left !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton strong {
+  display: block !important;
+  line-height: 1.12 !important;
+}
+
+.optionsModal .assetOptionsGrid .optionActionButton small {
+  display: block !important;
+  max-width: 26rem !important;
+  line-height: 1.35 !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  justify-items: center !important;
+  text-align: center !important;
+  gap: 1.06rem !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard > .assetQuoteChoiceIconTile,
+.assetQuoteChoiceIconTile {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  justify-self: center !important;
+  align-self: center !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard > .assetQuoteChoiceText,
+.assetQuoteChoiceText {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  justify-items: center !important;
+  width: 100% !important;
+  max-width: 18rem !important;
+  margin-inline: auto !important;
+  text-align: center !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard strong,
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard small,
+.assetQuoteChoiceText strong,
+.assetQuoteChoiceText small,
+.assetQuoteChoiceText small span {
+  display: block !important;
+  width: 100% !important;
+  margin-inline: auto !important;
+  text-align: center !important;
+}
+
+.assetQuoteChoiceText small {
+  gap: 0.18rem !important;
+  line-height: 1.4 !important;
+}
+
+.assetQuoteChoiceText small span {
+  white-space: normal !important;
+  text-wrap: balance;
+}
+
+@media (max-width: 760px) {
+  .optionsModal .assetOptionsGrid .optionActionButton {
+    grid-template-columns: 2.8rem minmax(0, 1fr) !important;
+    min-height: 5.35rem !important;
+    padding: 0.95rem !important;
+  }
+}
