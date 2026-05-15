@@ -48,7 +48,7 @@ type AssetQuoteOption = {
   partnerType: PartnerType;
   title: string;
   shortTitle: string;
-  description: string;
+  descriptionLines: readonly [string, string];
   mapTitle: string;
   sendLabel: string;
   emptyPartnerText: string;
@@ -496,7 +496,7 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     partnerType: 'finance',
     title: 'Get finance offer',
     shortTitle: 'Finance offer',
-    description: 'Send this asset to a bank or finance partner for finance or refinance.',
+    descriptionLines: ['Send this asset to a finance partner.', 'Request finance or refinance.'],
     mapTitle: 'Choose a finance partner',
     sendLabel: 'Send finance request',
     emptyPartnerText: 'No listed finance partners found yet. Finance partners must enable their directory listing under Account details.',
@@ -506,7 +506,7 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     partnerType: 'insurance',
     title: 'Get insurance quote',
     shortTitle: 'Insurance quote',
-    description: 'Send this asset to an insurer or broker for cover and insured-value review.',
+    descriptionLines: ['Send this asset to an insurer or broker.', 'Request cover or value review.'],
     mapTitle: 'Choose an insurance partner',
     sendLabel: 'Send insurance request',
     emptyPartnerText: 'No listed insurance partners found yet. Insurance partners must enable their directory listing under Account details.',
@@ -516,7 +516,7 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     partnerType: 'dealer',
     title: 'Get replacement quote',
     shortTitle: 'Replacement quote',
-    description: 'Send this asset to a dealer for a new or replacement machine quote.',
+    descriptionLines: ['Send this asset to a machinery dealer.', 'Request a replacement quote.'],
     mapTitle: 'Choose a dealer',
     sendLabel: 'Send replacement quote request',
     emptyPartnerText: 'No listed dealers found yet. Dealer accounts must enable their directory listing under Account details.',
@@ -5641,7 +5641,10 @@ export default function AssetRegisterClient() {
                         </span>
                         <span className={styles.assetQuoteChoiceText}>
                           <strong>{option.title}</strong>
-                          <small>{option.description}</small>
+                          <small>
+                            <span>{option.descriptionLines[0]}</span>
+                            <span>{option.descriptionLines[1]}</span>
+                          </small>
                         </span>
                       </button>
                     ))}
