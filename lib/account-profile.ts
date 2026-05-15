@@ -98,6 +98,10 @@ type AccountScanPinRow = {
   scan_pin_updated_at: string | null;
 };
 
+type AccountTypeRow = {
+  account_type: string | null;
+};
+
 const MAX_LOGO_URL_LENGTH = 3_000_000;
 let accountProfileColumnsEnsured = false;
 
@@ -345,7 +349,19 @@ export async function upsertAccountProfile(
 
   const db = getDb();
 
-  const normalizedAccountType = normalizeAccountType(input.accountType);
+  const existingAccountTypeResult = await db.query<AccountTypeRow>(
+    `
+      select account_type
+      from account_profiles
+      where user_id = $1
+      limit 1
+    `,
+    [user.id],
+  );
+
+  const normalizedAccountType = existingAccountTypeResult.rows[0]
+    ? normalizeAccountType(existingAccountTypeResult.rows[0].account_type)
+    : 'owner';
   const normalizedMarketplaceEmail = asText(input.marketplaceEmail).toLowerCase();
   const normalizedLatitude = asNullableNumber(input.partnerLatitude);
   const normalizedLongitude = asNullableNumber(input.partnerLongitude);
