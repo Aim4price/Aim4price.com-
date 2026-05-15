@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
-import { normalizeLeadStatus, updateAssetLeadStatus } from '../../../../lib/partner-access';
+import { deleteDeclinedAssetLead, normalizeLeadStatus, updateAssetLeadStatus } from '../../../../lib/partner-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -59,5 +59,37 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     console.error('asset lead PATCH failed', error);
     return NextResponse.json({ ok: false, error: 'Failed to update lead.' }, { status: 500 });
+  }
+}
+
+export async function DELETE(_request: NextRequest, context: RouteContext) {
+  const session = await getServerSession();
+
+  if (!session?.user?.id) {
+    return unauthorized();
+  }
+
+  try {
+    await deleteDeclinedAssetLead({
+      currentUserId: session.user.id,
+      leadId: context.params.leadId,
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'LEAD_NOT_FOUND') {
+      return NextResponse.json({ ok: false, error: 'Lead not found.' }, { status: 404 });
+    }
+
+    if (error instanceof Error && error.message === 'LEAD_FORBIDDEN') {
+      return NextResponse.json({ ok: false, error: 'You cannot delete this lead.' }, { status: 403 });
+    }
+
+    if (error instanceof Error && error.message === 'LEAD_DELETE_REQUIRES_DECLINED') {
+      return NextResponse.json({ ok: false, error: 'Only declined leads can be deleted.' }, { status: 400 });
+    }
+
+    console.error('asset lead DELETE failed', error);
+    return NextResponse.json({ ok: false, error: 'Failed to delete lead.' }, { status: 500 });
   }
 }
