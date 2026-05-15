@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
+import { getAccountProfile } from '../../../lib/account-profile';
 import {
   createAssetRegisterItemFromGenericValuation,
   createAssetRegisterItemFromValuation,
@@ -235,6 +236,22 @@ export async function POST(request: NextRequest) {
           error: 'You must be signed in to save to your asset register.',
         },
         { status: 401 },
+      );
+    }
+
+    const profile = await getAccountProfile({
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    });
+
+    if (profile.accountType !== 'owner') {
+      return NextResponse.json<SaveValuationRunApiResponse>(
+        {
+          ok: false,
+          error: 'Only owner accounts can save valuations to the Asset Register. Partner accounts can still estimate values, but must use shared registers for owner assets.',
+        },
+        { status: 403 },
       );
     }
 
