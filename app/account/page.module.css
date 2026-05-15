@@ -1940,3 +1940,357 @@
     justify-self: start;
   }
 }
+
+/* 2026-05-15: account role cleanup, bottom delete section and working partner map */
+.heroStatGridSingle {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.layoutNoSidebar {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.layoutNoSidebar .mainColumn {
+  width: 100%;
+}
+
+.accountDeleteCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: clamp(1.15rem, 2vw, 1.55rem);
+  border-color: rgba(198, 75, 75, 0.14);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(198, 75, 75, 0.075), transparent 16rem),
+    rgba(255, 255, 255, 0.97);
+}
+
+.accountDeleteCard::before {
+  display: block;
+  height: 0.22rem;
+  background: linear-gradient(90deg, rgba(198, 75, 75, 0.34), rgba(198, 75, 75, 0.12));
+}
+
+.accountDeleteCard h2 {
+  margin: 0;
+  color: #7f2f2f;
+  font-size: clamp(1.45rem, 2.1vw, 1.9rem);
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+}
+
+.accountDeleteCard .deletePrompt {
+  margin-top: 0.35rem;
+  text-align: left;
+  color: #7b6a6a;
+}
+
+.accountDeleteCard .dangerButton {
+  min-width: 14rem;
+  min-height: 3.35rem;
+}
+
+.partnerDirectoryCard {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(31, 138, 102, 0.075), transparent 22rem),
+    radial-gradient(circle at 100% 8%, rgba(62, 110, 213, 0.06), transparent 22rem),
+    rgba(255, 255, 255, 0.98);
+}
+
+.partnerDirectoryHeader {
+  align-items: center;
+  padding-bottom: 0.95rem;
+  border-bottom: 1px solid rgba(18, 45, 37, 0.08);
+}
+
+.sectionEyebrow {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 0.42rem;
+  padding: 0.34rem 0.62rem;
+  border-radius: 999px;
+  color: #174a3b;
+  background: rgba(31, 138, 102, 0.1);
+  border: 1px solid rgba(31, 138, 102, 0.12);
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.directoryStatusPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.35rem;
+  padding: 0 0.82rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.directoryStatusOn {
+  color: #176047;
+  background: rgba(31, 138, 102, 0.12);
+  border: 1px solid rgba(31, 138, 102, 0.18);
+}
+
+.directoryStatusOff {
+  color: #647481;
+  background: rgba(100, 116, 129, 0.08);
+  border: 1px solid rgba(100, 116, 129, 0.14);
+}
+
+.partnerVisibilityToggle {
+  align-items: flex-start;
+  min-height: 0;
+  padding: 1rem;
+  background:
+    linear-gradient(135deg, rgba(31, 138, 102, 0.08), rgba(62, 110, 213, 0.055)),
+    #ffffff;
+}
+
+.partnerVisibilityToggle input {
+  margin-top: 0.18rem;
+  flex: 0 0 auto;
+}
+
+.partnerVisibilityToggle span {
+  display: grid;
+  gap: 0.24rem;
+  min-width: 0;
+}
+
+.partnerVisibilityToggle strong {
+  color: #12362d;
+  font-size: 1rem;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+}
+
+.partnerVisibilityToggle small {
+  color: #687871;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.partnerMapField {
+  gap: 0.82rem;
+  padding: 1rem;
+  border-radius: 1.2rem;
+  background:
+    linear-gradient(180deg, rgba(248, 252, 250, 0.98) 0%, rgba(241, 247, 245, 0.98) 100%);
+}
+
+.partnerMapHeader {
+  align-items: flex-start;
+}
+
+.partnerMapHeader strong {
+  font-size: clamp(1.08rem, 1.35vw, 1.24rem);
+}
+
+.partnerMapHeader p {
+  max-width: 44rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.partnerMapActions .secondaryButton,
+.partnerMapActions .ghostButton {
+  min-height: 2.7rem;
+  padding: 0 0.92rem;
+}
+
+.partnerMapCanvas {
+  height: clamp(16.5rem, 29vw, 23rem);
+  min-height: 16.5rem;
+  border-radius: 1.08rem;
+  background: #eaf2ef;
+}
+
+.partnerMapCanvas::before {
+  z-index: 0;
+  font-size: 0.95rem;
+}
+
+.partnerMapCanvas :global(.leaflet-container) {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  width: 100% !important;
+  height: 100% !important;
+  background: #dfe9e5;
+  outline: 0;
+  font-family: inherit;
+}
+
+.partnerMapCanvas :global(.leaflet-pane),
+.partnerMapCanvas :global(.leaflet-map-pane),
+.partnerMapCanvas :global(.leaflet-tile-pane),
+.partnerMapCanvas :global(.leaflet-overlay-pane),
+.partnerMapCanvas :global(.leaflet-shadow-pane),
+.partnerMapCanvas :global(.leaflet-marker-pane),
+.partnerMapCanvas :global(.leaflet-tooltip-pane),
+.partnerMapCanvas :global(.leaflet-popup-pane),
+.partnerMapCanvas :global(.leaflet-tile-container),
+.partnerMapCanvas :global(.leaflet-layer) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.partnerMapCanvas :global(.leaflet-map-pane) {
+  z-index: 1;
+}
+
+.partnerMapCanvas :global(.leaflet-tile-pane) {
+  z-index: 200;
+}
+
+.partnerMapCanvas :global(.leaflet-overlay-pane) {
+  z-index: 400;
+}
+
+.partnerMapCanvas :global(.leaflet-shadow-pane) {
+  z-index: 500;
+}
+
+.partnerMapCanvas :global(.leaflet-marker-pane) {
+  z-index: 600;
+}
+
+.partnerMapCanvas :global(.leaflet-tooltip-pane) {
+  z-index: 650;
+}
+
+.partnerMapCanvas :global(.leaflet-popup-pane) {
+  z-index: 700;
+}
+
+.partnerMapCanvas :global(.leaflet-tile),
+.partnerMapCanvas :global(.leaflet-marker-icon),
+.partnerMapCanvas :global(.leaflet-marker-shadow),
+.partnerMapCanvas :global(.leaflet-image-layer),
+.partnerMapCanvas :global(.leaflet-pane > svg),
+.partnerMapCanvas :global(.leaflet-pane > canvas),
+.partnerMapCanvas :global(.leaflet-zoom-box),
+.partnerMapCanvas :global(.leaflet-tooltip),
+.partnerMapCanvas :global(.leaflet-popup) {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.partnerMapCanvas :global(.leaflet-tile) {
+  user-select: none;
+  -webkit-user-drag: none;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.partnerMapCanvas :global(.leaflet-container img) {
+  max-width: none !important;
+}
+
+.partnerMapCanvas :global(.leaflet-tile-loaded) {
+  visibility: inherit;
+}
+
+.partnerMapCanvas :global(.leaflet-control-container) {
+  position: absolute;
+  inset: 0;
+  z-index: 800;
+  pointer-events: none;
+}
+
+.partnerMapCanvas :global(.leaflet-top),
+.partnerMapCanvas :global(.leaflet-bottom) {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.partnerMapCanvas :global(.leaflet-top) {
+  top: 0;
+}
+
+.partnerMapCanvas :global(.leaflet-right) {
+  right: 0;
+}
+
+.partnerMapCanvas :global(.leaflet-bottom) {
+  bottom: 0;
+}
+
+.partnerMapCanvas :global(.leaflet-left) {
+  left: 0;
+}
+
+.partnerMapCanvas :global(.leaflet-control) {
+  position: relative;
+  z-index: 1000;
+  float: left;
+  clear: both;
+  pointer-events: auto;
+}
+
+.partnerMapCanvas :global(.leaflet-right .leaflet-control) {
+  float: right;
+}
+
+.partnerMapCanvas :global(.leaflet-top .leaflet-control) {
+  margin-top: 0.75rem;
+}
+
+.partnerMapCanvas :global(.leaflet-left .leaflet-control) {
+  margin-left: 0.75rem;
+}
+
+.partnerMapCanvas :global(.leaflet-bottom .leaflet-control) {
+  margin-bottom: 0.75rem;
+}
+
+.partnerMapCanvas :global(.leaflet-right .leaflet-control) {
+  margin-right: 0.75rem;
+}
+
+.partnerMapCanvas :global(.leaflet-control-attribution) {
+  padding: 0.25rem 0.45rem;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.partnerMapFooter {
+  min-height: 2.75rem;
+  padding: 0.7rem 0.82rem;
+}
+
+@media (max-width: 760px) {
+  .accountDeleteCard {
+    grid-template-columns: 1fr;
+  }
+
+  .accountDeleteCard .dangerButton {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .partnerDirectoryHeader {
+    display: grid;
+  }
+
+  .directoryStatusPill {
+    justify-self: start;
+  }
+
+  .partnerMapCanvas {
+    height: 16rem;
+    min-height: 16rem;
+  }
+}

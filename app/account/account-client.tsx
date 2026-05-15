@@ -156,8 +156,6 @@ function loadLeaflet(): Promise<any> {
       link.id = LEAFLET_CSS_ID;
       link.rel = 'stylesheet';
       link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      link.integrity = 'sha256-p4NxAoJBhIINfQDe6nD5PxyhY7PZN0jMl7gDXu0tdcs=';
-      link.crossOrigin = '';
       document.head.appendChild(link);
     }
 
@@ -182,8 +180,6 @@ function loadLeaflet(): Promise<any> {
       script = document.createElement('script');
       script.id = LEAFLET_SCRIPT_ID;
       script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
-      script.crossOrigin = '';
       script.async = true;
       document.body.appendChild(script);
     }
@@ -539,7 +535,15 @@ export default function AccountClient() {
       : `${PROFILE_COMPLETION_TOTAL - completedFields} left`;
   const addressLines = useMemo(() => buildAddressLines(profileDraft), [profileDraft]);
   const accountTypeLabel = useMemo(() => formatAccountTypeLabel(profileDraft.accountType), [profileDraft.accountType]);
-  const isPartnerAccount = profileDraft.accountType !== 'owner';
+  const normalizedAccountType = String(profile?.accountType || profileDraft.accountType || 'owner')
+    .trim()
+    .toLowerCase();
+  const isOwnerAccount = normalizedAccountType === 'owner';
+  const isDealerAccount = normalizedAccountType === 'dealer';
+  const isPartnerAccount = !isOwnerAccount;
+  const showScanPinControls = !isLoading && isOwnerAccount;
+  const showPartnerDirectory = !isLoading && isPartnerAccount;
+  const showMarketplaceContact = isLoading || isOwnerAccount || isDealerAccount;
   const accountDisplayName = profileDraft.displayName.trim() || profile?.name || 'Aim4price user';
   const profileInitials = useMemo(
     () => buildInitials(accountDisplayName || profileDraft.businessName || 'Aim4price'),
@@ -1028,7 +1032,7 @@ export default function AccountClient() {
           </div>
         ) : null}
 
-        <div className={styles.layout}>
+        <div className={`${styles.layout} ${!showScanPinControls ? styles.layoutNoSidebar : ''}`}>
           <div className={styles.mainColumn}>
             <section className={styles.card}>
               <div className={styles.cardHeader}>
@@ -1082,8 +1086,7 @@ export default function AccountClient() {
                     <span>Account type</span>
                     <div className={styles.readOnlyValue}>{accountTypeLabel}</div>
                     <small className={styles.fieldHint}>
-                      Account type is locked after signup. Contact Aim4price if this account must become a dealer,
-                      finance or insurance partner.
+                      Account type is locked after signup.
                     </small>
                   </label>
 
@@ -1124,19 +1127,25 @@ export default function AccountClient() {
               )}
             </section>
 
-            <section className={styles.card}>
-              <div className={styles.cardHeader}>
-                <div>
-                  <h2>Partner directory</h2>
-                  <p>Control whether this partner account appears as a selectable Aim4price partner for shared registers and quote leads.</p>
+            {showPartnerDirectory ? (
+              <section className={`${styles.card} ${styles.partnerDirectoryCard}`}>
+                <div className={`${styles.cardHeader} ${styles.partnerDirectoryHeader}`}>
+                  <div>
+                    <span className={styles.sectionEyebrow}>Partner directory</span>
+                    <h2>Partner directory</h2>
+                    <p>Owners use this information when selecting a partner for shared registers and quote leads.</p>
+                  </div>
+                  <span
+                    className={`${styles.directoryStatusPill} ${
+                      profileDraft.partnerDirectoryEnabled ? styles.directoryStatusOn : styles.directoryStatusOff
+                    }`}
+                  >
+                    {profileDraft.partnerDirectoryEnabled ? 'Visible' : 'Hidden'}
+                  </span>
                 </div>
-              </div>
 
-              {isLoading ? (
-                <p className={styles.loading}>Loading partner directory settings...</p>
-              ) : isPartnerAccount ? (
                 <form className={styles.form} onSubmit={handleProfileSubmit}>
-                  <label className={`${styles.toggleField} ${styles.fullWidth}`}>
+                  <label className={`${styles.toggleField} ${styles.partnerVisibilityToggle} ${styles.fullWidth}`}>
                     <input
                       type="checkbox"
                       checked={profileDraft.partnerDirectoryEnabled}
@@ -1147,7 +1156,10 @@ export default function AccountClient() {
                         }))
                       }
                     />
-                    <span>Show this account in the Aim4price partner directory</span>
+                    <span>
+                      <strong>Show in Aim4price partner directory</strong>
+                      <small>Owners can select this account when sharing a register or lead.</small>
+                    </span>
                   </label>
 
                   <label className={`${styles.field} ${styles.fullWidth}`}>
@@ -1165,8 +1177,8 @@ export default function AccountClient() {
                     <div className={styles.partnerMapHeader}>
                       <div>
                         <span>Partner map pin</span>
-                        <strong>Drop your public directory pin</strong>
-                        <p>Click the map or drag the pin to the exact place owners should see.</p>
+                        <strong>Set your public map pin</strong>
+                        <p>Click anywhere on the map, drag the pin, or use your current location.</p>
                       </div>
 
                       <div className={styles.partnerMapActions}>
@@ -1229,15 +1241,11 @@ export default function AccountClient() {
                     </button>
                   </div>
                 </form>
-              ) : (
-                <div className={styles.emptyDirectoryCard}>
-                  <strong>Partner directory is disabled for machine-owner accounts.</strong>
-                  <p>Machine-owner accounts can share their Asset Register with trusted partners, but they do not appear in the partner directory.</p>
-                </div>
-              )}
-            </section>
+              </section>
+            ) : null}
 
-            <section className={`${styles.card} ${styles.marketplaceCard}`}>
+            {showMarketplaceContact ? (
+              <section className={`${styles.card} ${styles.marketplaceCard}`}>
               <div className={styles.cardHeader}>
                 <div>
                   <h2>Marketplace contact</h2>
@@ -1301,9 +1309,11 @@ export default function AccountClient() {
                   </div>
                 </form>
               )}
-            </section>
+              </section>
+            ) : null}
           </div>
 
+          {showScanPinControls ? (
           <aside className={styles.sidebar}>
             <section className={styles.sidebarCard}>
               <div className={styles.cardHeader}>
@@ -1372,15 +1382,19 @@ export default function AccountClient() {
                 </>
               )}
             </section>
-
-            <section className={`${styles.sidebarCard} ${styles.dangerCard}`}>
-              <p className={styles.deletePrompt}>Want to delete your account?</p>
-              <button type="button" className={styles.dangerButton} onClick={() => setIsDeleteDialogOpen(true)}>
-                Delete account
-              </button>
-            </section>
           </aside>
+          ) : null}
         </div>
+
+        <section className={`${styles.card} ${styles.dangerCard} ${styles.accountDeleteCard}`}>
+          <div>
+            <h2>Delete account</h2>
+            <p className={styles.deletePrompt}>Want to delete your account?</p>
+          </div>
+          <button type="button" className={styles.dangerButton} onClick={() => setIsDeleteDialogOpen(true)}>
+            Delete account
+          </button>
+        </section>
       </section>
 
       {isDeleteDialogOpen ? (
