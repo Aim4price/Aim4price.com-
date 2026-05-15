@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
+import { getAccountProfile } from '../../../lib/account-profile';
+import { canViewOwnerRegister } from '../../../lib/partner-access';
 import {
   listPublishedMarketplaceAssetListings,
   publishAssetRegisterItemToMarketplace,
@@ -97,6 +99,7 @@ export async function POST(request: NextRequest) {
     assetId?: unknown;
     askingPriceExVat?: unknown;
     marketplaceNotes?: unknown;
+    ownerUserId?: unknown;
     sellerPhone?: unknown;
     sellerName?: unknown;
     sellerCompany?: unknown;
@@ -105,23 +108,59 @@ export async function POST(request: NextRequest) {
     area?: unknown;
   };
   const assetId = String(body.assetId ?? '').trim();
+  const ownerUserId = String(body.ownerUserId ?? session.user.id).trim() || session.user.id;
 
   if (!assetId) {
     return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
   }
 
   const askingPriceExVat = Math.round(Number(body.askingPriceExVat) || 0);
-  const marketplaceNotes = String(body.marketplaceNotes ?? '').trim();
-  const sellerPhone = String(body.sellerPhone ?? '').trim();
-  const sellerName = String(body.sellerName ?? '').trim();
-  const sellerCompany = String(body.sellerCompany ?? '').trim();
-  const sellerEmail = String(body.sellerEmail ?? '').trim();
-  const province = String(body.province ?? '').trim();
-  const area = String(body.area ?? '').trim();
+  let marketplaceNotes = String(body.marketplaceNotes ?? '').trim();
+  let sellerPhone = String(body.sellerPhone ?? '').trim();
+  let sellerName = String(body.sellerName ?? '').trim();
+  let sellerCompany = String(body.sellerCompany ?? '').trim();
+  let sellerEmail = String(body.sellerEmail ?? '').trim();
+  let province = String(body.province ?? '').trim();
+  let area = String(body.area ?? '').trim();
 
   try {
+    const profile = await getAccountProfile({
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    });
+    const isSharedRegisterPublish = ownerUserId !== session.user.id;
+
+    if (isSharedRegisterPublish) {
+      if (profile.accountType !== 'dealer') {
+        return NextResponse.json(
+          { ok: false, error: 'Only dealer accounts can send a shared owner asset to marketplace.' },
+          { status: 403 },
+        );
+      }
+
+      const canView = await canViewOwnerRegister(session.user.id, ownerUserId);
+      if (!canView) {
+        return NextResponse.json({ ok: false, error: 'You do not have access to this owner register.' }, { status: 403 });
+      }
+
+      const dealerLabel = profile.businessName || profile.displayName || profile.name || 'Aim4price';
+      marketplaceNotes = [`Sent to marketplace by ${dealerLabel} dealer.`, marketplaceNotes].filter(Boolean).join('\n\n');
+      sellerName = sellerName || profile.marketplaceSellerName || profile.displayName || profile.name;
+      sellerCompany = sellerCompany || profile.businessName || profile.marketplaceSellerName || profile.displayName || profile.name;
+      sellerPhone = sellerPhone || profile.marketplacePhone || profile.phone;
+      sellerEmail = sellerEmail || profile.marketplaceEmail || profile.email;
+      province = province || profile.province;
+      area = area || profile.marketplaceLocation || profile.townCity;
+    } else if (profile.accountType !== 'owner') {
+      return NextResponse.json(
+        { ok: false, error: 'Only owner accounts can send their own assets to marketplace.' },
+        { status: 403 },
+      );
+    }
+
     const listing = await publishAssetRegisterItemToMarketplace({
-      userId: session.user.id,
+      userId: ownerUserId,
       assetId,
       askingPriceExVat: askingPriceExVat > 0 ? askingPriceExVat : null,
       marketplaceNotes: marketplaceNotes || null,
