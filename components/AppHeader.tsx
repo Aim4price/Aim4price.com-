@@ -16,6 +16,8 @@ type AppHeaderProps = {
   ctaLabel?: string;
 };
 
+type AccountType = 'owner' | 'dealer' | 'finance' | 'insurance';
+
 type SessionResponse = {
   ok: boolean;
   signedIn: boolean;
@@ -23,6 +25,7 @@ type SessionResponse = {
     id: string;
     name: string;
     email: string;
+    accountType: AccountType;
   } | null;
 };
 
@@ -31,6 +34,8 @@ type SmartLinkProps = {
   className: string;
   children: ReactNode;
 };
+
+const PARTNER_ACCOUNT_TYPES = new Set<AccountType>(['dealer', 'finance', 'insurance']);
 
 const navItems: Array<{ key: ActivePage; href: string; label: string }> = [
   { key: 'home', href: '/', label: 'Home' },
@@ -157,6 +162,9 @@ export default function AppHeader({
 
   const accountName = useMemo(() => session?.name?.trim() || 'Aim4price User', [session]);
   const accountInitials = useMemo(() => getInitials(accountName), [accountName]);
+  const accountType = session?.accountType ?? 'owner';
+  const isOwnerAccount = accountType === 'owner';
+  const isPartnerAccount = PARTNER_ACCOUNT_TYPES.has(accountType);
 
   async function handleSignOut() {
     try {
@@ -243,25 +251,35 @@ export default function AppHeader({
                       Account details
                     </Link>
 
-                    <Link href="/shared-access" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                      Shared access
-                    </Link>
+                    {isOwnerAccount ? (
+                      <Link href="/shared-access" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                        Shared access
+                      </Link>
+                    ) : null}
 
-                    <Link href="/shared-registers" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                      Shared registers
-                    </Link>
+                    {isPartnerAccount ? (
+                      <>
+                        <Link href="/shared-registers" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                          Shared registers
+                        </Link>
 
-                    <Link href="/leads" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                      Leads
-                    </Link>
+                        <Link href="/leads" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                          Leads
+                        </Link>
+                      </>
+                    ) : null}
 
-                    <Link href="/asset-map" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                      Asset map
-                    </Link>
+                    {isOwnerAccount ? (
+                      <>
+                        <Link href="/asset-map" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                          Asset map
+                        </Link>
 
-                    <Link href="/fuel" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                      Fuel ledger
-                    </Link>
+                        <Link href="/fuel" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                          Fuel ledger
+                        </Link>
+                      </>
+                    ) : null}
 
                     <button
                       type="button"
