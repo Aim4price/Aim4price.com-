@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import styles from './AppHeader.module.css';
 
-type ActivePage = 'home' | 'valuation' | 'asset-register' | 'marketplace' | 'none';
+type ActivePage = 'home' | 'valuation' | 'asset-register' | 'leads' | 'marketplace' | 'none';
 
 type AppHeaderProps = {
   active: ActivePage;
@@ -17,6 +17,12 @@ type AppHeaderProps = {
 };
 
 type AccountType = 'owner' | 'dealer' | 'finance' | 'insurance';
+
+type NavItem = {
+  key: ActivePage;
+  href: string;
+  label: string;
+};
 
 type SessionResponse = {
   ok: boolean;
@@ -37,12 +43,37 @@ type SmartLinkProps = {
 
 const PARTNER_ACCOUNT_TYPES = new Set<AccountType>(['dealer', 'finance', 'insurance']);
 
-const navItems: Array<{ key: ActivePage; href: string; label: string }> = [
+const BASE_NAV_ITEMS: NavItem[] = [
   { key: 'home', href: '/', label: 'Home' },
   { key: 'valuation', href: '/valuation', label: 'Estimate' },
-  { key: 'asset-register', href: '/asset-register', label: 'Asset Register' },
-  { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
 ];
+
+function buildNavItems(accountType: AccountType | null): NavItem[] {
+  const resolvedType = accountType ?? 'owner';
+
+  if (resolvedType === 'finance' || resolvedType === 'insurance') {
+    return [
+      ...BASE_NAV_ITEMS,
+      { key: 'asset-register', href: '/shared-registers', label: 'Asset Register' },
+      { key: 'leads', href: '/leads', label: 'Leads' },
+    ];
+  }
+
+  if (resolvedType === 'dealer') {
+    return [
+      ...BASE_NAV_ITEMS,
+      { key: 'asset-register', href: '/shared-registers', label: 'Asset Register' },
+      { key: 'leads', href: '/leads', label: 'Leads' },
+      { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
+    ];
+  }
+
+  return [
+    ...BASE_NAV_ITEMS,
+    { key: 'asset-register', href: '/asset-register', label: 'Asset Register' },
+    { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
+  ];
+}
 
 function SmartLink({ href, className, children }: SmartLinkProps) {
   const isAnchorLike =
@@ -165,6 +196,7 @@ export default function AppHeader({
   const accountType = session?.accountType ?? 'owner';
   const isOwnerAccount = accountType === 'owner';
   const isPartnerAccount = PARTNER_ACCOUNT_TYPES.has(accountType);
+  const navItems = useMemo(() => buildNavItems(session?.accountType ?? null), [session?.accountType]);
 
   async function handleSignOut() {
     try {
@@ -209,7 +241,7 @@ export default function AppHeader({
 
               return (
                 <Link
-                  key={item.key}
+                  key={`${item.key}-${item.href}`}
                   href={item.href}
                   aria-current={isActive ? 'page' : undefined}
                   className={`${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
@@ -251,22 +283,18 @@ export default function AppHeader({
                       Account details
                     </Link>
 
-                    {isOwnerAccount ? (
-                      <Link href="/shared-access" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                        Shared access
-                      </Link>
-                    ) : null}
+                    <Link
+                      href={isOwnerAccount ? '/shared-access' : '/shared-registers'}
+                      className={styles.menuLink}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Shared access
+                    </Link>
 
                     {isPartnerAccount ? (
-                      <>
-                        <Link href="/shared-registers" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                          Shared registers
-                        </Link>
-
-                        <Link href="/leads" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                          Leads
-                        </Link>
-                      </>
+                      <Link href="/leads" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                        Leads
+                      </Link>
                     ) : null}
 
                     {isOwnerAccount ? (
