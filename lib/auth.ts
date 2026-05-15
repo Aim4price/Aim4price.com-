@@ -3,7 +3,7 @@ import { deleteUserWorkspaceData } from './account-deletion';
 import { createInitialAccountProfile } from './account-profile';
 import { getDb } from './db';
 
-function readSignupAccountType(context: unknown): unknown {
+function readSignupField(context: unknown, fieldName: string): unknown {
   if (!context || typeof context !== 'object') {
     return null;
   }
@@ -14,7 +14,7 @@ function readSignupAccountType(context: unknown): unknown {
     return null;
   }
 
-  return (body as Record<string, unknown>).accountType;
+  return (body as Record<string, unknown>)[fieldName];
 }
 
 export const auth = betterAuth({
@@ -35,7 +35,10 @@ export const auth = betterAuth({
                 name: typeof user.name === 'string' ? user.name : null,
                 email: typeof user.email === 'string' ? user.email : null,
               },
-              { accountType: readSignupAccountType(context) },
+              {
+                accountType: readSignupField(context, 'accountType'),
+                accountSubtype: readSignupField(context, 'accountSubtype'),
+              },
             );
           } catch (error) {
             console.error('Failed to create initial Aim4price account profile', error);

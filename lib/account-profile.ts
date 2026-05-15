@@ -9,6 +9,7 @@ export type AccountProfile = {
   businessName: string;
   phone: string;
   accountType: string;
+  accountSubtype: string;
   vatNumber: string;
   province: string;
   townCity: string;
@@ -43,6 +44,7 @@ export type UpsertAccountProfileInput = {
   businessName?: string | null;
   phone?: string | null;
   accountType?: string | null;
+  accountSubtype?: string | null;
   vatNumber?: string | null;
   province?: string | null;
   townCity?: string | null;
@@ -70,6 +72,7 @@ type AccountProfileRow = {
   business_name: string | null;
   phone: string | null;
   account_type: string | null;
+  account_subtype: string | null;
   vat_number: string | null;
   province: string | null;
   town_city: string | null;
@@ -100,6 +103,7 @@ type AccountScanPinRow = {
 
 type AccountTypeRow = {
   account_type: string | null;
+  account_subtype: string | null;
 };
 
 const MAX_LOGO_URL_LENGTH = 3_000_000;
@@ -131,6 +135,28 @@ function normalizeAccountType(value: unknown): string {
   }
 
   return 'owner';
+}
+
+function normalizeAccountSubtype(accountType: string, value: unknown): string {
+  const normalized = asText(value).toLowerCase().replace(/[\s_]+/g, '-');
+  const allowedByType: Record<string, Set<string>> = {
+    owner: new Set(['farmer', 'contractor', 'construction-company', 'asset-owner']),
+    finance: new Set(['bank', 'finance-house', 'insurer', 'accountant']),
+    insurance: new Set(['insurer', 'broker', 'insurance-broker']),
+    dealer: new Set(['machinery-dealer', 'auction-house']),
+  };
+  const defaults: Record<string, string> = {
+    owner: 'farmer',
+    finance: 'bank',
+    insurance: 'insurer',
+    dealer: 'machinery-dealer',
+  };
+
+  if (allowedByType[accountType]?.has(normalized)) {
+    return normalized;
+  }
+
+  return defaults[accountType] ?? 'farmer';
 }
 
 function normalizeDirectoryStatus(value: unknown): string {
@@ -186,6 +212,7 @@ export async function ensureAccountProfileColumns(): Promise<void> {
       business_name text,
       phone text,
       account_type text not null default 'owner',
+      account_subtype text,
       vat_number text,
       province text,
       town_city text,
@@ -219,6 +246,7 @@ export async function ensureAccountProfileColumns(): Promise<void> {
       add column if not exists business_name text,
       add column if not exists phone text,
       add column if not exists account_type text not null default 'owner',
+      add column if not exists account_subtype text,
       add column if not exists vat_number text,
       add column if not exists province text,
       add column if not exists town_city text,
@@ -273,6 +301,7 @@ function mapAccountProfileRow(
     businessName: asText(row?.business_name),
     phone: asText(row?.phone),
     accountType: normalizeAccountType(row?.account_type),
+    accountSubtype: normalizeAccountSubtype(normalizeAccountType(row?.account_type), row?.account_subtype),
     vatNumber: asText(row?.vat_number),
     province: asText(row?.province),
     townCity: asText(row?.town_city),
@@ -309,12 +338,13 @@ function mapAccountScanPinRow(row?: AccountScanPinRow): AccountScanPinStatus {
 
 export async function createInitialAccountProfile(
   user: { id: string; name?: string | null; email?: string | null },
-  input?: { accountType?: unknown },
+  input?: { accountType?: unknown; accountSubtype?: unknown },
 ): Promise<void> {
   await ensureAccountProfileColumns();
 
   const db = getDb();
   const initialAccountType = normalizeAccountType(input?.accountType);
+  const initialAccountSubtype = normalizeAccountSubtype(initialAccountType, input?.accountSubtype);
 
   await db.query(
     `
@@ -322,14 +352,15 @@ export async function createInitialAccountProfile(
         user_id,
         display_name,
         account_type,
+        account_subtype,
         marketplace_email,
         created_at,
         updated_at
       )
-      values ($1, $2, $3, $4, now(), now())
+      values ($1, $2, $3, $4, $5, now(), now())
       on conflict (user_id) do nothing
     `,
-    [user.id, asText(user.name) || null, initialAccountType, asText(user.email).toLowerCase() || null],
+    [user.id, asText(user.name) || null, initialAccountType, initialAccountSubtype, asText(user.email).toLowerCase() || null],
   );
 }
 
@@ -351,6 +382,7 @@ export async function getAccountProfile(user: {
         business_name,
         phone,
         account_type,
+        account_subtype,
         vat_number,
         province,
         town_city,
@@ -391,7 +423,7 @@ export async function upsertAccountProfile(
 
   const existingAccountTypeResult = await db.query<AccountTypeRow>(
     `
-      select account_type
+      select account_type, account_subtype
       from account_profiles
       where user_id = $1
       limit 1
@@ -399,9 +431,14 @@ export async function upsertAccountProfile(
     [user.id],
   );
 
-  const normalizedAccountType = existingAccountTypeResult.rows[0]
-    ? normalizeAccountType(existingAccountTypeResult.rows[0].account_type)
+  const existingAccount = existingAccountTypeResult.rows[0];
+  const normalizedAccountType = existingAccount
+    ? normalizeAccountType(existingAccount.account_type)
     : normalizeAccountType(input.accountType);
+  const normalizedAccountSubtype = normalizeAccountSubtype(
+    normalizedAccountType,
+    asText(existingAccount?.account_subtype) || input.accountSubtype,
+  );
   const normalizedMarketplaceEmail = asText(input.marketplaceEmail).toLowerCase();
   const normalizedLatitude = asNullableNumber(input.partnerLatitude);
   const normalizedLongitude = asNullableNumber(input.partnerLongitude);
@@ -417,6 +454,7 @@ export async function upsertAccountProfile(
         business_name,
         phone,
         account_type,
+        account_subtype,
         vat_number,
         province,
         town_city,
@@ -440,7 +478,7 @@ export async function upsertAccountProfile(
       )
       values (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-        $17, $18, $19, $20, $21, $22, $23, $24, now(), now()
+        $17, $18, $19, $20, $21, $22, $23, $24, $25, now(), now()
       )
       on conflict (user_id)
       do update set
@@ -449,6 +487,7 @@ export async function upsertAccountProfile(
         business_name = excluded.business_name,
         phone = excluded.phone,
         account_type = excluded.account_type,
+        account_subtype = excluded.account_subtype,
         vat_number = excluded.vat_number,
         province = excluded.province,
         town_city = excluded.town_city,
@@ -475,6 +514,7 @@ export async function upsertAccountProfile(
         business_name,
         phone,
         account_type,
+        account_subtype,
         vat_number,
         province,
         town_city,
@@ -503,6 +543,7 @@ export async function upsertAccountProfile(
       asText(input.businessName) || null,
       asText(input.phone) || null,
       normalizedAccountType,
+      normalizedAccountSubtype,
       asText(input.vatNumber) || null,
       asText(input.province) || null,
       asText(input.townCity) || null,
