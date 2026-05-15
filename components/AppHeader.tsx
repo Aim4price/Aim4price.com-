@@ -243,6 +243,18 @@ export default function AppHeader({
                       Account details
                     </Link>
 
+                    <Link href="/shared-access" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                      Shared access
+                    </Link>
+
+                    <Link href="/shared-registers" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                      Shared registers
+                    </Link>
+
+                    <Link href="/leads" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                      Leads
+                    </Link>
+
                     <Link href="/asset-map" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
                       Asset map
                     </Link>
