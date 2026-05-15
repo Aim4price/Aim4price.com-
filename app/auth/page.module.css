@@ -2,13 +2,13 @@
   min-height: 100vh;
   color: var(--text-strong);
   background:
-    radial-gradient(circle at 14% 0%, rgba(24, 77, 61, 0.07), transparent 30%),
-    radial-gradient(circle at 86% 4%, rgba(43, 98, 156, 0.04), transparent 28%),
+    radial-gradient(circle at 12% 0%, rgba(24, 77, 61, 0.065), transparent 30%),
+    radial-gradient(circle at 88% 4%, rgba(43, 98, 156, 0.04), transparent 28%),
     linear-gradient(180deg, #fbfcfb 0%, #f4f7f5 100%);
 }
 
 .shell {
-  width: min(100% - 2rem, 43rem);
+  width: min(100% - 2rem, 41rem);
   margin: 0 auto;
   padding: 2rem 0 4rem;
 }
@@ -23,8 +23,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.15rem;
-  padding: 0 1.35rem;
+  min-height: 3.05rem;
+  padding: 0 1.3rem;
   border-radius: 999px;
   border: 1px solid rgba(18, 45, 37, 0.1);
   background: rgba(255, 255, 255, 0.92);
@@ -88,7 +88,6 @@
   font-weight: 800;
   cursor: pointer;
   transition:
-    transform 180ms ease,
     border-color 180ms ease,
     box-shadow 180ms ease,
     background 180ms ease,
@@ -115,10 +114,10 @@
 .authTitle {
   margin: 0;
   color: #183a31;
-  font-size: clamp(2.25rem, 5.2vw, 3.15rem);
-  line-height: 1;
+  font-size: clamp(2.15rem, 5vw, 3rem);
+  line-height: 1.02;
   font-weight: 900;
-  letter-spacing: -0.058em;
+  letter-spacing: -0.055em;
   text-wrap: balance;
 }
 
@@ -171,16 +170,21 @@
   gap: 1rem;
 }
 
-.accountTypeFieldset {
-  min-width: 0;
+.signupTypeRow {
   display: grid;
-  gap: 0.65rem;
-  margin: 0;
-  padding: 0;
-  border: 0;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 0.85rem;
+  padding: 1rem;
+  border-radius: 1.18rem;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  background: linear-gradient(180deg, rgba(248, 251, 249, 0.94) 0%, rgba(255, 255, 255, 0.96) 100%);
 }
 
-.accountTypeLegend,
+.field {
+  display: grid;
+  gap: 0.46rem;
+}
+
 .label {
   margin: 0;
   padding: 0;
@@ -188,84 +192,6 @@
   font-size: 0.84rem;
   line-height: 1.25;
   font-weight: 800;
-}
-
-.accountTypeGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.72rem;
-}
-
-.accountTypeOption {
-  position: relative;
-  min-width: 0;
-  min-height: 7.35rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.42rem;
-  padding: 1rem 0.95rem;
-  border-radius: 1.05rem;
-  border: 1px solid rgba(18, 45, 37, 0.11);
-  background: #ffffff;
-  box-shadow: 0 10px 22px rgba(18, 45, 37, 0.036);
-  cursor: pointer;
-  transition:
-    transform 180ms ease,
-    border-color 180ms ease,
-    box-shadow 180ms ease,
-    background 180ms ease;
-}
-
-.accountTypeOption:hover {
-  transform: translateY(-1px);
-  border-color: rgba(23, 77, 62, 0.2);
-  box-shadow: 0 14px 28px rgba(18, 45, 37, 0.06);
-}
-
-.accountTypeOptionSelected {
-  border-color: rgba(24, 95, 69, 0.35);
-  background: linear-gradient(180deg, rgba(246, 252, 249, 0.98) 0%, #ffffff 100%);
-  box-shadow:
-    0 0 0 4px rgba(24, 95, 69, 0.06),
-    0 14px 28px rgba(18, 45, 37, 0.062);
-}
-
-.accountTypeOptionSelected::after {
-  content: '';
-  position: absolute;
-  top: 0.86rem;
-  right: 0.86rem;
-  width: 0.58rem;
-  height: 0.58rem;
-  border-radius: 50%;
-  background: #1b6048;
-  box-shadow: 0 0 0 5px rgba(27, 96, 72, 0.12);
-}
-
-.accountTypeRadio {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.accountTypeOptionTitle {
-  padding-right: 1.1rem;
-  color: #183a31;
-  font-size: 1.02rem;
-  line-height: 1.18;
-  font-weight: 900;
-}
-
-.accountTypeOptionText {
-  color: #66746f;
-  font-size: 0.82rem;
-  line-height: 1.42;
-  font-weight: 700;
-}
-
-.field {
-  display: grid;
-  gap: 0.46rem;
 }
 
 .labelRow {
@@ -282,13 +208,13 @@
   font-weight: 800;
 }
 
-.input {
+.input,
+.select {
   width: 100%;
   min-height: 3.45rem;
-  padding: 0 1rem;
   border-radius: 0.96rem;
   border: 1px solid rgba(18, 45, 37, 0.1);
-  background: #ffffff;
+  background-color: #ffffff;
   color: #203831;
   font-size: 0.98rem;
   transition:
@@ -297,15 +223,36 @@
     background 180ms ease;
 }
 
+.input {
+  padding: 0 1rem;
+}
+
+.select {
+  padding: 0 2.7rem 0 1rem;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #21483d 50%),
+    linear-gradient(135deg, #21483d 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.25rem) 50%,
+    calc(100% - 0.95rem) 50%;
+  background-size: 0.36rem 0.36rem, 0.36rem 0.36rem;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  font-weight: 700;
+}
+
 .input::placeholder {
   color: #9aa6a1;
 }
 
-.input:hover {
+.input:hover,
+.select:hover {
   border-color: rgba(18, 45, 37, 0.16);
 }
 
-.input:focus {
+.input:focus,
+.select:focus {
   outline: none;
   border-color: rgba(23, 77, 62, 0.26);
   box-shadow: 0 0 0 4px rgba(23, 77, 62, 0.08);
@@ -337,15 +284,12 @@
   font-weight: 800;
   cursor: pointer;
   transition:
-    transform 180ms ease,
     background 180ms ease,
     border-color 180ms ease,
-    box-shadow 180ms ease,
     color 180ms ease;
 }
 
 .passwordToggle:hover {
-  transform: translateY(-50%);
   border-color: rgba(18, 45, 37, 0.15);
   background: #ffffff;
   color: #1b4538;
@@ -425,8 +369,8 @@
 
 .homeLink:focus-visible,
 .modeButton:focus-visible,
-.accountTypeOption:focus-within,
 .input:focus-visible,
+.select:focus-visible,
 .passwordToggle:focus-visible,
 .primaryButton:focus-visible,
 .footerButton:focus-visible {
@@ -436,7 +380,7 @@
 
 @media (max-width: 720px) {
   .shell {
-    width: min(100% - 1.1rem, 43rem);
+    width: min(100% - 1.1rem, 41rem);
     padding: 1rem 0 2.8rem;
   }
 
@@ -463,12 +407,10 @@
     font-size: clamp(2rem, 8vw, 2.72rem);
   }
 
-  .accountTypeGrid {
+  .signupTypeRow {
     grid-template-columns: 1fr;
-  }
-
-  .accountTypeOption {
-    min-height: 0;
+    gap: 0.8rem;
+    padding: 0.9rem;
   }
 }
 

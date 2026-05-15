@@ -6,6 +6,17 @@ import styles from './page.module.css';
 
 type Mode = 'signup' | 'login';
 type SignupAccountType = 'owner' | 'finance' | 'dealer';
+type SignupAccountSubtype =
+  | 'farmer'
+  | 'contractor'
+  | 'construction-company'
+  | 'asset-owner'
+  | 'bank'
+  | 'finance-house'
+  | 'insurer'
+  | 'accountant'
+  | 'machinery-dealer'
+  | 'auction-house';
 type NoticeTone = 'success' | 'error' | 'info';
 
 type AuthNotice = {
@@ -16,6 +27,7 @@ type AuthNotice = {
 
 type SignupFormState = {
   accountType: SignupAccountType;
+  accountSubtype: SignupAccountSubtype;
   name: string;
   email: string;
   password: string;
@@ -34,28 +46,45 @@ const POST_LOGIN_REDIRECT = '/asset-register';
 
 const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<{
   value: SignupAccountType;
-  title: string;
-  description: string;
+  label: string;
 }> = [
-  {
-    value: 'owner',
-    title: 'Owner',
-    description: 'Farmer · Contractor · Construction Company · Asset Owner',
-  },
-  {
-    value: 'finance',
-    title: 'Finance',
-    description: 'Bank · Finance House · Insurer · Accountant',
-  },
-  {
-    value: 'dealer',
-    title: 'Dealer',
-    description: 'Machinery Dealer · Auction House',
-  },
+  { value: 'owner', label: 'Owner' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'dealer', label: 'Dealer' },
 ];
+
+const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
+  SignupAccountType,
+  Array<{
+    value: SignupAccountSubtype;
+    label: string;
+  }>
+> = {
+  owner: [
+    { value: 'farmer', label: 'Farmer' },
+    { value: 'contractor', label: 'Contractor' },
+    { value: 'construction-company', label: 'Construction Company' },
+    { value: 'asset-owner', label: 'Asset Owner' },
+  ],
+  finance: [
+    { value: 'bank', label: 'Bank' },
+    { value: 'finance-house', label: 'Finance House' },
+    { value: 'insurer', label: 'Insurer' },
+    { value: 'accountant', label: 'Accountant' },
+  ],
+  dealer: [
+    { value: 'machinery-dealer', label: 'Machinery Dealer' },
+    { value: 'auction-house', label: 'Auction House' },
+  ],
+};
+
+function getDefaultSubtype(accountType: SignupAccountType): SignupAccountSubtype {
+  return SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[accountType][0].value;
+}
 
 const initialSignupState: SignupFormState = {
   accountType: 'owner',
+  accountSubtype: 'farmer',
   name: '',
   email: '',
   password: '',
@@ -186,7 +215,11 @@ async function postAuth(path: string, body: Record<string, unknown>) {
   return payload;
 }
 
-async function saveSignupProfileFallback(accountType: SignupAccountType, displayName: string) {
+async function saveSignupProfileFallback(
+  accountType: SignupAccountType,
+  accountSubtype: SignupAccountSubtype,
+  displayName: string,
+) {
   await fetch('/api/account-profile', {
     method: 'PUT',
     headers: {
@@ -195,6 +228,7 @@ async function saveSignupProfileFallback(accountType: SignupAccountType, display
     credentials: 'include',
     body: JSON.stringify({
       accountType,
+      accountSubtype,
       displayName,
     }),
   }).catch(() => null);
@@ -312,12 +346,13 @@ export default function AuthPage() {
         email,
         password: signupForm.password,
         accountType: signupForm.accountType,
+        accountSubtype: signupForm.accountSubtype,
         callbackURL: getCallbackUrl(),
       });
 
       const redirectUrl = extractRedirectUrl(payload);
 
-      await saveSignupProfileFallback(signupForm.accountType, name);
+      await saveSignupProfileFallback(signupForm.accountType, signupForm.accountSubtype, name);
 
       setSignupForm(initialSignupState);
       setNotice({
@@ -455,36 +490,51 @@ export default function AuthPage() {
 
             {mode === 'signup' ? (
               <form className={styles.form} onSubmit={handleSignupSubmit} noValidate>
-                <fieldset className={styles.accountTypeFieldset}>
-                  <legend className={styles.accountTypeLegend}>Choose account type</legend>
-                  <div className={styles.accountTypeGrid}>
-                    {SIGNUP_ACCOUNT_TYPE_OPTIONS.map((option) => {
-                      const isSelected = signupForm.accountType === option.value;
+                <div className={styles.signupTypeRow}>
+                  <label className={styles.field}>
+                    <span className={styles.label}>Choose account type</span>
+                    <select
+                      name="accountType"
+                      className={styles.select}
+                      value={signupForm.accountType}
+                      onChange={(event) => {
+                        const nextAccountType = event.target.value as SignupAccountType;
+                        setSignupForm((current) => ({
+                          ...current,
+                          accountType: nextAccountType,
+                          accountSubtype: getDefaultSubtype(nextAccountType),
+                        }));
+                      }}
+                    >
+                      {SIGNUP_ACCOUNT_TYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-                      return (
-                        <label
-                          key={option.value}
-                          className={`${styles.accountTypeOption} ${
-                            isSelected ? styles.accountTypeOptionSelected : ''
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="accountType"
-                            value={option.value}
-                            className={styles.accountTypeRadio}
-                            checked={isSelected}
-                            onChange={() =>
-                              setSignupForm((current) => ({ ...current, accountType: option.value }))
-                            }
-                          />
-                          <span className={styles.accountTypeOptionTitle}>{option.title}</span>
-                          <span className={styles.accountTypeOptionText}>{option.description}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </fieldset>
+                  <label className={styles.field}>
+                    <span className={styles.label}>Which best describes you?</span>
+                    <select
+                      name="accountSubtype"
+                      className={styles.select}
+                      value={signupForm.accountSubtype}
+                      onChange={(event) =>
+                        setSignupForm((current) => ({
+                          ...current,
+                          accountSubtype: event.target.value as SignupAccountSubtype,
+                        }))
+                      }
+                    >
+                      {SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[signupForm.accountType].map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
 
                 <label className={styles.field}>
                   <span className={styles.label}>Full name</span>
