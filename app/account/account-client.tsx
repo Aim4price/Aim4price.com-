@@ -200,7 +200,13 @@ function loadLeaflet(): Promise<any> {
 }
 
 function parseCoordinate(value: string): number | null {
-  const numeric = Number(String(value ?? '').trim());
+  const text = String(value ?? '').trim();
+
+  if (!text) {
+    return null;
+  }
+
+  const numeric = Number(text);
   return Number.isFinite(numeric) ? numeric : null;
 }
 
@@ -213,6 +219,12 @@ function readPartnerPin(profile: ProfileDraft): { lat: number; lng: number } | n
   }
 
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return null;
+  }
+
+  // South African partner locations should never have a zero latitude or longitude.
+  // Treat a zero coordinate as an incomplete stale/manual value instead of centering the map in the ocean.
+  if (Math.abs(lat) < 0.000001 || Math.abs(lng) < 0.000001) {
     return null;
   }
 
@@ -574,9 +586,10 @@ export default function AccountClient() {
             scrollWheelZoom: true,
           }).setView(center, zoom);
 
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors',
             maxZoom: 19,
+            detectRetina: true,
           }).addTo(partnerLeafletMapRef.current);
 
           partnerLeafletMapRef.current.on('click', (event: any) => {
@@ -636,7 +649,9 @@ export default function AccountClient() {
           partnerLeafletMapRef.current.setView([selectedPin.lat, selectedPin.lng], Math.max(partnerLeafletMapRef.current.getZoom(), 8));
         }
 
+        window.requestAnimationFrame(() => partnerLeafletMapRef.current?.invalidateSize());
         window.setTimeout(() => partnerLeafletMapRef.current?.invalidateSize(), 80);
+        window.setTimeout(() => partnerLeafletMapRef.current?.invalidateSize(), 320);
       } catch (error) {
         if (!cancelled) {
           setNotice({
