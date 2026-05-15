@@ -16,6 +16,7 @@ export async function GET() {
   }
 
   let displayName = session.user.name;
+  let accountType = 'owner';
 
   try {
     const profile = await getAccountProfile({
@@ -25,6 +26,7 @@ export async function GET() {
     });
 
     displayName = profile.name || displayName;
+    accountType = profile.accountType || 'owner';
   } catch (error) {
     console.error('Failed to load account profile for session menu', error);
   }
@@ -36,6 +38,7 @@ export async function GET() {
       id: session.user.id,
       name: displayName,
       email: session.user.email,
+      accountType,
     },
   });
 }
