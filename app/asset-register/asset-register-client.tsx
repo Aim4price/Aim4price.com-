@@ -4390,7 +4390,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
     const reportInsuredStats = calculateAssetStats(reportAssets, (asset) => readInsuranceStatusChoice(asset) === 'yes');
     const reportFinancedStats = calculateAssetStats(reportAssets, (asset) => readFinanceStatusChoice(asset) === 'yes');
     const reportLicensedStats = calculateAssetStats(reportAssets, (asset) => readLicenseStatusChoice(asset) === 'yes');
-    const profile = await ensureAccountProfile();
+    const profile = reportProfile ?? (await ensureAccountProfile());
     const profileLocation = [profile?.townCity, profile?.province].filter(Boolean).join(' ');
     const profileAddress = [profile?.addressLine1, profile?.addressLine2, profileLocation].filter(Boolean).join(' ');
     const ownerName = buildOwnerName(profile);
@@ -4492,7 +4492,13 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
   }
 
   async function handleExportXlsx() {
-    const response = await fetch('/api/asset-register/export?format=xlsx', {
+    const params = new URLSearchParams({ format: 'xlsx' });
+
+    if (isSharedRegisterView) {
+      params.set('ownerUserId', sharedOwnerUserId);
+    }
+
+    const response = await fetch(`/api/asset-register/export?${params.toString()}`, {
       credentials: 'include',
       cache: 'no-store',
     });
@@ -4514,6 +4520,27 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
     const fallbackName = `aim4price-asset-register-${new Date().toISOString().slice(0, 10)}.xlsx`;
     const fileName = parseDownloadFileName(response, fallbackName);
     downloadBlob(blob, fileName);
+  }
+
+  async function handleQuickExportXlsx() {
+    if (!assets.length || isExporting) {
+      return;
+    }
+
+    setExportFormat('xlsx');
+    setIsExporting(true);
+
+    try {
+      await handleExportXlsx();
+      setNotice({ tone: 'success', message: 'Asset register Excel downloaded.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to export the asset register Excel file.',
+      });
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   async function handleConfirmExport() {
@@ -4755,7 +4782,29 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
                 ) : null}
               </div>
 
-              {canUseOwnerOnlyAssetActions ? (
+              {isSharedRegisterView ? (
+                <>
+                  <button
+                    type="button"
+                    className={`${styles.secondaryButton} ${styles.sharedExportButton}`}
+                    onClick={() => void handleExportPdfReport('full')}
+                    disabled={!assets.length || isLoading || isExporting}
+                  >
+                    <PdfIcon className={styles.buttonIcon} />
+                    <span>{isExporting && exportFormat === 'pdf' ? 'Opening PDF...' : 'Download all PDF'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.secondaryButton} ${styles.sharedExportButton}`}
+                    onClick={() => void handleQuickExportXlsx()}
+                    disabled={!assets.length || isLoading || isExporting}
+                  >
+                    <SpreadsheetIcon className={styles.buttonIcon} />
+                    <span>{isExporting && exportFormat === 'xlsx' ? 'Downloading Excel...' : 'Download all Excel'}</span>
+                  </button>
+                </>
+              ) : canUseOwnerOnlyAssetActions ? (
                 <button
                   type="button"
                   className={styles.secondaryButton}
@@ -4902,21 +4951,6 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
                               <span className={styles.assetSavedDateLabel}>{assetStatusDateLabel(asset)}</span>
                             </div>
 
-                            {openPartnerNote ? (
-                              <div className={styles.partnerNoteBanner}>
-                                <div className={styles.partnerNoteText}>
-                                  <strong>Note from {partnerNoteAuthor}</strong>
-                                  <p>{openPartnerNote.noteText}</p>
-                                </div>
-                                <button
-                                  type="button"
-                                  className={styles.partnerNoteButton}
-                                  onClick={() => void handleMarkPartnerNoteNoted(openPartnerNote.id, asset.id)}
-                                >
-                                  Noted
-                                </button>
-                              </div>
-                            ) : null}
                           </div>
 
                           <div className={styles.assetHeaderAside}>
@@ -4941,11 +4975,11 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
                               {isSharedRegisterView ? (
                                 <button
                                   type="button"
-                                  className={styles.optionsButton}
+                                  className={`${styles.optionsButton} ${styles.sharedNoteActionButton}`}
                                   onClick={() => openSharedNoteModal(asset)}
                                 >
                                   <EditIcon className={styles.buttonIcon} />
-                                  <span>Leave Note</span>
+                                  <span>Leave note</span>
                                 </button>
                               ) : (
                                 <button
@@ -4979,6 +5013,22 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
                               </button>
                             </div>
                           </div>
+
+                          {openPartnerNote ? (
+                            <div className={styles.partnerNoteBanner}>
+                              <div className={styles.partnerNoteText}>
+                                <strong>Note from {partnerNoteAuthor}</strong>
+                                <p>{openPartnerNote.noteText}</p>
+                              </div>
+                              <button
+                                type="button"
+                                className={styles.partnerNoteButton}
+                                onClick={() => void handleMarkPartnerNoteNoted(openPartnerNote.id, asset.id)}
+                              >
+                                Noted
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
 
                         {isExpanded ? (
@@ -6326,7 +6376,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeSharedNoteModal} />
 
-          <div className={styles.modalCard} role="dialog" aria-modal="true" aria-labelledby="shared-note-title">
+          <div className={`${styles.modalCard} ${styles.sharedNoteModal}`} role="dialog" aria-modal="true" aria-labelledby="shared-note-title">
             <div className={styles.modalHeader}>
               <div className={styles.modalHeaderText}>
                 <h3 id="shared-note-title">Leave note</h3>
@@ -6344,9 +6394,10 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
               </button>
             </div>
 
-            <label className={styles.field}>
+            <label className={`${styles.field} ${styles.sharedNoteField}`}>
               <span>Note to asset owner</span>
               <textarea
+                className={styles.sharedNoteTextarea}
                 value={noteDraft}
                 onChange={(event) => setNoteDraft(event.target.value)}
                 placeholder="Example: Please confirm the latest hours before we process this asset."
@@ -6354,7 +6405,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
               />
             </label>
 
-            <div className={styles.formActions}>
+            <div className={`${styles.formActions} ${styles.sharedNoteActions}`}>
               <button type="button" className={styles.secondaryButton} onClick={closeSharedNoteModal} disabled={isSavingNote}>
                 Cancel
               </button>
