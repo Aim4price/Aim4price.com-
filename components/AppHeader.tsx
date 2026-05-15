@@ -41,7 +41,6 @@ type SmartLinkProps = {
   children: ReactNode;
 };
 
-const PARTNER_ACCOUNT_TYPES = new Set<AccountType>(['dealer', 'finance', 'insurance']);
 
 const BASE_NAV_ITEMS: NavItem[] = [
   { key: 'home', href: '/', label: 'Home' },
@@ -195,7 +194,7 @@ export default function AppHeader({
   const accountInitials = useMemo(() => getInitials(accountName), [accountName]);
   const accountType = session?.accountType ?? 'owner';
   const isOwnerAccount = accountType === 'owner';
-  const isPartnerAccount = PARTNER_ACCOUNT_TYPES.has(accountType);
+  const isDealerAccount = accountType === 'dealer';
   const navItems = useMemo(() => buildNavItems(session?.accountType ?? null), [session?.accountType]);
 
   async function handleSignOut() {
@@ -283,18 +282,22 @@ export default function AppHeader({
                       Account details
                     </Link>
 
-                    <Link
-                      href={isOwnerAccount ? '/shared-access' : '/shared-registers'}
-                      className={styles.menuLink}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Shared access
-                    </Link>
-
-                    {isPartnerAccount ? (
-                      <Link href="/leads" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                        Leads
+                    {isOwnerAccount ? (
+                      <Link href="/shared-access" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                        Shared access
                       </Link>
+                    ) : null}
+
+                    {isDealerAccount ? (
+                      <>
+                        <Link href="/shared-registers" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                          Shared access
+                        </Link>
+
+                        <Link href="/leads" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                          Leads
+                        </Link>
+                      </>
                     ) : null}
 
                     {isOwnerAccount ? (
