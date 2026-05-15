@@ -250,8 +250,7 @@ export default function LeadsClient() {
           <div>
             <h1>Leads</h1>
             <p>
-              Track finance, insurance and replacement-quote requests created from Asset Register items. This is the
-              first dashboard layer before PDF/email automation is added.
+              View finance, insurance and replacement-quote requests sent from Asset Register options. Partners can review, accept, quote or decline each lead.
             </p>
           </div>
         </div>
@@ -308,7 +307,7 @@ export default function LeadsClient() {
             ) : sentLeads.length ? (
               <div className={styles.leadList}>{sentLeads.map((lead) => renderLeadCard(lead, 'sent'))}</div>
             ) : (
-              <p className={styles.emptyState}>No sent leads yet. The asset-level buttons will be connected in the next step.</p>
+              <p className={styles.emptyState}>No leads sent from this account yet.</p>
             )}
           </section>
         </div>
