@@ -13,6 +13,7 @@ import styles from './page.module.css';
 type NoticeTone = 'success' | 'error';
 type PartnerType = 'dealer' | 'finance' | 'insurance';
 type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote';
+type QuoteLeadStep = 'message' | 'consent' | null;
 
 type PartnerDirectoryEntry = {
   userId: string;
@@ -2232,6 +2233,7 @@ function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry, markerNumber
         ${brands ? `<div><strong style="color:#132d2d;">Brands:</strong> ${brands}</div>` : ''}
         ${services ? `<div><strong style="color:#132d2d;">Services:</strong> ${services}</div>` : ''}
       </div>
+      <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" style="width:100%; margin-top:12px; border:0; border-radius:12px; background:#12644d; color:#fff; font-weight:850; padding:10px 12px; cursor:pointer; font-family:inherit;">Choose this partner</button>
     </div>
   `;
 }
@@ -2268,6 +2270,8 @@ export default function AssetRegisterClient() {
   const [selectedQuotePartnerId, setSelectedQuotePartnerId] = useState('');
   const [quotePartnerSearch, setQuotePartnerSearch] = useState('');
   const [quoteOwnerMessage, setQuoteOwnerMessage] = useState('');
+  const [quoteLeadStep, setQuoteLeadStep] = useState<QuoteLeadStep>(null);
+  const [quoteConsentAccepted, setQuoteConsentAccepted] = useState(false);
   const [quoteIncludePhotos, setQuoteIncludePhotos] = useState(true);
   const [quoteIncludeDocuments, setQuoteIncludeDocuments] = useState(true);
   const [quoteIncludeScanHistory, setQuoteIncludeScanHistory] = useState(false);
@@ -2534,6 +2538,11 @@ export default function AssetRegisterClient() {
       }
 
       if (quoteAsset) {
+        if (quoteLeadStep) {
+          closeQuoteLeadStep();
+          return;
+        }
+
         closeAssetQuoteModal();
         return;
       }
@@ -2569,7 +2578,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isQrModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, quoteAsset]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isQrModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, quoteAsset, quoteLeadStep]);
 
   useEffect(() => {
     if (!quoteAsset || !selectedQuoteLeadType) return;
@@ -2654,6 +2663,28 @@ export default function AssetRegisterClient() {
       cancelled = true;
     };
   }, [quoteAsset, selectedQuoteOption, quotePartnersWithCoordinates, selectedQuotePartnerId]);
+
+  useEffect(() => {
+    if (!quoteAsset || !selectedQuoteOption) return undefined;
+
+    const handleQuotePopupSelect = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      const button = target.closest<HTMLButtonElement>('[data-quote-partner-id]');
+      if (!button) return;
+
+      const partnerId = button.getAttribute('data-quote-partner-id');
+      const partner = quotePartners.find((entry) => entry.userId === partnerId);
+      if (!partner) return;
+
+      event.preventDefault();
+      openQuoteLeadMessage(partner);
+    };
+
+    document.addEventListener('click', handleQuotePopupSelect);
+    return () => document.removeEventListener('click', handleQuotePopupSelect);
+  }, [quoteAsset, selectedQuoteOption, quotePartners]);
 
   useEffect(() => {
     if (quoteAsset && selectedQuoteOption && quotePartnersWithCoordinates.length) {
@@ -3063,7 +3094,11 @@ export default function AssetRegisterClient() {
     setQuotePartners([]);
     setSelectedQuotePartnerId('');
     setQuotePartnerSearch('');
+    setQuoteLeadStep(null);
+    setQuoteConsentAccepted(false);
     setQuoteOwnerMessage('');
+    setQuoteLeadStep(null);
+    setQuoteConsentAccepted(false);
     setQuoteIncludePhotos(true);
     setQuoteIncludeDocuments(true);
     setQuoteIncludeScanHistory(false);
@@ -3130,6 +3165,8 @@ export default function AssetRegisterClient() {
     setSelectedQuotePartnerId('');
     setQuotePartnerSearch('');
     setQuoteOwnerMessage('');
+    setQuoteLeadStep(null);
+    setQuoteConsentAccepted(false);
     setQuotePartners([]);
     setQuoteIncludePhotos(true);
     setQuoteIncludeDocuments(true);
@@ -3141,6 +3178,8 @@ export default function AssetRegisterClient() {
     setQuotePartners([]);
     setSelectedQuotePartnerId('');
     setQuotePartnerSearch('');
+    setQuoteLeadStep(null);
+    setQuoteConsentAccepted(false);
 
     if (quoteLeafletMapRef.current) {
       quoteLeafletMapRef.current.remove();
@@ -3148,6 +3187,34 @@ export default function AssetRegisterClient() {
       quoteMarkerLayerRef.current = null;
       quoteMarkersByPartnerRef.current.clear();
     }
+  }
+
+  function openQuoteLeadMessage(partner: PartnerDirectoryEntry) {
+    setSelectedQuotePartnerId(partner.userId);
+    setQuoteConsentAccepted(false);
+    setQuoteLeadStep('message');
+  }
+
+  function closeQuoteLeadStep() {
+    if (isSendingQuoteLead) return;
+    setQuoteLeadStep(null);
+    setQuoteConsentAccepted(false);
+  }
+
+  function goToQuoteLeadConsent() {
+    if (!selectedQuotePartner || !selectedQuoteOption) {
+      setNotice({ tone: 'error', message: 'Choose a partner first.' });
+      return;
+    }
+
+    setQuoteConsentAccepted(false);
+    setQuoteLeadStep('consent');
+  }
+
+  function goBackToQuoteLeadMessage() {
+    if (isSendingQuoteLead) return;
+    setQuoteConsentAccepted(false);
+    setQuoteLeadStep('message');
   }
 
   async function handleSendAssetQuoteLead() {
@@ -3158,6 +3225,11 @@ export default function AssetRegisterClient() {
 
     if (!selectedQuotePartner) {
       setNotice({ tone: 'error', message: `Choose a ${formatQuotePartnerType(selectedQuoteOption.partnerType).toLowerCase()} partner first.` });
+      return;
+    }
+
+    if (!quoteConsentAccepted) {
+      setNotice({ tone: 'error', message: 'Accept the POPIA and permission note before sending this request.' });
       return;
     }
 
@@ -5653,7 +5725,12 @@ export default function AssetRegisterClient() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeAssetQuoteModal} />
 
-          <div className={`${styles.optionsModal} ${styles.assetQuoteModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-quote-title">
+          <div
+            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${selectedQuoteOption ? styles.assetQuotePartnerPickerModal : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="asset-quote-title"
+          >
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-quote-title">{selectedQuoteOption ? selectedQuoteOption.mapTitle : quoteAsset.title}</h3>
@@ -5739,7 +5816,7 @@ export default function AssetRegisterClient() {
                               key={partner.userId}
                               type="button"
                               className={`${styles.assetQuotePartnerCard} ${selectedQuotePartnerId === partner.userId ? styles.assetQuotePartnerCardActive : ''}`}
-                              onClick={() => setSelectedQuotePartnerId(partner.userId)}
+                              onClick={() => openQuoteLeadMessage(partner)}
                             >
                               <span className={styles.assetQuotePartnerNumber}>{index + 1}</span>
                               <span className={styles.assetQuotePartnerBody}>
@@ -5774,64 +5851,106 @@ export default function AssetRegisterClient() {
                     </div>
                   </div>
 
-                  <div className={styles.assetQuoteLeadPanel}>
-                    <div className={styles.assetQuoteLeadPanelHeader}>
-                      <strong>Lead contents</strong>
-                      <span>This sends one asset only. It does not share the full register.</span>
-                    </div>
-
-                    <div className={styles.assetQuoteCheckboxGrid}>
-                      <label className={styles.assetQuoteCheckbox}>
-                        <input type="checkbox" checked readOnly />
-                        <span>Asset details and valuation summary</span>
-                      </label>
-                      <label className={styles.assetQuoteCheckbox}>
-                        <input type="checkbox" checked={quoteIncludePhotos} onChange={(event) => setQuoteIncludePhotos(event.target.checked)} />
-                        <span>Photos</span>
-                      </label>
-                      <label className={styles.assetQuoteCheckbox}>
-                        <input type="checkbox" checked={quoteIncludeDocuments} onChange={(event) => setQuoteIncludeDocuments(event.target.checked)} />
-                        <span>Saved documents</span>
-                      </label>
-                      <label className={styles.assetQuoteCheckbox}>
-                        <input type="checkbox" checked={quoteIncludeScanHistory} onChange={(event) => setQuoteIncludeScanHistory(event.target.checked)} />
-                        <span>QR scan history</span>
-                      </label>
-                    </div>
-
-                    <label className={styles.field}>
-                      <span>Message to partner</span>
-                      <textarea
-                        value={quoteOwnerMessage}
-                        onChange={(event) => setQuoteOwnerMessage(event.target.value)}
-                        placeholder="Optional note, for example: Please contact me about refinancing this tractor."
+                  {quoteLeadStep && selectedQuoteOption && selectedQuotePartner ? (
+                    <div className={styles.assetQuoteStepOverlay}>
+                      <button
+                        type="button"
+                        className={styles.assetQuoteStepBackdrop}
+                        onClick={closeQuoteLeadStep}
+                        aria-label="Close partner request step"
+                        disabled={isSendingQuoteLead}
                       />
-                    </label>
-                  </div>
 
-                  <div className={styles.assetQuoteDisclaimer}>
-                    By sending this lead, you allow the selected partner to view the asset information included above and contact you outside Aim4price.
-                    This does not create a finance, insurance, valuation or sales agreement.
-                  </div>
+                      <section className={styles.assetQuoteStepModal} aria-live="polite">
+                        <div className={styles.assetQuoteStepHeader}>
+                          <div>
+                            <span>{quotePartnerName(selectedQuotePartner)}</span>
+                            <h4>{quoteLeadStep === 'message' ? `Message for ${formatQuotePartnerType(selectedQuotePartner.partnerType).toLowerCase()} partner` : 'Confirm and send request'}</h4>
+                          </div>
+                          <button
+                            type="button"
+                            className={styles.assetQuoteStepCloseButton}
+                            onClick={closeQuoteLeadStep}
+                            aria-label="Close partner request step"
+                            disabled={isSendingQuoteLead}
+                          >
+                            <CloseIcon className={styles.buttonIcon} />
+                          </button>
+                        </div>
+
+                        {quoteLeadStep === 'message' ? (
+                          <div className={styles.assetQuoteStepBody}>
+                            <p className={styles.assetQuoteStepNotice}>This sends one asset only. It does not share the full register.</p>
+
+                            <label className={styles.assetQuoteMessageField}>
+                              <span>
+                                Message to partner
+                                <small>Optional</small>
+                              </span>
+                              <textarea
+                                value={quoteOwnerMessage}
+                                onChange={(event) => setQuoteOwnerMessage(event.target.value)}
+                                placeholder="Example: Please contact me about cover or finance options for this asset."
+                              />
+                            </label>
+                          </div>
+                        ) : (
+                          <div className={styles.assetQuoteStepBody}>
+                            <div className={styles.assetQuotePopiaBox}>
+                              <strong>Disclaimer and POPIA note</strong>
+                              <p>
+                                By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your account contact details with the chosen partner.
+                                This is only a lead request and does not create a finance, insurance, valuation or sales agreement.
+                              </p>
+                              <p>
+                                You confirm that you have permission to share this asset information and understand that the selected partner may contact you outside Aim4price.
+                              </p>
+                            </div>
+
+                            <label className={styles.assetQuoteConsentCheck}>
+                              <input
+                                type="checkbox"
+                                checked={quoteConsentAccepted}
+                                onChange={(event) => setQuoteConsentAccepted(event.target.checked)}
+                              />
+                              <span>I accept the disclaimer and POPIA permission note.</span>
+                            </label>
+                          </div>
+                        )}
+
+                        <div className={styles.assetQuoteStepFooter}>
+                          {quoteLeadStep === 'message' ? (
+                            <>
+                              <button type="button" className={styles.secondaryButton} onClick={closeQuoteLeadStep} disabled={isSendingQuoteLead}>
+                                Cancel
+                              </button>
+                              <button type="button" className={styles.primaryButton} onClick={goToQuoteLeadConsent}>
+                                Next
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button type="button" className={styles.secondaryButton} onClick={goBackToQuoteLeadMessage} disabled={isSendingQuoteLead}>
+                                Back
+                              </button>
+                              <button
+                                type="button"
+                                className={styles.primaryButton}
+                                onClick={() => void handleSendAssetQuoteLead()}
+                                disabled={isSendingQuoteLead || !quoteConsentAccepted}
+                              >
+                                {isSendingQuoteLead ? 'Sending...' : `Send to ${quotePartnerName(selectedQuotePartner)}`}
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </section>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>
 
-            {selectedQuoteOption ? (
-              <div className={styles.assetQuoteFooter}>
-                <button type="button" className={styles.secondaryButton} onClick={closeAssetQuoteModal} disabled={isSendingQuoteLead}>
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={() => void handleSendAssetQuoteLead()}
-                  disabled={isSendingQuoteLead || !selectedQuotePartner}
-                >
-                  {isSendingQuoteLead ? 'Sending...' : selectedQuotePartner ? `${selectedQuoteOption.sendLabel} to ${quotePartnerName(selectedQuotePartner)}` : 'Choose partner'}
-                </button>
-              </div>
-            ) : null}
           </div>
         </div>
       ) : null}
