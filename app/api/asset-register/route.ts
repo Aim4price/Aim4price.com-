@@ -470,7 +470,9 @@ export async function PUT(request: NextRequest) {
       excludeAssetId: assetId,
     });
 
-    return NextResponse.json({ ok: true, item });
+    const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [item]);
+
+    return NextResponse.json({ ok: true, item: itemWithPartnerNote ?? item });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
