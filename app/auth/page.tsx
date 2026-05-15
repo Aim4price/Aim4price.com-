@@ -40,17 +40,17 @@ const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<{
   {
     value: 'owner',
     title: 'Owner',
-    description: 'Farmer / Contractor / Construction Company / Asset Owner',
+    description: 'Farmer · Contractor · Construction Company · Asset Owner',
   },
   {
     value: 'finance',
     title: 'Finance',
-    description: 'Bank / Finance House / Insurer / Accountant',
+    description: 'Bank · Finance House · Insurer · Accountant',
   },
   {
     value: 'dealer',
     title: 'Dealer',
-    description: 'Machinery Dealer / Auction House',
+    description: 'Machinery Dealer · Auction House',
   },
 ];
 
@@ -229,15 +229,15 @@ export default function AuthPage() {
     () =>
       mode === 'signup'
         ? {
-            title: 'Create your Aim4price account',
-            text: 'Choose the correct account type, then save valuations, manage records and connect with trusted partners.',
+            title: 'Create your account',
+            text: 'Choose the account type that matches how you use Aim4price.',
             action: 'Create account',
             footer: 'Already have an account?',
             footerAction: 'Log in',
           }
         : {
-            title: 'Log in to your account',
-            text: 'Open your saved valuations and machinery records with secure email access.',
+            title: 'Welcome back',
+            text: 'Log in to manage your valuations and machinery records.',
             action: 'Log in',
             footer: 'Need an account?',
             footerAction: 'Create one',
