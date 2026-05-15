@@ -4782,34 +4782,12 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
                 ) : null}
               </div>
 
-              {isSharedRegisterView ? (
-                <>
-                  <button
-                    type="button"
-                    className={`${styles.secondaryButton} ${styles.sharedExportButton}`}
-                    onClick={() => void handleExportPdfReport('full')}
-                    disabled={!assets.length || isLoading || isExporting}
-                  >
-                    <PdfIcon className={styles.buttonIcon} />
-                    <span>{isExporting && exportFormat === 'pdf' ? 'Opening PDF...' : 'Download all PDF'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`${styles.secondaryButton} ${styles.sharedExportButton}`}
-                    onClick={() => void handleQuickExportXlsx()}
-                    disabled={!assets.length || isLoading || isExporting}
-                  >
-                    <SpreadsheetIcon className={styles.buttonIcon} />
-                    <span>{isExporting && exportFormat === 'xlsx' ? 'Downloading Excel...' : 'Download all Excel'}</span>
-                  </button>
-                </>
-              ) : canUseOwnerOnlyAssetActions ? (
+              {isSharedRegisterView || canUseOwnerOnlyAssetActions ? (
                 <button
                   type="button"
                   className={styles.secondaryButton}
                   onClick={openExportModal}
-                  disabled={!assets.length || isLoading}
+                  disabled={!assets.length || isLoading || isExporting}
                 >
                   <DownloadIcon className={styles.buttonIcon} />
                   <span>Download full Asset Register</span>
