@@ -4599,7 +4599,7 @@ export default function AssetRegisterClient() {
 
                               <button
                                 type="button"
-                                className={`${styles.optionsButton} ${styles.assetQuoteOpenButton}`}
+                                className={styles.optionsButton}
                                 onClick={() => openAssetQuoteOptions(asset)}
                               >
                                 <OptionsIcon className={styles.buttonIcon} />
@@ -5568,9 +5568,11 @@ export default function AssetRegisterClient() {
           <div className={`${styles.optionsModal} ${styles.assetQuoteModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-quote-title">
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <span className={styles.modalEyebrow}>Asset options</span>
-                <h3 id="asset-quote-title">{selectedQuoteOption ? selectedQuoteOption.mapTitle : 'Request quotes for this asset'}</h3>
-                <p>{quoteAsset.title} · {buildAssetMeta(quoteAsset)} · {money(quoteAsset.value)} excl. VAT</p>
+                <h3 id="asset-quote-title">{selectedQuoteOption ? selectedQuoteOption.mapTitle : quoteAsset.title}</h3>
+                <p>
+                  {selectedQuoteOption ? `${quoteAsset.title} · ${selectedQuoteOption.shortTitle} · ` : ''}
+                  {buildAssetMeta(quoteAsset)} · {money(quoteAsset.value)} excl. VAT
+                </p>
               </div>
 
               <button
@@ -5586,35 +5588,20 @@ export default function AssetRegisterClient() {
 
             <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.assetQuoteScrollBody}`}>
               {!selectedQuoteOption ? (
-                <div className={styles.assetQuoteContent}>
-                  <div className={styles.assetQuoteIntroCard}>
-                    <div className={styles.assetQuoteIntroMedia}>
-                      <img src={assetPreviewImage(quoteAsset) || FALLBACK_ASSET_IMAGE} alt={quoteAsset.title} />
-                    </div>
-                    <div>
-                      <span className={styles.assetQuoteKicker}>Send a controlled asset lead</span>
-                      <h4>{quoteAsset.title}</h4>
-                      <p>
-                        Choose what you need. Aim4price will send this asset as a structured lead to the selected partner.
-                        The partner does not receive access to your full Asset Register from these buttons.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className={styles.assetQuoteChoiceGrid}>
+                <div className={styles.optionsContent}>
+                  <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.assetQuoteChoiceGrid}`}>
                     {ASSET_QUOTE_OPTIONS.map((option) => (
                       <button
                         key={option.leadType}
                         type="button"
-                        className={styles.assetQuoteChoiceCard}
+                        className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard}`}
                         onClick={() => openQuotePartnerPicker(option.leadType)}
                       >
-                        <span className={styles.assetQuoteChoiceIcon}>{renderQuoteOptionIcon(option.leadType, styles.buttonIcon)}</span>
+                        {renderQuoteOptionIcon(option.leadType, styles.buttonIcon)}
                         <span>
                           <strong>{option.title}</strong>
                           <small>{option.description}</small>
                         </span>
-                        <ChevronRightIcon className={styles.buttonIcon} />
                       </button>
                     ))}
                   </div>

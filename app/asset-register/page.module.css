@@ -12737,28 +12737,9 @@
 }
 
 /* Asset quote lead options */
-.assetQuoteOpenButton {
-  color: #b32626 !important;
-  background: rgba(255, 255, 255, 0.96) !important;
-  border-color: rgba(220, 38, 38, 0.58) !important;
-  box-shadow:
-    0 14px 28px rgba(185, 28, 28, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
-  font-weight: 900 !important;
-  letter-spacing: -0.01em;
-}
-
-.assetQuoteOpenButton:hover {
-  color: #991b1b !important;
-  border-color: rgba(185, 28, 28, 0.78) !important;
-  box-shadow:
-    0 18px 34px rgba(185, 28, 28, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
-}
-
 .assetQuoteModal {
-  width: min(1120px, calc(100vw - 2rem)) !important;
-  max-height: min(88vh, 900px) !important;
+  width: min(100%, 960px) !important;
+  max-height: min(86vh, calc(100dvh - 2.25rem)) !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
@@ -12768,10 +12749,21 @@
   flex: 0 0 auto;
 }
 
+.assetQuoteModalHeader .modalHeaderText {
+  gap: 0.38rem !important;
+}
+
+.assetQuoteModalHeader p {
+  max-width: none !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .assetQuoteScrollBody {
   flex: 1 1 auto;
   min-height: 0;
-  padding: clamp(1.05rem, 2vw, 1.45rem) !important;
+  padding: clamp(1.05rem, 2vw, 1.35rem) !important;
   overflow-y: auto !important;
 }
 
@@ -12780,7 +12772,6 @@
   gap: clamp(1rem, 1.8vw, 1.3rem);
 }
 
-.assetQuoteIntroCard,
 .assetQuoteLeadPanel,
 .assetQuoteDisclaimer {
   border: 1px solid rgba(18, 45, 37, 0.09);
@@ -12789,127 +12780,74 @@
   box-shadow: 0 16px 38px rgba(18, 45, 37, 0.06);
 }
 
-.assetQuoteIntroCard {
-  display: grid;
-  grid-template-columns: minmax(170px, 0.24fr) minmax(0, 1fr);
-  gap: clamp(1rem, 2vw, 1.45rem);
-  align-items: center;
-  padding: clamp(0.95rem, 1.7vw, 1.25rem);
+.optionsModal .assetQuoteChoiceGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
 }
 
-.assetQuoteIntroMedia {
-  overflow: hidden;
-  aspect-ratio: 16 / 10;
-  border-radius: 1.2rem;
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  background: #eef3f1;
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard {
+  display: grid !important;
+  grid-template-columns: 3.15rem minmax(0, 1fr) !important;
+  align-items: center !important;
+  justify-items: center !important;
+  justify-content: stretch !important;
+  min-height: 7.35rem !important;
+  padding: 1.18rem 1.2rem !important;
+  border-radius: 1.35rem !important;
+  color: #1d3b62 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  text-align: left !important;
 }
 
-.assetQuoteIntroMedia img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(184, 202, 218, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eef5fb 100%) !important;
+  box-shadow:
+    0 16px 30px rgba(16, 31, 28, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
-.assetQuoteKicker {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  min-height: 1.85rem;
-  padding: 0 0.75rem;
-  border-radius: 999px;
-  color: #14533d;
-  background: rgba(31, 108, 83, 0.1);
-  border: 1px solid rgba(31, 108, 83, 0.16);
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard > .buttonIcon {
+  grid-column: 1 !important;
+  width: 1.48rem !important;
+  height: 1.48rem !important;
+  justify-self: center !important;
+  align-self: center !important;
+  margin: 0 !important;
+  color: #1d3b62 !important;
 }
 
-.assetQuoteIntroCard h4 {
-  margin: 0.55rem 0 0;
-  color: #0f3228;
-  font-size: clamp(1.45rem, 2.6vw, 2.1rem);
-  line-height: 1;
-  letter-spacing: -0.055em;
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard > span {
+  grid-column: 2 !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  display: grid !important;
+  align-content: center !important;
+  justify-items: start !important;
+  gap: 0.34rem !important;
 }
 
-.assetQuoteIntroCard p {
-  max-width: 62rem;
-  margin: 0.7rem 0 0;
-  color: #667581;
-  font-size: 1rem;
-  line-height: 1.65;
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard strong {
+  color: #10352b !important;
+  font-size: clamp(1rem, 1.18vw, 1.08rem) !important;
+  font-weight: 780 !important;
+  line-height: 1.14 !important;
+  letter-spacing: -0.024em !important;
+  white-space: nowrap !important;
 }
 
-.assetQuoteChoiceGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(0.9rem, 1.5vw, 1.2rem);
-}
-
-.assetQuoteChoiceCard {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 0.95rem;
-  align-items: center;
-  min-height: 10.25rem;
-  padding: clamp(1rem, 1.75vw, 1.3rem);
-  border-radius: 1.45rem;
-  border: 1px solid rgba(47, 73, 96, 0.12);
-  color: #12352c;
-  background:
-    radial-gradient(circle at 14% 10%, rgba(31, 108, 83, 0.13), transparent 10rem),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(246, 249, 251, 0.98) 100%);
-  box-shadow: 0 18px 42px rgba(18, 45, 37, 0.065);
-  cursor: pointer;
-  text-align: left;
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    border-color 180ms ease;
-}
-
-.assetQuoteChoiceCard:hover {
-  transform: translateY(-2px);
-  border-color: rgba(31, 108, 83, 0.28);
-  box-shadow: 0 24px 56px rgba(18, 45, 37, 0.105);
-}
-
-.assetQuoteChoiceIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 3.4rem;
-  height: 3.4rem;
-  border-radius: 1.15rem;
-  color: #ffffff;
-  background: linear-gradient(180deg, #1b7055 0%, #124332 100%);
-  box-shadow: 0 14px 28px rgba(18, 66, 51, 0.17);
-}
-
-.assetQuoteChoiceIcon .buttonIcon {
-  width: 1.45rem;
-  height: 1.45rem;
-}
-
-.assetQuoteChoiceCard strong {
-  display: block;
-  color: #102f27;
-  font-size: clamp(1.06rem, 1.5vw, 1.22rem);
-  line-height: 1.1;
-  letter-spacing: -0.025em;
-}
-
-.assetQuoteChoiceCard small {
-  display: block;
-  margin-top: 0.45rem;
-  color: #667581;
-  font-size: 0.88rem;
-  line-height: 1.5;
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard small {
+  max-width: 22rem !important;
+  color: #627386 !important;
+  font-size: 0.9rem !important;
+  font-weight: 620 !important;
+  line-height: 1.42 !important;
 }
 
 .assetQuoteStepBar {
@@ -13173,11 +13111,10 @@
 }
 
 @media (max-width: 980px) {
-  .assetQuoteChoiceGrid,
+  .optionsModal .assetQuoteChoiceGrid,
   .assetQuotePartnerGrid,
-  .assetQuoteCheckboxGrid,
-  .assetQuoteIntroCard {
-    grid-template-columns: 1fr;
+  .assetQuoteCheckboxGrid {
+    grid-template-columns: 1fr !important;
   }
 
   .assetQuotePartnerList {
@@ -13208,12 +13145,13 @@
     border-radius: 1.35rem !important;
   }
 
-  .assetQuoteChoiceCard {
-    grid-template-columns: auto minmax(0, 1fr);
+  .optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard {
+    grid-template-columns: 2.65rem minmax(0, 1fr) !important;
   }
 
-  .assetQuoteChoiceCard > .buttonIcon {
-    display: none;
+  .assetQuoteModalHeader p,
+  .optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard strong {
+    white-space: normal !important;
   }
 
   .assetQuoteFooter .primaryButton,
