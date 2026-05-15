@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
+import { getAccountProfile } from '../../../lib/account-profile';
+import { attachOpenPartnerNotesToAssets } from '../../../lib/partner-access';
 import {
   deleteUnreferencedAssetRegisterUploads,
   listInternalAssetRegisterUploadIds,
@@ -33,6 +35,23 @@ type ErrorLike = {
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
+}
+
+
+async function requireOwnerAccount(user: { id: string; name?: string | null; email?: string | null }) {
+  const profile = await getAccountProfile(user);
+
+  if (profile.accountType !== 'owner') {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'Partner accounts can only open shared asset registers. Owners are the only accounts that can create, update or delete asset register items.',
+      },
+      { status: 403 },
+    );
+  }
+
+  return null;
 }
 
 function normalizeKind(value: unknown): AssetRegisterItemKind {
@@ -290,7 +309,11 @@ export async function GET() {
   }
 
   try {
-    const items = await listAssetRegisterItems(session.user.id);
+    const ownerError = await requireOwnerAccount(session.user);
+    if (ownerError) return ownerError;
+
+    const baseItems = await listAssetRegisterItems(session.user.id);
+    const items = await attachOpenPartnerNotesToAssets(session.user.id, baseItems);
 
     return NextResponse.json({
       ok: true,
@@ -315,6 +338,9 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) {
     return unauthorized();
   }
+
+  const ownerError = await requireOwnerAccount(session.user);
+  if (ownerError) return ownerError;
 
   const body = (await request.json()) as Partial<CreateManualAssetInput>;
   const title = String(body.title ?? '').trim();
@@ -373,6 +399,9 @@ export async function PUT(request: NextRequest) {
   if (!session?.user?.id) {
     return unauthorized();
   }
+
+  const ownerError = await requireOwnerAccount(session.user);
+  if (ownerError) return ownerError;
 
   const body = (await request.json()) as Partial<UpdateAssetRegisterItemInput>;
   const assetId = String(body.assetId ?? '').trim();
@@ -469,6 +498,9 @@ export async function DELETE(request: NextRequest) {
   if (!session?.user?.id) {
     return unauthorized();
   }
+
+  const ownerError = await requireOwnerAccount(session.user);
+  if (ownerError) return ownerError;
 
   const { searchParams } = new URL(request.url);
   const assetId = String(searchParams.get('id') ?? '').trim();
