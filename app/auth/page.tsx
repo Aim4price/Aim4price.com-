@@ -5,7 +5,7 @@ import Link from 'next/link';
 import styles from './page.module.css';
 
 type Mode = 'signup' | 'login';
-type SignupAccountType = 'owner' | 'finance' | 'dealer';
+type SignupAccountType = 'owner' | 'finance' | 'insurance' | 'dealer';
 type SignupAccountSubtype =
   | 'farmer'
   | 'contractor'
@@ -13,10 +13,10 @@ type SignupAccountSubtype =
   | 'asset-owner'
   | 'bank'
   | 'finance-house'
-  | 'insurer'
   | 'accountant'
+  | 'short-term-insurer'
   | 'machinery-dealer'
-  | 'auction-house';
+  | 'auctioneer';
 type NoticeTone = 'success' | 'error' | 'info';
 
 type AuthNotice = {
@@ -50,6 +50,7 @@ const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<{
 }> = [
   { value: 'owner', label: 'Owner' },
   { value: 'finance', label: 'Finance' },
+  { value: 'insurance', label: 'Insurer' },
   { value: 'dealer', label: 'Dealer' },
 ];
 
@@ -69,12 +70,14 @@ const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
   finance: [
     { value: 'bank', label: 'Bank' },
     { value: 'finance-house', label: 'Finance House' },
-    { value: 'insurer', label: 'Insurer' },
     { value: 'accountant', label: 'Accountant' },
+  ],
+  insurance: [
+    { value: 'short-term-insurer', label: 'Short-Term Insurer' },
   ],
   dealer: [
     { value: 'machinery-dealer', label: 'Machinery Dealer' },
-    { value: 'auction-house', label: 'Auction House' },
+    { value: 'auctioneer', label: 'Auctioneer' },
   ],
 };
 
