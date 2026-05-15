@@ -1,0 +1,1191 @@
+import { ensureAccountProfileColumns, getAccountProfile } from './account-profile';
+import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
+import { getDb } from './db';
+import { verifyScanPin } from './scan-pin';
+
+export type AccountRole = 'owner' | 'dealer' | 'finance' | 'insurance';
+export type PartnerType = Exclude<AccountRole, 'owner'>;
+export type SharedAccessStatus = 'pending' | 'active' | 'revoked' | 'declined';
+export type LeadType = 'finance' | 'insurance' | 'replacement_quote';
+export type AssetLeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
+
+export type PartnerDirectoryEntry = {
+  userId: string;
+  partnerType: PartnerType;
+  displayName: string;
+  businessName: string;
+  phone: string;
+  province: string;
+  townCity: string;
+  addressLine1: string;
+  description: string;
+  latitude: number | null;
+  longitude: number | null;
+  serviceRadiusKm: number | null;
+  brandFocus: string;
+  services: string;
+};
+
+export type SharedAccessGrant = {
+  id: string;
+  ownerUserId: string;
+  partnerUserId: string;
+  partnerType: PartnerType;
+  status: SharedAccessStatus;
+  permissionLevel: string;
+  includeDocuments: boolean;
+  includeScanHistory: boolean;
+  ownerMessage: string;
+  ownerName: string;
+  ownerBusinessName: string;
+  ownerPhone: string;
+  ownerProvince: string;
+  ownerTownCity: string;
+  partnerName: string;
+  partnerBusinessName: string;
+  partnerPhone: string;
+  partnerProvince: string;
+  partnerTownCity: string;
+  createdAtIso: string;
+  acceptedAtIso: string | null;
+  revokedAtIso: string | null;
+  declinedAtIso: string | null;
+  lastViewedAtIso: string | null;
+  updatedAtIso: string;
+};
+
+export type SharedRegisterSummary = SharedAccessGrant & {
+  assetCount: number;
+  totalValue: number;
+};
+
+export type AssetLead = {
+  id: string;
+  ownerUserId: string;
+  partnerUserId: string;
+  assetRegisterItemId: string;
+  leadType: LeadType;
+  status: AssetLeadStatus;
+  assetSnapshot: Record<string, unknown>;
+  includedSections: Record<string, unknown>;
+  ownerMessage: string;
+  ownerContactName: string;
+  ownerContactPhone: string;
+  ownerContactEmail: string;
+  ownerName: string;
+  ownerBusinessName: string;
+  ownerPhone: string;
+  ownerProvince: string;
+  ownerTownCity: string;
+  partnerName: string;
+  partnerBusinessName: string;
+  partnerPhone: string;
+  partnerProvince: string;
+  partnerTownCity: string;
+  createdAtIso: string;
+  viewedAtIso: string | null;
+  acceptedAtIso: string | null;
+  quotedAtIso: string | null;
+  declinedAtIso: string | null;
+  closedAtIso: string | null;
+  updatedAtIso: string;
+};
+
+type AccountPartnerProfileRow = {
+  user_id: string;
+  display_name: string | null;
+  business_name: string | null;
+  phone: string | null;
+  account_type: string | null;
+  province: string | null;
+  town_city: string | null;
+  address_line_1: string | null;
+  partner_description: string | null;
+  partner_latitude: string | number | null;
+  partner_longitude: string | number | null;
+  partner_service_radius_km: string | number | null;
+  partner_brand_focus: string | null;
+  partner_services: string | null;
+};
+
+type GrantRow = {
+  id: string;
+  owner_user_id: string;
+  partner_user_id: string;
+  partner_type: string | null;
+  status: string | null;
+  permission_level: string | null;
+  include_documents: boolean | null;
+  include_scan_history: boolean | null;
+  owner_message: string | null;
+  owner_display_name: string | null;
+  owner_business_name: string | null;
+  owner_phone: string | null;
+  owner_province: string | null;
+  owner_town_city: string | null;
+  partner_display_name: string | null;
+  partner_business_name: string | null;
+  partner_phone: string | null;
+  partner_province: string | null;
+  partner_town_city: string | null;
+  created_at: string | null;
+  accepted_at: string | null;
+  revoked_at: string | null;
+  declined_at: string | null;
+  last_viewed_at: string | null;
+  updated_at: string | null;
+};
+
+type LeadRow = {
+  id: string;
+  owner_user_id: string;
+  partner_user_id: string;
+  asset_register_item_id: string;
+  lead_type: string | null;
+  status: string | null;
+  asset_snapshot_json: unknown;
+  included_sections_json: unknown;
+  owner_message: string | null;
+  owner_contact_name: string | null;
+  owner_contact_phone: string | null;
+  owner_contact_email: string | null;
+  owner_display_name: string | null;
+  owner_business_name: string | null;
+  owner_phone: string | null;
+  owner_province: string | null;
+  owner_town_city: string | null;
+  partner_display_name: string | null;
+  partner_business_name: string | null;
+  partner_phone: string | null;
+  partner_province: string | null;
+  partner_town_city: string | null;
+  created_at: string | null;
+  viewed_at: string | null;
+  accepted_at: string | null;
+  quoted_at: string | null;
+  declined_at: string | null;
+  closed_at: string | null;
+  updated_at: string | null;
+};
+
+type PinRow = {
+  scan_pin_hash: string | null;
+  scan_pin_enabled: boolean | null;
+};
+
+const ACCOUNT_ROLES = new Set<AccountRole>(['owner', 'dealer', 'finance', 'insurance']);
+const PARTNER_TYPES = new Set<PartnerType>(['dealer', 'finance', 'insurance']);
+const ACCESS_STATUSES = new Set<SharedAccessStatus>(['pending', 'active', 'revoked', 'declined']);
+const LEAD_TYPES = new Set<LeadType>(['finance', 'insurance', 'replacement_quote']);
+const LEAD_STATUSES = new Set<AssetLeadStatus>(['sent', 'viewed', 'accepted', 'quoted', 'declined', 'closed']);
+
+let partnerAccessTablesEnsured = false;
+
+function asText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function asNumber(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function asInteger(value: unknown): number | null {
+  const numeric = asNumber(value);
+  return numeric === null ? null : Math.round(numeric);
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+
+  return {};
+}
+
+export function normalizeAccountRole(value: unknown): AccountRole {
+  const normalized = asText(value).toLowerCase();
+
+  if (normalized === 'bank') return 'finance';
+  if (normalized === 'broker' || normalized === 'insurer') return 'insurance';
+  if (ACCOUNT_ROLES.has(normalized as AccountRole)) return normalized as AccountRole;
+
+  return 'owner';
+}
+
+export function normalizePartnerType(value: unknown): PartnerType | null {
+  const normalized = normalizeAccountRole(value);
+  return PARTNER_TYPES.has(normalized as PartnerType) ? (normalized as PartnerType) : null;
+}
+
+export function normalizeLeadType(value: unknown): LeadType | null {
+  const normalized = asText(value).toLowerCase();
+  if (normalized === 'replacement' || normalized === 'machinery' || normalized === 'dealer') return 'replacement_quote';
+  return LEAD_TYPES.has(normalized as LeadType) ? (normalized as LeadType) : null;
+}
+
+export function partnerTypeForLeadType(leadType: LeadType): PartnerType {
+  if (leadType === 'replacement_quote') return 'dealer';
+  if (leadType === 'insurance') return 'insurance';
+  return 'finance';
+}
+
+export function normalizeLeadStatus(value: unknown): AssetLeadStatus | null {
+  const normalized = asText(value).toLowerCase();
+  return LEAD_STATUSES.has(normalized as AssetLeadStatus) ? (normalized as AssetLeadStatus) : null;
+}
+
+function normalizeAccessStatus(value: unknown): SharedAccessStatus {
+  const normalized = asText(value).toLowerCase();
+  return ACCESS_STATUSES.has(normalized as SharedAccessStatus) ? (normalized as SharedAccessStatus) : 'pending';
+}
+
+function isoNowFallback(value: string | null | undefined): string {
+  return value || new Date().toISOString();
+}
+
+export async function ensurePartnerAccessTables(): Promise<void> {
+  if (partnerAccessTablesEnsured) {
+    return;
+  }
+
+  await ensureAccountProfileColumns();
+  const db = getDb();
+
+  await db.query('CREATE EXTENSION IF NOT EXISTS pgcrypto');
+
+  await db.query(`
+    alter table account_profiles
+      add column if not exists partner_directory_enabled boolean not null default false,
+      add column if not exists partner_directory_status text not null default 'approved',
+      add column if not exists partner_description text,
+      add column if not exists partner_latitude double precision,
+      add column if not exists partner_longitude double precision,
+      add column if not exists partner_service_radius_km integer,
+      add column if not exists partner_brand_focus text,
+      add column if not exists partner_services text
+  `);
+
+  await db.query(`
+    update account_profiles
+    set account_type = case lower(trim(account_type))
+      when 'bank' then 'finance'
+      when 'broker' then 'insurance'
+      when 'insurer' then 'insurance'
+      when 'insurance' then 'insurance'
+      when 'finance' then 'finance'
+      when 'dealer' then 'dealer'
+      else 'owner'
+    end
+    where account_type is null
+       or lower(trim(account_type)) not in ('owner', 'dealer', 'finance', 'insurance')
+       or lower(trim(account_type)) in ('bank', 'broker', 'insurer')
+  `);
+
+  await db.query(`
+    create table if not exists asset_register_access_grants (
+      id uuid primary key default gen_random_uuid(),
+      owner_user_id text not null,
+      partner_user_id text not null,
+      partner_type text not null,
+      status text not null default 'pending',
+      permission_level text not null default 'view',
+      include_documents boolean not null default true,
+      include_scan_history boolean not null default true,
+      owner_message text,
+      created_at timestamptz not null default now(),
+      accepted_at timestamptz,
+      revoked_at timestamptz,
+      declined_at timestamptz,
+      last_viewed_at timestamptz,
+      updated_at timestamptz not null default now()
+    )
+  `);
+
+  await db.query(`
+    alter table asset_register_access_grants
+      add column if not exists owner_user_id text,
+      add column if not exists partner_user_id text,
+      add column if not exists partner_type text,
+      add column if not exists status text not null default 'pending',
+      add column if not exists permission_level text not null default 'view',
+      add column if not exists include_documents boolean not null default true,
+      add column if not exists include_scan_history boolean not null default true,
+      add column if not exists owner_message text,
+      add column if not exists created_at timestamptz not null default now(),
+      add column if not exists accepted_at timestamptz,
+      add column if not exists revoked_at timestamptz,
+      add column if not exists declined_at timestamptz,
+      add column if not exists last_viewed_at timestamptz,
+      add column if not exists updated_at timestamptz not null default now()
+  `);
+
+  await db.query(`
+    create table if not exists asset_leads (
+      id uuid primary key default gen_random_uuid(),
+      owner_user_id text not null,
+      partner_user_id text not null,
+      asset_register_item_id uuid not null,
+      lead_type text not null,
+      status text not null default 'sent',
+      asset_snapshot_json jsonb not null default '{}'::jsonb,
+      included_sections_json jsonb not null default '{}'::jsonb,
+      owner_message text,
+      owner_contact_name text,
+      owner_contact_phone text,
+      owner_contact_email text,
+      created_at timestamptz not null default now(),
+      viewed_at timestamptz,
+      accepted_at timestamptz,
+      quoted_at timestamptz,
+      declined_at timestamptz,
+      closed_at timestamptz,
+      updated_at timestamptz not null default now()
+    )
+  `);
+
+  await db.query(`
+    alter table asset_leads
+      add column if not exists owner_user_id text,
+      add column if not exists partner_user_id text,
+      add column if not exists asset_register_item_id uuid,
+      add column if not exists lead_type text,
+      add column if not exists status text not null default 'sent',
+      add column if not exists asset_snapshot_json jsonb not null default '{}'::jsonb,
+      add column if not exists included_sections_json jsonb not null default '{}'::jsonb,
+      add column if not exists owner_message text,
+      add column if not exists owner_contact_name text,
+      add column if not exists owner_contact_phone text,
+      add column if not exists owner_contact_email text,
+      add column if not exists created_at timestamptz not null default now(),
+      add column if not exists viewed_at timestamptz,
+      add column if not exists accepted_at timestamptz,
+      add column if not exists quoted_at timestamptz,
+      add column if not exists declined_at timestamptz,
+      add column if not exists closed_at timestamptz,
+      add column if not exists updated_at timestamptz not null default now()
+  `);
+
+  await db.query(`
+    create table if not exists access_audit_events (
+      id uuid primary key default gen_random_uuid(),
+      owner_user_id text,
+      actor_user_id text not null,
+      event_type text not null,
+      entity_type text not null,
+      entity_id text,
+      metadata_json jsonb not null default '{}'::jsonb,
+      created_at timestamptz not null default now()
+    )
+  `);
+
+  await db.query(`
+    create index if not exists idx_account_profiles_partner_directory
+      on account_profiles(account_type, partner_directory_enabled, partner_directory_status, province, town_city)
+  `);
+
+  await db.query(`
+    create index if not exists idx_access_grants_owner_status
+      on asset_register_access_grants(owner_user_id, status, created_at desc)
+  `);
+
+  await db.query(`
+    create index if not exists idx_access_grants_partner_status
+      on asset_register_access_grants(partner_user_id, status, created_at desc)
+  `);
+
+  await db.query(`
+    create unique index if not exists idx_access_grants_open_unique
+      on asset_register_access_grants(owner_user_id, partner_user_id)
+      where status in ('pending', 'active')
+  `);
+
+  await db.query(`
+    create index if not exists idx_asset_leads_owner_status
+      on asset_leads(owner_user_id, status, created_at desc)
+  `);
+
+  await db.query(`
+    create index if not exists idx_asset_leads_partner_status
+      on asset_leads(partner_user_id, status, created_at desc)
+  `);
+
+  await db.query(`
+    create index if not exists idx_access_audit_owner_created
+      on access_audit_events(owner_user_id, created_at desc)
+  `);
+
+  partnerAccessTablesEnsured = true;
+}
+
+function mapPartnerRow(row: AccountPartnerProfileRow): PartnerDirectoryEntry {
+  const partnerType = normalizePartnerType(row.account_type) ?? 'dealer';
+  const businessName = asText(row.business_name);
+  const displayName = asText(row.display_name) || businessName || 'Aim4price partner';
+
+  return {
+    userId: row.user_id,
+    partnerType,
+    displayName,
+    businessName,
+    phone: asText(row.phone),
+    province: asText(row.province),
+    townCity: asText(row.town_city),
+    addressLine1: asText(row.address_line_1),
+    description: asText(row.partner_description),
+    latitude: asNumber(row.partner_latitude),
+    longitude: asNumber(row.partner_longitude),
+    serviceRadiusKm: asInteger(row.partner_service_radius_km),
+    brandFocus: asText(row.partner_brand_focus),
+    services: asText(row.partner_services),
+  };
+}
+
+function mapGrantRow(row: GrantRow): SharedAccessGrant {
+  const partnerType = normalizePartnerType(row.partner_type) ?? 'dealer';
+  const ownerBusinessName = asText(row.owner_business_name);
+  const ownerName = asText(row.owner_display_name) || ownerBusinessName || 'Aim4price owner';
+  const partnerBusinessName = asText(row.partner_business_name);
+  const partnerName = asText(row.partner_display_name) || partnerBusinessName || 'Aim4price partner';
+
+  return {
+    id: row.id,
+    ownerUserId: row.owner_user_id,
+    partnerUserId: row.partner_user_id,
+    partnerType,
+    status: normalizeAccessStatus(row.status),
+    permissionLevel: asText(row.permission_level) || 'view',
+    includeDocuments: Boolean(row.include_documents),
+    includeScanHistory: Boolean(row.include_scan_history),
+    ownerMessage: asText(row.owner_message),
+    ownerName,
+    ownerBusinessName,
+    ownerPhone: asText(row.owner_phone),
+    ownerProvince: asText(row.owner_province),
+    ownerTownCity: asText(row.owner_town_city),
+    partnerName,
+    partnerBusinessName,
+    partnerPhone: asText(row.partner_phone),
+    partnerProvince: asText(row.partner_province),
+    partnerTownCity: asText(row.partner_town_city),
+    createdAtIso: isoNowFallback(row.created_at),
+    acceptedAtIso: row.accepted_at,
+    revokedAtIso: row.revoked_at,
+    declinedAtIso: row.declined_at,
+    lastViewedAtIso: row.last_viewed_at,
+    updatedAtIso: isoNowFallback(row.updated_at),
+  };
+}
+
+function grantSelectSql(whereClause: string): string {
+  return `
+    select
+      g.id::text,
+      g.owner_user_id,
+      g.partner_user_id,
+      g.partner_type,
+      g.status,
+      g.permission_level,
+      g.include_documents,
+      g.include_scan_history,
+      g.owner_message,
+      owner.display_name as owner_display_name,
+      owner.business_name as owner_business_name,
+      owner.phone as owner_phone,
+      owner.province as owner_province,
+      owner.town_city as owner_town_city,
+      partner.display_name as partner_display_name,
+      partner.business_name as partner_business_name,
+      partner.phone as partner_phone,
+      partner.province as partner_province,
+      partner.town_city as partner_town_city,
+      g.created_at::text,
+      g.accepted_at::text,
+      g.revoked_at::text,
+      g.declined_at::text,
+      g.last_viewed_at::text,
+      g.updated_at::text
+    from asset_register_access_grants g
+    left join account_profiles owner on owner.user_id = g.owner_user_id
+    left join account_profiles partner on partner.user_id = g.partner_user_id
+    ${whereClause}
+  `;
+}
+
+function mapLeadRow(row: LeadRow): AssetLead {
+  const leadType = normalizeLeadType(row.lead_type) ?? 'finance';
+  const ownerBusinessName = asText(row.owner_business_name);
+  const ownerName = asText(row.owner_display_name) || ownerBusinessName || 'Aim4price owner';
+  const partnerBusinessName = asText(row.partner_business_name);
+  const partnerName = asText(row.partner_display_name) || partnerBusinessName || 'Aim4price partner';
+
+  return {
+    id: row.id,
+    ownerUserId: row.owner_user_id,
+    partnerUserId: row.partner_user_id,
+    assetRegisterItemId: row.asset_register_item_id,
+    leadType,
+    status: normalizeLeadStatus(row.status) ?? 'sent',
+    assetSnapshot: asRecord(row.asset_snapshot_json),
+    includedSections: asRecord(row.included_sections_json),
+    ownerMessage: asText(row.owner_message),
+    ownerContactName: asText(row.owner_contact_name),
+    ownerContactPhone: asText(row.owner_contact_phone),
+    ownerContactEmail: asText(row.owner_contact_email),
+    ownerName,
+    ownerBusinessName,
+    ownerPhone: asText(row.owner_phone),
+    ownerProvince: asText(row.owner_province),
+    ownerTownCity: asText(row.owner_town_city),
+    partnerName,
+    partnerBusinessName,
+    partnerPhone: asText(row.partner_phone),
+    partnerProvince: asText(row.partner_province),
+    partnerTownCity: asText(row.partner_town_city),
+    createdAtIso: isoNowFallback(row.created_at),
+    viewedAtIso: row.viewed_at,
+    acceptedAtIso: row.accepted_at,
+    quotedAtIso: row.quoted_at,
+    declinedAtIso: row.declined_at,
+    closedAtIso: row.closed_at,
+    updatedAtIso: isoNowFallback(row.updated_at),
+  };
+}
+
+function leadSelectSql(whereClause: string): string {
+  return `
+    select
+      l.id::text,
+      l.owner_user_id,
+      l.partner_user_id,
+      l.asset_register_item_id::text,
+      l.lead_type,
+      l.status,
+      l.asset_snapshot_json,
+      l.included_sections_json,
+      l.owner_message,
+      l.owner_contact_name,
+      l.owner_contact_phone,
+      l.owner_contact_email,
+      owner.display_name as owner_display_name,
+      owner.business_name as owner_business_name,
+      owner.phone as owner_phone,
+      owner.province as owner_province,
+      owner.town_city as owner_town_city,
+      partner.display_name as partner_display_name,
+      partner.business_name as partner_business_name,
+      partner.phone as partner_phone,
+      partner.province as partner_province,
+      partner.town_city as partner_town_city,
+      l.created_at::text,
+      l.viewed_at::text,
+      l.accepted_at::text,
+      l.quoted_at::text,
+      l.declined_at::text,
+      l.closed_at::text,
+      l.updated_at::text
+    from asset_leads l
+    left join account_profiles owner on owner.user_id = l.owner_user_id
+    left join account_profiles partner on partner.user_id = l.partner_user_id
+    ${whereClause}
+  `;
+}
+
+async function writeAuditEvent(input: {
+  ownerUserId?: string | null;
+  actorUserId: string;
+  eventType: string;
+  entityType: string;
+  entityId?: string | null;
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  await ensurePartnerAccessTables();
+  const db = getDb();
+
+  await db.query(
+    `
+      insert into access_audit_events (
+        owner_user_id,
+        actor_user_id,
+        event_type,
+        entity_type,
+        entity_id,
+        metadata_json,
+        created_at
+      )
+      values ($1, $2, $3, $4, $5, $6::jsonb, now())
+    `,
+    [
+      input.ownerUserId ?? null,
+      input.actorUserId,
+      input.eventType,
+      input.entityType,
+      input.entityId ?? null,
+      JSON.stringify(input.metadata ?? {}),
+    ],
+  );
+}
+
+export async function listPartnerDirectory(input: {
+  currentUserId: string;
+  partnerType?: PartnerType | null;
+  search?: string | null;
+}): Promise<PartnerDirectoryEntry[]> {
+  await ensurePartnerAccessTables();
+  const db = getDb();
+  const partnerType = input.partnerType ?? null;
+  const search = asText(input.search).toLowerCase();
+
+  const params: unknown[] = [input.currentUserId];
+  const filters = [
+    `user_id <> $1`,
+    `account_type in ('dealer', 'finance', 'insurance')`,
+    `partner_directory_enabled = true`,
+    `partner_directory_status = 'approved'`,
+  ];
+
+  if (partnerType) {
+    params.push(partnerType);
+    filters.push(`account_type = $${params.length}`);
+  }
+
+  if (search) {
+    params.push(`%${search}%`);
+    filters.push(`(
+      lower(coalesce(business_name, '')) like $${params.length}
+      or lower(coalesce(display_name, '')) like $${params.length}
+      or lower(coalesce(province, '')) like $${params.length}
+      or lower(coalesce(town_city, '')) like $${params.length}
+      or lower(coalesce(partner_brand_focus, '')) like $${params.length}
+      or lower(coalesce(partner_services, '')) like $${params.length}
+    )`);
+  }
+
+  const result = await db.query<AccountPartnerProfileRow>(
+    `
+      select
+        user_id,
+        display_name,
+        business_name,
+        phone,
+        account_type,
+        province,
+        town_city,
+        address_line_1,
+        partner_description,
+        partner_latitude,
+        partner_longitude,
+        partner_service_radius_km,
+        partner_brand_focus,
+        partner_services
+      from account_profiles
+      where ${filters.join('\n        and ')}
+      order by
+        province nulls last,
+        town_city nulls last,
+        coalesce(nullif(business_name, ''), nullif(display_name, ''), user_id)
+      limit 250
+    `,
+    params,
+  );
+
+  return result.rows.map(mapPartnerRow);
+}
+
+async function getPartnerProfileForShare(partnerUserId: string): Promise<AccountPartnerProfileRow | null> {
+  await ensurePartnerAccessTables();
+  const db = getDb();
+  const result = await db.query<AccountPartnerProfileRow>(
+    `
+      select
+        user_id,
+        display_name,
+        business_name,
+        phone,
+        account_type,
+        province,
+        town_city,
+        address_line_1,
+        partner_description,
+        partner_latitude,
+        partner_longitude,
+        partner_service_radius_km,
+        partner_brand_focus,
+        partner_services
+      from account_profiles
+      where user_id = $1
+      limit 1
+    `,
+    [partnerUserId],
+  );
+
+  return result.rows[0] ?? null;
+}
+
+async function validateOwnerPin(ownerUserId: string, rawPin: unknown): Promise<void> {
+  const db = getDb();
+  const result = await db.query<PinRow>(
+    `
+      select scan_pin_hash, scan_pin_enabled
+      from account_profiles
+      where user_id = $1
+      limit 1
+    `,
+    [ownerUserId],
+  );
+  const row = result.rows[0];
+
+  if (!row?.scan_pin_enabled || !row.scan_pin_hash) {
+    throw new Error('ACCOUNT_PIN_NOT_ENABLED');
+  }
+
+  const isValid = await verifyScanPin(rawPin, row.scan_pin_hash);
+
+  if (!isValid) {
+    throw new Error('INVALID_ACCOUNT_PIN');
+  }
+}
+
+export async function listSharedAccessForOwner(ownerUserId: string): Promise<SharedAccessGrant[]> {
+  await ensurePartnerAccessTables();
+  const db = getDb();
+  const result = await db.query<GrantRow>(
+    `${grantSelectSql('where g.owner_user_id = $1')} order by g.created_at desc`,
+    [ownerUserId],
+  );
+
+  return result.rows.map(mapGrantRow);
+}
+
+export async function listSharedRegistersForPartner(partnerUserId: string): Promise<SharedRegisterSummary[]> {
+  await ensurePartnerAccessTables();
+  const db = getDb();
+  const result = await db.query<GrantRow>(
+    `${grantSelectSql('where g.partner_user_id = $1')} order by g.created_at desc`,
+    [partnerUserId],
+  );
+
+  const grants: SharedAccessGrant[] = result.rows.map(mapGrantRow);
+
+  return Promise.all(
+    grants.map(async (grant) => {
+      if (grant.status !== 'active') {
+        return { ...grant, assetCount: 0, totalValue: 0 };
+      }
+
+      const assets = await listAssetRegisterItems(grant.ownerUserId);
+      return {
+        ...grant,
+        assetCount: assets.length,
+        totalValue: assets.reduce((sum, asset) => sum + Number(asset.value || 0), 0),
+      };
+    }),
+  );
+}
+
+export async function createSharedAccessRequest(input: {
+  ownerUserId: string;
+  partnerUserId: string;
+  partnerType: PartnerType;
+  pin: unknown;
+  ownerMessage?: string | null;
+  includeDocuments?: boolean;
+  includeScanHistory?: boolean;
+}): Promise<SharedAccessGrant> {
+  await ensurePartnerAccessTables();
+
+  if (input.ownerUserId === input.partnerUserId) {
+    throw new Error('CANNOT_SHARE_WITH_SELF');
+  }
+
+  const partner = await getPartnerProfileForShare(input.partnerUserId);
+  const actualPartnerType = normalizePartnerType(partner?.account_type);
+
+  if (!partner || actualPartnerType !== input.partnerType) {
+    throw new Error('PARTNER_NOT_FOUND');
+  }
+
+  await validateOwnerPin(input.ownerUserId, input.pin);
+
+  const db = getDb();
+  const existing = await db.query<GrantRow>(
+    `
+      ${grantSelectSql('where g.owner_user_id = $1 and g.partner_user_id = $2 and g.status in (\'pending\', \'active\')')}
+      limit 1
+    `,
+    [input.ownerUserId, input.partnerUserId],
+  );
+
+  if (existing.rows[0]) {
+    return mapGrantRow(existing.rows[0]);
+  }
+
+  const result = await db.query<GrantRow>(
+    `
+      insert into asset_register_access_grants (
+        owner_user_id,
+        partner_user_id,
+        partner_type,
+        status,
+        permission_level,
+        include_documents,
+        include_scan_history,
+        owner_message,
+        created_at,
+        updated_at
+      )
+      values ($1, $2, $3, 'pending', 'view', $4, $5, $6, now(), now())
+      returning id::text
+    `,
+    [
+      input.ownerUserId,
+      input.partnerUserId,
+      input.partnerType,
+      input.includeDocuments ?? true,
+      input.includeScanHistory ?? true,
+      asText(input.ownerMessage) || null,
+    ],
+  );
+
+  const created = await db.query<GrantRow>(
+    `${grantSelectSql('where g.id = $1::uuid')} limit 1`,
+    [result.rows[0]?.id],
+  );
+
+  const grant = mapGrantRow(created.rows[0]);
+  await writeAuditEvent({
+    ownerUserId: input.ownerUserId,
+    actorUserId: input.ownerUserId,
+    eventType: 'register_shared',
+    entityType: 'access_grant',
+    entityId: grant.id,
+    metadata: { partnerUserId: input.partnerUserId, partnerType: input.partnerType },
+  });
+
+  return grant;
+}
+
+export async function acceptSharedAccessGrant(partnerUserId: string, grantId: string): Promise<SharedAccessGrant> {
+  await ensurePartnerAccessTables();
+  const db = getDb();
+  const result = await db.query<GrantRow>(
+    `
+      update asset_register_access_grants
+      set status = 'active', accepted_at = now(), declined_at = null, revoked_at = null, updated_at = now()
+      where id = $1::uuid and partner_user_id = $2 and status = 'pending'
+      returning id::text
+    `,
+    [grantId, partnerUserId],
+  );
+
+  if (!result.rows[0]) {
+    throw new Error('ACCESS_GRANT_NOT_FOUND');
+  }
+
+  const updated = await db.query<GrantRow>(`${grantSelectSql('where g.id = $1::uuid')} limit 1`, [grantId]);
+  const grant = mapGrantRow(updated.rows[0]);
+  await writeAuditEvent({
+    ownerUserId: grant.ownerUserId,
+    actorUserId: partnerUserId,
+    eventType: 'register_accepted',
+    entityType: 'access_grant',
+    entityId: grant.id,
+  });
+
+  return grant;
+}
+
+export async function declineSharedAccessGrant(partnerUserId: string, grantId: string): Promise<SharedAccessGrant> {
+  await ensurePartnerAccessTables();
+  const db = getDb();
+  const result = await db.query<GrantRow>(
+    `
+      update asset_register_access_grants
+      set status = 'declined', declined_at = now(), updated_at = now()
+      where id = $1::uuid and partner_user_id = $2 and status = 'pending'
+      returning id::text
+    `,
+    [grantId, partnerUserId],
+  );
+
+  if (!result.rows[0]) {
+    throw new Error('ACCESS_GRANT_NOT_FOUND');
+  }
+
+  const updated = await db.query<GrantRow>(`${grantSelectSql('where g.id = $1::uuid')} limit 1`, [grantId]);
+  const grant = mapGrantRow(updated.rows[0]);
+  await writeAuditEvent({
+    ownerUserId: grant.ownerUserId,
+    actorUserId: partnerUserId,
+    eventType: 'register_declined',
+    entityType: 'access_grant',
+    entityId: grant.id,
+  });
+
+  return grant;
+}
+
+export async function revokeSharedAccessGrant(ownerUserId: string, grantId: string): Promise<SharedAccessGrant> {
+  await ensurePartnerAccessTables();
+  const db = getDb();
+  const result = await db.query<GrantRow>(
+    `
+      update asset_register_access_grants
+      set status = 'revoked', revoked_at = now(), updated_at = now()
+      where id = $1::uuid and owner_user_id = $2 and status in ('pending', 'active')
+      returning id::text
+    `,
+    [grantId, ownerUserId],
+  );
+
+  if (!result.rows[0]) {
+    throw new Error('ACCESS_GRANT_NOT_FOUND');
+  }
+
+  const updated = await db.query<GrantRow>(`${grantSelectSql('where g.id = $1::uuid')} limit 1`, [grantId]);
+  const grant = mapGrantRow(updated.rows[0]);
+  await writeAuditEvent({
+    ownerUserId,
+    actorUserId: ownerUserId,
+    eventType: 'register_revoked',
+    entityType: 'access_grant',
+    entityId: grant.id,
+  });
+
+  return grant;
+}
+
+export async function canViewOwnerRegister(currentUserId: string, ownerUserId: string): Promise<boolean> {
+  if (currentUserId === ownerUserId) {
+    return true;
+  }
+
+  await ensurePartnerAccessTables();
+  const db = getDb();
+  const result = await db.query<{ exists: boolean }>(
+    `
+      select exists (
+        select 1
+        from asset_register_access_grants
+        where owner_user_id = $1
+          and partner_user_id = $2
+          and status = 'active'
+        limit 1
+      ) as exists
+    `,
+    [ownerUserId, currentUserId],
+  );
+
+  return Boolean(result.rows[0]?.exists);
+}
+
+export async function listSharedRegisterAssets(input: {
+  currentUserId: string;
+  ownerUserId: string;
+}): Promise<AssetRegisterItem[]> {
+  const canView = await canViewOwnerRegister(input.currentUserId, input.ownerUserId);
+
+  if (!canView) {
+    throw new Error('SHARED_REGISTER_FORBIDDEN');
+  }
+
+  await ensurePartnerAccessTables();
+  const db = getDb();
+  await db.query(
+    `
+      update asset_register_access_grants
+      set last_viewed_at = now(), updated_at = now()
+      where owner_user_id = $1 and partner_user_id = $2 and status = 'active'
+    `,
+    [input.ownerUserId, input.currentUserId],
+  );
+
+  return listAssetRegisterItems(input.ownerUserId);
+}
+
+function buildAssetLeadSnapshot(asset: AssetRegisterItem): Record<string, unknown> {
+  return {
+    id: asset.id,
+    title: asset.title,
+    kind: asset.kind,
+    value: asset.value,
+    selectedValueExVat: asset.selectedValueExVat,
+    selectedMethod: asset.selectedMethod,
+    brandName: asset.brandName,
+    modelName: asset.modelName,
+    typedModelName: asset.typedModelName,
+    equipmentFamilyKey: asset.equipmentFamilyKey,
+    equipmentFamilyLabel: asset.equipmentFamilyLabel,
+    yearModel: asset.yearModel,
+    hours: asset.hours,
+    condition: asset.condition,
+    powerKw: asset.powerKw,
+    serialNumber: asset.serialNumber,
+    isFinanced: asset.isFinanced,
+    isInsured: asset.isInsured,
+    isLicensed: asset.isLicensed,
+    licenseRegistrationNumber: asset.licenseRegistrationNumber,
+    aim4priceValueExVat: asset.aim4priceValueExVat,
+    marketMidExVat: asset.marketMidExVat,
+    photos: asset.photos,
+    documents: asset.documents,
+    publicAssetCode: asset.publicAssetCode,
+    lastScannedAtIso: asset.lastScannedAtIso,
+    lastKnownLat: asset.lastKnownLat,
+    lastKnownLng: asset.lastKnownLng,
+    lastKnownLocationText: asset.lastKnownLocationText,
+    createdAtIso: asset.createdAtIso,
+    updatedAtIso: asset.updatedAtIso,
+  };
+}
+
+export async function createAssetLead(input: {
+  ownerUserId: string;
+  ownerName?: string | null;
+  ownerEmail?: string | null;
+  assetId: string;
+  partnerUserId: string;
+  leadType: LeadType;
+  ownerMessage?: string | null;
+  includedSections?: Record<string, unknown> | null;
+}): Promise<AssetLead> {
+  await ensurePartnerAccessTables();
+  const requiredPartnerType = partnerTypeForLeadType(input.leadType);
+  const partner = await getPartnerProfileForShare(input.partnerUserId);
+  const actualPartnerType = normalizePartnerType(partner?.account_type);
+
+  if (!partner || actualPartnerType !== requiredPartnerType) {
+    throw new Error('PARTNER_NOT_FOUND');
+  }
+
+  const asset = await getAssetRegisterItemById(input.ownerUserId, input.assetId);
+
+  if (!asset) {
+    throw new Error('ASSET_NOT_FOUND');
+  }
+
+  const ownerProfile = await getAccountProfile({ id: input.ownerUserId, name: input.ownerName, email: input.ownerEmail });
+  const ownerContactName = ownerProfile.businessName || ownerProfile.name || input.ownerName || 'Aim4price owner';
+  const ownerContactPhone = ownerProfile.phone;
+  const ownerContactEmail = ownerProfile.email || asText(input.ownerEmail);
+
+  const db = getDb();
+  const insertResult = await db.query<{ id: string }>(
+    `
+      insert into asset_leads (
+        owner_user_id,
+        partner_user_id,
+        asset_register_item_id,
+        lead_type,
+        status,
+        asset_snapshot_json,
+        included_sections_json,
+        owner_message,
+        owner_contact_name,
+        owner_contact_phone,
+        owner_contact_email,
+        created_at,
+        updated_at
+      )
+      values ($1, $2, $3::uuid, $4, 'sent', $5::jsonb, $6::jsonb, $7, $8, $9, $10, now(), now())
+      returning id::text
+    `,
+    [
+      input.ownerUserId,
+      input.partnerUserId,
+      asset.id,
+      input.leadType,
+      JSON.stringify(buildAssetLeadSnapshot(asset)),
+      JSON.stringify(input.includedSections ?? { assetDetails: true, valuationSummary: true, mainPhoto: true }),
+      asText(input.ownerMessage) || null,
+      ownerContactName,
+      ownerContactPhone || null,
+      ownerContactEmail || null,
+    ],
+  );
+
+  const leadId = insertResult.rows[0]?.id;
+  const loaded = await db.query<LeadRow>(`${leadSelectSql('where l.id = $1::uuid')} limit 1`, [leadId]);
+  const lead = mapLeadRow(loaded.rows[0]);
+
+  await writeAuditEvent({
+    ownerUserId: input.ownerUserId,
+    actorUserId: input.ownerUserId,
+    eventType: 'lead_sent',
+    entityType: 'asset_lead',
+    entityId: lead.id,
+    metadata: { partnerUserId: input.partnerUserId, leadType: input.leadType, assetId: input.assetId },
+  });
+
+  return lead;
+}
+
+export async function listAssetLeadsForUser(userId: string): Promise<AssetLead[]> {
+  await ensurePartnerAccessTables();
+  const db = getDb();
+  const result = await db.query<LeadRow>(
+    `${leadSelectSql('where l.owner_user_id = $1 or l.partner_user_id = $1')} order by l.created_at desc`,
+    [userId],
+  );
+
+  return result.rows.map(mapLeadRow);
+}
+
+export async function updateAssetLeadStatus(input: {
+  currentUserId: string;
+  leadId: string;
+  status: AssetLeadStatus;
+}): Promise<AssetLead> {
+  await ensurePartnerAccessTables();
+
+  const db = getDb();
+  const current = await db.query<LeadRow>(`${leadSelectSql('where l.id = $1::uuid')} limit 1`, [input.leadId]);
+  const lead = current.rows[0] ? mapLeadRow(current.rows[0]) : null;
+
+  if (!lead) {
+    throw new Error('LEAD_NOT_FOUND');
+  }
+
+  const isOwner = lead.ownerUserId === input.currentUserId;
+  const isPartner = lead.partnerUserId === input.currentUserId;
+
+  if (!isOwner && !isPartner) {
+    throw new Error('LEAD_FORBIDDEN');
+  }
+
+  if (input.status === 'closed' && !isOwner) {
+    throw new Error('LEAD_FORBIDDEN');
+  }
+
+  if (input.status !== 'closed' && !isPartner) {
+    throw new Error('LEAD_FORBIDDEN');
+  }
+
+  const timestampColumn = `${input.status}_at`;
+  const allowedTimestampColumns = new Set(['viewed_at', 'accepted_at', 'quoted_at', 'declined_at', 'closed_at']);
+  const timestampUpdate = allowedTimestampColumns.has(timestampColumn) ? `, ${timestampColumn} = coalesce(${timestampColumn}, now())` : '';
+
+  await db.query(
+    `
+      update asset_leads
+      set status = $1,
+          updated_at = now()
+          ${timestampUpdate}
+      where id = $2::uuid
+    `,
+    [input.status, input.leadId],
+  );
+
+  const updated = await db.query<LeadRow>(`${leadSelectSql('where l.id = $1::uuid')} limit 1`, [input.leadId]);
+  const updatedLead = mapLeadRow(updated.rows[0]);
+  await writeAuditEvent({
+    ownerUserId: updatedLead.ownerUserId,
+    actorUserId: input.currentUserId,
+    eventType: `lead_${input.status}`,
+    entityType: 'asset_lead',
+    entityId: updatedLead.id,
+  });
+
+  return updatedLead;
+}
