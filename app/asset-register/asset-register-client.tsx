@@ -497,7 +497,7 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     title: 'Get finance offer',
     shortTitle: 'Finance offer',
     descriptionLines: ['Send this asset to a finance partner.', 'Request finance or refinance.'],
-    mapTitle: 'Choose a finance partner',
+    mapTitle: 'Choose a finance partner.',
     sendLabel: 'Send finance request',
     emptyPartnerText: 'No listed finance partners found yet. Finance partners must enable their directory listing under Account details.',
   },
@@ -507,7 +507,7 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     title: 'Get insurance quote',
     shortTitle: 'Insurance quote',
     descriptionLines: ['Send this asset to an insurer or broker.', 'Request cover or value review.'],
-    mapTitle: 'Choose an insurance or finance partner',
+    mapTitle: 'Choose an insurance partner.',
     sendLabel: 'Send insurance request',
     emptyPartnerText: 'No listed insurance or finance partners found yet. Partners must enable their directory listing under Account details.',
   },
@@ -517,7 +517,7 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     title: 'Get replacement quote',
     shortTitle: 'Replacement quote',
     descriptionLines: ['Send this asset to a machinery dealer.', 'Request a replacement quote.'],
-    mapTitle: 'Choose a dealer',
+    mapTitle: 'Choose a dealer partner.',
     sendLabel: 'Send replacement quote request',
     emptyPartnerText: 'No listed dealers found yet. Dealer accounts must enable their directory listing under Account details.',
   },
@@ -2212,6 +2212,30 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#039;');
 }
 
+
+function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry, markerNumber: number): string {
+  const name = escapeHtml(quotePartnerName(partner));
+  const type = escapeHtml(formatQuotePartnerType(partner.partnerType));
+  const location = escapeHtml(quotePartnerLocation(partner));
+  const radius = partner.serviceRadiusKm ? escapeHtml(`${partner.serviceRadiusKm} km service radius`) : '';
+  const brands = partner.brandFocus ? escapeHtml(partner.brandFocus) : '';
+  const services = partner.services ? escapeHtml(partner.services) : '';
+
+  return `
+    <div style="min-width: 238px; font-family: Montserrat, Inter, Arial, sans-serif; color: #122f2a;">
+      <div style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:28px; padding:0 8px; border-radius:999px; color:#fff; background:#103f35; font-size:12px; font-weight:900; margin-bottom:9px;">${markerNumber}</div>
+      <div style="font-weight: 850; font-size: 16px; line-height: 1.15; margin-bottom: 6px; letter-spacing: -0.03em;">${name}</div>
+      <div style="display:inline-flex; align-items:center; justify-content:center; padding:4px 8px; border-radius:999px; color:#24517a; background:#eef3fb; border:1px solid #d8e1f0; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:9px;">${type}</div>
+      <div style="display:grid; gap:6px; font-size:12px; color:#53666b;">
+        <div><strong style="color:#132d2d;">Location:</strong> ${location}</div>
+        ${radius ? `<div><strong style="color:#132d2d;">Radius:</strong> ${radius}</div>` : ''}
+        ${brands ? `<div><strong style="color:#132d2d;">Brands:</strong> ${brands}</div>` : ''}
+        ${services ? `<div><strong style="color:#132d2d;">Services:</strong> ${services}</div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
 function extractApiError(payload: unknown, fallback: string): string {
   if (payload && typeof payload === 'object') {
     const record = payload as Record<string, unknown>;
@@ -2252,6 +2276,7 @@ export default function AssetRegisterClient() {
   const quoteMapElementRef = useRef<HTMLDivElement | null>(null);
   const quoteLeafletMapRef = useRef<any>(null);
   const quoteMarkerLayerRef = useRef<any>(null);
+  const quoteMarkersByPartnerRef = useRef<Map<string, any>>(new Map());
   const [isAssetReportModalOpen, setIsAssetReportModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [copiedScanLinkAssetId, setCopiedScanLinkAssetId] = useState<string | null>(null);
@@ -2581,19 +2606,40 @@ export default function AssetRegisterClient() {
           quoteMarkerLayerRef.current = L.layerGroup().addTo(quoteLeafletMapRef.current);
         }
 
+        quoteMarkersByPartnerRef.current.clear();
         const bounds = L.latLngBounds([]);
 
-        quotePartnersWithCoordinates.forEach((partner) => {
+        quotePartnersWithCoordinates.forEach((partner, index) => {
           const lat = Number(partner.latitude);
           const lng = Number(partner.longitude);
-          const marker = L.marker([lat, lng]).addTo(quoteMarkerLayerRef.current);
-          marker.bindPopup(`<strong>${escapeHtml(quotePartnerName(partner))}</strong><br />${escapeHtml(quotePartnerLocation(partner))}`);
+          const markerNumber = index + 1;
+          const isActive = selectedQuotePartnerId === partner.userId;
+          const icon = L.divIcon({
+            className: `assetQuoteMapMarker${isActive ? ' assetQuoteMapMarker--active' : ''}`,
+            html: `<span class="assetQuoteMapMarkerPin"><b>${markerNumber}</b></span>`,
+            iconSize: [42, 48],
+            iconAnchor: [21, 44],
+            popupAnchor: [0, -38],
+          });
+          const marker = L.marker([lat, lng], { icon, title: quotePartnerName(partner) }).addTo(quoteMarkerLayerRef.current);
+          marker.bindPopup(buildQuotePartnerPopupHtml(partner, markerNumber));
           marker.on('click', () => setSelectedQuotePartnerId(partner.userId));
+          quoteMarkersByPartnerRef.current.set(partner.userId, marker);
           bounds.extend([lat, lng]);
         });
 
         if (bounds.isValid()) {
-          quoteLeafletMapRef.current.fitBounds(bounds.pad(0.22));
+          quoteLeafletMapRef.current.fitBounds(bounds.pad(0.18), { maxZoom: 12 });
+        }
+
+        const selectedMarker = selectedQuotePartnerId ? quoteMarkersByPartnerRef.current.get(selectedQuotePartnerId) : null;
+        if (selectedMarker) {
+          window.setTimeout(() => {
+            if (!cancelled) {
+              selectedMarker.openPopup();
+              quoteLeafletMapRef.current?.panTo(selectedMarker.getLatLng(), { animate: true, duration: 0.35 });
+            }
+          }, 120);
         }
 
         window.setTimeout(() => quoteLeafletMapRef.current?.invalidateSize(), 80);
@@ -2607,7 +2653,7 @@ export default function AssetRegisterClient() {
     return () => {
       cancelled = true;
     };
-  }, [quoteAsset, selectedQuoteOption, quotePartnersWithCoordinates]);
+  }, [quoteAsset, selectedQuoteOption, quotePartnersWithCoordinates, selectedQuotePartnerId]);
 
   useEffect(() => {
     if (quoteAsset && selectedQuoteOption && quotePartnersWithCoordinates.length) {
@@ -2618,6 +2664,7 @@ export default function AssetRegisterClient() {
       quoteLeafletMapRef.current.remove();
       quoteLeafletMapRef.current = null;
       quoteMarkerLayerRef.current = null;
+      quoteMarkersByPartnerRef.current.clear();
     }
 
     return undefined;
@@ -3027,6 +3074,7 @@ export default function AssetRegisterClient() {
       quoteLeafletMapRef.current.remove();
       quoteLeafletMapRef.current = null;
       quoteMarkerLayerRef.current = null;
+      quoteMarkersByPartnerRef.current.clear();
     }
   }
 
@@ -3098,6 +3146,7 @@ export default function AssetRegisterClient() {
       quoteLeafletMapRef.current.remove();
       quoteLeafletMapRef.current = null;
       quoteMarkerLayerRef.current = null;
+      quoteMarkersByPartnerRef.current.clear();
     }
   }
 
@@ -5608,10 +5657,9 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-quote-title">{selectedQuoteOption ? selectedQuoteOption.mapTitle : quoteAsset.title}</h3>
-                <p>
-                  {selectedQuoteOption ? `${quoteAsset.title} · ${selectedQuoteOption.shortTitle} · ` : ''}
-                  {buildAssetMeta(quoteAsset)} · {money(quoteAsset.value)} excl. VAT
-                </p>
+                {!selectedQuoteOption ? (
+                  <p>{buildAssetMeta(quoteAsset)} · {money(quoteAsset.value)} excl. VAT</p>
+                ) : null}
               </div>
 
               <button
@@ -5652,17 +5700,6 @@ export default function AssetRegisterClient() {
                 </div>
               ) : (
                 <div className={styles.assetQuoteContent}>
-                  <div className={styles.assetQuoteStepBar}>
-                    <button type="button" className={styles.secondaryButton} onClick={goBackToQuoteOptions} disabled={isSendingQuoteLead}>
-                      <ChevronLeftIcon className={styles.buttonIcon} />
-                      <span>Back</span>
-                    </button>
-                    <div>
-                      <strong>{selectedQuoteOption.shortTitle}</strong>
-                      <span>Showing {formatQuotePartnerType(selectedQuoteOption.partnerType).toLowerCase()} partner accounts.</span>
-                    </div>
-                  </div>
-
                   <form
                     className={styles.assetQuoteSearchBar}
                     onSubmit={(event) => {
@@ -5670,48 +5707,60 @@ export default function AssetRegisterClient() {
                       void loadQuotePartners(selectedQuoteOption.leadType, quotePartnerSearch);
                     }}
                   >
-                    <label className={styles.field}>
-                      <span>Search partner directory</span>
-                      <input
-                        value={quotePartnerSearch}
-                        onChange={(event) => setQuotePartnerSearch(event.target.value)}
-                        placeholder="Search by business, town, province, service or brand"
-                      />
-                    </label>
+                    <input
+                      className={styles.assetQuoteSearchInput}
+                      value={quotePartnerSearch}
+                      onChange={(event) => setQuotePartnerSearch(event.target.value)}
+                      placeholder="Search by business, town, province, service or brand"
+                      aria-label="Search partner directory"
+                    />
                     <button type="submit" className={styles.secondaryButton} disabled={isLoadingQuotePartners}>
                       <SearchIcon className={styles.buttonIcon} />
                       <span>{isLoadingQuotePartners ? 'Searching...' : 'Search'}</span>
                     </button>
                   </form>
 
-                  <div className={styles.assetQuotePartnerGrid}>
-                    <div className={styles.assetQuotePartnerList}>
-                      {isLoadingQuotePartners ? (
-                        <p className={styles.assetQuoteEmptyState}>Loading partners...</p>
-                      ) : quotePartners.length ? (
-                        quotePartners.map((partner) => (
-                          <button
-                            key={partner.userId}
-                            type="button"
-                            className={`${styles.assetQuotePartnerCard} ${selectedQuotePartnerId === partner.userId ? styles.assetQuotePartnerCardActive : ''}`}
-                            onClick={() => setSelectedQuotePartnerId(partner.userId)}
-                          >
-                            <span className={styles.assetQuotePartnerHeader}>
-                              <strong>{quotePartnerName(partner)}</strong>
-                              <small>{formatQuotePartnerType(partner.partnerType)}</small>
-                            </span>
-                            <span className={styles.assetQuotePartnerMeta}>
-                              <span>{quotePartnerLocation(partner)}</span>
-                              {partner.serviceRadiusKm ? <span>{partner.serviceRadiusKm} km radius</span> : null}
-                            </span>
-                            {partner.description ? <span className={styles.assetQuotePartnerCopy}>{partner.description}</span> : null}
-                            {partner.brandFocus ? <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span> : null}
-                          </button>
-                        ))
-                      ) : (
-                        <p className={styles.assetQuoteEmptyState}>{selectedQuoteOption.emptyPartnerText}</p>
-                      )}
-                    </div>
+                  <div className={styles.assetQuoteMapStage}>
+                    <aside className={styles.assetQuoteMapSidebar} aria-label="Available partners">
+                      <div className={styles.assetQuoteSidebarHeader}>
+                        <button type="button" className={styles.assetQuoteBackButton} onClick={goBackToQuoteOptions} disabled={isSendingQuoteLead}>
+                          <ChevronLeftIcon className={styles.buttonIcon} />
+                          <span>Back</span>
+                        </button>
+                        <strong>Partners</strong>
+                      </div>
+
+                      <div className={styles.assetQuotePartnerList}>
+                        {isLoadingQuotePartners ? (
+                          <p className={styles.assetQuoteEmptyState}>Loading partners...</p>
+                        ) : quotePartners.length ? (
+                          quotePartners.map((partner, index) => (
+                            <button
+                              key={partner.userId}
+                              type="button"
+                              className={`${styles.assetQuotePartnerCard} ${selectedQuotePartnerId === partner.userId ? styles.assetQuotePartnerCardActive : ''}`}
+                              onClick={() => setSelectedQuotePartnerId(partner.userId)}
+                            >
+                              <span className={styles.assetQuotePartnerNumber}>{index + 1}</span>
+                              <span className={styles.assetQuotePartnerBody}>
+                                <span className={styles.assetQuotePartnerHeader}>
+                                  <strong>{quotePartnerName(partner)}</strong>
+                                  <small>{formatQuotePartnerType(partner.partnerType)}</small>
+                                </span>
+                                <span className={styles.assetQuotePartnerMeta}>
+                                  <span>{quotePartnerLocation(partner)}</span>
+                                  {partner.serviceRadiusKm ? <span>{partner.serviceRadiusKm} km radius</span> : null}
+                                </span>
+                                {partner.description ? <span className={styles.assetQuotePartnerCopy}>{partner.description}</span> : null}
+                                {partner.brandFocus ? <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span> : null}
+                              </span>
+                            </button>
+                          ))
+                        ) : (
+                          <p className={styles.assetQuoteEmptyState}>{selectedQuoteOption.emptyPartnerText}</p>
+                        )}
+                      </div>
+                    </aside>
 
                     <div className={styles.assetQuoteMapShell}>
                       {quotePartnersWithCoordinates.length ? (
