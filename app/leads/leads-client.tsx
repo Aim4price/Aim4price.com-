@@ -3,12 +3,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
 import { openAssetSheetPrint, type ReportMethodCard } from '../../lib/report-print';
-import styles from '../shared-access/page.module.css';
+import assetStyles from '../asset-register/page.module.css';
+import sharedStyles from '../shared-access/page.module.css';
+import styles from './page.module.css';
 
 type LeadType = 'finance' | 'insurance' | 'replacement_quote';
 type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 type NoticeTone = 'success' | 'error';
 type LeadStatusFilter = 'all' | 'accepted' | 'declined';
+
+type IconProps = {
+  className?: string;
+};
 
 type AssetLead = {
   id: string;
@@ -49,6 +55,16 @@ type LeadsResponse = {
   error?: string;
 };
 
+type PartnerNoteResponse = {
+  ok: boolean;
+  note?: {
+    id: string;
+    noteText: string;
+    createdAtIso: string;
+  };
+  error?: string;
+};
+
 type SessionResponse = {
   ok: boolean;
   signedIn: boolean;
@@ -58,6 +74,84 @@ type SessionResponse = {
     email: string;
   } | null;
 };
+
+function NoteIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 20h4.4L19.7 8.7a2.2 2.2 0 0 0 0-3.1l-1.3-1.3a2.2 2.2 0 0 0-3.1 0L4 15.6V20Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m13.8 5.8 4.4 4.4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ChevronUpIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ManageIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 8.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2Z" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.05.05a2.2 2.2 0 0 1-3.11 3.11l-.05-.05a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.09 1.65V21.5a2.2 2.2 0 0 1-4.4 0v-.12a1.8 1.8 0 0 0-1.09-1.65 1.8 1.8 0 0 0-1.98.36l-.05.05a2.2 2.2 0 1 1-3.11-3.11l.05-.05A1.8 1.8 0 0 0 4.6 15a1.8 1.8 0 0 0-1.65-1.09H2.83a2.2 2.2 0 0 1 0-4.4h.12A1.8 1.8 0 0 0 4.6 8.42a1.8 1.8 0 0 0-.36-1.98l-.05-.05a2.2 2.2 0 1 1 3.11-3.11l.05.05a1.8 1.8 0 0 0 1.98.36A1.8 1.8 0 0 0 10.42 2h.12a2.2 2.2 0 0 1 4.4 0v.12a1.8 1.8 0 0 0 1.09 1.65 1.8 1.8 0 0 0 1.98-.36l.05-.05a2.2 2.2 0 1 1 3.11 3.11l-.05.05a1.8 1.8 0 0 0-.36 1.98c.28.66.93 1.09 1.65 1.09h.12a2.2 2.2 0 0 1 0 4.4h-.12A1.8 1.8 0 0 0 19.4 15Z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function DownloadIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3v11" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 20h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function EmailIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 6.5h16v11H4v-11Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="m5 8 7 5 7-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PhoneIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8.2 5.2 6.7 6.7c-.8.8-.9 2.1-.3 3.3 1.4 2.7 4.9 6.2 7.6 7.6 1.2.6 2.5.5 3.3-.3l1.5-1.5-3.3-3.3-1.4 1.4c-1.7-.9-3.1-2.3-4-4l1.4-1.4-3.3-3.3Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function WhatsAppIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 19.2 6 16.1a7.7 7.7 0 1 1 2.1 2.1L5 19.2Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9.3 8.8c.2-.4.4-.5.7-.5h.5c.2 0 .4.1.5.4l.6 1.4c.1.3.1.5-.1.7l-.4.5c.7 1.2 1.5 2 2.7 2.7l.5-.4c.2-.2.5-.2.7-.1l1.4.6c.3.1.4.3.4.5v.5c0 .3-.1.6-.5.7-.6.3-1.2.4-1.9.2-2.5-.6-5.7-3.8-6.3-6.3-.1-.7 0-1.3.2-1.9Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CloseIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function formatCurrency(value: unknown): string {
   return new Intl.NumberFormat('en-ZA', {
@@ -90,12 +184,12 @@ function formatStatus(value: LeadStatus): string {
 }
 
 function statusClass(value: LeadStatus): string {
-  if (value === 'accepted') return styles.statusAccepted;
-  if (value === 'quoted') return styles.statusQuoted;
-  if (value === 'declined') return styles.statusDeclined;
-  if (value === 'closed') return styles.statusRevoked;
-  if (value === 'sent') return styles.statusPending;
-  return styles.statusActive;
+  if (value === 'accepted') return sharedStyles.statusAccepted;
+  if (value === 'quoted') return sharedStyles.statusQuoted;
+  if (value === 'declined') return sharedStyles.statusDeclined;
+  if (value === 'closed') return sharedStyles.statusRevoked;
+  if (value === 'sent') return sharedStyles.statusPending;
+  return sharedStyles.statusActive;
 }
 
 function asText(value: unknown): string {
@@ -107,8 +201,53 @@ function asNumber(value: unknown): number | null {
   return Number.isFinite(numeric) ? numeric : null;
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
+
 function asBoolean(value: unknown): boolean {
   return value === true || String(value ?? '').trim().toLowerCase() === 'true';
+}
+
+function firstTextFromRecord(record: Record<string, unknown> | null | undefined, keys: string[]): string {
+  if (!record) return '';
+
+  for (const key of keys) {
+    const value = asText(record[key]);
+    if (value) return value;
+  }
+
+  return '';
+}
+
+function firstNumberFromRecord(record: Record<string, unknown> | null | undefined, keys: string[]): number | null {
+  if (!record) return null;
+
+  for (const key of keys) {
+    const value = asNumber(record[key]);
+    if (value !== null) return value;
+  }
+
+  return null;
+}
+
+function formatUsagePercent(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  const formatted = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  return `${formatted}% worked`;
+}
+
+function conditionLabel(value: unknown): string {
+  const normalized = asText(value).toLowerCase();
+  return (
+    {
+      excellent: 'Excellent',
+      good: 'Good',
+      fair: 'Fair',
+      used: 'Used',
+      serious: 'Requires attention',
+    }[normalized] ?? asText(value) ?? '—'
+  );
 }
 
 function assetTitle(lead: AssetLead): string {
@@ -125,6 +264,105 @@ function assetDescription(lead: AssetLead): string {
     .join(' ') || asText(lead.assetSnapshot.equipmentFamilyLabel) || asText(lead.assetSnapshot.kind) || 'Asset';
 }
 
+function assetValue(lead: AssetLead): number {
+  return asNumber(lead.assetSnapshot.value ?? lead.assetSnapshot.selectedValueExVat ?? lead.assetSnapshot.aim4priceValueExVat ?? lead.assetSnapshot.marketMidExVat) ?? 0;
+}
+
+function assetPhotos(lead: AssetLead): string[] {
+  return Array.isArray(lead.assetSnapshot.photos)
+    ? lead.assetSnapshot.photos.map((photo) => String(photo ?? '').trim()).filter(Boolean)
+    : [];
+}
+
+function assetSpecs(lead: AssetLead): Record<string, unknown> | null {
+  return asRecord(lead.assetSnapshot.specsJson) ?? asRecord(lead.assetSnapshot.specs) ?? asRecord(lead.assetSnapshot.specAnswers);
+}
+
+function getLeadLifeWorkedPercent(lead: AssetLead): number | null {
+  const snapshot = lead.assetSnapshot;
+  const specs = assetSpecs(lead);
+  const directValue = firstNumberFromRecord(snapshot, [
+    'lifeWorkedPercent',
+    'life_worked_percent',
+    'percentWorked',
+    'percent_worked',
+    'workedPercent',
+    'worked_percent',
+    'usagePercent',
+    'usage_percent',
+    'lifetimeWorkedPercent',
+    'lifetime_worked_percent',
+  ]);
+
+  if (directValue !== null) return Math.min(100, Math.max(0, directValue));
+
+  const specsValue = firstNumberFromRecord(specs, [
+    'lifeWorkedPercent',
+    'life_worked_percent',
+    'percentWorked',
+    'percent_worked',
+    'workedPercent',
+    'worked_percent',
+    'usagePercent',
+    'usage_percent',
+    'lifetimeWorkedPercent',
+    'lifetime_worked_percent',
+    'lifetime_used_percent',
+    'worked_percent_estimate',
+  ]);
+
+  return specsValue === null ? null : Math.min(100, Math.max(0, specsValue));
+}
+
+function assetUsageValue(lead: AssetLead): string {
+  const snapshot = lead.assetSnapshot;
+  const specs = assetSpecs(lead);
+  const hours = asNumber(snapshot.hours);
+  const hasHours = hours !== null && hours > 0;
+  const percent = getLeadLifeWorkedPercent(lead);
+  const depreciationMethod = asText(snapshot.depreciationMethodUsed ?? snapshot.depreciationMethod).toLowerCase();
+  const usageMetric = firstTextFromRecord(snapshot, ['usageMetric', 'usage_metric', 'usageMetricType', 'usage_metric_type']) || firstTextFromRecord(specs, ['usageMetric', 'usage_metric', 'usageMetricType', 'usage_metric_type']);
+  const unit = usageMetric.toLowerCase() === 'km' || usageMetric.toLowerCase() === 'kilometres' || usageMetric.toLowerCase() === 'kilometers' ? 'km' : 'hours';
+  const prefersPercent = depreciationMethod === 'semi_depreciation' || depreciationMethod === 'percentage_depreciation' || (!hasHours && percent !== null);
+
+  if (percent !== null && prefersPercent) {
+    return formatUsagePercent(percent);
+  }
+
+  if (hasHours) {
+    return `${Math.round(hours).toLocaleString('en-ZA')} ${unit}`;
+  }
+
+  if (percent !== null) {
+    return formatUsagePercent(percent);
+  }
+
+  return '—';
+}
+
+function leadAssetMeta(lead: AssetLead): string {
+  const usageValue = assetUsageValue(lead);
+  const condition = asText(lead.assetSnapshot.condition);
+  const kind = asText(lead.assetSnapshot.kind).toLowerCase();
+  const yearLabel = kind === 'property' ? 'Year Built' : 'Year Model';
+  const parts = [
+    lead.assetSnapshot.yearModel ? `${yearLabel}: ${lead.assetSnapshot.yearModel}` : '',
+    usageValue !== '—' ? `Usage: ${usageValue}` : '',
+    condition ? `Condition: ${conditionLabel(condition)}` : '',
+  ].filter(Boolean);
+
+  return parts.join(' • ') || assetDescription(lead);
+}
+
+function methodLabel(value: unknown): string {
+  const normalized = asText(value).toLowerCase();
+  if (normalized === 'aim4price') return 'Aim4price';
+  if (normalized === 'market') return 'Market';
+  if (normalized === 'manual') return 'Manual';
+  if (normalized === 'department') return 'Department';
+  return 'Saved';
+}
+
 function ownerDisplayName(lead: AssetLead): string {
   return lead.ownerContactName || lead.ownerBusinessName || lead.ownerName || 'Aim4price owner';
 }
@@ -133,12 +371,38 @@ function ownerPhone(lead: AssetLead): string {
   return lead.ownerContactPhone || lead.ownerPhone || '';
 }
 
+function ownerEmail(lead: AssetLead): string {
+  return lead.ownerContactEmail || '';
+}
+
 function ownerLocation(lead: AssetLead): string {
   return [lead.ownerTownCity, lead.ownerProvince].filter(Boolean).join(', ') || '—';
 }
 
-function contactLine(lead: AssetLead): string {
-  return [ownerDisplayName(lead), ownerPhone(lead), lead.ownerContactEmail].filter(Boolean).join(' · ');
+function cleanPhoneForTel(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const prefix = trimmed.startsWith('+') ? '+' : '';
+  return `${prefix}${trimmed.replace(/\D/g, '')}`;
+}
+
+function cleanPhoneForWhatsApp(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('27')) return digits;
+  if (digits.startsWith('0') && digits.length >= 10) return `27${digits.slice(1)}`;
+  return digits;
+}
+
+function buildClientRows(lead: AssetLead): Array<{ label: string; value: string }> {
+  return [
+    { label: 'Owner full name', value: lead.ownerName || ownerDisplayName(lead) },
+    { label: 'Business name', value: lead.ownerBusinessName || '—' },
+    { label: 'Contact person', value: lead.ownerContactName || ownerDisplayName(lead) },
+    { label: 'Contact number', value: ownerPhone(lead) || '—' },
+    { label: 'Email', value: ownerEmail(lead) || '—' },
+    { label: 'Location', value: ownerLocation(lead) },
+  ];
 }
 
 function buildMethodCards(lead: AssetLead): ReportMethodCard[] {
@@ -146,7 +410,7 @@ function buildMethodCards(lead: AssetLead): ReportMethodCard[] {
   const cards: ReportMethodCard[] = [];
   const aim4priceValue = asNumber(lead.assetSnapshot.aim4priceValueExVat);
   const marketValue = asNumber(lead.assetSnapshot.marketMidExVat);
-  const selectedValue = asNumber(lead.assetSnapshot.value ?? lead.assetSnapshot.selectedValueExVat) ?? 0;
+  const selectedValue = assetValue(lead);
 
   if (aim4priceValue !== null) {
     cards.push({
@@ -179,16 +443,14 @@ function buildMethodCards(lead: AssetLead): ReportMethodCard[] {
 }
 
 function downloadLeadAsset(lead: AssetLead): boolean {
-  const value = asNumber(lead.assetSnapshot.value ?? lead.assetSnapshot.selectedValueExVat) ?? 0;
-  const photos = Array.isArray(lead.assetSnapshot.photos)
-    ? lead.assetSnapshot.photos.map((photo) => String(photo ?? '').trim()).filter(Boolean)
-    : [];
+  const value = assetValue(lead);
+  const photos = assetPhotos(lead);
   const didOpen = openAssetSheetPrint({
     logoUrl: '/brand/aim4price-mark-black.png',
     generatedAt: formatDate(new Date().toISOString()),
     assetBadge: asText(lead.assetSnapshot.equipmentFamilyLabel) || asText(lead.assetSnapshot.kind) || 'Asset',
     heroTitle: assetTitle(lead),
-    heroMeta: assetDescription(lead),
+    heroMeta: leadAssetMeta(lead),
     valueLabel: 'Asset value',
     value: formatCurrency(value),
     valueNote: `${formatCurrency(Math.round(value * 1.15))} incl. VAT`,
@@ -196,13 +458,8 @@ function downloadLeadAsset(lead: AssetLead): boolean {
     issuerName: ownerDisplayName(lead),
     issuerAddress: ownerLocation(lead),
     issuerPhone: ownerPhone(lead) || '—',
-    issuerEmail: lead.ownerContactEmail || '—',
-    clientRows: [
-      { label: 'Owner', value: ownerDisplayName(lead) },
-      { label: 'Phone', value: ownerPhone(lead) || '—' },
-      { label: 'Email', value: lead.ownerContactEmail || '—' },
-      { label: 'Location', value: ownerLocation(lead) },
-    ],
+    issuerEmail: ownerEmail(lead) || '—',
+    clientRows: buildClientRows(lead),
     summaryItems: [
       { label: 'Lead type', value: formatLeadType(lead.leadType) },
       { label: 'Lead status', value: formatStatus(lead.status) },
@@ -217,7 +474,7 @@ function downloadLeadAsset(lead: AssetLead): boolean {
       { label: 'Brand', value: asText(lead.assetSnapshot.brandName) || '—' },
       { label: 'Model', value: asText(lead.assetSnapshot.modelName) || asText(lead.assetSnapshot.typedModelName) || '—' },
       { label: 'Year', value: lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : '—' },
-      { label: 'Hours', value: lead.assetSnapshot.hours ? new Intl.NumberFormat('en-ZA').format(Number(lead.assetSnapshot.hours)) : '—' },
+      { label: 'Usage', value: assetUsageValue(lead) },
       { label: 'Condition', value: asText(lead.assetSnapshot.condition) || '—' },
       { label: 'Serial number', value: asText(lead.assetSnapshot.serialNumber) || '—' },
       { label: 'Financed', value: asBoolean(lead.assetSnapshot.isFinanced) ? 'Yes' : 'No' },
@@ -231,7 +488,7 @@ function downloadLeadAsset(lead: AssetLead): boolean {
     contactRows: [
       { label: 'Owner', value: ownerDisplayName(lead) },
       { label: 'Phone', value: ownerPhone(lead) || '—' },
-      { label: 'Email', value: lead.ownerContactEmail || '—' },
+      { label: 'Email', value: ownerEmail(lead) || '—' },
     ],
     footerNote: 'Lead asset valuation PDF. This lead is for private partner follow-up outside Aim4price.',
   });
@@ -239,11 +496,32 @@ function downloadLeadAsset(lead: AssetLead): boolean {
   return Boolean(didOpen);
 }
 
+function searchTextForLead(lead: AssetLead): string {
+  return [
+    assetTitle(lead),
+    assetDescription(lead),
+    leadAssetMeta(lead),
+    formatLeadType(lead.leadType),
+    ownerDisplayName(lead),
+    ownerPhone(lead),
+    ownerEmail(lead),
+    lead.ownerBusinessName,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
 export default function LeadsClient() {
   const [sessionUserId, setSessionUserId] = useState('');
   const [leads, setLeads] = useState<AssetLead[]>([]);
   const [statusFilter, setStatusFilter] = useState<LeadStatusFilter>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null);
+  const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
+  const [noteLead, setNoteLead] = useState<AssetLead | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [isSavingNote, setIsSavingNote] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
 
@@ -260,21 +538,7 @@ export default function LeadsClient() {
       if (statusFilter === 'declined' && lead.status !== 'declined') return false;
 
       if (!query) return true;
-
-      const haystack = [
-        assetTitle(lead),
-        assetDescription(lead),
-        formatLeadType(lead.leadType),
-        ownerDisplayName(lead),
-        ownerPhone(lead),
-        lead.ownerContactEmail,
-        lead.ownerBusinessName,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-
-      return haystack.includes(query);
+      return searchTextForLead(lead).includes(query);
     });
   }, [receivedLeads, searchTerm, statusFilter]);
 
@@ -335,6 +599,7 @@ export default function LeadsClient() {
       }
 
       setLeads((current) => current.map((lead) => (lead.id === leadId ? (data.lead as AssetLead) : lead)));
+      setManagedLead((current) => (current?.id === leadId ? (data.lead as AssetLead) : current));
       setNotice({ tone: 'success', message: status === 'accepted' ? 'Lead accepted. Contact the owner privately.' : 'Lead declined.' });
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to update lead.' });
@@ -354,6 +619,7 @@ export default function LeadsClient() {
       }
 
       setLeads((current) => current.filter((lead) => lead.id !== leadId));
+      setManagedLead((current) => (current?.id === leadId ? null : current));
       setNotice({ tone: 'success', message: 'Declined lead deleted.' });
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to delete lead.' });
@@ -367,51 +633,195 @@ export default function LeadsClient() {
     }
   }
 
+  function openNoteModal(lead: AssetLead) {
+    setNotice(null);
+    setNoteLead(lead);
+    setNoteDraft('');
+  }
+
+  function closeNoteModal() {
+    if (isSavingNote) return;
+    setNoteLead(null);
+    setNoteDraft('');
+  }
+
+  async function submitLeadNote() {
+    if (!noteLead) return;
+
+    const noteText = noteDraft.trim();
+    if (!noteText) {
+      setNotice({ tone: 'error', message: 'Write a note before saving it.' });
+      return;
+    }
+
+    setIsSavingNote(true);
+
+    try {
+      const response = await fetch(`/api/asset-leads/${encodeURIComponent(noteLead.id)}/notes`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: noteText }),
+      });
+      const data = (await response.json()) as PartnerNoteResponse;
+
+      if (!response.ok || !data.ok || !data.note) {
+        throw new Error(data.error ?? 'Failed to save note.');
+      }
+
+      setNotice({ tone: 'success', message: 'Note saved on the lead asset.' });
+      setNoteLead(null);
+      setNoteDraft('');
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save note.' });
+    } finally {
+      setIsSavingNote(false);
+    }
+  }
+
+  function openWhatsApp(lead: AssetLead) {
+    const phone = cleanPhoneForWhatsApp(ownerPhone(lead));
+    if (!phone) {
+      setNotice({ tone: 'error', message: 'No client cellphone number is saved on this lead.' });
+      return;
+    }
+
+    const message = encodeURIComponent(`Good day ${ownerDisplayName(lead)}, I received your Aim4price ${formatLeadType(lead.leadType).toLowerCase()} for ${assetTitle(lead)}.`);
+    window.open(`https://wa.me/${phone}?text=${message}`, '_blank', 'noopener,noreferrer');
+  }
+
+  function openEmail(lead: AssetLead) {
+    const email = ownerEmail(lead);
+    if (!email) {
+      setNotice({ tone: 'error', message: 'No client email address is saved on this lead.' });
+      return;
+    }
+
+    const subject = encodeURIComponent(`Aim4price lead: ${assetTitle(lead)}`);
+    const body = encodeURIComponent(`Good day ${ownerDisplayName(lead)},\n\nI received your Aim4price ${formatLeadType(lead.leadType).toLowerCase()} for ${assetTitle(lead)}.\n\nKind regards`);
+    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+  }
+
+  function callClient(lead: AssetLead) {
+    const phone = cleanPhoneForTel(ownerPhone(lead));
+    if (!phone) {
+      setNotice({ tone: 'error', message: 'No client contact number is saved on this lead.' });
+      return;
+    }
+
+    window.location.href = `tel:${phone}`;
+  }
+
+  function renderLeadDetails(lead: AssetLead) {
+    const photo = assetPhotos(lead)[0] ?? '';
+
+    return (
+      <div className={assetStyles.assetBody} id={`lead-panel-${lead.id}`}>
+        <div className={assetStyles.previewWrap}>
+          <div className={assetStyles.previewStage}>
+            {photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photo} alt={assetTitle(lead)} className={assetStyles.previewImage} />
+            ) : (
+              <div className={assetStyles.previewPlaceholder}>
+                <span className={assetStyles.previewPlaceholderBadge}>No photo saved</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className={assetStyles.assetContent}>
+          <div className={assetStyles.infoGrid}>
+            <div className={assetStyles.infoTile}>
+              <span>Family</span>
+              <strong>{asText(lead.assetSnapshot.equipmentFamilyLabel) || asText(lead.assetSnapshot.kind) || '—'}</strong>
+            </div>
+            <div className={assetStyles.infoTile}>
+              <span>Brand</span>
+              <strong>{asText(lead.assetSnapshot.brandName) || '—'}</strong>
+            </div>
+            <div className={assetStyles.infoTile}>
+              <span>Model</span>
+              <strong>{asText(lead.assetSnapshot.modelName) || asText(lead.assetSnapshot.typedModelName) || '—'}</strong>
+            </div>
+            <div className={assetStyles.infoTile}>
+              <span>Serial number</span>
+              <strong>{asText(lead.assetSnapshot.serialNumber) || '—'}</strong>
+            </div>
+            <div className={assetStyles.infoTile}>
+              <span>Lead type</span>
+              <strong>{formatLeadType(lead.leadType)}</strong>
+            </div>
+            <div className={assetStyles.infoTile}>
+              <span>Received</span>
+              <strong>{formatDate(lead.createdAtIso)}</strong>
+            </div>
+            <div className={assetStyles.infoTile}>
+              <span>Financed</span>
+              <strong>{asBoolean(lead.assetSnapshot.isFinanced) ? 'Yes' : 'No'}</strong>
+            </div>
+            <div className={assetStyles.infoTile}>
+              <span>Insured</span>
+              <strong>{asBoolean(lead.assetSnapshot.isInsured) ? 'Yes' : 'No'}</strong>
+            </div>
+          </div>
+
+          {lead.ownerMessage ? (
+            <div className={assetStyles.noteStack}>
+              <div className={assetStyles.note}>
+                <strong>Owner message</strong>
+                <p>{lead.ownerMessage}</p>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <main className={styles.page}>
+    <main className={sharedStyles.page}>
       <AppHeader active="leads" />
 
-      <section className={styles.shell}>
-        <div className={styles.hero}>
+      <section className={sharedStyles.shell}>
+        <div className={sharedStyles.hero}>
           <div>
             <h1>Leads</h1>
-            <p>
-              Review shared asset leads. The only document action here is downloading the asset valuation PDF; partners contact the owner privately outside Aim4price.
-            </p>
+            <p>Review received asset leads, contact the owner and leave asset notes for follow-up.</p>
           </div>
         </div>
 
         {notice ? (
-          <div className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`}>
+          <div className={`${sharedStyles.notice} ${notice.tone === 'success' ? sharedStyles.noticeSuccess : sharedStyles.noticeError}`}>
             {notice.message}
           </div>
         ) : null}
 
-        <div className={styles.statGrid}>
-          <div className={styles.statCard}>
+        <div className={sharedStyles.statGrid}>
+          <div className={sharedStyles.statCard}>
             <span>Total leads</span>
             <strong>{receivedLeads.length}</strong>
           </div>
-          <div className={styles.statCard}>
+          <div className={sharedStyles.statCard}>
             <span>Accepted</span>
             <strong>{acceptedCount}</strong>
           </div>
-          <div className={styles.statCard}>
+          <div className={sharedStyles.statCard}>
             <span>Declined</span>
             <strong>{declinedCount}</strong>
           </div>
         </div>
 
-        <section className={styles.card}>
-          <div className={styles.cardHeader}>
+        <section className={sharedStyles.card}>
+          <div className={sharedStyles.cardHeader}>
             <div>
               <h2>Received leads</h2>
-              <p>Accept the lead when you want to contact the owner. Declined leads can be deleted.</p>
+              <p>Accept a lead when you want to contact the owner. Each lead uses the same card layout as the Asset Register.</p>
             </div>
           </div>
 
-          <div className={styles.partnerAssetToolbar}>
-            <label className={styles.field}>
+          <div className={`${sharedStyles.partnerAssetToolbar} ${styles.leadToolbar}`}>
+            <label className={sharedStyles.field}>
               <span>Search</span>
               <input
                 type="search"
@@ -420,7 +830,7 @@ export default function LeadsClient() {
                 placeholder="Search asset, owner, contact details..."
               />
             </label>
-            <label className={styles.field}>
+            <label className={sharedStyles.field}>
               <span>Filters</span>
               <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as LeadStatusFilter)}>
                 <option value="all">All leads</option>
@@ -430,65 +840,204 @@ export default function LeadsClient() {
             </label>
           </div>
 
-          {isLoading ? <div className={styles.emptyState}>Loading leads...</div> : null}
+          {isLoading ? <div className={sharedStyles.emptyState}>Loading leads...</div> : null}
 
           {!isLoading && !filteredLeads.length ? (
-            <div className={styles.emptyState}>No leads match this search or filter.</div>
+            <div className={sharedStyles.emptyState}>No leads match this search or filter.</div>
           ) : null}
 
           {!isLoading && filteredLeads.length ? (
-            <div className={styles.leadList}>
-              {filteredLeads.map((lead) => (
-                <article key={lead.id} className={styles.leadCard}>
-                  <div className={styles.cardTitleRow}>
-                    <div>
-                      <strong>{assetTitle(lead)}</strong>
-                      <p>{assetDescription(lead)}</p>
-                    </div>
-                    <span className={`${styles.statusPill} ${statusClass(lead.status)}`}>{formatStatus(lead.status)}</span>
-                  </div>
+            <div className={styles.leadStack}>
+              {filteredLeads.map((lead) => {
+                const isExpanded = expandedLeadId === lead.id;
 
-                  <div className={styles.leadContactPanel}>
-                    <div>
-                      <span>Contact</span>
-                      <strong>{ownerDisplayName(lead)}</strong>
-                      <small>{contactLine(lead) || 'Owner contact not saved'}</small>
-                    </div>
-                    <div>
-                      <span>Value</span>
-                      <strong>{formatCurrency(lead.assetSnapshot.value ?? lead.assetSnapshot.selectedValueExVat)}</strong>
-                      <small>{formatLeadType(lead.leadType)} · {formatDate(lead.createdAtIso)}</small>
-                    </div>
-                  </div>
+                return (
+                  <article key={lead.id} className={styles.leadThread}>
+                    <div className={styles.clientPanel}>
+                      <div className={styles.clientPanelHeader}>
+                        <div>
+                          <span className={styles.clientEyebrow}>Client account details</span>
+                          <h3>{ownerDisplayName(lead)}</h3>
+                          <p>{formatLeadType(lead.leadType)} · Received {formatDate(lead.createdAtIso)}</p>
+                        </div>
 
-                  {lead.ownerMessage ? <p>{lead.ownerMessage}</p> : null}
+                        <div className={styles.clientDecisionArea}>
+                          <span className={`${sharedStyles.statusPill} ${statusClass(lead.status)}`}>{formatStatus(lead.status)}</span>
+                          {lead.status !== 'accepted' && lead.status !== 'declined' ? (
+                            <div className={styles.clientActionRow}>
+                              <button type="button" className={sharedStyles.dangerButton} onClick={() => void updateLeadStatus(lead.id, 'declined')}>
+                                Decline
+                              </button>
+                              <button type="button" className={sharedStyles.primaryButton} onClick={() => void updateLeadStatus(lead.id, 'accepted')}>
+                                Accept
+                              </button>
+                            </div>
+                          ) : null}
+                          {lead.status === 'declined' ? (
+                            <button type="button" className={sharedStyles.dangerButton} onClick={() => void deleteLead(lead.id)}>
+                              Delete declined lead
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
 
-                  <div className={styles.inlineActions}>
-                    <button type="button" className={styles.primaryButton} onClick={() => handleDownloadLead(lead)}>
-                      Download Asset Valuation PDF
-                    </button>
-                    {lead.status !== 'accepted' && lead.status !== 'declined' ? (
-                      <>
-                        <button type="button" className={styles.secondaryButton} onClick={() => void updateLeadStatus(lead.id, 'accepted')}>
-                          Accept
-                        </button>
-                        <button type="button" className={styles.dangerButton} onClick={() => void updateLeadStatus(lead.id, 'declined')}>
-                          Decline
-                        </button>
-                      </>
-                    ) : null}
-                    {lead.status === 'declined' ? (
-                      <button type="button" className={styles.dangerButton} onClick={() => void deleteLead(lead.id)}>
-                        Delete
-                      </button>
-                    ) : null}
-                  </div>
-                </article>
-              ))}
+                      <div className={styles.clientInfoGrid}>
+                        {buildClientRows(lead).map((row) => (
+                          <div key={row.label} className={styles.clientInfoTile}>
+                            <span>{row.label}</span>
+                            <strong>{row.value}</strong>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className={`${assetStyles.assetCard} ${styles.leadAssetCard} ${isExpanded ? assetStyles.assetCardExpanded : ''}`}>
+                      <div className={assetStyles.assetHeader}>
+                        <div className={assetStyles.assetTitleBlock}>
+                          <h2>{assetTitle(lead)}</h2>
+                          <p>{leadAssetMeta(lead)}</p>
+                          <div className={assetStyles.assetMetaRow}>
+                            <span className={assetStyles.assetValueMethodLabel}>{methodLabel(lead.assetSnapshot.selectedMethod)} value</span>
+                            <span className={assetStyles.assetSavedDateLabel}>Updated {formatDate(asText(lead.assetSnapshot.updatedAtIso) || lead.updatedAtIso)}</span>
+                          </div>
+                        </div>
+
+                        <div className={assetStyles.assetHeaderAside}>
+                          <div className={assetStyles.valueBlock}>
+                            <strong>{formatCurrency(assetValue(lead))}</strong>
+                            <span>Excl. VAT</span>
+                          </div>
+
+                          <div className={assetStyles.assetHeaderActions}>
+                            <button type="button" className={`${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton}`} onClick={() => openNoteModal(lead)}>
+                              <NoteIcon className={assetStyles.buttonIcon} />
+                              <span>Leave note</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              className={assetStyles.expandButton}
+                              onClick={() => setExpandedLeadId((current) => (current === lead.id ? null : lead.id))}
+                              aria-expanded={isExpanded}
+                              aria-controls={`lead-panel-${lead.id}`}
+                            >
+                              {isExpanded ? <ChevronUpIcon className={assetStyles.buttonIcon} /> : <ChevronDownIcon className={assetStyles.buttonIcon} />}
+                              <span>{isExpanded ? 'Hide details' : 'View details'}</span>
+                            </button>
+
+                            <button type="button" className={assetStyles.optionsButton} onClick={() => setManagedLead(lead)}>
+                              <ManageIcon className={assetStyles.buttonIcon} />
+                              <span>Manage</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {isExpanded ? renderLeadDetails(lead) : null}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           ) : null}
         </section>
       </section>
+
+      {managedLead ? (
+        <div className={assetStyles.modalOverlay}>
+          <div className={assetStyles.modalBackdrop} onClick={() => setManagedLead(null)} />
+
+          <div className={assetStyles.optionsModal} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
+            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader}`}>
+              <div className={assetStyles.modalHeaderText}>
+                <h3 id="lead-manage-title">{assetTitle(managedLead)}</h3>
+                <p>{leadAssetMeta(managedLead)}</p>
+              </div>
+
+              <button type="button" className={assetStyles.modalCloseButton} onClick={() => setManagedLead(null)} aria-label="Close lead management">
+                <CloseIcon className={assetStyles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody}`}>
+              <div className={assetStyles.optionsContent}>
+                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${styles.manageOptionsGrid}`}>
+                  <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.optionFeaturedButton}`} onClick={() => openWhatsApp(managedLead)}>
+                    <WhatsAppIcon className={assetStyles.buttonIcon} />
+                    <span>
+                      <strong>WhatsApp client</strong>
+                      <small>Open a WhatsApp message to the owner.</small>
+                    </span>
+                  </button>
+
+                  <button type="button" className={assetStyles.optionActionButton} onClick={() => handleDownloadLead(managedLead)}>
+                    <DownloadIcon className={assetStyles.buttonIcon} />
+                    <span>
+                      <strong>Download PDF report</strong>
+                      <small>Download the asset valuation PDF.</small>
+                    </span>
+                  </button>
+
+                  <button type="button" className={assetStyles.optionActionButton} onClick={() => openEmail(managedLead)}>
+                    <EmailIcon className={assetStyles.buttonIcon} />
+                    <span>
+                      <strong>Email client</strong>
+                      <small>Open an email draft with asset context.</small>
+                    </span>
+                  </button>
+
+                  <button type="button" className={assetStyles.optionActionButton} onClick={() => callClient(managedLead)}>
+                    <PhoneIcon className={assetStyles.buttonIcon} />
+                    <span>
+                      <strong>Call client</strong>
+                      <small>Start a phone call from the saved number.</small>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {noteLead ? (
+        <div className={assetStyles.modalOverlay}>
+          <div className={assetStyles.modalBackdrop} onClick={closeNoteModal} />
+
+          <div className={`${assetStyles.modalCard} ${assetStyles.sharedNoteModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-note-title">
+            <div className={assetStyles.modalHeader}>
+              <div className={assetStyles.modalHeaderText}>
+                <h3 id="lead-note-title">Leave note</h3>
+                <p>{assetTitle(noteLead)} · {ownerDisplayName(noteLead)}</p>
+              </div>
+
+              <button type="button" className={assetStyles.modalCloseButton} onClick={closeNoteModal} aria-label="Close note modal" disabled={isSavingNote}>
+                <CloseIcon className={assetStyles.buttonIcon} />
+              </button>
+            </div>
+
+            <label className={`${assetStyles.field} ${assetStyles.sharedNoteField}`}>
+              <span>Note to asset owner</span>
+              <textarea
+                className={assetStyles.sharedNoteTextarea}
+                value={noteDraft}
+                onChange={(event) => setNoteDraft(event.target.value)}
+                placeholder="Example: Please confirm the latest hours before we process this asset."
+                autoFocus
+              />
+            </label>
+
+            <div className={`${assetStyles.formActions} ${assetStyles.sharedNoteActions}`}>
+              <button type="button" className={assetStyles.secondaryButton} onClick={closeNoteModal} disabled={isSavingNote}>
+                Cancel
+              </button>
+              <button type="button" className={assetStyles.primaryButton} onClick={() => void submitLeadNote()} disabled={isSavingNote}>
+                {isSavingNote ? 'Saving...' : 'Save note'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
