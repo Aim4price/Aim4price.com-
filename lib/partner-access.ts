@@ -1320,6 +1320,12 @@ function buildAssetLeadSnapshot(asset: AssetRegisterItem): Record<string, unknow
     equipmentFamilyLabel: asset.equipmentFamilyLabel,
     yearModel: asset.yearModel,
     hours: asset.hours,
+    specsJson: asset.specsJson,
+    depreciationMethodUsed: asset.depreciationMethodUsed,
+    lifeWorkedPercent: asset.lifeWorkedPercent,
+    lifeRemainingPercent: asset.lifeRemainingPercent,
+    estimatedHours: asset.estimatedHours,
+    maxLifetimeHours: asset.maxLifetimeHours,
     condition: asset.condition,
     powerKw: asset.powerKw,
     serialNumber: asset.serialNumber,
@@ -1489,6 +1495,87 @@ export async function updateAssetLeadStatus(input: {
   });
 
   return updatedLead;
+}
+
+
+export async function createAssetLeadNote(input: {
+  currentUserId: string;
+  leadId: string;
+  noteText: unknown;
+}): Promise<AssetPartnerNote> {
+  await ensurePartnerAccessTables();
+  const noteText = asText(input.noteText);
+
+  if (!noteText) {
+    throw new Error('NOTE_REQUIRED');
+  }
+
+  const db = getDb();
+  const current = await db.query<LeadRow>(`${leadSelectSql('where l.id = $1::uuid')} limit 1`, [input.leadId]);
+  const lead = current.rows[0] ? mapLeadRow(current.rows[0]) : null;
+
+  if (!lead) {
+    throw new Error('LEAD_NOT_FOUND');
+  }
+
+  if (lead.partnerUserId !== input.currentUserId) {
+    throw new Error('LEAD_FORBIDDEN');
+  }
+
+  const profile = await getAccountProfile({ id: input.currentUserId });
+  if (!normalizePartnerType(profile.accountType)) {
+    throw new Error('PARTNER_NOTE_FORBIDDEN');
+  }
+
+  const created = await db.query<AssetPartnerNoteRow>(
+    `
+      insert into asset_partner_notes (
+        owner_user_id,
+        partner_user_id,
+        asset_register_item_id,
+        note_text,
+        status,
+        created_at,
+        updated_at
+      )
+      values ($1, $2, $3::uuid, $4, 'open', now(), now())
+      returning
+        id::text,
+        owner_user_id,
+        partner_user_id,
+        asset_register_item_id::text,
+        note_text,
+        status,
+        null::text as partner_display_name,
+        null::text as partner_business_name,
+        created_at::text,
+        noted_at::text,
+        updated_at::text
+    `,
+    [lead.ownerUserId, input.currentUserId, lead.assetRegisterItemId, noteText],
+  );
+
+  const createdRow = created.rows[0];
+  if (!createdRow) {
+    throw new Error('ASSET_NOTE_NOT_CREATED');
+  }
+
+  const note = mapAssetPartnerNoteRow({
+    ...createdRow,
+    partner_display_name: profile.displayName || profile.name,
+    partner_business_name: profile.businessName,
+  });
+
+  await writeAuditEvent({
+    ownerUserId: lead.ownerUserId,
+    actorUserId: input.currentUserId,
+    eventType: 'lead_asset_note_left',
+    entityType: 'asset_partner_note',
+    entityId: note.id,
+    metadata: { leadId: lead.id, assetId: lead.assetRegisterItemId },
+  });
+
+  return note;
 }
 
 export async function deleteDeclinedAssetLead(input: {
