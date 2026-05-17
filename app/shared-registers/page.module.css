@@ -22,14 +22,6 @@
   box-shadow: 0 22px 54px rgba(16, 31, 28, 0.08);
 }
 
-.registerPanel::before {
-  content: '';
-  position: absolute;
-  inset: 0 1.2rem auto;
-  height: 4px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(20, 126, 99, 0.48), rgba(80, 127, 226, 0.58));
-}
 
 .registerHeader {
   display: grid;
@@ -333,6 +325,15 @@
   transform: translateY(-1px);
 }
 
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+  box-shadow: none;
+}
+
 .secondaryButton {
   border: 1px solid rgba(197, 214, 228, 0.98);
   background: linear-gradient(180deg, #ffffff 0%, #f5f9fd 100%);
@@ -528,6 +529,101 @@
   justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 1.35rem;
+}
+
+.warningModal,
+.consentModal {
+  width: min(96vw, 54rem);
+  padding: clamp(1.4rem, 2.5vw, 2.1rem);
+}
+
+.modalBody {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.15rem;
+}
+
+.selectedRegisterBox {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1.05rem 1.15rem;
+  border: 1px solid rgba(207, 220, 231, 0.98);
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+}
+
+.selectedRegisterBox span {
+  color: #68798b;
+  font-size: 0.78rem;
+  font-weight: 820;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.selectedRegisterBox strong {
+  color: #0c382f;
+  font-size: 1.2rem;
+  font-weight: 780;
+  line-height: 1.1;
+}
+
+.selectedRegisterBox p {
+  margin: 0;
+  color: #607084;
+  font-size: 0.98rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.popiaList {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.popiaList li {
+  position: relative;
+  padding-left: 1.25rem;
+  color: #586a7f;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.48;
+}
+
+.popiaList li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.6rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: #15795a;
+}
+
+.checkboxRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.75rem;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(184, 219, 205, 0.98);
+  border-radius: 1.1rem;
+  background: rgba(241, 250, 246, 0.94);
+  color: #0d3028;
+  font-size: 0.98rem;
+  font-weight: 680;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.checkboxRow input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.13rem;
+  accent-color: #0f684f;
 }
 
 @media (max-width: 980px) {

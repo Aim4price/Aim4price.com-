@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
@@ -8,7 +8,7 @@ type AccountType = 'owner' | 'dealer' | 'finance' | 'insurance';
 type PartnerType = 'dealer' | 'finance' | 'insurance';
 type GrantStatus = 'pending' | 'active' | 'revoked' | 'declined';
 type NoticeTone = 'success' | 'error';
-type SharedRegisterStatusFilter = 'all' | GrantStatus;
+type SharedRegisterValueSort = 'highest' | 'lowest';
 
 type IconProps = {
   className?: string;
@@ -37,6 +37,7 @@ type SharedRegisterSummary = {
   ownerMessage: string;
   ownerName: string;
   ownerBusinessName: string;
+  ownerEmail: string;
   ownerPhone: string;
   ownerProvince: string;
   ownerTownCity: string;
@@ -74,12 +75,9 @@ const MONTH_OPTIONS = [
   { value: '11', label: 'December' },
 ];
 
-const STATUS_OPTIONS: Array<{ value: SharedRegisterStatusFilter; label: string }> = [
-  { value: 'all', label: 'All registers' },
-  { value: 'active', label: 'Active' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'declined', label: 'Declined' },
-  { value: 'revoked', label: 'Revoked' },
+const VALUE_SORT_OPTIONS: Array<{ value: SharedRegisterValueSort; label: string }> = [
+  { value: 'highest', label: 'Highest value first' },
+  { value: 'lowest', label: 'Lowest value first' },
 ];
 
 function FilterIcon({ className }: IconProps) {
@@ -133,25 +131,21 @@ function formatDate(value?: string | null): string {
   return new Intl.DateTimeFormat('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }).format(parsed);
 }
 
-function formatStatus(value: GrantStatus): string {
-  if (value === 'active') return 'Active';
-  if (value === 'pending') return 'Pending';
-  if (value === 'revoked') return 'Revoked';
-  return 'Declined';
-}
-
-function formatPartnerType(value: PartnerType): string {
-  if (value === 'dealer') return 'Dealer';
-  if (value === 'finance') return 'Finance';
-  return 'Insurance';
-}
-
 function ownerName(register: SharedRegisterSummary): string {
   return register.ownerBusinessName || register.ownerName || 'Aim4price owner';
 }
 
 function ownerLocation(register: SharedRegisterSummary): string {
   return [register.ownerTownCity, register.ownerProvince].filter(Boolean).join(', ') || 'Location not saved';
+}
+
+function ownerContactParts(register: SharedRegisterSummary): string[] {
+  return [
+    register.ownerName || ownerName(register),
+    register.ownerPhone || 'No contact number',
+    register.ownerEmail || 'No email saved',
+    ownerLocation(register),
+  ].filter(Boolean);
 }
 
 function registerHref(register: SharedRegisterSummary): string {
@@ -170,11 +164,10 @@ function registerMatchesSearch(register: SharedRegisterSummary, query: string): 
     ownerName(register),
     register.ownerName,
     register.ownerBusinessName,
+    register.ownerEmail,
     register.ownerPhone,
     register.ownerTownCity,
     register.ownerProvince,
-    formatPartnerType(register.partnerType),
-    formatStatus(register.status),
   ]
     .join(' ')
     .toLowerCase();
@@ -189,14 +182,18 @@ export default function SharedRegistersClient() {
   const [searchTerm, setSearchTerm] = useState('');
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState<SharedRegisterStatusFilter>('all');
+  const [valueSort, setValueSort] = useState<SharedRegisterValueSort>('highest');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [registerToDelete, setRegisterToDelete] = useState<SharedRegisterSummary | null>(null);
+  const [isDeletingAccess, setIsDeletingAccess] = useState(false);
+  const [registerToOpen, setRegisterToOpen] = useState<SharedRegisterSummary | null>(null);
+  const [hasAcceptedPopia, setHasAcceptedPopia] = useState(false);
 
   const activeRegisters = useMemo(() => registers.filter((register) => register.status === 'active'), [registers]);
 
   const yearOptions = useMemo(() => {
     const years = new Set<number>();
-    registers.forEach((register) => {
+    activeRegisters.forEach((register) => {
       const parsed = new Date(register.createdAtIso);
       if (!Number.isNaN(parsed.getTime())) {
         years.add(parsed.getFullYear());
@@ -204,24 +201,29 @@ export default function SharedRegistersClient() {
     });
 
     return Array.from(years).sort((a, b) => b - a);
-  }, [registers]);
+  }, [activeRegisters]);
 
   const filteredRegisters = useMemo(() => {
-    return registers.filter((register) => {
+    const filtered = activeRegisters.filter((register) => {
       const parsed = new Date(register.createdAtIso);
       const matchesMonth = monthFilter === 'all' || (!Number.isNaN(parsed.getTime()) && String(parsed.getMonth()) === monthFilter);
       const matchesYear = yearFilter === 'all' || (!Number.isNaN(parsed.getTime()) && String(parsed.getFullYear()) === yearFilter);
-      const matchesStatus = statusFilter === 'all' || register.status === statusFilter;
-      return matchesMonth && matchesYear && matchesStatus && registerMatchesSearch(register, searchTerm);
+      return matchesMonth && matchesYear && registerMatchesSearch(register, searchTerm);
     });
-  }, [monthFilter, registers, searchTerm, statusFilter, yearFilter]);
+
+    return [...filtered].sort((a, b) => {
+      const left = Number(a.totalValue || 0);
+      const right = Number(b.totalValue || 0);
+      return valueSort === 'lowest' ? left - right : right - left;
+    });
+  }, [activeRegisters, monthFilter, searchTerm, valueSort, yearFilter]);
 
   const filteredActiveRegisterValue = useMemo(
-    () => filteredRegisters.reduce((sum, register) => (register.status === 'active' ? sum + Number(register.totalValue || 0) : sum), 0),
+    () => filteredRegisters.reduce((sum, register) => sum + Number(register.totalValue || 0), 0),
     [filteredRegisters],
   );
 
-  const hasActiveFilters = searchTerm.trim() || monthFilter !== 'all' || yearFilter !== 'all' || statusFilter !== 'all';
+  const hasActiveFilters = Boolean(searchTerm.trim()) || monthFilter !== 'all' || yearFilter !== 'all' || valueSort !== 'highest';
 
   const loadRegisters = useCallback(async () => {
     setIsLoading(true);
@@ -260,33 +262,61 @@ export default function SharedRegistersClient() {
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
-  async function respondToGrant(grantId: string, action: 'accept' | 'decline') {
-    try {
-      const response = await fetch(`/api/shared-access/${grantId}/${action}`, {
-        method: 'PATCH',
-        credentials: 'include',
-      });
-      const data = (await response.json()) as SharedRegistersResponse;
-
-      if (!response.ok || !data.ok || !data.grant) {
-        throw new Error(data.error ?? `Failed to ${action} access.`);
-      }
-
-      setNotice({ tone: 'success', message: action === 'accept' ? 'Shared register accepted.' : 'Shared register declined.' });
-      await loadRegisters();
-    } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : `Failed to ${action} access.` });
-    }
-  }
-
   function resetFilters() {
     setMonthFilter('all');
     setYearFilter('all');
-    setStatusFilter('all');
+    setValueSort('highest');
   }
 
-  function updateStatusFilter(event: ChangeEvent<HTMLSelectElement>) {
-    setStatusFilter(event.target.value as SharedRegisterStatusFilter);
+  function openRegisterDisclaimer(register: SharedRegisterSummary) {
+    setRegisterToOpen(register);
+    setHasAcceptedPopia(false);
+  }
+
+  function closeRegisterDisclaimer() {
+    setRegisterToOpen(null);
+    setHasAcceptedPopia(false);
+  }
+
+  function confirmOpenRegister() {
+    if (!registerToOpen || !hasAcceptedPopia) return;
+    window.open(registerHref(registerToOpen), '_blank', 'noopener,noreferrer');
+    closeRegisterDisclaimer();
+  }
+
+  function openDeleteModal(register: SharedRegisterSummary) {
+    setRegisterToDelete(register);
+  }
+
+  function closeDeleteModal() {
+    if (isDeletingAccess) return;
+    setRegisterToDelete(null);
+  }
+
+  async function handleDeleteSharedAccess() {
+    if (!registerToDelete) return;
+
+    setIsDeletingAccess(true);
+
+    try {
+      const response = await fetch(`/api/shared-access/${encodeURIComponent(registerToDelete.id)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = (await response.json().catch(() => null)) as SharedRegistersResponse | null;
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error ?? 'Failed to delete shared access.');
+      }
+
+      setRegisters((current) => current.filter((register) => register.id !== registerToDelete.id));
+      setNotice({ tone: 'success', message: 'Shared access deleted.' });
+      setRegisterToDelete(null);
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to delete shared access.' });
+    } finally {
+      setIsDeletingAccess(false);
+    }
   }
 
   return (
@@ -376,20 +406,17 @@ export default function SharedRegistersClient() {
           {!isLoading && filteredRegisters.length ? (
             <div className={styles.registerStack}>
               {filteredRegisters.map((register) => {
-                const isActiveRegister = register.status === 'active';
                 const registerValueText = `${formatCurrency(register.totalValue)} excl. VAT`;
 
                 return (
                   <article className={styles.sharedRegisterCard} key={register.id}>
                     <div className={styles.sharedRegisterMain}>
-                      <span className={styles.registerKicker}>
-                        {formatPartnerType(register.partnerType)} register · {formatStatus(register.status)} · Received {formatDate(register.createdAtIso)}
-                      </span>
+                      <span className={styles.registerKicker}>Received {formatDate(register.createdAtIso)}</span>
                       <h2>{ownerName(register)}</h2>
                       <p className={styles.registerContactLine}>
-                        <span>{register.ownerName || ownerName(register)}</span>
-                        <span>{register.ownerPhone || 'No contact number'}</span>
-                        <span>{ownerLocation(register)}</span>
+                        {ownerContactParts(register).map((part) => (
+                          <span key={part}>{part}</span>
+                        ))}
                       </p>
                       <div className={styles.registerPreviewPill}>
                         <span>Full Asset Register</span>
@@ -399,26 +426,12 @@ export default function SharedRegistersClient() {
                     </div>
 
                     <div className={styles.sharedRegisterActions}>
-                      {isActiveRegister ? (
-                        <a className={styles.primaryButton} href={registerHref(register)} target="_blank" rel="noreferrer">
-                          Open
-                        </a>
-                      ) : null}
-
-                      {register.status === 'pending' ? (
-                        <>
-                          <button type="button" className={styles.primaryButton} onClick={() => void respondToGrant(register.id, 'accept')}>
-                            Accept
-                          </button>
-                          <button type="button" className={styles.dangerButton} onClick={() => void respondToGrant(register.id, 'decline')}>
-                            Decline
-                          </button>
-                        </>
-                      ) : null}
-
-                      {!isActiveRegister && register.status !== 'pending' ? (
-                        <span className={`${styles.statusPill} ${styles[`status_${register.status}`]}`}>{formatStatus(register.status)}</span>
-                      ) : null}
+                      <button type="button" className={styles.dangerButton} onClick={() => openDeleteModal(register)}>
+                        Delete
+                      </button>
+                      <button type="button" className={styles.primaryButton} onClick={() => openRegisterDisclaimer(register)}>
+                        Open
+                      </button>
                     </div>
                   </article>
                 );
@@ -440,7 +453,7 @@ export default function SharedRegistersClient() {
             <div className={styles.modalHeader}>
               <div>
                 <h3 id="shared-register-filter-title">Filter shared registers.</h3>
-                <p>Choose which shared registers to show by received date and status.</p>
+                <p>Choose which shared registers to show by received date and value order.</p>
               </div>
               <button
                 type="button"
@@ -477,9 +490,9 @@ export default function SharedRegistersClient() {
               </label>
 
               <label className={styles.field}>
-                <span>Status</span>
-                <select value={statusFilter} onChange={updateStatusFilter}>
-                  {STATUS_OPTIONS.map((option) => (
+                <span>Value order</span>
+                <select value={valueSort} onChange={(event) => setValueSort(event.target.value as SharedRegisterValueSort)}>
+                  {VALUE_SORT_OPTIONS.map((option) => (
                     <option value={option.value} key={option.value}>
                       {option.label}
                     </option>
@@ -494,6 +507,83 @@ export default function SharedRegistersClient() {
               </button>
               <button type="button" className={styles.primaryButton} onClick={() => setIsFilterModalOpen(false)}>
                 Apply filters
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {registerToOpen ? (
+        <div className={styles.modalBackdrop}>
+          <div className={`${styles.modalCard} ${styles.consentModal}`} role="dialog" aria-modal="true" aria-labelledby="shared-register-popia-title">
+            <div className={styles.modalHeader}>
+              <div>
+                <h3 id="shared-register-popia-title">POPIA access disclaimer.</h3>
+                <p>Confirm that you understand how this shared Asset Register may be used before opening it.</p>
+              </div>
+              <button type="button" className={styles.modalCloseButton} onClick={closeRegisterDisclaimer} aria-label="Close disclaimer">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.selectedRegisterBox}>
+                <span>Selected register</span>
+                <strong>{ownerName(registerToOpen)}</strong>
+                <p>{formatCurrency(registerToOpen.totalValue)} excl. VAT · {registerToOpen.assetCount} assets</p>
+              </div>
+
+              <ul className={styles.popiaList}>
+                <li>You may only use the owner details and asset information for the reason this register was shared with your account.</li>
+                <li>Do not copy, forward or reuse personal information outside the agreed finance, insurance or dealer process.</li>
+                <li>Any asset updates you make can affect the owner&apos;s saved Asset Register, reports and future asset records.</li>
+              </ul>
+
+              <label className={styles.checkboxRow}>
+                <input type="checkbox" checked={hasAcceptedPopia} onChange={(event) => setHasAcceptedPopia(event.target.checked)} />
+                <span>I understand the POPIA responsibility and the effect of updating shared assets.</span>
+              </label>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.secondaryButton} onClick={closeRegisterDisclaimer}>
+                Close
+              </button>
+              <button type="button" className={styles.primaryButton} onClick={confirmOpenRegister} disabled={!hasAcceptedPopia}>
+                Open shared register
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {registerToDelete ? (
+        <div className={styles.modalBackdrop}>
+          <div className={`${styles.modalCard} ${styles.warningModal}`} role="dialog" aria-modal="true" aria-labelledby="shared-register-delete-title">
+            <div className={styles.modalHeader}>
+              <div>
+                <h3 id="shared-register-delete-title">Delete shared access?</h3>
+                <p>This removes the shared register from this account. The owner&apos;s Asset Register stays saved.</p>
+              </div>
+              <button type="button" className={styles.modalCloseButton} onClick={closeDeleteModal} aria-label="Close delete confirmation">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.selectedRegisterBox}>
+                <span>Selected register</span>
+                <strong>{ownerName(registerToDelete)}</strong>
+                <p>{formatCurrency(registerToDelete.totalValue)} excl. VAT · Received {formatDate(registerToDelete.createdAtIso)}</p>
+              </div>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.secondaryButton} onClick={closeDeleteModal} disabled={isDeletingAccess}>
+                Close
+              </button>
+              <button type="button" className={styles.dangerButton} onClick={() => void handleDeleteSharedAccess()} disabled={isDeletingAccess}>
+                {isDeletingAccess ? 'Deleting...' : 'Yes, delete access'}
               </button>
             </div>
           </div>
