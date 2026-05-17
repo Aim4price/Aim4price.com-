@@ -1972,7 +1972,6 @@ export default function LeadsClient() {
           <div className={`${assetStyles.modalCard} ${assetStyles.exportModal} ${styles.leadReportModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-report-export-title">
             <div className={`${assetStyles.modalHeader} ${assetStyles.exportModalHeader}`}>
               <div className={assetStyles.modalHeaderText}>
-                <span className={assetStyles.modalEyebrow}>Download full Asset Register</span>
                 <h3 id="lead-report-export-title">Export asset register</h3>
               </div>
 
