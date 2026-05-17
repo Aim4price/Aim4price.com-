@@ -15427,3 +15427,89 @@
     width: 100% !important;
   }
 }
+
+/* === Small-detail summary tile polish: match shared-register tile typography === */
+.heroSummaryTile {
+  min-height: 8.5rem !important;
+  padding: 1.35rem 1.5rem !important;
+  border-radius: 1.45rem !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  gap: 0.65rem !important;
+}
+
+.heroSummaryTitle {
+  color: #68798b !important;
+  font-size: 0.86rem !important;
+  font-weight: 780 !important;
+  line-height: 1.15 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.heroSummaryValue,
+.heroRegisterValue {
+  color: #0c382f !important;
+  font-size: clamp(1.9rem, 3vw, 2.42rem) !important;
+  font-weight: 780 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.055em !important;
+  white-space: nowrap !important;
+}
+
+.heroRegisterVatSuffix {
+  color: #586b7f !important;
+  font-size: 0.95rem !important;
+  font-weight: 760 !important;
+  letter-spacing: 0 !important;
+}
+
+.heroSummaryFooter {
+  min-height: 2.6rem !important;
+  padding-top: 0.9rem !important;
+  border-top: 1px solid rgba(209, 221, 231, 0.95) !important;
+}
+
+.heroSummaryFooter small,
+.heroTotalFooter small {
+  color: #607084 !important;
+  font-size: 0.92rem !important;
+  font-weight: 690 !important;
+  line-height: 1.35 !important;
+}
+
+.heroVatFooter {
+  justify-content: flex-end !important;
+  text-align: right !important;
+}
+
+.heroVatFooter .vatToggleGroup {
+  margin-left: auto !important;
+}
+
+.heroVatFooter .vatToggleButton {
+  min-height: 2.25rem !important;
+  padding: 0 1rem !important;
+  font-size: 0.9rem !important;
+  font-weight: 760 !important;
+}
+
+@media (max-width: 760px) {
+  .heroSummaryTile {
+    min-height: 8.2rem !important;
+    padding: 1.15rem !important;
+  }
+
+  .heroSummaryValue,
+  .heroRegisterValue {
+    font-size: 2.15rem !important;
+  }
+
+  .heroVatFooter {
+    justify-content: flex-start !important;
+    text-align: left !important;
+  }
+
+  .heroVatFooter .vatToggleGroup {
+    margin-left: 0 !important;
+  }
+}
