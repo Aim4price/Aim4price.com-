@@ -139,8 +139,8 @@ function PhoneIcon({ className }: IconProps) {
 function WhatsAppIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M5 19.2 6 16.1a7.7 7.7 0 1 1 2.1 2.1L5 19.2Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M9.3 8.8c.2-.4.4-.5.7-.5h.5c.2 0 .4.1.5.4l.6 1.4c.1.3.1.5-.1.7l-.4.5c.7 1.2 1.5 2 2.7 2.7l.5-.4c.2-.2.5-.2.7-.1l1.4.6c.3.1.4.3.4.5v.5c0 .3-.1.6-.5.7-.6.3-1.2.4-1.9.2-2.5-.6-5.7-3.8-6.3-6.3-.1-.7 0-1.3.2-1.9Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 3.25a8.55 8.55 0 0 0-7.26 13.05l-1.06 3.9 4.04-1.02A8.55 8.55 0 1 0 12 3.25Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.55 7.65c.22-.48.45-.5.68-.5h.6c.2 0 .43.05.57.38l.78 1.82c.1.27.08.5-.08.72l-.42.53c-.1.12-.13.28-.05.43.48.9 1.35 1.78 2.34 2.34.15.08.3.05.43-.05l.53-.42c.22-.17.45-.2.72-.08l1.82.78c.33.13.38.37.38.57v.6c0 .23-.02.47-.5.68-.5.22-1.14.34-1.9.24-2.28-.32-5.83-3.86-6.15-6.15-.1-.76.02-1.4.25-1.9Z" fill="currentColor" />
     </svg>
   );
 }
@@ -187,6 +187,22 @@ function ChevronDownIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
       <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function ChevronLeftIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="m15 18-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="m9 18 6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -584,6 +600,7 @@ export default function LeadsClient() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
+  const [leadPhotoIndexes, setLeadPhotoIndexes] = useState<Record<string, number>>({});
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
   const [noteLead, setNoteLead] = useState<AssetLead | null>(null);
   const [deleteLeadTarget, setDeleteLeadTarget] = useState<AssetLead | null>(null);
@@ -713,6 +730,11 @@ export default function LeadsClient() {
       setLeads((current) => current.filter((lead) => lead.id !== leadToDelete.id));
       setManagedLead((current) => (current?.id === leadToDelete.id ? null : current));
       setOpenLeadId((current) => (current === leadToDelete.id ? null : current));
+      setLeadPhotoIndexes((current) => {
+        const next = { ...current };
+        delete next[leadToDelete.id];
+        return next;
+      });
       setNotice({ tone: 'success', message: 'Lead deleted.' });
       return true;
     } catch (error) {
@@ -914,6 +936,30 @@ export default function LeadsClient() {
       .toUpperCase();
   }
 
+  function setLeadPhotoIndex(leadId: string, index: number) {
+    setLeadPhotoIndexes((current) => ({
+      ...current,
+      [leadId]: Math.max(0, index),
+    }));
+  }
+
+  function getLeadPhotoIndex(lead: AssetLead): number {
+    const photos = assetPhotos(lead);
+    const storedIndex = leadPhotoIndexes[lead.id] ?? 0;
+
+    if (!photos.length) return 0;
+    return Math.min(Math.max(storedIndex, 0), photos.length - 1);
+  }
+
+  function cycleLeadPhoto(lead: AssetLead, direction: -1 | 1) {
+    const photos = assetPhotos(lead);
+    if (photos.length <= 1) return;
+
+    const currentIndex = getLeadPhotoIndex(lead);
+    const nextIndex = (currentIndex + direction + photos.length) % photos.length;
+    setLeadPhotoIndex(lead.id, nextIndex);
+  }
+
   function renderLeadAssetStatusMark(value: AssetStatusChoice) {
     const status = normalizeAssetStatusChoice(value);
     const config = {
@@ -931,7 +977,10 @@ export default function LeadsClient() {
   }
 
   function renderLeadDetails(lead: AssetLead) {
-    const photo = assetPhotos(lead)[0] ?? '';
+    const photos = assetPhotos(lead);
+    const photoIndex = getLeadPhotoIndex(lead);
+    const photo = photos[photoIndex] ?? '';
+    const hasMultiplePhotos = photos.length > 1;
     const familyLabel = asText(lead.assetSnapshot.equipmentFamilyLabel) || asText(lead.assetSnapshot.kind) || 'Asset';
     const licenseStatus = readLeadLicenseStatusChoice(lead);
     const licenseRegistrationNumber = readLeadLicenseRegistrationNumber(lead);
@@ -941,8 +990,36 @@ export default function LeadsClient() {
         <div className={assetStyles.previewWrap}>
           <div className={assetStyles.previewStage}>
             {photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo} alt={assetTitle(lead)} className={assetStyles.previewImage} />
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photo} alt={`${assetTitle(lead)} photo ${photoIndex + 1}`} className={assetStyles.previewImage} />
+
+                {hasMultiplePhotos ? (
+                  <>
+                    <button
+                      type="button"
+                      className={`${assetStyles.previewNavButton} ${assetStyles.previewNavPrev}`}
+                      onClick={() => cycleLeadPhoto(lead, -1)}
+                      aria-label="Show previous photo"
+                    >
+                      <ChevronLeftIcon className={assetStyles.buttonIcon} />
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`${assetStyles.previewNavButton} ${assetStyles.previewNavNext}`}
+                      onClick={() => cycleLeadPhoto(lead, 1)}
+                      aria-label="Show next photo"
+                    >
+                      <ChevronRightIcon className={assetStyles.buttonIcon} />
+                    </button>
+
+                    <div className={assetStyles.previewCounter}>
+                      {photoIndex + 1} / {photos.length}
+                    </div>
+                  </>
+                ) : null}
+              </>
             ) : (
               <div className={assetStyles.previewPlaceholder}>
                 <div className={assetStyles.previewPlaceholderBadges}>
@@ -953,6 +1030,27 @@ export default function LeadsClient() {
               </div>
             )}
           </div>
+
+          {hasMultiplePhotos ? (
+            <div className={assetStyles.previewThumbRow}>
+              {photos.map((thumbnail, index) => {
+                const isActivePhoto = index === photoIndex;
+
+                return (
+                  <button
+                    type="button"
+                    key={`${lead.id}-lead-photo-${index}`}
+                    className={`${assetStyles.previewThumbButton} ${isActivePhoto ? assetStyles.previewThumbButtonActive : ''}`}
+                    onClick={() => setLeadPhotoIndex(lead.id, index)}
+                    aria-label={`View photo ${index + 1}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={thumbnail} alt={`${assetTitle(lead)} thumbnail ${index + 1}`} className={assetStyles.previewThumbImage} />
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
 
         <div className={assetStyles.assetDetailDivider} aria-hidden="true" />
@@ -1222,9 +1320,8 @@ export default function LeadsClient() {
           <div className={`${assetStyles.modalCard} ${styles.leadFilterModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-filter-title">
             <div className={assetStyles.modalHeader}>
               <div className={assetStyles.modalHeaderText}>
-                <span className={assetStyles.modalEyebrow}>Filter leads</span>
-                <h3 id="lead-filter-title">Choose which leads to show</h3>
-                <p>Filter your inbox by the date the lead was received and the current lead status.</p>
+                <h3 id="lead-filter-title">Choose which leads to show.</h3>
+                <p className={styles.leadFilterIntro}>Filter your inbox by the date the lead was received and the current lead status.</p>
               </div>
 
               <button type="button" className={assetStyles.modalCloseButton} onClick={() => setIsFilterModalOpen(false)} aria-label="Close filter modal">
@@ -1293,8 +1390,8 @@ export default function LeadsClient() {
             <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody}`}>
               <div className={assetStyles.optionsContent}>
                 <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${styles.manageOptionsGrid}`}>
-                  <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.optionFeaturedButton}`} onClick={() => openWhatsApp(managedLead)}>
-                    <WhatsAppIcon className={assetStyles.buttonIcon} />
+                  <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.optionFeaturedButton} ${styles.whatsAppActionButton}`} onClick={() => openWhatsApp(managedLead)}>
+                    <WhatsAppIcon className={`${assetStyles.buttonIcon} ${styles.whatsAppIcon}`} />
                     <span>
                       <strong>WhatsApp client</strong>
                       <small>Open a WhatsApp message to the owner.</small>
@@ -1348,9 +1445,7 @@ export default function LeadsClient() {
 
             <div className={`${assetStyles.deleteConfirmContent} ${styles.leadDeleteContent}`}>
               <h3 id="delete-lead-confirm-title">Are you sure you want to delete this lead?</h3>
-              <p id="delete-lead-confirm-copy">
-                This removes the lead from your leads inbox. It does not delete the owner&apos;s asset register item or their saved asset data.
-              </p>
+              <p id="delete-lead-confirm-copy">This removes the lead from your leads inbox.</p>
 
               <div className={`${assetStyles.deleteConfirmAsset} ${styles.leadDeleteSummary}`}>
                 <span>Selected lead</span>
@@ -1360,7 +1455,7 @@ export default function LeadsClient() {
 
               <div className={`${assetStyles.deleteConfirmActions} ${styles.leadDeleteActions}`}>
                 <button type="button" className={assetStyles.secondaryButton} onClick={closeDeleteLeadModal} disabled={isDeletingLead}>
-                  Keep lead
+                  Close
                 </button>
 
                 <button

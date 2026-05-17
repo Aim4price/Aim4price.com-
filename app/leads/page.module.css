@@ -246,8 +246,13 @@
 }
 
 .leadFilterModal {
-  width: min(100%, 700px) !important;
-  padding: clamp(1.15rem, 2vw, 1.45rem) !important;
+  width: min(100%, 820px) !important;
+  padding: clamp(1.25rem, 2vw, 1.65rem) !important;
+}
+
+.leadFilterIntro {
+  max-width: none !important;
+  white-space: nowrap;
 }
 
 .leadFilterForm {
@@ -287,23 +292,23 @@
 }
 
 .leadDeleteModal {
-  width: min(100%, 800px) !important;
-  grid-template-columns: 4.3rem minmax(0, 1fr) !important;
-  gap: clamp(1.25rem, 2vw, 1.75rem) !important;
-  padding: clamp(1.7rem, 2.8vw, 2.5rem) !important;
+  width: min(100%, 920px) !important;
+  grid-template-columns: 4.6rem minmax(0, 1fr) !important;
+  gap: clamp(1.45rem, 2.2vw, 2rem) !important;
+  padding: clamp(2rem, 3vw, 2.85rem) !important;
   border-radius: 2rem !important;
 }
 
 .leadDeleteIcon {
-  width: 4.3rem !important;
-  height: 4.3rem !important;
-  border-radius: 1.3rem !important;
-  margin-top: 0.15rem;
+  width: 4.6rem !important;
+  height: 4.6rem !important;
+  border-radius: 1.35rem !important;
+  margin-top: 0.05rem;
 }
 
 .leadDeleteContent {
   display: grid !important;
-  gap: 1.1rem !important;
+  gap: 1.25rem !important;
   padding-right: 0 !important;
 }
 
@@ -322,8 +327,8 @@
 }
 
 .leadDeleteSummary {
-  margin-top: 0.1rem;
-  padding: 1.18rem 1.25rem !important;
+  margin-top: 0.08rem;
+  padding: 1.28rem 1.35rem !important;
   border-radius: 1.25rem !important;
   background: linear-gradient(180deg, #ffffff 0%, #fff9f9 100%) !important;
 }
@@ -337,8 +342,8 @@
   display: flex !important;
   align-items: center !important;
   justify-content: flex-end !important;
-  gap: 0.82rem !important;
-  margin-top: 0.3rem !important;
+  gap: 0.95rem !important;
+  margin-top: 0.45rem !important;
 }
 
 .leadDeleteActions > button {
@@ -349,6 +354,12 @@
 
 .leadDeleteConfirmButton {
   min-width: 13.75rem !important;
+}
+
+.whatsAppActionButton .whatsAppIcon {
+  width: 1.65rem !important;
+  height: 1.65rem !important;
+  filter: drop-shadow(0 2px 5px rgba(3, 40, 31, 0.14));
 }
 
 @keyframes leadAssetReveal {
@@ -410,6 +421,10 @@
 }
 
 @media (max-width: 760px) {
+  .leadFilterIntro {
+    white-space: normal;
+  }
+
   .leadDeleteModal {
     width: min(100%, calc(100vw - 1.25rem)) !important;
     grid-template-columns: 1fr !important;
