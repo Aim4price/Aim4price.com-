@@ -38,6 +38,7 @@ export type SharedAccessGrant = {
   ownerMessage: string;
   ownerName: string;
   ownerBusinessName: string;
+  ownerEmail: string;
   ownerPhone: string;
   ownerProvince: string;
   ownerTownCity: string;
@@ -74,6 +75,7 @@ export type AssetLead = {
   ownerContactEmail: string;
   ownerName: string;
   ownerBusinessName: string;
+  ownerEmail: string;
   ownerPhone: string;
   ownerProvince: string;
   ownerTownCity: string;
@@ -136,6 +138,7 @@ type GrantRow = {
   owner_message: string | null;
   owner_display_name: string | null;
   owner_business_name: string | null;
+  owner_marketplace_email: string | null;
   owner_phone: string | null;
   owner_province: string | null;
   owner_town_city: string | null;
@@ -167,6 +170,7 @@ type LeadRow = {
   owner_contact_email: string | null;
   owner_display_name: string | null;
   owner_business_name: string | null;
+  owner_marketplace_email: string | null;
   owner_phone: string | null;
   owner_province: string | null;
   owner_town_city: string | null;
@@ -555,6 +559,7 @@ function mapGrantRow(row: GrantRow): SharedAccessGrant {
     ownerMessage: asText(row.owner_message),
     ownerName,
     ownerBusinessName,
+    ownerEmail: asText(row.owner_marketplace_email),
     ownerPhone: asText(row.owner_phone),
     ownerProvince: asText(row.owner_province),
     ownerTownCity: asText(row.owner_town_city),
@@ -586,6 +591,7 @@ function grantSelectSql(whereClause: string): string {
       g.owner_message,
       owner.display_name as owner_display_name,
       owner.business_name as owner_business_name,
+      owner.marketplace_email as owner_marketplace_email,
       owner.phone as owner_phone,
       owner.province as owner_province,
       owner.town_city as owner_town_city,
@@ -629,6 +635,7 @@ function mapLeadRow(row: LeadRow): AssetLead {
     ownerContactEmail: asText(row.owner_contact_email),
     ownerName,
     ownerBusinessName,
+    ownerEmail: asText(row.owner_marketplace_email),
     ownerPhone: asText(row.owner_phone),
     ownerProvince: asText(row.owner_province),
     ownerTownCity: asText(row.owner_town_city),
@@ -664,6 +671,7 @@ function leadSelectSql(whereClause: string): string {
       l.owner_contact_email,
       owner.display_name as owner_display_name,
       owner.business_name as owner_business_name,
+      owner.marketplace_email as owner_marketplace_email,
       owner.phone as owner_phone,
       owner.province as owner_province,
       owner.town_city as owner_town_city,
@@ -1087,6 +1095,37 @@ export async function revokeSharedAccessGrant(ownerUserId: string, grantId: stri
     ownerUserId,
     actorUserId: ownerUserId,
     eventType: 'register_revoked',
+    entityType: 'access_grant',
+    entityId: grant.id,
+  });
+
+  return grant;
+}
+
+
+export async function deleteSharedAccessGrantForPartner(partnerUserId: string, grantId: string): Promise<SharedAccessGrant> {
+  await ensurePartnerAccessTables();
+  const db = getDb();
+  const result = await db.query<GrantRow>(
+    `
+      update asset_register_access_grants
+      set status = 'revoked', revoked_at = now(), updated_at = now()
+      where id = $1::uuid and partner_user_id = $2 and status in ('pending', 'active')
+      returning id::text
+    `,
+    [grantId, partnerUserId],
+  );
+
+  if (!result.rows[0]) {
+    throw new Error('ACCESS_GRANT_NOT_FOUND');
+  }
+
+  const updated = await db.query<GrantRow>(`${grantSelectSql('where g.id = $1::uuid')} limit 1`, [grantId]);
+  const grant = mapGrantRow(updated.rows[0]);
+  await writeAuditEvent({
+    ownerUserId: grant.ownerUserId,
+    actorUserId: partnerUserId,
+    eventType: 'register_access_deleted_by_partner',
     entityType: 'access_grant',
     entityId: grant.id,
   });
