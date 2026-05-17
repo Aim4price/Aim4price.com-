@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
-import { openAssetSheetPrint, type ReportMethodCard } from '../../lib/report-print';
+import { openAssetRegisterSummaryPrint, openAssetSheetPrint, type ReportMethodCard } from '../../lib/report-print';
 import assetStyles from '../asset-register/page.module.css';
 import styles from './page.module.css';
 
@@ -266,6 +266,80 @@ function asBoolean(value: unknown): boolean {
   return value === true || String(value ?? '').trim().toLowerCase() === 'true';
 }
 
+function registerLeadSnapshot(lead: AssetLead): Record<string, unknown> | null {
+  return asRecord(lead.includedSections.registerSnapshot) ?? asRecord(lead.assetSnapshot.registerSnapshot);
+}
+
+function isFullRegisterLead(lead: AssetLead): boolean {
+  return (
+    asBoolean(lead.includedSections.registerLead) ||
+    asText(lead.includedSections.source) === 'full_asset_register' ||
+    asText(lead.assetSnapshot.snapshotType) === 'full_asset_register' ||
+    Boolean(registerLeadSnapshot(lead))
+  );
+}
+
+function registerLeadAssets(lead: AssetLead): Record<string, unknown>[] {
+  const snapshot = registerLeadSnapshot(lead);
+  const assets = snapshot?.assets;
+
+  if (!Array.isArray(assets)) {
+    return [];
+  }
+
+  return assets.map((asset) => asRecord(asset)).filter((asset): asset is Record<string, unknown> => Boolean(asset));
+}
+
+function registerLeadCount(lead: AssetLead): number {
+  const snapshot = registerLeadSnapshot(lead);
+  const directCount = asNumber(snapshot?.assetCount ?? snapshot?.totalAssets);
+
+  if (directCount !== null) return Math.round(directCount);
+  return registerLeadAssets(lead).length;
+}
+
+function registerLeadLabel(lead: AssetLead): string {
+  const snapshot = registerLeadSnapshot(lead);
+  const label = asText(snapshot?.leadLabel);
+
+  if (label) return label;
+  if (lead.leadType === 'finance') return 'Full refinance quote';
+  if (lead.leadType === 'insurance') return 'Full insurance quote';
+  return 'Full register lead';
+}
+
+function formatLeadDisplayType(lead: AssetLead): string {
+  if (isFullRegisterLead(lead)) {
+    if (lead.leadType === 'finance') return 'Full refinance lead';
+    if (lead.leadType === 'insurance') return 'Full insurance lead';
+    return 'Full register lead';
+  }
+
+  return formatLeadType(lead.leadType);
+}
+
+function snapshotUsageValue(snapshot: Record<string, unknown>): string {
+  const specs = asRecord(snapshot.specsJson) ?? asRecord(snapshot.specs) ?? {};
+  const hours = asNumber(snapshot.hours);
+  const percent = firstNumberFromRecord(snapshot, ['lifeWorkedPercent', 'percentWorked', 'usagePercent']) ?? firstNumberFromRecord(specs, ['lifeWorkedPercent', 'percentWorked', 'usagePercent']);
+  const usageMetric = firstTextFromRecord(snapshot, ['usageMetric', 'usage_metric']) || firstTextFromRecord(specs, ['usageMetric', 'usage_metric']);
+  const unit = usageMetric.toLowerCase() === 'km' || usageMetric.toLowerCase() === 'kilometres' || usageMetric.toLowerCase() === 'kilometers' ? 'km' : 'hours';
+
+  if (hours !== null && hours > 0) {
+    return `${Math.round(hours).toLocaleString('en-ZA')} ${unit}`;
+  }
+
+  if (percent !== null) {
+    return formatUsagePercent(Math.min(100, Math.max(0, percent)));
+  }
+
+  return '—';
+}
+
+function snapshotTitle(snapshot: Record<string, unknown>): string {
+  return asText(snapshot.title) || [asText(snapshot.brandName), asText(snapshot.modelName) || asText(snapshot.typedModelName)].filter(Boolean).join(' ') || 'Asset';
+}
+
 function normalizeAssetStatusChoice(value: unknown, fallback: AssetStatusChoice = 'unknown'): AssetStatusChoice {
   const normalized = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
 
@@ -330,10 +404,18 @@ function conditionLabel(value: unknown): string {
 }
 
 function assetTitle(lead: AssetLead): string {
+  if (isFullRegisterLead(lead)) {
+    return asText(registerLeadSnapshot(lead)?.title) || 'Full Asset Register';
+  }
+
   return asText(lead.assetSnapshot.title) || 'Shared asset';
 }
 
 function assetDescription(lead: AssetLead): string {
+  if (isFullRegisterLead(lead)) {
+    return `${registerLeadCount(lead)} ${registerLeadCount(lead) === 1 ? 'asset' : 'assets'} · ${registerLeadLabel(lead)}`;
+  }
+
   return [
     lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : '',
     asText(lead.assetSnapshot.brandName),
@@ -344,10 +426,19 @@ function assetDescription(lead: AssetLead): string {
 }
 
 function assetValue(lead: AssetLead): number {
+  if (isFullRegisterLead(lead)) {
+    const snapshot = registerLeadSnapshot(lead);
+    return asNumber(snapshot?.totalValue ?? snapshot?.registerValue ?? snapshot?.value) ?? 0;
+  }
+
   return asNumber(lead.assetSnapshot.value ?? lead.assetSnapshot.selectedValueExVat ?? lead.assetSnapshot.aim4priceValueExVat ?? lead.assetSnapshot.marketMidExVat) ?? 0;
 }
 
 function assetPhotos(lead: AssetLead): string[] {
+  if (isFullRegisterLead(lead)) {
+    return [];
+  }
+
   return Array.isArray(lead.assetSnapshot.photos)
     ? lead.assetSnapshot.photos.map((photo) => String(photo ?? '').trim()).filter(Boolean)
     : [];
@@ -420,6 +511,10 @@ function assetUsageValue(lead: AssetLead): string {
 }
 
 function leadAssetMeta(lead: AssetLead): string {
+  if (isFullRegisterLead(lead)) {
+    return `${registerLeadCount(lead)} ${registerLeadCount(lead) === 1 ? 'asset' : 'assets'} • Register value: ${formatCurrency(assetValue(lead))} excl. VAT`;
+  }
+
   const usageValue = assetUsageValue(lead);
   const condition = asText(lead.assetSnapshot.condition);
   const kind = asText(lead.assetSnapshot.kind).toLowerCase();
@@ -473,6 +568,10 @@ function cleanPhoneForWhatsApp(value: string): string {
   return digits;
 }
 
+function leadFollowUpSubject(lead: AssetLead): string {
+  return isFullRegisterLead(lead) ? 'your full Aim4price asset register' : assetTitle(lead);
+}
+
 function buildClientRows(lead: AssetLead): Array<{ label: string; value: string }> {
   return [
     { label: 'Owner full name', value: lead.ownerName || ownerDisplayName(lead) },
@@ -521,7 +620,90 @@ function buildMethodCards(lead: AssetLead): ReportMethodCard[] {
   return cards;
 }
 
+function downloadFullRegisterLead(lead: AssetLead): boolean {
+  const snapshot = registerLeadSnapshot(lead);
+  const registerAssets = registerLeadAssets(lead);
+  const registerValue = assetValue(lead);
+  const registerValueInclVat = asNumber(snapshot?.totalValueInclVat) ?? Math.round(registerValue * 1.15);
+  const aim4priceCount = asNumber(snapshot?.aim4priceAssetCount) ?? registerAssets.filter((asset) => asText(asset.selectedMethod) === 'aim4price' || asNumber(asset.aim4priceValueExVat) !== null).length;
+  const manualAssetCount = asNumber(snapshot?.manualAssetCount) ?? registerAssets.filter((asset) => asText(asset.selectedMethod) === 'manual').length;
+  const financedCount = asNumber(snapshot?.financedAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isFinanced)).length;
+  const insuredCount = asNumber(snapshot?.insuredAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isInsured)).length;
+  const licensedCount = asNumber(snapshot?.licensedAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isLicensed)).length;
+
+  const rows = registerAssets.map((asset) => {
+    const value = asNumber(asset.value ?? asset.selectedValueExVat) ?? 0;
+    const family = asText(asset.equipmentFamilyLabel) || asText(asset.kind) || 'Asset';
+    const brand = asText(asset.brandName);
+    const model = asText(asset.modelName) || asText(asset.typedModelName);
+    const year = asset.yearModel ? String(asset.yearModel) : '—';
+    const usage = snapshotUsageValue(asset);
+    const condition = asText(asset.condition) ? conditionLabel(asset.condition) : '—';
+    const serial = asText(asset.serialNumber) || '—';
+    const updated = formatDate(asText(asset.updatedAtIso) || asText(asset.createdAtIso));
+
+    return {
+      asset: snapshotTitle(asset),
+      type: family,
+      method: methodLabel(asset.selectedMethod),
+      detail: [year !== '—' ? `Year: ${year}` : '', usage !== '—' ? `Usage: ${usage}` : '', condition !== '—' ? `Condition: ${condition}` : '', serial !== '—' ? `Serial: ${serial}` : ''].filter(Boolean).join(' • '),
+      value: formatCurrency(value),
+      status: updated !== '—' ? `Updated ${updated}` : 'Saved asset',
+      brand: brand || '—',
+      model: model || '—',
+      year,
+      usage,
+      condition,
+      serial,
+      insured: asBoolean(asset.isInsured) ? 'Yes' : 'No',
+      financed: asBoolean(asset.isFinanced) ? 'Yes' : 'No',
+      licensed: asBoolean(asset.isLicensed) ? 'Yes' : 'No',
+      licenseRegistrationNumber: asText(asset.licenseRegistrationNumber) || undefined,
+      documents: 'Not shared',
+      updated: updated !== '—' ? `Updated ${updated}` : '—',
+      photoUrl: asText(asset.photoUrl) || null,
+    };
+  });
+
+  return openAssetRegisterSummaryPrint({
+    logoUrl: '/brand/aim4price-mark-black.png',
+    generatedAt: formatDate(new Date().toISOString()),
+    reportTitle: `${formatLeadDisplayType(lead)} Report`,
+    reportSubtitle: 'Aim4price full asset register lead',
+    valueLabel: 'Register Value',
+    assetSectionTitle: 'Full Asset Register',
+    emptyStateMessage: 'No asset rows were included in this full-register lead snapshot.',
+    ownerName: lead.ownerBusinessName || ownerDisplayName(lead),
+    ownerMeta: [ownerDisplayName(lead), ownerPhone(lead), ownerEmail(lead), ownerLocation(lead)].filter(Boolean).join(' • '),
+    intro: 'Full asset register snapshot shared as an Aim4price lead.',
+    registerValue: formatCurrency(registerValue),
+    registerValueNote: `${formatCurrency(registerValueInclVat)} incl. VAT`,
+    ownerRows: [
+      { label: 'Business', value: lead.ownerBusinessName || '—' },
+      { label: 'Contact', value: ownerDisplayName(lead) },
+      { label: 'Phone', value: ownerPhone(lead) || '—' },
+      { label: 'Email', value: ownerEmail(lead) || '—' },
+      { label: 'Location', value: ownerLocation(lead) },
+    ],
+    stats: [
+      { label: 'Total assets', value: String(registerLeadCount(lead)), note: 'Assets included in the register snapshot.' },
+      { label: 'Register value', value: formatCurrency(registerValue), note: 'Saved register total excluding VAT.' },
+      { label: 'Aim4price assets', value: String(aim4priceCount), note: 'Assets valued through Aim4price.' },
+      { label: 'Manual assets', value: String(manualAssetCount), note: 'Assets entered manually.' },
+      { label: 'Financed assets', value: String(financedCount), note: 'Marked as financed.' },
+      { label: 'Insured assets', value: String(insuredCount), note: 'Marked as insured.' },
+      { label: 'Licensed assets', value: String(licensedCount), note: 'Marked as licensed.' },
+    ],
+    rows,
+    footerNote: "This PDF is generated from a once-off full-register lead snapshot. It does not provide live access to the owner's asset register.",
+  });
+}
+
 function downloadLeadAsset(lead: AssetLead): boolean {
+  if (isFullRegisterLead(lead)) {
+    return downloadFullRegisterLead(lead);
+  }
+
   const value = assetValue(lead);
   const photos = assetPhotos(lead);
   const didOpen = openAssetSheetPrint({
@@ -533,14 +715,14 @@ function downloadLeadAsset(lead: AssetLead): boolean {
     valueLabel: 'Asset value',
     value: formatCurrency(value),
     valueNote: `${formatCurrency(Math.round(value * 1.15))} incl. VAT`,
-    statusLabel: `${formatLeadType(lead.leadType)} · ${formatStatus(lead.status)}`,
+    statusLabel: `${formatLeadDisplayType(lead)} · ${formatStatus(lead.status)}`,
     issuerName: ownerDisplayName(lead),
     issuerAddress: ownerLocation(lead),
     issuerPhone: ownerPhone(lead) || '—',
     issuerEmail: ownerEmail(lead) || '—',
     clientRows: buildClientRows(lead),
     summaryItems: [
-      { label: 'Lead type', value: formatLeadType(lead.leadType) },
+      { label: 'Lead type', value: formatLeadDisplayType(lead) },
       { label: 'Lead status', value: formatStatus(lead.status) },
       { label: 'Created', value: formatDate(lead.createdAtIso) },
     ],
@@ -580,7 +762,7 @@ function searchTextForLead(lead: AssetLead): string {
     assetTitle(lead),
     assetDescription(lead),
     leadAssetMeta(lead),
-    formatLeadType(lead.leadType),
+    formatLeadDisplayType(lead),
     ownerDisplayName(lead),
     ownerPhone(lead),
     ownerEmail(lead),
@@ -826,7 +1008,7 @@ export default function LeadsClient() {
       return;
     }
 
-    const message = encodeURIComponent(`Good day ${ownerDisplayName(lead)}, I received your Aim4price ${formatLeadType(lead.leadType).toLowerCase()} for ${assetTitle(lead)}.`);
+    const message = encodeURIComponent(`Good day ${ownerDisplayName(lead)}, I received your Aim4price ${formatLeadDisplayType(lead).toLowerCase()} for ${leadFollowUpSubject(lead)}.`);
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank', 'noopener,noreferrer');
   }
 
@@ -837,8 +1019,8 @@ export default function LeadsClient() {
       return;
     }
 
-    const subject = encodeURIComponent(`Aim4price lead: ${assetTitle(lead)}`);
-    const body = encodeURIComponent(`Good day ${ownerDisplayName(lead)},\n\nI received your Aim4price ${formatLeadType(lead.leadType).toLowerCase()} for ${assetTitle(lead)}.\n\nKind regards`);
+    const subject = encodeURIComponent(`Aim4price lead: ${leadFollowUpSubject(lead)}`);
+    const body = encodeURIComponent(`Good day ${ownerDisplayName(lead)},\n\nI received your Aim4price ${formatLeadDisplayType(lead).toLowerCase()} for ${leadFollowUpSubject(lead)}.\n\nKind regards`);
     window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
   }
 
@@ -976,7 +1158,65 @@ export default function LeadsClient() {
     );
   }
 
+  function renderRegisterStatRow(label: string, value: string | number) {
+    return (
+      <div className={styles.fullRegisterStatRow}>
+        <span>{label}</span>
+        <strong>{value}</strong>
+      </div>
+    );
+  }
+
+  function renderFullRegisterLeadDetails(lead: AssetLead) {
+    const snapshot = registerLeadSnapshot(lead);
+    const registerAssets = registerLeadAssets(lead);
+    const assetCount = registerLeadCount(lead);
+    const aim4priceCount = asNumber(snapshot?.aim4priceAssetCount) ?? registerAssets.filter((asset) => asText(asset.selectedMethod) === 'aim4price' || asNumber(asset.aim4priceValueExVat) !== null).length;
+    const manualAssetCount = asNumber(snapshot?.manualAssetCount) ?? registerAssets.filter((asset) => asText(asset.selectedMethod) === 'manual').length;
+    const financedCount = asNumber(snapshot?.financedAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isFinanced)).length;
+    const insuredCount = asNumber(snapshot?.insuredAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isInsured)).length;
+    const licensedCount = asNumber(snapshot?.licensedAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isLicensed)).length;
+
+    return (
+      <div className={`${assetStyles.assetBody} ${styles.fullRegisterLeadBody}`} id={`lead-panel-${lead.id}`}>
+        <button type="button" className={styles.fullRegisterPdfPanel} onClick={() => handleDownloadLead(lead)}>
+          <span className={styles.fullRegisterPdfIcon}>
+            <DownloadIcon className={assetStyles.buttonIcon} />
+          </span>
+          <span>
+            <strong>Full Asset Register</strong>
+            <small>Download the register snapshot PDF.</small>
+          </span>
+        </button>
+
+        <div className={styles.fullRegisterStatsPanel}>
+          <div className={styles.fullRegisterStatsGrid}>
+            {renderRegisterStatRow('Total assets', assetCount)}
+            {renderRegisterStatRow('Assets licensed', licensedCount)}
+            {renderRegisterStatRow('Assets financed', financedCount)}
+            {renderRegisterStatRow('Aim4price assets', aim4priceCount)}
+            {renderRegisterStatRow('Assets insured', insuredCount)}
+            {renderRegisterStatRow('Manual assets', manualAssetCount)}
+          </div>
+        </div>
+
+        {lead.ownerMessage ? (
+          <div className={assetStyles.noteStack}>
+            <div className={assetStyles.note}>
+              <strong>Owner message</strong>
+              <p>{lead.ownerMessage}</p>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   function renderLeadDetails(lead: AssetLead) {
+    if (isFullRegisterLead(lead)) {
+      return renderFullRegisterLeadDetails(lead);
+    }
+
     const photos = assetPhotos(lead);
     const photoIndex = getLeadPhotoIndex(lead);
     const photo = photos[photoIndex] ?? '';
@@ -1225,7 +1465,7 @@ export default function LeadsClient() {
                     <div className={styles.clientPanel}>
                       <div className={styles.clientPanelHeader}>
                         <div className={styles.clientIdentity}>
-                          <span className={styles.clientKicker}>{formatLeadType(lead.leadType)} · Received {formatDate(lead.createdAtIso)}</span>
+                          <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
                           <h3>{lead.ownerBusinessName || ownerDisplayName(lead)}</h3>
                           <div className={styles.clientInlineMeta}>
                             <span>{lead.ownerName || ownerDisplayName(lead)}</span>
@@ -1271,13 +1511,13 @@ export default function LeadsClient() {
                     </div>
 
                     {openLeadId === lead.id ? (
-                      <div className={`${assetStyles.assetCard} ${styles.leadAssetCard} ${assetStyles.assetCardExpanded}`}>
+                      <div className={`${assetStyles.assetCard} ${styles.leadAssetCard} ${isFullRegisterLead(lead) ? styles.fullRegisterLeadCard : ''} ${assetStyles.assetCardExpanded}`}>
                         <div className={assetStyles.assetHeader}>
                           <div className={assetStyles.assetTitleBlock}>
                             <h2>{assetTitle(lead)}</h2>
                             <p>{leadAssetMeta(lead)}</p>
                             <div className={assetStyles.assetMetaRow}>
-                              <span className={assetStyles.assetValueMethodLabel}>{methodLabel(lead.assetSnapshot.selectedMethod)} value</span>
+                              <span className={assetStyles.assetValueMethodLabel}>{isFullRegisterLead(lead) ? 'Register' : methodLabel(lead.assetSnapshot.selectedMethod)} value</span>
                               <span className={assetStyles.assetSavedDateLabel}>Updated {formatDate(asText(lead.assetSnapshot.updatedAtIso) || lead.updatedAtIso)}</span>
                             </div>
                           </div>
