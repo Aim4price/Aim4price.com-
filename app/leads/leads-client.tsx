@@ -264,17 +264,6 @@ function CloseIcon({ className }: IconProps) {
   );
 }
 
-function TrashIcon({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path d="M3 6h18" strokeLinecap="round" />
-      <path d="M8 6V4h8v2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="m6 6 1 14h10l1-14" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M10 10v6M14 10v6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function SearchIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
@@ -1778,30 +1767,30 @@ export default function LeadsClient() {
 
                         <div className={styles.clientDecisionArea}>
                           {openLeadId === lead.id ? (
+                            <button
+                              type="button"
+                              className={`${assetStyles.secondaryButton} ${styles.closeLeadButton}`}
+                              onClick={() => {
+                                setOpenLeadId(null);
+                              }}
+                            >
+                              Close
+                            </button>
+                          ) : (
                             <div className={styles.clientActionRow}>
-                              <button
-                                type="button"
-                                className={`${assetStyles.secondaryButton} ${styles.closeLeadButton}`}
-                                onClick={() => {
-                                  setOpenLeadId(null);
-                                }}
-                              >
-                                Close
-                              </button>
                               <button type="button" className={`${assetStyles.secondaryButton} ${styles.deleteLeadButton}`} onClick={() => setDeleteLeadTarget(lead)}>
                                 Delete
                               </button>
+                              <button
+                                type="button"
+                                className={`${assetStyles.primaryButton} ${styles.openLeadButton}`}
+                                onClick={() => {
+                                  setOpenLeadId(lead.id);
+                                }}
+                              >
+                                Open
+                              </button>
                             </div>
-                          ) : (
-                            <button
-                              type="button"
-                              className={assetStyles.primaryButton}
-                              onClick={() => {
-                                setOpenLeadId(lead.id);
-                              }}
-                            >
-                              Open lead
-                            </button>
                           )}
                         </div>
                       </div>

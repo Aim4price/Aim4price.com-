@@ -199,8 +199,9 @@
 .clientDecisionArea > button,
 .clientActionRow button {
   min-height: 3.25rem;
-  padding-inline: 1.2rem;
-  border-radius: 1.1rem;
+  min-width: 5.8rem;
+  padding-inline: 1.25rem;
+  border-radius: 1.05rem;
   font-weight: 760;
   white-space: nowrap;
 }
@@ -208,18 +209,36 @@
 .clientActionRow {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
-  gap: 0.65rem;
+  gap: 0.7rem;
+}
+
+.openLeadButton {
+  border-color: rgba(7, 104, 76, 0.95) !important;
+  background: linear-gradient(180deg, #1a8664 0%, #0f684f 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 24px rgba(12, 105, 80, 0.18) !important;
 }
 
 .closeLeadButton {
-  background: #f7fbff !important;
+  color: #11335a !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f9fd 100%) !important;
+  border-color: rgba(197, 214, 228, 0.98) !important;
+  box-shadow: 0 12px 24px rgba(20, 48, 70, 0.04) !important;
 }
 
 .deleteLeadButton {
   color: var(--lead-danger) !important;
   background: var(--lead-danger-soft) !important;
   border-color: var(--lead-danger-line) !important;
+  box-shadow: none !important;
+}
+
+.openLeadButton:hover,
+.closeLeadButton:hover,
+.deleteLeadButton:hover {
+  transform: translateY(-1px);
 }
 
 .deleteLeadButton:hover {
