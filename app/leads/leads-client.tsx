@@ -101,22 +101,6 @@ function NoteIcon({ className }: IconProps) {
   );
 }
 
-function ChevronDownIcon({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function ChevronUpIcon({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m18 15-6-6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 function ManageIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
@@ -166,6 +150,17 @@ function CloseIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
       <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function TrashIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M3 6h18" strokeLinecap="round" />
+      <path d="M8 6V4h8v2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m6 6 1 14h10l1-14" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 10v6M14 10v6" strokeLinecap="round" />
     </svg>
   );
 }
@@ -562,11 +557,12 @@ export default function LeadsClient() {
   const [yearFilter, setYearFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
-  const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null);
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
   const [noteLead, setNoteLead] = useState<AssetLead | null>(null);
+  const [deleteLeadTarget, setDeleteLeadTarget] = useState<AssetLead | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [isDeletingLead, setIsDeletingLead] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
 
@@ -648,7 +644,7 @@ export default function LeadsClient() {
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
-  async function deleteLead(leadToDelete: AssetLead) {
+  async function deleteLead(leadToDelete: AssetLead): Promise<boolean> {
     try {
       if (leadToDelete.status !== 'declined') {
         const declineResponse = await fetch(`/api/asset-leads/${encodeURIComponent(leadToDelete.id)}`, {
@@ -677,11 +673,29 @@ export default function LeadsClient() {
       setLeads((current) => current.filter((lead) => lead.id !== leadToDelete.id));
       setManagedLead((current) => (current?.id === leadToDelete.id ? null : current));
       setOpenLeadId((current) => (current === leadToDelete.id ? null : current));
-      setExpandedLeadId((current) => (current === leadToDelete.id ? null : current));
       setNotice({ tone: 'success', message: 'Lead deleted.' });
+      return true;
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to delete lead.' });
+      return false;
     }
+  }
+
+  async function confirmDeleteLead() {
+    if (!deleteLeadTarget) return;
+
+    setIsDeletingLead(true);
+    const didDelete = await deleteLead(deleteLeadTarget);
+    setIsDeletingLead(false);
+
+    if (didDelete) {
+      setDeleteLeadTarget(null);
+    }
+  }
+
+  function closeDeleteLeadModal() {
+    if (isDeletingLead) return;
+    setDeleteLeadTarget(null);
   }
 
   function handleDownloadLead(lead: AssetLead) {
@@ -1039,8 +1053,6 @@ export default function LeadsClient() {
           {!isLoading && filteredLeads.length ? (
             <div className={styles.leadStack}>
               {filteredLeads.map((lead) => {
-                const isExpanded = expandedLeadId === lead.id;
-
                 return (
                   <article key={lead.id} className={`${styles.leadThread} ${openLeadId === lead.id ? styles.leadThreadOpen : ''}`}>
                     <div className={styles.clientPanel}>
@@ -1068,12 +1080,11 @@ export default function LeadsClient() {
                                 className={`${sharedStyles.secondaryButton} ${styles.closeLeadButton}`}
                                 onClick={() => {
                                   setOpenLeadId(null);
-                                  setExpandedLeadId((current) => (current === lead.id ? null : current));
                                 }}
                               >
                                 Close lead
                               </button>
-                              <button type="button" className={sharedStyles.dangerButton} onClick={() => void deleteLead(lead)}>
+                              <button type="button" className={sharedStyles.dangerButton} onClick={() => setDeleteLeadTarget(lead)}>
                                 Delete lead
                               </button>
                             </div>
@@ -1083,7 +1094,6 @@ export default function LeadsClient() {
                               className={sharedStyles.primaryButton}
                               onClick={() => {
                                 setOpenLeadId(lead.id);
-                                setExpandedLeadId(null);
                               }}
                             >
                               Open lead
@@ -1094,7 +1104,7 @@ export default function LeadsClient() {
                     </div>
 
                     {openLeadId === lead.id ? (
-                      <div className={`${assetStyles.assetCard} ${styles.leadAssetCard} ${isExpanded ? assetStyles.assetCardExpanded : ''}`}>
+                      <div className={`${assetStyles.assetCard} ${styles.leadAssetCard} ${assetStyles.assetCardExpanded}`}>
                         <div className={assetStyles.assetHeader}>
                           <div className={assetStyles.assetTitleBlock}>
                             <h2>{assetTitle(lead)}</h2>
@@ -1117,17 +1127,6 @@ export default function LeadsClient() {
                                 <span>Leave note</span>
                               </button>
 
-                              <button
-                                type="button"
-                                className={assetStyles.expandButton}
-                                onClick={() => setExpandedLeadId((current) => (current === lead.id ? null : lead.id))}
-                                aria-expanded={isExpanded}
-                                aria-controls={`lead-panel-${lead.id}`}
-                              >
-                                {isExpanded ? <ChevronUpIcon className={assetStyles.buttonIcon} /> : <ChevronDownIcon className={assetStyles.buttonIcon} />}
-                                <span>{isExpanded ? 'Hide details' : 'View details'}</span>
-                              </button>
-
                               <button type="button" className={assetStyles.optionsButton} onClick={() => setManagedLead(lead)}>
                                 <ManageIcon className={assetStyles.buttonIcon} />
                                 <span>Manage</span>
@@ -1136,7 +1135,7 @@ export default function LeadsClient() {
                           </div>
                         </div>
 
-                        {isExpanded ? renderLeadDetails(lead) : null}
+                        {renderLeadDetails(lead)}
                       </div>
                     ) : null}
                   </article>
@@ -1198,6 +1197,53 @@ export default function LeadsClient() {
                     </span>
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {deleteLeadTarget ? (
+        <div className={`${assetStyles.modalOverlay} ${assetStyles.confirmDeleteOverlay}`}>
+          <div className={assetStyles.modalBackdrop} onClick={closeDeleteLeadModal} />
+
+          <div
+            className={assetStyles.deleteConfirmModal}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-lead-confirm-title"
+            aria-describedby="delete-lead-confirm-copy"
+          >
+            <div className={assetStyles.deleteConfirmIcon}>
+              <TrashIcon className={assetStyles.buttonIcon} />
+            </div>
+
+            <div className={assetStyles.deleteConfirmContent}>
+              <h3 id="delete-lead-confirm-title">Are you sure you want to delete this lead?</h3>
+              <p id="delete-lead-confirm-copy">
+                This removes the lead from your leads inbox. It does not delete the owner&apos;s asset register item or their saved asset data.
+              </p>
+
+              <div className={assetStyles.deleteConfirmAsset}>
+                <span>Selected lead</span>
+                <strong>{deleteLeadTarget.ownerBusinessName || ownerDisplayName(deleteLeadTarget)}</strong>
+                <small>{assetTitle(deleteLeadTarget)} · {formatCurrency(assetValue(deleteLeadTarget))} excl. VAT</small>
+              </div>
+
+              <div className={assetStyles.deleteConfirmActions}>
+                <button type="button" className={assetStyles.secondaryButton} onClick={closeDeleteLeadModal} disabled={isDeletingLead}>
+                  Keep lead
+                </button>
+
+                <button
+                  type="button"
+                  className={`${assetStyles.primaryButton} ${assetStyles.deleteConfirmButton}`}
+                  onClick={() => void confirmDeleteLead()}
+                  disabled={isDeletingLead}
+                >
+                  <TrashIcon className={assetStyles.buttonIcon} />
+                  <span>{isDeletingLead ? 'Deleting...' : 'Yes, delete lead'}</span>
+                </button>
               </div>
             </div>
           </div>
