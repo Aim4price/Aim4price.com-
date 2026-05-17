@@ -2349,6 +2349,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
   const [currentPage, setCurrentPage] = useState(1);
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [summaryLeadType, setSummaryLeadType] = useState<Extract<AssetLeadType, 'finance' | 'insurance'> | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
   const [exportStep, setExportStep] = useState<ExportStep>('format');
@@ -3249,6 +3250,25 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
     resetAssetQuoteState();
   }
 
+  function chooseFullRegisterLeadType(leadType: Extract<AssetLeadType, 'finance' | 'insurance'>) {
+    if (!assets.length) {
+      setNotice({ tone: 'error', message: 'Add at least one asset before sending a full-register lead.' });
+      return;
+    }
+
+    setNotice(null);
+    setSummaryLeadType(leadType);
+  }
+
+  function proceedFullRegisterLead() {
+    if (!summaryLeadType) {
+      setNotice({ tone: 'error', message: 'Choose a full-register quote option first.' });
+      return;
+    }
+
+    openFullRegisterQuote(summaryLeadType);
+  }
+
   function openFullRegisterQuote(leadType: Extract<AssetLeadType, 'finance' | 'insurance'>) {
     if (!assets.length) {
       setNotice({ tone: 'error', message: 'Add at least one asset before sending a full-register lead.' });
@@ -3258,6 +3278,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
     setNotice(null);
     setIsAssetFilterOpen(false);
     setIsSummaryModalOpen(false);
+    setSummaryLeadType(null);
     setQuoteAsset(null);
     resetAssetQuoteState();
     setIsRegisterQuoteModalOpen(true);
@@ -4418,11 +4439,13 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
   }
 
   function openSummaryModal() {
+    setSummaryLeadType(null);
     setIsSummaryModalOpen(true);
   }
 
   function closeSummaryModal() {
     setIsSummaryModalOpen(false);
+    setSummaryLeadType(null);
   }
 
   function selectAssetFilter(nextFilter: AssetFilterKey) {
@@ -5379,76 +5402,89 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.summaryModalScrollBody}`}>
-              <div className={styles.summaryModalBody}>
-                <section className={styles.summarySimplePanel} aria-label="Asset register summary">
-                  <div className={styles.summarySimpleValueRow}>
-                    <span>Register value</span>
-                    <strong>{money(totalValue)}</strong>
-                    <small>{money(totalValueInclVat)} incl. VAT</small>
-                  </div>
+            <div className={styles.summaryModalBody}>
+              <section className={styles.summarySimplePanel} aria-label="Asset register summary">
+                <div className={styles.summarySimpleValueRow}>
+                  <span>Register value</span>
+                  <strong>{money(totalValue)}</strong>
+                  <small>{money(totalValueInclVat)} incl. VAT</small>
+                </div>
 
-                  <div className={styles.summarySimpleList}>
-                    <div className={styles.summarySimpleItem}>
-                      <span>Total assets</span>
-                      <strong>{assets.length}</strong>
-                    </div>
-                    <div className={styles.summarySimpleItem}>
-                      <span>Aim4price assets</span>
-                      <strong>{aim4priceValuedEquipmentCount}</strong>
-                      <small>{money(aim4priceValuedEquipmentValue)}</small>
-                    </div>
-                    <div className={styles.summarySimpleItem}>
-                      <span>Manual assets</span>
-                      <strong>{assets.filter((asset) => asset.selectedMethod === 'manual').length}</strong>
-                    </div>
-                    <div className={styles.summarySimpleItem}>
-                      <span>Assets financed</span>
-                      <strong>{financedAssetStats.count}</strong>
-                      <small>{money(financedAssetStats.value)}</small>
-                    </div>
-                    <div className={styles.summarySimpleItem}>
-                      <span>Assets insured</span>
-                      <strong>{insuredAssetStats.count}</strong>
-                      <small>{money(insuredAssetStats.value)}</small>
-                    </div>
-                    <div className={styles.summarySimpleItem}>
-                      <span>Assets licensed</span>
-                      <strong>{licensedAssetStats.count}</strong>
-                      <small>{money(licensedAssetStats.value)}</small>
-                    </div>
+                <div className={styles.summarySimpleList}>
+                  <div className={styles.summarySimpleItem}>
+                    <span>Total assets</span>
+                    <strong>{assets.length}</strong>
                   </div>
-                </section>
-
-                <section className={styles.summaryLeadActions} aria-label="Full register quote options">
-                  <div>
-                    <h4>Send the full register as a lead</h4>
-                    <p>Choose a partner from the map and send a once-off snapshot of this full asset register. This does not give the partner live register access.</p>
+                  <div className={styles.summarySimpleItem}>
+                    <span>Aim4price assets</span>
+                    <strong>{aim4priceValuedEquipmentCount}</strong>
+                    <small>{money(aim4priceValuedEquipmentValue)}</small>
                   </div>
+                  <div className={styles.summarySimpleItem}>
+                    <span>Manual assets</span>
+                    <strong>{assets.filter((asset) => asset.selectedMethod === 'manual').length}</strong>
+                  </div>
+                  <div className={styles.summarySimpleItem}>
+                    <span>Assets financed</span>
+                    <strong>{financedAssetStats.count}</strong>
+                    <small>{money(financedAssetStats.value)}</small>
+                  </div>
+                  <div className={styles.summarySimpleItem}>
+                    <span>Assets insured</span>
+                    <strong>{insuredAssetStats.count}</strong>
+                    <small>{money(insuredAssetStats.value)}</small>
+                  </div>
+                  <div className={styles.summarySimpleItem}>
+                    <span>Assets licensed</span>
+                    <strong>{licensedAssetStats.count}</strong>
+                    <small>{money(licensedAssetStats.value)}</small>
+                  </div>
+                </div>
+              </section>
 
-                  <div className={styles.summaryLeadButtonRow}>
+              <section className={styles.summaryLeadActions} aria-label="Full register quote options">
+                <div className={styles.summaryLeadButtonRow}>
+                  <button
+                    type="button"
+                    className={`${styles.primaryButton} ${styles.summaryLeadButton} ${summaryLeadType === 'finance' ? styles.summaryLeadButtonSelected : ''}`}
+                    onClick={() => chooseFullRegisterLeadType('finance')}
+                    disabled={!assets.length}
+                    aria-pressed={summaryLeadType === 'finance'}
+                  >
+                    <MoneyBagIcon className={styles.buttonIcon} />
+                    <span>Get full refinance quote</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.secondaryButton} ${styles.summaryLeadButton} ${summaryLeadType === 'insurance' ? styles.summaryLeadButtonSelected : ''}`}
+                    onClick={() => chooseFullRegisterLeadType('insurance')}
+                    disabled={!assets.length}
+                    aria-pressed={summaryLeadType === 'insurance'}
+                  >
+                    <ShieldIcon className={styles.buttonIcon} />
+                    <span>Get full Insurance Quote</span>
+                  </button>
+                </div>
+
+                {summaryLeadType ? (
+                  <div className={styles.summaryLeadConfirmPanel}>
+                    <div>
+                      <h4>Send the full register as a lead</h4>
+                      <p>Choose a partner from the map and send a once-off snapshot of this full asset register. This does not give the partner live register access.</p>
+                    </div>
+
                     <button
                       type="button"
-                      className={`${styles.primaryButton} ${styles.summaryLeadButton}`}
-                      onClick={() => openFullRegisterQuote('finance')}
-                      disabled={!assets.length}
+                      className={`${styles.primaryButton} ${styles.summaryLeadProceedButton}`}
+                      onClick={proceedFullRegisterLead}
                     >
-                      <MoneyBagIcon className={styles.buttonIcon} />
-                      <span>Get full refinance quote</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`${styles.secondaryButton} ${styles.summaryLeadButton}`}
-                      onClick={() => openFullRegisterQuote('insurance')}
-                      disabled={!assets.length}
-                    >
-                      <ShieldIcon className={styles.buttonIcon} />
-                      <span>Get full Insurance Quote</span>
+                      <span>Proceed</span>
+                      <ChevronRightIcon className={styles.buttonIcon} />
                     </button>
                   </div>
-                </section>
-              </div>
+                ) : null}
+              </section>
             </div>
           </div>
         </div>

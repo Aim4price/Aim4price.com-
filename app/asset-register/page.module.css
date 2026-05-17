@@ -14982,3 +14982,160 @@
     flex-basis: 100%;
   }
 }
+
+/* === Full-register summary compact refinement === */
+.summaryModal {
+  width: min(100%, 850px) !important;
+  max-height: calc(100dvh - 3rem) !important;
+  padding: clamp(1.2rem, 2vw, 1.55rem) !important;
+  overflow: visible !important;
+}
+
+.summaryModalHeader {
+  margin-bottom: 0.85rem !important;
+  padding-bottom: 0.85rem !important;
+}
+
+.summaryModalHeader h3 {
+  font-size: clamp(1.62rem, 2.3vw, 2rem) !important;
+}
+
+.summaryModalHeader p {
+  max-width: 42rem !important;
+  font-size: 0.95rem !important;
+  line-height: 1.42 !important;
+}
+
+.summaryModalBody {
+  display: grid !important;
+  gap: 0.85rem !important;
+  overflow: visible !important;
+}
+
+.summaryModalScrollBody {
+  overflow: visible !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.summarySimplePanel {
+  border-radius: 1.2rem !important;
+}
+
+.summarySimpleValueRow {
+  min-height: 4.35rem !important;
+  padding: 0.82rem 1.05rem !important;
+  align-items: center !important;
+}
+
+.summarySimpleValueRow strong {
+  font-size: clamp(2rem, 3.1vw, 3rem) !important;
+  letter-spacing: -0.068em !important;
+}
+
+.summarySimpleValueRow small {
+  font-size: 0.88rem !important;
+}
+
+.summarySimpleItem {
+  min-height: 2.82rem !important;
+  padding: 0.62rem 1.05rem !important;
+  gap: 0.75rem !important;
+}
+
+.summarySimpleValueRow span,
+.summarySimpleItem span {
+  font-size: 0.72rem !important;
+  letter-spacing: 0.064em !important;
+}
+
+.summarySimpleItem strong {
+  font-size: 1.18rem !important;
+}
+
+.summarySimpleItem small {
+  min-width: 7.5rem !important;
+  font-size: 0.84rem !important;
+}
+
+.summaryLeadActions {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0.78rem !important;
+  padding: 0.95rem !important;
+  border-radius: 1.2rem !important;
+}
+
+.summaryLeadButtonRow {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.78rem !important;
+  justify-content: stretch !important;
+}
+
+.summaryLeadButton {
+  justify-content: center !important;
+  min-height: 3.05rem !important;
+  padding-inline: 0.95rem !important;
+  width: 100% !important;
+}
+
+.summaryLeadButtonSelected {
+  border-color: rgba(18, 70, 53, 0.42) !important;
+  box-shadow:
+    0 16px 30px rgba(18, 70, 53, 0.14),
+    inset 0 0 0 1px rgba(18, 70, 53, 0.1) !important;
+}
+
+.summaryLeadConfirmPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.95rem;
+  padding: 0.9rem 0.95rem;
+  border: 1px solid rgba(188, 208, 221, 0.95);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 40%),
+    linear-gradient(180deg, #ffffff 0%, #f5f9fb 100%);
+}
+
+.summaryLeadConfirmPanel h4 {
+  margin: 0 0 0.26rem;
+  color: #0b3328;
+  font-size: 1.04rem;
+  font-weight: 880;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+}
+
+.summaryLeadConfirmPanel p {
+  margin: 0;
+  color: #607287;
+  font-size: 0.89rem;
+  font-weight: 650;
+  line-height: 1.38;
+}
+
+.summaryLeadProceedButton {
+  min-height: 2.9rem !important;
+  padding-inline: 1.1rem !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 760px) {
+  .summaryModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: calc(100dvh - 1rem) !important;
+    overflow-y: auto !important;
+  }
+
+  .summaryLeadButtonRow,
+  .summaryLeadConfirmPanel {
+    grid-template-columns: 1fr !important;
+  }
+
+  .summaryLeadProceedButton {
+    width: 100% !important;
+  }
+}
