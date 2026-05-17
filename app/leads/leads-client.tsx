@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
 import { openAssetSheetPrint, type ReportMethodCard } from '../../lib/report-print';
 import assetStyles from '../asset-register/page.module.css';
-import sharedStyles from '../shared-access/page.module.css';
 import styles from './page.module.css';
 
 type LeadType = 'finance' | 'insurance' | 'replacement_quote';
@@ -161,6 +160,33 @@ function TrashIcon({ className }: IconProps) {
       <path d="M8 6V4h8v2" strokeLinecap="round" strokeLinejoin="round" />
       <path d="m6 6 1 14h10l1-14" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M10 10v6M14 10v6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SearchIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  );
+}
+
+function FilterIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M4 6h16" />
+      <path d="M7 12h10" />
+      <path d="M10 18h4" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="m6 9 6 6 6-6" />
     </svg>
   );
 }
@@ -556,6 +582,7 @@ export default function LeadsClient() {
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
   const [noteLead, setNoteLead] = useState<AssetLead | null>(null);
@@ -603,7 +630,20 @@ export default function LeadsClient() {
   }, [periodLeads, searchTerm, statusFilter]);
 
   const newLeadCount = useMemo(() => periodLeads.filter((lead) => isNewLeadStatus(lead.status)).length, [periodLeads]);
-  const openLeadCount = useMemo(() => periodLeads.filter((lead) => !isNewLeadStatus(lead.status)).length, [periodLeads]);
+  const hasActiveLeadFilter = monthFilter !== 'all' || yearFilter !== 'all' || statusFilter !== 'all';
+  const activeLeadFilterLabel = useMemo(() => {
+    const labels: string[] = [];
+    const selectedMonth = MONTH_OPTIONS.find((option) => option.value === monthFilter);
+
+    if (selectedMonth && selectedMonth.value !== 'all') labels.push(selectedMonth.label);
+    if (yearFilter !== 'all') labels.push(yearFilter);
+    if (statusFilter === 'new') labels.push('New leads');
+    if (statusFilter === 'open') labels.push('Open leads');
+
+    if (!labels.length) return 'Filter';
+    if (labels.length === 1) return labels[0];
+    return `${labels.length} filters`;
+  }, [monthFilter, statusFilter, yearFilter]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -696,6 +736,12 @@ export default function LeadsClient() {
   function closeDeleteLeadModal() {
     if (isDeletingLead) return;
     setDeleteLeadTarget(null);
+  }
+
+  function resetLeadFilters() {
+    setMonthFilter('all');
+    setYearFilter('all');
+    setStatusFilter('all');
   }
 
   function handleDownloadLead(lead: AssetLead) {
@@ -967,93 +1013,110 @@ export default function LeadsClient() {
   }
 
   return (
-    <main className={`${sharedStyles.page} ${styles.leadsPage}`}>
+    <main className={`${assetStyles.page} ${styles.leadsPage}`}>
       <AppHeader active="leads" />
 
-      <section className={sharedStyles.shell}>
-        <div className={`${sharedStyles.hero} ${styles.leadsHero}`}>
-          <span className={styles.heroEyebrow}>Partner inbox</span>
-          <div>
-            <h1>Received leads</h1>
-            <p>Open one lead at a time. The client, asset value, action buttons and notes stay together so the request is easy to process.</p>
-          </div>
-        </div>
-
+      <section className={assetStyles.shell}>
         {notice ? (
-          <div className={`${sharedStyles.notice} ${notice.tone === 'success' ? sharedStyles.noticeSuccess : sharedStyles.noticeError}`}>
+          <div className={`${assetStyles.notice} ${notice.tone === 'success' ? assetStyles.noticeSuccess : assetStyles.noticeError}`}>
             {notice.message}
           </div>
         ) : null}
 
-        <div className={`${sharedStyles.statGrid} ${styles.leadStats}`}>
-          <div className={styles.statIntro}>
-            <span>Lead overview</span>
-            <strong>{periodLeads.length}</strong>
-            <small>Showing for the selected month and year.</small>
-          </div>
-          <div className={sharedStyles.statCard}>
-            <span>Total leads</span>
-            <strong>{periodLeads.length}</strong>
-          </div>
-          <div className={sharedStyles.statCard}>
-            <span>Open leads</span>
-            <strong>{openLeadCount}</strong>
-          </div>
-          <div className={sharedStyles.statCard}>
-            <span>New leads</span>
-            <strong>{newLeadCount}</strong>
-          </div>
-        </div>
+        <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
+          <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
+            <div className={`${assetStyles.registerTitleBlock} ${styles.leadsTitleBlock}`}>
+              <h1>Lead inbox</h1>
+              <p>Open one lead at a time. The owner details, asset value and action buttons stay together.</p>
+            </div>
 
-        <section className={`${sharedStyles.card} ${styles.leadsCard}`}>
-          <div className={sharedStyles.cardHeader}>
-            <div>
-              <h2>Lead inbox</h2>
-              <p>Click Open lead to expand the full asset card. Use Manage for WhatsApp, email, call and PDF actions.</p>
+            <div className={`${assetStyles.headerActions} ${styles.leadHeaderActions}`}>
+              <button
+                type="button"
+                className={`${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${styles.leadFilterButton} ${hasActiveLeadFilter ? assetStyles.filterTriggerButtonActive : ''}`}
+                onClick={() => setIsFilterModalOpen(true)}
+                disabled={isLoading}
+              >
+                <FilterIcon className={assetStyles.buttonIcon} />
+                <span>{activeLeadFilterLabel}</span>
+                <ChevronDownIcon className={assetStyles.filterChevron} />
+              </button>
             </div>
           </div>
 
-          <div className={`${sharedStyles.partnerAssetToolbar} ${styles.leadToolbar}`}>
-            <label className={sharedStyles.field}>
-              <span>Search</span>
+          <div className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${styles.leadSummaryRow}`}>
+            <div className={`${assetStyles.summaryTile} ${assetStyles.registerValueTile} ${assetStyles.heroSummaryTile} ${assetStyles.heroRegisterTile}`}>
+              <div className={assetStyles.heroSummaryHead}>
+                <span className={assetStyles.heroSummaryTitle}>Lead overview</span>
+              </div>
+
+              <div className={assetStyles.heroSummaryValueRow}>
+                <strong className={assetStyles.heroSummaryValue}>{filteredLeads.length}</strong>
+              </div>
+
+              <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter}`}>
+                <small>Showing leads after search and filters.</small>
+              </div>
+            </div>
+
+            <div className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile}`}>
+              <div className={assetStyles.heroSummaryHead}>
+                <span className={assetStyles.heroSummaryTitle}>Total leads</span>
+              </div>
+
+              <div className={assetStyles.heroSummaryValueRow}>
+                <strong className={assetStyles.heroSummaryValue}>{periodLeads.length}</strong>
+              </div>
+
+              <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter}`}>
+                <small>For the selected month and year.</small>
+              </div>
+            </div>
+
+            <div className={`${assetStyles.summaryTile} ${assetStyles.totalAssetsTile} ${assetStyles.heroSummaryTile}`}>
+              <div className={assetStyles.heroSummaryHead}>
+                <span className={assetStyles.heroSummaryTitle}>New leads</span>
+              </div>
+
+              <div className={assetStyles.heroSummaryValueRow}>
+                <strong className={assetStyles.heroSummaryValue}>{newLeadCount}</strong>
+              </div>
+
+              <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter}`}>
+                <small>Not yet opened or actioned.</small>
+              </div>
+            </div>
+          </div>
+
+          <div className={`${assetStyles.toolbar} ${styles.leadSearchToolbar}`}>
+            <label className={assetStyles.searchWrap}>
+              <SearchIcon className={assetStyles.searchIcon} />
               <input
+                className={assetStyles.searchInput}
                 type="search"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search asset, owner, contact details..."
+                placeholder="Search by asset, owner, contact details"
+                aria-label="Search leads"
               />
-            </label>
-            <label className={sharedStyles.field}>
-              <span>Month</span>
-              <select value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}>
-                {MONTH_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </label>
-            <label className={sharedStyles.field}>
-              <span>Year</span>
-              <select value={yearFilter} onChange={(event) => setYearFilter(event.target.value)}>
-                <option value="all">All years</option>
-                {availableYears.map((year) => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-            </label>
-            <label className={sharedStyles.field}>
-              <span>Status</span>
-              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as LeadStatusFilter)}>
-                <option value="all">All leads</option>
-                <option value="new">New leads</option>
-                <option value="open">Open leads</option>
-              </select>
+
+              {searchTerm ? (
+                <button
+                  type="button"
+                  className={assetStyles.clearSearchButton}
+                  onClick={() => setSearchTerm('')}
+                  aria-label="Clear search"
+                >
+                  <CloseIcon className={assetStyles.buttonIcon} />
+                </button>
+              ) : null}
             </label>
           </div>
 
-          {isLoading ? <div className={sharedStyles.emptyState}>Loading leads...</div> : null}
+          {isLoading ? <div className={assetStyles.emptyState}>Loading leads...</div> : null}
 
           {!isLoading && !filteredLeads.length ? (
-            <div className={sharedStyles.emptyState}>No leads match this search or filter.</div>
+            <div className={assetStyles.emptyState}>No leads match this search or filter.</div>
           ) : null}
 
           {!isLoading && filteredLeads.length ? (
@@ -1083,21 +1146,21 @@ export default function LeadsClient() {
                             <div className={styles.clientActionRow}>
                               <button
                                 type="button"
-                                className={`${sharedStyles.secondaryButton} ${styles.closeLeadButton}`}
+                                className={`${assetStyles.secondaryButton} ${styles.closeLeadButton}`}
                                 onClick={() => {
                                   setOpenLeadId(null);
                                 }}
                               >
                                 Close
                               </button>
-                              <button type="button" className={sharedStyles.dangerButton} onClick={() => setDeleteLeadTarget(lead)}>
+                              <button type="button" className={`${assetStyles.secondaryButton} ${styles.deleteLeadButton}`} onClick={() => setDeleteLeadTarget(lead)}>
                                 Delete
                               </button>
                             </div>
                           ) : (
                             <button
                               type="button"
-                              className={sharedStyles.primaryButton}
+                              className={assetStyles.primaryButton}
                               onClick={() => {
                                 setOpenLeadId(lead.id);
                               }}
@@ -1151,6 +1214,65 @@ export default function LeadsClient() {
           ) : null}
         </section>
       </section>
+
+      {isFilterModalOpen ? (
+        <div className={assetStyles.modalOverlay}>
+          <div className={assetStyles.modalBackdrop} onClick={() => setIsFilterModalOpen(false)} />
+
+          <div className={`${assetStyles.modalCard} ${styles.leadFilterModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-filter-title">
+            <div className={assetStyles.modalHeader}>
+              <div className={assetStyles.modalHeaderText}>
+                <span className={assetStyles.modalEyebrow}>Filter leads</span>
+                <h3 id="lead-filter-title">Choose which leads to show</h3>
+                <p>Filter your inbox by the date the lead was received and the current lead status.</p>
+              </div>
+
+              <button type="button" className={assetStyles.modalCloseButton} onClick={() => setIsFilterModalOpen(false)} aria-label="Close filter modal">
+                <CloseIcon className={assetStyles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={styles.leadFilterForm}>
+              <label className={`${assetStyles.field} ${styles.leadFilterField}`}>
+                <span>Month</span>
+                <select value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}>
+                  {MONTH_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className={`${assetStyles.field} ${styles.leadFilterField}`}>
+                <span>Year</span>
+                <select value={yearFilter} onChange={(event) => setYearFilter(event.target.value)}>
+                  <option value="all">All years</option>
+                  {availableYears.map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className={`${assetStyles.field} ${styles.leadFilterField}`}>
+                <span>Status</span>
+                <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as LeadStatusFilter)}>
+                  <option value="all">All leads</option>
+                  <option value="new">New leads</option>
+                  <option value="open">Open leads</option>
+                </select>
+              </label>
+            </div>
+
+            <div className={`${assetStyles.formActions} ${styles.leadFilterActions}`}>
+              <button type="button" className={assetStyles.secondaryButton} onClick={resetLeadFilters} disabled={!hasActiveLeadFilter}>
+                Reset filters
+              </button>
+              <button type="button" className={assetStyles.primaryButton} onClick={() => setIsFilterModalOpen(false)}>
+                Apply filters
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {managedLead ? (
         <div className={assetStyles.modalOverlay}>
