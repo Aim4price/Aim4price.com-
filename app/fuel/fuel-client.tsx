@@ -817,16 +817,26 @@ export default function FuelClient() {
       {deleteCandidateStorage ? (
         <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`} role="alertdialog" aria-modal="true" aria-labelledby="delete-fuel-title" aria-describedby="delete-fuel-copy">
           <div className={styles.deleteConfirmModal}>
-            <div className={styles.deleteConfirmIcon}>
-              <TrashIcon className={styles.buttonIcon} />
-            </div>
-
             <div className={styles.deleteConfirmContent}>
-              <h3 id="delete-fuel-title">Are you sure you want to delete this?</h3>
-              <p id="delete-fuel-copy">
-                All data will be lost. This permanently removes <strong>{deleteCandidateStorage.name}</strong> from your Fuel Ledger,
-                including stock records, QR access, issue history and fuel report data.
-              </p>
+              <div className={styles.deleteConfirmHeader}>
+                <div>
+                  <h3 id="delete-fuel-title">Delete storage unit?</h3>
+                  <p id="delete-fuel-copy">
+                    All data will be lost. This permanently removes <strong>{deleteCandidateStorage.name}</strong> from your Fuel Ledger,
+                    including stock records, QR access, issue history and fuel report data.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.closeButton}
+                  onClick={() => setDeleteCandidateStorage(null)}
+                  aria-label="Close delete confirmation"
+                  disabled={busyDeleteId === deleteCandidateStorage.id}
+                >
+                  ×
+                </button>
+              </div>
 
               <div className={styles.deleteConfirmAsset}>
                 <span>Selected storage unit</span>
@@ -836,7 +846,7 @@ export default function FuelClient() {
 
               <div className={styles.deleteConfirmActions}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setDeleteCandidateStorage(null)} disabled={busyDeleteId === deleteCandidateStorage.id}>
-                  Cancel
+                  Close
                 </button>
 
                 <button
@@ -845,7 +855,6 @@ export default function FuelClient() {
                   onClick={() => void handleConfirmDeleteStorage()}
                   disabled={busyDeleteId === deleteCandidateStorage.id}
                 >
-                  <TrashIcon className={styles.buttonIcon} />
                   <span>{busyDeleteId === deleteCandidateStorage.id ? 'Deleting...' : 'Yes, delete unit'}</span>
                 </button>
               </div>
