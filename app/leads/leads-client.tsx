@@ -11,6 +11,7 @@ type LeadType = 'finance' | 'insurance' | 'replacement_quote';
 type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 type NoticeTone = 'success' | 'error';
 type LeadStatusFilter = 'all' | 'accepted' | 'declined';
+type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 
 type IconProps = {
   className?: string;
@@ -207,6 +208,28 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 function asBoolean(value: unknown): boolean {
   return value === true || String(value ?? '').trim().toLowerCase() === 'true';
+}
+
+function normalizeAssetStatusChoice(value: unknown, fallback: AssetStatusChoice = 'unknown'): AssetStatusChoice {
+  const normalized = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+  if (['yes', 'y', 'true', 'financed', 'insured', 'licensed', 'licenced', 'is_financed', 'is_insured', 'is_licensed'].includes(normalized)) {
+    return 'yes';
+  }
+
+  if (['no', 'n', 'false', 'not_financed', 'not_insured', 'not_licensed', 'not_licenced', 'unfinanced', 'uninsured', 'unlicensed', 'unlicenced'].includes(normalized)) {
+    return 'no';
+  }
+
+  if (['na', 'n_a', 'not_applicable', 'not_aplicable', 'not_relevant', 'does_not_apply'].includes(normalized)) {
+    return 'not_applicable';
+  }
+
+  if (['unknown', 'not_sure', 'unsure', 'maybe', ''].includes(normalized)) {
+    return normalized ? 'unknown' : fallback;
+  }
+
+  return fallback;
 }
 
 function firstTextFromRecord(record: Record<string, unknown> | null | undefined, keys: string[]): string {
@@ -712,11 +735,114 @@ export default function LeadsClient() {
     window.location.href = `tel:${phone}`;
   }
 
-  function renderLeadDetails(lead: AssetLead) {
-    const photo = assetPhotos(lead)[0] ?? '';
+  function readLeadFinanceStatusChoice(lead: AssetLead): AssetStatusChoice {
+    const specs = assetSpecs(lead) ?? {};
+
+    return normalizeAssetStatusChoice(
+      specs.financeStatus ??
+        specs.finance_status ??
+        specs.financedStatus ??
+        specs.financed_status ??
+        lead.assetSnapshot.financeStatus ??
+        lead.assetSnapshot.finance_status ??
+        lead.assetSnapshot.financedStatus ??
+        lead.assetSnapshot.financed_status,
+      asBoolean(lead.assetSnapshot.isFinanced) ? 'yes' : 'no',
+    );
+  }
+
+  function readLeadInsuranceStatusChoice(lead: AssetLead): AssetStatusChoice {
+    const specs = assetSpecs(lead) ?? {};
+
+    return normalizeAssetStatusChoice(
+      specs.insuranceStatus ??
+        specs.insurance_status ??
+        specs.insuredStatus ??
+        specs.insured_status ??
+        lead.assetSnapshot.insuranceStatus ??
+        lead.assetSnapshot.insurance_status ??
+        lead.assetSnapshot.insuredStatus ??
+        lead.assetSnapshot.insured_status,
+      asBoolean(lead.assetSnapshot.isInsured) ? 'yes' : 'no',
+    );
+  }
+
+  function readLeadLicenseStatusChoice(lead: AssetLead): AssetStatusChoice {
+    const specs = assetSpecs(lead) ?? {};
+
+    return normalizeAssetStatusChoice(
+      specs.licenseStatus ??
+        specs.license_status ??
+        specs.licensedStatus ??
+        specs.licensed_status ??
+        specs.licenceStatus ??
+        specs.licence_status ??
+        specs.licencedStatus ??
+        specs.licenced_status ??
+        lead.assetSnapshot.licenseStatus ??
+        lead.assetSnapshot.license_status ??
+        lead.assetSnapshot.licensedStatus ??
+        lead.assetSnapshot.licensed_status ??
+        lead.assetSnapshot.licenceStatus ??
+        lead.assetSnapshot.licence_status ??
+        lead.assetSnapshot.licencedStatus ??
+        lead.assetSnapshot.licenced_status,
+      asBoolean(lead.assetSnapshot.isLicensed) ? 'yes' : 'no',
+    );
+  }
+
+  function readLeadLicenseRegistrationNumber(lead: AssetLead): string {
+    const specs = assetSpecs(lead) ?? {};
+
+    return String(
+      lead.assetSnapshot.licenseRegistrationNumber ??
+        lead.assetSnapshot.license_registration_number ??
+        lead.assetSnapshot.licenceRegistrationNumber ??
+        lead.assetSnapshot.licence_registration_number ??
+        specs.licenseRegistrationNumber ??
+        specs.license_registration_number ??
+        specs.licenceRegistrationNumber ??
+        specs.licence_registration_number ??
+        specs.licenseRegistration ??
+        specs.license_registration ??
+        specs.licenceRegistration ??
+        specs.licence_registration ??
+        specs.registrationNumber ??
+        specs.registration_number ??
+        specs.numberPlate ??
+        specs.number_plate ??
+        specs.numberplate ??
+        '',
+    )
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toUpperCase();
+  }
+
+  function renderLeadAssetStatusMark(value: AssetStatusChoice) {
+    const status = normalizeAssetStatusChoice(value);
+    const config = {
+      yes: { label: '✓', className: assetStyles.statusMarkYes, title: 'Yes' },
+      no: { label: '×', className: assetStyles.statusMarkNo, title: 'No' },
+      unknown: { label: '?', className: assetStyles.statusMarkUnknown, title: 'Not sure' },
+      not_applicable: { label: 'N/A', className: assetStyles.statusMarkNotApplicable, title: 'Not applicable' },
+    }[status];
 
     return (
-      <div className={assetStyles.assetBody} id={`lead-panel-${lead.id}`}>
+      <strong className={`${assetStyles.assetStatusMark} ${config.className}`} aria-label={config.title} title={config.title}>
+        {config.label}
+      </strong>
+    );
+  }
+
+  function renderLeadDetails(lead: AssetLead) {
+    const photo = assetPhotos(lead)[0] ?? '';
+    const familyLabel = asText(lead.assetSnapshot.equipmentFamilyLabel) || asText(lead.assetSnapshot.kind) || 'Asset';
+    const licenseStatus = readLeadLicenseStatusChoice(lead);
+    const licenseRegistrationNumber = readLeadLicenseRegistrationNumber(lead);
+
+    return (
+      <div className={`${assetStyles.assetBody} ${styles.leadAssetBody}`} id={`lead-panel-${lead.id}`}>
         <div className={assetStyles.previewWrap}>
           <div className={assetStyles.previewStage}>
             {photo ? (
@@ -724,45 +850,57 @@ export default function LeadsClient() {
               <img src={photo} alt={assetTitle(lead)} className={assetStyles.previewImage} />
             ) : (
               <div className={assetStyles.previewPlaceholder}>
-                <span className={assetStyles.previewPlaceholderBadge}>No photo saved</span>
+                <div className={assetStyles.previewPlaceholderBadges}>
+                  <span className={`${assetStyles.badge} ${assetStyles.badgeNeutral} ${assetStyles.previewPlaceholderBadge}`}>
+                    {familyLabel}
+                  </span>
+                </div>
               </div>
             )}
           </div>
         </div>
 
-        <div className={assetStyles.assetContent}>
-          <div className={assetStyles.infoGrid}>
-            <div className={assetStyles.infoTile}>
-              <span>Family</span>
-              <strong>{asText(lead.assetSnapshot.equipmentFamilyLabel) || asText(lead.assetSnapshot.kind) || '—'}</strong>
+        <div className={assetStyles.assetDetailDivider} aria-hidden="true" />
+
+        <div className={assetStyles.assetDetailsPanel}>
+          <div className={assetStyles.assetDetailsGrid}>
+            <div className={assetStyles.assetPrimaryDetails}>
+              <div className={assetStyles.assetDetailRow}>
+                <span>Serial</span>
+                <strong>{asText(lead.assetSnapshot.serialNumber) || '—'}</strong>
+              </div>
+              <div className={assetStyles.assetDetailRow}>
+                <span>{asText(lead.assetSnapshot.kind).toLowerCase() === 'property' ? 'Year Built' : 'Year'}</span>
+                <strong>{lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : '—'}</strong>
+              </div>
+              <div className={assetStyles.assetDetailRow}>
+                <span>Usage</span>
+                <strong>{assetUsageValue(lead)}</strong>
+              </div>
+              <div className={assetStyles.assetDetailRow}>
+                <span>Condition</span>
+                <strong>{conditionLabel(lead.assetSnapshot.condition)}</strong>
+              </div>
             </div>
-            <div className={assetStyles.infoTile}>
-              <span>Brand</span>
-              <strong>{asText(lead.assetSnapshot.brandName) || '—'}</strong>
-            </div>
-            <div className={assetStyles.infoTile}>
-              <span>Model</span>
-              <strong>{asText(lead.assetSnapshot.modelName) || asText(lead.assetSnapshot.typedModelName) || '—'}</strong>
-            </div>
-            <div className={assetStyles.infoTile}>
-              <span>Serial number</span>
-              <strong>{asText(lead.assetSnapshot.serialNumber) || '—'}</strong>
-            </div>
-            <div className={assetStyles.infoTile}>
-              <span>Lead type</span>
-              <strong>{formatLeadType(lead.leadType)}</strong>
-            </div>
-            <div className={assetStyles.infoTile}>
-              <span>Received</span>
-              <strong>{formatDate(lead.createdAtIso)}</strong>
-            </div>
-            <div className={assetStyles.infoTile}>
-              <span>Financed</span>
-              <strong>{asBoolean(lead.assetSnapshot.isFinanced) ? 'Yes' : 'No'}</strong>
-            </div>
-            <div className={assetStyles.infoTile}>
-              <span>Insured</span>
-              <strong>{asBoolean(lead.assetSnapshot.isInsured) ? 'Yes' : 'No'}</strong>
+
+            <div className={assetStyles.assetStatusDetails}>
+              <div className={assetStyles.assetStatusRow}>
+                <span>Financed</span>
+                {renderLeadAssetStatusMark(readLeadFinanceStatusChoice(lead))}
+              </div>
+              <div className={assetStyles.assetStatusRow}>
+                <span>Insured</span>
+                {renderLeadAssetStatusMark(readLeadInsuranceStatusChoice(lead))}
+              </div>
+              <div className={assetStyles.assetStatusRow}>
+                <span>Licensed</span>
+                {renderLeadAssetStatusMark(licenseStatus)}
+              </div>
+              {licenseStatus === 'yes' && licenseRegistrationNumber ? (
+                <div className={`${assetStyles.assetStatusRow} ${assetStyles.assetRegistrationRow}`}>
+                  <strong>{licenseRegistrationNumber}</strong>
+                </div>
+              ) : null}
             </div>
           </div>
 

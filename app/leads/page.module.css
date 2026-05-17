@@ -159,3 +159,14 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+.leadAssetBody.leadAssetBody {
+  grid-template-columns: minmax(220px, 300px) 1px minmax(400px, 1.55fr);
+}
+
+@media (max-width: 1180px) {
+  .leadAssetBody.leadAssetBody {
+    grid-template-columns: 1fr;
+  }
+}
