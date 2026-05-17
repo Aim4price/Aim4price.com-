@@ -1,49 +1,203 @@
-.leadToolbar {
-  grid-template-columns: minmax(18rem, 1.25fr) minmax(9.5rem, 0.36fr) minmax(8.2rem, 0.3fr) minmax(10.5rem, 0.42fr);
+.leadsPage {
+  --lead-ink: #092f27;
+  --lead-muted: #607184;
+  --lead-line: rgba(173, 199, 214, 0.78);
+  --lead-soft: #f5f9fb;
+  --lead-green: #14785a;
+  --lead-green-dark: #0e654c;
+  --lead-red: #a13a3a;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+}
+
+.leadsPage h1,
+.leadsPage h2,
+.leadsPage h3,
+.leadsPage p,
+.leadsPage span,
+.leadsPage strong,
+.leadsPage small,
+.leadsPage button,
+.leadsPage input,
+.leadsPage select,
+.leadsPage textarea {
+  font-family: inherit;
+}
+
+.leadsHero {
+  overflow: hidden;
+  min-height: 11rem;
   align-items: end;
+  background:
+    radial-gradient(circle at 9% 15%, rgba(55, 154, 116, 0.28) 0, transparent 18rem),
+    radial-gradient(circle at 90% 8%, rgba(93, 127, 222, 0.24) 0, transparent 18rem),
+    linear-gradient(135deg, #0c2f27 0%, #153b31 48%, #142f55 100%);
+}
+
+.heroEyebrow {
+  position: absolute;
+  top: 1.35rem;
+  left: clamp(1.35rem, 2.4vw, 2rem);
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.82rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.095em;
+  text-transform: uppercase;
+}
+
+.leadStats {
+  grid-template-columns: minmax(15rem, 1.18fr) repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.statIntro {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 0.25rem;
+  align-content: center;
+  padding: 1.08rem 1.15rem;
+  border: 1px solid rgba(20, 120, 90, 0.18);
+  border-radius: 1.2rem;
+  background:
+    radial-gradient(circle at top left, rgba(20, 120, 90, 0.15), transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 249, 246, 0.95));
+  box-shadow: 0 16px 30px rgba(18, 45, 37, 0.055);
+}
+
+.statIntro span {
+  color: var(--lead-green-dark);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.statIntro strong {
+  color: var(--lead-ink);
+  font-size: clamp(2rem, 3.2vw, 2.8rem);
+  font-weight: 950;
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+}
+
+.statIntro small {
+  color: var(--lead-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.leadsCard {
+  padding: clamp(1.25rem, 2.2vw, 1.8rem);
+  border-radius: 2rem;
+}
+
+.leadToolbar {
+  grid-template-columns: minmax(18rem, 1.25fr) minmax(10rem, 0.36fr) minmax(8.8rem, 0.3fr) minmax(10.6rem, 0.38fr);
+  align-items: end;
+  gap: 0.8rem;
+  padding: 0.2rem 0 0.55rem;
+}
+
+.leadToolbar input,
+.leadToolbar select {
+  min-height: 3.55rem;
+  border-radius: 1.15rem;
+  border-color: rgba(173, 199, 214, 0.86);
+  background-color: #ffffff;
+  color: var(--lead-ink);
+  font-weight: 720;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.leadToolbar input::placeholder {
+  color: #8090a2;
+  font-weight: 650;
+}
+
+.leadToolbar select {
+  appearance: none;
+  padding: 0 3rem 0 1.05rem;
+  line-height: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%230d3a30' stroke-width='2.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.05rem center;
+  background-size: 1rem 1rem;
+}
+
+.leadToolbar select::-ms-expand {
+  display: none;
 }
 
 .leadStack {
   display: grid;
-  gap: 1rem;
+  gap: 0.95rem;
 }
 
 .leadThread {
+  position: relative;
   display: grid;
   gap: 0;
-  padding: 0.72rem;
-  border: 1px solid rgba(203, 217, 228, 0.96);
-  border-radius: 1.65rem;
+  padding: 0.78rem;
+  border: 1px solid rgba(195, 215, 226, 0.94);
+  border-radius: 1.72rem;
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 30%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 251, 252, 0.98));
   box-shadow:
-    0 16px 34px rgba(16, 31, 28, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 18px 36px rgba(18, 45, 37, 0.052),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
   transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    transform 160ms ease;
+    border-color 170ms ease,
+    box-shadow 170ms ease,
+    transform 170ms ease,
+    background 170ms ease;
+}
+
+.leadThread::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0.28rem;
+  border-radius: 1.72rem 0 0 1.72rem;
+  background: linear-gradient(180deg, rgba(20, 120, 90, 0.9), rgba(61, 112, 217, 0.55));
+  opacity: 0.62;
 }
 
 .leadThread:hover {
-  border-color: rgba(178, 205, 219, 0.98);
+  border-color: rgba(161, 196, 213, 0.98);
   box-shadow:
-    0 18px 38px rgba(16, 31, 28, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 22px 42px rgba(18, 45, 37, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.99);
+  transform: translateY(-1px);
 }
 
 .leadThreadOpen {
-  gap: 0.75rem;
-  border-color: rgba(35, 123, 94, 0.28);
+  gap: 0.78rem;
+  border-color: rgba(20, 120, 90, 0.38);
   background:
-    radial-gradient(circle at top left, rgba(22, 128, 97, 0.07), transparent 32%),
-    linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
+    radial-gradient(circle at top left, rgba(20, 120, 90, 0.08), transparent 28rem),
+    linear-gradient(180deg, #ffffff 0%, #f5faf8 100%);
+  box-shadow:
+    0 24px 48px rgba(18, 45, 37, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.99);
+}
+
+.leadThreadOpen::before {
+  opacity: 1;
+  width: 0.34rem;
 }
 
 .clientPanel {
+  min-width: 0;
   padding: 0;
-  border-radius: 1.28rem;
+  border-radius: 1.32rem;
 }
 
 .clientPanelHeader {
@@ -51,16 +205,16 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 1rem;
   align-items: center;
-  min-height: 6.1rem;
-  padding: 1.05rem 1.08rem;
-  border-radius: 1.28rem;
-  background: rgba(255, 255, 255, 0.76);
+  min-height: 6.15rem;
+  padding: 1.05rem 1.18rem 1.05rem 1.35rem;
+  border-radius: 1.32rem;
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .leadThreadOpen .clientPanelHeader {
   background:
-    linear-gradient(90deg, rgba(239, 248, 245, 0.98), rgba(255, 255, 255, 0.92));
-  border: 1px solid rgba(203, 224, 216, 0.94);
+    linear-gradient(90deg, rgba(239, 248, 245, 0.98), rgba(255, 255, 255, 0.95));
+  border: 1px solid rgba(199, 224, 216, 0.94);
 }
 
 .clientIdentity {
@@ -69,32 +223,32 @@
 
 .clientKicker {
   display: block;
-  margin-bottom: 0.34rem;
-  color: #607184;
-  font-size: 0.78rem;
-  font-weight: 860;
+  margin-bottom: 0.36rem;
+  color: #586d80;
+  font-size: 0.76rem;
+  font-weight: 920;
   letter-spacing: 0.035em;
 }
 
 .clientPanel h3 {
   margin: 0;
-  color: #0d3028;
-  font-size: clamp(1.35rem, 2vw, 1.82rem);
-  font-weight: 930;
-  line-height: 1.03;
-  letter-spacing: -0.052em;
+  color: var(--lead-ink);
+  font-size: clamp(1.48rem, 2vw, 1.9rem);
+  font-weight: 950;
+  line-height: 1.02;
+  letter-spacing: -0.058em;
 }
 
 .clientInlineMeta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.3rem 0.64rem;
-  margin-top: 0.52rem;
-  color: #647486;
+  gap: 0.3rem 0.62rem;
+  margin-top: 0.55rem;
+  color: #5f7084;
   font-size: 0.95rem;
-  font-weight: 700;
-  line-height: 1.35;
+  font-weight: 760;
+  line-height: 1.38;
 }
 
 .clientInlineMeta span {
@@ -106,34 +260,36 @@
 
 .clientInlineMeta span:not(:last-child)::after {
   content: '•';
-  margin-left: 0.64rem;
-  color: #aab6c2;
-  font-weight: 900;
+  margin-left: 0.62rem;
+  color: #a9b8c7;
+  font-weight: 950;
 }
 
 .leadPreviewMeta {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.42rem 0.72rem;
-  margin-top: 0.7rem;
-  padding: 0.46rem 0.66rem;
-  border: 1px solid rgba(205, 219, 229, 0.82);
+  gap: 0.42rem 0.7rem;
+  margin-top: 0.76rem;
+  padding: 0.5rem 0.72rem;
+  border: 1px solid rgba(180, 205, 218, 0.85);
   border-radius: 999px;
-  background: rgba(246, 250, 252, 0.94);
-  color: #143830;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 249, 251, 0.98));
+  color: #11382f;
   font-size: 0.92rem;
   line-height: 1.25;
+  box-shadow: 0 8px 18px rgba(16, 48, 38, 0.045);
 }
 
 .leadPreviewMeta span {
-  font-weight: 850;
+  font-weight: 890;
   overflow-wrap: anywhere;
 }
 
 .leadPreviewMeta strong {
-  color: #0e332b;
-  font-weight: 930;
+  color: var(--lead-ink);
+  font-weight: 960;
   white-space: nowrap;
 }
 
@@ -143,30 +299,34 @@
   gap: 0.58rem;
 }
 
+.clientDecisionArea > button,
+.clientActionRow button {
+  min-height: 3.18rem;
+  padding-inline: 1.25rem;
+  border-radius: 1.06rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 .clientActionRow {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.58rem;
-}
-
-.clientActionRow button,
-.clientDecisionArea > button {
-  min-height: 2.95rem;
-  white-space: nowrap;
+  gap: 0.62rem;
 }
 
 .closeLeadButton {
-  background: #f8fbff;
+  background: #f7fbff;
 }
 
 .leadAssetCard {
   margin: 0;
+  border-radius: 1.45rem;
   box-shadow: none;
 }
 
 .leadThreadOpen .leadAssetCard {
-  animation: leadAssetReveal 150ms ease-out;
+  animation: leadAssetReveal 155ms ease-out;
 }
 
 .manageOptionsGrid {
@@ -177,10 +337,76 @@
   grid-template-columns: minmax(220px, 300px) 1px minmax(400px, 1.55fr);
 }
 
+.leadDeleteModal {
+  width: min(100%, 800px) !important;
+  grid-template-columns: 4.3rem minmax(0, 1fr) !important;
+  gap: clamp(1.25rem, 2vw, 1.75rem) !important;
+  padding: clamp(1.7rem, 2.8vw, 2.5rem) !important;
+  border-radius: 2rem !important;
+}
+
+.leadDeleteIcon {
+  width: 4.3rem !important;
+  height: 4.3rem !important;
+  border-radius: 1.3rem !important;
+  margin-top: 0.15rem;
+}
+
+.leadDeleteContent {
+  display: grid !important;
+  gap: 1.1rem !important;
+  padding-right: 0 !important;
+}
+
+.leadDeleteContent h3 {
+  max-width: 34rem !important;
+  font-size: clamp(1.78rem, 3vw, 2.38rem) !important;
+  line-height: 1.03 !important;
+  letter-spacing: -0.058em !important;
+}
+
+.leadDeleteContent p {
+  max-width: 42rem !important;
+  font-size: 1.03rem !important;
+  line-height: 1.72 !important;
+  font-weight: 680 !important;
+}
+
+.leadDeleteSummary {
+  margin-top: 0.1rem;
+  padding: 1.18rem 1.25rem !important;
+  border-radius: 1.25rem !important;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #fff9f9 100%) !important;
+}
+
+.leadDeleteSummary strong {
+  font-size: 1.12rem !important;
+  font-weight: 900 !important;
+}
+
+.leadDeleteActions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.82rem !important;
+  margin-top: 0.3rem !important;
+}
+
+.leadDeleteActions > button {
+  min-height: 3.35rem !important;
+  border-radius: 1.08rem !important;
+  font-weight: 900 !important;
+}
+
+.leadDeleteConfirmButton {
+  min-width: 13.75rem !important;
+}
+
 @keyframes leadAssetReveal {
   from {
     opacity: 0;
-    transform: translateY(-0.25rem);
+    transform: translateY(-0.35rem);
   }
   to {
     opacity: 1;
@@ -195,6 +421,14 @@
 }
 
 @media (max-width: 1100px) {
+  .leadStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .statIntro {
+    grid-column: 1 / -1;
+  }
+
   .leadToolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -224,7 +458,41 @@
   }
 }
 
+@media (max-width: 760px) {
+  .leadDeleteModal {
+    width: min(100%, calc(100vw - 1.25rem)) !important;
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+    padding: 1.35rem !important;
+    border-radius: 1.55rem !important;
+  }
+
+  .leadDeleteIcon {
+    width: 3.55rem !important;
+    height: 3.55rem !important;
+    border-radius: 1.15rem !important;
+    margin-top: 0;
+  }
+
+  .leadDeleteContent {
+    gap: 0.95rem !important;
+  }
+
+  .leadDeleteActions {
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+    gap: 0.7rem !important;
+  }
+
+  .leadDeleteActions > button,
+  .leadDeleteConfirmButton {
+    width: 100%;
+    min-width: 0 !important;
+  }
+}
+
 @media (max-width: 620px) {
+  .leadStats,
   .leadToolbar {
     grid-template-columns: 1fr;
   }
@@ -236,7 +504,7 @@
 
   .clientPanelHeader {
     min-height: 0;
-    padding: 0.95rem;
+    padding: 0.95rem 0.95rem 0.95rem 1.05rem;
     border-radius: 1.05rem;
   }
 

@@ -10,7 +10,7 @@ import styles from './page.module.css';
 type LeadType = 'finance' | 'insurance' | 'replacement_quote';
 type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 type NoticeTone = 'success' | 'error';
-type LeadStatusFilter = 'all' | 'new' | 'quoted';
+type LeadStatusFilter = 'all' | 'new' | 'open';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 
 type IconProps = {
@@ -595,7 +595,7 @@ export default function LeadsClient() {
 
     return periodLeads.filter((lead) => {
       if (statusFilter === 'new' && !isNewLeadStatus(lead.status)) return false;
-      if (statusFilter === 'quoted' && lead.status !== 'quoted') return false;
+      if (statusFilter === 'open' && isNewLeadStatus(lead.status)) return false;
 
       if (!query) return true;
       return searchTextForLead(lead).includes(query);
@@ -603,7 +603,7 @@ export default function LeadsClient() {
   }, [periodLeads, searchTerm, statusFilter]);
 
   const newLeadCount = useMemo(() => periodLeads.filter((lead) => isNewLeadStatus(lead.status)).length, [periodLeads]);
-  const quotedLeadCount = useMemo(() => periodLeads.filter((lead) => lead.status === 'quoted').length, [periodLeads]);
+  const openLeadCount = useMemo(() => periodLeads.filter((lead) => !isNewLeadStatus(lead.status)).length, [periodLeads]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -967,14 +967,15 @@ export default function LeadsClient() {
   }
 
   return (
-    <main className={sharedStyles.page}>
+    <main className={`${sharedStyles.page} ${styles.leadsPage}`}>
       <AppHeader active="leads" />
 
       <section className={sharedStyles.shell}>
-        <div className={sharedStyles.hero}>
+        <div className={`${sharedStyles.hero} ${styles.leadsHero}`}>
+          <span className={styles.heroEyebrow}>Partner inbox</span>
           <div>
-            <h1>Leads</h1>
-            <p>Open a lead to view the asset, contact the owner, leave notes or remove irrelevant requests.</p>
+            <h1>Received leads</h1>
+            <p>Open one lead at a time. The client, asset value, action buttons and notes stay together so the request is easy to process.</p>
           </div>
         </div>
 
@@ -984,26 +985,31 @@ export default function LeadsClient() {
           </div>
         ) : null}
 
-        <div className={sharedStyles.statGrid}>
+        <div className={`${sharedStyles.statGrid} ${styles.leadStats}`}>
+          <div className={styles.statIntro}>
+            <span>Lead overview</span>
+            <strong>{periodLeads.length}</strong>
+            <small>Showing for the selected month and year.</small>
+          </div>
           <div className={sharedStyles.statCard}>
             <span>Total leads</span>
             <strong>{periodLeads.length}</strong>
           </div>
           <div className={sharedStyles.statCard}>
-            <span>Quoted</span>
-            <strong>{quotedLeadCount}</strong>
+            <span>Open leads</span>
+            <strong>{openLeadCount}</strong>
           </div>
           <div className={sharedStyles.statCard}>
-            <span>New</span>
+            <span>New leads</span>
             <strong>{newLeadCount}</strong>
           </div>
         </div>
 
-        <section className={sharedStyles.card}>
+        <section className={`${sharedStyles.card} ${styles.leadsCard}`}>
           <div className={sharedStyles.cardHeader}>
             <div>
-              <h2>Received leads</h2>
-              <p>Each lead opens into one full asset card, keeping client details and asset actions together.</p>
+              <h2>Lead inbox</h2>
+              <p>Click Open lead to expand the full asset card. Use Manage for WhatsApp, email, call and PDF actions.</p>
             </div>
           </div>
 
@@ -1039,7 +1045,7 @@ export default function LeadsClient() {
               <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as LeadStatusFilter)}>
                 <option value="all">All leads</option>
                 <option value="new">New leads</option>
-                <option value="quoted">Quoted leads</option>
+                <option value="open">Open leads</option>
               </select>
             </label>
           </div>
@@ -1082,10 +1088,10 @@ export default function LeadsClient() {
                                   setOpenLeadId(null);
                                 }}
                               >
-                                Close lead
+                                Close
                               </button>
                               <button type="button" className={sharedStyles.dangerButton} onClick={() => setDeleteLeadTarget(lead)}>
-                                Delete lead
+                                Delete
                               </button>
                             </div>
                           ) : (
@@ -1208,36 +1214,36 @@ export default function LeadsClient() {
           <div className={assetStyles.modalBackdrop} onClick={closeDeleteLeadModal} />
 
           <div
-            className={assetStyles.deleteConfirmModal}
+            className={`${assetStyles.deleteConfirmModal} ${styles.leadDeleteModal}`}
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="delete-lead-confirm-title"
             aria-describedby="delete-lead-confirm-copy"
           >
-            <div className={assetStyles.deleteConfirmIcon}>
+            <div className={`${assetStyles.deleteConfirmIcon} ${styles.leadDeleteIcon}`}>
               <TrashIcon className={assetStyles.buttonIcon} />
             </div>
 
-            <div className={assetStyles.deleteConfirmContent}>
+            <div className={`${assetStyles.deleteConfirmContent} ${styles.leadDeleteContent}`}>
               <h3 id="delete-lead-confirm-title">Are you sure you want to delete this lead?</h3>
               <p id="delete-lead-confirm-copy">
                 This removes the lead from your leads inbox. It does not delete the owner&apos;s asset register item or their saved asset data.
               </p>
 
-              <div className={assetStyles.deleteConfirmAsset}>
+              <div className={`${assetStyles.deleteConfirmAsset} ${styles.leadDeleteSummary}`}>
                 <span>Selected lead</span>
                 <strong>{deleteLeadTarget.ownerBusinessName || ownerDisplayName(deleteLeadTarget)}</strong>
                 <small>{assetTitle(deleteLeadTarget)} · {formatCurrency(assetValue(deleteLeadTarget))} excl. VAT</small>
               </div>
 
-              <div className={assetStyles.deleteConfirmActions}>
+              <div className={`${assetStyles.deleteConfirmActions} ${styles.leadDeleteActions}`}>
                 <button type="button" className={assetStyles.secondaryButton} onClick={closeDeleteLeadModal} disabled={isDeletingLead}>
                   Keep lead
                 </button>
 
                 <button
                   type="button"
-                  className={`${assetStyles.primaryButton} ${assetStyles.deleteConfirmButton}`}
+                  className={`${assetStyles.primaryButton} ${assetStyles.deleteConfirmButton} ${styles.leadDeleteConfirmButton}`}
                   onClick={() => void confirmDeleteLead()}
                   disabled={isDeletingLead}
                 >
