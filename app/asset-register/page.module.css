@@ -14744,3 +14744,241 @@
     padding: 0.95rem !important;
   }
 }
+
+/* === Full-register lead sharing update === */
+.registerHeader {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 1rem !important;
+}
+
+.businessRegisterTitleBlock {
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+.businessRegisterTitleBlock h1 {
+  margin: 0 !important;
+  color: #0b3328 !important;
+  font-size: clamp(2rem, 3.5vw, 2.85rem) !important;
+  font-weight: 880 !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.065em !important;
+}
+
+.registerHeader .headerActions {
+  width: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.8rem !important;
+  flex-wrap: wrap !important;
+  margin-left: 0 !important;
+}
+
+.headerOptionsButton {
+  min-width: 220px !important;
+  min-height: 3.25rem !important;
+  padding-inline: 1.35rem !important;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #1d6048 0%, #124635 100%) !important;
+  border-color: rgba(18, 70, 53, 0.34) !important;
+  box-shadow:
+    0 15px 30px rgba(18, 70, 53, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+.headerOptionsButton:hover {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #207154 0%, #14513d 100%) !important;
+  border-color: rgba(18, 70, 53, 0.44) !important;
+}
+
+.headerOptionsButton .buttonIcon {
+  width: 1.1rem !important;
+  height: 1.1rem !important;
+  color: #ffffff !important;
+}
+
+.summarySimplePanel,
+.summaryLeadActions {
+  border: 1px solid rgba(210, 223, 233, 0.98);
+  border-radius: 1.45rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.055), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  box-shadow:
+    0 12px 26px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.summarySimplePanel {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+}
+
+.summarySimpleValueRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 1rem;
+  padding: clamp(1.05rem, 1.8vw, 1.35rem);
+  border-bottom: 1px solid rgba(210, 223, 233, 0.9);
+  background: linear-gradient(180deg, rgba(237, 248, 242, 0.9) 0%, rgba(255, 255, 255, 0.72) 100%);
+}
+
+.summarySimpleValueRow span,
+.summarySimpleItem span {
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.summarySimpleValueRow strong {
+  color: #0b3328;
+  font-size: clamp(2.45rem, 4.3vw, 4rem);
+  font-weight: 920;
+  line-height: 0.9;
+  letter-spacing: -0.075em;
+  white-space: nowrap;
+}
+
+.summarySimpleValueRow small {
+  grid-column: 2;
+  color: #64748b;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.summarySimpleList {
+  display: grid;
+}
+
+.summarySimpleItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 3.75rem;
+  padding: 0.85rem clamp(1.05rem, 1.8vw, 1.35rem);
+  border-bottom: 1px solid rgba(225, 233, 241, 0.88);
+}
+
+.summarySimpleItem:last-child {
+  border-bottom: 0;
+}
+
+.summarySimpleItem strong {
+  color: #0b3328;
+  font-size: 1.36rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-align: right;
+}
+
+.summarySimpleItem small {
+  min-width: 8rem;
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.summaryLeadActions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.1rem;
+  padding: clamp(1.05rem, 1.8vw, 1.35rem);
+}
+
+.summaryLeadActions h4 {
+  margin: 0 0 0.32rem;
+  color: #0b3328;
+  font-size: 1.18rem;
+  font-weight: 880;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.summaryLeadActions p {
+  max-width: 40rem;
+  margin: 0;
+  color: #637386;
+  font-size: 0.94rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.summaryLeadButtonRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.summaryLeadButton {
+  min-height: 3.3rem !important;
+  padding-inline: 1.15rem !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 1080px) {
+  .registerHeader {
+    grid-template-columns: 1fr !important;
+  }
+
+  .registerHeader .headerActions {
+    width: 100% !important;
+    justify-content: stretch !important;
+  }
+
+  .registerHeader .headerActions > *,
+  .assetFilterWrap,
+  .filterTriggerButton {
+    flex: 1 1 12rem !important;
+  }
+
+  .summaryLeadActions {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryLeadButtonRow {
+    justify-content: stretch;
+  }
+
+  .summaryLeadButton {
+    flex: 1 1 14rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .businessRegisterTitleBlock h1 {
+    font-size: 2rem !important;
+  }
+
+  .summarySimpleValueRow,
+  .summarySimpleItem {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .summarySimpleValueRow small,
+  .summarySimpleItem strong,
+  .summarySimpleItem small {
+    grid-column: auto;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .summaryLeadButton {
+    width: 100%;
+    flex-basis: 100%;
+  }
+}

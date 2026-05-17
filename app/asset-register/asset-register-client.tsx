@@ -2300,6 +2300,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
   const [hasManualAssetKindSelection, setHasManualAssetKindSelection] = useState(false);
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
   const [quoteAsset, setQuoteAsset] = useState<RegisterAsset | null>(null);
+  const [isRegisterQuoteModalOpen, setIsRegisterQuoteModalOpen] = useState(false);
   const [noteAsset, setNoteAsset] = useState<RegisterAsset | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
   const [isSavingNote, setIsSavingNote] = useState(false);
@@ -2373,6 +2374,8 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
   const reportProfile = registerOwnerProfile ?? accountProfile;
   const canUseOwnerOnlyAssetActions = !isSharedRegisterView;
   const canUseMarketplaceActions = !isSharedRegisterView || isDealerSharedRegisterView;
+  const isQuoteModalOpen = Boolean(quoteAsset) || isRegisterQuoteModalOpen;
+  const isRegisterQuoteRequest = isRegisterQuoteModalOpen;
 
   const selectedQuoteOption = useMemo(() => quoteOptionForLeadType(selectedQuoteLeadType), [selectedQuoteLeadType]);
   const selectedQuotePartner = useMemo(
@@ -2545,7 +2548,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
     isAddChoiceModalOpen ||
     isAssetModalOpen ||
     Boolean(activeAsset) ||
-    Boolean(quoteAsset) ||
+    isQuoteModalOpen ||
     Boolean(noteAsset) ||
     Boolean(deleteCandidateAsset) ||
     isAssetReportModalOpen ||
@@ -2593,7 +2596,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
         return;
       }
 
-      if (quoteAsset) {
+      if (isQuoteModalOpen) {
         if (quoteLeadStep) {
           closeQuoteLeadStep();
           return;
@@ -2639,15 +2642,15 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isQrModalOpen, isSummaryModalOpen, marketplaceAsset, noteAsset, projectionAsset, quoteAsset, quoteLeadStep]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isQrModalOpen, isSummaryModalOpen, marketplaceAsset, noteAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep]);
 
   useEffect(() => {
-    if (!quoteAsset || !selectedQuoteLeadType) return;
+    if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
     void loadQuotePartners(selectedQuoteLeadType, '');
-  }, [quoteAsset, selectedQuoteLeadType]);
+  }, [isQuoteModalOpen, selectedQuoteLeadType]);
 
   useEffect(() => {
-    if (!quoteAsset || !selectedQuoteOption || !quoteMapElementRef.current || !quotePartnersWithCoordinates.length) {
+    if (!isQuoteModalOpen || !selectedQuoteOption || !quoteMapElementRef.current || !quotePartnersWithCoordinates.length) {
       return undefined;
     }
 
@@ -2723,10 +2726,10 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
     return () => {
       cancelled = true;
     };
-  }, [quoteAsset, selectedQuoteOption, quotePartnersWithCoordinates, selectedQuotePartnerId]);
+  }, [isQuoteModalOpen, selectedQuoteOption, quotePartnersWithCoordinates, selectedQuotePartnerId]);
 
   useEffect(() => {
-    if (!quoteAsset || !selectedQuoteOption) return undefined;
+    if (!isQuoteModalOpen || !selectedQuoteOption) return undefined;
 
     const handleQuotePopupSelect = (event: MouseEvent) => {
       const target = event.target;
@@ -2746,10 +2749,10 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
 
     document.addEventListener('click', handleQuotePopupSelect, true);
     return () => document.removeEventListener('click', handleQuotePopupSelect, true);
-  }, [quoteAsset, selectedQuoteOption, quotePartners]);
+  }, [isQuoteModalOpen, selectedQuoteOption, quotePartners]);
 
   useEffect(() => {
-    if (quoteAsset && selectedQuoteOption && quotePartnersWithCoordinates.length) {
+    if (isQuoteModalOpen && selectedQuoteOption && quotePartnersWithCoordinates.length) {
       return undefined;
     }
 
@@ -2761,7 +2764,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
     }
 
     return undefined;
-  }, [quoteAsset, selectedQuoteOption, quotePartnersWithCoordinates.length]);
+  }, [isQuoteModalOpen, selectedQuoteOption, quotePartnersWithCoordinates.length]);
 
   const totalValue = useMemo(() => {
     return assets.reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
@@ -3241,13 +3244,30 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
   function openAssetQuoteOptions(asset: RegisterAsset) {
     setNotice(null);
     setIsAssetFilterOpen(false);
+    setIsRegisterQuoteModalOpen(false);
     setQuoteAsset(asset);
     resetAssetQuoteState();
+  }
+
+  function openFullRegisterQuote(leadType: Extract<AssetLeadType, 'finance' | 'insurance'>) {
+    if (!assets.length) {
+      setNotice({ tone: 'error', message: 'Add at least one asset before sending a full-register lead.' });
+      return;
+    }
+
+    setNotice(null);
+    setIsAssetFilterOpen(false);
+    setIsSummaryModalOpen(false);
+    setQuoteAsset(null);
+    resetAssetQuoteState();
+    setIsRegisterQuoteModalOpen(true);
+    openQuotePartnerPicker(leadType);
   }
 
   function closeAssetQuoteModal() {
     if (isSendingQuoteLead) return;
     setQuoteAsset(null);
+    setIsRegisterQuoteModalOpen(false);
     resetAssetQuoteState();
   }
 
@@ -3299,6 +3319,11 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
   }
 
   function goBackToQuoteOptions() {
+    if (isRegisterQuoteModalOpen) {
+      closeAssetQuoteModal();
+      return;
+    }
+
     setSelectedQuoteLeadType(null);
     setQuotePartners([]);
     setSelectedQuotePartnerId('');
@@ -3342,9 +3367,84 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
     setQuoteLeadStep('message');
   }
 
+  function buildFullRegisterLeadSections(leadType: AssetLeadType): Record<string, unknown> {
+    const ownerProfile = reportProfile ?? accountProfile;
+    const registerLeadLabel = leadType === 'finance' ? 'Full refinance quote' : 'Full insurance quote';
+    const registerAssets = assets.map((asset) => ({
+      id: asset.id,
+      title: asset.title,
+      kind: asset.kind,
+      value: Math.round(Number(asset.value || 0)),
+      selectedValueExVat: Math.round(Number(asset.selectedValueExVat || asset.value || 0)),
+      selectedMethod: asset.selectedMethod,
+      brandName: asset.brandName,
+      modelName: asset.modelName,
+      typedModelName: asset.typedModelName,
+      equipmentFamilyKey: asset.equipmentFamilyKey,
+      equipmentFamilyLabel: asset.equipmentFamilyLabel,
+      yearModel: asset.yearModel,
+      hours: asset.hours,
+      specsJson: asset.specsJson,
+      depreciationMethodUsed: asset.depreciationMethodUsed,
+      lifeWorkedPercent: asset.lifeWorkedPercent,
+      condition: asset.condition,
+      serialNumber: asset.serialNumber,
+      isFinanced: readFinanceStatusChoice(asset) === 'yes',
+      isInsured: readInsuranceStatusChoice(asset) === 'yes',
+      isLicensed: readLicenseStatusChoice(asset) === 'yes',
+      licenseRegistrationNumber: readLicenseRegistrationNumber(asset),
+      aim4priceValueExVat: asset.aim4priceValueExVat,
+      marketMidExVat: asset.marketMidExVat,
+      photoUrl: assetPreviewImage(asset),
+      updatedAtIso: asset.updatedAtIso,
+      createdAtIso: asset.createdAtIso,
+    }));
+    const manualAssetCount = assets.filter((asset) => asset.selectedMethod === 'manual').length;
+
+    return {
+      assetDetails: false,
+      valuationSummary: true,
+      mainPhoto: false,
+      photos: false,
+      documents: false,
+      scanHistory: false,
+      source: 'full_asset_register',
+      registerLead: true,
+      registerLeadType: leadType === 'finance' ? 'full_refinance' : 'full_insurance',
+      registerSnapshot: {
+        title: 'Full Asset Register',
+        leadLabel: registerLeadLabel,
+        ownerName: buildOwnerName(ownerProfile),
+        ownerBusinessName: ownerProfile?.businessName ?? '',
+        ownerMeta: buildOwnerMeta(ownerProfile),
+        totalValue,
+        totalValueInclVat,
+        assetCount: assets.length,
+        aim4priceAssetCount: aim4priceValuedEquipmentCount,
+        aim4priceAssetValue: aim4priceValuedEquipmentValue,
+        manualAssetCount,
+        financedAssetCount: financedAssetStats.count,
+        financedAssetValue: financedAssetStats.value,
+        insuredAssetCount: insuredAssetStats.count,
+        insuredAssetValue: insuredAssetStats.value,
+        licensedAssetCount: licensedAssetStats.count,
+        licensedAssetValue: licensedAssetStats.value,
+        generatedAtIso: new Date().toISOString(),
+        assets: registerAssets,
+      },
+    };
+  }
+
   async function handleSendAssetQuoteLead() {
-    if (!quoteAsset || !selectedQuoteOption) {
+    if (!selectedQuoteOption || (!quoteAsset && !isRegisterQuoteRequest)) {
       setNotice({ tone: 'error', message: 'Choose a quote option first.' });
+      return;
+    }
+
+    const leadAssetId = quoteAsset?.id ?? assets[0]?.id ?? '';
+
+    if (!leadAssetId) {
+      setNotice({ tone: 'error', message: 'Add at least one asset before sending a full-register lead.' });
       return;
     }
 
@@ -3366,19 +3466,21 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          assetId: quoteAsset.id,
+          assetId: leadAssetId,
           partnerUserId: selectedQuotePartner.userId,
           leadType: selectedQuoteOption.leadType,
           ownerMessage: quoteOwnerMessage,
-          includedSections: {
-            assetDetails: true,
-            valuationSummary: true,
-            mainPhoto: true,
-            photos: quoteIncludePhotos,
-            documents: quoteIncludeDocuments,
-            scanHistory: quoteIncludeScanHistory,
-            source: 'asset_register_options',
-          },
+          includedSections: isRegisterQuoteRequest
+            ? buildFullRegisterLeadSections(selectedQuoteOption.leadType)
+            : {
+                assetDetails: true,
+                valuationSummary: true,
+                mainPhoto: true,
+                photos: quoteIncludePhotos,
+                documents: quoteIncludeDocuments,
+                scanHistory: quoteIncludeScanHistory,
+                source: 'asset_register_options',
+              },
         }),
       });
 
@@ -3391,7 +3493,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
 
       setNotice({
         tone: 'success',
-        message: `${selectedQuoteOption.shortTitle} request sent to ${quotePartnerName(selectedQuotePartner)}.`,
+        message: `${isRegisterQuoteRequest ? 'Full register ' : ''}${selectedQuoteOption.shortTitle.toLowerCase()} request sent to ${quotePartnerName(selectedQuotePartner)}.`,
       });
       closeAssetQuoteModal();
     } catch (error) {
@@ -4736,14 +4838,19 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
 
         <section className={styles.registerPanel}>
           <div className={styles.registerHeader}>
+            <div className={`${styles.registerTitleBlock} ${styles.businessRegisterTitleBlock}`}>
+              <h1>{buildOwnerName(reportProfile)}</h1>
+            </div>
+
             <div className={styles.headerActions}>
               <button
                 type="button"
-                className={`${styles.secondaryButton} ${styles.summaryTriggerButton}`}
+                className={`${styles.secondaryButton} ${styles.summaryTriggerButton} ${styles.headerOptionsButton}`}
                 onClick={openSummaryModal}
                 disabled={isLoading}
               >
-                <span>Summary</span>
+                <OptionsIcon className={styles.buttonIcon} />
+                <span>Options</span>
               </button>
 
               <div className={styles.assetFilterWrap} ref={assetFilterWrapRef}>
@@ -5274,55 +5381,73 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
 
             <div className={`${styles.modalScrollBody} ${styles.summaryModalScrollBody}`}>
               <div className={styles.summaryModalBody}>
-                <section className={styles.summaryTotalsHero} aria-label="Asset register totals">
-                  <article className={`${styles.summaryHeroMetric} ${styles.summaryHeroMetricFeatured}`}>
-                    <span className={styles.summaryHeroLabel}>Register value</span>
-                    <strong className={styles.summaryHeroValue}>{money(totalValue)}</strong>
-                    <small className={styles.summaryHeroNote}>{money(totalValueInclVat)} incl. VAT</small>
-                  </article>
+                <section className={styles.summarySimplePanel} aria-label="Asset register summary">
+                  <div className={styles.summarySimpleValueRow}>
+                    <span>Register value</span>
+                    <strong>{money(totalValue)}</strong>
+                    <small>{money(totalValueInclVat)} incl. VAT</small>
+                  </div>
 
-                  <article className={styles.summaryHeroMetric}>
-                    <span className={styles.summaryHeroLabel}>Aim4price valued equipment</span>
-                    <strong className={styles.summaryHeroValue}>{aim4priceValuedEquipmentCount}</strong>
-                    <small className={styles.summaryHeroNote}>{money(aim4priceValuedEquipmentValue)} register value</small>
-                  </article>
-
-                  <article className={styles.summaryHeroMetric}>
-                    <span className={styles.summaryHeroLabel}>Total assets</span>
-                    <strong className={styles.summaryHeroValue}>{assets.length}</strong>
-                    <small className={styles.summaryHeroNote}>Full saved register count</small>
-                  </article>
-                </section>
-
-                <section className={styles.summaryStatusGrid} aria-label="Finance, insurance and licensing totals">
-                  <article className={`${styles.summaryStatusCard} ${styles.summaryStatusCardFinanced}`}>
-                    <div className={styles.summaryStatusHeader}>
+                  <div className={styles.summarySimpleList}>
+                    <div className={styles.summarySimpleItem}>
+                      <span>Total assets</span>
+                      <strong>{assets.length}</strong>
+                    </div>
+                    <div className={styles.summarySimpleItem}>
+                      <span>Aim4price assets</span>
+                      <strong>{aim4priceValuedEquipmentCount}</strong>
+                      <small>{money(aim4priceValuedEquipmentValue)}</small>
+                    </div>
+                    <div className={styles.summarySimpleItem}>
+                      <span>Manual assets</span>
+                      <strong>{assets.filter((asset) => asset.selectedMethod === 'manual').length}</strong>
+                    </div>
+                    <div className={styles.summarySimpleItem}>
                       <span>Assets financed</span>
                       <strong>{financedAssetStats.count}</strong>
+                      <small>{money(financedAssetStats.value)}</small>
                     </div>
-                    <div className={styles.summaryStatusValue}>{money(financedAssetStats.value)}</div>
-                    <p>{assets.length ? formatRatioPercent(financedAssetStats.count / assets.length) : '0%'} of assets · {money(Math.round(financedAssetStats.value * 1.15))} incl. VAT</p>
-                  </article>
-
-                  <article className={`${styles.summaryStatusCard} ${styles.summaryStatusCardInsured}`}>
-                    <div className={styles.summaryStatusHeader}>
+                    <div className={styles.summarySimpleItem}>
                       <span>Assets insured</span>
                       <strong>{insuredAssetStats.count}</strong>
+                      <small>{money(insuredAssetStats.value)}</small>
                     </div>
-                    <div className={styles.summaryStatusValue}>{money(insuredAssetStats.value)}</div>
-                    <p>{assets.length ? formatRatioPercent(insuredAssetStats.count / assets.length) : '0%'} of assets · {money(Math.round(insuredAssetStats.value * 1.15))} incl. VAT</p>
-                  </article>
-
-                  <article className={`${styles.summaryStatusCard} ${styles.summaryStatusCardLicensed}`}>
-                    <div className={styles.summaryStatusHeader}>
+                    <div className={styles.summarySimpleItem}>
                       <span>Assets licensed</span>
                       <strong>{licensedAssetStats.count}</strong>
+                      <small>{money(licensedAssetStats.value)}</small>
                     </div>
-                    <div className={styles.summaryStatusValue}>{money(licensedAssetStats.value)}</div>
-                    <p>{assets.length ? formatRatioPercent(licensedAssetStats.count / assets.length) : '0%'} of assets · {money(Math.round(licensedAssetStats.value * 1.15))} incl. VAT</p>
-                  </article>
+                  </div>
                 </section>
 
+                <section className={styles.summaryLeadActions} aria-label="Full register quote options">
+                  <div>
+                    <h4>Send the full register as a lead</h4>
+                    <p>Choose a partner from the map and send a once-off snapshot of this full asset register. This does not give the partner live register access.</p>
+                  </div>
+
+                  <div className={styles.summaryLeadButtonRow}>
+                    <button
+                      type="button"
+                      className={`${styles.primaryButton} ${styles.summaryLeadButton}`}
+                      onClick={() => openFullRegisterQuote('finance')}
+                      disabled={!assets.length}
+                    >
+                      <MoneyBagIcon className={styles.buttonIcon} />
+                      <span>Get full refinance quote</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`${styles.secondaryButton} ${styles.summaryLeadButton}`}
+                      onClick={() => openFullRegisterQuote('insurance')}
+                      disabled={!assets.length}
+                    >
+                      <ShieldIcon className={styles.buttonIcon} />
+                      <span>Get full Insurance Quote</span>
+                    </button>
+                  </div>
+                </section>
               </div>
             </div>
           </div>
@@ -5948,7 +6073,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
         </div>
       ) : null}
 
-      {quoteAsset ? (
+      {isQuoteModalOpen ? (
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeAssetQuoteModal} />
 
@@ -5960,9 +6085,9 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
           >
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-quote-title">{selectedQuoteOption ? selectedQuoteOption.mapTitle : quoteAsset.title}</h3>
+                <h3 id="asset-quote-title">{selectedQuoteOption ? selectedQuoteOption.mapTitle : isRegisterQuoteRequest ? 'Full Asset Register' : quoteAsset?.title}</h3>
                 {!selectedQuoteOption ? (
-                  <p>{buildAssetMeta(quoteAsset)} · {money(quoteAsset.value)} excl. VAT</p>
+                  <p>{isRegisterQuoteRequest ? `${assets.length} assets · ${money(totalValue)} excl. VAT` : quoteAsset ? `${buildAssetMeta(quoteAsset)} · ${money(quoteAsset.value)} excl. VAT` : ''}</p>
                 ) : null}
               </div>
 
@@ -6107,7 +6232,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
 
                         {quoteLeadStep === 'message' ? (
                           <div className={styles.assetQuoteStepBody}>
-                            <p className={styles.assetQuoteStepNotice}>This sends one asset only. It does not share the full register.</p>
+                            <p className={styles.assetQuoteStepNotice}>{isRegisterQuoteRequest ? 'This sends a full asset register snapshot. It does not give the partner login access to your live register.' : 'This sends one asset only. It does not share the full register.'}</p>
 
                             <label className={styles.assetQuoteMessageField}>
                               <span>
@@ -6117,7 +6242,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
                               <textarea
                                 value={quoteOwnerMessage}
                                 onChange={(event) => setQuoteOwnerMessage(event.target.value)}
-                                placeholder="Example: Please contact me about cover or finance options for this asset."
+                                placeholder={isRegisterQuoteRequest ? 'Example: Please contact me about refinance or insurance options for my full asset register.' : 'Example: Please contact me about cover or finance options for this asset.'}
                               />
                             </label>
                           </div>
@@ -6126,11 +6251,11 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
                             <div className={styles.assetQuotePopiaBox}>
                               <strong>Disclaimer and POPIA note</strong>
                               <p>
-                                By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your account contact details with the chosen partner.
+                                By sending this request, you allow Aim4price to share {isRegisterQuoteRequest ? 'your full asset register snapshot, saved register totals' : 'this selected asset, its saved valuation details'} and your account contact details with the chosen partner.
                                 This is only a lead request and does not create a finance, insurance, valuation or sales agreement.
                               </p>
                               <p>
-                                You confirm that you have permission to share this asset information and understand that the selected partner may contact you outside Aim4price.
+                                You confirm that you have permission to share this {isRegisterQuoteRequest ? 'asset register information' : 'asset information'} and understand that the selected partner may contact you outside Aim4price.
                               </p>
                             </div>
 
