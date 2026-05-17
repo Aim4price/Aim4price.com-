@@ -5,24 +5,45 @@
 
 .leadStack {
   display: grid;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .leadThread {
   display: grid;
-  gap: 0.72rem;
+  gap: 0;
+  padding: 0.72rem;
+  border: 1px solid rgba(203, 217, 228, 0.96);
+  border-radius: 1.65rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 30%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  box-shadow:
+    0 16px 34px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.leadThread:hover {
+  border-color: rgba(178, 205, 219, 0.98);
+  box-shadow:
+    0 18px 38px rgba(16, 31, 28, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.leadThreadOpen {
+  gap: 0.75rem;
+  border-color: rgba(35, 123, 94, 0.28);
+  background:
+    radial-gradient(circle at top left, rgba(22, 128, 97, 0.07), transparent 32%),
+    linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
 }
 
 .clientPanel {
-  padding: 1.08rem 1.15rem 1rem;
-  border-radius: 1.55rem;
-  border: 1px solid rgba(217, 227, 235, 0.96);
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
-  box-shadow:
-    0 12px 26px rgba(16, 31, 28, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  padding: 0;
+  border-radius: 1.28rem;
 }
 
 .clientPanelHeader {
@@ -30,6 +51,16 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 1rem;
   align-items: center;
+  min-height: 6.1rem;
+  padding: 1.05rem 1.08rem;
+  border-radius: 1.28rem;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.leadThreadOpen .clientPanelHeader {
+  background:
+    linear-gradient(90deg, rgba(239, 248, 245, 0.98), rgba(255, 255, 255, 0.92));
+  border: 1px solid rgba(203, 224, 216, 0.94);
 }
 
 .clientIdentity {
@@ -48,21 +79,21 @@
 .clientPanel h3 {
   margin: 0;
   color: #0d3028;
-  font-size: clamp(1.28rem, 1.9vw, 1.65rem);
+  font-size: clamp(1.35rem, 2vw, 1.82rem);
   font-weight: 930;
-  line-height: 1.05;
-  letter-spacing: -0.05em;
+  line-height: 1.03;
+  letter-spacing: -0.052em;
 }
 
 .clientInlineMeta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.28rem 0.62rem;
+  gap: 0.3rem 0.64rem;
   margin-top: 0.52rem;
   color: #647486;
-  font-size: 0.92rem;
-  font-weight: 680;
+  font-size: 0.95rem;
+  font-weight: 700;
   line-height: 1.35;
 }
 
@@ -75,9 +106,35 @@
 
 .clientInlineMeta span:not(:last-child)::after {
   content: '•';
-  margin-left: 0.62rem;
+  margin-left: 0.64rem;
   color: #aab6c2;
   font-weight: 900;
+}
+
+.leadPreviewMeta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.42rem 0.72rem;
+  margin-top: 0.7rem;
+  padding: 0.46rem 0.66rem;
+  border: 1px solid rgba(205, 219, 229, 0.82);
+  border-radius: 999px;
+  background: rgba(246, 250, 252, 0.94);
+  color: #143830;
+  font-size: 0.92rem;
+  line-height: 1.25;
+}
+
+.leadPreviewMeta span {
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.leadPreviewMeta strong {
+  color: #0e332b;
+  font-weight: 930;
+  white-space: nowrap;
 }
 
 .clientDecisionArea {
@@ -93,12 +150,23 @@
   gap: 0.58rem;
 }
 
-.clientActionRow button {
-  min-height: 2.9rem;
+.clientActionRow button,
+.clientDecisionArea > button {
+  min-height: 2.95rem;
+  white-space: nowrap;
+}
+
+.closeLeadButton {
+  background: #f8fbff;
 }
 
 .leadAssetCard {
   margin: 0;
+  box-shadow: none;
+}
+
+.leadThreadOpen .leadAssetCard {
+  animation: leadAssetReveal 150ms ease-out;
 }
 
 .manageOptionsGrid {
@@ -107,6 +175,17 @@
 
 .leadAssetBody.leadAssetBody {
   grid-template-columns: minmax(220px, 300px) 1px minmax(400px, 1.55fr);
+}
+
+@keyframes leadAssetReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 1180px) {
@@ -150,9 +229,15 @@
     grid-template-columns: 1fr;
   }
 
-  .clientPanel {
-    padding: 1rem;
-    border-radius: 1.28rem;
+  .leadThread {
+    padding: 0.55rem;
+    border-radius: 1.35rem;
+  }
+
+  .clientPanelHeader {
+    min-height: 0;
+    padding: 0.95rem;
+    border-radius: 1.05rem;
   }
 
   .clientInlineMeta {
@@ -162,5 +247,11 @@
 
   .clientInlineMeta span:not(:last-child)::after {
     display: none;
+  }
+
+  .leadPreviewMeta {
+    width: 100%;
+    justify-content: space-between;
+    border-radius: 1rem;
   }
 }

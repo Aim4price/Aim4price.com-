@@ -10,7 +10,7 @@ import styles from './page.module.css';
 type LeadType = 'finance' | 'insurance' | 'replacement_quote';
 type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 type NoticeTone = 'success' | 'error';
-type LeadStatusFilter = 'all' | 'new' | 'saved' | 'quoted';
+type LeadStatusFilter = 'all' | 'new' | 'quoted';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 
 type IconProps = {
@@ -193,7 +193,7 @@ function formatLeadType(value: LeadType): string {
 
 function formatStatus(value: LeadStatus): string {
   if (value === 'sent' || value === 'viewed') return 'New';
-  if (value === 'accepted') return 'Saved';
+  if (value === 'accepted') return 'Open';
   if (value === 'quoted') return 'Quoted';
   if (value === 'declined') return 'Deleted';
   return 'Closed';
@@ -202,15 +202,6 @@ function formatStatus(value: LeadStatus): string {
 function isNewLeadStatus(value: LeadStatus): boolean {
   return value === 'sent' || value === 'viewed';
 }
-
-function isSavedLeadStatus(value: LeadStatus): boolean {
-  return value === 'accepted' || value === 'quoted' || value === 'closed';
-}
-
-function canSaveLead(value: LeadStatus): boolean {
-  return value === 'sent' || value === 'viewed';
-}
-
 function leadDateParts(lead: AssetLead): { month: string; year: string } | null {
   const parsed = new Date(lead.createdAtIso);
   if (Number.isNaN(parsed.getTime())) return null;
@@ -570,6 +561,7 @@ export default function LeadsClient() {
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null);
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
   const [noteLead, setNoteLead] = useState<AssetLead | null>(null);
@@ -607,7 +599,6 @@ export default function LeadsClient() {
 
     return periodLeads.filter((lead) => {
       if (statusFilter === 'new' && !isNewLeadStatus(lead.status)) return false;
-      if (statusFilter === 'saved' && !isSavedLeadStatus(lead.status)) return false;
       if (statusFilter === 'quoted' && lead.status !== 'quoted') return false;
 
       if (!query) return true;
@@ -616,7 +607,7 @@ export default function LeadsClient() {
   }, [periodLeads, searchTerm, statusFilter]);
 
   const newLeadCount = useMemo(() => periodLeads.filter((lead) => isNewLeadStatus(lead.status)).length, [periodLeads]);
-  const savedLeadCount = useMemo(() => periodLeads.filter((lead) => isSavedLeadStatus(lead.status)).length, [periodLeads]);
+  const quotedLeadCount = useMemo(() => periodLeads.filter((lead) => lead.status === 'quoted').length, [periodLeads]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -657,28 +648,6 @@ export default function LeadsClient() {
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
-  async function updateLeadStatus(leadId: string, status: 'accepted' | 'declined') {
-    try {
-      const response = await fetch(`/api/asset-leads/${encodeURIComponent(leadId)}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      const data = (await response.json()) as LeadsResponse;
-
-      if (!response.ok || !data.ok || !data.lead) {
-        throw new Error(data.error ?? 'Failed to update lead.');
-      }
-
-      setLeads((current) => current.map((lead) => (lead.id === leadId ? (data.lead as AssetLead) : lead)));
-      setManagedLead((current) => (current?.id === leadId ? (data.lead as AssetLead) : current));
-      setNotice({ tone: 'success', message: status === 'accepted' ? 'Lead saved. It will stay in your saved leads.' : 'Lead updated.' });
-    } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to update lead.' });
-    }
-  }
-
   async function deleteLead(leadToDelete: AssetLead) {
     try {
       if (leadToDelete.status !== 'declined') {
@@ -707,6 +676,8 @@ export default function LeadsClient() {
 
       setLeads((current) => current.filter((lead) => lead.id !== leadToDelete.id));
       setManagedLead((current) => (current?.id === leadToDelete.id ? null : current));
+      setOpenLeadId((current) => (current === leadToDelete.id ? null : current));
+      setExpandedLeadId((current) => (current === leadToDelete.id ? null : current));
       setNotice({ tone: 'success', message: 'Lead deleted.' });
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to delete lead.' });
@@ -989,7 +960,7 @@ export default function LeadsClient() {
         <div className={sharedStyles.hero}>
           <div>
             <h1>Leads</h1>
-            <p>Review received asset leads, save the useful ones and contact the owner from the asset card.</p>
+            <p>Open a lead to view the asset, contact the owner, leave notes or remove irrelevant requests.</p>
           </div>
         </div>
 
@@ -1005,8 +976,8 @@ export default function LeadsClient() {
             <strong>{periodLeads.length}</strong>
           </div>
           <div className={sharedStyles.statCard}>
-            <span>Saved</span>
-            <strong>{savedLeadCount}</strong>
+            <span>Quoted</span>
+            <strong>{quotedLeadCount}</strong>
           </div>
           <div className={sharedStyles.statCard}>
             <span>New</span>
@@ -1018,7 +989,7 @@ export default function LeadsClient() {
           <div className={sharedStyles.cardHeader}>
             <div>
               <h2>Received leads</h2>
-              <p>Save leads you want to work on. Delete irrelevant leads to keep the inbox clean.</p>
+              <p>Each lead opens into one full asset card, keeping client details and asset actions together.</p>
             </div>
           </div>
 
@@ -1054,7 +1025,6 @@ export default function LeadsClient() {
               <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as LeadStatusFilter)}>
                 <option value="all">All leads</option>
                 <option value="new">New leads</option>
-                <option value="saved">Saved leads</option>
                 <option value="quoted">Quoted leads</option>
               </select>
             </label>
@@ -1072,7 +1042,7 @@ export default function LeadsClient() {
                 const isExpanded = expandedLeadId === lead.id;
 
                 return (
-                  <article key={lead.id} className={styles.leadThread}>
+                  <article key={lead.id} className={`${styles.leadThread} ${openLeadId === lead.id ? styles.leadThreadOpen : ''}`}>
                     <div className={styles.clientPanel}>
                       <div className={styles.clientPanelHeader}>
                         <div className={styles.clientIdentity}>
@@ -1084,68 +1054,91 @@ export default function LeadsClient() {
                             {ownerEmail(lead) ? <span>{ownerEmail(lead)}</span> : null}
                             <span>{ownerLocation(lead)}</span>
                           </div>
+                          <div className={styles.leadPreviewMeta}>
+                            <span>{assetTitle(lead)}</span>
+                            <strong>{formatCurrency(assetValue(lead))} excl. VAT</strong>
+                          </div>
                         </div>
 
                         <div className={styles.clientDecisionArea}>
-                          <div className={styles.clientActionRow}>
-                            {canSaveLead(lead.status) ? (
-                              <button type="button" className={sharedStyles.primaryButton} onClick={() => void updateLeadStatus(lead.id, 'accepted')}>
-                                Save lead
+                          {openLeadId === lead.id ? (
+                            <div className={styles.clientActionRow}>
+                              <button
+                                type="button"
+                                className={`${sharedStyles.secondaryButton} ${styles.closeLeadButton}`}
+                                onClick={() => {
+                                  setOpenLeadId(null);
+                                  setExpandedLeadId((current) => (current === lead.id ? null : current));
+                                }}
+                              >
+                                Close lead
                               </button>
-                            ) : null}
-                            <button type="button" className={sharedStyles.dangerButton} onClick={() => void deleteLead(lead)}>
-                              Delete lead
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                    </div>
-
-                    <div className={`${assetStyles.assetCard} ${styles.leadAssetCard} ${isExpanded ? assetStyles.assetCardExpanded : ''}`}>
-                      <div className={assetStyles.assetHeader}>
-                        <div className={assetStyles.assetTitleBlock}>
-                          <h2>{assetTitle(lead)}</h2>
-                          <p>{leadAssetMeta(lead)}</p>
-                          <div className={assetStyles.assetMetaRow}>
-                            <span className={assetStyles.assetValueMethodLabel}>{methodLabel(lead.assetSnapshot.selectedMethod)} value</span>
-                            <span className={assetStyles.assetSavedDateLabel}>Updated {formatDate(asText(lead.assetSnapshot.updatedAtIso) || lead.updatedAtIso)}</span>
-                          </div>
-                        </div>
-
-                        <div className={assetStyles.assetHeaderAside}>
-                          <div className={assetStyles.valueBlock}>
-                            <strong>{formatCurrency(assetValue(lead))}</strong>
-                            <span>Excl. VAT</span>
-                          </div>
-
-                          <div className={assetStyles.assetHeaderActions}>
-                            <button type="button" className={`${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton}`} onClick={() => openNoteModal(lead)}>
-                              <NoteIcon className={assetStyles.buttonIcon} />
-                              <span>Leave note</span>
-                            </button>
-
+                              <button type="button" className={sharedStyles.dangerButton} onClick={() => void deleteLead(lead)}>
+                                Delete lead
+                              </button>
+                            </div>
+                          ) : (
                             <button
                               type="button"
-                              className={assetStyles.expandButton}
-                              onClick={() => setExpandedLeadId((current) => (current === lead.id ? null : lead.id))}
-                              aria-expanded={isExpanded}
-                              aria-controls={`lead-panel-${lead.id}`}
+                              className={sharedStyles.primaryButton}
+                              onClick={() => {
+                                setOpenLeadId(lead.id);
+                                setExpandedLeadId(null);
+                              }}
                             >
-                              {isExpanded ? <ChevronUpIcon className={assetStyles.buttonIcon} /> : <ChevronDownIcon className={assetStyles.buttonIcon} />}
-                              <span>{isExpanded ? 'Hide details' : 'View details'}</span>
+                              Open lead
                             </button>
-
-                            <button type="button" className={assetStyles.optionsButton} onClick={() => setManagedLead(lead)}>
-                              <ManageIcon className={assetStyles.buttonIcon} />
-                              <span>Manage</span>
-                            </button>
-                          </div>
+                          )}
                         </div>
                       </div>
-
-                      {isExpanded ? renderLeadDetails(lead) : null}
                     </div>
+
+                    {openLeadId === lead.id ? (
+                      <div className={`${assetStyles.assetCard} ${styles.leadAssetCard} ${isExpanded ? assetStyles.assetCardExpanded : ''}`}>
+                        <div className={assetStyles.assetHeader}>
+                          <div className={assetStyles.assetTitleBlock}>
+                            <h2>{assetTitle(lead)}</h2>
+                            <p>{leadAssetMeta(lead)}</p>
+                            <div className={assetStyles.assetMetaRow}>
+                              <span className={assetStyles.assetValueMethodLabel}>{methodLabel(lead.assetSnapshot.selectedMethod)} value</span>
+                              <span className={assetStyles.assetSavedDateLabel}>Updated {formatDate(asText(lead.assetSnapshot.updatedAtIso) || lead.updatedAtIso)}</span>
+                            </div>
+                          </div>
+
+                          <div className={assetStyles.assetHeaderAside}>
+                            <div className={assetStyles.valueBlock}>
+                              <strong>{formatCurrency(assetValue(lead))}</strong>
+                              <span>Excl. VAT</span>
+                            </div>
+
+                            <div className={assetStyles.assetHeaderActions}>
+                              <button type="button" className={`${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton}`} onClick={() => openNoteModal(lead)}>
+                                <NoteIcon className={assetStyles.buttonIcon} />
+                                <span>Leave note</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                className={assetStyles.expandButton}
+                                onClick={() => setExpandedLeadId((current) => (current === lead.id ? null : lead.id))}
+                                aria-expanded={isExpanded}
+                                aria-controls={`lead-panel-${lead.id}`}
+                              >
+                                {isExpanded ? <ChevronUpIcon className={assetStyles.buttonIcon} /> : <ChevronDownIcon className={assetStyles.buttonIcon} />}
+                                <span>{isExpanded ? 'Hide details' : 'View details'}</span>
+                              </button>
+
+                              <button type="button" className={assetStyles.optionsButton} onClick={() => setManagedLead(lead)}>
+                                <ManageIcon className={assetStyles.buttonIcon} />
+                                <span>Manage</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {isExpanded ? renderLeadDetails(lead) : null}
+                      </div>
+                    ) : null}
                   </article>
                 );
               })}
