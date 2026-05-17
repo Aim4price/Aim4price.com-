@@ -2784,6 +2784,18 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
       .reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
   }, [assets]);
 
+  const manualAssetStats = useMemo(() => {
+    return assets
+      .filter((asset) => asset.selectedMethod === 'manual')
+      .reduce(
+        (stats, asset) => ({
+          count: stats.count + 1,
+          value: stats.value + Math.round(Number(asset.value || 0)),
+        }),
+        { count: 0, value: 0 },
+      );
+  }, [assets]);
+
   const financedAssetStats = useMemo(() => {
     return assets.reduce(
       (stats, asset) => {
@@ -3269,6 +3281,10 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
     openFullRegisterQuote(summaryLeadType);
   }
 
+  function closeFullRegisterLeadConfirm() {
+    setSummaryLeadType(null);
+  }
+
   function openFullRegisterQuote(leadType: Extract<AssetLeadType, 'finance' | 'insurance'>) {
     if (!assets.length) {
       setNotice({ tone: 'error', message: 'Add at least one asset before sending a full-register lead.' });
@@ -3390,7 +3406,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
 
   function buildFullRegisterLeadSections(leadType: AssetLeadType): Record<string, unknown> {
     const ownerProfile = reportProfile ?? accountProfile;
-    const registerLeadLabel = leadType === 'finance' ? 'Full refinance quote' : 'Full insurance quote';
+    const registerLeadLabel = leadType === 'finance' ? 'Full finance quote' : 'Full insurance quote';
     const registerAssets = assets.map((asset) => ({
       id: asset.id,
       title: asset.title,
@@ -3420,7 +3436,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
       updatedAtIso: asset.updatedAtIso,
       createdAtIso: asset.createdAtIso,
     }));
-    const manualAssetCount = assets.filter((asset) => asset.selectedMethod === 'manual').length;
+    const manualAssetCount = manualAssetStats.count;
 
     return {
       assetDetails: false,
@@ -3444,6 +3460,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
         aim4priceAssetCount: aim4priceValuedEquipmentCount,
         aim4priceAssetValue: aim4priceValuedEquipmentValue,
         manualAssetCount,
+        manualAssetValue: manualAssetStats.value,
         financedAssetCount: financedAssetStats.count,
         financedAssetValue: financedAssetStats.value,
         insuredAssetCount: insuredAssetStats.count,
@@ -5403,41 +5420,61 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
             </div>
 
             <div className={styles.summaryModalBody}>
-              <section className={styles.summarySimplePanel} aria-label="Asset register summary">
-                <div className={styles.summarySimpleValueRow}>
+              <section className={styles.summaryValueTable} aria-label="Asset register summary">
+                <div className={`${styles.summaryValueTableRow} ${styles.summaryValueTableHeroRow}`}>
                   <span>Register value</span>
                   <strong>{money(totalValue)}</strong>
                   <small>{money(totalValueInclVat)} incl. VAT</small>
                 </div>
 
-                <div className={styles.summarySimpleList}>
-                  <div className={styles.summarySimpleItem}>
+                <div className={styles.summaryValueTableHeader} aria-hidden="true">
+                  <span />
+                  <span>Count</span>
+                  <span>Excl. VAT</span>
+                  <span>Incl. VAT</span>
+                </div>
+
+                <div className={styles.summaryValueTableRows}>
+                  <div className={styles.summaryValueTableRow}>
                     <span>Total assets</span>
                     <strong>{assets.length}</strong>
+                    <small>{money(totalValue)}</small>
+                    <small>{money(totalValueInclVat)}</small>
                   </div>
-                  <div className={styles.summarySimpleItem}>
+
+                  <div className={styles.summaryValueTableRow}>
                     <span>Aim4price assets</span>
                     <strong>{aim4priceValuedEquipmentCount}</strong>
                     <small>{money(aim4priceValuedEquipmentValue)}</small>
+                    <small>{money(Math.round(aim4priceValuedEquipmentValue * 1.15))}</small>
                   </div>
-                  <div className={styles.summarySimpleItem}>
+
+                  <div className={styles.summaryValueTableRow}>
                     <span>Manual assets</span>
-                    <strong>{assets.filter((asset) => asset.selectedMethod === 'manual').length}</strong>
+                    <strong>{manualAssetStats.count}</strong>
+                    <small>{money(manualAssetStats.value)}</small>
+                    <small>{money(Math.round(manualAssetStats.value * 1.15))}</small>
                   </div>
-                  <div className={styles.summarySimpleItem}>
+
+                  <div className={styles.summaryValueTableRow}>
                     <span>Assets financed</span>
                     <strong>{financedAssetStats.count}</strong>
                     <small>{money(financedAssetStats.value)}</small>
+                    <small>{money(Math.round(financedAssetStats.value * 1.15))}</small>
                   </div>
-                  <div className={styles.summarySimpleItem}>
+
+                  <div className={styles.summaryValueTableRow}>
                     <span>Assets insured</span>
                     <strong>{insuredAssetStats.count}</strong>
                     <small>{money(insuredAssetStats.value)}</small>
+                    <small>{money(Math.round(insuredAssetStats.value * 1.15))}</small>
                   </div>
-                  <div className={styles.summarySimpleItem}>
+
+                  <div className={styles.summaryValueTableRow}>
                     <span>Assets licensed</span>
                     <strong>{licensedAssetStats.count}</strong>
                     <small>{money(licensedAssetStats.value)}</small>
+                    <small>{money(Math.round(licensedAssetStats.value * 1.15))}</small>
                   </div>
                 </div>
               </section>
@@ -5446,45 +5483,74 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
                 <div className={styles.summaryLeadButtonRow}>
                   <button
                     type="button"
-                    className={`${styles.primaryButton} ${styles.summaryLeadButton} ${summaryLeadType === 'finance' ? styles.summaryLeadButtonSelected : ''}`}
+                    className={`${styles.primaryButton} ${styles.summaryLeadButton}`}
                     onClick={() => chooseFullRegisterLeadType('finance')}
                     disabled={!assets.length}
-                    aria-pressed={summaryLeadType === 'finance'}
                   >
                     <MoneyBagIcon className={styles.buttonIcon} />
-                    <span>Get full refinance quote</span>
+                    <span>Get full Finance Quote</span>
                   </button>
 
                   <button
                     type="button"
-                    className={`${styles.secondaryButton} ${styles.summaryLeadButton} ${summaryLeadType === 'insurance' ? styles.summaryLeadButtonSelected : ''}`}
+                    className={`${styles.secondaryButton} ${styles.summaryLeadButton}`}
                     onClick={() => chooseFullRegisterLeadType('insurance')}
                     disabled={!assets.length}
-                    aria-pressed={summaryLeadType === 'insurance'}
                   >
                     <ShieldIcon className={styles.buttonIcon} />
                     <span>Get full Insurance Quote</span>
                   </button>
                 </div>
-
-                {summaryLeadType ? (
-                  <div className={styles.summaryLeadConfirmPanel}>
-                    <div>
-                      <h4>Send the full register as a lead</h4>
-                      <p>Choose a partner from the map and send a once-off snapshot of this full asset register. This does not give the partner live register access.</p>
-                    </div>
-
-                    <button
-                      type="button"
-                      className={`${styles.primaryButton} ${styles.summaryLeadProceedButton}`}
-                      onClick={proceedFullRegisterLead}
-                    >
-                      <span>Proceed</span>
-                      <ChevronRightIcon className={styles.buttonIcon} />
-                    </button>
-                  </div>
-                ) : null}
               </section>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {summaryLeadType ? (
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={closeFullRegisterLeadConfirm} />
+
+          <div className={`${styles.modalCard} ${styles.summaryLeadModal}`} role="dialog" aria-modal="true" aria-labelledby="full-register-lead-title">
+            <div className={`${styles.modalHeader} ${styles.summaryLeadModalHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="full-register-lead-title">
+                  {summaryLeadType === 'finance' ? 'Send register for finance quote' : 'Send register for insurance quote'}
+                </h3>
+                <p>Choose an approved partner from the map and send a once-off snapshot of this full asset register.</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={closeFullRegisterLeadConfirm}
+                aria-label="Close full register lead confirmation"
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={styles.summaryLeadModalBody}>
+              <div className={styles.summaryLeadModalNotice}>
+                <strong>One-time snapshot only</strong>
+                <p>The partner receives the saved register summary and asset rows needed to review the request. This does not give them live register access.</p>
+              </div>
+
+              <div className={styles.summaryLeadModalStats}>
+                <span>{assets.length} assets</span>
+                <span>{money(totalValue)} excl. VAT</span>
+                <span>{money(totalValueInclVat)} incl. VAT</span>
+              </div>
+
+              <div className={`${styles.formActions} ${styles.summaryLeadModalActions}`}>
+                <button type="button" className={styles.secondaryButton} onClick={closeFullRegisterLeadConfirm}>
+                  Close
+                </button>
+                <button type="button" className={styles.primaryButton} onClick={proceedFullRegisterLead}>
+                  <span>Proceed to partner map</span>
+                  <ChevronRightIcon className={styles.buttonIcon} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
