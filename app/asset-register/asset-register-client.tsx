@@ -6636,26 +6636,22 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
             aria-labelledby="delete-confirm-title"
             aria-describedby="delete-confirm-copy"
           >
-            <div className={styles.deleteConfirmContent}>
-              <div className={styles.deleteConfirmHeader}>
-                <div>
-                  <h3 id="delete-confirm-title">Delete asset?</h3>
-                  <p id="delete-confirm-copy">
-                    All data will be lost. This permanently removes <strong>{deleteCandidateAsset.title}</strong> from your Asset Register,
-                    including saved notes, photos, documents, marketplace status and QR scan history.
-                  </p>
-                </div>
+            <button
+              type="button"
+              className={styles.deleteConfirmCloseButton}
+              onClick={closeDeleteConfirmDialog}
+              aria-label="Close delete confirmation"
+              disabled={busyDeleteId === deleteCandidateAsset.id}
+            >
+              <CloseIcon className={styles.buttonIcon} />
+            </button>
 
-                <button
-                  type="button"
-                  className={styles.modalCloseButton}
-                  onClick={closeDeleteConfirmDialog}
-                  aria-label="Close delete confirmation"
-                  disabled={busyDeleteId === deleteCandidateAsset.id}
-                >
-                  <CloseIcon className={styles.buttonIcon} />
-                </button>
-              </div>
+            <div className={styles.deleteConfirmContent}>
+              <h3 id="delete-confirm-title">Are you sure you want to delete this?</h3>
+              <p id="delete-confirm-copy">
+                All data will be lost. This permanently removes <strong>{deleteCandidateAsset.title}</strong> from your Asset Register,
+                including saved notes, photos, documents, marketplace status and QR scan history.
+              </p>
 
               <div className={styles.deleteConfirmAsset}>
                 <span>Selected asset</span>
@@ -6665,7 +6661,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
 
               <div className={styles.deleteConfirmActions}>
                 <button type="button" className={styles.secondaryButton} onClick={closeDeleteConfirmDialog} disabled={busyDeleteId === deleteCandidateAsset.id}>
-                  Close
+                  Cancel
                 </button>
 
                 <button
