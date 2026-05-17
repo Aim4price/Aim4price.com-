@@ -763,3 +763,19 @@
     right: 1rem !important;
   }
 }
+
+/* === Lead delete modal: keep description above divider === */
+.leadDeleteHeader {
+  padding-bottom: 1.05rem !important;
+  border-bottom: 1px solid rgba(211, 224, 234, 0.98) !important;
+}
+
+.leadDeleteHeader h3 {
+  padding-bottom: 0 !important;
+  border-bottom: 0 !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.leadDeleteHeader p {
+  margin: 0 !important;
+}
