@@ -30,8 +30,6 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 1rem;
   align-items: center;
-  padding-bottom: 0.9rem;
-  border-bottom: 1px solid rgba(218, 228, 236, 0.9);
 }
 
 .clientIdentity {
@@ -99,50 +97,6 @@
   min-height: 2.9rem;
 }
 
-.clientInfoStrip {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  margin-top: 0.78rem;
-  padding: 0.78rem 0.7rem;
-  border-radius: 1.12rem;
-  border: 1px solid rgba(221, 229, 237, 0.92);
-  background: rgba(248, 251, 252, 0.72);
-}
-
-.clientInfoItem {
-  min-width: 0;
-  padding: 0.1rem 0.72rem 0.08rem;
-  border-right: 1px solid rgba(218, 227, 235, 0.9);
-}
-
-.clientInfoItem:first-child {
-  padding-left: 0.4rem;
-}
-
-.clientInfoItem:last-child {
-  border-right: 0;
-}
-
-.clientInfoItem span {
-  display: block;
-  color: #758397;
-  font-size: 0.67rem;
-  font-weight: 900;
-  letter-spacing: 0.065em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.clientInfoItem strong {
-  display: block;
-  margin-top: 0.32rem;
-  color: #132f28;
-  font-size: 0.9rem;
-  font-weight: 850;
-  line-height: 1.28;
-  overflow-wrap: anywhere;
-}
-
 .leadAssetCard {
   margin: 0;
 }
@@ -164,21 +118,6 @@
 @media (max-width: 1100px) {
   .leadToolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .clientInfoStrip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.55rem;
-    padding: 0.65rem;
-  }
-
-  .clientInfoItem,
-  .clientInfoItem:first-child,
-  .clientInfoItem:last-child {
-    padding: 0.64rem 0.72rem;
-    border: 1px solid rgba(220, 228, 236, 0.82);
-    border-radius: 0.88rem;
-    background: rgba(255, 255, 255, 0.7);
   }
 }
 
@@ -207,8 +146,7 @@
 }
 
 @media (max-width: 620px) {
-  .leadToolbar,
-  .clientInfoStrip {
+  .leadToolbar {
     grid-template-columns: 1fr;
   }
 

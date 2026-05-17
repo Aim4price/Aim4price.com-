@@ -220,14 +220,6 @@ function leadDateParts(lead: AssetLead): { month: string; year: string } | null 
   };
 }
 
-function statusClass(value: LeadStatus): string {
-  if (value === 'accepted') return sharedStyles.statusAccepted;
-  if (value === 'quoted') return sharedStyles.statusQuoted;
-  if (value === 'declined') return sharedStyles.statusDeclined;
-  if (value === 'closed') return sharedStyles.statusRevoked;
-  if (value === 'sent') return sharedStyles.statusPending;
-  return sharedStyles.statusActive;
-}
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -1095,7 +1087,6 @@ export default function LeadsClient() {
                         </div>
 
                         <div className={styles.clientDecisionArea}>
-                          <span className={`${sharedStyles.statusPill} ${statusClass(lead.status)}`}>{formatStatus(lead.status)}</span>
                           <div className={styles.clientActionRow}>
                             {canSaveLead(lead.status) ? (
                               <button type="button" className={sharedStyles.primaryButton} onClick={() => void updateLeadStatus(lead.id, 'accepted')}>
@@ -1109,14 +1100,6 @@ export default function LeadsClient() {
                         </div>
                       </div>
 
-                      <div className={styles.clientInfoStrip}>
-                        {buildClientRows(lead).map((row) => (
-                          <div key={row.label} className={styles.clientInfoItem}>
-                            <span>{row.label}</span>
-                            <strong>{row.value}</strong>
-                          </div>
-                        ))}
-                      </div>
                     </div>
 
                     <div className={`${assetStyles.assetCard} ${styles.leadAssetCard} ${isExpanded ? assetStyles.assetCardExpanded : ''}`}>
