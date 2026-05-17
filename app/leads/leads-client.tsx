@@ -10,7 +10,7 @@ import styles from './page.module.css';
 type LeadType = 'finance' | 'insurance' | 'replacement_quote';
 type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 type NoticeTone = 'success' | 'error';
-type LeadStatusFilter = 'all' | 'accepted' | 'declined';
+type LeadStatusFilter = 'all' | 'new' | 'saved' | 'quoted';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 
 type IconProps = {
@@ -75,6 +75,22 @@ type SessionResponse = {
     email: string;
   } | null;
 };
+
+const MONTH_OPTIONS = [
+  { value: 'all', label: 'All months' },
+  { value: '0', label: 'January' },
+  { value: '1', label: 'February' },
+  { value: '2', label: 'March' },
+  { value: '3', label: 'April' },
+  { value: '4', label: 'May' },
+  { value: '5', label: 'June' },
+  { value: '6', label: 'July' },
+  { value: '7', label: 'August' },
+  { value: '8', label: 'September' },
+  { value: '9', label: 'October' },
+  { value: '10', label: 'November' },
+  { value: '11', label: 'December' },
+];
 
 function NoteIcon({ className }: IconProps) {
   return (
@@ -176,12 +192,32 @@ function formatLeadType(value: LeadType): string {
 }
 
 function formatStatus(value: LeadStatus): string {
-  if (value === 'sent') return 'Sent';
-  if (value === 'viewed') return 'Viewed';
-  if (value === 'accepted') return 'Accepted';
+  if (value === 'sent' || value === 'viewed') return 'New';
+  if (value === 'accepted') return 'Saved';
   if (value === 'quoted') return 'Quoted';
-  if (value === 'declined') return 'Declined';
+  if (value === 'declined') return 'Deleted';
   return 'Closed';
+}
+
+function isNewLeadStatus(value: LeadStatus): boolean {
+  return value === 'sent' || value === 'viewed';
+}
+
+function isSavedLeadStatus(value: LeadStatus): boolean {
+  return value === 'accepted' || value === 'quoted' || value === 'closed';
+}
+
+function canSaveLead(value: LeadStatus): boolean {
+  return value === 'sent' || value === 'viewed';
+}
+
+function leadDateParts(lead: AssetLead): { month: string; year: string } | null {
+  const parsed = new Date(lead.createdAtIso);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return {
+    month: String(parsed.getMonth()),
+    year: String(parsed.getFullYear()),
+  };
 }
 
 function statusClass(value: LeadStatus): string {
@@ -539,6 +575,8 @@ export default function LeadsClient() {
   const [sessionUserId, setSessionUserId] = useState('');
   const [leads, setLeads] = useState<AssetLead[]>([]);
   const [statusFilter, setStatusFilter] = useState<LeadStatusFilter>('all');
+  const [monthFilter, setMonthFilter] = useState('all');
+  const [yearFilter, setYearFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null);
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
@@ -553,20 +591,40 @@ export default function LeadsClient() {
     [leads, sessionUserId],
   );
 
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    receivedLeads.forEach((lead) => {
+      const parts = leadDateParts(lead);
+      if (parts?.year) years.add(parts.year);
+    });
+
+    return Array.from(years).sort((left, right) => Number(right) - Number(left));
+  }, [receivedLeads]);
+
+  const periodLeads = useMemo(() => {
+    return receivedLeads.filter((lead) => {
+      const parts = leadDateParts(lead);
+      if (monthFilter !== 'all' && parts?.month !== monthFilter) return false;
+      if (yearFilter !== 'all' && parts?.year !== yearFilter) return false;
+      return true;
+    });
+  }, [monthFilter, receivedLeads, yearFilter]);
+
   const filteredLeads = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
 
-    return receivedLeads.filter((lead) => {
-      if (statusFilter === 'accepted' && lead.status !== 'accepted') return false;
-      if (statusFilter === 'declined' && lead.status !== 'declined') return false;
+    return periodLeads.filter((lead) => {
+      if (statusFilter === 'new' && !isNewLeadStatus(lead.status)) return false;
+      if (statusFilter === 'saved' && !isSavedLeadStatus(lead.status)) return false;
+      if (statusFilter === 'quoted' && lead.status !== 'quoted') return false;
 
       if (!query) return true;
       return searchTextForLead(lead).includes(query);
     });
-  }, [receivedLeads, searchTerm, statusFilter]);
+  }, [periodLeads, searchTerm, statusFilter]);
 
-  const acceptedCount = useMemo(() => receivedLeads.filter((lead) => lead.status === 'accepted').length, [receivedLeads]);
-  const declinedCount = useMemo(() => receivedLeads.filter((lead) => lead.status === 'declined').length, [receivedLeads]);
+  const newLeadCount = useMemo(() => periodLeads.filter((lead) => isNewLeadStatus(lead.status)).length, [periodLeads]);
+  const savedLeadCount = useMemo(() => periodLeads.filter((lead) => isSavedLeadStatus(lead.status)).length, [periodLeads]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -623,15 +681,29 @@ export default function LeadsClient() {
 
       setLeads((current) => current.map((lead) => (lead.id === leadId ? (data.lead as AssetLead) : lead)));
       setManagedLead((current) => (current?.id === leadId ? (data.lead as AssetLead) : current));
-      setNotice({ tone: 'success', message: status === 'accepted' ? 'Lead accepted. Contact the owner privately.' : 'Lead declined.' });
+      setNotice({ tone: 'success', message: status === 'accepted' ? 'Lead saved. It will stay in your saved leads.' : 'Lead updated.' });
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to update lead.' });
     }
   }
 
-  async function deleteLead(leadId: string) {
+  async function deleteLead(leadToDelete: AssetLead) {
     try {
-      const response = await fetch(`/api/asset-leads/${encodeURIComponent(leadId)}`, {
+      if (leadToDelete.status !== 'declined') {
+        const declineResponse = await fetch(`/api/asset-leads/${encodeURIComponent(leadToDelete.id)}`, {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'declined' }),
+        });
+        const declineData = (await declineResponse.json()) as LeadsResponse;
+
+        if (!declineResponse.ok || !declineData.ok) {
+          throw new Error(declineData.error ?? 'Failed to prepare lead for deletion.');
+        }
+      }
+
+      const response = await fetch(`/api/asset-leads/${encodeURIComponent(leadToDelete.id)}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -641,9 +713,9 @@ export default function LeadsClient() {
         throw new Error(data.error ?? 'Failed to delete lead.');
       }
 
-      setLeads((current) => current.filter((lead) => lead.id !== leadId));
-      setManagedLead((current) => (current?.id === leadId ? null : current));
-      setNotice({ tone: 'success', message: 'Declined lead deleted.' });
+      setLeads((current) => current.filter((lead) => lead.id !== leadToDelete.id));
+      setManagedLead((current) => (current?.id === leadToDelete.id ? null : current));
+      setNotice({ tone: 'success', message: 'Lead deleted.' });
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to delete lead.' });
     }
@@ -925,7 +997,7 @@ export default function LeadsClient() {
         <div className={sharedStyles.hero}>
           <div>
             <h1>Leads</h1>
-            <p>Review received asset leads, contact the owner and leave asset notes for follow-up.</p>
+            <p>Review received asset leads, save the useful ones and contact the owner from the asset card.</p>
           </div>
         </div>
 
@@ -938,15 +1010,15 @@ export default function LeadsClient() {
         <div className={sharedStyles.statGrid}>
           <div className={sharedStyles.statCard}>
             <span>Total leads</span>
-            <strong>{receivedLeads.length}</strong>
+            <strong>{periodLeads.length}</strong>
           </div>
           <div className={sharedStyles.statCard}>
-            <span>Accepted</span>
-            <strong>{acceptedCount}</strong>
+            <span>Saved</span>
+            <strong>{savedLeadCount}</strong>
           </div>
           <div className={sharedStyles.statCard}>
-            <span>Declined</span>
-            <strong>{declinedCount}</strong>
+            <span>New</span>
+            <strong>{newLeadCount}</strong>
           </div>
         </div>
 
@@ -954,7 +1026,7 @@ export default function LeadsClient() {
           <div className={sharedStyles.cardHeader}>
             <div>
               <h2>Received leads</h2>
-              <p>Accept a lead when you want to contact the owner. Each lead uses the same card layout as the Asset Register.</p>
+              <p>Save leads you want to work on. Delete irrelevant leads to keep the inbox clean.</p>
             </div>
           </div>
 
@@ -969,11 +1041,29 @@ export default function LeadsClient() {
               />
             </label>
             <label className={sharedStyles.field}>
-              <span>Filters</span>
+              <span>Month</span>
+              <select value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}>
+                {MONTH_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className={sharedStyles.field}>
+              <span>Year</span>
+              <select value={yearFilter} onChange={(event) => setYearFilter(event.target.value)}>
+                <option value="all">All years</option>
+                {availableYears.map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </label>
+            <label className={sharedStyles.field}>
+              <span>Status</span>
               <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as LeadStatusFilter)}>
                 <option value="all">All leads</option>
-                <option value="accepted">Accepted</option>
-                <option value="declined">Declined</option>
+                <option value="new">New leads</option>
+                <option value="saved">Saved leads</option>
+                <option value="quoted">Quoted leads</option>
               </select>
             </label>
           </div>
@@ -993,35 +1083,35 @@ export default function LeadsClient() {
                   <article key={lead.id} className={styles.leadThread}>
                     <div className={styles.clientPanel}>
                       <div className={styles.clientPanelHeader}>
-                        <div>
-                          <span className={styles.clientEyebrow}>Client account details</span>
-                          <h3>{ownerDisplayName(lead)}</h3>
-                          <p>{formatLeadType(lead.leadType)} · Received {formatDate(lead.createdAtIso)}</p>
+                        <div className={styles.clientIdentity}>
+                          <span className={styles.clientKicker}>{formatLeadType(lead.leadType)} · Received {formatDate(lead.createdAtIso)}</span>
+                          <h3>{lead.ownerBusinessName || ownerDisplayName(lead)}</h3>
+                          <div className={styles.clientInlineMeta}>
+                            <span>{lead.ownerName || ownerDisplayName(lead)}</span>
+                            {ownerPhone(lead) ? <span>{ownerPhone(lead)}</span> : null}
+                            {ownerEmail(lead) ? <span>{ownerEmail(lead)}</span> : null}
+                            <span>{ownerLocation(lead)}</span>
+                          </div>
                         </div>
 
                         <div className={styles.clientDecisionArea}>
                           <span className={`${sharedStyles.statusPill} ${statusClass(lead.status)}`}>{formatStatus(lead.status)}</span>
-                          {lead.status !== 'accepted' && lead.status !== 'declined' ? (
-                            <div className={styles.clientActionRow}>
-                              <button type="button" className={sharedStyles.dangerButton} onClick={() => void updateLeadStatus(lead.id, 'declined')}>
-                                Decline
-                              </button>
+                          <div className={styles.clientActionRow}>
+                            {canSaveLead(lead.status) ? (
                               <button type="button" className={sharedStyles.primaryButton} onClick={() => void updateLeadStatus(lead.id, 'accepted')}>
-                                Accept
+                                Save lead
                               </button>
-                            </div>
-                          ) : null}
-                          {lead.status === 'declined' ? (
-                            <button type="button" className={sharedStyles.dangerButton} onClick={() => void deleteLead(lead.id)}>
-                              Delete declined lead
+                            ) : null}
+                            <button type="button" className={sharedStyles.dangerButton} onClick={() => void deleteLead(lead)}>
+                              Delete lead
                             </button>
-                          ) : null}
+                          </div>
                         </div>
                       </div>
 
-                      <div className={styles.clientInfoGrid}>
+                      <div className={styles.clientInfoStrip}>
                         {buildClientRows(lead).map((row) => (
-                          <div key={row.label} className={styles.clientInfoTile}>
+                          <div key={row.label} className={styles.clientInfoItem}>
                             <span>{row.label}</span>
                             <strong>{row.value}</strong>
                           </div>

@@ -1,4 +1,5 @@
 .leadToolbar {
+  grid-template-columns: minmax(18rem, 1.25fr) minmax(9.5rem, 0.36fr) minmax(8.2rem, 0.3fr) minmax(10.5rem, 0.42fr);
   align-items: end;
 }
 
@@ -13,7 +14,7 @@
 }
 
 .clientPanel {
-  padding: 1.1rem 1.2rem;
+  padding: 1.08rem 1.15rem 1rem;
   border-radius: 1.55rem;
   border: 1px solid rgba(217, 227, 235, 0.96);
   background:
@@ -28,89 +29,117 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 1rem;
-  align-items: start;
-  padding-bottom: 0.95rem;
-  border-bottom: 1px solid rgba(218, 228, 236, 0.92);
+  align-items: center;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid rgba(218, 228, 236, 0.9);
 }
 
-.clientEyebrow {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.6rem;
-  margin-bottom: 0.35rem;
-  padding: 0 0.74rem;
-  border-radius: 999px;
-  color: #35584b;
-  background: rgba(237, 246, 241, 0.96);
-  border: 1px solid rgba(205, 229, 216, 0.98);
-  font-size: 0.68rem;
-  font-weight: 900;
-  letter-spacing: 0.075em;
-  text-transform: uppercase;
+.clientIdentity {
+  min-width: 0;
+}
+
+.clientKicker {
+  display: block;
+  margin-bottom: 0.34rem;
+  color: #607184;
+  font-size: 0.78rem;
+  font-weight: 860;
+  letter-spacing: 0.035em;
 }
 
 .clientPanel h3 {
   margin: 0;
   color: #0d3028;
-  font-size: clamp(1.2rem, 1.75vw, 1.52rem);
-  font-weight: 900;
-  line-height: 1.1;
-  letter-spacing: -0.04em;
+  font-size: clamp(1.28rem, 1.9vw, 1.65rem);
+  font-weight: 930;
+  line-height: 1.05;
+  letter-spacing: -0.05em;
 }
 
-.clientPanel p {
-  margin: 0.35rem 0 0;
+.clientInlineMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.28rem 0.62rem;
+  margin-top: 0.52rem;
   color: #647486;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 680;
-  line-height: 1.45;
+  line-height: 1.35;
+}
+
+.clientInlineMeta span {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.clientInlineMeta span:not(:last-child)::after {
+  content: '•';
+  margin-left: 0.62rem;
+  color: #aab6c2;
+  font-weight: 900;
 }
 
 .clientDecisionArea {
   display: grid;
   justify-items: end;
-  gap: 0.62rem;
+  gap: 0.58rem;
 }
 
 .clientActionRow {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.62rem;
+  gap: 0.58rem;
 }
 
-.clientInfoGrid {
+.clientActionRow button {
+  min-height: 2.9rem;
+}
+
+.clientInfoStrip {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.68rem;
-  margin-top: 0.95rem;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-top: 0.78rem;
+  padding: 0.78rem 0.7rem;
+  border-radius: 1.12rem;
+  border: 1px solid rgba(221, 229, 237, 0.92);
+  background: rgba(248, 251, 252, 0.72);
 }
 
-.clientInfoTile {
-  min-height: 4.6rem;
-  padding: 0.82rem 0.92rem;
-  border-radius: 1.08rem;
-  border: 1px solid rgba(220, 228, 236, 0.96);
-  background: linear-gradient(180deg, #ffffff 0%, #f4f8fa 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+.clientInfoItem {
+  min-width: 0;
+  padding: 0.1rem 0.72rem 0.08rem;
+  border-right: 1px solid rgba(218, 227, 235, 0.9);
 }
 
-.clientInfoTile span {
+.clientInfoItem:first-child {
+  padding-left: 0.4rem;
+}
+
+.clientInfoItem:last-child {
+  border-right: 0;
+}
+
+.clientInfoItem span {
   display: block;
-  color: #728193;
-  font-size: 0.68rem;
+  color: #758397;
+  font-size: 0.67rem;
   font-weight: 900;
   letter-spacing: 0.065em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.clientInfoTile strong {
+.clientInfoItem strong {
   display: block;
-  margin-top: 0.34rem;
-  color: #122f28;
-  font-size: 0.95rem;
+  margin-top: 0.32rem;
+  color: #132f28;
+  font-size: 0.9rem;
   font-weight: 850;
-  line-height: 1.34;
+  line-height: 1.28;
   overflow-wrap: anywhere;
 }
 
@@ -122,9 +151,41 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.leadAssetBody.leadAssetBody {
+  grid-template-columns: minmax(220px, 300px) 1px minmax(400px, 1.55fr);
+}
+
+@media (max-width: 1180px) {
+  .leadAssetBody.leadAssetBody {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1100px) {
+  .leadToolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .clientInfoStrip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+    padding: 0.65rem;
+  }
+
+  .clientInfoItem,
+  .clientInfoItem:first-child,
+  .clientInfoItem:last-child {
+    padding: 0.64rem 0.72rem;
+    border: 1px solid rgba(220, 228, 236, 0.82);
+    border-radius: 0.88rem;
+    background: rgba(255, 255, 255, 0.7);
+  }
+}
+
 @media (max-width: 900px) {
   .clientPanelHeader {
     grid-template-columns: 1fr;
+    align-items: start;
   }
 
   .clientDecisionArea {
@@ -140,33 +201,28 @@
     width: 100%;
   }
 
-  .clientInfoGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .manageOptionsGrid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 620px) {
+  .leadToolbar,
+  .clientInfoStrip {
+    grid-template-columns: 1fr;
+  }
+
   .clientPanel {
     padding: 1rem;
     border-radius: 1.28rem;
   }
 
-  .clientInfoGrid {
-    grid-template-columns: 1fr;
+  .clientInlineMeta {
+    display: grid;
+    gap: 0.28rem;
   }
-}
 
-
-.leadAssetBody.leadAssetBody {
-  grid-template-columns: minmax(220px, 300px) 1px minmax(400px, 1.55fr);
-}
-
-@media (max-width: 1180px) {
-  .leadAssetBody.leadAssetBody {
-    grid-template-columns: 1fr;
+  .clientInlineMeta span:not(:last-child)::after {
+    display: none;
   }
 }
