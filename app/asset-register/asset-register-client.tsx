@@ -4883,15 +4883,17 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
             </div>
 
             <div className={styles.headerActions}>
-              <button
-                type="button"
-                className={`${styles.secondaryButton} ${styles.summaryTriggerButton} ${styles.headerOptionsButton}`}
-                onClick={openSummaryModal}
-                disabled={isLoading}
-              >
-                <OptionsIcon className={styles.buttonIcon} />
-                <span>Options</span>
-              </button>
+              {canUseOwnerOnlyAssetActions ? (
+                <button
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.summaryTriggerButton} ${styles.headerOptionsButton}`}
+                  onClick={openSummaryModal}
+                  disabled={isLoading}
+                >
+                  <OptionsIcon className={styles.buttonIcon} />
+                  <span>Options</span>
+                </button>
+              ) : null}
 
               <div className={styles.assetFilterWrap} ref={assetFilterWrapRef}>
                 <button
