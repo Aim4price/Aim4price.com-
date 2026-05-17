@@ -635,3 +635,8 @@
     border-radius: 1rem;
   }
 }
+
+.leadReportModal {
+  width: min(100%, 880px) !important;
+}
+

@@ -11,6 +11,7 @@ type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'clos
 type NoticeTone = 'success' | 'error';
 type LeadStatusFilter = 'all' | 'new' | 'open';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
+type LeadReportFormat = 'pdf' | 'xlsx';
 
 type IconProps = {
   className?: string;
@@ -115,6 +116,29 @@ function DownloadIcon({ className }: IconProps) {
       <path d="M12 3v11" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       <path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M5 20h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function PdfIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M7 3h7l5 5v13H7z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 15h6" />
+      <path d="M9 18h5" />
+    </svg>
+  );
+}
+
+function SpreadsheetIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M8 7h8" />
+      <path d="M8 11h8" />
+      <path d="M8 15h8" />
+      <path d="M12 7v8" />
     </svg>
   );
 }
@@ -568,6 +592,25 @@ function cleanPhoneForWhatsApp(value: string): string {
   return digits;
 }
 
+function parseDownloadFileName(response: Response, fallback: string): string {
+  const disposition = response.headers.get('content-disposition') ?? '';
+  const quotedMatch = /filename="([^"]+)"/i.exec(disposition);
+  const plainMatch = /filename=([^;]+)/i.exec(disposition);
+
+  return (quotedMatch?.[1] || plainMatch?.[1] || fallback).trim();
+}
+
+function downloadBlob(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 250);
+}
+
 function leadFollowUpSubject(lead: AssetLead): string {
   return isFullRegisterLead(lead) ? 'your full Aim4price asset register' : assetTitle(lead);
 }
@@ -784,6 +827,9 @@ export default function LeadsClient() {
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [leadPhotoIndexes, setLeadPhotoIndexes] = useState<Record<string, number>>({});
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
+  const [reportLead, setReportLead] = useState<AssetLead | null>(null);
+  const [leadReportFormat, setLeadReportFormat] = useState<LeadReportFormat>('pdf');
+  const [isDownloadingLeadReport, setIsDownloadingLeadReport] = useState(false);
   const [noteLead, setNoteLead] = useState<AssetLead | null>(null);
   const [deleteLeadTarget, setDeleteLeadTarget] = useState<AssetLead | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
@@ -948,10 +994,72 @@ export default function LeadsClient() {
     setStatusFilter('all');
   }
 
-  function handleDownloadLead(lead: AssetLead) {
+  function handleDownloadLead(lead: AssetLead): boolean {
     const didOpen = downloadLeadAsset(lead);
     if (!didOpen) {
-      setNotice({ tone: 'error', message: 'Enable pop-ups to download or print the asset valuation PDF.' });
+      setNotice({ tone: 'error', message: 'Enable pop-ups to download or print the lead report PDF.' });
+    }
+
+    return didOpen;
+  }
+
+  function openLeadReportModal(lead: AssetLead) {
+    setNotice(null);
+    setLeadReportFormat('pdf');
+    setReportLead(lead);
+    setManagedLead(null);
+  }
+
+  function closeLeadReportModal() {
+    if (isDownloadingLeadReport) return;
+    setReportLead(null);
+    setLeadReportFormat('pdf');
+  }
+
+  async function downloadLeadXlsx(lead: AssetLead) {
+    const response = await fetch(`/api/asset-leads/${encodeURIComponent(lead.id)}/export?format=xlsx`, {
+      credentials: 'include',
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      try {
+        const data = (await response.json()) as { error?: string };
+        throw new Error(data.error ?? 'Failed to download the XLSX report.');
+      } catch (error) {
+        if (error instanceof Error) throw error;
+        throw new Error('Failed to download the XLSX report.');
+      }
+    }
+
+    const blob = await response.blob();
+    const fallbackName = `aim4price-lead-report-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const fileName = parseDownloadFileName(response, fallbackName);
+    downloadBlob(blob, fileName);
+  }
+
+  async function handleConfirmLeadReportDownload() {
+    if (!reportLead || isDownloadingLeadReport) return;
+
+    if (leadReportFormat === 'pdf') {
+      const didOpen = handleDownloadLead(reportLead);
+      if (didOpen) {
+        setReportLead(null);
+        setNotice({ tone: 'success', message: 'Lead report PDF opened.' });
+      }
+      return;
+    }
+
+    setIsDownloadingLeadReport(true);
+
+    try {
+      await downloadLeadXlsx(reportLead);
+      setReportLead(null);
+      setNotice({ tone: 'success', message: 'Lead report XLSX downloaded.' });
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to download the XLSX report.' });
+    } finally {
+      setIsDownloadingLeadReport(false);
     }
   }
 
@@ -1179,7 +1287,7 @@ export default function LeadsClient() {
 
     return (
       <div className={`${assetStyles.assetBody} ${styles.fullRegisterLeadBody}`} id={`lead-panel-${lead.id}`}>
-        <button type="button" className={styles.fullRegisterPdfPanel} onClick={() => handleDownloadLead(lead)}>
+        <button type="button" className={styles.fullRegisterPdfPanel} onClick={() => openLeadReportModal(lead)}>
           <span className={styles.fullRegisterPdfIcon}>
             <DownloadIcon className={assetStyles.buttonIcon} />
           </span>
@@ -1638,11 +1746,11 @@ export default function LeadsClient() {
                     </span>
                   </button>
 
-                  <button type="button" className={assetStyles.optionActionButton} onClick={() => handleDownloadLead(managedLead)}>
+                  <button type="button" className={assetStyles.optionActionButton} onClick={() => openLeadReportModal(managedLead)}>
                     <DownloadIcon className={assetStyles.buttonIcon} />
                     <span>
-                      <strong>Download PDF report</strong>
-                      <small>Download the asset valuation PDF.</small>
+                      <strong>Download Report</strong>
+                      <small>Choose PDF or XLSX for this lead.</small>
                     </span>
                   </button>
 
@@ -1660,6 +1768,96 @@ export default function LeadsClient() {
                       <strong>Call client</strong>
                       <small>Start a phone call from the saved number.</small>
                     </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {reportLead ? (
+        <div className={assetStyles.modalOverlay}>
+          <div className={assetStyles.modalBackdrop} onClick={closeLeadReportModal} />
+
+          <div className={`${assetStyles.modalCard} ${assetStyles.exportModal} ${styles.leadReportModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-report-export-title">
+            <div className={`${assetStyles.modalHeader} ${assetStyles.exportModalHeader}`}>
+              <div className={assetStyles.modalHeaderText}>
+                <h3 id="lead-report-export-title">Download Report</h3>
+                <p>{assetTitle(reportLead)} · {formatCurrency(assetValue(reportLead))} excl. VAT</p>
+              </div>
+
+              <button type="button" className={assetStyles.modalCloseButton} onClick={closeLeadReportModal} aria-label="Close report download options" disabled={isDownloadingLeadReport}>
+                <CloseIcon className={assetStyles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.exportModalScrollBody}`}>
+              <div className={assetStyles.exportModalBody}>
+                <div className={assetStyles.exportChoices}>
+                  <button
+                    type="button"
+                    className={`${assetStyles.exportOption} ${leadReportFormat === 'pdf' ? assetStyles.exportOptionActive : ''}`}
+                    onClick={() => setLeadReportFormat('pdf')}
+                    aria-pressed={leadReportFormat === 'pdf'}
+                  >
+                    <div className={assetStyles.exportOptionTop}>
+                      <span className={assetStyles.exportGraphic}>
+                        <PdfIcon className={assetStyles.exportOptionIcon} />
+                      </span>
+
+                      <div className={assetStyles.exportOptionTitleBlock}>
+                        <strong>PDF report</strong>
+                        <span className={assetStyles.exportOptionStatus}>{leadReportFormat === 'pdf' ? 'Selected' : 'Select'}</span>
+                      </div>
+                    </div>
+
+                    <ul className={assetStyles.exportFeatureList}>
+                      <li>Client-friendly printable report</li>
+                      <li>Includes lead owner details</li>
+                      <li>Best for quick review</li>
+                    </ul>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${assetStyles.exportOption} ${leadReportFormat === 'xlsx' ? assetStyles.exportOptionActive : ''}`}
+                    onClick={() => setLeadReportFormat('xlsx')}
+                    aria-pressed={leadReportFormat === 'xlsx'}
+                  >
+                    <div className={assetStyles.exportOptionTop}>
+                      <span className={assetStyles.exportGraphic}>
+                        <SpreadsheetIcon className={assetStyles.exportOptionIcon} />
+                      </span>
+
+                      <div className={assetStyles.exportOptionTitleBlock}>
+                        <strong>XLSX workbook</strong>
+                        <span className={assetStyles.exportOptionStatus}>{leadReportFormat === 'xlsx' ? 'Selected' : 'Select'}</span>
+                      </div>
+                    </div>
+
+                    <ul className={assetStyles.exportFeatureList}>
+                      <li>Spreadsheet-friendly lead data</li>
+                      <li>Register snapshot rows included</li>
+                      <li>Useful for finance and insurance work</li>
+                    </ul>
+                  </button>
+                </div>
+
+                <div className={`${assetStyles.formActions} ${assetStyles.exportActions}`}>
+                  <button type="button" className={assetStyles.primaryButton} onClick={() => void handleConfirmLeadReportDownload()} disabled={isDownloadingLeadReport}>
+                    {leadReportFormat === 'pdf' ? <PdfIcon className={assetStyles.buttonIcon} /> : <DownloadIcon className={assetStyles.buttonIcon} />}
+                    <span>
+                      {leadReportFormat === 'pdf'
+                        ? 'Open PDF'
+                        : isDownloadingLeadReport
+                          ? 'Preparing XLSX...'
+                          : 'Download XLSX'}
+                    </span>
+                  </button>
+
+                  <button type="button" className={assetStyles.secondaryButton} onClick={closeLeadReportModal} disabled={isDownloadingLeadReport}>
+                    Cancel
                   </button>
                 </div>
               </div>
