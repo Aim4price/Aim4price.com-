@@ -2093,13 +2093,23 @@ export default function LeadsClient() {
             aria-labelledby="delete-lead-confirm-title"
             aria-describedby="delete-lead-confirm-copy"
           >
-            <div className={`${assetStyles.deleteConfirmIcon} ${styles.leadDeleteIcon}`}>
-              <TrashIcon className={assetStyles.buttonIcon} />
-            </div>
-
             <div className={`${assetStyles.deleteConfirmContent} ${styles.leadDeleteContent}`}>
-              <h3 id="delete-lead-confirm-title">Are you sure you want to delete this lead?</h3>
-              <p id="delete-lead-confirm-copy">This removes the lead from your leads inbox.</p>
+              <div className={assetStyles.deleteConfirmHeader}>
+                <div>
+                  <h3 id="delete-lead-confirm-title">Delete lead?</h3>
+                  <p id="delete-lead-confirm-copy">This removes the lead from your leads inbox.</p>
+                </div>
+
+                <button
+                  type="button"
+                  className={assetStyles.modalCloseButton}
+                  onClick={closeDeleteLeadModal}
+                  aria-label="Close delete confirmation"
+                  disabled={isDeletingLead}
+                >
+                  <CloseIcon className={assetStyles.buttonIcon} />
+                </button>
+              </div>
 
               <div className={`${assetStyles.deleteConfirmAsset} ${styles.leadDeleteSummary}`}>
                 <span>Selected lead</span>
@@ -2118,7 +2128,6 @@ export default function LeadsClient() {
                   onClick={() => void confirmDeleteLead()}
                   disabled={isDeletingLead}
                 >
-                  <TrashIcon className={assetStyles.buttonIcon} />
                   <span>{isDeletingLead ? 'Deleting...' : 'Yes, delete lead'}</span>
                 </button>
               </div>
