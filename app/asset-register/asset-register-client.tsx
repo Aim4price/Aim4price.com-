@@ -6680,7 +6680,6 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
           <div className={`${styles.modalCard} ${styles.exportModal}`} role="dialog" aria-modal="true" aria-labelledby="export-title">
             <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <span className={styles.modalEyebrow}>Download full Asset Register</span>
                 <h3 id="export-title">Export asset register</h3>
               </div>
 
