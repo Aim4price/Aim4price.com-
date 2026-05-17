@@ -816,6 +816,9 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
   const [items, setItems] = useState<MarketplaceListing[]>(seedMarketplaceListings);
   const [families, setFamilies] = useState<FamilyOption[]>(FALLBACK_FAMILIES);
   const [activeListing, setActiveListing] = useState<MarketplaceListing | null>(null);
+  const [deleteListingTarget, setDeleteListingTarget] = useState<MarketplaceListing | null>(null);
+  const [isDeletingListing, setIsDeletingListing] = useState(false);
+  const [deleteListingError, setDeleteListingError] = useState('');
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [shareListing, setShareListing] = useState<MarketplaceListing | null>(null);
   const [shareFeedback, setShareFeedback] = useState('');
@@ -1209,6 +1212,8 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
 
   function closeListing() {
     setActiveListing(null);
+    setDeleteListingTarget(null);
+    setDeleteListingError('');
     setActiveImageIndex(0);
     updateListingUrl(null);
   }
@@ -1280,21 +1285,37 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
     }
   }
 
-  async function handleDeleteActiveListing() {
+  function openDeleteListingModal() {
     if (!activeListing?.sourceAssetId || !activeListing.canManage) {
       return;
     }
 
-    const listingName = listingDisplayTitle(activeListing);
-    const confirmed = window.confirm(`Delete ${listingName} from the marketplace?`);
+    setDeleteListingTarget(activeListing);
+    setDeleteListingError('');
+  }
 
-    if (!confirmed) {
+  function closeDeleteListingModal() {
+    if (isDeletingListing) {
       return;
     }
 
+    setDeleteListingTarget(null);
+    setDeleteListingError('');
+  }
+
+  async function handleDeleteActiveListing() {
+    if (!deleteListingTarget?.sourceAssetId || !deleteListingTarget.canManage) {
+      return;
+    }
+
+    const assetId = deleteListingTarget.sourceAssetId;
+
     try {
+      setIsDeletingListing(true);
+      setDeleteListingError('');
+
       const response = await fetch(
-        `/api/marketplace?assetId=${encodeURIComponent(activeListing.sourceAssetId)}`,
+        `/api/marketplace?assetId=${encodeURIComponent(assetId)}`,
         {
           method: 'DELETE',
           credentials: 'include',
@@ -1307,14 +1328,20 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
         throw new Error(data.error ?? 'Failed to delete listing.');
       }
 
-      setItems((current) =>
-        current.filter((listing) => listing.sourceAssetId !== activeListing.sourceAssetId),
-      );
-      closeListing();
+      setItems((current) => current.filter((listing) => listing.sourceAssetId !== assetId));
+      setDeleteListingTarget(null);
+      setDeleteListingError('');
+
+      if (activeListing?.sourceAssetId === assetId) {
+        closeListing();
+      }
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : 'Failed to delete listing.');
+      setDeleteListingError(error instanceof Error ? error.message : 'Failed to delete listing.');
+    } finally {
+      setIsDeletingListing(false);
     }
   }
+
 
   return (
     <main className={styles.page}>
@@ -1772,7 +1799,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
                     <h3>Your listing</h3>
                     <p>Remove this asset from the marketplace.</p>
                   </div>
-                  <button type="button" onClick={() => void handleDeleteActiveListing()}>
+                  <button type="button" onClick={openDeleteListingModal}>
                     Delete listing
                   </button>
                 </section>
@@ -1787,6 +1814,51 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
                 />
               </div>
             ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {deleteListingTarget ? (
+        <div className={styles.marketplaceDeleteBackdrop}>
+          <div
+            className={styles.marketplaceDeleteModal}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="marketplace-delete-title"
+            aria-describedby="marketplace-delete-copy"
+          >
+            <div className={styles.marketplaceDeleteHeader}>
+              <div>
+                <h3 id="marketplace-delete-title">Delete marketplace listing?</h3>
+                <p id="marketplace-delete-copy">This removes the listing from the marketplace. The asset stays saved in your Asset Register.</p>
+              </div>
+              <button
+                type="button"
+                className={styles.marketplaceDeleteCloseButton}
+                onClick={closeDeleteListingModal}
+                aria-label="Close delete confirmation"
+                disabled={isDeletingListing}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.marketplaceDeleteSelected}>
+              <span>Selected listing</span>
+              <strong>{listingDisplayTitle(deleteListingTarget)}</strong>
+              <p>{money(deleteListingTarget.askingPriceExVat)} excl. VAT · {formatLocation(deleteListingTarget)}</p>
+            </div>
+
+            {deleteListingError ? <p className={styles.marketplaceDeleteError}>{deleteListingError}</p> : null}
+
+            <div className={styles.marketplaceDeleteActions}>
+              <button type="button" className={styles.marketplaceDeleteSecondaryButton} onClick={closeDeleteListingModal} disabled={isDeletingListing}>
+                Close
+              </button>
+              <button type="button" className={styles.marketplaceDeleteDangerButton} onClick={() => void handleDeleteActiveListing()} disabled={isDeletingListing}>
+                {isDeletingListing ? 'Deleting...' : 'Yes, delete listing'}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
