@@ -15513,3 +15513,157 @@
     margin-left: 0 !important;
   }
 }
+
+/* === White delete modal standard === */
+.deleteConfirmModal {
+  width: min(100%, 760px) !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0 !important;
+  padding: clamp(1.55rem, 2.4vw, 2.15rem) !important;
+  border-radius: 1.75rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%) !important;
+  border: 1px solid rgba(207, 223, 236, 0.98) !important;
+  box-shadow:
+    0 34px 84px rgba(15, 25, 39, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.deleteConfirmIcon {
+  display: none !important;
+}
+
+.deleteConfirmContent {
+  width: 100% !important;
+  display: grid !important;
+  gap: 1.2rem !important;
+  padding: 0 !important;
+}
+
+.deleteConfirmHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid rgba(213, 225, 235, 0.98);
+}
+
+.deleteConfirmHeader > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.deleteConfirmHeader .modalCloseButton {
+  flex: 0 0 auto;
+}
+
+.deleteConfirmContent h3,
+.deleteConfirmHeader h3 {
+  max-width: none !important;
+  margin: 0 !important;
+  color: #10352b !important;
+  font-size: clamp(1.55rem, 2.35vw, 2.05rem) !important;
+  font-weight: 820 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.052em !important;
+}
+
+.deleteConfirmContent p,
+.deleteConfirmHeader p {
+  max-width: 52rem !important;
+  margin: 0 !important;
+  color: #617286 !important;
+  font-size: 1rem !important;
+  font-weight: 650 !important;
+  line-height: 1.58 !important;
+}
+
+.deleteConfirmAsset {
+  width: 100% !important;
+  display: grid !important;
+  gap: 0.35rem !important;
+  padding: 1rem 1.1rem !important;
+  border-radius: 1.18rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%) !important;
+  border: 1px solid rgba(207, 223, 236, 0.98) !important;
+}
+
+.deleteConfirmAsset span {
+  color: #68798b !important;
+  font-size: 0.76rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+.deleteConfirmAsset strong {
+  color: #10352b !important;
+  font-size: 1.12rem !important;
+  font-weight: 850 !important;
+  line-height: 1.24 !important;
+}
+
+.deleteConfirmAsset small {
+  color: #617286 !important;
+  font-size: 0.95rem !important;
+  font-weight: 650 !important;
+  line-height: 1.45 !important;
+}
+
+.deleteConfirmActions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 0.8rem !important;
+  margin-top: 0.15rem !important;
+}
+
+.deleteConfirmActions .secondaryButton,
+.deleteConfirmActions .deleteConfirmButton {
+  min-height: 3.2rem !important;
+  padding-inline: 1.25rem !important;
+  border-radius: 1rem !important;
+  font-size: 0.98rem !important;
+  font-weight: 850 !important;
+}
+
+.deleteConfirmButton,
+.deleteConfirmButton:hover {
+  min-width: 12.5rem !important;
+  color: #9a3030 !important;
+  background: linear-gradient(180deg, #fffafa 0%, #fff3f3 100%) !important;
+  border: 1px solid rgba(235, 203, 203, 0.98) !important;
+  box-shadow:
+    0 10px 22px rgba(130, 45, 45, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+@media (max-width: 760px) {
+  .deleteConfirmModal {
+    width: min(100%, calc(100vw - 1.25rem)) !important;
+    padding: 1.15rem !important;
+    border-radius: 1.4rem !important;
+  }
+
+  .deleteConfirmHeader {
+    gap: 0.9rem;
+  }
+
+  .deleteConfirmContent h3,
+  .deleteConfirmHeader h3 {
+    font-size: 1.45rem !important;
+  }
+
+  .deleteConfirmActions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .deleteConfirmActions .secondaryButton,
+  .deleteConfirmActions .deleteConfirmButton {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
