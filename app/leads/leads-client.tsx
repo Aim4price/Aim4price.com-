@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
 import { openAssetRegisterSummaryPrint, openAssetSheetPrint, type ReportMethodCard } from '../../lib/report-print';
 import assetStyles from '../asset-register/page.module.css';
@@ -12,6 +12,17 @@ type NoticeTone = 'success' | 'error';
 type LeadStatusFilter = 'all' | 'new' | 'open';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 type LeadReportFormat = 'pdf' | 'xlsx';
+type LeadReportStep = 'format' | 'pdf-report';
+type PdfReportKind = 'full' | 'financed' | 'insured' | 'licensed' | 'not-financed' | 'not-insured' | 'not-licensed';
+
+type PdfReportOption = {
+  value: PdfReportKind;
+  label: string;
+  description: string;
+  intro: string;
+  sectionTitle: string;
+  emptyLabel: string;
+};
 
 type IconProps = {
   className?: string;
@@ -92,6 +103,65 @@ const MONTH_OPTIONS = [
   { value: '11', label: 'December' },
 ];
 
+const PDF_REPORT_OPTIONS: PdfReportOption[] = [
+  {
+    value: 'full',
+    label: 'Full Asset Register',
+    description: 'All saved register assets with full register totals.',
+    intro: 'Complete saved asset register snapshot.',
+    sectionTitle: 'Asset Register',
+    emptyLabel: 'No saved assets are currently available for this report.',
+  },
+  {
+    value: 'financed',
+    label: 'Financed',
+    description: 'Only assets marked as financed.',
+    intro: 'Filtered asset register snapshot showing only financed assets.',
+    sectionTitle: 'Financed Assets',
+    emptyLabel: 'No financed assets are currently saved in this register.',
+  },
+  {
+    value: 'insured',
+    label: 'Insured',
+    description: 'Only assets marked as insured.',
+    intro: 'Filtered asset register snapshot showing only insured assets.',
+    sectionTitle: 'Insured Assets',
+    emptyLabel: 'No insured assets are currently saved in this register.',
+  },
+  {
+    value: 'licensed',
+    label: 'Licensed',
+    description: 'Only assets marked as licensed.',
+    intro: 'Filtered asset register snapshot showing only licensed assets.',
+    sectionTitle: 'Licensed Assets',
+    emptyLabel: 'No licensed assets are currently saved in this register.',
+  },
+  {
+    value: 'not-financed',
+    label: 'Not Financed',
+    description: 'Only assets not marked as financed.',
+    intro: 'Filtered asset register snapshot showing only assets not marked as financed.',
+    sectionTitle: 'Not Financed Assets',
+    emptyLabel: 'No assets without finance are currently saved in this register.',
+  },
+  {
+    value: 'not-insured',
+    label: 'Not Insured',
+    description: 'Only assets not marked as insured.',
+    intro: 'Filtered asset register snapshot showing only assets not marked as insured.',
+    sectionTitle: 'Not Insured Assets',
+    emptyLabel: 'No assets without insurance are currently saved in this register.',
+  },
+  {
+    value: 'not-licensed',
+    label: 'Not Licensed',
+    description: 'Only assets not marked as licensed.',
+    intro: 'Filtered asset register snapshot showing only assets not marked as licensed.',
+    sectionTitle: 'Not Licensed Assets',
+    emptyLabel: 'No assets without licensing are currently saved in this register.',
+  },
+];
+
 function NoteIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
@@ -141,6 +211,23 @@ function SpreadsheetIcon({ className }: IconProps) {
       <path d="M12 7v8" />
     </svg>
   );
+}
+
+
+type ExportGraphicProps = {
+  src: string;
+  alt: string;
+  icon: JSX.Element;
+};
+
+function ExportGraphic({ src, alt, icon }: ExportGraphicProps) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return <span className={assetStyles.exportGraphicFallback}>{icon}</span>;
+  }
+
+  return <img src={src} alt={alt} className={assetStyles.exportGraphicImage} onError={() => setHasError(true)} />;
 }
 
 function EmailIcon({ className }: IconProps) {
@@ -327,14 +414,14 @@ function registerLeadLabel(lead: AssetLead): string {
   const label = asText(snapshot?.leadLabel);
 
   if (label) return label;
-  if (lead.leadType === 'finance') return 'Full refinance quote';
+  if (lead.leadType === 'finance') return 'Full finance quote';
   if (lead.leadType === 'insurance') return 'Full insurance quote';
   return 'Full register lead';
 }
 
 function formatLeadDisplayType(lead: AssetLead): string {
   if (isFullRegisterLead(lead)) {
-    if (lead.leadType === 'finance') return 'Full refinance lead';
+    if (lead.leadType === 'finance') return 'Full finance lead';
     if (lead.leadType === 'insurance') return 'Full insurance lead';
     return 'Full register lead';
   }
@@ -611,6 +698,50 @@ function downloadBlob(blob: Blob, fileName: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 250);
 }
 
+function isPdfReportKind(value: string): value is PdfReportKind {
+  return PDF_REPORT_OPTIONS.some((option) => option.value === value);
+}
+
+function getPdfReportOption(reportKind: PdfReportKind): PdfReportOption {
+  return PDF_REPORT_OPTIONS.find((option) => option.value === reportKind) ?? PDF_REPORT_OPTIONS[0];
+}
+
+function snapshotAssetValue(asset: Record<string, unknown>): number {
+  return Math.round(asNumber(asset.value ?? asset.selectedValueExVat ?? asset.aim4priceValueExVat ?? asset.marketMidExVat) ?? 0);
+}
+
+function sumSnapshotAssetValues(assets: Record<string, unknown>[]): number {
+  return assets.reduce((sum, asset) => sum + snapshotAssetValue(asset), 0);
+}
+
+function filterRegisterLeadAssetsByPdfReportKind(assets: Record<string, unknown>[], reportKind: PdfReportKind): Record<string, unknown>[] {
+  switch (reportKind) {
+    case 'financed':
+      return assets.filter((asset) => asBoolean(asset.isFinanced));
+    case 'insured':
+      return assets.filter((asset) => asBoolean(asset.isInsured));
+    case 'licensed':
+      return assets.filter((asset) => asBoolean(asset.isLicensed));
+    case 'not-financed':
+      return assets.filter((asset) => !asBoolean(asset.isFinanced));
+    case 'not-insured':
+      return assets.filter((asset) => !asBoolean(asset.isInsured));
+    case 'not-licensed':
+      return assets.filter((asset) => !asBoolean(asset.isLicensed));
+    case 'full':
+    default:
+      return assets;
+  }
+}
+
+function calculateRegisterLeadStats(assets: Record<string, unknown>[], predicate?: (asset: Record<string, unknown>) => boolean): { count: number; value: number } {
+  const matchingAssets = predicate ? assets.filter(predicate) : assets;
+  return {
+    count: matchingAssets.length,
+    value: sumSnapshotAssetValues(matchingAssets),
+  };
+}
+
 function leadFollowUpSubject(lead: AssetLead): string {
   return isFullRegisterLead(lead) ? 'your full Aim4price asset register' : assetTitle(lead);
 }
@@ -663,19 +794,28 @@ function buildMethodCards(lead: AssetLead): ReportMethodCard[] {
   return cards;
 }
 
-function downloadFullRegisterLead(lead: AssetLead): boolean {
+function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = 'full'): boolean {
   const snapshot = registerLeadSnapshot(lead);
-  const registerAssets = registerLeadAssets(lead);
-  const registerValue = assetValue(lead);
-  const registerValueInclVat = asNumber(snapshot?.totalValueInclVat) ?? Math.round(registerValue * 1.15);
-  const aim4priceCount = asNumber(snapshot?.aim4priceAssetCount) ?? registerAssets.filter((asset) => asText(asset.selectedMethod) === 'aim4price' || asNumber(asset.aim4priceValueExVat) !== null).length;
-  const manualAssetCount = asNumber(snapshot?.manualAssetCount) ?? registerAssets.filter((asset) => asText(asset.selectedMethod) === 'manual').length;
-  const financedCount = asNumber(snapshot?.financedAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isFinanced)).length;
-  const insuredCount = asNumber(snapshot?.insuredAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isInsured)).length;
-  const licensedCount = asNumber(snapshot?.licensedAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isLicensed)).length;
+  const allRegisterAssets = registerLeadAssets(lead);
+  const reportAssets = filterRegisterLeadAssetsByPdfReportKind(allRegisterAssets, reportKind);
+  const reportOption = getPdfReportOption(reportKind);
+  const isFullReport = reportKind === 'full';
+  const snapshotRegisterValue = assetValue(lead);
+  const reportValue = isFullReport ? snapshotRegisterValue : sumSnapshotAssetValues(reportAssets);
+  const reportValueInclVat = isFullReport
+    ? asNumber(snapshot?.totalValueInclVat) ?? Math.round(reportValue * 1.15)
+    : Math.round(reportValue * 1.15);
+  const aim4priceStats = calculateRegisterLeadStats(
+    reportAssets,
+    (asset) => asText(asset.selectedMethod) === 'aim4price' || asNumber(asset.aim4priceValueExVat) !== null,
+  );
+  const manualAssetStats = calculateRegisterLeadStats(reportAssets, (asset) => asText(asset.selectedMethod) === 'manual');
+  const financedStats = calculateRegisterLeadStats(reportAssets, (asset) => asBoolean(asset.isFinanced));
+  const insuredStats = calculateRegisterLeadStats(reportAssets, (asset) => asBoolean(asset.isInsured));
+  const licensedStats = calculateRegisterLeadStats(reportAssets, (asset) => asBoolean(asset.isLicensed));
 
-  const rows = registerAssets.map((asset) => {
-    const value = asNumber(asset.value ?? asset.selectedValueExVat) ?? 0;
+  const rows = reportAssets.map((asset) => {
+    const value = snapshotAssetValue(asset);
     const family = asText(asset.equipmentFamilyLabel) || asText(asset.kind) || 'Asset';
     const brand = asText(asset.brandName);
     const model = asText(asset.modelName) || asText(asset.typedModelName);
@@ -711,16 +851,16 @@ function downloadFullRegisterLead(lead: AssetLead): boolean {
   return openAssetRegisterSummaryPrint({
     logoUrl: '/brand/aim4price-mark-black.png',
     generatedAt: formatDate(new Date().toISOString()),
-    reportTitle: `${formatLeadDisplayType(lead)} Report`,
+    reportTitle: `${reportOption.label} Report`,
     reportSubtitle: 'Aim4price full asset register lead',
-    valueLabel: 'Register Value',
-    assetSectionTitle: 'Full Asset Register',
-    emptyStateMessage: 'No asset rows were included in this full-register lead snapshot.',
+    valueLabel: isFullReport ? 'Register Value' : 'Filtered Register Value',
+    assetSectionTitle: reportOption.sectionTitle,
+    emptyStateMessage: reportOption.emptyLabel,
     ownerName: lead.ownerBusinessName || ownerDisplayName(lead),
     ownerMeta: [ownerDisplayName(lead), ownerPhone(lead), ownerEmail(lead), ownerLocation(lead)].filter(Boolean).join(' • '),
-    intro: 'Full asset register snapshot shared as an Aim4price lead.',
-    registerValue: formatCurrency(registerValue),
-    registerValueNote: `${formatCurrency(registerValueInclVat)} incl. VAT`,
+    intro: reportOption.intro,
+    registerValue: formatCurrency(reportValue),
+    registerValueNote: `VAT excluded · ${formatCurrency(reportValueInclVat)} incl. VAT`,
     ownerRows: [
       { label: 'Business', value: lead.ownerBusinessName || '—' },
       { label: 'Contact', value: ownerDisplayName(lead) },
@@ -729,22 +869,23 @@ function downloadFullRegisterLead(lead: AssetLead): boolean {
       { label: 'Location', value: ownerLocation(lead) },
     ],
     stats: [
-      { label: 'Total assets', value: String(registerLeadCount(lead)), note: 'Assets included in the register snapshot.' },
-      { label: 'Register value', value: formatCurrency(registerValue), note: 'Saved register total excluding VAT.' },
-      { label: 'Aim4price assets', value: String(aim4priceCount), note: 'Assets valued through Aim4price.' },
-      { label: 'Manual assets', value: String(manualAssetCount), note: 'Assets entered manually.' },
-      { label: 'Financed assets', value: String(financedCount), note: 'Marked as financed.' },
-      { label: 'Insured assets', value: String(insuredCount), note: 'Marked as insured.' },
-      { label: 'Licensed assets', value: String(licensedCount), note: 'Marked as licensed.' },
+      { label: 'Assets', value: String(reportAssets.length), note: isFullReport ? 'Saved register items.' : reportOption.description },
+      { label: 'Value ex VAT', value: formatCurrency(reportValue), note: 'Filtered report total excluding VAT.' },
+      { label: 'Value incl VAT', value: formatCurrency(reportValueInclVat), note: 'Filtered report total including 15% VAT.' },
+      { label: 'Aim4price values', value: String(aim4priceStats.count), note: `${formatCurrency(aim4priceStats.value)} total value.` },
+      { label: 'Manual assets', value: String(manualAssetStats.count), note: `${formatCurrency(manualAssetStats.value)} entered manually.` },
+      { label: 'Insured assets', value: String(insuredStats.count), note: `${formatCurrency(insuredStats.value)} marked insured.` },
+      { label: 'Financed assets', value: String(financedStats.count), note: `${formatCurrency(financedStats.value)} marked financed.` },
+      { label: 'Licensed assets', value: String(licensedStats.count), note: `${formatCurrency(licensedStats.value)} marked licensed.` },
     ],
     rows,
     footerNote: "This PDF is generated from a once-off full-register lead snapshot. It does not provide live access to the owner's asset register.",
   });
 }
 
-function downloadLeadAsset(lead: AssetLead): boolean {
+function downloadLeadAsset(lead: AssetLead, reportKind: PdfReportKind = 'full'): boolean {
   if (isFullRegisterLead(lead)) {
-    return downloadFullRegisterLead(lead);
+    return downloadFullRegisterLead(lead, reportKind);
   }
 
   const value = assetValue(lead);
@@ -829,6 +970,8 @@ export default function LeadsClient() {
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
   const [reportLead, setReportLead] = useState<AssetLead | null>(null);
   const [leadReportFormat, setLeadReportFormat] = useState<LeadReportFormat>('pdf');
+  const [leadReportStep, setLeadReportStep] = useState<LeadReportStep>('format');
+  const [leadPdfReportSelection, setLeadPdfReportSelection] = useState<PdfReportKind | ''>('');
   const [isDownloadingLeadReport, setIsDownloadingLeadReport] = useState(false);
   const [noteLead, setNoteLead] = useState<AssetLead | null>(null);
   const [deleteLeadTarget, setDeleteLeadTarget] = useState<AssetLead | null>(null);
@@ -994,8 +1137,8 @@ export default function LeadsClient() {
     setStatusFilter('all');
   }
 
-  function handleDownloadLead(lead: AssetLead): boolean {
-    const didOpen = downloadLeadAsset(lead);
+  function handleDownloadLead(lead: AssetLead, reportKind: PdfReportKind = 'full'): boolean {
+    const didOpen = downloadLeadAsset(lead, reportKind);
     if (!didOpen) {
       setNotice({ tone: 'error', message: 'Enable pop-ups to download or print the lead report PDF.' });
     }
@@ -1006,6 +1149,8 @@ export default function LeadsClient() {
   function openLeadReportModal(lead: AssetLead) {
     setNotice(null);
     setLeadReportFormat('pdf');
+    setLeadReportStep('format');
+    setLeadPdfReportSelection('');
     setReportLead(lead);
     setManagedLead(null);
   }
@@ -1014,6 +1159,30 @@ export default function LeadsClient() {
     if (isDownloadingLeadReport) return;
     setReportLead(null);
     setLeadReportFormat('pdf');
+    setLeadReportStep('format');
+    setLeadPdfReportSelection('');
+  }
+
+  function selectLeadReportFormat(nextFormat: LeadReportFormat) {
+    setLeadReportFormat(nextFormat);
+    setLeadReportStep('format');
+    setLeadPdfReportSelection('');
+  }
+
+  function closeLeadPdfReportChooser() {
+    if (isDownloadingLeadReport) return;
+    setLeadReportStep('format');
+    setLeadPdfReportSelection('');
+  }
+
+  function handleLeadPdfReportSelectionChange(event: ChangeEvent<HTMLSelectElement>) {
+    if (!reportLead) return;
+
+    const nextReportKind = event.target.value;
+    if (!isPdfReportKind(nextReportKind)) return;
+
+    setLeadPdfReportSelection(nextReportKind);
+    void handleLeadPdfReportDownload(reportLead, nextReportKind);
   }
 
   async function downloadLeadXlsx(lead: AssetLead) {
@@ -1038,15 +1207,33 @@ export default function LeadsClient() {
     downloadBlob(blob, fileName);
   }
 
+  async function handleLeadPdfReportDownload(lead: AssetLead, reportKind: PdfReportKind = 'full') {
+    if (isDownloadingLeadReport) return;
+
+    const reportOption = getPdfReportOption(reportKind);
+    const didOpen = handleDownloadLead(lead, reportKind);
+
+    if (didOpen) {
+      setReportLead(null);
+      setLeadReportStep('format');
+      setLeadPdfReportSelection('');
+      setNotice({ tone: 'success', message: `${reportOption.label} PDF opened.` });
+    } else {
+      setLeadPdfReportSelection('');
+    }
+  }
+
   async function handleConfirmLeadReportDownload() {
     if (!reportLead || isDownloadingLeadReport) return;
 
     if (leadReportFormat === 'pdf') {
-      const didOpen = handleDownloadLead(reportLead);
-      if (didOpen) {
-        setReportLead(null);
-        setNotice({ tone: 'success', message: 'Lead report PDF opened.' });
+      if (isFullRegisterLead(reportLead)) {
+        setLeadReportStep('pdf-report');
+        setLeadPdfReportSelection('');
+        return;
       }
+
+      await handleLeadPdfReportDownload(reportLead, 'full');
       return;
     }
 
@@ -1055,6 +1242,8 @@ export default function LeadsClient() {
     try {
       await downloadLeadXlsx(reportLead);
       setReportLead(null);
+      setLeadReportStep('format');
+      setLeadPdfReportSelection('');
       setNotice({ tone: 'success', message: 'Lead report XLSX downloaded.' });
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to download the XLSX report.' });
@@ -1783,8 +1972,8 @@ export default function LeadsClient() {
           <div className={`${assetStyles.modalCard} ${assetStyles.exportModal} ${styles.leadReportModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-report-export-title">
             <div className={`${assetStyles.modalHeader} ${assetStyles.exportModalHeader}`}>
               <div className={assetStyles.modalHeaderText}>
-                <h3 id="lead-report-export-title">Download Report</h3>
-                <p>{assetTitle(reportLead)} · {formatCurrency(assetValue(reportLead))} excl. VAT</p>
+                <span className={assetStyles.modalEyebrow}>Download full Asset Register</span>
+                <h3 id="lead-report-export-title">Export asset register</h3>
               </div>
 
               <button type="button" className={assetStyles.modalCloseButton} onClick={closeLeadReportModal} aria-label="Close report download options" disabled={isDownloadingLeadReport}>
@@ -1794,72 +1983,100 @@ export default function LeadsClient() {
 
             <div className={`${assetStyles.modalScrollBody} ${assetStyles.exportModalScrollBody}`}>
               <div className={assetStyles.exportModalBody}>
-                <div className={assetStyles.exportChoices}>
-                  <button
-                    type="button"
-                    className={`${assetStyles.exportOption} ${leadReportFormat === 'pdf' ? assetStyles.exportOptionActive : ''}`}
-                    onClick={() => setLeadReportFormat('pdf')}
-                    aria-pressed={leadReportFormat === 'pdf'}
-                  >
-                    <div className={assetStyles.exportOptionTop}>
-                      <span className={assetStyles.exportGraphic}>
-                        <PdfIcon className={assetStyles.exportOptionIcon} />
-                      </span>
+                {leadReportStep === 'format' ? (
+                  <>
+                    <div className={assetStyles.exportChoices}>
+                      <button
+                        type="button"
+                        className={`${assetStyles.exportOption} ${leadReportFormat === 'pdf' ? assetStyles.exportOptionActive : ''}`}
+                        onClick={() => selectLeadReportFormat('pdf')}
+                        aria-pressed={leadReportFormat === 'pdf'}
+                      >
+                        <div className={assetStyles.exportOptionTop}>
+                          <span className={assetStyles.exportGraphic}>
+                            <ExportGraphic src="/brand/pdf.png" alt="PDF export" icon={<PdfIcon className={assetStyles.exportOptionIcon} />} />
+                          </span>
 
-                      <div className={assetStyles.exportOptionTitleBlock}>
-                        <strong>PDF report</strong>
-                        <span className={assetStyles.exportOptionStatus}>{leadReportFormat === 'pdf' ? 'Selected' : 'Select'}</span>
-                      </div>
+                          <div className={assetStyles.exportOptionTitleBlock}>
+                            <strong>PDF summary</strong>
+                            <span className={assetStyles.exportOptionStatus}>{leadReportFormat === 'pdf' ? 'Selected' : 'Select'}</span>
+                          </div>
+                        </div>
+
+                        <ul className={assetStyles.exportFeatureList}>
+                          <li>Choose one of five filtered PDF reports</li>
+                          <li>Totals recalculate per selected report</li>
+                          <li>Clean client / bank handover</li>
+                        </ul>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`${assetStyles.exportOption} ${leadReportFormat === 'xlsx' ? assetStyles.exportOptionActive : ''}`}
+                        onClick={() => selectLeadReportFormat('xlsx')}
+                        aria-pressed={leadReportFormat === 'xlsx'}
+                      >
+                        <div className={assetStyles.exportOptionTop}>
+                          <span className={assetStyles.exportGraphic}>
+                            <ExportGraphic src="/brand/sheet.png" alt="Spreadsheet export" icon={<SpreadsheetIcon className={assetStyles.exportOptionIcon} />} />
+                          </span>
+
+                          <div className={assetStyles.exportOptionTitleBlock}>
+                            <strong>XLSX workbook</strong>
+                            <span className={assetStyles.exportOptionStatus}>{leadReportFormat === 'xlsx' ? 'Selected' : 'Select'}</span>
+                          </div>
+                        </div>
+
+                        <ul className={assetStyles.exportFeatureList}>
+                          <li>Detailed register rows</li>
+                          <li>Spreadsheet-friendly data</li>
+                          <li>Easy offline editing</li>
+                        </ul>
+                      </button>
                     </div>
 
-                    <ul className={assetStyles.exportFeatureList}>
-                      <li>Client-friendly printable report</li>
-                      <li>Includes lead owner details</li>
-                      <li>Best for quick review</li>
-                    </ul>
-                  </button>
+                    <div className={`${assetStyles.formActions} ${assetStyles.exportActions}`}>
+                      <button type="button" className={assetStyles.primaryButton} onClick={() => void handleConfirmLeadReportDownload()} disabled={isDownloadingLeadReport}>
+                        {leadReportFormat === 'pdf' ? <ChevronRightIcon className={assetStyles.buttonIcon} /> : <DownloadIcon className={assetStyles.buttonIcon} />}
+                        <span>{leadReportFormat === 'pdf' ? 'Next' : isDownloadingLeadReport ? 'Preparing export...' : 'Download XLSX'}</span>
+                      </button>
 
-                  <button
-                    type="button"
-                    className={`${assetStyles.exportOption} ${leadReportFormat === 'xlsx' ? assetStyles.exportOptionActive : ''}`}
-                    onClick={() => setLeadReportFormat('xlsx')}
-                    aria-pressed={leadReportFormat === 'xlsx'}
-                  >
-                    <div className={assetStyles.exportOptionTop}>
-                      <span className={assetStyles.exportGraphic}>
-                        <SpreadsheetIcon className={assetStyles.exportOptionIcon} />
-                      </span>
-
-                      <div className={assetStyles.exportOptionTitleBlock}>
-                        <strong>XLSX workbook</strong>
-                        <span className={assetStyles.exportOptionStatus}>{leadReportFormat === 'xlsx' ? 'Selected' : 'Select'}</span>
-                      </div>
+                      <button type="button" className={assetStyles.secondaryButton} onClick={closeLeadReportModal} disabled={isDownloadingLeadReport}>
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className={assetStyles.pdfReportDropdownPanel}>
+                      <select
+                        className={assetStyles.pdfReportDropdown}
+                        value={leadPdfReportSelection}
+                        onChange={handleLeadPdfReportSelectionChange}
+                        disabled={isDownloadingLeadReport}
+                        aria-label="Choose PDF summary option"
+                      >
+                        <option value="" disabled>Choose option</option>
+                        {PDF_REPORT_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDownIcon className={assetStyles.pdfReportDropdownIcon} />
                     </div>
 
-                    <ul className={assetStyles.exportFeatureList}>
-                      <li>Spreadsheet-friendly lead data</li>
-                      <li>Register snapshot rows included</li>
-                      <li>Useful for finance and insurance work</li>
-                    </ul>
-                  </button>
-                </div>
+                    <div className={`${assetStyles.formActions} ${assetStyles.exportActions}`}>
+                      <button type="button" className={assetStyles.secondaryButton} onClick={closeLeadPdfReportChooser} disabled={isDownloadingLeadReport}>
+                        Back
+                      </button>
 
-                <div className={`${assetStyles.formActions} ${assetStyles.exportActions}`}>
-                  <button type="button" className={assetStyles.primaryButton} onClick={() => void handleConfirmLeadReportDownload()} disabled={isDownloadingLeadReport}>
-                    {leadReportFormat === 'pdf' ? <PdfIcon className={assetStyles.buttonIcon} /> : <DownloadIcon className={assetStyles.buttonIcon} />}
-                    <span>
-                      {leadReportFormat === 'pdf'
-                        ? 'Open PDF'
-                        : isDownloadingLeadReport
-                          ? 'Preparing XLSX...'
-                          : 'Download XLSX'}
-                    </span>
-                  </button>
-
-                  <button type="button" className={assetStyles.secondaryButton} onClick={closeLeadReportModal} disabled={isDownloadingLeadReport}>
-                    Cancel
-                  </button>
-                </div>
+                      <button type="button" className={assetStyles.secondaryButton} onClick={closeLeadReportModal} disabled={isDownloadingLeadReport}>
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
