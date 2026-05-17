@@ -2083,7 +2083,7 @@ export default function LeadsClient() {
             aria-describedby="delete-lead-confirm-copy"
           >
             <div className={`${assetStyles.deleteConfirmContent} ${styles.leadDeleteContent}`}>
-              <div className={assetStyles.deleteConfirmHeader}>
+              <div className={`${assetStyles.deleteConfirmHeader} ${styles.leadDeleteHeader}`}>
                 <div>
                   <h3 id="delete-lead-confirm-title">Delete lead?</h3>
                   <p id="delete-lead-confirm-copy">This removes the lead from your leads inbox.</p>
@@ -2091,7 +2091,7 @@ export default function LeadsClient() {
 
                 <button
                   type="button"
-                  className={assetStyles.modalCloseButton}
+                  className={`${assetStyles.modalCloseButton} ${styles.leadDeleteCloseButton}`}
                   onClick={closeDeleteLeadModal}
                   aria-label="Close delete confirmation"
                   disabled={isDeletingLead}

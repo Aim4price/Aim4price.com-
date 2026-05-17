@@ -733,3 +733,33 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+
+/* === Lead delete modal close button placement === */
+.leadDeleteModal {
+  position: relative !important;
+}
+
+.leadDeleteHeader {
+  display: block !important;
+  padding-right: 4.6rem !important;
+}
+
+.leadDeleteCloseButton {
+  position: absolute !important;
+  top: clamp(1.3rem, 2vw, 1.75rem) !important;
+  right: clamp(1.3rem, 2vw, 1.75rem) !important;
+  margin: 0 !important;
+  z-index: 3;
+}
+
+@media (max-width: 760px) {
+  .leadDeleteHeader {
+    padding-right: 3.75rem !important;
+  }
+
+  .leadDeleteCloseButton {
+    top: 1rem !important;
+    right: 1rem !important;
+  }
+}
