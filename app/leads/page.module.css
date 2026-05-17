@@ -1,21 +1,20 @@
 .leadsPage {
-  --lead-ink: #092f27;
-  --lead-muted: #607184;
-  --lead-line: rgba(173, 199, 214, 0.78);
+  --lead-ink: #0d3028;
+  --lead-muted: #637282;
+  --lead-line: rgba(216, 226, 236, 0.96);
   --lead-soft: #f5f9fb;
   --lead-green: #14785a;
   --lead-green-dark: #0e654c;
   --lead-red: #a13a3a;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
 .leadsPage h1,
 .leadsPage h2,
-.leadsPage h3,
-.leadsPage p,
-.leadsPage span,
-.leadsPage strong,
-.leadsPage small,
+.leadsPage h3 {
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+}
+
 .leadsPage button,
 .leadsPage input,
 .leadsPage select,
@@ -46,7 +45,7 @@
   color: rgba(255, 255, 255, 0.9);
   background: rgba(255, 255, 255, 0.1);
   font-size: 0.74rem;
-  font-weight: 900;
+  font-weight: 850;
   letter-spacing: 0.095em;
   text-transform: uppercase;
 }
@@ -74,7 +73,7 @@
 .statIntro span {
   color: var(--lead-green-dark);
   font-size: 0.72rem;
-  font-weight: 950;
+  font-weight: 900;
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }
@@ -82,7 +81,7 @@
 .statIntro strong {
   color: var(--lead-ink);
   font-size: clamp(2rem, 3.2vw, 2.8rem);
-  font-weight: 950;
+  font-weight: 900;
   line-height: 0.95;
   letter-spacing: -0.06em;
 }
@@ -113,13 +112,14 @@
   border-color: rgba(173, 199, 214, 0.86);
   background-color: #ffffff;
   color: var(--lead-ink);
-  font-weight: 720;
+  font-weight: 650;
+  letter-spacing: -0.01em;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
 .leadToolbar input::placeholder {
   color: #8090a2;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .leadToolbar select {
@@ -128,7 +128,7 @@
   line-height: 1;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%230d3a30' stroke-width='2.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 1.05rem center;
+  background-position: right 1.12rem center;
   background-size: 1rem 1rem;
 }
 
@@ -145,7 +145,8 @@
   position: relative;
   display: grid;
   gap: 0;
-  padding: 0.78rem;
+  overflow: hidden;
+  padding: 0.78rem 0.78rem 0.78rem 1.02rem;
   border: 1px solid rgba(195, 215, 226, 0.94);
   border-radius: 1.72rem;
   background:
@@ -163,11 +164,15 @@
 .leadThread::before {
   content: '';
   position: absolute;
-  inset: 0 auto 0 0;
-  width: 0.28rem;
-  border-radius: 1.72rem 0 0 1.72rem;
-  background: linear-gradient(180deg, rgba(20, 120, 90, 0.9), rgba(61, 112, 217, 0.55));
-  opacity: 0.62;
+  top: 1rem;
+  bottom: 1rem;
+  left: 0.72rem;
+  width: 0.22rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(20, 120, 90, 0.74), rgba(61, 112, 217, 0.34));
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.65);
+  opacity: 0.72;
+  pointer-events: none;
 }
 
 .leadThread:hover {
@@ -190,11 +195,16 @@
 }
 
 .leadThreadOpen::before {
+  top: 1.08rem;
+  bottom: 1.08rem;
+  width: 0.24rem;
+  background: linear-gradient(180deg, rgba(20, 120, 90, 0.9), rgba(20, 120, 90, 0.44));
   opacity: 1;
-  width: 0.34rem;
 }
 
 .clientPanel {
+  position: relative;
+  z-index: 1;
   min-width: 0;
   padding: 0;
   border-radius: 1.32rem;
@@ -226,17 +236,17 @@
   margin-bottom: 0.36rem;
   color: #586d80;
   font-size: 0.76rem;
-  font-weight: 920;
-  letter-spacing: 0.035em;
+  font-weight: 850;
+  letter-spacing: 0.025em;
 }
 
 .clientPanel h3 {
   margin: 0;
   color: var(--lead-ink);
-  font-size: clamp(1.48rem, 2vw, 1.9rem);
-  font-weight: 950;
-  line-height: 1.02;
-  letter-spacing: -0.058em;
+  font-size: clamp(1.42rem, 1.9vw, 1.72rem);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.045em;
 }
 
 .clientInlineMeta {
@@ -247,7 +257,7 @@
   margin-top: 0.55rem;
   color: #5f7084;
   font-size: 0.95rem;
-  font-weight: 760;
+  font-weight: 700;
   line-height: 1.38;
 }
 
@@ -262,7 +272,7 @@
   content: '•';
   margin-left: 0.62rem;
   color: #a9b8c7;
-  font-weight: 950;
+  font-weight: 900;
 }
 
 .leadPreviewMeta {
@@ -283,13 +293,13 @@
 }
 
 .leadPreviewMeta span {
-  font-weight: 890;
+  font-weight: 850;
   overflow-wrap: anywhere;
 }
 
 .leadPreviewMeta strong {
   color: var(--lead-ink);
-  font-weight: 960;
+  font-weight: 900;
   white-space: nowrap;
 }
 
@@ -304,7 +314,7 @@
   min-height: 3.18rem;
   padding-inline: 1.25rem;
   border-radius: 1.06rem;
-  font-weight: 900;
+  font-weight: 850;
   white-space: nowrap;
 }
 
@@ -320,6 +330,8 @@
 }
 
 .leadAssetCard {
+  position: relative;
+  z-index: 1;
   margin: 0;
   border-radius: 1.45rem;
   box-shadow: none;
@@ -498,8 +510,14 @@
   }
 
   .leadThread {
-    padding: 0.55rem;
+    padding: 0.55rem 0.55rem 0.55rem 0.86rem;
     border-radius: 1.35rem;
+  }
+
+  .leadThread::before {
+    top: 0.82rem;
+    bottom: 0.82rem;
+    left: 0.55rem;
   }
 
   .clientPanelHeader {
