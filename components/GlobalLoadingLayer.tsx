@@ -60,8 +60,8 @@ export default function GlobalLoadingLayer() {
   const pathname = usePathname();
   const [activeKeys, setActiveKeys] = useState<string[]>([]);
   const [shouldRender, setShouldRender] = useState(false);
-  const showDelayRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
-  const routeFailsafeRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const showDelayRef = useRef<number | null>(null);
+  const routeFailsafeRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (activeKeys.length) {
