@@ -12,7 +12,6 @@ export const dynamic = 'force-dynamic';
 type CreateSharedAccessBody = {
   partnerUserId?: unknown;
   partnerType?: unknown;
-  pin?: unknown;
   ownerMessage?: unknown;
   includeDocuments?: unknown;
   includeScanHistory?: unknown;
@@ -24,17 +23,6 @@ function unauthorized() {
 
 function responseForError(error: unknown) {
   if (error instanceof Error) {
-    if (error.message === 'ACCOUNT_PIN_NOT_ENABLED') {
-      return NextResponse.json(
-        { ok: false, error: 'Set an Account PIN on the Account page before sharing a register.' },
-        { status: 400 },
-      );
-    }
-
-    if (error.message === 'INVALID_ACCOUNT_PIN') {
-      return NextResponse.json({ ok: false, error: 'Incorrect Account PIN.' }, { status: 401 });
-    }
-
     if (error.message === 'PARTNER_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Selected partner could not be found.' }, { status: 404 });
     }
@@ -90,7 +78,6 @@ export async function POST(request: NextRequest) {
       ownerUserId: session.user.id,
       partnerUserId,
       partnerType,
-      pin: body.pin,
       ownerMessage: typeof body.ownerMessage === 'string' ? body.ownerMessage : null,
       includeDocuments: body.includeDocuments !== false,
       includeScanHistory: body.includeScanHistory !== false,
