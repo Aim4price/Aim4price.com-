@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
+import { useGlobalLoading } from '../../lib/use-global-loading';
 import styles from './page.module.css';
 
 type AccountType = 'owner' | 'dealer' | 'finance' | 'insurance';
@@ -178,6 +179,7 @@ function registerMatchesSearch(register: SharedRegisterSummary, query: string): 
 export default function SharedRegistersClient() {
   const [registers, setRegisters] = useState<SharedRegisterSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  useGlobalLoading(isLoading, 'shared-registers-data');
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [monthFilter, setMonthFilter] = useState('all');
