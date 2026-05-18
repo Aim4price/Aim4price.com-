@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import AppFooter from '../components/AppFooter';
+import GlobalLoadingLayer from '../components/GlobalLoadingLayer';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body>
+        <GlobalLoadingLayer />
         <div className="appRoot">
           {children}
           <AppFooter />
