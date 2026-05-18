@@ -297,6 +297,10 @@ function grantPartnerLocation(grant: SharedAccessGrant): string {
   return [grant.partnerTownCity, grant.partnerProvince].filter(Boolean).join(', ') || 'Location not saved';
 }
 
+function isVisibleAccessGrant(grant: SharedAccessGrant): boolean {
+  return grant.status === 'active' || grant.status === 'pending';
+}
+
 function hasCoordinates(partner: PartnerDirectoryEntry): boolean {
   return (
     partner.latitude !== null &&
@@ -414,7 +418,7 @@ export default function SharedAccessClient() {
         throw new Error(data.error ?? 'Failed to load shared access.');
       }
 
-      setGrants(data.grants);
+      setGrants(data.grants.filter(isVisibleAccessGrant));
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load shared access.' });
     } finally {
@@ -653,14 +657,14 @@ export default function SharedAccessClient() {
         method: 'DELETE',
         credentials: 'include',
       });
-      const data = (await response.json()) as GrantsResponse;
+      const data = (await response.json().catch(() => null)) as GrantsResponse | null;
 
-      if (!response.ok || !data.ok || !data.grant) {
-        throw new Error(data.error ?? 'Failed to revoke access.');
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error ?? 'Failed to revoke access.');
       }
 
-      setGrants((current) => current.map((grant) => (grant.id === grantId ? data.grant as SharedAccessGrant : grant)));
-      setNotice({ tone: 'success', message: 'Access revoked.' });
+      setGrants((current) => current.filter((grant) => grant.id !== grantId));
+      setNotice({ tone: 'success', message: 'Access revoked and removed from Share access.' });
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to revoke access.' });
     }
