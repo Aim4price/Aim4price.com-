@@ -1,14 +1,18 @@
 'use client';
 
 import { useEffect } from 'react';
-import { setGlobalLoading } from './global-loading';
+import { usePathname } from 'next/navigation';
+import { isGlobalLoadingDisabledPath, setGlobalLoading } from './global-loading';
 
 export function useGlobalLoading(isLoading: boolean, key: string) {
+  const pathname = usePathname();
+  const isDisabledPath = isGlobalLoadingDisabledPath(pathname);
+
   useEffect(() => {
-    setGlobalLoading(isLoading, key);
+    setGlobalLoading(isLoading && !isDisabledPath, key);
 
     return () => {
       setGlobalLoading(false, key);
     };
-  }, [isLoading, key]);
+  }, [isDisabledPath, isLoading, key]);
 }
