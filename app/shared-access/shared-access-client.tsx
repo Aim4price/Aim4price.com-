@@ -240,13 +240,6 @@ function formatStatus(value: GrantStatus): string {
   return 'Declined';
 }
 
-function statusClass(value: GrantStatus): string {
-  if (value === 'active') return styles.statusActive;
-  if (value === 'pending') return styles.statusPending;
-  if (value === 'revoked') return styles.statusRevoked;
-  return styles.statusDeclined;
-}
-
 function partnerName(partner: PartnerDirectoryEntry): string {
   return partner.businessName || partner.displayName || 'Aim4price partner';
 }
@@ -653,11 +646,7 @@ export default function SharedAccessClient() {
           <header className={styles.registerHeader}>
             <div className={styles.registerTitleBlock}>
               <h1>Shared access</h1>
-              <p>
-                Give selected dealers, finance partners or insurance partners permission to view your live Asset Register.
-                <br />
-                Access stays controlled by you and can be revoked at any time.
-              </p>
+              <p>Give selected dealers, finance partners or insurance partners permission to view your live Asset Register.</p>
             </div>
 
             <div className={styles.headerActions}>
@@ -709,32 +698,15 @@ export default function SharedAccessClient() {
                   {visibleGrants.map((grant) => (
                     <article key={grant.id} className={styles.grantCard}>
                       <div className={styles.grantMain}>
-                        <div className={styles.grantTitleRow}>
-                          <h3>{grantPartnerName(grant)}</h3>
-                          <span className={`${styles.statusPill} ${statusClass(grant.status)}`}>{formatStatus(grant.status)}</span>
-                        </div>
-
                         <div className={styles.grantDetailsLayout}>
                           <div className={styles.grantMetaStack}>
-                            <div className={styles.grantMetaItem}>
-                              <span>Partner type</span>
-                              <strong>{formatPartnerType(grant.partnerType)}</strong>
-                            </div>
-                            <div className={styles.grantMetaItem}>
-                              <span>Partner address</span>
-                              <strong>{grantPartnerLocation(grant)}</strong>
-                            </div>
-                            <div className={styles.grantMetaItem}>
-                              <span>Shared</span>
-                              <strong>{formatDate(grant.createdAtIso)}</strong>
-                            </div>
+                            <h3>{grantPartnerName(grant)}</h3>
+                            <p>{grantPartnerLocation(grant)}</p>
+                            <p>Shared {formatDate(grant.createdAtIso)}</p>
                           </div>
 
                           <div className={styles.grantAside}>
-                            <div className={styles.grantMetaItem}>
-                              <span>Last viewed</span>
-                              <strong>{formatDate(grant.lastViewedAtIso)}</strong>
-                            </div>
+                            <p>Last viewed {formatDate(grant.lastViewedAtIso)}</p>
 
                             {grant.status === 'active' || grant.status === 'pending' ? (
                               <div className={styles.grantActions}>
