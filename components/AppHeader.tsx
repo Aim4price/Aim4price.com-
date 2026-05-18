@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { setGlobalLoading } from '../lib/global-loading';
+import { isGlobalLoadingDisabledPath, setGlobalLoading } from '../lib/global-loading';
 import styles from './AppHeader.module.css';
 
 type ActivePage = 'home' | 'valuation' | 'asset-register' | 'leads' | 'marketplace' | 'none';
@@ -172,13 +172,16 @@ export default function AppHeader({
   }, [pathname]);
 
   useEffect(() => {
-    const shouldShowAccountLoader = isSigningOut || (isLoadingSession && !hasLoadedSessionOnceRef.current);
+    const shouldShowAccountLoader =
+      !isGlobalLoadingDisabledPath(pathname) &&
+      (isSigningOut || (isLoadingSession && !hasLoadedSessionOnceRef.current));
+
     setGlobalLoading(shouldShowAccountLoader, 'account-session');
 
     return () => {
       setGlobalLoading(false, 'account-session');
     };
-  }, [isLoadingSession, isSigningOut]);
+  }, [isLoadingSession, isSigningOut, pathname]);
 
   useEffect(() => {
     function handleDocumentClick(event: MouseEvent) {

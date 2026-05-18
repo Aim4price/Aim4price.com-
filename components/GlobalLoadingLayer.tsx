@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   GLOBAL_LOADING_START_EVENT,
   GLOBAL_LOADING_STOP_EVENT,
+  isGlobalLoadingDisabledPath,
   type GlobalLoadingEventDetail,
 } from '../lib/global-loading';
 import GlobalLoadingScreen from './GlobalLoadingScreen';
@@ -51,6 +52,7 @@ function shouldShowRouteLoader(event: MouseEvent) {
   if (event.defaultPrevented) return false;
   if (event.button !== 0) return false;
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
+  if (isGlobalLoadingDisabledPath(window.location.pathname)) return false;
 
   const anchor = getClosestAnchor(event.target) as HTMLAnchorElement | null;
   if (!anchor || isExternalOrDownloadAnchor(anchor)) return false;
@@ -65,6 +67,8 @@ function shouldShowRouteLoader(event: MouseEvent) {
   } catch {
     return false;
   }
+
+  if (isGlobalLoadingDisabledPath(nextUrl.pathname)) return false;
 
   const currentPath = `${window.location.pathname}${window.location.search}`;
   const nextPath = `${nextUrl.pathname}${nextUrl.search}`;
@@ -107,6 +111,7 @@ export default function GlobalLoadingLayer() {
   const [shouldRender, setShouldRender] = useState(false);
 
   const activeKeysRef = useRef<string[]>([]);
+  const pathnameRef = useRef(pathname);
   const showDelayRef = useRef<number | null>(null);
   const hideDelayRef = useRef<number | null>(null);
   const renderStartedAtRef = useRef(0);
@@ -116,11 +121,51 @@ export default function GlobalLoadingLayer() {
   const navigationFetchTrackingUntilRef = useRef(0);
   const fetchIdRef = useRef(0);
 
+  function clearGlobalLoadingTimers() {
+    if (showDelayRef.current) {
+      window.clearTimeout(showDelayRef.current);
+      showDelayRef.current = null;
+    }
+
+    if (hideDelayRef.current) {
+      window.clearTimeout(hideDelayRef.current);
+      hideDelayRef.current = null;
+    }
+
+    if (routeSettledRef.current) {
+      window.clearTimeout(routeSettledRef.current);
+      routeSettledRef.current = null;
+    }
+
+    if (routeFailsafeRef.current) {
+      window.clearTimeout(routeFailsafeRef.current);
+      routeFailsafeRef.current = null;
+    }
+  }
+
+  function stopAllGlobalLoading() {
+    clearGlobalLoadingTimers();
+    activeKeysRef.current = [];
+    navigationFetchTrackingUntilRef.current = 0;
+    bootFetchTrackingUntilRef.current = 0;
+    setActiveKeys([]);
+    setShouldRender(false);
+  }
+
   useEffect(() => {
     activeKeysRef.current = activeKeys;
   }, [activeKeys]);
 
   useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
+  useEffect(() => {
+    if (isGlobalLoadingDisabledPath(pathname)) {
+      stopAllGlobalLoading();
+      return;
+    }
+
     if (activeKeys.length) {
       if (hideDelayRef.current) {
         window.clearTimeout(hideDelayRef.current);
@@ -152,19 +197,22 @@ export default function GlobalLoadingLayer() {
       hideDelayRef.current = null;
       setShouldRender(false);
     }, hideInMs);
-  }, [activeKeys.length, shouldRender]);
+  }, [activeKeys.length, pathname, shouldRender]);
 
   useEffect(() => {
     return () => {
-      if (showDelayRef.current) window.clearTimeout(showDelayRef.current);
-      if (hideDelayRef.current) window.clearTimeout(hideDelayRef.current);
-      if (routeSettledRef.current) window.clearTimeout(routeSettledRef.current);
-      if (routeFailsafeRef.current) window.clearTimeout(routeFailsafeRef.current);
+      clearGlobalLoadingTimers();
     };
   }, []);
 
   useEffect(() => {
+    function isCurrentPathDisabled() {
+      if (isGlobalLoadingDisabledPath(window.location.pathname)) return true;
+      return isGlobalLoadingDisabledPath(pathnameRef.current);
+    }
+
     function startLoading(key: string) {
+      if (isCurrentPathDisabled()) return;
       setActiveKeys((current) => (current.includes(key) ? current : [...current, key]));
     }
 
@@ -177,6 +225,11 @@ export default function GlobalLoadingLayer() {
     }
 
     function scheduleRouteSettled() {
+      if (isCurrentPathDisabled()) {
+        stopAllGlobalLoading();
+        return;
+      }
+
       markNavigationFetchWindow();
 
       if (routeSettledRef.current) {
@@ -195,6 +248,8 @@ export default function GlobalLoadingLayer() {
     }
 
     function startRouteLoading() {
+      if (isCurrentPathDisabled()) return;
+
       markNavigationFetchWindow();
       startLoading(ROUTE_LOADING_KEY);
 
@@ -223,6 +278,8 @@ export default function GlobalLoadingLayer() {
     }
 
     function shouldTrackFetch() {
+      if (isCurrentPathDisabled()) return false;
+
       const now = Date.now();
       return (
         now <= bootFetchTrackingUntilRef.current ||
@@ -232,6 +289,11 @@ export default function GlobalLoadingLayer() {
     }
 
     function handleLocationCommitted() {
+      if (isCurrentPathDisabled()) {
+        stopAllGlobalLoading();
+        return;
+      }
+
       scheduleRouteSettled();
     }
 
@@ -283,6 +345,11 @@ export default function GlobalLoadingLayer() {
   }, []);
 
   useEffect(() => {
+    if (isGlobalLoadingDisabledPath(pathname)) {
+      stopAllGlobalLoading();
+      return;
+    }
+
     navigationFetchTrackingUntilRef.current = Date.now() + NAVIGATION_FETCH_WINDOW_MS;
 
     if (routeSettledRef.current) {
@@ -300,7 +367,7 @@ export default function GlobalLoadingLayer() {
     }
   }, [pathname]);
 
-  if (!shouldRender) return null;
+  if (!shouldRender || isGlobalLoadingDisabledPath(pathname)) return null;
 
   return <GlobalLoadingScreen label="Loading data..." />;
 }
