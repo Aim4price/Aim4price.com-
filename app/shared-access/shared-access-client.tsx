@@ -85,14 +85,6 @@ const DEFAULT_ZOOM = 5;
 
 const SHARE_OPTIONS: ShareOption[] = [
   {
-    value: 'dealer',
-    title: 'Dealer',
-    actionTitle: 'Share with dealer',
-    description: 'Give a machinery dealer live register access for replacements, trade-ins and fleet support.',
-    mapTitle: 'Choose a dealer partner.',
-    emptyText: 'No listed dealer partners found yet. Dealer accounts must enable their directory listing under Account details.',
-  },
-  {
     value: 'finance',
     title: 'Finance',
     actionTitle: 'Share with finance partner',
@@ -107,6 +99,14 @@ const SHARE_OPTIONS: ShareOption[] = [
     description: 'Give an insurer or broker live register access for insured-value checks and annual policy updates.',
     mapTitle: 'Choose an insurance partner.',
     emptyText: 'No listed insurance partners found yet. Insurance partners must enable their directory listing under Account details.',
+  },
+  {
+    value: 'dealer',
+    title: 'Dealer',
+    actionTitle: 'Share with dealer',
+    description: 'Give a machinery dealer live register access for replacements, trade-ins and fleet support.',
+    mapTitle: 'Choose a dealer partner.',
+    emptyText: 'No listed dealer partners found yet. Dealer accounts must enable their directory listing under Account details.',
   },
 ];
 
@@ -189,35 +189,76 @@ function ChevronLeftIcon({ className }: IconProps) {
   );
 }
 
-function DealerIcon({ className }: IconProps) {
+function MoneyBagIcon({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none">
-      <path d="M4 18h16M6 18V8l6-3 6 3v10M9 18v-6h6v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M8.2 4.2c.55 1.35 1.7 2.1 3.8 2.1s3.25-.75 3.8-2.1" />
+      <path d="M9.15 3.2h5.7l1.55 2.25-1.85 1.85h-5.1L7.6 5.45z" />
+      <path d="M7.35 8.05c-2.65 2.2-4.1 5.15-4.1 8.25 0 3.15 2.5 4.5 8.75 4.5s8.75-1.35 8.75-4.5c0-3.1-1.45-6.05-4.1-8.25" />
+      <path d="M12 10.1v7.1" />
+      <path d="M14.4 11.65h-3.2c-.9 0-1.55.52-1.55 1.25s.58 1.12 1.55 1.32l1.6.34c.97.2 1.55.6 1.55 1.32s-.65 1.25-1.55 1.25H9.45" />
     </svg>
   );
 }
 
-function FinanceIcon({ className }: IconProps) {
+function ShieldIcon({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none">
-      <path d="M6.5 10.5h11M8 14h8M12 3l8 4.2v2.3H4V7.2L12 3ZM6 20h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 3 20 6v5c0 5.2-3.3 8.7-8 10-4.7-1.3-8-4.8-8-10V6z" />
+      <path d="m9 12 2 2 4-5" />
     </svg>
   );
 }
 
-function InsuranceIcon({ className }: IconProps) {
+function ReplacementQuoteIcon({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none">
-      <path d="M12 3 5 6v5.2c0 4.6 2.9 8 7 9.8 4.1-1.8 7-5.2 7-9.8V6l-7-3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="m9.3 12.1 1.8 1.8 3.8-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.35"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
+function PlusIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
     </svg>
   );
 }
 
 function renderShareOptionIcon(value: PartnerType, className: string) {
-  if (value === 'finance') return <FinanceIcon className={className} />;
-  if (value === 'insurance') return <InsuranceIcon className={className} />;
-  return <DealerIcon className={className} />;
+  if (value === 'finance') return <MoneyBagIcon className={className} />;
+  if (value === 'insurance') return <ShieldIcon className={className} />;
+  return <ReplacementQuoteIcon className={className} />;
 }
 
 function formatDate(value?: string | null): string {
@@ -309,7 +350,7 @@ export default function SharedAccessClient() {
 
   const [grants, setGrants] = useState<SharedAccessGrant[]>([]);
   const [partners, setPartners] = useState<PartnerDirectoryEntry[]>([]);
-  const [selectedPartnerType, setSelectedPartnerType] = useState<PartnerType>('dealer');
+  const [selectedPartnerType, setSelectedPartnerType] = useState<PartnerType>('finance');
   const [selectedPartnerId, setSelectedPartnerId] = useState('');
   const [grantSearch, setGrantSearch] = useState('');
   const [search, setSearch] = useState('');
@@ -645,14 +686,8 @@ export default function SharedAccessClient() {
         <div className={styles.registerPanel}>
           <header className={styles.registerHeader}>
             <div className={styles.registerTitleBlock}>
-              <h1>Shared access</h1>
+              <h1>Share access</h1>
               <p>Give selected dealers, finance partners or insurance partners permission to view your live Asset Register.</p>
-            </div>
-
-            <div className={styles.headerActions}>
-              <button type="button" className={styles.primaryButton} onClick={openShareOptions}>
-                Share Asset Register
-              </button>
             </div>
           </header>
 
@@ -687,6 +722,11 @@ export default function SharedAccessClient() {
                 aria-label="Search shared access grants"
               />
             </label>
+
+            <button type="button" className={`${styles.primaryButton} ${styles.shareRegisterButton}`} onClick={openShareOptions}>
+              <PlusIcon className={styles.buttonIcon} />
+              <span>Share Asset Register</span>
+            </button>
           </div>
 
           <section className={styles.accessCard}>
@@ -727,7 +767,7 @@ export default function SharedAccessClient() {
                 <p className={styles.emptyState}>No shared access matches your search.</p>
               )
             ) : (
-              <p className={styles.emptyState}>No shared access yet. Use “Share Asset Register” to invite a partner.</p>
+              <p className={styles.emptyState}>No shared access yet. Use “+ Share Asset Register” to invite a partner.</p>
             )}
           </section>
         </div>
@@ -737,10 +777,10 @@ export default function SharedAccessClient() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeShareOptions} />
 
-          <section className={styles.optionsModal} role="dialog" aria-modal="true" aria-labelledby="share-register-options-title">
-            <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
+          <section className={`${styles.optionsModal} ${styles.shareOptionsModal}`} role="dialog" aria-modal="true" aria-labelledby="share-register-options-title">
+            <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.shareOptionsModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="share-register-options-title">Shared access</h3>
+                <h3 id="share-register-options-title">Share access</h3>
                 <p>Choose which partner type should receive live access to your Asset Register.</p>
               </div>
 
@@ -749,9 +789,9 @@ export default function SharedAccessClient() {
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody}`}>
+            <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.shareOptionsScrollBody}`}>
               <div className={styles.optionsContent}>
-                <div className={styles.optionsGrid}>
+                <div className={`${styles.optionsGrid} ${styles.shareOptionsGrid}`}>
                   {SHARE_OPTIONS.map((option) => (
                     <button
                       key={option.value}
