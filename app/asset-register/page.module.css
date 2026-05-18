@@ -15996,3 +15996,213 @@
   transform: none !important;
   box-shadow: none !important;
 }
+
+/* === Asset Register colour depth polish === */
+.page {
+  --action-primary: #197454;
+  --action-primary-deep: #0f5840;
+  --action-primary-hover: #0b4b37;
+  --action-primary-border: #0f6248;
+  --action-primary-shadow: rgba(25, 116, 84, 0.2);
+
+  --action-mint-bg: #e6f8ef;
+  --action-mint-bg-hover: #d9f1e5;
+  --action-mint-text: #0a543d;
+  --action-mint-border: #6fc596;
+  --action-mint-border-hover: #43ad73;
+
+  --action-blue-bg: #eaf5ff;
+  --action-blue-bg-hover: #daecff;
+  --action-blue-text: #0f3b64;
+  --action-blue-border: #7eb4df;
+  --action-blue-border-hover: #558fc6;
+
+  --action-clay-bg: #fff0e3;
+  --action-clay-bg-hover: #ffe2ca;
+  --action-clay-text: #723b0d;
+  --action-clay-border: #c87534;
+  --action-clay-border-hover: #a95b1d;
+
+  --action-neutral-bg: #ffffff;
+  --action-neutral-bg-hover: #f5f9fb;
+  --action-neutral-text: #1d3142;
+  --action-neutral-border: #c5d5e2;
+  --action-neutral-border-hover: #aebfd0;
+
+  --action-focused-ring: rgba(20, 112, 82, 0.18);
+
+  background: linear-gradient(180deg, #f5f8f8 0%, #edf3f4 100%) !important;
+}
+
+.businessRegisterTitleBlock h1 {
+  border-color: rgba(47, 58, 66, 0.96) !important;
+  background: linear-gradient(180deg, #4d5962 0%, #323d45 100%) !important;
+  box-shadow:
+    0 16px 30px rgba(27, 39, 48, 0.22),
+    0 3px 8px rgba(27, 39, 48, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+}
+
+.registerPanel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 253, 253, 0.96) 100%) !important;
+  border-color: rgba(199, 218, 222, 0.98) !important;
+  box-shadow:
+    0 30px 70px rgba(16, 36, 40, 0.075),
+    0 10px 24px rgba(16, 36, 40, 0.04) !important;
+}
+
+.summaryTile {
+  background: linear-gradient(180deg, #fbfdfe 0%, #f3f8f9 100%) !important;
+  border-color: rgba(196, 215, 223, 0.96) !important;
+}
+
+.summaryRow .summaryTile:first-child {
+  background:
+    radial-gradient(circle at 6% 0%, rgba(54, 153, 111, 0.13) 0%, rgba(54, 153, 111, 0) 42%),
+    linear-gradient(180deg, #fbfefd 0%, #edf8f3 100%) !important;
+  border-color: rgba(151, 205, 181, 0.96) !important;
+}
+
+.summaryTile span,
+.summaryTileMeta small {
+  color: #5e7080 !important;
+}
+
+.summaryTile strong,
+.summaryTileMeta span {
+  color: #073b30 !important;
+}
+
+.searchWrap {
+  background: #ffffff !important;
+  border-color: rgba(194, 211, 224, 0.98) !important;
+  box-shadow:
+    0 8px 18px rgba(30, 56, 66, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.searchWrap:focus-within {
+  border-color: rgba(25, 116, 84, 0.42) !important;
+  box-shadow:
+    0 0 0 4px rgba(25, 116, 84, 0.12),
+    0 10px 22px rgba(30, 56, 66, 0.055) !important;
+}
+
+.assetCard {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.04) 0%, rgba(25, 116, 84, 0) 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.99) 100%) !important;
+  border-color: rgba(198, 216, 223, 0.98) !important;
+  box-shadow:
+    0 14px 28px rgba(20, 43, 43, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.assetCardExpanded {
+  border-color: rgba(151, 205, 181, 0.9) !important;
+  box-shadow:
+    0 18px 34px rgba(20, 43, 43, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.badgeSuccess {
+  color: #075f42 !important;
+  background: #e4f6ed !important;
+  border-color: #b8e2ca !important;
+}
+
+.assetTitleBlock h2,
+.valueBlock strong {
+  color: #073b30 !important;
+}
+
+.assetMetaRow,
+.assetTitleBlock p,
+.valueBlock span,
+.valueBlock small {
+  color: #5d6d7c !important;
+}
+
+.page .headerOptionsButton,
+.page .assetHeaderActions .cardOptionsButton {
+  color: var(--action-clay-text) !important;
+  background: linear-gradient(180deg, #fffaf5 0%, var(--action-clay-bg) 100%) !important;
+  border-color: var(--action-clay-border) !important;
+  box-shadow:
+    0 10px 22px rgba(114, 59, 13, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.page .headerOptionsButton:hover:not(:disabled),
+.page .assetHeaderActions .cardOptionsButton:hover:not(:disabled) {
+  color: var(--action-clay-text) !important;
+  background: linear-gradient(180deg, #fff7f0 0%, var(--action-clay-bg-hover) 100%) !important;
+  border-color: var(--action-clay-border-hover) !important;
+  box-shadow:
+    0 14px 28px rgba(114, 59, 13, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.page .filterTriggerButton,
+.page .filterTriggerButtonActive,
+.page .filterTriggerButtonActive:hover:not(:disabled),
+.page .primaryButton,
+.page .updateEstimateInlineButton {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, var(--action-primary) 0%, var(--action-primary-deep) 100%) !important;
+  border-color: var(--action-primary-border) !important;
+  box-shadow:
+    0 14px 26px var(--action-primary-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+.page .filterTriggerButton:hover:not(:disabled),
+.page .filterTriggerButtonOpen,
+.page .primaryButton:hover:not(:disabled) {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #218462 0%, var(--action-primary-hover) 100%) !important;
+  border-color: var(--action-primary-hover) !important;
+  box-shadow:
+    0 18px 32px rgba(25, 116, 84, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.page .headerDownloadButton,
+.page .assetHeaderActions .cardViewDetailsButton {
+  color: var(--action-blue-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg) 100%) !important;
+  border-color: var(--action-blue-border) !important;
+  box-shadow:
+    0 10px 22px rgba(15, 59, 100, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.page .headerDownloadButton:hover:not(:disabled),
+.page .assetHeaderActions .cardViewDetailsButton:hover:not(:disabled) {
+  color: var(--action-blue-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg-hover) 100%) !important;
+  border-color: var(--action-blue-border-hover) !important;
+  box-shadow:
+    0 14px 28px rgba(15, 59, 100, 0.115),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.page .assetHeaderActions .cardManageButton {
+  color: var(--action-mint-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-mint-bg) 100%) !important;
+  border-color: var(--action-mint-border) !important;
+  box-shadow:
+    0 10px 22px rgba(10, 84, 61, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.page .assetHeaderActions .cardManageButton:hover:not(:disabled) {
+  color: #083f2f !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-mint-bg-hover) 100%) !important;
+  border-color: var(--action-mint-border-hover) !important;
+  box-shadow:
+    0 14px 28px rgba(10, 84, 61, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
