@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
+import { useGlobalLoading } from '../../lib/use-global-loading';
 import { openAssetRegisterSummaryPrint, openAssetSheetPrint, type ReportMethodCard } from '../../lib/report-print';
 import assetStyles from '../asset-register/page.module.css';
 import styles from './page.module.css';
@@ -968,6 +969,7 @@ export default function LeadsClient() {
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [isDeletingLead, setIsDeletingLead] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  useGlobalLoading(isLoading, 'leads-data');
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
 
   const receivedLeads = useMemo(
