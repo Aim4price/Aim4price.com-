@@ -15751,22 +15751,38 @@
   }
 }
 
-/* === Final Asset Register button colour hierarchy === */
+/* === Refined Asset Register button colour hierarchy === */
 .page {
-  --action-green: #0f5a43;
-  --action-green-hover: #0b4635;
-  --action-green-border: #0f5a43;
-  --action-green-shadow: rgba(15, 90, 67, 0.22);
-  --action-blue-bg: #eef6ff;
-  --action-blue-bg-hover: #e4f0ff;
-  --action-blue-text: #12355b;
-  --action-blue-border: #bfd3ea;
-  --action-blue-border-hover: #9fbfe0;
+  --action-primary: #176b52;
+  --action-primary-deep: #105640;
+  --action-primary-hover: #0d4b38;
+  --action-primary-border: #126047;
+  --action-primary-shadow: rgba(23, 107, 82, 0.18);
+
+  --action-mint-bg: #edf8f2;
+  --action-mint-bg-hover: #e0f3ea;
+  --action-mint-text: #0f5a43;
+  --action-mint-border: #9fd8bf;
+  --action-mint-border-hover: #72c6a0;
+
+  --action-blue-bg: #edf6ff;
+  --action-blue-bg-hover: #e1f0ff;
+  --action-blue-text: #123d66;
+  --action-blue-border: #abc9e7;
+  --action-blue-border-hover: #86b3dc;
+
+  --action-sand-bg: #fff8e8;
+  --action-sand-bg-hover: #fff1d2;
+  --action-sand-text: #6f4b11;
+  --action-sand-border: #efd293;
+  --action-sand-border-hover: #dfba68;
+
   --action-neutral-bg: #ffffff;
   --action-neutral-bg-hover: #f7fafc;
   --action-neutral-text: #1f3347;
   --action-neutral-border: #cedbe7;
   --action-neutral-border-hover: #b8c9d8;
+
   --action-danger-bg: #fff1f1;
   --action-danger-bg-hover: #ffe7e7;
   --action-danger-text: #b42318;
@@ -15780,20 +15796,20 @@
 
 .page .primaryButton {
   color: #ffffff !important;
-  background: linear-gradient(180deg, var(--action-green) 0%, var(--action-green-hover) 100%) !important;
-  border-color: var(--action-green-border) !important;
+  background: linear-gradient(180deg, var(--action-primary) 0%, var(--action-primary-deep) 100%) !important;
+  border-color: var(--action-primary-border) !important;
   box-shadow:
-    0 14px 26px var(--action-green-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+    0 14px 26px var(--action-primary-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
 }
 
 .page .primaryButton:hover:not(:disabled) {
   color: #ffffff !important;
-  background: linear-gradient(180deg, #12684d 0%, #083c2d 100%) !important;
-  border-color: #0b4635 !important;
+  background: linear-gradient(180deg, #1d765b 0%, var(--action-primary-hover) 100%) !important;
+  border-color: var(--action-primary-hover) !important;
   box-shadow:
-    0 18px 32px rgba(15, 90, 67, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    0 18px 32px rgba(23, 107, 82, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
 
 .page .secondaryButton,
@@ -15826,48 +15842,51 @@
 
 .page .headerOptionsButton {
   color: #ffffff !important;
-  background: linear-gradient(180deg, var(--action-green) 0%, var(--action-green-hover) 100%) !important;
-  border-color: var(--action-green-border) !important;
+  background: linear-gradient(180deg, var(--action-primary) 0%, var(--action-primary-deep) 100%) !important;
+  border-color: var(--action-primary-border) !important;
   box-shadow:
-    0 16px 30px var(--action-green-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+    0 16px 30px var(--action-primary-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
 }
 
 .page .headerOptionsButton:hover:not(:disabled) {
   color: #ffffff !important;
-  background: linear-gradient(180deg, #12684d 0%, #083c2d 100%) !important;
-  border-color: #0b4635 !important;
+  background: linear-gradient(180deg, #1d765b 0%, var(--action-primary-hover) 100%) !important;
+  border-color: var(--action-primary-hover) !important;
   box-shadow:
-    0 20px 36px rgba(15, 90, 67, 0.29),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    0 20px 36px rgba(23, 107, 82, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
 
 .page .filterTriggerButton,
 .page .assetHeaderActions .cardOptionsButton {
-  color: var(--action-neutral-text) !important;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%) !important;
-  border-color: var(--action-neutral-border) !important;
+  color: var(--action-sand-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-sand-bg) 100%) !important;
+  border-color: var(--action-sand-border) !important;
   box-shadow:
-    0 8px 18px rgba(31, 51, 71, 0.045),
+    0 9px 20px rgba(111, 75, 17, 0.055),
     inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
 .page .filterTriggerButton:hover:not(:disabled),
 .page .filterTriggerButtonOpen,
 .page .assetHeaderActions .cardOptionsButton:hover:not(:disabled) {
-  color: var(--action-neutral-text) !important;
-  background: linear-gradient(180deg, #ffffff 0%, var(--action-neutral-bg-hover) 100%) !important;
-  border-color: var(--action-neutral-border-hover) !important;
+  color: var(--action-sand-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-sand-bg-hover) 100%) !important;
+  border-color: var(--action-sand-border-hover) !important;
+  box-shadow:
+    0 12px 24px rgba(111, 75, 17, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
 }
 
 .page .filterTriggerButtonActive,
 .page .filterTriggerButtonActive:hover:not(:disabled) {
   color: #ffffff !important;
-  background: linear-gradient(180deg, var(--action-green) 0%, var(--action-green-hover) 100%) !important;
-  border-color: var(--action-green-border) !important;
+  background: linear-gradient(180deg, var(--action-primary) 0%, var(--action-primary-deep) 100%) !important;
+  border-color: var(--action-primary-border) !important;
   box-shadow:
-    0 14px 26px var(--action-green-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+    0 14px 26px var(--action-primary-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
 }
 
 .page .headerDownloadButton,
@@ -15876,7 +15895,7 @@
   background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg) 100%) !important;
   border-color: var(--action-blue-border) !important;
   box-shadow:
-    0 9px 20px rgba(18, 53, 91, 0.065),
+    0 9px 20px rgba(18, 61, 102, 0.065),
     inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
@@ -15886,32 +15905,32 @@
   background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg-hover) 100%) !important;
   border-color: var(--action-blue-border-hover) !important;
   box-shadow:
-    0 13px 26px rgba(18, 53, 91, 0.09),
+    0 13px 26px rgba(18, 61, 102, 0.095),
     inset 0 1px 0 rgba(255, 255, 255, 1) !important;
 }
 
 .page .assetHeaderActions .cardManageButton {
-  color: #ffffff !important;
-  background: linear-gradient(180deg, var(--action-green) 0%, var(--action-green-hover) 100%) !important;
-  border-color: var(--action-green-border) !important;
+  color: var(--action-mint-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-mint-bg) 100%) !important;
+  border-color: var(--action-mint-border) !important;
   box-shadow:
-    0 14px 26px var(--action-green-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+    0 10px 22px rgba(15, 90, 67, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
 .page .assetHeaderActions .cardManageButton:hover:not(:disabled) {
-  color: #ffffff !important;
-  background: linear-gradient(180deg, #12684d 0%, #083c2d 100%) !important;
-  border-color: #0b4635 !important;
+  color: #0b4635 !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-mint-bg-hover) 100%) !important;
+  border-color: var(--action-mint-border-hover) !important;
   box-shadow:
-    0 18px 32px rgba(15, 90, 67, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    0 14px 28px rgba(15, 90, 67, 0.115),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
 }
 
 .page .updateEstimateInlineButton {
   color: #ffffff !important;
-  background: linear-gradient(180deg, var(--action-green) 0%, var(--action-green-hover) 100%) !important;
-  border-color: var(--action-green-border) !important;
+  background: linear-gradient(180deg, var(--action-primary) 0%, var(--action-primary-deep) 100%) !important;
+  border-color: var(--action-primary-border) !important;
 }
 
 .page .sharedNoteActionButton {
