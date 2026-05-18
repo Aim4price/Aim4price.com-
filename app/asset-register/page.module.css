@@ -15725,10 +15725,11 @@
     0 10px 22px rgba(16, 31, 28, 0.035),
     inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
   color: #0d3028 !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
   font-size: clamp(1.42rem, 1.9vw, 1.72rem) !important;
-  font-weight: 900 !important;
+  font-weight: 760 !important;
   line-height: 1.08 !important;
-  letter-spacing: -0.045em !important;
+  letter-spacing: -0.032em !important;
   overflow-wrap: anywhere !important;
   text-wrap: balance;
 }
@@ -15744,7 +15745,8 @@
     min-height: 3.05rem !important;
     padding: 0.7rem 0.9rem !important;
     border-radius: 0.95rem !important;
-    font-size: clamp(1.3rem, 7vw, 1.55rem) !important;
-    letter-spacing: -0.035em !important;
+    font-size: 1.35rem !important;
+    font-weight: 740 !important;
+    letter-spacing: -0.026em !important;
   }
 }
