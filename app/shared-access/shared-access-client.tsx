@@ -701,13 +701,6 @@ export default function SharedAccessClient() {
           </div>
 
           <section className={styles.accessCard}>
-            <div className={styles.sectionHeader}>
-              <div>
-                <h2>Register access</h2>
-                <p>These partners have been invited to view your Asset Register.</p>
-              </div>
-            </div>
-
             {isLoadingGrants ? (
               <p className={styles.emptyState}>Loading shared access...</p>
             ) : grants.length ? (
