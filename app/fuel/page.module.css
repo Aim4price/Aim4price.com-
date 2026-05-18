@@ -1,12 +1,12 @@
-.pageShell {
+.page {
   --bg: #f3f6f8;
   --surface: #ffffff;
-  --surface-soft: #f8fbfc;
-  --surface-muted: #f1f5f7;
-  --line: #e1e9f0;
-  --line-strong: #d2dee8;
-  --text: #10352b;
-  --text-muted: #617286;
+  --surface-soft: #f7fafc;
+  --surface-muted: #f2f5f8;
+  --line: #e5ebf1;
+  --line-strong: #d8e1ea;
+  --text: #17362c;
+  --text-muted: #677586;
   --text-soft: #7f8a98;
   --brand-dark: #10382f;
   --brand-mid: #165340;
@@ -21,56 +21,89 @@
   --danger-bg: #fff4f4;
   --danger-line: #eed3d3;
   --danger-text: #a03535;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f5f7f8 0%, #eef3f5 100%);
+}
+
+.pageShell {
   min-height: calc(100vh - 4rem);
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 34%),
-    linear-gradient(180deg, #f6f8f9 0%, #eef3f5 100%);
-  padding: 1.45rem 0 3.5rem;
+  background: linear-gradient(180deg, #f5f7f8 0%, #eef3f5 100%);
+  padding: 1.35rem 0 4rem;
+}
+
+.shell {
+  width: min(calc(100% - 2.5rem), 1360px);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 2vw, 1.85rem) 0 4rem;
+}
+
+.notice {
+  margin-bottom: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.noticeSuccess {
+  color: #116343;
+  background: #eaf7f1;
+  border-color: #d1ebdf;
+}
+
+.noticeError {
+  color: #9b2f2f;
+  background: #fff0f0;
+  border-color: #f1d2d2;
 }
 
 .ledgerPanel {
-  width: min(calc(100% - 2rem), 1320px);
-  margin: 0 auto;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(225, 233, 241, 0.98);
-  border-radius: 2rem;
-  box-shadow:
-    0 30px 74px rgba(16, 31, 28, 0.065),
-    0 10px 24px rgba(16, 31, 28, 0.04);
-  padding: clamp(1.15rem, 2vw, 1.55rem);
   display: grid;
-  gap: 1.05rem;
+  gap: 1.15rem;
+  padding: clamp(1.15rem, 1.9vw, 1.7rem);
+  border-radius: 2.05rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.035), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 252, 0.96) 100%);
+  border: 1px solid rgba(218, 228, 236, 0.98);
+  box-shadow:
+    0 30px 72px rgba(16, 31, 28, 0.07),
+    0 10px 22px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
 }
 
 .panelHeader {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
-  gap: 1rem 1.25rem;
-  padding: 0.15rem 0.15rem 0.35rem;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
 }
 
 .pageTitleBlock {
-  min-width: 0;
   display: grid;
-  gap: 0.25rem;
+  gap: 0.4rem;
+  max-width: 52rem;
+  min-width: 0;
 }
 
 .pageTitleBlock h1 {
   margin: 0;
-  color: var(--brand-dark);
-  font-size: clamp(2rem, 3.4vw, 2.65rem);
-  font-weight: 850;
-  line-height: 0.98;
-  letter-spacing: -0.06em;
+  color: #102f27;
+  font-size: clamp(1.95rem, 2.6vw, 2.7rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.055em;
 }
 
 .topActions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  align-items: stretch;
-  gap: 0.7rem;
+  gap: 0.85rem;
   flex-wrap: wrap;
+  margin-left: auto;
 }
 
 .primaryButton,
@@ -84,10 +117,12 @@
   gap: 0.55rem;
   min-height: 3.1rem;
   padding: 0 1.08rem;
-  border-radius: 1.05rem;
+  border-radius: 1rem;
   border: 1px solid transparent;
   font: inherit;
-  font-weight: 780;
+  font-size: 0.96rem;
+  font-weight: 830;
+  letter-spacing: -0.015em;
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
@@ -120,137 +155,245 @@
 
 .primaryButton {
   color: #ffffff;
-  background: linear-gradient(180deg, #1a5a45 0%, #124233 100%);
-  border-color: rgba(18, 66, 51, 0.2);
-  box-shadow: 0 13px 26px rgba(18, 66, 51, 0.17);
+  background: linear-gradient(180deg, rgba(32, 104, 78, 1) 0%, rgba(17, 70, 52, 1) 100%);
+  border-color: rgba(17, 70, 52, 0.38);
+  box-shadow:
+    0 15px 28px rgba(17, 70, 52, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
-.secondaryButton {
-  color: var(--blue-text);
-  background: linear-gradient(180deg, #f7fbff 0%, var(--blue-soft) 100%);
-  border-color: var(--blue-soft-border);
-  box-shadow: 0 10px 20px rgba(30, 55, 86, 0.045);
+.primaryButton:hover {
+  box-shadow:
+    0 20px 34px rgba(17, 70, 52, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
-.buttonIcon {
+.secondaryButton,
+.clearSearchButton,
+.unitButton {
+  color: #1d3b62;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+  border-color: rgba(210, 222, 237, 0.98);
+  box-shadow:
+    0 9px 18px rgba(23, 45, 75, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.secondaryButton:hover,
+.clearSearchButton:hover,
+.unitButton:hover {
+  border-color: rgba(177, 197, 220, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #edf5ff 100%);
+  box-shadow:
+    0 13px 24px rgba(23, 45, 75, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.buttonIcon,
+.searchIcon {
   width: 1.05rem;
   height: 1.05rem;
   flex: 0 0 auto;
 }
 
-.notice {
-  padding: 0.95rem 1rem;
-  border-radius: 1rem;
-  font-size: 0.95rem;
-  font-weight: 720;
-  border: 1px solid transparent;
-}
-
-.noticeSuccess {
-  color: #116343;
-  background: #eaf7f1;
-  border-color: #d1ebdf;
-}
-
-.noticeError {
-  color: #9b2f2f;
-  background: #fff0f0;
-  border-color: #f1d2d2;
-}
-
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.9fr) minmax(0, 0.9fr);
+  gap: 1rem;
+  align-items: stretch;
 }
 
 .summaryCard {
-  min-height: 7.8rem;
-  padding: 1.25rem 1.35rem;
-  border-radius: 1.25rem;
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 42%),
-    linear-gradient(180deg, #f8fbfc 0%, #f2f6f8 100%);
-  border: 1px solid var(--line);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  min-height: 9.7rem;
+  padding: 1.25rem 1.3rem 1.1rem;
+  border-radius: 1.45rem;
   display: grid;
-  align-content: center;
-  gap: 0.25rem;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  border: 1px solid rgba(206, 218, 229, 0.98);
+  box-shadow:
+    0 14px 28px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.summaryCardFeatured {
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 38%),
+    linear-gradient(180deg, #ffffff 0%, #eef7f2 100%);
+  border-color: rgba(194, 218, 207, 0.98);
 }
 
 .summaryCard span {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  font-weight: 760;
+  color: #5d6f80;
+  font-size: 0.94rem;
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
 }
 
 .summaryCard strong {
-  color: var(--text);
-  font-size: clamp(1.7rem, 2.4vw, 2rem);
-  line-height: 1;
-  letter-spacing: -0.045em;
+  align-self: center;
+  color: #0e3228;
+  font-size: clamp(2.15rem, 3.2vw, 3.05rem);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.065em;
+  white-space: nowrap;
 }
 
 .summaryCard small {
-  color: var(--text-muted);
-  font-size: 0.86rem;
-  font-weight: 680;
+  display: flex;
+  align-items: center;
+  min-height: 2.45rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(210, 222, 232, 0.96);
+  color: #647587;
+  font-size: 0.84rem;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.95rem;
+  align-items: stretch;
+}
+
+.toolbarPrimaryButton {
+  min-height: 3.55rem;
+  padding: 0 1.25rem;
+  border-radius: 1.15rem;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.searchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 3.55rem;
+  border-radius: 1.15rem;
+  border: 1px solid rgba(210, 222, 232, 0.98);
+  background: #ffffff;
+  padding: 0 0.78rem 0 1rem;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.searchWrap:focus-within {
+  border-color: rgba(22, 83, 64, 0.35);
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.09),
+    0 12px 24px rgba(16, 31, 28, 0.045);
+}
+
+.searchIcon {
+  color: #7b8a99;
+  width: 1.08rem;
+  height: 1.08rem;
+}
+
+.searchInput {
+  width: 100%;
+  min-width: 0;
+  min-height: 3.35rem;
+  border: 0;
+  background: transparent;
+  color: #1d303a;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 620;
+  padding: 0 0.72rem;
+}
+
+.searchInput:focus {
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: #8594a4;
+  font-weight: 560;
+}
+
+.clearSearchButton {
+  width: 2.4rem;
+  min-width: 2.4rem;
+  min-height: 2.4rem;
+  padding: 0;
+  border-radius: 999px;
 }
 
 .storageList {
   display: grid;
-  gap: 0.9rem;
+  gap: 1.05rem;
 }
 
 .storageCard {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
-  gap: clamp(1rem, 2vw, 1.45rem);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
   align-items: center;
-  padding: clamp(1.15rem, 1.8vw, 1.45rem);
-  border-radius: 1.7rem;
-  background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.035), transparent 36%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(249, 252, 253, 0.99) 100%);
-  border: 1px solid var(--line);
-  box-shadow: 0 14px 28px rgba(20, 36, 33, 0.035);
+  gap: 1.3rem;
+  padding: 1.3rem 1.38rem;
+  border-radius: 1.58rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbfc 100%);
+  border: 1px solid rgba(217, 227, 235, 0.96);
+  box-shadow:
+    0 12px 26px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.storageCard:hover {
+  transform: translateY(-1px);
+  border-color: rgba(197, 211, 223, 0.98);
+  box-shadow:
+    0 18px 34px rgba(16, 31, 28, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
 .storageCardLow {
   border-color: rgba(235, 203, 203, 0.98);
   background:
-    radial-gradient(circle at top left, rgba(166, 58, 58, 0.08), transparent 38%),
-    linear-gradient(180deg, #fffafa 0%, #fff7f7 100%);
+    radial-gradient(circle at top left, rgba(166, 58, 58, 0.06), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #fff8f8 100%);
 }
 
 .storageInfo {
   min-width: 0;
   display: grid;
-  gap: 0.9rem;
+  gap: 0.92rem;
+  align-content: center;
 }
 
 .storageTitleBlock {
   min-width: 0;
   display: grid;
-  gap: 0.4rem;
+  gap: 0.58rem;
 }
 
 .storageTitleBlock h2 {
   margin: 0;
-  color: var(--text);
-  font-size: clamp(1.7rem, 2.6vw, 2.25rem);
-  font-weight: 850;
-  line-height: 1.02;
-  letter-spacing: -0.06em;
+  color: #0d3028;
+  font-size: clamp(1.42rem, 1.9vw, 1.72rem);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.045em;
 }
 
 .storageDetails {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.42rem 0.72rem;
-  color: var(--text-muted);
-  font-size: 0.94rem;
-  font-weight: 690;
+  gap: 0.5rem 0.75rem;
+  color: #637282;
+  font-size: 0.96rem;
+  font-weight: 650;
+  line-height: 1.45;
 }
 
 .storageDetails span {
@@ -260,14 +403,14 @@
 }
 
 .storageDetails span:first-child {
-  color: var(--brand-mid);
-  font-weight: 850;
+  color: #0f4a39;
+  font-weight: 880;
 }
 
 .storageDetails span:not(:last-child)::after {
   content: '•';
-  margin-left: 0.72rem;
-  color: var(--line-strong);
+  margin-left: 0.75rem;
+  color: rgba(199, 214, 226, 0.98);
 }
 
 .storageProgressBlock {
@@ -277,7 +420,7 @@
 }
 
 .progressTrack {
-  height: 0.78rem;
+  height: 0.72rem;
   overflow: hidden;
   border-radius: 999px;
   background: #e5ebf1;
@@ -288,68 +431,112 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #1a5a45 0%, #1fb364 100%);
+  background: linear-gradient(90deg, #1d6048 0%, #1fb364 100%);
   transition: width 220ms ease;
 }
 
 .storageCardLow .progressTrack span {
-  background: linear-gradient(90deg, #af3d3d 0%, #e15f5f 100%);
+  background: linear-gradient(90deg, #a13a3a 0%, #e15f5f 100%);
 }
 
 .progressMeta {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  color: var(--text-muted);
-  font-size: 0.86rem;
-  font-weight: 740;
+  color: #657586;
+  font-size: 0.9rem;
+  font-weight: 760;
+  line-height: 1.3;
 }
 
 .progressMeta span:last-child {
-  color: var(--text);
-  font-weight: 850;
+  color: #0e3228;
+  font-weight: 900;
+}
+
+.storageHeaderAside {
+  display: grid;
+  gap: 0.85rem;
+  justify-items: end;
+  align-content: center;
+  min-width: min(100%, 340px);
+}
+
+.storageValueBlock {
+  display: grid;
+  justify-items: end;
+  align-content: center;
+  gap: 0.16rem;
+  width: 100%;
+  padding-left: 0.7rem;
+  text-align: right;
+}
+
+.storageValueBlock strong {
+  display: block;
+  margin: 0;
+  color: #0d3028;
+  font-size: clamp(1.5rem, 2.05vw, 1.9rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.storageValueBlock span {
+  display: block;
+  margin: 0;
+  color: #647486;
+  font-size: 0.9rem;
+  font-weight: 780;
 }
 
 .unitActions {
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.7rem;
-  align-self: center;
+  gap: 0.72rem;
+  align-items: center;
+  justify-content: end;
 }
 
 .unitButton {
-  min-height: 3.35rem;
+  min-height: 3.1rem;
+  padding: 0 1rem;
   border-radius: 1rem;
-  color: var(--blue-text);
-  background: #ffffff;
-  border-color: var(--line-strong);
-  box-shadow: 0 10px 18px rgba(20, 36, 33, 0.035);
-  letter-spacing: 0;
-  text-align: center;
+  font-size: 0.96rem;
 }
 
 .deleteUnitButton {
   color: var(--danger-text);
   background: linear-gradient(180deg, #fffafa 0%, var(--danger-bg) 100%);
   border-color: var(--danger-line);
+  box-shadow: none;
+}
+
+.deleteUnitButton:hover {
+  color: #913131;
+  background: linear-gradient(180deg, #ffffff 0%, #ffecec 100%);
+  border-color: #efcaca;
+  box-shadow: none;
 }
 
 .emptyState {
-  padding: clamp(1.25rem, 3vw, 2rem);
+  padding: 1.25rem 1.3rem;
+  border-radius: 1.25rem;
   display: grid;
   gap: 0.8rem;
   justify-items: start;
-  color: var(--text-muted);
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  border: 1px solid rgba(217, 227, 235, 0.96);
+  color: #607080;
   font-weight: 700;
   line-height: 1.55;
-  border-radius: 1.35rem;
-  background: var(--surface-soft);
-  border: 1px solid var(--line);
 }
 
 .emptyState strong {
-  color: var(--text);
-  font-size: 1.25rem;
+  color: #0d3028;
+  font-size: 1.18rem;
+  font-weight: 880;
 }
 
 .modalOverlay {
@@ -369,11 +556,11 @@
   max-height: min(92vh, 780px);
   overflow: auto;
   display: grid;
-  gap: 0.9rem;
+  gap: 0.95rem;
   padding: clamp(1.05rem, 2vw, 1.45rem);
   border-radius: 1.7rem;
   background: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(216, 226, 236, 0.98);
   box-shadow: 0 36px 90px rgba(10, 30, 24, 0.26);
   scrollbar-width: thin;
   scrollbar-color: rgba(22, 83, 64, 0.28) transparent;
@@ -388,6 +575,8 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 1rem;
   align-items: start;
+  padding-bottom: 0.95rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9);
 }
 
 .modalHeader > div {
@@ -397,39 +586,41 @@
 
 .modalHeader h2 {
   margin: 0;
-  color: var(--text);
-  font-size: clamp(1.9rem, 3.2vw, 2.55rem);
-  line-height: 0.98;
-  letter-spacing: -0.055em;
+  color: #10352b;
+  font-size: clamp(1.7rem, 2.5vw, 2.18rem);
+  font-weight: 760;
+  line-height: 1.05;
+  letter-spacing: -0.052em;
 }
 
 .modalEyebrow {
   display: inline-flex;
   align-items: center;
   width: fit-content;
-  min-height: 1.95rem;
-  padding: 0 0.85rem;
+  min-height: 1.85rem;
+  padding: 0 0.78rem;
   border-radius: 999px;
-  color: var(--text-muted);
-  background: var(--surface-muted);
-  border: 1px solid var(--line-strong);
+  color: #446054;
+  background: rgba(237, 246, 241, 0.92);
+  border: 1px solid rgba(216, 232, 223, 0.98);
   font-size: 0.72rem;
   font-weight: 850;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.075em;
   text-transform: uppercase;
 }
 
 .closeButton {
-  width: 2.65rem;
-  height: 2.65rem;
-  min-height: 2.65rem;
+  width: 3rem;
+  height: 3rem;
+  min-height: 3rem;
   padding: 0;
   border-radius: 999px;
-  background: var(--surface-muted);
-  color: var(--text);
-  border-color: var(--line-strong);
-  font-size: 1.7rem;
+  background: #f7fbff;
+  color: #13395d;
+  border-color: rgba(207, 223, 236, 0.98);
+  font-size: 1.35rem;
   line-height: 1;
+  box-shadow: none;
 }
 
 .formGrid,
@@ -520,59 +711,48 @@
 }
 
 .confirmDeleteOverlay {
-  z-index: 190;
+  z-index: 220;
 }
 
 .deleteConfirmModal {
-  width: min(100%, 760px);
-  display: grid;
-  grid-template-columns: 3.8rem minmax(0, 1fr);
-  gap: 1.35rem;
-  padding: clamp(1.65rem, 2.3vw, 2rem);
-  border-radius: 1.9rem;
-  background:
-    radial-gradient(circle at top left, rgba(160, 53, 53, 0.07), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #fffafa 100%);
-  border: 1px solid rgba(235, 203, 203, 0.98);
-  box-shadow:
-    0 34px 86px rgba(42, 20, 20, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  position: relative;
+  width: min(96vw, 54rem);
+  display: block;
+  padding: clamp(1.55rem, 2.4vw, 2.1rem);
+  border: 1px solid rgba(203, 218, 230, 0.98);
+  border-radius: 1.8rem;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 26px 70px rgba(8, 27, 34, 0.22);
 }
 
 .deleteConfirmIcon {
-  width: 3.8rem;
-  height: 3.8rem;
-  border-radius: 1.18rem;
-  display: grid;
-  place-items: center;
-  color: #a63a3a;
-  background: #fff5f5;
-  border: 1px solid rgba(235, 203, 203, 0.98);
+  display: none;
 }
 
 .deleteConfirmContent {
-  min-width: 0;
   display: grid;
-  gap: 1.05rem;
+  gap: 1.15rem;
+  padding: 0;
 }
 
 .deleteConfirmContent h3 {
   margin: 0;
-  max-width: 42rem;
-  color: #10352b;
-  font-size: clamp(1.58rem, 2.65vw, 2.05rem);
-  font-weight: 780;
-  line-height: 1.06;
-  letter-spacing: -0.045em;
+  padding: 0 3.6rem 1.1rem 0;
+  border-bottom: 1px solid rgba(211, 224, 234, 0.98);
+  color: #0c382f;
+  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  font-weight: 760;
+  line-height: 1.02;
+  letter-spacing: -0.05em;
 }
 
 .deleteConfirmContent p {
+  max-width: 100%;
   margin: 0;
-  max-width: 41.5rem;
-  color: #617286;
-  font-size: 1.03rem;
-  font-weight: 600;
-  line-height: 1.68;
+  color: #647382;
+  font-size: 1rem;
+  font-weight: 560;
+  line-height: 1.45;
 }
 
 .deleteConfirmContent p strong {
@@ -582,114 +762,181 @@
 
 .deleteConfirmAsset {
   display: grid;
-  gap: 0.42rem;
-  padding: 1.18rem 1.25rem;
-  border-radius: 1.22rem;
-  background: #ffffff;
-  border: 1px solid rgba(235, 203, 203, 0.92);
+  gap: 0.35rem;
+  width: 100%;
+  margin: 0;
+  padding: 1.05rem 1.15rem;
+  border: 1px solid rgba(207, 220, 231, 0.98);
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
 }
 
 .deleteConfirmAsset span {
-  color: #8c6767;
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.07em;
+  color: #68798b;
+  font-size: 0.78rem;
+  font-weight: 820;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .deleteConfirmAsset strong {
-  color: #10352b;
-  font-size: 1.12rem;
-  font-weight: 820;
-  line-height: 1.28;
+  color: #0c382f;
+  font-size: 1.2rem;
+  font-weight: 780;
+  line-height: 1.1;
 }
 
 .deleteConfirmAsset small {
-  color: #617286;
-  font-size: 0.94rem;
-  font-weight: 600;
-  line-height: 1.5;
+  color: #607084;
+  font-size: 0.98rem;
+  font-weight: 650;
+  line-height: 1.35;
 }
 
 .deleteConfirmActions {
   display: flex;
-  flex-wrap: wrap;
   justify-content: flex-end;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.75rem;
   margin-top: 0.2rem;
 }
 
 .deleteConfirmActions .secondaryButton,
 .deleteConfirmActions .deleteConfirmButton {
   min-height: 3.25rem;
-  padding-inline: 1.25rem;
+  padding: 0 1.3rem;
   border-radius: 1.05rem;
+  font-size: 0.98rem;
+  font-weight: 760;
+  box-shadow: none;
 }
 
-.deleteConfirmButton {
-  min-width: 13.5rem;
-  color: #ffffff !important;
-  background: linear-gradient(180deg, #bd4545 0%, #922f2f 100%) !important;
-  border-color: rgba(146, 47, 47, 0.34) !important;
-  box-shadow:
-    0 14px 26px rgba(160, 53, 53, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+.deleteConfirmButton,
+.deleteConfirmActions .deleteConfirmButton {
+  min-width: 0;
+  color: #a13a3a;
+  background: #fff5f4;
+  border: 1px solid #efcaca;
 }
 
-@media (max-width: 1060px) {
-  .panelHeader,
+.deleteConfirmButton:hover,
+.deleteConfirmActions .deleteConfirmButton:hover {
+  background: #ffecec;
+  border-color: #e8c7c7;
+  box-shadow: none;
+}
+
+.deleteConfirmCloseButton {
+  position: absolute;
+  top: clamp(1rem, 1.6vw, 1.25rem);
+  right: clamp(1rem, 1.6vw, 1.25rem);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid rgba(207, 223, 236, 0.98);
+  border-radius: 999px;
+  background: #f7fbff;
+  color: #13395d;
+  font: inherit;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.deleteConfirmCloseButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+@media (max-width: 1180px) {
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summaryCardFeatured {
+    grid-column: 1 / -1;
+  }
+
   .storageCard {
     grid-template-columns: 1fr;
   }
 
+  .storageHeaderAside,
+  .storageValueBlock {
+    justify-items: start;
+    text-align: left;
+    padding-left: 0;
+  }
+
+  .unitActions {
+    max-width: 42rem;
+  }
+}
+
+@media (max-width: 960px) {
+  .panelHeader,
+  .topActions {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .panelHeader {
+    flex-direction: column;
+  }
+
   .topActions {
     justify-content: stretch;
-    width: 100%;
+    margin-left: 0;
   }
 
   .topActions > * {
     flex: 1 1 auto;
   }
 
-  .storageProgressBlock {
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbarPrimaryButton {
     width: 100%;
   }
 }
 
-@media (max-width: 900px) {
-  .formGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 760px) {
-  .pageShell {
-    padding-top: 1rem;
+  .shell {
+    width: min(calc(100% - 1rem), 1360px);
+    padding: 1rem 0 3rem;
   }
 
   .ledgerPanel {
-    width: min(calc(100% - 1rem), 1320px);
     padding: 1rem;
     border-radius: 1.4rem;
-  }
-
-  .topActions,
-  .modalActions,
-  .deleteConfirmActions {
-    justify-content: stretch;
-  }
-
-  .topActions > *,
-  .modalActions > *,
-  .deleteConfirmActions > * {
-    flex: 1 1 100%;
   }
 
   .summaryGrid,
   .formGrid,
   .unitActions {
     grid-template-columns: 1fr;
+  }
+
+  .summaryCardFeatured {
+    grid-column: auto;
+  }
+
+  .summaryCard {
+    min-height: 8.4rem;
+    border-radius: 1.18rem;
+  }
+
+  .summaryCard strong {
+    font-size: 2.1rem;
+  }
+
+  .storageCard {
+    padding: 1.05rem;
+    border-radius: 1.25rem;
   }
 
   .storageDetails {
@@ -707,188 +954,48 @@
     gap: 0.25rem;
   }
 
+  .topActions,
+  .modalActions,
+  .deleteConfirmActions {
+    justify-content: stretch;
+  }
+
+  .topActions > *,
+  .modalActions > *,
+  .deleteConfirmActions > * {
+    flex: 1 1 100%;
+  }
+
   .fullField {
     grid-column: auto;
   }
 
+  .modalCard,
+  .modalCardSmall,
   .deleteConfirmModal {
     width: min(100%, calc(100vw - 1.25rem));
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-}
-
-/* === Standard white delete confirmation modal === */
-.confirmDeleteOverlay {
-  z-index: 220 !important;
-}
-
-.deleteConfirmModal {
-  width: min(96vw, 54rem) !important;
-  display: block !important;
-  grid-template-columns: unset !important;
-  gap: 0 !important;
-  padding: clamp(1.55rem, 2.4vw, 2.1rem) !important;
-  border: 1px solid rgba(203, 218, 230, 0.98) !important;
-  border-radius: 1.8rem !important;
-  background: rgba(255, 255, 255, 0.98) !important;
-  box-shadow: 0 26px 70px rgba(8, 27, 34, 0.22) !important;
-}
-
-.deleteConfirmIcon {
-  display: none !important;
-}
-
-.deleteConfirmContent {
-  display: grid !important;
-  gap: 1.15rem !important;
-  padding: 0 !important;
-}
-
-.deleteConfirmContent h3 {
-  margin: 0 !important;
-  padding-bottom: 1.1rem !important;
-  border-bottom: 1px solid rgba(211, 224, 234, 0.98) !important;
-  color: #0c382f !important;
-  font-size: clamp(1.65rem, 3vw, 2.25rem) !important;
-  font-weight: 760 !important;
-  line-height: 1.02 !important;
-  letter-spacing: -0.05em !important;
-}
-
-.deleteConfirmContent p {
-  max-width: 100% !important;
-  margin: 0 !important;
-  color: #647382 !important;
-  font-size: 1rem !important;
-  font-weight: 560 !important;
-  line-height: 1.45 !important;
-}
-
-.deleteConfirmAsset {
-  display: grid !important;
-  gap: 0.35rem !important;
-  width: 100% !important;
-  margin: 0 !important;
-  padding: 1.05rem 1.15rem !important;
-  border: 1px solid rgba(207, 220, 231, 0.98) !important;
-  border-radius: 1.2rem !important;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%) !important;
-}
-
-.deleteConfirmAsset span {
-  color: #68798b !important;
-  font-size: 0.78rem !important;
-  font-weight: 820 !important;
-  letter-spacing: 0.06em !important;
-  text-transform: uppercase !important;
-}
-
-.deleteConfirmAsset strong {
-  color: #0c382f !important;
-  font-size: 1.2rem !important;
-  font-weight: 780 !important;
-  line-height: 1.1 !important;
-}
-
-.deleteConfirmAsset small {
-  color: #607084 !important;
-  font-size: 0.98rem !important;
-  font-weight: 650 !important;
-  line-height: 1.35 !important;
-}
-
-.deleteConfirmActions {
-  display: flex !important;
-  justify-content: flex-end !important;
-  align-items: center !important;
-  gap: 0.75rem !important;
-  margin-top: 0.2rem !important;
-}
-
-.deleteConfirmActions .secondaryButton,
-.deleteConfirmActions .deleteConfirmButton {
-  min-height: 3.25rem !important;
-  padding: 0 1.3rem !important;
-  border-radius: 1.05rem !important;
-  font-size: 0.98rem !important;
-  font-weight: 760 !important;
-  box-shadow: none !important;
-}
-
-.deleteConfirmButton,
-.deleteConfirmActions .deleteConfirmButton {
-  min-width: 0 !important;
-  color: #a13a3a !important;
-  background: #fff5f4 !important;
-  border: 1px solid #efcaca !important;
-}
-
-.deleteConfirmButton:hover,
-.deleteConfirmActions .deleteConfirmButton:hover {
-  background: #ffecec !important;
-  border-color: #e8c7c7 !important;
-  box-shadow: none !important;
-}
-
-.deleteConfirmButton .buttonIcon {
-  display: none !important;
-}
-
-@media (max-width: 760px) {
-  .deleteConfirmModal {
-    width: min(100%, calc(100vw - 1.25rem)) !important;
-    padding: 1.15rem !important;
-    border-radius: 1.4rem !important;
+    padding: 1.15rem;
+    border-radius: 1.4rem;
   }
 
   .deleteConfirmActions {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .deleteConfirmActions .secondaryButton,
   .deleteConfirmActions .deleteConfirmButton {
-    width: 100% !important;
+    width: 100%;
   }
-}
 
-.deleteConfirmModal {
-  position: relative !important;
-}
-
-.deleteConfirmCloseButton {
-  position: absolute !important;
-  top: clamp(1rem, 1.6vw, 1.25rem) !important;
-  right: clamp(1rem, 1.6vw, 1.25rem) !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 3rem !important;
-  height: 3rem !important;
-  border: 1px solid rgba(207, 223, 236, 0.98) !important;
-  border-radius: 999px !important;
-  background: #f7fbff !important;
-  color: #13395d !important;
-  font-size: 1.35rem !important;
-  line-height: 1 !important;
-  cursor: pointer !important;
-}
-
-.deleteConfirmCloseButton:disabled {
-  cursor: not-allowed !important;
-  opacity: 0.58 !important;
-}
-
-@media (max-width: 760px) {
   .deleteConfirmCloseButton {
-    top: 0.85rem !important;
-    right: 0.85rem !important;
-    width: 2.65rem !important;
-    height: 2.65rem !important;
+    top: 0.85rem;
+    right: 0.85rem;
+    width: 2.65rem;
+    height: 2.65rem;
   }
 
   .deleteConfirmContent h3 {
-    padding-right: 3rem !important;
+    padding-right: 3rem;
   }
 }
