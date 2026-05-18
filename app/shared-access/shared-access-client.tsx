@@ -655,6 +655,7 @@ export default function SharedAccessClient() {
               <h1>Shared access</h1>
               <p>
                 Give selected dealers, finance partners or insurance partners permission to view your live Asset Register.
+                <br />
                 Access stays controlled by you and can be revoked at any time.
               </p>
             </div>
@@ -720,35 +721,40 @@ export default function SharedAccessClient() {
                           <span className={`${styles.statusPill} ${statusClass(grant.status)}`}>{formatStatus(grant.status)}</span>
                         </div>
 
-                        <div className={styles.grantMetaGrid}>
-                          <div className={styles.grantMetaItem}>
-                            <span>Partner type</span>
-                            <strong>{formatPartnerType(grant.partnerType)}</strong>
+                        <div className={styles.grantDetailsLayout}>
+                          <div className={styles.grantMetaStack}>
+                            <div className={styles.grantMetaItem}>
+                              <span>Partner type</span>
+                              <strong>{formatPartnerType(grant.partnerType)}</strong>
+                            </div>
+                            <div className={styles.grantMetaItem}>
+                              <span>Partner address</span>
+                              <strong>{grantPartnerLocation(grant)}</strong>
+                            </div>
+                            <div className={styles.grantMetaItem}>
+                              <span>Shared</span>
+                              <strong>{formatDate(grant.createdAtIso)}</strong>
+                            </div>
                           </div>
-                          <div className={styles.grantMetaItem}>
-                            <span>Partner address</span>
-                            <strong>{grantPartnerLocation(grant)}</strong>
-                          </div>
-                          <div className={styles.grantMetaItem}>
-                            <span>Shared</span>
-                            <strong>{formatDate(grant.createdAtIso)}</strong>
-                          </div>
-                          <div className={styles.grantMetaItem}>
-                            <span>Last viewed</span>
-                            <strong>{formatDate(grant.lastViewedAtIso)}</strong>
+
+                          <div className={styles.grantAside}>
+                            <div className={styles.grantMetaItem}>
+                              <span>Last viewed</span>
+                              <strong>{formatDate(grant.lastViewedAtIso)}</strong>
+                            </div>
+
+                            {grant.status === 'active' || grant.status === 'pending' ? (
+                              <div className={styles.grantActions}>
+                                <button type="button" className={styles.dangerButton} onClick={() => void handleRevoke(grant.id)}>
+                                  Revoke access
+                                </button>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
 
                         {grant.ownerMessage ? <p className={styles.grantMessage}>{grant.ownerMessage}</p> : null}
                       </div>
-
-                      {grant.status === 'active' || grant.status === 'pending' ? (
-                        <div className={styles.grantActions}>
-                          <button type="button" className={styles.dangerButton} onClick={() => void handleRevoke(grant.id)}>
-                            Revoke access
-                          </button>
-                        </div>
-                      ) : null}
                     </article>
                   ))}
                 </div>
