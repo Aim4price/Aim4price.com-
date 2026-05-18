@@ -1,0 +1,49 @@
+.loadingScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: grid;
+  place-items: center;
+  background: #ffffff;
+}
+
+.loaderShell {
+  width: 4.35rem;
+  height: 4.35rem;
+  display: inline-grid;
+  place-items: center;
+}
+
+.spinner {
+  width: 2.45rem;
+  height: 2.45rem;
+  border-radius: 999px;
+  border: 3px solid rgba(10, 18, 15, 0.12);
+  border-top-color: #0b0f0d;
+  border-right-color: var(--brand-700, #184d3d);
+  animation: globalLoadingSpin 760ms linear infinite;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes globalLoadingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 1.35s;
+  }
+}
