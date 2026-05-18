@@ -878,7 +878,7 @@ export async function listSharedRegistersForPartner(partnerUserId: string): Prom
   await ensurePartnerAccessTables();
   const db = getDb();
   const result = await db.query<GrantRow>(
-    `${grantSelectSql('where g.partner_user_id = $1')} order by g.created_at desc`,
+    `${grantSelectSql("where g.partner_user_id = $1 and g.status in ('pending', 'active')")} order by g.created_at desc`,
     [partnerUserId],
   );
 
