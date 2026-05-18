@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
+import { useGlobalLoading } from '../../lib/use-global-loading';
 import styles from './page.module.css';
 
 type PartnerType = 'dealer' | 'finance' | 'insurance';
@@ -364,6 +365,7 @@ export default function SharedAccessClient() {
   const [isShareConfirmOpen, setIsShareConfirmOpen] = useState(false);
   const [isLoadingGrants, setIsLoadingGrants] = useState(true);
   const [isLoadingPartners, setIsLoadingPartners] = useState(false);
+  useGlobalLoading(isLoadingGrants, 'shared-access-data');
   const [isSharing, setIsSharing] = useState(false);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
 
