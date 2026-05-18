@@ -130,6 +130,7 @@ export default function AppHeader({
   const router = useRouter();
   const pathname = usePathname();
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const hasLoadedSessionOnceRef = useRef(false);
 
   const [session, setSession] = useState<SessionResponse['user']>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
@@ -157,6 +158,7 @@ export default function AppHeader({
         setSession(null);
       } finally {
         if (mounted) {
+          hasLoadedSessionOnceRef.current = true;
           setIsLoadingSession(false);
         }
       }
@@ -170,7 +172,8 @@ export default function AppHeader({
   }, [pathname]);
 
   useEffect(() => {
-    setGlobalLoading(isLoadingSession || isSigningOut, 'account-session');
+    const shouldShowAccountLoader = isSigningOut || (isLoadingSession && !hasLoadedSessionOnceRef.current);
+    setGlobalLoading(shouldShowAccountLoader, 'account-session');
 
     return () => {
       setGlobalLoading(false, 'account-session');

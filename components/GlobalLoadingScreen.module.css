@@ -5,35 +5,45 @@
   display: grid;
   place-items: center;
   background: #ffffff;
+  animation: globalLoadingFadeIn 160ms ease-out both;
 }
 
 .loaderShell {
-  width: 4.35rem;
-  height: 4.35rem;
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.95rem;
+  min-width: 8.5rem;
 }
 
 .spinner {
-  width: 2.45rem;
-  height: 2.45rem;
+  width: 2.55rem;
+  height: 2.55rem;
   border-radius: 999px;
-  border: 3px solid rgba(10, 18, 15, 0.12);
+  border: 3px solid rgba(10, 18, 15, 0.11);
   border-top-color: #0b0f0d;
   border-right-color: var(--brand-700, #184d3d);
   animation: globalLoadingSpin 760ms linear infinite;
 }
 
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+.loadingText {
+  font-family: Montserrat, Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.92rem;
+  font-weight: 750;
+  line-height: 1.2;
+  color: #0b0f0d;
+  letter-spacing: -0.01em;
+}
+
+@keyframes globalLoadingFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes globalLoadingSpin {
@@ -43,6 +53,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .loadingScreen {
+    animation: none;
+  }
+
   .spinner {
     animation-duration: 1.35s;
   }
