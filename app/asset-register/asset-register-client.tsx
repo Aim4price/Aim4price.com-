@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
+import { useGlobalLoading } from '../../lib/use-global-loading';
 import {
   openAssetRegisterSummaryPrint,
   openAssetSheetPrint,
@@ -2325,6 +2326,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
   const [copiedScanLinkAssetId, setCopiedScanLinkAssetId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  useGlobalLoading(isLoading, 'asset-register-data');
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
