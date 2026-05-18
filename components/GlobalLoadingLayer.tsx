@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { usePathname } from 'next/navigation';
 import {
   GLOBAL_LOADING_START_EVENT,
@@ -12,13 +12,17 @@ import GlobalLoadingScreen from './GlobalLoadingScreen';
 
 const ROUTE_LOADING_KEY = 'route-change';
 const FETCH_LOADING_KEY_PREFIX = 'fetch';
-const SHOW_DELAY_MS = 110;
-const HIDE_GRACE_MS = 220;
-const MIN_VISIBLE_MS = 620;
-const ROUTE_SETTLE_MS = 520;
-const ROUTE_FAILSAFE_MS = 12000;
-const NAVIGATION_FETCH_WINDOW_MS = 2400;
-const BOOT_FETCH_WINDOW_MS = 2600;
+
+const SHOW_DELAY_MS = 160;
+const HIDE_GRACE_MS = 260;
+const MIN_VISIBLE_MS = 720;
+const EXIT_TRANSITION_MS = 180;
+
+const ROUTE_HANDOFF_MS = 950;
+const ROUTE_QUIET_MS = 260;
+const ROUTE_FAILSAFE_MS = 14000;
+const NAVIGATION_FETCH_WINDOW_MS = 3600;
+const BOOT_FETCH_WINDOW_MS = 2400;
 
 function getEventKey(event: Event) {
   const detail = (event as CustomEvent<GlobalLoadingEventDetail>).detail;
@@ -48,32 +52,29 @@ function isExternalOrDownloadAnchor(anchor: HTMLAnchorElement) {
   }
 }
 
-function shouldShowRouteLoader(event: MouseEvent) {
-  if (event.defaultPrevented) return false;
-  if (event.button !== 0) return false;
-  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
-  if (isGlobalLoadingDisabledPath(window.location.pathname)) return false;
+function getInternalNavigationUrl(event: MouseEvent) {
+  if (event.defaultPrevented) return null;
+  if (event.button !== 0) return null;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null;
 
   const anchor = getClosestAnchor(event.target) as HTMLAnchorElement | null;
-  if (!anchor || isExternalOrDownloadAnchor(anchor)) return false;
+  if (!anchor || isExternalOrDownloadAnchor(anchor)) return null;
 
   const href = anchor.getAttribute('href')?.trim();
-  if (!href) return false;
-
-  let nextUrl: URL;
+  if (!href) return null;
 
   try {
-    nextUrl = new URL(href, window.location.href);
+    const nextUrl = new URL(href, window.location.href);
+    const currentPath = `${window.location.pathname}${window.location.search}`;
+    const nextPath = `${nextUrl.pathname}${nextUrl.search}`;
+
+    if (nextPath === currentPath) return null;
+    if (isGlobalLoadingDisabledPath(nextUrl.pathname)) return null;
+
+    return nextUrl;
   } catch {
-    return false;
+    return null;
   }
-
-  if (isGlobalLoadingDisabledPath(nextUrl.pathname)) return false;
-
-  const currentPath = `${window.location.pathname}${window.location.search}`;
-  const nextPath = `${nextUrl.pathname}${nextUrl.search}`;
-
-  return nextPath !== currentPath;
 }
 
 function getFetchUrl(input: RequestInfo | URL) {
@@ -85,9 +86,11 @@ function getFetchUrl(input: RequestInfo | URL) {
 function getFetchMethod(input: RequestInfo | URL, init?: RequestInit) {
   const initMethod = init?.method?.trim();
   if (initMethod) return initMethod.toUpperCase();
+
   if (typeof input === 'object' && 'method' in input && typeof input.method === 'string') {
     return input.method.toUpperCase();
   }
+
   return 'GET';
 }
 
@@ -105,51 +108,195 @@ function isTrackableApiFetch(input: RequestInfo | URL, init?: RequestInit) {
   }
 }
 
+function getClientPathname() {
+  if (typeof window === 'undefined') return '/';
+  return window.location.pathname || '/';
+}
+
 export default function GlobalLoadingLayer() {
   const pathname = usePathname();
   const [activeKeys, setActiveKeys] = useState<string[]>([]);
   const [shouldRender, setShouldRender] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   const activeKeysRef = useRef<string[]>([]);
   const pathnameRef = useRef(pathname);
+  const lastCommittedPathRef = useRef(pathname);
+  const hasCommittedInitialPathRef = useRef(false);
+  const pendingRouteTargetPathRef = useRef<string | null>(null);
+
   const showDelayRef = useRef<number | null>(null);
   const hideDelayRef = useRef<number | null>(null);
+  const exitDelayRef = useRef<number | null>(null);
+  const showFrameRef = useRef<number | null>(null);
+
   const renderStartedAtRef = useRef(0);
-  const routeSettledRef = useRef<number | null>(null);
+  const routeReleaseRef = useRef<number | null>(null);
   const routeFailsafeRef = useRef<number | null>(null);
+  const routeHandoffUntilRef = useRef(0);
+  const routeLastActivityAtRef = useRef(0);
   const bootFetchTrackingUntilRef = useRef(Date.now() + BOOT_FETCH_WINDOW_MS);
   const navigationFetchTrackingUntilRef = useRef(0);
   const fetchIdRef = useRef(0);
 
+  function clearTimer(timerRef: MutableRefObject<number | null>) {
+    if (!timerRef.current) return;
+    window.clearTimeout(timerRef.current);
+    timerRef.current = null;
+  }
+
+  function clearAnimationFrame(frameRef: MutableRefObject<number | null>) {
+    if (!frameRef.current) return;
+    window.cancelAnimationFrame(frameRef.current);
+    frameRef.current = null;
+  }
+
   function clearGlobalLoadingTimers() {
-    if (showDelayRef.current) {
-      window.clearTimeout(showDelayRef.current);
-      showDelayRef.current = null;
-    }
+    clearTimer(showDelayRef);
+    clearTimer(hideDelayRef);
+    clearTimer(exitDelayRef);
+    clearTimer(routeReleaseRef);
+    clearTimer(routeFailsafeRef);
+    clearAnimationFrame(showFrameRef);
+  }
 
-    if (hideDelayRef.current) {
-      window.clearTimeout(hideDelayRef.current);
-      hideDelayRef.current = null;
-    }
+  function commitActiveKeys(nextKeys: string[]) {
+    activeKeysRef.current = nextKeys;
+    setActiveKeys(nextKeys);
+  }
 
-    if (routeSettledRef.current) {
-      window.clearTimeout(routeSettledRef.current);
-      routeSettledRef.current = null;
-    }
+  function hasRouteLoadingKey(keys = activeKeysRef.current) {
+    return keys.includes(ROUTE_LOADING_KEY);
+  }
 
-    if (routeFailsafeRef.current) {
-      window.clearTimeout(routeFailsafeRef.current);
-      routeFailsafeRef.current = null;
-    }
+  function hasBlockingKeys(keys = activeKeysRef.current) {
+    return keys.some((key) => key !== ROUTE_LOADING_KEY);
+  }
+
+  function markRouteActivity() {
+    routeLastActivityAtRef.current = Date.now();
+  }
+
+  function markNavigationFetchWindow() {
+    navigationFetchTrackingUntilRef.current = Date.now() + NAVIGATION_FETCH_WINDOW_MS;
+  }
+
+  function hasPendingEnabledRoute() {
+    const pendingTargetPath = pendingRouteTargetPathRef.current;
+    return Boolean(pendingTargetPath && !isGlobalLoadingDisabledPath(pendingTargetPath));
   }
 
   function stopAllGlobalLoading() {
     clearGlobalLoadingTimers();
     activeKeysRef.current = [];
+    pendingRouteTargetPathRef.current = null;
     navigationFetchTrackingUntilRef.current = 0;
     bootFetchTrackingUntilRef.current = 0;
+    routeHandoffUntilRef.current = 0;
+    routeLastActivityAtRef.current = 0;
     setActiveKeys([]);
+    setIsVisible(false);
     setShouldRender(false);
+  }
+
+  function removeLoadingKey(key: string) {
+    const currentKeys = activeKeysRef.current;
+    if (!currentKeys.includes(key)) return;
+
+    markRouteActivity();
+    const nextKeys = currentKeys.filter((currentKey) => currentKey !== key);
+    commitActiveKeys(nextKeys);
+
+    if (key !== ROUTE_LOADING_KEY && hasRouteLoadingKey(nextKeys)) {
+      scheduleRouteRelease();
+    }
+  }
+
+  function addLoadingKey(key: string) {
+    const currentKeys = activeKeysRef.current;
+    markRouteActivity();
+
+    if (currentKeys.includes(key)) {
+      if (key !== ROUTE_LOADING_KEY && hasRouteLoadingKey(currentKeys)) {
+        scheduleRouteRelease();
+      }
+      return;
+    }
+
+    const nextKeys = [...currentKeys, key];
+    commitActiveKeys(nextKeys);
+
+    if (key !== ROUTE_LOADING_KEY && hasRouteLoadingKey(nextKeys)) {
+      scheduleRouteRelease();
+    }
+  }
+
+  function startNonRouteLoading(key: string) {
+    if (isGlobalLoadingDisabledPath(getClientPathname())) return;
+    addLoadingKey(key);
+  }
+
+  function startRouteLoading(targetPathname: string) {
+    if (isGlobalLoadingDisabledPath(targetPathname)) {
+      stopAllGlobalLoading();
+      return;
+    }
+
+    const now = Date.now();
+    pendingRouteTargetPathRef.current = targetPathname;
+    markNavigationFetchWindow();
+    routeHandoffUntilRef.current = Math.max(routeHandoffUntilRef.current, now + ROUTE_HANDOFF_MS);
+    routeLastActivityAtRef.current = now;
+    addLoadingKey(ROUTE_LOADING_KEY);
+    scheduleRouteRelease();
+
+    clearTimer(routeFailsafeRef);
+    routeFailsafeRef.current = window.setTimeout(() => {
+      removeLoadingKey(ROUTE_LOADING_KEY);
+      routeFailsafeRef.current = null;
+      routeHandoffUntilRef.current = 0;
+    }, ROUTE_FAILSAFE_MS);
+  }
+
+  function scheduleRouteRelease() {
+    if (!hasRouteLoadingKey()) return;
+
+    clearTimer(routeReleaseRef);
+
+    const now = Date.now();
+    const handoffRemainingMs = Math.max(0, routeHandoffUntilRef.current - now);
+    const quietRemainingMs = Math.max(0, ROUTE_QUIET_MS - (now - routeLastActivityAtRef.current));
+    const blockingKeysDelayMs = hasBlockingKeys() ? ROUTE_QUIET_MS : 0;
+    const nextCheckInMs = Math.max(20, handoffRemainingMs, quietRemainingMs, blockingKeysDelayMs);
+
+    routeReleaseRef.current = window.setTimeout(() => {
+      routeReleaseRef.current = null;
+
+      if (!hasRouteLoadingKey()) return;
+
+      if (isGlobalLoadingDisabledPath(getClientPathname())) {
+        if (hasPendingEnabledRoute()) {
+          scheduleRouteRelease();
+          return;
+        }
+
+        stopAllGlobalLoading();
+        return;
+      }
+
+      const currentTime = Date.now();
+      const isInsideHandoffWindow = currentTime < routeHandoffUntilRef.current;
+      const isInsideQuietWindow = currentTime - routeLastActivityAtRef.current < ROUTE_QUIET_MS;
+
+      if (hasBlockingKeys() || isInsideHandoffWindow || isInsideQuietWindow) {
+        scheduleRouteRelease();
+        return;
+      }
+
+      removeLoadingKey(ROUTE_LOADING_KEY);
+      routeHandoffUntilRef.current = 0;
+      clearTimer(routeFailsafeRef);
+    }, nextCheckInMs);
   }
 
   useEffect(() => {
@@ -157,45 +304,85 @@ export default function GlobalLoadingLayer() {
   }, [activeKeys]);
 
   useEffect(() => {
+    const previousPathname = pathnameRef.current;
+    const didPathnameChange = hasCommittedInitialPathRef.current && previousPathname !== pathname;
+
     pathnameRef.current = pathname;
+    lastCommittedPathRef.current = pathname;
+
+    const isDisabledPath = isGlobalLoadingDisabledPath(pathname);
+
+    if (isDisabledPath && !hasPendingEnabledRoute()) {
+      hasCommittedInitialPathRef.current = true;
+      stopAllGlobalLoading();
+      return;
+    }
+
+    if (!isDisabledPath && didPathnameChange && !hasRouteLoadingKey()) {
+      startRouteLoading(pathname);
+    }
+
+    if (!isDisabledPath) {
+      pendingRouteTargetPathRef.current = null;
+    }
+
+    if (hasRouteLoadingKey()) {
+      markNavigationFetchWindow();
+      routeHandoffUntilRef.current = Math.max(routeHandoffUntilRef.current, Date.now() + ROUTE_HANDOFF_MS);
+      scheduleRouteRelease();
+    }
+
+    hasCommittedInitialPathRef.current = true;
   }, [pathname]);
 
   useEffect(() => {
-    if (isGlobalLoadingDisabledPath(pathname)) {
+    const isDisabledPath = isGlobalLoadingDisabledPath(pathname);
+
+    if (isDisabledPath && !hasPendingEnabledRoute()) {
       stopAllGlobalLoading();
       return;
     }
 
     if (activeKeys.length) {
-      if (hideDelayRef.current) {
-        window.clearTimeout(hideDelayRef.current);
-        hideDelayRef.current = null;
+      clearTimer(hideDelayRef);
+      clearTimer(exitDelayRef);
+
+      if (shouldRender) {
+        setIsVisible(true);
+        return;
       }
 
-      if (!shouldRender && !showDelayRef.current) {
+      if (!showDelayRef.current) {
         showDelayRef.current = window.setTimeout(() => {
           showDelayRef.current = null;
           renderStartedAtRef.current = Date.now();
           setShouldRender(true);
+          showFrameRef.current = window.requestAnimationFrame(() => {
+            showFrameRef.current = null;
+            setIsVisible(true);
+          });
         }, SHOW_DELAY_MS);
       }
 
       return;
     }
 
-    if (showDelayRef.current) {
-      window.clearTimeout(showDelayRef.current);
-      showDelayRef.current = null;
-    }
+    clearTimer(showDelayRef);
+    clearAnimationFrame(showFrameRef);
 
-    if (!shouldRender || hideDelayRef.current) return;
+    if (!shouldRender || hideDelayRef.current || exitDelayRef.current) return;
 
     const elapsedVisibleMs = Date.now() - renderStartedAtRef.current;
     const hideInMs = Math.max(HIDE_GRACE_MS, MIN_VISIBLE_MS - elapsedVisibleMs);
 
     hideDelayRef.current = window.setTimeout(() => {
       hideDelayRef.current = null;
-      setShouldRender(false);
+      setIsVisible(false);
+
+      exitDelayRef.current = window.setTimeout(() => {
+        exitDelayRef.current = null;
+        setShouldRender(false);
+      }, EXIT_TRANSITION_MS);
     }, hideInMs);
   }, [activeKeys.length, pathname, shouldRender]);
 
@@ -206,95 +393,51 @@ export default function GlobalLoadingLayer() {
   }, []);
 
   useEffect(() => {
-    function isCurrentPathDisabled() {
-      if (isGlobalLoadingDisabledPath(window.location.pathname)) return true;
-      return isGlobalLoadingDisabledPath(pathnameRef.current);
-    }
-
-    function startLoading(key: string) {
-      if (isCurrentPathDisabled()) return;
-      setActiveKeys((current) => (current.includes(key) ? current : [...current, key]));
-    }
-
-    function stopLoading(key: string) {
-      setActiveKeys((current) => current.filter((currentKey) => currentKey !== key));
-    }
-
-    function markNavigationFetchWindow() {
-      navigationFetchTrackingUntilRef.current = Date.now() + NAVIGATION_FETCH_WINDOW_MS;
-    }
-
-    function scheduleRouteSettled() {
-      if (isCurrentPathDisabled()) {
-        stopAllGlobalLoading();
-        return;
-      }
-
-      markNavigationFetchWindow();
-
-      if (routeSettledRef.current) {
-        window.clearTimeout(routeSettledRef.current);
-      }
-
-      routeSettledRef.current = window.setTimeout(() => {
-        stopLoading(ROUTE_LOADING_KEY);
-        routeSettledRef.current = null;
-      }, ROUTE_SETTLE_MS);
-
-      if (routeFailsafeRef.current) {
-        window.clearTimeout(routeFailsafeRef.current);
-        routeFailsafeRef.current = null;
-      }
-    }
-
-    function startRouteLoading() {
-      if (isCurrentPathDisabled()) return;
-
-      markNavigationFetchWindow();
-      startLoading(ROUTE_LOADING_KEY);
-
-      if (routeFailsafeRef.current) {
-        window.clearTimeout(routeFailsafeRef.current);
-      }
-
-      routeFailsafeRef.current = window.setTimeout(() => {
-        stopLoading(ROUTE_LOADING_KEY);
-        routeFailsafeRef.current = null;
-      }, ROUTE_FAILSAFE_MS);
-    }
-
-    function handleLoadingStart(event: Event) {
-      startLoading(getEventKey(event));
-    }
-
-    function handleLoadingStop(event: Event) {
-      stopLoading(getEventKey(event));
-    }
-
-    function handleDocumentClick(event: MouseEvent) {
-      if (shouldShowRouteLoader(event)) {
-        startRouteLoading();
-      }
-    }
-
     function shouldTrackFetch() {
-      if (isCurrentPathDisabled()) return false;
+      if (isGlobalLoadingDisabledPath(getClientPathname())) return false;
 
       const now = Date.now();
       return (
         now <= bootFetchTrackingUntilRef.current ||
         now <= navigationFetchTrackingUntilRef.current ||
-        activeKeysRef.current.includes(ROUTE_LOADING_KEY)
+        hasRouteLoadingKey()
       );
     }
 
+    function handleLoadingStart(event: Event) {
+      startNonRouteLoading(getEventKey(event));
+    }
+
+    function handleLoadingStop(event: Event) {
+      removeLoadingKey(getEventKey(event));
+    }
+
+    function handleDocumentClick(event: MouseEvent) {
+      const nextUrl = getInternalNavigationUrl(event);
+      if (nextUrl) {
+        startRouteLoading(nextUrl.pathname);
+      }
+    }
+
     function handleLocationCommitted() {
-      if (isCurrentPathDisabled()) {
+      const nextPathname = getClientPathname();
+
+      if (isGlobalLoadingDisabledPath(nextPathname)) {
         stopAllGlobalLoading();
+        lastCommittedPathRef.current = nextPathname;
         return;
       }
 
-      scheduleRouteSettled();
+      if (lastCommittedPathRef.current !== nextPathname) {
+        startRouteLoading(nextPathname);
+        lastCommittedPathRef.current = nextPathname;
+        return;
+      }
+
+      if (hasRouteLoadingKey()) {
+        markNavigationFetchWindow();
+        scheduleRouteRelease();
+      }
     }
 
     const originalFetch = window.fetch.bind(window);
@@ -307,12 +450,12 @@ export default function GlobalLoadingLayer() {
       }
 
       const fetchKey = `${FETCH_LOADING_KEY_PREFIX}:${++fetchIdRef.current}`;
-      startLoading(fetchKey);
+      startNonRouteLoading(fetchKey);
 
       try {
         return await originalFetch(input, init);
       } finally {
-        stopLoading(fetchKey);
+        removeLoadingKey(fetchKey);
       }
     };
 
@@ -344,30 +487,7 @@ export default function GlobalLoadingLayer() {
     };
   }, []);
 
-  useEffect(() => {
-    if (isGlobalLoadingDisabledPath(pathname)) {
-      stopAllGlobalLoading();
-      return;
-    }
-
-    navigationFetchTrackingUntilRef.current = Date.now() + NAVIGATION_FETCH_WINDOW_MS;
-
-    if (routeSettledRef.current) {
-      window.clearTimeout(routeSettledRef.current);
-    }
-
-    routeSettledRef.current = window.setTimeout(() => {
-      setActiveKeys((current) => current.filter((key) => key !== ROUTE_LOADING_KEY));
-      routeSettledRef.current = null;
-    }, ROUTE_SETTLE_MS);
-
-    if (routeFailsafeRef.current) {
-      window.clearTimeout(routeFailsafeRef.current);
-      routeFailsafeRef.current = null;
-    }
-  }, [pathname]);
-
   if (!shouldRender || isGlobalLoadingDisabledPath(pathname)) return null;
 
-  return <GlobalLoadingScreen label="Loading data..." />;
+  return <GlobalLoadingScreen isVisible={isVisible} label="Loading all data..." />;
 }

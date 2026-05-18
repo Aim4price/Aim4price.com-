@@ -141,8 +141,12 @@ export default function AppHeader({
     let mounted = true;
 
     async function loadSession() {
+      const isInitialSessionLoad = !hasLoadedSessionOnceRef.current;
+
       try {
-        setIsLoadingSession(true);
+        if (isInitialSessionLoad) {
+          setIsLoadingSession(true);
+        }
 
         const response = await fetch('/api/me', {
           credentials: 'include',
