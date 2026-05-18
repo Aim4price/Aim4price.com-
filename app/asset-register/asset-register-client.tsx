@@ -1039,6 +1039,36 @@ function formatDate(value?: string | null): string {
   }).format(parsed);
 }
 
+function formatDateTime(value?: string | null): string {
+  if (!value) return '—';
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '—';
+
+  return new Intl.DateTimeFormat('en-ZA', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(parsed);
+}
+
+function latestAssetActivityIso(assetList: RegisterAsset[]): string | null {
+  return assetList.reduce<string | null>((latestIso, asset) => {
+    const candidateIso = asset.updatedAtIso || asset.createdAtIso;
+    if (!candidateIso) return latestIso;
+
+    const candidateTime = new Date(candidateIso).getTime();
+    if (!Number.isFinite(candidateTime)) return latestIso;
+
+    if (!latestIso) return candidateIso;
+
+    const latestTime = new Date(latestIso).getTime();
+    return candidateTime > latestTime ? candidateIso : latestIso;
+  }, null);
+}
+
 function wasUpdatedAfterCreate(asset: RegisterAsset): boolean {
   const createdAt = new Date(asset.createdAtIso).getTime();
   const updatedAt = new Date(asset.updatedAtIso).getTime();
@@ -2026,6 +2056,24 @@ function buildOwnerMeta(profile: AccountProfile | null): string {
   return parts.join(' • ') || 'Aim4price asset register summary';
 }
 
+function buildOwnerLocation(profile: AccountProfile | null): string {
+  if (!profile) return 'Location not saved';
+
+  return [profile.townCity, profile.province].filter(Boolean).join(', ') || 'Location not saved';
+}
+
+function buildOwnerContact(profile: AccountProfile | null): string {
+  if (!profile) return 'Contact details not saved';
+
+  return [profile.email, profile.phone].filter(Boolean).join(' • ') || 'Contact details not saved';
+}
+
+function buildOwnerAddress(profile: AccountProfile | null): string {
+  if (!profile) return 'Address not saved';
+
+  return [profile.addressLine1, profile.addressLine2].filter(Boolean).join(', ') || 'Address not saved';
+}
+
 function toAbsoluteUrl(value?: string | null): string | null {
   const text = String(value ?? '').trim();
 
@@ -2349,6 +2397,8 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
   const [currentPage, setCurrentPage] = useState(1);
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [isRegisterIdentityExpanded, setIsRegisterIdentityExpanded] = useState(false);
+  const [lastRegisterViewLabel, setLastRegisterViewLabel] = useState('Viewed now');
   const [summaryLeadType, setSummaryLeadType] = useState<Extract<AssetLeadType, 'finance' | 'insurance'> | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
@@ -2375,6 +2425,13 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
   const reportProfile = registerOwnerProfile ?? accountProfile;
   const canUseOwnerOnlyAssetActions = !isSharedRegisterView;
   const canUseMarketplaceActions = !isSharedRegisterView || isDealerSharedRegisterView;
+  const registerOwnerName = buildOwnerName(reportProfile);
+  const registerViewTypeLabel = isSharedRegisterView ? 'Shared register' : 'Business register';
+  const registerOwnerLocation = buildOwnerLocation(reportProfile);
+  const registerOwnerContact = buildOwnerContact(reportProfile);
+  const registerOwnerAddress = buildOwnerAddress(reportProfile);
+  const latestAssetUpdateIso = useMemo(() => latestAssetActivityIso(assets), [assets]);
+  const latestAssetUpdateLabel = latestAssetUpdateIso ? `Last asset update ${formatDateTime(latestAssetUpdateIso)}` : 'No asset activity yet';
   const isQuoteModalOpen = Boolean(quoteAsset) || isRegisterQuoteModalOpen;
   const isRegisterQuoteRequest = isRegisterQuoteModalOpen;
 
@@ -2388,6 +2445,25 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
   useEffect(() => {
     pendingPhotoFilesRef.current = pendingPhotoFiles;
   }, [pendingPhotoFiles]);
+
+  useEffect(() => {
+    const ownerProfileId = reportProfile?.userId?.trim();
+
+    if (!ownerProfileId) {
+      return;
+    }
+
+    const currentViewIso = new Date().toISOString();
+    const storageKey = `aim4price:asset-register:last-viewed:${mode}:${ownerProfileId}`;
+
+    try {
+      const previousViewIso = window.localStorage.getItem(storageKey);
+      setLastRegisterViewLabel(previousViewIso ? `Last viewed ${formatDateTime(previousViewIso)}` : 'Viewed now');
+      window.localStorage.setItem(storageKey, currentViewIso);
+    } catch {
+      setLastRegisterViewLabel(`Viewed ${formatDateTime(currentViewIso)}`);
+    }
+  }, [mode, reportProfile?.userId]);
 
   useEffect(() => {
     return () => {
@@ -4879,7 +4955,52 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
         <section className={styles.registerPanel}>
           <div className={styles.registerHeader}>
             <div className={`${styles.registerTitleBlock} ${styles.businessRegisterTitleBlock}`}>
-              <h1>{buildOwnerName(reportProfile)}</h1>
+              <div className={styles.registerIdentityCard}>
+                <div className={styles.registerIdentityMain}>
+                  <span className={styles.registerIdentityEyebrow}>Asset Register</span>
+                  <h1>{registerOwnerName}</h1>
+                </div>
+
+                <div className={styles.registerIdentityMetaRow} aria-label="Register view details">
+                  <span>{registerViewTypeLabel}</span>
+                  <span>{lastRegisterViewLabel}</span>
+                </div>
+
+                <button
+                  type="button"
+                  className={`${styles.registerIdentityToggle} ${isRegisterIdentityExpanded ? styles.registerIdentityToggleOpen : ''}`}
+                  onClick={() => setIsRegisterIdentityExpanded((current) => !current)}
+                  aria-expanded={isRegisterIdentityExpanded}
+                >
+                  <span>{isRegisterIdentityExpanded ? 'Hide details' : 'Details'}</span>
+                  <ChevronDownIcon className={styles.registerIdentityToggleIcon} />
+                </button>
+              </div>
+
+              {isRegisterIdentityExpanded ? (
+                <div className={styles.registerIdentityDetails}>
+                  <div>
+                    <span>Owner</span>
+                    <strong>{registerOwnerName}</strong>
+                  </div>
+                  <div>
+                    <span>Location</span>
+                    <strong>{registerOwnerLocation}</strong>
+                  </div>
+                  <div>
+                    <span>Contact</span>
+                    <strong>{registerOwnerContact}</strong>
+                  </div>
+                  <div>
+                    <span>Address</span>
+                    <strong>{registerOwnerAddress}</strong>
+                  </div>
+                  <div>
+                    <span>Activity</span>
+                    <strong>{latestAssetUpdateLabel}</strong>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div className={styles.headerActions}>

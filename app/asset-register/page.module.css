@@ -15702,3 +15702,195 @@
     padding-right: 3rem !important;
   }
 }
+
+/* === Register owner identity: compact header with last viewed detail === */
+.registerHeader {
+  align-items: start !important;
+  gap: 1rem !important;
+}
+
+.businessRegisterTitleBlock {
+  width: min(100%, 44rem) !important;
+  max-width: 44rem !important;
+  display: grid !important;
+  gap: 0.7rem !important;
+}
+
+.registerIdentityCard {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 0.7rem 0.9rem !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding: 0.95rem 1rem !important;
+  border: 1px solid rgba(207, 222, 234, 0.98) !important;
+  border-radius: 1.35rem !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.055), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+  box-shadow:
+    0 12px 26px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.registerIdentityMain {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 0.25rem !important;
+}
+
+.registerIdentityEyebrow {
+  color: #6d7c8e !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.businessRegisterTitleBlock h1 {
+  max-width: 100% !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  color: #0c382f !important;
+  font-size: clamp(1.38rem, 2.1vw, 1.85rem) !important;
+  font-weight: 760 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.045em !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.registerIdentityMetaRow {
+  grid-column: 1 / -1 !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+}
+
+.registerIdentityMetaRow span {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 1.8rem !important;
+  padding: 0 0.72rem !important;
+  border: 1px solid rgba(209, 223, 233, 0.98) !important;
+  border-radius: 999px !important;
+  background: rgba(244, 248, 251, 0.94) !important;
+  color: #5f7084 !important;
+  font-size: 0.8rem !important;
+  font-weight: 740 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+.registerIdentityToggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.42rem !important;
+  min-height: 2.45rem !important;
+  padding: 0 0.85rem !important;
+  border: 1px solid rgba(201, 216, 229, 0.98) !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%) !important;
+  color: #163d60 !important;
+  font: inherit !important;
+  font-size: 0.86rem !important;
+  font-weight: 820 !important;
+  cursor: pointer !important;
+  box-shadow: 0 7px 16px rgba(20, 50, 68, 0.045) !important;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease !important;
+}
+
+.registerIdentityToggle:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(172, 194, 214, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #edf4f8 100%) !important;
+}
+
+.registerIdentityToggleIcon {
+  width: 0.92rem !important;
+  height: 0.92rem !important;
+  transition: transform 160ms ease !important;
+}
+
+.registerIdentityToggleOpen .registerIdentityToggleIcon {
+  transform: rotate(180deg) !important;
+}
+
+.registerIdentityDetails {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 0.65rem !important;
+  width: 100% !important;
+  padding: 0.85rem !important;
+  border: 1px solid rgba(213, 226, 236, 0.98) !important;
+  border-radius: 1.25rem !important;
+  background: rgba(248, 251, 252, 0.98) !important;
+}
+
+.registerIdentityDetails div {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 0.22rem !important;
+  padding: 0.78rem 0.85rem !important;
+  border: 1px solid rgba(224, 233, 240, 0.98) !important;
+  border-radius: 1rem !important;
+  background: #ffffff !important;
+}
+
+.registerIdentityDetails span {
+  color: #738196 !important;
+  font-size: 0.68rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.07em !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+}
+
+.registerIdentityDetails strong {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  color: #17362c !important;
+  font-size: 0.9rem !important;
+  font-weight: 760 !important;
+  line-height: 1.25 !important;
+  text-overflow: ellipsis !important;
+}
+
+@media (max-width: 1180px) {
+  .businessRegisterTitleBlock {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .registerIdentityDetails {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .registerIdentityCard {
+    grid-template-columns: 1fr !important;
+    padding: 0.9rem !important;
+    border-radius: 1.18rem !important;
+  }
+
+  .businessRegisterTitleBlock h1 {
+    font-size: 1.42rem !important;
+    white-space: normal !important;
+  }
+
+  .registerIdentityToggle {
+    width: 100% !important;
+  }
+
+  .registerIdentityDetails {
+    grid-template-columns: 1fr !important;
+  }
+}
