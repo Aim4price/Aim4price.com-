@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
+import { useGlobalLoading } from '../../lib/use-global-loading';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
@@ -401,6 +402,7 @@ export default function AccountClient() {
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingScanPin, setIsLoadingScanPin] = useState(true);
+  useGlobalLoading(isLoading || isLoadingScanPin, 'account-page-data');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingScanPin, setIsSavingScanPin] = useState(false);
   const [isDisablingScanPin, setIsDisablingScanPin] = useState(false);
