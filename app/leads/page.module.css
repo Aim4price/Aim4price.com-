@@ -125,7 +125,8 @@
 
 .clientPanel h3 {
   margin: 0;
-  color: var(--lead-ink);
+  color: #0d3028;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(1.42rem, 1.9vw, 1.72rem);
   font-weight: 760;
   line-height: 1.08;
@@ -585,6 +586,11 @@
 }
 
 @media (max-width: 760px) {
+  .clientPanel h3 {
+    font-weight: 740;
+    letter-spacing: -0.026em;
+  }
+
   .leadFilterIntro {
     white-space: normal;
   }
