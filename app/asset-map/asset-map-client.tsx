@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import AppHeader from '../../components/AppHeader';
+import { useGlobalLoading } from '../../lib/use-global-loading';
 import styles from './page.module.css';
 
 type NoticeTone = 'error';
@@ -293,6 +294,7 @@ export default function AssetMapClient() {
   const [summary, setSummary] = useState<AssetMapResponse['summary'] | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  useGlobalLoading(isLoading, 'asset-map-data');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastLoadedAtIso, setLastLoadedAtIso] = useState<string | null>(null);
 
