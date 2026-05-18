@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent, type SVGProps } from 'react';
 import AppHeader from '../../components/AppHeader';
+import { useGlobalLoading } from '../../lib/use-global-loading';
 import styles from './page.module.css';
 
 type FuelStorageStatus = 'active' | 'archived';
@@ -336,6 +337,7 @@ export default function FuelClient() {
   const [recentEvents, setRecentEvents] = useState<FuelLedgerEvent[]>([]);
   const [summary, setSummary] = useState<FuelLedgerSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  useGlobalLoading(isLoading, 'fuel-data');
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
