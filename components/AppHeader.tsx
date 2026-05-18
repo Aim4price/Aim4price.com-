@@ -283,7 +283,7 @@ export default function AppHeader({
 
                     {isOwnerAccount ? (
                       <Link href="/shared-access" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                        Shared access
+                        Share access
                       </Link>
                     ) : null}
 
