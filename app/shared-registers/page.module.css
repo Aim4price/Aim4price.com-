@@ -204,6 +204,13 @@
   transform: translateY(-1px);
 }
 
+.pendingRegisterCard {
+  border-color: rgba(193, 217, 202, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(26, 134, 100, 0.065), transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 253, 250, 0.99));
+}
+
 .sharedRegisterMain {
   display: grid;
   gap: 0.5rem;
@@ -215,6 +222,10 @@
   font-size: 0.92rem;
   font-weight: 760;
   line-height: 1.3;
+}
+
+.pendingKicker {
+  color: #0f684f;
 }
 
 .sharedRegisterMain h2 {
@@ -275,6 +286,11 @@
 
 .registerPreviewPill strong {
   color: #0c382f;
+}
+
+.pendingPreviewPill {
+  border-color: rgba(179, 218, 200, 0.98);
+  background: #f1fbf6;
 }
 
 .ownerMessage {

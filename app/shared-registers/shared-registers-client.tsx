@@ -186,14 +186,21 @@ export default function SharedRegistersClient() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [registerToDelete, setRegisterToDelete] = useState<SharedRegisterSummary | null>(null);
   const [isDeletingAccess, setIsDeletingAccess] = useState(false);
+  const [acceptingGrantId, setAcceptingGrantId] = useState<string | null>(null);
+  const [decliningGrantId, setDecliningGrantId] = useState<string | null>(null);
   const [registerToOpen, setRegisterToOpen] = useState<SharedRegisterSummary | null>(null);
   const [hasAcceptedPopia, setHasAcceptedPopia] = useState(false);
 
-  const activeRegisters = useMemo(() => registers.filter((register) => register.status === 'active'), [registers]);
+  const visibleRegisters = useMemo(
+    () => registers.filter((register) => register.status === 'pending' || register.status === 'active'),
+    [registers],
+  );
+  const activeRegisters = useMemo(() => visibleRegisters.filter((register) => register.status === 'active'), [visibleRegisters]);
+  const pendingRegisters = useMemo(() => visibleRegisters.filter((register) => register.status === 'pending'), [visibleRegisters]);
 
   const yearOptions = useMemo(() => {
     const years = new Set<number>();
-    activeRegisters.forEach((register) => {
+    visibleRegisters.forEach((register) => {
       const parsed = new Date(register.createdAtIso);
       if (!Number.isNaN(parsed.getTime())) {
         years.add(parsed.getFullYear());
@@ -201,10 +208,10 @@ export default function SharedRegistersClient() {
     });
 
     return Array.from(years).sort((a, b) => b - a);
-  }, [activeRegisters]);
+  }, [visibleRegisters]);
 
   const filteredRegisters = useMemo(() => {
-    const filtered = activeRegisters.filter((register) => {
+    const filtered = visibleRegisters.filter((register) => {
       const parsed = new Date(register.createdAtIso);
       const matchesMonth = monthFilter === 'all' || (!Number.isNaN(parsed.getTime()) && String(parsed.getMonth()) === monthFilter);
       const matchesYear = yearFilter === 'all' || (!Number.isNaN(parsed.getTime()) && String(parsed.getFullYear()) === yearFilter);
@@ -212,14 +219,18 @@ export default function SharedRegistersClient() {
     });
 
     return [...filtered].sort((a, b) => {
+      if (a.status !== b.status) {
+        return a.status === 'pending' ? -1 : 1;
+      }
+
       const left = Number(a.totalValue || 0);
       const right = Number(b.totalValue || 0);
       return valueSort === 'lowest' ? left - right : right - left;
     });
-  }, [activeRegisters, monthFilter, searchTerm, valueSort, yearFilter]);
+  }, [visibleRegisters, monthFilter, searchTerm, valueSort, yearFilter]);
 
   const filteredActiveRegisterValue = useMemo(
-    () => filteredRegisters.reduce((sum, register) => sum + Number(register.totalValue || 0), 0),
+    () => filteredRegisters.reduce((sum, register) => (register.status === 'active' ? sum + Number(register.totalValue || 0) : sum), 0),
     [filteredRegisters],
   );
 
@@ -268,7 +279,62 @@ export default function SharedRegistersClient() {
     setValueSort('highest');
   }
 
+  async function handleAcceptSharedAccess(register: SharedRegisterSummary) {
+    if (acceptingGrantId || register.status !== 'pending') return;
+
+    setAcceptingGrantId(register.id);
+
+    try {
+      const response = await fetch(`/api/shared-access/${encodeURIComponent(register.id)}/accept`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      const data = (await response.json().catch(() => null)) as SharedRegistersResponse | null;
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error ?? 'Failed to accept shared register access.');
+      }
+
+      setNotice({ tone: 'success', message: 'Shared register access accepted.' });
+      await loadRegisters();
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to accept shared register access.' });
+    } finally {
+      setAcceptingGrantId(null);
+    }
+  }
+
+  async function handleDeclineSharedAccess(register: SharedRegisterSummary) {
+    if (decliningGrantId || register.status !== 'pending') return;
+
+    setDecliningGrantId(register.id);
+
+    try {
+      const response = await fetch(`/api/shared-access/${encodeURIComponent(register.id)}/decline`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      const data = (await response.json().catch(() => null)) as SharedRegistersResponse | null;
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error ?? 'Failed to decline shared register access.');
+      }
+
+      setRegisters((current) => current.filter((item) => item.id !== register.id));
+      setNotice({ tone: 'success', message: 'Shared register access declined.' });
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to decline shared register access.' });
+    } finally {
+      setDecliningGrantId(null);
+    }
+  }
+
   function openRegisterDisclaimer(register: SharedRegisterSummary) {
+    if (register.status !== 'active') {
+      setNotice({ tone: 'error', message: 'Accept the shared register before opening it.' });
+      return;
+    }
+
     setRegisterToOpen(register);
     setHasAcceptedPopia(false);
   }
@@ -356,7 +422,11 @@ export default function SharedRegistersClient() {
               <span className={styles.summaryLabel}>Total shared registers</span>
               <strong className={styles.summaryValue}>{filteredRegisters.length}</strong>
               <div className={styles.summaryFooter}>
-                <small>{hasActiveFilters ? 'Showing after search and filters.' : `${activeRegisters.length} active ${activeRegisters.length === 1 ? 'register' : 'registers'}.`}</small>
+                <small>
+                  {hasActiveFilters
+                    ? 'Showing after search and filters.'
+                    : `${activeRegisters.length} active · ${pendingRegisters.length} pending`}
+                </small>
               </div>
             </div>
 
@@ -406,32 +476,63 @@ export default function SharedRegistersClient() {
           {!isLoading && filteredRegisters.length ? (
             <div className={styles.registerStack}>
               {filteredRegisters.map((register) => {
+                const isPending = register.status === 'pending';
+                const isAccepting = acceptingGrantId === register.id;
+                const isDeclining = decliningGrantId === register.id;
                 const registerValueText = `${formatCurrency(register.totalValue)} excl. VAT`;
 
                 return (
-                  <article className={styles.sharedRegisterCard} key={register.id}>
+                  <article
+                    className={`${styles.sharedRegisterCard} ${isPending ? styles.pendingRegisterCard : ''}`}
+                    key={register.id}
+                  >
                     <div className={styles.sharedRegisterMain}>
-                      <span className={styles.registerKicker}>Received {formatDate(register.createdAtIso)}</span>
+                      <span className={`${styles.registerKicker} ${isPending ? styles.pendingKicker : ''}`}>
+                        {isPending ? 'Pending access request' : `Received ${formatDate(register.createdAtIso)}`}
+                      </span>
                       <h2>{ownerName(register)}</h2>
                       <p className={styles.registerContactLine}>
                         {ownerContactParts(register).map((part) => (
                           <span key={part}>{part}</span>
                         ))}
                       </p>
-                      <div className={styles.registerPreviewPill}>
-                        <span>Full Asset Register</span>
-                        <strong>{registerValueText}</strong>
+                      <div className={`${styles.registerPreviewPill} ${isPending ? styles.pendingPreviewPill : ''}`}>
+                        <span>{isPending ? `Shared ${formatDate(register.createdAtIso)}` : 'Full Asset Register'}</span>
+                        <strong>{isPending ? 'Accept to open' : registerValueText}</strong>
                       </div>
                       {register.ownerMessage ? <p className={styles.ownerMessage}>{register.ownerMessage}</p> : null}
                     </div>
 
                     <div className={styles.sharedRegisterActions}>
-                      <button type="button" className={styles.dangerButton} onClick={() => openDeleteModal(register)}>
-                        Delete
-                      </button>
-                      <button type="button" className={styles.primaryButton} onClick={() => openRegisterDisclaimer(register)}>
-                        Open
-                      </button>
+                      {isPending ? (
+                        <>
+                          <button
+                            type="button"
+                            className={styles.secondaryButton}
+                            onClick={() => void handleDeclineSharedAccess(register)}
+                            disabled={isAccepting || isDeclining || isLoading}
+                          >
+                            {isDeclining ? 'Declining...' : 'Decline'}
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.primaryButton}
+                            onClick={() => void handleAcceptSharedAccess(register)}
+                            disabled={isAccepting || isDeclining || isLoading}
+                          >
+                            {isAccepting ? 'Accepting...' : 'Accept access'}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button type="button" className={styles.dangerButton} onClick={() => openDeleteModal(register)}>
+                            Delete
+                          </button>
+                          <button type="button" className={styles.primaryButton} onClick={() => openRegisterDisclaimer(register)}>
+                            Open
+                          </button>
+                        </>
+                      )}
                     </div>
                   </article>
                 );
@@ -441,7 +542,7 @@ export default function SharedRegistersClient() {
 
           {!isLoading && !filteredRegisters.length ? (
             <div className={styles.emptyState}>
-              {registers.length ? 'No shared registers match the current search or filters.' : 'No owner registers are currently shared with this account.'}
+              {visibleRegisters.length ? 'No shared registers match the current search or filters.' : 'No owner registers are currently shared with this account.'}
             </div>
           ) : null}
         </section>
