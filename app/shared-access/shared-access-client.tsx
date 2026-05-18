@@ -7,6 +7,7 @@ import styles from './page.module.css';
 type PartnerType = 'dealer' | 'finance' | 'insurance';
 type GrantStatus = 'pending' | 'active' | 'revoked' | 'declined';
 type NoticeTone = 'success' | 'error';
+type IconProps = { className?: string };
 
 type PartnerDirectoryEntry = {
   userId: string;
@@ -60,6 +61,15 @@ type PartnersResponse = {
   error?: string;
 };
 
+type ShareOption = {
+  value: PartnerType;
+  title: string;
+  actionTitle: string;
+  description: string;
+  mapTitle: string;
+  emptyText: string;
+};
+
 declare global {
   interface Window {
     L?: any;
@@ -73,21 +83,30 @@ const LEAFLET_CSS_ID = 'aim4price-leaflet-css';
 const DEFAULT_CENTER: [number, number] = [-29.0, 24.0];
 const DEFAULT_ZOOM = 5;
 
-const PARTNER_TYPES: Array<{ value: PartnerType; title: string; description: string }> = [
+const SHARE_OPTIONS: ShareOption[] = [
   {
     value: 'dealer',
     title: 'Dealer',
-    description: 'Share with a machinery dealer for fleet planning, trade-ins and replacement support.',
+    actionTitle: 'Share with dealer',
+    description: 'Give a machinery dealer live register access for replacements, trade-ins and fleet support.',
+    mapTitle: 'Choose a dealer partner.',
+    emptyText: 'No listed dealer partners found yet. Dealer accounts must enable their directory listing under Account details.',
   },
   {
     value: 'finance',
     title: 'Finance',
-    description: 'Share with a bank or finance partner for asset-backed finance and refinancing reviews.',
+    actionTitle: 'Share with finance partner',
+    description: 'Give a bank or finance partner live register access for asset-backed finance and refinancing reviews.',
+    mapTitle: 'Choose a finance partner.',
+    emptyText: 'No listed finance partners found yet. Finance partners must enable their directory listing under Account details.',
   },
   {
     value: 'insurance',
     title: 'Insurance',
-    description: 'Share with an insurer or broker for insured-value checks and annual policy updates.',
+    actionTitle: 'Share with insurance partner',
+    description: 'Give an insurer or broker live register access for insured-value checks and annual policy updates.',
+    mapTitle: 'Choose an insurance partner.',
+    emptyText: 'No listed insurance partners found yet. Insurance partners must enable their directory listing under Account details.',
   },
 ];
 
@@ -146,6 +165,61 @@ function loadLeaflet(): Promise<any> {
   return leafletLoaderPromise;
 }
 
+function CloseIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path d="M7 7l10 10M17 7 7 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SearchIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path d="m20 20-4.2-4.2M18 10.8a7.2 7.2 0 1 1-14.4 0 7.2 7.2 0 0 1 14.4 0Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ChevronLeftIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path d="m15 18-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function DealerIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path d="M4 18h16M6 18V8l6-3 6 3v10M9 18v-6h6v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function FinanceIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path d="M6.5 10.5h11M8 14h8M12 3l8 4.2v2.3H4V7.2L12 3ZM6 20h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function InsuranceIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path d="M12 3 5 6v5.2c0 4.6 2.9 8 7 9.8 4.1-1.8 7-5.2 7-9.8V6l-7-3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m9.3 12.1 1.8 1.8 3.8-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function renderShareOptionIcon(value: PartnerType, className: string) {
+  if (value === 'finance') return <FinanceIcon className={className} />;
+  if (value === 'insurance') return <InsuranceIcon className={className} />;
+  return <DealerIcon className={className} />;
+}
+
 function formatDate(value?: string | null): string {
   if (!value) return '—';
   const parsed = new Date(value);
@@ -181,6 +255,14 @@ function partnerLocation(partner: PartnerDirectoryEntry): string {
   return [partner.townCity, partner.province].filter(Boolean).join(', ') || 'Location not saved';
 }
 
+function grantPartnerName(grant: SharedAccessGrant): string {
+  return grant.partnerBusinessName || grant.partnerName || 'Aim4price partner';
+}
+
+function grantPartnerLocation(grant: SharedAccessGrant): string {
+  return [grant.partnerTownCity, grant.partnerProvince].filter(Boolean).join(', ') || 'Location not saved';
+}
+
 function hasCoordinates(partner: PartnerDirectoryEntry): boolean {
   return (
     partner.latitude !== null &&
@@ -210,7 +292,10 @@ function buildPartnerPopupHtml(partner: PartnerDirectoryEntry, markerNumber: num
   const name = escapePopupText(partnerName(partner));
   const location = escapePopupText(partnerLocation(partner));
   const type = escapePopupText(formatPartnerType(partner.partnerType));
-  return `<strong>${markerNumber}. ${name}</strong><br /><span>${type}</span><br /><small>${location}</small>`;
+  const radius = partner.serviceRadiusKm ? escapePopupText(`${partner.serviceRadiusKm} km radius`) : '';
+  const radiusLine = radius ? `<br /><small>${radius}</small>` : '';
+
+  return `<strong>${markerNumber}. ${name}</strong><br /><span>${type}</span><br /><small>${location}</small>${radiusLine}`;
 }
 
 function extractError(payload: unknown, fallback: string): string {
@@ -233,17 +318,24 @@ export default function SharedAccessClient() {
   const [partners, setPartners] = useState<PartnerDirectoryEntry[]>([]);
   const [selectedPartnerType, setSelectedPartnerType] = useState<PartnerType>('dealer');
   const [selectedPartnerId, setSelectedPartnerId] = useState('');
+  const [grantSearch, setGrantSearch] = useState('');
   const [search, setSearch] = useState('');
   const [pin, setPin] = useState('');
   const [ownerMessage, setOwnerMessage] = useState('');
   const [includeDocuments, setIncludeDocuments] = useState(true);
   const [includeScanHistory, setIncludeScanHistory] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isShareConfirmOpen, setIsShareConfirmOpen] = useState(false);
   const [isLoadingGrants, setIsLoadingGrants] = useState(true);
   const [isLoadingPartners, setIsLoadingPartners] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
+
+  const selectedShareOption = useMemo(
+    () => SHARE_OPTIONS.find((option) => option.value === selectedPartnerType) ?? SHARE_OPTIONS[0],
+    [selectedPartnerType],
+  );
 
   const selectedPartner = useMemo(
     () => partners.find((partner) => partner.userId === selectedPartnerId) ?? null,
@@ -257,6 +349,28 @@ export default function SharedAccessClient() {
     const pending = grants.filter((grant) => grant.status === 'pending').length;
     return { total: grants.length, active, pending };
   }, [grants]);
+
+  const visibleGrants = useMemo(() => {
+    const query = grantSearch.trim().toLowerCase();
+    if (!query) return grants;
+
+    return grants.filter((grant) => {
+      const haystack = [
+        grantPartnerName(grant),
+        grant.partnerName,
+        grant.partnerBusinessName,
+        grant.partnerTownCity,
+        grant.partnerProvince,
+        formatPartnerType(grant.partnerType),
+        formatStatus(grant.status),
+        grant.ownerMessage,
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(query);
+    });
+  }, [grants, grantSearch]);
 
   const loadGrants = useCallback(async () => {
     setIsLoadingGrants(true);
@@ -291,8 +405,9 @@ export default function SharedAccessClient() {
         throw new Error(data.error ?? 'Failed to load partners.');
       }
 
-      setPartners(data.partners);
-      setSelectedPartnerId((current) => (data.partners?.some((partner) => partner.userId === current) ? current : ''));
+      const nextPartners = data.partners;
+      setPartners(nextPartners);
+      setSelectedPartnerId((current) => (nextPartners.some((partner) => partner.userId === current) ? current : ''));
     } catch (error) {
       setPartners([]);
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load partners.' });
@@ -306,9 +421,9 @@ export default function SharedAccessClient() {
   }, [loadGrants]);
 
   useEffect(() => {
-    if (!isModalOpen) return;
+    if (!isMapModalOpen) return;
     void loadPartners();
-  }, [isModalOpen, loadPartners]);
+  }, [isMapModalOpen, loadPartners]);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -317,7 +432,7 @@ export default function SharedAccessClient() {
   }, [notice]);
 
   useEffect(() => {
-    if (!isModalOpen || !mapElementRef.current) return undefined;
+    if (!isMapModalOpen || !mapElementRef.current) return undefined;
 
     let cancelled = false;
 
@@ -392,10 +507,10 @@ export default function SharedAccessClient() {
     return () => {
       cancelled = true;
     };
-  }, [isModalOpen, partnersWithCoordinates, selectedPartnerId]);
+  }, [isMapModalOpen, partnersWithCoordinates, selectedPartnerId]);
 
   useEffect(() => {
-    if (isModalOpen) return undefined;
+    if (isMapModalOpen) return undefined;
 
     if (leafletMapRef.current) {
       leafletMapRef.current.remove();
@@ -405,10 +520,9 @@ export default function SharedAccessClient() {
     }
 
     return undefined;
-  }, [isModalOpen]);
+  }, [isMapModalOpen]);
 
-  function openShareModal(partnerType: PartnerType = 'dealer') {
-    setSelectedPartnerType(partnerType);
+  function resetShareFields() {
     setSelectedPartnerId('');
     setSearch('');
     setPin('');
@@ -416,13 +530,40 @@ export default function SharedAccessClient() {
     setIncludeDocuments(true);
     setIncludeScanHistory(true);
     setIsShareConfirmOpen(false);
-    setIsModalOpen(true);
   }
 
-  function closeShareModal() {
+  function openShareOptions() {
+    if (isSharing) return;
+    resetShareFields();
+    setIsMapModalOpen(false);
+    setIsOptionsModalOpen(true);
+  }
+
+  function closeShareOptions() {
+    if (isSharing) return;
+    setIsOptionsModalOpen(false);
+  }
+
+  function openPartnerMap(partnerType: PartnerType) {
+    if (isSharing) return;
+    resetShareFields();
+    setPartners([]);
+    setSelectedPartnerType(partnerType);
+    setIsOptionsModalOpen(false);
+    setIsMapModalOpen(true);
+  }
+
+  function closePartnerMap() {
     if (isSharing) return;
     setIsShareConfirmOpen(false);
-    setIsModalOpen(false);
+    setIsMapModalOpen(false);
+  }
+
+  function goBackToShareOptions() {
+    if (isSharing) return;
+    setIsShareConfirmOpen(false);
+    setIsMapModalOpen(false);
+    setIsOptionsModalOpen(true);
   }
 
   function openShareConfirm(partner: PartnerDirectoryEntry) {
@@ -475,7 +616,8 @@ export default function SharedAccessClient() {
       });
       setNotice({ tone: 'success', message: `Access request sent to ${partnerName(selectedPartner)}.` });
       setIsShareConfirmOpen(false);
-      setIsModalOpen(false);
+      setIsMapModalOpen(false);
+      setIsOptionsModalOpen(false);
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to share register.' });
     } finally {
@@ -507,283 +649,332 @@ export default function SharedAccessClient() {
       <AppHeader active="none" />
 
       <section className={styles.shell}>
-        <div className={styles.hero}>
-          <div>
-            <h1>Shared access</h1>
-            <p>
-              Give selected dealers, finance partners or insurance partners permission to view your live Asset Register.
-              Access stays controlled by you and can be revoked at any time.
-            </p>
-          </div>
-          <div className={styles.heroActions}>
-            <button type="button" className={styles.primaryButton} onClick={() => openShareModal()}>
-              Share Asset Register
-            </button>
-          </div>
-        </div>
+        <div className={styles.registerPanel}>
+          <header className={styles.registerHeader}>
+            <div className={styles.registerTitleBlock}>
+              <h1>Shared access</h1>
+              <p>
+                Give selected dealers, finance partners or insurance partners permission to view your live Asset Register.
+                Access stays controlled by you and can be revoked at any time.
+              </p>
+            </div>
 
-        {notice ? (
-          <div className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`}>
-            {notice.message}
-          </div>
-        ) : null}
+            <div className={styles.headerActions}>
+              <button type="button" className={styles.primaryButton} onClick={openShareOptions}>
+                Share Asset Register
+              </button>
+            </div>
+          </header>
 
-        <div className={styles.statGrid}>
-          <div className={styles.statCard}>
-            <span>Total shared</span>
-            <strong>{grantStats.total}</strong>
-          </div>
-          <div className={styles.statCard}>
-            <span>Active</span>
-            <strong>{grantStats.active}</strong>
-          </div>
-          <div className={styles.statCard}>
-            <span>Pending</span>
-            <strong>{grantStats.pending}</strong>
-          </div>
-        </div>
+          {notice ? (
+            <div className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`}>
+              {notice.message}
+            </div>
+          ) : null}
 
-        <section className={styles.card}>
-          <div className={styles.cardHeader}>
-            <div>
-              <h2>Register access</h2>
-              <p>These partners have been invited to view your Asset Register.</p>
+          <div className={styles.summaryRow}>
+            <div className={`${styles.summaryTile} ${styles.summaryTileMain}`}>
+              <span>Total shared</span>
+              <strong>{grantStats.total}</strong>
+            </div>
+            <div className={styles.summaryTile}>
+              <span>Active</span>
+              <strong>{grantStats.active}</strong>
+            </div>
+            <div className={styles.summaryTile}>
+              <span>Pending</span>
+              <strong>{grantStats.pending}</strong>
             </div>
           </div>
 
-          {isLoadingGrants ? (
-            <p className={styles.emptyState}>Loading shared access...</p>
-          ) : grants.length ? (
-            <div className={styles.grantList}>
-              {grants.map((grant) => (
-                <article key={grant.id} className={styles.grantCard}>
-                  <div className={styles.cardTitleRow}>
-                    <strong>{grant.partnerBusinessName || grant.partnerName}</strong>
-                    <span className={`${styles.statusPill} ${statusClass(grant.status)}`}>{formatStatus(grant.status)}</span>
-                  </div>
-                  <div className={styles.cardMetaRow}>
-                    <span>{formatPartnerType(grant.partnerType)}</span>
-                    <span>{[grant.partnerTownCity, grant.partnerProvince].filter(Boolean).join(', ') || 'Location not saved'}</span>
-                    <span>Shared {formatDate(grant.createdAtIso)}</span>
-                    {grant.lastViewedAtIso ? <span>Last viewed {formatDate(grant.lastViewedAtIso)}</span> : null}
-                  </div>
-                  {grant.ownerMessage ? <p>{grant.ownerMessage}</p> : null}
-                  {grant.status === 'active' || grant.status === 'pending' ? (
-                    <div className={styles.inlineActions}>
-                      <button type="button" className={styles.dangerButton} onClick={() => void handleRevoke(grant.id)}>
-                        Revoke access
-                      </button>
-                    </div>
-                  ) : null}
-                </article>
-              ))}
+          <div className={styles.accessToolbar}>
+            <label className={styles.searchBox}>
+              <SearchIcon className={styles.searchIcon} />
+              <input
+                value={grantSearch}
+                onChange={(event) => setGrantSearch(event.target.value)}
+                placeholder="Search by partner, type, town, province or status"
+                aria-label="Search shared access grants"
+              />
+            </label>
+          </div>
+
+          <section className={styles.accessCard}>
+            <div className={styles.sectionHeader}>
+              <div>
+                <h2>Register access</h2>
+                <p>These partners have been invited to view your Asset Register.</p>
+              </div>
             </div>
-          ) : (
-            <p className={styles.emptyState}>No shared access yet. Use “Share Asset Register” to invite a partner.</p>
-          )}
-        </section>
+
+            {isLoadingGrants ? (
+              <p className={styles.emptyState}>Loading shared access...</p>
+            ) : grants.length ? (
+              visibleGrants.length ? (
+                <div className={styles.grantList}>
+                  {visibleGrants.map((grant) => (
+                    <article key={grant.id} className={styles.grantCard}>
+                      <div className={styles.grantMain}>
+                        <div className={styles.grantTitleRow}>
+                          <h3>{grantPartnerName(grant)}</h3>
+                          <span className={`${styles.statusPill} ${statusClass(grant.status)}`}>{formatStatus(grant.status)}</span>
+                        </div>
+
+                        <div className={styles.grantMetaGrid}>
+                          <div className={styles.grantMetaItem}>
+                            <span>Partner type</span>
+                            <strong>{formatPartnerType(grant.partnerType)}</strong>
+                          </div>
+                          <div className={styles.grantMetaItem}>
+                            <span>Partner address</span>
+                            <strong>{grantPartnerLocation(grant)}</strong>
+                          </div>
+                          <div className={styles.grantMetaItem}>
+                            <span>Shared</span>
+                            <strong>{formatDate(grant.createdAtIso)}</strong>
+                          </div>
+                          <div className={styles.grantMetaItem}>
+                            <span>Last viewed</span>
+                            <strong>{formatDate(grant.lastViewedAtIso)}</strong>
+                          </div>
+                        </div>
+
+                        {grant.ownerMessage ? <p className={styles.grantMessage}>{grant.ownerMessage}</p> : null}
+                      </div>
+
+                      {grant.status === 'active' || grant.status === 'pending' ? (
+                        <div className={styles.grantActions}>
+                          <button type="button" className={styles.dangerButton} onClick={() => void handleRevoke(grant.id)}>
+                            Revoke access
+                          </button>
+                        </div>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.emptyState}>No shared access matches your search.</p>
+              )
+            ) : (
+              <p className={styles.emptyState}>No shared access yet. Use “Share Asset Register” to invite a partner.</p>
+            )}
+          </section>
+        </div>
       </section>
 
-      {isModalOpen ? (
-        <div className={styles.modalBackdrop} onClick={closeShareModal}>
-          <section className={`${styles.modalCard} ${styles.shareMapModal}`} onClick={(event) => event.stopPropagation()}>
-            <div className={`${styles.modalHeader} ${styles.shareModalHeader}`}>
-              <div>
-                <h2>Share Asset Register</h2>
-                <p>Choose a partner on the left, then confirm access with your Account PIN.</p>
+      {isOptionsModalOpen ? (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBackdrop} onClick={closeShareOptions} />
+
+          <section className={styles.optionsModal} role="dialog" aria-modal="true" aria-labelledby="share-register-options-title">
+            <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="share-register-options-title">Shared access</h3>
+                <p>Choose which partner type should receive live access to your Asset Register.</p>
               </div>
-              <button type="button" className={styles.modalCloseButton} onClick={closeShareModal} aria-label="Close share register modal" disabled={isSharing}>
-                ×
+
+              <button type="button" className={styles.modalCloseButton} onClick={closeShareOptions} aria-label="Close shared access options">
+                <CloseIcon className={styles.buttonIcon} />
               </button>
             </div>
 
-            <form
-              className={styles.shareSearchBar}
-              onSubmit={(event) => {
-                event.preventDefault();
-                void loadPartners();
-              }}
-            >
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search by business, town, province, service or brand"
-                aria-label="Search partner directory"
-              />
-              <button type="submit" className={styles.secondaryButton} disabled={isLoadingPartners}>
-                {isLoadingPartners ? 'Searching...' : 'Search'}
-              </button>
-            </form>
-
-            <div className={styles.shareMapStage}>
-              <aside className={styles.shareSidebar} aria-label="Share register partner options">
-                <div className={styles.shareTypeGrid}>
-                  {PARTNER_TYPES.map((entry) => (
+            <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody}`}>
+              <div className={styles.optionsContent}>
+                <div className={styles.optionsGrid}>
+                  {SHARE_OPTIONS.map((option) => (
                     <button
-                      key={entry.value}
+                      key={option.value}
                       type="button"
-                      className={`${styles.shareTypeButton} ${selectedPartnerType === entry.value ? styles.shareTypeButtonActive : ''}`}
-                      onClick={() => {
-                        setSelectedPartnerType(entry.value);
-                        setSelectedPartnerId('');
-                        setIsShareConfirmOpen(false);
-                      }}
+                      className={`${styles.optionActionButton} ${styles.shareChoiceCard}`}
+                      onClick={() => openPartnerMap(option.value)}
                     >
-                      <strong>{entry.title}</strong>
-                      <small>{entry.description}</small>
+                      <span className={styles.optionIconTile}>{renderShareOptionIcon(option.value, styles.buttonIcon)}</span>
+                      <span className={styles.shareChoiceText}>
+                        <strong>{option.actionTitle}</strong>
+                        <small>{option.description}</small>
+                      </span>
                     </button>
                   ))}
                 </div>
-
-                <div className={styles.shareSidebarHeader}>
-                  <div>
-                    <strong>{formatPartnerType(selectedPartnerType)} partners</strong>
-                    <small>{partners.length ? `${partners.length} listed partner${partners.length === 1 ? '' : 's'} found` : 'Choose a listed partner'}</small>
-                  </div>
-                  {selectedPartner ? <span>Selected</span> : null}
-                </div>
-
-                <div className={styles.sharePartnerList}>
-                  {isLoadingPartners ? (
-                    <p className={styles.emptyState}>Loading partners...</p>
-                  ) : partners.length ? (
-                    partners.map((partner, index) => (
-                      <button
-                        key={partner.userId}
-                        type="button"
-                        className={`${styles.sharePartnerCard} ${selectedPartnerId === partner.userId ? styles.sharePartnerCardActive : ''}`}
-                        onClick={() => openShareConfirm(partner)}
-                      >
-                        <span className={styles.sharePartnerNumber}>{index + 1}</span>
-                        <span className={styles.sharePartnerBody}>
-                          <span className={styles.sharePartnerTitleRow}>
-                            <strong>{partnerName(partner)}</strong>
-                            <small>{formatPartnerType(partner.partnerType)}</small>
-                          </span>
-                          <span className={styles.sharePartnerMeta}>
-                            <span>{partnerLocation(partner)}</span>
-                            {partner.serviceRadiusKm ? <span>{partner.serviceRadiusKm} km radius</span> : null}
-                          </span>
-                          {partner.description ? <span className={styles.sharePartnerCopy}>{partner.description}</span> : null}
-                          {partner.brandFocus ? <span className={styles.sharePartnerCopy}>Brands: {partner.brandFocus}</span> : null}
-                        </span>
-                      </button>
-                    ))
-                  ) : (
-                    <p className={styles.emptyState}>
-                      No listed {formatPartnerType(selectedPartnerType).toLowerCase()} partners found yet. Partner accounts must enable their directory listing under Account details.
-                    </p>
-                  )}
-                </div>
-              </aside>
-
-              <div className={styles.shareMapShell}>
-                <div ref={mapElementRef} className={styles.shareMapCanvas} aria-label="Partner map" />
-                {!partnersWithCoordinates.length ? (
-                  <div className={styles.shareMapFallback}>
-                    <p>Partners with saved latitude and longitude will appear on this map.</p>
-                  </div>
-                ) : null}
               </div>
             </div>
-
-            <div className={styles.shareModalActions}>
-              <span>{selectedPartner ? `Selected: ${partnerName(selectedPartner)}` : 'Choose a partner from the sidebar or the map.'}</span>
-              <div>
-                <button type="button" className={styles.ghostButton} onClick={closeShareModal} disabled={isSharing}>
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={() => selectedPartner ? setIsShareConfirmOpen(true) : setNotice({ tone: 'error', message: 'Choose a partner first.' })}
-                  disabled={isSharing}
-                >
-                  Continue
-                </button>
-              </div>
-            </div>
-
-            {isShareConfirmOpen && selectedPartner ? (
-              <div className={styles.shareConfirmOverlay}>
-                <button
-                  type="button"
-                  className={styles.shareConfirmBackdrop}
-                  onClick={closeShareConfirm}
-                  aria-label="Close share confirmation"
-                  disabled={isSharing}
-                />
-
-                <section className={styles.shareConfirmModal} aria-live="polite">
-                  <div className={styles.shareConfirmHeader}>
-                    <div>
-                      <span>{partnerName(selectedPartner)}</span>
-                      <h3>Confirm register access</h3>
-                    </div>
-                    <button type="button" className={styles.modalCloseButton} onClick={closeShareConfirm} aria-label="Close share confirmation" disabled={isSharing}>
-                      ×
-                    </button>
-                  </div>
-
-                  <div className={styles.shareConfirmBody}>
-                    <div className={styles.disclaimer}>
-                      You are giving the selected partner view access to your Asset Register, including asset details, saved values, photos and selected history. This does not create a finance, insurance, valuation or sales agreement. You can revoke access at any time.
-                    </div>
-
-                    <label className={styles.checkboxField}>
-                      <input
-                        type="checkbox"
-                        checked={includeDocuments}
-                        onChange={(event) => setIncludeDocuments(event.target.checked)}
-                      />
-                      <span>Include asset documents where saved</span>
-                    </label>
-
-                    <label className={styles.checkboxField}>
-                      <input
-                        type="checkbox"
-                        checked={includeScanHistory}
-                        onChange={(event) => setIncludeScanHistory(event.target.checked)}
-                      />
-                      <span>Include QR scan and update history where available</span>
-                    </label>
-
-                    <label className={styles.field}>
-                      <span>Message to partner</span>
-                      <textarea
-                        value={ownerMessage}
-                        onChange={(event) => setOwnerMessage(event.target.value)}
-                        placeholder="Optional note explaining why you are sharing this register."
-                      />
-                    </label>
-
-                    <label className={styles.field}>
-                      <span>Account PIN</span>
-                      <input
-                        type="password"
-                        inputMode="numeric"
-                        value={pin}
-                        onChange={(event) => setPin(event.target.value.replace(/\D+/g, '').slice(0, 8))}
-                        placeholder="Enter your 4 to 8 digit Account PIN"
-                      />
-                    </label>
-                  </div>
-
-                  <div className={styles.shareConfirmActions}>
-                    <button type="button" className={styles.ghostButton} onClick={closeShareConfirm} disabled={isSharing}>
-                      Back
-                    </button>
-                    <button type="button" className={styles.primaryButton} onClick={() => void handleShare()} disabled={isSharing}>
-                      {isSharing ? 'Sharing...' : `Share with ${partnerName(selectedPartner)}`}
-                    </button>
-                  </div>
-                </section>
-              </div>
-            ) : null}
           </section>
         </div>
       ) : null}
 
+      {isMapModalOpen ? (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBackdrop} onClick={closePartnerMap} />
+
+          <section className={`${styles.optionsModal} ${styles.shareMapModal}`} role="dialog" aria-modal="true" aria-labelledby="share-partner-map-title">
+            <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.shareMapModalHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="share-partner-map-title">{selectedShareOption.mapTitle}</h3>
+              </div>
+
+              <button type="button" className={styles.modalCloseButton} onClick={closePartnerMap} aria-label="Close partner map" disabled={isSharing}>
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${styles.modalScrollBody} ${styles.shareMapScrollBody}`}>
+              <form
+                className={styles.shareSearchBar}
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void loadPartners();
+                }}
+              >
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search by business, town, province, service or brand"
+                  aria-label="Search partner directory"
+                />
+                <button type="submit" className={styles.secondaryButton} disabled={isLoadingPartners}>
+                  <SearchIcon className={styles.buttonIcon} />
+                  <span>{isLoadingPartners ? 'Searching...' : 'Search'}</span>
+                </button>
+              </form>
+
+              <div className={styles.shareMapStage}>
+                <aside className={styles.shareSidebar} aria-label="Share register partner options">
+                  <div className={styles.shareSidebarHeader}>
+                    <button type="button" className={styles.shareBackButton} onClick={goBackToShareOptions} disabled={isSharing}>
+                      <ChevronLeftIcon className={styles.buttonIcon} />
+                      <span>Back</span>
+                    </button>
+                    <strong>Partners</strong>
+                  </div>
+
+                  <div className={styles.sharePartnerList}>
+                    {isLoadingPartners ? (
+                      <p className={styles.shareEmptyState}>Loading partners...</p>
+                    ) : partners.length ? (
+                      partners.map((partner, index) => (
+                        <button
+                          key={partner.userId}
+                          type="button"
+                          className={`${styles.sharePartnerCard} ${selectedPartnerId === partner.userId ? styles.sharePartnerCardActive : ''}`}
+                          onClick={() => openShareConfirm(partner)}
+                        >
+                          <span className={styles.sharePartnerNumber}>{index + 1}</span>
+                          <span className={styles.sharePartnerBody}>
+                            <span className={styles.sharePartnerHeader}>
+                              <strong>{partnerName(partner)}</strong>
+                              <small>{formatPartnerType(partner.partnerType)}</small>
+                            </span>
+                            <span className={styles.sharePartnerMeta}>
+                              <span>{partnerLocation(partner)}</span>
+                              {partner.serviceRadiusKm ? <span>{partner.serviceRadiusKm} km radius</span> : null}
+                            </span>
+                            {partner.description ? <span className={styles.sharePartnerCopy}>{partner.description}</span> : null}
+                            {partner.brandFocus ? <span className={styles.sharePartnerCopy}>Brands: {partner.brandFocus}</span> : null}
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      <p className={styles.shareEmptyState}>{selectedShareOption.emptyText}</p>
+                    )}
+                  </div>
+                </aside>
+
+                <div className={styles.shareMapShell}>
+                  <div ref={mapElementRef} className={styles.shareMapCanvas} aria-label="Partner map" />
+                  {!partnersWithCoordinates.length ? (
+                    <div className={styles.shareMapFallback}>
+                      <p>Partners with saved latitude and longitude will appear on this map.</p>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              {isShareConfirmOpen && selectedPartner ? (
+                <div className={styles.shareConfirmOverlay}>
+                  <button
+                    type="button"
+                    className={styles.shareConfirmBackdrop}
+                    onClick={closeShareConfirm}
+                    aria-label="Close share confirmation"
+                    disabled={isSharing}
+                  />
+
+                  <section className={styles.shareConfirmModal} aria-live="polite">
+                    <div className={styles.shareConfirmHeader}>
+                      <div>
+                        <span>{partnerName(selectedPartner)}</span>
+                        <h4>Confirm register access</h4>
+                      </div>
+                      <button type="button" className={styles.modalCloseButton} onClick={closeShareConfirm} aria-label="Close share confirmation" disabled={isSharing}>
+                        <CloseIcon className={styles.buttonIcon} />
+                      </button>
+                    </div>
+
+                    <div className={styles.shareConfirmBody}>
+                      <div className={styles.disclaimer}>
+                        <strong>Live Asset Register access</strong>
+                        <p>
+                          You are giving this partner view access to your Asset Register, including asset details, saved values, photos and selected history. This does not create a finance, insurance, valuation or sales agreement. You can revoke access at any time.
+                        </p>
+                      </div>
+
+                      <label className={styles.checkboxField}>
+                        <input
+                          type="checkbox"
+                          checked={includeDocuments}
+                          onChange={(event) => setIncludeDocuments(event.target.checked)}
+                        />
+                        <span>Include asset documents where saved</span>
+                      </label>
+
+                      <label className={styles.checkboxField}>
+                        <input
+                          type="checkbox"
+                          checked={includeScanHistory}
+                          onChange={(event) => setIncludeScanHistory(event.target.checked)}
+                        />
+                        <span>Include QR scan and update history where available</span>
+                      </label>
+
+                      <label className={styles.field}>
+                        <span>
+                          Message to partner
+                          <small>Optional</small>
+                        </span>
+                        <textarea
+                          value={ownerMessage}
+                          onChange={(event) => setOwnerMessage(event.target.value)}
+                          placeholder="Example: Please review my live asset register for cover, finance or replacement support."
+                        />
+                      </label>
+
+                      <label className={styles.field}>
+                        <span>Account PIN</span>
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          value={pin}
+                          onChange={(event) => setPin(event.target.value.replace(/\D+/g, '').slice(0, 8))}
+                          placeholder="Enter your 4 to 8 digit Account PIN"
+                        />
+                      </label>
+                    </div>
+
+                    <div className={styles.shareConfirmActions}>
+                      <button type="button" className={styles.secondaryButton} onClick={closeShareConfirm} disabled={isSharing}>
+                        Back
+                      </button>
+                      <button type="button" className={styles.primaryButton} onClick={() => void handleShare()} disabled={isSharing}>
+                        {isSharing ? 'Sharing...' : `Share with ${partnerName(selectedPartner)}`}
+                      </button>
+                    </div>
+                  </section>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }
