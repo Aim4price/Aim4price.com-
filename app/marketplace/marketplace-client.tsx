@@ -10,6 +10,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import AppHeader from '../../components/AppHeader';
+import { useGlobalLoading } from '../../lib/use-global-loading';
 import styles from './page.module.css';
 import {
   FALLBACK_MARKETPLACE_IMAGE,
@@ -815,6 +816,8 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
   const [query, setQuery] = useState(initialSearch);
   const [items, setItems] = useState<MarketplaceListing[]>(seedMarketplaceListings);
   const [families, setFamilies] = useState<FamilyOption[]>(FALLBACK_FAMILIES);
+  const [isLoadingListings, setIsLoadingListings] = useState(true);
+  const [isLoadingFamilies, setIsLoadingFamilies] = useState(true);
   const [activeListing, setActiveListing] = useState<MarketplaceListing | null>(null);
   const [deleteListingTarget, setDeleteListingTarget] = useState<MarketplaceListing | null>(null);
   const [isDeletingListing, setIsDeletingListing] = useState(false);
@@ -832,10 +835,16 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
   const modalDetailsRef = useRef<HTMLElement | null>(null);
   const [modalScrollState, setModalScrollState] = useState({ visible: false, top: 0, height: 100 });
 
+  useGlobalLoading(isLoadingListings || isLoadingFamilies, 'marketplace-data');
+
   useEffect(() => {
     let mounted = true;
 
-    async function refresh() {
+    async function refresh(options: { silent?: boolean } = {}) {
+      if (!options.silent) {
+        setIsLoadingListings(true);
+      }
+
       try {
         const response = await fetch('/api/marketplace', {
           cache: 'no-store',
@@ -858,15 +867,23 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
         if (mounted) {
           setItems(seedMarketplaceListings);
         }
+      } finally {
+        if (mounted && !options.silent) {
+          setIsLoadingListings(false);
+        }
       }
     }
 
+    function refreshSilently() {
+      void refresh({ silent: true });
+    }
+
     void refresh();
-    window.addEventListener('focus', refresh);
+    window.addEventListener('focus', refreshSilently);
 
     return () => {
       mounted = false;
-      window.removeEventListener('focus', refresh);
+      window.removeEventListener('focus', refreshSilently);
     };
   }, []);
 
@@ -874,6 +891,8 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
     let mounted = true;
 
     async function loadFamilies() {
+      setIsLoadingFamilies(true);
+
       try {
         const response = await fetch('/api/equipment-families', {
           cache: 'no-store',
@@ -891,6 +910,10 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
       } catch {
         if (mounted) {
           setFamilies(FALLBACK_FAMILIES);
+        }
+      } finally {
+        if (mounted) {
+          setIsLoadingFamilies(false);
         }
       }
     }
