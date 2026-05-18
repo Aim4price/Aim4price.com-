@@ -1,7 +1,6 @@
 import { ensureAccountProfileColumns, getAccountProfile } from './account-profile';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
 import { getDb } from './db';
-import { verifyScanPin } from './scan-pin';
 
 export type AccountRole = 'owner' | 'dealer' | 'finance' | 'insurance';
 export type PartnerType = Exclude<AccountRole, 'owner'>;
@@ -200,11 +199,6 @@ type AssetPartnerNoteRow = {
   created_at: string | null;
   noted_at: string | null;
   updated_at: string | null;
-};
-
-type PinRow = {
-  scan_pin_hash: string | null;
-  scan_pin_enabled: boolean | null;
 };
 
 const ACCOUNT_ROLES = new Set<AccountRole>(['owner', 'dealer', 'finance', 'insurance']);
@@ -869,30 +863,6 @@ async function getPartnerProfileForShare(partnerUserId: string): Promise<Account
   return result.rows[0] ?? null;
 }
 
-async function validateOwnerPin(ownerUserId: string, rawPin: unknown): Promise<void> {
-  const db = getDb();
-  const result = await db.query<PinRow>(
-    `
-      select scan_pin_hash, scan_pin_enabled
-      from account_profiles
-      where user_id = $1
-      limit 1
-    `,
-    [ownerUserId],
-  );
-  const row = result.rows[0];
-
-  if (!row?.scan_pin_enabled || !row.scan_pin_hash) {
-    throw new Error('ACCOUNT_PIN_NOT_ENABLED');
-  }
-
-  const isValid = await verifyScanPin(rawPin, row.scan_pin_hash);
-
-  if (!isValid) {
-    throw new Error('INVALID_ACCOUNT_PIN');
-  }
-}
-
 export async function listSharedAccessForOwner(ownerUserId: string): Promise<SharedAccessGrant[]> {
   await ensurePartnerAccessTables();
   const db = getDb();
@@ -934,7 +904,6 @@ export async function createSharedAccessRequest(input: {
   ownerUserId: string;
   partnerUserId: string;
   partnerType: PartnerType;
-  pin: unknown;
   ownerMessage?: string | null;
   includeDocuments?: boolean;
   includeScanHistory?: boolean;
@@ -952,7 +921,6 @@ export async function createSharedAccessRequest(input: {
     throw new Error('PARTNER_NOT_FOUND');
   }
 
-  await validateOwnerPin(input.ownerUserId, input.pin);
 
   const db = getDb();
   const existing = await db.query<GrantRow>(
