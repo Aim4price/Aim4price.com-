@@ -354,10 +354,7 @@ export default function SharedAccessClient() {
   const [selectedPartnerId, setSelectedPartnerId] = useState('');
   const [grantSearch, setGrantSearch] = useState('');
   const [search, setSearch] = useState('');
-  const [pin, setPin] = useState('');
   const [ownerMessage, setOwnerMessage] = useState('');
-  const [includeDocuments, setIncludeDocuments] = useState(true);
-  const [includeScanHistory, setIncludeScanHistory] = useState(true);
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isShareConfirmOpen, setIsShareConfirmOpen] = useState(false);
@@ -559,10 +556,7 @@ export default function SharedAccessClient() {
   function resetShareFields() {
     setSelectedPartnerId('');
     setSearch('');
-    setPin('');
     setOwnerMessage('');
-    setIncludeDocuments(true);
-    setIncludeScanHistory(true);
     setIsShareConfirmOpen(false);
   }
 
@@ -616,11 +610,6 @@ export default function SharedAccessClient() {
       return;
     }
 
-    if (!pin.trim()) {
-      setNotice({ tone: 'error', message: 'Enter your Account PIN to confirm sharing.' });
-      return;
-    }
-
     setIsSharing(true);
 
     try {
@@ -631,10 +620,9 @@ export default function SharedAccessClient() {
         body: JSON.stringify({
           partnerUserId: selectedPartner.userId,
           partnerType: selectedPartnerType,
-          pin,
           ownerMessage,
-          includeDocuments,
-          includeScanHistory,
+          includeDocuments: true,
+          includeScanHistory: true,
         }),
       });
       const payload = await response.json().catch(() => null);
@@ -900,90 +888,64 @@ export default function SharedAccessClient() {
                 </div>
               </div>
 
-              {isShareConfirmOpen && selectedPartner ? (
-                <div className={styles.shareConfirmOverlay}>
-                  <button
-                    type="button"
-                    className={styles.shareConfirmBackdrop}
-                    onClick={closeShareConfirm}
-                    aria-label="Close share confirmation"
-                    disabled={isSharing}
-                  />
-
-                  <section className={styles.shareConfirmModal} aria-live="polite">
-                    <div className={styles.shareConfirmHeader}>
-                      <div>
-                        <span>{partnerName(selectedPartner)}</span>
-                        <h4>Confirm register access</h4>
-                      </div>
-                      <button type="button" className={styles.modalCloseButton} onClick={closeShareConfirm} aria-label="Close share confirmation" disabled={isSharing}>
-                        <CloseIcon className={styles.buttonIcon} />
-                      </button>
-                    </div>
-
-                    <div className={styles.shareConfirmBody}>
-                      <div className={styles.disclaimer}>
-                        <strong>Live Asset Register access</strong>
-                        <p>
-                          You are giving this partner view access to your Asset Register, including asset details, saved values, photos and selected history. This does not create a finance, insurance, valuation or sales agreement. You can revoke access at any time.
-                        </p>
-                      </div>
-
-                      <label className={styles.checkboxField}>
-                        <input
-                          type="checkbox"
-                          checked={includeDocuments}
-                          onChange={(event) => setIncludeDocuments(event.target.checked)}
-                        />
-                        <span>Include asset documents where saved</span>
-                      </label>
-
-                      <label className={styles.checkboxField}>
-                        <input
-                          type="checkbox"
-                          checked={includeScanHistory}
-                          onChange={(event) => setIncludeScanHistory(event.target.checked)}
-                        />
-                        <span>Include QR scan and update history where available</span>
-                      </label>
-
-                      <label className={styles.field}>
-                        <span>
-                          Message to partner
-                          <small>Optional</small>
-                        </span>
-                        <textarea
-                          value={ownerMessage}
-                          onChange={(event) => setOwnerMessage(event.target.value)}
-                          placeholder="Example: Please review my live asset register for cover, finance or replacement support."
-                        />
-                      </label>
-
-                      <label className={styles.field}>
-                        <span>Account PIN</span>
-                        <input
-                          type="password"
-                          inputMode="numeric"
-                          value={pin}
-                          onChange={(event) => setPin(event.target.value.replace(/\D+/g, '').slice(0, 8))}
-                          placeholder="Enter your 4 to 8 digit Account PIN"
-                        />
-                      </label>
-                    </div>
-
-                    <div className={styles.shareConfirmActions}>
-                      <button type="button" className={styles.secondaryButton} onClick={closeShareConfirm} disabled={isSharing}>
-                        Back
-                      </button>
-                      <button type="button" className={styles.primaryButton} onClick={() => void handleShare()} disabled={isSharing}>
-                        {isSharing ? 'Sharing...' : `Share with ${partnerName(selectedPartner)}`}
-                      </button>
-                    </div>
-                  </section>
-                </div>
-              ) : null}
             </div>
           </section>
+
+          {isShareConfirmOpen && selectedPartner ? (
+            <div className={styles.shareConfirmOverlay}>
+              <button
+                type="button"
+                className={styles.shareConfirmBackdrop}
+                onClick={closeShareConfirm}
+                aria-label="Close share confirmation"
+                disabled={isSharing}
+              />
+
+              <section className={styles.shareConfirmModal} aria-live="polite">
+                <div className={styles.shareConfirmHeader}>
+                  <div>
+                    <span>{partnerName(selectedPartner)}</span>
+                    <h4>Confirm register access</h4>
+                  </div>
+                  <button type="button" className={styles.modalCloseButton} onClick={closeShareConfirm} aria-label="Close share confirmation" disabled={isSharing}>
+                    <CloseIcon className={styles.buttonIcon} />
+                  </button>
+                </div>
+
+                <div className={styles.shareConfirmBody}>
+                  <div className={styles.disclaimer}>
+                    <strong>Live Asset Register access</strong>
+                    <p>
+                      This gives {partnerName(selectedPartner)} live, view-only access to your Asset Register so they can review asset details, saved Aim4price values, photos and relevant register history. It does not approve a finance, insurance, valuation or sales agreement. You stay in control and can revoke access from this page at any time.
+                    </p>
+                  </div>
+
+                  <label className={styles.field}>
+                    <span>
+                      Message to partner
+                      <small>Optional</small>
+                    </span>
+                    <textarea
+                      value={ownerMessage}
+                      onChange={(event) => setOwnerMessage(event.target.value)}
+                      placeholder="Example: Please review my live asset register for cover, finance or replacement support."
+                    />
+                  </label>
+
+                </div>
+
+                <div className={styles.shareConfirmActions}>
+                  <button type="button" className={styles.secondaryButton} onClick={closeShareConfirm} disabled={isSharing}>
+                    Back
+                  </button>
+                  <button type="button" className={styles.primaryButton} onClick={() => void handleShare()} disabled={isSharing}>
+                    {isSharing ? 'Sharing...' : `Share with ${partnerName(selectedPartner)}`}
+                  </button>
+                </div>
+              </section>
+            </div>
+          ) : null}
+
         </div>
       ) : null}
     </main>
