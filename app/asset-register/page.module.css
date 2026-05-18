@@ -15843,21 +15843,21 @@
 }
 
 .page .headerOptionsButton {
-  color: #ffffff !important;
-  background: linear-gradient(180deg, #c47735 0%, #9a551c 100%) !important;
-  border: 1.5px solid #9a551c !important;
+  color: var(--action-clay-text) !important;
+  background: linear-gradient(180deg, #fffdf9 0%, var(--action-clay-bg) 100%) !important;
+  border: 1.5px solid var(--action-clay-border) !important;
   box-shadow:
-    0 16px 30px rgba(109, 63, 18, 0.17),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    0 10px 22px rgba(109, 63, 18, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
 .page .headerOptionsButton:hover:not(:disabled) {
-  color: #ffffff !important;
-  background: linear-gradient(180deg, #d1843e 0%, #884914 100%) !important;
-  border-color: #884914 !important;
+  color: var(--action-clay-text) !important;
+  background: linear-gradient(180deg, #fffaf4 0%, var(--action-clay-bg-hover) 100%) !important;
+  border-color: var(--action-clay-border-hover) !important;
   box-shadow:
-    0 20px 36px rgba(109, 63, 18, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    0 13px 26px rgba(109, 63, 18, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
 }
 
 .page .filterTriggerButton {
