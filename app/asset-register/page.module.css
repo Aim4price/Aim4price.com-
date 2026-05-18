@@ -15717,14 +15717,15 @@
   max-width: min(100%, 38rem) !important;
   min-height: 3.35rem !important;
   margin: 0 !important;
-  padding: 0.72rem 1.05rem !important;
-  border: 1px solid rgba(203, 218, 230, 0.98) !important;
+  padding: 0.76rem 1.12rem !important;
+  border: 1px solid rgba(108, 122, 133, 0.92) !important;
   border-radius: 1.05rem !important;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%) !important;
+  background: linear-gradient(180deg, #6f7b84 0%, #59656f 100%) !important;
   box-shadow:
-    0 10px 22px rgba(16, 31, 28, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
-  color: #0d3028 !important;
+    0 14px 28px rgba(28, 39, 48, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 0 rgba(31, 42, 48, 0.18) !important;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
   font-size: clamp(1.42rem, 1.9vw, 1.72rem) !important;
   font-weight: 760 !important;
@@ -15743,7 +15744,7 @@
     width: 100% !important;
     max-width: 100% !important;
     min-height: 3.05rem !important;
-    padding: 0.7rem 0.9rem !important;
+    padding: 0.72rem 0.92rem !important;
     border-radius: 0.95rem !important;
     font-size: 1.35rem !important;
     font-weight: 740 !important;
