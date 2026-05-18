@@ -4937,7 +4937,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
               {isSharedRegisterView || canUseOwnerOnlyAssetActions ? (
                 <button
                   type="button"
-                  className={styles.secondaryButton}
+                  className={`${styles.secondaryButton} ${styles.headerDownloadButton}`}
                   onClick={openExportModal}
                   disabled={!assets.length || isLoading || isExporting}
                 >
@@ -5114,7 +5114,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
                               ) : (
                                 <button
                                   type="button"
-                                  className={styles.optionsButton}
+                                  className={`${styles.optionsButton} ${styles.cardOptionsButton}`}
                                   onClick={() => openAssetQuoteOptions(asset)}
                                 >
                                   <OptionsIcon className={styles.buttonIcon} />
@@ -5124,7 +5124,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
 
                               <button
                                 type="button"
-                                className={styles.expandButton}
+                                className={`${styles.expandButton} ${styles.cardViewDetailsButton}`}
                                 onClick={() => setExpandedAssetId((current) => (current === asset.id ? null : asset.id))}
                                 aria-expanded={isExpanded}
                                 aria-controls={`asset-panel-${asset.id}`}
@@ -5135,7 +5135,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
 
                               <button
                                 type="button"
-                                className={styles.optionsButton}
+                                className={`${styles.optionsButton} ${styles.cardManageButton}`}
                                 onClick={() => openActionDialog(asset)}
                               >
                                 <ManageIcon className={styles.buttonIcon} />
