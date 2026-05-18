@@ -867,7 +867,7 @@ export async function listSharedAccessForOwner(ownerUserId: string): Promise<Sha
   await ensurePartnerAccessTables();
   const db = getDb();
   const result = await db.query<GrantRow>(
-    `${grantSelectSql('where g.owner_user_id = $1')} order by g.created_at desc`,
+    `${grantSelectSql("where g.owner_user_id = $1 and g.status in ('pending', 'active')")} order by g.created_at desc`,
     [ownerUserId],
   );
 
