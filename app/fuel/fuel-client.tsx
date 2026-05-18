@@ -145,6 +145,53 @@ function TrashIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function SearchIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </IconBase>
+  );
+}
+
+function FilterIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 6h16" />
+      <path d="M7 12h10" />
+      <path d="M10 18h4" />
+    </IconBase>
+  );
+}
+
+function DownloadIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 3v11" />
+      <path d="m7 9 5 5 5-5" />
+      <path d="M5 20h14" />
+    </IconBase>
+  );
+}
+
+function PlusIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </IconBase>
+  );
+}
+
+function CloseIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </IconBase>
+  );
+}
+
 function formatLitres(value: number | null | undefined): string {
   if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return '—';
   return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L`;
@@ -507,119 +554,158 @@ export default function FuelClient() {
 
   return (
     <>
-      <AppHeader active="none" />
-      <main className={styles.pageShell}>
-        <section className={styles.ledgerPanel}>
-          <div className={styles.panelHeader}>
-            <div className={styles.pageTitleBlock}>
-              <h1>Aim4price Fuel Tracking System</h1>
-            </div>
+      <main className={styles.page}>
+        <AppHeader active="none" />
 
-            <div className={styles.topActions}>
-              <button type="button" className={styles.secondaryButton} onClick={openFilterModal}>
-                Filter{hasActiveFilters ? ' active' : ''}
-              </button>
-              <button type="button" className={styles.secondaryButton} onClick={openReportModal}>
-                Fuel Report
-              </button>
-              <button type="button" className={styles.primaryButton} onClick={openCreateStorage}>
-                + Add Storage Tank
-              </button>
-            </div>
-          </div>
-
+        <section className={styles.shell}>
           {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
 
-          <section className={styles.summaryGrid} aria-label="Fuel Ledger summary">
-            <article className={styles.summaryCard}>
-              <span>Total storage</span>
-              <strong>{summary?.totalStorageUnits ?? 0}</strong>
-              <small>{summary?.lowStorageCount ?? 0} low storage</small>
-            </article>
-            <article className={styles.summaryCard}>
-              <span>Fuel issued · {issuedPeriodLabel}</span>
-              <strong>{formatLitres(issuedLitres)}</strong>
-              <small>QR fuel entries</small>
-            </article>
-            <article className={styles.summaryCard}>
-              <span>Total Stock</span>
-              <strong>{formatLitres(summary?.currentLitres ?? 0)}</strong>
-              <small>{formatPercent(summary?.currentStockPercent ?? null)} of known capacity</small>
-            </article>
+          <section className={styles.ledgerPanel}>
+            <div className={styles.panelHeader}>
+              <div className={styles.pageTitleBlock}>
+                <h1>Aim4price Fuel Tracking System</h1>
+              </div>
+
+              <div className={styles.topActions}>
+                <button type="button" className={styles.secondaryButton} onClick={openFilterModal}>
+                  <FilterIcon className={styles.buttonIcon} />
+                  <span>{hasActiveFilters ? 'Filter active' : 'Filter'}</span>
+                </button>
+                <button type="button" className={styles.secondaryButton} onClick={openReportModal}>
+                  <DownloadIcon className={styles.buttonIcon} />
+                  <span>Fuel Report</span>
+                </button>
+              </div>
+            </div>
+
+            <section className={styles.summaryGrid} aria-label="Fuel Ledger summary">
+              <article className={`${styles.summaryCard} ${styles.summaryCardFeatured}`}>
+                <span>Total storage</span>
+                <strong>{summary?.totalStorageUnits ?? 0}</strong>
+                <small>{summary?.lowStorageCount ?? 0} low storage</small>
+              </article>
+              <article className={styles.summaryCard}>
+                <span>Fuel issued · {issuedPeriodLabel}</span>
+                <strong>{formatLitres(issuedLitres)}</strong>
+                <small>QR fuel entries</small>
+              </article>
+              <article className={styles.summaryCard}>
+                <span>Total stock</span>
+                <strong>{formatLitres(summary?.currentLitres ?? 0)}</strong>
+                <small>{formatPercent(summary?.currentStockPercent ?? null)} of known capacity</small>
+              </article>
+            </section>
+
+            <div className={styles.toolbar}>
+              <label className={styles.searchWrap}>
+                <SearchIcon className={styles.searchIcon} />
+                <input
+                  className={styles.searchInput}
+                  value={filterText}
+                  onChange={(event) => setFilterText(event.target.value)}
+                  placeholder="Search by storage, fuel type, location or QR code"
+                  aria-label="Search Fuel Ledger"
+                />
+
+                {filterText ? (
+                  <button
+                    type="button"
+                    className={styles.clearSearchButton}
+                    onClick={() => setFilterText('')}
+                    aria-label="Clear fuel storage search"
+                  >
+                    <CloseIcon className={styles.buttonIcon} />
+                  </button>
+                ) : null}
+              </label>
+
+              <button type="button" className={`${styles.primaryButton} ${styles.toolbarPrimaryButton}`} onClick={openCreateStorage}>
+                <PlusIcon className={styles.buttonIcon} />
+                <span>Add Storage Tank</span>
+              </button>
+            </div>
+
+            {isLoading ? <div className={styles.emptyState}>Loading Fuel Ledger...</div> : null}
+
+            {!isLoading && !storages.length ? (
+              <div className={styles.emptyState}>
+                <strong>No fuel storage yet.</strong>
+                <span>Add your first tank, bowser or storage unit.</span>
+                <button type="button" className={styles.primaryButton} onClick={openCreateStorage}>
+                  <PlusIcon className={styles.buttonIcon} />
+                  <span>Add Storage Tank</span>
+                </button>
+              </div>
+            ) : null}
+
+            {!isLoading && storages.length > 0 && visibleStorages.length === 0 ? (
+              <div className={styles.emptyState}>
+                <strong>No storage matches the filter.</strong>
+                <button type="button" className={styles.secondaryButton} onClick={clearFilters}>
+                  Clear Filter
+                </button>
+              </div>
+            ) : null}
+
+            <div className={styles.storageList}>
+              {visibleStorages.map((storage) => {
+                const progress = getProgressPercent(storage);
+                const storageIsLow = isLowStorage(storage);
+
+                return (
+                  <article key={storage.id} className={`${styles.storageCard} ${storageIsLow ? styles.storageCardLow : ''}`}>
+                    <div className={styles.storageInfo}>
+                      <div className={styles.storageTitleBlock}>
+                        <h2>{storage.name}</h2>
+                        <div className={styles.storageDetails}>
+                          <span>{formatFuelType(storage.fuelType)}</span>
+                          <span>{formatLitres(storage.currentLitres)} available</span>
+                          <span>{storage.capacityLitres === null ? 'Capacity not set' : `${formatLitres(storage.capacityLitres)} capacity`}</span>
+                          <span>{storage.locationLabel || storage.publicFuelStorageCode}</span>
+                        </div>
+                      </div>
+
+                      <div className={styles.storageProgressBlock}>
+                        <div className={styles.progressTrack} aria-hidden="true">
+                          <span style={{ width: `${progress}%` }} />
+                        </div>
+                        <div className={styles.progressMeta}>
+                          <span>{storage.reorderLevelLitres === null ? 'No low level set' : `Low at ${formatLitres(storage.reorderLevelLitres)}`}</span>
+                          <span>{formatPercent(storage.stockPercent)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={styles.storageHeaderAside}>
+                      <div className={styles.storageValueBlock}>
+                        <strong>{formatLitres(storage.currentLitres)}</strong>
+                        <span>{formatPercent(storage.stockPercent)} full</span>
+                      </div>
+
+                      <div className={styles.unitActions}>
+                        <button type="button" className={styles.unitButton} onClick={() => openEditStorage(storage)} disabled={isSaving}>
+                          <GearIcon className={styles.buttonIcon} />
+                          <span>Manage</span>
+                        </button>
+                        <a className={styles.unitButton} href={`/api/fuel/storage/${storage.id}/qr?format=print`} target="_blank" rel="noreferrer">
+                          <QrIcon className={styles.buttonIcon} />
+                          <span>QR Code</span>
+                        </a>
+                        <button type="button" className={styles.unitButton} onClick={() => openPin(storage)} disabled={isSaving}>
+                          <LockIcon className={styles.buttonIcon} />
+                          <span>Change PIN</span>
+                        </button>
+                        <button type="button" className={`${styles.unitButton} ${styles.deleteUnitButton}`} onClick={() => setDeleteCandidateStorage(storage)} disabled={isSaving}>
+                          <TrashIcon className={styles.buttonIcon} />
+                          <span>Delete Unit</span>
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </section>
-
-          {isLoading ? <div className={styles.emptyState}>Loading Fuel Ledger...</div> : null}
-
-          {!isLoading && !storages.length ? (
-            <div className={styles.emptyState}>
-              <strong>No fuel storage yet.</strong>
-              <span>Add your first tank, bowser or storage unit.</span>
-              <button type="button" className={styles.primaryButton} onClick={openCreateStorage}>
-                + Add Storage Tank
-              </button>
-            </div>
-          ) : null}
-
-          {!isLoading && storages.length > 0 && visibleStorages.length === 0 ? (
-            <div className={styles.emptyState}>
-              <strong>No storage matches the filter.</strong>
-              <button type="button" className={styles.secondaryButton} onClick={clearFilters}>
-                Clear Filter
-              </button>
-            </div>
-          ) : null}
-
-          <div className={styles.storageList}>
-            {visibleStorages.map((storage) => {
-              const progress = getProgressPercent(storage);
-              const storageIsLow = isLowStorage(storage);
-
-              return (
-                <article key={storage.id} className={`${styles.storageCard} ${storageIsLow ? styles.storageCardLow : ''}`}>
-                  <div className={styles.storageInfo}>
-                    <div className={styles.storageTitleBlock}>
-                      <h2>{storage.name}</h2>
-                      <div className={styles.storageDetails}>
-                        <span>{formatFuelType(storage.fuelType)}</span>
-                        <span>{formatLitres(storage.currentLitres)} available</span>
-                        <span>{storage.capacityLitres === null ? 'Capacity not set' : `${formatLitres(storage.capacityLitres)} capacity`}</span>
-                        <span>{storage.locationLabel || storage.publicFuelStorageCode}</span>
-                      </div>
-                    </div>
-
-                    <div className={styles.storageProgressBlock}>
-                      <div className={styles.progressTrack} aria-hidden="true">
-                        <span style={{ width: `${progress}%` }} />
-                      </div>
-                      <div className={styles.progressMeta}>
-                        <span>{storage.reorderLevelLitres === null ? 'No low level set' : `Low at ${formatLitres(storage.reorderLevelLitres)}`}</span>
-                        <span>{formatPercent(storage.stockPercent)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={styles.unitActions}>
-                    <button type="button" className={styles.unitButton} onClick={() => openEditStorage(storage)} disabled={isSaving}>
-                      <GearIcon className={styles.buttonIcon} />
-                      <span>Manage</span>
-                    </button>
-                    <a className={styles.unitButton} href={`/api/fuel/storage/${storage.id}/qr?format=print`} target="_blank" rel="noreferrer">
-                      <QrIcon className={styles.buttonIcon} />
-                      <span>QR Code</span>
-                    </a>
-                    <button type="button" className={styles.unitButton} onClick={() => openPin(storage)} disabled={isSaving}>
-                      <LockIcon className={styles.buttonIcon} />
-                      <span>Change PIN</span>
-                    </button>
-                    <button type="button" className={`${styles.unitButton} ${styles.deleteUnitButton}`} onClick={() => setDeleteCandidateStorage(storage)} disabled={isSaving}>
-                      <TrashIcon className={styles.buttonIcon} />
-                      <span>Delete Unit</span>
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
         </section>
       </main>
 
