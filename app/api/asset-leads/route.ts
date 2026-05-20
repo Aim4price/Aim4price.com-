@@ -25,6 +25,25 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return null;
 }
 
+function isFullRegisterLeadPayload(value: unknown): boolean {
+  const sections = asRecord(value);
+
+  if (!sections) {
+    return false;
+  }
+
+  const source = String(sections.source ?? '').trim().toLowerCase();
+  const registerLeadType = String(sections.registerLeadType ?? '').trim().toLowerCase();
+  const hasRegisterSnapshot = Boolean(asRecord(sections.registerSnapshot));
+
+  return (
+    sections.registerLead === true ||
+    source === 'full_asset_register' ||
+    registerLeadType.startsWith('full_') ||
+    hasRegisterSnapshot
+  );
+}
+
 export async function GET() {
   const session = await getServerSession();
 
@@ -59,6 +78,14 @@ export async function POST(request: NextRequest) {
   const assetId = String(body.assetId ?? '').trim();
   const partnerUserId = String(body.partnerUserId ?? '').trim();
   const leadType = normalizeLeadType(body.leadType);
+  const includedSections = asRecord(body.includedSections);
+
+  if (isFullRegisterLeadPayload(includedSections)) {
+    return NextResponse.json(
+      { ok: false, error: 'Complete asset registers cannot be sent as leads.' },
+      { status: 400 },
+    );
+  }
 
   if (!assetId || !partnerUserId || !leadType) {
     return NextResponse.json({ ok: false, error: 'Choose a valid asset, partner and lead type.' }, { status: 400 });
@@ -73,7 +100,7 @@ export async function POST(request: NextRequest) {
       partnerUserId,
       leadType,
       ownerMessage: typeof body.ownerMessage === 'string' ? body.ownerMessage : null,
-      includedSections: asRecord(body.includedSections),
+      includedSections,
     });
 
     return NextResponse.json({ ok: true, lead });
@@ -84,6 +111,10 @@ export async function POST(request: NextRequest) {
 
     if (error instanceof Error && error.message === 'PARTNER_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Selected partner could not be found.' }, { status: 404 });
+    }
+
+    if (error instanceof Error && error.message === 'FULL_REGISTER_LEADS_DISABLED') {
+      return NextResponse.json({ ok: false, error: 'Complete asset registers cannot be sent as leads.' }, { status: 400 });
     }
 
     console.error('asset leads POST failed', error);
