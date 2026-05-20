@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<SaveValuationRunApiResponse>(
         {
           ok: false,
-          error: 'Only owner accounts can save valuations to the Asset Register. Partner accounts can still estimate values, but must use shared registers for owner assets.',
+          error: 'Only owner accounts can save valuations to the Asset Register. Partner accounts can still run estimates, but Asset Register saving is disabled for dealer, finance and insurance accounts.',
         },
         { status: 403 },
       );
