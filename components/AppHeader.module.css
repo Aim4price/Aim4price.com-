@@ -10,14 +10,14 @@
 }
 
 .inner {
-  width: min(calc(100% - clamp(2rem, 5.5vw, 5rem)), 1320px);
+  width: min(calc(100% - 3rem), 1360px);
   margin: 0 auto;
   min-height: 5.75rem;
   padding: 0.82rem 0;
   display: grid;
-  grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, 1fr);
+  grid-template-columns: minmax(16rem, 1fr) auto minmax(16rem, 1fr);
   align-items: center;
-  gap: clamp(1rem, 2vw, 2.25rem);
+  gap: clamp(1.45rem, 2.4vw, 2.75rem);
 }
 
 .brand {
@@ -31,9 +31,9 @@
 
 .brandLogo {
   display: block;
-  width: clamp(10.85rem, 13.5vw, 12.8rem);
+  width: clamp(10.6rem, 12.6vw, 12.25rem);
   height: auto;
-  max-height: 3.35rem;
+  max-height: 3.25rem;
   object-fit: contain;
 }
 
@@ -48,10 +48,10 @@
   min-width: 0;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem;
-  border-radius: 1.38rem;
-  background: rgba(255, 255, 255, 0.94);
+  gap: 0.44rem;
+  padding: 0.38rem;
+  border-radius: 1.35rem;
+  background: rgba(255, 255, 255, 0.93);
   border: 1px solid rgba(18, 45, 37, 0.07);
   box-shadow:
     0 14px 32px rgba(18, 45, 37, 0.05),
@@ -62,9 +62,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 7rem;
   min-height: 3.28rem;
-  padding: 0 clamp(1.1rem, 1.35vw, 1.5rem);
+  min-width: clamp(6.55rem, 7.2vw, 8.15rem);
+  padding: 0 1.16rem;
   border-radius: 1rem;
   border: 1px solid transparent;
   text-decoration: none;
@@ -104,9 +104,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.34rem;
-  padding: 0.4rem;
-  border-radius: 1.38rem;
-  background: rgba(255, 255, 255, 0.94);
+  padding: 0.38rem;
+  border-radius: 1.35rem;
+  background: rgba(255, 255, 255, 0.93);
   border: 1px solid rgba(18, 45, 37, 0.07);
   box-shadow:
     0 14px 32px rgba(18, 45, 37, 0.05),
@@ -308,18 +308,20 @@
 
 @media (max-width: 1240px) {
   .inner {
-    gap: 1.25rem;
+    width: min(calc(100% - 2rem), 1240px);
+    gap: 1.15rem;
+    grid-template-columns: minmax(13rem, 1fr) auto minmax(13rem, 1fr);
   }
 
-  .navLink {
-    min-width: 6.45rem;
-    padding: 0 1.08rem;
-  }
-
+  .navLink,
   .signupButton,
   .loginButton,
   .accountButton {
-    padding: 0 1.12rem;
+    padding: 0 1rem;
+  }
+
+  .navLink {
+    min-width: auto;
   }
 
   .brandLogo {
@@ -378,7 +380,6 @@
   }
 
   .navLink {
-    min-width: 0;
     min-height: 3.2rem;
     padding: 0 0.95rem;
     background: rgba(255, 255, 255, 0.94);
