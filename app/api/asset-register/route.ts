@@ -45,7 +45,7 @@ async function requireOwnerAccount(user: { id: string; name?: string | null; ema
     return NextResponse.json(
       {
         ok: false,
-        error: 'Partner accounts can only open shared asset registers. Owners are the only accounts that can create, update or delete asset register items.',
+        error: 'Asset Register is only available to owner accounts. Dealer, finance and insurance accounts cannot create, update or delete asset register items.',
       },
       { status: 403 },
     );
