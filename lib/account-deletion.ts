@@ -1,7 +1,7 @@
 import { getDb } from './db';
 
 const USER_ID_TABLES = ['fuel_storage_events', 'fuel_storage_units', 'asset_register_items', 'valuation_runs', 'account_profiles'] as const;
-const PARTNER_ACCESS_TABLES = ['asset_leads', 'asset_register_access_grants', 'access_audit_events'] as const;
+const PARTNER_ACCESS_TABLES = ['asset_leads', 'asset_partner_notes', 'access_audit_events'] as const;
 
 async function getExistingTableSet(tableNames: readonly string[]): Promise<Set<string>> {
   const db = getDb();
@@ -31,8 +31,8 @@ export async function deleteUserWorkspaceData(userId: string): Promise<void> {
       await client.query('delete from asset_leads where owner_user_id = $1 or partner_user_id = $1', [userId]);
     }
 
-    if (tableSet.has('asset_register_access_grants')) {
-      await client.query('delete from asset_register_access_grants where owner_user_id = $1 or partner_user_id = $1', [userId]);
+    if (tableSet.has('asset_partner_notes')) {
+      await client.query('delete from asset_partner_notes where owner_user_id = $1 or partner_user_id = $1', [userId]);
     }
 
     if (tableSet.has('access_audit_events')) {

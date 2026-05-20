@@ -4,7 +4,6 @@ import { getDb } from './db';
 
 export type AccountRole = 'owner' | 'dealer' | 'finance' | 'insurance';
 export type PartnerType = Exclude<AccountRole, 'owner'>;
-export type SharedAccessStatus = 'pending' | 'active' | 'revoked' | 'declined';
 export type LeadType = 'finance' | 'insurance' | 'replacement_quote';
 export type AssetLeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 
@@ -23,40 +22,6 @@ export type PartnerDirectoryEntry = {
   serviceRadiusKm: number | null;
   brandFocus: string;
   services: string;
-};
-
-export type SharedAccessGrant = {
-  id: string;
-  ownerUserId: string;
-  partnerUserId: string;
-  partnerType: PartnerType;
-  status: SharedAccessStatus;
-  permissionLevel: string;
-  includeDocuments: boolean;
-  includeScanHistory: boolean;
-  ownerMessage: string;
-  ownerName: string;
-  ownerBusinessName: string;
-  ownerEmail: string;
-  ownerPhone: string;
-  ownerProvince: string;
-  ownerTownCity: string;
-  partnerName: string;
-  partnerBusinessName: string;
-  partnerPhone: string;
-  partnerProvince: string;
-  partnerTownCity: string;
-  createdAtIso: string;
-  acceptedAtIso: string | null;
-  revokedAtIso: string | null;
-  declinedAtIso: string | null;
-  lastViewedAtIso: string | null;
-  updatedAtIso: string;
-};
-
-export type SharedRegisterSummary = SharedAccessGrant & {
-  assetCount: number;
-  totalValue: number;
 };
 
 export type AssetLead = {
@@ -125,35 +90,6 @@ type AccountPartnerProfileRow = {
   partner_services: string | null;
 };
 
-type GrantRow = {
-  id: string;
-  owner_user_id: string;
-  partner_user_id: string;
-  partner_type: string | null;
-  status: string | null;
-  permission_level: string | null;
-  include_documents: boolean | null;
-  include_scan_history: boolean | null;
-  owner_message: string | null;
-  owner_display_name: string | null;
-  owner_business_name: string | null;
-  owner_marketplace_email: string | null;
-  owner_phone: string | null;
-  owner_province: string | null;
-  owner_town_city: string | null;
-  partner_display_name: string | null;
-  partner_business_name: string | null;
-  partner_phone: string | null;
-  partner_province: string | null;
-  partner_town_city: string | null;
-  created_at: string | null;
-  accepted_at: string | null;
-  revoked_at: string | null;
-  declined_at: string | null;
-  last_viewed_at: string | null;
-  updated_at: string | null;
-};
-
 type LeadRow = {
   id: string;
   owner_user_id: string;
@@ -203,7 +139,6 @@ type AssetPartnerNoteRow = {
 
 const ACCOUNT_ROLES = new Set<AccountRole>(['owner', 'dealer', 'finance', 'insurance']);
 const PARTNER_TYPES = new Set<PartnerType>(['dealer', 'finance', 'insurance']);
-const ACCESS_STATUSES = new Set<SharedAccessStatus>(['pending', 'active', 'revoked', 'declined']);
 const LEAD_TYPES = new Set<LeadType>(['finance', 'insurance', 'replacement_quote']);
 const LEAD_STATUSES = new Set<AssetLeadStatus>(['sent', 'viewed', 'accepted', 'quoted', 'declined', 'closed']);
 const ASSET_PARTNER_NOTE_STATUSES = new Set<AssetPartnerNoteStatus>(['open', 'noted']);
@@ -274,11 +209,6 @@ export function normalizeLeadStatus(value: unknown): AssetLeadStatus | null {
   return LEAD_STATUSES.has(normalized as AssetLeadStatus) ? (normalized as AssetLeadStatus) : null;
 }
 
-function normalizeAccessStatus(value: unknown): SharedAccessStatus {
-  const normalized = asText(value).toLowerCase();
-  return ACCESS_STATUSES.has(normalized as SharedAccessStatus) ? (normalized as SharedAccessStatus) : 'pending';
-}
-
 function isoNowFallback(value: string | null | undefined): string {
   return value || new Date().toISOString();
 }
@@ -332,44 +262,6 @@ export async function ensurePartnerAccessTables(): Promise<void> {
     set account_subtype = 'auctioneer'
     where account_type = 'dealer'
       and lower(trim(coalesce(account_subtype, ''))) in ('auction-house', 'auctioneer')
-  `);
-
-  await db.query(`
-    create table if not exists asset_register_access_grants (
-      id uuid primary key default gen_random_uuid(),
-      owner_user_id text not null,
-      partner_user_id text not null,
-      partner_type text not null,
-      status text not null default 'pending',
-      permission_level text not null default 'view',
-      include_documents boolean not null default true,
-      include_scan_history boolean not null default true,
-      owner_message text,
-      created_at timestamptz not null default now(),
-      accepted_at timestamptz,
-      revoked_at timestamptz,
-      declined_at timestamptz,
-      last_viewed_at timestamptz,
-      updated_at timestamptz not null default now()
-    )
-  `);
-
-  await db.query(`
-    alter table asset_register_access_grants
-      add column if not exists owner_user_id text,
-      add column if not exists partner_user_id text,
-      add column if not exists partner_type text,
-      add column if not exists status text not null default 'pending',
-      add column if not exists permission_level text not null default 'view',
-      add column if not exists include_documents boolean not null default true,
-      add column if not exists include_scan_history boolean not null default true,
-      add column if not exists owner_message text,
-      add column if not exists created_at timestamptz not null default now(),
-      add column if not exists accepted_at timestamptz,
-      add column if not exists revoked_at timestamptz,
-      add column if not exists declined_at timestamptz,
-      add column if not exists last_viewed_at timestamptz,
-      add column if not exists updated_at timestamptz not null default now()
   `);
 
   await db.query(`
@@ -463,22 +355,6 @@ export async function ensurePartnerAccessTables(): Promise<void> {
   `);
 
   await db.query(`
-    create index if not exists idx_access_grants_owner_status
-      on asset_register_access_grants(owner_user_id, status, created_at desc)
-  `);
-
-  await db.query(`
-    create index if not exists idx_access_grants_partner_status
-      on asset_register_access_grants(partner_user_id, status, created_at desc)
-  `);
-
-  await db.query(`
-    create unique index if not exists idx_access_grants_open_unique
-      on asset_register_access_grants(owner_user_id, partner_user_id)
-      where status in ('pending', 'active')
-  `);
-
-  await db.query(`
     create index if not exists idx_asset_leads_owner_status
       on asset_leads(owner_user_id, status, created_at desc)
   `);
@@ -532,79 +408,6 @@ function mapPartnerRow(row: AccountPartnerProfileRow): PartnerDirectoryEntry {
     brandFocus: asText(row.partner_brand_focus),
     services: asText(row.partner_services),
   };
-}
-
-function mapGrantRow(row: GrantRow): SharedAccessGrant {
-  const partnerType = normalizePartnerType(row.partner_type) ?? 'dealer';
-  const ownerBusinessName = asText(row.owner_business_name);
-  const ownerName = asText(row.owner_display_name) || ownerBusinessName || 'Aim4price owner';
-  const partnerBusinessName = asText(row.partner_business_name);
-  const partnerName = asText(row.partner_display_name) || partnerBusinessName || 'Aim4price partner';
-
-  return {
-    id: row.id,
-    ownerUserId: row.owner_user_id,
-    partnerUserId: row.partner_user_id,
-    partnerType,
-    status: normalizeAccessStatus(row.status),
-    permissionLevel: asText(row.permission_level) || 'view',
-    includeDocuments: Boolean(row.include_documents),
-    includeScanHistory: Boolean(row.include_scan_history),
-    ownerMessage: asText(row.owner_message),
-    ownerName,
-    ownerBusinessName,
-    ownerEmail: asText(row.owner_marketplace_email),
-    ownerPhone: asText(row.owner_phone),
-    ownerProvince: asText(row.owner_province),
-    ownerTownCity: asText(row.owner_town_city),
-    partnerName,
-    partnerBusinessName,
-    partnerPhone: asText(row.partner_phone),
-    partnerProvince: asText(row.partner_province),
-    partnerTownCity: asText(row.partner_town_city),
-    createdAtIso: isoNowFallback(row.created_at),
-    acceptedAtIso: row.accepted_at,
-    revokedAtIso: row.revoked_at,
-    declinedAtIso: row.declined_at,
-    lastViewedAtIso: row.last_viewed_at,
-    updatedAtIso: isoNowFallback(row.updated_at),
-  };
-}
-
-function grantSelectSql(whereClause: string): string {
-  return `
-    select
-      g.id::text,
-      g.owner_user_id,
-      g.partner_user_id,
-      g.partner_type,
-      g.status,
-      g.permission_level,
-      g.include_documents,
-      g.include_scan_history,
-      g.owner_message,
-      owner.display_name as owner_display_name,
-      owner.business_name as owner_business_name,
-      owner.marketplace_email as owner_marketplace_email,
-      owner.phone as owner_phone,
-      owner.province as owner_province,
-      owner.town_city as owner_town_city,
-      partner.display_name as partner_display_name,
-      partner.business_name as partner_business_name,
-      partner.phone as partner_phone,
-      partner.province as partner_province,
-      partner.town_city as partner_town_city,
-      g.created_at::text,
-      g.accepted_at::text,
-      g.revoked_at::text,
-      g.declined_at::text,
-      g.last_viewed_at::text,
-      g.updated_at::text
-    from asset_register_access_grants g
-    left join account_profiles owner on owner.user_id = g.owner_user_id
-    left join account_profiles partner on partner.user_id = g.partner_user_id
-    ${whereClause}
-  `;
 }
 
 function mapLeadRow(row: LeadRow): AssetLead {
@@ -833,7 +636,7 @@ export async function listPartnerDirectory(input: {
   return result.rows.map(mapPartnerRow);
 }
 
-async function getPartnerProfileForShare(partnerUserId: string): Promise<AccountPartnerProfileRow | null> {
+async function getPartnerProfile(partnerUserId: string): Promise<AccountPartnerProfileRow | null> {
   await ensurePartnerAccessTables();
   const db = getDb();
   const result = await db.query<AccountPartnerProfileRow>(
@@ -861,268 +664,6 @@ async function getPartnerProfileForShare(partnerUserId: string): Promise<Account
   );
 
   return result.rows[0] ?? null;
-}
-
-export async function listSharedAccessForOwner(ownerUserId: string): Promise<SharedAccessGrant[]> {
-  await ensurePartnerAccessTables();
-  const db = getDb();
-  const result = await db.query<GrantRow>(
-    `${grantSelectSql("where g.owner_user_id = $1 and g.status in ('pending', 'active')")} order by g.created_at desc`,
-    [ownerUserId],
-  );
-
-  return result.rows.map(mapGrantRow);
-}
-
-export async function listSharedRegistersForPartner(partnerUserId: string): Promise<SharedRegisterSummary[]> {
-  await ensurePartnerAccessTables();
-  const db = getDb();
-  const result = await db.query<GrantRow>(
-    `${grantSelectSql("where g.partner_user_id = $1 and g.status in ('pending', 'active')")} order by g.created_at desc`,
-    [partnerUserId],
-  );
-
-  const grants: SharedAccessGrant[] = result.rows.map(mapGrantRow);
-
-  return Promise.all(
-    grants.map(async (grant) => {
-      if (grant.status !== 'active') {
-        return { ...grant, assetCount: 0, totalValue: 0 };
-      }
-
-      const assets = await listAssetRegisterItems(grant.ownerUserId);
-      return {
-        ...grant,
-        assetCount: assets.length,
-        totalValue: assets.reduce((sum, asset) => sum + Number(asset.value || 0), 0),
-      };
-    }),
-  );
-}
-
-export async function createSharedAccessRequest(input: {
-  ownerUserId: string;
-  partnerUserId: string;
-  partnerType: PartnerType;
-  ownerMessage?: string | null;
-  includeDocuments?: boolean;
-  includeScanHistory?: boolean;
-}): Promise<SharedAccessGrant> {
-  await ensurePartnerAccessTables();
-
-  if (input.ownerUserId === input.partnerUserId) {
-    throw new Error('CANNOT_SHARE_WITH_SELF');
-  }
-
-  const partner = await getPartnerProfileForShare(input.partnerUserId);
-  const actualPartnerType = normalizePartnerType(partner?.account_type);
-
-  if (!partner || !canUsePartnerForRequestedType(actualPartnerType, input.partnerType)) {
-    throw new Error('PARTNER_NOT_FOUND');
-  }
-
-
-  const db = getDb();
-  const existing = await db.query<GrantRow>(
-    `
-      ${grantSelectSql('where g.owner_user_id = $1 and g.partner_user_id = $2 and g.status in (\'pending\', \'active\')')}
-      limit 1
-    `,
-    [input.ownerUserId, input.partnerUserId],
-  );
-
-  if (existing.rows[0]) {
-    return mapGrantRow(existing.rows[0]);
-  }
-
-  const result = await db.query<GrantRow>(
-    `
-      insert into asset_register_access_grants (
-        owner_user_id,
-        partner_user_id,
-        partner_type,
-        status,
-        permission_level,
-        include_documents,
-        include_scan_history,
-        owner_message,
-        created_at,
-        updated_at
-      )
-      values ($1, $2, $3, 'pending', 'view', $4, $5, $6, now(), now())
-      returning id::text
-    `,
-    [
-      input.ownerUserId,
-      input.partnerUserId,
-      input.partnerType,
-      input.includeDocuments ?? true,
-      input.includeScanHistory ?? true,
-      asText(input.ownerMessage) || null,
-    ],
-  );
-
-  const created = await db.query<GrantRow>(
-    `${grantSelectSql('where g.id = $1::uuid')} limit 1`,
-    [result.rows[0]?.id],
-  );
-
-  const grant = mapGrantRow(created.rows[0]);
-  await writeAuditEvent({
-    ownerUserId: input.ownerUserId,
-    actorUserId: input.ownerUserId,
-    eventType: 'register_shared',
-    entityType: 'access_grant',
-    entityId: grant.id,
-    metadata: { partnerUserId: input.partnerUserId, partnerType: input.partnerType },
-  });
-
-  return grant;
-}
-
-export async function acceptSharedAccessGrant(partnerUserId: string, grantId: string): Promise<SharedAccessGrant> {
-  await ensurePartnerAccessTables();
-  const db = getDb();
-  const result = await db.query<GrantRow>(
-    `
-      update asset_register_access_grants
-      set status = 'active', accepted_at = now(), declined_at = null, revoked_at = null, updated_at = now()
-      where id = $1::uuid and partner_user_id = $2 and status = 'pending'
-      returning id::text
-    `,
-    [grantId, partnerUserId],
-  );
-
-  if (!result.rows[0]) {
-    throw new Error('ACCESS_GRANT_NOT_FOUND');
-  }
-
-  const updated = await db.query<GrantRow>(`${grantSelectSql('where g.id = $1::uuid')} limit 1`, [grantId]);
-  const grant = mapGrantRow(updated.rows[0]);
-  await writeAuditEvent({
-    ownerUserId: grant.ownerUserId,
-    actorUserId: partnerUserId,
-    eventType: 'register_accepted',
-    entityType: 'access_grant',
-    entityId: grant.id,
-  });
-
-  return grant;
-}
-
-export async function declineSharedAccessGrant(partnerUserId: string, grantId: string): Promise<SharedAccessGrant> {
-  await ensurePartnerAccessTables();
-  const db = getDb();
-  const result = await db.query<GrantRow>(
-    `
-      update asset_register_access_grants
-      set status = 'declined', declined_at = now(), updated_at = now()
-      where id = $1::uuid and partner_user_id = $2 and status = 'pending'
-      returning id::text
-    `,
-    [grantId, partnerUserId],
-  );
-
-  if (!result.rows[0]) {
-    throw new Error('ACCESS_GRANT_NOT_FOUND');
-  }
-
-  const updated = await db.query<GrantRow>(`${grantSelectSql('where g.id = $1::uuid')} limit 1`, [grantId]);
-  const grant = mapGrantRow(updated.rows[0]);
-  await writeAuditEvent({
-    ownerUserId: grant.ownerUserId,
-    actorUserId: partnerUserId,
-    eventType: 'register_declined',
-    entityType: 'access_grant',
-    entityId: grant.id,
-  });
-
-  return grant;
-}
-
-export async function revokeSharedAccessGrant(ownerUserId: string, grantId: string): Promise<SharedAccessGrant> {
-  await ensurePartnerAccessTables();
-  const db = getDb();
-  const result = await db.query<GrantRow>(
-    `
-      update asset_register_access_grants
-      set status = 'revoked', revoked_at = now(), updated_at = now()
-      where id = $1::uuid and owner_user_id = $2 and status in ('pending', 'active')
-      returning id::text
-    `,
-    [grantId, ownerUserId],
-  );
-
-  if (!result.rows[0]) {
-    throw new Error('ACCESS_GRANT_NOT_FOUND');
-  }
-
-  const updated = await db.query<GrantRow>(`${grantSelectSql('where g.id = $1::uuid')} limit 1`, [grantId]);
-  const grant = mapGrantRow(updated.rows[0]);
-  await writeAuditEvent({
-    ownerUserId,
-    actorUserId: ownerUserId,
-    eventType: 'register_revoked',
-    entityType: 'access_grant',
-    entityId: grant.id,
-  });
-
-  return grant;
-}
-
-
-export async function deleteSharedAccessGrantForPartner(partnerUserId: string, grantId: string): Promise<SharedAccessGrant> {
-  await ensurePartnerAccessTables();
-  const db = getDb();
-  const result = await db.query<GrantRow>(
-    `
-      update asset_register_access_grants
-      set status = 'revoked', revoked_at = now(), updated_at = now()
-      where id = $1::uuid and partner_user_id = $2 and status in ('pending', 'active')
-      returning id::text
-    `,
-    [grantId, partnerUserId],
-  );
-
-  if (!result.rows[0]) {
-    throw new Error('ACCESS_GRANT_NOT_FOUND');
-  }
-
-  const updated = await db.query<GrantRow>(`${grantSelectSql('where g.id = $1::uuid')} limit 1`, [grantId]);
-  const grant = mapGrantRow(updated.rows[0]);
-  await writeAuditEvent({
-    ownerUserId: grant.ownerUserId,
-    actorUserId: partnerUserId,
-    eventType: 'register_access_deleted_by_partner',
-    entityType: 'access_grant',
-    entityId: grant.id,
-  });
-
-  return grant;
-}
-
-export async function canViewOwnerRegister(currentUserId: string, ownerUserId: string): Promise<boolean> {
-  if (currentUserId === ownerUserId) {
-    return true;
-  }
-
-  await ensurePartnerAccessTables();
-  const db = getDb();
-  const result = await db.query<{ exists: boolean }>(
-    `
-      select exists (
-        select 1
-        from asset_register_access_grants
-        where owner_user_id = $1
-          and partner_user_id = $2
-          and status = 'active'
-        limit 1
-      ) as exists
-    `,
-    [ownerUserId, currentUserId],
-  );
-
-  return Boolean(result.rows[0]?.exists);
 }
 
 export async function attachOpenPartnerNotesToAssets<T extends { id: string }>(
@@ -1158,116 +699,7 @@ export async function attachOpenPartnerNotesToAssets<T extends { id: string }>(
   }));
 }
 
-export async function listSharedRegisterAssets(input: {
-  currentUserId: string;
-  ownerUserId: string;
-}): Promise<Array<AssetRegisterItem & { openPartnerNote: AssetPartnerNote | null }>> {
-  const canView = await canViewOwnerRegister(input.currentUserId, input.ownerUserId);
-
-  if (!canView) {
-    throw new Error('SHARED_REGISTER_FORBIDDEN');
-  }
-
-  await ensurePartnerAccessTables();
-  const db = getDb();
-  await db.query(
-    `
-      update asset_register_access_grants
-      set last_viewed_at = now(), updated_at = now()
-      where owner_user_id = $1 and partner_user_id = $2 and status = 'active'
-    `,
-    [input.ownerUserId, input.currentUserId],
-  );
-
-  const assets = await listAssetRegisterItems(input.ownerUserId);
-  return attachOpenPartnerNotesToAssets(input.ownerUserId, assets);
-}
-
-export async function createSharedAssetNote(input: {
-  currentUserId: string;
-  ownerUserId: string;
-  assetId: string;
-  noteText: unknown;
-}): Promise<AssetPartnerNote> {
-  await ensurePartnerAccessTables();
-  const noteText = asText(input.noteText);
-
-  if (!noteText) {
-    throw new Error('NOTE_REQUIRED');
-  }
-
-  if (input.currentUserId === input.ownerUserId) {
-    throw new Error('PARTNER_NOTE_FORBIDDEN');
-  }
-
-  const profile = await getAccountProfile({ id: input.currentUserId });
-  if (!normalizePartnerType(profile.accountType)) {
-    throw new Error('PARTNER_NOTE_FORBIDDEN');
-  }
-
-  const canView = await canViewOwnerRegister(input.currentUserId, input.ownerUserId);
-  if (!canView) {
-    throw new Error('SHARED_REGISTER_FORBIDDEN');
-  }
-
-  const asset = await getAssetRegisterItemById(input.ownerUserId, input.assetId);
-  if (!asset) {
-    throw new Error('ASSET_NOT_FOUND');
-  }
-
-  const db = getDb();
-  const created = await db.query<AssetPartnerNoteRow>(
-    `
-      insert into asset_partner_notes (
-        owner_user_id,
-        partner_user_id,
-        asset_register_item_id,
-        note_text,
-        status,
-        created_at,
-        updated_at
-      )
-      values ($1, $2, $3::uuid, $4, 'open', now(), now())
-      returning
-        id::text,
-        owner_user_id,
-        partner_user_id,
-        asset_register_item_id::text,
-        note_text,
-        status,
-        null::text as partner_display_name,
-        null::text as partner_business_name,
-        created_at::text,
-        noted_at::text,
-        updated_at::text
-    `,
-    [input.ownerUserId, input.currentUserId, input.assetId, noteText],
-  );
-
-  const createdRow = created.rows[0];
-  if (!createdRow) {
-    throw new Error('ASSET_NOTE_NOT_CREATED');
-  }
-
-  const note = mapAssetPartnerNoteRow({
-    ...createdRow,
-    partner_display_name: profile.displayName || profile.name,
-    partner_business_name: profile.businessName,
-  });
-
-  await writeAuditEvent({
-    ownerUserId: input.ownerUserId,
-    actorUserId: input.currentUserId,
-    eventType: 'asset_note_left',
-    entityType: 'asset_partner_note',
-    entityId: note.id,
-    metadata: { assetId: input.assetId },
-  });
-
-  return note;
-}
-
-export async function markSharedAssetNoteNoted(input: {
+export async function markAssetPartnerNoteNoted(input: {
   currentUserId: string;
   noteId: string;
 }): Promise<AssetPartnerNote> {
@@ -1366,7 +798,7 @@ export async function createAssetLead(input: {
 }): Promise<AssetLead> {
   await ensurePartnerAccessTables();
   const allowedPartnerTypes = partnerTypesForLeadType(input.leadType);
-  const partner = await getPartnerProfileForShare(input.partnerUserId);
+  const partner = await getPartnerProfile(input.partnerUserId);
   const actualPartnerType = normalizePartnerType(partner?.account_type);
 
   if (!partner || !actualPartnerType || !allowedPartnerTypes.includes(actualPartnerType)) {
