@@ -1137,7 +1137,7 @@ export default function AccountClient() {
                   <div>
                     <span className={styles.sectionEyebrow}>Partner directory</span>
                     <h2>Partner directory</h2>
-                    <p>Owners use this information when selecting a partner for shared registers and quote leads.</p>
+                    <p>Owners use this information when selecting a partner for quote leads.</p>
                   </div>
                   <span
                     className={`${styles.directoryStatusPill} ${
@@ -1162,7 +1162,7 @@ export default function AccountClient() {
                     />
                     <span>
                       <strong>Show in Aim4price partner directory</strong>
-                      <small>Owners can select this account when sharing a register or lead.</small>
+                      <small>Owners can select this account when sending a quote lead.</small>
                     </span>
                   </label>
 
