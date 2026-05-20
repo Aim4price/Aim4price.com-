@@ -10,7 +10,6 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import AppHeader from '../../components/AppHeader';
-import { useGlobalLoading } from '../../lib/use-global-loading';
 import styles from './page.module.css';
 import {
   FALLBACK_MARKETPLACE_IMAGE,
@@ -834,8 +833,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
   const [visibleCount, setVisibleCount] = useState(LISTINGS_PER_LOAD);
   const modalDetailsRef = useRef<HTMLElement | null>(null);
   const [modalScrollState, setModalScrollState] = useState({ visible: false, top: 0, height: 100 });
-
-  useGlobalLoading(isLoadingListings || isLoadingFamilies, 'marketplace-data');
 
   useEffect(() => {
     let mounted = true;
