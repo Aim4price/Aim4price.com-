@@ -28,3 +28,14 @@
 --   03-agri-verify.sql
 --   04-valuation-usability-and-model-candidate-constraint.sql
 --   05-asset-register-marketplace-save-hardening.sql
+--   06-asset-register-insurance-status.sql
+--   07-asset-register-documents.sql
+--   08-asset-register-brand-model-backfill.sql
+--   09-account-profile-branding-and-marketplace-contact.sql
+--   10-asset-register-license-status.sql
+--   11-asset-register-license-registration.sql
+--   12-fuel-ledger.sql
+--   13-partner-access-and-leads.sql
+--   14-account-profile-subtype.sql
+--   15-account-role-split-and-partner-notes.sql
+--   16-remove-shared-register-access.sql
