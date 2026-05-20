@@ -16206,3 +16206,36 @@
     inset 0 1px 0 rgba(255, 255, 255, 1) !important;
 }
 
+
+
+/* === Asset Register open canvas refinement: remove outer white panel === */
+.registerPanel {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.registerHeader {
+  margin-bottom: clamp(1.05rem, 1.45vw, 1.35rem) !important;
+}
+
+.heroSummaryRow {
+  gap: clamp(1rem, 1.35vw, 1.18rem) !important;
+  margin-bottom: clamp(1.08rem, 1.35vw, 1.28rem) !important;
+}
+
+.toolbar {
+  gap: clamp(0.9rem, 1.2vw, 1.1rem) !important;
+  margin-bottom: clamp(1.05rem, 1.35vw, 1.25rem) !important;
+}
+
+.assetList {
+  gap: clamp(1rem, 1.28vw, 1.18rem) !important;
+}
+
+@media (max-width: 760px) {
+  .registerPanel {
+    padding: 0.9rem !important;
+  }
+}
