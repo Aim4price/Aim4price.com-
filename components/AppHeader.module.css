@@ -10,14 +10,14 @@
 }
 
 .inner {
-  width: var(--shell-width);
+  width: min(calc(100% - clamp(2rem, 5.5vw, 5rem)), 1320px);
   margin: 0 auto;
   min-height: 5.75rem;
   padding: 0.82rem 0;
   display: grid;
-  grid-template-columns: minmax(15rem, 1fr) auto minmax(15rem, 1fr);
+  grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, 1fr);
   align-items: center;
-  gap: clamp(1.25rem, 2.2vw, 2.4rem);
+  gap: clamp(1rem, 2vw, 2.25rem);
 }
 
 .brand {
@@ -48,10 +48,10 @@
   min-width: 0;
   display: inline-flex;
   align-items: center;
-  gap: 0.44rem;
-  padding: 0.38rem;
-  border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.93);
+  gap: 0.4rem;
+  padding: 0.4rem;
+  border-radius: 1.38rem;
+  background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(18, 45, 37, 0.07);
   box-shadow:
     0 14px 32px rgba(18, 45, 37, 0.05),
@@ -62,8 +62,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 7rem;
   min-height: 3.28rem;
-  padding: 0 1.38rem;
+  padding: 0 clamp(1.1rem, 1.35vw, 1.5rem);
   border-radius: 1rem;
   border: 1px solid transparent;
   text-decoration: none;
@@ -103,9 +104,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.34rem;
-  padding: 0.38rem;
-  border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.93);
+  padding: 0.4rem;
+  border-radius: 1.38rem;
+  background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(18, 45, 37, 0.07);
   box-shadow:
     0 14px 32px rgba(18, 45, 37, 0.05),
@@ -310,7 +311,11 @@
     gap: 1.25rem;
   }
 
-  .navLink,
+  .navLink {
+    min-width: 6.45rem;
+    padding: 0 1.08rem;
+  }
+
   .signupButton,
   .loginButton,
   .accountButton {
@@ -373,6 +378,7 @@
   }
 
   .navLink {
+    min-width: 0;
     min-height: 3.2rem;
     padding: 0 0.95rem;
     background: rgba(255, 255, 255, 0.94);
