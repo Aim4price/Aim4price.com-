@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
-import { useGlobalLoading } from '../../lib/use-global-loading';
 import {
   openAssetRegisterSummaryPrint,
   openAssetSheetPrint,
@@ -2306,7 +2305,6 @@ export default function AssetRegisterClient() {
   const [copiedScanLinkAssetId, setCopiedScanLinkAssetId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  useGlobalLoading(isLoading, 'asset-register-data');
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
@@ -4808,9 +4806,7 @@ export default function AssetRegisterClient() {
             ) : null}
           </div>
 
-          {isLoading ? (
-            <div className={styles.emptyState}>Loading assets...</div>
-          ) : assets.length ? (
+          {!isLoading && assets.length ? (
             filteredAssets.length ? (
               <>
                 <div className={styles.assetList}>
@@ -5133,7 +5129,7 @@ export default function AssetRegisterClient() {
                 </div>
               </div>
             )
-          ) : (
+          ) : !isLoading ? (
             <div className={styles.emptyState}>
               <h3>No assets saved yet</h3>
               <p>Run a valuation or add a manual asset to start building your register.</p>
@@ -5149,7 +5145,7 @@ export default function AssetRegisterClient() {
                 </div>
               ) : null}
             </div>
-          )}
+          ) : null}
         </section>
       </section>
 
