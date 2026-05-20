@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import AppHeader from '../../components/AppHeader';
-import { useGlobalLoading } from '../../lib/use-global-loading';
 import styles from './page.module.css';
 
 type NoticeTone = 'error';
@@ -294,7 +293,6 @@ export default function AssetMapClient() {
   const [summary, setSummary] = useState<AssetMapResponse['summary'] | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  useGlobalLoading(isLoading, 'asset-map-data');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastLoadedAtIso, setLastLoadedAtIso] = useState<string | null>(null);
 
@@ -663,13 +661,11 @@ export default function AssetMapClient() {
               </div>
 
               <div className={styles.assetList}>
-                {isLoading ? (
-                  <p className={styles.emptyState}>Loading mapped assets...</p>
-                ) : !mappedAssets.length ? (
+                {!isLoading && !mappedAssets.length ? (
                   <p className={styles.emptyState}>No GPS locations saved yet. Scan an asset and save location data to place the first marker on this map.</p>
-                ) : !visibleAssets.length ? (
+                ) : !isLoading && !visibleAssets.length ? (
                   <p className={styles.emptyState}>No mapped assets match this search. Clear the search to show all mapped assets.</p>
-                ) : (
+                ) : !isLoading ? (
                   visibleAssets.map((asset, index) => {
                     const isActive = selectedCode === asset.publicAssetCode;
                     const googleMapsHref = buildGoogleMapsHref(asset);
@@ -734,12 +730,11 @@ export default function AssetMapClient() {
                       </article>
                     );
                   })
-                )}
+                ) : null}
               </div>
             </aside>
 
             <div className={styles.assetMapShell}>
-              {isLoading ? <div className={styles.mapEmpty}>Loading the asset map...</div> : null}
               {!isLoading && !mappedAssets.length ? (
                 <div className={styles.mapEmpty}>
                   <strong>No GPS locations saved yet.</strong>
