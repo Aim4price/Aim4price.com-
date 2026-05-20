@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
-import { canViewOwnerRegister, createSharedAssetNote } from '../../../lib/partner-access';
 import {
   listPublishedMarketplaceAssetListings,
   publishAssetRegisterItemToMarketplace,
@@ -99,7 +98,6 @@ export async function POST(request: NextRequest) {
     assetId?: unknown;
     askingPriceExVat?: unknown;
     marketplaceNotes?: unknown;
-    ownerUserId?: unknown;
     sellerPhone?: unknown;
     sellerName?: unknown;
     sellerCompany?: unknown;
@@ -108,7 +106,6 @@ export async function POST(request: NextRequest) {
     area?: unknown;
   };
   const assetId = String(body.assetId ?? '').trim();
-  const ownerUserId = String(body.ownerUserId ?? session.user.id).trim() || session.user.id;
 
   if (!assetId) {
     return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
@@ -122,7 +119,6 @@ export async function POST(request: NextRequest) {
   let sellerEmail = String(body.sellerEmail ?? '').trim();
   let province = String(body.province ?? '').trim();
   let area = String(body.area ?? '').trim();
-  let sharedMarketplaceNoteText = '';
 
   try {
     const profile = await getAccountProfile({
@@ -130,39 +126,16 @@ export async function POST(request: NextRequest) {
       name: session.user.name,
       email: session.user.email,
     });
-    const isSharedRegisterPublish = ownerUserId !== session.user.id;
 
-    if (isSharedRegisterPublish) {
-      if (profile.accountType !== 'dealer') {
-        return NextResponse.json(
-          { ok: false, error: 'Only dealer accounts can send a shared owner asset to marketplace.' },
-          { status: 403 },
-        );
-      }
-
-      const canView = await canViewOwnerRegister(session.user.id, ownerUserId);
-      if (!canView) {
-        return NextResponse.json({ ok: false, error: 'You do not have access to this owner register.' }, { status: 403 });
-      }
-
-      const dealerLabel = profile.businessName || profile.displayName || profile.name || 'Aim4price';
-      sharedMarketplaceNoteText = `Sent to marketplace by ${dealerLabel} dealer.`;
-      marketplaceNotes = [sharedMarketplaceNoteText, marketplaceNotes].filter(Boolean).join('\n\n');
-      sellerName = sellerName || profile.marketplaceSellerName || profile.displayName || profile.name;
-      sellerCompany = sellerCompany || profile.businessName || profile.marketplaceSellerName || profile.displayName || profile.name;
-      sellerPhone = sellerPhone || profile.marketplacePhone || profile.phone;
-      sellerEmail = sellerEmail || profile.marketplaceEmail || profile.email;
-      province = province || profile.province;
-      area = area || profile.marketplaceLocation || profile.townCity;
-    } else if (profile.accountType !== 'owner') {
+    if (profile.accountType !== 'owner') {
       return NextResponse.json(
-        { ok: false, error: 'Only owner accounts can send their own assets to marketplace.' },
+        { ok: false, error: 'Only owner accounts can send assets to marketplace.' },
         { status: 403 },
       );
     }
 
     const listing = await publishAssetRegisterItemToMarketplace({
-      userId: ownerUserId,
+      userId: session.user.id,
       assetId,
       askingPriceExVat: askingPriceExVat > 0 ? askingPriceExVat : null,
       marketplaceNotes: marketplaceNotes || null,
@@ -174,21 +147,11 @@ export async function POST(request: NextRequest) {
       area: area || null,
     });
 
-    const note = sharedMarketplaceNoteText
-      ? await createSharedAssetNote({
-          currentUserId: session.user.id,
-          ownerUserId,
-          assetId,
-          noteText: sharedMarketplaceNoteText,
-        })
-      : null;
-
     return NextResponse.json({
       ok: true,
       assetId,
       marketplaceStatus: 'live',
       listing,
-      note,
     });
   } catch (error) {
     const message = formatUnknownError(error, 'Failed to send asset to marketplace.');
