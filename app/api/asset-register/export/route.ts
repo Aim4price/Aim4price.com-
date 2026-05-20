@@ -3,7 +3,6 @@ import { getServerSession } from '../../../../lib/auth-session';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { listAssetRegisterItems, type AssetRegisterItem } from '../../../../lib/asset-register-db';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
-import { canViewOwnerRegister } from '../../../../lib/partner-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -689,9 +688,6 @@ export async function GET(request: NextRequest) {
 
   const params = new URL(request.url).searchParams;
   const format = params.get('format');
-  const requestedOwnerUserId = String(params.get('ownerUserId') ?? '').trim();
-  const targetUserId = requestedOwnerUserId || session.user.id;
-
   if (format !== 'xlsx') {
     return NextResponse.json(
       { ok: false, error: 'Only XLSX export is available on this endpoint.' },
@@ -700,30 +696,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    if (targetUserId !== session.user.id) {
-      const canView = await canViewOwnerRegister(session.user.id, targetUserId);
+    const profile = await getAccountProfile({
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    });
 
-      if (!canView) {
-        return NextResponse.json({ ok: false, error: 'You do not have access to this shared register.' }, { status: 403 });
-      }
+    if (profile.accountType !== 'owner') {
+      return NextResponse.json({ ok: false, error: 'Asset Register export is only available to owner accounts.' }, { status: 403 });
     }
 
-    const items = await listAssetRegisterItems(targetUserId);
-
-    let profile: AccountProfileResult | null = null;
-    try {
-      profile = await getAccountProfile(
-        targetUserId === session.user.id
-          ? {
-              id: session.user.id,
-              name: session.user.name,
-              email: session.user.email,
-            }
-          : { id: targetUserId },
-      );
-    } catch (profileError) {
-      console.error('asset register export profile lookup failed', profileError);
-    }
+    const items = await listAssetRegisterItems(session.user.id);
 
     const workbook = createXlsxWorkbook(buildWorkbookSheets(items, profile));
     const filenameDate = new Date().toISOString().slice(0, 10);
