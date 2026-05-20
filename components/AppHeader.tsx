@@ -54,7 +54,6 @@ function buildNavItems(accountType: AccountType | null): NavItem[] {
   if (resolvedType === 'finance' || resolvedType === 'insurance') {
     return [
       ...BASE_NAV_ITEMS,
-      { key: 'asset-register', href: '/shared-registers', label: 'Asset Register' },
       { key: 'leads', href: '/leads', label: 'Leads' },
     ];
   }
@@ -62,7 +61,6 @@ function buildNavItems(accountType: AccountType | null): NavItem[] {
   if (resolvedType === 'dealer') {
     return [
       ...BASE_NAV_ITEMS,
-      { key: 'asset-register', href: '/shared-registers', label: 'Asset Register' },
       { key: 'leads', href: '/leads', label: 'Leads' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
     ];
@@ -299,14 +297,6 @@ export default function AppHeader({
                     <Link href="/account" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
                       Account details
                     </Link>
-
-                    {isOwnerAccount ? (
-                      <Link href="/shared-access" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                        Share access
-                      </Link>
-                    ) : null}
-
-
                     {isOwnerAccount ? (
                       <>
                         <Link href="/asset-map" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
