@@ -4659,7 +4659,7 @@ export default function AssetRegisterClient() {
                   disabled={isLoading}
                 >
                   <OptionsIcon className={styles.buttonIcon} />
-                  <span>Options</span>
+                  <span>Summary</span>
                 </button>
               ) : null}
 
