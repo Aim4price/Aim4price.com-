@@ -420,13 +420,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   }
 
   if (isLoading) {
-    return (
-      <main className={styles.scanPage}>
-        <div className={styles.scanShell}>
-          <section className={styles.card}><h1>Loading fuel access...</h1></section>
-        </div>
-      </main>
-    );
+    return null;
   }
 
   if (isDone) {
