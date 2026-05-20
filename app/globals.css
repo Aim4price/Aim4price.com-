@@ -15,6 +15,8 @@
   --shell-gutter: 1.5rem;
   --shell-width: min(calc(100% - (var(--shell-gutter) * 2)), var(--shell-max));
   --shell-narrow-width: min(calc(100% - (var(--shell-gutter) * 2)), var(--shell-narrow-max));
+  --desktop-app-header-height: 4rem;
+  --desktop-app-sidebar-width: clamp(14.15rem, 16vw, 16.75rem);
   color-scheme: light;
 }
 
@@ -106,6 +108,35 @@ h4,
 
 ::selection {
   background: rgba(23, 77, 62, 0.14);
+}
+
+@media (min-width: 1025px) {
+  :root {
+    --shell-gutter: clamp(1rem, 1.28vw, 1.5rem);
+  }
+
+  main:has([data-aim4price-desktop-sidebar='true']),
+  body.aim4price-has-app-shell main {
+    padding-top: var(--desktop-app-header-height);
+    padding-left: var(--desktop-app-sidebar-width);
+  }
+
+  body.aim4price-has-app-shell .appRoot > footer {
+    padding-left: var(--desktop-app-sidebar-width);
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1280px) {
+  :root {
+    --desktop-app-sidebar-width: 13.85rem;
+    --shell-gutter: 1rem;
+  }
+}
+
+@media (min-width: 1600px) {
+  :root {
+    --desktop-app-sidebar-width: 17.25rem;
+  }
 }
 
 @media (max-width: 640px) {
