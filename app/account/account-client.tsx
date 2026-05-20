@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
-import { useGlobalLoading } from '../../lib/use-global-loading';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
@@ -402,7 +401,6 @@ export default function AccountClient() {
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingScanPin, setIsLoadingScanPin] = useState(true);
-  useGlobalLoading(isLoading || isLoadingScanPin, 'account-page-data');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingScanPin, setIsSavingScanPin] = useState(false);
   const [isDisablingScanPin, setIsDisablingScanPin] = useState(false);
@@ -1045,9 +1043,7 @@ export default function AccountClient() {
                 </div>
               </div>
 
-              {isLoading ? (
-                <p className={styles.loading}>Loading account details...</p>
-              ) : (
+              {!isLoading ? (
                 <form className={styles.form} onSubmit={handleProfileSubmit}>
                   <label className={`${styles.field} ${styles.halfField}`}>
                     <span>Full name</span>
@@ -1128,7 +1124,7 @@ export default function AccountClient() {
                     </button>
                   </div>
                 </form>
-              )}
+              ) : null}
             </section>
 
             {showPartnerDirectory ? (
@@ -1256,9 +1252,7 @@ export default function AccountClient() {
                 </div>
               </div>
 
-              {isLoading ? (
-                <p className={styles.loading}>Loading marketplace contact...</p>
-              ) : (
+              {!isLoading ? (
                 <form className={styles.marketplaceFields} onSubmit={handleProfileSubmit}>
                   <label className={styles.field}>
                     <span>Seller name</span>
@@ -1312,7 +1306,7 @@ export default function AccountClient() {
                     </button>
                   </div>
                 </form>
-              )}
+              ) : null}
               </section>
             ) : null}
           </div>
@@ -1326,9 +1320,7 @@ export default function AccountClient() {
                 </div>
               </div>
 
-              {isLoadingScanPin ? (
-                <p className={styles.loading}>Loading scan PIN...</p>
-              ) : (
+              {!isLoadingScanPin ? (
                 <>
                   <div className={styles.summaryStack}>
                     <div className={styles.summaryRow}>
@@ -1384,7 +1376,7 @@ export default function AccountClient() {
                     </div>
                   </form>
                 </>
-              )}
+              ) : null}
             </section>
           </aside>
           ) : null}
