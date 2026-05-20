@@ -168,6 +168,43 @@ function asRecord(value: unknown): Record<string, unknown> {
   return {};
 }
 
+function isFullRegisterLeadSections(value: unknown): boolean {
+  const sections = asRecord(value);
+  const source = asText(sections.source).toLowerCase();
+  const registerLeadType = asText(sections.registerLeadType).toLowerCase();
+  const hasRegisterSnapshot = Boolean(
+    sections.registerSnapshot && typeof sections.registerSnapshot === 'object' && !Array.isArray(sections.registerSnapshot),
+  );
+
+  return (
+    sections.registerLead === true ||
+    source === 'full_asset_register' ||
+    registerLeadType.startsWith('full_') ||
+    hasRegisterSnapshot
+  );
+}
+
+function isBlockedLeadDocument(document: AssetRegisterItem['documents'][number]): boolean {
+  const fileName = asText(document.fileName).toLowerCase();
+  const contentType = asText(document.contentType).toLowerCase();
+
+  return (
+    fileName.endsWith('.xlsx') ||
+    contentType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  );
+}
+
+function leadDocumentsForSnapshot(
+  documents: AssetRegisterItem['documents'],
+  includedSections: Record<string, unknown>,
+): AssetRegisterItem['documents'] {
+  if (includedSections.documents !== true) {
+    return [];
+  }
+
+  return documents.filter((document) => !isBlockedLeadDocument(document));
+}
+
 export function normalizeAccountRole(value: unknown): AccountRole {
   const normalized = asText(value).toLowerCase();
 
@@ -744,7 +781,7 @@ export async function markAssetPartnerNoteNoted(input: {
   return updatedNote;
 }
 
-function buildAssetLeadSnapshot(asset: AssetRegisterItem): Record<string, unknown> {
+function buildAssetLeadSnapshot(asset: AssetRegisterItem, includedSections: Record<string, unknown>): Record<string, unknown> {
   return {
     id: asset.id,
     title: asset.title,
@@ -775,7 +812,7 @@ function buildAssetLeadSnapshot(asset: AssetRegisterItem): Record<string, unknow
     aim4priceValueExVat: asset.aim4priceValueExVat,
     marketMidExVat: asset.marketMidExVat,
     photos: asset.photos,
-    documents: asset.documents,
+    documents: leadDocumentsForSnapshot(asset.documents, includedSections),
     publicAssetCode: asset.publicAssetCode,
     lastScannedAtIso: asset.lastScannedAtIso,
     lastKnownLat: asset.lastKnownLat,
@@ -811,6 +848,12 @@ export async function createAssetLead(input: {
     throw new Error('ASSET_NOT_FOUND');
   }
 
+  const includedSections = input.includedSections ?? { assetDetails: true, valuationSummary: true, mainPhoto: true };
+
+  if (isFullRegisterLeadSections(includedSections)) {
+    throw new Error('FULL_REGISTER_LEADS_DISABLED');
+  }
+
   const ownerProfile = await getAccountProfile({ id: input.ownerUserId, name: input.ownerName, email: input.ownerEmail });
   const ownerContactName = ownerProfile.businessName || ownerProfile.name || input.ownerName || 'Aim4price owner';
   const ownerContactPhone = ownerProfile.phone;
@@ -842,8 +885,8 @@ export async function createAssetLead(input: {
       input.partnerUserId,
       asset.id,
       input.leadType,
-      JSON.stringify(buildAssetLeadSnapshot(asset)),
-      JSON.stringify(input.includedSections ?? { assetDetails: true, valuationSummary: true, mainPhoto: true }),
+      JSON.stringify(buildAssetLeadSnapshot(asset, includedSections)),
+      JSON.stringify(includedSections),
       asText(input.ownerMessage) || null,
       ownerContactName,
       ownerContactPhone || null,
