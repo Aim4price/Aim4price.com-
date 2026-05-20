@@ -45,7 +45,7 @@ type SmartLinkProps = {
 
 const BASE_NAV_ITEMS: NavItem[] = [
   { key: 'home', href: '/', label: 'Home' },
-  { key: 'valuation', href: '/valuation', label: 'Estimate' },
+  { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
 ];
 
 function buildNavItems(accountType: AccountType | null): NavItem[] {
