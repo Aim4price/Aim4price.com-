@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
-import { markSharedAssetNoteNoted } from '../../../../lib/partner-access';
+import { markAssetPartnerNoteNoted } from '../../../../lib/partner-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,7 +41,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const note = await markSharedAssetNoteNoted({
+    const note = await markAssetPartnerNoteNoted({
       currentUserId: session.user.id,
       noteId: context.params.noteId,
     });
