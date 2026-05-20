@@ -19,7 +19,7 @@ export default async function AssetRegisterPage() {
   });
 
   if (profile.accountType !== 'owner') {
-    redirect('/shared-registers');
+    redirect('/leads');
   }
 
   return <AssetRegisterClient />;

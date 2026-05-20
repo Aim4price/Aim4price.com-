@@ -250,19 +250,6 @@ type AssetRegisterApiResponse = {
   error?: string;
 };
 
-type AssetRegisterMode = 'owner' | 'shared';
-
-type AssetRegisterClientProps = {
-  mode?: AssetRegisterMode;
-  ownerUserId?: string;
-};
-
-type CreatePartnerNoteResponse = {
-  ok: boolean;
-  note?: OpenPartnerNote;
-  error?: string;
-};
-
 type AssetUploadApiResponse = {
   ok: boolean;
   uploads?: Array<{
@@ -2287,12 +2274,9 @@ function renderQuoteOptionIcon(leadType: AssetLeadType, className?: string) {
   return <ReplacementQuoteIcon className={className} />;
 }
 
-export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }: AssetRegisterClientProps = {}) {
+export default function AssetRegisterClient() {
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
-  const [registerOwnerProfile, setRegisterOwnerProfile] = useState<AccountProfile | null>(null);
-  const sharedOwnerUserId = ownerUserId.trim();
-  const isSharedRegisterView = mode === 'shared' && Boolean(sharedOwnerUserId);
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
@@ -2302,9 +2286,6 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
   const [quoteAsset, setQuoteAsset] = useState<RegisterAsset | null>(null);
   const [isRegisterQuoteModalOpen, setIsRegisterQuoteModalOpen] = useState(false);
-  const [noteAsset, setNoteAsset] = useState<RegisterAsset | null>(null);
-  const [noteDraft, setNoteDraft] = useState('');
-  const [isSavingNote, setIsSavingNote] = useState(false);
   const [selectedQuoteLeadType, setSelectedQuoteLeadType] = useState<AssetLeadType | null>(null);
   const [quotePartners, setQuotePartners] = useState<PartnerDirectoryEntry[]>([]);
   const [selectedQuotePartnerId, setSelectedQuotePartnerId] = useState('');
@@ -2372,11 +2353,9 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 16 }, (_, index) => currentYear + index);
   }, []);
-  const currentAccountType = accountProfile?.accountType ?? 'owner';
-  const isDealerSharedRegisterView = isSharedRegisterView && currentAccountType === 'dealer';
-  const reportProfile = registerOwnerProfile ?? accountProfile;
-  const canUseOwnerOnlyAssetActions = !isSharedRegisterView;
-  const canUseMarketplaceActions = !isSharedRegisterView || isDealerSharedRegisterView;
+  const reportProfile = accountProfile;
+  const canUseOwnerOnlyAssetActions = true;
+  const canUseMarketplaceActions = true;
   const isQuoteModalOpen = Boolean(quoteAsset) || isRegisterQuoteModalOpen;
   const isRegisterQuoteRequest = isRegisterQuoteModalOpen;
 
@@ -2445,11 +2424,8 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
       setIsLoading(true);
 
       try {
-        const assetRegisterEndpoint = isSharedRegisterView
-          ? `/api/shared-registers/${encodeURIComponent(sharedOwnerUserId)}/assets`
-          : '/api/asset-register';
         const [assetsResponse, profileResponse] = await Promise.all([
-          fetch(assetRegisterEndpoint, {
+          fetch('/api/asset-register', {
             cache: 'no-store',
             credentials: 'include',
           }),
@@ -2473,16 +2449,11 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
             ? assetsData.assets
             : [];
         setAssets(loadedAssets);
-        setRegisterOwnerProfile(isSharedRegisterView ? assetsData.profile ?? null : null);
-
         if (profileResponse) {
           try {
             const profileData = (await profileResponse.json()) as AccountProfileApiResponse;
             if (profileResponse.ok && profileData.ok && profileData.profile) {
               setAccountProfile(profileData.profile);
-              if (!isSharedRegisterView) {
-                setRegisterOwnerProfile(profileData.profile);
-              }
             }
           } catch {
             // no-op
@@ -2507,7 +2478,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
     return () => {
       mounted = false;
     };
-  }, [isSharedRegisterView, sharedOwnerUserId]);
+  }, []);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -2552,7 +2523,6 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
     isAssetModalOpen ||
     Boolean(activeAsset) ||
     isQuoteModalOpen ||
-    Boolean(noteAsset) ||
     Boolean(deleteCandidateAsset) ||
     isAssetReportModalOpen ||
     isQrModalOpen ||
@@ -2609,11 +2579,6 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
         return;
       }
 
-      if (noteAsset) {
-        closeSharedNoteModal();
-        return;
-      }
-
       if (activeAsset) {
         closeActionDialog();
         return;
@@ -2645,7 +2610,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isQrModalOpen, isSummaryModalOpen, marketplaceAsset, noteAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isQrModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
@@ -3174,62 +3139,6 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
     setActiveAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
     setMarketplaceAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
     setProjectionAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
-  }
-
-  function openSharedNoteModal(asset: RegisterAsset) {
-    if (!isSharedRegisterView) return;
-    setNotice(null);
-    setIsAssetFilterOpen(false);
-    setNoteAsset(asset);
-    setNoteDraft('');
-  }
-
-  function closeSharedNoteModal() {
-    if (isSavingNote) return;
-    setNoteAsset(null);
-    setNoteDraft('');
-  }
-
-  async function submitSharedNote() {
-    if (!noteAsset || !isSharedRegisterView) return;
-
-    const noteText = noteDraft.trim();
-    if (!noteText) {
-      setNotice({ tone: 'error', message: 'Write a note before saving it.' });
-      return;
-    }
-
-    setIsSavingNote(true);
-
-    try {
-      const response = await fetch(
-        `/api/shared-registers/${encodeURIComponent(sharedOwnerUserId)}/assets/${encodeURIComponent(noteAsset.id)}/notes`,
-        {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ note: noteText }),
-        },
-      );
-      const data = (await response.json()) as CreatePartnerNoteResponse;
-
-      if (!response.ok || !data.ok || !data.note) {
-        throw new Error(data.error ?? 'Failed to save note.');
-      }
-
-      const nextAsset = { ...noteAsset, openPartnerNote: data.note };
-      syncUpdatedAsset(nextAsset);
-      setNotice({ tone: 'success', message: 'Note saved on the shared asset.' });
-      setNoteAsset(null);
-      setNoteDraft('');
-    } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Failed to save note.',
-      });
-    } finally {
-      setIsSavingNote(false);
-    }
   }
 
   function resetAssetQuoteState() {
@@ -3897,11 +3806,6 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
       specsJson.lifetime_worked_percent = roundedLifeWorkedPercent;
     }
 
-    if (isSharedRegisterView && editingAssetId === null) {
-      setNotice({ tone: 'error', message: 'Partner accounts cannot add assets to this register.' });
-      return;
-    }
-
     setIsSavingAsset(true);
 
     try {
@@ -3949,10 +3853,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
       let assetIdToFocus: string | null = null;
 
       if (editingAssetId !== null) {
-        const updateEndpoint = isSharedRegisterView
-          ? `/api/shared-registers/${encodeURIComponent(sharedOwnerUserId)}/assets`
-          : '/api/asset-register';
-        const response = await fetch(updateEndpoint, {
+        const response = await fetch('/api/asset-register', {
           method: 'PUT',
           credentials: 'include',
           headers: {
@@ -3976,9 +3877,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
         setExpandedAssetId(data.item.id);
         setNotice({
           tone: 'success',
-          message: isSharedRegisterView
-            ? 'Asset updated and marked with an update note.'
-            : 'Asset updated successfully.',
+          message: 'Asset updated successfully.',
         });
       } else {
         const response = await fetch('/api/asset-register', {
@@ -4120,7 +4019,6 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
           sellerEmail: marketplaceDraft.sellerEmail.trim(),
           province: marketplaceDraft.province.trim(),
           area: marketplaceDraft.area.trim(),
-          ...(isSharedRegisterView ? { ownerUserId: sharedOwnerUserId } : {}),
         }),
       });
       const data = (await response.json()) as MarketplaceApiResponse;
@@ -4639,10 +4537,6 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
   async function handleExportXlsx() {
     const params = new URLSearchParams({ format: 'xlsx' });
 
-    if (isSharedRegisterView) {
-      params.set('ownerUserId', sharedOwnerUserId);
-    }
-
     const response = await fetch(`/api/asset-register/export?${params.toString()}`, {
       credentials: 'include',
       cache: 'no-store',
@@ -4755,7 +4649,6 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
           targetYear,
           inflationRatePct,
           extraHours,
-          ...(isSharedRegisterView ? { ownerUserId: sharedOwnerUserId } : {}),
         }),
       });
 
@@ -4934,7 +4827,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
                 ) : null}
               </div>
 
-              {isSharedRegisterView || canUseOwnerOnlyAssetActions ? (
+              {canUseOwnerOnlyAssetActions ? (
                 <button
                   type="button"
                   className={`${styles.secondaryButton} ${styles.headerDownloadButton}`}
@@ -5102,25 +4995,14 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
                                 </button>
                               ) : null}
 
-                              {isSharedRegisterView ? (
-                                <button
-                                  type="button"
-                                  className={`${styles.optionsButton} ${styles.sharedNoteActionButton}`}
-                                  onClick={() => openSharedNoteModal(asset)}
-                                >
-                                  <EditIcon className={styles.buttonIcon} />
-                                  <span>Leave note</span>
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  className={`${styles.optionsButton} ${styles.cardOptionsButton}`}
-                                  onClick={() => openAssetQuoteOptions(asset)}
-                                >
-                                  <OptionsIcon className={styles.buttonIcon} />
-                                  <span>Options</span>
-                                </button>
-                              )}
+                              <button
+                                type="button"
+                                className={`${styles.optionsButton} ${styles.cardOptionsButton}`}
+                                onClick={() => openAssetQuoteOptions(asset)}
+                              >
+                                <OptionsIcon className={styles.buttonIcon} />
+                                <span>Options</span>
+                              </button>
 
                               <button
                                 type="button"
@@ -5380,12 +5262,8 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
             )
           ) : (
             <div className={styles.emptyState}>
-              <h3>{isSharedRegisterView ? 'No assets are visible in this shared register yet' : 'No assets saved yet'}</h3>
-              <p>
-                {isSharedRegisterView
-                  ? 'When the owner adds assets, they will show in this shared register.'
-                  : 'Run a valuation or add a manual asset to start building your register.'}
-              </p>
+              <h3>No assets saved yet</h3>
+              <p>Run a valuation or add a manual asset to start building your register.</p>
               {canUseOwnerOnlyAssetActions ? (
                 <div className={styles.emptyStateActions}>
                   <Link href="/valuation" className={styles.secondaryButton}>
@@ -6452,8 +6330,8 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
                   <button type="button" className={styles.optionActionButton} onClick={openAssetReportDialog}>
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>
-                      <strong>{isSharedRegisterView ? 'Download PDF report' : 'Download PDF Reports'}</strong>
-                      <small>{isSharedRegisterView ? 'Download the asset valuation report.' : 'Valuation, Fuel, QR Scan, Maintenance.'}</small>
+                      <strong>Download PDF Reports</strong>
+                      <small>Valuation, Fuel, QR Scan, Maintenance.</small>
                     </span>
                   </button>
 
@@ -6530,7 +6408,7 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
           <div className={`${styles.modalCard} ${styles.assetReportModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-report-title">
             <div className={`${styles.modalHeader} ${styles.assetReportModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-report-title">{isSharedRegisterView ? 'Download PDF report' : 'Download PDF Reports'}</h3>
+                <h3 id="asset-report-title">Download PDF Reports</h3>
                 <p>{activeAsset.title}</p>
               </div>
 
@@ -6577,51 +6455,6 @@ export default function AssetRegisterClient({ mode = 'owner', ownerUserId = '' }
                   </>
                 ) : null}
               </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {noteAsset ? (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalBackdrop} onClick={closeSharedNoteModal} />
-
-          <div className={`${styles.modalCard} ${styles.sharedNoteModal}`} role="dialog" aria-modal="true" aria-labelledby="shared-note-title">
-            <div className={styles.modalHeader}>
-              <div className={styles.modalHeaderText}>
-                <h3 id="shared-note-title">Leave note</h3>
-                <p>{noteAsset.title}</p>
-              </div>
-
-              <button
-                type="button"
-                className={styles.modalCloseButton}
-                onClick={closeSharedNoteModal}
-                aria-label="Close note modal"
-                disabled={isSavingNote}
-              >
-                <CloseIcon className={styles.buttonIcon} />
-              </button>
-            </div>
-
-            <label className={`${styles.field} ${styles.sharedNoteField}`}>
-              <span>Note to asset owner</span>
-              <textarea
-                className={styles.sharedNoteTextarea}
-                value={noteDraft}
-                onChange={(event) => setNoteDraft(event.target.value)}
-                placeholder="Example: Please confirm the latest hours before we process this asset."
-                autoFocus
-              />
-            </label>
-
-            <div className={`${styles.formActions} ${styles.sharedNoteActions}`}>
-              <button type="button" className={styles.secondaryButton} onClick={closeSharedNoteModal} disabled={isSavingNote}>
-                Cancel
-              </button>
-              <button type="button" className={styles.primaryButton} onClick={() => void submitSharedNote()} disabled={isSavingNote}>
-                {isSavingNote ? 'Saving...' : 'Save note'}
-              </button>
             </div>
           </div>
         </div>
