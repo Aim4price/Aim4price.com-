@@ -168,22 +168,6 @@ function asRecord(value: unknown): Record<string, unknown> {
   return {};
 }
 
-function isFullRegisterLeadSections(value: unknown): boolean {
-  const sections = asRecord(value);
-  const source = asText(sections.source).toLowerCase();
-  const registerLeadType = asText(sections.registerLeadType).toLowerCase();
-  const hasRegisterSnapshot = Boolean(
-    sections.registerSnapshot && typeof sections.registerSnapshot === 'object' && !Array.isArray(sections.registerSnapshot),
-  );
-
-  return (
-    sections.registerLead === true ||
-    source === 'full_asset_register' ||
-    registerLeadType.startsWith('full_') ||
-    hasRegisterSnapshot
-  );
-}
-
 function isBlockedLeadDocument(document: AssetRegisterItem['documents'][number]): boolean {
   const fileName = asText(document.fileName).toLowerCase();
   const contentType = asText(document.contentType).toLowerCase();
@@ -850,10 +834,6 @@ export async function createAssetLead(input: {
 
   const includedSections = input.includedSections ?? { assetDetails: true, valuationSummary: true, mainPhoto: true };
 
-  if (isFullRegisterLeadSections(includedSections)) {
-    throw new Error('FULL_REGISTER_LEADS_DISABLED');
-  }
-
   const ownerProfile = await getAccountProfile({ id: input.ownerUserId, name: input.ownerName, email: input.ownerEmail });
   const ownerContactName = ownerProfile.businessName || ownerProfile.name || input.ownerName || 'Aim4price owner';
   const ownerContactPhone = ownerProfile.phone;
@@ -978,7 +958,6 @@ export async function updateAssetLeadStatus(input: {
 
   return updatedLead;
 }
-
 
 export async function createAssetLeadNote(input: {
   currentUserId: string;
