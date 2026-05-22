@@ -16329,3 +16329,167 @@
     grid-template-columns: 2.45rem minmax(0, 1fr) !important;
   }
 }
+
+/* === Asset Register hero title and evenly spaced action bar === */
+.registerHeader {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  align-items: stretch !important;
+  gap: clamp(0.85rem, 1.15vw, 1.08rem) !important;
+  margin-bottom: clamp(1.05rem, 1.45vw, 1.35rem) !important;
+}
+
+.businessRegisterTitleBlock {
+  width: 100% !important;
+  display: block !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+.businessRegisterTitleBlock h1 {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: clamp(5.1rem, 7vw, 6.1rem) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  margin: 0 !important;
+  padding: clamp(1.15rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2rem) !important;
+  border: 1.5px solid rgba(193, 211, 218, 0.98) !important;
+  border-radius: clamp(1.25rem, 2vw, 1.7rem) !important;
+  background:
+    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%) !important;
+  box-shadow:
+    0 18px 38px rgba(16, 36, 40, 0.06),
+    0 6px 16px rgba(16, 36, 40, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  color: #073b30 !important;
+  text-shadow: none !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
+  font-size: clamp(2.35rem, 4.15vw, 3.55rem) !important;
+  font-weight: 900 !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.062em !important;
+  text-transform: uppercase !important;
+  overflow-wrap: anywhere !important;
+  text-wrap: balance;
+}
+
+.registerHeader .headerActions {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  gap: clamp(0.78rem, 1.35vw, 1.25rem) !important;
+  margin: 0 !important;
+  margin-left: 0 !important;
+  flex-wrap: nowrap !important;
+}
+
+.registerHeader .headerActions > .secondaryButton,
+.registerHeader .headerActions > .assetFilterWrap {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: none !important;
+}
+
+.registerHeader .headerActions > .assetFilterWrap {
+  display: flex !important;
+  align-items: stretch !important;
+  position: relative !important;
+}
+
+.registerHeader .headerActions .secondaryButton,
+.registerHeader .headerActions .filterTriggerButton {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: clamp(3.45rem, 4.2vw, 3.9rem) !important;
+  justify-content: center !important;
+  padding-inline: clamp(1rem, 1.8vw, 1.45rem) !important;
+  border-radius: clamp(1rem, 1.45vw, 1.22rem) !important;
+  font-size: clamp(0.98rem, 1.15vw, 1.08rem) !important;
+  font-weight: 860 !important;
+  letter-spacing: -0.015em !important;
+  white-space: nowrap !important;
+}
+
+.registerHeader .headerActions .buttonIcon,
+.registerHeader .headerActions .filterChevron {
+  width: 1.08rem !important;
+  height: 1.08rem !important;
+  flex: 0 0 auto !important;
+}
+
+.registerHeader .assetFilterMenu {
+  right: 0 !important;
+  left: auto !important;
+  width: min(92vw, 286px) !important;
+}
+
+@media (max-width: 980px) {
+  .registerHeader .headerActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .registerHeader .assetFilterMenu {
+    left: 0 !important;
+    right: auto !important;
+    width: min(92vw, 320px) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .businessRegisterTitleBlock h1 {
+    min-height: 4.35rem !important;
+    padding: 1rem 1.05rem !important;
+    border-radius: 1.15rem !important;
+    font-size: clamp(1.75rem, 9vw, 2.2rem) !important;
+    letter-spacing: -0.045em !important;
+  }
+
+  .registerHeader .headerActions {
+    grid-template-columns: 1fr !important;
+    gap: 0.65rem !important;
+  }
+
+  .registerHeader .headerActions .secondaryButton,
+  .registerHeader .headerActions .filterTriggerButton {
+    min-height: 3.25rem !important;
+  }
+
+  .registerHeader .assetFilterMenu {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+  }
+}
+
+.registerHeader .ownerRegisterHeaderActions {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.registerHeader .sharedRegisterHeaderActions {
+  grid-template-columns: minmax(0, 18rem) !important;
+  justify-content: end !important;
+}
+
+@media (max-width: 980px) {
+  .registerHeader .ownerRegisterHeaderActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .registerHeader .sharedRegisterHeaderActions {
+    grid-template-columns: minmax(0, 1fr) !important;
+    justify-content: stretch !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .registerHeader .ownerRegisterHeaderActions,
+  .registerHeader .sharedRegisterHeaderActions {
+    grid-template-columns: 1fr !important;
+  }
+}

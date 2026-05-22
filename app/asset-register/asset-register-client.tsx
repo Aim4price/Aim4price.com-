@@ -4877,10 +4877,10 @@ export default function AssetRegisterClient() {
         <section className={styles.registerPanel}>
           <div className={styles.registerHeader}>
             <div className={`${styles.registerTitleBlock} ${styles.businessRegisterTitleBlock}`}>
-              <h1>{buildOwnerName(reportProfile)}</h1>
+              <h1>Asset Register: {buildOwnerName(reportProfile)}</h1>
             </div>
 
-            <div className={styles.headerActions}>
+            <div className={`${styles.headerActions} ${canUseOwnerOnlyAssetActions ? styles.ownerRegisterHeaderActions : styles.sharedRegisterHeaderActions}`}>
               {canUseOwnerOnlyAssetActions ? (
                 <button
                   type="button"
@@ -4890,6 +4890,30 @@ export default function AssetRegisterClient() {
                 >
                   <OptionsIcon className={styles.buttonIcon} />
                   <span>Summary</span>
+                </button>
+              ) : null}
+
+              {canUseOwnerOnlyAssetActions ? (
+                <button
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.headerShareButton}`}
+                  onClick={openRegisterShareModal}
+                  disabled={!assets.length || isLoading || isExporting}
+                >
+                  <ShareIcon className={styles.buttonIcon} />
+                  <span>Share</span>
+                </button>
+              ) : null}
+
+              {canUseOwnerOnlyAssetActions ? (
+                <button
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.headerDownloadButton}`}
+                  onClick={openExportModal}
+                  disabled={!assets.length || isLoading || isExporting}
+                >
+                  <DownloadIcon className={styles.buttonIcon} />
+                  <span>Download</span>
                 </button>
               ) : null}
 
@@ -4903,7 +4927,7 @@ export default function AssetRegisterClient() {
                   aria-expanded={isAssetFilterOpen}
                 >
                   <FilterIcon className={styles.buttonIcon} />
-                  <span>{hasActiveAssetFilter ? activeAssetFilterLabel : 'Filter'}</span>
+                  <span>Filters</span>
                   <ChevronDownIcon className={styles.filterChevron} />
                 </button>
 
@@ -4929,31 +4953,6 @@ export default function AssetRegisterClient() {
                   </div>
                 ) : null}
               </div>
-
-              {canUseOwnerOnlyAssetActions ? (
-                <button
-                  type="button"
-                  className={`${styles.secondaryButton} ${styles.headerShareButton}`}
-                  onClick={openRegisterShareModal}
-                  disabled={!assets.length || isLoading || isExporting}
-                >
-                  <ShareIcon className={styles.buttonIcon} />
-                  <span>Share full Asset Register</span>
-                </button>
-              ) : null}
-
-              {canUseOwnerOnlyAssetActions ? (
-                <button
-                  type="button"
-                  className={`${styles.secondaryButton} ${styles.headerDownloadButton}`}
-                  onClick={openExportModal}
-                  disabled={!assets.length || isLoading || isExporting}
-                >
-                  <DownloadIcon className={styles.buttonIcon} />
-                  <span>Download full Asset Register</span>
-                </button>
-              ) : null}
-
             </div>
           </div>
 
