@@ -14,6 +14,8 @@ type NoticeTone = 'success' | 'error';
 type PartnerType = 'dealer' | 'finance' | 'insurance';
 type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote';
 type QuoteLeadStep = 'message' | 'consent' | null;
+type QuoteScope = 'asset' | 'register';
+type RegisterShareChannel = 'whatsapp' | 'email';
 
 type PartnerDirectoryEntry = {
   userId: string;
@@ -739,6 +741,37 @@ function DownloadIcon({ className }: IconProps) {
       <path d="M12 3v10" />
       <path d="m8 9 4 4 4-4" />
       <path d="M4 20h16" />
+    </svg>
+  );
+}
+
+function ShareIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <path d="m8.6 10.6 6.8-4.2" />
+      <path d="m8.6 13.4 6.8 4.2" />
+    </svg>
+  );
+}
+
+function MessageIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.7 8.7 0 0 1-3.95-.95L3 21l1.95-5.35A8.4 8.4 0 0 1 4 11.5 8.4 8.4 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5Z" />
+      <path d="M8.5 10h8" />
+      <path d="M8.5 13.5h5.5" />
+    </svg>
+  );
+}
+
+function EmailIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m4 7 8 6 8-6" />
     </svg>
   );
 }
@@ -2284,6 +2317,7 @@ export default function AssetRegisterClient() {
   const [hasManualAssetKindSelection, setHasManualAssetKindSelection] = useState(false);
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
   const [quoteAsset, setQuoteAsset] = useState<RegisterAsset | null>(null);
+  const [quoteScope, setQuoteScope] = useState<QuoteScope>('asset');
   const [selectedQuoteLeadType, setSelectedQuoteLeadType] = useState<AssetLeadType | null>(null);
   const [quotePartners, setQuotePartners] = useState<PartnerDirectoryEntry[]>([]);
   const [selectedQuotePartnerId, setSelectedQuotePartnerId] = useState('');
@@ -2329,6 +2363,7 @@ export default function AssetRegisterClient() {
   const [currentPage, setCurrentPage] = useState(1);
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [isRegisterShareModalOpen, setIsRegisterShareModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
   const [exportStep, setExportStep] = useState<ExportStep>('format');
@@ -2353,6 +2388,7 @@ export default function AssetRegisterClient() {
   const canUseOwnerOnlyAssetActions = true;
   const canUseMarketplaceActions = true;
   const isQuoteModalOpen = Boolean(quoteAsset);
+  const isFullRegisterQuoteLead = quoteScope === 'register';
 
   const selectedQuoteOption = useMemo(() => quoteOptionForLeadType(selectedQuoteLeadType), [selectedQuoteLeadType]);
   const selectedQuotePartner = useMemo(
@@ -2522,6 +2558,7 @@ export default function AssetRegisterClient() {
     isAssetReportModalOpen ||
     isQrModalOpen ||
     isSummaryModalOpen ||
+    isRegisterShareModalOpen ||
     isExportModalOpen ||
     Boolean(projectionAsset) ||
     Boolean(marketplaceAsset);
@@ -2589,6 +2626,11 @@ export default function AssetRegisterClient() {
         return;
       }
 
+      if (isRegisterShareModalOpen) {
+        closeRegisterShareModal();
+        return;
+      }
+
       if (isExportModalOpen) {
         closeExportModal();
         return;
@@ -2605,7 +2647,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isQrModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
@@ -3136,7 +3178,8 @@ export default function AssetRegisterClient() {
     setProjectionAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
   }
 
-  function resetAssetQuoteState() {
+  function resetAssetQuoteState(nextScope: QuoteScope = 'asset') {
+    setQuoteScope(nextScope);
     setSelectedQuoteLeadType(null);
     setQuotePartners([]);
     setSelectedQuotePartnerId('');
@@ -3163,14 +3206,14 @@ export default function AssetRegisterClient() {
   function openAssetQuoteOptions(asset: RegisterAsset) {
     setNotice(null);
     setIsAssetFilterOpen(false);
+    resetAssetQuoteState('asset');
     setQuoteAsset(asset);
-    resetAssetQuoteState();
   }
 
   function closeAssetQuoteModal() {
     if (isSendingQuoteLead) return;
     setQuoteAsset(null);
-    resetAssetQuoteState();
+    resetAssetQuoteState('asset');
   }
 
   async function loadQuotePartners(leadType: AssetLeadType | null = selectedQuoteLeadType, searchValue = quotePartnerSearch) {
@@ -3221,6 +3264,13 @@ export default function AssetRegisterClient() {
   }
 
   function goBackToQuoteOptions() {
+    if (isFullRegisterQuoteLead) {
+      setQuoteAsset(null);
+      resetAssetQuoteState('asset');
+      setIsRegisterShareModalOpen(true);
+      return;
+    }
+
     setSelectedQuoteLeadType(null);
     setQuotePartners([]);
     setSelectedQuotePartnerId('');
@@ -3285,6 +3335,19 @@ export default function AssetRegisterClient() {
     setIsSendingQuoteLead(true);
 
     try {
+      const profile = isFullRegisterQuoteLead ? reportProfile ?? (await ensureAccountProfile()) : null;
+      const includedSections = isFullRegisterQuoteLead
+        ? buildFullRegisterLeadSections(selectedQuoteOption.leadType, profile)
+        : {
+            assetDetails: true,
+            valuationSummary: true,
+            mainPhoto: true,
+            photos: quoteIncludePhotos,
+            documents: quoteIncludeDocuments,
+            scanHistory: quoteIncludeScanHistory,
+            source: 'asset_register_options',
+          };
+
       const response = await fetch('/api/asset-leads', {
         method: 'POST',
         credentials: 'include',
@@ -3294,15 +3357,7 @@ export default function AssetRegisterClient() {
           partnerUserId: selectedQuotePartner.userId,
           leadType: selectedQuoteOption.leadType,
           ownerMessage: quoteOwnerMessage,
-          includedSections: {
-            assetDetails: true,
-            valuationSummary: true,
-            mainPhoto: true,
-            photos: quoteIncludePhotos,
-            documents: quoteIncludeDocuments,
-            scanHistory: quoteIncludeScanHistory,
-            source: 'asset_register_options',
-          },
+          includedSections,
         }),
       });
 
@@ -3313,9 +3368,13 @@ export default function AssetRegisterClient() {
         throw new Error(extractApiError(payload, 'Failed to send asset lead.'));
       }
 
+      const fullRegisterQuoteLabel = selectedQuoteOption.leadType === 'insurance' ? 'insurance quote' : 'refinance quote';
+
       setNotice({
         tone: 'success',
-        message: `${selectedQuoteOption.shortTitle.toLowerCase()} request sent to ${quotePartnerName(selectedQuotePartner)}.`,
+        message: isFullRegisterQuoteLead
+          ? `Full Asset Register ${fullRegisterQuoteLabel} sent to ${quotePartnerName(selectedQuotePartner)}.`
+          : `${selectedQuoteOption.shortTitle.toLowerCase()} request sent to ${quotePartnerName(selectedQuotePartner)}.`,
       });
       closeAssetQuoteModal();
     } catch (error) {
@@ -4228,6 +4287,179 @@ export default function AssetRegisterClient() {
     setNotice({ tone: 'success', message: 'QR print sheet opened in a new tab.' });
   }
 
+  function openRegisterShareModal() {
+    if (!assets.length || isLoading) {
+      return;
+    }
+
+    setNotice(null);
+    setIsAssetFilterOpen(false);
+    setIsRegisterShareModalOpen(true);
+  }
+
+  function closeRegisterShareModal() {
+    if (isExporting || isSendingQuoteLead) return;
+    setIsRegisterShareModalOpen(false);
+  }
+
+  function buildFullRegisterLeadAssetSnapshot(asset: RegisterAsset): Record<string, unknown> {
+    const financeStatus = readFinanceStatusChoice(asset);
+    const insuranceStatus = readInsuranceStatusChoice(asset);
+    const licenseStatus = readLicenseStatusChoice(asset);
+
+    return {
+      id: asset.id,
+      title: asset.title,
+      kind: asset.kind,
+      value: asset.value,
+      selectedValueExVat: asset.selectedValueExVat,
+      selectedMethod: asset.selectedMethod,
+      brandName: asset.brandName,
+      modelName: asset.modelName,
+      typedModelName: asset.typedModelName,
+      equipmentFamilyKey: asset.equipmentFamilyKey,
+      equipmentFamilyLabel: asset.equipmentFamilyLabel,
+      yearModel: asset.yearModel,
+      hours: asset.hours,
+      specsJson: {
+        ...(isPlainRecord(asset.specsJson) ? asset.specsJson : {}),
+        financeStatus,
+        insuranceStatus,
+        licenseStatus,
+      },
+      depreciationMethodUsed: asset.depreciationMethodUsed,
+      lifeWorkedPercent: asset.lifeWorkedPercent,
+      lifeRemainingPercent: asset.lifeRemainingPercent,
+      estimatedHours: asset.estimatedHours,
+      maxLifetimeHours: asset.maxLifetimeHours,
+      condition: asset.condition,
+      powerKw: asset.powerKw,
+      serialNumber: asset.serialNumber,
+      isFinanced: financeStatus === 'yes',
+      isInsured: insuranceStatus === 'yes',
+      isLicensed: licenseStatus === 'yes',
+      licenseRegistrationNumber: readLicenseRegistrationNumber(asset),
+      aim4priceValueExVat: asset.aim4priceValueExVat,
+      marketMidExVat: asset.marketMidExVat,
+      photoUrl: toAbsoluteUrl(assetPreviewImage(asset)),
+      createdAtIso: asset.createdAtIso,
+      updatedAtIso: asset.updatedAtIso,
+    };
+  }
+
+  function buildFullRegisterLeadSections(leadType: AssetLeadType, profile: AccountProfile | null): Record<string, unknown> {
+    const registerAssets = assets.map(buildFullRegisterLeadAssetSnapshot);
+    const generatedAtIso = new Date().toISOString();
+    const leadLabel = leadType === 'insurance' ? 'Full insurance quote' : 'Full refinance quote';
+    const registerLeadType = leadType === 'insurance' ? 'full_insurance_quote' : 'full_refinance_quote';
+
+    return {
+      assetDetails: true,
+      valuationSummary: true,
+      mainPhoto: true,
+      photos: false,
+      documents: false,
+      scanHistory: false,
+      registerLead: true,
+      source: 'full_asset_register',
+      registerLeadType,
+      pdfReport: true,
+      liveAccess: false,
+      registerSnapshot: {
+        snapshotType: 'full_asset_register',
+        title: 'Full Asset Register',
+        leadLabel,
+        generatedAtIso,
+        ownerName: buildOwnerName(profile),
+        ownerMeta: buildOwnerMeta(profile),
+        assetCount: assets.length,
+        totalAssets: assets.length,
+        totalValue,
+        registerValue: totalValue,
+        totalValueInclVat,
+        aim4priceAssetCount: aim4priceValuedEquipmentCount,
+        manualAssetCount: manualAssetStats.count,
+        financedAssetCount: financedAssetStats.count,
+        insuredAssetCount: insuredAssetStats.count,
+        licensedAssetCount: licensedAssetStats.count,
+        assets: registerAssets,
+      },
+    };
+  }
+
+  function buildFullRegisterShareMessage(profile: AccountProfile | null): string {
+    const ownerName = buildOwnerName(profile);
+
+    return [
+      `Aim4price Full Asset Register - ${ownerName}`,
+      '',
+      `Assets: ${assets.length}`,
+      `Register value: ${money(totalValue)} excl. VAT (${money(totalValueInclVat)} incl. VAT)`,
+      '',
+      'A PDF register report has been prepared from Aim4price. Please see the attached PDF.',
+    ].join('\n');
+  }
+
+  async function handleShareFullRegisterPdf(channel: RegisterShareChannel) {
+    if (!assets.length || isExporting) {
+      return;
+    }
+
+    setIsRegisterShareModalOpen(false);
+    setIsExporting(true);
+
+    try {
+      const profile = reportProfile ?? (await ensureAccountProfile());
+      await handleExportPdf('full');
+      const message = buildFullRegisterShareMessage(profile);
+
+      if (channel === 'whatsapp') {
+        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+        setNotice({
+          tone: 'success',
+          message: 'Full Asset Register PDF opened. Save it as PDF and attach it to the WhatsApp message.',
+        });
+      } else {
+        const subject = `Aim4price Full Asset Register - ${buildOwnerName(profile)}`;
+        window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+        setNotice({
+          tone: 'success',
+          message: 'Full Asset Register PDF opened. Save it as PDF and attach it to the email.',
+        });
+      }
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to prepare the full Asset Register PDF.',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  function openFullRegisterQuotePartnerPicker(leadType: Extract<AssetLeadType, 'finance' | 'insurance'>) {
+    const anchorAsset = assets[0];
+
+    if (!anchorAsset) {
+      setNotice({ tone: 'error', message: 'Add at least one asset before sending a full-register lead.' });
+      return;
+    }
+
+    setIsRegisterShareModalOpen(false);
+    resetAssetQuoteState('register');
+    setQuoteAsset(anchorAsset);
+    setSelectedQuoteLeadType(leadType);
+    setSelectedQuotePartnerId('');
+    setQuotePartnerSearch('');
+    setQuoteOwnerMessage('');
+    setQuoteLeadStep(null);
+    setQuoteConsentAccepted(false);
+    setQuotePartners([]);
+    setQuoteIncludePhotos(false);
+    setQuoteIncludeDocuments(false);
+    setQuoteIncludeScanHistory(false);
+  }
+
   function openSummaryModal() {
     setIsSummaryModalOpen(true);
   }
@@ -4701,6 +4933,18 @@ export default function AssetRegisterClient() {
               {canUseOwnerOnlyAssetActions ? (
                 <button
                   type="button"
+                  className={`${styles.secondaryButton} ${styles.headerShareButton}`}
+                  onClick={openRegisterShareModal}
+                  disabled={!assets.length || isLoading || isExporting}
+                >
+                  <ShareIcon className={styles.buttonIcon} />
+                  <span>Share full Asset Register</span>
+                </button>
+              ) : null}
+
+              {canUseOwnerOnlyAssetActions ? (
+                <button
+                  type="button"
                   className={`${styles.secondaryButton} ${styles.headerDownloadButton}`}
                   onClick={openExportModal}
                   disabled={!assets.length || isLoading || isExporting}
@@ -5148,6 +5392,100 @@ export default function AssetRegisterClient() {
           ) : null}
         </section>
       </section>
+
+      {isRegisterShareModalOpen ? (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBackdrop} onClick={closeRegisterShareModal} />
+
+          <div className={`${styles.modalCard} ${styles.summaryLeadModal} ${styles.registerShareModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-register-share-title">
+            <div className={`${styles.modalHeader} ${styles.summaryLeadModalHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="asset-register-share-title">Share full Asset Register</h3>
+                <p>Send a once-off PDF report or create a full-register lead for a finance or insurance partner.</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={closeRegisterShareModal}
+                aria-label="Close register share options"
+                disabled={isExporting}
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${styles.summaryLeadModalBody} ${styles.registerShareModalBody}`}>
+              <div className={styles.summaryLeadModalNotice}>
+                <strong>Full Asset Register PDF</strong>
+                <p>
+                  The PDF uses the complete saved register: {assets.length} {assets.length === 1 ? 'asset' : 'assets'} with a register value of {money(totalValue)} excl. VAT.
+                </p>
+              </div>
+
+              <div className={styles.summaryLeadModalStats} aria-label="Full register snapshot totals">
+                <span>{assets.length} {assets.length === 1 ? 'asset' : 'assets'}</span>
+                <span>{money(totalValue)} excl. VAT</span>
+                <span>{money(totalValueInclVat)} incl. VAT</span>
+              </div>
+
+              <div className={styles.registerShareOptionGrid}>
+                <button
+                  type="button"
+                  className={`${styles.optionActionButton} ${styles.registerShareOptionCard}`}
+                  onClick={() => void handleShareFullRegisterPdf('whatsapp')}
+                  disabled={isExporting}
+                >
+                  <MessageIcon className={styles.buttonIcon} />
+                  <span>
+                    <strong>Send via WhatsApp</strong>
+                    <small>Open the PDF report and a WhatsApp message. Save the PDF and attach it.</small>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.optionActionButton} ${styles.registerShareOptionCard}`}
+                  onClick={() => void handleShareFullRegisterPdf('email')}
+                  disabled={isExporting}
+                >
+                  <EmailIcon className={styles.buttonIcon} />
+                  <span>
+                    <strong>Send via email</strong>
+                    <small>Open the PDF report and an email draft. Save the PDF and attach it.</small>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.optionActionButton} ${styles.registerShareOptionCard}`}
+                  onClick={() => openFullRegisterQuotePartnerPicker('finance')}
+                  disabled={isExporting}
+                >
+                  <BankIcon className={styles.buttonIcon} />
+                  <span>
+                    <strong>Get refinance quote</strong>
+                    <small>Send a once-off full-register lead to a finance partner.</small>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.optionActionButton} ${styles.registerShareOptionCard}`}
+                  onClick={() => openFullRegisterQuotePartnerPicker('insurance')}
+                  disabled={isExporting}
+                >
+                  <ShieldIcon className={styles.buttonIcon} />
+                  <span>
+                    <strong>Get insurance quote</strong>
+                    <small>Send a once-off full-register lead to an insurance partner.</small>
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {isSummaryModalOpen ? (
         <div className={styles.modalOverlay}>
@@ -5866,9 +6204,11 @@ export default function AssetRegisterClient() {
           >
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-quote-title">{selectedQuoteOption ? selectedQuoteOption.mapTitle : quoteAsset?.title}</h3>
+                <h3 id="asset-quote-title">{selectedQuoteOption ? selectedQuoteOption.mapTitle : isFullRegisterQuoteLead ? 'Share full Asset Register' : quoteAsset?.title}</h3>
                 {!selectedQuoteOption ? (
                   <p>{quoteAsset ? `${buildAssetMeta(quoteAsset)} · ${money(quoteAsset.value)} excl. VAT` : ''}</p>
+                ) : isFullRegisterQuoteLead ? (
+                  <p>Once-off full-register snapshot · {assets.length} {assets.length === 1 ? 'asset' : 'assets'} · {money(totalValue)} excl. VAT</p>
                 ) : null}
               </div>
 
@@ -6013,7 +6353,11 @@ export default function AssetRegisterClient() {
 
                         {quoteLeadStep === 'message' ? (
                           <div className={styles.assetQuoteStepBody}>
-                            <p className={styles.assetQuoteStepNotice}>This sends one asset only. It does not share the full register.</p>
+                            <p className={styles.assetQuoteStepNotice}>
+                              {isFullRegisterQuoteLead
+                                ? 'This sends a once-off full Asset Register snapshot. It does not grant live register access.'
+                                : 'This sends one asset only. It does not share the full register.'}
+                            </p>
 
                             <label className={styles.assetQuoteMessageField}>
                               <span>
@@ -6023,7 +6367,11 @@ export default function AssetRegisterClient() {
                               <textarea
                                 value={quoteOwnerMessage}
                                 onChange={(event) => setQuoteOwnerMessage(event.target.value)}
-                                placeholder="Example: Please contact me about cover or finance options for this asset."
+                                placeholder={
+                                  isFullRegisterQuoteLead
+                                    ? 'Example: Please review my full register for refinance or insurance options.'
+                                    : 'Example: Please contact me about cover or finance options for this asset.'
+                                }
                               />
                             </label>
                           </div>
@@ -6032,11 +6380,15 @@ export default function AssetRegisterClient() {
                             <div className={styles.assetQuotePopiaBox}>
                               <strong>Disclaimer and POPIA note</strong>
                               <p>
-                                By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your account contact details with the chosen partner.
-                                This is only a lead request and does not create a finance, insurance, valuation or sales agreement.
+                                {isFullRegisterQuoteLead
+                                  ? 'By sending this request, you allow Aim4price to share a once-off full Asset Register snapshot, saved valuation details and your account contact details with the chosen partner.'
+                                  : 'By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your account contact details with the chosen partner.'}
+                                {' '}This is only a lead request and does not create a finance, insurance, valuation or sales agreement.
                               </p>
                               <p>
-                                You confirm that you have permission to share this asset information and understand that the selected partner may contact you outside Aim4price.
+                                {isFullRegisterQuoteLead
+                                  ? 'You confirm that you have permission to share the complete register information and understand that the selected partner may contact you outside Aim4price.'
+                                  : 'You confirm that you have permission to share this asset information and understand that the selected partner may contact you outside Aim4price.'}
                               </p>
                             </div>
 
