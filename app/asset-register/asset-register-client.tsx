@@ -6092,11 +6092,18 @@ export default function AssetRegisterClient() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeActionDialog} />
 
-          <div className={styles.optionsModal} role="dialog" aria-modal="true" aria-labelledby="asset-manage-title">
-            <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
+          <div
+            className={`${styles.optionsModal} ${styles.assetManageModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="asset-manage-title"
+            aria-describedby="asset-manage-meta"
+          >
+            <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetManageModalHeader}`}>
               <div className={styles.modalHeaderText}>
+                <span className={styles.modalEyebrow}>Manage asset</span>
                 <h3 id="asset-manage-title">{activeAsset.title}</h3>
-                <p>{buildAssetMeta(activeAsset)}</p>
+                <p id="asset-manage-meta">{buildAssetMeta(activeAsset)}</p>
               </div>
 
               <button

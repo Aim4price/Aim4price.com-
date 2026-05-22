@@ -16239,3 +16239,321 @@
     padding: 0.9rem !important;
   }
 }
+
+
+/* === Asset Manage modal enlargement and usability pass: 22 May 2026 === */
+.assetManageModal {
+  width: min(1180px, calc(100vw - clamp(1rem, 4vw, 3rem))) !important;
+  min-height: min(690px, calc(100dvh - clamp(1rem, 4vh, 2.5rem))) !important;
+  max-height: calc(100dvh - clamp(1rem, 4vh, 2.5rem)) !important;
+  padding: clamp(1.35rem, 2.25vw, 2.15rem) !important;
+  border-radius: clamp(1.6rem, 2.3vw, 2.35rem) !important;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(22, 83, 64, 0.1), transparent 32%),
+    radial-gradient(circle at 95% 15%, rgba(29, 59, 98, 0.08), transparent 31%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafc 100%) !important;
+  box-shadow:
+    0 42px 110px rgba(10, 20, 34, 0.34),
+    0 18px 42px rgba(10, 20, 34, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetManageModalHeader {
+  align-items: center !important;
+  gap: clamp(1rem, 1.7vw, 1.45rem) !important;
+  margin-bottom: clamp(1.1rem, 1.7vw, 1.45rem) !important;
+  padding-bottom: clamp(1.05rem, 1.5vw, 1.35rem) !important;
+}
+
+.assetManageModalHeader .modalHeaderText {
+  gap: 0.5rem !important;
+}
+
+.assetManageModalHeader .modalEyebrow {
+  width: fit-content !important;
+  min-height: 1.9rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 0.86rem !important;
+  border-radius: 999px !important;
+  color: #174b3a !important;
+  background: linear-gradient(180deg, #f4fbf7 0%, #e6f5ec 100%) !important;
+  border: 1px solid rgba(188, 221, 203, 0.98) !important;
+  font-size: 0.72rem !important;
+  font-weight: 880 !important;
+  letter-spacing: 0.07em !important;
+  text-transform: uppercase !important;
+}
+
+.assetManageModalHeader h3 {
+  max-width: 46rem !important;
+  font-size: clamp(2rem, 3.4vw, 3rem) !important;
+  font-weight: 850 !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.07em !important;
+}
+
+.assetManageModalHeader p {
+  max-width: 58rem !important;
+  color: #5e7086 !important;
+  font-size: clamp(1rem, 1.45vw, 1.18rem) !important;
+  font-weight: 720 !important;
+  line-height: 1.42 !important;
+}
+
+.assetManageModal .modalCloseButton {
+  width: clamp(3.35rem, 4.2vw, 4.15rem) !important;
+  min-width: clamp(3.35rem, 4.2vw, 4.15rem) !important;
+  height: clamp(3.35rem, 4.2vw, 4.15rem) !important;
+  min-height: clamp(3.35rem, 4.2vw, 4.15rem) !important;
+  color: #183a61 !important;
+  background: linear-gradient(180deg, #f7fbff 0%, #edf4fb 100%) !important;
+  border-color: rgba(205, 219, 234, 0.98) !important;
+}
+
+.assetManageModal .modalCloseButton .buttonIcon {
+  width: 1.12rem !important;
+  height: 1.12rem !important;
+}
+
+.assetManageModal .optionsScrollBody {
+  overflow-y: auto !important;
+  padding: 0 0.35rem 0 0 !important;
+  margin: 0 -0.35rem 0 0 !important;
+}
+
+.assetManageModal .optionsContent {
+  min-height: 0 !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.assetManageModal .assetOptionsGrid {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-auto-rows: minmax(8.4rem, 1fr) !important;
+  align-items: stretch !important;
+  gap: clamp(1rem, 1.45vw, 1.35rem) !important;
+}
+
+.assetManageModal .assetOptionsGrid .optionActionButton {
+  position: relative !important;
+  min-height: clamp(8.15rem, 11vh, 9.7rem) !important;
+  height: 100% !important;
+  display: grid !important;
+  grid-template-columns: clamp(3.3rem, 4.5vw, 4.05rem) minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: clamp(1rem, 1.5vw, 1.35rem) !important;
+  padding: clamp(1.2rem, 1.85vw, 1.65rem) !important;
+  border-radius: clamp(1.25rem, 1.7vw, 1.55rem) !important;
+  color: #173b63 !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(29, 59, 98, 0.055), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f3f7fb 100%) !important;
+  border: 1px solid rgba(213, 224, 236, 0.98) !important;
+  box-shadow:
+    0 16px 32px rgba(16, 31, 28, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.99) !important;
+}
+
+.assetManageModal .assetOptionsGrid .optionActionButton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+}
+
+.assetManageModal .assetOptionsGrid .optionActionButton:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  border-color: rgba(174, 195, 216, 0.98) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(29, 59, 98, 0.09), transparent 43%),
+    linear-gradient(180deg, #ffffff 0%, #edf4fb 100%) !important;
+  box-shadow:
+    0 22px 42px rgba(16, 31, 28, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.99) !important;
+}
+
+.assetManageModal .assetOptionsGrid .optionFeaturedButton {
+  color: #124635 !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.16), transparent 43%),
+    linear-gradient(180deg, #ffffff 0%, #eef8f2 100%) !important;
+  border-color: rgba(184, 221, 202, 0.98) !important;
+}
+
+.assetManageModal .assetOptionsGrid .optionFeaturedButton:hover:not(:disabled) {
+  border-color: rgba(146, 205, 176, 0.98) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.2), transparent 43%),
+    linear-gradient(180deg, #ffffff 0%, #e5f5ec 100%) !important;
+}
+
+.assetManageModal .assetOptionsGrid .optionDangerButton {
+  color: #a33434 !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(160, 53, 53, 0.1), transparent 42%),
+    linear-gradient(180deg, #fffafa 0%, #fff2f2 100%) !important;
+  border-color: rgba(242, 191, 191, 0.98) !important;
+}
+
+.assetManageModal .assetOptionsGrid .optionDangerButton:hover:not(:disabled) {
+  border-color: rgba(224, 139, 139, 0.98) !important;
+  box-shadow:
+    0 22px 42px rgba(160, 53, 53, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.99) !important;
+}
+
+.assetManageModal .assetOptionsGrid .optionActionButton > .buttonIcon {
+  box-sizing: border-box !important;
+  grid-column: 1 !important;
+  width: clamp(3.15rem, 4.3vw, 3.8rem) !important;
+  height: clamp(3.15rem, 4.3vw, 3.8rem) !important;
+  padding: clamp(0.82rem, 1.1vw, 1rem) !important;
+  justify-self: center !important;
+  align-self: center !important;
+  color: currentColor !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(238, 245, 249, 0.98) 100%) !important;
+  border: 1px solid rgba(205, 219, 234, 0.96) !important;
+  border-radius: clamp(1rem, 1.3vw, 1.2rem) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  margin: 0 !important;
+}
+
+.assetManageModal .assetOptionsGrid .optionFeaturedButton > .buttonIcon {
+  background: linear-gradient(180deg, #f2fbf6 0%, #dff2e7 100%) !important;
+  border-color: rgba(184, 221, 202, 0.98) !important;
+}
+
+.assetManageModal .assetOptionsGrid .optionDangerButton > .buttonIcon {
+  background: linear-gradient(180deg, #fffafa 0%, #ffe8e8 100%) !important;
+  border-color: rgba(242, 191, 191, 0.98) !important;
+}
+
+.assetManageModal .assetOptionsGrid .optionActionButton > span {
+  grid-column: 2 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  display: grid !important;
+  align-content: center !important;
+  justify-items: start !important;
+  gap: 0.42rem !important;
+}
+
+.assetManageModal .assetOptionsGrid .optionActionButton strong {
+  color: #10352b !important;
+  font-size: clamp(1.16rem, 1.55vw, 1.34rem) !important;
+  font-weight: 880 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.assetManageModal .assetOptionsGrid .optionDangerButton strong {
+  color: #a33434 !important;
+}
+
+.assetManageModal .assetOptionsGrid .optionActionButton small {
+  max-width: 30rem !important;
+  color: #5f7186 !important;
+  font-size: clamp(0.92rem, 1.2vw, 1.02rem) !important;
+  font-weight: 660 !important;
+  line-height: 1.38 !important;
+}
+
+@media (max-width: 940px) {
+  .assetManageModal {
+    width: min(100%, calc(100vw - 1.25rem)) !important;
+    min-height: auto !important;
+    max-height: calc(100dvh - 1.25rem) !important;
+    padding: 1.15rem !important;
+  }
+
+  .assetManageModal .optionsScrollBody {
+    overflow-y: auto !important;
+    padding-right: 0.45rem !important;
+    margin-right: -0.3rem !important;
+  }
+
+  .assetManageModal .assetOptionsGrid {
+    grid-auto-rows: auto !important;
+  }
+
+  .assetManageModal .assetOptionsGrid .optionActionButton {
+    min-height: 7.6rem !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .assetManageModal {
+    border-radius: 1.45rem !important;
+  }
+
+  .assetManageModalHeader {
+    align-items: flex-start !important;
+  }
+
+  .assetManageModalHeader h3 {
+    font-size: clamp(1.7rem, 8vw, 2.3rem) !important;
+    letter-spacing: -0.055em !important;
+  }
+
+  .assetManageModal .assetOptionsGrid {
+    grid-template-columns: 1fr !important;
+    gap: 0.85rem !important;
+  }
+
+  .assetManageModal .assetOptionsGrid .optionActionButton {
+    min-height: 6.9rem !important;
+    grid-template-columns: 3.05rem minmax(0, 1fr) !important;
+    padding: 1rem !important;
+  }
+
+  .assetManageModal .assetOptionsGrid .optionActionButton > .buttonIcon {
+    width: 2.9rem !important;
+    height: 2.9rem !important;
+    padding: 0.76rem !important;
+  }
+}
+
+@media (max-width: 460px) {
+  .assetManageModal {
+    width: min(100%, calc(100vw - 0.7rem)) !important;
+    max-height: calc(100dvh - 0.7rem) !important;
+    padding: 0.95rem !important;
+    border-radius: 1.25rem !important;
+  }
+
+  .assetManageModalHeader {
+    gap: 0.8rem !important;
+    padding-bottom: 0.9rem !important;
+  }
+
+  .assetManageModal .modalCloseButton {
+    width: 3rem !important;
+    min-width: 3rem !important;
+    height: 3rem !important;
+    min-height: 3rem !important;
+  }
+
+  .assetManageModal .assetOptionsGrid .optionActionButton {
+    grid-template-columns: 2.7rem minmax(0, 1fr) !important;
+    min-height: 6.55rem !important;
+    gap: 0.78rem !important;
+  }
+
+  .assetManageModal .assetOptionsGrid .optionActionButton > .buttonIcon {
+    width: 2.62rem !important;
+    height: 2.62rem !important;
+    padding: 0.68rem !important;
+    border-radius: 0.9rem !important;
+  }
+}
