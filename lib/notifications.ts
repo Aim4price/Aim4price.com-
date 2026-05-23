@@ -1,4 +1,9 @@
 import { getDb } from './db';
+import {
+  contactRequesterName,
+  listContactRequestsForRequester,
+  listPendingContactRequestsForOwner,
+} from './contact-requests';
 import { listAssetRegisterItems } from './asset-register-db';
 import { listFuelLedger, type FuelLedgerEvent } from './fuel-ledger';
 import {
@@ -15,6 +20,7 @@ export type HeaderNotificationCategory =
   | 'lead'
   | 'qr_scan'
   | 'fuel'
+  | 'contact_request'
   | 'account';
 
 export type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
@@ -27,6 +33,7 @@ export type HeaderNotificationItem = {
   body: string;
   href: string;
   createdAtIso: string;
+  contactRequestId?: string;
 };
 
 type OpenPartnerNoteRow = {
@@ -257,6 +264,59 @@ async function listPartnerLeadNotifications(userId: string): Promise<HeaderNotif
   }
 }
 
+
+async function listOwnerContactRequestNotifications(userId: string): Promise<HeaderNotificationItem[]> {
+  try {
+    const requests = await listPendingContactRequestsForOwner(userId);
+
+    return requests.map((request) => {
+      const requester = contactRequesterName(request);
+
+      return {
+        id: `contact-request-owner:${request.id}:${request.updatedAtIso}`,
+        category: 'contact_request',
+        tone: 'info',
+        title: 'Contact detail request',
+        body: `${requester} wants to be in contact with you. Share contact details or deny request.`,
+        href: '/users',
+        createdAtIso: isoFallback(request.createdAtIso || request.updatedAtIso),
+        contactRequestId: request.id,
+      } satisfies HeaderNotificationItem;
+    });
+  } catch (error) {
+    console.error('Failed to load owner contact request notifications', error);
+    return [];
+  }
+}
+
+async function listPartnerContactRequestNotifications(userId: string): Promise<HeaderNotificationItem[]> {
+  try {
+    const requests = await listContactRequestsForRequester(userId);
+
+    return requests
+      .filter((request) => request.status === 'approved' || request.status === 'denied')
+      .filter((request) => isWithinDays(request.updatedAtIso, RECENT_LEAD_DAYS))
+      .map((request) => {
+        const wasApproved = request.status === 'approved';
+
+        return {
+          id: `contact-request-partner:${request.id}:${request.status}:${request.updatedAtIso}`,
+          category: 'contact_request',
+          tone: wasApproved ? 'success' : 'warning',
+          title: wasApproved ? 'Contact details unlocked' : 'Contact request denied',
+          body: wasApproved
+            ? `${request.ownerCompanyName} shared contact details with you.`
+            : `${request.ownerCompanyName} denied your contact detail request.`,
+          href: '/users',
+          createdAtIso: isoFallback(request.updatedAtIso),
+        } satisfies HeaderNotificationItem;
+      });
+  } catch (error) {
+    console.error('Failed to load partner contact request notifications', error);
+    return [];
+  }
+}
+
 async function listQrScanNotifications(userId: string): Promise<HeaderNotificationItem[]> {
   try {
     const assets = await listAssetRegisterItems(userId);
@@ -315,10 +375,14 @@ export async function listHeaderNotifications(input: ListHeaderNotificationsInpu
     ? await Promise.all([
         listOpenPartnerNoteNotifications(input.userId),
         listOwnerLeadNotifications(input.userId),
+        listOwnerContactRequestNotifications(input.userId),
         listQrScanNotifications(input.userId),
         listFuelNotifications(input.userId),
       ])
-    : await Promise.all([listPartnerLeadNotifications(input.userId)]);
+    : await Promise.all([
+        listPartnerLeadNotifications(input.userId),
+        listPartnerContactRequestNotifications(input.userId),
+      ]);
 
   return notificationGroups
     .flat()
