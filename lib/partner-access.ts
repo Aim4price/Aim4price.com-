@@ -66,6 +66,7 @@ export type AssetPartnerNote = {
   assetRegisterItemId: string;
   noteText: string;
   status: AssetPartnerNoteStatus;
+  partnerType: PartnerType | null;
   partnerName: string;
   partnerBusinessName: string;
   createdAtIso: string;
@@ -130,6 +131,7 @@ type AssetPartnerNoteRow = {
   asset_register_item_id: string;
   note_text: string | null;
   status: string | null;
+  partner_type: string | null;
   partner_display_name: string | null;
   partner_business_name: string | null;
   created_at: string | null;
@@ -528,6 +530,7 @@ function mapAssetPartnerNoteRow(row: AssetPartnerNoteRow): AssetPartnerNote {
     assetRegisterItemId: row.asset_register_item_id,
     noteText: asText(row.note_text),
     status: normalizeAssetPartnerNoteStatus(row.status),
+    partnerType: normalizePartnerType(row.partner_type),
     partnerName,
     partnerBusinessName,
     createdAtIso: isoNowFallback(row.created_at),
@@ -545,6 +548,7 @@ function assetPartnerNoteSelectSql(whereClause: string): string {
       n.asset_register_item_id::text,
       n.note_text,
       n.status,
+      partner.account_type as partner_type,
       partner.display_name as partner_display_name,
       partner.business_name as partner_business_name,
       n.created_at::text,
@@ -1007,6 +1011,7 @@ export async function createAssetLeadNote(input: {
         asset_register_item_id::text,
         note_text,
         status,
+        null::text as partner_type,
         null::text as partner_display_name,
         null::text as partner_business_name,
         created_at::text,
@@ -1023,6 +1028,7 @@ export async function createAssetLeadNote(input: {
 
   const note = mapAssetPartnerNoteRow({
     ...createdRow,
+    partner_type: profile.accountType,
     partner_display_name: profile.displayName || profile.name,
     partner_business_name: profile.businessName,
   });
