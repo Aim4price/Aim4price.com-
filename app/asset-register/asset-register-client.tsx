@@ -4862,78 +4862,6 @@ export default function AssetRegisterClient() {
       ? 'Update marketplace listing'
       : 'Send to marketplace'
     : '';
-  const summaryAssetCount = assets.length;
-  const getSummaryCoveragePercentage = (count: number) => {
-    if (!summaryAssetCount) return 0;
-    return Math.max(0, Math.min(100, Math.round((count / summaryAssetCount) * 100)));
-  };
-  const summaryValueRows = [
-    {
-      label: 'Total assets',
-      description: 'All saved assets in this register.',
-      count: summaryAssetCount,
-      value: totalValue,
-    },
-    {
-      label: 'Aim4price assets',
-      description: 'Assets valued through the Aim4price valuation flow.',
-      count: aim4priceValuedEquipmentCount,
-      value: aim4priceValuedEquipmentValue,
-    },
-    {
-      label: 'Manual assets',
-      description: 'Assets added with manually entered values.',
-      count: manualAssetStats.count,
-      value: manualAssetStats.value,
-    },
-    {
-      label: 'Assets financed',
-      description: 'Assets currently marked as financed.',
-      count: financedAssetStats.count,
-      value: financedAssetStats.value,
-    },
-    {
-      label: 'Assets insured',
-      description: 'Assets currently marked as insured.',
-      count: insuredAssetStats.count,
-      value: insuredAssetStats.value,
-    },
-    {
-      label: 'Assets licensed',
-      description: 'Assets currently marked as licensed.',
-      count: licensedAssetStats.count,
-      value: licensedAssetStats.value,
-    },
-  ];
-  const summaryStatusRows = [
-    {
-      key: 'financed',
-      label: 'Financed',
-      description: 'Assets where finance status is marked as yes.',
-      count: financedAssetStats.count,
-      percentage: getSummaryCoveragePercentage(financedAssetStats.count),
-      value: financedAssetStats.value,
-      className: styles.summaryStatusFinanced,
-    },
-    {
-      key: 'insured',
-      label: 'Insured',
-      description: 'Assets where insurance status is marked as yes.',
-      count: insuredAssetStats.count,
-      percentage: getSummaryCoveragePercentage(insuredAssetStats.count),
-      value: insuredAssetStats.value,
-      className: styles.summaryStatusInsured,
-    },
-    {
-      key: 'licensed',
-      label: 'Licensed',
-      description: 'Assets where licence status is marked as yes.',
-      count: licensedAssetStats.count,
-      percentage: getSummaryCoveragePercentage(licensedAssetStats.count),
-      value: licensedAssetStats.value,
-      className: styles.summaryStatusLicensed,
-    },
-  ];
 
   return (
     <main className={styles.page}>
@@ -5567,108 +5495,65 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={styles.summaryModalBody}>
-              <section className={styles.summaryOverviewGrid} aria-label="Register headline figures">
-                <article className={`${styles.summaryMetricCard} ${styles.summaryRegisterValueCard}`}>
-                  <span className={styles.summaryMetricLabel}>Register value</span>
-                  <strong className={styles.summaryRegisterValueAmount}>{money(totalValue)}</strong>
-                  <div className={styles.summaryMetricMeta}>
-                    <span>{money(totalValueInclVat)} incl. VAT</span>
-                    <small>Combined value of all saved assets.</small>
-                  </div>
-                </article>
-
-                <article className={styles.summaryMetricCard}>
-                  <span className={styles.summaryMetricLabel}>Total assets</span>
-                  <strong className={styles.summaryMetricValue}>{summaryAssetCount}</strong>
-                  <small>Saved assets in this register.</small>
-                </article>
-
-                <article className={styles.summaryMetricCard}>
-                  <span className={styles.summaryMetricLabel}>Aim4price valued</span>
-                  <strong className={styles.summaryMetricValue}>{aim4priceValuedEquipmentCount}</strong>
-                  <small>{money(aim4priceValuedEquipmentValue)} excl. VAT</small>
-                </article>
-
-                <article className={styles.summaryMetricCard}>
-                  <span className={styles.summaryMetricLabel}>Manual entries</span>
-                  <strong className={styles.summaryMetricValue}>{manualAssetStats.count}</strong>
-                  <small>{money(manualAssetStats.value)} excl. VAT</small>
-                </article>
-              </section>
-
-              <section className={styles.summaryStatusSection} aria-label="Register status coverage">
-                <div className={styles.summarySectionHeader}>
-                  <div>
-                    <span>Status coverage</span>
-                    <h4>Finance, insurance and licence status</h4>
-                  </div>
-                  <p>Status totals can overlap when the same asset is financed, insured and licensed.</p>
-                </div>
-
-                <div className={styles.summaryStatusDetailGrid}>
-                  {summaryStatusRows.map((row) => (
-                    <article key={row.key} className={`${styles.summaryStatusDetailCard} ${row.className}`}>
-                      <div className={styles.summaryStatusTitleRow}>
-                        <span>{row.label}</span>
-                        <strong>{row.count}</strong>
-                      </div>
-
-                      <div className={styles.summaryStatusMainValue}>
-                        <strong>{row.percentage}%</strong>
-                        <small>of register assets</small>
-                      </div>
-
-                      <div className={styles.summaryStatusProgressTrack} aria-hidden="true">
-                        <span style={{ width: `${row.percentage}%` }} />
-                      </div>
-
-                      <div className={styles.summaryStatusAmounts}>
-                        <span>
-                          <small>Excl. VAT</small>
-                          <strong>{money(row.value)}</strong>
-                        </span>
-                        <span>
-                          <small>Incl. VAT</small>
-                          <strong>{money(Math.round(row.value * 1.15))}</strong>
-                        </span>
-                      </div>
-
-                      <p>{row.description}</p>
-                    </article>
-                  ))}
-                </div>
-              </section>
-
-              <section className={styles.summaryValueTable} aria-label="Asset register value breakdown">
-                <div className={styles.summarySectionHeader}>
-                  <div>
-                    <span>Value breakdown</span>
-                    <h4>Counts and values by group</h4>
-                  </div>
-                  <p>Excl. VAT is the main register value. Incl. VAT is shown for quote and report context.</p>
+              <section className={styles.summaryValueTable} aria-label="Asset register summary">
+                <div className={`${styles.summaryValueTableRow} ${styles.summaryValueTableHeroRow}`}>
+                  <span>Register value</span>
+                  <strong>{money(totalValue)}</strong>
+                  <small>{money(totalValueInclVat)} incl. VAT</small>
                 </div>
 
                 <div className={styles.summaryValueTableHeader} aria-hidden="true">
-                  <span>Group</span>
+                  <span />
                   <span>Count</span>
                   <span>Excl. VAT</span>
                   <span>Incl. VAT</span>
                 </div>
 
                 <div className={styles.summaryValueTableRows}>
-                  {summaryValueRows.map((row) => (
-                    <div className={styles.summaryValueTableRow} key={row.label}>
-                      <div className={styles.summaryValueLabelCell}>
-                        <strong>{row.label}</strong>
-                        <small>{row.description}</small>
-                      </div>
-                      <strong className={styles.summaryValueCountCell}>{row.count}</strong>
-                      <span className={styles.summaryValueAmountCell}>{money(row.value)}</span>
-                      <span className={styles.summaryValueAmountCell}>{money(Math.round(row.value * 1.15))}</span>
-                    </div>
-                  ))}
+                  <div className={styles.summaryValueTableRow}>
+                    <span>Total assets</span>
+                    <strong>{assets.length}</strong>
+                    <small>{money(totalValue)}</small>
+                    <small>{money(totalValueInclVat)}</small>
+                  </div>
+
+                  <div className={styles.summaryValueTableRow}>
+                    <span>Aim4price assets</span>
+                    <strong>{aim4priceValuedEquipmentCount}</strong>
+                    <small>{money(aim4priceValuedEquipmentValue)}</small>
+                    <small>{money(Math.round(aim4priceValuedEquipmentValue * 1.15))}</small>
+                  </div>
+
+                  <div className={styles.summaryValueTableRow}>
+                    <span>Manual assets</span>
+                    <strong>{manualAssetStats.count}</strong>
+                    <small>{money(manualAssetStats.value)}</small>
+                    <small>{money(Math.round(manualAssetStats.value * 1.15))}</small>
+                  </div>
+
+                  <div className={styles.summaryValueTableRow}>
+                    <span>Assets financed</span>
+                    <strong>{financedAssetStats.count}</strong>
+                    <small>{money(financedAssetStats.value)}</small>
+                    <small>{money(Math.round(financedAssetStats.value * 1.15))}</small>
+                  </div>
+
+                  <div className={styles.summaryValueTableRow}>
+                    <span>Assets insured</span>
+                    <strong>{insuredAssetStats.count}</strong>
+                    <small>{money(insuredAssetStats.value)}</small>
+                    <small>{money(Math.round(insuredAssetStats.value * 1.15))}</small>
+                  </div>
+
+                  <div className={styles.summaryValueTableRow}>
+                    <span>Assets licensed</span>
+                    <strong>{licensedAssetStats.count}</strong>
+                    <small>{money(licensedAssetStats.value)}</small>
+                    <small>{money(Math.round(licensedAssetStats.value * 1.15))}</small>
+                  </div>
                 </div>
               </section>
+
             </div>
           </div>
         </div>
