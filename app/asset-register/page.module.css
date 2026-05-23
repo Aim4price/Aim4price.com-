@@ -14983,32 +14983,32 @@
   }
 }
 
-/* === Full-register summary compact refinement === */
+/* === Full-register summary readability refinement === */
 .summaryModal {
-  width: min(100%, 850px) !important;
-  max-height: calc(100dvh - 3rem) !important;
-  padding: clamp(1.2rem, 2vw, 1.55rem) !important;
+  width: min(100%, 1080px) !important;
+  max-height: calc(100dvh - 1.5rem) !important;
+  padding: clamp(1.55rem, 2.4vw, 2rem) !important;
   overflow: visible !important;
 }
 
 .summaryModalHeader {
-  margin-bottom: 0.85rem !important;
-  padding-bottom: 0.85rem !important;
+  margin-bottom: 1.05rem !important;
+  padding-bottom: 1.05rem !important;
 }
 
 .summaryModalHeader h3 {
-  font-size: clamp(1.62rem, 2.3vw, 2rem) !important;
+  font-size: clamp(1.9rem, 2.7vw, 2.45rem) !important;
 }
 
 .summaryModalHeader p {
-  max-width: 42rem !important;
-  font-size: 0.95rem !important;
-  line-height: 1.42 !important;
+  max-width: 58rem !important;
+  font-size: 1.06rem !important;
+  line-height: 1.5 !important;
 }
 
 .summaryModalBody {
   display: grid !important;
-  gap: 0.85rem !important;
+  gap: 1.08rem !important;
   overflow: visible !important;
 }
 
@@ -15128,6 +15128,7 @@
     width: min(100%, calc(100vw - 1rem)) !important;
     max-height: calc(100dvh - 1rem) !important;
     overflow-y: auto !important;
+    padding: 1.1rem !important;
   }
 
   .summaryLeadButtonRow,
@@ -15140,34 +15141,34 @@
   }
 }
 
-/* === Full-register summary: compact value table + separate lead confirmation === */
+/* === Full-register summary: larger value table + separate lead confirmation === */
 .summaryModal {
-  width: min(100%, 920px) !important;
-  max-height: calc(100dvh - 2rem) !important;
+  width: min(100%, 1080px) !important;
+  max-height: calc(100dvh - 1.5rem) !important;
   overflow: visible !important;
-  padding: clamp(1.2rem, 2vw, 1.6rem) !important;
+  padding: clamp(1.55rem, 2.4vw, 2rem) !important;
 }
 
 .summaryModalHeader {
-  margin-bottom: 0.85rem !important;
-  padding-bottom: 0.82rem !important;
+  margin-bottom: 1.05rem !important;
+  padding-bottom: 1.05rem !important;
 }
 
 .summaryModalHeader h3 {
-  font-size: clamp(1.68rem, 2.4vw, 2.08rem) !important;
+  font-size: clamp(1.9rem, 2.7vw, 2.45rem) !important;
   line-height: 1.02 !important;
 }
 
 .summaryModalHeader p {
-  max-width: 48rem !important;
-  font-size: 0.95rem !important;
-  line-height: 1.42 !important;
+  max-width: 58rem !important;
+  font-size: 1.06rem !important;
+  line-height: 1.5 !important;
 }
 
 .summaryValueTable {
   overflow: hidden;
   border: 1px solid rgba(205, 220, 231, 0.98);
-  border-radius: 1.15rem;
+  border-radius: 1.32rem;
   background:
     radial-gradient(circle at top left, rgba(23, 96, 72, 0.055), transparent 34%),
     linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
@@ -15179,22 +15180,22 @@
 .summaryValueTableHeader,
 .summaryValueTableRow {
   display: grid;
-  grid-template-columns: minmax(170px, 1.15fr) minmax(74px, 0.32fr) minmax(140px, 0.64fr) minmax(140px, 0.64fr);
+  grid-template-columns: minmax(205px, 1.18fr) minmax(92px, 0.34fr) minmax(170px, 0.64fr) minmax(170px, 0.64fr);
   align-items: center;
-  column-gap: 0.85rem;
+  column-gap: 1.15rem;
 }
 
 .summaryValueTableHeroRow {
-  min-height: 5.15rem;
+  min-height: 6.35rem;
   grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: 1rem;
-  padding: 1.05rem 1.15rem 0.95rem;
+  column-gap: 1.25rem;
+  padding: 1.35rem 1.55rem 1.22rem;
   background: linear-gradient(180deg, rgba(240, 249, 245, 0.86), rgba(255, 255, 255, 0.96));
 }
 
 .summaryValueTableHeroRow span {
   color: #65778a;
-  font-size: 0.74rem;
+  font-size: 0.82rem;
   font-weight: 900;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -15202,7 +15203,7 @@
 
 .summaryValueTableHeroRow strong {
   color: #0d3329;
-  font-size: clamp(2.1rem, 4.1vw, 3.75rem);
+  font-size: clamp(2.45rem, 4.3vw, 4.25rem);
   font-weight: 920;
   line-height: 0.92;
   letter-spacing: -0.075em;
@@ -15213,15 +15214,15 @@
 .summaryValueTableHeroRow small {
   grid-column: 2;
   color: #65748a;
-  font-size: 0.92rem;
+  font-size: 1.04rem;
   font-weight: 850;
   line-height: 1.1;
   text-align: right;
 }
 
 .summaryValueTableHeader {
-  min-height: 2.25rem;
-  padding: 0 1.15rem;
+  min-height: 2.7rem;
+  padding: 0 1.55rem;
   border-top: 1px solid rgba(216, 226, 236, 0.96);
   border-bottom: 1px solid rgba(216, 226, 236, 0.96);
   background: rgba(246, 250, 252, 0.92);
@@ -15229,7 +15230,7 @@
 
 .summaryValueTableHeader span {
   color: #728295;
-  font-size: 0.67rem;
+  font-size: 0.75rem;
   font-weight: 900;
   letter-spacing: 0.075em;
   text-transform: uppercase;
@@ -15245,8 +15246,8 @@
 }
 
 .summaryValueTableRows .summaryValueTableRow {
-  min-height: 2.75rem;
-  padding: 0.56rem 1.15rem;
+  min-height: 3.35rem;
+  padding: 0.72rem 1.55rem;
   border-bottom: 1px solid rgba(224, 232, 240, 0.98);
 }
 
@@ -15256,7 +15257,7 @@
 
 .summaryValueTableRow span {
   color: #62758a;
-  font-size: 0.74rem;
+  font-size: 0.82rem;
   font-weight: 900;
   letter-spacing: 0.065em;
   line-height: 1.12;
@@ -15265,7 +15266,7 @@
 
 .summaryValueTableRow strong {
   color: #0d3329;
-  font-size: 1.18rem;
+  font-size: 1.34rem;
   font-weight: 920;
   line-height: 1;
   text-align: right;
@@ -15273,7 +15274,7 @@
 
 .summaryValueTableRow small {
   color: #617186;
-  font-size: 0.9rem;
+  font-size: 1.02rem;
   font-weight: 850;
   line-height: 1.1;
   text-align: right;
@@ -15413,7 +15414,7 @@
   }
 
   .summaryValueTableRows .summaryValueTableRow {
-    padding: 0.75rem 1rem;
+    padding: 0.9rem 1rem;
   }
 
   .summaryLeadButtonRow,
