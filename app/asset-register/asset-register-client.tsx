@@ -6574,8 +6574,8 @@ export default function AssetRegisterClient() {
                         </span>
 
                         <span className={styles.exportOptionTitleBlock}>
-                          <strong>PDF summary</strong>
-                          <small>Choose a filtered PDF report for client, bank or insurance handover.</small>
+                          <strong>PDF report</strong>
+                          <small>Choose a clear PDF report for clients, banks or insurance partners.</small>
                         </span>
                       </button>
 
@@ -6591,7 +6591,7 @@ export default function AssetRegisterClient() {
 
                         <span className={styles.exportOptionTitleBlock}>
                           <strong>XLSX workbook</strong>
-                          <small>Download detailed register rows in an Excel-friendly workbook.</small>
+                          <small>Download all register rows in an Excel-ready workbook.</small>
                         </span>
                       </button>
                     </div>

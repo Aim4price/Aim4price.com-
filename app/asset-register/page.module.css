@@ -17055,3 +17055,119 @@
     min-width: 0 !important;
   }
 }
+
+/* === Export asset register readability refinement === */
+.exportModal {
+  width: min(100%, 960px) !important;
+  padding: clamp(1.5rem, 2.35vw, 1.95rem) !important;
+  border-radius: 2rem !important;
+}
+
+.exportModalHeader {
+  margin-bottom: 1.18rem !important;
+  padding-bottom: 1.18rem !important;
+}
+
+.exportModalHeader h3 {
+  font-size: clamp(1.86rem, 2.65vw, 2.38rem) !important;
+  line-height: 1.03 !important;
+}
+
+.exportModalBody {
+  gap: 1.12rem !important;
+}
+
+.exportChoices,
+.pdfReportChoices {
+  gap: 1rem !important;
+}
+
+.exportOption {
+  min-height: 5.9rem !important;
+  grid-template-columns: 3.8rem minmax(0, 1fr) !important;
+  gap: 1rem !important;
+  padding: 1.12rem 1.18rem !important;
+  border-radius: 1.24rem !important;
+}
+
+.exportGraphic {
+  width: 3.8rem !important;
+  min-width: 3.8rem !important;
+  height: 3.8rem !important;
+}
+
+.exportGraphicImage,
+.exportGraphicFallback,
+.exportOptionIcon {
+  width: 2.38rem !important;
+  height: 2.38rem !important;
+}
+
+.exportOptionTitleBlock,
+.pdfReportOptionMain {
+  gap: 0.3rem !important;
+}
+
+.exportOptionTitleBlock strong,
+.pdfReportOptionMain strong {
+  font-size: 1.08rem !important;
+  line-height: 1.2 !important;
+}
+
+.exportOptionTitleBlock small,
+.pdfReportOptionMain small {
+  font-size: 0.93rem !important;
+  line-height: 1.45 !important;
+}
+
+.pdfReportOption {
+  min-height: 5.9rem !important;
+  padding: 1.12rem 1.18rem !important;
+  border-radius: 1.24rem !important;
+}
+
+.exportActions {
+  gap: 0.8rem !important;
+  margin-top: 0.12rem !important;
+}
+
+.exportActions .primaryButton,
+.exportActions .secondaryButton {
+  min-height: 3.35rem !important;
+  padding-inline: 1.28rem !important;
+  font-size: 1rem !important;
+}
+
+.exportActions .primaryButton {
+  min-width: 13.5rem !important;
+}
+
+@media (max-width: 900px) {
+  .exportModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    padding: 1rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .exportModalHeader {
+    margin-bottom: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .exportModalHeader h3 {
+    font-size: 1.58rem !important;
+  }
+
+  .exportOption,
+  .pdfReportOption {
+    min-height: auto !important;
+    padding: 1rem !important;
+    border-radius: 1.12rem !important;
+  }
+
+  .exportActions .primaryButton,
+  .exportActions .secondaryButton {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
