@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import styles from './AppHeader.module.css';
 
-type ActivePage = 'home' | 'valuation' | 'asset-register' | 'leads' | 'marketplace' | 'none';
+type ActivePage = 'home' | 'valuation' | 'asset-register' | 'leads' | 'users' | 'marketplace' | 'none';
 
 type AppHeaderProps = {
   active: ActivePage;
@@ -35,7 +35,7 @@ type SessionResponse = {
   } | null;
 };
 
-type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'account';
+type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'contact_request' | 'account';
 
 type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 
@@ -47,6 +47,7 @@ type HeaderNotificationItem = {
   body: string;
   href: string;
   createdAtIso: string;
+  contactRequestId?: string;
 };
 
 type NotificationsResponse = {
@@ -74,6 +75,7 @@ function buildNavItems(accountType: AccountType | null): NavItem[] {
     return [
       ...BASE_NAV_ITEMS,
       { key: 'leads', href: '/leads', label: 'Leads' },
+      { key: 'users', href: '/users', label: 'Users' },
     ];
   }
 
@@ -81,6 +83,7 @@ function buildNavItems(accountType: AccountType | null): NavItem[] {
     return [
       ...BASE_NAV_ITEMS,
       { key: 'leads', href: '/leads', label: 'Leads' },
+      { key: 'users', href: '/users', label: 'Users' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
     ];
   }
@@ -185,6 +188,7 @@ export default function AppHeader({
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const [notifications, setNotifications] = useState<HeaderNotificationItem[]>([]);
   const [notificationsSeenAt, setNotificationsSeenAt] = useState<string | null>(null);
+  const [processingContactRequestIds, setProcessingContactRequestIds] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     let mounted = true;
@@ -340,6 +344,37 @@ export default function AppHeader({
     setNotificationOpen(false);
   }
 
+  async function handleContactRequestDecision(contactRequestId: string, status: 'approved' | 'denied') {
+    setProcessingContactRequestIds((current) => new Set(current).add(contactRequestId));
+
+    try {
+      const response = await fetch(`/api/users/contact-requests/${encodeURIComponent(contactRequestId)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
+      const data = (await response.json()) as { ok?: boolean; error?: string };
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || 'Failed to update contact request.');
+      }
+
+      setNotifications((current) => current.filter((item) => item.contactRequestId !== contactRequestId));
+      markNotificationsSeen();
+    } catch (error) {
+      console.error('Failed to update contact request notification', error);
+    } finally {
+      setProcessingContactRequestIds((current) => {
+        const next = new Set(current);
+        next.delete(contactRequestId);
+        return next;
+      });
+    }
+  }
+
   async function handleSignOut() {
     try {
       setIsSigningOut(true);
@@ -432,7 +467,7 @@ export default function AppHeader({
                           <strong className={styles.notificationTitle}>Notifications</strong>
                           <span className={styles.notificationSubtitle}>
                             {isOwnerAccount
-                              ? 'Messages, notes, QR scans and fuel updates.'
+                              ? 'Messages, notes, contact requests, QR scans and fuel updates.'
                               : 'New lead opportunities and account requests.'}
                           </span>
                         </div>
@@ -450,19 +485,52 @@ export default function AppHeader({
                           <div className={styles.notificationEmpty}>Loading notifications...</div>
                         ) : notifications.length ? (
                           notifications.map((notification) => (
-                            <Link
-                              key={notification.id}
-                              href={notification.href}
-                              className={`${styles.notificationItem} ${styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`]}`}
-                              onClick={handleNotificationLinkClick}
-                            >
-                              <span className={styles.notificationDot} aria-hidden="true" />
-                              <span className={styles.notificationCopy}>
-                                <strong>{notification.title}</strong>
-                                <span>{notification.body}</span>
-                                <small>{formatNotificationTime(notification.createdAtIso)}</small>
-                              </span>
-                            </Link>
+                            notification.category === 'contact_request' && notification.contactRequestId ? (
+                              <div
+                                key={notification.id}
+                                className={`${styles.notificationItem} ${styles.notificationItemActionable} ${styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`]}`}
+                                role="menuitem"
+                              >
+                                <span className={styles.notificationDot} aria-hidden="true" />
+                                <span className={styles.notificationCopy}>
+                                  <strong>{notification.title}</strong>
+                                  <span>{notification.body}</span>
+                                  <small>{formatNotificationTime(notification.createdAtIso)}</small>
+                                  <span className={styles.notificationActionRow}>
+                                    <button
+                                      type="button"
+                                      className={styles.notificationApproveButton}
+                                      onClick={() => handleContactRequestDecision(notification.contactRequestId as string, 'approved')}
+                                      disabled={processingContactRequestIds.has(notification.contactRequestId)}
+                                    >
+                                      Share contact details
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={styles.notificationDenyButton}
+                                      onClick={() => handleContactRequestDecision(notification.contactRequestId as string, 'denied')}
+                                      disabled={processingContactRequestIds.has(notification.contactRequestId)}
+                                    >
+                                      Deny request
+                                    </button>
+                                  </span>
+                                </span>
+                              </div>
+                            ) : (
+                              <Link
+                                key={notification.id}
+                                href={notification.href}
+                                className={`${styles.notificationItem} ${styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`]}`}
+                                onClick={handleNotificationLinkClick}
+                              >
+                                <span className={styles.notificationDot} aria-hidden="true" />
+                                <span className={styles.notificationCopy}>
+                                  <strong>{notification.title}</strong>
+                                  <span>{notification.body}</span>
+                                  <small>{formatNotificationTime(notification.createdAtIso)}</small>
+                                </span>
+                              </Link>
+                            )
                           ))
                         ) : (
                           <div className={styles.notificationEmpty}>

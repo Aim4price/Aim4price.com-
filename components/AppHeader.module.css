@@ -674,3 +674,66 @@
     justify-self: start;
   }
 }
+
+.notificationItemActionable {
+  cursor: default;
+}
+
+.notificationItemActionable:hover {
+  transform: none;
+}
+
+.notificationActionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.38rem;
+}
+
+.notificationApproveButton,
+.notificationDenyButton {
+  min-height: 2.2rem;
+  padding: 0 0.7rem;
+  border-radius: 0.72rem;
+  font-size: 0.74rem;
+  font-weight: 850;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.notificationApproveButton {
+  color: #ffffff;
+  border: 1px solid rgba(15, 104, 79, 0.95);
+  background: linear-gradient(180deg, #1a8664 0%, #0f684f 100%);
+  box-shadow: 0 8px 16px rgba(15, 104, 79, 0.16);
+}
+
+.notificationDenyButton {
+  color: #8a1f1f;
+  border: 1px solid rgba(138, 31, 31, 0.18);
+  background: #fff7f7;
+}
+
+.notificationApproveButton:hover,
+.notificationDenyButton:hover {
+  transform: translateY(-1px);
+}
+
+.notificationApproveButton:disabled,
+.notificationDenyButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+  box-shadow: none;
+}
+
+.notificationApproveButton:focus-visible,
+.notificationDenyButton:focus-visible {
+  outline: 3px solid rgba(23, 77, 62, 0.18);
+  outline-offset: 3px;
+}
