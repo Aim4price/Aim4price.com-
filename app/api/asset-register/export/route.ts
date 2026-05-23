@@ -628,8 +628,7 @@ function buildWorkbookSheet(definition: SheetDefinition, profile: AccountProfile
   };
 }
 
-function buildWorkbookSheets(items: AssetRegisterItem[], profile: AccountProfileResult | null): XlsxSheet[] {
-  const generatedAt = new Date();
+function buildWorkbookSheets(items: AssetRegisterItem[], profile: AccountProfileResult | null, generatedAt = new Date()): XlsxSheet[] {
   const uniqueItems = dedupeAssetItems(items);
   const definitions: SheetDefinition[] = [
     {
@@ -679,6 +678,365 @@ function buildWorkbookSheets(items: AssetRegisterItem[], profile: AccountProfile
   return definitions.map((definition) => buildWorkbookSheet(definition, profile, generatedAt));
 }
 
+
+const PDF_PAGE_WIDTH = 595.28;
+const PDF_PAGE_HEIGHT = 841.89;
+const PDF_MARGIN = 42;
+const PDF_BOTTOM_MARGIN = 44;
+
+type PdfFontKey = 'F1' | 'F2';
+
+type PdfBuildState = {
+  pages: string[][];
+  y: number;
+};
+
+function formatPdfDate(value: Date): string {
+  return value.toLocaleDateString('en-ZA', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+  });
+}
+
+function formatPdfMoney(value: unknown): string {
+  const numeric = numericValue(value) ?? 0;
+  const rounded = Math.round(numeric);
+  const formatted = Math.abs(rounded).toLocaleString('en-ZA').replace(/,/g, ' ');
+  return `${rounded < 0 ? '-' : ''}R ${formatted}`;
+}
+
+function pdfFileSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'asset-register';
+}
+
+function sanitizePdfText(value: unknown): string {
+  return String(value ?? '')
+    .replace(/[\r\n\t]+/g, ' ')
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[–—]/g, '-')
+    .replace(/•/g, '-')
+    .replace(/[^\x20-\x7E]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function escapePdfText(value: unknown): string {
+  return sanitizePdfText(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
+}
+
+function pdfNumber(value: number): string {
+  return Number.isFinite(value) ? value.toFixed(2).replace(/\.00$/, '') : '0';
+}
+
+function currentPdfPage(state: PdfBuildState): string[] {
+  if (!state.pages.length) {
+    state.pages.push([]);
+  }
+
+  return state.pages[state.pages.length - 1];
+}
+
+function addPdfPage(state: PdfBuildState, continued = false) {
+  state.pages.push([]);
+  state.y = PDF_PAGE_HEIGHT - PDF_MARGIN;
+
+  if (continued) {
+    drawPdfText(state, 'Full Asset Register continued', PDF_MARGIN, state.y, 12, 'F2');
+    drawPdfText(state, 'Aim4price asset register PDF', PDF_PAGE_WIDTH - PDF_MARGIN - 160, state.y, 9, 'F1');
+    state.y -= 22;
+    drawPdfRule(state, state.y);
+    state.y -= 18;
+  }
+}
+
+function drawPdfText(state: PdfBuildState, text: unknown, x: number, y: number, size = 10, font: PdfFontKey = 'F1') {
+  currentPdfPage(state).push(`BT /${font} ${pdfNumber(size)} Tf ${pdfNumber(x)} ${pdfNumber(y)} Td (${escapePdfText(text)}) Tj ET`);
+}
+
+function drawPdfRule(state: PdfBuildState, y: number) {
+  currentPdfPage(state).push(`q 0.78 0.82 0.86 RG 0.7 w ${pdfNumber(PDF_MARGIN)} ${pdfNumber(y)} m ${pdfNumber(PDF_PAGE_WIDTH - PDF_MARGIN)} ${pdfNumber(y)} l S Q`);
+}
+
+function drawPdfRect(state: PdfBuildState, x: number, y: number, width: number, height: number, fill = '0.96 0.98 0.97') {
+  currentPdfPage(state).push(`q ${fill} rg ${pdfNumber(x)} ${pdfNumber(y)} ${pdfNumber(width)} ${pdfNumber(height)} re f Q`);
+  currentPdfPage(state).push(`q 0.80 0.87 0.83 RG 0.6 w ${pdfNumber(x)} ${pdfNumber(y)} ${pdfNumber(width)} ${pdfNumber(height)} re S Q`);
+}
+
+function ensurePdfSpace(state: PdfBuildState, requiredHeight: number) {
+  if (state.y - requiredHeight < PDF_BOTTOM_MARGIN) {
+    addPdfPage(state, true);
+  }
+}
+
+function wrapPdfText(text: unknown, maxChars: number): string[] {
+  const words = sanitizePdfText(text).split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = '';
+
+  words.forEach((word) => {
+    if (word.length > maxChars) {
+      if (current) {
+        lines.push(current);
+        current = '';
+      }
+
+      for (let index = 0; index < word.length; index += maxChars) {
+        lines.push(word.slice(index, index + maxChars));
+      }
+      return;
+    }
+
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length > maxChars && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+  });
+
+  if (current) {
+    lines.push(current);
+  }
+
+  return lines.length ? lines : ['-'];
+}
+
+function drawPdfWrappedText(state: PdfBuildState, text: unknown, x: number, maxWidth: number, size = 10, font: PdfFontKey = 'F1', lineHeight = 13): number {
+  const maxChars = Math.max(16, Math.floor(maxWidth / (size * 0.54)));
+  const lines = wrapPdfText(text, maxChars);
+
+  lines.forEach((line) => {
+    drawPdfText(state, line, x, state.y, size, font);
+    state.y -= lineHeight;
+  });
+
+  return lines.length;
+}
+
+function drawPdfWrappedTextAt(state: PdfBuildState, text: unknown, x: number, y: number, maxWidth: number, size = 10, font: PdfFontKey = 'F1', lineHeight = 13): number {
+  const maxChars = Math.max(16, Math.floor(maxWidth / (size * 0.54)));
+  const lines = wrapPdfText(text, maxChars);
+
+  lines.forEach((line, index) => {
+    drawPdfText(state, line, x, y - index * lineHeight, size, font);
+  });
+
+  return lines.length;
+}
+
+function usagePdfLabel(item: AssetRegisterItem): string {
+  const usage = usageDisplay(item);
+
+  if (usage.value === null) {
+    return usage.unit === 'percentage' ? 'N/A %' : 'N/A';
+  }
+
+  if (usage.unit === 'percentage') return `${usage.value}%`;
+  if (usage.unit === 'km') return `${usage.value.toLocaleString('en-ZA')} km`;
+  if (usage.unit === 'hours') return `${usage.value.toLocaleString('en-ZA')} hours`;
+  return String(usage.value);
+}
+
+function statusPdfLabel(status: AssetStatusChoice, positiveLabel: string, negativeLabel: string): string {
+  const normalized = normalizeAssetStatusChoice(status);
+
+  if (normalized === 'yes') return positiveLabel;
+  if (normalized === 'no') return negativeLabel;
+  if (normalized === 'not_applicable') return 'N/A';
+  return 'Unknown';
+}
+
+function assetModelPdfLabel(item: AssetRegisterItem): string {
+  return [item.brandName, item.modelName || item.typedModelName]
+    .map((part) => cleanText(part))
+    .filter(Boolean)
+    .join(' ') || 'N/A';
+}
+
+function drawPdfKeyValue(state: PdfBuildState, label: string, value: string, x: number, y: number, width: number) {
+  drawPdfText(state, label.toUpperCase(), x, y, 7.6, 'F2');
+  const lines = wrapPdfText(value, Math.max(12, Math.floor(width / 5.2)));
+  drawPdfText(state, lines[0] ?? '-', x, y - 13, 11, 'F2');
+  if (lines[1]) {
+    drawPdfText(state, lines[1], x, y - 26, 8.5, 'F1');
+  }
+}
+
+function drawPdfSummaryCard(state: PdfBuildState, label: string, value: string, x: number, y: number, width: number) {
+  drawPdfRect(state, x, y - 48, width, 48, '0.97 0.99 0.98');
+  drawPdfText(state, label.toUpperCase(), x + 11, y - 17, 7.5, 'F2');
+  drawPdfText(state, value, x + 11, y - 34, 13, 'F2');
+}
+
+function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ text: string; font: PdfFontKey; size: number }> {
+  const financeStatus = statusPdfLabel(readFinanceStatusChoice(item), 'Financed', 'Not financed');
+  const insuranceStatus = statusPdfLabel(readInsuranceStatusChoice(item), 'Insured', 'Not insured');
+  const licenseStatus = statusPdfLabel(readLicenseStatusChoice(item), 'Licensed', 'Not licensed');
+  const registration = readLicenseRegistrationNumber(item);
+  const year = item.yearModel ? String(item.yearModel) : 'N/A';
+  const condition = conditionLabel(item.condition) || 'N/A';
+  const serial = cleanText(item.serialNumber) || 'N/A';
+  const docs = Array.isArray(item.documents) ? item.documents.length : 0;
+
+  return [
+    { text: `${index + 1}. ${cleanText(item.title) || 'Asset'}`, font: 'F2', size: 11.2 },
+    { text: `${kindLabel(item)} | ${assetModelPdfLabel(item)} | Year: ${year} | Usage: ${usagePdfLabel(item)} | Condition: ${condition}`, font: 'F1', size: 9.2 },
+    { text: `Serial/VIN: ${serial} | Finance: ${financeStatus} | Insurance: ${insuranceStatus} | License: ${licenseStatus}${registration ? ` (${registration})` : ''}`, font: 'F1', size: 9.2 },
+    { text: `Register value: ${formatPdfMoney(item.value)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
+  ];
+}
+
+function drawPdfAssetBlock(state: PdfBuildState, item: AssetRegisterItem, index: number) {
+  const contentWidth = PDF_PAGE_WIDTH - PDF_MARGIN * 2 - 22;
+  const rawLines = buildPdfAssetLines(item, index);
+  const measuredLineCount = rawLines.reduce((count, line) => {
+    const maxChars = Math.max(18, Math.floor(contentWidth / (line.size * 0.54)));
+    return count + wrapPdfText(line.text, maxChars).length;
+  }, 0);
+  const blockHeight = 22 + measuredLineCount * 12.4;
+
+  ensurePdfSpace(state, blockHeight + 10);
+
+  const topY = state.y;
+  drawPdfRect(state, PDF_MARGIN, topY - blockHeight, PDF_PAGE_WIDTH - PDF_MARGIN * 2, blockHeight, index % 2 === 0 ? '0.985 0.992 0.988' : '0.965 0.981 0.974');
+  state.y -= 17;
+
+  rawLines.forEach((line) => {
+    drawPdfWrappedText(state, line.text, PDF_MARGIN + 12, contentWidth, line.size, line.font, 12.4);
+  });
+
+  state.y = topY - blockHeight - 9;
+}
+
+function buildFullRegisterPdf(items: AssetRegisterItem[], profile: AccountProfileResult | null, generatedAt = new Date()): Buffer {
+  const state: PdfBuildState = { pages: [], y: 0 };
+  const uniqueItems = dedupeAssetItems(items);
+  const ownerName = buildOwnerName(profile);
+  const ownerAddress = buildOwnerAddress(profile) || 'N/A';
+  const ownerEmail = cleanText(profile?.email) || 'N/A';
+  const ownerPhone = cleanText(profile?.phone) || 'N/A';
+  const registerValue = registerValueTotal(uniqueItems);
+  const registerValueInclVat = registerValueInclVatTotal(uniqueItems);
+
+  addPdfPage(state, false);
+
+  drawPdfText(state, 'Aim4price', PDF_MARGIN, state.y, 13, 'F2');
+  drawPdfText(state, 'Full Asset Register PDF', PDF_MARGIN, state.y - 28, 24, 'F2');
+  drawPdfText(state, `Generated ${formatPdfDate(generatedAt)}`, PDF_PAGE_WIDTH - PDF_MARGIN - 145, state.y, 9, 'F1');
+  state.y -= 56;
+  drawPdfRule(state, state.y);
+  state.y -= 24;
+
+  const heroTop = state.y;
+  drawPdfRect(state, PDF_MARGIN, heroTop - 88, PDF_PAGE_WIDTH - PDF_MARGIN * 2, 88, '0.955 0.980 0.970');
+  drawPdfText(state, 'ASSET OWNER', PDF_MARGIN + 14, heroTop - 22, 8, 'F2');
+  const ownerLineCount = drawPdfWrappedTextAt(state, ownerName, PDF_MARGIN + 14, heroTop - 43, 300, 17, 'F2', 19);
+  drawPdfWrappedTextAt(state, ownerAddress, PDF_MARGIN + 14, heroTop - 45 - ownerLineCount * 18, 300, 8.8, 'F1', 11);
+  drawPdfText(state, 'REGISTER VALUE', PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 22, 8, 'F2');
+  drawPdfText(state, `${formatPdfMoney(registerValue)} excl. VAT`, PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 43, 13, 'F2');
+  drawPdfText(state, `${formatPdfMoney(registerValueInclVat)} incl. VAT`, PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 58, 9, 'F1');
+  state.y = heroTop - 108;
+
+  const cardGap = 8;
+  const cardWidth = (PDF_PAGE_WIDTH - PDF_MARGIN * 2 - cardGap * 2) / 3;
+  drawPdfSummaryCard(state, 'Assets', String(uniqueItems.length), PDF_MARGIN, state.y, cardWidth);
+  drawPdfSummaryCard(state, 'Financed', String(countFinanced(uniqueItems)), PDF_MARGIN + cardWidth + cardGap, state.y, cardWidth);
+  drawPdfSummaryCard(state, 'Insured', String(countInsured(uniqueItems)), PDF_MARGIN + (cardWidth + cardGap) * 2, state.y, cardWidth);
+  state.y -= 66;
+
+  drawPdfText(state, 'Owner details', PDF_MARGIN, state.y, 13, 'F2');
+  state.y -= 18;
+  const detailsTop = state.y;
+  drawPdfRect(state, PDF_MARGIN, detailsTop - 52, PDF_PAGE_WIDTH - PDF_MARGIN * 2, 52, '0.98 0.99 1.00');
+  drawPdfKeyValue(state, 'Email', ownerEmail, PDF_MARGIN + 12, detailsTop - 14, 176);
+  drawPdfKeyValue(state, 'Phone', ownerPhone, PDF_MARGIN + 205, detailsTop - 14, 126);
+  drawPdfKeyValue(state, 'Licensed assets', String(countLicensed(uniqueItems)), PDF_MARGIN + 350, detailsTop - 14, 130);
+  state.y -= 74;
+
+  drawPdfText(state, 'Asset list', PDF_MARGIN, state.y, 14, 'F2');
+  state.y -= 18;
+
+  if (uniqueItems.length) {
+    uniqueItems.forEach((item, index) => drawPdfAssetBlock(state, item, index));
+  } else {
+    drawPdfText(state, 'No assets were saved in this register at export time.', PDF_MARGIN, state.y, 10, 'F1');
+    state.y -= 18;
+  }
+
+  ensurePdfSpace(state, 72);
+  drawPdfRule(state, state.y);
+  state.y -= 18;
+  drawPdfWrappedText(
+    state,
+    'Values are indicative estimates based on saved Aim4price asset-register information and available pricing inputs. Values exclude VAT unless stated otherwise. This is not a certified valuation, inspection report or guarantee of selling price. Final values remain subject to physical inspection, documents, attachments, condition, location and live market demand.',
+    PDF_MARGIN,
+    PDF_PAGE_WIDTH - PDF_MARGIN * 2,
+    8.2,
+    'F1',
+    10.8,
+  );
+
+  state.pages.forEach((page, index) => {
+    page.push(`BT /F1 8 Tf ${pdfNumber(PDF_MARGIN)} ${pdfNumber(24)} Td (${escapePdfText('Powered by Aim4price.com')}) Tj ET`);
+    page.push(`BT /F1 8 Tf ${pdfNumber(PDF_PAGE_WIDTH - PDF_MARGIN - 62)} ${pdfNumber(24)} Td (${escapePdfText(`Page ${index + 1} of ${state.pages.length}`)}) Tj ET`);
+  });
+
+  return createPdfBuffer(state.pages.map((commands) => commands.join('\n')));
+}
+
+function createPdfBuffer(pageContents: string[]): Buffer {
+  const objects: string[] = [];
+  const addObject = (body: string) => {
+    objects.push(body);
+    return objects.length;
+  };
+
+  const catalogId = addObject('');
+  const pagesId = addObject('');
+  const regularFontId = addObject('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  const boldFontId = addObject('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+  const pageIds: number[] = [];
+
+  pageContents.forEach((content) => {
+    const contentLength = Buffer.byteLength(content, 'utf8');
+    const contentId = addObject(`<< /Length ${contentLength} >>\nstream\n${content}\nendstream`);
+    const pageId = addObject(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${PDF_PAGE_WIDTH} ${PDF_PAGE_HEIGHT}] /Resources << /Font << /F1 ${regularFontId} 0 R /F2 ${boldFontId} 0 R >> >> /Contents ${contentId} 0 R >>`);
+    pageIds.push(pageId);
+  });
+
+  objects[catalogId - 1] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+  objects[pagesId - 1] = `<< /Type /Pages /Kids [${pageIds.map((pageId) => `${pageId} 0 R`).join(' ')}] /Count ${pageIds.length} >>`;
+
+  const chunks: string[] = ['%PDF-1.4\n'];
+  const offsets: number[] = [0];
+  let position = Buffer.byteLength(chunks[0], 'utf8');
+
+  objects.forEach((body, index) => {
+    const objectText = `${index + 1} 0 obj\n${body}\nendobj\n`;
+    offsets.push(position);
+    chunks.push(objectText);
+    position += Buffer.byteLength(objectText, 'utf8');
+  });
+
+  const xrefOffset = position;
+  const xrefRows = offsets
+    .map((offset, index) => (index === 0 ? '0000000000 65535 f ' : `${String(offset).padStart(10, '0')} 00000 n `))
+    .join('\n');
+  const trailer = `xref\n0 ${objects.length + 1}\n${xrefRows}\ntrailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+  chunks.push(trailer);
+  return Buffer.from(chunks.join(''), 'utf8');
+}
+
 export async function GET(request: NextRequest) {
   const session = await getServerSession();
 
@@ -688,9 +1046,9 @@ export async function GET(request: NextRequest) {
 
   const params = new URL(request.url).searchParams;
   const format = params.get('format');
-  if (format !== 'xlsx') {
+  if (format !== 'xlsx' && format !== 'pdf') {
     return NextResponse.json(
-      { ok: false, error: 'Only XLSX export is available on this endpoint.' },
+      { ok: false, error: 'Only PDF and XLSX exports are available on this endpoint.' },
       { status: 400 },
     );
   }
@@ -707,9 +1065,31 @@ export async function GET(request: NextRequest) {
     }
 
     const items = await listAssetRegisterItems(session.user.id);
+    const generatedAt = new Date();
+    const filenameDate = generatedAt.toISOString().slice(0, 10);
 
-    const workbook = createXlsxWorkbook(buildWorkbookSheets(items, profile));
-    const filenameDate = new Date().toISOString().slice(0, 10);
+    if (format === 'pdf') {
+      const reportKind = params.get('reportKind') || 'full';
+      if (reportKind !== 'full') {
+        return NextResponse.json({ ok: false, error: 'Only the full Asset Register PDF is available from this endpoint.' }, { status: 400 });
+      }
+
+      const pdf = buildFullRegisterPdf(items, profile, generatedAt);
+      const ownerSlug = pdfFileSlug(buildOwnerName(profile));
+      const fileName = `aim4price-full-asset-register-${ownerSlug}-${filenameDate}.pdf`;
+
+      return new NextResponse(pdf, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${fileName}"`,
+          'Content-Length': String(pdf.length),
+          'Cache-Control': 'no-store',
+        },
+      });
+    }
+
+    const workbook = createXlsxWorkbook(buildWorkbookSheets(items, profile, generatedAt));
     const fileName = `aim4price-full-asset-register-${filenameDate}.xlsx`;
 
     return new NextResponse(workbook, {
