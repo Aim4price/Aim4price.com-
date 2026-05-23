@@ -5331,7 +5331,7 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalHeader} ${styles.summaryLeadModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-register-share-title">Share full Asset Register</h3>
-                <p>Send the complete register as a once-off lead to a finance or insurance partner.</p>
+                <p>Send the complete register as a once-off to a finance or insurance partner.</p>
               </div>
 
               <button
@@ -5356,7 +5356,7 @@ export default function AssetRegisterClient() {
                   <BankIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Get refinance quote</strong>
-                    <small>Send a once-off full-register lead to a finance partner.</small>
+                    <small>Send a once-off full-register to a finance partner.</small>
                   </span>
                 </button>
 
@@ -5369,7 +5369,7 @@ export default function AssetRegisterClient() {
                   <ShieldIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Get insurance quote</strong>
-                    <small>Send a once-off full-register lead to an insurance partner.</small>
+                    <small>Send a once-off full-register to an insurance partner.</small>
                   </span>
                 </button>
               </div>

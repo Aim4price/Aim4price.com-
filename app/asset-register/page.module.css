@@ -16359,16 +16359,17 @@
 }
 
 .registerShareOptionCard small {
-  max-width: 25rem !important;
+  max-width: none !important;
   color: #627386;
   font-size: 0.94rem !important;
   font-weight: 620 !important;
   line-height: 1.42 !important;
+  white-space: nowrap !important;
 }
 
 @media (max-width: 980px) {
   .registerShareModal .summaryLeadModalHeader p {
-    white-space: normal !important;
+    white-space: nowrap !important;
   }
 }
 
