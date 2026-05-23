@@ -17637,3 +17637,45 @@
     min-width: 280px !important;
   }
 }
+/* === Asset Register summary divider alignment ===
+   Keeps the footer divider line in Register value, Aim4price valued equipment,
+   and Total assets on the same horizontal baseline. */
+.heroSummaryTile {
+  grid-template-rows: auto minmax(0, 1fr) 3.2rem !important;
+  align-content: stretch !important;
+}
+
+.heroSummaryFooter {
+  box-sizing: border-box !important;
+  height: 3.2rem !important;
+  min-height: 3.2rem !important;
+  flex: 0 0 3.2rem !important;
+  align-self: stretch !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  padding-top: 0.88rem !important;
+  margin-top: 0 !important;
+  border-top: 1px solid rgba(209, 221, 231, 0.95) !important;
+}
+
+.heroVatFooter,
+.heroTotalFooter {
+  align-items: flex-start !important;
+}
+
+.heroVatFooter .vatToggleGroup {
+  margin-top: 0 !important;
+}
+
+@media (max-width: 760px) {
+  .heroSummaryTile {
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+  }
+
+  .heroSummaryFooter {
+    height: auto !important;
+    min-height: 2.6rem !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+  }
+}
