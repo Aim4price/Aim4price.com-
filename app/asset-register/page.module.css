@@ -16563,3 +16563,49 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* === Filter dropdown sizing refinement === */
+.registerHeader .assetFilterWrap {
+  overflow: visible !important;
+}
+
+.registerHeader .headerActions .filterTriggerButton {
+  min-height: clamp(3.62rem, 4.45vw, 4.08rem) !important;
+  padding-inline: clamp(1.15rem, 2vw, 1.6rem) !important;
+  font-size: clamp(1.04rem, 1.22vw, 1.14rem) !important;
+}
+
+.registerHeader .assetFilterMenu {
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: none !important;
+  padding: 0.64rem !important;
+  gap: 0.34rem !important;
+  border-radius: 1.2rem !important;
+}
+
+.registerHeader .assetFilterMenuButton {
+  min-height: 3.08rem !important;
+  padding: 0 1rem !important;
+  border-radius: 0.96rem !important;
+  font-size: clamp(1rem, 1.08vw, 1.08rem) !important;
+  font-weight: 850 !important;
+}
+
+.registerHeader .assetFilterMenuTick {
+  width: 1.56rem !important;
+  height: 1.56rem !important;
+  font-size: 0.86rem !important;
+}
+
+@media (max-width: 640px) {
+  .registerHeader .headerActions .filterTriggerButton {
+    min-height: 3.5rem !important;
+  }
+
+  .registerHeader .assetFilterMenuButton {
+    min-height: 3rem !important;
+  }
+}
