@@ -6731,13 +6731,13 @@ export default function AssetRegisterClient() {
                     </div>
 
                     <div className={`${styles.formActions} ${styles.exportActions}`}>
+                      <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
+                        Cancel
+                      </button>
+
                       <button type="button" className={styles.primaryButton} onClick={handleConfirmExport} disabled={isExporting}>
                         {exportFormat === 'pdf' ? <ChevronRightIcon className={styles.buttonIcon} /> : <DownloadIcon className={styles.buttonIcon} />}
                         <span>{exportFormat === 'pdf' ? 'Next' : isExporting ? 'Preparing export...' : 'Download XLSX'}</span>
-                      </button>
-
-                      <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
-                        Cancel
                       </button>
                     </div>
                   </>
