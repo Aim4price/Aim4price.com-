@@ -5415,19 +5415,6 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.summaryLeadModalBody} ${styles.registerShareModalBody}`}>
-              <div className={styles.summaryLeadModalNotice}>
-                <strong>Full Asset Register PDF</strong>
-                <p>
-                  The PDF uses the complete saved register: {assets.length} {assets.length === 1 ? 'asset' : 'assets'} with a register value of {money(totalValue)} excl. VAT.
-                </p>
-              </div>
-
-              <div className={styles.summaryLeadModalStats} aria-label="Full register snapshot totals">
-                <span>{assets.length} {assets.length === 1 ? 'asset' : 'assets'}</span>
-                <span>{money(totalValue)} excl. VAT</span>
-                <span>{money(totalValueInclVat)} incl. VAT</span>
-              </div>
-
               <div className={styles.registerShareOptionGrid}>
                 <button
                   type="button"
