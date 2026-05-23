@@ -2315,17 +2315,17 @@ function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry, markerNumber
   const tone = quoteStyleForPartnerType(partner.partnerType);
 
   return `
-    <div style="min-width: 238px; font-family: Montserrat, Inter, Arial, sans-serif; color: #122f2a;">
-      <div style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:28px; padding:0 8px; border-radius:999px; color:#fff; background:${tone.primary}; box-shadow:0 10px 20px ${tone.shadow}; font-size:12px; font-weight:900; margin-bottom:9px;">${markerNumber}</div>
-      <div style="font-weight: 850; font-size: 16px; line-height: 1.15; margin-bottom: 6px; letter-spacing: -0.03em;">${name}</div>
-      <div style="display:inline-flex; align-items:center; justify-content:center; padding:4px 8px; border-radius:999px; color:${tone.text}; background:${tone.soft}; border:1px solid ${tone.border}; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:9px;">${type}</div>
-      <div style="display:grid; gap:6px; font-size:12px; color:#53666b;">
+    <div style="min-width: 340px; max-width: 430px; font-family: Montserrat, Inter, Arial, sans-serif; color: #122f2a;">
+      <div style="display:inline-flex; align-items:center; justify-content:center; min-width:36px; height:36px; padding:0 11px; border-radius:999px; color:#fff; background:${tone.primary}; box-shadow:0 12px 24px ${tone.shadow}; font-size:15px; font-weight:900; margin-bottom:14px;">${markerNumber}</div>
+      <div style="font-weight: 900; font-size: 20px; line-height: 1.12; margin-bottom: 10px; letter-spacing: -0.045em;">${name}</div>
+      <div style="display:inline-flex; align-items:center; justify-content:center; padding:7px 11px; border-radius:999px; color:${tone.text}; background:${tone.soft}; border:1px solid ${tone.border}; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:14px;">${type}</div>
+      <div style="display:grid; gap:9px; font-size:14px; line-height:1.42; color:#53666b;">
         <div><strong style="color:#132d2d;">Location:</strong> ${location}</div>
         ${radius ? `<div><strong style="color:#132d2d;">Radius:</strong> ${radius}</div>` : ''}
         ${brands ? `<div><strong style="color:#132d2d;">Brands:</strong> ${brands}</div>` : ''}
         ${services ? `<div><strong style="color:#132d2d;">Services:</strong> ${services}</div>` : ''}
       </div>
-      <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" style="width:100%; margin-top:12px; border:0; border-radius:12px; background:${tone.primary}; color:#fff; font-weight:850; padding:10px 12px; cursor:pointer; font-family:inherit; box-shadow:0 12px 22px ${tone.shadow};">Choose this partner</button>
+      <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" style="width:100%; margin-top:18px; border:0; border-radius:15px; background:${tone.primary}; color:#fff; font-size:14px; font-weight:900; padding:15px 18px; cursor:pointer; font-family:inherit; box-shadow:0 14px 28px ${tone.shadow};">Choose this partner</button>
     </div>
   `;
 }
@@ -2740,8 +2740,14 @@ export default function AssetRegisterClient() {
             popupAnchor: [0, -38],
           });
           const marker = L.marker([lat, lng], { icon, title: quotePartnerName(partner) }).addTo(quoteMarkerLayerRef.current);
-          marker.bindPopup(buildQuotePartnerPopupHtml(partner, markerNumber));
-          marker.on('click', () => openQuoteLeadMessage(partner));
+          marker.bindPopup(buildQuotePartnerPopupHtml(partner, markerNumber), {
+            className: 'assetQuotePartnerPopup',
+            minWidth: 340,
+            maxWidth: 460,
+            autoPan: true,
+            autoPanPadding: [34, 34],
+          });
+          marker.on('click', () => focusQuotePartnerOnMap(partner));
           quoteMarkersByPartnerRef.current.set(partner.userId, marker);
           bounds.extend([lat, lng]);
         });
@@ -2754,8 +2760,15 @@ export default function AssetRegisterClient() {
         if (selectedMarker) {
           window.setTimeout(() => {
             if (!cancelled) {
+              const selectedLatLng = selectedMarker.getLatLng();
+              const currentZoom = typeof quoteLeafletMapRef.current?.getZoom === 'function' ? quoteLeafletMapRef.current.getZoom() : DEFAULT_PARTNER_MAP_ZOOM;
+              const nextZoom = Math.max(currentZoom, 11);
               selectedMarker.openPopup();
-              quoteLeafletMapRef.current?.panTo(selectedMarker.getLatLng(), { animate: true, duration: 0.35 });
+              if (typeof quoteLeafletMapRef.current?.flyTo === 'function') {
+                quoteLeafletMapRef.current.flyTo(selectedLatLng, nextZoom, { animate: true, duration: 0.35 });
+              } else {
+                quoteLeafletMapRef.current?.setView(selectedLatLng, nextZoom, { animate: true });
+              }
             }
           }, 120);
         }
@@ -3324,6 +3337,29 @@ export default function AssetRegisterClient() {
       quoteMarkerLayerRef.current = null;
       quoteMarkersByPartnerRef.current.clear();
     }
+  }
+
+  function focusQuotePartnerOnMap(partner: PartnerDirectoryEntry) {
+    setSelectedQuotePartnerId(partner.userId);
+
+    const marker = quoteMarkersByPartnerRef.current.get(partner.userId);
+    const map = quoteLeafletMapRef.current;
+
+    if (!map || !marker) return;
+
+    const latLng = marker.getLatLng();
+    const currentZoom = typeof map.getZoom === 'function' ? map.getZoom() : DEFAULT_PARTNER_MAP_ZOOM;
+    const nextZoom = Math.max(currentZoom, 11);
+
+    if (typeof map.flyTo === 'function') {
+      map.flyTo(latLng, nextZoom, { animate: true, duration: 0.35 });
+    } else {
+      map.setView(latLng, nextZoom, { animate: true });
+    }
+
+    window.setTimeout(() => {
+      marker.openPopup();
+    }, 120);
   }
 
   function openQuoteLeadMessage(partner: PartnerDirectoryEntry) {
@@ -6250,7 +6286,7 @@ export default function AssetRegisterClient() {
                               key={partner.userId}
                               type="button"
                               className={`${styles.assetQuotePartnerCard} ${quoteToneClassForPartnerType(partner.partnerType)} ${selectedQuotePartnerId === partner.userId ? styles.assetQuotePartnerCardActive : ''}`}
-                              onClick={() => openQuoteLeadMessage(partner)}
+                              onClick={() => focusQuotePartnerOnMap(partner)}
                             >
                               <span className={styles.assetQuotePartnerNumber}>{index + 1}</span>
                               <span className={styles.assetQuotePartnerBody}>
