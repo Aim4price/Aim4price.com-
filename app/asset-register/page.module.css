@@ -17601,3 +17601,33 @@
     height: 4.4rem !important;
   }
 }
+
+/* === Partner map popup refinement: larger selectable partner card === */
+.assetQuoteMapShell :global(.assetQuotePartnerPopup .leaflet-popup-content-wrapper) {
+  border-radius: 1.25rem !important;
+  box-shadow:
+    0 24px 52px rgba(19, 39, 54, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePartnerPopup .leaflet-popup-content) {
+  min-width: 320px !important;
+  margin: 1.1rem !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePartnerPopup .leaflet-popup-close-button) {
+  top: 0.65rem !important;
+  right: 0.65rem !important;
+  width: 2rem !important;
+  height: 2rem !important;
+  border-radius: 999px !important;
+  color: #596a72 !important;
+  font-size: 1.25rem !important;
+  line-height: 2rem !important;
+  background: rgba(248, 252, 255, 0.92) !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePartnerPopup .leaflet-popup-close-button:hover) {
+  color: #173f61 !important;
+  background: rgba(239, 246, 255, 0.98) !important;
+}
