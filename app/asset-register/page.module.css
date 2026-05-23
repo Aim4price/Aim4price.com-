@@ -17198,3 +17198,210 @@
     0 18px 32px rgba(180, 35, 24, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
+
+/* === Partner type colour system for quote options, map pins and asset notes === */
+.assetQuoteToneFinance {
+  --quote-accent: #c48220;
+  --quote-accent-dark: #8b5a12;
+  --quote-accent-text: #74460b;
+  --quote-accent-soft: #fff7e8;
+  --quote-accent-surface: #fffbf2;
+  --quote-accent-border: rgba(196, 130, 32, 0.34);
+  --quote-accent-border-strong: rgba(196, 130, 32, 0.58);
+  --quote-accent-shadow: rgba(196, 130, 32, 0.18);
+  --quote-accent-ring: rgba(196, 130, 32, 0.13);
+}
+
+.assetQuoteToneInsurance {
+  --quote-accent: #2563eb;
+  --quote-accent-dark: #1d4ed8;
+  --quote-accent-text: #1e3a8a;
+  --quote-accent-soft: #eff6ff;
+  --quote-accent-surface: #f8fbff;
+  --quote-accent-border: rgba(37, 99, 235, 0.28);
+  --quote-accent-border-strong: rgba(37, 99, 235, 0.48);
+  --quote-accent-shadow: rgba(37, 99, 235, 0.16);
+  --quote-accent-ring: rgba(37, 99, 235, 0.12);
+}
+
+.assetQuoteToneDealer {
+  --quote-accent: #159063;
+  --quote-accent-dark: #0f6f4d;
+  --quote-accent-text: #065f46;
+  --quote-accent-soft: #ecfdf5;
+  --quote-accent-surface: #f6fffb;
+  --quote-accent-border: rgba(21, 144, 99, 0.3);
+  --quote-accent-border-strong: rgba(21, 144, 99, 0.52);
+  --quote-accent-shadow: rgba(21, 144, 99, 0.17);
+  --quote-accent-ring: rgba(21, 144, 99, 0.12);
+}
+
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard.assetQuoteToneFinance,
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard.assetQuoteToneInsurance,
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard.assetQuoteToneDealer {
+  color: var(--quote-accent-text) !important;
+  border-color: var(--quote-accent-border) !important;
+  background:
+    radial-gradient(circle at 50% 0%, var(--quote-accent-ring), transparent 44%),
+    linear-gradient(180deg, #ffffff 0%, var(--quote-accent-surface) 100%) !important;
+  box-shadow:
+    0 16px 34px rgba(11, 32, 48, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard.assetQuoteToneFinance:hover,
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard.assetQuoteToneInsurance:hover,
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard.assetQuoteToneDealer:hover {
+  border-color: var(--quote-accent-border-strong) !important;
+  background:
+    radial-gradient(circle at 50% 0%, var(--quote-accent-shadow), transparent 46%),
+    linear-gradient(180deg, #ffffff 0%, var(--quote-accent-soft) 100%) !important;
+  box-shadow:
+    0 22px 42px var(--quote-accent-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard.assetQuoteToneFinance .assetQuoteChoiceIconTile,
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard.assetQuoteToneInsurance .assetQuoteChoiceIconTile,
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard.assetQuoteToneDealer .assetQuoteChoiceIconTile {
+  color: var(--quote-accent-dark) !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.94), transparent 48%),
+    linear-gradient(180deg, #ffffff 0%, var(--quote-accent-soft) 100%) !important;
+  border-color: var(--quote-accent-border) !important;
+  box-shadow:
+    0 12px 25px var(--quote-accent-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard.assetQuoteToneFinance .assetQuoteChoiceIcon,
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard.assetQuoteToneInsurance .assetQuoteChoiceIcon,
+.optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard.assetQuoteToneDealer .assetQuoteChoiceIcon {
+  color: var(--quote-accent-dark) !important;
+}
+
+.assetQuotePartnerCard.assetQuoteToneFinance,
+.assetQuotePartnerCard.assetQuoteToneInsurance,
+.assetQuotePartnerCard.assetQuoteToneDealer {
+  border-color: rgba(204, 219, 232, 0.94) !important;
+}
+
+.assetQuotePartnerCard.assetQuoteToneFinance:hover,
+.assetQuotePartnerCard.assetQuoteToneInsurance:hover,
+.assetQuotePartnerCard.assetQuoteToneDealer:hover,
+.assetQuotePartnerCard.assetQuoteToneFinance.assetQuotePartnerCardActive,
+.assetQuotePartnerCard.assetQuoteToneInsurance.assetQuotePartnerCardActive,
+.assetQuotePartnerCard.assetQuoteToneDealer.assetQuotePartnerCardActive {
+  border-color: var(--quote-accent-border-strong) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--quote-accent-soft) 100%) !important;
+  box-shadow: 0 16px 32px var(--quote-accent-shadow) !important;
+}
+
+.assetQuotePartnerCard.assetQuoteToneFinance.assetQuotePartnerCardActive,
+.assetQuotePartnerCard.assetQuoteToneInsurance.assetQuotePartnerCardActive,
+.assetQuotePartnerCard.assetQuoteToneDealer.assetQuotePartnerCardActive {
+  outline: 3px solid var(--quote-accent-ring) !important;
+}
+
+.assetQuotePartnerCard.assetQuoteToneFinance .assetQuotePartnerNumber,
+.assetQuotePartnerCard.assetQuoteToneInsurance .assetQuotePartnerNumber,
+.assetQuotePartnerCard.assetQuoteToneDealer .assetQuotePartnerNumber {
+  background: var(--quote-accent) !important;
+  box-shadow: 0 10px 20px var(--quote-accent-shadow) !important;
+}
+
+.assetQuotePartnerCard.assetQuoteToneFinance .assetQuotePartnerHeader small,
+.assetQuotePartnerCard.assetQuoteToneInsurance .assetQuotePartnerHeader small,
+.assetQuotePartnerCard.assetQuoteToneDealer .assetQuotePartnerHeader small {
+  color: var(--quote-accent-text) !important;
+  background: var(--quote-accent-soft) !important;
+  border-color: var(--quote-accent-border) !important;
+}
+
+.assetQuoteMapShell :global(.assetQuoteMapMarker--finance) {
+  --quote-marker-color: #c48220;
+  --quote-marker-shadow: rgba(196, 130, 32, 0.34);
+  --quote-marker-ring: rgba(196, 130, 32, 0.17);
+}
+
+.assetQuoteMapShell :global(.assetQuoteMapMarker--insurance) {
+  --quote-marker-color: #2563eb;
+  --quote-marker-shadow: rgba(37, 99, 235, 0.32);
+  --quote-marker-ring: rgba(37, 99, 235, 0.16);
+}
+
+.assetQuoteMapShell :global(.assetQuoteMapMarker--dealer) {
+  --quote-marker-color: #159063;
+  --quote-marker-shadow: rgba(22, 130, 88, 0.34);
+  --quote-marker-ring: rgba(22, 130, 88, 0.17);
+}
+
+.assetQuoteMapShell :global(.assetQuoteMapMarkerPin) {
+  background: var(--quote-marker-color, #159063) !important;
+  box-shadow:
+    0 13px 24px var(--quote-marker-shadow, rgba(22, 130, 88, 0.34)),
+    0 0 0 6px rgba(255, 255, 255, 0.32) !important;
+}
+
+.assetQuoteMapShell :global(.assetQuoteMapMarkerPin::after) {
+  background: var(--quote-marker-color, #159063) !important;
+}
+
+.assetQuoteMapShell :global(.assetQuoteMapMarker--active .assetQuoteMapMarkerPin) {
+  box-shadow:
+    0 0 0 8px var(--quote-marker-ring, rgba(16, 71, 59, 0.17)),
+    0 18px 34px var(--quote-marker-shadow, rgba(22, 130, 88, 0.34)) !important;
+}
+
+.assetCardPartnerNote.assetQuoteToneFinance,
+.assetCardPartnerNote.assetQuoteToneInsurance,
+.assetCardPartnerNote.assetQuoteToneDealer {
+  border-color: var(--quote-accent-border-strong) !important;
+  background: linear-gradient(180deg, var(--quote-accent-soft) 0%, #ffffff 58%) !important;
+  box-shadow: 0 18px 42px var(--quote-accent-shadow) !important;
+}
+
+.assetCardPartnerNote.assetQuoteToneFinance:hover,
+.assetCardPartnerNote.assetQuoteToneInsurance:hover,
+.assetCardPartnerNote.assetQuoteToneDealer:hover {
+  border-color: var(--quote-accent) !important;
+}
+
+.badgeInfo.assetQuoteToneFinance,
+.badgeInfo.assetQuoteToneInsurance,
+.badgeInfo.assetQuoteToneDealer {
+  color: var(--quote-accent-text) !important;
+  background: var(--quote-accent-soft) !important;
+  border-color: var(--quote-accent-border) !important;
+}
+
+.partnerNoteBanner.assetQuoteToneFinance,
+.partnerNoteBanner.assetQuoteToneInsurance,
+.partnerNoteBanner.assetQuoteToneDealer {
+  border-color: var(--quote-accent-border) !important;
+  background: var(--quote-accent-soft) !important;
+}
+
+.partnerNoteBanner.assetQuoteToneFinance .partnerNoteText strong,
+.partnerNoteBanner.assetQuoteToneInsurance .partnerNoteText strong,
+.partnerNoteBanner.assetQuoteToneDealer .partnerNoteText strong,
+.partnerNoteBanner.assetQuoteToneFinance .partnerNoteText p,
+.partnerNoteBanner.assetQuoteToneInsurance .partnerNoteText p,
+.partnerNoteBanner.assetQuoteToneDealer .partnerNoteText p {
+  color: var(--quote-accent-text) !important;
+}
+
+.partnerNoteBanner.assetQuoteToneFinance .partnerNoteButton,
+.partnerNoteBanner.assetQuoteToneInsurance .partnerNoteButton,
+.partnerNoteBanner.assetQuoteToneDealer .partnerNoteButton {
+  color: var(--quote-accent-text) !important;
+  border-color: var(--quote-accent-border) !important;
+  background: #ffffff !important;
+}
+
+.partnerNoteBanner.assetQuoteToneFinance .partnerNoteButton:hover,
+.partnerNoteBanner.assetQuoteToneInsurance .partnerNoteButton:hover,
+.partnerNoteBanner.assetQuoteToneDealer .partnerNoteButton:hover {
+  border-color: var(--quote-accent-border-strong) !important;
+  background: var(--quote-accent-soft) !important;
+}

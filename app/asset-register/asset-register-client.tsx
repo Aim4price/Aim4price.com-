@@ -171,6 +171,7 @@ type OpenPartnerNote = {
   assetRegisterItemId: string;
   noteText: string;
   status: 'open' | 'noted';
+  partnerType?: PartnerType | null;
   partnerName: string;
   partnerBusinessName: string;
   createdAtIso: string;
@@ -543,6 +544,42 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     emptyPartnerText: 'No listed dealers found yet. Dealer accounts must enable their directory listing under Account details.',
   },
 ];
+
+type QuoteToneStyle = {
+  primary: string;
+  dark: string;
+  text: string;
+  soft: string;
+  border: string;
+  shadow: string;
+};
+
+const QUOTE_TONE_STYLES: Record<PartnerType, QuoteToneStyle> = {
+  finance: {
+    primary: '#c48220',
+    dark: '#8b5a12',
+    text: '#74460b',
+    soft: '#fff7e8',
+    border: '#f0cf97',
+    shadow: 'rgba(196, 130, 32, 0.34)',
+  },
+  insurance: {
+    primary: '#2563eb',
+    dark: '#1d4ed8',
+    text: '#1e3a8a',
+    soft: '#eff6ff',
+    border: '#bfdbfe',
+    shadow: 'rgba(37, 99, 235, 0.32)',
+  },
+  dealer: {
+    primary: '#159063',
+    dark: '#0f6f4d',
+    text: '#065f46',
+    soft: '#ecfdf5',
+    border: '#bbf7d0',
+    shadow: 'rgba(22, 130, 88, 0.34)',
+  },
+};
 
 
 const initialAssetDraft: AssetDraft = {
@@ -2214,6 +2251,31 @@ function formatQuotePartnerType(value: PartnerType): string {
   return 'Insurance';
 }
 
+function quoteStyleForPartnerType(partnerType: PartnerType | null | undefined): QuoteToneStyle {
+  if (partnerType === 'finance') return QUOTE_TONE_STYLES.finance;
+  if (partnerType === 'insurance') return QUOTE_TONE_STYLES.insurance;
+  return QUOTE_TONE_STYLES.dealer;
+}
+
+function quoteToneClassForLeadType(leadType: AssetLeadType): string {
+  if (leadType === 'finance') return styles.assetQuoteToneFinance;
+  if (leadType === 'insurance') return styles.assetQuoteToneInsurance;
+  return styles.assetQuoteToneDealer;
+}
+
+function quoteToneClassForPartnerType(partnerType: PartnerType | null | undefined): string {
+  if (partnerType === 'finance') return styles.assetQuoteToneFinance;
+  if (partnerType === 'insurance') return styles.assetQuoteToneInsurance;
+  if (partnerType === 'dealer') return styles.assetQuoteToneDealer;
+  return '';
+}
+
+function quoteMarkerClassForPartnerType(partnerType: PartnerType | null | undefined): string {
+  if (partnerType === 'finance') return 'assetQuoteMapMarker--finance';
+  if (partnerType === 'insurance') return 'assetQuoteMapMarker--insurance';
+  return 'assetQuoteMapMarker--dealer';
+}
+
 function quotePartnerName(partner: PartnerDirectoryEntry): string {
   return partner.businessName || partner.displayName || 'Aim4price partner';
 }
@@ -2250,19 +2312,20 @@ function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry, markerNumber
   const radius = partner.serviceRadiusKm ? escapeHtml(`${partner.serviceRadiusKm} km service radius`) : '';
   const brands = partner.brandFocus ? escapeHtml(partner.brandFocus) : '';
   const services = partner.services ? escapeHtml(partner.services) : '';
+  const tone = quoteStyleForPartnerType(partner.partnerType);
 
   return `
     <div style="min-width: 238px; font-family: Montserrat, Inter, Arial, sans-serif; color: #122f2a;">
-      <div style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:28px; padding:0 8px; border-radius:999px; color:#fff; background:#103f35; font-size:12px; font-weight:900; margin-bottom:9px;">${markerNumber}</div>
+      <div style="display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:28px; padding:0 8px; border-radius:999px; color:#fff; background:${tone.primary}; box-shadow:0 10px 20px ${tone.shadow}; font-size:12px; font-weight:900; margin-bottom:9px;">${markerNumber}</div>
       <div style="font-weight: 850; font-size: 16px; line-height: 1.15; margin-bottom: 6px; letter-spacing: -0.03em;">${name}</div>
-      <div style="display:inline-flex; align-items:center; justify-content:center; padding:4px 8px; border-radius:999px; color:#24517a; background:#eef3fb; border:1px solid #d8e1f0; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:9px;">${type}</div>
+      <div style="display:inline-flex; align-items:center; justify-content:center; padding:4px 8px; border-radius:999px; color:${tone.text}; background:${tone.soft}; border:1px solid ${tone.border}; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:9px;">${type}</div>
       <div style="display:grid; gap:6px; font-size:12px; color:#53666b;">
         <div><strong style="color:#132d2d;">Location:</strong> ${location}</div>
         ${radius ? `<div><strong style="color:#132d2d;">Radius:</strong> ${radius}</div>` : ''}
         ${brands ? `<div><strong style="color:#132d2d;">Brands:</strong> ${brands}</div>` : ''}
         ${services ? `<div><strong style="color:#132d2d;">Services:</strong> ${services}</div>` : ''}
       </div>
-      <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" style="width:100%; margin-top:12px; border:0; border-radius:12px; background:#12644d; color:#fff; font-weight:850; padding:10px 12px; cursor:pointer; font-family:inherit;">Choose this partner</button>
+      <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" style="width:100%; margin-top:12px; border:0; border-radius:12px; background:${tone.primary}; color:#fff; font-weight:850; padding:10px 12px; cursor:pointer; font-family:inherit; box-shadow:0 12px 22px ${tone.shadow};">Choose this partner</button>
     </div>
   `;
 }
@@ -2670,7 +2733,7 @@ export default function AssetRegisterClient() {
           const markerNumber = index + 1;
           const isActive = selectedQuotePartnerId === partner.userId;
           const icon = L.divIcon({
-            className: `assetQuoteMapMarker${isActive ? ' assetQuoteMapMarker--active' : ''}`,
+            className: `assetQuoteMapMarker ${quoteMarkerClassForPartnerType(partner.partnerType)}${isActive ? ' assetQuoteMapMarker--active' : ''}`,
             html: `<span class="assetQuoteMapMarkerPin"><b>${markerNumber}</b></span>`,
             iconSize: [42, 48],
             iconAnchor: [21, 44],
@@ -4982,11 +5045,13 @@ export default function AssetRegisterClient() {
                     const estimateNeedsUpdate = doesEstimateNeedUpdate(asset) && isValuationUpdateAvailable(asset);
                     const openPartnerNote = asset.openPartnerNote ?? null;
                     const partnerNoteAuthor = openPartnerNote?.partnerBusinessName || openPartnerNote?.partnerName || 'Aim4price partner';
+                    const partnerNoteToneClass = openPartnerNote ? quoteToneClassForPartnerType(openPartnerNote.partnerType) : '';
+                    const partnerNoteLabel = openPartnerNote?.partnerType ? `${formatQuotePartnerType(openPartnerNote.partnerType)} note` : 'Partner note';
 
                     return (
                       <article
                         id={`asset-card-${asset.id}`}
-                        className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? styles.assetCardPartnerNote : ''}`}
+                        className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''}`}
                         key={asset.id}
                       >
                         <div className={styles.assetHeader}>
@@ -4997,7 +5062,7 @@ export default function AssetRegisterClient() {
                                 {estimateNeedsUpdate ? (
                                   <span className={`${styles.badge} ${styles.badgeWarning}`}>Estimate needs update</span>
                                 ) : null}
-                                {openPartnerNote ? <span className={`${styles.badge} ${styles.badgeInfo}`}>Partner note</span> : null}
+                                {openPartnerNote ? <span className={`${styles.badge} ${styles.badgeInfo} ${partnerNoteToneClass}`}>{partnerNoteLabel}</span> : null}
                               </div>
                             ) : null}
                             <h2>{asset.title}</h2>
@@ -5060,7 +5125,7 @@ export default function AssetRegisterClient() {
                           </div>
 
                           {openPartnerNote ? (
-                            <div className={styles.partnerNoteBanner}>
+                            <div className={`${styles.partnerNoteBanner} ${partnerNoteToneClass}`}>
                               <div className={styles.partnerNoteText}>
                                 <strong>Note from {partnerNoteAuthor}</strong>
                                 <p>{openPartnerNote.noteText}</p>
@@ -6112,7 +6177,7 @@ export default function AssetRegisterClient() {
                       <button
                         key={option.leadType}
                         type="button"
-                        className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard}`}
+                        className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard} ${quoteToneClassForLeadType(option.leadType)}`}
                         onClick={() => openQuotePartnerPicker(option.leadType)}
                       >
                         <span className={styles.assetQuoteChoiceIconTile}>
@@ -6169,7 +6234,7 @@ export default function AssetRegisterClient() {
                             <button
                               key={partner.userId}
                               type="button"
-                              className={`${styles.assetQuotePartnerCard} ${selectedQuotePartnerId === partner.userId ? styles.assetQuotePartnerCardActive : ''}`}
+                              className={`${styles.assetQuotePartnerCard} ${quoteToneClassForPartnerType(partner.partnerType)} ${selectedQuotePartnerId === partner.userId ? styles.assetQuotePartnerCardActive : ''}`}
                               onClick={() => openQuoteLeadMessage(partner)}
                             >
                               <span className={styles.assetQuotePartnerNumber}>{index + 1}</span>
