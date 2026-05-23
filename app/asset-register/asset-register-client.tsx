@@ -5382,8 +5382,13 @@ export default function AssetRegisterClient() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeRegisterShareModal} />
 
-          <div className={`${styles.modalCard} ${styles.summaryLeadModal} ${styles.registerShareModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-register-share-title">
-            <div className={`${styles.modalHeader} ${styles.summaryLeadModalHeader}`}>
+          <div
+            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${styles.registerShareModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="asset-register-share-title"
+          >
+            <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader} ${styles.registerShareModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-register-share-title">Share full Asset Register</h3>
                 <p>Send the complete register as a once-off to a finance or insurance partner.</p>
@@ -5400,33 +5405,43 @@ export default function AssetRegisterClient() {
               </button>
             </div>
 
-            <div className={`${styles.summaryLeadModalBody} ${styles.registerShareModalBody}`}>
-              <div className={styles.registerShareOptionGrid}>
-                <button
-                  type="button"
-                  className={`${styles.optionActionButton} ${styles.registerShareOptionCard}`}
-                  onClick={() => openFullRegisterQuotePartnerPicker('finance')}
-                  disabled={isExporting}
-                >
-                  <BankIcon className={styles.buttonIcon} />
-                  <span>
-                    <strong>Get refinance quote</strong>
-                    <small>Send a once-off full-register to a finance partner.</small>
-                  </span>
-                </button>
+            <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.assetQuoteScrollBody} ${styles.registerShareModalBody}`}>
+              <div className={styles.optionsContent}>
+                <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.assetQuoteChoiceGrid} ${styles.registerShareOptionGrid}`}>
+                  <button
+                    type="button"
+                    className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard} ${styles.registerShareOptionCard} ${quoteToneClassForLeadType('finance')}`}
+                    onClick={() => openFullRegisterQuotePartnerPicker('finance')}
+                    disabled={isExporting}
+                  >
+                    <span className={styles.assetQuoteChoiceIconTile}>
+                      {renderQuoteOptionIcon('finance', styles.assetQuoteChoiceIcon)}
+                    </span>
+                    <span className={styles.assetQuoteChoiceText}>
+                      <strong>Get refinance quote</strong>
+                      <small>
+                        <span>Send a once-off full-register to a finance partner.</span>
+                      </small>
+                    </span>
+                  </button>
 
-                <button
-                  type="button"
-                  className={`${styles.optionActionButton} ${styles.registerShareOptionCard}`}
-                  onClick={() => openFullRegisterQuotePartnerPicker('insurance')}
-                  disabled={isExporting}
-                >
-                  <ShieldIcon className={styles.buttonIcon} />
-                  <span>
-                    <strong>Get insurance quote</strong>
-                    <small>Send a once-off full-register to an insurance partner.</small>
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard} ${styles.registerShareOptionCard} ${quoteToneClassForLeadType('insurance')}`}
+                    onClick={() => openFullRegisterQuotePartnerPicker('insurance')}
+                    disabled={isExporting}
+                  >
+                    <span className={styles.assetQuoteChoiceIconTile}>
+                      {renderQuoteOptionIcon('insurance', styles.assetQuoteChoiceIcon)}
+                    </span>
+                    <span className={styles.assetQuoteChoiceText}>
+                      <strong>Get insurance quote</strong>
+                      <small>
+                        <span>Send a once-off full-register to an insurance partner.</span>
+                      </small>
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

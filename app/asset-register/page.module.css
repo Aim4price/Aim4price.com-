@@ -17405,3 +17405,199 @@
   border-color: var(--quote-accent-border-strong) !important;
   background: var(--quote-accent-soft) !important;
 }
+
+/* === Full Asset Register share modal: match asset quote cards === */
+.registerShareModal {
+  width: min(100%, 1320px) !important;
+  max-height: min(92vh, calc(100dvh - 1.25rem)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: clamp(1.85rem, 2.7vw, 2.45rem) !important;
+  border-radius: 2.15rem !important;
+}
+
+.registerShareModalHeader {
+  align-items: flex-start !important;
+  gap: clamp(1rem, 1.55vw, 1.45rem) !important;
+  margin: 0 !important;
+  padding: 0 0 clamp(1.1rem, 1.7vw, 1.35rem) !important;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.92) !important;
+}
+
+.registerShareModalHeader .modalHeaderText {
+  display: grid !important;
+  gap: 0.42rem !important;
+  min-width: 0 !important;
+  padding-right: clamp(0.75rem, 1.4vw, 1.35rem) !important;
+}
+
+.registerShareModalHeader h3 {
+  max-width: 100% !important;
+  font-size: clamp(2rem, 3vw, 2.8rem) !important;
+  line-height: 1.02 !important;
+}
+
+.registerShareModalHeader p {
+  max-width: none !important;
+  margin-top: 0.2rem !important;
+  color: #617286 !important;
+  font-size: clamp(1rem, 1.05vw, 1.08rem) !important;
+  font-weight: 650 !important;
+  line-height: 1.45 !important;
+  white-space: nowrap !important;
+}
+
+.registerShareModalBody {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  padding: clamp(1.75rem, 2.45vw, 2.25rem) 0 0.25rem !important;
+}
+
+.registerShareModalBody .optionsContent {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: clamp(1.2rem, 1.8vw, 1.55rem) !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  margin: 0 auto !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 1.05rem !important;
+  min-height: 14.4rem !important;
+  padding: clamp(1.65rem, 2.1vw, 2rem) clamp(1.45rem, 2vw, 1.8rem) !important;
+  text-align: center !important;
+  border-radius: 1.55rem !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard > .assetQuoteChoiceIconTile {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 5.15rem !important;
+  height: 5.15rem !important;
+  margin: 0 auto !important;
+  border-radius: 1.35rem !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard > .assetQuoteChoiceText {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0.58rem !important;
+  width: 100% !important;
+  max-width: 24rem !important;
+  margin: 0 auto !important;
+  text-align: center !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard strong {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+  color: #10352b !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  line-height: 1.08 !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard small {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0.1rem !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 auto !important;
+  color: #5f7185 !important;
+  text-align: center !important;
+  line-height: 1.34 !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard small span {
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 1060px) {
+  .registerShareModal {
+    width: min(100%, calc(100vw - 1.5rem)) !important;
+    max-height: min(92vh, calc(100dvh - 1.5rem)) !important;
+  }
+
+  .optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid {
+    grid-template-columns: 1fr !important;
+    max-width: 34rem !important;
+  }
+
+  .optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard {
+    min-height: 12.9rem !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .registerShareModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: calc(100dvh - 1rem) !important;
+    overflow-y: auto !important;
+    padding: 1.05rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .registerShareModalHeader {
+    gap: 0.85rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .registerShareModalHeader .modalHeaderText {
+    padding-right: 0 !important;
+  }
+
+  .registerShareModalHeader h3 {
+    font-size: 1.58rem !important;
+    letter-spacing: -0.045em !important;
+  }
+
+  .registerShareModalHeader p,
+  .optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard strong,
+  .optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard small span {
+    white-space: normal !important;
+  }
+
+  .registerShareModalBody {
+    padding-top: 1.25rem !important;
+  }
+
+  .optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid {
+    max-width: none !important;
+    gap: 0.8rem !important;
+  }
+
+  .optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard {
+    min-height: 12.4rem !important;
+    padding: 1.35rem 1rem !important;
+    border-radius: 1.18rem !important;
+  }
+
+  .optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard > .assetQuoteChoiceIconTile {
+    width: 4.4rem !important;
+    height: 4.4rem !important;
+  }
+}
