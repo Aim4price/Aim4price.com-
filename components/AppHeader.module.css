@@ -103,7 +103,7 @@
 .actionsRail {
   display: inline-flex;
   align-items: center;
-  gap: 0.34rem;
+  gap: 0.42rem;
   padding: 0.38rem;
   border-radius: 1.35rem;
   background: rgba(255, 255, 255, 0.93);
@@ -127,6 +127,7 @@
 .signupButton,
 .loginButton,
 .accountButton,
+.notificationButton,
 .menuLink,
 .menuDangerButton {
   display: inline-flex;
@@ -153,26 +154,30 @@
 .signupButton:hover,
 .loginButton:hover,
 .accountButton:hover,
+.notificationButton:hover,
 .menuLink:hover,
 .menuDangerButton:hover {
   transform: translateY(-1px);
 }
 
 .loginButton,
-.accountButton {
+.accountButton,
+.notificationButton {
   color: #42514b;
   background: transparent;
 }
 
 .loginButton:hover,
 .accountButton:hover,
+.notificationButton:hover,
 .menuLink:hover {
   color: #17362c;
   background: rgba(23, 77, 62, 0.06);
 }
 
 .signupButton,
-.accountButton {
+.accountButton,
+.notificationButton {
   border-color: rgba(23, 77, 62, 0.1);
 }
 
@@ -186,7 +191,8 @@
   background: rgba(23, 77, 62, 0.06);
 }
 
-.accountMenu {
+.accountMenu,
+.notificationMenu {
   position: relative;
 }
 
@@ -228,6 +234,214 @@
   display: inline-flex;
   align-items: center;
 }
+
+.notificationButton {
+  position: relative;
+  width: 3.28rem;
+  min-width: 3.28rem;
+  padding: 0;
+  cursor: pointer;
+  background: #ffffff;
+  color: #17315c;
+  border-color: rgba(62, 110, 213, 0.16);
+  box-shadow: 0 10px 20px rgba(41, 72, 145, 0.08);
+}
+
+.notificationButtonActive {
+  color: #163f32;
+  border-color: rgba(23, 77, 62, 0.18);
+  box-shadow: 0 12px 24px rgba(18, 45, 37, 0.1);
+}
+
+.notificationIcon {
+  width: 1.18rem;
+  height: 1.18rem;
+  display: block;
+}
+
+.notificationBadge {
+  position: absolute;
+  top: 0.43rem;
+  right: 0.43rem;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.22rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #e02424;
+  color: #ffffff;
+  font-size: 0.62rem;
+  line-height: 1;
+  font-weight: 850;
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+.notificationPopover {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  width: min(calc(100vw - 2rem), 28rem);
+  box-sizing: border-box;
+  padding: 0.68rem;
+  display: grid;
+  gap: 0.65rem;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.99);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  box-shadow: 0 22px 46px rgba(18, 45, 37, 0.14);
+}
+
+.notificationHeaderRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem;
+  padding: 0.18rem 0.18rem 0.05rem;
+}
+
+.notificationTitle {
+  display: block;
+  color: #17362c;
+  font-size: 1rem;
+  line-height: 1.2;
+  font-weight: 850;
+}
+
+.notificationSubtitle {
+  display: block;
+  margin-top: 0.18rem;
+  color: #66736e;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  font-weight: 650;
+}
+
+.notificationClearButton {
+  min-height: 2.05rem;
+  padding: 0 0.72rem;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  border-radius: 0.72rem;
+  background: rgba(247, 249, 248, 0.96);
+  color: #42514b;
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.notificationClearButton:hover {
+  color: #17362c;
+  background: rgba(23, 77, 62, 0.06);
+  transform: translateY(-1px);
+}
+
+.notificationList {
+  display: grid;
+  gap: 0.42rem;
+  max-height: min(30rem, calc(100vh - 10rem));
+  overflow: auto;
+  padding-right: 0.12rem;
+}
+
+.notificationItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.62rem;
+  align-items: start;
+  padding: 0.78rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.075);
+  background: rgba(250, 251, 250, 0.92);
+  text-decoration: none;
+  color: #25342e;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.notificationItem:hover {
+  transform: translateY(-1px);
+  background: #ffffff;
+  border-color: rgba(23, 77, 62, 0.13);
+  box-shadow: 0 12px 26px rgba(18, 45, 37, 0.07);
+}
+
+.notificationDot {
+  width: 0.58rem;
+  height: 0.58rem;
+  margin-top: 0.28rem;
+  border-radius: 999px;
+  background: #6f7b76;
+  box-shadow: 0 0 0 4px rgba(111, 123, 118, 0.1);
+}
+
+.notificationToneNeutral .notificationDot {
+  background: #6f7b76;
+  box-shadow: 0 0 0 4px rgba(111, 123, 118, 0.1);
+}
+
+.notificationToneInfo .notificationDot {
+  background: #3d5fc8;
+  box-shadow: 0 0 0 4px rgba(61, 95, 200, 0.12);
+}
+
+.notificationToneSuccess .notificationDot {
+  background: #1f7a4d;
+  box-shadow: 0 0 0 4px rgba(31, 122, 77, 0.12);
+}
+
+.notificationToneWarning .notificationDot {
+  background: #b85c1b;
+  box-shadow: 0 0 0 4px rgba(184, 92, 27, 0.13);
+}
+
+.notificationCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.22rem;
+}
+
+.notificationCopy strong {
+  color: #17362c;
+  font-size: 0.88rem;
+  line-height: 1.24;
+  font-weight: 850;
+}
+
+.notificationCopy span {
+  color: #52615c;
+  font-size: 0.8rem;
+  line-height: 1.38;
+  font-weight: 650;
+}
+
+.notificationCopy small {
+  color: #8a9691;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  font-weight: 750;
+}
+
+.notificationEmpty {
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px dashed rgba(18, 45, 37, 0.14);
+  background: rgba(247, 249, 248, 0.72);
+  color: #66736e;
+  font-size: 0.86rem;
+  line-height: 1.42;
+  font-weight: 700;
+  text-align: center;
+}
+
 
 .accountPopover {
   position: absolute;
@@ -300,6 +514,9 @@
 .signupButton:focus-visible,
 .loginButton:focus-visible,
 .accountButton:focus-visible,
+.notificationButton:focus-visible,
+.notificationClearButton:focus-visible,
+.notificationItem:focus-visible,
 .menuLink:focus-visible,
 .menuDangerButton:focus-visible {
   outline: 3px solid rgba(23, 77, 62, 0.18);
@@ -390,7 +607,7 @@
   .actionsRail {
     width: 100%;
     justify-content: stretch;
-    gap: 0.2rem;
+    gap: 0.55rem;
     padding: 0;
     background: none;
     border: 0;
@@ -402,8 +619,21 @@
     flex: 1 1 0;
   }
 
+  .notificationMenu {
+    flex: 0 0 auto;
+  }
+
   .accountButton {
     width: 100%;
+  }
+
+  .notificationButton {
+    width: 3.2rem;
+    min-width: 3.2rem;
+    min-height: 3.2rem;
+    background: rgba(255, 255, 255, 0.94);
+    border-color: rgba(18, 45, 37, 0.08);
+    box-shadow: 0 8px 18px rgba(18, 45, 37, 0.045);
   }
 
   .actionDivider {
@@ -428,5 +658,19 @@
     width: 100%;
     min-width: 0;
     max-width: none;
+  }
+
+  .notificationPopover {
+    left: 0;
+    right: auto;
+    width: min(calc(100vw - 2rem), 26rem);
+  }
+
+  .notificationHeaderRow {
+    grid-template-columns: 1fr;
+  }
+
+  .notificationClearButton {
+    justify-self: start;
   }
 }

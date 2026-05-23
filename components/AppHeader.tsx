@@ -35,6 +35,26 @@ type SessionResponse = {
   } | null;
 };
 
+type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'account';
+
+type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
+
+type HeaderNotificationItem = {
+  id: string;
+  category: HeaderNotificationCategory;
+  tone: HeaderNotificationTone;
+  title: string;
+  body: string;
+  href: string;
+  createdAtIso: string;
+};
+
+type NotificationsResponse = {
+  ok: boolean;
+  notifications?: HeaderNotificationItem[];
+  error?: string;
+};
+
 type SmartLinkProps = {
   href: string;
   className: string;
@@ -116,6 +136,33 @@ function clearLegacyPrototypeStorage() {
   window.localStorage.removeItem('aim4price-tractors-kit-marketplace');
 }
 
+function getNotificationSeenStorageKey(userId: string): string {
+  return `aim4price-header-notifications-seen-${userId}`;
+}
+
+function parseTime(value: string | null | undefined): number {
+  if (!value) return 0;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatNotificationTime(value: string): string {
+  const time = parseTime(value);
+  if (!time) return '';
+
+  const diffMs = Date.now() - time;
+  const minuteMs = 60 * 1000;
+  const hourMs = 60 * minuteMs;
+  const dayMs = 24 * hourMs;
+
+  if (diffMs < minuteMs) return 'Just now';
+  if (diffMs < hourMs) return `${Math.max(1, Math.round(diffMs / minuteMs))} min ago`;
+  if (diffMs < dayMs) return `${Math.max(1, Math.round(diffMs / hourMs))} hr ago`;
+  if (diffMs < 7 * dayMs) return `${Math.max(1, Math.round(diffMs / dayMs))} days ago`;
+
+  return new Intl.DateTimeFormat('en-ZA', { day: '2-digit', month: 'short' }).format(new Date(time));
+}
+
 export default function AppHeader({
   active,
   signupHref = '/auth#signup',
@@ -126,13 +173,18 @@ export default function AppHeader({
   const primaryHref = ctaHref ?? signupHref;
   const router = useRouter();
   const pathname = usePathname();
-  const menuRef = useRef<HTMLDivElement | null>(null);
+  const accountMenuRef = useRef<HTMLDivElement | null>(null);
+  const notificationMenuRef = useRef<HTMLDivElement | null>(null);
   const hasLoadedSessionOnceRef = useRef(false);
 
   const [session, setSession] = useState<SessionResponse['user']>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<HeaderNotificationItem[]>([]);
+  const [notificationsSeenAt, setNotificationsSeenAt] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -175,14 +227,21 @@ export default function AppHeader({
 
   useEffect(() => {
     function handleDocumentClick(event: MouseEvent) {
-      if (!menuRef.current) return;
-      if (menuRef.current.contains(event.target as Node)) return;
-      setMenuOpen(false);
+      const target = event.target as Node;
+
+      if (accountMenuRef.current && !accountMenuRef.current.contains(target)) {
+        setMenuOpen(false);
+      }
+
+      if (notificationMenuRef.current && !notificationMenuRef.current.contains(target)) {
+        setNotificationOpen(false);
+      }
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         setMenuOpen(false);
+        setNotificationOpen(false);
       }
     }
 
@@ -195,11 +254,91 @@ export default function AppHeader({
     };
   }, []);
 
+  useEffect(() => {
+    if (!session?.id || typeof window === 'undefined') {
+      setNotificationsSeenAt(null);
+      return;
+    }
+
+    setNotificationsSeenAt(window.localStorage.getItem(getNotificationSeenStorageKey(session.id)));
+  }, [session?.id]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadNotifications() {
+      if (!session?.id) {
+        setNotifications([]);
+        setNotificationOpen(false);
+        return;
+      }
+
+      try {
+        setIsLoadingNotifications(true);
+        const response = await fetch('/api/notifications', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+
+        const data = (await response.json()) as NotificationsResponse;
+
+        if (!mounted) return;
+        setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
+      } catch {
+        if (!mounted) return;
+        setNotifications([]);
+      } finally {
+        if (mounted) {
+          setIsLoadingNotifications(false);
+        }
+      }
+    }
+
+    void loadNotifications();
+
+    return () => {
+      mounted = false;
+    };
+  }, [session?.id, pathname]);
+
   const accountName = useMemo(() => session?.name?.trim() || 'Aim4price User', [session]);
   const accountInitials = useMemo(() => getInitials(accountName), [accountName]);
   const accountType = session?.accountType ?? 'owner';
   const isOwnerAccount = accountType === 'owner';
   const navItems = useMemo(() => buildNavItems(session?.accountType ?? null), [session?.accountType]);
+  const latestNotificationTime = useMemo(
+    () => notifications.reduce((latest, item) => Math.max(latest, parseTime(item.createdAtIso)), 0),
+    [notifications],
+  );
+  const unreadNotificationCount = useMemo(() => {
+    const seenTime = parseTime(notificationsSeenAt);
+    return notifications.filter((item) => parseTime(item.createdAtIso) > seenTime).length;
+  }, [notifications, notificationsSeenAt]);
+  const notificationBadgeText = unreadNotificationCount > 9 ? '9+' : String(unreadNotificationCount);
+
+  function markNotificationsSeen() {
+    if (!session?.id || typeof window === 'undefined') return;
+
+    const nextSeenAt = latestNotificationTime ? new Date(latestNotificationTime).toISOString() : new Date().toISOString();
+    window.localStorage.setItem(getNotificationSeenStorageKey(session.id), nextSeenAt);
+    setNotificationsSeenAt(nextSeenAt);
+  }
+
+  function handleNotificationToggle() {
+    setNotificationOpen((current) => {
+      const nextOpen = !current;
+      if (nextOpen) {
+        setMenuOpen(false);
+        markNotificationsSeen();
+      }
+      return nextOpen;
+    });
+  }
+
+  function handleNotificationLinkClick() {
+    markNotificationsSeen();
+    setNotificationOpen(false);
+  }
 
   async function handleSignOut() {
     try {
@@ -217,6 +356,8 @@ export default function AppHeader({
       clearLegacyPrototypeStorage();
       setSession(null);
       setMenuOpen(false);
+      setNotificationOpen(false);
+      setNotifications([]);
       setIsSigningOut(false);
       router.refresh();
       window.location.href = '/';
@@ -259,55 +400,133 @@ export default function AppHeader({
         <div className={styles.actions}>
           <div className={styles.actionsRail}>
             {isLoadingSession ? null : session ? (
-              <div className={styles.accountMenu} ref={menuRef}>
-                <button
-                  type="button"
-                  className={styles.accountButton}
-                  aria-expanded={menuOpen}
-                  aria-haspopup="menu"
-                  onClick={() => setMenuOpen((current) => !current)}
-                >
-                  <span className={styles.accountAvatar} aria-hidden="true">
-                    {accountInitials}
-                  </span>
-                  <span className={styles.accountButtonText}>Account</span>
-                </button>
+              <>
+                <div className={styles.notificationMenu} ref={notificationMenuRef}>
+                  <button
+                    type="button"
+                    className={`${styles.notificationButton} ${unreadNotificationCount ? styles.notificationButtonActive : ''}`}
+                    aria-expanded={notificationOpen}
+                    aria-haspopup="menu"
+                    aria-label={
+                      unreadNotificationCount
+                        ? `Notifications, ${unreadNotificationCount} new`
+                        : 'Notifications'
+                    }
+                    onClick={handleNotificationToggle}
+                  >
+                    <svg className={styles.notificationIcon} viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M12 22a2.6 2.6 0 0 0 2.42-1.65H9.58A2.6 2.6 0 0 0 12 22Zm7.18-5.32-1.14-1.62a3.9 3.9 0 0 1-.72-2.25V9.7a5.35 5.35 0 0 0-4.05-5.18V3.9a1.27 1.27 0 1 0-2.54 0v.62A5.35 5.35 0 0 0 6.68 9.7v3.11c0 .81-.25 1.59-.72 2.25l-1.14 1.62a1.05 1.05 0 0 0 .86 1.66h12.64a1.05 1.05 0 0 0 .86-1.66Z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                    {unreadNotificationCount ? (
+                      <span className={styles.notificationBadge}>{notificationBadgeText}</span>
+                    ) : null}
+                  </button>
 
-                {menuOpen ? (
-                  <div className={styles.accountPopover} role="menu">
-                    <div className={styles.accountSummary}>
-                      <div className={styles.accountAvatarLarge}>{accountInitials}</div>
-                      <div className={styles.accountSummaryText}>
-                        <strong className={styles.accountName}>{accountName}</strong>
+                  {notificationOpen ? (
+                    <div className={styles.notificationPopover} role="menu">
+                      <div className={styles.notificationHeaderRow}>
+                        <div>
+                          <strong className={styles.notificationTitle}>Notifications</strong>
+                          <span className={styles.notificationSubtitle}>
+                            {isOwnerAccount
+                              ? 'Messages, notes, QR scans and fuel updates.'
+                              : 'New lead opportunities and account requests.'}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.notificationClearButton}
+                          onClick={markNotificationsSeen}
+                        >
+                          Mark checked
+                        </button>
+                      </div>
+
+                      <div className={styles.notificationList}>
+                        {isLoadingNotifications ? (
+                          <div className={styles.notificationEmpty}>Loading notifications...</div>
+                        ) : notifications.length ? (
+                          notifications.map((notification) => (
+                            <Link
+                              key={notification.id}
+                              href={notification.href}
+                              className={`${styles.notificationItem} ${styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`]}`}
+                              onClick={handleNotificationLinkClick}
+                            >
+                              <span className={styles.notificationDot} aria-hidden="true" />
+                              <span className={styles.notificationCopy}>
+                                <strong>{notification.title}</strong>
+                                <span>{notification.body}</span>
+                                <small>{formatNotificationTime(notification.createdAtIso)}</small>
+                              </span>
+                            </Link>
+                          ))
+                        ) : (
+                          <div className={styles.notificationEmpty}>
+                            No new messages, notes or lead updates yet.
+                          </div>
+                        )}
                       </div>
                     </div>
+                  ) : null}
+                </div>
 
-                    <Link href="/account" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                      Account details
-                    </Link>
-                    {isOwnerAccount ? (
-                      <>
-                        <Link href="/asset-map" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                          Asset map
-                        </Link>
+                <div className={styles.accountMenu} ref={accountMenuRef}>
+                  <button
+                    type="button"
+                    className={styles.accountButton}
+                    aria-expanded={menuOpen}
+                    aria-haspopup="menu"
+                    onClick={() => {
+                      setNotificationOpen(false);
+                      setMenuOpen((current) => !current);
+                    }}
+                  >
+                    <span className={styles.accountAvatar} aria-hidden="true">
+                      {accountInitials}
+                    </span>
+                    <span className={styles.accountButtonText}>Account</span>
+                  </button>
 
-                        <Link href="/fuel" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                          Fuel ledger
-                        </Link>
-                      </>
-                    ) : null}
+                  {menuOpen ? (
+                    <div className={styles.accountPopover} role="menu">
+                      <div className={styles.accountSummary}>
+                        <div className={styles.accountAvatarLarge}>{accountInitials}</div>
+                        <div className={styles.accountSummaryText}>
+                          <strong className={styles.accountName}>{accountName}</strong>
+                        </div>
+                      </div>
 
-                    <button
-                      type="button"
-                      className={styles.menuDangerButton}
-                      onClick={handleSignOut}
-                      disabled={isSigningOut}
-                    >
-                      {isSigningOut ? 'Signing out...' : 'Sign out'}
-                    </button>
-                  </div>
-                ) : null}
-              </div>
+                      <Link href="/account" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                        Account details
+                      </Link>
+                      {isOwnerAccount ? (
+                        <>
+                          <Link href="/asset-map" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                            Asset map
+                          </Link>
+
+                          <Link href="/fuel" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                            Fuel ledger
+                          </Link>
+                        </>
+                      ) : null}
+
+                      <button
+                        type="button"
+                        className={styles.menuDangerButton}
+                        onClick={handleSignOut}
+                        disabled={isSigningOut}
+                      >
+                        {isSigningOut ? 'Signing out...' : 'Sign out'}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </>
             ) : (
               <>
                 <SmartLink href={loginHref} className={styles.loginButton}>
