@@ -983,10 +983,6 @@ function formatRatioPercent(value: number): string {
   return `${normalized.toFixed(normalized % 1 === 0 ? 0 : 1)}%`;
 }
 
-function isPdfReportKind(value: string): value is PdfReportKind {
-  return PDF_REPORT_OPTIONS.some((option) => option.value === value);
-}
-
 function getPdfReportOption(reportKind: PdfReportKind): PdfReportOption {
   return PDF_REPORT_OPTIONS.find((option) => option.value === reportKind) ?? PDF_REPORT_OPTIONS[0];
 }
@@ -4447,15 +4443,9 @@ export default function AssetRegisterClient() {
     setPdfReportSelection('');
   }
 
-  function handlePdfReportSelectionChange(event: ChangeEvent<HTMLSelectElement>) {
-    const nextReportKind = event.target.value;
-
-    if (!isPdfReportKind(nextReportKind)) {
-      return;
-    }
-
-    setPdfReportSelection(nextReportKind);
-    void handleExportPdfReport(nextReportKind);
+  function handlePdfReportChoice(reportKind: PdfReportKind) {
+    setPdfReportSelection(reportKind);
+    void handleExportPdfReport(reportKind);
   }
 
   async function handleExportPdf(reportKind: PdfReportKind = pdfReportKind) {
@@ -6579,22 +6569,14 @@ export default function AssetRegisterClient() {
                         onClick={() => selectExportFormat('pdf')}
                         aria-pressed={exportFormat === 'pdf'}
                       >
-                        <div className={styles.exportOptionTop}>
-                          <span className={styles.exportGraphic}>
-                            <ExportGraphic src="/brand/pdf.png" alt="PDF export" icon={<PdfIcon className={styles.exportOptionIcon} />} />
-                          </span>
+                        <span className={styles.exportGraphic}>
+                          <ExportGraphic src="/brand/pdf.png" alt="PDF export" icon={<PdfIcon className={styles.exportOptionIcon} />} />
+                        </span>
 
-                          <div className={styles.exportOptionTitleBlock}>
-                            <strong>PDF summary</strong>
-                            <span className={styles.exportOptionStatus}>{exportFormat === 'pdf' ? 'Selected' : 'Select'}</span>
-                          </div>
-                        </div>
-
-                        <ul className={styles.exportFeatureList}>
-                          <li>Choose one of five filtered PDF reports</li>
-                          <li>Totals recalculate per selected report</li>
-                          <li>Clean client / bank handover</li>
-                        </ul>
+                        <span className={styles.exportOptionTitleBlock}>
+                          <strong>PDF summary</strong>
+                          <small>Choose a filtered PDF report for client, bank or insurance handover.</small>
+                        </span>
                       </button>
 
                       <button
@@ -6603,22 +6585,14 @@ export default function AssetRegisterClient() {
                         onClick={() => selectExportFormat('xlsx')}
                         aria-pressed={exportFormat === 'xlsx'}
                       >
-                        <div className={styles.exportOptionTop}>
-                          <span className={styles.exportGraphic}>
-                            <ExportGraphic src="/brand/sheet.png" alt="Spreadsheet export" icon={<SpreadsheetIcon className={styles.exportOptionIcon} />} />
-                          </span>
+                        <span className={styles.exportGraphic}>
+                          <ExportGraphic src="/brand/sheet.png" alt="Spreadsheet export" icon={<SpreadsheetIcon className={styles.exportOptionIcon} />} />
+                        </span>
 
-                          <div className={styles.exportOptionTitleBlock}>
-                            <strong>XLSX workbook</strong>
-                            <span className={styles.exportOptionStatus}>{exportFormat === 'xlsx' ? 'Selected' : 'Select'}</span>
-                          </div>
-                        </div>
-
-                        <ul className={styles.exportFeatureList}>
-                          <li>Detailed register rows</li>
-                          <li>Spreadsheet-friendly data</li>
-                          <li>Easy offline editing</li>
-                        </ul>
+                        <span className={styles.exportOptionTitleBlock}>
+                          <strong>XLSX workbook</strong>
+                          <small>Download detailed register rows in an Excel-friendly workbook.</small>
+                        </span>
                       </button>
                     </div>
 
@@ -6635,22 +6609,24 @@ export default function AssetRegisterClient() {
                   </>
                 ) : (
                   <>
-                    <div className={styles.pdfReportDropdownPanel}>
-                      <select
-                        className={styles.pdfReportDropdown}
-                        value={pdfReportSelection}
-                        onChange={handlePdfReportSelectionChange}
-                        disabled={isExporting}
-                        aria-label="Choose PDF summary option"
-                      >
-                        <option value="" disabled>Choose option</option>
+                    <div className={styles.pdfReportSelector}>
+                      <div className={styles.pdfReportChoices}>
                         {PDF_REPORT_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
+                          <button
+                            key={option.value}
+                            type="button"
+                            className={`${styles.pdfReportOption} ${pdfReportSelection === option.value ? styles.pdfReportOptionActive : ''}`}
+                            onClick={() => handlePdfReportChoice(option.value)}
+                            disabled={isExporting}
+                            aria-pressed={pdfReportSelection === option.value}
+                          >
+                            <span className={styles.pdfReportOptionMain}>
+                              <strong>{option.label}</strong>
+                              <small>{option.description}</small>
+                            </span>
+                          </button>
                         ))}
-                      </select>
-                      <ChevronDownIcon className={styles.pdfReportDropdownIcon} />
+                      </div>
                     </div>
 
                     <div className={`${styles.formActions} ${styles.exportActions}`}>

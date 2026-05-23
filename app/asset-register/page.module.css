@@ -16771,3 +16771,287 @@
   }
 }
 
+
+/* === Export asset register modal: align with Manage modal === */
+.exportModal {
+  width: min(100%, 900px) !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: clamp(1.35rem, 2.15vw, 1.75rem) !important;
+  border-radius: 2rem !important;
+}
+
+.exportModalHeader {
+  margin-bottom: 1.05rem !important;
+  padding-bottom: 1.05rem !important;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9) !important;
+}
+
+.exportModalHeader h3 {
+  font-size: clamp(1.72rem, 2.5vw, 2.18rem) !important;
+  font-weight: 760 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.052em !important;
+}
+
+.exportModalScrollBody {
+  flex: 0 0 auto !important;
+  min-height: auto !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  scrollbar-gutter: auto !important;
+}
+
+.exportModalBody {
+  display: grid !important;
+  gap: 1rem !important;
+}
+
+.exportChoices {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.86rem !important;
+}
+
+.exportOption {
+  min-height: 5.15rem !important;
+  display: grid !important;
+  grid-template-columns: 3.55rem minmax(0, 1fr) !important;
+  grid-template-rows: none !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  gap: 0.9rem !important;
+  padding: 1rem 1.05rem !important;
+  border-radius: 1.18rem !important;
+  color: #1d3b62 !important;
+  text-align: left !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.exportOption:hover {
+  border-color: rgba(184, 202, 218, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eef5fb 100%) !important;
+  box-shadow:
+    0 16px 30px rgba(16, 31, 28, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.exportOptionActive {
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.1), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%) !important;
+  border-color: rgba(190, 224, 206, 0.98) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.exportGraphic {
+  width: 3.55rem !important;
+  min-width: 3.55rem !important;
+  height: 3.55rem !important;
+  border-radius: 1rem !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  box-shadow:
+    0 9px 18px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.exportGraphicImage {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+}
+
+.exportGraphicFallback,
+.exportOptionIcon {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+}
+
+.exportOptionTitleBlock {
+  display: grid !important;
+  gap: 0.22rem !important;
+  min-width: 0 !important;
+  align-content: center !important;
+}
+
+.exportOptionTitleBlock strong {
+  color: #10352b !important;
+  font-size: 1rem !important;
+  font-weight: 850 !important;
+  line-height: 1.18 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.exportOptionTitleBlock small {
+  color: #627386 !important;
+  font-size: 0.83rem !important;
+  font-weight: 620 !important;
+  line-height: 1.32 !important;
+}
+
+.exportFeatureList,
+.exportOptionStatus {
+  display: none !important;
+}
+
+.exportActions {
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 0.72rem !important;
+  margin-top: 0.05rem !important;
+  padding: 0 !important;
+  border-top: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.exportActions::before,
+.exportActions::after {
+  display: none !important;
+  content: none !important;
+}
+
+.exportActions .primaryButton,
+.exportActions .secondaryButton {
+  min-height: 3.15rem !important;
+  border-radius: 1rem !important;
+  padding-inline: 1.15rem !important;
+  font-size: 0.96rem !important;
+  font-weight: 850 !important;
+  box-shadow: none !important;
+}
+
+.exportActions .primaryButton:hover,
+.exportActions .secondaryButton:hover {
+  box-shadow: none !important;
+}
+
+.pdfReportSelector {
+  display: grid !important;
+  gap: 0.86rem !important;
+}
+
+.pdfReportChoices {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.86rem !important;
+}
+
+.pdfReportOption {
+  appearance: none !important;
+  min-height: 5.15rem !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0.9rem !important;
+  padding: 1rem 1.05rem !important;
+  border-radius: 1.18rem !important;
+  color: #1d3b62 !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.pdfReportOption:hover {
+  transform: translateY(-1px);
+  border-color: rgba(184, 202, 218, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eef5fb 100%) !important;
+  box-shadow:
+    0 16px 30px rgba(16, 31, 28, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.pdfReportOption:focus-visible {
+  outline: none !important;
+  border-color: rgba(149, 204, 178, 0.98) !important;
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.11),
+    0 16px 30px rgba(16, 31, 28, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.pdfReportOption:disabled {
+  cursor: progress !important;
+  opacity: 0.72 !important;
+  transform: none !important;
+}
+
+.pdfReportOptionActive {
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.1), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%) !important;
+  border-color: rgba(190, 224, 206, 0.98) !important;
+}
+
+.pdfReportOptionMain {
+  display: grid !important;
+  gap: 0.22rem !important;
+  min-width: 0 !important;
+}
+
+.pdfReportOptionMain strong {
+  color: #10352b !important;
+  font-size: 1rem !important;
+  font-weight: 850 !important;
+  line-height: 1.18 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.pdfReportOptionMain small {
+  color: #627386 !important;
+  font-size: 0.83rem !important;
+  font-weight: 620 !important;
+  line-height: 1.32 !important;
+}
+
+@media (max-width: 900px) {
+  .exportModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: min(88vh, calc(100dvh - 1rem)) !important;
+    overflow: hidden !important;
+    padding: 1rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .exportModalScrollBody {
+    overflow-y: auto !important;
+    padding-right: 0.58rem !important;
+    margin-right: -0.2rem !important;
+  }
+
+  .exportChoices,
+  .pdfReportChoices {
+    grid-template-columns: 1fr !important;
+  }
+
+  .exportActions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .exportActions > button,
+  .exportActions .primaryButton,
+  .exportActions .secondaryButton {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
