@@ -15,7 +15,6 @@ type PartnerType = 'dealer' | 'finance' | 'insurance';
 type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote';
 type QuoteLeadStep = 'message' | 'consent' | null;
 type QuoteScope = 'asset' | 'register';
-type RegisterShareChannel = 'whatsapp' | 'email';
 
 type PartnerDirectoryEntry = {
   userId: string;
@@ -757,24 +756,6 @@ function ShareIcon({ className }: IconProps) {
   );
 }
 
-function MessageIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.7 8.7 0 0 1-3.95-.95L3 21l1.95-5.35A8.4 8.4 0 0 1 4 11.5 8.4 8.4 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5Z" />
-      <path d="M8.5 10h8" />
-      <path d="M8.5 13.5h5.5" />
-    </svg>
-  );
-}
-
-function EmailIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="m4 7 8 6 8-6" />
-    </svg>
-  );
-}
 
 function CopyIcon({ className }: IconProps) {
   return (
@@ -4387,56 +4368,6 @@ export default function AssetRegisterClient() {
     };
   }
 
-  function buildFullRegisterShareMessage(profile: AccountProfile | null): string {
-    const ownerName = buildOwnerName(profile);
-
-    return [
-      `Aim4price Full Asset Register - ${ownerName}`,
-      '',
-      `Assets: ${assets.length}`,
-      `Register value: ${money(totalValue)} excl. VAT (${money(totalValueInclVat)} incl. VAT)`,
-      '',
-      'A PDF register report has been prepared from Aim4price. Please see the attached PDF.',
-    ].join('\n');
-  }
-
-  async function handleShareFullRegisterPdf(channel: RegisterShareChannel) {
-    if (!assets.length || isExporting) {
-      return;
-    }
-
-    setIsRegisterShareModalOpen(false);
-    setIsExporting(true);
-
-    try {
-      const profile = reportProfile ?? (await ensureAccountProfile());
-      await handleExportPdf('full');
-      const message = buildFullRegisterShareMessage(profile);
-
-      if (channel === 'whatsapp') {
-        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
-        setNotice({
-          tone: 'success',
-          message: 'Full Asset Register PDF opened. Save it as PDF and attach it to the WhatsApp message.',
-        });
-      } else {
-        const subject = `Aim4price Full Asset Register - ${buildOwnerName(profile)}`;
-        window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
-        setNotice({
-          tone: 'success',
-          message: 'Full Asset Register PDF opened. Save it as PDF and attach it to the email.',
-        });
-      }
-    } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Failed to prepare the full Asset Register PDF.',
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  }
-
   function openFullRegisterQuotePartnerPicker(leadType: Extract<AssetLeadType, 'finance' | 'insurance'>) {
     const anchorAsset = assets[0];
 
@@ -5400,7 +5331,7 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalHeader} ${styles.summaryLeadModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-register-share-title">Share full Asset Register</h3>
-                <p>Send a once-off PDF report or create a full-register lead for a finance or insurance partner.</p>
+                <p>Send the complete register as a once-off lead to a finance or insurance partner.</p>
               </div>
 
               <button
@@ -5416,32 +5347,6 @@ export default function AssetRegisterClient() {
 
             <div className={`${styles.summaryLeadModalBody} ${styles.registerShareModalBody}`}>
               <div className={styles.registerShareOptionGrid}>
-                <button
-                  type="button"
-                  className={`${styles.optionActionButton} ${styles.registerShareOptionCard}`}
-                  onClick={() => void handleShareFullRegisterPdf('whatsapp')}
-                  disabled={isExporting}
-                >
-                  <MessageIcon className={styles.buttonIcon} />
-                  <span>
-                    <strong>Send via WhatsApp</strong>
-                    <small>Open the PDF report and a WhatsApp message. Save the PDF and attach it.</small>
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  className={`${styles.optionActionButton} ${styles.registerShareOptionCard}`}
-                  onClick={() => void handleShareFullRegisterPdf('email')}
-                  disabled={isExporting}
-                >
-                  <EmailIcon className={styles.buttonIcon} />
-                  <span>
-                    <strong>Send via email</strong>
-                    <small>Open the PDF report and an email draft. Save the PDF and attach it.</small>
-                  </span>
-                </button>
-
                 <button
                   type="button"
                   className={`${styles.optionActionButton} ${styles.registerShareOptionCard}`}

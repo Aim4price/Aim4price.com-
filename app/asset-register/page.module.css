@@ -16262,7 +16262,22 @@
 
 .registerShareModal {
   width: min(100%, 960px) !important;
-  padding: clamp(1.35rem, 2.3vw, 1.95rem) !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: clamp(1.35rem, 2.15vw, 1.75rem) !important;
+  border-radius: 2rem !important;
+}
+
+.registerShareModal .summaryLeadModalHeader {
+  margin-bottom: 1.05rem !important;
+  padding-bottom: 1.05rem !important;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9) !important;
+}
+
+.registerShareModal .summaryLeadModalHeader h3 {
+  font-size: clamp(1.72rem, 2.5vw, 2.18rem) !important;
+  font-weight: 760 !important;
+  letter-spacing: -0.052em !important;
 }
 
 .registerShareModal .modalHeaderText {
@@ -16271,104 +16286,84 @@
 
 .registerShareModal .summaryLeadModalHeader p {
   max-width: none !important;
+  color: #617286 !important;
+  font-size: 1rem !important;
+  font-weight: 620 !important;
+  line-height: 1.52 !important;
   white-space: nowrap !important;
 }
 
 .registerShareModalBody {
-  gap: 1.05rem !important;
+  gap: 1rem !important;
 }
 
 .registerShareOptionGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.05rem;
+  gap: 1rem;
 }
 
 .registerShareOptionCard {
-  position: relative !important;
   width: 100% !important;
-  min-height: 7.45rem !important;
+  min-height: 6.3rem !important;
   display: grid !important;
-  grid-template-columns: 3.45rem minmax(0, 1fr) !important;
-  align-items: center !important;
-  justify-content: start !important;
+  grid-template-columns: 1.42rem minmax(0, 1fr) !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
   gap: 1.08rem !important;
-  padding: 1.25rem 1.35rem !important;
-  overflow: hidden !important;
+  padding: 1.22rem 1.28rem !important;
   text-align: left !important;
   border-radius: 1.35rem !important;
-  color: #123d31 !important;
-  background:
-    radial-gradient(circle at top left, rgba(19, 116, 82, 0.08), transparent 38%),
-    linear-gradient(180deg, #ffffff 0%, #f6fafc 100%) !important;
-  border: 1px solid rgba(205, 221, 233, 0.98) !important;
+  color: #1d3b62 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
   box-shadow:
-    0 16px 34px rgba(17, 38, 52, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
-}
-
-.registerShareOptionCard::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: linear-gradient(135deg, rgba(21, 118, 83, 0.12), transparent 44%);
-  opacity: 0;
-  transition: opacity 160ms ease;
+    0 10px 22px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
 .registerShareOptionCard:hover:not(:disabled) {
-  color: #0d3329 !important;
-  background:
-    radial-gradient(circle at top left, rgba(19, 116, 82, 0.11), transparent 40%),
-    linear-gradient(180deg, #ffffff 0%, #f0f8f5 100%) !important;
-  border-color: rgba(142, 205, 172, 0.98) !important;
+  color: #1d3b62 !important;
+  border-color: rgba(184, 202, 218, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eef5fb 100%) !important;
   box-shadow:
-    0 18px 38px rgba(17, 79, 58, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
-}
-
-.registerShareOptionCard:hover:not(:disabled)::after {
-  opacity: 1;
+    0 16px 30px rgba(16, 31, 28, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
 .registerShareOptionCard > .buttonIcon {
-  position: relative !important;
-  z-index: 1 !important;
-  width: 3rem !important;
-  height: 3rem !important;
-  padding: 0.78rem !important;
-  justify-self: center !important;
-  color: #114234 !important;
-  border: 1px solid rgba(190, 224, 206, 0.98) !important;
-  border-radius: 1rem !important;
-  background: linear-gradient(180deg, #ffffff 0%, #edf8f3 100%) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+  width: 1.42rem !important;
+  height: 1.42rem !important;
+  margin-top: 0.1rem !important;
+  padding: 0 !important;
+  justify-self: start !important;
+  color: #1d3b62 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .registerShareOptionCard > span {
-  position: relative;
-  z-index: 1;
   display: grid;
-  gap: 0.34rem;
+  gap: 0.34rem !important;
   min-width: 0;
 }
 
 .registerShareOptionCard strong {
-  color: #0d3329;
-  font-size: 1.08rem;
-  font-weight: 900;
-  line-height: 1.12;
-  letter-spacing: -0.025em;
+  color: #10352b;
+  font-size: 1.12rem !important;
+  font-weight: 780 !important;
+  line-height: 1.18 !important;
+  letter-spacing: -0.024em !important;
 }
 
 .registerShareOptionCard small {
-  max-width: none;
-  color: #617286;
-  font-size: 0.9rem;
-  font-weight: 700;
-  line-height: 1.35;
+  max-width: 25rem !important;
+  color: #627386;
+  font-size: 0.94rem !important;
+  font-weight: 620 !important;
+  line-height: 1.42 !important;
 }
 
 @media (max-width: 980px) {
@@ -16382,6 +16377,8 @@
     width: min(100%, calc(100vw - 1rem)) !important;
     max-height: calc(100dvh - 1rem) !important;
     overflow-y: auto !important;
+    padding: 1rem !important;
+    border-radius: 1.35rem !important;
   }
 
   .registerShareOptionGrid {
@@ -16389,15 +16386,14 @@
   }
 
   .registerShareOptionCard {
-    min-height: 6.2rem !important;
-    grid-template-columns: 2.8rem minmax(0, 1fr) !important;
-    padding: 1rem 1.05rem !important;
+    min-height: 5.8rem !important;
+    grid-template-columns: 1.34rem minmax(0, 1fr) !important;
+    padding: 1.05rem 1.1rem !important;
   }
 
   .registerShareOptionCard > .buttonIcon {
-    width: 2.45rem !important;
-    height: 2.45rem !important;
-    padding: 0.64rem !important;
+    width: 1.34rem !important;
+    height: 1.34rem !important;
   }
 }
 
