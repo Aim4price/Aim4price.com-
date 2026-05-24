@@ -164,6 +164,13 @@ type AssetDocument = {
   uploadedAtIso: string;
 };
 
+type OpenPartnerNoteAttachment = {
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+  url: string;
+};
+
 type OpenPartnerNote = {
   id: string;
   ownerUserId: string;
@@ -174,6 +181,7 @@ type OpenPartnerNote = {
   partnerType?: PartnerType | null;
   partnerName: string;
   partnerBusinessName: string;
+  attachment?: OpenPartnerNoteAttachment | null;
   createdAtIso: string;
   notedAtIso: string | null;
   updatedAtIso: string;
@@ -5235,6 +5243,17 @@ export default function AssetRegisterClient() {
                               <div className={styles.partnerNoteText}>
                                 <strong>Note from {partnerNoteAuthor}</strong>
                                 <p>{openPartnerNote.noteText}</p>
+                                {openPartnerNote.attachment ? (
+                                  <a
+                                    className={styles.partnerNoteAttachmentLink}
+                                    href={openPartnerNote.attachment.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <span>Open quote PDF</span>
+                                    <small>{openPartnerNote.attachment.fileName} · {formatByteSize(openPartnerNote.attachment.byteSize)}</small>
+                                  </a>
+                                ) : null}
                               </div>
                               <button
                                 type="button"

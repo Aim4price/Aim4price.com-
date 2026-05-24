@@ -17732,3 +17732,56 @@
   outline: 3px solid rgba(239, 68, 68, 0.22) !important;
   outline-offset: 3px !important;
 }
+
+/* === Partner note PDF quote attachment === */
+.partnerNoteAttachmentLink {
+  display: inline-grid;
+  width: fit-content;
+  max-width: 100%;
+  gap: 0.12rem;
+  margin-top: 0.35rem;
+  padding: 0.55rem 0.72rem;
+  border: 1px solid rgba(37, 99, 235, 0.24);
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.86);
+  color: #1d4ed8;
+  text-decoration: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.partnerNoteAttachmentLink:hover {
+  border-color: rgba(37, 99, 235, 0.5);
+  background: #ffffff;
+}
+
+.partnerNoteAttachmentLink span {
+  color: inherit;
+  font-size: 0.88rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.partnerNoteAttachmentLink small {
+  color: inherit;
+  max-width: 34rem;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.35;
+  opacity: 0.8;
+  overflow-wrap: anywhere;
+}
+
+.partnerNoteBanner.assetQuoteToneFinance .partnerNoteAttachmentLink,
+.partnerNoteBanner.assetQuoteToneInsurance .partnerNoteAttachmentLink,
+.partnerNoteBanner.assetQuoteToneDealer .partnerNoteAttachmentLink {
+  color: var(--quote-accent-text) !important;
+  border-color: var(--quote-accent-border) !important;
+  background: #ffffff !important;
+}
+
+.partnerNoteBanner.assetQuoteToneFinance .partnerNoteAttachmentLink:hover,
+.partnerNoteBanner.assetQuoteToneInsurance .partnerNoteAttachmentLink:hover,
+.partnerNoteBanner.assetQuoteToneDealer .partnerNoteAttachmentLink:hover {
+  border-color: var(--quote-accent-border-strong) !important;
+  background: var(--quote-accent-soft) !important;
+}
