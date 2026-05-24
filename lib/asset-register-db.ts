@@ -1393,14 +1393,20 @@ export async function listAssetRegisterItems(userId: string): Promise<AssetRegis
   const db = getDb();
   const schema = await getAssetRegisterSchema();
 
-  const orderColumn = resolveColumn(schema, 'created_at', 'id') ?? 'id';
+  const updatedOrderColumn = resolveColumn(schema, 'updated_at', 'modified_at', 'updatedon');
+  const createdOrderColumn = resolveColumn(schema, 'created_at');
+  const primaryOrderExpression = updatedOrderColumn && createdOrderColumn
+    ? `coalesce(${updatedOrderColumn}, ${createdOrderColumn})`
+    : updatedOrderColumn ?? createdOrderColumn ?? 'id';
+  const secondaryOrderClause = createdOrderColumn ? `, ${createdOrderColumn} desc nulls last` : '';
+
   const result = await db.query<AssetRegisterRow>(
     `
       select
         ${buildSelectList(schema)}
       from asset_register_items
       where user_id = $1
-      order by ${orderColumn} desc, id desc
+      order by ${primaryOrderExpression} desc nulls last${secondaryOrderClause}, id desc
     `,
     [userId],
   );
