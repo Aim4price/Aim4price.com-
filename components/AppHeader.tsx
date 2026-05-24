@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -178,6 +179,7 @@ export default function AppHeader({
   const pathname = usePathname();
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const notificationMenuRef = useRef<HTMLDivElement | null>(null);
+  const notificationDialogRef = useRef<HTMLElement | null>(null);
   const hasLoadedSessionOnceRef = useRef(false);
 
   const [session, setSession] = useState<SessionResponse['user']>(null);
@@ -189,6 +191,11 @@ export default function AppHeader({
   const [notifications, setNotifications] = useState<HeaderNotificationItem[]>([]);
   const [notificationsSeenAt, setNotificationsSeenAt] = useState<string | null>(null);
   const [processingContactRequestIds, setProcessingContactRequestIds] = useState<Set<string>>(() => new Set());
+  const [canUseNotificationPortal, setCanUseNotificationPortal] = useState(false);
+
+  useEffect(() => {
+    setCanUseNotificationPortal(true);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -237,7 +244,10 @@ export default function AppHeader({
         setMenuOpen(false);
       }
 
-      if (notificationMenuRef.current && !notificationMenuRef.current.contains(target)) {
+      const clickedInsideNotificationButton = notificationMenuRef.current?.contains(target) ?? false;
+      const clickedInsideNotificationDialog = notificationDialogRef.current?.contains(target) ?? false;
+
+      if (!clickedInsideNotificationButton && !clickedInsideNotificationDialog) {
         setNotificationOpen(false);
       }
     }
@@ -410,8 +420,124 @@ export default function AppHeader({
     }
   }
 
+
+  const notificationPortal =
+    notificationOpen && canUseNotificationPortal
+      ? createPortal(
+          <div
+            className={styles.notificationModalBackdrop}
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setNotificationOpen(false);
+              }
+            }}
+          >
+            <section
+              id="header-notifications-modal"
+              ref={notificationDialogRef}
+              className={styles.notificationModal}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="header-notifications-title"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className={styles.notificationHeaderRow}>
+                <div>
+                  <span className={styles.notificationEyebrow}>Account activity</span>
+                  <strong id="header-notifications-title" className={styles.notificationTitle}>
+                    Notifications
+                  </strong>
+                  <span className={styles.notificationSubtitle}>
+                    {isOwnerAccount
+                      ? 'Messages, notes, contact requests, QR scans and fuel updates.'
+                      : 'New lead opportunities and account requests.'}
+                  </span>
+                </div>
+
+                <div className={styles.notificationHeaderActions}>
+                  <button type="button" className={styles.notificationClearButton} onClick={markNotificationsSeen}>
+                    Mark checked
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.notificationCloseButton}
+                    aria-label="Close notifications"
+                    onClick={() => setNotificationOpen(false)}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.notificationList}>
+                {isLoadingNotifications ? (
+                  <div className={styles.notificationEmpty}>Loading notifications...</div>
+                ) : notifications.length ? (
+                  notifications.map((notification) =>
+                    notification.category === 'contact_request' && notification.contactRequestId ? (
+                      <div
+                        key={notification.id}
+                        className={`${styles.notificationItem} ${styles.notificationItemActionable} ${styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`]}`}
+                      >
+                        <span className={styles.notificationDot} aria-hidden="true" />
+                        <span className={styles.notificationCopy}>
+                          <strong>{notification.title}</strong>
+                          <span>{notification.body}</span>
+                          <small>{formatNotificationTime(notification.createdAtIso)}</small>
+                          <span className={styles.notificationActionRow}>
+                            <button
+                              type="button"
+                              className={styles.notificationApproveButton}
+                              onClick={() =>
+                                handleContactRequestDecision(notification.contactRequestId as string, 'approved')
+                              }
+                              disabled={processingContactRequestIds.has(notification.contactRequestId)}
+                            >
+                              Share contact details
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.notificationDenyButton}
+                              onClick={() =>
+                                handleContactRequestDecision(notification.contactRequestId as string, 'denied')
+                              }
+                              disabled={processingContactRequestIds.has(notification.contactRequestId)}
+                            >
+                              Deny request
+                            </button>
+                          </span>
+                        </span>
+                      </div>
+                    ) : (
+                      <Link
+                        key={notification.id}
+                        href={notification.href}
+                        className={`${styles.notificationItem} ${styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`]}`}
+                        onClick={handleNotificationLinkClick}
+                      >
+                        <span className={styles.notificationDot} aria-hidden="true" />
+                        <span className={styles.notificationCopy}>
+                          <strong>{notification.title}</strong>
+                          <span>{notification.body}</span>
+                          <small>{formatNotificationTime(notification.createdAtIso)}</small>
+                        </span>
+                      </Link>
+                    ),
+                  )
+                ) : (
+                  <div className={styles.notificationEmpty}>No new messages, notes or lead updates yet.</div>
+                )}
+              </div>
+            </section>
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
-    <header className={styles.header}>
+    <>
+      <header className={styles.header}>
       <div className={styles.inner}>
         <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
           <Image
@@ -472,112 +598,6 @@ export default function AppHeader({
                     ) : null}
                   </button>
 
-                  {notificationOpen ? (
-                    <div
-                      className={styles.notificationModalBackdrop}
-                      role="presentation"
-                      onClick={() => setNotificationOpen(false)}
-                    >
-                      <section
-                        id="header-notifications-modal"
-                        className={styles.notificationModal}
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="header-notifications-title"
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        <div className={styles.notificationHeaderRow}>
-                          <div>
-                            <span className={styles.notificationEyebrow}>Account activity</span>
-                            <strong id="header-notifications-title" className={styles.notificationTitle}>
-                              Notifications
-                            </strong>
-                            <span className={styles.notificationSubtitle}>
-                              {isOwnerAccount
-                                ? 'Messages, notes, contact requests, QR scans and fuel updates.'
-                                : 'New lead opportunities and account requests.'}
-                            </span>
-                          </div>
-
-                          <div className={styles.notificationHeaderActions}>
-                            <button
-                              type="button"
-                              className={styles.notificationClearButton}
-                              onClick={markNotificationsSeen}
-                            >
-                              Mark checked
-                            </button>
-                            <button
-                              type="button"
-                              className={styles.notificationCloseButton}
-                              aria-label="Close notifications"
-                              onClick={() => setNotificationOpen(false)}
-                            >
-                              ×
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className={styles.notificationList}>
-                          {isLoadingNotifications ? (
-                            <div className={styles.notificationEmpty}>Loading notifications...</div>
-                          ) : notifications.length ? (
-                            notifications.map((notification) => (
-                              notification.category === 'contact_request' && notification.contactRequestId ? (
-                                <div
-                                  key={notification.id}
-                                  className={`${styles.notificationItem} ${styles.notificationItemActionable} ${styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`]}`}
-                                >
-                                  <span className={styles.notificationDot} aria-hidden="true" />
-                                  <span className={styles.notificationCopy}>
-                                    <strong>{notification.title}</strong>
-                                    <span>{notification.body}</span>
-                                    <small>{formatNotificationTime(notification.createdAtIso)}</small>
-                                    <span className={styles.notificationActionRow}>
-                                      <button
-                                        type="button"
-                                        className={styles.notificationApproveButton}
-                                        onClick={() => handleContactRequestDecision(notification.contactRequestId as string, 'approved')}
-                                        disabled={processingContactRequestIds.has(notification.contactRequestId)}
-                                      >
-                                        Share contact details
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className={styles.notificationDenyButton}
-                                        onClick={() => handleContactRequestDecision(notification.contactRequestId as string, 'denied')}
-                                        disabled={processingContactRequestIds.has(notification.contactRequestId)}
-                                      >
-                                        Deny request
-                                      </button>
-                                    </span>
-                                  </span>
-                                </div>
-                              ) : (
-                                <Link
-                                  key={notification.id}
-                                  href={notification.href}
-                                  className={`${styles.notificationItem} ${styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`]}`}
-                                  onClick={handleNotificationLinkClick}
-                                >
-                                  <span className={styles.notificationDot} aria-hidden="true" />
-                                  <span className={styles.notificationCopy}>
-                                    <strong>{notification.title}</strong>
-                                    <span>{notification.body}</span>
-                                    <small>{formatNotificationTime(notification.createdAtIso)}</small>
-                                  </span>
-                                </Link>
-                              )
-                            ))
-                          ) : (
-                            <div className={styles.notificationEmpty}>
-                              No new messages, notes or lead updates yet.
-                            </div>
-                          )}
-                        </div>
-                      </section>
-                    </div>
-                  ) : null}
                 </div>
 
                 <div className={styles.accountMenu} ref={accountMenuRef}>
@@ -651,6 +671,8 @@ export default function AppHeader({
           </div>
         </div>
       </div>
-    </header>
+      </header>
+      {notificationPortal}
+    </>
   );
 }
