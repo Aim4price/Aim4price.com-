@@ -691,9 +691,13 @@ export default function FuelClient() {
               </label>
             </div>
 
-            <div className={styles.modalActions}>
-              <button type="button" className={`${styles.secondaryButton} ${styles.modalCancelAction}`} onClick={closeModal} disabled={isSaving}>Cancel</button>
-              <button type="submit" className={`${styles.primaryButton} ${styles.modalSubmitButton} ${styles.modalPrimaryAction}`} disabled={isSaving}>{isSaving ? 'Saving...' : modalMode === 'edit-storage' ? 'Save Changes' : 'Save Storage'}</button>
+            <div className={styles.fuelModalFooter}>
+              <button type="button" className={styles.fuelModalCancelButton} onClick={closeModal} disabled={isSaving}>Cancel</button>
+              {modalMode === 'edit-storage' ? (
+                <button type="submit" className={styles.fuelModalPrimaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Changes'}</button>
+              ) : (
+                <button type="submit" className={styles.fuelModalPrimaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Storage'}</button>
+              )}
             </div>
           </form>
         </div>
@@ -713,9 +717,9 @@ export default function FuelClient() {
               New PIN
               <input value={pinDraft} onChange={(event) => setPinDraft(event.target.value)} inputMode="numeric" placeholder="4 to 8 digits" required />
             </label>
-            <div className={styles.modalActions}>
-              <button type="button" className={`${styles.secondaryButton} ${styles.modalCancelAction}`} onClick={closeModal} disabled={isSaving}>Cancel</button>
-              <button type="submit" className={`${styles.primaryButton} ${styles.modalSubmitButton} ${styles.modalPrimaryAction}`} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save PIN'}</button>
+            <div className={styles.fuelModalFooter}>
+              <button type="button" className={styles.fuelModalCancelButton} onClick={closeModal} disabled={isSaving}>Cancel</button>
+              <button type="submit" className={styles.fuelModalPrimaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save PIN'}</button>
             </div>
           </form>
         </div>
