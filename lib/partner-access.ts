@@ -59,6 +59,13 @@ export type AssetLead = {
 
 export type AssetPartnerNoteStatus = 'open' | 'noted';
 
+export type AssetPartnerNoteAttachment = {
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+  url: string;
+};
+
 export type AssetPartnerNote = {
   id: string;
   ownerUserId: string;
@@ -69,9 +76,17 @@ export type AssetPartnerNote = {
   partnerType: PartnerType | null;
   partnerName: string;
   partnerBusinessName: string;
+  attachment: AssetPartnerNoteAttachment | null;
   createdAtIso: string;
   notedAtIso: string | null;
   updatedAtIso: string;
+};
+
+type CreateAssetLeadNoteAttachmentInput = {
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+  data: Buffer;
 };
 
 type AccountPartnerProfileRow = {
@@ -134,6 +149,9 @@ type AssetPartnerNoteRow = {
   partner_type: string | null;
   partner_display_name: string | null;
   partner_business_name: string | null;
+  attachment_file_name: string | null;
+  attachment_content_type: string | null;
+  attachment_byte_size: string | number | null;
   created_at: string | null;
   noted_at: string | null;
   updated_at: string | null;
@@ -354,6 +372,10 @@ export async function ensurePartnerAccessTables(): Promise<void> {
       add column if not exists asset_register_item_id uuid,
       add column if not exists note_text text,
       add column if not exists status text not null default 'open',
+      add column if not exists attachment_file_name text,
+      add column if not exists attachment_content_type text,
+      add column if not exists attachment_byte_size integer,
+      add column if not exists attachment_data bytea,
       add column if not exists created_at timestamptz not null default now(),
       add column if not exists noted_at timestamptz,
       add column if not exists updated_at timestamptz not null default now()
@@ -519,6 +541,21 @@ function normalizeAssetPartnerNoteStatus(value: unknown): AssetPartnerNoteStatus
   return ASSET_PARTNER_NOTE_STATUSES.has(normalized as AssetPartnerNoteStatus) ? (normalized as AssetPartnerNoteStatus) : 'open';
 }
 
+function mapAssetPartnerNoteAttachment(row: Pick<AssetPartnerNoteRow, 'id' | 'attachment_file_name' | 'attachment_content_type' | 'attachment_byte_size'>): AssetPartnerNoteAttachment | null {
+  const fileName = asText(row.attachment_file_name);
+
+  if (!fileName) {
+    return null;
+  }
+
+  return {
+    fileName,
+    contentType: asText(row.attachment_content_type) || 'application/pdf',
+    byteSize: asInteger(row.attachment_byte_size) ?? 0,
+    url: `/api/asset-notes/${encodeURIComponent(row.id)}/attachment`,
+  };
+}
+
 function mapAssetPartnerNoteRow(row: AssetPartnerNoteRow): AssetPartnerNote {
   const partnerBusinessName = asText(row.partner_business_name);
   const partnerName = asText(row.partner_display_name) || partnerBusinessName || 'Aim4price partner';
@@ -533,6 +570,7 @@ function mapAssetPartnerNoteRow(row: AssetPartnerNoteRow): AssetPartnerNote {
     partnerType: normalizePartnerType(row.partner_type),
     partnerName,
     partnerBusinessName,
+    attachment: mapAssetPartnerNoteAttachment(row),
     createdAtIso: isoNowFallback(row.created_at),
     notedAtIso: row.noted_at,
     updatedAtIso: isoNowFallback(row.updated_at),
@@ -551,6 +589,9 @@ function assetPartnerNoteSelectSql(whereClause: string): string {
       partner.account_type as partner_type,
       partner.display_name as partner_display_name,
       partner.business_name as partner_business_name,
+      n.attachment_file_name,
+      n.attachment_content_type,
+      n.attachment_byte_size,
       n.created_at::text,
       n.noted_at::text,
       n.updated_at::text
@@ -967,13 +1008,17 @@ export async function createAssetLeadNote(input: {
   currentUserId: string;
   leadId: string;
   noteText: unknown;
+  attachment?: CreateAssetLeadNoteAttachmentInput | null;
 }): Promise<AssetPartnerNote> {
   await ensurePartnerAccessTables();
   const noteText = asText(input.noteText);
+  const attachment = input.attachment ?? null;
 
-  if (!noteText) {
+  if (!noteText && !attachment) {
     throw new Error('NOTE_REQUIRED');
   }
+
+  const storedNoteText = noteText || 'PDF quote attached.';
 
   const db = getDb();
   const current = await db.query<LeadRow>(`${leadSelectSql('where l.id = $1::uuid')} limit 1`, [input.leadId]);
@@ -1000,10 +1045,14 @@ export async function createAssetLeadNote(input: {
         asset_register_item_id,
         note_text,
         status,
+        attachment_file_name,
+        attachment_content_type,
+        attachment_byte_size,
+        attachment_data,
         created_at,
         updated_at
       )
-      values ($1, $2, $3::uuid, $4, 'open', now(), now())
+      values ($1, $2, $3::uuid, $4, 'open', $5, $6, $7, $8, now(), now())
       returning
         id::text,
         owner_user_id,
@@ -1014,11 +1063,23 @@ export async function createAssetLeadNote(input: {
         null::text as partner_type,
         null::text as partner_display_name,
         null::text as partner_business_name,
+        attachment_file_name,
+        attachment_content_type,
+        attachment_byte_size,
         created_at::text,
         noted_at::text,
         updated_at::text
     `,
-    [lead.ownerUserId, input.currentUserId, lead.assetRegisterItemId, noteText],
+    [
+      lead.ownerUserId,
+      input.currentUserId,
+      lead.assetRegisterItemId,
+      storedNoteText,
+      attachment?.fileName ?? null,
+      attachment?.contentType ?? null,
+      attachment?.byteSize ?? null,
+      attachment?.data ?? null,
+    ],
   );
 
   const createdRow = created.rows[0];
@@ -1043,6 +1104,57 @@ export async function createAssetLeadNote(input: {
   });
 
   return note;
+}
+
+export async function getAssetPartnerNoteAttachmentForUser(input: {
+  currentUserId: string;
+  noteId: string;
+}): Promise<{ fileName: string; contentType: string; byteSize: number; data: Buffer }> {
+  await ensurePartnerAccessTables();
+  const db = getDb();
+  const result = await db.query<{
+    owner_user_id: string;
+    partner_user_id: string;
+    attachment_file_name: string | null;
+    attachment_content_type: string | null;
+    attachment_byte_size: string | number | null;
+    attachment_data: Buffer | null;
+  }>(
+    `
+      select
+        owner_user_id,
+        partner_user_id,
+        attachment_file_name,
+        attachment_content_type,
+        attachment_byte_size,
+        attachment_data
+      from asset_partner_notes
+      where id = $1::uuid
+      limit 1
+    `,
+    [input.noteId],
+  );
+
+  const row = result.rows[0];
+
+  if (!row) {
+    throw new Error('ASSET_NOTE_NOT_FOUND');
+  }
+
+  if (row.owner_user_id !== input.currentUserId && row.partner_user_id !== input.currentUserId) {
+    throw new Error('ASSET_NOTE_FORBIDDEN');
+  }
+
+  if (!row.attachment_data || !asText(row.attachment_file_name)) {
+    throw new Error('ASSET_NOTE_ATTACHMENT_NOT_FOUND');
+  }
+
+  return {
+    fileName: asText(row.attachment_file_name),
+    contentType: asText(row.attachment_content_type) || 'application/pdf',
+    byteSize: asInteger(row.attachment_byte_size) ?? row.attachment_data.length,
+    data: row.attachment_data,
+  };
 }
 
 export async function deleteDeclinedAssetLead(input: {
