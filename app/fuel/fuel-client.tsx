@@ -563,7 +563,7 @@ export default function FuelClient() {
           <section className={styles.ledgerPanel}>
             <div className={styles.panelHeader}>
               <div className={styles.pageTitleBlock}>
-                <h1>Aim4price Fuel Tracking System</h1>
+                <h1>AIM4PRICE FUEL TRACKING SYSTEM</h1>
               </div>
 
               <div className={styles.topActions}>
