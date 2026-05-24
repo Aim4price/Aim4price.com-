@@ -285,25 +285,25 @@ function buildPopupHtml(asset: AssetMapItem, markerNumber: number): string {
   const licensed = escapeHtml(formatAssetStatusChoice(asset.licenseStatus));
   const registration = escapeHtml(asset.licenseRegistrationNumber || '');
   const registrationRow = asset.licenseStatus === 'yes' && registration
-    ? `<div style="display:grid; gap:2px;"><span style="color:#607182; font-size:10px; font-weight:850; letter-spacing:0.08em; text-transform:uppercase;">Registration</span><strong style="color:#123130; font-size:12px; font-weight:850;">${registration}</strong></div>`
+    ? `<div style="display:grid; gap:2px;"><span style="color:#607182; font-size:9.5px; font-weight:850; letter-spacing:0.075em; text-transform:uppercase;">Registration</span><strong style="color:#123130; font-size:11.5px; line-height:1.18; font-weight:850;">${registration}</strong></div>`
     : '';
   const gps = escapeHtml(formatLatLng(asset));
 
   return `
-    <div style="min-width: 246px; max-width: 276px; font-family: Montserrat, Inter, Arial, sans-serif; color: #122f2a; padding:2px;">
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-        <div style="display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:999px; color:#fff; background:#103f35; font-size:12px; font-weight:900; box-shadow:0 9px 18px rgba(16,63,53,.18); flex:0 0 auto;">${markerNumber}</div>
-        <div style="min-width:0; display:grid; gap:3px;">
-          <div style="font-weight: 900; font-size: 15px; line-height: 1.12; letter-spacing: -0.035em; color:#0b3328; overflow-wrap:anywhere;">${title}</div>
-          <div style="font-size: 11px; color: #667581; font-weight:720;">${plate}</div>
+    <div style="min-width: 236px; max-width: 268px; font-family: Montserrat, Inter, Arial, sans-serif; color: #122f2a; padding:2px;">
+      <div style="display:flex; align-items:center; gap:9px; margin-bottom:11px; padding-right:12px;">
+        <div style="display:inline-flex; align-items:center; justify-content:center; width:29px; height:29px; border-radius:999px; color:#fff; background:#103f35; font-size:12px; font-weight:900; box-shadow:0 9px 18px rgba(16,63,53,.18); flex:0 0 auto;">${markerNumber}</div>
+        <div style="min-width:0; display:grid; gap:2px;">
+          <div style="font-weight: 900; font-size: 14px; line-height: 1.12; letter-spacing: -0.032em; color:#0b3328; overflow-wrap:anywhere;">${title}</div>
+          <div style="font-size: 10.5px; color: #667581; font-weight:760;">${plate}</div>
         </div>
       </div>
-      <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; font-size:12px; color:#53666b;">
-        <div style="display:grid; gap:2px;"><span style="color:#607182; font-size:10px; font-weight:850; letter-spacing:0.08em; text-transform:uppercase;">Asset type</span><strong style="color:#123130; font-size:12px; font-weight:850;">${assetType}</strong></div>
-        <div style="display:grid; gap:2px;"><span style="color:#607182; font-size:10px; font-weight:850; letter-spacing:0.08em; text-transform:uppercase;">Fuel</span><strong style="color:#123130; font-size:12px; font-weight:850;">${fuel}</strong></div>
-        <div style="display:grid; gap:2px;"><span style="color:#607182; font-size:10px; font-weight:850; letter-spacing:0.08em; text-transform:uppercase;">Licensed</span><strong style="color:#123130; font-size:12px; font-weight:850;">${licensed}</strong></div>
+      <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 10px; font-size:11.5px; color:#53666b;">
+        <div style="display:grid; gap:2px;"><span style="color:#607182; font-size:9.5px; font-weight:850; letter-spacing:0.075em; text-transform:uppercase;">Asset type</span><strong style="color:#123130; font-size:11.5px; line-height:1.18; font-weight:850;">${assetType}</strong></div>
+        <div style="display:grid; gap:2px;"><span style="color:#607182; font-size:9.5px; font-weight:850; letter-spacing:0.075em; text-transform:uppercase;">Fuel</span><strong style="color:#123130; font-size:11.5px; line-height:1.18; font-weight:850;">${fuel}</strong></div>
+        <div style="display:grid; gap:2px;"><span style="color:#607182; font-size:9.5px; font-weight:850; letter-spacing:0.075em; text-transform:uppercase;">Licensed</span><strong style="color:#123130; font-size:11.5px; line-height:1.18; font-weight:850;">${licensed}</strong></div>
         ${registrationRow}
-        <div style="grid-column:1 / -1; display:grid; gap:2px;"><span style="color:#607182; font-size:10px; font-weight:850; letter-spacing:0.08em; text-transform:uppercase;">GPS</span><strong style="color:#123130; font-size:12px; font-weight:850;">${gps}</strong></div>
+        <div style="grid-column:1 / -1; display:grid; gap:2px;"><span style="color:#607182; font-size:9.5px; font-weight:850; letter-spacing:0.075em; text-transform:uppercase;">GPS</span><strong style="color:#123130; font-size:11.5px; line-height:1.18; font-weight:850;">${gps}</strong></div>
       </div>
     </div>
   `;
