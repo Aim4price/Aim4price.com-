@@ -3,9 +3,16 @@
   --lead-muted: #637282;
   --lead-line: rgba(206, 218, 229, 0.98);
   --lead-soft: #f5f8fb;
-  --lead-danger: #a13a3a;
-  --lead-danger-soft: #fff4f4;
-  --lead-danger-line: #eed3d3;
+  --lead-danger: #9c3434;
+  --lead-danger-soft: #fff3f3;
+  --lead-danger-line: #efc4c4;
+  --lead-danger-hover: #ffe7e7;
+  --lead-danger-line-hover: #e8abab;
+  --lead-mint-text: #0d5a42;
+  --lead-mint-soft: #ebf9f2;
+  --lead-mint-line: #85cfaa;
+  --lead-mint-hover: #ddf3e8;
+  --lead-mint-line-hover: #58b985;
 }
 
 .leadsRegisterPanel {
@@ -216,10 +223,12 @@
 }
 
 .openLeadButton {
-  border-color: rgba(7, 104, 76, 0.95) !important;
-  background: linear-gradient(180deg, #1a8664 0%, #0f684f 100%) !important;
-  color: #ffffff !important;
-  box-shadow: 0 14px 24px rgba(12, 105, 80, 0.18) !important;
+  color: var(--lead-mint-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--lead-mint-soft) 100%) !important;
+  border-color: var(--lead-mint-line) !important;
+  box-shadow:
+    0 10px 22px rgba(10, 84, 61, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
 .closeLeadButton {
@@ -242,9 +251,22 @@
   transform: translateY(-1px);
 }
 
+.openLeadButton:hover {
+  color: #083f2f !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--lead-mint-hover) 100%) !important;
+  border-color: var(--lead-mint-line-hover) !important;
+  box-shadow:
+    0 14px 28px rgba(10, 84, 61, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
 .deleteLeadButton:hover {
-  background: #ffecec !important;
-  border-color: #e8c7c7 !important;
+  color: #842929 !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--lead-danger-hover) 100%) !important;
+  border-color: var(--lead-danger-line-hover) !important;
+  box-shadow:
+    0 12px 24px rgba(142, 51, 51, 0.105),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
 }
 
 .leadAssetCard {
@@ -929,21 +951,21 @@
 }
 
 .deleteLeadButton {
-  color: #ffffff !important;
-  background: linear-gradient(180deg, #d85252 0%, #a83333 100%) !important;
-  border-color: rgba(152, 43, 43, 0.98) !important;
+  color: var(--lead-danger) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--lead-danger-soft) 100%) !important;
+  border-color: var(--lead-danger-line) !important;
   box-shadow:
-    0 12px 24px rgba(145, 44, 44, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    0 9px 20px rgba(142, 51, 51, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
 .deleteLeadButton:hover {
-  color: #ffffff !important;
-  background: linear-gradient(180deg, #c94444 0%, #932a2a 100%) !important;
-  border-color: rgba(132, 35, 35, 0.98) !important;
+  color: #842929 !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--lead-danger-hover) 100%) !important;
+  border-color: var(--lead-danger-line-hover) !important;
   box-shadow:
-    0 15px 28px rgba(145, 44, 44, 0.23),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    0 12px 24px rgba(142, 51, 51, 0.105),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
 }
 
 .leadDeleteConfirmButton,
