@@ -443,7 +443,7 @@ export default function AppHeader({
               onMouseDown={(event) => event.stopPropagation()}
             >
               <div className={styles.notificationHeaderRow}>
-                <div>
+                <div className={styles.notificationHeaderText}>
                   <span className={styles.notificationEyebrow}>Account activity</span>
                   <strong id="header-notifications-title" className={styles.notificationTitle}>
                     Notifications
@@ -456,7 +456,12 @@ export default function AppHeader({
                 </div>
 
                 <div className={styles.notificationHeaderActions}>
-                  <button type="button" className={styles.notificationClearButton} onClick={markNotificationsSeen}>
+                  <button
+                    type="button"
+                    className={styles.notificationClearButton}
+                    onClick={markNotificationsSeen}
+                    aria-label="Mark all notifications checked"
+                  >
                     Mark checked
                   </button>
                   <button
@@ -468,6 +473,23 @@ export default function AppHeader({
                     ×
                   </button>
                 </div>
+              </div>
+
+              <div className={styles.notificationListHeader} aria-live="polite">
+                <span>
+                  {isLoadingNotifications
+                    ? 'Checking activity'
+                    : notifications.length
+                      ? `${notifications.length} ${notifications.length === 1 ? 'notification' : 'notifications'}`
+                      : 'No notifications'}
+                </span>
+                <strong>
+                  {unreadNotificationCount
+                    ? `${unreadNotificationCount} new`
+                    : notifications.length
+                      ? 'All checked'
+                      : 'Clear'}
+                </strong>
               </div>
 
               <div className={styles.notificationList}>
