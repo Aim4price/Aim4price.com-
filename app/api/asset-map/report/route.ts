@@ -88,6 +88,28 @@ function formatFileDate(value = new Date()): string {
   return value.toISOString().slice(0, 10);
 }
 
+function formatFileSegment(value: string): string {
+  return (
+    asText(value)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 70) || 'asset'
+  );
+}
+
+function buildReportFilename(assets: PrintableAsset[], generatedAt = new Date()): string {
+  const dateSegment = formatFileDate(generatedAt);
+
+  if (assets.length === 1) {
+    const asset = assets[0];
+    const assetSegment = formatFileSegment(`${asset.title}-${asset.publicAssetCode}`);
+    return `aim4price-asset-map-${assetSegment}-${dateSegment}.html`;
+  }
+
+  return `aim4price-asset-map-${dateSegment}.html`;
+}
+
 function formatCondition(value: string): string {
   const normalized = asText(value).toLowerCase();
 
@@ -1233,7 +1255,7 @@ export async function GET(request: Request) {
     const printableAssets = reportItems.map(toPrintableAsset);
     const now = new Date();
     const html = buildReportHtml(printableAssets, formatDate(now), formatTime(now), asText(session.user.email));
-    const filename = `aim4price-asset-map-${formatFileDate(now)}.html`;
+    const filename = buildReportFilename(printableAssets, now);
 
     return new NextResponse(html, {
       status: 200,
