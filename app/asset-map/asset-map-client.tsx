@@ -292,7 +292,7 @@ function buildPopupHtml(asset: AssetMapItem, markerNumber: number): string {
   return `
     <div style="min-width: 236px; max-width: 268px; font-family: Montserrat, Inter, Arial, sans-serif; color: #122f2a; padding:2px;">
       <div style="display:flex; align-items:center; gap:9px; margin-bottom:11px; padding-right:12px;">
-        <div style="display:inline-flex; align-items:center; justify-content:center; width:29px; height:29px; border-radius:999px; color:#fff; background:#103f35; font-size:12px; font-weight:900; box-shadow:0 9px 18px rgba(16,63,53,.18); flex:0 0 auto;">${markerNumber}</div>
+        <div style="display:inline-flex; align-items:center; justify-content:center; width:29px; height:29px; border-radius:999px; color:#fff; background:#3768d5; font-size:12px; font-weight:900; box-shadow:0 9px 18px rgba(55,104,213,.24); flex:0 0 auto;">${markerNumber}</div>
         <div style="min-width:0; display:grid; gap:2px;">
           <div style="font-weight: 900; font-size: 14px; line-height: 1.12; letter-spacing: -0.032em; color:#0b3328; overflow-wrap:anywhere;">${title}</div>
           <div style="font-size: 10.5px; color: #667581; font-weight:760;">${plate}</div>
@@ -670,6 +670,10 @@ export default function AssetMapClient() {
             </label>
 
             <div className={styles.toolbarActions}>
+              <button type="button" className={styles.secondaryAction} onClick={() => void fetchMapData('refresh')} disabled={isRefreshing || isLoading}>
+                <RefreshIcon className={styles.buttonIcon} />
+                <span>{isRefreshing ? 'Refreshing…' : 'Refresh map'}</span>
+              </button>
               {fullMapReportHref ? (
                 <a href={fullMapReportHref} target="_blank" rel="noreferrer" className={styles.primaryAction}>
                   <DownloadIcon className={styles.buttonIcon} />
@@ -681,10 +685,6 @@ export default function AssetMapClient() {
                   <span>Download asset map</span>
                 </button>
               )}
-              <button type="button" className={styles.secondaryAction} onClick={() => void fetchMapData('refresh')} disabled={isRefreshing || isLoading}>
-                <RefreshIcon className={styles.buttonIcon} />
-                <span>{isRefreshing ? 'Refreshing…' : 'Refresh map'}</span>
-              </button>
             </div>
           </form>
 

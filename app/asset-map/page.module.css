@@ -677,19 +677,11 @@
   border: 0;
 }
 
-.assetMapShell :global(.aim4priceMapMarker--recent) {
-  --marker-bg: #159063;
-  --marker-shadow: rgba(22, 130, 88, 0.34);
-}
-
-.assetMapShell :global(.aim4priceMapMarker--warm) {
+.assetMapShell :global(.aim4priceMapMarker--recent),
+.assetMapShell :global(.aim4priceMapMarker--warm),
+.assetMapShell :global(.aim4priceMapMarker--older) {
   --marker-bg: #3768d5;
   --marker-shadow: rgba(55, 104, 213, 0.3);
-}
-
-.assetMapShell :global(.aim4priceMapMarker--older) {
-  --marker-bg: #7d8996;
-  --marker-shadow: rgba(87, 102, 118, 0.28);
 }
 
 .assetMapShell :global(.aim4priceMapMarkerPin) {
@@ -700,10 +692,10 @@
   height: 36px;
   border-radius: 999px;
   color: #ffffff;
-  background: var(--marker-bg, #159063);
+  background: var(--marker-bg, #3768d5);
   border: 3px solid rgba(255, 255, 255, 0.96);
   box-shadow:
-    0 13px 24px var(--marker-shadow, rgba(22, 130, 88, 0.34)),
+    0 13px 24px var(--marker-shadow, rgba(55, 104, 213, 0.3)),
     0 0 0 6px rgba(255, 255, 255, 0.32);
   transition:
     transform 170ms ease,
@@ -719,7 +711,7 @@
   height: 11px;
   border-right: 3px solid rgba(255, 255, 255, 0.96);
   border-bottom: 3px solid rgba(255, 255, 255, 0.96);
-  background: var(--marker-bg, #159063);
+  background: var(--marker-bg, #3768d5);
   transform: translateX(-50%) rotate(45deg);
   border-radius: 0 0 3px 0;
 }
@@ -736,8 +728,8 @@
 .assetMapShell :global(.aim4priceMapMarker--active .aim4priceMapMarkerPin) {
   transform: translateY(-4px) scale(1.08);
   box-shadow:
-    0 0 0 8px rgba(16, 71, 59, 0.17),
-    0 18px 34px var(--marker-shadow, rgba(22, 130, 88, 0.34));
+    0 0 0 8px rgba(55, 104, 213, 0.18),
+    0 18px 34px var(--marker-shadow, rgba(55, 104, 213, 0.3));
 }
 
 .assetMapShell :global(.leaflet-container) {
