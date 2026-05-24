@@ -316,13 +316,69 @@ function toPrintableAsset(asset: AssetRegisterItem, index: number): PrintableAss
   };
 }
 
-function filterAssetsByCodes(assets: AssetRegisterItem[], codes: string[]): AssetRegisterItem[] {
-  if (!codes.length) {
-    return assets.sort(sortByScanDate);
+type AssetReportSelection = {
+  codes: string[];
+  ids: string[];
+};
+
+function normalizeLookupKey(value: string): string {
+  return asText(value).toLowerCase();
+}
+
+function appendUnique(target: string[], value: string | null): void {
+  const normalized = asText(value);
+  if (!normalized) return;
+
+  if (!target.some((existing) => normalizeLookupKey(existing) === normalizeLookupKey(normalized))) {
+    target.push(normalized);
+  }
+}
+
+function splitListParam(value: string | null): string[] {
+  return asText(value)
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function readAssetReportSelection(url: URL): AssetReportSelection {
+  const codes: string[] = [];
+  const ids: string[] = [];
+
+  splitListParam(url.searchParams.get('codes')).forEach((code) => appendUnique(codes, code));
+  appendUnique(codes, url.searchParams.get('assetCode'));
+  appendUnique(codes, url.searchParams.get('publicAssetCode'));
+  appendUnique(codes, url.searchParams.get('code'));
+
+  splitListParam(url.searchParams.get('ids')).forEach((id) => appendUnique(ids, id));
+  appendUnique(ids, url.searchParams.get('assetId'));
+  appendUnique(ids, url.searchParams.get('id'));
+
+  return { codes, ids };
+}
+
+function filterAssetsBySelection(assets: AssetRegisterItem[], selection: AssetReportSelection): AssetRegisterItem[] {
+  const sortedAssets = [...assets].sort(sortByScanDate);
+
+  if (!selection.codes.length && !selection.ids.length) {
+    return sortedAssets;
   }
 
-  const byCode = new Map(assets.map((asset) => [asset.publicAssetCode, asset]));
-  return codes.map((code) => byCode.get(code)).filter((asset): asset is AssetRegisterItem => Boolean(asset));
+  const byCode = new Map(sortedAssets.map((asset) => [normalizeLookupKey(asset.publicAssetCode), asset]));
+  const byId = new Map(sortedAssets.map((asset) => [normalizeLookupKey(asset.id), asset]));
+  const selected: AssetRegisterItem[] = [];
+  const seenIds = new Set<string>();
+
+  const addAsset = (asset: AssetRegisterItem | undefined) => {
+    if (!asset || seenIds.has(asset.id)) return;
+    selected.push(asset);
+    seenIds.add(asset.id);
+  };
+
+  selection.codes.forEach((code) => addAsset(byCode.get(normalizeLookupKey(code))));
+  selection.ids.forEach((id) => addAsset(byId.get(normalizeLookupKey(id))));
+
+  return selected;
 }
 
 function renderKeyRows(assets: PrintableAsset[]): string {
@@ -1243,15 +1299,11 @@ export async function GET(request: Request) {
 
   try {
     const url = new URL(request.url);
-    const rawCodes = asText(url.searchParams.get('codes'));
-    const requestedCodes = rawCodes
-      .split(',')
-      .map((code) => code.trim())
-      .filter(Boolean);
+    const selection = readAssetReportSelection(url);
 
     const items = await listAssetRegisterItems(session.user.id);
     const mappedItems = items.filter(hasCoordinates);
-    const reportItems = filterAssetsByCodes(mappedItems, requestedCodes);
+    const reportItems = filterAssetsBySelection(mappedItems, selection);
     const printableAssets = reportItems.map(toPrintableAsset);
     const now = new Date();
     const html = buildReportHtml(printableAssets, formatDate(now), formatTime(now), asText(session.user.email));
