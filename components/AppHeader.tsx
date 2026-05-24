@@ -69,21 +69,23 @@ const BASE_NAV_ITEMS: NavItem[] = [
   { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
 ];
 
-function buildNavItems(accountType: AccountType | null): NavItem[] {
-  const resolvedType = accountType ?? 'owner';
+function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
+  if (accountType === null) {
+    return BASE_NAV_ITEMS;
+  }
 
-  if (resolvedType === 'finance' || resolvedType === 'insurance') {
+  if (accountType === 'finance' || accountType === 'insurance') {
     return [
       ...BASE_NAV_ITEMS,
-      { key: 'leads', href: '/leads', label: 'Leads' },
+      { key: 'leads', href: '/leads', label: 'My Leads' },
       { key: 'users', href: '/users', label: 'Users' },
     ];
   }
 
-  if (resolvedType === 'dealer') {
+  if (accountType === 'dealer') {
     return [
       ...BASE_NAV_ITEMS,
-      { key: 'leads', href: '/leads', label: 'Leads' },
+      { key: 'leads', href: '/leads', label: 'My Leads' },
       { key: 'users', href: '/users', label: 'Users' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
     ];
@@ -328,9 +330,10 @@ export default function AppHeader({
 
   const accountName = useMemo(() => session?.name?.trim() || 'Aim4price User', [session]);
   const accountInitials = useMemo(() => getInitials(accountName), [accountName]);
-  const accountType = session?.accountType ?? 'owner';
+  const accountType = session?.accountType ?? null;
   const isOwnerAccount = accountType === 'owner';
-  const navItems = useMemo(() => buildNavItems(session?.accountType ?? null), [session?.accountType]);
+  const navAccountType = isLoadingSession ? null : (session?.accountType ?? 'public');
+  const navItems = useMemo(() => buildNavItems(navAccountType), [navAccountType]);
   const latestNotificationTime = useMemo(
     () => notifications.reduce((latest, item) => Math.max(latest, parseTime(item.createdAtIso)), 0),
     [notifications],
