@@ -693,7 +693,7 @@ export default function FuelClient() {
 
             <div className={styles.modalActions}>
               <button type="button" className={styles.secondaryButton} onClick={closeModal} disabled={isSaving}>Cancel</button>
-              <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Storage'}</button>
+              <button type="submit" className={`${styles.primaryButton} ${styles.modalSubmitButton}`} disabled={isSaving}>{isSaving ? 'Saving...' : modalMode === 'edit-storage' ? 'Save Changes' : 'Save Storage'}</button>
             </div>
           </form>
         </div>
@@ -715,7 +715,7 @@ export default function FuelClient() {
             </label>
             <div className={styles.modalActions}>
               <button type="button" className={styles.secondaryButton} onClick={closeModal} disabled={isSaving}>Cancel</button>
-              <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save PIN'}</button>
+              <button type="submit" className={`${styles.primaryButton} ${styles.modalSubmitButton}`} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save PIN'}</button>
             </div>
           </form>
         </div>
@@ -772,7 +772,7 @@ export default function FuelClient() {
 
             <div className={styles.modalActions}>
               <button type="button" className={styles.secondaryButton} onClick={clearFilters}>Clear filters</button>
-              <button type="button" className={styles.primaryButton} onClick={closeModal}>Apply filters</button>
+              <button type="button" className={`${styles.primaryButton} ${styles.modalSubmitButton}`} onClick={closeModal}>Apply filters</button>
             </div>
           </div>
         </div>
@@ -823,7 +823,7 @@ export default function FuelClient() {
 
             <div className={styles.modalActions}>
               <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
-              <button type="button" className={styles.primaryButton} onClick={handleOpenReport}>Open Fuel Report</button>
+              <button type="button" className={`${styles.primaryButton} ${styles.modalSubmitButton}`} onClick={handleOpenReport}>Open Fuel Report</button>
             </div>
           </div>
         </div>
