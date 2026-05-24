@@ -1485,46 +1485,6 @@ export default function LeadsClient() {
     );
   }
 
-  function renderLeadContactPanel(lead: AssetLead) {
-    const phone = ownerPhone(lead).trim();
-    const email = ownerEmail(lead).trim();
-    const contactPerson = (lead.ownerContactName || lead.ownerName || ownerDisplayName(lead)).trim() || '—';
-    const location = ownerLocation(lead);
-    const phoneHref = cleanPhoneForTel(phone);
-    const contactLines: Array<{ key: string; label: string; value: string; href?: string }> = [
-      { key: 'person', label: 'Contact Person', value: contactPerson },
-      { key: 'phone', label: 'Contact Number', value: phone || '—', href: phoneHref ? `tel:${phoneHref}` : undefined },
-      { key: 'email', label: 'Email', value: email || '—', href: email ? `mailto:${email}` : undefined },
-      { key: 'location', label: 'Location', value: location || '—' },
-    ];
-
-    return (
-      <section className={styles.leadContactPanel} aria-label="Account contact details">
-        <div className={styles.leadContactStack}>
-          {contactLines.map((line) => {
-            const valueClassName = line.value === '—' ? `${styles.leadContactValue} ${styles.leadContactEmpty}` : styles.leadContactValue;
-            const content = (
-              <>
-                <span className={styles.leadContactLabel}>{line.label}</span>
-                <span className={valueClassName}>{line.value}</span>
-              </>
-            );
-
-            return line.href ? (
-              <a className={styles.leadContactCard} href={line.href} key={`${lead.id}-${line.key}`}>
-                {content}
-              </a>
-            ) : (
-              <div className={styles.leadContactCard} key={`${lead.id}-${line.key}`}>
-                {content}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-    );
-  }
-
   function renderLeadDetails(lead: AssetLead) {
     if (isFullRegisterLead(lead)) {
       return renderFullRegisterLeadDetails(lead);
@@ -1811,8 +1771,6 @@ export default function LeadsClient() {
                         </div>
                       </div>
                     </div>
-
-                    {isLeadOpen ? renderLeadContactPanel(lead) : null}
 
                     {isLeadOpen ? (
                       <div className={`${assetStyles.assetCard} ${styles.leadAssetCard} ${isFullRegisterLead(lead) ? styles.fullRegisterLeadCard : ''} ${assetStyles.assetCardExpanded}`}>
