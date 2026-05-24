@@ -329,7 +329,6 @@ export default function AssetMapClient() {
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastLoadedAtIso, setLastLoadedAtIso] = useState<string | null>(null);
 
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
@@ -372,7 +371,6 @@ export default function AssetMapClient() {
 
       setAssets(data.assets);
       setSummary(data.summary ?? null);
-      setLastLoadedAtIso(new Date().toISOString());
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load the asset map.' });
     } finally {
@@ -609,7 +607,6 @@ export default function AssetMapClient() {
     };
   }, []);
 
-  const lastUpdatedText = lastLoadedAtIso ? formatDate(lastLoadedAtIso) : 'Waiting for first refresh';
   const selectedAsset = useMemo(
     () => visibleAssets.find((asset) => asset.publicAssetCode === selectedCode) ?? null,
     [selectedCode, visibleAssets],
@@ -644,11 +641,6 @@ export default function AssetMapClient() {
           <header className={styles.workspaceHeader}>
             <div className={styles.mapTitleBlock}>
               <h1>QR Scanned Assets</h1>
-              <p>
-                {visibleAssets.length} mapped asset{visibleAssets.length === 1 ? '' : 's'} visible
-                <span aria-hidden="true"> · </span>
-                Updated {lastUpdatedText}
-              </p>
             </div>
           </header>
 
