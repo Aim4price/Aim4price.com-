@@ -1102,3 +1102,59 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* === Leads page: asset-register-matched title type and soft action buttons === */
+.leadsPage .clientPanel h3,
+.leadsPage .leadThreadNew:not(.leadThreadOpen) .clientPanel h3 {
+  margin: 0 !important;
+  color: #073b30 !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
+  font-size: clamp(1.42rem, 1.9vw, 1.72rem) !important;
+  font-weight: 760 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.032em !important;
+}
+
+.leadsPage .clientActionRow .deleteLeadButton {
+  color: var(--lead-danger) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--lead-danger-soft) 100%) !important;
+  border-color: var(--lead-danger-line) !important;
+  box-shadow:
+    0 10px 22px rgba(156, 52, 52, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.leadsPage .clientActionRow .deleteLeadButton:hover:not(:disabled) {
+  color: #842929 !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--lead-danger-hover) 100%) !important;
+  border-color: var(--lead-danger-line-hover) !important;
+  box-shadow:
+    0 13px 26px rgba(142, 51, 51, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.leadsPage .clientActionRow .openLeadButton {
+  color: var(--lead-mint-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--lead-mint-soft) 100%) !important;
+  border-color: var(--lead-mint-line) !important;
+  box-shadow:
+    0 10px 22px rgba(10, 84, 61, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.leadsPage .clientActionRow .openLeadButton:hover:not(:disabled) {
+  color: #083f2f !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--lead-mint-hover) 100%) !important;
+  border-color: var(--lead-mint-line-hover) !important;
+  box-shadow:
+    0 14px 28px rgba(10, 84, 61, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+@media (max-width: 760px) {
+  .leadsPage .clientPanel h3,
+  .leadsPage .leadThreadNew:not(.leadThreadOpen) .clientPanel h3 {
+    font-weight: 740 !important;
+    letter-spacing: -0.026em !important;
+  }
+}
