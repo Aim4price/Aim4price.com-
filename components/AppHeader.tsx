@@ -259,6 +259,17 @@ export default function AppHeader({
   }, []);
 
   useEffect(() => {
+    if (!notificationOpen || typeof document === 'undefined') return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [notificationOpen]);
+
+  useEffect(() => {
     if (!session?.id || typeof window === 'undefined') {
       setNotificationsSeenAt(null);
       return;
@@ -441,7 +452,8 @@ export default function AppHeader({
                     type="button"
                     className={`${styles.notificationButton} ${unreadNotificationCount ? styles.notificationButtonActive : ''}`}
                     aria-expanded={notificationOpen}
-                    aria-haspopup="menu"
+                    aria-haspopup="dialog"
+                    aria-controls={notificationOpen ? 'header-notifications-modal' : undefined}
                     aria-label={
                       unreadNotificationCount
                         ? `Notifications, ${unreadNotificationCount} new`
@@ -461,83 +473,109 @@ export default function AppHeader({
                   </button>
 
                   {notificationOpen ? (
-                    <div className={styles.notificationPopover} role="menu">
-                      <div className={styles.notificationHeaderRow}>
-                        <div>
-                          <strong className={styles.notificationTitle}>Notifications</strong>
-                          <span className={styles.notificationSubtitle}>
-                            {isOwnerAccount
-                              ? 'Messages, notes, contact requests, QR scans and fuel updates.'
-                              : 'New lead opportunities and account requests.'}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          className={styles.notificationClearButton}
-                          onClick={markNotificationsSeen}
-                        >
-                          Mark checked
-                        </button>
-                      </div>
-
-                      <div className={styles.notificationList}>
-                        {isLoadingNotifications ? (
-                          <div className={styles.notificationEmpty}>Loading notifications...</div>
-                        ) : notifications.length ? (
-                          notifications.map((notification) => (
-                            notification.category === 'contact_request' && notification.contactRequestId ? (
-                              <div
-                                key={notification.id}
-                                className={`${styles.notificationItem} ${styles.notificationItemActionable} ${styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`]}`}
-                                role="menuitem"
-                              >
-                                <span className={styles.notificationDot} aria-hidden="true" />
-                                <span className={styles.notificationCopy}>
-                                  <strong>{notification.title}</strong>
-                                  <span>{notification.body}</span>
-                                  <small>{formatNotificationTime(notification.createdAtIso)}</small>
-                                  <span className={styles.notificationActionRow}>
-                                    <button
-                                      type="button"
-                                      className={styles.notificationApproveButton}
-                                      onClick={() => handleContactRequestDecision(notification.contactRequestId as string, 'approved')}
-                                      disabled={processingContactRequestIds.has(notification.contactRequestId)}
-                                    >
-                                      Share contact details
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className={styles.notificationDenyButton}
-                                      onClick={() => handleContactRequestDecision(notification.contactRequestId as string, 'denied')}
-                                      disabled={processingContactRequestIds.has(notification.contactRequestId)}
-                                    >
-                                      Deny request
-                                    </button>
-                                  </span>
-                                </span>
-                              </div>
-                            ) : (
-                              <Link
-                                key={notification.id}
-                                href={notification.href}
-                                className={`${styles.notificationItem} ${styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`]}`}
-                                onClick={handleNotificationLinkClick}
-                              >
-                                <span className={styles.notificationDot} aria-hidden="true" />
-                                <span className={styles.notificationCopy}>
-                                  <strong>{notification.title}</strong>
-                                  <span>{notification.body}</span>
-                                  <small>{formatNotificationTime(notification.createdAtIso)}</small>
-                                </span>
-                              </Link>
-                            )
-                          ))
-                        ) : (
-                          <div className={styles.notificationEmpty}>
-                            No new messages, notes or lead updates yet.
+                    <div
+                      className={styles.notificationModalBackdrop}
+                      role="presentation"
+                      onClick={() => setNotificationOpen(false)}
+                    >
+                      <section
+                        id="header-notifications-modal"
+                        className={styles.notificationModal}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="header-notifications-title"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <div className={styles.notificationHeaderRow}>
+                          <div>
+                            <span className={styles.notificationEyebrow}>Account activity</span>
+                            <strong id="header-notifications-title" className={styles.notificationTitle}>
+                              Notifications
+                            </strong>
+                            <span className={styles.notificationSubtitle}>
+                              {isOwnerAccount
+                                ? 'Messages, notes, contact requests, QR scans and fuel updates.'
+                                : 'New lead opportunities and account requests.'}
+                            </span>
                           </div>
-                        )}
-                      </div>
+
+                          <div className={styles.notificationHeaderActions}>
+                            <button
+                              type="button"
+                              className={styles.notificationClearButton}
+                              onClick={markNotificationsSeen}
+                            >
+                              Mark checked
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.notificationCloseButton}
+                              aria-label="Close notifications"
+                              onClick={() => setNotificationOpen(false)}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className={styles.notificationList}>
+                          {isLoadingNotifications ? (
+                            <div className={styles.notificationEmpty}>Loading notifications...</div>
+                          ) : notifications.length ? (
+                            notifications.map((notification) => (
+                              notification.category === 'contact_request' && notification.contactRequestId ? (
+                                <div
+                                  key={notification.id}
+                                  className={`${styles.notificationItem} ${styles.notificationItemActionable} ${styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`]}`}
+                                >
+                                  <span className={styles.notificationDot} aria-hidden="true" />
+                                  <span className={styles.notificationCopy}>
+                                    <strong>{notification.title}</strong>
+                                    <span>{notification.body}</span>
+                                    <small>{formatNotificationTime(notification.createdAtIso)}</small>
+                                    <span className={styles.notificationActionRow}>
+                                      <button
+                                        type="button"
+                                        className={styles.notificationApproveButton}
+                                        onClick={() => handleContactRequestDecision(notification.contactRequestId as string, 'approved')}
+                                        disabled={processingContactRequestIds.has(notification.contactRequestId)}
+                                      >
+                                        Share contact details
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className={styles.notificationDenyButton}
+                                        onClick={() => handleContactRequestDecision(notification.contactRequestId as string, 'denied')}
+                                        disabled={processingContactRequestIds.has(notification.contactRequestId)}
+                                      >
+                                        Deny request
+                                      </button>
+                                    </span>
+                                  </span>
+                                </div>
+                              ) : (
+                                <Link
+                                  key={notification.id}
+                                  href={notification.href}
+                                  className={`${styles.notificationItem} ${styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`]}`}
+                                  onClick={handleNotificationLinkClick}
+                                >
+                                  <span className={styles.notificationDot} aria-hidden="true" />
+                                  <span className={styles.notificationCopy}>
+                                    <strong>{notification.title}</strong>
+                                    <span>{notification.body}</span>
+                                    <small>{formatNotificationTime(notification.createdAtIso)}</small>
+                                  </span>
+                                </Link>
+                              )
+                            ))
+                          ) : (
+                            <div className={styles.notificationEmpty}>
+                              No new messages, notes or lead updates yet.
+                            </div>
+                          )}
+                        </div>
+                      </section>
                     </div>
                   ) : null}
                 </div>
