@@ -615,7 +615,12 @@ export default function FuelClient() {
                           <QrIcon className={styles.buttonIcon} />
                           <span>QR Code</span>
                         </a>
-                        <button type="button" className={styles.unitButton} onClick={() => openPin(storage)} disabled={isSaving}>
+                        <button
+                          type="button"
+                          className={`${styles.unitButton} ${styles.changePinButton}`}
+                          onClick={() => openPin(storage)}
+                          disabled={isSaving}
+                        >
                           <LockIcon className={styles.buttonIcon} />
                           <span>Change PIN</span>
                         </button>
