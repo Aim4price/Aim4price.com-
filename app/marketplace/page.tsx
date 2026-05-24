@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation';
+import { getAccountProfile } from '../../lib/account-profile';
 import { getServerSession } from '../../lib/auth-session';
 import MarketplaceClient from './marketplace-client';
 
@@ -25,6 +27,18 @@ export const runtime = 'nodejs';
 
 export default async function MarketplacePage({ searchParams }: MarketplacePageProps) {
   const session = await getServerSession();
+
+  if (session?.user?.id) {
+    const profile = await getAccountProfile({
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    });
+
+    if (profile.accountType !== 'owner' && profile.accountType !== 'dealer') {
+      redirect('/leads');
+    }
+  }
 
   return (
     <MarketplaceClient
