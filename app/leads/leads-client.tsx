@@ -1486,25 +1486,41 @@ export default function LeadsClient() {
   }
 
   function renderLeadContactPanel(lead: AssetLead) {
-    const phone = ownerPhone(lead);
-    const email = ownerEmail(lead);
-    const contactLines = [
-      phone ? { key: 'phone', value: phone, href: `tel:${cleanPhoneForTel(phone)}` } : null,
-      email ? { key: 'email', value: email, href: `mailto:${email}` } : null,
-    ].filter((line): line is { key: string; value: string; href: string } => Boolean(line));
+    const phone = ownerPhone(lead).trim();
+    const email = ownerEmail(lead).trim();
+    const contactPerson = (lead.ownerContactName || lead.ownerName || ownerDisplayName(lead)).trim() || '—';
+    const location = ownerLocation(lead);
+    const phoneHref = cleanPhoneForTel(phone);
+    const contactLines: Array<{ key: string; label: string; value: string; href?: string }> = [
+      { key: 'person', label: 'Contact Person', value: contactPerson },
+      { key: 'phone', label: 'Contact Number', value: phone || '—', href: phoneHref ? `tel:${phoneHref}` : undefined },
+      { key: 'email', label: 'Email', value: email || '—', href: email ? `mailto:${email}` : undefined },
+      { key: 'location', label: 'Location', value: location || '—' },
+    ];
 
     return (
       <div className={styles.leadContactPanel} aria-label="Account contact details">
         <div className={styles.leadContactStack}>
-          {contactLines.length ? (
-            contactLines.map((line) => (
-              <a className={styles.leadContactLine} href={line.href} key={`${lead.id}-${line.key}`}>
-                {line.value}
-              </a>
-            ))
-          ) : (
-            <span className={`${styles.leadContactLine} ${styles.leadContactEmpty}`}>No phone or email saved.</span>
-          )}
+          {contactLines.map((line, index) => (
+            <span className={styles.leadContactGroup} key={`${lead.id}-${line.key}`}>
+              <span className={styles.leadContactLine}>
+                <span className={styles.leadContactLabel}>{line.label}</span>
+                {line.href ? (
+                  <a className={styles.leadContactValue} href={line.href}>
+                    {line.value}
+                  </a>
+                ) : (
+                  <span className={line.value === '—' ? `${styles.leadContactValue} ${styles.leadContactEmpty}` : styles.leadContactValue}>{line.value}</span>
+                )}
+              </span>
+
+              {index < contactLines.length - 1 ? (
+                <span className={styles.leadContactDivider} aria-hidden="true">
+                  -
+                </span>
+              ) : null}
+            </span>
+          ))}
         </div>
       </div>
     );
@@ -1801,7 +1817,7 @@ export default function LeadsClient() {
 
                     {isLeadOpen ? (
                       <div className={`${assetStyles.assetCard} ${styles.leadAssetCard} ${isFullRegisterLead(lead) ? styles.fullRegisterLeadCard : ''} ${assetStyles.assetCardExpanded}`}>
-                        <div className={assetStyles.assetHeader}>
+                        <div className={`${assetStyles.assetHeader} ${styles.leadAssetHeader}`}>
                           <div className={assetStyles.assetTitleBlock}>
                             <h2>{assetTitle(lead)}</h2>
                             <p>{leadAssetMeta(lead)}</p>
@@ -1811,13 +1827,13 @@ export default function LeadsClient() {
                             </div>
                           </div>
 
-                          <div className={assetStyles.assetHeaderAside}>
-                            <div className={assetStyles.valueBlock}>
+                          <div className={`${assetStyles.assetHeaderAside} ${styles.leadAssetHeaderAside}`}>
+                            <div className={`${assetStyles.valueBlock} ${styles.leadValueBlock}`}>
                               <strong>{formatCurrency(assetValue(lead))}</strong>
                               <span>Excl. VAT</span>
                             </div>
 
-                            <div className={assetStyles.assetHeaderActions}>
+                            <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions}`}>
                               <button type="button" className={`${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton}`} onClick={() => openNoteModal(lead)}>
                                 <NoteIcon className={assetStyles.buttonIcon} />
                                 <span>Leave note</span>
