@@ -640,10 +640,10 @@ export default function AssetMapClient() {
       <AppHeader active="asset-register" />
 
       <section className={styles.shell}>
-        <article className={styles.mapWorkspace} aria-label="Asset map workspace">
+        <article className={styles.mapWorkspace} aria-label="QR scanned asset workspace">
           <header className={styles.workspaceHeader}>
             <div className={styles.mapTitleBlock}>
-              <h1>Asset Map</h1>
+              <h1>QR Scanned Asset</h1>
               <p>
                 {visibleAssets.length} mapped asset{visibleAssets.length === 1 ? '' : 's'} visible
                 <span aria-hidden="true"> · </span>
@@ -673,7 +673,7 @@ export default function AssetMapClient() {
               {fullMapReportHref ? (
                 <a href={fullMapReportHref} target="_blank" rel="noreferrer" className={styles.primaryAction}>
                   <DownloadIcon className={styles.buttonIcon} />
-                  <span>{selectedAsset ? 'Download full map' : 'Download asset map'}</span>
+                  <span>Download full map</span>
                 </a>
               ) : (
                 <button type="button" className={`${styles.primaryAction} ${styles.actionDisabled}`} disabled>
@@ -695,7 +695,6 @@ export default function AssetMapClient() {
                   <span aria-hidden="true">‹</span>
                   <span>All assets</span>
                 </button>
-                <strong>Assets</strong>
               </div>
 
               <div className={styles.assetList}>

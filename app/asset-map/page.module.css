@@ -38,15 +38,12 @@
 
 .mapWorkspace {
   overflow: visible;
-  border: 1px solid rgba(199, 218, 222, 0.98);
-  border-radius: 2rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 253, 253, 0.96) 100%);
-  box-shadow:
-    0 30px 70px rgba(16, 36, 40, 0.075),
-    0 10px 24px rgba(16, 36, 40, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(18px);
-  padding: clamp(1rem, 1.55vw, 1.35rem);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: 0;
 }
 
 .workspaceHeader {
@@ -94,8 +91,10 @@
 .mapTitleBlock p {
   width: fit-content;
   max-width: 100%;
-  margin: 0;
+  justify-self: end;
+  margin: 0 0 0 auto;
   padding: 0 0.15rem;
+  text-align: right;
   color: #617286;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(0.92rem, 0.98vw, 1rem);
@@ -337,20 +336,13 @@
   min-height: 3.85rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 0.75rem;
   padding: 0.72rem 0.82rem;
   border-bottom: 1px solid rgba(204, 219, 232, 0.82);
   background: rgba(255, 255, 255, 0.72);
 }
 
-.assetSidebarHeader strong {
-  color: #10352b;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.98rem;
-  font-weight: 900;
-  letter-spacing: -0.018em;
-}
 
 .assetSidebarResetButton {
   min-height: 2.55rem;
