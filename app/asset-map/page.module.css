@@ -1,65 +1,113 @@
 .page {
+  --bg: #f3f6f8;
+  --surface: #ffffff;
+  --surface-soft: #f7fafc;
+  --surface-muted: #f2f5f8;
+  --line: #e5ebf1;
+  --line-strong: #d8e1ea;
+  --text: #17362c;
+  --text-muted: #677586;
+  --text-soft: #7f8a98;
+  --brand-dark: #10382f;
+  --brand-mid: #165340;
+  --brand-soft: #edf6f1;
+  --brand-soft-border: #d8e8df;
+  --blue-soft: #eef3fb;
+  --blue-soft-border: #d8e1f0;
+  --blue-text: #29456b;
+  --action-primary: #1a7458;
+  --action-primary-deep: #115b45;
+  --action-primary-hover: #0f513d;
+  --action-blue-bg: #eaf5ff;
+  --action-blue-bg-hover: #daecff;
+  --action-blue-text: #0f3b64;
+  --action-blue-border: #7eb4df;
+  --action-blue-border-hover: #558fc6;
   min-height: 100vh;
   background:
     radial-gradient(circle at 8% 0%, rgba(18, 75, 61, 0.08), transparent 28rem),
-    radial-gradient(circle at 94% 12%, rgba(58, 105, 206, 0.06), transparent 28rem),
-    linear-gradient(180deg, #f8faf9 0%, #edf4f1 100%);
+    radial-gradient(circle at 94% 12%, rgba(58, 105, 206, 0.055), transparent 28rem),
+    linear-gradient(180deg, #f5f8f8 0%, #edf3f4 100%);
 }
 
 .shell {
-  width: min(calc(100% - 2rem), 1500px);
+  width: min(calc(100% - 2.5rem), 1360px);
   margin: 0 auto;
-  padding: 0.9rem 0 2.4rem;
+  padding: clamp(1.25rem, 2vw, 1.85rem) 0 4rem;
 }
 
 .mapWorkspace {
-  overflow: hidden;
-  border: 1px solid rgba(204, 219, 232, 0.9);
-  border-radius: 2rem;
-  background: rgba(255, 255, 255, 0.94);
+  overflow: visible;
+  border: 1px solid rgba(199, 218, 222, 0.98);
+  border-radius: 2.05rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 253, 253, 0.96) 100%);
   box-shadow:
-    0 26px 70px rgba(18, 45, 37, 0.09),
-    0 7px 20px rgba(18, 45, 37, 0.045),
+    0 30px 70px rgba(16, 36, 40, 0.075),
+    0 10px 24px rgba(16, 36, 40, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(18px);
-  padding: clamp(1.25rem, 2vw, 2rem);
+  padding: clamp(1.15rem, 1.9vw, 1.7rem);
 }
 
 .workspaceHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-bottom: clamp(1rem, 1.55vw, 1.3rem);
-  border-bottom: 1px solid rgba(204, 219, 232, 0.96);
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: clamp(0.75rem, 1vw, 0.95rem);
+  margin-bottom: clamp(0.95rem, 1.35vw, 1.15rem);
 }
 
 .mapTitleBlock {
   min-width: 0;
   display: grid;
-  gap: 0.28rem;
+  gap: 0.72rem;
 }
 
 .mapTitleBlock h1 {
+  width: 100%;
+  max-width: 100%;
+  min-height: clamp(5.1rem, 7vw, 6.1rem);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
   margin: 0;
-  color: #0e3a2f;
+  padding: clamp(1.15rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2rem);
+  border: 1.5px solid rgba(193, 211, 218, 0.98);
+  border-radius: clamp(1.25rem, 2vw, 1.7rem);
+  background:
+    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%);
+  box-shadow:
+    0 18px 38px rgba(16, 36, 40, 0.06),
+    0 6px 16px rgba(16, 36, 40, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  color: #073b30;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(2.1rem, 4.1vw, 3.6rem);
-  line-height: 0.98;
-  letter-spacing: -0.065em;
+  font-size: clamp(2.35rem, 4.15vw, 3.55rem);
   font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.062em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 .mapTitleBlock p {
+  width: fit-content;
+  max-width: 100%;
   margin: 0;
-  color: #5e6f79;
-  font-size: clamp(0.88rem, 1.05vw, 1rem);
-  line-height: 1.35;
+  padding: 0 0.15rem;
+  color: #617286;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(0.95rem, 1vw, 1.05rem);
+  line-height: 1.45;
   font-weight: 760;
+  letter-spacing: -0.015em;
 }
 
 .notice {
-  margin-top: 1rem;
+  margin: 0 0 1rem;
   border: 1px solid rgba(170, 40, 40, 0.14);
   border-radius: 1.05rem;
   padding: 0.95rem 1rem;
@@ -73,28 +121,42 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: stretch;
-  gap: clamp(0.75rem, 1.2vw, 1.05rem);
+  gap: clamp(0.78rem, 1.35vw, 1.25rem);
   width: 100%;
-  margin-top: clamp(1rem, 1.6vw, 1.35rem);
+  margin-top: clamp(0.95rem, 1.35vw, 1.15rem);
 }
 
 .searchControl {
+  position: relative;
   min-width: 0;
-  display: block;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 1.14rem;
+  z-index: 2;
+  width: 1.05rem;
+  height: 1.05rem;
+  color: #647386;
+  pointer-events: none;
 }
 
 .searchControl input {
   width: 100%;
-  min-height: 4.25rem;
-  border: 1px solid rgba(204, 219, 232, 0.96);
-  border-radius: 1.25rem;
+  min-height: clamp(3.62rem, 4.45vw, 4.08rem);
+  border: 1px solid rgba(196, 215, 223, 0.96);
+  border-radius: clamp(1rem, 1.45vw, 1.22rem);
   background: rgba(255, 255, 255, 0.98);
   color: #123130;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
-  padding: 0 1.35rem;
+  box-shadow:
+    0 12px 24px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+  padding: 0 1.35rem 0 3rem;
   font: inherit;
-  font-size: 1rem;
-  font-weight: 650;
+  font-size: clamp(1rem, 1.08vw, 1.08rem);
+  font-weight: 720;
   outline: none;
   transition:
     border-color 160ms ease,
@@ -103,39 +165,44 @@
 }
 
 .searchControl input::placeholder {
-  color: rgba(91, 106, 118, 0.76);
-  font-weight: 700;
+  color: rgba(91, 106, 118, 0.78);
+  font-weight: 720;
 }
 
 .searchControl input:focus {
   border-color: rgba(31, 108, 83, 0.48);
   box-shadow:
     0 0 0 4px rgba(31, 108, 83, 0.1),
+    0 12px 24px rgba(16, 31, 28, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.94);
 }
 
 .toolbarActions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(12.5rem, 1fr));
   align-items: stretch;
   justify-content: flex-end;
-  gap: clamp(0.65rem, 1vw, 0.9rem);
-  min-width: max-content;
+  gap: clamp(0.78rem, 1.35vw, 1rem);
+  min-width: min(100%, 27rem);
 }
 
 .primaryAction,
 .secondaryAction,
 .primaryActionCompact,
-.secondaryActionCompact {
+.secondaryActionCompact,
+.assetSidebarResetButton,
+.layerButton {
   appearance: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.55rem;
   border: 1px solid transparent;
   text-decoration: none;
   white-space: nowrap;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-weight: 850;
-  letter-spacing: -0.012em;
+  font-weight: 860;
+  letter-spacing: -0.015em;
   line-height: 1;
   cursor: pointer;
   transition:
@@ -143,31 +210,66 @@
     box-shadow 160ms ease,
     background 160ms ease,
     border-color 160ms ease,
-    color 160ms ease;
+    color 160ms ease,
+    opacity 160ms ease;
 }
 
 .primaryAction,
 .secondaryAction {
-  min-height: 4.25rem;
-  padding: 0 1.35rem;
-  border-radius: 1.25rem;
-  font-size: 0.94rem;
+  width: 100%;
+  min-height: clamp(3.62rem, 4.45vw, 4.08rem);
+  padding: 0 clamp(1.15rem, 2vw, 1.6rem);
+  border-radius: clamp(1rem, 1.45vw, 1.22rem);
+  font-size: clamp(1.04rem, 1.22vw, 1.14rem);
 }
 
 .primaryAction,
 .primaryActionCompact {
   color: #ffffff;
-  background: linear-gradient(135deg, #103f35 0%, #176b56 100%);
-  border-color: rgba(16, 71, 59, 0.18);
-  box-shadow: 0 16px 34px rgba(16, 71, 59, 0.17);
+  background: linear-gradient(180deg, var(--action-primary) 0%, var(--action-primary-deep) 100%);
+  border-color: rgba(18, 70, 53, 0.34);
+  box-shadow:
+    0 15px 30px rgba(18, 70, 53, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.primaryAction:hover,
+.primaryActionCompact:hover {
+  color: #ffffff;
+  background: linear-gradient(180deg, #207154 0%, var(--action-primary-hover) 100%);
+  border-color: rgba(18, 70, 53, 0.44);
+  box-shadow:
+    0 20px 34px rgba(18, 70, 53, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .secondaryAction,
-.secondaryActionCompact {
-  color: #17315c;
-  background: rgba(248, 251, 255, 0.96);
-  border-color: rgba(204, 219, 232, 0.96);
-  box-shadow: 0 12px 26px rgba(41, 72, 145, 0.06);
+.secondaryActionCompact,
+.assetSidebarResetButton,
+.layerButton {
+  color: var(--action-blue-text);
+  background: linear-gradient(180deg, #f8fbff 0%, var(--action-blue-bg) 100%);
+  border-color: rgba(126, 180, 223, 0.9);
+  box-shadow:
+    0 9px 18px rgba(23, 45, 75, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.secondaryAction:hover,
+.secondaryActionCompact:hover,
+.assetSidebarResetButton:hover,
+.layerButton:hover {
+  border-color: rgba(85, 143, 198, 0.94);
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg-hover) 100%);
+  box-shadow:
+    0 13px 24px rgba(23, 45, 75, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.buttonIcon {
+  width: 1.08rem;
+  height: 1.08rem;
+  flex: 0 0 auto;
 }
 
 .primaryAction:hover,
@@ -202,15 +304,16 @@
 .mapStage {
   display: grid;
   grid-template-columns: minmax(20rem, 24rem) minmax(0, 1fr);
-  min-height: clamp(33rem, calc(100vh - 21rem), 39rem);
-  height: clamp(33rem, calc(100vh - 21rem), 39rem);
+  min-height: clamp(34rem, 62vh, 43rem);
+  height: clamp(34rem, 62vh, 43rem);
   margin-top: clamp(1rem, 1.5vw, 1.25rem);
   overflow: hidden;
-  border: 1px solid rgba(204, 219, 232, 0.96);
+  border: 1px solid rgba(196, 215, 223, 0.96);
   border-radius: 1.65rem;
   background: #edf5f1;
   box-shadow:
-    0 22px 58px rgba(18, 45, 37, 0.08),
+    0 18px 38px rgba(16, 36, 40, 0.06),
+    0 6px 16px rgba(16, 36, 40, 0.035),
     inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
@@ -221,54 +324,32 @@
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
   border-right: 1px solid rgba(204, 219, 232, 0.96);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0%, rgba(247, 250, 252, 0.94) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 252, 0.96) 100%);
 }
 
 .assetSidebarHeader {
-  min-height: 4.15rem;
+  min-height: 4.35rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.85rem 1rem;
-  border-bottom: 1px solid rgba(204, 219, 232, 0.75);
+  border-bottom: 1px solid rgba(204, 219, 232, 0.82);
 }
 
 .assetSidebarHeader strong {
   color: #10352b;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.92rem;
+  font-size: 1rem;
   font-weight: 900;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.018em;
 }
 
 .assetSidebarResetButton {
-  appearance: none;
-  border: 1px solid rgba(204, 219, 232, 0.96);
+  min-height: 2.7rem;
+  padding: 0 0.95rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.94);
-  color: #173f61;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.42rem;
-  min-height: 2.45rem;
-  padding: 0 0.86rem;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.84rem;
-  font-weight: 850;
-  cursor: pointer;
-  transition:
-    transform 160ms ease,
-    border-color 160ms ease,
-    background 160ms ease,
-    box-shadow 160ms ease;
-}
-
-.assetSidebarResetButton:hover {
-  border-color: rgba(31, 108, 83, 0.32);
-  background: rgba(247, 255, 251, 0.98);
-  box-shadow: 0 10px 24px rgba(18, 45, 37, 0.07);
+  font-size: 0.88rem;
 }
 
 .assetList {
@@ -311,11 +392,13 @@
   display: grid;
   gap: 0;
   width: 100%;
-  border-radius: 1.18rem;
-  border: 1px solid rgba(204, 219, 232, 0.94);
-  background: rgba(255, 255, 255, 0.96);
+  border-radius: 1.2rem;
+  border: 1px solid rgba(196, 215, 223, 0.96);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
   color: #17362c;
-  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.035);
+  box-shadow:
+    0 12px 24px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
   transition:
     transform 160ms ease,
     border-color 160ms ease,
@@ -326,7 +409,9 @@
 .assetCard:hover,
 .assetCardActive {
   border-color: rgba(31, 108, 83, 0.4);
-  background: linear-gradient(180deg, rgba(247, 255, 251, 0.99) 0%, rgba(240, 249, 244, 0.99) 100%);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 38%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
   box-shadow: 0 16px 32px rgba(18, 45, 37, 0.09);
 }
 
@@ -338,13 +423,13 @@
   appearance: none;
   width: 100%;
   display: grid;
-  grid-template-columns: 2.15rem minmax(0, 1fr);
+  grid-template-columns: 2.2rem minmax(0, 1fr);
   gap: 0.78rem;
   align-items: start;
   border: 0;
   border-radius: 1.18rem;
   background: transparent;
-  padding: 0.95rem;
+  padding: 1rem;
   color: inherit;
   text-align: left;
   cursor: pointer;
@@ -353,13 +438,13 @@
 .assetNumber {
   display: grid;
   place-items: center;
-  width: 2.05rem;
-  height: 2.05rem;
+  width: 2.08rem;
+  height: 2.08rem;
   border-radius: 999px;
   color: #ffffff;
   background: #103f35;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 900;
   box-shadow: 0 10px 20px rgba(16, 63, 53, 0.2);
 }
@@ -367,7 +452,7 @@
 .assetCardBody {
   min-width: 0;
   display: grid;
-  gap: 0.55rem;
+  gap: 0.58rem;
 }
 
 .assetCardHeader {
@@ -379,11 +464,11 @@
 
 .assetCardHeader strong {
   overflow-wrap: anywhere;
-  color: #102f27;
+  color: #0b3328;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 1rem;
-  line-height: 1.14;
-  letter-spacing: -0.025em;
+  font-size: 1.06rem;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
   font-weight: 900;
 }
 
@@ -392,14 +477,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 1.38rem;
-  padding: 0 0.62rem;
+  min-height: 1.42rem;
+  padding: 0 0.64rem;
   border-radius: 999px;
   border: 1px solid rgba(23, 68, 118, 0.14);
   background: rgba(40, 99, 160, 0.08);
   color: #173f61;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   line-height: 1;
   font-weight: 900;
   letter-spacing: 0.05em;
@@ -410,10 +495,10 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.38rem;
-  color: #627183;
-  font-size: 0.82rem;
+  color: #637386;
+  font-size: 0.84rem;
   line-height: 1.34;
-  font-weight: 700;
+  font-weight: 760;
 }
 
 .assetCardMeta span:not(:last-child)::after {
@@ -423,32 +508,32 @@
 }
 
 .assetCardCopy {
-  color: #667581;
-  font-size: 0.82rem;
+  color: #637386;
+  font-size: 0.84rem;
   line-height: 1.42;
-  font-weight: 700;
+  font-weight: 760;
 }
 
 .assetCardDetailPanel {
   display: grid;
   gap: 0.72rem;
-  padding: 0 0.95rem 0.95rem 3.88rem;
+  padding: 0 1rem 1rem 3.98rem;
 }
 
 .assetDetailGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.48rem;
+  gap: 0.5rem;
 }
 
 .assetDetailGrid span {
   min-width: 0;
   display: grid;
-  gap: 0.16rem;
-  padding: 0.54rem;
-  border: 1px solid rgba(204, 219, 232, 0.74);
-  border-radius: 0.84rem;
-  background: rgba(255, 255, 255, 0.78);
+  gap: 0.18rem;
+  padding: 0.58rem;
+  border: 1px solid rgba(204, 219, 232, 0.82);
+  border-radius: 0.86rem;
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .assetDetailGrid small {
@@ -464,7 +549,7 @@
   overflow-wrap: anywhere;
   color: #123130;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   line-height: 1.22;
   letter-spacing: -0.015em;
   font-weight: 850;
@@ -473,16 +558,16 @@
 .assetCardActions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0.55rem;
+  gap: 0.58rem;
   align-items: stretch;
 }
 
 .primaryActionCompact,
 .secondaryActionCompact {
-  min-height: 2.55rem;
-  padding: 0 0.75rem;
-  border-radius: 0.86rem;
-  font-size: 0.78rem;
+  min-height: 2.75rem;
+  padding: 0 0.82rem;
+  border-radius: 0.9rem;
+  font-size: 0.82rem;
   text-align: center;
 }
 
@@ -547,11 +632,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.28rem;
-  padding: 0.34rem;
+  gap: 0.32rem;
+  padding: 0.38rem;
   border: 1px solid rgba(204, 219, 232, 0.88);
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.91);
+  border-radius: 1.08rem;
+  background: rgba(255, 255, 255, 0.92);
   box-shadow:
     0 18px 42px rgba(18, 41, 52, 0.12),
     0 4px 14px rgba(18, 41, 52, 0.06),
@@ -560,37 +645,20 @@
 }
 
 .layerButton {
-  appearance: none;
-  min-height: 2.65rem;
-  padding: 0 1rem;
-  border-radius: 0.78rem;
-  border: 1px solid transparent;
-  background: transparent;
-  color: #52616b;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.84rem;
-  font-weight: 850;
-  letter-spacing: -0.012em;
-  cursor: pointer;
-  transition:
-    background 170ms ease,
-    color 170ms ease,
-    box-shadow 170ms ease,
-    transform 170ms ease,
-    border-color 170ms ease;
-}
-
-.layerButton:hover {
-  color: #143a32;
-  background: rgba(23, 77, 62, 0.06);
+  min-height: 2.82rem;
+  padding: 0 1.08rem;
+  border-radius: 0.84rem;
+  font-size: 0.88rem;
 }
 
 .layerButtonActive,
 .layerButtonActive:hover {
   color: #ffffff;
-  background: #103f35;
-  border-color: rgba(16, 71, 59, 0.18);
-  box-shadow: 0 12px 22px rgba(16, 71, 59, 0.17);
+  background: linear-gradient(180deg, var(--action-primary) 0%, var(--action-primary-deep) 100%);
+  border-color: rgba(18, 70, 53, 0.34);
+  box-shadow:
+    0 13px 24px rgba(18, 70, 53, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 .assetMapShell :global(.aim4priceMapMarker) {
@@ -662,7 +730,7 @@
 }
 
 .assetMapShell :global(.leaflet-container) {
-  font-family: inherit;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   background: #dfe8e2;
 }
 
@@ -711,13 +779,9 @@
   }
 
   .toolbarActions {
-    justify-content: stretch;
+    width: 100%;
     min-width: 0;
-  }
-
-  .primaryAction,
-  .secondaryAction {
-    flex: 1 1 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .mapStage {
@@ -727,7 +791,7 @@
 
 @media (max-width: 860px) {
   .shell {
-    width: min(calc(100% - 1rem), 1500px);
+    width: min(calc(100% - 1rem), 1360px);
   }
 
   .mapWorkspace {
@@ -735,8 +799,12 @@
     border-radius: 1.35rem;
   }
 
-  .workspaceHeader {
-    padding-bottom: 0.9rem;
+  .mapTitleBlock h1 {
+    min-height: 4.35rem;
+    padding: 1rem 1.05rem;
+    border-radius: 1.15rem;
+    font-size: clamp(1.75rem, 9vw, 2.2rem);
+    letter-spacing: -0.045em;
   }
 
   .mapStage {
@@ -767,10 +835,6 @@
     grid-template-columns: 1fr;
   }
 
-  .toolbarActions {
-    display: grid;
-  }
-
   .primaryAction,
   .secondaryAction,
   .primaryActionCompact,
@@ -778,14 +842,10 @@
     width: 100%;
   }
 
-  .mapTitleBlock h1 {
-    font-size: clamp(1.85rem, 12vw, 2.45rem);
-  }
-
   .searchControl input,
   .primaryAction,
   .secondaryAction {
-    min-height: 3.65rem;
+    min-height: 3.5rem;
   }
 
   .assetSidebarHeader {
@@ -794,7 +854,7 @@
   }
 
   .assetCardDetailPanel {
-    padding-left: 0.95rem;
+    padding-left: 1rem;
   }
 
   .layerControl {

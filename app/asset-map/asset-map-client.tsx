@@ -9,6 +9,7 @@ type NoticeTone = 'error';
 type BasemapMode = 'road' | 'satellite';
 type MarkerTone = 'recent' | 'warm' | 'older';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
+type IconProps = { className?: string };
 
 type AssetMapItem = {
   id: string;
@@ -72,6 +73,36 @@ const BASEMAP_OPTIONS: Array<{ value: BasemapMode; label: string }> = [
   { value: 'road', label: 'Map' },
   { value: 'satellite', label: 'Satellite' },
 ];
+
+function SearchIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10.8 18.1a7.3 7.3 0 1 0 0-14.6 7.3 7.3 0 0 0 0 14.6Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="m16.3 16.3 4.2 4.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DownloadIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 4v10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="m8 10 4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 19h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function RefreshIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 11a8 8 0 0 0-14.7-4.3L4 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 4v4h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 13a8 8 0 0 0 14.7 4.3L20 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 20v-4h-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 function loadLeaflet(): Promise<any> {
   if (typeof window === 'undefined') {
@@ -609,7 +640,7 @@ export default function AssetMapClient() {
         <article className={styles.mapWorkspace} aria-label="Asset map workspace">
           <header className={styles.workspaceHeader}>
             <div className={styles.mapTitleBlock}>
-              <h1>Asset map</h1>
+              <h1>Asset Map</h1>
               <p>
                 {visibleAssets.length} mapped asset{visibleAssets.length === 1 ? '' : 's'} visible
                 <span aria-hidden="true"> · </span>
@@ -627,6 +658,7 @@ export default function AssetMapClient() {
             }}
           >
             <label className={styles.searchControl} aria-label="Search scanned assets">
+              <SearchIcon className={styles.searchIcon} />
               <input
                 value={search}
                 onChange={(event) => handleSearchChange(event.target.value)}
@@ -637,15 +669,18 @@ export default function AssetMapClient() {
             <div className={styles.toolbarActions}>
               {reportHref ? (
                 <a href={reportHref} target="_blank" rel="noreferrer" className={styles.primaryAction}>
-                  Download asset map
+                  <DownloadIcon className={styles.buttonIcon} />
+                  <span>Download asset map</span>
                 </a>
               ) : (
                 <button type="button" className={`${styles.primaryAction} ${styles.actionDisabled}`} disabled>
-                  Download asset map
+                  <DownloadIcon className={styles.buttonIcon} />
+                  <span>Download asset map</span>
                 </button>
               )}
               <button type="button" className={styles.secondaryAction} onClick={() => void fetchMapData('refresh')} disabled={isRefreshing || isLoading}>
-                {isRefreshing ? 'Refreshing…' : 'Refresh map'}
+                <RefreshIcon className={styles.buttonIcon} />
+                <span>{isRefreshing ? 'Refreshing…' : 'Refresh map'}</span>
               </button>
             </div>
           </form>
