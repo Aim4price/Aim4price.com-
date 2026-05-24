@@ -1212,3 +1212,128 @@
     width: 100%;
   }
 }
+
+/* === Lead note PDF quote upload === */
+.leadNoteAttachmentDropzone {
+  position: relative;
+  display: grid;
+  gap: 0.34rem;
+  margin-top: 1rem;
+  padding: 1.05rem 1.15rem;
+  border: 1.5px dashed rgba(23, 83, 70, 0.28);
+  border-radius: 1.18rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbf9 100%);
+  color: #17362c;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.leadNoteAttachmentDropzone:hover,
+.leadNoteAttachmentDropzoneDragging {
+  border-color: rgba(14, 113, 82, 0.58);
+  background: linear-gradient(180deg, #ffffff 0%, #eef9f4 100%);
+  box-shadow: 0 12px 28px rgba(14, 91, 67, 0.08);
+  transform: translateY(-1px);
+}
+
+.leadNoteAttachmentInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.leadNoteAttachmentInput:disabled {
+  cursor: not-allowed;
+}
+
+.leadNoteAttachmentEyebrow {
+  color: #657587;
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.085em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.leadNoteAttachmentDropzone strong {
+  color: #103b31;
+  font-size: 1rem;
+  font-weight: 820;
+  line-height: 1.25;
+}
+
+.leadNoteAttachmentDropzone small {
+  color: #69798a;
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.leadNoteAttachmentPreview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  margin-top: 0.72rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(199, 216, 226, 0.98);
+  border-radius: 1rem;
+  background: #f8fbfd;
+}
+
+.leadNoteAttachmentPreview div {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.leadNoteAttachmentPreview strong {
+  color: #19362d;
+  font-size: 0.95rem;
+  font-weight: 820;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.leadNoteAttachmentPreview span {
+  color: #6c7b8a;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.leadNoteAttachmentPreview button {
+  flex: 0 0 auto;
+  min-height: 2.35rem;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(207, 221, 232, 0.98);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #22384a;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 780;
+  cursor: pointer;
+}
+
+.leadNoteAttachmentPreview button:hover:not(:disabled) {
+  border-color: rgba(154, 177, 196, 0.98);
+  background: #f2f6f9;
+}
+
+@media (max-width: 620px) {
+  .leadNoteAttachmentPreview {
+    display: grid;
+    align-items: stretch;
+  }
+
+  .leadNoteAttachmentPreview button {
+    width: 100%;
+  }
+}

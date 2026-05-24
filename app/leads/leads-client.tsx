@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
 import { openAssetRegisterSummaryPrint, openAssetSheetPrint, type ReportMethodCard } from '../../lib/report-print';
 import assetStyles from '../asset-register/page.module.css';
@@ -72,11 +72,19 @@ type LeadsResponse = {
   error?: string;
 };
 
+type LeadNoteAttachment = {
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+  url: string;
+};
+
 type PartnerNoteResponse = {
   ok: boolean;
   note?: {
     id: string;
     noteText: string;
+    attachment?: LeadNoteAttachment | null;
     createdAtIso: string;
   };
   error?: string;
@@ -118,6 +126,8 @@ const MONTH_OPTIONS = [
   { value: '10', label: 'November' },
   { value: '11', label: 'December' },
 ];
+
+const MAX_LEAD_NOTE_PDF_BYTES = 12 * 1024 * 1024;
 
 const PDF_REPORT_OPTIONS: PdfReportOption[] = [
   {
@@ -317,6 +327,22 @@ function formatDate(value?: string | null): string {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return '—';
   return new Intl.DateTimeFormat('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }).format(parsed);
+}
+
+function formatByteSize(value: unknown): string {
+  const bytes = Math.max(0, Math.round(Number(value) || 0));
+
+  if (!bytes) return '0 KB';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+
+  const mb = bytes / (1024 * 1024);
+  return `${mb >= 10 ? Math.round(mb) : mb.toFixed(1)} MB`;
+}
+
+function isPdfFile(file: File): boolean {
+  const contentType = String(file.type ?? '').trim().toLowerCase();
+  return contentType === 'application/pdf' || file.name.trim().toLowerCase().endsWith('.pdf');
 }
 
 function formatLeadType(value: LeadType): string {
@@ -949,6 +975,8 @@ export default function LeadsClient() {
   const [noteLead, setNoteLead] = useState<AssetLead | null>(null);
   const [deleteLeadTarget, setDeleteLeadTarget] = useState<AssetLead | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
+  const [noteAttachmentFile, setNoteAttachmentFile] = useState<File | null>(null);
+  const [isNoteAttachmentDragging, setIsNoteAttachmentDragging] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [isDeletingLead, setIsDeletingLead] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -1228,25 +1256,68 @@ export default function LeadsClient() {
     await handleLeadPdfReportDownload(reportLead, 'full');
   }
 
+  function resetLeadNoteDraft() {
+    setNoteDraft('');
+    setNoteAttachmentFile(null);
+    setIsNoteAttachmentDragging(false);
+  }
+
   function openNoteModal(lead: AssetLead) {
     setNotice(null);
     setNoteLead(lead);
-    setNoteDraft('');
+    resetLeadNoteDraft();
   }
 
   function closeNoteModal() {
     if (isSavingNote) return;
     setNoteLead(null);
-    setNoteDraft('');
+    resetLeadNoteDraft();
+  }
+
+  function handleLeadNotePdfFile(file: File | null) {
+    if (!file) return;
+
+    if (!isPdfFile(file)) {
+      setNoteAttachmentFile(null);
+      setNotice({ tone: 'error', message: 'Only PDF quote files can be attached to a lead note.' });
+      return;
+    }
+
+    if (file.size > MAX_LEAD_NOTE_PDF_BYTES) {
+      setNoteAttachmentFile(null);
+      setNotice({ tone: 'error', message: 'The PDF quote must be 12 MB or smaller.' });
+      return;
+    }
+
+    setNotice(null);
+    setNoteAttachmentFile(file);
+  }
+
+  function handleLeadNoteAttachmentChange(event: ChangeEvent<HTMLInputElement>) {
+    handleLeadNotePdfFile(event.target.files?.item(0) ?? null);
+    event.target.value = '';
+  }
+
+  function handleLeadNoteAttachmentDrop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    setIsNoteAttachmentDragging(false);
+    handleLeadNotePdfFile(event.dataTransfer.files.item(0) ?? null);
   }
 
   async function submitLeadNote() {
     if (!noteLead) return;
 
     const noteText = noteDraft.trim();
-    if (!noteText) {
-      setNotice({ tone: 'error', message: 'Write a note before saving it.' });
+    if (!noteText && !noteAttachmentFile) {
+      setNotice({ tone: 'error', message: 'Write a note or attach a PDF quote before saving.' });
       return;
+    }
+
+    const formData = new FormData();
+    formData.append('note', noteText);
+
+    if (noteAttachmentFile) {
+      formData.append('attachment', noteAttachmentFile);
     }
 
     setIsSavingNote(true);
@@ -1255,8 +1326,7 @@ export default function LeadsClient() {
       const response = await fetch(`/api/asset-leads/${encodeURIComponent(noteLead.id)}/notes`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ note: noteText }),
+        body: formData,
       });
       const data = (await response.json()) as PartnerNoteResponse;
 
@@ -1264,9 +1334,10 @@ export default function LeadsClient() {
         throw new Error(data.error ?? 'Failed to save note.');
       }
 
-      setNotice({ tone: 'success', message: 'Note saved on the lead asset.' });
+      const hasAttachment = Boolean(data.note.attachment ?? noteAttachmentFile);
+      setNotice({ tone: 'success', message: hasAttachment ? 'Note and PDF quote saved on the lead asset.' : 'Note saved on the lead asset.' });
       setNoteLead(null);
-      setNoteDraft('');
+      resetLeadNoteDraft();
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save note.' });
     } finally {
@@ -2094,10 +2165,47 @@ export default function LeadsClient() {
                 className={assetStyles.sharedNoteTextarea}
                 value={noteDraft}
                 onChange={(event) => setNoteDraft(event.target.value)}
-                placeholder="Example: Please confirm the latest hours before we process this asset."
+                placeholder="Example: Please find the attached quote PDF for this asset."
                 autoFocus
               />
             </label>
+
+            <label
+              className={`${styles.leadNoteAttachmentDropzone} ${isNoteAttachmentDragging ? styles.leadNoteAttachmentDropzoneDragging : ''}`}
+              onDragEnter={(event) => {
+                event.preventDefault();
+                setIsNoteAttachmentDragging(true);
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setIsNoteAttachmentDragging(true);
+              }}
+              onDragLeave={() => setIsNoteAttachmentDragging(false)}
+              onDrop={handleLeadNoteAttachmentDrop}
+            >
+              <input
+                className={styles.leadNoteAttachmentInput}
+                type="file"
+                accept="application/pdf,.pdf"
+                onChange={handleLeadNoteAttachmentChange}
+                disabled={isSavingNote}
+              />
+              <span className={styles.leadNoteAttachmentEyebrow}>Optional PDF quote</span>
+              <strong>Drop quote PDF here or click to upload</strong>
+              <small>PDF only · maximum {formatByteSize(MAX_LEAD_NOTE_PDF_BYTES)}. The owner can open it from their Asset Register.</small>
+            </label>
+
+            {noteAttachmentFile ? (
+              <div className={styles.leadNoteAttachmentPreview}>
+                <div>
+                  <strong>{noteAttachmentFile.name}</strong>
+                  <span>{formatByteSize(noteAttachmentFile.size)}</span>
+                </div>
+                <button type="button" onClick={() => setNoteAttachmentFile(null)} disabled={isSavingNote}>
+                  Remove PDF
+                </button>
+              </div>
+            ) : null}
 
             <div className={`${assetStyles.formActions} ${assetStyles.sharedNoteActions} ${styles.leadNoteActions}`}>
               <button type="button" className={assetStyles.secondaryButton} onClick={closeNoteModal} disabled={isSavingNote}>
