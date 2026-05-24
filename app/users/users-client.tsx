@@ -68,17 +68,6 @@ function SearchIcon({ className }: IconProps) {
   );
 }
 
-function UsersIcon({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M16.5 11.4a3.35 3.35 0 1 0 0-6.7 3.35 3.35 0 0 0 0 6.7Z" fill="none" stroke="currentColor" strokeWidth="1.9" />
-      <path d="M7.8 12.15a3.05 3.05 0 1 0 0-6.1 3.05 3.05 0 0 0 0 6.1Z" fill="none" stroke="currentColor" strokeWidth="1.9" />
-      <path d="M13.1 19.35c.55-3.05 2.25-4.58 5.12-4.58 2.32 0 3.73 1.05 4.23 3.15.15.62-.32 1.2-.96 1.2h-8.14" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M1.95 19.1c.42-2.76 2.1-4.15 5.03-4.15 2.62 0 4.24 1.12 4.86 3.36.12.43-.21.79-.66.79H1.95Z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 function PhoneIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
@@ -306,17 +295,12 @@ export default function UsersClient() {
     return (
       <>
         <section className={styles.heroPanel}>
-          <div className={styles.heroIcon} aria-hidden="true">
-            <UsersIcon className={styles.heroIconSvg} />
-          </div>
-          <div className={styles.heroCopy}>
-            <p className={styles.eyebrow}>Users</p>
-            <h1>Owner accounts</h1>
-            <p>
-              View registered owner companies and request contact details when there is a professional reason to connect.
-            </p>
-          </div>
+          <h1>AIM4PRICE ACCOUNTS</h1>
         </section>
+
+        <p className={styles.pageLead}>
+          View registered owner companies and request contact details when there is a professional reason to connect.
+        </p>
 
         <section className={styles.toolbar} aria-label="Search owners">
           <label className={styles.searchBox}>
@@ -327,6 +311,16 @@ export default function UsersClient() {
               placeholder="Search company names"
               aria-label="Search company names"
             />
+            {searchTerm ? (
+              <button
+                type="button"
+                className={styles.clearSearchButton}
+                onClick={() => setSearchTerm('')}
+                aria-label="Clear company search"
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            ) : null}
           </label>
         </section>
 
@@ -463,15 +457,10 @@ export default function UsersClient() {
     return (
       <>
         <section className={styles.heroPanel}>
-          <div className={styles.heroIcon} aria-hidden="true">
-            <UsersIcon className={styles.heroIconSvg} />
-          </div>
-          <div className={styles.heroCopy}>
-            <p className={styles.eyebrow}>Users</p>
-            <h1>Contact detail requests</h1>
-            <p>Control which finance, insurance and dealer accounts can see your saved contact details.</p>
-          </div>
+          <h1>CONTACT REQUESTS</h1>
         </section>
+
+        <p className={styles.pageLead}>Control which finance, insurance and dealer accounts can see your saved contact details.</p>
 
         <section className={styles.summaryGrid} aria-label="Contact request summary">
           <article className={styles.summaryCard}>
@@ -515,7 +504,11 @@ export default function UsersClient() {
       <AppHeader active={mode === 'directory' ? 'users' : 'none'} />
 
       <div className={styles.shell}>
-        {notice ? <div className={`${styles.notice} ${styles[`notice${notice.tone}`]}`}>{notice.message}</div> : null}
+        {notice ? (
+          <div className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`}>
+            {notice.message}
+          </div>
+        ) : null}
         {mode === 'directory' ? renderOwnerDirectory() : renderOwnerRequests()}
         {!isLoading && mode === 'directory' && owners.length === 0 ? (
           <p className={styles.footerNote}>Owner accounts will appear here once they have created an Aim4price profile.</p>
