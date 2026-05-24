@@ -285,21 +285,25 @@ function buildPopupHtml(asset: AssetMapItem, markerNumber: number): string {
   const licensed = escapeHtml(formatAssetStatusChoice(asset.licenseStatus));
   const registration = escapeHtml(asset.licenseRegistrationNumber || '');
   const registrationRow = asset.licenseStatus === 'yes' && registration
-    ? `<div><strong style="color:#132d2d;">Registration:</strong> ${registration}</div>`
+    ? `<div style="display:grid; gap:2px;"><span style="color:#607182; font-size:10px; font-weight:850; letter-spacing:0.08em; text-transform:uppercase;">Registration</span><strong style="color:#123130; font-size:12px; font-weight:850;">${registration}</strong></div>`
     : '';
   const gps = escapeHtml(formatLatLng(asset));
 
   return `
-    <div style="min-width: 226px; font-family: Montserrat, Inter, Arial, sans-serif; color: #122f2a;">
-      <div style="display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:999px; color:#fff; background:#103f35; font-size:12px; font-weight:900; margin-bottom:8px;">${markerNumber}</div>
-      <div style="font-weight: 850; font-size: 16px; line-height: 1.15; margin-bottom: 6px; letter-spacing: -0.03em;">${title}</div>
-      <div style="font-size: 12px; color: #5b6a70; margin-bottom: 9px;">${plate}</div>
-      <div style="display:grid; gap:6px; font-size:12px; color:#53666b;">
-        <div><strong style="color:#132d2d;">Asset type:</strong> ${assetType}</div>
-        <div><strong style="color:#132d2d;">Fuel:</strong> ${fuel}</div>
-        <div><strong style="color:#132d2d;">Licensed:</strong> ${licensed}</div>
+    <div style="min-width: 246px; max-width: 276px; font-family: Montserrat, Inter, Arial, sans-serif; color: #122f2a; padding:2px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+        <div style="display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:999px; color:#fff; background:#103f35; font-size:12px; font-weight:900; box-shadow:0 9px 18px rgba(16,63,53,.18); flex:0 0 auto;">${markerNumber}</div>
+        <div style="min-width:0; display:grid; gap:3px;">
+          <div style="font-weight: 900; font-size: 15px; line-height: 1.12; letter-spacing: -0.035em; color:#0b3328; overflow-wrap:anywhere;">${title}</div>
+          <div style="font-size: 11px; color: #667581; font-weight:720;">${plate}</div>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; font-size:12px; color:#53666b;">
+        <div style="display:grid; gap:2px;"><span style="color:#607182; font-size:10px; font-weight:850; letter-spacing:0.08em; text-transform:uppercase;">Asset type</span><strong style="color:#123130; font-size:12px; font-weight:850;">${assetType}</strong></div>
+        <div style="display:grid; gap:2px;"><span style="color:#607182; font-size:10px; font-weight:850; letter-spacing:0.08em; text-transform:uppercase;">Fuel</span><strong style="color:#123130; font-size:12px; font-weight:850;">${fuel}</strong></div>
+        <div style="display:grid; gap:2px;"><span style="color:#607182; font-size:10px; font-weight:850; letter-spacing:0.08em; text-transform:uppercase;">Licensed</span><strong style="color:#123130; font-size:12px; font-weight:850;">${licensed}</strong></div>
         ${registrationRow}
-        <div><strong style="color:#132d2d;">GPS:</strong> ${gps}</div>
+        <div style="grid-column:1 / -1; display:grid; gap:2px;"><span style="color:#607182; font-size:10px; font-weight:850; letter-spacing:0.08em; text-transform:uppercase;">GPS</span><strong style="color:#123130; font-size:12px; font-weight:850;">${gps}</strong></div>
       </div>
     </div>
   `;
@@ -606,17 +610,16 @@ export default function AssetMapClient() {
   }, []);
 
   const lastUpdatedText = lastLoadedAtIso ? formatDate(lastLoadedAtIso) : 'Waiting for first refresh';
-  const reportHref = useMemo(() => {
-    if (!visibleAssets.length) return null;
+  const selectedAsset = useMemo(
+    () => visibleAssets.find((asset) => asset.publicAssetCode === selectedCode) ?? null,
+    [selectedCode, visibleAssets],
+  );
 
-    const showingAll = !search.trim() && visibleAssets.length === mappedAssets.length;
-    if (showingAll) {
-      return '/api/asset-map/report';
-    }
+  const fullMapReportHref = mappedAssets.length ? '/api/asset-map/report' : null;
 
-    const codes = visibleAssets.map((asset) => encodeURIComponent(asset.publicAssetCode)).join(',');
-    return `/api/asset-map/report?codes=${codes}`;
-  }, [mappedAssets.length, search, visibleAssets]);
+  const selectedAssetReportHref = selectedAsset
+    ? `/api/asset-map/report?assetCode=${encodeURIComponent(selectedAsset.publicAssetCode)}`
+    : null;
 
   function handleSearchChange(value: string) {
     setSearch(value);
@@ -667,10 +670,10 @@ export default function AssetMapClient() {
             </label>
 
             <div className={styles.toolbarActions}>
-              {reportHref ? (
-                <a href={reportHref} target="_blank" rel="noreferrer" className={styles.primaryAction}>
+              {fullMapReportHref ? (
+                <a href={fullMapReportHref} target="_blank" rel="noreferrer" className={styles.primaryAction}>
                   <DownloadIcon className={styles.buttonIcon} />
-                  <span>Download asset map</span>
+                  <span>{selectedAsset ? 'Download full map' : 'Download asset map'}</span>
                 </a>
               ) : (
                 <button type="button" className={`${styles.primaryAction} ${styles.actionDisabled}`} disabled>
@@ -751,7 +754,19 @@ export default function AssetMapClient() {
                             </div>
 
                             <div className={styles.assetCardActions}>
-                              <Link href="/asset-register" className={styles.primaryActionCompact}>
+                              {selectedAssetReportHref ? (
+                                <a
+                                  href={selectedAssetReportHref}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className={`${styles.primaryActionCompact} ${styles.assetCardDownloadAction}`}
+                                >
+                                  <DownloadIcon className={styles.buttonIcon} />
+                                  <span>Download map</span>
+                                </a>
+                              ) : null}
+
+                              <Link href="/asset-register" className={styles.secondaryActionCompact}>
                                 Asset register
                               </Link>
                               {googleMapsHref ? (
