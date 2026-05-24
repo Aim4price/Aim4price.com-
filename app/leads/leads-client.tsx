@@ -9,7 +9,7 @@ import styles from './page.module.css';
 type LeadType = 'finance' | 'insurance' | 'replacement_quote';
 type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 type NoticeTone = 'success' | 'error';
-type LeadStatusFilter = 'all' | 'new' | 'open';
+type LeadStatusFilter = 'all' | 'new' | 'opened';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 type LeadReportStep = 'format' | 'pdf-report';
 type PdfReportKind = 'full' | 'financed' | 'insured' | 'licensed' | 'not-financed' | 'not-insured' | 'not-licensed';
@@ -315,15 +315,15 @@ function formatLeadType(value: LeadType): string {
 }
 
 function formatStatus(value: LeadStatus): string {
-  if (value === 'sent' || value === 'viewed') return 'New';
-  if (value === 'accepted') return 'Open';
+  if (value === 'sent') return 'New';
+  if (value === 'viewed' || value === 'accepted') return 'Opened';
   if (value === 'quoted') return 'Quoted';
   if (value === 'declined') return 'Deleted';
   return 'Closed';
 }
 
-function isNewLeadStatus(value: LeadStatus): boolean {
-  return value === 'sent' || value === 'viewed';
+function isNewLead(lead: AssetLead): boolean {
+  return lead.status === 'sent' && !lead.viewedAtIso;
 }
 function leadDateParts(lead: AssetLead): { month: string; year: string } | null {
   const parsed = new Date(lead.createdAtIso);
@@ -965,15 +965,15 @@ export default function LeadsClient() {
     const query = searchTerm.trim().toLowerCase();
 
     return periodLeads.filter((lead) => {
-      if (statusFilter === 'new' && !isNewLeadStatus(lead.status)) return false;
-      if (statusFilter === 'open' && isNewLeadStatus(lead.status)) return false;
+      if (statusFilter === 'new' && !isNewLead(lead)) return false;
+      if (statusFilter === 'opened' && isNewLead(lead)) return false;
 
       if (!query) return true;
       return searchTextForLead(lead).includes(query);
     });
   }, [periodLeads, searchTerm, statusFilter]);
 
-  const newLeadCount = useMemo(() => periodLeads.filter((lead) => isNewLeadStatus(lead.status)).length, [periodLeads]);
+  const newLeadCount = useMemo(() => filteredLeads.filter((lead) => isNewLead(lead)).length, [filteredLeads]);
   const hasActiveLeadFilter = monthFilter !== 'all' || yearFilter !== 'all' || statusFilter !== 'all';
   const activeLeadFilterLabel = useMemo(() => {
     const labels: string[] = [];
@@ -982,7 +982,7 @@ export default function LeadsClient() {
     if (selectedMonth && selectedMonth.value !== 'all') labels.push(selectedMonth.label);
     if (yearFilter !== 'all') labels.push(yearFilter);
     if (statusFilter === 'new') labels.push('New leads');
-    if (statusFilter === 'open') labels.push('Open leads');
+    if (statusFilter === 'opened') labels.push('Opened leads');
 
     if (!labels.length) return 'Filter';
     if (labels.length === 1) return labels[0];
@@ -1085,6 +1085,50 @@ export default function LeadsClient() {
   function closeDeleteLeadModal() {
     if (isDeletingLead) return;
     setDeleteLeadTarget(null);
+  }
+
+  async function openLead(leadToOpen: AssetLead) {
+    setNotice(null);
+    setOpenLeadId(leadToOpen.id);
+
+    if (!isNewLead(leadToOpen)) return;
+
+    const viewedAtIso = new Date().toISOString();
+
+    setLeads((current) =>
+      current.map((lead) =>
+        lead.id === leadToOpen.id
+          ? {
+              ...lead,
+              status: 'viewed',
+              viewedAtIso: lead.viewedAtIso ?? viewedAtIso,
+              updatedAtIso: viewedAtIso,
+            }
+          : lead,
+      ),
+    );
+
+    try {
+      const response = await fetch(`/api/asset-leads/${encodeURIComponent(leadToOpen.id)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'viewed' }),
+      });
+      const data = (await response.json()) as LeadsResponse;
+
+      if (!response.ok || !data.ok || !data.lead) {
+        throw new Error(data.error ?? 'Failed to mark lead as opened.');
+      }
+
+      const updatedLead = data.lead;
+      setLeads((current) => current.map((lead) => (lead.id === updatedLead.id ? updatedLead : lead)));
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Lead opened, but it could not be marked as opened.',
+      });
+    }
   }
 
   function resetLeadFilters() {
@@ -1418,6 +1462,39 @@ export default function LeadsClient() {
     );
   }
 
+  function renderLeadContactPanel(lead: AssetLead) {
+    const phone = ownerPhone(lead);
+    const email = ownerEmail(lead);
+
+    return (
+      <div className={styles.leadContactPanel} aria-label="Account contact details">
+        <div className={styles.leadContactHeading}>
+          <span>Account contact details</span>
+          <strong>{ownerDisplayName(lead)}</strong>
+        </div>
+
+        <div className={styles.leadContactGrid}>
+          {buildClientRows(lead).map((row) => {
+            const isPhoneRow = row.label === 'Contact number' && phone;
+            const isEmailRow = row.label === 'Email' && email;
+            const value = row.value || '—';
+
+            return (
+              <div className={styles.leadContactRow} key={`${lead.id}-${row.label}`}>
+                <span>{row.label}</span>
+                <strong>
+                  {isPhoneRow ? <a href={`tel:${cleanPhoneForTel(phone)}`}>{value}</a> : null}
+                  {isEmailRow ? <a href={`mailto:${email}`}>{value}</a> : null}
+                  {!isPhoneRow && !isEmailRow ? value : null}
+                </strong>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   function renderLeadDetails(lead: AssetLead) {
     if (isFullRegisterLead(lead)) {
       return renderFullRegisterLeadDetails(lead);
@@ -1662,8 +1739,11 @@ export default function LeadsClient() {
           {!isLoading && filteredLeads.length ? (
             <div className={styles.leadStack}>
               {filteredLeads.map((lead) => {
+                const isLeadOpen = openLeadId === lead.id;
+                const isLeadNew = isNewLead(lead);
+
                 return (
-                  <article key={lead.id} className={`${styles.leadThread} ${openLeadId === lead.id ? styles.leadThreadOpen : ''}`}>
+                  <article key={lead.id} className={`${styles.leadThread} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadOpen ? styles.leadThreadOpen : ''}`}>
                     <div className={styles.clientPanel}>
                       <div className={styles.clientPanelHeader}>
                         <div className={styles.clientIdentity}>
@@ -1672,7 +1752,7 @@ export default function LeadsClient() {
                         </div>
 
                         <div className={styles.clientDecisionArea}>
-                          {openLeadId === lead.id ? (
+                          {isLeadOpen ? (
                             <button
                               type="button"
                               className={`${assetStyles.secondaryButton} ${styles.closeLeadButton}`}
@@ -1691,7 +1771,7 @@ export default function LeadsClient() {
                                 type="button"
                                 className={`${assetStyles.primaryButton} ${styles.openLeadButton}`}
                                 onClick={() => {
-                                  setOpenLeadId(lead.id);
+                                  void openLead(lead);
                                 }}
                               >
                                 Open
@@ -1702,7 +1782,9 @@ export default function LeadsClient() {
                       </div>
                     </div>
 
-                    {openLeadId === lead.id ? (
+                    {isLeadOpen ? renderLeadContactPanel(lead) : null}
+
+                    {isLeadOpen ? (
                       <div className={`${assetStyles.assetCard} ${styles.leadAssetCard} ${isFullRegisterLead(lead) ? styles.fullRegisterLeadCard : ''} ${assetStyles.assetCardExpanded}`}>
                         <div className={assetStyles.assetHeader}>
                           <div className={assetStyles.assetTitleBlock}>
@@ -1726,7 +1808,7 @@ export default function LeadsClient() {
                                 <span>Leave note</span>
                               </button>
 
-                              <button type="button" className={assetStyles.optionsButton} onClick={() => setManagedLead(lead)}>
+                              <button type="button" className={`${assetStyles.optionsButton} ${styles.leadManageButton}`} onClick={() => setManagedLead(lead)}>
                                 <ManageIcon className={assetStyles.buttonIcon} />
                                 <span>Manage</span>
                               </button>
@@ -1786,7 +1868,7 @@ export default function LeadsClient() {
                 <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as LeadStatusFilter)}>
                   <option value="all">All leads</option>
                   <option value="new">New leads</option>
-                  <option value="open">Open leads</option>
+                  <option value="opened">Opened leads</option>
                 </select>
               </label>
             </div>

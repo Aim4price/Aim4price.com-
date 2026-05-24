@@ -894,3 +894,189 @@
     min-width: 0 !important;
   }
 }
+
+/* === Leads inbox: unopened/read state, contact panel and action colours === */
+.leadThreadNew:not(.leadThreadOpen) {
+  border-color: rgba(124, 201, 157, 0.94) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(70, 181, 120, 0.16) 0%, rgba(70, 181, 120, 0) 42%),
+    linear-gradient(180deg, #f3fff8 0%, #eaf9f1 100%) !important;
+  box-shadow:
+    0 16px 32px rgba(20, 97, 66, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.leadThreadNew:not(.leadThreadOpen):hover {
+  border-color: rgba(83, 174, 122, 0.98) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(70, 181, 120, 0.2) 0%, rgba(70, 181, 120, 0) 44%),
+    linear-gradient(180deg, #f7fffa 0%, #e4f6ed 100%) !important;
+  box-shadow:
+    0 18px 34px rgba(20, 97, 66, 0.095),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.leadThreadOpen {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(249, 252, 253, 0.99) 100%) !important;
+}
+
+.leadThreadNew:not(.leadThreadOpen) .clientKicker {
+  color: #367456 !important;
+}
+
+.leadThreadNew:not(.leadThreadOpen) .clientPanel h3 {
+  color: #063b30 !important;
+}
+
+.deleteLeadButton {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #d85252 0%, #a83333 100%) !important;
+  border-color: rgba(152, 43, 43, 0.98) !important;
+  box-shadow:
+    0 12px 24px rgba(145, 44, 44, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+.deleteLeadButton:hover {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #c94444 0%, #932a2a 100%) !important;
+  border-color: rgba(132, 35, 35, 0.98) !important;
+  box-shadow:
+    0 15px 28px rgba(145, 44, 44, 0.23),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+.leadDeleteConfirmButton,
+.leadDeleteConfirmButton:hover {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #d85252 0%, #a83333 100%) !important;
+  border-color: rgba(152, 43, 43, 0.98) !important;
+  box-shadow:
+    0 12px 24px rgba(145, 44, 44, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+.leadContactPanel {
+  margin-top: 0.95rem;
+  padding: clamp(1rem, 1.45vw, 1.2rem);
+  border: 1px solid rgba(188, 219, 204, 0.98);
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(43, 148, 95, 0.08) 0%, rgba(43, 148, 95, 0) 40%),
+    linear-gradient(180deg, #ffffff 0%, #f1faf5 100%);
+  box-shadow:
+    0 14px 28px rgba(20, 97, 66, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.leadContactHeading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.85rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(205, 226, 216, 0.98);
+}
+
+.leadContactHeading span {
+  color: #5d7181;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.leadContactHeading strong {
+  min-width: 0;
+  color: #073b30;
+  font-size: clamp(1.05rem, 1.4vw, 1.24rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.leadContactGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.68rem;
+  padding-top: 0.9rem;
+}
+
+.leadContactRow {
+  min-width: 0;
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.78rem 0.85rem;
+  border: 1px solid rgba(210, 225, 217, 0.98);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.leadContactRow span {
+  color: #64768a;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.055em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.leadContactRow strong,
+.leadContactRow a {
+  min-width: 0;
+  color: #0b3028;
+  font-size: 0.98rem;
+  font-weight: 820;
+  line-height: 1.25;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.leadContactRow a:hover {
+  color: #0f684f;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.leadAssetCard .leadManageButton {
+  color: #0a543d !important;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%) !important;
+  border-color: #6fc596 !important;
+  box-shadow:
+    0 10px 22px rgba(15, 90, 67, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.leadAssetCard .leadManageButton:hover:not(:disabled) {
+  color: #0b4635 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #d9f1e5 100%) !important;
+  border-color: #43ad73 !important;
+  box-shadow:
+    0 14px 28px rgba(15, 90, 67, 0.115),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+@media (max-width: 980px) {
+  .leadContactGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .leadContactHeading {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .leadContactHeading strong {
+    text-align: left;
+  }
+
+  .leadContactGrid {
+    grid-template-columns: 1fr;
+  }
+}
