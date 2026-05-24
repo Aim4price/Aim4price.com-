@@ -92,6 +92,17 @@ type SessionResponse = {
   } | null;
 };
 
+type AccountProfileResponse = {
+  ok: boolean;
+  profile?: {
+    businessName: string;
+    displayName: string;
+    name: string;
+    email: string;
+  };
+  error?: string;
+};
+
 const MONTH_OPTIONS = [
   { value: 'all', label: 'All months' },
   { value: '0', label: 'January' },
@@ -337,6 +348,11 @@ function leadDateParts(lead: AssetLead): { month: string; year: string } | null 
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function formatInboxTitle(value: unknown): string {
+  const title = asText(value);
+  return title ? title.toUpperCase() : 'LEADS INBOX';
 }
 
 function asNumber(value: unknown): number | null {
@@ -917,6 +933,7 @@ function searchTextForLead(lead: AssetLead): string {
 export default function LeadsClient() {
   const [sessionUserId, setSessionUserId] = useState('');
   const [leads, setLeads] = useState<AssetLead[]>([]);
+  const [accountInboxTitle, setAccountInboxTitle] = useState('LEADS INBOX');
   const [statusFilter, setStatusFilter] = useState<LeadStatusFilter>('all');
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
@@ -993,13 +1010,15 @@ export default function LeadsClient() {
     setIsLoading(true);
 
     try {
-      const [sessionResponse, leadsResponse] = await Promise.all([
+      const [sessionResponse, leadsResponse, profileResponse] = await Promise.all([
         fetch('/api/me', { cache: 'no-store', credentials: 'include' }),
         fetch('/api/asset-leads', { cache: 'no-store', credentials: 'include' }),
+        fetch('/api/account-profile', { cache: 'no-store', credentials: 'include' }),
       ]);
 
       const sessionData = (await sessionResponse.json()) as SessionResponse;
       const leadsData = (await leadsResponse.json()) as LeadsResponse;
+      const profileData = profileResponse.ok ? ((await profileResponse.json()) as AccountProfileResponse) : null;
 
       if (!sessionResponse.ok || !sessionData.signedIn || !sessionData.user) {
         throw new Error('You must be signed in.');
@@ -1009,7 +1028,11 @@ export default function LeadsClient() {
         throw new Error(leadsData.error ?? 'Failed to load leads.');
       }
 
+      const profile = profileData?.profile;
+      const accountTitle = profile?.businessName || profile?.displayName || profile?.name || sessionData.user.name;
+
       setSessionUserId(sessionData.user.id);
+      setAccountInboxTitle(formatInboxTitle(accountTitle));
       setLeads(leadsData.leads);
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load leads.' });
@@ -1465,31 +1488,23 @@ export default function LeadsClient() {
   function renderLeadContactPanel(lead: AssetLead) {
     const phone = ownerPhone(lead);
     const email = ownerEmail(lead);
+    const contactLines = [
+      phone ? { key: 'phone', value: phone, href: `tel:${cleanPhoneForTel(phone)}` } : null,
+      email ? { key: 'email', value: email, href: `mailto:${email}` } : null,
+    ].filter((line): line is { key: string; value: string; href: string } => Boolean(line));
 
     return (
       <div className={styles.leadContactPanel} aria-label="Account contact details">
-        <div className={styles.leadContactHeading}>
-          <span>Account contact details</span>
-          <strong>{ownerDisplayName(lead)}</strong>
-        </div>
-
-        <div className={styles.leadContactGrid}>
-          {buildClientRows(lead).map((row) => {
-            const isPhoneRow = row.label === 'Contact number' && phone;
-            const isEmailRow = row.label === 'Email' && email;
-            const value = row.value || '—';
-
-            return (
-              <div className={styles.leadContactRow} key={`${lead.id}-${row.label}`}>
-                <span>{row.label}</span>
-                <strong>
-                  {isPhoneRow ? <a href={`tel:${cleanPhoneForTel(phone)}`}>{value}</a> : null}
-                  {isEmailRow ? <a href={`mailto:${email}`}>{value}</a> : null}
-                  {!isPhoneRow && !isEmailRow ? value : null}
-                </strong>
-              </div>
-            );
-          })}
+        <div className={styles.leadContactStack}>
+          {contactLines.length ? (
+            contactLines.map((line) => (
+              <a className={styles.leadContactLine} href={line.href} key={`${lead.id}-${line.key}`}>
+                {line.value}
+              </a>
+            ))
+          ) : (
+            <span className={`${styles.leadContactLine} ${styles.leadContactEmpty}`}>No phone or email saved.</span>
+          )}
         </div>
       </div>
     );
@@ -1647,7 +1662,7 @@ export default function LeadsClient() {
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
             <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
-              <h1>LEADS INBOX</h1>
+              <h1>{accountInboxTitle}</h1>
             </div>
           </div>
 
@@ -2111,7 +2126,7 @@ export default function LeadsClient() {
               />
             </label>
 
-            <div className={`${assetStyles.formActions} ${assetStyles.sharedNoteActions}`}>
+            <div className={`${assetStyles.formActions} ${assetStyles.sharedNoteActions} ${styles.leadNoteActions}`}>
               <button type="button" className={assetStyles.secondaryButton} onClick={closeNoteModal} disabled={isSavingNote}>
                 Cancel
               </button>
