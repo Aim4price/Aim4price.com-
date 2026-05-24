@@ -1499,30 +1499,29 @@ export default function LeadsClient() {
     ];
 
     return (
-      <div className={styles.leadContactPanel} aria-label="Account contact details">
+      <section className={styles.leadContactPanel} aria-label="Account contact details">
         <div className={styles.leadContactStack}>
-          {contactLines.map((line, index) => (
-            <span className={styles.leadContactGroup} key={`${lead.id}-${line.key}`}>
-              <span className={styles.leadContactLine}>
+          {contactLines.map((line) => {
+            const valueClassName = line.value === '—' ? `${styles.leadContactValue} ${styles.leadContactEmpty}` : styles.leadContactValue;
+            const content = (
+              <>
                 <span className={styles.leadContactLabel}>{line.label}</span>
-                {line.href ? (
-                  <a className={styles.leadContactValue} href={line.href}>
-                    {line.value}
-                  </a>
-                ) : (
-                  <span className={line.value === '—' ? `${styles.leadContactValue} ${styles.leadContactEmpty}` : styles.leadContactValue}>{line.value}</span>
-                )}
-              </span>
+                <span className={valueClassName}>{line.value}</span>
+              </>
+            );
 
-              {index < contactLines.length - 1 ? (
-                <span className={styles.leadContactDivider} aria-hidden="true">
-                  -
-                </span>
-              ) : null}
-            </span>
-          ))}
+            return line.href ? (
+              <a className={styles.leadContactCard} href={line.href} key={`${lead.id}-${line.key}`}>
+                {content}
+              </a>
+            ) : (
+              <div className={styles.leadContactCard} key={`${lead.id}-${line.key}`}>
+                {content}
+              </div>
+            );
+          })}
         </div>
-      </div>
+      </section>
     );
   }
 
