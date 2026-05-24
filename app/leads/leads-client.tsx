@@ -903,6 +903,7 @@ function searchTextForLead(lead: AssetLead): string {
     assetDescription(lead),
     leadAssetMeta(lead),
     formatLeadDisplayType(lead),
+    formatDate(lead.createdAtIso),
     ownerDisplayName(lead),
     ownerPhone(lead),
     ownerEmail(lead),
@@ -1568,22 +1569,8 @@ export default function LeadsClient() {
 
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
-            <div className={`${assetStyles.registerTitleBlock} ${styles.leadsTitleBlock}`}>
-              <h1>Lead inbox</h1>
-              <p>Open one lead at a time. The owner details, asset value and action buttons stay together.</p>
-            </div>
-
-            <div className={`${assetStyles.headerActions} ${styles.leadHeaderActions}`}>
-              <button
-                type="button"
-                className={`${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${styles.leadFilterButton} ${hasActiveLeadFilter ? assetStyles.filterTriggerButtonActive : ''}`}
-                onClick={() => setIsFilterModalOpen(true)}
-                disabled={isLoading}
-              >
-                <FilterIcon className={assetStyles.buttonIcon} />
-                <span>{activeLeadFilterLabel}</span>
-                <ChevronDownIcon className={assetStyles.filterChevron} />
-              </button>
+            <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
+              <h1>LEADS INBOX</h1>
             </div>
           </div>
 
@@ -1639,7 +1626,7 @@ export default function LeadsClient() {
                 type="search"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search by asset, owner, contact details"
+                placeholder="Search by business, asset or lead date"
                 aria-label="Search leads"
               />
 
@@ -1654,6 +1641,17 @@ export default function LeadsClient() {
                 </button>
               ) : null}
             </label>
+
+            <button
+              type="button"
+              className={`${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${styles.leadFilterButton} ${hasActiveLeadFilter ? assetStyles.filterTriggerButtonActive : ''}`}
+              onClick={() => setIsFilterModalOpen(true)}
+              disabled={isLoading}
+            >
+              <FilterIcon className={assetStyles.buttonIcon} />
+              <span>{activeLeadFilterLabel}</span>
+              <ChevronDownIcon className={assetStyles.filterChevron} />
+            </button>
           </div>
 
 
@@ -1669,18 +1667,8 @@ export default function LeadsClient() {
                     <div className={styles.clientPanel}>
                       <div className={styles.clientPanelHeader}>
                         <div className={styles.clientIdentity}>
-                          <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
+                          <span className={styles.clientKicker}>Received {formatDate(lead.createdAtIso)}</span>
                           <h3>{lead.ownerBusinessName || ownerDisplayName(lead)}</h3>
-                          <div className={styles.clientInlineMeta}>
-                            <span>{lead.ownerName || ownerDisplayName(lead)}</span>
-                            {ownerPhone(lead) ? <span>{ownerPhone(lead)}</span> : null}
-                            {ownerEmail(lead) ? <span>{ownerEmail(lead)}</span> : null}
-                            <span>{ownerLocation(lead)}</span>
-                          </div>
-                          <div className={styles.leadPreviewMeta}>
-                            <span>{assetTitle(lead)}</span>
-                            <strong>{formatCurrency(assetValue(lead))} excl. VAT</strong>
-                          </div>
                         </div>
 
                         <div className={styles.clientDecisionArea}>
