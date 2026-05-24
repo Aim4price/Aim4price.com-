@@ -643,7 +643,7 @@ export default function AssetMapClient() {
         <article className={styles.mapWorkspace} aria-label="QR scanned asset workspace">
           <header className={styles.workspaceHeader}>
             <div className={styles.mapTitleBlock}>
-              <h1>QR Scanned Asset</h1>
+              <h1>QR Scanned Assets</h1>
               <p>
                 {visibleAssets.length} mapped asset{visibleAssets.length === 1 ? '' : 's'} visible
                 <span aria-hidden="true"> · </span>
