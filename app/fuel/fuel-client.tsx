@@ -145,14 +145,6 @@ function TrashIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function SearchIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <IconBase {...props}>
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
-    </IconBase>
-  );
-}
 
 function FilterIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -183,14 +175,6 @@ function PlusIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function CloseIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <IconBase {...props}>
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
-    </IconBase>
-  );
-}
 
 function formatLitres(value: number | null | undefined): string {
   if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return '—';
@@ -271,13 +255,6 @@ function eventDateParts(event: FuelLedgerEvent): { year: string; month: string }
   };
 }
 
-function matchesPeriod(event: FuelLedgerEvent, year: string, month: string): boolean {
-  const parts = eventDateParts(event);
-  if (!parts) return false;
-  if (year !== 'all' && parts.year !== year) return false;
-  if (month !== 'all' && parts.month !== month) return false;
-  return true;
-}
 
 function getMonthOptions(events: FuelLedgerEvent[], year: string): string[] {
   const months = new Set<string>();
@@ -307,11 +284,6 @@ function getYearOptions(events: FuelLedgerEvent[]): string[] {
   return Array.from(years).sort((a, b) => Number(b) - Number(a));
 }
 
-function periodLabel(year: string, month: string): string {
-  if (year === 'all') return '30 days';
-  if (month !== 'all') return `${MONTH_LABELS[Number(month) - 1] ?? 'Month'} ${year}`;
-  return year;
-}
 
 function buildReportUrl(storageId: string, year: string, month: string): string {
   const url = new URL('/api/fuel/report', window.location.origin);
@@ -334,7 +306,6 @@ function buildReportUrl(storageId: string, year: string, month: string): string 
 export default function FuelClient() {
   const [storages, setStorages] = useState<FuelLedgerStorage[]>([]);
   const [recentEvents, setRecentEvents] = useState<FuelLedgerEvent[]>([]);
-  const [summary, setSummary] = useState<FuelLedgerSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -366,18 +337,6 @@ export default function FuelClient() {
   const filterMonthOptions = useMemo(() => getMonthOptions(recentEvents, filterYear), [filterYear, recentEvents]);
   const reportMonthOptions = useMemo(() => getMonthOptions(recentEvents, reportYear), [recentEvents, reportYear]);
 
-  const periodEvents = useMemo(
-    () => recentEvents.filter((event) => matchesPeriod(event, filterYear, filterMonth)),
-    [filterMonth, filterYear, recentEvents],
-  );
-
-  const periodIssuedLitres = useMemo(
-    () => periodEvents.filter((event) => event.eventType === 'asset_issue').reduce((sum, event) => sum + Number(event.litres || 0), 0),
-    [periodEvents],
-  );
-
-  const issuedLitres = filterYear === 'all' && filterMonth === 'all' ? summary?.issuedLitres30Days ?? 0 : periodIssuedLitres;
-  const issuedPeriodLabel = periodLabel(filterYear, filterMonth);
 
   async function loadLedger(options: { silent?: boolean } = {}) {
     if (!options.silent) {
@@ -394,7 +353,6 @@ export default function FuelClient() {
 
       setStorages(data.storages ?? []);
       setRecentEvents(data.recentEvents ?? []);
-      setSummary(data.summary ?? null);
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load Fuel Ledger.' });
     } finally {
@@ -466,7 +424,6 @@ export default function FuelClient() {
 
     if (data.storages) setStorages(data.storages);
     if (data.recentEvents) setRecentEvents(data.recentEvents);
-    if (data.summary) setSummary(data.summary);
   }
 
   async function handleStorageSubmit(event: FormEvent<HTMLFormElement>) {
@@ -563,68 +520,36 @@ export default function FuelClient() {
           <section className={styles.ledgerPanel}>
             <div className={styles.panelHeader}>
               <div className={styles.pageTitleBlock}>
-                <h1>AIM4PRICE FUEL TRACKING SYSTEM</h1>
+                <h1>QR FUEL TRACKING SYSTEM</h1>
               </div>
 
               <div className={styles.topActions}>
-                <button type="button" className={styles.secondaryButton} onClick={openFilterModal}>
-                  <FilterIcon className={styles.buttonIcon} />
-                  <span>{hasActiveFilters ? 'Filter active' : 'Filter'}</span>
+                <button
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topAddButton}`}
+                  onClick={openCreateStorage}
+                >
+                  <PlusIcon className={styles.buttonIcon} />
+                  <span>Add Storage Tank</span>
                 </button>
-                <button type="button" className={styles.secondaryButton} onClick={openReportModal}>
+                <button
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topReportButton}`}
+                  onClick={openReportModal}
+                >
                   <DownloadIcon className={styles.buttonIcon} />
                   <span>Fuel Report</span>
                 </button>
+                <button
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topFilterButton}`}
+                  onClick={openFilterModal}
+                >
+                  <FilterIcon className={styles.buttonIcon} />
+                  <span>{hasActiveFilters ? 'Filter Active' : 'Filter'}</span>
+                </button>
               </div>
             </div>
-
-            <section className={styles.summaryGrid} aria-label="Fuel Ledger summary">
-              <article className={`${styles.summaryCard} ${styles.summaryCardFeatured}`}>
-                <span>Total storage</span>
-                <strong>{summary?.totalStorageUnits ?? 0}</strong>
-                <small>{summary?.lowStorageCount ?? 0} low storage</small>
-              </article>
-              <article className={styles.summaryCard}>
-                <span>Fuel issued · {issuedPeriodLabel}</span>
-                <strong>{formatLitres(issuedLitres)}</strong>
-                <small>QR fuel entries</small>
-              </article>
-              <article className={styles.summaryCard}>
-                <span>Total stock</span>
-                <strong>{formatLitres(summary?.currentLitres ?? 0)}</strong>
-                <small>{formatPercent(summary?.currentStockPercent ?? null)} of known capacity</small>
-              </article>
-            </section>
-
-            <div className={styles.toolbar}>
-              <label className={styles.searchWrap}>
-                <SearchIcon className={styles.searchIcon} />
-                <input
-                  className={styles.searchInput}
-                  value={filterText}
-                  onChange={(event) => setFilterText(event.target.value)}
-                  placeholder="Search by storage, fuel type, location or QR code"
-                  aria-label="Search Fuel Ledger"
-                />
-
-                {filterText ? (
-                  <button
-                    type="button"
-                    className={styles.clearSearchButton}
-                    onClick={() => setFilterText('')}
-                    aria-label="Clear fuel storage search"
-                  >
-                    <CloseIcon className={styles.buttonIcon} />
-                  </button>
-                ) : null}
-              </label>
-
-              <button type="button" className={`${styles.primaryButton} ${styles.toolbarPrimaryButton}`} onClick={openCreateStorage}>
-                <PlusIcon className={styles.buttonIcon} />
-                <span>Add Storage Tank</span>
-              </button>
-            </div>
-
 
             {!isLoading && !storages.length ? (
               <div className={styles.emptyState}>
