@@ -1648,6 +1648,85 @@ function valuationStaleReason(asset: RegisterAsset): string {
   return String(specs.valuation_stale_reason ?? specs.valuationStaleReason ?? 'latest asset details changed').trim() || 'latest asset details changed';
 }
 
+function timestampFromIso(value?: string | null): number {
+  if (!value) return 0;
+
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function timestampFromSpecs(specs: Record<string, unknown>, keys: string[]): number {
+  for (const key of keys) {
+    const value = specs[key];
+
+    if (typeof value === 'string') {
+      const timestamp = timestampFromIso(value);
+      if (timestamp) return timestamp;
+    }
+  }
+
+  return 0;
+}
+
+function assetNeedsEstimateAttention(asset: RegisterAsset): boolean {
+  return doesEstimateNeedUpdate(asset) && isValuationUpdateAvailable(asset);
+}
+
+function assetAttentionRank(asset: RegisterAsset): number {
+  if (asset.openPartnerNote) return 2;
+  if (assetNeedsEstimateAttention(asset)) return 1;
+
+  return 0;
+}
+
+function assetAttentionTimestamp(asset: RegisterAsset): number {
+  const openPartnerNote = asset.openPartnerNote ?? null;
+
+  if (openPartnerNote) {
+    return (
+      timestampFromIso(openPartnerNote.updatedAtIso) ||
+      timestampFromIso(openPartnerNote.createdAtIso) ||
+      timestampFromIso(asset.updatedAtIso) ||
+      timestampFromIso(asset.createdAtIso)
+    );
+  }
+
+  if (assetNeedsEstimateAttention(asset)) {
+    return (
+      timestampFromSpecs(asset.specsJson ?? {}, ['valuationStaleSince', 'valuation_stale_since']) ||
+      timestampFromIso(asset.updatedAtIso) ||
+      timestampFromIso(asset.createdAtIso)
+    );
+  }
+
+  return timestampFromIso(asset.updatedAtIso) || timestampFromIso(asset.createdAtIso);
+}
+
+function compareAssetsByRegisterPriority(left: RegisterAsset, right: RegisterAsset, assetFilter: AssetFilterKey): number {
+  const rankDifference = assetAttentionRank(right) - assetAttentionRank(left);
+  if (rankDifference) return rankDifference;
+
+  if (assetFilter === 'highest-value' || assetFilter === 'lowest-value') {
+    const leftValue = Number(left.value || 0);
+    const rightValue = Number(right.value || 0);
+    const valueDifference = assetFilter === 'highest-value' ? rightValue - leftValue : leftValue - rightValue;
+
+    if (valueDifference) return valueDifference;
+  }
+
+  const attentionTimestampDifference = assetAttentionTimestamp(right) - assetAttentionTimestamp(left);
+  if (attentionTimestampDifference) return attentionTimestampDifference;
+
+  const createdTimestampDifference = timestampFromIso(right.createdAtIso) - timestampFromIso(left.createdAtIso);
+  if (createdTimestampDifference) return createdTimestampDifference;
+
+  return left.title.localeCompare(right.title, 'en-ZA') || left.id.localeCompare(right.id);
+}
+
+function sortAssetsByRegisterPriority(assetList: RegisterAsset[], assetFilter: AssetFilterKey): RegisterAsset[] {
+  return [...assetList].sort((left, right) => compareAssetsByRegisterPriority(left, right, assetFilter));
+}
+
 function assetKindLabel(asset: RegisterAsset): string {
   return assetFamilyLabel(asset);
 }
@@ -2978,10 +3057,7 @@ export default function AssetRegisterClient() {
         nextAssets = nextAssets.filter((asset) => readLicenseStatusChoice(asset) === 'no');
         break;
       case 'highest-value':
-        nextAssets = [...nextAssets].sort((left, right) => Number(right.value || 0) - Number(left.value || 0));
-        break;
       case 'lowest-value':
-        nextAssets = [...nextAssets].sort((left, right) => Number(left.value || 0) - Number(right.value || 0));
         break;
       case 'aim4price-value':
         nextAssets = nextAssets.filter((asset) => isAim4priceValuedAsset(asset));
@@ -2997,7 +3073,7 @@ export default function AssetRegisterClient() {
         break;
     }
 
-    return nextAssets;
+    return sortAssetsByRegisterPriority(nextAssets, assetFilter);
   }, [assets, assetFilter, searchTerm]);
 
   const pageCount = Math.max(1, Math.ceil(filteredAssets.length / PAGE_SIZE));
@@ -3225,7 +3301,8 @@ export default function AssetRegisterClient() {
   }
 
   function syncUpdatedAsset(nextAsset: RegisterAsset) {
-    setAssets((current) => current.map((asset) => (asset.id === nextAsset.id ? nextAsset : asset)));
+    setAssets((current) => [nextAsset, ...current.filter((asset) => asset.id !== nextAsset.id)]);
+    setCurrentPage(1);
     setActiveAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
     setMarketplaceAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
     setProjectionAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
@@ -4086,9 +4163,7 @@ export default function AssetRegisterClient() {
         updatedAtIso: new Date().toISOString(),
       };
 
-      setAssets((current) => current.map((entry) => (entry.id === removedAsset.id ? removedAsset : entry)));
-      setActiveAsset((current) => (current?.id === removedAsset.id ? removedAsset : current));
-      setMarketplaceAsset((current) => (current?.id === removedAsset.id ? removedAsset : current));
+      syncUpdatedAsset(removedAsset);
       setNotice({ tone: 'success', message: `${removedAsset.title} was removed from marketplace.` });
       closeActionDialog();
     } catch (error) {
@@ -4118,18 +4193,13 @@ export default function AssetRegisterClient() {
         throw new Error(data.error ?? 'Failed to update estimate.');
       }
 
-      setAssets((current) => current.map((entry) => (entry.id === data.item!.id ? data.item! : entry)));
-      setActiveAsset((current) => (current?.id === data.item!.id ? data.item! : current));
-      setMarketplaceAsset((current) => (current?.id === data.item!.id ? data.item! : current));
-
-      if (projectionAsset?.id === data.item.id) {
-        setProjectionAsset(data.item);
-      }
+      const updatedAsset = data.item;
+      syncUpdatedAsset(updatedAsset);
 
       const marketplaceNote = isLiveOnMarketplace(asset) ? ' Marketplace asking price was not changed.' : '';
       setNotice({
         tone: 'success',
-        message: `${data.item.title} estimate updated to ${money(data.item.value)}.${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
+        message: `${updatedAsset.title} estimate updated to ${money(updatedAsset.value)}.${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
       });
     } catch (error) {
       setNotice({
