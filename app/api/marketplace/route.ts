@@ -72,6 +72,21 @@ export async function GET() {
   const session = await getOptionalSession();
 
   try {
+    if (session?.user?.id) {
+      const profile = await getAccountProfile({
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+      });
+
+      if (profile.accountType !== 'owner' && profile.accountType !== 'dealer') {
+        return NextResponse.json(
+          { ok: false, error: 'Marketplace is only available to owner and dealer accounts.' },
+          { status: 403 },
+        );
+      }
+    }
+
     const listings = await listPublishedMarketplaceAssetListings({
       viewerUserId: session?.user?.id ?? null,
       exposeContact: Boolean(session?.user?.id),
