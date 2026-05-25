@@ -75,9 +75,10 @@ type ActiveFilterChip = {
 };
 
 const LISTINGS_PER_LOAD = 24;
-const JPEG_AD_WIDTH = 1080;
-const JPEG_AD_HEIGHT = 1350;
-const JPEG_AD_LOGO_SRC = '/brand/Aim4price Logo.png';
+const JPEG_AD_WIDTH = 1600;
+const JPEG_AD_HEIGHT = 900;
+const JPEG_AD_LOGO_SRC = '/brand/Aim4price_Home_Logo.png';
+const JPEG_AD_WATERMARK_SRC = '/brand/aim4price-mark-black.png';
 
 const SECTOR_OPTIONS: SectorOption[] = [
   { key: 'agricultural', label: 'Agriculture', shortLabel: 'Agri' },
@@ -1174,38 +1175,62 @@ function drawAdContactCard(
 ) {
   const sellerName = getAdSellerName(listing);
   const sellerPhone = getAdSellerPhone(listing);
+  const contactLabel = sellerPhone ? 'CALL / WHATSAPP' : 'CONTACT';
+  const contactValue = sellerPhone || 'View full listing on Aim4price';
+  const radius = Math.min(28, Math.max(18, height / 4));
 
   context.save();
-  context.shadowColor = 'rgba(10, 35, 27, 0.16)';
-  context.shadowBlur = 18;
-  context.shadowOffsetY = 10;
-  fillRoundedRect(context, x, y, width, height, 24, '#123f32');
+  context.shadowColor = 'rgba(10, 35, 27, 0.18)';
+  context.shadowBlur = 20;
+  context.shadowOffsetY = 12;
+  fillRoundedRect(context, x, y, width, height, radius, '#123f32');
   context.restore();
 
   context.save();
   const highlightGradient = context.createLinearGradient(x, y, x + width, y + height);
-  highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.10)');
-  highlightGradient.addColorStop(0.55, 'rgba(255, 255, 255, 0.03)');
+  highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.13)');
+  highlightGradient.addColorStop(0.55, 'rgba(255, 255, 255, 0.04)');
   highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0.00)');
-  createRoundedRectPath(context, x, y, width, height, 24);
+  createRoundedRectPath(context, x, y, width, height, radius);
   context.clip();
   context.fillStyle = highlightGradient;
   context.fillRect(x, y, width, height);
   context.restore();
 
   context.save();
-  context.fillStyle = 'rgba(255, 255, 255, 0.64)';
-  context.font = '800 16px Montserrat, Inter, Arial, sans-serif';
-  context.letterSpacing = '1.5px';
-  context.fillText('SELLER CONTACT', x + 28, y + 31);
+  context.fillStyle = 'rgba(255, 255, 255, 0.68)';
+  context.font = '800 15px Montserrat, Inter, Arial, sans-serif';
+  context.letterSpacing = '1.4px';
+  context.fillText('SELLER CONTACT', x + 24, y + 31);
   context.letterSpacing = '0px';
   context.fillStyle = '#ffffff';
-  context.font = '850 26px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(fitCanvasText(context, sellerName, width * 0.48), x + 28, y + 68);
+  context.font = '850 25px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, sellerName, width - 48), x + 24, y + 61);
 
-  const contactLabel = sellerPhone ? 'CALL / WHATSAPP' : 'CONTACT';
-  const contactValue = sellerPhone || 'View full listing on Aim4price';
-  const pillWidth = Math.min(408, Math.max(300, width * 0.42));
+  if (width < 720) {
+    const pillX = x + 22;
+    const pillY = y + height - 42;
+    const pillWidth = width - 44;
+    const pillHeight = 30;
+
+    fillRoundedRect(context, pillX, pillY, pillWidth, pillHeight, 15, 'rgba(255, 255, 255, 0.15)');
+    strokeRoundedRect(context, pillX, pillY, pillWidth, pillHeight, 15, 'rgba(255, 255, 255, 0.22)', 1.4);
+
+    context.fillStyle = 'rgba(255, 255, 255, 0.70)';
+    context.font = '800 12px Montserrat, Inter, Arial, sans-serif';
+    context.letterSpacing = '1.1px';
+    context.textAlign = 'left';
+    context.fillText(contactLabel, pillX + 18, pillY + 20);
+    context.letterSpacing = '0px';
+    context.fillStyle = '#ffffff';
+    context.font = sellerPhone ? '850 21px Montserrat, Inter, Arial, sans-serif' : '800 17px Montserrat, Inter, Arial, sans-serif';
+    context.textAlign = 'right';
+    context.fillText(fitCanvasText(context, contactValue, pillWidth - 178), pillX + pillWidth - 18, pillY + 21);
+    context.restore();
+    return;
+  }
+
+  const pillWidth = Math.min(460, Math.max(340, width * 0.42));
   const pillX = x + width - pillWidth - 22;
   fillRoundedRect(context, pillX, y + 16, pillWidth, height - 32, 20, 'rgba(255, 255, 255, 0.14)');
   strokeRoundedRect(context, pillX, y + 16, pillWidth, height - 32, 20, 'rgba(255, 255, 255, 0.22)', 1.5);
@@ -1239,17 +1264,28 @@ async function drawListingAdCanvas(
     await Promise.all(imageSources.map((imageSrc) => loadCanvasImage(imageSrc).catch(() => null)))
   ).filter((image): image is HTMLImageElement => image !== null);
   const logoImage = await loadCanvasImage(JPEG_AD_LOGO_SRC).catch(() => null);
+  const watermarkImage = await loadCanvasImage(JPEG_AD_WATERMARK_SRC).catch(() => logoImage);
   const width = JPEG_AD_WIDTH;
   const height = JPEG_AD_HEIGHT;
   const margin = 64;
-  const innerWidth = width - margin * 2;
-  const detailCardWidth = (innerWidth - 24) / 2;
+  const frameInset = 36;
+  const frameRadius = 42;
   const province = getAdProvince(listing);
-  const photoTop = 150;
-  const photoHeight = 560;
-  const contentTop = 748;
-  const cardTop = 958;
-  const cardHeight = 88;
+  const photoX = margin;
+  const photoY = 150;
+  const photoWidth = 904;
+  const photoHeight = 610;
+  const contentX = photoX + photoWidth + 42;
+  const contentY = 178;
+  const contentWidth = width - margin - contentX;
+  const detailGap = 16;
+  const detailCardWidth = (contentWidth - detailGap) / 2;
+  const detailCardHeight = 78;
+  const detailCardTop = 416;
+  const specLineY = 646;
+  const listedLineY = 682;
+  const contactTop = 714;
+  const contactHeight = 110;
 
   context.clearRect(0, 0, width, height);
 
@@ -1260,64 +1296,92 @@ async function drawListingAdCanvas(
   context.fillRect(0, 0, width, height);
 
   context.save();
-  context.shadowColor = 'rgba(12, 28, 24, 0.10)';
-  context.shadowBlur = 28;
+  context.shadowColor = 'rgba(12, 28, 24, 0.11)';
+  context.shadowBlur = 30;
   context.shadowOffsetY = 18;
-  fillRoundedRect(context, 36, 36, width - 72, height - 72, 38, '#ffffff');
+  fillRoundedRect(context, frameInset, frameInset, width - frameInset * 2, height - frameInset * 2, frameRadius, '#ffffff');
   context.restore();
-  strokeRoundedRect(context, 36, 36, width - 72, height - 72, 38, '#d7dde1', 2);
+  strokeRoundedRect(context, frameInset, frameInset, width - frameInset * 2, height - frameInset * 2, frameRadius, '#d7dde1', 2);
 
-  drawAdWatermark(context, logoImage, margin, contentTop - 20, innerWidth, 530);
+  drawAdWatermark(context, watermarkImage, contentX - 22, 286, contentWidth + 28, 410);
 
   context.save();
   if (logoImage) {
-    const logoWidth = 238;
+    const logoWidth = 360;
     const ratio = (logoImage.naturalHeight || logoImage.height) / Math.max(1, logoImage.naturalWidth || logoImage.width);
-    context.drawImage(logoImage, margin, 76, logoWidth, logoWidth * ratio);
+    context.drawImage(logoImage, margin - 30, 50, logoWidth, logoWidth * ratio);
   } else {
-    drawAim4priceWordmarkFallback(context, margin, 116, 43, 1);
+    drawAim4priceWordmarkFallback(context, margin, 112, 42, 1);
   }
   context.restore();
 
-  drawAdProvincePill(context, province, width - margin - 264, 72, 264, 56);
-  drawAdImageShowcase(context, listing, listingImages, margin, photoTop, innerWidth, photoHeight);
+  drawAdProvincePill(context, province, width - margin - 286, 72, 286, 58);
+  drawAdImageShowcase(context, listing, listingImages, photoX, photoY, photoWidth, photoHeight);
 
   context.save();
   context.fillStyle = '#050505';
-  context.font = '950 80px Montserrat, Inter, Arial, sans-serif';
-  context.letterSpacing = '-3.8px';
-  const adPriceText = fitCanvasText(context, money(listing.askingPriceExVat), 650);
-  context.fillText(adPriceText, margin, contentTop + 68);
+  context.letterSpacing = '-3.4px';
+  const rawPriceText = money(listing.askingPriceExVat);
+  let priceFontSize = 72;
+
+  while (priceFontSize > 50) {
+    context.font = `950 ${priceFontSize}px Montserrat, Inter, Arial, sans-serif`;
+
+    if (context.measureText(rawPriceText).width <= contentWidth - 122) {
+      break;
+    }
+
+    priceFontSize -= 4;
+  }
+
+  const adPriceText = fitCanvasText(context, rawPriceText, contentWidth - 122);
+  context.fillText(adPriceText, contentX, contentY + 67);
   const adPriceWidth = context.measureText(adPriceText).width;
   context.letterSpacing = '0px';
-  context.font = '850 36px Montserrat, Inter, Arial, sans-serif';
-  context.fillText('+ VAT', margin + Math.min(682, adPriceWidth + 26), contentTop + 61);
+  context.font = `850 ${Math.max(28, Math.round(priceFontSize * 0.47))}px Montserrat, Inter, Arial, sans-serif`;
+  context.fillText('+ VAT', contentX + Math.min(contentWidth - 118, adPriceWidth + 24), contentY + 58);
 
   context.fillStyle = '#0c0d0d';
-  context.font = '850 41px Montserrat, Inter, Arial, sans-serif';
-  const nextY = drawWrappedCanvasText(context, listingDisplayTitle(listing), margin, contentTop + 124, innerWidth, 47, 2);
+  context.font = '850 38px Montserrat, Inter, Arial, sans-serif';
+  const titleBottomY = drawWrappedCanvasText(context, listingDisplayTitle(listing), contentX, contentY + 126, contentWidth, 43, 2);
 
   context.fillStyle = '#60666a';
-  context.font = '700 25px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(fitCanvasText(context, `Province: ${province}`, innerWidth), margin, nextY + 7);
+  context.font = '700 27px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, `Province: ${province}`, contentWidth), contentX, titleBottomY + 5);
   context.restore();
 
-  drawAdLabelValue(context, 'Year', String(listing.yearModel || 'N/A'), margin, cardTop, detailCardWidth, cardHeight);
-  drawAdLabelValue(context, listingUsageLabel(listing), formatUsage(listing), margin + detailCardWidth + 24, cardTop, detailCardWidth, cardHeight);
-  drawAdLabelValue(context, 'Condition', formatConditionLabel(getListingConditionKey(listing)), margin, cardTop + cardHeight + 18, detailCardWidth, cardHeight);
-  drawAdLabelValue(context, 'Family', getListingPrimaryFamilyLabel(listing), margin + detailCardWidth + 24, cardTop + cardHeight + 18, detailCardWidth, cardHeight);
+  drawAdLabelValue(context, 'Year', String(listing.yearModel || 'N/A'), contentX, detailCardTop, detailCardWidth, detailCardHeight);
+  drawAdLabelValue(
+    context,
+    listingUsageLabel(listing),
+    formatUsage(listing),
+    contentX + detailCardWidth + detailGap,
+    detailCardTop,
+    detailCardWidth,
+    detailCardHeight,
+  );
+  drawAdLabelValue(context, 'Condition', formatConditionLabel(getListingConditionKey(listing)), contentX, detailCardTop + detailCardHeight + 20, detailCardWidth, detailCardHeight);
+  drawAdLabelValue(
+    context,
+    'Family',
+    getListingPrimaryFamilyLabel(listing),
+    contentX + detailCardWidth + detailGap,
+    detailCardTop + detailCardHeight + 20,
+    detailCardWidth,
+    detailCardHeight,
+  );
 
   context.save();
   context.fillStyle = '#111312';
-  context.font = '850 27px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(fitCanvasText(context, buildListingSpecLine(listing) || 'Marketplace listing', innerWidth), margin, 1188);
+  context.font = '850 25px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, buildListingSpecLine(listing) || 'Marketplace listing', contentWidth), contentX, specLineY);
 
   context.fillStyle = '#6a7074';
-  context.font = '700 21px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(`Listed ${formatPublishedDate(listing.dateAdvertised || listing.publishedAtIso)} on Aim4price`, margin, 1218);
+  context.font = '700 20px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(`Listed ${formatPublishedDate(listing.dateAdvertised || listing.publishedAtIso)} on Aim4price`, contentX, listedLineY);
   context.restore();
 
-  drawAdContactCard(context, listing, margin, 1230, innerWidth, 84);
+  drawAdContactCard(context, listing, contentX, contactTop, contentWidth, contactHeight);
 }
 
 function canvasToJpegBlob(canvas: HTMLCanvasElement): Promise<Blob> {
