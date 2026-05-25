@@ -1000,15 +1000,25 @@ function drawAdLabelValue(
   width: number,
   height: number,
 ) {
-  fillRoundedRect(context, x, y, width, height, 18, '#f0f2f5');
-  context.fillStyle = '#65676b';
-  context.font = '800 20px Montserrat, Inter, Arial, sans-serif';
-  context.letterSpacing = '1.1px';
-  context.fillText(label.toUpperCase(), x + 24, y + 34);
+  context.save();
+  context.shadowColor = 'rgba(16, 36, 30, 0.06)';
+  context.shadowBlur = 12;
+  context.shadowOffsetY = 8;
+  fillRoundedRect(context, x, y, width, height, 20, '#f6f7f8');
+  context.restore();
+
+  strokeRoundedRect(context, x, y, width, height, 20, '#eceff1', 1.5);
+
+  context.save();
+  context.fillStyle = '#6c7175';
+  context.font = '800 18px Montserrat, Inter, Arial, sans-serif';
+  context.letterSpacing = '1.6px';
+  context.fillText(label.toUpperCase(), x + 24, y + 32);
   context.letterSpacing = '0px';
   context.fillStyle = '#050505';
-  context.font = '800 28px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(fitCanvasText(context, value, width - 48), x + 24, y + 74);
+  context.font = '850 26px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, value, width - 48), x + 24, y + 67);
+  context.restore();
 }
 
 function drawAim4priceWordmarkFallback(
@@ -1027,6 +1037,191 @@ function drawAim4priceWordmarkFallback(
   context.restore();
 }
 
+function getAdProvince(listing: MarketplaceListing): string {
+  return String(listing.province ?? '').trim() || 'South Africa';
+}
+
+function getAdSellerName(listing: MarketplaceListing): string {
+  return String(listing.sellerCompany ?? '').trim() || String(listing.sellerName ?? '').trim() || 'Aim4price seller';
+}
+
+function getAdSellerPhone(listing: MarketplaceListing): string {
+  return String(listing.sellerPhone ?? '').trim();
+}
+
+function drawAdWatermark(
+  context: CanvasRenderingContext2D,
+  logoImage: HTMLImageElement | null,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  context.save();
+  context.globalAlpha = 0.045;
+
+  if (logoImage) {
+    const logoWidth = width * 0.82;
+    const ratio = (logoImage.naturalHeight || logoImage.height) / Math.max(1, logoImage.naturalWidth || logoImage.width);
+    const logoHeight = logoWidth * ratio;
+    context.drawImage(
+      logoImage,
+      x + width - logoWidth - 18,
+      y + (height - logoHeight) / 2,
+      logoWidth,
+      logoHeight,
+    );
+  } else {
+    context.fillStyle = '#165340';
+    context.font = '900 112px Montserrat, Inter, Arial, sans-serif';
+    context.letterSpacing = '-5px';
+    context.fillText('Aim4price', x + 170, y + height / 2 + 34);
+  }
+
+  context.restore();
+}
+
+function drawAdProvincePill(
+  context: CanvasRenderingContext2D,
+  province: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  fillRoundedRect(context, x, y, width, height, height / 2, '#edf6f1');
+  strokeRoundedRect(context, x, y, width, height, height / 2, '#d7e9df', 1.5);
+  context.save();
+  context.fillStyle = '#165340';
+  context.font = '850 21px Montserrat, Inter, Arial, sans-serif';
+  context.letterSpacing = '0.2px';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(fitCanvasText(context, province, width - 36), x + width / 2, y + height / 2 + 1);
+  context.restore();
+}
+
+function drawAdImageShowcase(
+  context: CanvasRenderingContext2D,
+  listing: MarketplaceListing,
+  images: HTMLImageElement[],
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  context.save();
+  context.shadowColor = 'rgba(7, 23, 18, 0.22)';
+  context.shadowBlur = 30;
+  context.shadowOffsetY = 18;
+  fillRoundedRect(context, x, y, width, height, 36, '#eef4f1');
+  context.restore();
+
+  if (images[0]) {
+    drawCoverImage(context, images[0], x, y, width, height, 36);
+  } else {
+    drawAdPlaceholder(context, listing, x, y, width, height);
+  }
+
+  context.save();
+  createRoundedRectPath(context, x, y, width, height, 36);
+  context.clip();
+  const topGradient = context.createLinearGradient(0, y, 0, y + height * 0.38);
+  topGradient.addColorStop(0, 'rgba(0, 0, 0, 0.18)');
+  topGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  context.fillStyle = topGradient;
+  context.fillRect(x, y, width, height * 0.38);
+
+  const bottomGradient = context.createLinearGradient(0, y + height * 0.55, 0, y + height);
+  bottomGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  bottomGradient.addColorStop(1, 'rgba(0, 0, 0, 0.26)');
+  context.fillStyle = bottomGradient;
+  context.fillRect(x, y + height * 0.55, width, height * 0.45);
+  context.restore();
+
+  strokeRoundedRect(context, x, y, width, height, 36, 'rgba(255, 255, 255, 0.74)', 3);
+
+  const thumbnailImages = images.slice(1, 3);
+
+  if (thumbnailImages.length) {
+    const thumbnailSize = 118;
+    const thumbnailGap = 14;
+    const totalWidth = thumbnailImages.length * thumbnailSize + (thumbnailImages.length - 1) * thumbnailGap;
+    const thumbnailY = y + height - thumbnailSize - 28;
+    let thumbnailX = x + width - totalWidth - 28;
+
+    thumbnailImages.forEach((image) => {
+      context.save();
+      context.shadowColor = 'rgba(0, 0, 0, 0.22)';
+      context.shadowBlur = 16;
+      context.shadowOffsetY = 9;
+      fillRoundedRect(context, thumbnailX - 5, thumbnailY - 5, thumbnailSize + 10, thumbnailSize + 10, 22, '#ffffff');
+      context.restore();
+      drawCoverImage(context, image, thumbnailX, thumbnailY, thumbnailSize, thumbnailSize, 18);
+      strokeRoundedRect(context, thumbnailX, thumbnailY, thumbnailSize, thumbnailSize, 18, 'rgba(255, 255, 255, 0.9)', 3);
+      thumbnailX += thumbnailSize + thumbnailGap;
+    });
+  }
+}
+
+function drawAdContactCard(
+  context: CanvasRenderingContext2D,
+  listing: MarketplaceListing,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  const sellerName = getAdSellerName(listing);
+  const sellerPhone = getAdSellerPhone(listing);
+
+  context.save();
+  context.shadowColor = 'rgba(10, 35, 27, 0.16)';
+  context.shadowBlur = 18;
+  context.shadowOffsetY = 10;
+  fillRoundedRect(context, x, y, width, height, 24, '#123f32');
+  context.restore();
+
+  context.save();
+  const highlightGradient = context.createLinearGradient(x, y, x + width, y + height);
+  highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.10)');
+  highlightGradient.addColorStop(0.55, 'rgba(255, 255, 255, 0.03)');
+  highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0.00)');
+  createRoundedRectPath(context, x, y, width, height, 24);
+  context.clip();
+  context.fillStyle = highlightGradient;
+  context.fillRect(x, y, width, height);
+  context.restore();
+
+  context.save();
+  context.fillStyle = 'rgba(255, 255, 255, 0.64)';
+  context.font = '800 16px Montserrat, Inter, Arial, sans-serif';
+  context.letterSpacing = '1.5px';
+  context.fillText('SELLER CONTACT', x + 28, y + 31);
+  context.letterSpacing = '0px';
+  context.fillStyle = '#ffffff';
+  context.font = '850 26px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, sellerName, width * 0.48), x + 28, y + 68);
+
+  const contactLabel = sellerPhone ? 'CALL / WHATSAPP' : 'CONTACT';
+  const contactValue = sellerPhone || 'View full listing on Aim4price';
+  const pillWidth = Math.min(408, Math.max(300, width * 0.42));
+  const pillX = x + width - pillWidth - 22;
+  fillRoundedRect(context, pillX, y + 16, pillWidth, height - 32, 20, 'rgba(255, 255, 255, 0.14)');
+  strokeRoundedRect(context, pillX, y + 16, pillWidth, height - 32, 20, 'rgba(255, 255, 255, 0.22)', 1.5);
+
+  context.textAlign = 'center';
+  context.fillStyle = 'rgba(255, 255, 255, 0.68)';
+  context.font = '800 14px Montserrat, Inter, Arial, sans-serif';
+  context.letterSpacing = '1.2px';
+  context.fillText(contactLabel, pillX + pillWidth / 2, y + 39);
+  context.letterSpacing = '0px';
+  context.fillStyle = '#ffffff';
+  context.font = sellerPhone ? '850 25px Montserrat, Inter, Arial, sans-serif' : '800 21px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, contactValue, pillWidth - 32), pillX + pillWidth / 2, y + 69);
+  context.restore();
+}
+
 async function drawListingAdCanvas(
   context: CanvasRenderingContext2D,
   listing: MarketplaceListing,
@@ -1036,114 +1231,93 @@ async function drawListingAdCanvas(
     await document.fonts.ready.catch(() => undefined);
   }
 
-  const directUrl = buildListingShareUrl(listing);
-  const imageSrc = options.includeListingImage ? getListingImages(listing)[0] ?? '' : '';
-  const listingImage = imageSrc ? await loadCanvasImage(imageSrc).catch(() => null) : null;
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = 'high';
+
+  const imageSources = options.includeListingImage ? getListingImages(listing).slice(0, 3) : [];
+  const listingImages = (
+    await Promise.all(imageSources.map((imageSrc) => loadCanvasImage(imageSrc).catch(() => null)))
+  ).filter((image): image is HTMLImageElement => image !== null);
   const logoImage = await loadCanvasImage(JPEG_AD_LOGO_SRC).catch(() => null);
   const width = JPEG_AD_WIDTH;
   const height = JPEG_AD_HEIGHT;
   const margin = 64;
   const innerWidth = width - margin * 2;
-  const panelTop = 612;
   const detailCardWidth = (innerWidth - 24) / 2;
+  const province = getAdProvince(listing);
+  const photoTop = 150;
+  const photoHeight = 560;
+  const contentTop = 748;
+  const cardTop = 958;
+  const cardHeight = 88;
 
   context.clearRect(0, 0, width, height);
-  context.fillStyle = '#eef3f1';
+
+  const backgroundGradient = context.createLinearGradient(0, 0, width, height);
+  backgroundGradient.addColorStop(0, '#edf3f0');
+  backgroundGradient.addColorStop(1, '#dfe9e4');
+  context.fillStyle = backgroundGradient;
   context.fillRect(0, 0, width, height);
 
   context.save();
-  context.globalAlpha = 0.08;
-  if (logoImage) {
-    const logoWidth = 700;
-    const ratio = (logoImage.naturalHeight || logoImage.height) / Math.max(1, logoImage.naturalWidth || logoImage.width);
-    const logoHeight = logoWidth * ratio;
-    context.drawImage(logoImage, width - logoWidth - 32, height - logoHeight - 120, logoWidth, logoHeight);
-  } else {
-    context.fillStyle = '#165340';
-    context.font = '900 126px Montserrat, Inter, Arial, sans-serif';
-    context.fillText('Aim4price', 320, height - 130);
-  }
+  context.shadowColor = 'rgba(12, 28, 24, 0.10)';
+  context.shadowBlur = 28;
+  context.shadowOffsetY = 18;
+  fillRoundedRect(context, 36, 36, width - 72, height - 72, 38, '#ffffff');
   context.restore();
+  strokeRoundedRect(context, 36, 36, width - 72, height - 72, 38, '#d7dde1', 2);
 
-  fillRoundedRect(context, 36, 36, width - 72, height - 72, 34, '#ffffff');
-  strokeRoundedRect(context, 36, 36, width - 72, height - 72, 34, '#d6dde2', 2);
+  drawAdWatermark(context, logoImage, margin, contentTop - 20, innerWidth, 530);
 
   context.save();
   if (logoImage) {
-    const logoWidth = 245;
+    const logoWidth = 238;
     const ratio = (logoImage.naturalHeight || logoImage.height) / Math.max(1, logoImage.naturalWidth || logoImage.width);
     context.drawImage(logoImage, margin, 76, logoWidth, logoWidth * ratio);
   } else {
-    drawAim4priceWordmarkFallback(context, margin, 118, 44, 1);
+    drawAim4priceWordmarkFallback(context, margin, 116, 43, 1);
   }
   context.restore();
 
-  fillRoundedRect(context, width - margin - 212, 72, 212, 54, 27, '#edf6f1');
-  context.fillStyle = '#165340';
-  context.font = '800 24px Montserrat, Inter, Arial, sans-serif';
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillText('Marketplace', width - margin - 106, 99);
-  context.textAlign = 'left';
-  context.textBaseline = 'alphabetic';
+  drawAdProvincePill(context, province, width - margin - 264, 72, 264, 56);
+  drawAdImageShowcase(context, listing, listingImages, margin, photoTop, innerWidth, photoHeight);
 
-  if (listingImage) {
-    drawCoverImage(context, listingImage, margin, 154, innerWidth, 420, 28);
-  } else {
-    drawAdPlaceholder(context, listing, margin, 154, innerWidth, 420);
-  }
-
-  fillRoundedRect(context, margin, panelTop, innerWidth, 536, 30, '#ffffff');
-
+  context.save();
   context.fillStyle = '#050505';
-  context.font = '950 84px Montserrat, Inter, Arial, sans-serif';
-  context.letterSpacing = '-4px';
+  context.font = '950 80px Montserrat, Inter, Arial, sans-serif';
+  context.letterSpacing = '-3.8px';
   const adPriceText = fitCanvasText(context, money(listing.askingPriceExVat), 650);
-  context.fillText(adPriceText, margin, panelTop + 88);
+  context.fillText(adPriceText, margin, contentTop + 68);
   const adPriceWidth = context.measureText(adPriceText).width;
   context.letterSpacing = '0px';
-  context.font = '800 40px Montserrat, Inter, Arial, sans-serif';
-  context.fillText('+ VAT', margin + Math.min(700, adPriceWidth + 32), panelTop + 82);
+  context.font = '850 36px Montserrat, Inter, Arial, sans-serif';
+  context.fillText('+ VAT', margin + Math.min(682, adPriceWidth + 26), contentTop + 61);
 
-  context.fillStyle = '#050505';
-  context.font = '850 44px Montserrat, Inter, Arial, sans-serif';
-  const nextY = drawWrappedCanvasText(context, listingDisplayTitle(listing), margin, panelTop + 145, innerWidth, 52, 2);
+  context.fillStyle = '#0c0d0d';
+  context.font = '850 41px Montserrat, Inter, Arial, sans-serif';
+  const nextY = drawWrappedCanvasText(context, listingDisplayTitle(listing), margin, contentTop + 124, innerWidth, 47, 2);
 
-  context.fillStyle = '#65676b';
-  context.font = '600 30px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(fitCanvasText(context, formatLocation(listing), innerWidth), margin, nextY + 8);
+  context.fillStyle = '#60666a';
+  context.font = '700 25px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, `Province: ${province}`, innerWidth), margin, nextY + 7);
+  context.restore();
 
-  const cardTop = panelTop + 250;
-  drawAdLabelValue(context, 'Year', String(listing.yearModel || 'N/A'), margin, cardTop, detailCardWidth, 104);
-  drawAdLabelValue(context, listingUsageLabel(listing), formatUsage(listing), margin + detailCardWidth + 24, cardTop, detailCardWidth, 104);
-  drawAdLabelValue(context, 'Condition', formatConditionLabel(getListingConditionKey(listing)), margin, cardTop + 124, detailCardWidth, 104);
-  drawAdLabelValue(context, 'Family', getListingPrimaryFamilyLabel(listing), margin + detailCardWidth + 24, cardTop + 124, detailCardWidth, 104);
+  drawAdLabelValue(context, 'Year', String(listing.yearModel || 'N/A'), margin, cardTop, detailCardWidth, cardHeight);
+  drawAdLabelValue(context, listingUsageLabel(listing), formatUsage(listing), margin + detailCardWidth + 24, cardTop, detailCardWidth, cardHeight);
+  drawAdLabelValue(context, 'Condition', formatConditionLabel(getListingConditionKey(listing)), margin, cardTop + cardHeight + 18, detailCardWidth, cardHeight);
+  drawAdLabelValue(context, 'Family', getListingPrimaryFamilyLabel(listing), margin + detailCardWidth + 24, cardTop + cardHeight + 18, detailCardWidth, cardHeight);
 
-  context.strokeStyle = '#dadde1';
-  context.lineWidth = 2;
-  context.beginPath();
-  context.moveTo(margin, cardTop + 258);
-  context.lineTo(width - margin, cardTop + 258);
-  context.stroke();
+  context.save();
+  context.fillStyle = '#111312';
+  context.font = '850 27px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, buildListingSpecLine(listing) || 'Marketplace listing', innerWidth), margin, 1188);
 
-  context.fillStyle = '#050505';
-  context.font = '800 30px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(fitCanvasText(context, buildListingSpecLine(listing) || 'Marketplace listing', innerWidth), margin, cardTop + 314);
+  context.fillStyle = '#6a7074';
+  context.font = '700 21px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(`Listed ${formatPublishedDate(listing.dateAdvertised || listing.publishedAtIso)} on Aim4price`, margin, 1218);
+  context.restore();
 
-  context.fillStyle = '#65676b';
-  context.font = '700 24px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(`Listed ${formatPublishedDate(listing.dateAdvertised || listing.publishedAtIso)}`, margin, cardTop + 354);
-
-  fillRoundedRect(context, margin, height - 170, innerWidth, 76, 20, '#edf6f1');
-  context.fillStyle = '#165340';
-  context.font = '850 28px Montserrat, Inter, Arial, sans-serif';
-  context.textAlign = 'center';
-  context.fillText('View this listing on Aim4price', width / 2, height - 122);
-  context.textAlign = 'left';
-
-  context.fillStyle = '#65676b';
-  context.font = '600 20px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(fitCanvasText(context, directUrl, innerWidth), margin, height - 62);
+  drawAdContactCard(context, listing, margin, 1230, innerWidth, 84);
 }
 
 function canvasToJpegBlob(canvas: HTMLCanvasElement): Promise<Blob> {
