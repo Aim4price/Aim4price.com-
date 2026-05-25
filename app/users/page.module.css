@@ -834,3 +834,609 @@
     border-radius: 1.35rem;
   }
 }
+
+/* === Users page Asset Register alignment update === */
+.page {
+  --action-primary: #1a7458;
+  --action-primary-deep: #115b45;
+  --action-primary-hover: #0f513d;
+  --action-primary-border: #17664d;
+  --action-primary-shadow: rgba(26, 116, 88, 0.18);
+  --action-mint-bg: #ebf9f2;
+  --action-mint-bg-hover: #ddf3e8;
+  --action-mint-text: #0d5a42;
+  --action-mint-border: #85cfaa;
+  --action-mint-border-hover: #58b985;
+  --action-blue-bg: #edf6ff;
+  --action-blue-bg-hover: #deefff;
+  --action-blue-text: #113d66;
+  --action-blue-border: #92bfe6;
+  --action-blue-border-hover: #6da6d8;
+  --action-neutral-bg: #ffffff;
+  --action-neutral-bg-hover: #f7fafc;
+  --action-neutral-text: #1f3347;
+  --action-neutral-border: #cedbe7;
+  --action-neutral-border-hover: #b8c9d8;
+  --action-danger-bg: #fff1f1;
+  --action-danger-bg-hover: #ffe7e7;
+  --action-danger-text: #b42318;
+  --action-danger-border: #f2b8b5;
+  --action-focused-ring: rgba(26, 116, 88, 0.18);
+  background: linear-gradient(180deg, #f5f7f8 0%, #eef3f5 100%) !important;
+}
+
+.shell {
+  width: min(calc(100% - 2.5rem), 1360px) !important;
+  padding: clamp(1.25rem, 2vw, 1.85rem) 0 4rem !important;
+}
+
+.heroPanel {
+  min-height: clamp(5.1rem, 7vw, 6.1rem) !important;
+  margin: 0 0 clamp(1.05rem, 1.45vw, 1.35rem) !important;
+  padding: clamp(1.15rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2rem) !important;
+  border: 1.5px solid rgba(193, 211, 218, 0.98) !important;
+  border-radius: clamp(1.25rem, 2vw, 1.7rem) !important;
+  background:
+    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%) !important;
+  box-shadow:
+    0 18px 38px rgba(16, 36, 40, 0.06),
+    0 6px 16px rgba(16, 36, 40, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.heroPanel h1 {
+  color: #073b30 !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
+  font-size: clamp(2.35rem, 4.15vw, 3.55rem) !important;
+  font-weight: 900 !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.062em !important;
+  text-transform: uppercase !important;
+}
+
+.controlsPanel {
+  margin: 0 0 clamp(1.05rem, 1.5vw, 1.28rem) !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.summaryGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: clamp(0.95rem, 1.35vw, 1.25rem) !important;
+  margin: 0 0 clamp(1rem, 1.4vw, 1.15rem) !important;
+  align-items: stretch !important;
+}
+
+.summaryCard {
+  min-height: clamp(8.8rem, 10.5vw, 9.7rem) !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  place-items: initial !important;
+  align-content: stretch !important;
+  justify-items: start !important;
+  gap: 0.65rem !important;
+  padding: 1.25rem 1.3rem 1.1rem !important;
+  border-radius: 1.45rem !important;
+  border: 1px solid rgba(206, 218, 229, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%) !important;
+  box-shadow:
+    0 14px 28px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+  text-align: left !important;
+}
+
+.summaryCard span {
+  display: flex !important;
+  align-items: flex-start !important;
+  color: #5d6f80 !important;
+  font-size: 0.94rem !important;
+  font-weight: 900 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0.01em !important;
+}
+
+.summaryCard strong {
+  align-self: center !important;
+  color: #0e3228 !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
+  font-size: clamp(2.15rem, 3.2vw, 3.05rem) !important;
+  font-weight: 900 !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.065em !important;
+}
+
+.toolbar {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(13rem, 15.75rem) !important;
+  gap: 0.95rem !important;
+  align-items: stretch !important;
+  margin: 0 0 clamp(1rem, 1.45vw, 1.15rem) !important;
+}
+
+.searchBox {
+  min-height: 3.55rem !important;
+  border-radius: 1.15rem !important;
+  border: 1px solid rgba(210, 222, 232, 0.98) !important;
+  background: #ffffff !important;
+  padding: 0 0.78rem 0 1rem !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+.searchBox:focus-within {
+  border-color: rgba(22, 83, 64, 0.35) !important;
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.09),
+    0 12px 24px rgba(16, 31, 28, 0.045) !important;
+}
+
+.searchIcon {
+  color: #7b8a99 !important;
+  width: 1.08rem !important;
+  height: 1.08rem !important;
+}
+
+.searchBox input {
+  min-height: 3.35rem !important;
+  padding: 0 0.72rem !important;
+  color: #1d303a !important;
+  font-size: 1rem !important;
+  font-weight: 620 !important;
+  line-height: 1.2 !important;
+}
+
+.searchBox input::placeholder {
+  color: #8594a4 !important;
+  font-size: 1rem !important;
+  font-weight: 560 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.clearSearchButton,
+.primaryButton,
+.secondaryButton,
+.outlineButton,
+.filterButton,
+.shareButton,
+.denyButton,
+.modalCloseButton,
+.provinceOption {
+  border-width: 1.5px !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
+  font-size: clamp(0.98rem, 1.08vw, 1.04rem) !important;
+  font-weight: 860 !important;
+  letter-spacing: -0.015em !important;
+}
+
+.primaryButton,
+.shareButton,
+.filterButton,
+.filterButtonActive {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, var(--action-primary) 0%, var(--action-primary-deep) 100%) !important;
+  border-color: var(--action-primary-border) !important;
+  box-shadow:
+    0 14px 26px var(--action-primary-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+.filterButton {
+  min-height: 3.55rem !important;
+  justify-content: center !important;
+  padding: 0 1.25rem !important;
+  border-radius: 1.15rem !important;
+  text-transform: none !important;
+  letter-spacing: -0.015em !important;
+  white-space: nowrap !important;
+}
+
+.primaryButton:hover:not(:disabled),
+.shareButton:hover:not(:disabled),
+.filterButton:hover:not(:disabled),
+.filterButtonActive:hover:not(:disabled) {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #218061 0%, var(--action-primary-hover) 100%) !important;
+  border-color: var(--action-primary-hover) !important;
+  box-shadow:
+    0 18px 32px rgba(26, 116, 88, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.outlineButton {
+  color: var(--action-blue-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg) 100%) !important;
+  border-color: var(--action-blue-border) !important;
+  box-shadow:
+    0 9px 20px rgba(18, 61, 102, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.outlineButton:hover:not(:disabled) {
+  color: var(--action-blue-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg-hover) 100%) !important;
+  border-color: var(--action-blue-border-hover) !important;
+  box-shadow:
+    0 13px 26px rgba(18, 61, 102, 0.095),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.secondaryButton,
+.clearSearchButton,
+.modalCloseButton,
+.provinceOption {
+  color: var(--action-neutral-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-neutral-bg-hover) 100%) !important;
+  border-color: var(--action-neutral-border) !important;
+  box-shadow:
+    0 9px 18px rgba(23, 45, 75, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.secondaryButton:hover:not(:disabled),
+.clearSearchButton:hover:not(:disabled),
+.modalCloseButton:hover:not(:disabled),
+.provinceOption:hover:not(:disabled) {
+  color: var(--action-neutral-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eef4fb 100%) !important;
+  border-color: var(--action-neutral-border-hover) !important;
+  box-shadow:
+    0 13px 24px rgba(23, 45, 75, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.statusPill {
+  color: var(--action-mint-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-mint-bg) 100%) !important;
+  border-color: var(--action-mint-border) !important;
+  box-shadow:
+    0 10px 22px rgba(10, 84, 61, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  font-size: clamp(0.98rem, 1.08vw, 1.04rem) !important;
+  font-weight: 860 !important;
+}
+
+.denyButton {
+  color: var(--action-danger-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-danger-bg) 100%) !important;
+  border-color: var(--action-danger-border) !important;
+}
+
+.denyButton:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-danger-bg-hover) 100%) !important;
+  border-color: #e89d98 !important;
+}
+
+.cardStack {
+  gap: 1.05rem !important;
+}
+
+.ownerCard,
+.requestCard {
+  border: 1px solid rgba(217, 227, 235, 0.96) !important;
+  border-radius: 1.58rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbfc 100%) !important;
+  box-shadow:
+    0 12px 26px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.ownerCard:hover,
+.requestCard:hover,
+.ownerCardOpen {
+  border-color: rgba(197, 211, 223, 0.98) !important;
+  box-shadow:
+    0 16px 30px rgba(16, 31, 28, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.ownerCard {
+  padding: 1.3rem 1.38rem !important;
+}
+
+.ownerCardHeader {
+  min-height: clamp(5.4rem, 7vw, 6.4rem) !important;
+}
+
+.ownerKicker {
+  color: #617486 !important;
+  font-size: 0.94rem !important;
+  font-weight: 850 !important;
+}
+
+.ownerIdentity h2,
+.requestBody h2,
+.historySection h2 {
+  color: #073b30 !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
+  font-size: clamp(1.65rem, 2.15vw, 2.08rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.052em !important;
+}
+
+.ownerActionRow {
+  gap: 0.78rem !important;
+}
+
+.ownerActionRow > :is(button, span) {
+  min-width: clamp(9.8rem, 10.8vw, 12rem) !important;
+  min-height: clamp(3.35rem, 4vw, 3.6rem) !important;
+  border-radius: 1.05rem !important;
+}
+
+.detailPanel {
+  border-color: rgba(210, 222, 232, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%) !important;
+}
+
+.filterOverlay {
+  z-index: 160 !important;
+  padding: 1rem !important;
+  background: rgba(8, 22, 20, 0.28) !important;
+  backdrop-filter: blur(14px) !important;
+}
+
+.filterModal {
+  width: min(100%, 960px) !important;
+  max-height: min(92vh, calc(100dvh - 2rem)) !important;
+  overflow: auto !important;
+  gap: clamp(1rem, 1.6vw, 1.25rem) !important;
+  padding: clamp(1.55rem, 2.35vw, 2.15rem) !important;
+  border-radius: 2.05rem !important;
+  border: 1px solid rgba(210, 223, 233, 0.98) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.075), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%) !important;
+  box-shadow:
+    0 28px 82px rgba(8, 22, 20, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.modalEyebrow {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 1.85rem;
+  margin-bottom: 0.65rem;
+  padding: 0 0.78rem;
+  border-radius: 999px;
+  color: #446054;
+  background: rgba(237, 246, 241, 0.92);
+  border: 1px solid rgba(216, 232, 223, 0.98);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.modalHeader {
+  align-items: start !important;
+  gap: 1.1rem !important;
+}
+
+.modalHeader h3 {
+  color: #0b3328 !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
+  font-size: clamp(1.85rem, 2.75vw, 2.45rem) !important;
+  font-weight: 900 !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.06em !important;
+}
+
+.modalHeader p {
+  max-width: 42rem !important;
+  color: #637486 !important;
+  font-size: 0.98rem !important;
+  font-weight: 650 !important;
+  line-height: 1.48 !important;
+}
+
+.filterModalBody {
+  display: grid;
+  gap: 1rem;
+}
+
+.filterSection {
+  display: grid;
+  gap: 0.8rem;
+  padding: clamp(1rem, 1.8vw, 1.25rem);
+  border: 1px solid rgba(210, 223, 233, 0.96);
+  border-radius: 1.45rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 252, 0.98) 100%);
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.filterSectionHeader {
+  display: grid;
+  gap: 0.22rem;
+}
+
+.filterSectionHeader span {
+  color: #0b3328;
+  font-size: 1.08rem;
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+}
+
+.filterSectionHeader small {
+  color: #637486;
+  font-size: 0.88rem;
+  font-weight: 680;
+  line-height: 1.36;
+}
+
+.filterOptionGrid,
+.provinceList {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)) !important;
+  gap: 0.62rem !important;
+}
+
+.provinceOption {
+  min-height: 3.45rem !important;
+  justify-content: space-between !important;
+  gap: 0.85rem !important;
+  padding: 0 1rem !important;
+  border-radius: 1rem !important;
+  color: #17362c !important;
+  text-align: left !important;
+}
+
+.provinceOption span {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.provinceOption strong {
+  min-width: 2rem !important;
+  color: #0d5a42 !important;
+  font-weight: 900 !important;
+  text-align: right !important;
+}
+
+.provinceOptionActive,
+.provinceOptionActive:hover:not(:disabled) {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, var(--action-primary) 0%, var(--action-primary-deep) 100%) !important;
+  border-color: var(--action-primary-border) !important;
+  box-shadow:
+    0 14px 26px var(--action-primary-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+.provinceOptionActive strong,
+.provinceOptionActive span {
+  color: #ffffff !important;
+}
+
+.modalActions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 0.75rem !important;
+  padding-top: 0.15rem !important;
+}
+
+.modalActions > button {
+  min-width: 10.5rem !important;
+  min-height: 3.35rem !important;
+  border-radius: 1.05rem !important;
+}
+
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.outlineButton:focus-visible,
+.filterButton:focus-visible,
+.shareButton:focus-visible,
+.denyButton:focus-visible,
+.clearSearchButton:focus-visible,
+.modalCloseButton:focus-visible,
+.provinceOption:focus-visible {
+  outline: 3px solid var(--action-focused-ring) !important;
+  outline-offset: 3px !important;
+}
+
+@media (max-width: 1080px) {
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .toolbar,
+  .ownerCardHeader,
+  .requestBody,
+  .detailGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .filterButton,
+  .ownerActionRow > :is(button, span),
+  .requestActions > button,
+  .modalActions > button {
+    width: 100% !important;
+  }
+
+  .ownerActionRow,
+  .requestActions,
+  .modalActions {
+    justify-content: stretch !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell {
+    width: min(calc(100% - 1rem), 1360px) !important;
+    padding: 1rem 0 2.4rem !important;
+  }
+
+  .heroPanel {
+    min-height: 4.35rem !important;
+    padding: 1rem 1.05rem !important;
+    border-radius: 1.15rem !important;
+  }
+
+  .heroPanel h1 {
+    font-size: clamp(1.75rem, 9vw, 2.2rem) !important;
+    letter-spacing: -0.045em !important;
+  }
+
+  .summaryGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .summaryCard {
+    min-height: 7.4rem !important;
+    padding: 1rem 1.05rem !important;
+    border-radius: 1.25rem !important;
+  }
+
+  .toolbar {
+    gap: 0.75rem !important;
+  }
+
+  .ownerCard,
+  .requestCard {
+    padding: 1rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .ownerIdentity h2,
+  .requestBody h2,
+  .historySection h2 {
+    font-size: clamp(1.38rem, 7vw, 1.75rem) !important;
+  }
+
+  .filterOverlay {
+    align-items: flex-end !important;
+    padding: 0.7rem !important;
+  }
+
+  .filterModal {
+    width: 100% !important;
+    max-height: 88vh !important;
+    padding: 1.1rem !important;
+    border-radius: 1.45rem !important;
+  }
+
+  .modalHeader {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .filterOptionGrid,
+  .provinceList {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .modalActions {
+    flex-direction: column-reverse !important;
+  }
+}

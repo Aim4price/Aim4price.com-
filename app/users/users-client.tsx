@@ -6,6 +6,7 @@ import styles from './page.module.css';
 
 type ContactRequestStatus = 'pending' | 'approved' | 'denied';
 type UsersMode = 'directory' | 'requests';
+type ContactLockFilter = 'all' | 'unlocked' | 'locked';
 type NoticeTone = 'success' | 'error';
 
 type OwnerDirectoryEntry = {
@@ -63,6 +64,7 @@ type IconProps = {
 
 const ALL_PROVINCES_VALUE = 'all';
 const PROVINCE_NOT_SAVED_VALUE = '__province_not_saved__';
+const ALL_CONTACT_STATUS_VALUE: ContactLockFilter = 'all';
 
 function SearchIcon({ className }: IconProps) {
   return (
@@ -194,12 +196,6 @@ function ownerTownCity(owner: OwnerDirectoryEntry): string {
   return asCleanText(owner.ownerTownCity);
 }
 
-function renderProvinceLabel(value: string): string {
-  if (value === PROVINCE_NOT_SAVED_VALUE) return 'Province not saved';
-  if (value === ALL_PROVINCES_VALUE) return 'Filter';
-  return value;
-}
-
 export default function UsersClient() {
   const [mode, setMode] = useState<UsersMode>('directory');
   const [accountType, setAccountType] = useState('owner');
@@ -207,7 +203,8 @@ export default function UsersClient() {
   const [contactRequests, setContactRequests] = useState<ContactDetailRequest[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProvince, setSelectedProvince] = useState<string>(ALL_PROVINCES_VALUE);
-  const [isProvinceFilterOpen, setIsProvinceFilterOpen] = useState(false);
+  const [selectedContactLockFilter, setSelectedContactLockFilter] = useState<ContactLockFilter>(ALL_CONTACT_STATUS_VALUE);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [openOwnerId, setOpenOwnerId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
@@ -269,8 +266,24 @@ export default function UsersClient() {
     [owners],
   );
 
+  const unlockedOwnerCount = useMemo(
+    () => owners.filter((owner) => owner.contactUnlocked).length,
+    [owners],
+  );
+
+  const lockedOwnerCount = Math.max(owners.length - unlockedOwnerCount, 0);
+
+  const pendingOwnerRequestCount = useMemo(
+    () => owners.filter((owner) => owner.requestStatus === 'pending').length,
+    [owners],
+  );
+
   const hasActiveProvinceFilter = selectedProvince !== ALL_PROVINCES_VALUE;
-  const activeProvinceLabel = renderProvinceLabel(selectedProvince);
+  const hasActiveContactLockFilter = selectedContactLockFilter !== ALL_CONTACT_STATUS_VALUE;
+  const activeFilterCount = Number(hasActiveProvinceFilter) + Number(hasActiveContactLockFilter);
+  const filterButtonLabel = activeFilterCount
+    ? `${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'}`
+    : 'Filters';
 
   useEffect(() => {
     if (selectedProvince === ALL_PROVINCES_VALUE) return;
@@ -295,10 +308,12 @@ export default function UsersClient() {
       const matchesSearch = !normalizedSearch || ownerSearchText(owner).includes(normalizedSearch);
       const matchesProvince = selectedProvince === ALL_PROVINCES_VALUE
         || (selectedProvince === PROVINCE_NOT_SAVED_VALUE ? !province : province.toLowerCase() === selectedProvince.toLowerCase());
+      const matchesContactLock = selectedContactLockFilter === ALL_CONTACT_STATUS_VALUE
+        || (selectedContactLockFilter === 'unlocked' ? owner.contactUnlocked : !owner.contactUnlocked);
 
-      return matchesSearch && matchesProvince;
+      return matchesSearch && matchesProvince && matchesContactLock;
     });
-  }, [owners, searchTerm, selectedProvince]);
+  }, [owners, searchTerm, selectedProvince, selectedContactLockFilter]);
 
   const pendingRequests = useMemo(
     () => contactRequests.filter((request) => request.status === 'pending'),
@@ -395,7 +410,7 @@ export default function UsersClient() {
 
   function handleFilterOverlayMouseDown(event: MouseEvent<HTMLDivElement>) {
     if (event.target === event.currentTarget) {
-      setIsProvinceFilterOpen(false);
+      setIsFilterModalOpen(false);
     }
   }
 
@@ -450,71 +465,109 @@ export default function UsersClient() {
     );
   }
 
-  function renderProvinceFilterModal() {
-    if (!isProvinceFilterOpen) return null;
+  function renderFilterModal() {
+    if (!isFilterModalOpen) return null;
 
     return (
       <div className={styles.filterOverlay} onMouseDown={handleFilterOverlayMouseDown}>
-        <section className={styles.filterModal} role="dialog" aria-modal="true" aria-labelledby="province-filter-title">
+        <section className={styles.filterModal} role="dialog" aria-modal="true" aria-labelledby="users-filter-title">
           <div className={styles.modalHeader}>
             <div>
-              <h3 id="province-filter-title">Choose province.</h3>
-              <p>Filter owner accounts by the province saved on their account profile.</p>
+              <span className={styles.modalEyebrow}>Filters</span>
+              <h3 id="users-filter-title">Filter accounts.</h3>
+              <p>Choose which owner accounts to show by saved province and contact access.</p>
             </div>
             <button
               type="button"
               className={styles.modalCloseButton}
-              onClick={() => setIsProvinceFilterOpen(false)}
-              aria-label="Close province filter"
+              onClick={() => setIsFilterModalOpen(false)}
+              aria-label="Close account filters"
             >
               <CloseIcon className={styles.buttonIcon} />
             </button>
           </div>
 
-          <div className={styles.provinceList}>
-            <button
-              type="button"
-              className={`${styles.provinceOption} ${selectedProvince === ALL_PROVINCES_VALUE ? styles.provinceOptionActive : ''}`}
-              onClick={() => setSelectedProvince(ALL_PROVINCES_VALUE)}
-            >
-              <span>All provinces</span>
-              <strong>{owners.length}</strong>
-            </button>
+          <div className={styles.filterModalBody}>
+            <section className={styles.filterSection} aria-labelledby="province-filter-section-title">
+              <div className={styles.filterSectionHeader}>
+                <span id="province-filter-section-title">Saved province</span>
+                <small>Uses the province saved on the owner account profile.</small>
+              </div>
 
-            {provinceOptions.map((province) => (
-              <button
-                key={province}
-                type="button"
-                className={`${styles.provinceOption} ${selectedProvince === province ? styles.provinceOptionActive : ''}`}
-                onClick={() => setSelectedProvince(province)}
-              >
-                <span>{province}</span>
-                <strong>{provinceCounts[province] ?? 0}</strong>
-              </button>
-            ))}
+              <div className={styles.filterOptionGrid}>
+                <button
+                  type="button"
+                  className={`${styles.provinceOption} ${selectedProvince === ALL_PROVINCES_VALUE ? styles.provinceOptionActive : ''}`}
+                  onClick={() => setSelectedProvince(ALL_PROVINCES_VALUE)}
+                >
+                  <span>All provinces</span>
+                  <strong>{owners.length}</strong>
+                </button>
 
-            {ownersWithoutProvinceCount ? (
-              <button
-                type="button"
-                className={`${styles.provinceOption} ${selectedProvince === PROVINCE_NOT_SAVED_VALUE ? styles.provinceOptionActive : ''}`}
-                onClick={() => setSelectedProvince(PROVINCE_NOT_SAVED_VALUE)}
-              >
-                <span>Province not saved</span>
-                <strong>{ownersWithoutProvinceCount}</strong>
-              </button>
-            ) : null}
+                {provinceOptions.map((province) => (
+                  <button
+                    key={province}
+                    type="button"
+                    className={`${styles.provinceOption} ${selectedProvince === province ? styles.provinceOptionActive : ''}`}
+                    onClick={() => setSelectedProvince(province)}
+                  >
+                    <span>{province}</span>
+                    <strong>{provinceCounts[province] ?? 0}</strong>
+                  </button>
+                ))}
+
+                {ownersWithoutProvinceCount ? (
+                  <button
+                    type="button"
+                    className={`${styles.provinceOption} ${selectedProvince === PROVINCE_NOT_SAVED_VALUE ? styles.provinceOptionActive : ''}`}
+                    onClick={() => setSelectedProvince(PROVINCE_NOT_SAVED_VALUE)}
+                  >
+                    <span>Province not saved</span>
+                    <strong>{ownersWithoutProvinceCount}</strong>
+                  </button>
+                ) : null}
+              </div>
+            </section>
+
+            <section className={styles.filterSection} aria-labelledby="contact-filter-section-title">
+              <div className={styles.filterSectionHeader}>
+                <span id="contact-filter-section-title">Contact access</span>
+                <small>Show accounts where contact details are unlocked or still locked.</small>
+              </div>
+
+              <div className={styles.filterOptionGrid}>
+                {([
+                  { value: ALL_CONTACT_STATUS_VALUE, label: 'All accounts', count: owners.length },
+                  { value: 'unlocked' as ContactLockFilter, label: 'Unlocked', count: unlockedOwnerCount },
+                  { value: 'locked' as ContactLockFilter, label: 'Locked', count: lockedOwnerCount },
+                ]).map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`${styles.provinceOption} ${selectedContactLockFilter === option.value ? styles.provinceOptionActive : ''}`}
+                    onClick={() => setSelectedContactLockFilter(option.value)}
+                  >
+                    <span>{option.label}</span>
+                    <strong>{option.count}</strong>
+                  </button>
+                ))}
+              </div>
+            </section>
           </div>
 
           <div className={styles.modalActions}>
             <button
               type="button"
               className={styles.secondaryButton}
-              onClick={() => setSelectedProvince(ALL_PROVINCES_VALUE)}
+              onClick={() => {
+                setSelectedProvince(ALL_PROVINCES_VALUE);
+                setSelectedContactLockFilter(ALL_CONTACT_STATUS_VALUE);
+              }}
             >
-              Reset filter
+              Reset filters
             </button>
-            <button type="button" className={styles.primaryButton} onClick={() => setIsProvinceFilterOpen(false)}>
-              Apply filter
+            <button type="button" className={styles.primaryButton} onClick={() => setIsFilterModalOpen(false)}>
+              Apply filters
             </button>
           </div>
         </section>
@@ -537,11 +590,11 @@ export default function UsersClient() {
             </article>
             <article className={styles.summaryCard}>
               <span>Unlocked contacts</span>
-              <strong>{owners.filter((owner) => owner.contactUnlocked).length}</strong>
+              <strong>{unlockedOwnerCount}</strong>
             </article>
             <article className={styles.summaryCard}>
               <span>Pending requests</span>
-              <strong>{owners.filter((owner) => owner.requestStatus === 'pending').length}</strong>
+              <strong>{pendingOwnerRequestCount}</strong>
             </article>
           </section>
 
@@ -551,7 +604,7 @@ export default function UsersClient() {
               <input
                 value={searchTerm}
                 onChange={(event: ChangeEvent<HTMLInputElement>) => setSearchTerm(event.target.value)}
-                placeholder="Search..."
+                placeholder="Search by company, province or town"
                 aria-label="Search company names"
               />
               {searchTerm ? (
@@ -568,12 +621,12 @@ export default function UsersClient() {
 
             <button
               type="button"
-              className={`${styles.filterButton} ${hasActiveProvinceFilter ? styles.filterButtonActive : ''}`}
-              onClick={() => setIsProvinceFilterOpen(true)}
+              className={`${styles.filterButton} ${activeFilterCount ? styles.filterButtonActive : ''}`}
+              onClick={() => setIsFilterModalOpen(true)}
               disabled={isLoading}
             >
               <FilterIcon className={styles.buttonIcon} />
-              <span>{activeProvinceLabel}</span>
+              <span>{filterButtonLabel}</span>
               <ChevronDownIcon className={styles.filterChevron} />
             </button>
           </section>
@@ -637,7 +690,7 @@ export default function UsersClient() {
           )}
         </section>
 
-        {renderProvinceFilterModal()}
+        {renderFilterModal()}
       </>
     );
   }
