@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type MouseEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
@@ -18,6 +18,8 @@ type OwnerDirectoryEntry = {
   contactPhone: string;
   contactEmail: string;
   contactLocation: string;
+  ownerProvince: string;
+  ownerTownCity: string;
   requestedAtIso: string | null;
   updatedAtIso: string | null;
 };
@@ -58,6 +60,9 @@ type UsersResponse = {
 type IconProps = {
   className?: string;
 };
+
+const ALL_PROVINCES_VALUE = 'all';
+const PROVINCE_NOT_SAVED_VALUE = '__province_not_saved__';
 
 function SearchIcon({ className }: IconProps) {
   return (
@@ -111,6 +116,28 @@ function CloseIcon({ className }: IconProps) {
   );
 }
 
+function FilterIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 6h16" />
+      <path d="M7 12h10" />
+      <path d="M10 18h4" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function asCleanText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 function formatAccountType(value: string): string {
   const normalized = String(value ?? '').trim().toLowerCase();
 
@@ -144,12 +171,44 @@ function getRequesterName(request: ContactDetailRequest): string {
   return request.requesterBusinessName || request.requesterDisplayName || 'Aim4price user';
 }
 
+function ownerSearchText(owner: OwnerDirectoryEntry): string {
+  return [
+    owner.companyName,
+    owner.ownerProvince,
+    owner.ownerTownCity,
+    owner.contactUnlocked ? owner.contactName : '',
+    owner.contactUnlocked ? owner.contactPhone : '',
+    owner.contactUnlocked ? owner.contactEmail : '',
+    owner.contactUnlocked ? owner.contactLocation : '',
+  ]
+    .map((value) => asCleanText(value).toLowerCase())
+    .filter(Boolean)
+    .join(' ');
+}
+
+function ownerProvince(owner: OwnerDirectoryEntry): string {
+  return asCleanText(owner.ownerProvince);
+}
+
+function ownerTownCity(owner: OwnerDirectoryEntry): string {
+  return asCleanText(owner.ownerTownCity);
+}
+
+function renderProvinceLabel(value: string): string {
+  if (value === PROVINCE_NOT_SAVED_VALUE) return 'Province not saved';
+  if (value === ALL_PROVINCES_VALUE) return 'Filter';
+  return value;
+}
+
 export default function UsersClient() {
   const [mode, setMode] = useState<UsersMode>('directory');
   const [accountType, setAccountType] = useState('owner');
   const [owners, setOwners] = useState<OwnerDirectoryEntry[]>([]);
   const [contactRequests, setContactRequests] = useState<ContactDetailRequest[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedProvince, setSelectedProvince] = useState<string>(ALL_PROVINCES_VALUE);
+  const [isProvinceFilterOpen, setIsProvinceFilterOpen] = useState(false);
+  const [openOwnerId, setOpenOwnerId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [processingOwnerIds, setProcessingOwnerIds] = useState<Set<string>>(() => new Set());
@@ -188,15 +247,58 @@ export default function UsersClient() {
     void loadUsers();
   }, [loadUsers]);
 
+  const provinceCounts = useMemo(() => {
+    return owners.reduce<Record<string, number>>((counts, owner) => {
+      const province = ownerProvince(owner);
+
+      if (!province) {
+        return counts;
+      }
+
+      counts[province] = (counts[province] ?? 0) + 1;
+      return counts;
+    }, {});
+  }, [owners]);
+
+  const provinceOptions = useMemo(() => {
+    return Object.keys(provinceCounts).sort((first, second) => first.localeCompare(second));
+  }, [provinceCounts]);
+
+  const ownersWithoutProvinceCount = useMemo(
+    () => owners.filter((owner) => !ownerProvince(owner)).length,
+    [owners],
+  );
+
+  const hasActiveProvinceFilter = selectedProvince !== ALL_PROVINCES_VALUE;
+  const activeProvinceLabel = renderProvinceLabel(selectedProvince);
+
+  useEffect(() => {
+    if (selectedProvince === ALL_PROVINCES_VALUE) return;
+
+    if (selectedProvince === PROVINCE_NOT_SAVED_VALUE) {
+      if (ownersWithoutProvinceCount === 0) {
+        setSelectedProvince(ALL_PROVINCES_VALUE);
+      }
+      return;
+    }
+
+    if (!provinceOptions.includes(selectedProvince)) {
+      setSelectedProvince(ALL_PROVINCES_VALUE);
+    }
+  }, [ownersWithoutProvinceCount, provinceOptions, selectedProvince]);
+
   const filteredOwners = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    if (!normalizedSearch) {
-      return owners;
-    }
+    return owners.filter((owner) => {
+      const province = ownerProvince(owner);
+      const matchesSearch = !normalizedSearch || ownerSearchText(owner).includes(normalizedSearch);
+      const matchesProvince = selectedProvince === ALL_PROVINCES_VALUE
+        || (selectedProvince === PROVINCE_NOT_SAVED_VALUE ? !province : province.toLowerCase() === selectedProvince.toLowerCase());
 
-    return owners.filter((owner) => owner.companyName.toLowerCase().includes(normalizedSearch));
-  }, [owners, searchTerm]);
+      return matchesSearch && matchesProvince;
+    });
+  }, [owners, searchTerm, selectedProvince]);
 
   const pendingRequests = useMemo(
     () => contactRequests.filter((request) => request.status === 'pending'),
@@ -291,6 +393,135 @@ export default function UsersClient() {
     }
   }
 
+  function handleFilterOverlayMouseDown(event: MouseEvent<HTMLDivElement>) {
+    if (event.target === event.currentTarget) {
+      setIsProvinceFilterOpen(false);
+    }
+  }
+
+  function renderOwnerDetails(owner: OwnerDirectoryEntry) {
+    const province = ownerProvince(owner);
+    const townCity = ownerTownCity(owner);
+    const requestedAt = formatDate(owner.requestedAtIso);
+    const updatedAt = formatDate(owner.updatedAtIso);
+
+    return (
+      <div className={styles.ownerDetails}>
+        <div className={styles.detailGrid}>
+          <div className={styles.detailPanel}>
+            <span>Request status</span>
+            <strong>{requestStatusLabel(owner.requestStatus)}</strong>
+            <p>{requestedAt ? `Requested ${requestedAt}` : 'No request has been sent yet.'}</p>
+          </div>
+
+          <div className={styles.detailPanel}>
+            <span>Saved province</span>
+            <strong>{province || 'Province not saved'}</strong>
+            <p>{townCity ? `Town / city: ${townCity}` : 'Town / city not saved.'}</p>
+          </div>
+
+          {owner.contactUnlocked ? (
+            <div className={`${styles.detailPanel} ${styles.contactDetailPanel}`}>
+              <span>Unlocked contact details</span>
+              <div className={styles.contactRows}>
+                <div className={styles.contactRow}>
+                  <PhoneIcon className={styles.contactIcon} />
+                  <strong>{owner.contactPhone || 'No phone saved yet'}</strong>
+                </div>
+                <div className={styles.contactRow}>
+                  <MailIcon className={styles.contactIcon} />
+                  <strong>{owner.contactEmail || 'No email saved yet'}</strong>
+                </div>
+                <p>{owner.contactLocation || 'Location not saved.'}</p>
+              </div>
+            </div>
+          ) : (
+            <div className={`${styles.detailPanel} ${styles.lockedPanel}`}>
+              <LockIcon className={styles.lockedIcon} />
+              <div>
+                <span>Contact details locked</span>
+                <strong>Owner approval required</strong>
+                <p>{updatedAt ? `Last updated ${updatedAt}` : 'Contact details stay locked until the owner shares them.'}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function renderProvinceFilterModal() {
+    if (!isProvinceFilterOpen) return null;
+
+    return (
+      <div className={styles.filterOverlay} onMouseDown={handleFilterOverlayMouseDown}>
+        <section className={styles.filterModal} role="dialog" aria-modal="true" aria-labelledby="province-filter-title">
+          <div className={styles.modalHeader}>
+            <div>
+              <h3 id="province-filter-title">Choose province.</h3>
+              <p>Filter owner accounts by the province saved on their account profile.</p>
+            </div>
+            <button
+              type="button"
+              className={styles.modalCloseButton}
+              onClick={() => setIsProvinceFilterOpen(false)}
+              aria-label="Close province filter"
+            >
+              <CloseIcon className={styles.buttonIcon} />
+            </button>
+          </div>
+
+          <div className={styles.provinceList}>
+            <button
+              type="button"
+              className={`${styles.provinceOption} ${selectedProvince === ALL_PROVINCES_VALUE ? styles.provinceOptionActive : ''}`}
+              onClick={() => setSelectedProvince(ALL_PROVINCES_VALUE)}
+            >
+              <span>All provinces</span>
+              <strong>{owners.length}</strong>
+            </button>
+
+            {provinceOptions.map((province) => (
+              <button
+                key={province}
+                type="button"
+                className={`${styles.provinceOption} ${selectedProvince === province ? styles.provinceOptionActive : ''}`}
+                onClick={() => setSelectedProvince(province)}
+              >
+                <span>{province}</span>
+                <strong>{provinceCounts[province] ?? 0}</strong>
+              </button>
+            ))}
+
+            {ownersWithoutProvinceCount ? (
+              <button
+                type="button"
+                className={`${styles.provinceOption} ${selectedProvince === PROVINCE_NOT_SAVED_VALUE ? styles.provinceOptionActive : ''}`}
+                onClick={() => setSelectedProvince(PROVINCE_NOT_SAVED_VALUE)}
+              >
+                <span>Province not saved</span>
+                <strong>{ownersWithoutProvinceCount}</strong>
+              </button>
+            ) : null}
+          </div>
+
+          <div className={styles.modalActions}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => setSelectedProvince(ALL_PROVINCES_VALUE)}
+            >
+              Reset filter
+            </button>
+            <button type="button" className={styles.primaryButton} onClick={() => setIsProvinceFilterOpen(false)}>
+              Apply filter
+            </button>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   function renderOwnerDirectory() {
     return (
       <>
@@ -298,45 +529,54 @@ export default function UsersClient() {
           <h1>AIM4PRICE ACCOUNTS</h1>
         </section>
 
-        <p className={styles.pageLead}>
-          View registered owner companies and request contact details when there is a professional reason to connect.
-        </p>
+        <section className={styles.controlsPanel} aria-label="Owner account controls">
+          <section className={styles.summaryGrid} aria-label="Users summary">
+            <article className={styles.summaryCard}>
+              <span>Total owner accounts</span>
+              <strong>{owners.length}</strong>
+            </article>
+            <article className={styles.summaryCard}>
+              <span>Unlocked contacts</span>
+              <strong>{owners.filter((owner) => owner.contactUnlocked).length}</strong>
+            </article>
+            <article className={styles.summaryCard}>
+              <span>Pending requests</span>
+              <strong>{owners.filter((owner) => owner.requestStatus === 'pending').length}</strong>
+            </article>
+          </section>
 
-        <section className={styles.toolbar} aria-label="Search owners">
-          <label className={styles.searchBox}>
-            <SearchIcon className={styles.searchIcon} />
-            <input
-              value={searchTerm}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setSearchTerm(event.target.value)}
-              placeholder="Search company names"
-              aria-label="Search company names"
-            />
-            {searchTerm ? (
-              <button
-                type="button"
-                className={styles.clearSearchButton}
-                onClick={() => setSearchTerm('')}
-                aria-label="Clear company search"
-              >
-                <CloseIcon className={styles.buttonIcon} />
-              </button>
-            ) : null}
-          </label>
-        </section>
+          <section className={styles.toolbar} aria-label="Search and filter owners">
+            <label className={styles.searchBox}>
+              <SearchIcon className={styles.searchIcon} />
+              <input
+                value={searchTerm}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setSearchTerm(event.target.value)}
+                placeholder="Search..."
+                aria-label="Search company names"
+              />
+              {searchTerm ? (
+                <button
+                  type="button"
+                  className={styles.clearSearchButton}
+                  onClick={() => setSearchTerm('')}
+                  aria-label="Clear company search"
+                >
+                  <CloseIcon className={styles.buttonIcon} />
+                </button>
+              ) : null}
+            </label>
 
-        <section className={styles.summaryGrid} aria-label="Users summary">
-          <article className={styles.summaryCard}>
-            <span>Total owner accounts</span>
-            <strong>{owners.length}</strong>
-          </article>
-          <article className={styles.summaryCard}>
-            <span>Unlocked contacts</span>
-            <strong>{owners.filter((owner) => owner.contactUnlocked).length}</strong>
-          </article>
-          <article className={styles.summaryCard}>
-            <span>Pending requests</span>
-            <strong>{owners.filter((owner) => owner.requestStatus === 'pending').length}</strong>
-          </article>
+            <button
+              type="button"
+              className={`${styles.filterButton} ${hasActiveProvinceFilter ? styles.filterButtonActive : ''}`}
+              onClick={() => setIsProvinceFilterOpen(true)}
+              disabled={isLoading}
+            >
+              <FilterIcon className={styles.buttonIcon} />
+              <span>{activeProvinceLabel}</span>
+              <ChevronDownIcon className={styles.filterChevron} />
+            </button>
+          </section>
         </section>
 
         <section className={styles.cardStack} aria-label="Owner accounts">
@@ -347,65 +587,57 @@ export default function UsersClient() {
               const isProcessing = processingOwnerIds.has(owner.ownerUserId);
               const hasPendingRequest = owner.requestStatus === 'pending';
               const requestDenied = owner.requestStatus === 'denied';
+              const isOpen = openOwnerId === owner.ownerUserId;
+              const province = ownerProvince(owner);
 
               return (
-                <article key={owner.ownerUserId} className={styles.ownerCard}>
-                  <div className={styles.ownerMain}>
-                    <div className={styles.companyAvatar} aria-hidden="true">
-                      {owner.companyName.charAt(0).toUpperCase() || 'A'}
-                    </div>
-                    <div className={styles.ownerCopy}>
+                <article key={owner.ownerUserId} className={`${styles.ownerCard} ${isOpen ? styles.ownerCardOpen : ''}`}>
+                  <div className={styles.ownerCardHeader}>
+                    <div className={styles.ownerIdentity}>
+                      <span className={styles.ownerKicker}>{province ? `Province saved: ${province}` : 'Province not saved'}</span>
                       <h2>{owner.companyName}</h2>
-                      <p className={styles.ownerStatus}>{requestStatusLabel(owner.requestStatus)}</p>
                     </div>
-                  </div>
 
-                  {owner.contactUnlocked ? (
-                    <div className={styles.contactPanel}>
-                      <div className={styles.contactRow}>
-                        <PhoneIcon className={styles.contactIcon} />
-                        <span>{owner.contactPhone || 'No phone saved yet'}</span>
-                      </div>
-                      <div className={styles.contactRow}>
-                        <MailIcon className={styles.contactIcon} />
-                        <span>{owner.contactEmail || 'No email saved yet'}</span>
-                      </div>
-                      {owner.contactLocation ? <p className={styles.contactLocation}>{owner.contactLocation}</p> : null}
-                    </div>
-                  ) : (
-                    <div className={styles.lockedPanel}>
-                      <LockIcon className={styles.lockedIcon} />
-                      <span>Contact details stay locked until the owner shares them.</span>
-                    </div>
-                  )}
-
-                  <div className={styles.ownerActions}>
-                    {owner.contactUnlocked ? (
-                      <span className={styles.statusPill}>Unlocked</span>
-                    ) : (
+                    <div className={styles.ownerActionRow}>
                       <button
                         type="button"
-                        className={styles.primaryButton}
-                        onClick={() => handleRequestContact(owner)}
-                        disabled={isProcessing || hasPendingRequest}
+                        className={styles.outlineButton}
+                        onClick={() => setOpenOwnerId((current) => (current === owner.ownerUserId ? null : owner.ownerUserId))}
                       >
-                        {isProcessing
-                          ? 'Sending...'
-                          : hasPendingRequest
-                            ? 'Request pending'
-                            : requestDenied
-                              ? 'Request again'
-                              : 'Request contact details'}
+                        {isOpen ? 'Close' : 'View Details'}
                       </button>
-                    )}
+
+                      {owner.contactUnlocked ? (
+                        <span className={styles.statusPill}>Unlocked</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className={styles.primaryButton}
+                          onClick={() => handleRequestContact(owner)}
+                          disabled={isProcessing || hasPendingRequest}
+                        >
+                          {isProcessing
+                            ? 'Sending...'
+                            : hasPendingRequest
+                              ? 'Pending'
+                              : requestDenied
+                                ? 'Request again'
+                                : 'Request'}
+                        </button>
+                      )}
+                    </div>
                   </div>
+
+                  {isOpen ? renderOwnerDetails(owner) : null}
                 </article>
               );
             })
           ) : (
-            <div className={styles.emptyState}>No owner accounts match this search.</div>
+            <div className={styles.emptyState}>No owner accounts match this search or filter.</div>
           )}
         </section>
+
+        {renderProvinceFilterModal()}
       </>
     );
   }
