@@ -75,6 +75,9 @@ type ActiveFilterChip = {
 };
 
 const LISTINGS_PER_LOAD = 24;
+const JPEG_AD_WIDTH = 1080;
+const JPEG_AD_HEIGHT = 1350;
+const JPEG_AD_LOGO_SRC = '/brand/Aim4price Logo.png';
 
 const SECTOR_OPTIONS: SectorOption[] = [
   { key: 'agricultural', label: 'Agriculture', shortLabel: 'Agri' },
@@ -177,6 +180,16 @@ function IconCopy() {
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <rect x="8" y="8" width="11" height="11" rx="2" />
       <path d="M5 15V7a2 2 0 0 1 2-2h8" />
+    </svg>
+  );
+}
+
+function IconPhoto() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <circle cx="8.5" cy="10" r="1.6" />
+      <path d="m21 15-4.4-4.4a2 2 0 0 0-2.8 0L7 17.4" />
     </svg>
   );
 }
@@ -740,6 +753,7 @@ function buildListingShareText(listing: MarketplaceListing): string {
   ].join(' • ');
 }
 
+
 async function copyTextToClipboard(value: string): Promise<void> {
   if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(value);
@@ -759,6 +773,439 @@ async function copyTextToClipboard(value: string): Promise<void> {
   textarea.select();
   document.execCommand('copy');
   document.body.removeChild(textarea);
+}
+
+function sanitizeDownloadFilename(value: string): string {
+  return (
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'aim4price-marketplace-ad'
+  );
+}
+
+function resolveCanvasImageSource(src: string): string {
+  const value = String(src ?? '').trim();
+
+  if (!value || /^(?:https?:|data:|blob:)/i.test(value) || typeof window === 'undefined') {
+    return value;
+  }
+
+  return new URL(value, window.location.origin).toString();
+}
+
+function loadCanvasImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const value = resolveCanvasImageSource(src);
+
+    if (!value) {
+      reject(new Error('No image source provided.'));
+      return;
+    }
+
+    const image = new Image();
+    image.decoding = 'async';
+
+    if (!value.startsWith('data:')) {
+      image.crossOrigin = 'anonymous';
+    }
+
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Image failed to load.'));
+    image.src = value;
+  });
+}
+
+function createRoundedRectPath(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  const nextRadius = Math.min(radius, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + nextRadius, y);
+  context.lineTo(x + width - nextRadius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + nextRadius);
+  context.lineTo(x + width, y + height - nextRadius);
+  context.quadraticCurveTo(x + width, y + height, x + width - nextRadius, y + height);
+  context.lineTo(x + nextRadius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - nextRadius);
+  context.lineTo(x, y + nextRadius);
+  context.quadraticCurveTo(x, y, x + nextRadius, y);
+  context.closePath();
+}
+
+function fillRoundedRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+  fillStyle: string,
+) {
+  context.save();
+  createRoundedRectPath(context, x, y, width, height, radius);
+  context.fillStyle = fillStyle;
+  context.fill();
+  context.restore();
+}
+
+function strokeRoundedRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+  strokeStyle: string,
+  lineWidth = 2,
+) {
+  context.save();
+  createRoundedRectPath(context, x, y, width, height, radius);
+  context.strokeStyle = strokeStyle;
+  context.lineWidth = lineWidth;
+  context.stroke();
+  context.restore();
+}
+
+function drawCoverImage(
+  context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  const imageWidth = image.naturalWidth || image.width;
+  const imageHeight = image.naturalHeight || image.height;
+
+  if (!imageWidth || !imageHeight) {
+    return;
+  }
+
+  const scale = Math.max(width / imageWidth, height / imageHeight);
+  const sourceWidth = width / scale;
+  const sourceHeight = height / scale;
+  const sourceX = Math.max(0, (imageWidth - sourceWidth) / 2);
+  const sourceY = Math.max(0, (imageHeight - sourceHeight) / 2);
+
+  context.save();
+  createRoundedRectPath(context, x, y, width, height, radius);
+  context.clip();
+  context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+  context.restore();
+}
+
+function fitCanvasText(context: CanvasRenderingContext2D, text: string, maxWidth: number): string {
+  const value = String(text ?? '').trim();
+
+  if (context.measureText(value).width <= maxWidth) {
+    return value;
+  }
+
+  let next = value;
+
+  while (next.length > 3 && context.measureText(`${next}…`).width > maxWidth) {
+    next = next.slice(0, -1).trim();
+  }
+
+  return `${next}…`;
+}
+
+function drawWrappedCanvasText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number,
+  maxLines: number,
+): number {
+  const words = String(text ?? '').trim().split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let currentLine = '';
+
+  for (const word of words) {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+
+    if (context.measureText(testLine).width <= maxWidth) {
+      currentLine = testLine;
+      continue;
+    }
+
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+
+    currentLine = word;
+
+    if (lines.length >= maxLines) {
+      break;
+    }
+  }
+
+  if (currentLine && lines.length < maxLines) {
+    lines.push(currentLine);
+  }
+
+  const finalLines = lines.slice(0, maxLines);
+
+  if (words.length && finalLines.length === maxLines) {
+    const consumedText = finalLines.join(' ');
+    const originalText = words.join(' ');
+
+    if (consumedText.length < originalText.length) {
+      finalLines[finalLines.length - 1] = fitCanvasText(context, finalLines[finalLines.length - 1], maxWidth);
+    }
+  }
+
+  finalLines.forEach((line, index) => {
+    context.fillText(line, x, y + index * lineHeight);
+  });
+
+  return y + Math.max(1, finalLines.length) * lineHeight;
+}
+
+function drawAdPlaceholder(
+  context: CanvasRenderingContext2D,
+  listing: MarketplaceListing,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  fillRoundedRect(context, x, y, width, height, 30, '#eef4f1');
+  strokeRoundedRect(context, x, y, width, height, 30, '#d5e2dc', 2);
+  context.save();
+  context.fillStyle = '#165340';
+  context.font = '800 38px Montserrat, Inter, Arial, sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(fitCanvasText(context, getListingPrimaryFamilyLabel(listing).toUpperCase(), width - 120), x + width / 2, y + height / 2);
+  context.restore();
+}
+
+function drawAdLabelValue(
+  context: CanvasRenderingContext2D,
+  label: string,
+  value: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  fillRoundedRect(context, x, y, width, height, 18, '#f0f2f5');
+  context.fillStyle = '#65676b';
+  context.font = '800 20px Montserrat, Inter, Arial, sans-serif';
+  context.letterSpacing = '1.1px';
+  context.fillText(label.toUpperCase(), x + 24, y + 34);
+  context.letterSpacing = '0px';
+  context.fillStyle = '#050505';
+  context.font = '800 28px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, value, width - 48), x + 24, y + 74);
+}
+
+function drawAim4priceWordmarkFallback(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  fontSize: number,
+  alpha: number,
+) {
+  context.save();
+  context.globalAlpha = alpha;
+  context.fillStyle = '#165340';
+  context.font = `900 ${fontSize}px Montserrat, Inter, Arial, sans-serif`;
+  context.letterSpacing = '-3px';
+  context.fillText('Aim4price', x, y);
+  context.restore();
+}
+
+async function drawListingAdCanvas(
+  context: CanvasRenderingContext2D,
+  listing: MarketplaceListing,
+  options: { includeListingImage: boolean },
+): Promise<void> {
+  if (typeof document !== 'undefined' && 'fonts' in document) {
+    await document.fonts.ready.catch(() => undefined);
+  }
+
+  const directUrl = buildListingShareUrl(listing);
+  const imageSrc = options.includeListingImage ? getListingImages(listing)[0] ?? '' : '';
+  const listingImage = imageSrc ? await loadCanvasImage(imageSrc).catch(() => null) : null;
+  const logoImage = await loadCanvasImage(JPEG_AD_LOGO_SRC).catch(() => null);
+  const width = JPEG_AD_WIDTH;
+  const height = JPEG_AD_HEIGHT;
+  const margin = 64;
+  const innerWidth = width - margin * 2;
+  const panelTop = 612;
+  const detailCardWidth = (innerWidth - 24) / 2;
+
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = '#eef3f1';
+  context.fillRect(0, 0, width, height);
+
+  context.save();
+  context.globalAlpha = 0.08;
+  if (logoImage) {
+    const logoWidth = 700;
+    const ratio = (logoImage.naturalHeight || logoImage.height) / Math.max(1, logoImage.naturalWidth || logoImage.width);
+    const logoHeight = logoWidth * ratio;
+    context.drawImage(logoImage, width - logoWidth - 32, height - logoHeight - 120, logoWidth, logoHeight);
+  } else {
+    context.fillStyle = '#165340';
+    context.font = '900 126px Montserrat, Inter, Arial, sans-serif';
+    context.fillText('Aim4price', 320, height - 130);
+  }
+  context.restore();
+
+  fillRoundedRect(context, 36, 36, width - 72, height - 72, 34, '#ffffff');
+  strokeRoundedRect(context, 36, 36, width - 72, height - 72, 34, '#d6dde2', 2);
+
+  context.save();
+  if (logoImage) {
+    const logoWidth = 245;
+    const ratio = (logoImage.naturalHeight || logoImage.height) / Math.max(1, logoImage.naturalWidth || logoImage.width);
+    context.drawImage(logoImage, margin, 76, logoWidth, logoWidth * ratio);
+  } else {
+    drawAim4priceWordmarkFallback(context, margin, 118, 44, 1);
+  }
+  context.restore();
+
+  fillRoundedRect(context, width - margin - 212, 72, 212, 54, 27, '#edf6f1');
+  context.fillStyle = '#165340';
+  context.font = '800 24px Montserrat, Inter, Arial, sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText('Marketplace', width - margin - 106, 99);
+  context.textAlign = 'left';
+  context.textBaseline = 'alphabetic';
+
+  if (listingImage) {
+    drawCoverImage(context, listingImage, margin, 154, innerWidth, 420, 28);
+  } else {
+    drawAdPlaceholder(context, listing, margin, 154, innerWidth, 420);
+  }
+
+  fillRoundedRect(context, margin, panelTop, innerWidth, 536, 30, '#ffffff');
+
+  context.fillStyle = '#050505';
+  context.font = '950 84px Montserrat, Inter, Arial, sans-serif';
+  context.letterSpacing = '-4px';
+  const adPriceText = fitCanvasText(context, money(listing.askingPriceExVat), 650);
+  context.fillText(adPriceText, margin, panelTop + 88);
+  const adPriceWidth = context.measureText(adPriceText).width;
+  context.letterSpacing = '0px';
+  context.font = '800 40px Montserrat, Inter, Arial, sans-serif';
+  context.fillText('+ VAT', margin + Math.min(700, adPriceWidth + 32), panelTop + 82);
+
+  context.fillStyle = '#050505';
+  context.font = '850 44px Montserrat, Inter, Arial, sans-serif';
+  const nextY = drawWrappedCanvasText(context, listingDisplayTitle(listing), margin, panelTop + 145, innerWidth, 52, 2);
+
+  context.fillStyle = '#65676b';
+  context.font = '600 30px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, formatLocation(listing), innerWidth), margin, nextY + 8);
+
+  const cardTop = panelTop + 250;
+  drawAdLabelValue(context, 'Year', String(listing.yearModel || 'N/A'), margin, cardTop, detailCardWidth, 104);
+  drawAdLabelValue(context, listingUsageLabel(listing), formatUsage(listing), margin + detailCardWidth + 24, cardTop, detailCardWidth, 104);
+  drawAdLabelValue(context, 'Condition', formatConditionLabel(getListingConditionKey(listing)), margin, cardTop + 124, detailCardWidth, 104);
+  drawAdLabelValue(context, 'Family', getListingPrimaryFamilyLabel(listing), margin + detailCardWidth + 24, cardTop + 124, detailCardWidth, 104);
+
+  context.strokeStyle = '#dadde1';
+  context.lineWidth = 2;
+  context.beginPath();
+  context.moveTo(margin, cardTop + 258);
+  context.lineTo(width - margin, cardTop + 258);
+  context.stroke();
+
+  context.fillStyle = '#050505';
+  context.font = '800 30px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, buildListingSpecLine(listing) || 'Marketplace listing', innerWidth), margin, cardTop + 314);
+
+  context.fillStyle = '#65676b';
+  context.font = '700 24px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(`Listed ${formatPublishedDate(listing.dateAdvertised || listing.publishedAtIso)}`, margin, cardTop + 354);
+
+  fillRoundedRect(context, margin, height - 170, innerWidth, 76, 20, '#edf6f1');
+  context.fillStyle = '#165340';
+  context.font = '850 28px Montserrat, Inter, Arial, sans-serif';
+  context.textAlign = 'center';
+  context.fillText('View this listing on Aim4price', width / 2, height - 122);
+  context.textAlign = 'left';
+
+  context.fillStyle = '#65676b';
+  context.font = '600 20px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, directUrl, innerWidth), margin, height - 62);
+}
+
+function canvasToJpegBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    try {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+            return;
+          }
+
+          reject(new Error('JPEG export failed.'));
+        },
+        'image/jpeg',
+        0.92,
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+async function createListingJpegAd(listing: MarketplaceListing): Promise<Blob> {
+  if (typeof document === 'undefined') {
+    throw new Error('JPEG export is only available in the browser.');
+  }
+
+  const attempts = [true, false];
+
+  for (const includeListingImage of attempts) {
+    const canvas = document.createElement('canvas');
+    canvas.width = JPEG_AD_WIDTH;
+    canvas.height = JPEG_AD_HEIGHT;
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      throw new Error('Canvas is not available.');
+    }
+
+    try {
+      await drawListingAdCanvas(context, listing, { includeListingImage });
+      return await canvasToJpegBlob(canvas);
+    } catch (error) {
+      if (!includeListingImage) {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error('JPEG export failed.');
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 500);
 }
 
 function normaliseFamilyOption(family: EquipmentFamilyRecord): FamilyOption | null {
@@ -824,6 +1271,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [shareListing, setShareListing] = useState<MarketplaceListing | null>(null);
   const [shareFeedback, setShareFeedback] = useState('');
+  const [isCreatingJpegAd, setIsCreatingJpegAd] = useState(false);
   const [listingQueryId, setListingQueryId] = useState('');
   const [sectorFilter, setSectorFilter] = useState<SectorKey | ''>('');
   const [familyFilter, setFamilyFilter] = useState('');
@@ -1246,6 +1694,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
   function closeShareSheet() {
     setShareListing(null);
     setShareFeedback('');
+    setIsCreatingJpegAd(false);
   }
 
   function showPreviousImage() {
@@ -1281,27 +1730,43 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
     }
 
     const nextShareUrl = buildListingShareUrl(shareListing);
-    const nextShareText = buildListingShareText(shareListing);
 
     try {
       if (channel === 'copy') {
         await copyTextToClipboard(nextShareUrl);
-        setShareFeedback('Listing link copied.');
+        setShareFeedback('Direct listing link copied.');
         return;
       }
 
       if (channel === 'whatsapp') {
-        openShareWindow(`https://wa.me/?text=${encodeURIComponent(`${nextShareText} ${nextShareUrl}`)}`);
+        openShareWindow(`https://wa.me/?text=${encodeURIComponent(nextShareUrl)}`);
         closeShareSheet();
         return;
       }
 
-      openShareWindow(
-        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(nextShareUrl)}&quote=${encodeURIComponent(nextShareText)}`,
-      );
+      openShareWindow(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(nextShareUrl)}`);
       closeShareSheet();
     } catch {
       setShareFeedback('Sharing did not complete. Please try again.');
+    }
+  }
+
+  async function handleCreateJpegAd() {
+    if (!shareListing || isCreatingJpegAd) {
+      return;
+    }
+
+    setIsCreatingJpegAd(true);
+    setShareFeedback('Creating JPEG ad...');
+
+    try {
+      const blob = await createListingJpegAd(shareListing);
+      downloadBlob(blob, `${sanitizeDownloadFilename(listingDisplayTitle(shareListing))}-aim4price-ad.jpg`);
+      setShareFeedback('JPEG ad downloaded.');
+    } catch {
+      setShareFeedback('JPEG ad could not be created. Please try again.');
+    } finally {
+      setIsCreatingJpegAd(false);
     }
   }
 
@@ -1899,7 +2364,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
             <div className={styles.shareHeader}>
               <span>Share listing</span>
               <h2 id="share-listing-title">Send this listing outside Aim4price.</h2>
-              <p>Share to WhatsApp, Facebook or copy the direct link.</p>
+              <p>Share the direct listing link or create a ready-to-post JPEG ad.</p>
             </div>
 
             <div
@@ -1931,6 +2396,10 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
               <button type="button" onClick={() => void handleShareAction('copy')}>
                 <IconCopy />
                 <span>Copy link</span>
+              </button>
+              <button type="button" onClick={() => void handleCreateJpegAd()} disabled={isCreatingJpegAd}>
+                <IconPhoto />
+                <span>{isCreatingJpegAd ? 'Creating...' : 'Create JPEG'}</span>
               </button>
             </div>
 

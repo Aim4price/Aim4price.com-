@@ -1091,11 +1091,13 @@
 }
 
 .lockedActions a {
-  flex: 1 1 0;
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 6.45rem;
   min-height: 2.45rem;
+  padding: 0 1rem;
   border-radius: 0.55rem;
   background: #165340;
   color: #ffffff;
@@ -1104,6 +1106,8 @@
 }
 
 .lockedActions a + a {
+  min-width: 8.9rem;
+  padding-inline: 1.16rem;
   background: #e4e6eb;
   color: #050505;
 }
@@ -1230,7 +1234,7 @@
 
 .shareGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
   margin-top: 1.15rem;
 }
@@ -1249,6 +1253,11 @@
 
 .shareGrid button:hover {
   background: #e4e6eb;
+}
+
+.shareGrid button:disabled {
+  cursor: progress;
+  opacity: 0.68;
 }
 
 .brandIcon,
