@@ -587,14 +587,17 @@ export default function UsersClient() {
             <article className={styles.summaryCard}>
               <span>Total owner accounts</span>
               <strong>{owners.length}</strong>
+              <small>Owner accounts available to your profile.</small>
             </article>
             <article className={styles.summaryCard}>
               <span>Unlocked contacts</span>
               <strong>{unlockedOwnerCount}</strong>
+              <small>Contact details already shared by owners.</small>
             </article>
             <article className={styles.summaryCard}>
               <span>Pending requests</span>
               <strong>{pendingOwnerRequestCount}</strong>
+              <small>Waiting for owner approval.</small>
             </article>
           </section>
 
@@ -654,18 +657,18 @@ export default function UsersClient() {
                     <div className={styles.ownerActionRow}>
                       <button
                         type="button"
-                        className={styles.outlineButton}
+                        className={`${styles.outlineButton} ${styles.ownerDetailsButton}`}
                         onClick={() => setOpenOwnerId((current) => (current === owner.ownerUserId ? null : owner.ownerUserId))}
                       >
                         {isOpen ? 'Close' : 'View Details'}
                       </button>
 
                       {owner.contactUnlocked ? (
-                        <span className={styles.statusPill}>Unlocked</span>
+                        <span className={`${styles.statusPill} ${styles.ownerUnlockedPill}`}>Unlocked</span>
                       ) : (
                         <button
                           type="button"
-                          className={styles.primaryButton}
+                          className={`${styles.primaryButton} ${styles.ownerRequestButton}`}
                           onClick={() => handleRequestContact(owner)}
                           disabled={isProcessing || hasPendingRequest}
                         >
