@@ -447,13 +447,14 @@ export default function UsersClient() {
                   <MailIcon className={styles.contactIcon} />
                   <strong>{owner.contactEmail || 'No email saved yet'}</strong>
                 </div>
-                <p>{owner.contactLocation || 'Location not saved.'}</p>
               </div>
             </div>
           ) : (
             <div className={`${styles.detailPanel} ${styles.lockedPanel}`}>
-              <LockIcon className={styles.lockedIcon} />
-              <div>
+              <div className={styles.lockedIconBadge} aria-hidden="true">
+                <LockIcon className={styles.lockedIcon} />
+              </div>
+              <div className={styles.lockedPanelContent}>
                 <span>Contact details locked</span>
                 <strong>Owner approval required</strong>
                 <p>{updatedAt ? `Last updated ${updatedAt}` : 'Contact details stay locked until the owner shares them.'}</p>
