@@ -14,6 +14,8 @@ export type OwnerDirectoryEntry = {
   contactPhone: string;
   contactEmail: string;
   contactLocation: string;
+  ownerProvince: string;
+  ownerTownCity: string;
   requestedAtIso: string | null;
   updatedAtIso: string | null;
 };
@@ -49,6 +51,8 @@ type OwnerDirectoryRow = {
   contact_phone: string | null;
   contact_email: string | null;
   contact_location: string | null;
+  owner_province: string | null;
+  owner_town_city: string | null;
   requested_at: string | null;
   updated_at: string | null;
 };
@@ -129,6 +133,8 @@ function mapOwnerDirectoryRow(row: OwnerDirectoryRow): OwnerDirectoryEntry {
     contactPhone: contactUnlocked ? asText(row.contact_phone) : '',
     contactEmail: contactUnlocked ? asText(row.contact_email) : '',
     contactLocation: contactUnlocked ? asText(row.contact_location) : '',
+    ownerProvince: asText(row.owner_province),
+    ownerTownCity: asText(row.owner_town_city),
     requestedAtIso: row.requested_at,
     updatedAtIso: row.updated_at,
   };
@@ -265,6 +271,8 @@ export async function listOwnerDirectoryForRequester(requesterUserId: string): P
         case when request.status = 'approved' then owner.phone else null end as contact_phone,
         case when request.status = 'approved' then owner.marketplace_email else null end as contact_email,
         case when request.status = 'approved' then concat_ws(', ', nullif(owner.town_city, ''), nullif(owner.province, '')) else null end as contact_location,
+        owner.province as owner_province,
+        owner.town_city as owner_town_city,
         request.created_at::text as requested_at,
         request.updated_at::text as updated_at
       from account_profiles owner
