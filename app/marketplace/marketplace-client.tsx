@@ -79,6 +79,8 @@ const JPEG_AD_WIDTH = 1600;
 const JPEG_AD_HEIGHT = 900;
 const JPEG_AD_LOGO_SRC = '/brand/Aim4price_Home_Logo.png';
 const JPEG_AD_WATERMARK_SRC = '/brand/aim4price-mark-black.png';
+const DEFAULT_MARKETPLACE_CONTACT_NAME = 'Kuyler';
+const DEFAULT_MARKETPLACE_CONTACT_PHONE = '062 572 1650';
 
 const SECTOR_OPTIONS: SectorOption[] = [
   { key: 'agricultural', label: 'Agriculture', shortLabel: 'Agri' },
@@ -1042,12 +1044,42 @@ function getAdProvince(listing: MarketplaceListing): string {
   return String(listing.province ?? '').trim() || 'South Africa';
 }
 
+function isPlaceholderContactName(value: unknown): boolean {
+  const normalized = normalize(value).replace(/\s+/g, ' ');
+
+  return (
+    !normalized ||
+    normalized === 'aim4price seller' ||
+    normalized === 'marketplace seller' ||
+    normalized === 'seller' ||
+    normalized === 'contact person'
+  );
+}
+
+function isPlaceholderContactPhone(value: unknown): boolean {
+  const compact = String(value ?? '').replace(/[^\d+]/g, '');
+
+  return !compact || compact === '+27000000000' || compact === '27000000000' || compact === '0000000000';
+}
+
 function getAdSellerName(listing: MarketplaceListing): string {
-  return String(listing.sellerCompany ?? '').trim() || String(listing.sellerName ?? '').trim() || 'Aim4price seller';
+  const contactPerson = String(listing.sellerName ?? '').trim();
+  const company = String(listing.sellerCompany ?? '').trim();
+
+  if (!isPlaceholderContactName(contactPerson)) {
+    return contactPerson;
+  }
+
+  if (!isPlaceholderContactName(company)) {
+    return company;
+  }
+
+  return DEFAULT_MARKETPLACE_CONTACT_NAME;
 }
 
 function getAdSellerPhone(listing: MarketplaceListing): string {
-  return String(listing.sellerPhone ?? '').trim();
+  const phone = String(listing.sellerPhone ?? '').trim();
+  return isPlaceholderContactPhone(phone) ? DEFAULT_MARKETPLACE_CONTACT_PHONE : phone;
 }
 
 function drawAdWatermark(
@@ -1082,6 +1114,38 @@ function drawAdWatermark(
   context.restore();
 }
 
+function drawAdLogoBadge(
+  context: CanvasRenderingContext2D,
+  logoImage: HTMLImageElement | null,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  context.save();
+  context.shadowColor = 'rgba(5, 5, 5, 0.14)';
+  context.shadowBlur = 18;
+  context.shadowOffsetY = 8;
+  fillRoundedRect(context, x, y, width, height, 20, 'rgba(255, 255, 255, 0.94)');
+  context.restore();
+  strokeRoundedRect(context, x, y, width, height, 20, 'rgba(215, 221, 225, 0.92)', 1.4);
+
+  context.save();
+  if (logoImage) {
+    const ratio = (logoImage.naturalHeight || logoImage.height) / Math.max(1, logoImage.naturalWidth || logoImage.width);
+    const logoWidth = width - 42;
+    const logoHeight = Math.min(height - 18, logoWidth * ratio);
+    context.drawImage(logoImage, x + 21, y + (height - logoHeight) / 2, logoWidth, logoHeight);
+  } else {
+    context.fillStyle = '#050505';
+    context.font = '900 25px Montserrat, Inter, Arial, sans-serif';
+    context.letterSpacing = '-1.3px';
+    context.textBaseline = 'middle';
+    context.fillText('AIM4PRICE', x + 22, y + height / 2 + 1);
+  }
+  context.restore();
+}
+
 function drawAdProvincePill(
   context: CanvasRenderingContext2D,
   province: string,
@@ -1090,7 +1154,12 @@ function drawAdProvincePill(
   width: number,
   height: number,
 ) {
+  context.save();
+  context.shadowColor = 'rgba(20, 61, 49, 0.07)';
+  context.shadowBlur = 11;
+  context.shadowOffsetY = 6;
   fillRoundedRect(context, x, y, width, height, height / 2, '#edf6f1');
+  context.restore();
   strokeRoundedRect(context, x, y, width, height, height / 2, '#d7e9df', 1.5);
   context.save();
   context.fillStyle = '#165340';
@@ -1099,6 +1168,67 @@ function drawAdProvincePill(
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   context.fillText(fitCanvasText(context, province, width - 36), x + width / 2, y + height / 2 + 1);
+  context.restore();
+}
+
+function drawAdThumbnailPlaceholder(
+  context: CanvasRenderingContext2D,
+  listing: MarketplaceListing,
+  index: number,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  fillRoundedRect(context, x, y, width, height, 20, '#f5f7f6');
+  strokeRoundedRect(context, x, y, width, height, 20, '#e2e9e5', 1.5);
+
+  context.save();
+  context.fillStyle = '#165340';
+  context.font = '850 20px Montserrat, Inter, Arial, sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(`PHOTO ${index + 1}`, x + width / 2, y + height / 2 - 6);
+  context.fillStyle = '#78817d';
+  context.font = '700 14px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, getListingPrimaryFamilyLabel(listing), width - 34), x + width / 2, y + height / 2 + 20);
+  context.restore();
+}
+
+function drawAdThumbnailCell(
+  context: CanvasRenderingContext2D,
+  listing: MarketplaceListing,
+  image: HTMLImageElement | undefined,
+  index: number,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  context.save();
+  context.shadowColor = 'rgba(8, 23, 18, 0.15)';
+  context.shadowBlur = 16;
+  context.shadowOffsetY = 9;
+  fillRoundedRect(context, x, y, width, height, 22, '#ffffff');
+  context.restore();
+
+  if (image) {
+    drawCoverImage(context, image, x, y, width, height, 18);
+  } else {
+    drawAdThumbnailPlaceholder(context, listing, index, x, y, width, height);
+  }
+
+  strokeRoundedRect(context, x, y, width, height, 18, index === 0 ? '#165340' : '#ffffff', index === 0 ? 4 : 3);
+
+  context.save();
+  const badgeSize = 36;
+  fillRoundedRect(context, x + 12, y + 12, badgeSize, badgeSize, badgeSize / 2, index === 0 ? '#165340' : 'rgba(255, 255, 255, 0.92)');
+  strokeRoundedRect(context, x + 12, y + 12, badgeSize, badgeSize, badgeSize / 2, index === 0 ? '#165340' : 'rgba(215, 221, 225, 0.96)', 1.2);
+  context.fillStyle = index === 0 ? '#ffffff' : '#050505';
+  context.font = '850 18px Montserrat, Inter, Arial, sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(String(index + 1), x + 12 + badgeSize / 2, y + 12 + badgeSize / 2 + 1);
   context.restore();
 }
 
@@ -1111,58 +1241,79 @@ function drawAdImageShowcase(
   width: number,
   height: number,
 ) {
+  const thumbnailGap = 18;
+  const thumbnailCount = 4;
+  const thumbnailHeight = 158;
+  const mainGap = 20;
+  const mainHeight = height - thumbnailHeight - mainGap;
+  const thumbnailWidth = (width - thumbnailGap * (thumbnailCount - 1)) / thumbnailCount;
+  const thumbnailY = y + mainHeight + mainGap;
+
   context.save();
   context.shadowColor = 'rgba(7, 23, 18, 0.22)';
-  context.shadowBlur = 30;
-  context.shadowOffsetY = 18;
-  fillRoundedRect(context, x, y, width, height, 36, '#eef4f1');
+  context.shadowBlur = 28;
+  context.shadowOffsetY = 16;
+  fillRoundedRect(context, x, y, width, mainHeight, 34, '#eef4f1');
   context.restore();
 
   if (images[0]) {
-    drawCoverImage(context, images[0], x, y, width, height, 36);
+    drawCoverImage(context, images[0], x, y, width, mainHeight, 34);
   } else {
-    drawAdPlaceholder(context, listing, x, y, width, height);
+    drawAdPlaceholder(context, listing, x, y, width, mainHeight);
   }
 
   context.save();
-  createRoundedRectPath(context, x, y, width, height, 36);
+  createRoundedRectPath(context, x, y, width, mainHeight, 34);
   context.clip();
-  const topGradient = context.createLinearGradient(0, y, 0, y + height * 0.38);
-  topGradient.addColorStop(0, 'rgba(0, 0, 0, 0.18)');
+  const topGradient = context.createLinearGradient(0, y, 0, y + mainHeight * 0.28);
+  topGradient.addColorStop(0, 'rgba(0, 0, 0, 0.16)');
   topGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
   context.fillStyle = topGradient;
-  context.fillRect(x, y, width, height * 0.38);
+  context.fillRect(x, y, width, mainHeight * 0.28);
 
-  const bottomGradient = context.createLinearGradient(0, y + height * 0.55, 0, y + height);
+  const bottomGradient = context.createLinearGradient(0, y + mainHeight * 0.65, 0, y + mainHeight);
   bottomGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-  bottomGradient.addColorStop(1, 'rgba(0, 0, 0, 0.26)');
+  bottomGradient.addColorStop(1, 'rgba(0, 0, 0, 0.18)');
   context.fillStyle = bottomGradient;
-  context.fillRect(x, y + height * 0.55, width, height * 0.45);
+  context.fillRect(x, y + mainHeight * 0.65, width, mainHeight * 0.35);
   context.restore();
 
-  strokeRoundedRect(context, x, y, width, height, 36, 'rgba(255, 255, 255, 0.74)', 3);
+  strokeRoundedRect(context, x, y, width, mainHeight, 34, 'rgba(255, 255, 255, 0.78)', 3);
 
-  const thumbnailImages = images.slice(1, 3);
-
-  if (thumbnailImages.length) {
-    const thumbnailSize = 118;
-    const thumbnailGap = 14;
-    const totalWidth = thumbnailImages.length * thumbnailSize + (thumbnailImages.length - 1) * thumbnailGap;
-    const thumbnailY = y + height - thumbnailSize - 28;
-    let thumbnailX = x + width - totalWidth - 28;
-
-    thumbnailImages.forEach((image) => {
-      context.save();
-      context.shadowColor = 'rgba(0, 0, 0, 0.22)';
-      context.shadowBlur = 16;
-      context.shadowOffsetY = 9;
-      fillRoundedRect(context, thumbnailX - 5, thumbnailY - 5, thumbnailSize + 10, thumbnailSize + 10, 22, '#ffffff');
-      context.restore();
-      drawCoverImage(context, image, thumbnailX, thumbnailY, thumbnailSize, thumbnailSize, 18);
-      strokeRoundedRect(context, thumbnailX, thumbnailY, thumbnailSize, thumbnailSize, 18, 'rgba(255, 255, 255, 0.9)', 3);
-      thumbnailX += thumbnailSize + thumbnailGap;
-    });
+  for (let index = 0; index < thumbnailCount; index += 1) {
+    const thumbnailX = x + index * (thumbnailWidth + thumbnailGap);
+    drawAdThumbnailCell(context, listing, images[index], index, thumbnailX, thumbnailY, thumbnailWidth, thumbnailHeight);
   }
+}
+
+function drawAdContactBox(
+  context: CanvasRenderingContext2D,
+  label: string,
+  value: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  context.save();
+  context.shadowColor = 'rgba(9, 39, 31, 0.08)';
+  context.shadowBlur = 14;
+  context.shadowOffsetY = 8;
+  fillRoundedRect(context, x, y, width, height, 18, '#ffffff');
+  context.restore();
+  strokeRoundedRect(context, x, y, width, height, 18, '#0d3329', 2.4);
+
+  context.save();
+  context.textAlign = 'center';
+  context.fillStyle = '#6c7175';
+  context.font = '800 14px Montserrat, Inter, Arial, sans-serif';
+  context.letterSpacing = '1.6px';
+  context.fillText(label.toUpperCase(), x + width / 2, y + 28);
+  context.letterSpacing = '0px';
+  context.fillStyle = '#050505';
+  context.font = '850 29px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, value, width - 52), x + width / 2, y + 65);
+  context.restore();
 }
 
 function drawAdContactCard(
@@ -1175,76 +1326,11 @@ function drawAdContactCard(
 ) {
   const sellerName = getAdSellerName(listing);
   const sellerPhone = getAdSellerPhone(listing);
-  const contactLabel = sellerPhone ? 'CALL / WHATSAPP' : 'CONTACT';
-  const contactValue = sellerPhone || 'View full listing on Aim4price';
-  const radius = Math.min(28, Math.max(18, height / 4));
+  const fieldGap = 30;
+  const fieldHeight = (height - fieldGap) / 2;
 
-  context.save();
-  context.shadowColor = 'rgba(10, 35, 27, 0.18)';
-  context.shadowBlur = 20;
-  context.shadowOffsetY = 12;
-  fillRoundedRect(context, x, y, width, height, radius, '#123f32');
-  context.restore();
-
-  context.save();
-  const highlightGradient = context.createLinearGradient(x, y, x + width, y + height);
-  highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.13)');
-  highlightGradient.addColorStop(0.55, 'rgba(255, 255, 255, 0.04)');
-  highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0.00)');
-  createRoundedRectPath(context, x, y, width, height, radius);
-  context.clip();
-  context.fillStyle = highlightGradient;
-  context.fillRect(x, y, width, height);
-  context.restore();
-
-  context.save();
-  context.fillStyle = 'rgba(255, 255, 255, 0.68)';
-  context.font = '800 15px Montserrat, Inter, Arial, sans-serif';
-  context.letterSpacing = '1.4px';
-  context.fillText('SELLER CONTACT', x + 24, y + 31);
-  context.letterSpacing = '0px';
-  context.fillStyle = '#ffffff';
-  context.font = '850 25px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(fitCanvasText(context, sellerName, width - 48), x + 24, y + 61);
-
-  if (width < 720) {
-    const pillX = x + 22;
-    const pillY = y + height - 42;
-    const pillWidth = width - 44;
-    const pillHeight = 30;
-
-    fillRoundedRect(context, pillX, pillY, pillWidth, pillHeight, 15, 'rgba(255, 255, 255, 0.15)');
-    strokeRoundedRect(context, pillX, pillY, pillWidth, pillHeight, 15, 'rgba(255, 255, 255, 0.22)', 1.4);
-
-    context.fillStyle = 'rgba(255, 255, 255, 0.70)';
-    context.font = '800 12px Montserrat, Inter, Arial, sans-serif';
-    context.letterSpacing = '1.1px';
-    context.textAlign = 'left';
-    context.fillText(contactLabel, pillX + 18, pillY + 20);
-    context.letterSpacing = '0px';
-    context.fillStyle = '#ffffff';
-    context.font = sellerPhone ? '850 21px Montserrat, Inter, Arial, sans-serif' : '800 17px Montserrat, Inter, Arial, sans-serif';
-    context.textAlign = 'right';
-    context.fillText(fitCanvasText(context, contactValue, pillWidth - 178), pillX + pillWidth - 18, pillY + 21);
-    context.restore();
-    return;
-  }
-
-  const pillWidth = Math.min(460, Math.max(340, width * 0.42));
-  const pillX = x + width - pillWidth - 22;
-  fillRoundedRect(context, pillX, y + 16, pillWidth, height - 32, 20, 'rgba(255, 255, 255, 0.14)');
-  strokeRoundedRect(context, pillX, y + 16, pillWidth, height - 32, 20, 'rgba(255, 255, 255, 0.22)', 1.5);
-
-  context.textAlign = 'center';
-  context.fillStyle = 'rgba(255, 255, 255, 0.68)';
-  context.font = '800 14px Montserrat, Inter, Arial, sans-serif';
-  context.letterSpacing = '1.2px';
-  context.fillText(contactLabel, pillX + pillWidth / 2, y + 39);
-  context.letterSpacing = '0px';
-  context.fillStyle = '#ffffff';
-  context.font = sellerPhone ? '850 25px Montserrat, Inter, Arial, sans-serif' : '800 21px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(fitCanvasText(context, contactValue, pillWidth - 32), pillX + pillWidth / 2, y + 69);
-  context.restore();
+  drawAdContactBox(context, 'Contact person', sellerName, x, y, width, fieldHeight);
+  drawAdContactBox(context, 'Phone / WhatsApp', sellerPhone, x, y + fieldHeight + fieldGap, width, fieldHeight);
 }
 
 async function drawListingAdCanvas(
@@ -1259,7 +1345,7 @@ async function drawListingAdCanvas(
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = 'high';
 
-  const imageSources = options.includeListingImage ? getListingImages(listing).slice(0, 3) : [];
+  const imageSources = options.includeListingImage ? getListingImages(listing).slice(0, 4) : [];
   const listingImages = (
     await Promise.all(imageSources.map((imageSrc) => loadCanvasImage(imageSrc).catch(() => null)))
   ).filter((image): image is HTMLImageElement => image !== null);
@@ -1272,9 +1358,9 @@ async function drawListingAdCanvas(
   const frameRadius = 42;
   const province = getAdProvince(listing);
   const photoX = margin;
-  const photoY = 150;
+  const photoY = 72;
   const photoWidth = 904;
-  const photoHeight = 610;
+  const photoHeight = 764;
   const contentX = photoX + photoWidth + 42;
   const contentY = 178;
   const contentWidth = width - margin - contentX;
@@ -1282,10 +1368,8 @@ async function drawListingAdCanvas(
   const detailCardWidth = (contentWidth - detailGap) / 2;
   const detailCardHeight = 78;
   const detailCardTop = 416;
-  const specLineY = 646;
-  const listedLineY = 682;
-  const contactTop = 714;
-  const contactHeight = 110;
+  const contactTop = 642;
+  const contactHeight = 218;
 
   context.clearRect(0, 0, width, height);
 
@@ -1303,20 +1387,16 @@ async function drawListingAdCanvas(
   context.restore();
   strokeRoundedRect(context, frameInset, frameInset, width - frameInset * 2, height - frameInset * 2, frameRadius, '#d7dde1', 2);
 
-  drawAdWatermark(context, watermarkImage, contentX - 22, 286, contentWidth + 28, 410);
+  drawAdWatermark(context, watermarkImage, contentX - 22, 286, contentWidth + 28, 380);
 
   context.save();
-  if (logoImage) {
-    const logoWidth = 360;
-    const ratio = (logoImage.naturalHeight || logoImage.height) / Math.max(1, logoImage.naturalWidth || logoImage.width);
-    context.drawImage(logoImage, margin - 30, 50, logoWidth, logoWidth * ratio);
-  } else {
-    drawAim4priceWordmarkFallback(context, margin, 112, 42, 1);
-  }
+  context.fillStyle = 'rgba(13, 51, 41, 0.08)';
+  fillRoundedRect(context, contentX - 22, photoY, 2, photoHeight, 1, 'rgba(13, 51, 41, 0.08)');
   context.restore();
 
   drawAdProvincePill(context, province, width - margin - 286, 72, 286, 58);
   drawAdImageShowcase(context, listing, listingImages, photoX, photoY, photoWidth, photoHeight);
+  drawAdLogoBadge(context, logoImage, photoX + 22, photoY + 22, 250, 68);
 
   context.save();
   context.fillStyle = '#050505';
@@ -1371,17 +1451,7 @@ async function drawListingAdCanvas(
     detailCardHeight,
   );
 
-  context.save();
-  context.fillStyle = '#111312';
-  context.font = '850 25px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(fitCanvasText(context, buildListingSpecLine(listing) || 'Marketplace listing', contentWidth), contentX, specLineY);
-
-  context.fillStyle = '#6a7074';
-  context.font = '700 20px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(`Listed ${formatPublishedDate(listing.dateAdvertised || listing.publishedAtIso)} on Aim4price`, contentX, listedLineY);
-  context.restore();
-
-  drawAdContactCard(context, listing, contentX, contactTop, contentWidth, contactHeight);
+  drawAdContactCard(context, listing, contentX + 14, contactTop, contentWidth - 14, contactHeight);
 }
 
 function canvasToJpegBlob(canvas: HTMLCanvasElement): Promise<Blob> {
