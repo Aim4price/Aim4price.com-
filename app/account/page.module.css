@@ -1229,3 +1229,363 @@
 .partnerVisibilityToggle {
   align-items: flex-start;
 }
+
+/* === Account page Asset Register spacing alignment === */
+.page {
+  --account-bg: #f3f6f8;
+  --account-surface: #ffffff;
+  --account-surface-soft: #f7fafc;
+  --account-surface-muted: #f2f5f8;
+  --account-line: #e5ebf1;
+  --account-line-strong: #d8e1ea;
+  --account-text: #17362c;
+  --account-muted: #677586;
+  --account-blue-soft: #eef3fb;
+  --account-blue-border: #d8e1f0;
+  --account-blue-text: #29456b;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  color: var(--account-text);
+  background: linear-gradient(180deg, #f5f7f8 0%, #eef3f5 100%);
+}
+
+.shell {
+  width: min(calc(100% - 2rem), 1320px);
+  margin: 0 auto;
+  padding: 1.35rem 0 3rem;
+  gap: 1.25rem;
+}
+
+.card,
+.modalCard {
+  border: 1px solid rgba(225, 233, 241, 0.95);
+  box-shadow:
+    0 28px 70px rgba(16, 31, 28, 0.06),
+    0 10px 22px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+.card {
+  padding: 1.35rem;
+  border-radius: 2rem;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.accountHero {
+  min-height: 9.25rem;
+  padding: 1.45rem 1.65rem;
+  border-radius: 1.55rem;
+  box-shadow:
+    0 28px 70px rgba(16, 31, 28, 0.06),
+    0 10px 22px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.topGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.1rem;
+}
+
+.cardTitleRow,
+.compactCardHeader {
+  margin-bottom: 1.05rem;
+}
+
+.compactCardHeader h2,
+.cardTitleRow h2,
+.modalHeader h2,
+.accountDeleteCard h2,
+.pinSummaryCard h3,
+.profileStatusCard h3 {
+  color: var(--account-text);
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  letter-spacing: -0.045em;
+}
+
+.compactCardHeader h2,
+.cardTitleRow h2 {
+  font-size: clamp(1.24rem, 1.65vw, 1.55rem);
+  line-height: 1.08;
+}
+
+.compactCardHeader p,
+.cardTitleRow p,
+.modalHeader p,
+.loading,
+.fieldHint {
+  color: var(--account-muted);
+}
+
+.metricGrid {
+  gap: 0.95rem;
+}
+
+.metricTile {
+  min-height: 7.3rem;
+  padding: 1rem 1.05rem;
+  border-radius: 1.2rem;
+  border: 1px solid var(--account-line);
+  background: linear-gradient(180deg, #f9fbfc 0%, #f2f5f8 100%);
+  box-shadow:
+    0 16px 30px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+.metricTile span,
+.detailRow span,
+.field span,
+.modalField span,
+.partnerMapHeader span {
+  color: #40564e;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: 0.74rem;
+  font-weight: 850;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.metricTile strong {
+  color: var(--account-text);
+  font-size: 1.12rem;
+  line-height: 1.18;
+}
+
+.quickActionList {
+  gap: 0.72rem;
+}
+
+.quickActionButton {
+  min-height: 3.45rem;
+  padding: 0.78rem 0.9rem;
+  border-radius: 1.05rem;
+  border-color: var(--account-line);
+  font-weight: 700;
+}
+
+.quickActionButton strong {
+  font-size: 0.96rem;
+  font-weight: 800;
+}
+
+.smallButton,
+.primaryButton,
+.secondaryButton,
+.dangerButton,
+.ghostButton {
+  min-height: 3rem;
+  border-radius: 1rem;
+  font-weight: 700;
+}
+
+.smallButton {
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  color: var(--account-text);
+  background: var(--account-surface-soft);
+  border-color: var(--account-line);
+}
+
+.primaryButton {
+  background: linear-gradient(180deg, #1a5a45 0%, #124233 100%);
+  border-color: rgba(18, 66, 51, 0.2);
+  box-shadow: 0 12px 24px rgba(18, 66, 51, 0.16);
+}
+
+.secondaryButton,
+.ghostButton {
+  color: var(--account-blue-text);
+  background: var(--account-blue-soft);
+  border-color: var(--account-blue-border);
+}
+
+.ghostButton {
+  color: var(--account-text);
+  background: var(--account-surface-muted);
+  border-color: var(--account-line-strong);
+}
+
+.detailGrid,
+.marketplaceGrid {
+  grid-template-columns: minmax(0, 1fr) minmax(19rem, 0.34fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.detailGridSingle {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.detailList {
+  align-self: stretch;
+  gap: 0.85rem;
+  padding: 1rem 1.05rem;
+  border-radius: 1.2rem;
+  border: 1px solid var(--account-line);
+  background: linear-gradient(180deg, #f9fbfc 0%, #f4f7f9 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+.detailRow {
+  grid-template-columns: minmax(10rem, 0.28fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: baseline;
+}
+
+.detailRow strong {
+  color: #17362c;
+  font-size: 0.93rem;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.pinSummaryCard,
+.profileStatusCard {
+  padding: 1.15rem;
+  border-radius: 1.25rem;
+  border-color: var(--account-line);
+}
+
+.pinSummaryCard > strong {
+  font-size: clamp(2.1rem, 3.35vw, 2.7rem);
+}
+
+.form,
+.marketplaceFields {
+  gap: 1rem;
+}
+
+.field input,
+.field select,
+.field textarea,
+.modalField input,
+.modalField textarea,
+.readOnlyValue {
+  min-height: 3.25rem;
+  border-radius: 1.1rem;
+  border-color: var(--account-line);
+  color: #20313b;
+  background: var(--account-surface);
+}
+
+.field textarea,
+.modalField textarea {
+  min-height: 7.5rem;
+}
+
+.marketplaceFields .field:nth-of-type(1),
+.marketplaceFields .field:nth-of-type(2) {
+  grid-column: span 6;
+}
+
+.marketplaceFields .field:nth-of-type(3),
+.marketplaceFields .field:nth-of-type(4) {
+  grid-column: 1 / -1;
+}
+
+.partnerDirectoryHeader {
+  align-items: center;
+  padding-bottom: 1.1rem;
+  border-bottom-color: var(--account-line);
+}
+
+.sectionEyebrow {
+  display: none;
+}
+
+.toggleField,
+.partnerMapField {
+  border-color: var(--account-line);
+  border-radius: 1.25rem;
+}
+
+.partnerVisibilityToggle {
+  min-height: 4.35rem;
+  padding: 1.1rem 1.2rem;
+}
+
+.partnerMapField {
+  padding: 1.15rem;
+  gap: 1rem;
+}
+
+.partnerMapCanvas {
+  height: clamp(18rem, 30vw, 24rem);
+  min-height: 18rem;
+  border-radius: 1.15rem;
+  border-color: var(--account-line-strong);
+}
+
+.partnerMapFooter {
+  min-height: 3rem;
+  border-radius: 1rem;
+  border-color: var(--account-line);
+}
+
+.partnerDescriptionField {
+  margin-top: 0.2rem;
+}
+
+.partnerDescriptionField textarea {
+  min-height: 8rem;
+}
+
+.directoryForm .actionsRow {
+  margin-top: 0.15rem;
+}
+
+.accountDeleteCard {
+  border-color: rgba(198, 75, 75, 0.16);
+}
+
+@media (max-width: 1080px) {
+  .topGrid,
+  .detailGrid,
+  .marketplaceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .detailGridSingle {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell {
+    width: min(calc(100% - 1.7rem), 1320px);
+    padding-top: 0.85rem;
+  }
+
+  .card {
+    padding: 1.05rem;
+    border-radius: 1.25rem;
+  }
+
+  .accountHero {
+    padding: 1.1rem;
+    border-radius: 1.25rem;
+  }
+
+  .metricGrid,
+  .form,
+  .marketplaceFields,
+  .pinGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .marketplaceFields .field:nth-of-type(1),
+  .marketplaceFields .field:nth-of-type(2),
+  .marketplaceFields .field:nth-of-type(3),
+  .marketplaceFields .field:nth-of-type(4),
+  .halfField,
+  .thirdField,
+  .fullWidth,
+  .actionsRow,
+  .marketplaceActions {
+    grid-column: 1 / -1;
+  }
+
+  .detailRow {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+    align-items: start;
+  }
+}

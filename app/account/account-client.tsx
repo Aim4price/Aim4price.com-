@@ -1324,7 +1324,6 @@ export default function AccountClient() {
           <section ref={partnerDirectorySectionRef} className={`${styles.card} ${styles.partnerDirectoryCard}`}>
             <div className={`${styles.cardTitleRow} ${styles.partnerDirectoryHeader}`}>
               <div>
-                <span className={styles.sectionEyebrow}>Partner directory</span>
                 <h2>Partner directory</h2>
                 <p>Owners use this information when selecting a partner for quote leads.</p>
               </div>
@@ -1349,15 +1348,6 @@ export default function AccountClient() {
                   <strong>Show in Aim4price partner directory</strong>
                   <small>Owners can select this account when sending a quote lead.</small>
                 </span>
-              </label>
-
-              <label className={`${styles.field} ${styles.fullWidth}`}>
-                <span>Partner description</span>
-                <textarea
-                  value={profileDraft.partnerDescription}
-                  onChange={(event) => setProfileDraft((current) => ({ ...current, partnerDescription: event.target.value }))}
-                  placeholder="Example: Finance partner for agricultural machinery, asset-backed finance and refinancing discussions."
-                />
               </label>
 
               <div className={`${styles.partnerMapField} ${styles.fullWidth}`}>
@@ -1413,6 +1403,15 @@ export default function AccountClient() {
                   value={profileDraft.partnerServices}
                   onChange={(event) => setProfileDraft((current) => ({ ...current, partnerServices: event.target.value }))}
                   placeholder="Finance, insurance, replacements, trade-ins"
+                />
+              </label>
+
+              <label className={`${styles.field} ${styles.fullWidth} ${styles.partnerDescriptionField}`}>
+                <span>Partner description</span>
+                <textarea
+                  value={profileDraft.partnerDescription}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, partnerDescription: event.target.value }))}
+                  placeholder="Example: Finance partner for agricultural machinery, asset-backed finance and refinancing discussions."
                 />
               </label>
 
