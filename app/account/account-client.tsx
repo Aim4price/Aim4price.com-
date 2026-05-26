@@ -296,6 +296,18 @@ function formatDate(value?: string | null): string {
   }).format(parsed);
 }
 
+function formatMemberSince(value?: string | null): string {
+  if (!value) return 'Member since —';
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Member since —';
+
+  return `Member since ${new Intl.DateTimeFormat('en-ZA', {
+    month: 'long',
+    year: 'numeric',
+  }).format(parsed)}`;
+}
+
 function formatUploadSize(bytes: number): string {
   return `${Math.round(bytes / (1024 * 1024))} MB`;
 }
@@ -413,6 +425,13 @@ export default function AccountClient() {
   const partnerLeafletMapRef = useRef<any>(null);
   const partnerPinMarkerRef = useRef<any>(null);
   const partnerRadiusCircleRef = useRef<any>(null);
+  const businessDetailsSectionRef = useRef<HTMLElement | null>(null);
+  const scanPinSectionRef = useRef<HTMLElement | null>(null);
+  const marketplaceSectionRef = useRef<HTMLElement | null>(null);
+  const partnerDirectorySectionRef = useRef<HTMLElement | null>(null);
+  const [isBusinessEditorOpen, setIsBusinessEditorOpen] = useState(false);
+  const [isMarketplaceEditorOpen, setIsMarketplaceEditorOpen] = useState(false);
+  const [isScanPinEditorOpen, setIsScanPinEditorOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -564,6 +583,28 @@ export default function AccountClient() {
   const partnerDirectoryPinLabel = partnerDirectoryPin
     ? `${formatCoordinate(partnerDirectoryPin.lat)}, ${formatCoordinate(partnerDirectoryPin.lng)}`
     : 'No map pin selected yet';
+  const memberSinceLabel = formatMemberSince(profile?.createdAtIso);
+  const updatedLabel = formatDate(profile?.updatedAtIso || profile?.createdAtIso);
+  const businessNameLabel = profileDraft.businessName.trim() || 'No business name saved yet';
+  const businessPhoneLabel = profileDraft.phone.trim() || 'No phone saved yet';
+  const businessEmailLabel = profile?.email || 'No email found';
+  const businessLocationLabel = addressLines.length ? addressLines.join(', ') : 'No location saved yet';
+  const businessServicesLabel =
+    profileDraft.partnerServices.trim() ||
+    profileDraft.notes.trim() ||
+    (isOwnerAccount
+      ? 'Asset register, valuations and marketplace'
+      : isDealerAccount
+        ? 'Marketplace listings and quote leads'
+        : `${accountTypeLabel} partner services`);
+  const marketplaceProfileComplete = Boolean(
+    (profileDraft.marketplaceSellerName.trim() || profileDraft.businessName.trim() || accountDisplayName) &&
+      (profileDraft.marketplacePhone.trim() || profileDraft.phone.trim()) &&
+      (profileDraft.marketplaceEmail.trim() || profile?.email) &&
+      (profileDraft.marketplaceLocation.trim() || addressLines.length),
+  );
+  const directoryStatusLabel = profileDraft.partnerDirectoryEnabled ? 'Visible' : 'Hidden';
+  const scanPinDisplayLabel = isLoadingScanPin ? 'Loading' : scanPinStatus.hasPin ? scanPinStatusLabel : 'Not set';
 
   useEffect(() => {
     if (isLoading || !isPartnerAccount || !partnerMapElementRef.current) {
@@ -765,7 +806,7 @@ export default function AccountClient() {
     await saveProfileDraft(nextDraft, 'Logo removed.');
   }
 
-  async function saveProfileDraft(nextDraft: ProfileDraft, successMessage = 'Account details saved.') {
+  async function saveProfileDraft(nextDraft: ProfileDraft, successMessage = 'Account details saved.'): Promise<boolean> {
     setIsSavingProfile(true);
 
     try {
@@ -787,11 +828,13 @@ export default function AccountClient() {
       setProfile(data.profile);
       setProfileDraft(buildProfileDraft(data.profile));
       setNotice({ tone: 'success', message: successMessage });
+      return true;
     } catch (error) {
       setNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'Failed to save account details.',
       });
+      return false;
     } finally {
       setIsSavingProfile(false);
     }
@@ -799,7 +842,12 @@ export default function AccountClient() {
 
   async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await saveProfileDraft(profileDraft);
+    const didSave = await saveProfileDraft(profileDraft);
+
+    if (didSave) {
+      setIsBusinessEditorOpen(false);
+      setIsMarketplaceEditorOpen(false);
+    }
   }
 
   async function handleScanPinSubmit(event: FormEvent<HTMLFormElement>) {
@@ -848,6 +896,7 @@ export default function AccountClient() {
       setScanPinStatus(data.scanPin);
       setScanPinDraft('');
       setScanPinConfirmDraft('');
+      setIsScanPinEditorOpen(false);
       setNotice({ tone: 'success', message: 'Scan PIN saved. QR scan access is now active.' });
     } catch (error) {
       setNotice({
@@ -878,6 +927,7 @@ export default function AccountClient() {
       setScanPinStatus(data.scanPin);
       setScanPinDraft('');
       setScanPinConfirmDraft('');
+      setIsScanPinEditorOpen(false);
       setNotice({ tone: 'success', message: 'Scan PIN disabled.' });
     } catch (error) {
       setNotice({
@@ -897,6 +947,32 @@ export default function AccountClient() {
     setIsDeleteDialogOpen(false);
     setDeletePassword('');
     setDeleteConfirmText('');
+  }
+
+  function scrollToSection(ref: { current: HTMLElement | null }) {
+    window.requestAnimationFrame(() => {
+      ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  function openBusinessEditor() {
+    setIsBusinessEditorOpen(true);
+    scrollToSection(businessDetailsSectionRef);
+  }
+
+  function openMarketplaceEditor() {
+    setIsMarketplaceEditorOpen(true);
+    scrollToSection(marketplaceSectionRef);
+  }
+
+  function openScanPinEditor() {
+    setIsBusinessEditorOpen(false);
+    setIsScanPinEditorOpen(true);
+    scrollToSection(scanPinSectionRef);
+  }
+
+  function openPartnerDirectory() {
+    scrollToSection(partnerDirectorySectionRef);
   }
 
   async function handleDeleteAccount(event: FormEvent<HTMLFormElement>) {
@@ -959,74 +1035,31 @@ export default function AccountClient() {
       <AppHeader active="none" />
 
       <section className={styles.shell}>
-        <div className={styles.hero}>
-          <div className={styles.heroContent}>
-            <div className={styles.heroLogoUploader}>
-              <div
-                className={`${styles.heroLogoPreview} ${!logoUrl ? styles.logoEmpty : ''}`}
-                aria-label="Business logo preview"
-                tabIndex={0}
-              >
-                {logoUrl ? <img src={logoUrl} alt="Business logo" /> : <span>{profileInitials}</span>}
+        <section className={styles.accountHero}>
+          <div className={styles.heroIdentityGroup}>
+            <label
+              className={`${styles.heroAvatar} ${logoUrl ? styles.heroAvatarWithLogo : ''}`}
+              title="Upload account logo"
+              aria-label="Upload account logo"
+            >
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleLogoFileChange}
+                disabled={isReadingLogo || isSavingProfile}
+              />
+              {logoUrl ? <img src={logoUrl} alt="Business logo" /> : <span>{profileInitials}</span>}
+            </label>
 
-                <div className={styles.heroLogoOverlay}>
-                  <label className={`${styles.heroLogoOverlayButton} ${styles.uploadButton}`}>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleLogoFileChange}
-                      disabled={isReadingLogo || isSavingProfile}
-                    />
-                    {isReadingLogo ? 'Reading...' : logoUrl ? 'Change logo' : 'Upload logo'}
-                  </label>
-
-                  {logoUrl ? (
-                    <button
-                      type="button"
-                      className={styles.heroLogoOverlayButton}
-                      onClick={handleRemoveLogo}
-                      disabled={isSavingProfile}
-                    >
-                      Remove
-                    </button>
-                  ) : null}
-                </div>
-              </div>
+            <div className={styles.heroCopy}>
+              <h1>{accountDisplayName}</h1>
+              <p>{profile?.email || 'Loading email'}</p>
+              <small>{accountTypeLabel} account&nbsp; • &nbsp;{memberSinceLabel}</small>
             </div>
           </div>
 
-          <div className={styles.heroAside}>
-            <div className={styles.heroProfileCard}>
-              <div className={styles.profileSummary}>
-                <span>Profile</span>
-                <strong>{accountDisplayName}</strong>
-                <small>{profile?.email || 'Loading email'}</small>
-              </div>
-            </div>
-
-            <div className={styles.heroStat}>
-              <span>Profile</span>
-              <strong>{completedFields}/{PROFILE_COMPLETION_TOTAL}</strong>
-              <div className={styles.progressTrack} aria-hidden="true">
-                <span style={{ width: `${completionPercentage}%` }} />
-              </div>
-              <small>{completionLabel}</small>
-            </div>
-
-            <div className={`${styles.heroStatGrid} ${!isOwnerAccount ? styles.heroStatGridSingle : ''}`}>
-              <div className={styles.heroStat}>
-                <span>Account type</span>
-                <strong>{accountTypeLabel}</strong>
-              </div>
-              {isOwnerAccount ? (
-                <div className={styles.heroStat}>
-                  <span>QR PIN</span>
-                  <strong>{scanPinStatusLabel}</strong>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </div>
+          <span className={styles.statusBadge}>Active</span>
+        </section>
 
         {notice ? (
           <div className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`}>
@@ -1034,358 +1067,468 @@ export default function AccountClient() {
           </div>
         ) : null}
 
-        <div className={`${styles.layout} ${!showScanPinControls ? styles.layoutNoSidebar : ''}`}>
-          <div className={styles.mainColumn}>
-            <section className={styles.card}>
-              <div className={styles.cardHeader}>
-                <div>
-                  <h2>Business details</h2>
+        <section className={styles.topGrid}>
+          <section className={`${styles.card} ${styles.overviewCard}`}>
+            <div className={styles.compactCardHeader}>
+              <h2>Account overview</h2>
+              <p>Your account at a glance</p>
+            </div>
+
+            <div className={styles.metricGrid}>
+              <div className={styles.metricTile}>
+                <span>Account type</span>
+                <strong>{accountTypeLabel}</strong>
+              </div>
+
+              <div className={styles.metricTile}>
+                <span>Profile progress</span>
+                <strong>{completedFields}/{PROFILE_COMPLETION_TOTAL}</strong>
+                <small>{completionPercentage}% complete</small>
+                <div className={styles.progressTrack} aria-hidden="true">
+                  <span style={{ width: `${completionPercentage}%` }} />
                 </div>
               </div>
 
-              {!isLoading ? (
-                <form className={styles.form} onSubmit={handleProfileSubmit}>
-                  <label className={`${styles.field} ${styles.halfField}`}>
-                    <span>Full name</span>
-                    <input
-                      value={profileDraft.displayName}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({ ...current, displayName: event.target.value }))
-                      }
-                      placeholder="Full name"
-                    />
-                  </label>
-
-                  <label className={`${styles.field} ${styles.halfField}`}>
-                    <span>Email</span>
-                    <input value={profile?.email ?? ''} disabled />
-                  </label>
-
-                  <label className={`${styles.field} ${styles.halfField}`}>
-                    <span>Business name</span>
-                    <input
-                      value={profileDraft.businessName}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({ ...current, businessName: event.target.value }))
-                      }
-                      placeholder="Business name"
-                    />
-                  </label>
-
-                  <label className={`${styles.field} ${styles.halfField}`}>
-                    <span>Phone</span>
-                    <input
-                      type="tel"
-                      value={profileDraft.phone}
-                      onChange={(event) => setProfileDraft((current) => ({ ...current, phone: event.target.value }))}
-                      placeholder="Phone number"
-                    />
-                  </label>
-
-                  <label className={`${styles.field} ${styles.thirdField}`}>
-                    <span>Account type</span>
-                    <div className={styles.readOnlyValue}>{accountTypeLabel}</div>
-                    <small className={styles.fieldHint}>
-                      Account type is locked after signup.
-                    </small>
-                  </label>
-
-                  <label className={`${styles.field} ${styles.thirdField}`}>
-                    <span>Province</span>
-                    <input
-                      value={profileDraft.province}
-                      onChange={(event) => setProfileDraft((current) => ({ ...current, province: event.target.value }))}
-                      placeholder="Province"
-                    />
-                  </label>
-
-                  <label className={`${styles.field} ${styles.thirdField}`}>
-                    <span>Town / city</span>
-                    <input
-                      value={profileDraft.townCity}
-                      onChange={(event) => setProfileDraft((current) => ({ ...current, townCity: event.target.value }))}
-                      placeholder="Town or city"
-                    />
-                  </label>
-
-                  <label className={`${styles.field} ${styles.fullWidth}`}>
-                    <span>Address line 1</span>
-                    <input
-                      value={profileDraft.addressLine1}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({ ...current, addressLine1: event.target.value }))
-                      }
-                      placeholder="Address line 1"
-                    />
-                  </label>
-                  <div className={styles.actionsRow}>
-                    <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
-                      {isSavingProfile ? 'Saving...' : 'Save'}
-                    </button>
-                  </div>
-                </form>
-              ) : null}
-            </section>
-
-            {showPartnerDirectory ? (
-              <section className={`${styles.card} ${styles.partnerDirectoryCard}`}>
-                <div className={`${styles.cardHeader} ${styles.partnerDirectoryHeader}`}>
-                  <div>
-                    <span className={styles.sectionEyebrow}>Partner directory</span>
-                    <h2>Partner directory</h2>
-                    <p>Owners use this information when selecting a partner for quote leads.</p>
-                  </div>
-                  <span
-                    className={`${styles.directoryStatusPill} ${
-                      profileDraft.partnerDirectoryEnabled ? styles.directoryStatusOn : styles.directoryStatusOff
-                    }`}
-                  >
-                    {profileDraft.partnerDirectoryEnabled ? 'Visible' : 'Hidden'}
-                  </span>
-                </div>
-
-                <form className={styles.form} onSubmit={handleProfileSubmit}>
-                  <label className={`${styles.toggleField} ${styles.partnerVisibilityToggle} ${styles.fullWidth}`}>
-                    <input
-                      type="checkbox"
-                      checked={profileDraft.partnerDirectoryEnabled}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({
-                          ...current,
-                          partnerDirectoryEnabled: event.target.checked,
-                        }))
-                      }
-                    />
-                    <span>
-                      <strong>Show in Aim4price partner directory</strong>
-                      <small>Owners can select this account when sending a quote lead.</small>
-                    </span>
-                  </label>
-
-                  <label className={`${styles.field} ${styles.fullWidth}`}>
-                    <span>Partner description</span>
-                    <textarea
-                      value={profileDraft.partnerDescription}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({ ...current, partnerDescription: event.target.value }))
-                      }
-                      placeholder="Example: Finance partner for agricultural machinery, asset-backed finance and refinancing discussions."
-                    />
-                  </label>
-
-                  <div className={`${styles.partnerMapField} ${styles.fullWidth}`}>
-                    <div className={styles.partnerMapHeader}>
-                      <div>
-                        <span>Partner map pin</span>
-                        <strong>Set your public map pin</strong>
-                        <p>Click anywhere on the map, drag the pin, or use your current location.</p>
-                      </div>
-
-                      <div className={styles.partnerMapActions}>
-                        <button type="button" className={styles.secondaryButton} onClick={handleUseCurrentLocation}>
-                          Use current location
-                        </button>
-                        {partnerDirectoryPin ? (
-                          <button type="button" className={styles.ghostButton} onClick={clearPartnerMapPin}>
-                            Clear pin
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div ref={partnerMapElementRef} className={styles.partnerMapCanvas} aria-label="Partner directory map pin" />
-
-                    <div className={styles.partnerMapFooter}>
-                      <span>{partnerDirectoryPinLabel}</span>
-                      <strong>{partnerDirectoryPin ? 'Ready to save' : 'Click the map to place your pin'}</strong>
-                    </div>
-                  </div>
-
-                  <label className={`${styles.field} ${styles.thirdField}`}>
-                    <span>Service radius km</span>
-                    <input
-                      inputMode="numeric"
-                      value={profileDraft.partnerServiceRadiusKm}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({ ...current, partnerServiceRadiusKm: event.target.value }))
-                      }
-                      placeholder="250"
-                    />
-                  </label>
-
-                  <label className={`${styles.field} ${styles.halfField}`}>
-                    <span>Brand focus</span>
-                    <input
-                      value={profileDraft.partnerBrandFocus}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({ ...current, partnerBrandFocus: event.target.value }))
-                      }
-                      placeholder="John Deere, Case IH, New Holland"
-                    />
-                  </label>
-
-                  <label className={`${styles.field} ${styles.halfField}`}>
-                    <span>Services</span>
-                    <input
-                      value={profileDraft.partnerServices}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({ ...current, partnerServices: event.target.value }))
-                      }
-                      placeholder="Finance, insurance, replacements, trade-ins"
-                    />
-                  </label>
-
-                  <div className={styles.actionsRow}>
-                    <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
-                      {isSavingProfile ? 'Saving...' : 'Save directory'}
-                    </button>
-                  </div>
-                </form>
-              </section>
-            ) : null}
-
-            {showMarketplaceContact ? (
-              <section className={`${styles.card} ${styles.marketplaceCard}`}>
-              <div className={styles.cardHeader}>
-                <div>
-                  <h2>Marketplace contact</h2>
-                </div>
+              <div className={styles.metricTile}>
+                <span>{isOwnerAccount ? 'QR PIN status' : 'Directory status'}</span>
+                <strong>{isOwnerAccount ? scanPinDisplayLabel : directoryStatusLabel}</strong>
               </div>
 
-              {!isLoading ? (
-                <form className={styles.marketplaceFields} onSubmit={handleProfileSubmit}>
-                  <label className={styles.field}>
-                    <span>Seller name</span>
-                    <input
-                      value={profileDraft.marketplaceSellerName}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({ ...current, marketplaceSellerName: event.target.value }))
-                      }
-                      placeholder={marketplaceSellerName}
-                    />
-                  </label>
+              <div className={styles.metricTile}>
+                <span>Last updated</span>
+                <strong>{updatedLabel}</strong>
+              </div>
+            </div>
+          </section>
 
-                  <label className={styles.field}>
-                    <span>Phone</span>
-                    <input
-                      type="tel"
-                      value={profileDraft.marketplacePhone}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({ ...current, marketplacePhone: event.target.value }))
-                      }
-                      placeholder={marketplacePhone}
-                    />
-                  </label>
+          <section className={`${styles.card} ${styles.quickActionsCard}`}>
+            <div className={styles.compactCardHeader}>
+              <h2>Quick actions</h2>
+              <p>Frequently used actions</p>
+            </div>
 
-                  <label className={styles.field}>
-                    <span>Email</span>
-                    <input
-                      type="email"
-                      value={profileDraft.marketplaceEmail}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({ ...current, marketplaceEmail: event.target.value }))
-                      }
-                      placeholder={marketplaceEmail}
-                    />
-                  </label>
+            <div className={styles.quickActionList}>
+              <button type="button" className={styles.quickActionButton} onClick={openBusinessEditor}>
+                <span className={styles.quickActionIcon}>✎</span>
+                <strong>Edit business details</strong>
+                <span className={styles.quickActionChevron}>›</span>
+              </button>
 
-                  <label className={styles.field}>
-                    <span>Location</span>
-                    <input
-                      value={profileDraft.marketplaceLocation}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({ ...current, marketplaceLocation: event.target.value }))
-                      }
-                      placeholder={marketplaceLocation}
-                    />
-                  </label>
-
-                  <div className={styles.marketplaceActions}>
-                    <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
-                      {isSavingProfile ? 'Saving...' : 'Save marketplace'}
-                    </button>
-                  </div>
-                </form>
+              {showScanPinControls ? (
+                <button type="button" className={styles.quickActionButton} onClick={openScanPinEditor}>
+                  <span className={styles.quickActionIcon}>⌘</span>
+                  <strong>Update QR PIN</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
               ) : null}
-              </section>
-            ) : null}
+
+              {showMarketplaceContact ? (
+                <button type="button" className={styles.quickActionButton} onClick={openMarketplaceEditor}>
+                  <span className={styles.quickActionIcon}>▣</span>
+                  <strong>Marketplace contact</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              {showPartnerDirectory ? (
+                <button type="button" className={styles.quickActionButton} onClick={openPartnerDirectory}>
+                  <span className={styles.quickActionIcon}>◎</span>
+                  <strong>Partner directory</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              <button type="button" className={`${styles.quickActionButton} ${styles.quickActionDanger}`} onClick={() => setIsDeleteDialogOpen(true)}>
+                <span className={styles.quickActionIcon}>!</span>
+                <strong>Delete account</strong>
+                <span className={styles.quickActionChevron}>›</span>
+              </button>
+            </div>
+          </section>
+        </section>
+
+        <section ref={businessDetailsSectionRef} className={`${styles.card} ${styles.detailCard}`}>
+          <div className={styles.cardTitleRow}>
+            <div>
+              <h2>Business details</h2>
+            </div>
+            <button type="button" className={styles.smallButton} onClick={() => setIsBusinessEditorOpen((current) => !current)}>
+              {isBusinessEditorOpen ? 'Close' : 'Edit'}
+            </button>
           </div>
 
-          {showScanPinControls ? (
-          <aside className={styles.sidebar}>
-            <section className={styles.sidebarCard}>
-              <div className={styles.cardHeader}>
-                <div>
-                  <h2>QR scan PIN</h2>
+          {isLoading ? (
+            <p className={styles.loading}>Loading account details...</p>
+          ) : isBusinessEditorOpen ? (
+            <form className={`${styles.form} ${styles.compactEditForm}`} onSubmit={handleProfileSubmit}>
+              <label className={`${styles.field} ${styles.halfField}`}>
+                <span>Full name</span>
+                <input
+                  value={profileDraft.displayName}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, displayName: event.target.value }))}
+                  placeholder="Full name"
+                />
+              </label>
+
+              <label className={`${styles.field} ${styles.halfField}`}>
+                <span>Email</span>
+                <input value={profile?.email ?? ''} disabled />
+              </label>
+
+              <label className={`${styles.field} ${styles.halfField}`}>
+                <span>Business name</span>
+                <input
+                  value={profileDraft.businessName}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, businessName: event.target.value }))}
+                  placeholder="Business name"
+                />
+              </label>
+
+              <label className={`${styles.field} ${styles.halfField}`}>
+                <span>Phone</span>
+                <input
+                  type="tel"
+                  value={profileDraft.phone}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, phone: event.target.value }))}
+                  placeholder="Phone number"
+                />
+              </label>
+
+              <label className={`${styles.field} ${styles.thirdField}`}>
+                <span>Account type</span>
+                <div className={styles.readOnlyValue}>{accountTypeLabel}</div>
+                <small className={styles.fieldHint}>Account type is locked after signup.</small>
+              </label>
+
+              <label className={`${styles.field} ${styles.thirdField}`}>
+                <span>Province</span>
+                <input
+                  value={profileDraft.province}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, province: event.target.value }))}
+                  placeholder="Province"
+                />
+              </label>
+
+              <label className={`${styles.field} ${styles.thirdField}`}>
+                <span>Town / city</span>
+                <input
+                  value={profileDraft.townCity}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, townCity: event.target.value }))}
+                  placeholder="Town or city"
+                />
+              </label>
+
+              <label className={`${styles.field} ${styles.fullWidth}`}>
+                <span>Address line 1</span>
+                <input
+                  value={profileDraft.addressLine1}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, addressLine1: event.target.value }))}
+                  placeholder="Address line 1"
+                />
+              </label>
+
+              <div className={styles.actionsRow}>
+                <button type="button" className={styles.ghostButton} onClick={() => setIsBusinessEditorOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
+                  {isSavingProfile ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className={`${styles.detailGrid} ${!showScanPinControls ? styles.detailGridSingle : ''}`}>
+              <div className={styles.detailList}>
+                <div className={styles.detailRow}>
+                  <span>Business name</span>
+                  <strong>{businessNameLabel}</strong>
+                </div>
+                <div className={styles.detailRow}>
+                  <span>Phone</span>
+                  <strong>{businessPhoneLabel}</strong>
+                </div>
+                <div className={styles.detailRow}>
+                  <span>Email</span>
+                  <strong>{businessEmailLabel}</strong>
+                </div>
+                <div className={styles.detailRow}>
+                  <span>Location</span>
+                  <strong>{businessLocationLabel}</strong>
+                </div>
+                <div className={styles.detailRow}>
+                  <span>Services</span>
+                  <strong>{businessServicesLabel}</strong>
                 </div>
               </div>
 
-              {!isLoadingScanPin ? (
-                <>
-                  <div className={styles.summaryStack}>
-                    <div className={styles.summaryRow}>
-                      <span className={styles.summaryLabel}>Status</span>
-                      <strong className={styles.summaryValue}>{scanPinStatusLabel}</strong>
-                    </div>
+              {showScanPinControls ? (
+                <aside ref={scanPinSectionRef} className={styles.pinSummaryCard}>
+                  <h3>QR Code PIN</h3>
+                  <p>Share your PIN to receive leads</p>
+                  <strong>{scanPinDisplayLabel}</strong>
+                  <small>4 to 8 digits</small>
+                  <button type="button" className={styles.primaryButton} onClick={() => setIsScanPinEditorOpen((current) => !current)}>
+                    {isScanPinEditorOpen ? 'Close PIN' : 'Manage PIN'}
+                  </button>
 
-                    <div className={styles.summaryRow}>
-                      <span className={styles.summaryLabel}>Last changed</span>
-                      <span className={styles.summaryValue}>{formatDate(scanPinStatus.updatedAtIso)}</span>
-                    </div>
+                  {isScanPinEditorOpen ? (
+                    <form className={styles.pinForm} onSubmit={handleScanPinSubmit}>
+                      <div className={styles.pinGrid}>
+                        <label className={styles.field}>
+                          <span>New scan PIN</span>
+                          <input
+                            type="password"
+                            inputMode="numeric"
+                            autoComplete="new-password"
+                            value={scanPinDraft}
+                            onChange={(event) => setScanPinDraft(normalizePinInput(event.target.value))}
+                            placeholder="4 to 8 digits"
+                          />
+                        </label>
+
+                        <label className={styles.field}>
+                          <span>Confirm scan PIN</span>
+                          <input
+                            type="password"
+                            inputMode="numeric"
+                            autoComplete="new-password"
+                            value={scanPinConfirmDraft}
+                            onChange={(event) => setScanPinConfirmDraft(normalizePinInput(event.target.value))}
+                            placeholder="Repeat PIN"
+                          />
+                        </label>
+                      </div>
+
+                      <div className={styles.inlineActions}>
+                        <button type="submit" className={styles.primaryButton} disabled={isSavingScanPin}>
+                          {isSavingScanPin ? 'Saving...' : scanPinStatus.hasPin ? 'Update PIN' : 'Save PIN'}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.secondaryButton}
+                          onClick={handleDisableScanPin}
+                          disabled={isDisablingScanPin || !scanPinStatus.hasPin}
+                        >
+                          {isDisablingScanPin ? 'Disabling...' : 'Disable PIN'}
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
+                </aside>
+              ) : null}
+            </div>
+          )}
+        </section>
+
+        {showPartnerDirectory ? (
+          <section ref={partnerDirectorySectionRef} className={`${styles.card} ${styles.partnerDirectoryCard}`}>
+            <div className={`${styles.cardTitleRow} ${styles.partnerDirectoryHeader}`}>
+              <div>
+                <span className={styles.sectionEyebrow}>Partner directory</span>
+                <h2>Partner directory</h2>
+                <p>Owners use this information when selecting a partner for quote leads.</p>
+              </div>
+              <span className={`${styles.directoryStatusPill} ${profileDraft.partnerDirectoryEnabled ? styles.directoryStatusOn : styles.directoryStatusOff}`}>
+                {directoryStatusLabel}
+              </span>
+            </div>
+
+            <form className={`${styles.form} ${styles.directoryForm}`} onSubmit={handleProfileSubmit}>
+              <label className={`${styles.toggleField} ${styles.partnerVisibilityToggle} ${styles.fullWidth}`}>
+                <input
+                  type="checkbox"
+                  checked={profileDraft.partnerDirectoryEnabled}
+                  onChange={(event) =>
+                    setProfileDraft((current) => ({
+                      ...current,
+                      partnerDirectoryEnabled: event.target.checked,
+                    }))
+                  }
+                />
+                <span>
+                  <strong>Show in Aim4price partner directory</strong>
+                  <small>Owners can select this account when sending a quote lead.</small>
+                </span>
+              </label>
+
+              <label className={`${styles.field} ${styles.fullWidth}`}>
+                <span>Partner description</span>
+                <textarea
+                  value={profileDraft.partnerDescription}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, partnerDescription: event.target.value }))}
+                  placeholder="Example: Finance partner for agricultural machinery, asset-backed finance and refinancing discussions."
+                />
+              </label>
+
+              <div className={`${styles.partnerMapField} ${styles.fullWidth}`}>
+                <div className={styles.partnerMapHeader}>
+                  <div>
+                    <span>Partner map pin</span>
+                    <strong>Set your public map pin</strong>
+                    <p>Click anywhere on the map, drag the pin, or use your current location.</p>
                   </div>
 
-                  <form className={styles.pinForm} onSubmit={handleScanPinSubmit}>
-                    <div className={styles.pinGrid}>
-                      <label className={styles.field}>
-                        <span>New scan PIN</span>
-                        <input
-                          type="password"
-                          inputMode="numeric"
-                          autoComplete="new-password"
-                          value={scanPinDraft}
-                          onChange={(event) => setScanPinDraft(normalizePinInput(event.target.value))}
-                          placeholder="4 to 8 digits"
-                        />
-                      </label>
-
-                      <label className={styles.field}>
-                        <span>Confirm scan PIN</span>
-                        <input
-                          type="password"
-                          inputMode="numeric"
-                          autoComplete="new-password"
-                          value={scanPinConfirmDraft}
-                          onChange={(event) => setScanPinConfirmDraft(normalizePinInput(event.target.value))}
-                          placeholder="Repeat PIN"
-                        />
-                      </label>
-                    </div>
-
-                    <div className={styles.inlineActions}>
-                      <button type="submit" className={styles.primaryButton} disabled={isSavingScanPin}>
-                        {isSavingScanPin ? 'Saving...' : scanPinStatus.hasPin ? 'Update PIN' : 'Save PIN'}
+                  <div className={styles.partnerMapActions}>
+                    <button type="button" className={styles.secondaryButton} onClick={handleUseCurrentLocation}>
+                      Use current location
+                    </button>
+                    {partnerDirectoryPin ? (
+                      <button type="button" className={styles.ghostButton} onClick={clearPartnerMapPin}>
+                        Clear pin
                       </button>
-                      <button
-                        type="button"
-                        className={styles.secondaryButton}
-                        onClick={handleDisableScanPin}
-                        disabled={isDisablingScanPin || !scanPinStatus.hasPin}
-                      >
-                        {isDisablingScanPin ? 'Disabling...' : 'Disable PIN'}
-                      </button>
-                    </div>
-                  </form>
-                </>
-              ) : null}
-            </section>
-          </aside>
-          ) : null}
-        </div>
+                    ) : null}
+                  </div>
+                </div>
 
-        <section className={`${styles.card} ${styles.dangerCard} ${styles.accountDeleteCard}`}>
+                <div ref={partnerMapElementRef} className={styles.partnerMapCanvas} aria-label="Partner directory map pin" />
+
+                <div className={styles.partnerMapFooter}>
+                  <span>{partnerDirectoryPinLabel}</span>
+                  <strong>{partnerDirectoryPin ? 'Ready to save' : 'Click the map to place your pin'}</strong>
+                </div>
+              </div>
+
+              <label className={`${styles.field} ${styles.thirdField}`}>
+                <span>Service radius km</span>
+                <input
+                  inputMode="numeric"
+                  value={profileDraft.partnerServiceRadiusKm}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, partnerServiceRadiusKm: event.target.value }))}
+                  placeholder="250"
+                />
+              </label>
+
+              <label className={`${styles.field} ${styles.halfField}`}>
+                <span>Brand focus</span>
+                <input
+                  value={profileDraft.partnerBrandFocus}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, partnerBrandFocus: event.target.value }))}
+                  placeholder="John Deere, Case IH, New Holland"
+                />
+              </label>
+
+              <label className={`${styles.field} ${styles.halfField}`}>
+                <span>Services</span>
+                <input
+                  value={profileDraft.partnerServices}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, partnerServices: event.target.value }))}
+                  placeholder="Finance, insurance, replacements, trade-ins"
+                />
+              </label>
+
+              <div className={styles.actionsRow}>
+                <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
+                  {isSavingProfile ? 'Saving...' : 'Save directory'}
+                </button>
+              </div>
+            </form>
+          </section>
+        ) : null}
+
+        {showMarketplaceContact ? (
+          <section ref={marketplaceSectionRef} className={`${styles.card} ${styles.marketplaceContactCard}`}>
+            <div className={styles.cardTitleRow}>
+              <div>
+                <h2>Marketplace contact</h2>
+              </div>
+              <button type="button" className={styles.smallButton} onClick={() => setIsMarketplaceEditorOpen((current) => !current)}>
+                {isMarketplaceEditorOpen ? 'Close' : 'Edit'}
+              </button>
+            </div>
+
+            {isLoading ? (
+              <p className={styles.loading}>Loading marketplace contact...</p>
+            ) : isMarketplaceEditorOpen ? (
+              <form className={`${styles.marketplaceFields} ${styles.compactEditForm}`} onSubmit={handleProfileSubmit}>
+                <label className={styles.field}>
+                  <span>Seller name</span>
+                  <input
+                    value={profileDraft.marketplaceSellerName}
+                    onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceSellerName: event.target.value }))}
+                    placeholder={marketplaceSellerName}
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Phone</span>
+                  <input
+                    type="tel"
+                    value={profileDraft.marketplacePhone}
+                    onChange={(event) => setProfileDraft((current) => ({ ...current, marketplacePhone: event.target.value }))}
+                    placeholder={marketplacePhone}
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    value={profileDraft.marketplaceEmail}
+                    onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceEmail: event.target.value }))}
+                    placeholder={marketplaceEmail}
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Location</span>
+                  <input
+                    value={profileDraft.marketplaceLocation}
+                    onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceLocation: event.target.value }))}
+                    placeholder={marketplaceLocation}
+                  />
+                </label>
+
+                <div className={styles.marketplaceActions}>
+                  <button type="button" className={styles.ghostButton} onClick={() => setIsMarketplaceEditorOpen(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
+                    {isSavingProfile ? 'Saving...' : 'Save marketplace'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className={styles.marketplaceGrid}>
+                <div className={styles.detailList}>
+                  <div className={styles.detailRow}>
+                    <span>Contact name</span>
+                    <strong>{marketplaceSellerName}</strong>
+                  </div>
+                  <div className={styles.detailRow}>
+                    <span>Phone</span>
+                    <strong>{marketplacePhone}</strong>
+                  </div>
+                  <div className={styles.detailRow}>
+                    <span>Email</span>
+                    <strong>{marketplaceEmail}</strong>
+                  </div>
+                  <div className={styles.detailRow}>
+                    <span>Location</span>
+                    <strong>{marketplaceLocation}</strong>
+                  </div>
+                </div>
+
+                <aside className={styles.profileStatusCard}>
+                  <h3>Your marketplace profile</h3>
+                  <p>You are visible in the Aim4price marketplace</p>
+                  <ul>
+                    <li>Visible to customers</li>
+                    <li>Receiving quote leads</li>
+                    <li>{marketplaceProfileComplete ? 'Profile is up to date' : 'Profile needs contact details'}</li>
+                  </ul>
+                  <button type="button" className={styles.ghostButton} onClick={openMarketplaceEditor}>
+                    View marketplace
+                  </button>
+                </aside>
+              </div>
+            )}
+          </section>
+        ) : null}
+
+        <section className={`${styles.card} ${styles.accountDeleteCard}`}>
           <div>
             <h2>Delete account</h2>
-            <p className={styles.deletePrompt}>Want to delete your account?</p>
+            <p>This action cannot be undone. All your data will be permanently removed.</p>
           </div>
           <button type="button" className={styles.dangerButton} onClick={() => setIsDeleteDialogOpen(true)}>
             Delete account
