@@ -447,7 +447,6 @@ export default function AppHeader({
             >
               <div className={styles.notificationHeaderRow}>
                 <div className={styles.notificationHeaderText}>
-                  <span className={styles.notificationEyebrow}>Account activity</span>
                   <strong id="header-notifications-title" className={styles.notificationTitle}>
                     Notifications
                   </strong>
