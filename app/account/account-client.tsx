@@ -589,14 +589,6 @@ export default function AccountClient() {
   const businessPhoneLabel = profileDraft.phone.trim() || 'No phone saved yet';
   const businessEmailLabel = profile?.email || 'No email found';
   const businessLocationLabel = addressLines.length ? addressLines.join(', ') : 'No location saved yet';
-  const businessServicesLabel =
-    profileDraft.partnerServices.trim() ||
-    profileDraft.notes.trim() ||
-    (isOwnerAccount
-      ? 'Asset register, valuations and marketplace'
-      : isDealerAccount
-        ? 'Marketplace listings and quote leads'
-        : `${accountTypeLabel} partner services`);
   const marketplaceProfileComplete = Boolean(
     (profileDraft.marketplaceSellerName.trim() || profileDraft.businessName.trim() || accountDisplayName) &&
       (profileDraft.marketplacePhone.trim() || profileDraft.phone.trim()) &&
@@ -1255,16 +1247,12 @@ export default function AccountClient() {
                   <span>Location</span>
                   <strong>{businessLocationLabel}</strong>
                 </div>
-                <div className={styles.detailRow}>
-                  <span>Services</span>
-                  <strong>{businessServicesLabel}</strong>
-                </div>
               </div>
 
               {showScanPinControls ? (
                 <aside ref={scanPinSectionRef} className={styles.pinSummaryCard}>
                   <h3>QR Code PIN</h3>
-                  <p>Share your PIN to receive leads</p>
+                  <p>Create your PIN to receive QR updates</p>
                   <strong>{scanPinDisplayLabel}</strong>
                   <small>4 to 8 digits</small>
                   <button type="button" className={styles.primaryButton} onClick={() => setIsScanPinEditorOpen((current) => !current)}>
