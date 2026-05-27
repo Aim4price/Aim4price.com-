@@ -3,6 +3,8 @@ import { ensureAccountProfileColumns } from './account-profile';
 import type { MarketplaceListing } from './marketplace';
 
 const FALLBACK_MARKETPLACE_IMAGE = '/brand/Tractor.png';
+const PUBLIC_MARKETPLACE_CONTACT_NAME = 'Kuyler';
+const PUBLIC_MARKETPLACE_CONTACT_PHONE = '062 572 1650';
 
 type MarketplaceUsageUnit = MarketplaceListing['usageUnit'];
 
@@ -603,10 +605,10 @@ function buildMarketplaceListing(
   const rawSellerName =
     asText(pick(row, ['marketplace_seller_name'])) || rawSellerCompany || asText(row.profile_name) || 'Aim4price seller';
   const sellerCompany = options.exposeContact ? rawSellerCompany : undefined;
-  const sellerName = options.exposeContact ? rawSellerName : 'Aim4price seller';
+  const sellerName = options.exposeContact ? rawSellerName : PUBLIC_MARKETPLACE_CONTACT_NAME;
   const sellerPhone = options.exposeContact
     ? asText(pick(row, ['seller_phone'])) || asText(row.profile_phone)
-    : '';
+    : PUBLIC_MARKETPLACE_CONTACT_PHONE;
   const sellerEmail = options.exposeContact
     ? asText(pick(row, ['marketplace_seller_email'])) || asText(row.profile_email)
     : '';
