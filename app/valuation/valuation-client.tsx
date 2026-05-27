@@ -16,9 +16,7 @@ import {
 import { SECTOR_LABELS, type CatalogMode, type SectorKey, type UsageMetricType } from '../../lib/equipment-types';
 import { conditionLabel, money, type Result } from '../../lib/tractor-logic';
 import {
-  getGuestMarketplaceUploadCount,
   getGuestValuationCount,
-  incrementGuestMarketplaceUploadCount,
   incrementGuestValuationCount,
 } from '../../lib/guest-valuation-limit';
 
@@ -260,8 +258,8 @@ type MarketplaceApiResponse = {
 };
 
 const CURRENT_YEAR = new Date().getFullYear();
-const GUEST_MARKETPLACE_UPLOAD_LIMIT = 3;
 const MAX_MARKETPLACE_PHOTOS = 12;
+const MARKETPLACE_INTRO_DISMISSED_KEY = 'aim4price-marketplace-intro-dismissed';
 
 const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
   { step: 1, label: 'Machine' },
@@ -698,12 +696,11 @@ export default function ValuationClient() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [guestValuationCount, setGuestValuationCount] = useState(0);
-  const [guestMarketplaceUploadCount, setGuestMarketplaceUploadCount] = useState(0);
   const [marketplaceMode, setMarketplaceMode] = useState(false);
   const [accountType, setAccountType] = useState('public');
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
-  const [marketplaceAutoModalOpened, setMarketplaceAutoModalOpened] = useState(false);
+  const [marketplaceIntroOpen, setMarketplaceIntroOpen] = useState(false);
   const [marketplacePhotoFiles, setMarketplacePhotoFiles] = useState<MarketplacePendingPhoto[]>([]);
   const [marketplacePublishError, setMarketplacePublishError] = useState('');
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
@@ -802,7 +799,7 @@ export default function ValuationClient() {
   const headlineValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
   const normalizedSignedInAccountType = normalizeAccountType(accountType);
   const isDealerAccount = normalizedSignedInAccountType === 'dealer';
-  const canUseMarketplacePublishFlow = !isSignedIn || normalizedSignedInAccountType === 'owner' || normalizedSignedInAccountType === 'dealer';
+  const canUseMarketplacePublishFlow = isSignedIn && (normalizedSignedInAccountType === 'owner' || normalizedSignedInAccountType === 'dealer');
   const canSaveToAssetRegister = !isSignedIn || normalizedSignedInAccountType === 'owner';
   useEffect(() => {
     const target = document.getElementById('valuation-wizard-card');
@@ -813,7 +810,19 @@ export default function ValuationClient() {
     if (typeof window === 'undefined') return;
 
     const searchParams = new URLSearchParams(window.location.search);
-    setMarketplaceMode(searchParams.get('marketplace') === '1' || searchParams.get('marketplaceListing') === '1');
+    const nextMarketplaceMode = searchParams.get('marketplace') === '1' || searchParams.get('marketplaceListing') === '1';
+    setMarketplaceMode(nextMarketplaceMode);
+
+    if (!nextMarketplaceMode) {
+      setMarketplaceIntroOpen(false);
+      return;
+    }
+
+    try {
+      setMarketplaceIntroOpen(window.localStorage.getItem(MARKETPLACE_INTRO_DISMISSED_KEY) !== '1');
+    } catch {
+      setMarketplaceIntroOpen(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -855,7 +864,6 @@ export default function ValuationClient() {
       } finally {
         if (mounted) {
           setGuestValuationCount(getGuestValuationCount());
-          setGuestMarketplaceUploadCount(getGuestMarketplaceUploadCount());
         }
       }
     }
@@ -865,16 +873,6 @@ export default function ValuationClient() {
       mounted = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (!marketplaceMode || step !== 5 || !resultState || headlineValue === null || marketplaceDraft || marketplaceAutoModalOpened) {
-      return;
-    }
-
-    setMarketplaceAutoModalOpened(true);
-    setMarketplacePublishError('');
-    setMarketplaceDraft(buildDefaultMarketplaceDraft());
-  }, [headlineValue, marketplaceAutoModalOpened, marketplaceDraft, marketplaceMode, resultState, step]);
 
   useEffect(() => {
     let ignore = false;
@@ -1094,7 +1092,6 @@ export default function ValuationClient() {
 
   function resetResult() {
     setResultState(null);
-    setMarketplaceAutoModalOpened(false);
     setSelectedMethod('aim4price');
     setReplacementPriceBasis('aim4price');
     setReplacementPanelOpen(false);
@@ -1437,9 +1434,9 @@ export default function ValuationClient() {
     const sellerName =
       (isSignedIn
         ? accountProfile?.marketplaceSellerName || accountProfile?.displayName || accountProfile?.name || accountProfile?.businessName
-        : 'Kuyler') || '';
+        : '') || '';
     const sellerCompany = (isSignedIn ? accountProfile?.businessName : '') || '';
-    const sellerPhone = (isSignedIn ? accountProfile?.marketplacePhone || accountProfile?.phone : '062 572 1650') || '';
+    const sellerPhone = (isSignedIn ? accountProfile?.marketplacePhone || accountProfile?.phone : '') || '';
     const sellerEmail = (isSignedIn ? accountProfile?.marketplaceEmail || accountProfile?.email : '') || '';
     const area = (isSignedIn ? accountProfile?.marketplaceLocation || accountProfile?.townCity : '') || '';
 
@@ -1461,6 +1458,11 @@ export default function ValuationClient() {
       return;
     }
 
+    if (!isSignedIn) {
+      setMessage('Create an account before sending an estimate to Marketplace.');
+      return;
+    }
+
     if (!canUseMarketplacePublishFlow) {
       setMessage('Marketplace listings are only available for owner, dealer and auctioneer accounts.');
       return;
@@ -1473,6 +1475,22 @@ export default function ValuationClient() {
 
     setMarketplacePublishError('');
     setMarketplaceDraft(buildDefaultMarketplaceDraft());
+  }
+
+  function closeMarketplaceIntroModal() {
+    setMarketplaceIntroOpen(false);
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(MARKETPLACE_INTRO_DISMISSED_KEY, '1');
+      } catch {
+        // Ignore storage errors; the modal still closes for the current page view.
+      }
+    }
+  }
+
+  function goToAccountCreationFromMarketplaceIntro() {
+    closeMarketplaceIntroModal();
+    router.push('/auth#signup');
   }
 
   function clearMarketplacePhotoFiles(files = marketplacePhotoFiles) {
@@ -1591,15 +1609,7 @@ export default function ValuationClient() {
     }
 
     if (!isSignedIn) {
-      if (guestMarketplaceUploadCount >= GUEST_MARKETPLACE_UPLOAD_LIMIT) {
-        setMarketplacePublishError('You have used your 3 guest marketplace upload attempts. Create an account to continue.');
-        router.push('/auth#signup');
-        return;
-      }
-
-      const nextCount = incrementGuestMarketplaceUploadCount();
-      setGuestMarketplaceUploadCount(nextCount);
-      setMarketplacePublishError('Your estimate is ready. Create an account to publish this marketplace listing.');
+      setMarketplacePublishError('Create an account before publishing this marketplace listing.');
       router.push('/auth#signup');
       return;
     }
@@ -3129,24 +3139,6 @@ export default function ValuationClient() {
     <main className={styles.page}>
       <AppHeader active="valuation" />
       <div className={styles.container}>
-        {marketplaceMode ? (
-          <section className={styles.marketplaceModeNotice}>
-            <span>Marketplace listing path</span>
-            <h1>Get an Aim4price value before the listing goes live.</h1>
-            <p>
-              The marketplace only accepts listings that start with an Aim4price estimate. After the value is calculated,
-              use Send to Marketplace to confirm the asking price, upload photos and check seller details.
-            </p>
-            <small>
-              {!isSignedIn
-                ? `Guest limits: ${Math.min(guestValuationCount, 3)}/3 estimates used and ${Math.min(guestMarketplaceUploadCount, GUEST_MARKETPLACE_UPLOAD_LIMIT)}/3 marketplace upload attempts used.`
-                : isDealerAccount
-                  ? 'Dealer and auctioneer accounts publish through Get Estimate only. Asset Register listing is owner-only.'
-                  : 'Owner accounts can also create listings from the Asset Register.'}
-            </small>
-          </section>
-        ) : null}
-
         <section className={styles.wizardShell}>
           <div id="valuation-wizard-card" className={styles.wizardCard}>
             {step > 1 ? (
@@ -3222,6 +3214,63 @@ export default function ValuationClient() {
           </div>
         </section>
       </div>
+
+      {marketplaceMode && marketplaceIntroOpen ? (
+        <div className={styles.marketplaceIntroOverlay} onClick={closeMarketplaceIntroModal}>
+          <section
+            className={styles.marketplaceIntroModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="marketplace-intro-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.marketplaceIntroClose}
+              onClick={closeMarketplaceIntroModal}
+              aria-label="Close marketplace listing path note"
+            >
+              ×
+            </button>
+            <span className={styles.marketplaceIntroKicker}>Marketplace listing path</span>
+            <h2 id="marketplace-intro-title">Get an Aim4price value before the listing goes live.</h2>
+            <p>
+              The marketplace only accepts listings that start with an Aim4price estimate. Run the estimate first, then use
+              Send to Marketplace on the result screen to confirm the asking price, photos and seller details.
+            </p>
+            <div className={styles.marketplaceIntroNote}>
+              {!isSignedIn ? (
+                <>
+                  <strong>Account required before publishing.</strong>
+                  <span>
+                    Guests can run {Math.max(0, 3 - Math.min(guestValuationCount, 3))} more estimate{3 - Math.min(guestValuationCount, 3) === 1 ? '' : 's'}, but marketplace listings can only be published from an account.
+                  </span>
+                </>
+              ) : isDealerAccount ? (
+                <>
+                  <strong>Dealer and auctioneer account.</strong>
+                  <span>Publish marketplace listings through Get Estimate after the value has been calculated.</span>
+                </>
+              ) : (
+                <>
+                  <strong>Owner account.</strong>
+                  <span>You can publish from this estimate path or from assets already saved in the Asset Register.</span>
+                </>
+              )}
+            </div>
+            <div className={styles.marketplaceIntroActions}>
+              <button type="button" className={styles.secondaryButton} onClick={closeMarketplaceIntroModal}>
+                Close
+              </button>
+              {!isSignedIn ? (
+                <button type="button" className={styles.primaryButton} onClick={goToAccountCreationFromMarketplaceIntro}>
+                  Create account
+                </button>
+              ) : null}
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {marketplaceDraft ? (
         <div className={styles.marketplacePublishOverlay} onClick={closeMarketplacePublishModal}>
