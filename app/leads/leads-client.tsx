@@ -708,6 +708,38 @@ function snapshotAssetValue(asset: Record<string, unknown>): number {
   return Math.round(asNumber(asset.value ?? asset.selectedValueExVat ?? asset.aim4priceValueExVat ?? asset.marketMidExVat) ?? 0);
 }
 
+const SNAPSHOT_REPLACEMENT_PRICE_KEYS = [
+  'replacementPriceExVat',
+  'replacement_price_ex_vat',
+  'replacementPriceUsedExVat',
+  'replacement_price_used_ex_vat',
+  'userReplacementPriceExVat',
+  'user_replacement_price_ex_vat',
+  'officialReplacementPriceExVat',
+  'official_replacement_price_ex_vat',
+  'replacementPrice',
+  'replacement_price',
+];
+
+function snapshotReplacementPrice(asset: Record<string, unknown>): number | null {
+  for (const key of SNAPSHOT_REPLACEMENT_PRICE_KEYS) {
+    const value = asNumber(asset[key]);
+    if (value !== null && value > 0) return Math.round(value);
+  }
+
+  const specs = asRecord(asset.specsJson) ?? asRecord(asset.specs) ?? asRecord(asset.specAnswers);
+  for (const key of SNAPSHOT_REPLACEMENT_PRICE_KEYS) {
+    const value = asNumber(specs?.[key]);
+    if (value !== null && value > 0) return Math.round(value);
+  }
+
+  return null;
+}
+
+function sumSnapshotReplacementValues(assets: Record<string, unknown>[]): number {
+  return assets.reduce((sum, asset) => sum + Math.round(snapshotReplacementPrice(asset) ?? 0), 0);
+}
+
 function sumSnapshotAssetValues(assets: Record<string, unknown>[]): number {
   return assets.reduce((sum, asset) => sum + snapshotAssetValue(asset), 0);
 }
@@ -803,6 +835,13 @@ function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = '
   const reportValueInclVat = isFullReport
     ? asNumber(snapshot?.totalValueInclVat) ?? Math.round(reportValue * 1.15)
     : Math.round(reportValue * 1.15);
+  const snapshotReplacementValue = asNumber(snapshot?.totalReplacementValue ?? snapshot?.replacementValue);
+  const reportReplacementValue = isFullReport && snapshotReplacementValue !== null
+    ? Math.round(snapshotReplacementValue)
+    : sumSnapshotReplacementValues(reportAssets);
+  const reportReplacementValueInclVat = isFullReport
+    ? asNumber(snapshot?.totalReplacementValueInclVat ?? snapshot?.replacementValueInclVat) ?? Math.round(reportReplacementValue * 1.15)
+    : Math.round(reportReplacementValue * 1.15);
   const aim4priceStats = calculateRegisterLeadStats(
     reportAssets,
     (asset) => asText(asset.selectedMethod) === 'aim4price' || asNumber(asset.aim4priceValueExVat) !== null,
@@ -814,6 +853,7 @@ function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = '
 
   const rows = reportAssets.map((asset) => {
     const value = snapshotAssetValue(asset);
+    const replacementPrice = snapshotReplacementPrice(asset);
     const family = asText(asset.equipmentFamilyLabel) || asText(asset.kind) || 'Asset';
     const brand = asText(asset.brandName);
     const model = asText(asset.modelName) || asText(asset.typedModelName);
@@ -829,6 +869,7 @@ function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = '
       method: methodLabel(asset.selectedMethod),
       detail: [year !== '—' ? `Year: ${year}` : '', usage !== '—' ? `Usage: ${usage}` : '', condition !== '—' ? `Condition: ${condition}` : '', serial !== '—' ? `Serial: ${serial}` : ''].filter(Boolean).join(' • '),
       value: formatCurrency(value),
+      replacementPrice: replacementPrice === null ? '—' : formatCurrency(replacementPrice),
       status: updated !== '—' ? `Updated ${updated}` : 'Saved asset',
       brand: brand || '—',
       model: model || '—',
@@ -870,6 +911,7 @@ function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = '
       { label: 'Assets', value: String(reportAssets.length), note: isFullReport ? 'Saved register items.' : reportOption.description },
       { label: 'Value ex VAT', value: formatCurrency(reportValue), note: 'Filtered report total excluding VAT.' },
       { label: 'Value incl VAT', value: formatCurrency(reportValueInclVat), note: 'Filtered report total including 15% VAT.' },
+      { label: 'Replacement ex VAT', value: formatCurrency(reportReplacementValue), note: `${formatCurrency(reportReplacementValueInclVat)} incl. VAT.` },
       { label: 'Aim4price values', value: String(aim4priceStats.count), note: `${formatCurrency(aim4priceStats.value)} total value.` },
       { label: 'Manual assets', value: String(manualAssetStats.count), note: `${formatCurrency(manualAssetStats.value)} entered manually.` },
       { label: 'Insured assets', value: String(insuredStats.count), note: `${formatCurrency(insuredStats.value)} marked insured.` },
@@ -887,6 +929,7 @@ function downloadLeadAsset(lead: AssetLead, reportKind: PdfReportKind = 'full'):
   }
 
   const value = assetValue(lead);
+  const replacementPrice = snapshotReplacementPrice(lead.assetSnapshot);
   const photos = assetPhotos(lead);
   const didOpen = openAssetSheetPrint({
     logoUrl: '/brand/aim4price-mark-black.png',
@@ -919,6 +962,7 @@ function downloadLeadAsset(lead: AssetLead, reportKind: PdfReportKind = 'full'):
       { label: 'Year', value: lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : '—' },
       { label: 'Usage', value: assetUsageValue(lead) },
       { label: 'Condition', value: asText(lead.assetSnapshot.condition) || '—' },
+      { label: 'Replacement price', value: replacementPrice === null ? '—' : formatCurrency(replacementPrice) },
       { label: 'Serial number', value: asText(lead.assetSnapshot.serialNumber) || '—' },
       { label: 'Financed', value: asBoolean(lead.assetSnapshot.isFinanced) ? 'Yes' : 'No' },
       { label: 'Insured', value: asBoolean(lead.assetSnapshot.isInsured) ? 'Yes' : 'No' },
@@ -1520,6 +1564,7 @@ export default function LeadsClient() {
     const financedCount = asNumber(snapshot?.financedAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isFinanced)).length;
     const insuredCount = asNumber(snapshot?.insuredAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isInsured)).length;
     const licensedCount = asNumber(snapshot?.licensedAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isLicensed)).length;
+    const replacementValue = asNumber(snapshot?.totalReplacementValue ?? snapshot?.replacementValue) ?? sumSnapshotReplacementValues(registerAssets);
 
     return (
       <div className={`${assetStyles.assetBody} ${styles.fullRegisterLeadBody}`} id={`lead-panel-${lead.id}`}>
@@ -1536,6 +1581,7 @@ export default function LeadsClient() {
         <div className={styles.fullRegisterStatsPanel}>
           <div className={styles.fullRegisterStatsGrid}>
             {renderRegisterStatRow('Total assets', assetCount)}
+            {renderRegisterStatRow('Replacement value', formatCurrency(replacementValue))}
             {renderRegisterStatRow('Assets licensed', licensedCount)}
             {renderRegisterStatRow('Assets financed', financedCount)}
             {renderRegisterStatRow('Aim4price assets', aim4priceCount)}
