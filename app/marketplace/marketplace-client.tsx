@@ -1085,6 +1085,20 @@ function getAdSellerPhone(listing: MarketplaceListing): string {
   return isPlaceholderContactPhone(phone) ? DEFAULT_MARKETPLACE_CONTACT_PHONE : phone;
 }
 
+function getPublicMarketplaceListing(listing: MarketplaceListing): MarketplaceListing {
+  return {
+    ...listing,
+    sellerName: DEFAULT_MARKETPLACE_CONTACT_NAME,
+    sellerCompany: undefined,
+    sellerPhone: DEFAULT_MARKETPLACE_CONTACT_PHONE,
+    sellerEmail: undefined,
+  };
+}
+
+function getListingForCurrentViewer(listing: MarketplaceListing, exposeSellerContact: boolean): MarketplaceListing {
+  return exposeSellerContact ? listing : getPublicMarketplaceListing(listing);
+}
+
 function drawAdWatermark(
   context: CanvasRenderingContext2D,
   logoImage: HTMLImageElement | null,
@@ -1587,7 +1601,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   const [shareFeedback, setShareFeedback] = useState('');
   const [isCreatingJpegAd, setIsCreatingJpegAd] = useState(false);
   const [createListingModalOpen, setCreateListingModalOpen] = useState(false);
-  const [marketplaceAccessPromptOpen, setMarketplaceAccessPromptOpen] = useState(false);
   const [listingQueryId, setListingQueryId] = useState('');
   const [sectorFilter, setSectorFilter] = useState<SectorKey | ''>('');
   const [familyFilter, setFamilyFilter] = useState('');
@@ -1895,13 +1908,9 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
       return;
     }
 
-    if (!isSignedIn) {
-      setMarketplaceAccessPromptOpen(true);
-      updateListingUrl(null);
-      return;
-    }
+    const nextListing = getListingForCurrentViewer(matchedListing, isSignedIn);
 
-    setActiveListing((current) => (current?.id === matchedListing.id ? current : matchedListing));
+    setActiveListing(nextListing);
     setActiveImageIndex(0);
   }, [isSignedIn, items, listingQueryId]);
 
@@ -2012,21 +2021,8 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
     goToMarketplaceEstimate();
   }
 
-  function openMarketplaceAccessPrompt() {
-    setMarketplaceAccessPromptOpen(true);
-  }
-
-  function closeMarketplaceAccessPrompt() {
-    setMarketplaceAccessPromptOpen(false);
-  }
-
   function openListing(listing: MarketplaceListing) {
-    if (!isSignedIn) {
-      openMarketplaceAccessPrompt();
-      return;
-    }
-
-    setActiveListing(listing);
+    setActiveListing(getListingForCurrentViewer(listing, isSignedIn));
     setActiveImageIndex(0);
     updateListingUrl(listing.id);
   }
@@ -2040,12 +2036,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   }
 
   function openShareSheet(listing: MarketplaceListing) {
-    if (!isSignedIn) {
-      openMarketplaceAccessPrompt();
-      return;
-    }
-
-    setShareListing(listing);
+    setShareListing(getListingForCurrentViewer(listing, isSignedIn));
     setShareFeedback('');
   }
 
@@ -2487,37 +2478,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
         </div>
       ) : null}
 
-      {marketplaceAccessPromptOpen ? (
-        <div className={styles.createListingOverlay} onClick={closeMarketplaceAccessPrompt}>
-          <div
-            className={styles.marketplaceAccessDialog}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="marketplace-access-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button type="button" className={styles.createListingCloseButton} onClick={closeMarketplaceAccessPrompt} aria-label="Close marketplace access notice">
-              <IconClose />
-            </button>
-
-            <div className={styles.createListingHeader}>
-              <span>Account required</span>
-              <h2 id="marketplace-access-title">Create an account to see marketplace information.</h2>
-              <p>
-                Guests can browse the public cards, but seller details, listing information and sharing tools are only
-                available after login. Guests also get 3 free estimates and 3 marketplace upload attempts before an
-                account is required.
-              </p>
-            </div>
-
-            <div className={styles.marketplaceAccessActions}>
-              <a href="/auth#signup" className={styles.marketplaceAccessPrimary}>Create account</a>
-              <a href="/auth#login" className={styles.marketplaceAccessSecondary}>Login</a>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       {activeListing ? (
         <div className={styles.modalOverlay} onClick={closeListing}>
           <div
@@ -2643,70 +2603,34 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
               <section className={styles.modalSection}>
                 <h3>Seller information</h3>
 
-                {isSignedIn ? (
-                  <div className={styles.contactRows}>
-                    <div className={styles.contactRow}>
-                      <span>Seller</span>
-                      <strong>{activeListing.sellerName || 'Aim4price seller'}</strong>
-                    </div>
-                    {activeListing.sellerCompany ? (
-                      <div className={styles.contactRow}>
-                        <span>Company</span>
-                        <strong>{activeListing.sellerCompany}</strong>
-                      </div>
-                    ) : null}
-                    <div className={styles.contactRow}>
-                      <span>Phone</span>
-                      {activeListing.sellerPhone ? (
-                        <strong>
-                          <a href={`tel:${activeListing.sellerPhone}`}>{activeListing.sellerPhone}</a>
-                        </strong>
-                      ) : (
-                        <strong>N/A</strong>
-                      )}
-                    </div>
-                    {activeListing.sellerEmail ? (
-                      <div className={styles.contactRow}>
-                        <span>Email</span>
-                        <strong>
-                          <a href={`mailto:${activeListing.sellerEmail}`}>{activeListing.sellerEmail}</a>
-                        </strong>
-                      </div>
-                    ) : null}
+                <div className={styles.contactRows}>
+                  <div className={styles.contactRow}>
+                    <span>Seller</span>
+                    <strong>{activeListing.sellerName || DEFAULT_MARKETPLACE_CONTACT_NAME}</strong>
                   </div>
-                ) : (
-                  <div className={styles.blurredContactCard}>
-                    <div className={`${styles.contactRows} ${styles.contactRowsBlurred}`} aria-hidden="true">
-                      <div className={styles.contactRow}>
-                        <span>Seller</span>
-                        <strong>{activeListing.sellerName || 'Aim4price seller'}</strong>
-                      </div>
-                      {activeListing.sellerCompany ? (
-                        <div className={styles.contactRow}>
-                          <span>Company</span>
-                          <strong>{activeListing.sellerCompany}</strong>
-                        </div>
-                      ) : null}
-                      <div className={styles.contactRow}>
-                        <span>Phone</span>
-                        <strong>{activeListing.sellerPhone || '+27 00 000 0000'}</strong>
-                      </div>
-                      <div className={styles.contactRow}>
-                        <span>Email</span>
-                        <strong>{activeListing.sellerEmail || 'seller@aim4price.co.za'}</strong>
-                      </div>
+                  {activeListing.sellerCompany ? (
+                    <div className={styles.contactRow}>
+                      <span>Company</span>
+                      <strong>{activeListing.sellerCompany}</strong>
                     </div>
-
-                    <div className={styles.contactBlurOverlay}>
-                      <strong>Create an account to view marketplace information.</strong>
-                      <p>Seller contact details and full marketplace information are available only to signed-in Aim4price users.</p>
-                      <div className={styles.lockedActions}>
-                        <a href="/auth#login">Login</a>
-                        <a href="/auth#signup">Create account</a>
-                      </div>
-                    </div>
+                  ) : null}
+                  <div className={styles.contactRow}>
+                    <span>Phone</span>
+                    <strong>
+                      <a href={`tel:${activeListing.sellerPhone || DEFAULT_MARKETPLACE_CONTACT_PHONE}`}>
+                        {activeListing.sellerPhone || DEFAULT_MARKETPLACE_CONTACT_PHONE}
+                      </a>
+                    </strong>
                   </div>
-                )}
+                  {activeListing.sellerEmail ? (
+                    <div className={styles.contactRow}>
+                      <span>Email</span>
+                      <strong>
+                        <a href={`mailto:${activeListing.sellerEmail}`}>{activeListing.sellerEmail}</a>
+                      </strong>
+                    </div>
+                  ) : null}
+                </div>
               </section>
 
               {canDeleteActiveListing ? (
