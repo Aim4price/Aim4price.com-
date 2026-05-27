@@ -1656,14 +1656,6 @@
 }
 
 /* Marketplace listing-account flow */
-.createListingHint {
-  margin: 0.52rem 0 0;
-  color: #607485;
-  font-size: 0.84rem;
-  font-weight: 560;
-  line-height: 1.38;
-}
-
 .createButton {
   cursor: pointer;
 }
