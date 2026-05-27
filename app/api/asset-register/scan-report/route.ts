@@ -240,6 +240,47 @@ function formatNumber(value: number | null | undefined, digits = 0): string {
   });
 }
 
+function coercePositiveNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(/[^0-9.-]+/g, ''));
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function readAssetReplacementPriceExVat(asset: AssetRegisterItem): number | null {
+  const direct = coercePositiveNumber(asset.replacementPriceExVat);
+  if (direct !== null) return direct;
+
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return coercePositiveNumber(
+    specs.replacementPriceExVat ??
+      specs.replacement_price_ex_vat ??
+      specs.replacementPrice ??
+      specs.replacement_price ??
+      specs.replacementPriceUsedExVat ??
+      specs.replacement_price_used_ex_vat ??
+      specs.userReplacementPriceExVat ??
+      specs.user_replacement_price_ex_vat,
+  );
+}
+
+function formatMoney(value: number | null | undefined): string {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return '-';
+  }
+
+  return `R ${formatNumber(value)}`;
+}
+
 function formatFuel(value: number | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return '-';
@@ -590,6 +631,7 @@ function buildAssetDetailRows(asset: AssetRegisterItem): KeyValueRow[] {
     { label: 'Year', value: typeof asset.yearModel === 'number' ? String(asset.yearModel) : '-' },
     { label: 'Usage', value: formatLatestUsage(asset) },
     { label: 'Condition', value: formatCondition(asset.condition) },
+    { label: 'Replacement Price', value: formatMoney(readAssetReplacementPriceExVat(asset)) },
     { label: 'Financed', value: statusChoiceReportLabel(readFinanceStatusChoice(asset)) },
     { label: 'Insured', value: statusChoiceReportLabel(readInsuranceStatusChoice(asset)) },
     { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
