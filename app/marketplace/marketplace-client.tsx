@@ -2454,7 +2454,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
             </button>
 
             <div className={styles.createListingHeader}>
-              <span>New marketplace listing</span>
               <h2 id="create-listing-title">Choose how this listing must be created.</h2>
               <p>
                 Aim4price only allows marketplace uploads after a machine has an Aim4price value. This keeps every
