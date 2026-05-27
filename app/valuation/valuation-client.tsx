@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
@@ -15,7 +15,12 @@ import {
 } from '../../lib/tractor-data';
 import { SECTOR_LABELS, type CatalogMode, type SectorKey, type UsageMetricType } from '../../lib/equipment-types';
 import { conditionLabel, money, type Result } from '../../lib/tractor-logic';
-import { getGuestValuationCount, incrementGuestValuationCount } from '../../lib/guest-valuation-limit';
+import {
+  getGuestMarketplaceUploadCount,
+  getGuestValuationCount,
+  incrementGuestMarketplaceUploadCount,
+  incrementGuestValuationCount,
+} from '../../lib/guest-valuation-limit';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 type MethodKey = 'aim4price' | 'market';
@@ -198,7 +203,65 @@ type SaveValuationRunApiResponse = {
   error?: string;
 };
 
+type AccountProfile = Partial<{
+  userId: string;
+  name: string;
+  displayName: string;
+  email: string;
+  businessName: string;
+  phone: string;
+  accountType: string;
+  province: string;
+  townCity: string;
+  marketplaceSellerName: string;
+  marketplacePhone: string;
+  marketplaceEmail: string;
+  marketplaceLocation: string;
+}>;
+
+type AccountProfileApiResponse = {
+  ok: boolean;
+  profile?: AccountProfile;
+  error?: string;
+};
+
+type MarketplacePendingPhoto = {
+  id: string;
+  file: File;
+  previewUrl: string;
+};
+
+type MarketplacePublishDraft = {
+  askingPriceExVat: string;
+  marketplaceNotes: string;
+  sellerName: string;
+  sellerCompany: string;
+  sellerPhone: string;
+  sellerEmail: string;
+  province: string;
+  area: string;
+};
+
+type MarketplaceUploadApiResponse = {
+  ok: boolean;
+  uploads?: Array<{ url?: string; href?: string; path?: string }>;
+  error?: string;
+};
+
+type MarketplaceApiResponse = {
+  ok: boolean;
+  assetId?: string;
+  marketplaceStatus?: string;
+  listing?: {
+    id?: string | number | null;
+    sourceAssetId?: string | number | null;
+  } | null;
+  error?: string;
+};
+
 const CURRENT_YEAR = new Date().getFullYear();
+const GUEST_MARKETPLACE_UPLOAD_LIMIT = 3;
+const MAX_MARKETPLACE_PHOTOS = 12;
 
 const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
   { step: 1, label: 'Machine' },
@@ -261,6 +324,24 @@ function parseFlexibleNumber(value: unknown): number | null {
   if (!text) return null;
   const numeric = Number(text);
   return Number.isFinite(numeric) ? numeric : null;
+}
+
+function parseMoneyInput(value: unknown): number | null {
+  const numeric = Number(String(value ?? '').replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+}
+
+function formatMoneyInput(value: unknown): string {
+  const numeric = parseMoneyInput(value);
+  return numeric === null ? '' : Math.round(numeric).toLocaleString('en-ZA');
+}
+
+function normalizeAccountType(value: unknown): string {
+  return String(value ?? '').trim().toLowerCase() || 'public';
+}
+
+function createMarketplacePhotoId(): string {
+  return `marketplace-photo-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function toNumberOrNull(value: unknown): number | null {
@@ -617,7 +698,17 @@ export default function ValuationClient() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [guestValuationCount, setGuestValuationCount] = useState(0);
+  const [guestMarketplaceUploadCount, setGuestMarketplaceUploadCount] = useState(0);
+  const [marketplaceMode, setMarketplaceMode] = useState(false);
+  const [accountType, setAccountType] = useState('public');
+  const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
+  const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
+  const [marketplaceAutoModalOpened, setMarketplaceAutoModalOpened] = useState(false);
+  const [marketplacePhotoFiles, setMarketplacePhotoFiles] = useState<MarketplacePendingPhoto[]>([]);
+  const [marketplacePublishError, setMarketplacePublishError] = useState('');
+  const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const [replacementPanelOpen, setReplacementPanelOpen] = useState(false);
+  const marketplacePhotoInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedFamily = useMemo(
     () => families.find((family) => family.familyKey === familyKey) ?? null,
@@ -709,10 +800,21 @@ export default function ValuationClient() {
     [specsJson, lifeWorkedPercentNumber, yearModelUnknown],
   );
   const headlineValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
+  const normalizedSignedInAccountType = normalizeAccountType(accountType);
+  const isDealerAccount = normalizedSignedInAccountType === 'dealer';
+  const canUseMarketplacePublishFlow = !isSignedIn || normalizedSignedInAccountType === 'owner' || normalizedSignedInAccountType === 'dealer';
+  const canSaveToAssetRegister = !isSignedIn || normalizedSignedInAccountType === 'owner';
   useEffect(() => {
     const target = document.getElementById('valuation-wizard-card');
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [step]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const searchParams = new URLSearchParams(window.location.search);
+    setMarketplaceMode(searchParams.get('marketplace') === '1' || searchParams.get('marketplaceListing') === '1');
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -720,14 +822,41 @@ export default function ValuationClient() {
     async function loadAccessState() {
       try {
         const response = await fetch('/api/me', { credentials: 'include', cache: 'no-store' });
-        const data = (await response.json()) as { ok: boolean; signedIn: boolean };
+        const data = (await response.json()) as {
+          ok: boolean;
+          signedIn: boolean;
+          user?: { accountType?: string | null } | null;
+        };
         if (!mounted) return;
-        setIsSignedIn(Boolean(data?.signedIn));
+
+        const signedIn = Boolean(data?.signedIn);
+        setIsSignedIn(signedIn);
+        setAccountType(signedIn ? normalizeAccountType(data.user?.accountType ?? 'owner') : 'public');
+
+        if (signedIn) {
+          try {
+            const profileResponse = await fetch('/api/account-profile', { credentials: 'include', cache: 'no-store' });
+            const profileData = (await profileResponse.json()) as AccountProfileApiResponse;
+            if (mounted && profileResponse.ok && profileData.ok) {
+              setAccountProfile(profileData.profile ?? null);
+              setAccountType(normalizeAccountType(profileData.profile?.accountType ?? data.user?.accountType ?? 'owner'));
+            }
+          } catch {
+            if (mounted) setAccountProfile(null);
+          }
+        } else {
+          setAccountProfile(null);
+        }
       } catch {
         if (!mounted) return;
         setIsSignedIn(false);
+        setAccountType('public');
+        setAccountProfile(null);
       } finally {
-        if (mounted) setGuestValuationCount(getGuestValuationCount());
+        if (mounted) {
+          setGuestValuationCount(getGuestValuationCount());
+          setGuestMarketplaceUploadCount(getGuestMarketplaceUploadCount());
+        }
       }
     }
 
@@ -736,6 +865,16 @@ export default function ValuationClient() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!marketplaceMode || step !== 5 || !resultState || headlineValue === null || marketplaceDraft || marketplaceAutoModalOpened) {
+      return;
+    }
+
+    setMarketplaceAutoModalOpened(true);
+    setMarketplacePublishError('');
+    setMarketplaceDraft(buildDefaultMarketplaceDraft());
+  }, [headlineValue, marketplaceAutoModalOpened, marketplaceDraft, marketplaceMode, resultState, step]);
 
   useEffect(() => {
     let ignore = false;
@@ -955,6 +1094,7 @@ export default function ValuationClient() {
 
   function resetResult() {
     setResultState(null);
+    setMarketplaceAutoModalOpened(false);
     setSelectedMethod('aim4price');
     setReplacementPriceBasis('aim4price');
     setReplacementPanelOpen(false);
@@ -1200,6 +1340,326 @@ export default function ValuationClient() {
     }
   }
 
+  function buildValuationSavePayload(options: { saveForMarketplace?: boolean; photos?: string[] } = {}): Record<string, unknown> {
+    if (!resultState) {
+      throw new Error('Run a valuation before saving.');
+    }
+
+    const marketplaceFields = options.saveForMarketplace
+      ? {
+          saveForMarketplace: true,
+          photos: options.photos ?? [],
+        }
+      : {};
+
+    if (resultState.kind === 'tractor') {
+      return {
+        modelId: resultState.result.model.id,
+        year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
+        hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
+        condition,
+        frontPto,
+        frontLoader,
+        gpsEnabled,
+        gpsType,
+        gpsYear,
+        userReplacementPriceExVat:
+          replacementPriceBasis === 'user' && selectedMethod === 'aim4price' && resultState.result.userReplacementPriceExVat
+            ? resultState.result.userReplacementPriceExVat
+            : null,
+        selectedMethod,
+        valuationVersion: 'v1',
+        ...marketplaceFields,
+      };
+    }
+
+    return {
+      catalogModeUsed: 'generic_specs',
+      sectorKey: resultState.result.sector.key,
+      familyKey: resultState.result.family.key,
+      brandSlug: resultState.result.brand.slug,
+      typedModelName: resultState.result.typedModelName,
+      specsJson: resultState.result.specsJson,
+      year: resultState.result.year,
+      yearModelUnknown,
+      usageAmount: resultState.result.usageAmount,
+      lifeWorkedPercent: resultState.result.lifeWorkedPercent,
+      condition: resultState.result.condition,
+      userReplacementPriceExVat:
+        replacementPriceBasis === 'user' && selectedMethod === 'aim4price' ? resultState.result.userReplacementPriceExVat : null,
+      userReplacementPriceYear:
+        replacementPriceBasis === 'user' && selectedMethod === 'aim4price' ? resultState.result.userReplacementPriceYear : null,
+      selectedMethod,
+      valuationVersion: 'generic-v1',
+      ...marketplaceFields,
+    };
+  }
+
+  function buildMarketplaceEstimateTitle(): string {
+    if (!resultState) return 'Aim4price marketplace listing';
+
+    if (resultState.kind === 'tractor') {
+      const model = resultState.result.model;
+      const titleUsage = usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber);
+      return [
+        model.brandName,
+        model.modelName,
+        yearModelUnknown ? null : String(yearNumber),
+        titleUsage ? `${formatWholeNumber(titleUsage)} hours` : null,
+        conditionLabel(condition),
+      ]
+        .filter(Boolean)
+        .join(' • ');
+    }
+
+    const result = resultState.result;
+    const usageLabel =
+      result.usageAmount !== null
+        ? `${formatWholeNumber(result.usageAmount)} ${result.family.usageMetricType === 'hours' ? 'hours' : '%'}`
+        : result.lifeWorkedPercent !== null
+          ? `${formatPercent(result.lifeWorkedPercent)} worked`
+          : null;
+
+    return [
+      result.brand.name,
+      result.typedModelName || result.family.label,
+      result.year,
+      usageLabel,
+      conditionLabel(result.condition),
+    ]
+      .filter(Boolean)
+      .join(' • ');
+  }
+
+  function buildDefaultMarketplaceDraft(): MarketplacePublishDraft {
+    const selectedValue = headlineValue ?? 0;
+    const title = buildMarketplaceEstimateTitle();
+    const sellerName =
+      (isSignedIn
+        ? accountProfile?.marketplaceSellerName || accountProfile?.displayName || accountProfile?.name || accountProfile?.businessName
+        : 'Kuyler') || '';
+    const sellerCompany = (isSignedIn ? accountProfile?.businessName : '') || '';
+    const sellerPhone = (isSignedIn ? accountProfile?.marketplacePhone || accountProfile?.phone : '062 572 1650') || '';
+    const sellerEmail = (isSignedIn ? accountProfile?.marketplaceEmail || accountProfile?.email : '') || '';
+    const area = (isSignedIn ? accountProfile?.marketplaceLocation || accountProfile?.townCity : '') || '';
+
+    return {
+      askingPriceExVat: selectedValue > 0 ? formatMoneyInput(selectedValue) : '',
+      marketplaceNotes: `${title} listed from a current Aim4price estimate.`,
+      sellerName,
+      sellerCompany,
+      sellerPhone,
+      sellerEmail,
+      province: accountProfile?.province || '',
+      area,
+    };
+  }
+
+  function openMarketplacePublishModal() {
+    if (!resultState) {
+      setMessage('Run an estimate before sending to marketplace.');
+      return;
+    }
+
+    if (!canUseMarketplacePublishFlow) {
+      setMessage('Marketplace listings are only available for owner, dealer and auctioneer accounts.');
+      return;
+    }
+
+    if (headlineValue === null) {
+      setMessage('Choose an available value before sending to marketplace.');
+      return;
+    }
+
+    setMarketplacePublishError('');
+    setMarketplaceDraft(buildDefaultMarketplaceDraft());
+  }
+
+  function clearMarketplacePhotoFiles(files = marketplacePhotoFiles) {
+    for (const photo of files) {
+      URL.revokeObjectURL(photo.previewUrl);
+    }
+    setMarketplacePhotoFiles([]);
+    if (marketplacePhotoInputRef.current) marketplacePhotoInputRef.current.value = '';
+  }
+
+  function closeMarketplacePublishModal() {
+    if (isPublishingMarketplace) return;
+    clearMarketplacePhotoFiles();
+    setMarketplaceDraft(null);
+    setMarketplacePublishError('');
+  }
+
+  function handleMarketplaceDraftChange(
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) {
+    const { name, value } = event.target;
+    setMarketplaceDraft((current) => (current ? { ...current, [name]: value } : current));
+  }
+
+  function handleMarketplacePriceChange(event: ChangeEvent<HTMLInputElement>) {
+    const next = formatMoneyInput(event.target.value);
+    setMarketplaceDraft((current) => (current ? { ...current, askingPriceExVat: next } : current));
+  }
+
+  function handleMarketplacePhotoChange(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []).filter((file) => file.type.startsWith('image/'));
+    if (!files.length) return;
+
+    const availableSlots = Math.max(0, MAX_MARKETPLACE_PHOTOS - marketplacePhotoFiles.length);
+    if (!availableSlots) {
+      setMarketplacePublishError(`You can upload a maximum of ${MAX_MARKETPLACE_PHOTOS} photos.`);
+      if (marketplacePhotoInputRef.current) marketplacePhotoInputRef.current.value = '';
+      return;
+    }
+
+    const selectedFiles = files.slice(0, availableSlots);
+    if (files.length > availableSlots) {
+      setMarketplacePublishError(`Only ${availableSlots} more photo${availableSlots === 1 ? '' : 's'} can be added.`);
+    } else {
+      setMarketplacePublishError('');
+    }
+
+    setMarketplacePhotoFiles((current) => [
+      ...current,
+      ...selectedFiles.map((file) => ({
+        id: createMarketplacePhotoId(),
+        file,
+        previewUrl: URL.createObjectURL(file),
+      })),
+    ]);
+
+    if (marketplacePhotoInputRef.current) marketplacePhotoInputRef.current.value = '';
+  }
+
+  function removeMarketplacePhoto(photoId: string) {
+    setMarketplacePhotoFiles((current) => {
+      const removed = current.find((photo) => photo.id === photoId);
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return current.filter((photo) => photo.id !== photoId);
+    });
+  }
+
+  async function uploadMarketplacePhotos(): Promise<string[]> {
+    if (!marketplacePhotoFiles.length) return [];
+
+    const formData = new FormData();
+    formData.append('uploadType', 'photo');
+    for (const photo of marketplacePhotoFiles) {
+      formData.append('files', photo.file);
+    }
+
+    const response = await fetch('/api/asset-register/uploads', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+    });
+    const data = (await response.json()) as MarketplaceUploadApiResponse;
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error ?? 'Failed to upload marketplace photos.');
+    }
+
+    return (data.uploads ?? [])
+      .map((upload) => String(upload.url ?? upload.href ?? upload.path ?? '').trim())
+      .filter(Boolean);
+  }
+
+  async function publishEstimateToMarketplace(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!resultState || !marketplaceDraft) {
+      setMarketplacePublishError('Run an estimate before sending to marketplace.');
+      return;
+    }
+
+    const selectedValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
+    if (selectedValue === null) {
+      setMarketplacePublishError('Choose an available value before sending to marketplace.');
+      return;
+    }
+
+    const askingPriceExVat = Math.round(parseMoneyInput(marketplaceDraft.askingPriceExVat) ?? 0);
+    if (askingPriceExVat <= 0) {
+      setMarketplacePublishError('Enter a valid asking price excluding VAT.');
+      return;
+    }
+
+    if (!marketplaceDraft.sellerName.trim() || !marketplaceDraft.sellerPhone.trim()) {
+      setMarketplacePublishError('Seller name and phone are required.');
+      return;
+    }
+
+    if (!isSignedIn) {
+      if (guestMarketplaceUploadCount >= GUEST_MARKETPLACE_UPLOAD_LIMIT) {
+        setMarketplacePublishError('You have used your 3 guest marketplace upload attempts. Create an account to continue.');
+        router.push('/auth#signup');
+        return;
+      }
+
+      const nextCount = incrementGuestMarketplaceUploadCount();
+      setGuestMarketplaceUploadCount(nextCount);
+      setMarketplacePublishError('Your estimate is ready. Create an account to publish this marketplace listing.');
+      router.push('/auth#signup');
+      return;
+    }
+
+    if (normalizedSignedInAccountType !== 'owner' && normalizedSignedInAccountType !== 'dealer') {
+      setMarketplacePublishError('Marketplace listings are only available for owner, dealer and auctioneer accounts.');
+      return;
+    }
+
+    setIsPublishingMarketplace(true);
+    setMarketplacePublishError('');
+
+    try {
+      const photoUrls = await uploadMarketplacePhotos();
+      const saveResponse = await fetch('/api/valuation-runs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(buildValuationSavePayload({ saveForMarketplace: true, photos: photoUrls })),
+      });
+      const saved = (await saveResponse.json()) as SaveValuationRunApiResponse;
+
+      if (!saveResponse.ok || !saved.ok || !saved.assetId) {
+        throw new Error(saved.error ?? 'Failed to prepare this marketplace asset.');
+      }
+
+      const publishResponse = await fetch('/api/marketplace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          assetId: saved.assetId,
+          askingPriceExVat,
+          marketplaceNotes: marketplaceDraft.marketplaceNotes,
+          sellerPhone: marketplaceDraft.sellerPhone,
+          sellerName: marketplaceDraft.sellerName,
+          sellerCompany: marketplaceDraft.sellerCompany,
+          sellerEmail: marketplaceDraft.sellerEmail,
+          province: marketplaceDraft.province,
+          area: marketplaceDraft.area,
+        }),
+      });
+      const published = (await publishResponse.json()) as MarketplaceApiResponse;
+
+      if (!publishResponse.ok || !published.ok) {
+        throw new Error(published.error ?? 'Failed to publish this marketplace listing.');
+      }
+
+      const listingReference = published.listing?.id ?? published.listing?.sourceAssetId ?? published.assetId ?? saved.assetId;
+      clearMarketplacePhotoFiles();
+      setMarketplaceDraft(null);
+      router.push(`/marketplace?listing=${encodeURIComponent(String(listingReference))}`);
+    } catch (error) {
+      console.error(error);
+      setMarketplacePublishError(error instanceof Error ? error.message : 'Failed to publish this marketplace listing.');
+    } finally {
+      setIsPublishingMarketplace(false);
+    }
+  }
+
   async function saveToAssetRegister() {
     if (!resultState) {
       setMessage('Run a valuation before saving.');
@@ -1209,6 +1669,11 @@ export default function ValuationClient() {
     if (!isSignedIn) {
       setMessage('Please create an account or log in to save to your asset register.');
       router.push('/auth#signup');
+      return;
+    }
+
+    if (normalizedSignedInAccountType !== 'owner') {
+      setMessage('Dealer and auctioneer accounts can publish from Get Estimate, but Asset Register saving is owner-only.');
       return;
     }
 
@@ -1222,48 +1687,12 @@ export default function ValuationClient() {
     setMessage('');
 
     try {
-      const payload =
-        resultState.kind === 'tractor'
-          ? {
-              modelId: resultState.result.model.id,
-              year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
-              hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
-              condition,
-              frontPto,
-              frontLoader,
-              gpsEnabled,
-              gpsType,
-              gpsYear,
-              userReplacementPriceExVat:
-                replacementPriceBasis === 'user' && selectedMethod === 'aim4price' && resultState.result.userReplacementPriceExVat
-                  ? resultState.result.userReplacementPriceExVat
-                  : null,
-              selectedMethod,
-              valuationVersion: 'v1',
-            }
-          : {
-              catalogModeUsed: 'generic_specs',
-              sectorKey: resultState.result.sector.key,
-              familyKey: resultState.result.family.key,
-              brandSlug: resultState.result.brand.slug,
-              typedModelName: resultState.result.typedModelName,
-              specsJson: resultState.result.specsJson,
-              year: resultState.result.year,
-              yearModelUnknown,
-              usageAmount: resultState.result.usageAmount,
-              lifeWorkedPercent: resultState.result.lifeWorkedPercent,
-              condition: resultState.result.condition,
-              userReplacementPriceExVat:
-                replacementPriceBasis === 'user' && selectedMethod === 'aim4price' ? resultState.result.userReplacementPriceExVat : null,
-              userReplacementPriceYear:
-                replacementPriceBasis === 'user' && selectedMethod === 'aim4price' ? resultState.result.userReplacementPriceYear : null,
-              selectedMethod,
-              valuationVersion: 'generic-v1',
-            };
+      const payload = buildValuationSavePayload();
 
       const response = await fetch('/api/valuation-runs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
       const data = (await response.json()) as SaveValuationRunApiResponse;
@@ -2700,6 +3129,24 @@ export default function ValuationClient() {
     <main className={styles.page}>
       <AppHeader active="valuation" />
       <div className={styles.container}>
+        {marketplaceMode ? (
+          <section className={styles.marketplaceModeNotice}>
+            <span>Marketplace listing path</span>
+            <h1>Get an Aim4price value before the listing goes live.</h1>
+            <p>
+              The marketplace only accepts listings that start with an Aim4price estimate. After the value is calculated,
+              use Send to Marketplace to confirm the asking price, upload photos and check seller details.
+            </p>
+            <small>
+              {!isSignedIn
+                ? `Guest limits: ${Math.min(guestValuationCount, 3)}/3 estimates used and ${Math.min(guestMarketplaceUploadCount, GUEST_MARKETPLACE_UPLOAD_LIMIT)}/3 marketplace upload attempts used.`
+                : isDealerAccount
+                  ? 'Dealer and auctioneer accounts publish through Get Estimate only. Asset Register listing is owner-only.'
+                  : 'Owner accounts can also create listings from the Asset Register.'}
+            </small>
+          </section>
+        ) : null}
+
         <section className={styles.wizardShell}>
           <div id="valuation-wizard-card" className={styles.wizardCard}>
             {step > 1 ? (
@@ -2732,12 +3179,34 @@ export default function ValuationClient() {
               </button>
               {step === 1 ? null : step === 5 ? (
                 <div className={styles.resultActionGroup}>
-                  <button type="button" className={styles.secondaryButton} onClick={resetToSectorSelection} disabled={saveLoading}>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={resetToSectorSelection}
+                    disabled={saveLoading || isPublishingMarketplace}
+                  >
                     New valuation
                   </button>
-                  <button type="button" className={styles.primaryButton} onClick={saveToAssetRegister} disabled={saveLoading || !resultState}>
-                    {saveLoading ? 'Saving...' : 'Save to Asset Register'}
-                  </button>
+                  {marketplaceMode && canUseMarketplacePublishFlow ? (
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={openMarketplacePublishModal}
+                      disabled={saveLoading || isPublishingMarketplace || !resultState}
+                    >
+                      {isPublishingMarketplace ? 'Publishing...' : 'Send to Marketplace'}
+                    </button>
+                  ) : null}
+                  {canSaveToAssetRegister ? (
+                    <button
+                      type="button"
+                      className={marketplaceMode ? styles.secondaryButton : styles.primaryButton}
+                      onClick={saveToAssetRegister}
+                      disabled={saveLoading || isPublishingMarketplace || !resultState}
+                    >
+                      {saveLoading ? 'Saving...' : 'Save to Asset Register'}
+                    </button>
+                  ) : null}
                 </div>
               ) : (
                 <button
@@ -2753,6 +3222,155 @@ export default function ValuationClient() {
           </div>
         </section>
       </div>
+
+      {marketplaceDraft ? (
+        <div className={styles.marketplacePublishOverlay} onClick={closeMarketplacePublishModal}>
+          <form
+            className={styles.marketplacePublishModal}
+            onSubmit={publishEstimateToMarketplace}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.marketplacePublishClose}
+              onClick={closeMarketplacePublishModal}
+              aria-label="Close marketplace modal"
+              disabled={isPublishingMarketplace}
+            >
+              ×
+            </button>
+
+            <div className={styles.marketplacePublishHeader}>
+              <span>Send to marketplace</span>
+              <h2>Confirm the marketplace listing.</h2>
+              <p>Check the title, asking price, photos and seller details before it goes live.</p>
+            </div>
+
+            <div className={styles.marketplaceSummaryGrid}>
+              <div className={styles.marketplaceTitlePreview}>
+                <span>Listing title</span>
+                <strong>{buildMarketplaceEstimateTitle()}</strong>
+                <small>Year model, usage and condition are included in the marketplace title.</small>
+              </div>
+              <div className={styles.marketplaceEstimateValueCard}>
+                <span>Estimate Value</span>
+                <strong>{headlineValue !== null ? money(headlineValue) : 'N/A'}</strong>
+                <small>Excl. VAT</small>
+              </div>
+            </div>
+
+            <div className={styles.marketplacePublishGrid}>
+              <section className={styles.marketplacePublishPanel}>
+                <label className={styles.marketplaceField}>
+                  <span>Asking price excl. VAT</span>
+                  <div className={styles.marketplaceCurrencyInput}>
+                    <small>R</small>
+                    <input
+                      name="askingPriceExVat"
+                      inputMode="numeric"
+                      value={marketplaceDraft.askingPriceExVat}
+                      onChange={handleMarketplacePriceChange}
+                      placeholder="0"
+                    />
+                  </div>
+                </label>
+
+                <div className={styles.marketplacePhotoPanel}>
+                  <div>
+                    <span>Photos</span>
+                    <p>Upload the listing photos directly here. JPG, PNG and WEBP are supported.</p>
+                  </div>
+                  <input
+                    ref={marketplacePhotoInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    hidden
+                    onChange={handleMarketplacePhotoChange}
+                  />
+                  <button type="button" className={styles.marketplacePhotoButton} onClick={() => marketplacePhotoInputRef.current?.click()}>
+                    Upload photos
+                  </button>
+
+                  {marketplacePhotoFiles.length ? (
+                    <div className={styles.marketplacePhotoGrid}>
+                      {marketplacePhotoFiles.map((photo) => (
+                        <div key={photo.id} className={styles.marketplacePhotoThumb}>
+                          <img src={photo.previewUrl} alt="Marketplace upload preview" />
+                          <button type="button" onClick={() => removeMarketplacePhoto(photo.id)} aria-label="Remove photo">
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className={styles.marketplaceEmptyPhotos}>No photos uploaded yet.</div>
+                  )}
+                </div>
+              </section>
+
+              <section className={styles.marketplacePublishPanel}>
+                <div className={styles.marketplaceSellerHeader}>
+                  <h3>Edit seller details</h3>
+                  <p>Shown to signed-in marketplace users.</p>
+                </div>
+
+                <div className={styles.marketplaceSellerGrid}>
+                  <label className={`${styles.marketplaceField} ${styles.marketplaceWideField}`}>
+                    <span>Business name</span>
+                    <input name="sellerCompany" value={marketplaceDraft.sellerCompany} onChange={handleMarketplaceDraftChange} />
+                  </label>
+                  <label className={styles.marketplaceField}>
+                    <span>Contact name</span>
+                    <input name="sellerName" value={marketplaceDraft.sellerName} onChange={handleMarketplaceDraftChange} required />
+                  </label>
+                  <label className={styles.marketplaceField}>
+                    <span>Phone</span>
+                    <input name="sellerPhone" value={marketplaceDraft.sellerPhone} onChange={handleMarketplaceDraftChange} required />
+                  </label>
+                  <label className={`${styles.marketplaceField} ${styles.marketplaceWideField}`}>
+                    <span>Email</span>
+                    <input type="email" name="sellerEmail" value={marketplaceDraft.sellerEmail} onChange={handleMarketplaceDraftChange} />
+                  </label>
+                  <label className={styles.marketplaceField}>
+                    <span>Province</span>
+                    <input name="province" value={marketplaceDraft.province} onChange={handleMarketplaceDraftChange} />
+                  </label>
+                  <label className={styles.marketplaceField}>
+                    <span>Area</span>
+                    <input name="area" value={marketplaceDraft.area} onChange={handleMarketplaceDraftChange} />
+                  </label>
+                  <label className={`${styles.marketplaceField} ${styles.marketplaceWideField}`}>
+                    <span>Notes</span>
+                    <textarea name="marketplaceNotes" value={marketplaceDraft.marketplaceNotes} onChange={handleMarketplaceDraftChange} rows={4} />
+                  </label>
+                </div>
+              </section>
+            </div>
+
+            {!isSignedIn ? (
+              <div className={styles.marketplaceGuestWarning}>
+                <strong>Account required before publishing.</strong>
+                <p>
+                  Guests can run 3 estimates and make 3 marketplace upload attempts. This attempt will take you to account
+                  creation so the listing can be tied to your seller profile.
+                </p>
+              </div>
+            ) : null}
+
+            {marketplacePublishError ? <p className={styles.marketplacePublishError}>{marketplacePublishError}</p> : null}
+
+            <div className={styles.marketplacePublishActions}>
+              <button type="button" className={styles.secondaryButton} onClick={closeMarketplacePublishModal} disabled={isPublishingMarketplace}>
+                Close
+              </button>
+              <button type="submit" className={styles.primaryButton} disabled={isPublishingMarketplace}>
+                {isPublishingMarketplace ? 'Publishing...' : isSignedIn ? 'Confirm and publish' : 'Create account to publish'}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </main>
   );
 }

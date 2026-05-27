@@ -8163,3 +8163,423 @@
     width: min(21rem, 78vw);
   }
 }
+
+/* Marketplace estimate-to-listing flow */
+.marketplaceModeNotice {
+  display: grid;
+  gap: 0.55rem;
+  width: min(100%, 70rem);
+  margin: 0 auto 1.25rem;
+  padding: clamp(1.15rem, 2.6vw, 1.75rem);
+  border: 1px solid rgba(180, 212, 200, 0.92);
+  border-radius: 1.35rem;
+  background: linear-gradient(135deg, rgba(236, 248, 242, 0.96), rgba(255, 255, 255, 0.98));
+  box-shadow: 0 18px 42px rgba(11, 45, 35, 0.08);
+}
+
+.marketplaceModeNotice span {
+  color: #165340;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.marketplaceModeNotice h1 {
+  margin: 0;
+  color: #0c3f33;
+  font-size: clamp(1.65rem, 3.6vw, 2.5rem);
+  font-weight: 820;
+  line-height: 1.03;
+  letter-spacing: -0.055em;
+}
+
+.marketplaceModeNotice p,
+.marketplaceModeNotice small {
+  margin: 0;
+  color: #607485;
+  font-weight: 560;
+  line-height: 1.48;
+}
+
+.marketplaceModeNotice small {
+  color: #315949;
+  font-weight: 720;
+}
+
+.marketplacePublishOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.35rem;
+  background: rgba(20, 31, 36, 0.55);
+  backdrop-filter: blur(12px);
+}
+
+.marketplacePublishModal {
+  position: relative;
+  width: min(96vw, 82rem);
+  max-height: min(88dvh, 50rem);
+  overflow-y: auto;
+  padding: clamp(1.35rem, 2.4vw, 2.15rem);
+  border: 1px solid rgba(201, 220, 233, 0.96);
+  border-radius: 1.85rem;
+  background: rgba(255, 255, 255, 0.99);
+  box-shadow: 0 30px 86px rgba(8, 27, 34, 0.28);
+}
+
+.marketplacePublishClose {
+  position: absolute;
+  top: 1.05rem;
+  right: 1.05rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.05rem;
+  height: 3.05rem;
+  border: 1px solid rgba(205, 222, 234, 0.98);
+  border-radius: 999px;
+  background: #f7fbff;
+  color: #143d34;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.marketplacePublishClose:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.marketplacePublishHeader {
+  padding-right: 3.6rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(207, 224, 235, 0.96);
+}
+
+.marketplacePublishHeader span {
+  display: inline-flex;
+  margin-bottom: 0.55rem;
+  color: #165340;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.marketplacePublishHeader h2 {
+  margin: 0;
+  color: #0b3f34;
+  font-size: clamp(2rem, 4.4vw, 3.25rem);
+  font-weight: 840;
+  line-height: 0.98;
+  letter-spacing: -0.07em;
+}
+
+.marketplacePublishHeader p {
+  margin: 0.65rem 0 0;
+  color: #607485;
+  font-size: 1.05rem;
+  font-weight: 560;
+  line-height: 1.45;
+}
+
+.marketplaceSummaryGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 19rem);
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+.marketplaceTitlePreview,
+.marketplaceEstimateValueCard,
+.marketplacePublishPanel {
+  border: 1px solid rgba(202, 220, 233, 0.96);
+  border-radius: 1.1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+}
+
+.marketplaceTitlePreview,
+.marketplaceEstimateValueCard {
+  display: grid;
+  gap: 0.38rem;
+  padding: 1rem 1.1rem;
+}
+
+.marketplaceTitlePreview span,
+.marketplaceEstimateValueCard span,
+.marketplaceField span,
+.marketplacePhotoPanel > div > span {
+  color: #607485;
+  font-size: 0.82rem;
+  font-weight: 780;
+}
+
+.marketplaceTitlePreview strong {
+  color: #113b32;
+  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+  line-height: 1.25;
+}
+
+.marketplaceTitlePreview small,
+.marketplaceEstimateValueCard small,
+.marketplacePhotoPanel p,
+.marketplaceSellerHeader p,
+.marketplaceGuestWarning p {
+  color: #607485;
+  font-weight: 560;
+  line-height: 1.45;
+}
+
+.marketplaceEstimateValueCard {
+  align-content: center;
+  text-align: right;
+}
+
+.marketplaceEstimateValueCard strong {
+  color: #0b3f34;
+  font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+  font-weight: 840;
+}
+
+.marketplacePublishGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.marketplacePublishPanel {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.marketplaceField {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.marketplaceField input,
+.marketplaceField textarea {
+  width: 100%;
+  border: 1px solid rgba(198, 217, 231, 0.98);
+  border-radius: 0.9rem;
+  background: #ffffff;
+  color: #20323f;
+  font: inherit;
+  font-weight: 620;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.marketplaceField input {
+  min-height: 3.15rem;
+  padding: 0 1rem;
+}
+
+.marketplaceField textarea {
+  min-height: 7rem;
+  padding: 0.9rem 1rem;
+  resize: vertical;
+}
+
+.marketplaceField input:focus,
+.marketplaceField textarea:focus,
+.marketplaceCurrencyInput:focus-within {
+  border-color: #165340;
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.12);
+}
+
+.marketplaceCurrencyInput {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  min-height: 4.9rem;
+  border: 1px solid rgba(169, 199, 188, 0.98);
+  border-radius: 1.1rem;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.marketplaceCurrencyInput small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.8rem;
+  height: 100%;
+  border-right: 1px solid rgba(188, 207, 198, 0.95);
+  color: #173f36;
+  font-size: 1.05rem;
+  font-weight: 820;
+}
+
+.marketplaceCurrencyInput input {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  padding: 0 1rem;
+  color: #113b32;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  font-weight: 820;
+  letter-spacing: -0.06em;
+}
+
+.marketplacePhotoPanel {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px dashed rgba(161, 193, 181, 0.98);
+  border-radius: 1.1rem;
+  background: rgba(240, 248, 244, 0.72);
+}
+
+.marketplacePhotoPanel p,
+.marketplaceSellerHeader p,
+.marketplaceGuestWarning p {
+  margin: 0.25rem 0 0;
+}
+
+.marketplacePhotoButton {
+  min-height: 2.75rem;
+  justify-self: start;
+  padding: 0 1.1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #165340;
+  color: #ffffff;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.marketplacePhotoGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.marketplacePhotoThumb {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.85rem;
+  background: #e9eef2;
+  aspect-ratio: 4 / 3;
+}
+
+.marketplacePhotoThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.marketplacePhotoThumb button {
+  position: absolute;
+  top: 0.38rem;
+  right: 0.38rem;
+  width: 1.85rem;
+  height: 1.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(10, 25, 30, 0.74);
+  color: #ffffff;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.marketplaceEmptyPhotos {
+  display: grid;
+  place-items: center;
+  min-height: 5.6rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.82);
+  color: #607485;
+  font-weight: 650;
+}
+
+.marketplaceSellerHeader h3 {
+  margin: 0;
+  color: #0b3f34;
+  font-size: 1.45rem;
+  font-weight: 820;
+  letter-spacing: -0.04em;
+}
+
+.marketplaceSellerGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.82rem;
+}
+
+.marketplaceWideField {
+  grid-column: 1 / -1;
+}
+
+.marketplaceGuestWarning {
+  margin-top: 1rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(230, 178, 86, 0.42);
+  border-radius: 1rem;
+  background: rgba(255, 248, 232, 0.95);
+}
+
+.marketplaceGuestWarning strong {
+  display: block;
+  color: #5d4216;
+  font-weight: 820;
+}
+
+.marketplacePublishError {
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border-radius: 0.9rem;
+  background: #fff1f0;
+  color: #a1271f;
+  font-weight: 700;
+}
+
+.marketplacePublishActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(207, 224, 235, 0.96);
+}
+
+@media (max-width: 980px) {
+  .marketplaceSummaryGrid,
+  .marketplacePublishGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .marketplaceEstimateValueCard {
+    text-align: left;
+  }
+}
+
+@media (max-width: 680px) {
+  .marketplacePublishOverlay {
+    align-items: flex-start;
+    padding: 0.75rem;
+  }
+
+  .marketplacePublishModal {
+    max-height: calc(100dvh - 1.5rem);
+    border-radius: 1.25rem;
+  }
+
+  .marketplaceSellerGrid,
+  .marketplacePhotoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .marketplacePublishActions {
+    flex-direction: column-reverse;
+  }
+}
