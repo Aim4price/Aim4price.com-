@@ -25,9 +25,12 @@ type MarketplaceFilters = {
   type: string;
 };
 
+type MarketplaceAccountType = 'owner' | 'dealer' | 'public' | string;
+
 type MarketplaceClientProps = {
   initialFilters: MarketplaceFilters;
   isSignedIn: boolean;
+  accountType?: MarketplaceAccountType | null;
 };
 
 type MarketplaceApiResponse = {
@@ -1561,11 +1564,14 @@ function mergeFamilies(records: EquipmentFamilyRecord[]): FamilyOption[] {
   });
 }
 
-export default function MarketplaceClient({ initialFilters, isSignedIn }: MarketplaceClientProps) {
+export default function MarketplaceClient({ initialFilters, isSignedIn, accountType = 'public' }: MarketplaceClientProps) {
   const initialSearch = [initialFilters.brand, initialFilters.model]
     .map((value) => String(value ?? '').trim())
     .filter(Boolean)
     .join(' ');
+  const normalizedAccountType = normalize(accountType || (isSignedIn ? 'owner' : 'public'));
+  const isOwnerAccount = normalizedAccountType === 'owner';
+  const isDealerAccount = normalizedAccountType === 'dealer';
 
   const [query, setQuery] = useState(initialSearch);
   const [items, setItems] = useState<MarketplaceListing[]>(seedMarketplaceListings);
@@ -1580,6 +1586,8 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
   const [shareListing, setShareListing] = useState<MarketplaceListing | null>(null);
   const [shareFeedback, setShareFeedback] = useState('');
   const [isCreatingJpegAd, setIsCreatingJpegAd] = useState(false);
+  const [createListingModalOpen, setCreateListingModalOpen] = useState(false);
+  const [marketplaceAccessPromptOpen, setMarketplaceAccessPromptOpen] = useState(false);
   const [listingQueryId, setListingQueryId] = useState('');
   const [sectorFilter, setSectorFilter] = useState<SectorKey | ''>('');
   const [familyFilter, setFamilyFilter] = useState('');
@@ -1887,9 +1895,15 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
       return;
     }
 
+    if (!isSignedIn) {
+      setMarketplaceAccessPromptOpen(true);
+      updateListingUrl(null);
+      return;
+    }
+
     setActiveListing((current) => (current?.id === matchedListing.id ? current : matchedListing));
     setActiveImageIndex(0);
-  }, [items, listingQueryId]);
+  }, [isSignedIn, items, listingQueryId]);
 
   useEffect(() => {
     if (!activeListing) {
@@ -1980,7 +1994,38 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
     setVisibleCount(LISTINGS_PER_LOAD);
   }
 
+  function goToMarketplaceEstimate() {
+    window.location.assign('/valuation?marketplace=1');
+  }
+
+  function handleCreateListingClick() {
+    if (!isSignedIn || isDealerAccount) {
+      goToMarketplaceEstimate();
+      return;
+    }
+
+    if (isOwnerAccount) {
+      setCreateListingModalOpen(true);
+      return;
+    }
+
+    goToMarketplaceEstimate();
+  }
+
+  function openMarketplaceAccessPrompt() {
+    setMarketplaceAccessPromptOpen(true);
+  }
+
+  function closeMarketplaceAccessPrompt() {
+    setMarketplaceAccessPromptOpen(false);
+  }
+
   function openListing(listing: MarketplaceListing) {
+    if (!isSignedIn) {
+      openMarketplaceAccessPrompt();
+      return;
+    }
+
     setActiveListing(listing);
     setActiveImageIndex(0);
     updateListingUrl(listing.id);
@@ -1995,6 +2040,11 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
   }
 
   function openShareSheet(listing: MarketplaceListing) {
+    if (!isSignedIn) {
+      openMarketplaceAccessPrompt();
+      return;
+    }
+
     setShareListing(listing);
     setShareFeedback('');
   }
@@ -2166,12 +2216,13 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
             ) : null}
           </label>
 
-          <a href={isSignedIn ? '/asset-register' : '/auth#signup'} className={styles.createButton}>
+          <button type="button" className={styles.createButton} onClick={handleCreateListingClick}>
             <span className={styles.createIcon} aria-hidden="true">
               <IconPlus />
             </span>
             Create new listing
-          </a>
+          </button>
+          <p className={styles.createListingHint}>Listings must start with an Aim4price value from Get Estimate.</p>
 
           <div className={styles.sidebarDivider} />
 
@@ -2395,6 +2446,78 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
         </section>
       </div>
 
+      {createListingModalOpen ? (
+        <div className={styles.createListingOverlay} onClick={() => setCreateListingModalOpen(false)}>
+          <div
+            className={styles.createListingDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-listing-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.createListingCloseButton}
+              onClick={() => setCreateListingModalOpen(false)}
+              aria-label="Close create listing options"
+            >
+              <IconClose />
+            </button>
+
+            <div className={styles.createListingHeader}>
+              <span>New marketplace listing</span>
+              <h2 id="create-listing-title">Choose how this listing must be created.</h2>
+              <p>
+                Aim4price only allows marketplace uploads after a machine has an Aim4price value. This keeps every
+                listing linked to a valuation instead of a loose advert.
+              </p>
+            </div>
+
+            <div className={styles.createListingChoiceGrid}>
+              <a href="/asset-register" className={styles.createListingChoiceCard}>
+                <strong>From Asset Register</strong>
+                <span>Use an existing saved asset and publish it from its Manage modal.</span>
+              </a>
+              <button type="button" className={styles.createListingChoiceCard} onClick={goToMarketplaceEstimate}>
+                <strong>Via Get Estimate</strong>
+                <span>Run a fresh estimate, upload photos, then send it straight to marketplace.</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {marketplaceAccessPromptOpen ? (
+        <div className={styles.createListingOverlay} onClick={closeMarketplaceAccessPrompt}>
+          <div
+            className={styles.marketplaceAccessDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="marketplace-access-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button type="button" className={styles.createListingCloseButton} onClick={closeMarketplaceAccessPrompt} aria-label="Close marketplace access notice">
+              <IconClose />
+            </button>
+
+            <div className={styles.createListingHeader}>
+              <span>Account required</span>
+              <h2 id="marketplace-access-title">Create an account to see marketplace information.</h2>
+              <p>
+                Guests can browse the public cards, but seller details, listing information and sharing tools are only
+                available after login. Guests also get 3 free estimates and 3 marketplace upload attempts before an
+                account is required.
+              </p>
+            </div>
+
+            <div className={styles.marketplaceAccessActions}>
+              <a href="/auth#signup" className={styles.marketplaceAccessPrimary}>Create account</a>
+              <a href="/auth#login" className={styles.marketplaceAccessSecondary}>Login</a>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {activeListing ? (
         <div className={styles.modalOverlay} onClick={closeListing}>
           <div
@@ -2575,8 +2698,8 @@ export default function MarketplaceClient({ initialFilters, isSignedIn }: Market
                     </div>
 
                     <div className={styles.contactBlurOverlay}>
-                      <strong>Sign in to view seller details.</strong>
-                      <p>Seller contact information is hidden until you are signed in.</p>
+                      <strong>Create an account to view marketplace information.</strong>
+                      <p>Seller contact details and full marketplace information are available only to signed-in Aim4price users.</p>
                       <div className={styles.lockedActions}>
                         <a href="/auth#login">Login</a>
                         <a href="/auth#signup">Create account</a>

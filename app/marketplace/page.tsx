@@ -148,6 +148,7 @@ export async function generateMetadata({ searchParams }: MarketplacePageProps): 
 
 export default async function MarketplacePage({ searchParams }: MarketplacePageProps) {
   const session = await getServerSession();
+  let accountType = session?.user?.id ? 'owner' : 'public';
 
   if (session?.user?.id) {
     const profile = await getAccountProfile({
@@ -156,6 +157,8 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
       email: session.user.email,
     });
 
+    accountType = profile.accountType;
+
     if (profile.accountType !== 'owner' && profile.accountType !== 'dealer') {
       redirect('/leads');
     }
@@ -163,7 +166,8 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
 
   return (
     <MarketplaceClient
-      isSignedIn={Boolean(session)}
+      isSignedIn={Boolean(session?.user?.id)}
+      accountType={accountType}
       initialFilters={{
         brand: pick(searchParams?.brand) || pick(searchParams?.query),
         model: pick(searchParams?.model),
