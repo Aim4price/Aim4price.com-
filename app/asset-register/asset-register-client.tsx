@@ -151,6 +151,8 @@ type AssetFilterKey =
   | 'not-licensed'
   | 'highest-value'
   | 'lowest-value'
+  | 'highest-replacement-price'
+  | 'lowest-replacement-price'
   | 'aim4price-value'
   | 'manual-value'
   | 'marketplace';
@@ -508,8 +510,10 @@ const ASSET_FILTER_OPTIONS: Array<{ value: AssetFilterKey; label: string }> = [
   { value: 'not-financed', label: 'Not financed' },
   { value: 'licensed', label: 'Licensed' },
   { value: 'not-licensed', label: 'Not licensed' },
-  { value: 'highest-value', label: 'Highest value' },
-  { value: 'lowest-value', label: 'Lowest value' },
+  { value: 'highest-value', label: 'Highest current value' },
+  { value: 'lowest-value', label: 'Lowest current value' },
+  { value: 'highest-replacement-price', label: 'Highest replacement price' },
+  { value: 'lowest-replacement-price', label: 'Lowest replacement price' },
   { value: 'aim4price-value', label: 'Aim4price value' },
   { value: 'manual-value', label: 'Manual value' },
   { value: 'marketplace', label: 'Marketplace' },
@@ -1827,6 +1831,14 @@ function compareAssetsByRegisterPriority(left: RegisterAsset, right: RegisterAss
     if (valueDifference) return valueDifference;
   }
 
+  if (assetFilter === 'highest-replacement-price' || assetFilter === 'lowest-replacement-price') {
+    const leftValue = readAssetReplacementPriceExVat(left) ?? 0;
+    const rightValue = readAssetReplacementPriceExVat(right) ?? 0;
+    const valueDifference = assetFilter === 'highest-replacement-price' ? rightValue - leftValue : leftValue - rightValue;
+
+    if (valueDifference) return valueDifference;
+  }
+
   const attentionTimestampDifference = assetAttentionTimestamp(right) - assetAttentionTimestamp(left);
   if (attentionTimestampDifference) return attentionTimestampDifference;
 
@@ -1900,6 +1912,14 @@ function readAssetReplacementPriceExVat(asset: Pick<RegisterAsset, 'replacementP
   const fromSpecs = readNumberFromSpecs(specs, [...REPLACEMENT_PRICE_SPEC_KEYS]);
 
   return fromSpecs !== null && fromSpecs > 0 ? Math.round(fromSpecs) : null;
+}
+
+function sumAssetReplacementValues(assetList: Array<Pick<RegisterAsset, 'replacementPriceExVat' | 'specsJson'>>): number {
+  return assetList.reduce((sum, asset) => sum + (readAssetReplacementPriceExVat(asset) ?? 0), 0);
+}
+
+function countAssetsWithReplacementPrice(assetList: Array<Pick<RegisterAsset, 'replacementPriceExVat' | 'specsJson'>>): number {
+  return assetList.filter((asset) => readAssetReplacementPriceExVat(asset) !== null).length;
 }
 
 function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
@@ -2238,6 +2258,8 @@ function buildSearchableText(asset: RegisterAsset): string {
     asset.cab,
     asset.yearModel ? String(asset.yearModel) : '',
     asset.hours !== null && typeof asset.hours !== 'undefined' ? String(asset.hours) : '',
+    readAssetReplacementPriceExVat(asset) !== null ? String(readAssetReplacementPriceExVat(asset)) : '',
+    readAssetReplacementPriceExVat(asset) !== null ? `replacement price replacement value ${money(readAssetReplacementPriceExVat(asset) ?? 0)}` : 'replacement price not set',
     getAssetUsageMetric(asset),
     asset.lifeWorkedPercent !== null && typeof asset.lifeWorkedPercent !== 'undefined' ? String(asset.lifeWorkedPercent) : '',
     buildAssetUsageMeta(asset),
@@ -2258,6 +2280,7 @@ function buildExportDetail(asset: RegisterAsset): string {
     `Finance: ${statusChoiceReportLabel(readFinanceStatusChoice(asset))}`,
     `License: ${statusChoiceReportLabel(readLicenseStatusChoice(asset))}`,
     readLicenseRegistrationNumber(asset) ? `Registration: ${readLicenseRegistrationNumber(asset)}` : '',
+    readAssetReplacementPriceExVat(asset) !== null ? `Replacement: ${money(readAssetReplacementPriceExVat(asset) ?? 0)}` : 'Replacement: Not set',
     assetDocuments(asset).length ? `Documents: ${assetDocuments(asset).length}` : '',
   ].filter(Boolean);
 
@@ -3049,6 +3072,9 @@ export default function AssetRegisterClient() {
 
   const totalValueInclVat = useMemo(() => Math.round(totalValue * 1.15), [totalValue]);
   const displayedRegisterValue = registerValueVatMode === 'included' ? totalValueInclVat : totalValue;
+  const totalReplacementValue = useMemo(() => sumAssetReplacementValues(assets), [assets]);
+  const totalReplacementValueInclVat = useMemo(() => Math.round(totalReplacementValue * 1.15), [totalReplacementValue]);
+  const replacementPricedAssetCount = useMemo(() => countAssetsWithReplacementPrice(assets), [assets]);
 
   const aim4priceValuedEquipmentCount = useMemo(() => {
     return assets.filter((asset) => isAim4priceValuedAsset(asset)).length;
@@ -3198,6 +3224,8 @@ export default function AssetRegisterClient() {
         break;
       case 'highest-value':
       case 'lowest-value':
+      case 'highest-replacement-price':
+      case 'lowest-replacement-price':
         break;
       case 'aim4price-value':
         nextAssets = nextAssets.filter((asset) => isAim4priceValuedAsset(asset));
@@ -3345,8 +3373,7 @@ export default function AssetRegisterClient() {
 
   function validateAssetDetailsDraft(): boolean {
     const value = parseRegisterValueInput(assetDraft.value);
-    const hasReplacementPrice = assetDraft.replacementPrice.trim() !== '';
-    const replacementPrice = hasReplacementPrice ? parseRegisterValueInput(assetDraft.replacementPrice) : null;
+    const replacementPrice = parseRegisterValueInput(assetDraft.replacementPrice);
     const hasYearModel = assetDraft.yearModel.trim() !== '';
     const yearModel = hasYearModel ? Number(assetDraft.yearModel) : null;
     const hasHours = assetDraft.hours.trim() !== '';
@@ -3360,8 +3387,8 @@ export default function AssetRegisterClient() {
       return false;
     }
 
-    if (hasReplacementPrice && (!replacementPrice || replacementPrice <= 0)) {
-      setNotice({ tone: 'error', message: 'Replacement price must be greater than zero when entered.' });
+    if (!replacementPrice || replacementPrice <= 0) {
+      setNotice({ tone: 'error', message: 'Replacement price is required and must be greater than zero.' });
       return false;
     }
 
@@ -3941,8 +3968,7 @@ export default function AssetRegisterClient() {
     }
 
     const value = parseRegisterValueInput(assetDraft.value);
-    const hasReplacementPrice = assetDraft.replacementPrice.trim() !== '';
-    const replacementPrice = hasReplacementPrice ? parseRegisterValueInput(assetDraft.replacementPrice) : null;
+    const replacementPrice = parseRegisterValueInput(assetDraft.replacementPrice);
     const hasYearModel = assetDraft.yearModel.trim() !== '';
     const yearModel = hasYearModel ? Number(assetDraft.yearModel) : null;
     const hasHours = assetDraft.hours.trim() !== '';
@@ -3956,8 +3982,8 @@ export default function AssetRegisterClient() {
       return;
     }
 
-    if (hasReplacementPrice && (!replacementPrice || replacementPrice <= 0)) {
-      setNotice({ tone: 'error', message: 'Replacement price must be greater than zero when entered.' });
+    if (!replacementPrice || replacementPrice <= 0) {
+      setNotice({ tone: 'error', message: 'Replacement price is required and must be greater than zero.' });
       return;
     }
 
@@ -4043,8 +4069,8 @@ export default function AssetRegisterClient() {
       user_replacement_price_ex_vat: replacementPrice,
       officialReplacementPriceExVat: replacementPrice,
       official_replacement_price_ex_vat: replacementPrice,
-      replacementPriceBasis: replacementPrice ? 'user' : '',
-      replacement_price_basis: replacementPrice ? 'user' : '',
+      replacementPriceBasis: 'user',
+      replacement_price_basis: 'user',
       insuranceNote: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
       insurance_note: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
       insuredNote: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
@@ -4432,6 +4458,7 @@ export default function AssetRegisterClient() {
       { label: asset.kind === 'property' ? 'Year Built' : 'Year', value: asset.yearModel ? String(asset.yearModel) : '—' },
       { label: 'Usage', value: buildAssetUsageValue(asset) },
       { label: 'Condition', value: conditionLabel(asset.condition) },
+      { label: 'Replacement Price', value: readAssetReplacementPriceExVat(asset) !== null ? `${money(readAssetReplacementPriceExVat(asset) ?? 0)} excl. VAT` : 'Not set' },
       { label: 'Serial Number', value: asset.serialNumber || '—' },
       { label: 'Insured', value: statusChoiceReportLabel(readInsuranceStatusChoice(asset)) },
       { label: 'Financed', value: statusChoiceReportLabel(readFinanceStatusChoice(asset)) },
@@ -4626,6 +4653,9 @@ export default function AssetRegisterClient() {
       kind: asset.kind,
       value: asset.value,
       selectedValueExVat: asset.selectedValueExVat,
+      replacementPriceExVat: readAssetReplacementPriceExVat(asset),
+      replacementPriceUsedExVat: readAssetReplacementPriceExVat(asset),
+      userReplacementPriceExVat: readAssetReplacementPriceExVat(asset),
       selectedMethod: asset.selectedMethod,
       brandName: asset.brandName,
       modelName: asset.modelName,
@@ -4639,6 +4669,10 @@ export default function AssetRegisterClient() {
         financeStatus,
         insuranceStatus,
         licenseStatus,
+        replacementPriceExVat: readAssetReplacementPriceExVat(asset),
+        replacement_price_ex_vat: readAssetReplacementPriceExVat(asset),
+        replacementPriceUsedExVat: readAssetReplacementPriceExVat(asset),
+        replacement_price_used_ex_vat: readAssetReplacementPriceExVat(asset),
       },
       depreciationMethodUsed: asset.depreciationMethodUsed,
       lifeWorkedPercent: asset.lifeWorkedPercent,
@@ -4690,6 +4724,9 @@ export default function AssetRegisterClient() {
         totalValue,
         registerValue: totalValue,
         totalValueInclVat,
+        totalReplacementValue,
+        totalReplacementValueInclVat,
+        replacementPricedAssetCount,
         aim4priceAssetCount: aim4priceValuedEquipmentCount,
         manualAssetCount: manualAssetStats.count,
         financedAssetCount: financedAssetStats.count,
@@ -4789,6 +4826,9 @@ export default function AssetRegisterClient() {
     const reportAssets = filterAssetsByPdfReportKind(assets, reportKind);
     const reportValue = sumAssetValues(reportAssets);
     const reportValueInclVat = Math.round(reportValue * 1.15);
+    const reportReplacementValue = sumAssetReplacementValues(reportAssets);
+    const reportReplacementValueInclVat = Math.round(reportReplacementValue * 1.15);
+    const reportReplacementPricedCount = countAssetsWithReplacementPrice(reportAssets);
     const reportAim4priceStats = calculateAssetStats(reportAssets, isAim4priceValuedAsset);
     const reportInsuredStats = calculateAssetStats(reportAssets, (asset) => readInsuranceStatusChoice(asset) === 'yes');
     const reportFinancedStats = calculateAssetStats(reportAssets, (asset) => readFinanceStatusChoice(asset) === 'yes');
@@ -4812,7 +4852,7 @@ export default function AssetRegisterClient() {
       ownerMeta: buildOwnerMeta(profile),
       intro: reportOption.intro,
       registerValue: money(reportValue),
-      registerValueNote: `VAT excluded · ${money(reportValueInclVat)} incl. VAT`,
+      registerValueNote: `VAT excluded · ${money(reportValueInclVat)} incl. VAT · Replacement ${money(reportReplacementValue)} excl. VAT`,
       ownerRows: [
         { label: 'Name', value: ownerName },
         { label: 'Email', value: ownerEmail },
@@ -4823,6 +4863,7 @@ export default function AssetRegisterClient() {
         { label: 'Assets', value: String(reportAssets.length), note: reportKind === 'full' ? 'Saved register items.' : reportOption.description },
         { label: 'Value ex VAT', value: money(reportValue), note: 'Filtered report total excluding VAT.' },
         { label: 'Value incl VAT', value: money(reportValueInclVat), note: 'Filtered report total including 15% VAT.' },
+        { label: 'Replacement value', value: money(reportReplacementValue), note: `${reportReplacementPricedCount} assets · ${money(reportReplacementValueInclVat)} incl. VAT.` },
         { label: 'Aim4price values', value: String(reportAim4priceStats.count), note: `${money(reportAim4priceStats.value)} total value.` },
         { label: 'Insured assets', value: String(reportInsuredStats.count), note: `${money(reportInsuredStats.value)} marked insured.` },
         { label: 'Financed assets', value: String(reportFinancedStats.count), note: `${money(reportFinancedStats.value)} marked financed.` },
@@ -4840,6 +4881,7 @@ export default function AssetRegisterClient() {
           method: methodLabel(asset.selectedMethod),
           detail: buildExportDetail(asset),
           value: money(asset.value),
+          replacementPrice: readAssetReplacementPriceExVat(asset) !== null ? money(readAssetReplacementPriceExVat(asset) ?? 0) : 'Not set',
           status: assetStatusDateLabel(asset),
           brand: reportBrandName,
           model: reportModelName,
@@ -5759,12 +5801,6 @@ export default function AssetRegisterClient() {
 
             <div className={styles.summaryModalBody}>
               <section className={styles.summaryValueTable} aria-label="Asset register summary">
-                <div className={`${styles.summaryValueTableRow} ${styles.summaryValueTableHeroRow}`}>
-                  <span>Register value</span>
-                  <strong>{money(totalValue)}</strong>
-                  <small>{money(totalValueInclVat)} incl. VAT</small>
-                </div>
-
                 <div className={styles.summaryValueTableHeader} aria-hidden="true">
                   <span />
                   <span>Count</span>
@@ -5813,6 +5849,13 @@ export default function AssetRegisterClient() {
                     <strong>{licensedAssetStats.count}</strong>
                     <small>{money(licensedAssetStats.value)}</small>
                     <small>{money(Math.round(licensedAssetStats.value * 1.15))}</small>
+                  </div>
+
+                  <div className={`${styles.summaryValueTableRow} ${styles.summaryValueTableReplacementRow}`}>
+                    <span>Replacement value</span>
+                    <strong>{replacementPricedAssetCount}</strong>
+                    <small>{money(totalReplacementValue)}</small>
+                    <small>{money(totalReplacementValueInclVat)}</small>
                   </div>
                 </div>
               </section>
@@ -5963,7 +6006,7 @@ export default function AssetRegisterClient() {
                       </label>
 
                       <label className={`${styles.field} ${styles.manualReplacementValueField}`}>
-                        <span>Replacement Price excl. VAT</span>
+                        <span>Replacement Price excl. VAT *</span>
                         <div className={styles.manualCurrencyInput}>
                           <span>R</span>
                           <input
@@ -5976,7 +6019,7 @@ export default function AssetRegisterClient() {
                                 replacementPrice: formatRegisterValueInput(event.target.value),
                               }))
                             }
-                            placeholder="Optional"
+                            placeholder="Required"
                           />
                         </div>
                       </label>
@@ -6206,7 +6249,7 @@ export default function AssetRegisterClient() {
                       <div className={styles.manualReviewValueTile}>
                         <span>Replacement Price</span>
                         <strong>
-                          {assetDraft.replacementPrice.trim() ? money(parseRegisterValueInput(assetDraft.replacementPrice)) : 'Not set'}
+                          {money(parseRegisterValueInput(assetDraft.replacementPrice))}
                           <small>Excl. VAT</small>
                         </strong>
                       </div>

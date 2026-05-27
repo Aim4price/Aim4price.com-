@@ -15221,9 +15221,9 @@
 }
 
 .summaryValueTableHeader {
-  min-height: 2.7rem;
+  min-height: 2.85rem;
   padding: 0 1.55rem;
-  border-top: 1px solid rgba(216, 226, 236, 0.96);
+  border-top: 0;
   border-bottom: 1px solid rgba(216, 226, 236, 0.96);
   background: rgba(246, 250, 252, 0.92);
 }
@@ -15253,6 +15253,23 @@
 
 .summaryValueTableRows .summaryValueTableRow:last-child {
   border-bottom: 0;
+}
+
+.summaryValueTableReplacementRow {
+  min-height: 4rem !important;
+  background:
+    radial-gradient(circle at center left, rgba(24, 77, 61, 0.06), transparent 42%),
+    linear-gradient(180deg, rgba(246, 251, 248, 0.98), rgba(255, 255, 255, 0.98));
+}
+
+.summaryValueTableReplacementRow span,
+.summaryValueTableReplacementRow strong,
+.summaryValueTableReplacementRow small {
+  color: #103b31;
+}
+
+.summaryValueTableReplacementRow strong {
+  font-size: 1.48rem;
 }
 
 .summaryValueTableRow span {
