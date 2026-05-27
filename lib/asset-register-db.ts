@@ -1772,6 +1772,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   year: number;
   hours: number;
   note?: string | null;
+  photos?: string[];
 }): Promise<AssetRegisterItem> {
   const db = getDb();
   const schema = await getAssetRegisterSchema();
@@ -1811,7 +1812,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(valuationResult.marketMid));
   pushField(fields, schema, ['note', 'notes', 'description'], cleanAssetRegisterNote(input.note) || null);
-  pushPhotoField(fields, schema, []);
+  pushPhotoField(fields, schema, input.photos ?? []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
@@ -1853,6 +1854,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   selectedMethod: GenericSelectedMethod;
   selectedValueExVat: number;
   note?: string | null;
+  photos?: string[];
 }): Promise<AssetRegisterItem> {
   const db = getDb();
   const schema = await getAssetRegisterSchema();
@@ -1903,7 +1905,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(valuationResult.marketAverageExVat));
   pushField(fields, schema, ['note', 'notes', 'description'], cleanAssetRegisterNote(input.note) || null);
-  pushPhotoField(fields, schema, []);
+  pushPhotoField(fields, schema, input.photos ?? []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
