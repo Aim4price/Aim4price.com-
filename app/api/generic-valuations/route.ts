@@ -36,6 +36,13 @@ function normalizeCondition(value: unknown): GenericCondition | null {
   return null;
 }
 
+function normalizeReplacementPrice(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined') return null;
+
+  const numeric = Number(String(value).replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(numeric) && numeric > 0 ? Math.round(numeric) : null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as Body;
@@ -45,6 +52,11 @@ export async function POST(request: NextRequest) {
     const year = Number(body.year);
     const yearModelUnknown = parseBoolean(body.yearModelUnknown);
     const condition = normalizeCondition(body.condition);
+    const userReplacementPriceExVat = normalizeReplacementPrice(body.userReplacementPriceExVat);
+    const userReplacementPriceYear = Number(body.userReplacementPriceYear);
+    const resolvedReplacementPriceYear = Number.isInteger(userReplacementPriceYear) && userReplacementPriceYear > 1900
+      ? userReplacementPriceYear
+      : new Date().getFullYear();
 
     if (!isSectorKey(sectorKey)) {
       return NextResponse.json({ ok: false, error: 'Valid sectorKey is required.' }, { status: 400 });
@@ -53,6 +65,13 @@ export async function POST(request: NextRequest) {
     if (!familyKey || !brandSlug || !Number.isInteger(year) || !condition) {
       return NextResponse.json(
         { ok: false, error: 'familyKey, brandSlug, year and condition are required.' },
+        { status: 400 },
+      );
+    }
+
+    if (userReplacementPriceExVat === null) {
+      return NextResponse.json(
+        { ok: false, error: 'Replacement price is required and must be greater than zero.' },
         { status: 400 },
       );
     }
@@ -71,14 +90,8 @@ export async function POST(request: NextRequest) {
           ? null
           : Number(body.lifeWorkedPercent),
       condition,
-      userReplacementPriceExVat:
-        body.userReplacementPriceExVat === null || typeof body.userReplacementPriceExVat === 'undefined'
-          ? null
-          : Number(body.userReplacementPriceExVat),
-      userReplacementPriceYear:
-        body.userReplacementPriceYear === null || typeof body.userReplacementPriceYear === 'undefined'
-          ? null
-          : Number(body.userReplacementPriceYear),
+      userReplacementPriceExVat,
+      userReplacementPriceYear: resolvedReplacementPriceYear,
     });
 
     return NextResponse.json({ ok: true, result });
