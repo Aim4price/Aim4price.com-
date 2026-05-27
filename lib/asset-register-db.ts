@@ -1480,6 +1480,11 @@ export async function createManualAssetRegisterItem(
   const now = new Date();
   const nextValue = Math.round(Number(input.value) || 0);
   const nextReplacementPriceExVat = normalizeReplacementPriceExVat(input.replacementPriceExVat);
+
+  if (nextReplacementPriceExVat === null) {
+    throw new Error('REPLACEMENT_PRICE_REQUIRED');
+  }
+
   const nextKind = normalizeKind(input.kind);
   const nextSpecsJson = buildManualSpecsJson(input, nextKind);
   const nextLicenseRegistrationNumber = Boolean(input.isLicensed) ? normalizeLicenseRegistrationNumber(input.licenseRegistrationNumber) : null;
@@ -1555,6 +1560,11 @@ export async function updateAssetRegisterItem(
   const nextKind = existing.valuationRunId ? existing.kind : normalizeKind(input.kind);
   const nextValue = Math.round(Number(input.value) || 0);
   const nextReplacementPriceExVat = normalizeReplacementPriceExVat(input.replacementPriceExVat);
+
+  if (nextReplacementPriceExVat === null) {
+    throw new Error('REPLACEMENT_PRICE_REQUIRED');
+  }
+
   const incomingYearModel = input.yearModel === null || input.yearModel === undefined ? null : Math.max(0, Math.round(input.yearModel));
   const incomingHours = input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours));
   const nextYearModel = existing.valuationRunId && incomingYearModel === null ? existing.yearModel : incomingYearModel;
@@ -1666,6 +1676,13 @@ export async function updateAssetRegisterItemFromValuation(input: {
   const now = new Date();
   const model = input.result.model;
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const replacementPriceUsedExVat = normalizeReplacementPriceExVat(input.result.replacementPriceUsedExVat);
+  const userReplacementPriceExVat = normalizeReplacementPriceExVat(input.result.userReplacementPriceExVat);
+
+  if (replacementPriceUsedExVat === null) {
+    throw new Error('REPLACEMENT_PRICE_REQUIRED');
+  }
+
   const fields: SqlField[] = [];
   const valuationSpecsJson = isRecord(valuationRow.specs_json) ? valuationRow.specs_json : {};
 
@@ -1688,8 +1705,8 @@ export async function updateAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['condition'], input.condition);
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(input.result.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(input.result.marketMid));
-  pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], normalizeReplacementPriceExVat(input.result.replacementPriceUsedExVat));
-  pushField(fields, schema, ['user_replacement_price_ex_vat'], normalizeReplacementPriceExVat(input.result.userReplacementPriceExVat));
+  pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], replacementPriceUsedExVat);
+  pushField(fields, schema, ['user_replacement_price_ex_vat'], userReplacementPriceExVat);
   pushField(fields, schema, ['replacement_price_basis'], input.result.replacementPriceBasis);
   pushField(
     fields,
@@ -1754,6 +1771,13 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   const now = new Date();
   const valuationResult = input.result;
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
+  const userReplacementPriceExVat = normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat);
+
+  if (replacementPriceUsedExVat === null) {
+    throw new Error('REPLACEMENT_PRICE_REQUIRED');
+  }
+
   const fields: SqlField[] = [];
 
   copySharedFieldsFromValuationRun(fields, schema, valuationSchema, valuationRow);
@@ -1787,8 +1811,8 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   );
   pushField(fields, schema, ['depreciation_method_used'], valuationResult.depreciationMethodUsed);
   pushField(fields, schema, ['replacement_price_basis'], valuationResult.replacementPriceBasis);
-  pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat));
-  pushField(fields, schema, ['user_replacement_price_ex_vat'], normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat));
+  pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], replacementPriceUsedExVat);
+  pushField(fields, schema, ['user_replacement_price_ex_vat'], userReplacementPriceExVat);
   pushField(fields, schema, ['life_worked_percent'], valuationResult.lifeWorkedPercent);
   pushField(fields, schema, ['life_remaining_percent'], valuationResult.lifeRemainingPercent);
   pushField(fields, schema, ['estimated_hours'], valuationResult.estimatedHours);
@@ -1858,6 +1882,13 @@ export async function createAssetRegisterItemFromValuation(input: {
   const title = `${model.brandName} ${model.modelName}`.trim();
   const now = new Date();
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
+  const userReplacementPriceExVat = normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat);
+
+  if (replacementPriceUsedExVat === null) {
+    throw new Error('REPLACEMENT_PRICE_REQUIRED');
+  }
+
   const fields: SqlField[] = [];
 
   copySharedFieldsFromValuationRun(fields, schema, valuationSchema, valuationRow);
@@ -1881,8 +1912,8 @@ export async function createAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['condition'], typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good');
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(valuationResult.marketMid));
-  pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat));
-  pushField(fields, schema, ['user_replacement_price_ex_vat'], normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat));
+  pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], replacementPriceUsedExVat);
+  pushField(fields, schema, ['user_replacement_price_ex_vat'], userReplacementPriceExVat);
   pushField(fields, schema, ['replacement_price_basis'], valuationResult.replacementPriceBasis);
   pushField(fields, schema, ['note', 'notes', 'description'], cleanAssetRegisterNote(input.note) || null);
   pushPhotoField(fields, schema, input.photos ?? []);
@@ -1946,6 +1977,13 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
     .trim();
   const now = new Date();
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
+  const userReplacementPriceExVat = normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat);
+
+  if (replacementPriceUsedExVat === null) {
+    throw new Error('REPLACEMENT_PRICE_REQUIRED');
+  }
+
   const fields: SqlField[] = [];
 
   copySharedFieldsFromValuationRun(fields, schema, valuationSchema, valuationRow);
@@ -1968,8 +2006,8 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['specs_json'], valuationResult.specsJson ?? {}, '::jsonb');
   pushField(fields, schema, ['depreciation_method_used'], valuationResult.depreciationMethodUsed);
   pushField(fields, schema, ['replacement_price_basis'], valuationResult.replacementPriceBasis);
-  pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat));
-  pushField(fields, schema, ['user_replacement_price_ex_vat'], normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat));
+  pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], replacementPriceUsedExVat);
+  pushField(fields, schema, ['user_replacement_price_ex_vat'], userReplacementPriceExVat);
   pushField(fields, schema, ['life_worked_percent'], valuationResult.lifeWorkedPercent);
   pushField(fields, schema, ['life_remaining_percent'], valuationResult.lifeRemainingPercent);
   pushField(fields, schema, ['estimated_hours'], valuationResult.estimatedHours);

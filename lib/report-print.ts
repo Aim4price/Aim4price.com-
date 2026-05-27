@@ -69,6 +69,7 @@ export type AssetRegisterSummaryRow = {
   method: string;
   detail: string;
   value: string;
+  replacementPrice?: string;
   status: string;
   brand?: string;
   model?: string;
@@ -2177,7 +2178,7 @@ function renderFullRegisterMetaRows(rows: ReportKeyValue[]): string {
 }
 
 function renderFullRegisterStats(payload: AssetRegisterSummaryPayload): string {
-  const stats = payload.stats.filter((stat) => String(stat.label ?? '').trim()).slice(0, 7);
+  const stats = payload.stats.filter((stat) => String(stat.label ?? '').trim()).slice(0, 8);
 
   if (!stats.length) {
     return '';
@@ -2226,6 +2227,7 @@ function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[], emptyMessa
           const method = sanitizeRegisterDisplayValue(row.method);
           const type = sanitizeRegisterDisplayValue(row.type);
           const value = sanitizeRegisterDisplayValue(row.value);
+          const replacementPrice = sanitizeRegisterDisplayValue(row.replacementPrice);
 
           return `
             <article class="fullRegisterAssetCard">
@@ -2260,9 +2262,10 @@ function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[], emptyMessa
               </div>
 
               <div class="fullRegisterAssetValue">
-                <span>Value</span>
+                <span>Register value</span>
                 <strong>${escapeHtml(value)}</strong>
                 <small>VAT excluded</small>
+                ${replacementPrice !== '-' ? `<b class="fullRegisterReplacementValue">Replacement: ${escapeHtml(replacementPrice)}</b>` : ''}
                 <em>${escapeHtml(method)}</em>
                 <i>${escapeHtml(updated)}</i>
               </div>
@@ -2793,6 +2796,16 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
         line-height: 1.25;
         font-style: normal;
         font-weight: 600;
+      }
+
+      .fullRegisterReplacementValue {
+        display: block;
+        margin-top: 1.15mm;
+        color: #103b31;
+        font-size: 6.55pt;
+        line-height: 1.25;
+        font-style: normal;
+        font-weight: 800;
       }
 
       .fullRegisterAssetValue em {
