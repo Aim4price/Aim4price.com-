@@ -84,6 +84,8 @@ const JPEG_AD_LOGO_SRC = '/brand/Aim4price_Home_Logo.png';
 const JPEG_AD_WATERMARK_SRC = '/brand/aim4price-mark-black.png';
 const DEFAULT_MARKETPLACE_CONTACT_NAME = 'Kuyler';
 const DEFAULT_MARKETPLACE_CONTACT_PHONE = '062 572 1650';
+const DEFAULT_MARKETPLACE_CONTACT_TEL = '0625721650';
+const DEFAULT_MARKETPLACE_CONTACT_DISPLAY = `${DEFAULT_MARKETPLACE_CONTACT_NAME} - ${DEFAULT_MARKETPLACE_CONTACT_PHONE}`;
 
 const SECTOR_OPTIONS: SectorOption[] = [
   { key: 'agricultural', label: 'Agriculture', shortLabel: 'Agri' },
@@ -2470,14 +2472,17 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
 
                 <div className={styles.createListingGuestPanel}>
                   <strong>Seller information stays protected until account creation.</strong>
-                  <span>Create an account to publish from an Aim4price estimate, or contact Kuyler - 062 572 1650.</span>
+                  <span>
+                    Create an account to publish from an Aim4price estimate, or contact{' '}
+                    <span className={styles.marketplaceContactNoWrap}>{DEFAULT_MARKETPLACE_CONTACT_DISPLAY}</span>.
+                  </span>
                 </div>
 
                 <div className={styles.createListingActionRow}>
                   <a href="/auth#signup" className={styles.createListingPrimaryAction}>
                     Create account
                   </a>
-                  <a href="tel:0625721650" className={styles.createListingSecondaryAction}>
+                  <a href={`tel:${DEFAULT_MARKETPLACE_CONTACT_TEL}`} className={styles.createListingSecondaryAction}>
                     Contact Kuyler
                   </a>
                 </div>
@@ -2648,7 +2653,10 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
                     <div className={styles.contactRow}>
                       <span>Phone</span>
                       <strong>
-                        <a href={`tel:${activeListing.sellerPhone || DEFAULT_MARKETPLACE_CONTACT_PHONE}`}>
+                        <a
+                          href={`tel:${activeListing.sellerPhone || DEFAULT_MARKETPLACE_CONTACT_PHONE}`}
+                          className={styles.marketplaceContactNoWrap}
+                        >
                           {activeListing.sellerPhone || DEFAULT_MARKETPLACE_CONTACT_PHONE}
                         </a>
                       </strong>
@@ -2684,10 +2692,13 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
                     </div>
                     <div className={styles.contactBlurOverlay}>
                       <strong>Seller information is blocked.</strong>
-                      <p>Create an account or contact Kuyler - 062 572 1650.</p>
+                      <p>
+                        Create an account or contact{' '}
+                        <span className={styles.marketplaceContactNoWrap}>{DEFAULT_MARKETPLACE_CONTACT_DISPLAY}</span>.
+                      </p>
                       <div className={styles.lockedActions}>
                         <a href="/auth#signup">Create account</a>
-                        <a href="tel:0625721650">Contact Kuyler</a>
+                        <a href={`tel:${DEFAULT_MARKETPLACE_CONTACT_TEL}`}>Contact Kuyler</a>
                       </div>
                     </div>
                   </div>
