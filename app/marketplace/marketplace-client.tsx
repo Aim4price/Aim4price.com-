@@ -2213,8 +2213,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
             </span>
             Create new listing
           </button>
-          <p className={styles.createListingHint}>Listings must start with an Aim4price value from Get Estimate.</p>
-
           <div className={styles.sidebarDivider} />
 
           <section className={styles.sidebarSection}>
