@@ -15,6 +15,7 @@ type PrintableAsset = {
   serialNumber: string;
   assetTypeLabel: string;
   yearModel: string;
+  replacementValue: string;
   fuel: string;
   financed: string;
   insured: string;
@@ -132,6 +133,44 @@ function formatFuel(value: number | null): string {
 function formatNumber(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return '';
   return new Intl.NumberFormat('en-ZA').format(Math.round(value));
+}
+
+function coercePositiveNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(/[^0-9.-]+/g, ''));
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function readAssetReplacementPriceExVat(asset: AssetRegisterItem): number | null {
+  const direct = coercePositiveNumber(asset.replacementPriceExVat);
+  if (direct !== null) return direct;
+
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return coercePositiveNumber(
+    specs.replacementPriceExVat ??
+      specs.replacement_price_ex_vat ??
+      specs.replacementPrice ??
+      specs.replacement_price ??
+      specs.replacementPriceUsedExVat ??
+      specs.replacement_price_used_ex_vat ??
+      specs.userReplacementPriceExVat ??
+      specs.user_replacement_price_ex_vat,
+  );
+}
+
+function formatMoney(value: number | null): string {
+  if (value === null || !Number.isFinite(value) || value <= 0) return 'Not saved';
+  return `R ${formatNumber(value)}`;
 }
 
 function titleCase(value: string): string {
@@ -301,6 +340,7 @@ function toPrintableAsset(asset: AssetRegisterItem, index: number): PrintableAss
     serialNumber: asset.serialNumber || 'Not saved',
     assetTypeLabel: assetTypeLabel(asset),
     yearModel: formatYearModel(asset.yearModel),
+    replacementValue: formatMoney(readAssetReplacementPriceExVat(asset)),
     fuel: formatFuel(asset.fuelPercent),
     financed: formatAssetStatusChoice(readFinanceStatusChoice(asset)),
     insured: formatAssetStatusChoice(readInsuranceStatusChoice(asset)),
@@ -405,6 +445,10 @@ function renderKeyRows(assets: PrintableAsset[]): string {
             <strong>${escapeHtml(asset.yearModel)}</strong>
           </div>
           <div class="assetMapReportCell">
+            <span>Replacement</span>
+            <strong>${escapeHtml(asset.replacementValue)}</strong>
+          </div>
+          <div class="assetMapReportCell">
             <span>Serial</span>
             <strong>${escapeHtml(asset.serialNumber)}</strong>
           </div>
@@ -437,6 +481,7 @@ function renderSelectedAssetRows(asset: PrintableAsset): string {
     ['Plate label', asset.plateLabel],
     ['Serial number', asset.serialNumber],
     ['Year model', asset.yearModel],
+    ['Replacement price', asset.replacementValue],
     ['Usage', asset.usage],
     ['Fuel', asset.fuel],
     ['Condition', asset.condition],
