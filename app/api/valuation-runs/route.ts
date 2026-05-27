@@ -129,6 +129,13 @@ function normalizeGpsType(value: unknown): GpsType | null {
   return null;
 }
 
+function normalizeReplacementPrice(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined') return null;
+
+  const numeric = Number(String(value).replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(numeric) && numeric > 0 ? Math.round(numeric) : null;
+}
+
 function buildInput(
   body: Partial<RunValuationInput> & { selectedMethod?: unknown; valuationVersion?: unknown },
 ): SaveValuationRunInput | null {
@@ -137,8 +144,9 @@ function buildInput(
   const hours = Number(body.hours);
   const condition = normalizeCondition(body.condition);
   const selectedMethod = normalizeMethod(body.selectedMethod);
+  const userReplacementPriceExVat = normalizeReplacementPrice(body.userReplacementPriceExVat);
 
-  if (!modelId || !Number.isFinite(year) || !Number.isFinite(hours) || !condition || !selectedMethod) {
+  if (!modelId || !Number.isFinite(year) || !Number.isFinite(hours) || !condition || !selectedMethod || userReplacementPriceExVat === null) {
     return null;
   }
 
@@ -152,10 +160,7 @@ function buildInput(
     gpsEnabled: parseBoolean(body.gpsEnabled),
     gpsType: normalizeGpsType(body.gpsType),
     gpsYear: body.gpsYear ?? null,
-    userReplacementPriceExVat:
-      typeof body.userReplacementPriceExVat === 'number' && Number.isFinite(body.userReplacementPriceExVat) && body.userReplacementPriceExVat > 0
-        ? body.userReplacementPriceExVat
-        : null,
+    userReplacementPriceExVat,
     selectedMethod,
     valuationVersion: String(body.valuationVersion ?? 'v1').trim() || 'v1',
     userId: null,
@@ -222,6 +227,13 @@ function buildFriendlyError(error: unknown): { status: number; message: string }
     return {
       status: 400,
       message: 'The selected valuation method is not available for this machine profile.',
+    };
+  }
+
+  if (message.includes('REPLACEMENT_PRICE_REQUIRED')) {
+    return {
+      status: 400,
+      message: 'Replacement price is required and must be greater than zero.',
     };
   }
 
@@ -307,9 +319,14 @@ export async function POST(request: NextRequest) {
       const yearModelUnknown = parseBoolean(body.yearModelUnknown);
       const condition = normalizeGenericCondition(body.condition);
       const selectedMethod = normalizeGenericSelectedMethod(body.selectedMethod);
+      const userReplacementPriceExVat = normalizeReplacementPrice(body.userReplacementPriceExVat);
+      const userReplacementPriceYear = Number(body.userReplacementPriceYear);
+      const resolvedReplacementPriceYear = Number.isInteger(userReplacementPriceYear) && userReplacementPriceYear > 1900
+        ? userReplacementPriceYear
+        : new Date().getFullYear();
 
-      if (!isSectorKey(sectorKey) || !familyKey || !brandSlug || !Number.isInteger(year) || !condition || !selectedMethod) {
-        return badRequest('sectorKey, familyKey, brandSlug, year, condition and selectedMethod are required.');
+      if (!isSectorKey(sectorKey) || !familyKey || !brandSlug || !Number.isInteger(year) || !condition || !selectedMethod || userReplacementPriceExVat === null) {
+        return badRequest('sectorKey, familyKey, brandSlug, year, condition, selectedMethod and replacement price are required.');
       }
 
       const genericResult = await runGenericValuation({
@@ -326,14 +343,8 @@ export async function POST(request: NextRequest) {
             ? null
             : Number(body.lifeWorkedPercent),
         condition,
-        userReplacementPriceExVat:
-          body.userReplacementPriceExVat === null || typeof body.userReplacementPriceExVat === 'undefined'
-            ? null
-            : Number(body.userReplacementPriceExVat),
-        userReplacementPriceYear:
-          body.userReplacementPriceYear === null || typeof body.userReplacementPriceYear === 'undefined'
-            ? null
-            : Number(body.userReplacementPriceYear),
+        userReplacementPriceExVat,
+        userReplacementPriceYear: resolvedReplacementPriceYear,
       });
 
       const savedRun = await saveGenericValuationRunFromResult({
@@ -378,7 +389,7 @@ export async function POST(request: NextRequest) {
 
     const input = buildInput(body);
     if (!input) {
-      return badRequest('modelId, year, hours, condition and selectedMethod are required.');
+      return badRequest('modelId, year, hours, condition, selectedMethod and replacement price are required.');
     }
 
     const valuationResult = await runServerValuation(input);
