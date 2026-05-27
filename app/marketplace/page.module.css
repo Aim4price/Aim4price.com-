@@ -1667,235 +1667,164 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(1rem, 3vh, 2rem);
-  overflow-y: auto;
-  background: rgba(14, 22, 32, 0.44);
-  backdrop-filter: blur(14px) saturate(0.9);
+  padding: clamp(1rem, 3vw, 2rem);
+  background: rgba(12, 24, 29, 0.58);
+  backdrop-filter: blur(16px) saturate(118%);
 }
 
 .createListingDialog,
 .marketplaceAccessDialog {
   position: relative;
-  width: min(100%, 46rem);
-  max-height: min(88vh, calc(100dvh - 3rem));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: clamp(1.25rem, 2vw, 1.65rem);
-  border: 1px solid rgba(216, 226, 236, 0.98);
+  isolation: isolate;
+  overflow: hidden;
+  width: min(94vw, 48.5rem);
+  padding: clamp(2.05rem, 3vw, 2.75rem);
+  border: 1px solid rgba(206, 224, 235, 0.92);
   border-radius: 1.85rem;
-  background: #ffffff;
-  box-shadow: 0 28px 70px rgba(16, 28, 45, 0.22);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(250, 253, 252, 0.98) 100%);
+  box-shadow: 0 34px 96px rgba(8, 25, 31, 0.32);
+}
+
+.createListingDialog::before,
+.marketplaceAccessDialog::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(22, 83, 64, 0.08), transparent 31%),
+    radial-gradient(circle at 100% 0%, rgba(72, 127, 158, 0.08), transparent 28%);
 }
 
 .marketplaceAccessDialog {
-  width: min(100%, 42rem);
+  width: min(94vw, 42rem);
 }
 
 .createListingCloseButton {
   position: absolute;
-  z-index: 2;
-  top: 1.25rem;
-  right: 1.25rem;
+  top: 1.15rem;
+  right: 1.15rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3.08rem;
-  height: 3.08rem;
-  padding: 0;
-  border: 1px solid rgba(210, 222, 237, 0.98);
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid rgba(199, 218, 232, 0.95);
   border-radius: 999px;
-  background: linear-gradient(180deg, #f7fbff 0%, #edf4fb 100%);
-  color: #1d3b62;
+  background: rgba(247, 251, 255, 0.92);
+  color: #153c34;
   cursor: pointer;
-  box-shadow:
-    0 10px 20px rgba(23, 45, 75, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
-  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  box-shadow: 0 12px 26px rgba(16, 44, 56, 0.08);
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .createListingCloseButton:hover {
   transform: translateY(-1px);
-  border-color: rgba(177, 197, 220, 0.98);
-  background: linear-gradient(180deg, #ffffff 0%, #edf5ff 100%);
-  box-shadow:
-    0 14px 26px rgba(23, 45, 75, 0.09),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-}
-
-.createListingCloseButton:focus-visible,
-.createListingChoiceCard:focus-visible,
-.marketplaceAccessPrimary:focus-visible,
-.marketplaceAccessSecondary:focus-visible {
-  outline: 0;
-  box-shadow: 0 0 0 4px rgba(178, 198, 223, 0.24);
+  border-color: rgba(22, 83, 64, 0.25);
+  background: #ffffff;
+  box-shadow: 0 16px 32px rgba(16, 44, 56, 0.13);
 }
 
 .createListingCloseButton svg {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1.08rem;
+  height: 1.08rem;
   fill: none;
   stroke: currentColor;
-  stroke-width: 2.35;
+  stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .createListingHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1.15rem;
-  margin: 0 0 1rem;
-  padding: 0 4.15rem 1rem 0;
-  border-bottom: 1px solid rgba(216, 226, 236, 0.88);
-}
-
-.createListingHeaderText {
-  display: grid;
-  gap: 0.42rem;
-  min-width: 0;
-}
-
-.createListingEyebrow {
-  width: fit-content;
-  color: #617286;
-  font-size: 0.78rem;
-  font-weight: 820;
-  letter-spacing: 0.08em;
-  line-height: 1;
-  text-transform: uppercase;
+  max-width: 42.5rem;
+  padding-right: clamp(2.6rem, 7vw, 4.1rem);
 }
 
 .createListingHeader h2 {
-  max-width: 36rem;
+  max-width: 38.5rem;
   margin: 0;
-  color: #0f3329;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.65rem, 2.75vw, 2.12rem);
-  font-weight: 760;
+  color: #0c3f33;
+  font-size: clamp(2.05rem, 4.6vw, 3rem);
+  font-weight: 820;
   line-height: 1.04;
-  letter-spacing: -0.047em;
+  letter-spacing: -0.055em;
 }
 
 .createListingHeader p {
-  max-width: 39rem;
-  margin: 0;
-  color: #617286;
-  font-size: 1rem;
-  font-weight: 620;
-  line-height: 1.52;
-}
-
-.createListingNotice {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 0.7rem;
-  margin: 0 0 1rem;
-  padding: 0.92rem 1rem;
-  border: 1px solid rgba(217, 227, 235, 0.96);
-  border-radius: 1.1rem;
-  background: linear-gradient(180deg, #fbfdff 0%, #f5f9fc 100%);
-}
-
-.createListingNotice strong {
-  color: #123b30;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.94rem;
-  font-weight: 790;
-  line-height: 1.15;
-  white-space: nowrap;
-}
-
-.createListingNotice span {
-  color: #617286;
-  font-size: 0.94rem;
-  font-weight: 600;
-  line-height: 1.42;
+  max-width: 41rem;
+  margin: 1rem 0 0;
+  color: #5d7283;
+  font-size: clamp(0.98rem, 1.55vw, 1.08rem);
+  font-weight: 560;
+  line-height: 1.58;
 }
 
 .createListingChoiceGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
-  margin-top: 0.95rem;
+  gap: 1.1rem;
+  margin-top: 1.7rem;
 }
 
 .createListingChoiceCard {
   position: relative;
-  display: grid;
-  align-content: space-between;
-  min-height: 10rem;
-  gap: 1.1rem;
-  padding: 1.05rem;
-  border: 1px solid rgba(216, 226, 236, 0.98);
-  border-radius: 1.25rem;
-  background: #ffffff;
-  color: #123b30;
+  display: flex;
+  min-height: 11.25rem;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.15rem;
+  padding: 1.35rem;
+  border: 1px solid rgba(190, 211, 224, 0.92);
+  border-radius: 1.32rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
+  color: #143d34;
   font: inherit;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
-  box-shadow: 0 12px 28px rgba(18, 45, 58, 0.05);
-  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  box-shadow: 0 16px 30px rgba(16, 45, 57, 0.04);
+  transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease, background 170ms ease;
+}
+
+.createListingChoiceCard::before {
+  content: '';
+  display: block;
+  width: min(16rem, 82%);
+  height: 0.18rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #165340 0%, rgba(22, 83, 64, 0.18) 100%);
+  order: 1;
+}
+
+.createListingChoiceCard strong {
+  order: 0;
+  color: #0c3f33;
+  font-size: clamp(1.05rem, 1.8vw, 1.18rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.createListingChoiceCard span {
+  order: 2;
+  max-width: 18.5rem;
+  color: #5d7283;
+  font-size: 0.96rem;
+  font-weight: 560;
+  line-height: 1.5;
 }
 
 .createListingChoiceCard:hover,
 .createListingChoiceCard:focus-visible {
   transform: translateY(-2px);
-  border-color: rgba(22, 83, 64, 0.34);
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%);
-  box-shadow: 0 18px 38px rgba(14, 44, 57, 0.11);
+  border-color: rgba(22, 83, 64, 0.38);
+  background: linear-gradient(180deg, #ffffff 0%, #f2f9f5 100%);
+  box-shadow: 0 20px 42px rgba(10, 43, 33, 0.12);
+  outline: none;
 }
 
 .createListingChoiceCard:focus-visible {
-  outline: 0;
-  box-shadow: 0 0 0 4px rgba(178, 198, 223, 0.24), 0 18px 38px rgba(14, 44, 57, 0.11);
-}
-
-.createListingChoiceText {
-  display: grid;
-  gap: 0.52rem;
-}
-
-.createListingChoiceText strong {
-  color: #0f3329;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.02rem, 1.35vw, 1.14rem);
-  font-weight: 780;
-  letter-spacing: -0.022em;
-  line-height: 1.15;
-}
-
-.createListingChoiceText span {
-  max-width: 20rem;
-  color: #617286;
-  font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.48;
-}
-
-.createListingChoiceCta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: fit-content;
-  min-height: 2.55rem;
-  padding: 0 1rem;
-  border-radius: 999px;
-  background: #165340;
-  color: #ffffff;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.9rem;
-  font-weight: 760;
-  line-height: 1;
-  letter-spacing: -0.012em;
-  box-shadow: 0 10px 20px rgba(22, 83, 64, 0.14);
-}
-
-.createListingChoiceCard:hover .createListingChoiceCta,
-.createListingChoiceCard:focus-visible .createListingChoiceCta {
-  background: #123b30;
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.12), 0 20px 42px rgba(10, 43, 33, 0.12);
 }
 
 .marketplaceAccessActions {
@@ -1913,7 +1842,6 @@
   min-height: 2.9rem;
   padding: 0 1.3rem;
   border-radius: 999px;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-weight: 760;
   text-decoration: none;
 }
@@ -1932,54 +1860,40 @@
 @media (max-width: 720px) {
   .createListingOverlay {
     align-items: flex-start;
-    padding: 0.7rem;
+    padding: 1rem;
+    overflow-y: auto;
   }
 
   .createListingDialog,
   .marketplaceAccessDialog {
-    width: min(100%, calc(100vw - 1.4rem));
-    max-height: calc(100dvh - 1.4rem);
-    padding: 1.1rem;
+    width: min(100%, 34rem);
+    padding: 4.2rem 1.15rem 1.15rem;
     border-radius: 1.45rem;
   }
 
   .createListingCloseButton {
-    top: 0.95rem;
-    right: 0.95rem;
-    width: 2.8rem;
-    height: 2.8rem;
+    top: 0.9rem;
+    right: 0.9rem;
   }
 
   .createListingHeader {
-    padding-right: 3.3rem;
+    padding-right: 0;
   }
 
   .createListingHeader h2 {
-    font-size: clamp(1.48rem, 8vw, 1.92rem);
-  }
-
-  .createListingHeader p {
-    font-size: 0.95rem;
-  }
-
-  .createListingNotice {
-    grid-template-columns: 1fr;
-    gap: 0.35rem;
-    padding: 0.9rem;
-  }
-
-  .createListingNotice strong {
-    white-space: normal;
+    font-size: clamp(1.95rem, 11vw, 2.55rem);
+    letter-spacing: -0.05em;
   }
 
   .createListingChoiceGrid {
     grid-template-columns: 1fr;
+    gap: 0.85rem;
+    margin-top: 1.25rem;
   }
 
   .createListingChoiceCard {
-    min-height: auto;
-    gap: 1rem;
-    padding: 1rem;
+    min-height: 9.5rem;
+    padding: 1.15rem;
   }
 
   .marketplaceAccessActions {

@@ -1971,28 +1971,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
     };
   }, [shareListing]);
 
-  useEffect(() => {
-    if (!createListingModalOpen) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setCreateListingModalOpen(false);
-      }
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [createListingModalOpen]);
-
   function updateListingUrl(nextListingId: string | null) {
     if (typeof window === 'undefined') {
       return;
@@ -2476,35 +2454,21 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
             </button>
 
             <div className={styles.createListingHeader}>
-              <div className={styles.createListingHeaderText}>
-                <span className={styles.createListingEyebrow}>Marketplace listing</span>
-                <h2 id="create-listing-title">Create a marketplace listing</h2>
-                <p>Choose one clean path. Every marketplace listing must stay linked to an Aim4price valuation.</p>
-              </div>
-            </div>
-
-            <div className={styles.createListingNotice}>
-              <strong>Valuation required</strong>
-              <span>
-                Listings are created only after a machine has a saved Aim4price value, keeping the advert trusted and
-                traceable.
-              </span>
+              <h2 id="create-listing-title">Choose how this listing must be created.</h2>
+              <p>
+                Aim4price only allows marketplace uploads after a machine has an Aim4price value. This keeps every
+                listing linked to a valuation instead of a loose advert.
+              </p>
             </div>
 
             <div className={styles.createListingChoiceGrid}>
               <a href="/asset-register" className={styles.createListingChoiceCard}>
-                <span className={styles.createListingChoiceText}>
-                  <strong>From Asset Register</strong>
-                  <span>Use an existing saved asset, then publish it from the asset Manage modal.</span>
-                </span>
-                <span className={styles.createListingChoiceCta}>Open Asset Register</span>
+                <strong>From Asset Register</strong>
+                <span>Use an existing saved asset and publish it from its Manage modal.</span>
               </a>
               <button type="button" className={styles.createListingChoiceCard} onClick={goToMarketplaceEstimate}>
-                <span className={styles.createListingChoiceText}>
-                  <strong>Via Get Estimate</strong>
-                  <span>Run a fresh estimate, upload photos, then send it directly to marketplace.</span>
-                </span>
-                <span className={styles.createListingChoiceCta}>Start Estimate</span>
+                <strong>Via Get Estimate</strong>
+                <span>Run a fresh estimate, upload photos, then send it straight to marketplace.</span>
               </button>
             </div>
           </div>
