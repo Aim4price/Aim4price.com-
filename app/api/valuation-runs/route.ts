@@ -5,6 +5,7 @@ import {
   createAssetRegisterItemFromGenericValuation,
   createAssetRegisterItemFromValuation,
 } from '../../../lib/asset-register-db';
+import { MAX_ASSET_REGISTER_PHOTOS } from '../../../lib/asset-register-uploads';
 import { runServerValuation } from '../../../lib/server-valuation';
 import {
   getSelectedMethodValue,
@@ -51,6 +52,23 @@ function parseBoolean(value: unknown): boolean {
   }
   if (typeof value === 'number') return value === 1;
   return false;
+}
+
+function normalizePhotos(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  const seen = new Set<string>();
+  const urls: string[] = [];
+
+  for (const item of value) {
+    const url = String(item ?? '').trim();
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    urls.push(url);
+    if (urls.length >= MAX_ASSET_REGISTER_PHOTOS) break;
+  }
+
+  return urls;
 }
 
 function normalizeCondition(value: unknown): ConditionKey | null {
@@ -239,22 +257,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const profile = await getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
-    });
-
-    if (profile.accountType !== 'owner') {
-      return NextResponse.json<SaveValuationRunApiResponse>(
-        {
-          ok: false,
-          error: 'Only owner accounts can save valuations to the Asset Register. Partner accounts can still run estimates, but Asset Register saving is disabled for dealer, finance and insurance accounts.',
-        },
-        { status: 403 },
-      );
-    }
-
     const body = (await request.json()) as Partial<RunValuationInput> & {
       selectedMethod?: unknown;
       valuationVersion?: unknown;
@@ -269,7 +271,31 @@ export async function POST(request: NextRequest) {
       lifeWorkedPercent?: unknown;
       userReplacementPriceExVat?: unknown;
       userReplacementPriceYear?: unknown;
+      saveForMarketplace?: unknown;
+      photos?: unknown;
     };
+
+    const saveForMarketplace = parseBoolean(body.saveForMarketplace);
+    const photoUrls = saveForMarketplace ? normalizePhotos(body.photos) : [];
+
+    const profile = await getAccountProfile({
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    });
+    const accountType = String(profile.accountType ?? '').trim().toLowerCase();
+    const canSaveAssetRegister = accountType === 'owner';
+    const canSaveMarketplaceAsset = saveForMarketplace && (accountType === 'owner' || accountType === 'dealer');
+
+    if (!canSaveAssetRegister && !canSaveMarketplaceAsset) {
+      return NextResponse.json<SaveValuationRunApiResponse>(
+        {
+          ok: false,
+          error: 'Only owner accounts can save to the Asset Register. Dealer and auctioneer accounts can create marketplace listings by saving directly from Get Estimate.',
+        },
+        { status: 403 },
+      );
+    }
 
     const catalogModeUsed = String(body.catalogModeUsed ?? '').trim();
 
@@ -325,6 +351,7 @@ export async function POST(request: NextRequest) {
           selectedMethod,
           selectedValueExVat: savedRun.selectedValueExVat,
           note: '',
+          photos: photoUrls,
         });
 
         return NextResponse.json<SaveValuationRunApiResponse>({
@@ -385,6 +412,7 @@ export async function POST(request: NextRequest) {
         year: input.year,
         hours: input.hours,
         note: '',
+        photos: photoUrls,
       });
 
       return NextResponse.json<SaveValuationRunApiResponse>({
