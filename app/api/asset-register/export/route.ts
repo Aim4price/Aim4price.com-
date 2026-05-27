@@ -31,7 +31,7 @@ const EXPORT_DETAILS_SECTION_ROW = 5;
 const EXPORT_NOTE_SECTION_ROW = 13;
 const EXPORT_NOTE_START_ROW = EXPORT_NOTE_SECTION_ROW + 1;
 const SUMMARY_SECTION_ROW = 17;
-const SUMMARY_ROW_COUNT = 10;
+const SUMMARY_ROW_COUNT = 12;
 const TABLE_HEADER_ROW = SUMMARY_SECTION_ROW + 1 + SUMMARY_ROW_COUNT + 1;
 const DATA_START_ROW = TABLE_HEADER_ROW + 1;
 
@@ -44,6 +44,8 @@ const MARKET_VALUE_INCL_VAT_COLUMN = 'R';
 const FINANCE_STATUS_COLUMN = 'T';
 const INSURANCE_STATUS_COLUMN = 'V';
 const LICENSE_STATUS_COLUMN = 'X';
+const REPLACEMENT_VALUE_EX_VAT_COLUMN = 'Z';
+const REPLACEMENT_VALUE_INCL_VAT_COLUMN = 'AA';
 
 const TABLE_HEADERS = [
   'Asset title',
@@ -71,6 +73,8 @@ const TABLE_HEADERS = [
   'Insurance notes',
   'License status',
   'License registration',
+  'Replacement price ex VAT',
+  'Replacement price incl VAT',
 ] as const;
 
 const WORKBOOK_COLUMN_WIDTHS = [
@@ -99,6 +103,8 @@ const WORKBOOK_COLUMN_WIDTHS = [
   28,
   17,
   24,
+  22,
+  22,
 ];
 
 function unauthorized() {
@@ -274,6 +280,33 @@ function readLicenseRegistrationNumber(item: AssetRegisterItem): string {
   ).toUpperCase();
 }
 
+const REPLACEMENT_PRICE_SPEC_KEYS = [
+  'replacementPriceExVat',
+  'replacement_price_ex_vat',
+  'replacementPriceUsedExVat',
+  'replacement_price_used_ex_vat',
+  'userReplacementPriceExVat',
+  'user_replacement_price_ex_vat',
+  'officialReplacementPriceExVat',
+  'official_replacement_price_ex_vat',
+  'replacementPrice',
+  'replacement_price',
+] as const;
+
+function replacementPriceExVat(item: AssetRegisterItem): number | null {
+  const direct = numericValue(item.replacementPriceExVat);
+  if (direct !== null && direct > 0) return Math.round(direct);
+
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+
+  for (const key of REPLACEMENT_PRICE_SPEC_KEYS) {
+    const value = numericValue(specs[key]);
+    if (value !== null && value > 0) return Math.round(value);
+  }
+
+  return null;
+}
+
 function methodLabel(value: AssetRegisterItem['selectedMethod']): string {
   return (
     {
@@ -400,6 +433,14 @@ function registerValueInclVatTotal(items: AssetRegisterItem[]): number {
   return items.reduce((sum, item) => sum + moneyInclVatTotal(item.value), 0);
 }
 
+function replacementValueTotal(items: AssetRegisterItem[]): number {
+  return items.reduce((sum, item) => sum + Math.round(replacementPriceExVat(item) ?? 0), 0);
+}
+
+function replacementValueInclVatTotal(items: AssetRegisterItem[]): number {
+  return items.reduce((sum, item) => sum + moneyInclVatTotal(replacementPriceExVat(item)), 0);
+}
+
 function aim4priceValueTotal(items: AssetRegisterItem[]): number {
   return items.reduce((sum, item) => sum + Math.round(numericValue(item.aim4priceValueExVat) ?? 0), 0);
 }
@@ -480,6 +521,7 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
   const financeStatus = readFinanceStatusChoice(item);
   const insuranceStatus = readInsuranceStatusChoice(item);
   const licenseStatus = readLicenseStatusChoice(item);
+  const replacementPrice = replacementPriceExVat(item);
 
   return [
     textOrNaCell(item.title),
@@ -507,6 +549,8 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
     textOrNaCell(readInsuranceNote(item), 'note'),
     statusCellForChoice(licenseStatus, 'Licensed', 'Not licensed'),
     licenseStatus === 'yes' ? textOrNaCell(readLicenseRegistrationNumber(item)) : naCell(),
+    replacementPrice === null ? naCell() : moneyCell(replacementPrice),
+    replacementPrice === null ? naCell() : vatIncludedFormulaCell(REPLACEMENT_VALUE_EX_VAT_COLUMN, rowNumber, replacementPrice),
   ];
 }
 
@@ -526,6 +570,8 @@ function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
   const financeRange = buildFormulaRange(FINANCE_STATUS_COLUMN, items.length);
   const insuranceRange = buildFormulaRange(INSURANCE_STATUS_COLUMN, items.length);
   const licenseRange = buildFormulaRange(LICENSE_STATUS_COLUMN, items.length);
+  const replacementValueExVatRange = buildFormulaRange(REPLACEMENT_VALUE_EX_VAT_COLUMN, items.length);
+  const replacementValueInclVatRange = buildFormulaRange(REPLACEMENT_VALUE_INCL_VAT_COLUMN, items.length);
 
   return [
     [
@@ -576,6 +622,18 @@ function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
         ? formulaCell(`SUM(${marketValueInclVatRange})`, marketValueInclVatTotal(items), 'currency')
         : moneyCell(0),
     ],
+    [
+      textCell('Replacement value ex VAT', 'metaLabel'),
+      replacementValueExVatRange
+        ? formulaCell(`SUM(${replacementValueExVatRange})`, replacementValueTotal(items), 'currency')
+        : moneyCell(0),
+    ],
+    [
+      textCell('Replacement value incl VAT', 'metaLabel'),
+      replacementValueInclVatRange
+        ? formulaCell(`SUM(${replacementValueInclVatRange})`, replacementValueInclVatTotal(items), 'currency')
+        : moneyCell(0),
+    ],
   ];
 }
 
@@ -601,7 +659,7 @@ function buildWorkbookSheet(definition: SheetDefinition, profile: AccountProfile
     [textCell('Export note', 'section')],
     [
       textCell(
-        'Values are shown both excluding VAT and including VAT at 15%. This workbook is editable and intended for owners, financiers and insurance companies.',
+        'Values and replacement prices are shown both excluding VAT and including VAT at 15%. This workbook is editable and intended for owners, financiers and insurance companies.',
         'subtitle',
       ),
     ],
@@ -886,12 +944,16 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
   const condition = conditionLabel(item.condition) || 'N/A';
   const serial = cleanText(item.serialNumber) || 'N/A';
   const docs = Array.isArray(item.documents) ? item.documents.length : 0;
+  const replacementPrice = replacementPriceExVat(item);
+  const replacementSummary = replacementPrice === null
+    ? 'Replacement price: N/A'
+    : `Replacement price: ${formatPdfMoney(replacementPrice)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(replacementPrice))} incl. VAT`;
 
   return [
     { text: `${index + 1}. ${cleanText(item.title) || 'Asset'}`, font: 'F2', size: 11.2 },
     { text: `${kindLabel(item)} | ${assetModelPdfLabel(item)} | Year: ${year} | Usage: ${usagePdfLabel(item)} | Condition: ${condition}`, font: 'F1', size: 9.2 },
     { text: `Serial/VIN: ${serial} | Finance: ${financeStatus} | Insurance: ${insuranceStatus} | License: ${licenseStatus}${registration ? ` (${registration})` : ''}`, font: 'F1', size: 9.2 },
-    { text: `Register value: ${formatPdfMoney(item.value)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
+    { text: `Register value: ${formatPdfMoney(item.value)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT | ${replacementSummary} | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
   ];
 }
 
@@ -926,6 +988,8 @@ function buildFullRegisterPdf(items: AssetRegisterItem[], profile: AccountProfil
   const ownerPhone = cleanText(profile?.phone) || 'N/A';
   const registerValue = registerValueTotal(uniqueItems);
   const registerValueInclVat = registerValueInclVatTotal(uniqueItems);
+  const replacementValue = replacementValueTotal(uniqueItems);
+  const replacementValueInclVat = replacementValueInclVatTotal(uniqueItems);
 
   addPdfPage(state, false);
 
@@ -942,15 +1006,18 @@ function buildFullRegisterPdf(items: AssetRegisterItem[], profile: AccountProfil
   const ownerLineCount = drawPdfWrappedTextAt(state, ownerName, PDF_MARGIN + 14, heroTop - 43, 300, 17, 'F2', 19);
   drawPdfWrappedTextAt(state, ownerAddress, PDF_MARGIN + 14, heroTop - 45 - ownerLineCount * 18, 300, 8.8, 'F1', 11);
   drawPdfText(state, 'REGISTER VALUE', PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 22, 8, 'F2');
-  drawPdfText(state, `${formatPdfMoney(registerValue)} excl. VAT`, PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 43, 13, 'F2');
-  drawPdfText(state, `${formatPdfMoney(registerValueInclVat)} incl. VAT`, PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 58, 9, 'F1');
+  drawPdfText(state, `${formatPdfMoney(registerValue)} excl. VAT`, PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 43, 12, 'F2');
+  drawPdfText(state, `${formatPdfMoney(registerValueInclVat)} incl. VAT`, PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 57, 8.5, 'F1');
+  drawPdfText(state, 'REPLACEMENT VALUE', PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 71, 8, 'F2');
+  drawPdfText(state, `${formatPdfMoney(replacementValue)} excl. VAT`, PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 84, 9.2, 'F2');
   state.y = heroTop - 108;
 
   const cardGap = 8;
-  const cardWidth = (PDF_PAGE_WIDTH - PDF_MARGIN * 2 - cardGap * 2) / 3;
+  const cardWidth = (PDF_PAGE_WIDTH - PDF_MARGIN * 2 - cardGap * 3) / 4;
   drawPdfSummaryCard(state, 'Assets', String(uniqueItems.length), PDF_MARGIN, state.y, cardWidth);
-  drawPdfSummaryCard(state, 'Financed', String(countFinanced(uniqueItems)), PDF_MARGIN + cardWidth + cardGap, state.y, cardWidth);
-  drawPdfSummaryCard(state, 'Insured', String(countInsured(uniqueItems)), PDF_MARGIN + (cardWidth + cardGap) * 2, state.y, cardWidth);
+  drawPdfSummaryCard(state, 'Replacement', formatPdfMoney(replacementValue), PDF_MARGIN + cardWidth + cardGap, state.y, cardWidth);
+  drawPdfSummaryCard(state, 'Financed', String(countFinanced(uniqueItems)), PDF_MARGIN + (cardWidth + cardGap) * 2, state.y, cardWidth);
+  drawPdfSummaryCard(state, 'Insured', String(countInsured(uniqueItems)), PDF_MARGIN + (cardWidth + cardGap) * 3, state.y, cardWidth);
   state.y -= 66;
 
   drawPdfText(state, 'Owner details', PDF_MARGIN, state.y, 13, 'F2');
@@ -959,7 +1026,7 @@ function buildFullRegisterPdf(items: AssetRegisterItem[], profile: AccountProfil
   drawPdfRect(state, PDF_MARGIN, detailsTop - 52, PDF_PAGE_WIDTH - PDF_MARGIN * 2, 52, '0.98 0.99 1.00');
   drawPdfKeyValue(state, 'Email', ownerEmail, PDF_MARGIN + 12, detailsTop - 14, 176);
   drawPdfKeyValue(state, 'Phone', ownerPhone, PDF_MARGIN + 205, detailsTop - 14, 126);
-  drawPdfKeyValue(state, 'Licensed assets', String(countLicensed(uniqueItems)), PDF_MARGIN + 350, detailsTop - 14, 130);
+  drawPdfKeyValue(state, 'Replacement incl VAT', formatPdfMoney(replacementValueInclVat), PDF_MARGIN + 350, detailsTop - 14, 130);
   state.y -= 74;
 
   drawPdfText(state, 'Asset list', PDF_MARGIN, state.y, 14, 'F2');
