@@ -401,6 +401,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (replacementPriceExVat === null) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'Replacement price is required and must be greater than zero.',
+      },
+      { status: 400 },
+    );
+  }
+
   try {
     const item = await createManualAssetRegisterItem(session.user.id, {
       kind: normalizeKind(body.kind),
@@ -472,6 +482,16 @@ export async function PUT(request: NextRequest) {
     );
   }
 
+  if (replacementPriceExVat === null) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'Replacement price is required and must be greater than zero.',
+      },
+      { status: 400 },
+    );
+  }
+
   const existing = await getAssetRegisterItemById(session.user.id, assetId);
 
   if (!existing) {
@@ -530,6 +550,10 @@ export async function PUT(request: NextRequest) {
 
     if (error instanceof Error && error.message === 'LIFE_WORKED_PERCENT_CANNOT_DECREASE') {
       return NextResponse.json({ ok: false, error: 'The new lifetime worked percentage cannot be lower than the percentage already saved on this asset.' }, { status: 400 });
+    }
+
+    if (error instanceof Error && error.message === 'REPLACEMENT_PRICE_REQUIRED') {
+      return NextResponse.json({ ok: false, error: 'Replacement price is required and must be greater than zero.' }, { status: 400 });
     }
 
     console.error('asset register PUT failed', error);
