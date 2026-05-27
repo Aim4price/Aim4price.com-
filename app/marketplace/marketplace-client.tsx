@@ -2008,7 +2008,12 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   }
 
   function handleCreateListingClick() {
-    if (!isSignedIn || isDealerAccount) {
+    if (!isSignedIn) {
+      setCreateListingModalOpen(true);
+      return;
+    }
+
+    if (isDealerAccount) {
       goToMarketplaceEstimate();
       return;
     }
@@ -2453,24 +2458,52 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
               <IconClose />
             </button>
 
-            <div className={styles.createListingHeader}>
-              <h2 id="create-listing-title">Choose how this listing must be created.</h2>
-              <p>
-                Aim4price only allows marketplace uploads after a machine has an Aim4price value. This keeps every
-                listing linked to a valuation instead of a loose advert.
-              </p>
-            </div>
+            {!isSignedIn ? (
+              <>
+                <div className={styles.createListingHeader}>
+                  <h2 id="create-listing-title">Create an account before listing on Marketplace.</h2>
+                  <p>
+                    Marketplace listings must be tied to a seller profile. You can browse listings as a guest, but you need
+                    an account before you can create or publish a listing.
+                  </p>
+                </div>
 
-            <div className={styles.createListingChoiceGrid}>
-              <a href="/asset-register" className={styles.createListingChoiceCard}>
-                <strong>From Asset Register</strong>
-                <span>Use an existing saved asset and publish it from its Manage modal.</span>
-              </a>
-              <button type="button" className={styles.createListingChoiceCard} onClick={goToMarketplaceEstimate}>
-                <strong>Via Get Estimate</strong>
-                <span>Run a fresh estimate, upload photos, then send it straight to marketplace.</span>
-              </button>
-            </div>
+                <div className={styles.createListingGuestPanel}>
+                  <strong>Seller information stays protected until account creation.</strong>
+                  <span>Create an account to publish from an Aim4price estimate, or contact Kuyler - 062 572 1650.</span>
+                </div>
+
+                <div className={styles.createListingActionRow}>
+                  <a href="/auth#signup" className={styles.createListingPrimaryAction}>
+                    Create account
+                  </a>
+                  <a href="tel:0625721650" className={styles.createListingSecondaryAction}>
+                    Contact Kuyler
+                  </a>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={styles.createListingHeader}>
+                  <h2 id="create-listing-title">Choose how this listing must be created.</h2>
+                  <p>
+                    Aim4price only allows marketplace uploads after a machine has an Aim4price value. This keeps every
+                    listing linked to a valuation instead of a loose advert.
+                  </p>
+                </div>
+
+                <div className={styles.createListingChoiceGrid}>
+                  <a href="/asset-register" className={styles.createListingChoiceCard}>
+                    <strong>From Asset Register</strong>
+                    <span>Use an existing saved asset and publish it from its Manage modal.</span>
+                  </a>
+                  <button type="button" className={styles.createListingChoiceCard} onClick={goToMarketplaceEstimate}>
+                    <strong>Via Get Estimate</strong>
+                    <span>Run a fresh estimate, upload photos, then send it straight to marketplace.</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : null}
@@ -2600,34 +2633,65 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
               <section className={styles.modalSection}>
                 <h3>Seller information</h3>
 
-                <div className={styles.contactRows}>
-                  <div className={styles.contactRow}>
-                    <span>Seller</span>
-                    <strong>{activeListing.sellerName || DEFAULT_MARKETPLACE_CONTACT_NAME}</strong>
-                  </div>
-                  {activeListing.sellerCompany ? (
+                {isSignedIn ? (
+                  <div className={styles.contactRows}>
                     <div className={styles.contactRow}>
-                      <span>Company</span>
-                      <strong>{activeListing.sellerCompany}</strong>
+                      <span>Seller</span>
+                      <strong>{activeListing.sellerName || DEFAULT_MARKETPLACE_CONTACT_NAME}</strong>
                     </div>
-                  ) : null}
-                  <div className={styles.contactRow}>
-                    <span>Phone</span>
-                    <strong>
-                      <a href={`tel:${activeListing.sellerPhone || DEFAULT_MARKETPLACE_CONTACT_PHONE}`}>
-                        {activeListing.sellerPhone || DEFAULT_MARKETPLACE_CONTACT_PHONE}
-                      </a>
-                    </strong>
-                  </div>
-                  {activeListing.sellerEmail ? (
+                    {activeListing.sellerCompany ? (
+                      <div className={styles.contactRow}>
+                        <span>Company</span>
+                        <strong>{activeListing.sellerCompany}</strong>
+                      </div>
+                    ) : null}
                     <div className={styles.contactRow}>
-                      <span>Email</span>
+                      <span>Phone</span>
                       <strong>
-                        <a href={`mailto:${activeListing.sellerEmail}`}>{activeListing.sellerEmail}</a>
+                        <a href={`tel:${activeListing.sellerPhone || DEFAULT_MARKETPLACE_CONTACT_PHONE}`}>
+                          {activeListing.sellerPhone || DEFAULT_MARKETPLACE_CONTACT_PHONE}
+                        </a>
                       </strong>
                     </div>
-                  ) : null}
-                </div>
+                    {activeListing.sellerEmail ? (
+                      <div className={styles.contactRow}>
+                        <span>Email</span>
+                        <strong>
+                          <a href={`mailto:${activeListing.sellerEmail}`}>{activeListing.sellerEmail}</a>
+                        </strong>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className={styles.blurredContactCard}>
+                    <div className={`${styles.contactRows} ${styles.contactRowsBlurred}`} aria-hidden="true">
+                      <div className={styles.contactRow}>
+                        <span>Seller</span>
+                        <strong>Seller information</strong>
+                      </div>
+                      <div className={styles.contactRow}>
+                        <span>Company</span>
+                        <strong>Marketplace seller</strong>
+                      </div>
+                      <div className={styles.contactRow}>
+                        <span>Phone</span>
+                        <strong>000 000 0000</strong>
+                      </div>
+                      <div className={styles.contactRow}>
+                        <span>Email</span>
+                        <strong>seller@example.com</strong>
+                      </div>
+                    </div>
+                    <div className={styles.contactBlurOverlay}>
+                      <strong>Seller information is blocked.</strong>
+                      <p>Create an account or contact Kuyler - 062 572 1650.</p>
+                      <div className={styles.lockedActions}>
+                        <a href="/auth#signup">Create account</a>
+                        <a href="tel:0625721650">Contact Kuyler</a>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </section>
 
               {canDeleteActiveListing ? (
