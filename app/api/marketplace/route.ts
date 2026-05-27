@@ -142,9 +142,11 @@ export async function POST(request: NextRequest) {
       email: session.user.email,
     });
 
-    if (profile.accountType !== 'owner') {
+    const accountType = String(profile.accountType ?? '').trim().toLowerCase();
+
+    if (accountType !== 'owner' && accountType !== 'dealer') {
       return NextResponse.json(
-        { ok: false, error: 'Only owner accounts can send assets to marketplace.' },
+        { ok: false, error: 'Only owner, dealer and auctioneer accounts can send assets to marketplace.' },
         { status: 403 },
       );
     }
