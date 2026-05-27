@@ -87,6 +87,25 @@ function normalizeHours(value: unknown): number | null {
   return Math.round(numeric);
 }
 
+
+function normalizeReplacementPrice(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined') {
+    return null;
+  }
+
+  const text = String(value).trim();
+  if (!text) {
+    return null;
+  }
+
+  const numeric = Number(text.replace(/[^0-9.-]/g, ''));
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return null;
+  }
+
+  return Math.round(numeric);
+}
+
 function normalizeYearModel(value: unknown): number | null {
   if (value === null || typeof value === 'undefined') {
     return null;
@@ -159,6 +178,7 @@ function buildManualSpecsJson(
   value: unknown,
   usageMetric: 'hours' | 'km' | null,
   lifeWorkedPercent: number | null,
+  replacementPriceExVat: number | null = null,
 ): Record<string, unknown> {
   const specs = normalizeSpecsJson(value);
   const resolvedLifeWorkedPercent = lifeWorkedPercent ?? readLifeWorkedPercentFromSpecs(specs);
@@ -178,6 +198,22 @@ function buildManualSpecsJson(
           worked_percent: resolvedLifeWorkedPercent,
           percent_worked: resolvedLifeWorkedPercent,
           lifetime_worked_percent: resolvedLifeWorkedPercent,
+        }
+      : {}),
+    ...(replacementPriceExVat !== null
+      ? {
+          replacementPriceExVat,
+          replacement_price_ex_vat: replacementPriceExVat,
+          replacementPrice: replacementPriceExVat,
+          replacement_price: replacementPriceExVat,
+          replacementPriceUsedExVat: replacementPriceExVat,
+          replacement_price_used_ex_vat: replacementPriceExVat,
+          userReplacementPriceExVat: replacementPriceExVat,
+          user_replacement_price_ex_vat: replacementPriceExVat,
+          officialReplacementPriceExVat: replacementPriceExVat,
+          official_replacement_price_ex_vat: replacementPriceExVat,
+          replacementPriceBasis: 'user',
+          replacement_price_basis: 'user',
         }
       : {}),
   };
@@ -350,6 +386,10 @@ export async function POST(request: NextRequest) {
     ? normalizeLicenseRegistrationNumber((body as { licenseRegistrationNumber?: unknown }).licenseRegistrationNumber)
     : null;
   const lifeWorkedPercent = normalizeLifeWorkedPercent((body as { lifeWorkedPercent?: unknown }).lifeWorkedPercent);
+  const replacementPriceExVat = normalizeReplacementPrice(
+    (body as { replacementPriceExVat?: unknown; replacementPrice?: unknown }).replacementPriceExVat ??
+      (body as { replacementPrice?: unknown }).replacementPrice,
+  );
 
   if (!title || value <= 0) {
     return NextResponse.json(
@@ -379,7 +419,8 @@ export async function POST(request: NextRequest) {
       hours: normalizeHours(body.hours),
       usageMetric,
       lifeWorkedPercent,
-      specsJson: buildManualSpecsJson(body.specsJson, usageMetric, lifeWorkedPercent),
+      replacementPriceExVat,
+      specsJson: buildManualSpecsJson(body.specsJson, usageMetric, lifeWorkedPercent, replacementPriceExVat),
       condition: normalizeCondition(body.condition),
     });
 
@@ -412,6 +453,10 @@ export async function PUT(request: NextRequest) {
     ? normalizeLicenseRegistrationNumber((body as { licenseRegistrationNumber?: unknown }).licenseRegistrationNumber)
     : null;
   const lifeWorkedPercent = normalizeLifeWorkedPercent((body as { lifeWorkedPercent?: unknown }).lifeWorkedPercent);
+  const replacementPriceExVat = normalizeReplacementPrice(
+    (body as { replacementPriceExVat?: unknown; replacementPrice?: unknown }).replacementPriceExVat ??
+      (body as { replacementPrice?: unknown }).replacementPrice,
+  );
 
   if (!assetId) {
     return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
@@ -460,7 +505,8 @@ export async function PUT(request: NextRequest) {
       hours: normalizeHours(body.hours),
       usageMetric,
       lifeWorkedPercent,
-      specsJson: buildManualSpecsJson(body.specsJson, usageMetric, lifeWorkedPercent),
+      replacementPriceExVat,
+      specsJson: buildManualSpecsJson(body.specsJson, usageMetric, lifeWorkedPercent, replacementPriceExVat),
       condition: normalizeCondition(body.condition),
     });
 
