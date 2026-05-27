@@ -787,6 +787,7 @@ export default function ValuationClient() {
   const yearNumber = Number(year);
   const usageNumber = toNumberOrNull(usageAmount);
   const lifeWorkedPercentNumber = toPercentOrNull(lifeWorkedPercent);
+  const userReplacementPriceNumber = toNumberOrNull(userReplacementPrice);
   const specsJson = useMemo(() => buildSpecPayload(specQuestions, specAnswers), [specQuestions, specAnswers]);
   const enrichedSpecsJson = useMemo(
     () => ({
@@ -899,6 +900,7 @@ export default function ValuationClient() {
     setYearModelUnknown(false);
     setUsageAmount('');
     setLifeWorkedPercent('');
+    setUserReplacementPrice('');
     setCondition('good');
     setYearStepComplete(false);
     setUsageStepComplete(false);
@@ -1102,6 +1104,7 @@ export default function ValuationClient() {
     setYearModelUnknown(false);
     setUsageAmount('');
     setLifeWorkedPercent('');
+    setUserReplacementPrice('');
     setCondition('good');
     setSpecAnswers({});
     setYearStepComplete(false);
@@ -1146,6 +1149,9 @@ export default function ValuationClient() {
     }
 
     if (!conditionStepComplete || !condition) return 'Choose the condition.';
+    if (!userReplacementPrice.trim() || !userReplacementPriceNumber) {
+      return 'Enter the replacement price before getting a valuation.';
+    }
     if (flowMode === 'exact_model' && !tractorSetupComplete) return 'Complete the type, drive and cab setup first.';
     if (flowMode === 'exact_model' && !selectedModel) return 'Choose the exact model or use machine specs.';
 
@@ -1291,11 +1297,13 @@ export default function ValuationClient() {
             gpsEnabled,
             gpsType,
             gpsYear,
+            userReplacementPriceExVat: userReplacementPriceNumber,
           }),
         });
         const data = (await response.json()) as TractorValuationApiResponse;
         if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to calculate tractor valuation.');
         setResultState({ kind: 'tractor', result: data.result });
+        setReplacementPriceBasis('user');
         setSelectedMethod(data.result.marketMid !== null ? 'market' : 'aim4price');
         setReplacementPanelOpen(false);
       } else if (selectedFamily && selectedBrand) {
@@ -1313,14 +1321,14 @@ export default function ValuationClient() {
             usageAmount: usageNumber,
             lifeWorkedPercent: lifeWorkedPercentNumber,
             condition,
-            userReplacementPriceExVat: toNumberOrNull(userReplacementPrice),
-            userReplacementPriceYear: toNumberOrNull(userReplacementPrice) ? CURRENT_YEAR : null,
+            userReplacementPriceExVat: userReplacementPriceNumber,
+            userReplacementPriceYear: userReplacementPriceNumber ? CURRENT_YEAR : null,
           }),
         });
         const data = (await response.json()) as GenericValuationApiResponse;
         if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to calculate generic valuation.');
         setResultState({ kind: 'generic', result: data.result });
-        setReplacementPriceBasis(data.result.userReplacementCalculation ? 'user' : 'aim4price');
+        setReplacementPriceBasis('user');
         setSelectedMethod(data.result.marketAverageExVat !== null ? 'market' : 'aim4price');
         setReplacementPanelOpen(false);
       }
@@ -1350,6 +1358,8 @@ export default function ValuationClient() {
       : {};
 
     if (resultState.kind === 'tractor') {
+      const replacementPriceForSave = resultState.result.userReplacementPriceExVat ?? userReplacementPriceNumber;
+
       return {
         modelId: resultState.result.model.id,
         year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
@@ -1360,15 +1370,15 @@ export default function ValuationClient() {
         gpsEnabled,
         gpsType,
         gpsYear,
-        userReplacementPriceExVat:
-          replacementPriceBasis === 'user' && selectedMethod === 'aim4price' && resultState.result.userReplacementPriceExVat
-            ? resultState.result.userReplacementPriceExVat
-            : null,
+        userReplacementPriceExVat: replacementPriceForSave,
         selectedMethod,
         valuationVersion: 'v1',
         ...marketplaceFields,
       };
     }
+
+    const replacementPriceForSave = resultState.result.userReplacementPriceExVat ?? userReplacementPriceNumber;
+    const replacementPriceYearForSave = replacementPriceForSave ? resultState.result.userReplacementPriceYear ?? CURRENT_YEAR : null;
 
     return {
       catalogModeUsed: 'generic_specs',
@@ -1382,10 +1392,8 @@ export default function ValuationClient() {
       usageAmount: resultState.result.usageAmount,
       lifeWorkedPercent: resultState.result.lifeWorkedPercent,
       condition: resultState.result.condition,
-      userReplacementPriceExVat:
-        replacementPriceBasis === 'user' && selectedMethod === 'aim4price' ? resultState.result.userReplacementPriceExVat : null,
-      userReplacementPriceYear:
-        replacementPriceBasis === 'user' && selectedMethod === 'aim4price' ? resultState.result.userReplacementPriceYear : null,
+      userReplacementPriceExVat: replacementPriceForSave,
+      userReplacementPriceYear: replacementPriceYearForSave,
       selectedMethod,
       valuationVersion: 'generic-v1',
       ...marketplaceFields,
@@ -2771,6 +2779,36 @@ export default function ValuationClient() {
             </div>
           ) : null}
 
+          {conditionStepComplete ? (
+            <div className={`${styles.currentCard} ${styles.replacementStepCard}`}>
+              <div className={styles.currentCardHead}>
+                <div>
+                  <span className={styles.currentEyebrow}>Step 4</span>
+                  <h3 className={styles.currentTitle}>Replacement price</h3>
+                  <p className={styles.currentHint}>Enter what a similar machine costs new today. This becomes the saved replacement price for the asset.</p>
+                </div>
+                <span className={styles.selectedSummaryPill}>{userReplacementPriceNumber ? money(userReplacementPriceNumber) : 'Required'}</span>
+              </div>
+
+              <div className={styles.replacementStepGrid}>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Replacement price excl. VAT *</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={userReplacementPrice}
+                    onChange={(event) => {
+                      setUserReplacementPrice(event.target.value);
+                      resetResult();
+                    }}
+                    placeholder="Required, ex VAT"
+                  />
+                </label>
+                <p className={styles.replacementStepHelp}>Use the current replacement cost before VAT. The asset register, summaries, PDFs and Excel exports use this value as the official replacement price.</p>
+              </div>
+            </div>
+          ) : null}
+
           {conditionStepComplete && genericPath ? renderSpecQuestionsProgress() : null}
         </div>
 
@@ -3016,7 +3054,7 @@ export default function ValuationClient() {
                         inputMode="decimal"
                         value={userReplacementPrice}
                         onChange={(event) => setUserReplacementPrice(event.target.value)}
-                        placeholder="Optional, ex VAT"
+                        placeholder="Required, ex VAT"
                       />
                     </label>
                     <button

@@ -5870,6 +5870,28 @@
   gap: 1rem;
 }
 
+.replacementStepCard {
+  border-color: rgba(24, 77, 61, 0.16);
+  background:
+    radial-gradient(circle at top left, rgba(24, 77, 61, 0.06), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 251, 250, 0.99));
+}
+
+.replacementStepGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: end;
+}
+
+.replacementStepHelp {
+  margin: 0;
+  color: #5f6c66;
+  font-size: 0.94rem;
+  line-height: 1.55;
+  font-weight: 650;
+}
+
 .conditionButtonGrid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -6567,6 +6589,10 @@
   .resultMethodGrid,
   .replacementOptionGrid,
   .replacementInputPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .replacementStepGrid {
     grid-template-columns: 1fr;
   }
 
