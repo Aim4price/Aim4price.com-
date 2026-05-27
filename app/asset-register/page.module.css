@@ -17785,3 +17785,268 @@
   border-color: var(--quote-accent-border-strong) !important;
   background: var(--quote-accent-soft) !important;
 }
+
+/* === Asset Register modal replacement-price + custom dropdown update === */
+.manualWizardHeaderKicker,
+.manualStepProgress {
+  display: none !important;
+}
+
+.assetFormModal .modalHeaderText,
+.assetFormModal .manualWizardHeader .modalHeaderText {
+  gap: 0.42rem !important;
+}
+
+.assetFormModal .manualValueGrid {
+  grid-template-columns: minmax(260px, 1fr) minmax(200px, 0.68fr) minmax(230px, 0.78fr) !important;
+  align-items: end !important;
+}
+
+.assetFormModal .manualValueGrid .manualTitleField,
+.assetFormModal .manualValueGrid .manualValueField,
+.assetFormModal .manualValueGrid .manualReplacementValueField {
+  min-width: 0 !important;
+}
+
+.assetFormModal .manualReplacementValueField .manualCurrencyInput {
+  border-color: rgba(21, 128, 97, 0.28) !important;
+  background:
+    radial-gradient(circle at top left, rgba(21, 128, 97, 0.08), transparent 44%),
+    #ffffff !important;
+}
+
+.customSelectField {
+  position: relative !important;
+  min-width: 0 !important;
+}
+
+.customSelectButton {
+  width: 100% !important;
+  min-height: 3.75rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.8rem !important;
+  padding: 0.85rem 1rem !important;
+  border: 1px solid rgba(211, 223, 233, 0.98) !important;
+  border-radius: 1.08rem !important;
+  color: #20313b !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.05), transparent 40%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+  box-shadow:
+    0 10px 20px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  font: inherit !important;
+  font-size: 1.08rem !important;
+  font-weight: 650 !important;
+  line-height: 1.2 !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    transform 160ms ease !important;
+}
+
+.customSelectButton:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(151, 178, 202, 0.98) !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f2f7f8 100%) !important;
+  box-shadow:
+    0 14px 28px rgba(16, 31, 28, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.customSelectButtonOpen,
+.customSelectButton:focus-visible {
+  border-color: rgba(22, 83, 64, 0.38) !important;
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.1),
+    0 14px 28px rgba(16, 31, 28, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  outline: none !important;
+}
+
+.customSelectButtonPlaceholder {
+  color: #68798a !important;
+  font-weight: 590 !important;
+}
+
+.customSelectChevron {
+  flex: 0 0 auto !important;
+  width: 1.05rem !important;
+  height: 1.05rem !important;
+  color: #153f5f !important;
+  transition: transform 160ms ease !important;
+}
+
+.customSelectButtonOpen .customSelectChevron {
+  transform: rotate(180deg) !important;
+}
+
+.customSelectMenu {
+  display: grid !important;
+  gap: 0.42rem !important;
+  max-height: 18rem !important;
+  margin-top: 0.5rem !important;
+  padding: 0.48rem !important;
+  overflow-y: auto !important;
+  border: 1px solid rgba(203, 216, 229, 0.98) !important;
+  border-radius: 1.08rem !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow:
+    0 22px 50px rgba(16, 31, 28, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.customSelectOption {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+  min-height: 3.15rem !important;
+  padding: 0.72rem 0.78rem !important;
+  border: 1px solid transparent !important;
+  border-radius: 0.86rem !important;
+  color: #20313b !important;
+  background: #ffffff !important;
+  font: inherit !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease !important;
+}
+
+.customSelectOption:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(197, 215, 228, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f9fb 100%) !important;
+}
+
+.customSelectOption > span {
+  display: grid !important;
+  gap: 0.16rem !important;
+  min-width: 0 !important;
+}
+
+.customSelectOption strong {
+  color: #102f2a !important;
+  font-size: 0.96rem !important;
+  font-weight: 760 !important;
+  line-height: 1.15 !important;
+}
+
+.customSelectOption small {
+  color: #66778a !important;
+  font-size: 0.78rem !important;
+  font-weight: 560 !important;
+  line-height: 1.32 !important;
+}
+
+.customSelectOption b {
+  flex: 0 0 auto !important;
+  width: 1.55rem !important;
+  height: 1.55rem !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  background: #176f52 !important;
+  font-size: 0.86rem !important;
+  font-weight: 900 !important;
+}
+
+.customSelectOptionActive,
+.customSelectOptionActive:hover {
+  border-color: rgba(22, 83, 64, 0.24) !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.1), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%) !important;
+}
+
+.assetReplacementPriceBubble {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 1rem !important;
+  min-height: 4.25rem !important;
+  padding: 0.9rem 1rem !important;
+  border-radius: 1rem !important;
+  border: 1px solid rgba(21, 128, 97, 0.28) !important;
+  background:
+    radial-gradient(circle at top left, rgba(21, 128, 97, 0.1), transparent 44%),
+    linear-gradient(180deg, #ffffff 0%, #f2fbf7 100%) !important;
+  box-shadow:
+    0 12px 24px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetReplacementPriceBubble span {
+  color: #176f52 !important;
+  font-size: 0.82rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.055em !important;
+  text-transform: uppercase !important;
+}
+
+.assetReplacementPriceBubble strong {
+  margin-left: auto !important;
+  color: #062f27 !important;
+  font-size: clamp(1.25rem, 2vw, 1.75rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.045em !important;
+  line-height: 1 !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+}
+
+.assetReplacementPriceBubble small {
+  align-self: flex-end !important;
+  margin-left: -0.65rem !important;
+  color: #5f7082 !important;
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.manualReviewStrip {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+@media (max-width: 1180px) {
+  .assetFormModal .manualValueGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .assetFormModal .manualValueGrid .manualTitleField {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .assetFormModal .manualValueGrid,
+  .manualReviewStrip {
+    grid-template-columns: 1fr !important;
+  }
+
+  .assetReplacementPriceBubble {
+    display: grid !important;
+    justify-items: start !important;
+  }
+
+  .assetReplacementPriceBubble strong {
+    margin-left: 0 !important;
+    text-align: left !important;
+  }
+
+  .assetReplacementPriceBubble small {
+    margin-left: 0 !important;
+  }
+}

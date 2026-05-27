@@ -209,6 +209,7 @@ type RegisterAsset = {
   value: number;
   selectedMethod: AssetMethod;
   selectedValueExVat: number;
+  replacementPriceExVat: number | null;
   brandName: string;
   modelName: string;
   drive: string;
@@ -367,6 +368,7 @@ type AssetDraft = {
   kind: AssetKind;
   title: string;
   value: string;
+  replacementPrice: string;
   note: string;
   serialNumber: string;
   isFinanced: boolean;
@@ -594,6 +596,7 @@ const initialAssetDraft: AssetDraft = {
   kind: 'equipment',
   title: '',
   value: '',
+  replacementPrice: '',
   note: '',
   serialNumber: '',
   isFinanced: false,
@@ -977,6 +980,108 @@ function ExportGraphic({ src, alt, icon }: ExportGraphicProps) {
   }
 
   return <img src={src} alt={alt} className={styles.exportGraphicImage} onError={() => setHasError(true)} />;
+}
+
+type ModalSelectOption<T extends string> = {
+  value: T;
+  label: string;
+  description?: string;
+};
+
+type ModalSelectProps<T extends string> = {
+  label: string;
+  value: T | '';
+  options: Array<ModalSelectOption<T>>;
+  onChange: (value: T) => void;
+  placeholder?: string;
+  className?: string;
+  autoFocus?: boolean;
+};
+
+function ModalSelect<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+  placeholder = 'Select option',
+  className = '',
+  autoFocus = false,
+}: ModalSelectProps<T>) {
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const selectedOption = options.find((option) => option.value === value) ?? null;
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (wrapRef.current && target instanceof Node && !wrapRef.current.contains(target)) {
+        setIsOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className={`${styles.field} ${styles.customSelectField} ${className}`} ref={wrapRef}>
+      <span>{label}</span>
+      <button
+        type="button"
+        className={`${styles.customSelectButton} ${isOpen ? styles.customSelectButtonOpen : ''} ${!selectedOption ? styles.customSelectButtonPlaceholder : ''}`}
+        onClick={() => setIsOpen((current) => !current)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        autoFocus={autoFocus}
+      >
+        <span>{selectedOption?.label ?? placeholder}</span>
+        <ChevronDownIcon className={styles.customSelectChevron} />
+      </button>
+
+      {isOpen ? (
+        <div className={styles.customSelectMenu} role="listbox" aria-label={label}>
+          {options.map((option) => {
+            const isSelected = option.value === value;
+
+            return (
+              <button
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                key={option.value || option.label}
+                className={`${styles.customSelectOption} ${isSelected ? styles.customSelectOptionActive : ''}`}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+              >
+                <span>
+                  <strong>{option.label}</strong>
+                  {option.description ? <small>{option.description}</small> : null}
+                </span>
+                {isSelected ? <b aria-hidden="true">✓</b> : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function money(value: number): string {
@@ -1772,6 +1877,31 @@ function canProjectFuturePrice(asset: RegisterAsset): boolean {
   );
 }
 
+const REPLACEMENT_PRICE_SPEC_KEYS = [
+  'replacementPriceExVat',
+  'replacement_price_ex_vat',
+  'replacementPriceUsedExVat',
+  'replacement_price_used_ex_vat',
+  'userReplacementPriceExVat',
+  'user_replacement_price_ex_vat',
+  'officialReplacementPriceExVat',
+  'official_replacement_price_ex_vat',
+  'replacementPrice',
+  'replacement_price',
+] as const;
+
+function readAssetReplacementPriceExVat(asset: Pick<RegisterAsset, 'replacementPriceExVat' | 'specsJson'>): number | null {
+  const direct = Number(asset.replacementPriceExVat);
+  if (Number.isFinite(direct) && direct > 0) {
+    return Math.round(direct);
+  }
+
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+  const fromSpecs = readNumberFromSpecs(specs, [...REPLACEMENT_PRICE_SPEC_KEYS]);
+
+  return fromSpecs !== null && fromSpecs > 0 ? Math.round(fromSpecs) : null;
+}
+
 function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
   const financeStatus = readFinanceStatusChoice(asset);
   const insuranceStatus = readInsuranceStatusChoice(asset);
@@ -1782,6 +1912,7 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     kind: normalizeDraftKind(asset.kind),
     title: asset.title,
     value: formatRegisterValueInput(asset.value || ''),
+    replacementPrice: formatRegisterValueInput(readAssetReplacementPriceExVat(asset) ?? ''),
     note: '',
     serialNumber: asset.serialNumber,
     isFinanced: financeStatus === 'yes',
@@ -1813,6 +1944,7 @@ function buildSavedItemFromAsset(asset: RegisterAsset) {
     selectedMethod: asset.selectedMethod,
     method: asset.selectedMethod,
     selectedValueExVat: asset.selectedValueExVat,
+    replacementPriceExVat: readAssetReplacementPriceExVat(asset),
     brandName: asset.brandName || undefined,
     modelName: asset.modelName || undefined,
     drive: asset.drive || undefined,
@@ -3213,6 +3345,8 @@ export default function AssetRegisterClient() {
 
   function validateAssetDetailsDraft(): boolean {
     const value = parseRegisterValueInput(assetDraft.value);
+    const hasReplacementPrice = assetDraft.replacementPrice.trim() !== '';
+    const replacementPrice = hasReplacementPrice ? parseRegisterValueInput(assetDraft.replacementPrice) : null;
     const hasYearModel = assetDraft.yearModel.trim() !== '';
     const yearModel = hasYearModel ? Number(assetDraft.yearModel) : null;
     const hasHours = assetDraft.hours.trim() !== '';
@@ -3222,7 +3356,12 @@ export default function AssetRegisterClient() {
     const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
 
     if (!assetDraft.title.trim() || value <= 0) {
-      setNotice({ tone: 'error', message: 'Asset title and value are required before moving to the next step.' });
+      setNotice({ tone: 'error', message: 'Asset title and current value are required before moving to the next step.' });
+      return false;
+    }
+
+    if (hasReplacementPrice && (!replacementPrice || replacementPrice <= 0)) {
+      setNotice({ tone: 'error', message: 'Replacement price must be greater than zero when entered.' });
       return false;
     }
 
@@ -3802,6 +3941,8 @@ export default function AssetRegisterClient() {
     }
 
     const value = parseRegisterValueInput(assetDraft.value);
+    const hasReplacementPrice = assetDraft.replacementPrice.trim() !== '';
+    const replacementPrice = hasReplacementPrice ? parseRegisterValueInput(assetDraft.replacementPrice) : null;
     const hasYearModel = assetDraft.yearModel.trim() !== '';
     const yearModel = hasYearModel ? Number(assetDraft.yearModel) : null;
     const hasHours = assetDraft.hours.trim() !== '';
@@ -3811,7 +3952,12 @@ export default function AssetRegisterClient() {
     const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
 
     if (!assetDraft.title.trim() || value <= 0) {
-      setNotice({ tone: 'error', message: 'Asset title and value are required.' });
+      setNotice({ tone: 'error', message: 'Asset title and current value are required.' });
+      return;
+    }
+
+    if (hasReplacementPrice && (!replacementPrice || replacementPrice <= 0)) {
+      setNotice({ tone: 'error', message: 'Replacement price must be greater than zero when entered.' });
       return;
     }
 
@@ -3887,6 +4033,18 @@ export default function AssetRegisterClient() {
       registration_number: licenseRegistrationNumber,
       numberPlate: licenseRegistrationNumber,
       number_plate: licenseRegistrationNumber,
+      replacementPriceExVat: replacementPrice,
+      replacement_price_ex_vat: replacementPrice,
+      replacementPrice: replacementPrice,
+      replacement_price: replacementPrice,
+      replacementPriceUsedExVat: replacementPrice,
+      replacement_price_used_ex_vat: replacementPrice,
+      userReplacementPriceExVat: replacementPrice,
+      user_replacement_price_ex_vat: replacementPrice,
+      officialReplacementPriceExVat: replacementPrice,
+      official_replacement_price_ex_vat: replacementPrice,
+      replacementPriceBasis: replacementPrice ? 'user' : '',
+      replacement_price_basis: replacementPrice ? 'user' : '',
       insuranceNote: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
       insurance_note: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
       insuredNote: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
@@ -3926,6 +4084,7 @@ export default function AssetRegisterClient() {
         kind: editingAsset?.valuationRunId ? editingAsset.kind : assetDraft.kind,
         title: assetDraft.title,
         value,
+        replacementPriceExVat: replacementPrice,
         note: assetDraft.note.trim(),
         serialNumber: assetDraft.serialNumber,
         isFinanced: assetDraft.financeStatus === 'yes',
@@ -4929,7 +5088,6 @@ export default function AssetRegisterClient() {
     : searchTerm.trim() || hasActiveAssetFilter
       ? 'No assets match the current search or filter.'
       : 'No saved assets yet.';
-  const currentManualStepMeta = MANUAL_FORM_STEPS.find((entry) => entry.step === manualAssetStep) ?? MANUAL_FORM_STEPS[0];
   const assetFormStepDescription =
     manualAssetStep === 1
       ? 'Select the asset type.'
@@ -5407,6 +5565,11 @@ export default function AssetRegisterClient() {
                                       </div>
                                     </div>
 
+                                    <div className={styles.assetReplacementPriceBubble}>
+                                      <span>Replacement Price</span>
+                                      <strong>{readAssetReplacementPriceExVat(asset) ? money(readAssetReplacementPriceExVat(asset) ?? 0) : 'Not set'}</strong>
+                                      <small>Excl. VAT</small>
+                                    </div>
                                   </div>
                                 </>
                               );
@@ -5712,10 +5875,6 @@ export default function AssetRegisterClient() {
           >
             <div className={`${styles.modalHeader} ${styles.assetFormModalHeader} ${styles.manualWizardHeader}`}>
               <div className={styles.modalHeaderText}>
-                <div className={styles.manualWizardHeaderKicker}>
-                  <span>Step {manualAssetStep} of 4</span>
-                  <strong>{currentManualStepMeta.label}</strong>
-                </div>
                 <h3 id="asset-form-title">{editingAsset ? 'Update asset' : 'Add asset'}</h3>
                 <p>{assetFormStepDescription}</p>
               </div>
@@ -5732,23 +5891,6 @@ export default function AssetRegisterClient() {
 
             <div className={`${styles.modalScrollBody} ${styles.manualStepScrollBody} ${manualAssetStep === 1 ? styles.manualStepScrollBodyNoScroll : ''}`}>
               <form className={`${styles.modalForm} ${styles.manualAssetForm} ${styles.manualStepForm}`} onSubmit={(event) => event.preventDefault()}>
-                <div className={styles.manualStepProgress} aria-label="Manual asset progress">
-                  {MANUAL_FORM_STEPS.map((entry) => {
-                    const isActiveStep = entry.step === manualAssetStep;
-                    const isCompleteStep = entry.step < manualAssetStep;
-
-                    return (
-                      <span
-                        key={entry.step}
-                        className={`${styles.manualStepProgressItem} ${isActiveStep ? styles.manualStepProgressItemActive : ''} ${isCompleteStep ? styles.manualStepProgressItemComplete : ''}`}
-                      >
-                        <span>{isCompleteStep ? '✓' : entry.step}</span>
-                        <small>{entry.label}</small>
-                      </span>
-                    );
-                  })}
-                </div>
-
                 {manualAssetStep === 1 ? (
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.manualStepOneCard} ${styles.fullWidth}`}>
                     <div className={styles.manualStepIntro}>
@@ -5761,26 +5903,15 @@ export default function AssetRegisterClient() {
                         <input value={kindLabel(editingAsset.kind)} disabled readOnly />
                       </label>
                     ) : (
-                      <label className={`${styles.field} ${styles.manualCompactSelectField}`}>
-                        <span>Choose type</span>
-                        <select
-                          value={hasManualAssetKindSelection ? assetFormKind : ''}
-                          onChange={(event) => {
-                            const nextKind = event.target.value as AssetKind;
-                            if (nextKind) {
-                              selectManualAssetKind(nextKind, true);
-                            }
-                          }}
-                          autoFocus
-                        >
-                          <option value="">Select asset type</option>
-                          {MANUAL_ASSET_TYPE_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                      <ModalSelect<AssetKind>
+                        label="Choose type"
+                        value={hasManualAssetKindSelection ? assetFormKind : ''}
+                        placeholder="Select asset type"
+                        options={MANUAL_ASSET_TYPE_OPTIONS}
+                        onChange={(nextKind) => selectManualAssetKind(nextKind, true)}
+                        className={styles.manualCompactSelectField}
+                        autoFocus
+                      />
                     )}
                   </section>
                 ) : null}
@@ -5796,7 +5927,7 @@ export default function AssetRegisterClient() {
                       <strong>{selectedManualAssetType.label}</strong>
                     </div>
 
-                    <div className={`${styles.manualStageGrid} ${styles.manualPrimaryFields}`}>
+                    <div className={`${styles.manualStageGrid} ${styles.manualPrimaryFields} ${styles.manualValueGrid}`}>
                       <label className={`${styles.field} ${styles.manualTitleField}`}>
                         <span>Asset title</span>
                         <input
@@ -5813,7 +5944,7 @@ export default function AssetRegisterClient() {
                       </label>
 
                       <label className={`${styles.field} ${styles.manualValueField}`}>
-                        <span>Value excl. VAT</span>
+                        <span>Current Value excl. VAT</span>
                         <div className={styles.manualCurrencyInput}>
                           <span>R</span>
                           <input
@@ -5827,6 +5958,25 @@ export default function AssetRegisterClient() {
                               }))
                             }
                             placeholder="0"
+                          />
+                        </div>
+                      </label>
+
+                      <label className={`${styles.field} ${styles.manualReplacementValueField}`}>
+                        <span>Replacement Price excl. VAT</span>
+                        <div className={styles.manualCurrencyInput}>
+                          <span>R</span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={formatRegisterValueInput(assetDraft.replacementPrice)}
+                            onChange={(event) =>
+                              setAssetDraft((current) => ({
+                                ...current,
+                                replacementPrice: formatRegisterValueInput(event.target.value),
+                              }))
+                            }
+                            placeholder="Optional"
                           />
                         </div>
                       </label>
@@ -5866,21 +6016,20 @@ export default function AssetRegisterClient() {
                       </label>
 
                       {assetFormKind === 'vehicle' ? (
-                        <label className={styles.field}>
-                          <span>Usage type</span>
-                          <select
-                            value={assetDraft.usageMetric}
-                            onChange={(event) =>
-                              setAssetDraft((current) => ({
-                                ...current,
-                                usageMetric: normalizeUsageMetric(event.target.value, 'vehicle'),
-                              }))
-                            }
-                          >
-                            <option value="km">Kilometres</option>
-                            <option value="hours">Hours</option>
-                          </select>
-                        </label>
+                        <ModalSelect<UsageMetric>
+                          label="Usage type"
+                          value={assetDraft.usageMetric}
+                          options={[
+                            { value: 'km', label: 'Kilometres', description: 'Use odometer readings for vehicles.' },
+                            { value: 'hours', label: 'Hours', description: 'Use machine or engine hours.' },
+                          ]}
+                          onChange={(nextUsageMetric) =>
+                            setAssetDraft((current) => ({
+                              ...current,
+                              usageMetric: normalizeUsageMetric(nextUsageMetric, 'vehicle'),
+                            }))
+                          }
+                        />
                       ) : null}
 
                       {showUsageHoursField ? (
@@ -5922,24 +6071,17 @@ export default function AssetRegisterClient() {
                       ) : null}
 
                       {showConditionField ? (
-                        <label className={styles.field}>
-                          <span>Condition</span>
-                          <select
-                            value={assetDraft.condition}
-                            onChange={(event) =>
-                              setAssetDraft((current) => ({
-                                ...current,
-                                condition: event.target.value as AssetConditionValue,
-                              }))
-                            }
-                          >
-                            {CONDITION_OPTIONS.map((option) => (
-                              <option key={option.value || 'blank'} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                        <ModalSelect<AssetConditionValue>
+                          label="Condition"
+                          value={assetDraft.condition}
+                          options={CONDITION_OPTIONS}
+                          onChange={(nextCondition) =>
+                            setAssetDraft((current) => ({
+                              ...current,
+                              condition: nextCondition,
+                            }))
+                          }
+                        />
                       ) : null}
 
                       <label className={`${styles.field} ${styles.fullWidth}`}>
@@ -5967,47 +6109,26 @@ export default function AssetRegisterClient() {
                     </div>
 
                     <div className={styles.manualStageGrid}>
-                      <label className={styles.field}>
-                        <span>Finance status</span>
-                        <select
-                          value={assetDraft.financeStatus}
-                          onChange={(event) => setAssetFinanceStatus(event.target.value as AssetStatusChoice)}
-                        >
-                          {FINANCE_STATUS_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                      <ModalSelect<AssetStatusChoice>
+                        label="Finance status"
+                        value={assetDraft.financeStatus}
+                        options={FINANCE_STATUS_OPTIONS}
+                        onChange={setAssetFinanceStatus}
+                      />
 
-                      <label className={styles.field}>
-                        <span>Insurance status</span>
-                        <select
-                          value={assetDraft.insuranceStatus}
-                          onChange={(event) => setAssetInsuranceStatus(event.target.value as AssetStatusChoice)}
-                        >
-                          {INSURANCE_STATUS_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                      <ModalSelect<AssetStatusChoice>
+                        label="Insurance status"
+                        value={assetDraft.insuranceStatus}
+                        options={INSURANCE_STATUS_OPTIONS}
+                        onChange={setAssetInsuranceStatus}
+                      />
 
-                      <label className={styles.field}>
-                        <span>License status</span>
-                        <select
-                          value={assetDraft.licenseStatus}
-                          onChange={(event) => setAssetLicenseStatus(event.target.value as AssetStatusChoice)}
-                        >
-                          {LICENSE_STATUS_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                      <ModalSelect<AssetStatusChoice>
+                        label="License status"
+                        value={assetDraft.licenseStatus}
+                        options={LICENSE_STATUS_OPTIONS}
+                        onChange={setAssetLicenseStatus}
+                      />
 
                       {assetDraft.licenseStatus === 'yes' ? (
                         <label className={`${styles.field} ${styles.manualStatusNoteField}`}>
@@ -6076,9 +6197,16 @@ export default function AssetRegisterClient() {
                         <strong>{assetDraft.title.trim() || 'No title'}</strong>
                       </div>
                       <div className={styles.manualReviewValueTile}>
-                        <span>Value</span>
+                        <span>Current Value</span>
                         <strong>
                           {money(parseRegisterValueInput(assetDraft.value))}
+                          <small>Excl. VAT</small>
+                        </strong>
+                      </div>
+                      <div className={styles.manualReviewValueTile}>
+                        <span>Replacement Price</span>
+                        <strong>
+                          {assetDraft.replacementPrice.trim() ? money(parseRegisterValueInput(assetDraft.replacementPrice)) : 'Not set'}
                           <small>Excl. VAT</small>
                         </strong>
                       </div>
