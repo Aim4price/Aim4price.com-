@@ -6839,6 +6839,386 @@
   }
 }
 
+
+.resultFinalActions {
+  display: grid;
+  gap: 1.15rem;
+  padding: clamp(1.15rem, 2vw, 1.45rem);
+  border: 1px solid rgba(23, 77, 62, 0.12);
+  border-radius: 1.35rem;
+  background: linear-gradient(135deg, rgba(245, 250, 247, 0.98) 0%, rgba(255, 255, 255, 0.98) 100%);
+  box-shadow:
+    0 18px 44px rgba(16, 42, 34, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.resultFinalActionsCopy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.resultFinalActionsCopy span {
+  color: #165340;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.resultFinalActionsCopy h3 {
+  margin: 0;
+  color: #123f34;
+  font-size: clamp(1.35rem, 2.2vw, 1.85rem);
+  font-weight: 850;
+  letter-spacing: -0.045em;
+}
+
+.resultFinalActionsCopy p {
+  margin: 0;
+  max-width: 54rem;
+  color: #63746c;
+  font-weight: 560;
+  line-height: 1.55;
+}
+
+.resultFinalActionsButtons {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.resultPrimaryActionButton,
+.resultAlternateActionButton {
+  display: inline-flex;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.35rem;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 820;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    opacity 160ms ease;
+}
+
+.resultPrimaryActionButton {
+  min-width: 15.5rem;
+  border: 1px solid rgba(18, 82, 62, 0.94);
+  background: linear-gradient(180deg, #1a624d 0%, #0f4638 100%);
+  color: #ffffff;
+  box-shadow: 0 16px 30px rgba(22, 83, 64, 0.2);
+}
+
+.resultAlternateActionButton {
+  min-width: 16.8rem;
+  border: 1px solid rgba(18, 82, 62, 0.24);
+  background: #ffffff;
+  color: #15513f;
+  box-shadow: 0 12px 24px rgba(16, 42, 34, 0.08);
+}
+
+.resultPrimaryActionButton:hover:not(:disabled),
+.resultAlternateActionButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.resultPrimaryActionButton:disabled,
+.resultAlternateActionButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+
+.resultActionNote {
+  margin: -0.25rem 0 0;
+  color: #6f7a75;
+  font-size: 0.92rem;
+  font-weight: 620;
+  line-height: 1.45;
+}
+
+.resultSignedOutNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(205, 161, 61, 0.28);
+  border-radius: 1.1rem;
+  background: rgba(255, 249, 237, 0.92);
+}
+
+.resultSignedOutNotice p {
+  margin: 0;
+  color: #664a1b;
+  font-weight: 660;
+  line-height: 1.45;
+}
+
+.resultSignedOutNotice a,
+.resultSignedOutNotice button {
+  display: inline-flex;
+  min-height: 2.85rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.15rem;
+  border: 0;
+  border-radius: 999px;
+  background: #165340;
+  color: #ffffff;
+  font-weight: 780;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.finalSaveOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.35rem;
+  background: rgba(20, 31, 36, 0.56);
+  backdrop-filter: blur(12px);
+}
+
+.finalSaveModal {
+  position: relative;
+  display: grid;
+  gap: 1.05rem;
+  width: min(96vw, 45rem);
+  max-height: min(90dvh, 48rem);
+  overflow-y: auto;
+  padding: clamp(1.25rem, 2.4vw, 2rem);
+  border: 1px solid rgba(201, 220, 233, 0.96);
+  border-radius: 1.75rem;
+  background: rgba(255, 255, 255, 0.99);
+  box-shadow: 0 30px 86px rgba(8, 27, 34, 0.28);
+}
+
+.finalSaveClose {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.9rem;
+  height: 2.9rem;
+  border: 1px solid rgba(205, 222, 234, 0.98);
+  border-radius: 999px;
+  background: #f7fbff;
+  color: #143d34;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.finalSaveClose:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.finalSaveHeader {
+  display: grid;
+  gap: 0.45rem;
+  padding-right: 3.4rem;
+}
+
+.finalSaveHeader span {
+  color: #165340;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.finalSaveHeader h2 {
+  margin: 0;
+  color: #0b3f34;
+  font-size: clamp(1.85rem, 4vw, 2.75rem);
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: -0.065em;
+}
+
+.finalSaveHeader p {
+  margin: 0;
+  color: #607485;
+  font-weight: 560;
+  line-height: 1.5;
+}
+
+.finalSaveSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.finalSaveSummaryCard {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(202, 220, 233, 0.96);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+}
+
+.finalSaveSummaryCard span {
+  color: #607485;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.finalSaveSummaryCard strong {
+  color: #0b3f34;
+  font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+}
+
+.finalReplacementPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: end;
+  padding: 1rem;
+  border: 1px solid rgba(169, 199, 188, 0.66);
+  border-radius: 1.1rem;
+  background: rgba(240, 248, 244, 0.72);
+}
+
+.finalReplacementField {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.finalReplacementField > span {
+  color: #50645b;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.finalReplacementCurrencyInput {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  min-height: 3.2rem;
+  overflow: hidden;
+  border: 1px solid rgba(169, 199, 188, 0.98);
+  border-radius: 0.95rem;
+  background: #ffffff;
+}
+
+.finalReplacementCurrencyInput span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 100%;
+  border-right: 1px solid rgba(188, 207, 198, 0.95);
+  color: #173f36;
+  font-weight: 820;
+}
+
+.finalReplacementCurrencyInput input {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  padding: 0 0.9rem;
+  color: #113b32;
+  font: inherit;
+  font-weight: 760;
+}
+
+.finalReplacementCurrencyInput:focus-within {
+  border-color: #165340;
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.12);
+}
+
+.finalReplacementRecalculateButton {
+  min-height: 3.2rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(18, 82, 62, 0.18);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #15513f;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 10px 22px rgba(16, 42, 34, 0.07);
+}
+
+.finalReplacementRecalculateButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+.finalSaveWarning,
+.finalSaveError {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-radius: 0.9rem;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
+.finalSaveWarning {
+  background: rgba(255, 248, 232, 0.95);
+  color: #684a12;
+}
+
+.finalSaveError {
+  background: #fff1f0;
+  color: #a1271f;
+}
+
+.finalSaveActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.95rem;
+  border-top: 1px solid rgba(207, 224, 235, 0.96);
+}
+
+@media (max-width: 760px) {
+  .resultFinalActionsButtons,
+  .resultSignedOutNotice,
+  .finalSaveActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .resultPrimaryActionButton,
+  .resultAlternateActionButton,
+  .resultSignedOutNotice a,
+  .resultSignedOutNotice button,
+  .finalSaveActions .secondaryButton,
+  .finalSaveActions .primaryButton {
+    width: 100%;
+  }
+
+  .finalSaveSummaryGrid,
+  .finalReplacementPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .finalReplacementRecalculateButton {
+    width: 100%;
+  }
+}
+
 /* --- Valuation UX refinement overrides --- */
 .sectorLargeGrid {
   align-items: stretch;
