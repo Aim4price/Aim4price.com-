@@ -6072,84 +6072,88 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={styles.summaryModalBody}>
-              <section className={styles.summaryValueTable} aria-label="Asset register summary">
-                <div className={styles.summaryValueTableHeader} aria-hidden="true">
-                  <span />
-                  <span>Count</span>
-                  <span>Excl. VAT</span>
-                  <span>Incl. VAT</span>
+              <section className={styles.summaryCurrentPanel} aria-label="Current register values">
+                <div className={styles.summarySectionHeader}>
+                  <div>
+                    <span>Current register values</span>
+                    <p>Saved asset values currently used in the register totals.</p>
+                  </div>
                 </div>
 
-                <div className={styles.summaryValueTableRows}>
-                  <div className={styles.summaryValueTableRow}>
-                    <span>Total assets</span>
-                    <strong>{assets.length}</strong>
-                    <small>{money(totalValue)}</small>
-                    <small>{money(totalValueInclVat)}</small>
+                <div className={styles.summaryValueTable}>
+                  <div className={styles.summaryValueTableHeader} aria-hidden="true">
+                    <span>Category</span>
+                    <span>Count</span>
+                    <span>Excl. VAT</span>
+                    <span>Incl. VAT</span>
                   </div>
 
-                  <div className={styles.summaryValueTableRow}>
-                    <span>Aim4price assets</span>
-                    <strong>{aim4priceValuedEquipmentCount}</strong>
-                    <small>{money(aim4priceValuedEquipmentValue)}</small>
-                    <small>{money(Math.round(aim4priceValuedEquipmentValue * 1.15))}</small>
-                  </div>
+                  <div className={styles.summaryValueTableRows}>
+                    <div className={styles.summaryValueTableRow}>
+                      <span>Total assets</span>
+                      <strong>{assets.length}</strong>
+                      <small>{money(totalValue)}</small>
+                      <small>{money(totalValueInclVat)}</small>
+                    </div>
 
-                  <div className={styles.summaryValueTableRow}>
-                    <span>Manual assets</span>
-                    <strong>{manualAssetStats.count}</strong>
-                    <small>{money(manualAssetStats.value)}</small>
-                    <small>{money(Math.round(manualAssetStats.value * 1.15))}</small>
-                  </div>
+                    <div className={styles.summaryValueTableRow}>
+                      <span>Aim4price assets</span>
+                      <strong>{aim4priceValuedEquipmentCount}</strong>
+                      <small>{money(aim4priceValuedEquipmentValue)}</small>
+                      <small>{money(Math.round(aim4priceValuedEquipmentValue * 1.15))}</small>
+                    </div>
 
-                  <div className={styles.summaryValueTableRow}>
-                    <span>Assets financed</span>
-                    <strong>{financedAssetStats.count}</strong>
-                    <small>{money(financedAssetStats.value)}</small>
-                    <small>{money(Math.round(financedAssetStats.value * 1.15))}</small>
-                  </div>
+                    <div className={styles.summaryValueTableRow}>
+                      <span>Manual assets</span>
+                      <strong>{manualAssetStats.count}</strong>
+                      <small>{money(manualAssetStats.value)}</small>
+                      <small>{money(Math.round(manualAssetStats.value * 1.15))}</small>
+                    </div>
 
-                  <div className={styles.summaryValueTableRow}>
-                    <span>Assets insured</span>
-                    <strong>{insuredAssetStats.count}</strong>
-                    <small>{money(insuredAssetStats.value)}</small>
-                    <small>{money(Math.round(insuredAssetStats.value * 1.15))}</small>
-                  </div>
+                    <div className={styles.summaryValueTableRow}>
+                      <span>Assets financed</span>
+                      <strong>{financedAssetStats.count}</strong>
+                      <small>{money(financedAssetStats.value)}</small>
+                      <small>{money(Math.round(financedAssetStats.value * 1.15))}</small>
+                    </div>
 
-                  <div className={styles.summaryValueTableRow}>
-                    <span>Assets licensed</span>
-                    <strong>{licensedAssetStats.count}</strong>
-                    <small>{money(licensedAssetStats.value)}</small>
-                    <small>{money(Math.round(licensedAssetStats.value * 1.15))}</small>
-                  </div>
+                    <div className={styles.summaryValueTableRow}>
+                      <span>Assets insured</span>
+                      <strong>{insuredAssetStats.count}</strong>
+                      <small>{money(insuredAssetStats.value)}</small>
+                      <small>{money(Math.round(insuredAssetStats.value * 1.15))}</small>
+                    </div>
 
+                    <div className={styles.summaryValueTableRow}>
+                      <span>Assets licensed</span>
+                      <strong>{licensedAssetStats.count}</strong>
+                      <small>{money(licensedAssetStats.value)}</small>
+                      <small>{money(Math.round(licensedAssetStats.value * 1.15))}</small>
+                    </div>
+                  </div>
                 </div>
               </section>
 
               <section className={styles.summaryReplacementPanel} aria-label="Replacement value summary">
                 <div className={styles.summaryReplacementCopy}>
                   <span>Replacement value</span>
-                  <p>Total replacement cost for the assets that have saved replacement prices.</p>
+                  <p>Total replacement cost for assets with saved replacement prices. This is separate from the current register-value totals above.</p>
                 </div>
 
-                <div className={styles.summaryReplacementMetrics}>
-                  <div className={styles.summaryReplacementMetric}>
-                    <small>Assets priced</small>
-                    <strong>{replacementPricedAssetCount}</strong>
+                <div className={styles.summaryReplacementTable} role="table" aria-label="Replacement value totals">
+                  <div className={styles.summaryReplacementTableHeader} role="row">
+                    <span role="columnheader">Assets priced</span>
+                    <span role="columnheader">Excl. VAT</span>
+                    <span role="columnheader">Incl. VAT</span>
                   </div>
 
-                  <div className={styles.summaryReplacementMetric}>
-                    <small>Excl. VAT</small>
-                    <strong>{money(totalReplacementValue)}</strong>
-                  </div>
-
-                  <div className={styles.summaryReplacementMetric}>
-                    <small>Incl. VAT</small>
-                    <strong>{money(totalReplacementValueInclVat)}</strong>
+                  <div className={styles.summaryReplacementTableRow} role="row">
+                    <strong role="cell" data-label="Assets priced">{replacementPricedAssetCount}</strong>
+                    <strong role="cell" data-label="Excl. VAT">{money(totalReplacementValue)}</strong>
+                    <strong role="cell" data-label="Incl. VAT">{money(totalReplacementValueInclVat)}</strong>
                   </div>
                 </div>
               </section>
-
             </div>
           </div>
         </div>
