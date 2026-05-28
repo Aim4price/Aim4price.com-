@@ -24,6 +24,7 @@ export type AssetRevaluationResult = {
   oldValueExVat: number;
   newValueExVat: number;
   warning?: string;
+  previewOnly?: boolean;
 };
 
 type ValuationRunRow = Record<string, unknown> & {
@@ -68,6 +69,29 @@ function asNumber(value: unknown): number | null {
 function asInteger(value: unknown): number | null {
   const parsed = asNumber(value);
   return parsed === null ? null : Math.round(parsed);
+}
+
+function roundMoneyValue(value: unknown): number | null {
+  const parsed = asNumber(value);
+  return parsed === null ? null : Math.round(parsed);
+}
+
+function requireSelectedValue(value: unknown): number {
+  const parsed = roundMoneyValue(value);
+  if (parsed === null) {
+    throw new Error('SELECTED_METHOD_NOT_AVAILABLE');
+  }
+
+  return parsed;
+}
+
+function resolveReplacementPrice(value: unknown): number {
+  const parsed = roundMoneyValue(value);
+  if (parsed === null || parsed <= 0) {
+    throw new Error('REPLACEMENT_PRICE_REQUIRED');
+  }
+
+  return parsed;
 }
 
 function asBoolean(value: unknown): boolean {
@@ -220,6 +244,82 @@ function assetUsesPercentUsageForRevaluation(asset: AssetRegisterItem): boolean 
   return percent !== null && ((!hours || hours <= 0) || depreciationMethod === 'semi_depreciation');
 }
 
+function buildPreviewAssetFromTractorValuation(input: {
+  asset: AssetRegisterItem;
+  result: Awaited<ReturnType<typeof runServerValuation>>;
+  selectedMethod: MethodKey;
+  selectedValueExVat: number;
+  year: number;
+  hours: number;
+  condition: ConditionKey;
+}): AssetRegisterItem {
+  const model = input.result.model;
+  const replacementPriceExVat = resolveReplacementPrice(input.result.replacementPriceUsedExVat);
+
+  return {
+    ...input.asset,
+    kind: 'tractor',
+    value: input.selectedValueExVat,
+    selectedValueExVat: input.selectedValueExVat,
+    selectedMethod: input.selectedMethod,
+    replacementPriceExVat,
+    brandName: model.brandName,
+    modelName: model.modelName,
+    drive: model.drive,
+    tractorType: model.tractorType,
+    cab: model.cab,
+    powerKw: model.powerKw,
+    yearModel: Math.round(input.year),
+    hours: Math.max(0, Math.round(input.hours)),
+    condition: input.condition,
+    aim4priceValueExVat: roundMoneyValue(input.result.aim4priceValueExVat),
+    marketMidExVat: roundMoneyValue(input.result.marketMid),
+    updatedAtIso: new Date().toISOString(),
+  };
+}
+
+function buildPreviewAssetFromGenericValuation(input: {
+  asset: AssetRegisterItem;
+  result: Awaited<ReturnType<typeof runGenericValuation>>;
+  selectedMethod: GenericSelectedMethod;
+  selectedValueExVat: number;
+}): AssetRegisterItem {
+  const replacementPriceExVat = resolveReplacementPrice(input.result.replacementPriceUsedExVat);
+
+  return {
+    ...input.asset,
+    sectorId: input.result.sector.id,
+    equipmentFamilyId: input.result.family.id,
+    equipmentFamilyKey: input.result.family.key,
+    equipmentFamilyLabel: input.result.family.label,
+    equipmentModelId: null,
+    typedModelName: input.result.typedModelName ?? '',
+    normalizedTypedModelName: input.result.normalizedTypedModelName ?? '',
+    specsJson: {
+      ...(input.asset.specsJson ?? {}),
+      ...(input.result.specsJson ?? {}),
+    },
+    depreciationMethodUsed: input.result.depreciationMethodUsed,
+    lifeWorkedPercent: input.result.lifeWorkedPercent,
+    lifeRemainingPercent: input.result.lifeRemainingPercent,
+    estimatedHours: input.result.estimatedHours,
+    maxLifetimeHours: input.result.maxLifetimeHours,
+    kind: 'equipment',
+    value: input.selectedValueExVat,
+    selectedValueExVat: input.selectedValueExVat,
+    selectedMethod: input.selectedMethod,
+    replacementPriceExVat,
+    brandName: input.result.brand.name,
+    modelName: input.result.typedModelName || 'Specs-based valuation',
+    yearModel: input.result.year,
+    hours: input.result.usageAmount ?? null,
+    condition: input.result.condition,
+    aim4priceValueExVat: roundMoneyValue(input.result.aim4priceValueExVat),
+    marketMidExVat: roundMoneyValue(input.result.marketAverageExVat),
+    updatedAtIso: new Date().toISOString(),
+  };
+}
+
 function requireNumber(value: unknown, message: string): number {
   const parsed = asNumber(value);
   if (parsed === null) {
@@ -310,6 +410,7 @@ async function revalueTractorAsset(input: {
   asset: AssetRegisterItem;
   row: ValuationRunRow;
   preferredMethod: RevaluePreference;
+  previewOnly?: boolean;
 }): Promise<AssetRevaluationResult> {
   const payload = asRecord(input.row.valuation_payload);
   const payloadInput = readNestedRecord(payload, 'input');
@@ -350,6 +451,7 @@ async function revalueTractorAsset(input: {
     gpsType: normalizeGpsType(payloadInput.gpsType ?? input.row.gps_type),
     gpsYear: asText(payloadInput.gpsYear ?? input.row.gps_year) || null,
     userReplacementPriceExVat:
+      asNumber(input.asset.replacementPriceExVat) ??
       asNumber(payloadInput.userReplacementPriceExVat) ??
       asNumber(payloadOutput.userReplacementPriceExVat) ??
       asNumber(input.row.user_replacement_price_ex_vat),
@@ -357,6 +459,29 @@ async function revalueTractorAsset(input: {
 
   const result = await runServerValuation(valuationInput);
   const selectedMethod = resolveTractorMethod(input.preferredMethod, result);
+  const selectedValueExVat = requireSelectedValue(getSelectedMethodValue(result, selectedMethod));
+  const warning = selectedMethod !== input.preferredMethod ? 'Market value was unavailable, so Aim4price value was used.' : undefined;
+
+  if (input.previewOnly) {
+    return {
+      item: buildPreviewAssetFromTractorValuation({
+        asset: input.asset,
+        result,
+        selectedMethod,
+        selectedValueExVat,
+        year,
+        hours,
+        condition,
+      }),
+      valuationRunId: input.asset.valuationRunId ?? Number(input.row.id),
+      selectedMethod,
+      oldValueExVat: input.asset.value,
+      newValueExVat: selectedValueExVat,
+      warning,
+      previewOnly: true,
+    };
+  }
+
   const saved = await saveValuationRunFromResult(
     {
       ...valuationInput,
@@ -384,7 +509,7 @@ async function revalueTractorAsset(input: {
     selectedMethod,
     oldValueExVat: input.asset.value,
     newValueExVat: saved.selectedValueExVat,
-    warning: selectedMethod !== input.preferredMethod ? 'Market value was unavailable, so Aim4price value was used.' : undefined,
+    warning,
   };
 }
 
@@ -393,6 +518,7 @@ async function revalueGenericAsset(input: {
   asset: AssetRegisterItem;
   row: ValuationRunRow;
   preferredMethod: RevaluePreference;
+  previewOnly?: boolean;
 }): Promise<AssetRevaluationResult> {
   const payload = asRecord(input.row.valuation_payload);
   const payloadInput = readNestedRecord(payload, 'input');
@@ -437,7 +563,9 @@ async function revalueGenericAsset(input: {
     ? null
     : asNumber(input.asset.hours) ?? asNumber(payloadInput.usageAmount) ?? asNumber(input.row.hours);
   const userReplacementPriceExVat =
-    asNumber(payloadInput.userReplacementPriceExVat) ?? asNumber(input.row.user_replacement_price_ex_vat);
+    asNumber(input.asset.replacementPriceExVat) ??
+    asNumber(payloadInput.userReplacementPriceExVat) ??
+    asNumber(input.row.user_replacement_price_ex_vat);
 
   const result = await runGenericValuation({
     sectorKey,
@@ -454,6 +582,26 @@ async function revalueGenericAsset(input: {
     userReplacementPriceYear: asInteger(payloadInput.userReplacementPriceYear ?? input.row.user_replacement_price_year),
   });
   const selectedMethod = resolveGenericMethod(input.preferredMethod, result);
+  const selectedValueExVat = requireSelectedValue(getGenericSelectedMethodValue(result, selectedMethod));
+  const warning = selectedMethod !== input.preferredMethod ? 'Market value was unavailable, so Aim4price value was used.' : undefined;
+
+  if (input.previewOnly) {
+    return {
+      item: buildPreviewAssetFromGenericValuation({
+        asset: input.asset,
+        result,
+        selectedMethod,
+        selectedValueExVat,
+      }),
+      valuationRunId: input.asset.valuationRunId ?? Number(input.row.id),
+      selectedMethod,
+      oldValueExVat: input.asset.value,
+      newValueExVat: selectedValueExVat,
+      warning,
+      previewOnly: true,
+    };
+  }
+
   const saved = await saveGenericValuationRunFromResult({
     userId: input.userId,
     result,
@@ -475,7 +623,7 @@ async function revalueGenericAsset(input: {
     selectedMethod,
     oldValueExVat: input.asset.value,
     newValueExVat: saved.selectedValueExVat,
-    warning: selectedMethod !== input.preferredMethod ? 'Market value was unavailable, so Aim4price value was used.' : undefined,
+    warning,
   };
 }
 
@@ -483,6 +631,7 @@ export async function revalueAssetRegisterItem(input: {
   userId: string;
   assetId: string;
   selectedMethod?: unknown;
+  previewOnly?: boolean;
 }): Promise<AssetRevaluationResult> {
   const asset = await getAssetRegisterItemById(input.userId, input.assetId);
 
@@ -510,6 +659,7 @@ export async function revalueAssetRegisterItem(input: {
       asset,
       row,
       preferredMethod,
+      previewOnly: input.previewOnly,
     });
   }
 
@@ -518,5 +668,6 @@ export async function revalueAssetRegisterItem(input: {
     asset,
     row,
     preferredMethod,
+    previewOnly: input.previewOnly,
   });
 }
