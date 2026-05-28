@@ -15,6 +15,12 @@ type RevalueAssetResponse = {
   newValueExVat?: number;
   warning?: string;
   previewOnly?: boolean;
+  marketAverageExVat?: number | null;
+  marketLowExVat?: number | null;
+  marketHighExVat?: number | null;
+  marketCount?: number;
+  marketSources?: unknown[];
+  marketMatchStrategy?: string;
   error?: string;
 };
 
@@ -116,6 +122,12 @@ export async function POST(request: NextRequest) {
       newValueExVat: result.newValueExVat,
       warning: result.warning,
       previewOnly: result.previewOnly,
+      marketAverageExVat: result.marketAverageExVat,
+      marketLowExVat: result.marketLowExVat,
+      marketHighExVat: result.marketHighExVat,
+      marketCount: result.marketCount,
+      marketSources: result.marketSources,
+      marketMatchStrategy: result.marketMatchStrategy,
     });
   } catch (error) {
     console.error('asset register revalue failed', error);
