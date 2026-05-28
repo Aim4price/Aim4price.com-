@@ -6123,11 +6123,29 @@ export default function AssetRegisterClient() {
                     <small>{money(Math.round(licensedAssetStats.value * 1.15))}</small>
                   </div>
 
-                  <div className={`${styles.summaryValueTableRow} ${styles.summaryValueTableReplacementRow}`}>
-                    <span>Replacement value</span>
+                </div>
+              </section>
+
+              <section className={styles.summaryReplacementPanel} aria-label="Replacement value summary">
+                <div className={styles.summaryReplacementCopy}>
+                  <span>Replacement value</span>
+                  <p>Total replacement cost for the assets that have saved replacement prices.</p>
+                </div>
+
+                <div className={styles.summaryReplacementMetrics}>
+                  <div className={styles.summaryReplacementMetric}>
+                    <small>Assets priced</small>
                     <strong>{replacementPricedAssetCount}</strong>
-                    <small>{money(totalReplacementValue)}</small>
-                    <small>{money(totalReplacementValueInclVat)}</small>
+                  </div>
+
+                  <div className={styles.summaryReplacementMetric}>
+                    <small>Excl. VAT</small>
+                    <strong>{money(totalReplacementValue)}</strong>
+                  </div>
+
+                  <div className={styles.summaryReplacementMetric}>
+                    <small>Incl. VAT</small>
+                    <strong>{money(totalReplacementValueInclVat)}</strong>
                   </div>
                 </div>
               </section>
