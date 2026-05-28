@@ -6,6 +6,7 @@ import {
   publishAssetRegisterItemToMarketplace,
   removeAssetRegisterItemFromMarketplace,
 } from '../../../lib/marketplace-db';
+import { MAX_ASSET_REGISTER_PHOTOS } from '../../../lib/asset-register-uploads';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,6 +23,23 @@ type ErrorLike = {
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
+}
+
+function normalizePhotos(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  const seen = new Set<string>();
+  const urls: string[] = [];
+
+  for (const item of value) {
+    const url = String(item ?? '').trim();
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    urls.push(url);
+    if (urls.length >= MAX_ASSET_REGISTER_PHOTOS) break;
+  }
+
+  return urls;
 }
 
 function formatUnknownError(error: unknown, fallback: string): string {
@@ -119,6 +137,7 @@ export async function POST(request: NextRequest) {
     sellerEmail?: unknown;
     province?: unknown;
     area?: unknown;
+    photos?: unknown;
   };
   const assetId = String(body.assetId ?? '').trim();
 
@@ -134,6 +153,7 @@ export async function POST(request: NextRequest) {
   let sellerEmail = String(body.sellerEmail ?? '').trim();
   let province = String(body.province ?? '').trim();
   let area = String(body.area ?? '').trim();
+  const photoUrls = normalizePhotos(body.photos);
 
   try {
     const profile = await getAccountProfile({
@@ -162,6 +182,7 @@ export async function POST(request: NextRequest) {
       sellerEmail: sellerEmail || null,
       province: province || null,
       area: area || null,
+      photos: photoUrls,
     });
 
     return NextResponse.json({
