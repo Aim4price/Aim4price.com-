@@ -787,7 +787,6 @@ export default function ValuationClient() {
   const yearNumber = Number(year);
   const usageNumber = toNumberOrNull(usageAmount);
   const lifeWorkedPercentNumber = toPercentOrNull(lifeWorkedPercent);
-  const userReplacementPriceNumber = toNumberOrNull(userReplacementPrice);
   const specsJson = useMemo(() => buildSpecPayload(specQuestions, specAnswers), [specQuestions, specAnswers]);
   const enrichedSpecsJson = useMemo(
     () => ({
@@ -1149,9 +1148,6 @@ export default function ValuationClient() {
     }
 
     if (!conditionStepComplete || !condition) return 'Choose the condition.';
-    if (!userReplacementPrice.trim() || !userReplacementPriceNumber) {
-      return 'Enter the replacement price before getting a valuation.';
-    }
     if (flowMode === 'exact_model' && !tractorSetupComplete) return 'Complete the type, drive and cab setup first.';
     if (flowMode === 'exact_model' && !selectedModel) return 'Choose the exact model or use machine specs.';
 
@@ -1297,13 +1293,13 @@ export default function ValuationClient() {
             gpsEnabled,
             gpsType,
             gpsYear,
-            userReplacementPriceExVat: userReplacementPriceNumber,
+            userReplacementPriceExVat: null,
           }),
         });
         const data = (await response.json()) as TractorValuationApiResponse;
         if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to calculate tractor valuation.');
         setResultState({ kind: 'tractor', result: data.result });
-        setReplacementPriceBasis('user');
+        setReplacementPriceBasis(data.result.replacementPriceBasis ?? 'aim4price');
         setSelectedMethod(data.result.marketMid !== null ? 'market' : 'aim4price');
         setReplacementPanelOpen(false);
       } else if (selectedFamily && selectedBrand) {
@@ -1321,14 +1317,14 @@ export default function ValuationClient() {
             usageAmount: usageNumber,
             lifeWorkedPercent: lifeWorkedPercentNumber,
             condition,
-            userReplacementPriceExVat: userReplacementPriceNumber,
-            userReplacementPriceYear: userReplacementPriceNumber ? CURRENT_YEAR : null,
+            userReplacementPriceExVat: null,
+            userReplacementPriceYear: null,
           }),
         });
         const data = (await response.json()) as GenericValuationApiResponse;
         if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to calculate generic valuation.');
         setResultState({ kind: 'generic', result: data.result });
-        setReplacementPriceBasis('user');
+        setReplacementPriceBasis(data.result.replacementPriceBasis ?? 'aim4price');
         setSelectedMethod(data.result.marketAverageExVat !== null ? 'market' : 'aim4price');
         setReplacementPanelOpen(false);
       }
@@ -1358,7 +1354,7 @@ export default function ValuationClient() {
       : {};
 
     if (resultState.kind === 'tractor') {
-      const replacementPriceForSave = resultState.result.userReplacementPriceExVat ?? userReplacementPriceNumber;
+      const replacementPriceForSave = resultState.result.userReplacementPriceExVat ?? null;
 
       return {
         modelId: resultState.result.model.id,
@@ -1377,7 +1373,7 @@ export default function ValuationClient() {
       };
     }
 
-    const replacementPriceForSave = resultState.result.userReplacementPriceExVat ?? userReplacementPriceNumber;
+    const replacementPriceForSave = resultState.result.userReplacementPriceExVat ?? null;
     const replacementPriceYearForSave = replacementPriceForSave ? resultState.result.userReplacementPriceYear ?? CURRENT_YEAR : null;
 
     return {
@@ -1398,6 +1394,34 @@ export default function ValuationClient() {
       valuationVersion: 'generic-v1',
       ...marketplaceFields,
     };
+  }
+
+  function getCurrentResultReplacementPriceExVat(): number | null {
+    if (!resultState) return null;
+
+    if (resultState.kind === 'tractor') {
+      return (
+        resultState.result.replacementPriceUsedExVat ??
+        resultState.result.userReplacementPriceExVat ??
+        resultState.result.model.aim4priceReplacementExVat ??
+        null
+      );
+    }
+
+    const calculation = getGenericCalculation(resultState.result, replacementPriceBasis);
+    return calculation?.replacementPriceExVat ?? resultState.result.replacementPriceUsedExVat ?? null;
+  }
+
+  function ensureReplacementPriceBeforeFinalSave(setError: (message: string) => void): boolean {
+    const replacementPrice = getCurrentResultReplacementPriceExVat();
+
+    if (replacementPrice !== null && Number.isFinite(replacementPrice) && replacementPrice > 0) {
+      return true;
+    }
+
+    setReplacementPanelOpen(true);
+    setError('Confirm a replacement price on the results page before saving this asset. Enter the replacement price, click Update and recalculate, then save again.');
+    return false;
   }
 
   function buildMarketplaceEstimateTitle(): string {
@@ -1478,6 +1502,10 @@ export default function ValuationClient() {
 
     if (headlineValue === null) {
       setMessage('Choose an available value before sending to marketplace.');
+      return;
+    }
+
+    if (!ensureReplacementPriceBeforeFinalSave(setMessage)) {
       return;
     }
 
@@ -1627,6 +1655,10 @@ export default function ValuationClient() {
       return;
     }
 
+    if (!ensureReplacementPriceBeforeFinalSave(setMarketplacePublishError)) {
+      return;
+    }
+
     setIsPublishingMarketplace(true);
     setMarketplacePublishError('');
 
@@ -1698,6 +1730,10 @@ export default function ValuationClient() {
     const selectedValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
     if (selectedValue === null) {
       setMessage('Choose an available valuation method first.');
+      return;
+    }
+
+    if (!ensureReplacementPriceBeforeFinalSave(setMessage)) {
       return;
     }
 
@@ -2778,37 +2814,6 @@ export default function ValuationClient() {
               </div>
             </div>
           ) : null}
-
-          {conditionStepComplete ? (
-            <div className={`${styles.currentCard} ${styles.replacementStepCard}`}>
-              <div className={styles.currentCardHead}>
-                <div>
-                  <span className={styles.currentEyebrow}>Step 4</span>
-                  <h3 className={styles.currentTitle}>Replacement price</h3>
-                  <p className={styles.currentHint}>Enter what a similar machine costs new today. This becomes the saved replacement price for the asset.</p>
-                </div>
-                <span className={styles.selectedSummaryPill}>{userReplacementPriceNumber ? money(userReplacementPriceNumber) : 'Required'}</span>
-              </div>
-
-              <div className={styles.replacementStepGrid}>
-                <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Replacement price excl. VAT *</span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={userReplacementPrice}
-                    onChange={(event) => {
-                      setUserReplacementPrice(event.target.value);
-                      resetResult();
-                    }}
-                    placeholder="Required, ex VAT"
-                  />
-                </label>
-                <p className={styles.replacementStepHelp}>Use the current replacement cost before VAT. The asset register, summaries, PDFs and Excel exports use this value as the official replacement price.</p>
-              </div>
-            </div>
-          ) : null}
-
           {conditionStepComplete && genericPath ? renderSpecQuestionsProgress() : null}
         </div>
 
@@ -2901,10 +2906,10 @@ export default function ValuationClient() {
           : 'Usage captured';
     const tractorReplacementBasisText = tractorResult?.userReplacementPriceExVat && replacementPriceBasis === 'user'
       ? `Current basis: your replacement price of ${money(tractorResult.userReplacementPriceExVat)}`
-      : `Current basis: Aim4price replacement price of ${money(tractorResult?.model.aim4priceReplacementExVat ?? null)}`;
+      : `Current basis: saved replacement price of ${money(tractorResult?.replacementPriceUsedExVat ?? tractorResult?.model.aim4priceReplacementExVat ?? null)}`;
     const genericReplacementBasisText = genericResult?.userReplacementCalculation && replacementPriceBasis === 'user'
       ? `Current basis: your replacement price of ${money(genericResult.userReplacementCalculation.replacementPriceExVat)}`
-      : `Current basis: Aim4price replacement estimate of ${money(genericResult?.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}`;
+      : `Current basis: saved replacement estimate of ${money(genericResult?.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}`;
     const replacementBasisText = isGeneric ? genericReplacementBasisText : tractorReplacementBasisText;
     const marketEvidenceInfo = 'Market evidence only uses listings within 2 model years and 1,000 hours/usage of your machine. Confidence: Low = no listings, Medium = 3–5 listings, High = more than 5 listings.';
     const resultValueSizeClass = getResultValueSizeClass(headlineValue);
@@ -2947,7 +2952,7 @@ export default function ValuationClient() {
             >
               <span className={styles.resultMethodLabel}>Aim4price value</span>
               <strong>{money(aimValue)}</strong>
-              <small>{replacementPriceBasis === 'user' ? 'Using your replacement price' : 'Using Aim4price valuation logic'}</small>
+              <small>{replacementPriceBasis === 'user' ? 'Using your replacement price' : 'Using saved replacement price'}</small>
             </button>
             <button
               type="button"
@@ -2970,16 +2975,16 @@ export default function ValuationClient() {
                 aria-expanded={replacementPanelOpen}
               >
                 <span className={styles.resultAccordionTitleGroup}>
-                  <strong>Replacement price</strong>
+                  <strong>Replacement price check</strong>
                   <small>{replacementBasisText}</small>
                 </span>
-                <span className={styles.resultAccordionAction}>{replacementPanelOpen ? 'Hide' : 'Adjust'}</span>
+                <span className={styles.resultAccordionAction}>{replacementPanelOpen ? 'Hide' : 'Check / adjust'}</span>
               </button>
 
               {replacementPanelOpen ? (
                 <div className={styles.resultAccordionBody}>
                   <p className={styles.resultAccordionCopy}>
-                    Replacement price means what a similar machine would cost new today. Adjust it when you know the real current new price and want Aim4price to calculate from that number.
+                    Aim4price uses the saved replacement price immediately. Only change it here if you want to update the replacement price and recalculate before saving the asset.
                   </p>
 
                   {isGeneric && genericResult ? (
@@ -2992,7 +2997,7 @@ export default function ValuationClient() {
                           setSelectedMethod('aim4price');
                         }}
                       >
-                        <span>Aim4price basis</span>
+                        <span>Saved price basis</span>
                         <strong>{money(genericResult.aim4priceReplacementCalculation?.valuationMidExVat ?? null)}</strong>
                         <small>New price used: {money(genericResult.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}</small>
                       </button>
@@ -3008,7 +3013,7 @@ export default function ValuationClient() {
                         }}
                         disabled={!genericResult.userReplacementCalculation}
                       >
-                        <span>Your basis</span>
+                        <span>Updated price basis</span>
                         <strong>{money(genericResult.userReplacementCalculation?.valuationMidExVat ?? null)}</strong>
                         <small>New price used: {money(genericResult.userReplacementCalculation?.replacementPriceExVat ?? null)}</small>
                       </button>
@@ -3023,7 +3028,7 @@ export default function ValuationClient() {
                           void calculateTractorWithReplacementPrice(null);
                         }}
                       >
-                        <span>Aim4price basis</span>
+                        <span>Saved price basis</span>
                         <strong>{money(replacementPriceBasis === 'aim4price' ? tractorResult.aim4priceValueExVat : null)}</strong>
                         <small>New price used: {money(tractorResult.model.aim4priceReplacementExVat)}</small>
                       </button>
@@ -3039,7 +3044,7 @@ export default function ValuationClient() {
                         }}
                         disabled={!tractorResult.userReplacementPriceExVat}
                       >
-                        <span>Your basis</span>
+                        <span>Updated price basis</span>
                         <strong>{money(replacementPriceBasis === 'user' ? tractorResult.aim4priceValueExVat : null)}</strong>
                         <small>New price used: {money(tractorResult.userReplacementPriceExVat ?? null)}</small>
                       </button>
@@ -3048,13 +3053,13 @@ export default function ValuationClient() {
 
                   <div className={styles.replacementInputPanel}>
                     <label className={styles.field}>
-                      <span className={styles.fieldLabel}>What does this cost new today?</span>
+                      <span className={styles.fieldLabel}>Updated replacement price excl. VAT</span>
                       <input
                         type="text"
                         inputMode="decimal"
                         value={userReplacementPrice}
                         onChange={(event) => setUserReplacementPrice(event.target.value)}
-                        placeholder="Required, ex VAT"
+                        placeholder="Optional, ex VAT"
                       />
                     </label>
                     <button
@@ -3070,7 +3075,7 @@ export default function ValuationClient() {
                         }
                       }}
                     >
-                      {replacementRecalculateLoading ? 'Recalculating...' : 'Recalculate value'}
+                      {replacementRecalculateLoading ? 'Recalculating...' : 'Update and recalculate'}
                     </button>
                   </div>
                 </div>
