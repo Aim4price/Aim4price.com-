@@ -54,9 +54,11 @@ export async function POST(request: NextRequest) {
     const condition = normalizeCondition(body.condition);
     const userReplacementPriceExVat = normalizeReplacementPrice(body.userReplacementPriceExVat);
     const userReplacementPriceYear = Number(body.userReplacementPriceYear);
-    const resolvedReplacementPriceYear = Number.isInteger(userReplacementPriceYear) && userReplacementPriceYear > 1900
-      ? userReplacementPriceYear
-      : new Date().getFullYear();
+    const resolvedReplacementPriceYear = userReplacementPriceExVat === null
+      ? null
+      : Number.isInteger(userReplacementPriceYear) && userReplacementPriceYear > 1900
+        ? userReplacementPriceYear
+        : new Date().getFullYear();
 
     if (!isSectorKey(sectorKey)) {
       return NextResponse.json({ ok: false, error: 'Valid sectorKey is required.' }, { status: 400 });
@@ -65,13 +67,6 @@ export async function POST(request: NextRequest) {
     if (!familyKey || !brandSlug || !Number.isInteger(year) || !condition) {
       return NextResponse.json(
         { ok: false, error: 'familyKey, brandSlug, year and condition are required.' },
-        { status: 400 },
-      );
-    }
-
-    if (userReplacementPriceExVat === null) {
-      return NextResponse.json(
-        { ok: false, error: 'Replacement price is required and must be greater than zero.' },
         { status: 400 },
       );
     }
