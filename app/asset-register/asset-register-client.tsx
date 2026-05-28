@@ -345,6 +345,27 @@ type ProjectionApiResponse = {
   error?: string;
 };
 
+type PricingMarketSource = {
+  id: string | number;
+  title: string;
+  sourceName?: string | null;
+  sourceUrl?: string | null;
+  advertisedPriceExVat?: number | null;
+  priceExVat?: number | null;
+  askingPriceExVat?: number | null;
+  price?: number | null;
+  yearModel?: number | null;
+  year?: number | null;
+  hours?: number | null;
+  usageAmount?: number | null;
+  location?: string | null;
+  province?: string | null;
+  area?: string | null;
+  condition?: string | null;
+  matchReason?: string | null;
+  dateAdvertised?: string | null;
+};
+
 type RevalueAssetApiResponse = {
   ok: boolean;
   item?: RegisterAsset;
@@ -354,6 +375,12 @@ type RevalueAssetApiResponse = {
   newValueExVat?: number;
   warning?: string;
   previewOnly?: boolean;
+  marketAverageExVat?: number | null;
+  marketLowExVat?: number | null;
+  marketHighExVat?: number | null;
+  marketCount?: number;
+  marketSources?: PricingMarketSource[];
+  marketMatchStrategy?: string;
   error?: string;
 };
 
@@ -1097,12 +1124,81 @@ function ModalSelect<T extends string>({
   );
 }
 
-function money(value: number): string {
+function money(value: number | null | undefined): string {
   return new Intl.NumberFormat('en-ZA', {
     style: 'currency',
     currency: 'ZAR',
     maximumFractionDigits: 0,
   }).format(value || 0);
+}
+
+function formatWholeNumber(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return 'N/A';
+  return Math.round(value).toLocaleString('en-ZA');
+}
+
+function formatListingYear(value: number | null | undefined): string | null {
+  if (value === null || value === undefined || !Number.isFinite(value) || value < 1950) return null;
+  return String(Math.round(value));
+}
+
+function formatListingHours(value: number | null | undefined): string | null {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) return null;
+  return `${formatWholeNumber(value)} hours`;
+}
+
+function normalizeExternalUrl(value: string | null | undefined): string | null {
+  const trimmed = String(value ?? '').trim();
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^[a-z0-9.-]+\.[a-z]{2,}/i.test(trimmed)) return `https://${trimmed}`;
+  return null;
+}
+
+function joinMeta(parts: Array<string | null | undefined>): string {
+  const cleanParts = parts.map((part) => String(part ?? '').trim()).filter(Boolean);
+  return cleanParts.length ? cleanParts.join(' • ') : 'Details not captured';
+}
+
+function formatMarketSourceLabel(value: string | null | undefined): string {
+  const label = String(value ?? '').trim();
+  return label || 'Marketplace listing';
+}
+
+function formatMarketCondition(value: string | null | undefined): string | null {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (!normalized) return null;
+
+  if (normalized === 'excellent' || normalized === 'good' || normalized === 'fair' || normalized === 'used' || normalized === 'serious') {
+    return conditionLabel(normalized as AssetConditionValue);
+  }
+
+  return value ?? null;
+}
+
+function marketSourcePrice(source: PricingMarketSource): number | null {
+  const value = source.advertisedPriceExVat ?? source.priceExVat ?? source.askingPriceExVat ?? source.price;
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function marketSourceLocation(source: PricingMarketSource): string | null {
+  const explicitLocation = String(source.location ?? '').trim();
+  if (explicitLocation && !explicitLocation.toLowerCase().includes('unknown')) return explicitLocation;
+
+  const area = String(source.area ?? '').trim();
+  const province = String(source.province ?? '').trim();
+  const joined = [area, province].filter((part) => part && part.toLowerCase() !== 'unknown').join(', ');
+  return joined || null;
+}
+
+function formatPricingMarketMeta(source: PricingMarketSource): string {
+  return joinMeta([
+    formatListingYear(source.yearModel ?? source.year),
+    formatListingHours(source.hours ?? source.usageAmount),
+    marketSourceLocation(source),
+    formatMarketCondition(source.condition),
+    source.matchReason,
+  ]);
 }
 
 function parseMoneyInput(value: unknown): number | null {
@@ -4473,10 +4569,6 @@ export default function AssetRegisterClient() {
     }
   }
 
-  function pricingPreviewTitle(method: RevalueMethod): string {
-    return method === 'market' ? 'Get newest market price' : 'Recalculate Aim4price value';
-  }
-
   function pricingPreviewIntro(method: RevalueMethod): string {
     return method === 'market'
       ? 'Aim4price will refresh the market midpoint from the latest valuation data. Review the new value before saving it to the Asset Register.'
@@ -7004,11 +7096,6 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.pricingModalBody}`}>
-              <div className={styles.pricingModalIntro}>
-                <span>Manage pricing</span>
-                <p>Choose a pricing action. Recalculate and market refresh first open a preview so the saved register value only changes after confirmation.</p>
-              </div>
-
               <div className={styles.pricingOptionsGrid}>
                 <button
                   type="button"
@@ -7065,7 +7152,6 @@ export default function AssetRegisterClient() {
           <div className={`${styles.modalCard} ${styles.pricingResultModal}`} role="dialog" aria-modal="true" aria-labelledby="pricing-preview-title">
             <div className={`${styles.modalHeader} ${styles.pricingResultHeader}`}>
               <div className={styles.modalHeaderText}>
-                <span className={styles.modalEyebrow}>{pricingPreviewTitle(pricingPreview.method)}</span>
                 <h3 id="pricing-preview-title">{pricingPreview.asset.title}</h3>
                 <p>{buildAssetMeta(pricingPreview.asset)}</p>
               </div>
@@ -7113,6 +7199,59 @@ export default function AssetRegisterClient() {
                       <strong>{methodLabel(pricingPreview.result.selectedMethod ?? pricingPreview.result.item.selectedMethod)}</strong>
                     </div>
                   </div>
+
+                  {pricingPreview.method === 'market' ? (
+                    <section className={styles.marketEvidenceCard}>
+                      <div className={styles.marketEvidenceHeader}>
+                        <div>
+                          <h3>Market evidence</h3>
+                          <p>Listings used after model, year, usage and price checks.</p>
+                        </div>
+                        <span className={styles.marketEvidenceCount}>
+                          {(pricingPreview.result.marketCount ?? pricingPreview.result.marketSources?.length ?? 0) > 0
+                            ? `${pricingPreview.result.marketCount ?? pricingPreview.result.marketSources?.length ?? 0} used`
+                            : 'No matches'}
+                        </span>
+                      </div>
+
+                      {(pricingPreview.result.marketAverageExVat ?? pricingPreview.result.newValueExVat ?? pricingPreview.result.item.marketMidExVat) !== null ? (
+                        <div className={styles.marketEvidenceSummary}>
+                          <span>Marketplace average</span>
+                          <strong>{money(pricingPreview.result.marketAverageExVat ?? pricingPreview.result.newValueExVat ?? pricingPreview.result.item.marketMidExVat)}</strong>
+                        </div>
+                      ) : null}
+
+                      {pricingPreview.result.marketSources?.length ? (
+                        pricingPreview.result.marketSources.slice(0, 6).map((source) => {
+                          const sourceHref = normalizeExternalUrl(source.sourceUrl);
+                          const price = marketSourcePrice(source);
+
+                          return (
+                            <article key={String(source.id)} className={styles.marketEvidenceItem}>
+                              <div className={styles.marketEvidenceItemHeader}>
+                                <span>{formatMarketSourceLabel(source.sourceName)}</span>
+                                <small className={styles.marketEvidencePrice}>{money(price)}</small>
+                              </div>
+                              <strong>{source.title || 'Marketplace listing'}</strong>
+                              <p className={styles.marketEvidenceMeta}>{formatPricingMarketMeta(source)}</p>
+                              {sourceHref ? (
+                                <a className={styles.marketEvidenceLink} href={sourceHref} target="_blank" rel="noreferrer">
+                                  Open listing →
+                                </a>
+                              ) : (
+                                <span className={styles.marketEvidenceNoLink}>No source link saved</span>
+                              )}
+                            </article>
+                          );
+                        })
+                      ) : (
+                        <div className={styles.marketEvidenceEmpty}>
+                          <strong>No matching marketplace average yet</strong>
+                          <p>When Aim4price finds similar listings, they will appear here as supporting evidence.</p>
+                        </div>
+                      )}
+                    </section>
+                  ) : null}
 
                   {pricingPreview.result.warning ? (
                     <p className={styles.pricingPreviewWarning}>{pricingPreview.result.warning}</p>
@@ -7613,7 +7752,6 @@ export default function AssetRegisterClient() {
           <div className={`${styles.modalCard} ${styles.projectionModal}`} role="dialog" aria-modal="true" aria-labelledby="projection-title">
             <div className={`${styles.modalHeader} ${styles.projectionModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <span className={styles.modalEyebrow}>Calculate future price</span>
                 <h3 id="projection-title">{projectionAsset.title}</h3>
                 <p>Change the year, inflation, or extra hours. Then calculate the estimated future value.</p>
               </div>
