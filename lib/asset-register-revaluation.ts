@@ -11,11 +11,29 @@ import {
   runGenericValuation,
   type GenericCondition,
   type GenericSelectedMethod,
+  type MarketMatch,
 } from './generic-valuation';
 import { getSelectedMethodValue, saveGenericValuationRunFromResult, saveValuationRunFromResult, type MethodKey } from './valuation-runs';
 import { runServerValuation } from './server-valuation';
 import type { GpsType, RunValuationInput } from './tractor-logic';
-import type { ConditionKey } from './tractor-data';
+import type { ConditionKey, MarketplaceListing } from './tractor-data';
+
+export type AssetRevaluationMarketSource = {
+  id: string | number;
+  title: string;
+  sourceName: string;
+  sourceUrl?: string | null;
+  advertisedPriceExVat: number;
+  yearModel?: number | null;
+  hours?: number | null;
+  usageAmount?: number | null;
+  location?: string | null;
+  province?: string | null;
+  area?: string | null;
+  condition?: string | null;
+  matchReason?: string | null;
+  dateAdvertised?: string | null;
+};
 
 export type AssetRevaluationResult = {
   item: AssetRegisterItem;
@@ -25,6 +43,12 @@ export type AssetRevaluationResult = {
   newValueExVat: number;
   warning?: string;
   previewOnly?: boolean;
+  marketAverageExVat?: number | null;
+  marketLowExVat?: number | null;
+  marketHighExVat?: number | null;
+  marketCount?: number;
+  marketSources?: AssetRevaluationMarketSource[];
+  marketMatchStrategy?: string;
 };
 
 type ValuationRunRow = Record<string, unknown> & {
@@ -92,6 +116,63 @@ function resolveReplacementPrice(value: unknown): number {
   }
 
   return parsed;
+}
+
+function mapTractorMarketSource(listing: MarketplaceListing): AssetRevaluationMarketSource {
+  return {
+    id: listing.id,
+    title: listing.title,
+    sourceName: listing.sourceName || 'Marketplace listing',
+    sourceUrl: listing.sourceUrl || null,
+    advertisedPriceExVat: Math.round(Number(listing.advertisedPriceExVat || listing.priceExVat || listing.askingPriceExVat || 0)),
+    yearModel: Number.isFinite(listing.yearModel) ? Math.round(listing.yearModel) : null,
+    hours: Number.isFinite(listing.hours) ? Math.round(listing.hours) : null,
+    usageAmount: Number.isFinite(listing.hours) ? Math.round(listing.hours) : null,
+    location: listing.location || null,
+    province: listing.province || null,
+    area: listing.area || null,
+    condition: null,
+    matchReason: null,
+    dateAdvertised: listing.dateAdvertised || null,
+  };
+}
+
+function mapGenericMarketSource(match: MarketMatch): AssetRevaluationMarketSource {
+  return {
+    id: match.id,
+    title: match.title,
+    sourceName: match.sourceName || 'Marketplace listing',
+    sourceUrl: match.sourceUrl || null,
+    advertisedPriceExVat: Math.round(Number(match.advertisedPriceExVat || 0)),
+    yearModel: match.yearModel ?? null,
+    hours: match.usageAmount ?? null,
+    usageAmount: match.usageAmount ?? null,
+    location: null,
+    province: null,
+    area: null,
+    condition: match.condition ?? null,
+    matchReason: match.matchReason || null,
+    dateAdvertised: match.dateAdvertised ?? null,
+  };
+}
+
+function buildTractorMarketEvidence(result: Awaited<ReturnType<typeof runServerValuation>>): Pick<AssetRevaluationResult, 'marketAverageExVat' | 'marketLowExVat' | 'marketHighExVat' | 'marketCount' | 'marketSources'> {
+  return {
+    marketAverageExVat: roundMoneyValue(result.marketMid),
+    marketLowExVat: roundMoneyValue(result.marketLow),
+    marketHighExVat: roundMoneyValue(result.marketHigh),
+    marketCount: result.marketCount,
+    marketSources: result.marketSources.map(mapTractorMarketSource),
+  };
+}
+
+function buildGenericMarketEvidence(result: Awaited<ReturnType<typeof runGenericValuation>>): Pick<AssetRevaluationResult, 'marketAverageExVat' | 'marketCount' | 'marketSources' | 'marketMatchStrategy'> {
+  return {
+    marketAverageExVat: roundMoneyValue(result.marketAverageExVat),
+    marketCount: result.marketAverageCount,
+    marketSources: result.marketSources.map(mapGenericMarketSource),
+    marketMatchStrategy: result.marketMatchStrategy,
+  };
 }
 
 function asBoolean(value: unknown): boolean {
@@ -461,6 +542,7 @@ async function revalueTractorAsset(input: {
   const selectedMethod = resolveTractorMethod(input.preferredMethod, result);
   const selectedValueExVat = requireSelectedValue(getSelectedMethodValue(result, selectedMethod));
   const warning = selectedMethod !== input.preferredMethod ? 'Market value was unavailable, so Aim4price value was used.' : undefined;
+  const marketEvidence = buildTractorMarketEvidence(result);
 
   if (input.previewOnly) {
     return {
@@ -479,6 +561,7 @@ async function revalueTractorAsset(input: {
       newValueExVat: selectedValueExVat,
       warning,
       previewOnly: true,
+      ...marketEvidence,
     };
   }
 
@@ -510,6 +593,7 @@ async function revalueTractorAsset(input: {
     oldValueExVat: input.asset.value,
     newValueExVat: saved.selectedValueExVat,
     warning,
+    ...marketEvidence,
   };
 }
 
@@ -584,6 +668,7 @@ async function revalueGenericAsset(input: {
   const selectedMethod = resolveGenericMethod(input.preferredMethod, result);
   const selectedValueExVat = requireSelectedValue(getGenericSelectedMethodValue(result, selectedMethod));
   const warning = selectedMethod !== input.preferredMethod ? 'Market value was unavailable, so Aim4price value was used.' : undefined;
+  const marketEvidence = buildGenericMarketEvidence(result);
 
   if (input.previewOnly) {
     return {
@@ -599,6 +684,7 @@ async function revalueGenericAsset(input: {
       newValueExVat: selectedValueExVat,
       warning,
       previewOnly: true,
+      ...marketEvidence,
     };
   }
 
@@ -624,6 +710,7 @@ async function revalueGenericAsset(input: {
     oldValueExVat: input.asset.value,
     newValueExVat: saved.selectedValueExVat,
     warning,
+    ...marketEvidence,
   };
 }
 
