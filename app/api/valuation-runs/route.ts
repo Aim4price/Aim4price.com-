@@ -146,7 +146,7 @@ function buildInput(
   const selectedMethod = normalizeMethod(body.selectedMethod);
   const userReplacementPriceExVat = normalizeReplacementPrice(body.userReplacementPriceExVat);
 
-  if (!modelId || !Number.isFinite(year) || !Number.isFinite(hours) || !condition || !selectedMethod || userReplacementPriceExVat === null) {
+  if (!modelId || !Number.isFinite(year) || !Number.isFinite(hours) || !condition || !selectedMethod) {
     return null;
   }
 
@@ -233,7 +233,7 @@ function buildFriendlyError(error: unknown): { status: number; message: string }
   if (message.includes('REPLACEMENT_PRICE_REQUIRED')) {
     return {
       status: 400,
-      message: 'Replacement price is required and must be greater than zero.',
+      message: 'Confirm a replacement price on the results page before saving this asset.',
     };
   }
 
@@ -321,12 +321,14 @@ export async function POST(request: NextRequest) {
       const selectedMethod = normalizeGenericSelectedMethod(body.selectedMethod);
       const userReplacementPriceExVat = normalizeReplacementPrice(body.userReplacementPriceExVat);
       const userReplacementPriceYear = Number(body.userReplacementPriceYear);
-      const resolvedReplacementPriceYear = Number.isInteger(userReplacementPriceYear) && userReplacementPriceYear > 1900
-        ? userReplacementPriceYear
-        : new Date().getFullYear();
+      const resolvedReplacementPriceYear = userReplacementPriceExVat === null
+        ? null
+        : Number.isInteger(userReplacementPriceYear) && userReplacementPriceYear > 1900
+          ? userReplacementPriceYear
+          : new Date().getFullYear();
 
-      if (!isSectorKey(sectorKey) || !familyKey || !brandSlug || !Number.isInteger(year) || !condition || !selectedMethod || userReplacementPriceExVat === null) {
-        return badRequest('sectorKey, familyKey, brandSlug, year, condition, selectedMethod and replacement price are required.');
+      if (!isSectorKey(sectorKey) || !familyKey || !brandSlug || !Number.isInteger(year) || !condition || !selectedMethod) {
+        return badRequest('sectorKey, familyKey, brandSlug, year, condition and selectedMethod are required.');
       }
 
       const genericResult = await runGenericValuation({
@@ -389,7 +391,7 @@ export async function POST(request: NextRequest) {
 
     const input = buildInput(body);
     if (!input) {
-      return badRequest('modelId, year, hours, condition, selectedMethod and replacement price are required.');
+      return badRequest('modelId, year, hours, condition and selectedMethod are required.');
     }
 
     const valuationResult = await runServerValuation(input);
