@@ -811,12 +811,30 @@ export async function markAssetPartnerNoteNoted(input: {
 }
 
 function buildAssetLeadSnapshot(asset: AssetRegisterItem, includedSections: Record<string, unknown>): Record<string, unknown> {
+  const replacementPriceExVat = asNumber(asset.replacementPriceExVat);
+  const replacementPriceSnapshot =
+    replacementPriceExVat !== null && replacementPriceExVat > 0
+      ? {
+          replacementPriceExVat,
+          replacement_price_ex_vat: replacementPriceExVat,
+          replacementPriceUsedExVat: replacementPriceExVat,
+          replacement_price_used_ex_vat: replacementPriceExVat,
+          userReplacementPriceExVat: replacementPriceExVat,
+          user_replacement_price_ex_vat: replacementPriceExVat,
+          officialReplacementPriceExVat: replacementPriceExVat,
+          official_replacement_price_ex_vat: replacementPriceExVat,
+          replacementPrice: replacementPriceExVat,
+          replacement_price: replacementPriceExVat,
+        }
+      : {};
+
   return {
     id: asset.id,
     title: asset.title,
     kind: asset.kind,
     value: asset.value,
     selectedValueExVat: asset.selectedValueExVat,
+    ...replacementPriceSnapshot,
     selectedMethod: asset.selectedMethod,
     brandName: asset.brandName,
     modelName: asset.modelName,
@@ -825,7 +843,10 @@ function buildAssetLeadSnapshot(asset: AssetRegisterItem, includedSections: Reco
     equipmentFamilyLabel: asset.equipmentFamilyLabel,
     yearModel: asset.yearModel,
     hours: asset.hours,
-    specsJson: asset.specsJson,
+    specsJson: {
+      ...asset.specsJson,
+      ...replacementPriceSnapshot,
+    },
     depreciationMethodUsed: asset.depreciationMethodUsed,
     lifeWorkedPercent: asset.lifeWorkedPercent,
     lifeRemainingPercent: asset.lifeRemainingPercent,
