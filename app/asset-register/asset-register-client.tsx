@@ -64,6 +64,7 @@ declare global {
 
 type AssetKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools';
 type AssetMethod = 'aim4price' | 'market' | 'manual';
+type RevalueMethod = Exclude<AssetMethod, 'manual'>;
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
 type UsageMetric = 'hours' | 'km';
@@ -1889,6 +1890,14 @@ function canProjectFuturePrice(asset: RegisterAsset): boolean {
   );
 }
 
+function canRefreshAssetEstimate(asset: RegisterAsset): boolean {
+  return asset.valuationRunId !== null && asset.selectedMethod !== 'manual';
+}
+
+function canManageAssetPricing(asset: RegisterAsset): boolean {
+  return canRefreshAssetEstimate(asset) || canProjectFuturePrice(asset);
+}
+
 const REPLACEMENT_PRICE_SPEC_KEYS = [
   'replacementPriceExVat',
   'replacement_price_ex_vat',
@@ -2617,6 +2626,7 @@ export default function AssetRegisterClient() {
   const quoteMarkerLayerRef = useRef<any>(null);
   const quoteMarkersByPartnerRef = useRef<Map<string, any>>(new Map());
   const [isAssetReportModalOpen, setIsAssetReportModalOpen] = useState(false);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [copiedScanLinkAssetId, setCopiedScanLinkAssetId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
@@ -2638,6 +2648,7 @@ export default function AssetRegisterClient() {
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const [busyMarketplaceRemoveId, setBusyMarketplaceRemoveId] = useState<string | null>(null);
   const [busyRevalueAssetId, setBusyRevalueAssetId] = useState<string | null>(null);
+  const [busyRevalueAction, setBusyRevalueAction] = useState<RevalueMethod | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [assetFilter, setAssetFilter] = useState<AssetFilterKey>('all');
   const [isAssetFilterOpen, setIsAssetFilterOpen] = useState(false);
@@ -2838,6 +2849,7 @@ export default function AssetRegisterClient() {
     isQuoteModalOpen ||
     Boolean(deleteCandidateAsset) ||
     isAssetReportModalOpen ||
+    isPricingModalOpen ||
     isQrModalOpen ||
     isSummaryModalOpen ||
     isRegisterShareModalOpen ||
@@ -2860,6 +2872,11 @@ export default function AssetRegisterClient() {
 
       if (deleteCandidateAsset) {
         closeDeleteConfirmDialog();
+        return;
+      }
+
+      if (isPricingModalOpen) {
+        closePricingDialog();
         return;
       }
 
@@ -2929,7 +2946,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
@@ -3468,6 +3485,7 @@ export default function AssetRegisterClient() {
 
   function closeActionDialog() {
     setIsAssetReportModalOpen(false);
+    setIsPricingModalOpen(false);
     setIsQrModalOpen(false);
     setCopiedScanLinkAssetId(null);
     setDeleteCandidateAsset(null);
@@ -3721,6 +3739,7 @@ export default function AssetRegisterClient() {
   }
 
   function openAssetReportDialog() {
+    setIsPricingModalOpen(false);
     setIsQrModalOpen(false);
     setCopiedScanLinkAssetId(null);
     setIsAssetReportModalOpen(true);
@@ -3730,8 +3749,20 @@ export default function AssetRegisterClient() {
     setIsAssetReportModalOpen(false);
   }
 
+  function openPricingDialog() {
+    setIsAssetReportModalOpen(false);
+    setIsQrModalOpen(false);
+    setCopiedScanLinkAssetId(null);
+    setIsPricingModalOpen(true);
+  }
+
+  function closePricingDialog() {
+    setIsPricingModalOpen(false);
+  }
+
   function openQrDialog() {
     setIsAssetReportModalOpen(false);
+    setIsPricingModalOpen(false);
     setIsQrModalOpen(true);
   }
 
@@ -4370,15 +4401,19 @@ export default function AssetRegisterClient() {
   }
 
 
-  async function handleUpdateEstimate(asset: RegisterAsset) {
+  async function handleUpdateEstimate(asset: RegisterAsset, selectedMethod?: RevalueMethod, closePricingAfterSuccess = false) {
     setBusyRevalueAssetId(asset.id);
+    setBusyRevalueAction(selectedMethod ?? null);
 
     try {
       const response = await fetch('/api/asset-register/revalue', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assetId: asset.id }),
+        body: JSON.stringify({
+          assetId: asset.id,
+          ...(selectedMethod ? { selectedMethod } : {}),
+        }),
       });
       const data = (await response.json()) as RevalueAssetApiResponse;
 
@@ -4389,10 +4424,16 @@ export default function AssetRegisterClient() {
       const updatedAsset = data.item;
       syncUpdatedAsset(updatedAsset);
 
+      if (closePricingAfterSuccess) {
+        setIsPricingModalOpen(false);
+      }
+
+      const updatedMethod = data.selectedMethod ?? updatedAsset.selectedMethod;
+      const updateLabel = updatedMethod === 'market' ? 'market price' : 'Aim4price price';
       const marketplaceNote = isLiveOnMarketplace(asset) ? ' Marketplace asking price was not changed.' : '';
       setNotice({
         tone: 'success',
-        message: `${updatedAsset.title} estimate updated to ${money(updatedAsset.value)}.${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
+        message: `${updatedAsset.title} ${updateLabel} updated to ${money(updatedAsset.value)}.${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
       });
     } catch (error) {
       setNotice({
@@ -4401,6 +4442,7 @@ export default function AssetRegisterClient() {
       });
     } finally {
       setBusyRevalueAssetId(null);
+      setBusyRevalueAction(null);
     }
   }
 
@@ -6733,13 +6775,15 @@ export default function AssetRegisterClient() {
                     </span>
                   </button>
 
-                  <button type="button" className={styles.optionActionButton} onClick={openAssetReportDialog}>
-                    <DownloadIcon className={styles.buttonIcon} />
-                    <span>
-                      <strong>Download PDF Reports</strong>
-                      <small>Valuation, Fuel, QR Scan, Maintenance.</small>
-                    </span>
-                  </button>
+                  {canManageAssetPricing(activeAsset) ? (
+                    <button type="button" className={styles.optionActionButton} onClick={openPricingDialog}>
+                      <TrendIcon className={styles.buttonIcon} />
+                      <span>
+                        <strong>Manage pricing</strong>
+                        <small>Recalculate, refresh market or project future value.</small>
+                      </span>
+                    </button>
+                  ) : null}
 
                   {canUseOwnerOnlyAssetActions ? (
                     <button type="button" className={styles.optionActionButton} onClick={openQrDialog}>
@@ -6751,15 +6795,13 @@ export default function AssetRegisterClient() {
                     </button>
                   ) : null}
 
-                  {canProjectFuturePrice(activeAsset) ? (
-                    <button type="button" className={styles.optionActionButton} onClick={() => openProjectionModal(activeAsset)}>
-                      <TrendIcon className={styles.buttonIcon} />
-                      <span>
-                        <strong>Calculate future price</strong>
-                        <small>Project value using year, inflation and hours.</small>
-                      </span>
-                    </button>
-                  ) : null}
+                  <button type="button" className={styles.optionActionButton} onClick={openAssetReportDialog}>
+                    <DownloadIcon className={styles.buttonIcon} />
+                    <span>
+                      <strong>Download PDF reports</strong>
+                      <small>Valuation, Fuel, QR Scan, Maintenance.</small>
+                    </span>
+                  </button>
 
                   {canUseMarketplaceActions && isMarketplaceEligible(activeAsset) ? (
                     <button type="button" className={styles.optionActionButton} onClick={() => handlePublishFromDialog(activeAsset)}>
@@ -6806,6 +6848,73 @@ export default function AssetRegisterClient() {
           </div>
         </div>
       ) : null}
+
+      {activeAsset && isPricingModalOpen ? (
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={closePricingDialog} />
+
+          <div className={`${styles.modalCard} ${styles.pricingModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-pricing-title">
+            <div className={`${styles.modalHeader} ${styles.pricingModalHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="asset-pricing-title">Manage pricing</h3>
+                <p>{activeAsset.title}</p>
+              </div>
+
+              <button type="button" className={styles.modalCloseButton} onClick={closePricingDialog} aria-label="Close pricing options">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${styles.modalScrollBody} ${styles.pricingModalBody}`}>
+              <div className={styles.pricingOptionsGrid}>
+                <button
+                  type="button"
+                  className={styles.pricingOptionButton}
+                  disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id}
+                  onClick={() => void handleUpdateEstimate(activeAsset, 'aim4price', true)}
+                >
+                  <TrendIcon className={styles.buttonIcon} />
+                  <span>
+                    <strong>{busyRevalueAssetId === activeAsset.id && busyRevalueAction === 'aim4price' ? 'Recalculating...' : 'Recalculate Aim4price price'}</strong>
+                    <small>Rerun the saved Aim4price valuation using the latest asset details.</small>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.pricingOptionButton}
+                  disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id}
+                  onClick={() => void handleUpdateEstimate(activeAsset, 'market', true)}
+                >
+                  <TrendIcon className={styles.buttonIcon} />
+                  <span>
+                    <strong>{busyRevalueAssetId === activeAsset.id && busyRevalueAction === 'market' ? 'Refreshing...' : 'Get newest market price'}</strong>
+                    <small>Refresh the saved market midpoint from the current valuation data.</small>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.pricingOptionButton}
+                  disabled={!canProjectFuturePrice(activeAsset) || busyRevalueAssetId === activeAsset.id}
+                  onClick={() => openProjectionModal(activeAsset)}
+                >
+                  <TrendIcon className={styles.buttonIcon} />
+                  <span>
+                    <strong>Calculate future price</strong>
+                    <small>Project value using year, inflation and hours.</small>
+                  </span>
+                </button>
+              </div>
+
+              {!canRefreshAssetEstimate(activeAsset) ? (
+                <p className={styles.pricingOptionHint}>Automatic recalculation is only available for assets saved from an Aim4price valuation.</p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
 
       {activeAsset && isAssetReportModalOpen ? (
         <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
