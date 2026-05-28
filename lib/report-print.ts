@@ -2322,7 +2322,7 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
 
       @page {
         size: A4 landscape;
-        margin: 10mm;
+        margin: 8mm;
       }
 
       html,
@@ -2381,10 +2381,10 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
       }
 
       .fullRegisterPage {
-        width: 277mm;
-        min-height: 190mm;
+        width: 287mm;
+        min-height: 202mm;
         margin: 14px auto;
-        padding: 14mm 14mm 9mm;
+        padding: 13mm 13mm 10mm;
         background: var(--paper);
         box-shadow: 0 18px 48px rgba(15, 23, 42, 0.14);
       }
@@ -2394,7 +2394,7 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
         gap: 14mm;
-        padding-bottom: 6.5mm;
+        padding-bottom: 7.5mm;
         border-bottom: 1px solid var(--line-strong);
       }
 
@@ -2451,9 +2451,9 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
 
       .fullRegisterHero {
         display: grid;
-        grid-template-columns: minmax(0, 1.58fr) minmax(64mm, 0.68fr);
-        gap: 4.5mm;
-        margin-top: 4.5mm;
+        grid-template-columns: minmax(0, 1.58fr) minmax(70mm, 0.68fr);
+        gap: 5.5mm;
+        margin-top: 5.5mm;
       }
 
       .fullRegisterPanel,
@@ -2465,7 +2465,7 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
       }
 
       .fullRegisterPanel {
-        padding: 4.5mm;
+        padding: 5.6mm;
       }
 
       .fullRegisterPanelLabel,
@@ -2510,7 +2510,8 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
       }
 
       .fullRegisterValuePanel {
-        padding: 5mm;
+        min-height: 34mm;
+        padding: 6mm;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -2529,20 +2530,20 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
       .fullRegisterValuePanel small {
         color: var(--muted);
         font-size: 7.4pt;
-        line-height: 1.35;
+        line-height: 1.45;
         font-weight: 600;
       }
 
       .fullRegisterStatsGrid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(30mm, 1fr));
-        gap: 3mm;
-        margin-top: 3.8mm;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4mm;
+        margin-top: 5mm;
       }
 
       .fullRegisterStatCard {
-        min-height: 21mm;
-        padding: 3.8mm;
+        min-height: 27mm;
+        padding: 4.8mm;
       }
 
       .fullRegisterStatCard strong {
@@ -2557,29 +2558,29 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
 
       .fullRegisterStatCard small {
         display: block;
-        margin-top: 1.6mm;
+        margin-top: 1.8mm;
         color: var(--muted);
         font-size: 6.9pt;
-        line-height: 1.3;
+        line-height: 1.42;
         font-weight: 600;
       }
 
       .fullRegisterOwnerDetailsPanel {
-        margin-top: 4.5mm;
-        padding: 4.8mm 5.2mm 5.2mm;
+        margin-top: 5.5mm;
+        padding: 5.8mm 6.2mm 6.2mm;
       }
 
       .fullRegisterOwnerDetailsPanel .fullRegisterMetaRow {
-        grid-template-columns: 34mm minmax(0, 1fr);
-        min-height: 7.6mm;
+        grid-template-columns: 36mm minmax(0, 1fr);
+        min-height: 8.8mm;
       }
 
       .fullRegisterOwnerDetailsPanel .fullRegisterMetaRowTall {
-        min-height: 12.5mm;
+        min-height: 14mm;
       }
 
       .fullRegisterAssetSection {
-        margin-top: 4.5mm;
+        margin-top: 5.5mm;
       }
 
       .fullRegisterSectionTitle {
@@ -2587,7 +2588,7 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
         align-items: baseline;
         justify-content: space-between;
         gap: 5mm;
-        margin: 0 0 2.8mm;
+        margin: 0 0 4mm;
       }
 
       .fullRegisterSectionTitle h2 {
@@ -2608,12 +2609,12 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
 
       .fullRegisterMetaRow {
         display: grid;
-        grid-template-columns: 28mm minmax(0, 1fr);
-        min-height: 7mm;
+        grid-template-columns: 30mm minmax(0, 1fr);
+        min-height: 8mm;
         align-items: center;
         border-top: 1px solid var(--line);
         font-size: 7.4pt;
-        line-height: 1.25;
+        line-height: 1.35;
       }
 
       .fullRegisterMetaRow:first-child {
@@ -2640,14 +2641,14 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
 
       .fullRegisterAssetList {
         display: grid;
-        gap: 2.7mm;
+        gap: 3.8mm;
       }
 
       .fullRegisterAssetCard {
         display: grid;
-        grid-template-columns: minmax(92mm, 1.55fr) minmax(54mm, 0.78fr) minmax(36mm, 0.48fr) minmax(38mm, 0.46fr);
+        grid-template-columns: minmax(98mm, 1.35fr) minmax(56mm, 0.74fr) minmax(44mm, 0.56fr) minmax(50mm, 0.62fr);
         gap: 0;
-        min-height: 27mm;
+        min-height: 34mm;
         break-inside: avoid;
         page-break-inside: avoid;
       }
@@ -2656,21 +2657,21 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
       .fullRegisterAssetDetails,
       .fullRegisterAssetStatus,
       .fullRegisterAssetValue {
-        padding: 2.8mm 3mm;
+        padding: 4mm 4.2mm;
         border-left: 1px solid var(--line);
       }
 
       .fullRegisterAssetMain {
         display: grid;
-        grid-template-columns: 17mm minmax(0, 1fr);
-        gap: 3.2mm;
+        grid-template-columns: 21mm minmax(0, 1fr);
+        gap: 4.2mm;
         border-left: none;
         align-items: center;
       }
 
       .fullRegisterAssetThumb {
-        width: 17mm;
-        height: 17mm;
+        width: 21mm;
+        height: 21mm;
         border: 1px solid var(--line);
         background: var(--soft);
         display: flex;
@@ -2693,10 +2694,10 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
       }
 
       .fullRegisterAssetIdentity h3 {
-        margin: 1.2mm 0 1.5mm;
+        margin: 1.5mm 0 1.8mm;
         color: var(--strong);
-        font-size: 10.4pt;
-        line-height: 1.08;
+        font-size: 10.7pt;
+        line-height: 1.12;
         font-weight: 800;
         letter-spacing: -0.045em;
         overflow-wrap: anywhere;
@@ -2705,10 +2706,10 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
       .fullRegisterAssetMeta {
         display: flex;
         flex-wrap: wrap;
-        gap: 1mm 3.5mm;
+        gap: 1.2mm 4mm;
         color: var(--muted);
-        font-size: 6.8pt;
-        line-height: 1.25;
+        font-size: 6.9pt;
+        line-height: 1.32;
         font-weight: 600;
         max-width: 100%;
       }
@@ -2727,24 +2728,24 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
       .fullRegisterAssetDetails,
       .fullRegisterAssetStatus {
         display: grid;
-        gap: 1.3mm;
+        gap: 1.85mm;
       }
 
       .fullRegisterAssetDetails div,
       .fullRegisterAssetStatus div {
         display: grid;
-        grid-template-columns: 18mm minmax(0, 1fr);
-        gap: 1.8mm;
+        grid-template-columns: 20mm minmax(0, 1fr);
+        gap: 2.2mm;
         align-items: baseline;
         color: var(--muted);
-        font-size: 6.85pt;
-        line-height: 1.2;
+        font-size: 6.9pt;
+        line-height: 1.32;
         font-weight: 600;
       }
 
       .fullRegisterAssetStatus div {
-        grid-template-columns: 16.5mm minmax(0, 1fr);
-        gap: 1.5mm;
+        grid-template-columns: 19mm minmax(0, 1fr);
+        gap: 2mm;
       }
 
       .fullRegisterAssetDetails span,
@@ -2777,10 +2778,10 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
 
       .fullRegisterAssetValue strong {
         display: block;
-        margin-top: 1.1mm;
+        margin-top: 1.3mm;
         color: var(--strong);
-        font-size: 11.4pt;
-        line-height: 1;
+        font-size: 12pt;
+        line-height: 1.05;
         font-weight: 800;
         letter-spacing: -0.045em;
         white-space: nowrap;
@@ -2790,20 +2791,20 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
       .fullRegisterAssetValue em,
       .fullRegisterAssetValue i {
         display: block;
-        margin-top: 1mm;
+        margin-top: 1.1mm;
         color: var(--muted);
-        font-size: 6.4pt;
-        line-height: 1.25;
+        font-size: 6.55pt;
+        line-height: 1.35;
         font-style: normal;
         font-weight: 600;
       }
 
       .fullRegisterReplacementValue {
         display: block;
-        margin-top: 1.15mm;
+        margin-top: 1.25mm;
         color: #103b31;
-        font-size: 6.55pt;
-        line-height: 1.25;
+        font-size: 6.85pt;
+        line-height: 1.35;
         font-style: normal;
         font-weight: 800;
       }
@@ -2830,8 +2831,8 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
         grid-template-columns: minmax(0, 1fr) auto;
         gap: 12mm;
         align-items: end;
-        margin-top: 7mm;
-        padding-top: 3mm;
+        margin-top: 8mm;
+        padding-top: 3.8mm;
         border-top: 1px solid var(--line-strong);
       }
 
