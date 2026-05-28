@@ -14,6 +14,7 @@ type RevalueAssetResponse = {
   oldValueExVat?: number;
   newValueExVat?: number;
   warning?: string;
+  previewOnly?: boolean;
   error?: string;
 };
 
@@ -55,6 +56,13 @@ function formatError(error: unknown): { status: number; message: string } {
       };
     }
 
+    if (error.message === 'REPLACEMENT_PRICE_REQUIRED') {
+      return {
+        status: 400,
+        message: 'A replacement price is required before this asset can be recalculated.',
+      };
+    }
+
     if (error.message.startsWith('This asset is missing') || error.message.startsWith('This tractor is missing')) {
       return { status: 400, message: error.message };
     }
@@ -76,9 +84,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<RevalueAssetResponse>({ ok: false, error: 'You must be signed in.' }, { status: 401 });
   }
 
-  let body: { assetId?: unknown; selectedMethod?: unknown };
+  let body: { assetId?: unknown; selectedMethod?: unknown; previewOnly?: unknown };
   try {
-    body = (await request.json()) as { assetId?: unknown; selectedMethod?: unknown };
+    body = (await request.json()) as { assetId?: unknown; selectedMethod?: unknown; previewOnly?: unknown };
   } catch {
     return badRequest('Enter a valid estimate update request.');
   }
@@ -94,6 +102,7 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       assetId,
       selectedMethod: body.selectedMethod,
+      previewOnly: body.previewOnly === true,
     });
 
     const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [result.item]);
@@ -106,6 +115,7 @@ export async function POST(request: NextRequest) {
       oldValueExVat: result.oldValueExVat,
       newValueExVat: result.newValueExVat,
       warning: result.warning,
+      previewOnly: result.previewOnly,
     });
   } catch (error) {
     console.error('asset register revalue failed', error);
