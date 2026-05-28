@@ -18070,33 +18070,38 @@
 
 /* === Manage pricing modal: May 2026 === */
 .pricingModal {
-  width: min(100%, 720px) !important;
-  max-height: min(86vh, calc(100dvh - 2rem)) !important;
+  width: min(100%, 880px) !important;
+  max-height: min(88vh, calc(100dvh - 2rem)) !important;
   overflow: hidden !important;
-  padding: clamp(1.25rem, 2vw, 1.65rem) !important;
-  border-radius: 1.9rem !important;
+  padding: clamp(1.35rem, 2.15vw, 1.85rem) !important;
+  border-radius: 2rem !important;
 }
 
 .pricingModalHeader {
-  margin-bottom: 1.05rem !important;
-  padding-bottom: 0.95rem !important;
+  margin-bottom: 1.15rem !important;
+  padding-bottom: 1.05rem !important;
   border-bottom: 1px solid rgba(218, 229, 237, 0.96) !important;
+}
+
+.pricingModalHeader .modalHeaderText {
+  max-width: 46rem !important;
 }
 
 .pricingModalHeader h3 {
   margin: 0 !important;
   color: #10352b !important;
-  font-size: clamp(1.55rem, 3vw, 2.05rem) !important;
+  font-size: clamp(1.85rem, 3.35vw, 2.55rem) !important;
   font-weight: 900 !important;
-  letter-spacing: -0.055em !important;
+  letter-spacing: -0.058em !important;
   line-height: 1.02 !important;
 }
 
 .pricingModalHeader p {
-  margin: 0.28rem 0 0 !important;
+  margin: 0.32rem 0 0 !important;
   color: #5f7083 !important;
-  font-size: 0.98rem !important;
-  font-weight: 720 !important;
+  font-size: 1rem !important;
+  font-weight: 760 !important;
+  line-height: 1.45 !important;
 }
 
 .pricingModalBody {
@@ -18104,27 +18109,53 @@
   overflow-y: auto !important;
 }
 
+.pricingModalIntro {
+  display: grid !important;
+  gap: 0.34rem !important;
+  margin-bottom: 1rem !important;
+  padding: 0.95rem 1.05rem !important;
+  border-radius: 1.18rem !important;
+  border: 1px solid rgba(216, 226, 236, 0.96) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%) !important;
+}
+
+.pricingModalIntro span {
+  color: #10352b !important;
+  font-size: 0.78rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.075em !important;
+  text-transform: uppercase !important;
+}
+
+.pricingModalIntro p {
+  margin: 0 !important;
+  color: #5f7083 !important;
+  font-size: 0.94rem !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
+}
+
 .pricingOptionsGrid {
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 1rem !important;
+  gap: 1.05rem !important;
 }
 
 .pricingOptionButton {
   width: 100% !important;
-  min-height: 10.5rem !important;
+  min-height: 11.75rem !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 0.8rem !important;
-  padding: 1.15rem !important;
+  gap: 0.85rem !important;
+  padding: 1.3rem 1.1rem !important;
   border: 1px solid rgba(216, 226, 236, 0.98) !important;
-  border-radius: 1.35rem !important;
+  border-radius: 1.42rem !important;
   color: #1d3b62 !important;
   background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%) !important;
   box-shadow:
-    0 12px 26px rgba(16, 31, 28, 0.05),
+    0 14px 30px rgba(16, 31, 28, 0.055),
     inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
   cursor: pointer !important;
   font: inherit !important;
@@ -18141,7 +18172,7 @@
   border-color: rgba(184, 202, 218, 0.98) !important;
   background: linear-gradient(180deg, #ffffff 0%, #eef5fb 100%) !important;
   box-shadow:
-    0 18px 34px rgba(16, 31, 28, 0.08),
+    0 20px 38px rgba(16, 31, 28, 0.085),
     inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
@@ -18152,23 +18183,23 @@
 }
 
 .pricingOptionButton > .buttonIcon {
-  width: 1.55rem !important;
-  height: 1.55rem !important;
+  width: 1.62rem !important;
+  height: 1.62rem !important;
   color: #1d3b62 !important;
 }
 
 .pricingOptionButton > span {
   display: grid !important;
   justify-items: center !important;
-  gap: 0.38rem !important;
+  gap: 0.42rem !important;
   min-width: 0 !important;
 }
 
 .pricingOptionButton strong {
   color: #10352b !important;
-  font-size: clamp(1rem, 1.5vw, 1.28rem) !important;
+  font-size: clamp(1.08rem, 1.55vw, 1.34rem) !important;
   font-weight: 900 !important;
-  line-height: 1.12 !important;
+  line-height: 1.1 !important;
   letter-spacing: -0.04em !important;
   text-align: center !important;
   text-wrap: balance;
@@ -18176,16 +18207,16 @@
 
 .pricingOptionButton small {
   color: #617386 !important;
-  font-size: 0.84rem !important;
-  font-weight: 650 !important;
-  line-height: 1.35 !important;
+  font-size: 0.88rem !important;
+  font-weight: 660 !important;
+  line-height: 1.38 !important;
   text-align: center !important;
   text-wrap: balance;
 }
 
 .pricingOptionHint {
   margin: 1rem 0 0 !important;
-  padding: 0.85rem 1rem !important;
+  padding: 0.9rem 1rem !important;
   border: 1px solid rgba(216, 226, 236, 0.98) !important;
   border-radius: 1rem !important;
   color: #5f7083 !important;
@@ -18195,21 +18226,209 @@
   line-height: 1.45 !important;
 }
 
+.pricingPreviewOverlay {
+  z-index: 220 !important;
+}
+
+.pricingResultModal {
+  width: min(100%, 760px) !important;
+  max-height: min(88vh, calc(100dvh - 2rem)) !important;
+  overflow: hidden !important;
+  padding: clamp(1.32rem, 2vw, 1.75rem) !important;
+  border-radius: 1.9rem !important;
+}
+
+.pricingResultHeader {
+  margin-bottom: 1rem !important;
+  padding-bottom: 0.95rem !important;
+  border-bottom: 1px solid rgba(218, 229, 237, 0.96) !important;
+}
+
+.pricingResultHeader .modalHeaderText {
+  max-width: 42rem !important;
+}
+
+.pricingResultHeader h3 {
+  margin: 0.16rem 0 0 !important;
+  color: #10352b !important;
+  font-size: clamp(1.65rem, 3vw, 2.25rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.03 !important;
+  letter-spacing: -0.055em !important;
+}
+
+.pricingResultHeader p {
+  margin: 0.32rem 0 0 !important;
+  color: #5f7083 !important;
+  font-size: 0.96rem !important;
+  font-weight: 740 !important;
+  line-height: 1.45 !important;
+}
+
+.pricingResultBody {
+  display: grid !important;
+  gap: 0.95rem !important;
+  padding: 0 !important;
+  overflow-y: auto !important;
+}
+
+.pricingPreviewIntroCopy {
+  margin: 0 !important;
+  color: #5f7083 !important;
+  font-size: 0.95rem !important;
+  font-weight: 660 !important;
+  line-height: 1.55 !important;
+}
+
+.pricingResultHero {
+  display: grid !important;
+  gap: 0.42rem !important;
+  padding: 1.2rem !important;
+  border-radius: 1.28rem !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.1), transparent 44%),
+    linear-gradient(180deg, #f7fcf9 0%, #e7f5ee 100%) !important;
+  border: 1px solid rgba(189, 224, 204, 0.98) !important;
+  box-shadow:
+    0 14px 28px rgba(18, 70, 53, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.pricingResultHero span,
+.pricingCompareGrid span {
+  color: #6e7f91 !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.07em !important;
+  text-transform: uppercase !important;
+}
+
+.pricingResultHero strong {
+  color: #0e3228 !important;
+  font-size: clamp(2.25rem, 4vw, 3.25rem) !important;
+  font-weight: 900 !important;
+  line-height: 0.96 !important;
+  letter-spacing: -0.065em !important;
+}
+
+.pricingResultHero p {
+  margin: 0 !important;
+  color: #5f7286 !important;
+  font-size: 0.92rem !important;
+  font-weight: 670 !important;
+  line-height: 1.4 !important;
+}
+
+.pricingCompareGrid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0.7rem !important;
+}
+
+.pricingCompareGrid > div {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 0.28rem !important;
+  padding: 0.9rem 0.95rem !important;
+  border-radius: 1rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.95) !important;
+}
+
+.pricingCompareGrid strong {
+  color: #10352b !important;
+  font-size: 1rem !important;
+  font-weight: 850 !important;
+  line-height: 1.25 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.pricingPreviewWarning {
+  margin: 0 !important;
+  padding: 0.88rem 1rem !important;
+  border-radius: 1rem !important;
+  border: 1px solid rgba(242, 207, 140, 0.9) !important;
+  background: linear-gradient(180deg, #fffaf0 0%, #fff4dd 100%) !important;
+  color: #755311 !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  line-height: 1.45 !important;
+}
+
+.pricingPreviewStatus {
+  display: grid !important;
+  gap: 0.3rem !important;
+  padding: 1rem !important;
+  border-radius: 1.08rem !important;
+  border: 1px solid rgba(216, 226, 236, 0.96) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%) !important;
+  color: #5f7083 !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  line-height: 1.45 !important;
+}
+
+.pricingPreviewStatus strong {
+  color: #10352b !important;
+  font-size: 1rem !important;
+  font-weight: 850 !important;
+}
+
+.pricingPreviewStatus span {
+  color: #5f7083 !important;
+  font-size: 0.9rem !important;
+  font-weight: 650 !important;
+}
+
+.pricingPreviewError {
+  border-color: rgba(239, 164, 164, 0.92) !important;
+  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%) !important;
+}
+
+.pricingPreviewActions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 0.72rem !important;
+  padding-top: 0.15rem !important;
+}
+
+.pricingPreviewActions .secondaryButton,
+.pricingPreviewActions .primaryButton {
+  min-height: 3.25rem !important;
+  border-radius: 1rem !important;
+  padding-inline: 1.2rem !important;
+  font-size: 0.95rem !important;
+}
+
 @media (max-width: 760px) {
-  .pricingModal {
+  .pricingModal,
+  .pricingResultModal {
     width: min(100%, calc(100vw - 1rem)) !important;
     max-height: min(90vh, calc(100dvh - 1rem)) !important;
     padding: 1rem !important;
     border-radius: 1.45rem !important;
   }
 
-  .pricingOptionsGrid {
+  .pricingOptionsGrid,
+  .pricingCompareGrid {
     grid-template-columns: 1fr !important;
     gap: 0.78rem !important;
   }
 
   .pricingOptionButton {
-    min-height: 7.5rem !important;
+    min-height: 7.75rem !important;
     padding: 1rem !important;
   }
+
+  .pricingPreviewActions {
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+  }
+
+  .pricingPreviewActions .secondaryButton,
+  .pricingPreviewActions .primaryButton {
+    width: 100% !important;
+  }
 }
+

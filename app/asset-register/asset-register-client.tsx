@@ -353,7 +353,15 @@ type RevalueAssetApiResponse = {
   oldValueExVat?: number;
   newValueExVat?: number;
   warning?: string;
+  previewOnly?: boolean;
   error?: string;
+};
+
+type PricingRevaluePreview = {
+  asset: RegisterAsset;
+  method: RevalueMethod;
+  result: RevalueAssetApiResponse | null;
+  error: string | null;
 };
 
 type MarketplacePublishDraft = {
@@ -2649,6 +2657,9 @@ export default function AssetRegisterClient() {
   const [busyMarketplaceRemoveId, setBusyMarketplaceRemoveId] = useState<string | null>(null);
   const [busyRevalueAssetId, setBusyRevalueAssetId] = useState<string | null>(null);
   const [busyRevalueAction, setBusyRevalueAction] = useState<RevalueMethod | null>(null);
+  const [pricingPreview, setPricingPreview] = useState<PricingRevaluePreview | null>(null);
+  const [isLoadingPricingPreview, setIsLoadingPricingPreview] = useState(false);
+  const [isSavingPricingPreview, setIsSavingPricingPreview] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [assetFilter, setAssetFilter] = useState<AssetFilterKey>('all');
   const [isAssetFilterOpen, setIsAssetFilterOpen] = useState(false);
@@ -2850,6 +2861,7 @@ export default function AssetRegisterClient() {
     Boolean(deleteCandidateAsset) ||
     isAssetReportModalOpen ||
     isPricingModalOpen ||
+    Boolean(pricingPreview) ||
     isQrModalOpen ||
     isSummaryModalOpen ||
     isRegisterShareModalOpen ||
@@ -2872,6 +2884,11 @@ export default function AssetRegisterClient() {
 
       if (deleteCandidateAsset) {
         closeDeleteConfirmDialog();
+        return;
+      }
+
+      if (pricingPreview) {
+        closePricingPreviewDialog();
         return;
       }
 
@@ -2946,7 +2963,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
@@ -3486,6 +3503,9 @@ export default function AssetRegisterClient() {
   function closeActionDialog() {
     setIsAssetReportModalOpen(false);
     setIsPricingModalOpen(false);
+    setPricingPreview(null);
+    setIsLoadingPricingPreview(false);
+    setIsSavingPricingPreview(false);
     setIsQrModalOpen(false);
     setCopiedScanLinkAssetId(null);
     setDeleteCandidateAsset(null);
@@ -3757,7 +3777,14 @@ export default function AssetRegisterClient() {
   }
 
   function closePricingDialog() {
+    if (isLoadingPricingPreview || isSavingPricingPreview) return;
+    setPricingPreview(null);
     setIsPricingModalOpen(false);
+  }
+
+  function closePricingPreviewDialog() {
+    if (isLoadingPricingPreview || isSavingPricingPreview) return;
+    setPricingPreview(null);
   }
 
   function openQrDialog() {
@@ -4443,6 +4470,117 @@ export default function AssetRegisterClient() {
     } finally {
       setBusyRevalueAssetId(null);
       setBusyRevalueAction(null);
+    }
+  }
+
+  function pricingPreviewTitle(method: RevalueMethod): string {
+    return method === 'market' ? 'Get newest market price' : 'Recalculate Aim4price value';
+  }
+
+  function pricingPreviewIntro(method: RevalueMethod): string {
+    return method === 'market'
+      ? 'Aim4price will refresh the market midpoint from the latest valuation data. Review the new value before saving it to the Asset Register.'
+      : 'Aim4price will rerun the saved valuation using the latest asset details. Review the new value before saving it to the Asset Register.';
+  }
+
+  async function openRevaluePreviewDialog(asset: RegisterAsset, method: RevalueMethod) {
+    const initialPreview: PricingRevaluePreview = {
+      asset,
+      method,
+      result: null,
+      error: null,
+    };
+
+    setPricingPreview(initialPreview);
+    setIsLoadingPricingPreview(true);
+    setIsSavingPricingPreview(false);
+
+    try {
+      const response = await fetch('/api/asset-register/revalue', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetId: asset.id,
+          selectedMethod: method,
+          previewOnly: true,
+        }),
+      });
+      const data = (await response.json()) as RevalueAssetApiResponse;
+
+      if (!response.ok || !data.ok || !data.item) {
+        throw new Error(data.error ?? 'Failed to calculate the new value preview.');
+      }
+
+      setPricingPreview((current) => {
+        if (!current || current.asset.id !== asset.id || current.method !== method) {
+          return current;
+        }
+
+        return {
+          ...current,
+          result: data,
+          error: null,
+        };
+      });
+    } catch (error) {
+      setPricingPreview((current) => {
+        if (!current || current.asset.id !== asset.id || current.method !== method) {
+          return current;
+        }
+
+        return {
+          ...current,
+          result: null,
+          error: error instanceof Error ? error.message : 'Failed to calculate the new value preview.',
+        };
+      });
+    } finally {
+      setIsLoadingPricingPreview(false);
+    }
+  }
+
+  async function handleSavePricingPreview() {
+    if (!pricingPreview) return;
+
+    const { asset, method } = pricingPreview;
+    setIsSavingPricingPreview(true);
+
+    try {
+      const response = await fetch('/api/asset-register/revalue', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetId: asset.id,
+          selectedMethod: method,
+        }),
+      });
+      const data = (await response.json()) as RevalueAssetApiResponse;
+
+      if (!response.ok || !data.ok || !data.item) {
+        throw new Error(data.error ?? 'Failed to save the new value.');
+      }
+
+      const updatedAsset = data.item;
+      syncUpdatedAsset(updatedAsset);
+      setPricingPreview(null);
+      setIsPricingModalOpen(false);
+
+      const updatedMethod = data.selectedMethod ?? updatedAsset.selectedMethod;
+      const updateLabel = updatedMethod === 'market' ? 'market price' : 'Aim4price value';
+      const marketplaceNote = isLiveOnMarketplace(asset) ? ' Marketplace asking price was not changed.' : '';
+      setNotice({
+        tone: 'success',
+        message: `${updatedAsset.title} ${updateLabel} saved at ${money(updatedAsset.value)}.${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
+      });
+    } catch (error) {
+      setPricingPreview((current) => (current ? {
+        ...current,
+        error: error instanceof Error ? error.message : 'Failed to save the new value.',
+      } : current));
+    } finally {
+      setIsSavingPricingPreview(false);
     }
   }
 
@@ -6780,7 +6918,7 @@ export default function AssetRegisterClient() {
                       <TrendIcon className={styles.buttonIcon} />
                       <span>
                         <strong>Manage pricing</strong>
-                        <small>Recalculate, refresh market or project future value.</small>
+                        <small>Recalculate, refresh or get a future value.</small>
                       </span>
                     </button>
                   ) : null}
@@ -6856,8 +6994,8 @@ export default function AssetRegisterClient() {
           <div className={`${styles.modalCard} ${styles.pricingModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-pricing-title">
             <div className={`${styles.modalHeader} ${styles.pricingModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-pricing-title">Manage pricing</h3>
-                <p>{activeAsset.title}</p>
+                <h3 id="asset-pricing-title">{activeAsset.title}</h3>
+                <p>{buildAssetMeta(activeAsset)}</p>
               </div>
 
               <button type="button" className={styles.modalCloseButton} onClick={closePricingDialog} aria-label="Close pricing options">
@@ -6866,43 +7004,48 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.pricingModalBody}`}>
+              <div className={styles.pricingModalIntro}>
+                <span>Manage pricing</span>
+                <p>Choose a pricing action. Recalculate and market refresh first open a preview so the saved register value only changes after confirmation.</p>
+              </div>
+
               <div className={styles.pricingOptionsGrid}>
                 <button
                   type="button"
                   className={styles.pricingOptionButton}
-                  disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id}
-                  onClick={() => void handleUpdateEstimate(activeAsset, 'aim4price', true)}
+                  disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
+                  onClick={() => void openRevaluePreviewDialog(activeAsset, 'aim4price')}
                 >
                   <TrendIcon className={styles.buttonIcon} />
                   <span>
-                    <strong>{busyRevalueAssetId === activeAsset.id && busyRevalueAction === 'aim4price' ? 'Recalculating...' : 'Recalculate Aim4price price'}</strong>
-                    <small>Rerun the saved Aim4price valuation using the latest asset details.</small>
+                    <strong>Recalculate Aim4price value</strong>
+                    <small>Preview a fresh Aim4price valuation before saving it.</small>
                   </span>
                 </button>
 
                 <button
                   type="button"
                   className={styles.pricingOptionButton}
-                  disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id}
-                  onClick={() => void handleUpdateEstimate(activeAsset, 'market', true)}
+                  disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
+                  onClick={() => void openRevaluePreviewDialog(activeAsset, 'market')}
                 >
                   <TrendIcon className={styles.buttonIcon} />
                   <span>
-                    <strong>{busyRevalueAssetId === activeAsset.id && busyRevalueAction === 'market' ? 'Refreshing...' : 'Get newest market price'}</strong>
-                    <small>Refresh the saved market midpoint from the current valuation data.</small>
+                    <strong>Get newest market price</strong>
+                    <small>Preview the newest market midpoint before saving it.</small>
                   </span>
                 </button>
 
                 <button
                   type="button"
                   className={styles.pricingOptionButton}
-                  disabled={!canProjectFuturePrice(activeAsset) || busyRevalueAssetId === activeAsset.id}
+                  disabled={!canProjectFuturePrice(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
                   onClick={() => openProjectionModal(activeAsset)}
                 >
                   <TrendIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Calculate future price</strong>
-                    <small>Project value using year, inflation and hours.</small>
+                    <small>Open the future value calculator for year, inflation and hours.</small>
                   </span>
                 </button>
               </div>
@@ -6915,6 +7058,82 @@ export default function AssetRegisterClient() {
         </div>
       ) : null}
 
+      {pricingPreview ? (
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.pricingPreviewOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={closePricingPreviewDialog} />
+
+          <div className={`${styles.modalCard} ${styles.pricingResultModal}`} role="dialog" aria-modal="true" aria-labelledby="pricing-preview-title">
+            <div className={`${styles.modalHeader} ${styles.pricingResultHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <span className={styles.modalEyebrow}>{pricingPreviewTitle(pricingPreview.method)}</span>
+                <h3 id="pricing-preview-title">{pricingPreview.asset.title}</h3>
+                <p>{buildAssetMeta(pricingPreview.asset)}</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={closePricingPreviewDialog}
+                aria-label="Close value preview"
+                disabled={isLoadingPricingPreview || isSavingPricingPreview}
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${styles.modalScrollBody} ${styles.pricingResultBody}`}>
+              <p className={styles.pricingPreviewIntroCopy}>{pricingPreviewIntro(pricingPreview.method)}</p>
+
+              {isLoadingPricingPreview ? (
+                <div className={styles.pricingPreviewStatus}>Calculating the new value preview...</div>
+              ) : pricingPreview.error ? (
+                <div className={`${styles.pricingPreviewStatus} ${styles.pricingPreviewError}`}>
+                  <strong>Could not calculate preview</strong>
+                  <span>{pricingPreview.error}</span>
+                </div>
+              ) : pricingPreview.result?.item ? (
+                <>
+                  <section className={styles.pricingResultHero} aria-live="polite">
+                    <span>Preview value</span>
+                    <strong>{money(pricingPreview.result.newValueExVat ?? pricingPreview.result.item.value)}</strong>
+                    <p>This is not saved yet. Save it only if you want to replace the current Asset Register value.</p>
+                  </section>
+
+                  <div className={styles.pricingCompareGrid}>
+                    <div>
+                      <span>Current saved value</span>
+                      <strong>{money(pricingPreview.result.oldValueExVat ?? pricingPreview.asset.value)}</strong>
+                    </div>
+                    <div>
+                      <span>New preview value</span>
+                      <strong>{money(pricingPreview.result.newValueExVat ?? pricingPreview.result.item.value)}</strong>
+                    </div>
+                    <div>
+                      <span>Pricing method</span>
+                      <strong>{methodLabel(pricingPreview.result.selectedMethod ?? pricingPreview.result.item.selectedMethod)}</strong>
+                    </div>
+                  </div>
+
+                  {pricingPreview.result.warning ? (
+                    <p className={styles.pricingPreviewWarning}>{pricingPreview.result.warning}</p>
+                  ) : null}
+
+                  <div className={styles.pricingPreviewActions}>
+                    <button type="button" className={styles.secondaryButton} onClick={closePricingPreviewDialog} disabled={isSavingPricingPreview}>
+                      Keep current value
+                    </button>
+                    <button type="button" className={styles.primaryButton} onClick={() => void handleSavePricingPreview()} disabled={isSavingPricingPreview}>
+                      {isSavingPricingPreview ? 'Saving...' : 'Save new value'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className={styles.pricingPreviewStatus}>No preview result is available yet.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {activeAsset && isAssetReportModalOpen ? (
         <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
