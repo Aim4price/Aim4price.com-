@@ -181,11 +181,34 @@ function isManualAssetRow(row: Record<string, unknown>): boolean {
 }
 
 function buildPhotoList(row: Record<string, unknown>): string[] {
-  const photos = asStringArray(pick(row, ['photo_urls', 'photos', 'image_urls', 'images']))
-    .map((entry) => safeImage(entry))
-    .filter(Boolean);
+  const photos: string[] = [];
+
+  for (const column of ['photo_urls', 'photos', 'image_urls', 'images']) {
+    for (const entry of asStringArray(row[column])) {
+      const image = safeImage(entry);
+      if (image) photos.push(image);
+    }
+  }
 
   return Array.from(new Set(photos));
+}
+
+function mergePhotoLists(...lists: string[][]): string[] {
+  const photos: string[] = [];
+
+  for (const list of lists) {
+    for (const entry of list) {
+      const image = safeImage(entry);
+      if (image) photos.push(image);
+    }
+  }
+
+  return Array.from(new Set(photos));
+}
+
+function getWritablePhotoColumns(row: Record<string, unknown>): string[] {
+  const present = ['photo_urls', 'photos', 'image_urls', 'images'].filter((column) => column in row);
+  return present.length ? present : ['photo_urls'];
 }
 
 function deriveBrandAndModel(row: Record<string, unknown>): { brandName: string; modelName: string } {
@@ -254,7 +277,8 @@ async function ensureMarketplaceColumns(): Promise<void> {
       add column if not exists marketplace_seller_company text,
       add column if not exists marketplace_seller_email text,
       add column if not exists marketplace_province text,
-      add column if not exists marketplace_area text
+      add column if not exists marketplace_area text,
+      add column if not exists photo_urls jsonb not null default '[]'::jsonb
   `);
 
   await db.query(`
@@ -739,6 +763,7 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   sellerEmail?: string | null;
   province?: string | null;
   area?: string | null;
+  photos?: string[] | null;
 }): Promise<MarketplaceListing> {
   await ensureMarketplaceColumns();
 
@@ -820,24 +845,53 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   const province = asText(input.province) || asText(row.profile_province);
   const area = asText(input.area) || asText(row.profile_location) || asText(row.profile_town_city);
 
+  const updateValues: unknown[] = [
+    input.userId,
+    input.assetId,
+    sellerPhone,
+    nextNotes,
+    askingPriceExVat,
+    sellerName,
+    sellerCompany,
+    sellerEmail,
+    province,
+    area,
+  ];
+  const updateAssignments = [
+    "marketplace_status = 'live'",
+    'seller_phone = $3',
+    'marketplace_notes = $4',
+    'marketplace_price_ex_vat = $5',
+    'marketplace_seller_name = $6',
+    "marketplace_seller_company = nullif($7, '')",
+    "marketplace_seller_email = nullif($8, '')",
+    "marketplace_province = nullif($9, '')",
+    "marketplace_area = nullif($10, '')",
+  ];
+  const incomingPhotos = Array.isArray(input.photos)
+    ? input.photos.map((entry) => safeImage(entry)).filter(Boolean)
+    : [];
+
+  if (incomingPhotos.length) {
+    const mergedPhotosJson = JSON.stringify(mergePhotoLists(buildPhotoList(row), incomingPhotos));
+
+    for (const column of getWritablePhotoColumns(row)) {
+      updateValues.push(mergedPhotosJson);
+      updateAssignments.push(`${column} = $${updateValues.length}::jsonb`);
+    }
+  }
+
+  updateAssignments.push('updated_at = now()');
+
   const updated = await db.query<MarketplaceAssetRow>(
     `
       update asset_register_items
       set
-        marketplace_status = 'live',
-        seller_phone = $3,
-        marketplace_notes = $4,
-        marketplace_price_ex_vat = $5,
-        marketplace_seller_name = $6,
-        marketplace_seller_company = nullif($7, ''),
-        marketplace_seller_email = nullif($8, ''),
-        marketplace_province = nullif($9, ''),
-        marketplace_area = nullif($10, ''),
-        updated_at = now()
+        ${updateAssignments.join(',\n        ')}
       where user_id = $1 and id = $2
       returning *
     `,
-    [input.userId, input.assetId, sellerPhone, nextNotes, askingPriceExVat, sellerName, sellerCompany, sellerEmail, province, area],
+    updateValues,
   );
 
   const updatedRow = updated.rows[0];
