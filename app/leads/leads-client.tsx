@@ -1614,6 +1614,7 @@ export default function LeadsClient() {
     const familyLabel = asText(lead.assetSnapshot.equipmentFamilyLabel) || asText(lead.assetSnapshot.kind) || 'Asset';
     const licenseStatus = readLeadLicenseStatusChoice(lead);
     const licenseRegistrationNumber = readLeadLicenseRegistrationNumber(lead);
+    const replacementPrice = snapshotReplacementPrice(lead.assetSnapshot);
 
     return (
       <div className={`${assetStyles.assetBody} ${styles.leadAssetBody}`} id={`lead-panel-${lead.id}`}>
@@ -1725,6 +1726,12 @@ export default function LeadsClient() {
                 </div>
               ) : null}
             </div>
+          </div>
+
+          <div className={assetStyles.assetReplacementPriceBubble}>
+            <span>Replacement Price</span>
+            <strong>{replacementPrice === null ? 'Not set' : formatCurrency(replacementPrice)}</strong>
+            <small>Excl. VAT</small>
           </div>
 
           {lead.ownerMessage ? (
