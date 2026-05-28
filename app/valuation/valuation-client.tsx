@@ -23,6 +23,7 @@ import {
 type Step = 1 | 2 | 3 | 4 | 5;
 type MethodKey = 'aim4price' | 'market';
 type FlowMode = 'exact_model' | 'generic_specs' | '';
+type FinalSaveIntent = 'asset-register' | 'marketplace';
 type GpsType = 'full-autosteer' | 'guidance-only';
 type ReplacementPriceBasis = 'aim4price' | 'user';
 type DepreciationMethodUsed = 'full_depreciation' | 'semi_depreciation' | 'percentage_depreciation';
@@ -694,6 +695,9 @@ export default function ValuationClient() {
   const [valuationLoading, setValuationLoading] = useState(false);
   const [replacementRecalculateLoading, setReplacementRecalculateLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [finalSaveIntent, setFinalSaveIntent] = useState<FinalSaveIntent | null>(null);
+  const [finalSaveError, setFinalSaveError] = useState('');
+  const [savedMarketplaceAssetId, setSavedMarketplaceAssetId] = useState<string | null>(null);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [guestValuationCount, setGuestValuationCount] = useState(0);
   const [marketplaceMode, setMarketplaceMode] = useState(false);
@@ -800,7 +804,7 @@ export default function ValuationClient() {
   const normalizedSignedInAccountType = normalizeAccountType(accountType);
   const isDealerAccount = normalizedSignedInAccountType === 'dealer';
   const canUseMarketplacePublishFlow = isSignedIn && (normalizedSignedInAccountType === 'owner' || normalizedSignedInAccountType === 'dealer');
-  const canSaveToAssetRegister = !isSignedIn || normalizedSignedInAccountType === 'owner';
+  const canSaveToAssetRegister = isSignedIn && normalizedSignedInAccountType === 'owner';
   useEffect(() => {
     const target = document.getElementById('valuation-wizard-card');
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -909,6 +913,9 @@ export default function ValuationClient() {
     setResultState(null);
     setSelectedMethod('aim4price');
     setReplacementPriceBasis('aim4price');
+    setFinalSaveIntent(null);
+    setFinalSaveError('');
+    setSavedMarketplaceAssetId(null);
 
     if (!selectedSector) {
       setFamiliesLoading(false);
@@ -953,6 +960,9 @@ export default function ValuationClient() {
     setResultState(null);
     setSelectedMethod('aim4price');
     setReplacementPriceBasis('aim4price');
+    setFinalSaveIntent(null);
+    setFinalSaveError('');
+    setSavedMarketplaceAssetId(null);
     setBrandSearch('');
     setBrandDropdownOpen(false);
     setBrandSlug('');
@@ -1096,6 +1106,9 @@ export default function ValuationClient() {
     setSelectedMethod('aim4price');
     setReplacementPriceBasis('aim4price');
     setReplacementPanelOpen(false);
+    setFinalSaveIntent(null);
+    setFinalSaveError('');
+    setSavedMarketplaceAssetId(null);
   }
 
   function resetDetailsFlow() {
@@ -1163,20 +1176,21 @@ export default function ValuationClient() {
   }
 
 
-  async function calculateGenericWithReplacementPrice(priceExVat: number) {
+  async function calculateGenericWithReplacementPrice(priceExVat: number, setError: (message: string) => void = setMessage) {
     if (!selectedSector || !selectedFamily || !selectedBrand) {
-      setMessage('Choose a sector, family and brand first.');
+      setError('Choose a sector, family and brand first.');
       return;
     }
 
     const validationMessage = validateDetails();
     if (validationMessage) {
-      setMessage(validationMessage);
+      setError(validationMessage);
       return;
     }
 
     setReplacementRecalculateLoading(true);
     setMessage('');
+    setError('');
 
     try {
       const response = await fetch('/api/generic-valuations', {
@@ -1202,29 +1216,31 @@ export default function ValuationClient() {
       setResultState({ kind: 'generic', result: data.result });
       setReplacementPriceBasis('user');
       setSelectedMethod('aim4price');
-      setReplacementPanelOpen(true);
+      setSavedMarketplaceAssetId(null);
+      setReplacementPanelOpen(!finalSaveIntent);
     } catch (error) {
       console.error(error);
-      setMessage(error instanceof Error ? error.message : 'Failed to recalculate with user replacement price.');
+      setError(error instanceof Error ? error.message : 'Failed to recalculate with user replacement price.');
     } finally {
       setReplacementRecalculateLoading(false);
     }
   }
 
-  async function calculateTractorWithReplacementPrice(priceExVat: number | null) {
+  async function calculateTractorWithReplacementPrice(priceExVat: number | null, setError: (message: string) => void = setMessage) {
     if (!selectedModel) {
-      setMessage('Choose an exact tractor model first.');
+      setError('Choose an exact tractor model first.');
       return;
     }
 
     const validationMessage = validateDetails();
     if (validationMessage) {
-      setMessage(validationMessage);
+      setError(validationMessage);
       return;
     }
 
     setReplacementRecalculateLoading(true);
     setMessage('');
+    setError('');
 
     try {
       const response = await fetch('/api/tractor-valuations', {
@@ -1248,10 +1264,11 @@ export default function ValuationClient() {
       setResultState({ kind: 'tractor', result: data.result });
       setReplacementPriceBasis(priceExVat ? 'user' : 'aim4price');
       setSelectedMethod('aim4price');
-      setReplacementPanelOpen(true);
+      setSavedMarketplaceAssetId(null);
+      setReplacementPanelOpen(!finalSaveIntent);
     } catch (error) {
       console.error(error);
-      setMessage(error instanceof Error ? error.message : 'Failed to recalculate tractor valuation.');
+      setError(error instanceof Error ? error.message : 'Failed to recalculate tractor valuation.');
     } finally {
       setReplacementRecalculateLoading(false);
     }
@@ -1277,6 +1294,9 @@ export default function ValuationClient() {
 
     setMessage('');
     setValuationLoading(true);
+    setFinalSaveIntent(null);
+    setFinalSaveError('');
+    setSavedMarketplaceAssetId(null);
 
     try {
       if (flowMode === 'exact_model' && selectedModel) {
@@ -1419,8 +1439,10 @@ export default function ValuationClient() {
       return true;
     }
 
-    setReplacementPanelOpen(true);
-    setError('Confirm a replacement price on the results page before saving this asset. Enter the replacement price, click Update and recalculate, then save again.');
+    if (!finalSaveIntent) {
+      setReplacementPanelOpen(true);
+    }
+    setError('A replacement price is required before this asset can be saved. Enter the replacement price, click Update and recalculate, then continue.');
     return false;
   }
 
@@ -1484,33 +1506,189 @@ export default function ValuationClient() {
     };
   }
 
-  function openMarketplacePublishModal() {
+  function hasPendingReplacementPriceInput(): boolean {
+    const typedReplacementPrice = parseMoneyInput(userReplacementPrice);
+    if (typedReplacementPrice === null) return false;
+
+    const currentReplacementPrice = getCurrentResultReplacementPriceExVat();
+    if (currentReplacementPrice === null) return true;
+
+    return Math.round(typedReplacementPrice) !== Math.round(currentReplacementPrice);
+  }
+
+  function openFinalSaveModal(intent: FinalSaveIntent) {
     if (!resultState) {
-      setMessage('Run an estimate before sending to marketplace.');
+      setMessage('Run an estimate before saving this valuation.');
       return;
     }
 
     if (!isSignedIn) {
-      setMessage('Create an account before sending an estimate to Marketplace.');
+      setMessage('Create an account or sign in to save this valuation to your Asset Register or send it to Marketplace.');
       return;
     }
 
-    if (!canUseMarketplacePublishFlow) {
+    if (intent === 'asset-register' && !canSaveToAssetRegister) {
+      setMessage('Only owner accounts can save valuations to the Asset Register.');
+      return;
+    }
+
+    if (intent === 'marketplace' && !canUseMarketplacePublishFlow) {
       setMessage('Marketplace listings are only available for owner, dealer and auctioneer accounts.');
       return;
     }
 
     if (headlineValue === null) {
-      setMessage('Choose an available value before sending to marketplace.');
+      setMessage('Choose an available valuation method first.');
       return;
     }
 
-    if (!ensureReplacementPriceBeforeFinalSave(setMessage)) {
+    const currentReplacementPrice = getCurrentResultReplacementPriceExVat();
+
+    setMessage('');
+    setFinalSaveError('');
+    setFinalSaveIntent(intent);
+    setReplacementPanelOpen(false);
+
+    if (!userReplacementPrice.trim() && currentReplacementPrice !== null && Number.isFinite(currentReplacementPrice) && currentReplacementPrice > 0) {
+      setUserReplacementPrice(String(Math.round(currentReplacementPrice)));
+    }
+  }
+
+  function closeFinalSaveModal() {
+    if (saveLoading || replacementRecalculateLoading) return;
+    setFinalSaveIntent(null);
+    setFinalSaveError('');
+  }
+
+  async function recalculateFinalReplacementPrice() {
+    const nextReplacementPrice = parseMoneyInput(userReplacementPrice);
+
+    if (!resultState) {
+      setFinalSaveError('Run an estimate before updating the replacement price.');
       return;
     }
 
-    setMarketplacePublishError('');
-    setMarketplaceDraft(buildDefaultMarketplaceDraft());
+    if (nextReplacementPrice === null) {
+      setFinalSaveError('Enter a valid replacement price excluding VAT.');
+      return;
+    }
+
+    setFinalSaveError('');
+
+    if (resultState.kind === 'generic') {
+      await calculateGenericWithReplacementPrice(Math.round(nextReplacementPrice), setFinalSaveError);
+    } else {
+      await calculateTractorWithReplacementPrice(Math.round(nextReplacementPrice), setFinalSaveError);
+    }
+  }
+
+  async function saveCurrentValuationToRegister(options: {
+    saveForMarketplace?: boolean;
+    photos?: string[];
+    redirectToAssetRegister?: boolean;
+    setError?: (message: string) => void;
+  } = {}): Promise<SaveValuationRunApiResponse | null> {
+    const setError = options.setError ?? setMessage;
+
+    if (!resultState) {
+      setError('Run a valuation before saving.');
+      return null;
+    }
+
+    if (!isSignedIn) {
+      setError('Create an account or sign in to save this valuation to your Asset Register or send it to Marketplace.');
+      return null;
+    }
+
+    if (options.saveForMarketplace) {
+      if (!canUseMarketplacePublishFlow) {
+        setError('Marketplace listings are only available for owner, dealer and auctioneer accounts.');
+        return null;
+      }
+    } else if (!canSaveToAssetRegister) {
+      setError('Only owner accounts can save valuations to the Asset Register.');
+      return null;
+    }
+
+    const selectedValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
+    if (selectedValue === null) {
+      setError('Choose an available valuation method first.');
+      return null;
+    }
+
+    if (hasPendingReplacementPriceInput()) {
+      setError('You changed the replacement price input. Click Update and recalculate before saving or listing this asset.');
+      return null;
+    }
+
+    if (!ensureReplacementPriceBeforeFinalSave(setError)) {
+      return null;
+    }
+
+    setSaveLoading(true);
+    setMessage('');
+    setError('');
+
+    try {
+      const response = await fetch('/api/valuation-runs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(
+          buildValuationSavePayload({
+            saveForMarketplace: options.saveForMarketplace,
+            photos: options.photos,
+          }),
+        ),
+      });
+      const data = (await response.json()) as SaveValuationRunApiResponse;
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? 'Failed to save valuation.');
+      }
+
+      if (options.redirectToAssetRegister) {
+        router.push('/asset-register');
+      }
+
+      return data;
+    } catch (error) {
+      console.error(error);
+      setError(error instanceof Error ? error.message : 'Failed to save valuation.');
+      return null;
+    } finally {
+      setSaveLoading(false);
+    }
+  }
+
+  async function confirmFinalSaveAction() {
+    if (!finalSaveIntent) return;
+
+    const isMarketplaceSave = finalSaveIntent === 'marketplace';
+    const saved = await saveCurrentValuationToRegister({
+      saveForMarketplace: isMarketplaceSave,
+      redirectToAssetRegister: !isMarketplaceSave,
+      setError: setFinalSaveError,
+    });
+
+    if (!saved) return;
+
+    if (isMarketplaceSave) {
+      if (!saved.assetId) {
+        setFinalSaveError('The valuation saved, but no asset id was returned for the marketplace listing.');
+        return;
+      }
+
+      setSavedMarketplaceAssetId(saved.assetId);
+      setFinalSaveIntent(null);
+      setFinalSaveError('');
+      setMarketplacePublishError('');
+      setMarketplaceDraft(buildDefaultMarketplaceDraft());
+    }
+  }
+
+  function openMarketplacePublishModal() {
+    openFinalSaveModal('marketplace');
   }
 
   function closeMarketplaceIntroModal() {
@@ -1655,6 +1833,11 @@ export default function ValuationClient() {
       return;
     }
 
+    if (hasPendingReplacementPriceInput()) {
+      setMarketplacePublishError('You changed the replacement price input. Click Update and recalculate before publishing this listing.');
+      return;
+    }
+
     if (!ensureReplacementPriceBeforeFinalSave(setMarketplacePublishError)) {
       return;
     }
@@ -1664,16 +1847,21 @@ export default function ValuationClient() {
 
     try {
       const photoUrls = await uploadMarketplacePhotos();
-      const saveResponse = await fetch('/api/valuation-runs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(buildValuationSavePayload({ saveForMarketplace: true, photos: photoUrls })),
-      });
-      const saved = (await saveResponse.json()) as SaveValuationRunApiResponse;
+      let assetId = savedMarketplaceAssetId;
 
-      if (!saveResponse.ok || !saved.ok || !saved.assetId) {
-        throw new Error(saved.error ?? 'Failed to prepare this marketplace asset.');
+      if (!assetId) {
+        const saved = await saveCurrentValuationToRegister({
+          saveForMarketplace: true,
+          photos: photoUrls,
+          setError: setMarketplacePublishError,
+        });
+
+        if (!saved?.assetId) {
+          throw new Error('Failed to prepare this marketplace asset.');
+        }
+
+        assetId = saved.assetId;
+        setSavedMarketplaceAssetId(saved.assetId);
       }
 
       const publishResponse = await fetch('/api/marketplace', {
@@ -1681,7 +1869,7 @@ export default function ValuationClient() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          assetId: saved.assetId,
+          assetId,
           askingPriceExVat,
           marketplaceNotes: marketplaceDraft.marketplaceNotes,
           sellerPhone: marketplaceDraft.sellerPhone,
@@ -1690,6 +1878,7 @@ export default function ValuationClient() {
           sellerEmail: marketplaceDraft.sellerEmail,
           province: marketplaceDraft.province,
           area: marketplaceDraft.area,
+          photos: photoUrls,
         }),
       });
       const published = (await publishResponse.json()) as MarketplaceApiResponse;
@@ -1698,9 +1887,10 @@ export default function ValuationClient() {
         throw new Error(published.error ?? 'Failed to publish this marketplace listing.');
       }
 
-      const listingReference = published.listing?.id ?? published.listing?.sourceAssetId ?? published.assetId ?? saved.assetId;
+      const listingReference = published.listing?.id ?? published.listing?.sourceAssetId ?? published.assetId ?? assetId;
       clearMarketplacePhotoFiles();
       setMarketplaceDraft(null);
+      setSavedMarketplaceAssetId(null);
       router.push(`/marketplace?listing=${encodeURIComponent(String(listingReference))}`);
     } catch (error) {
       console.error(error);
@@ -1710,54 +1900,12 @@ export default function ValuationClient() {
     }
   }
 
-  async function saveToAssetRegister() {
-    if (!resultState) {
-      setMessage('Run a valuation before saving.');
-      return;
-    }
+  function saveToAssetRegister() {
+    openFinalSaveModal('asset-register');
+  }
 
-    if (!isSignedIn) {
-      setMessage('Please create an account or log in to save to your asset register.');
-      router.push('/auth#signup');
-      return;
-    }
-
-    if (normalizedSignedInAccountType !== 'owner') {
-      setMessage('Dealer and auctioneer accounts can publish from Get Estimate, but Asset Register saving is owner-only.');
-      return;
-    }
-
-    const selectedValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
-    if (selectedValue === null) {
-      setMessage('Choose an available valuation method first.');
-      return;
-    }
-
-    if (!ensureReplacementPriceBeforeFinalSave(setMessage)) {
-      return;
-    }
-
-    setSaveLoading(true);
-    setMessage('');
-
-    try {
-      const payload = buildValuationSavePayload();
-
-      const response = await fetch('/api/valuation-runs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      });
-      const data = (await response.json()) as SaveValuationRunApiResponse;
-      if (!response.ok || !data.ok) throw new Error(data.error ?? 'Failed to save valuation.');
-      router.push('/asset-register');
-    } catch (error) {
-      console.error(error);
-      setMessage(error instanceof Error ? error.message : 'Failed to save valuation.');
-    } finally {
-      setSaveLoading(false);
-    }
+  function saveAndSendToMarketplace() {
+    openFinalSaveModal('marketplace');
   }
 
   function handleNext() {
@@ -2877,7 +3025,7 @@ export default function ValuationClient() {
       ? genericSelectedCalculation?.valuationMidExVat ?? null
       : tractorResult?.aim4priceValueExVat ?? null;
     const marketCount = isGeneric ? genericResult?.marketAverageCount ?? 0 : tractorResult?.marketCount ?? 0;
-    const userPriceInput = toNumberOrNull(userReplacementPrice);
+    const userPriceInput = parseMoneyInput(userReplacementPrice);
     const confidenceContext: ConfidenceContext = {
       selectedMethod,
       yearKnown: !yearModelUnknown,
@@ -2913,6 +3061,13 @@ export default function ValuationClient() {
     const replacementBasisText = isGeneric ? genericReplacementBasisText : tractorReplacementBasisText;
     const marketEvidenceInfo = 'Market evidence only uses listings within 2 model years and 1,000 hours/usage of your machine. Confidence: Low = no listings, Medium = 3–5 listings, High = more than 5 listings.';
     const resultValueSizeClass = getResultValueSizeClass(headlineValue);
+    const actionRestrictionNote = !canSaveToAssetRegister && canUseMarketplacePublishFlow
+      ? 'Dealer and auctioneer accounts can save and send a valuation to Marketplace. Asset Register-only saving is owner-only.'
+      : canSaveToAssetRegister && !canUseMarketplacePublishFlow
+        ? 'This account can save valuations to the Asset Register, but cannot publish marketplace listings.'
+        : !canSaveToAssetRegister && !canUseMarketplacePublishFlow
+          ? 'This account type cannot save valuations or publish marketplace listings from Get Estimate.'
+          : '';
 
     return (
       <div className={styles.resultsLayout}>
@@ -2964,6 +3119,45 @@ export default function ValuationClient() {
               <strong>{money(marketValue)}</strong>
               <small>{marketCount > 0 ? `${marketCount} usable market listing${marketCount === 1 ? '' : 's'}` : 'No matching listings yet'}</small>
             </button>
+          </section>
+
+          <section className={styles.resultFinalActions}>
+            <div className={styles.resultFinalActionsCopy}>
+              <span>Final actions</span>
+              <h3>Save this valuation</h3>
+              <p>Review the result first. Then save it to your Asset Register or save it and continue to the Marketplace listing flow.</p>
+            </div>
+
+            {isSignedIn ? (
+              <>
+                <div className={styles.resultFinalActionsButtons}>
+                  <button
+                    type="button"
+                    className={styles.resultPrimaryActionButton}
+                    onClick={saveToAssetRegister}
+                    disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
+                  >
+                    {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to Asset Register'}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.resultAlternateActionButton}
+                    onClick={saveAndSendToMarketplace}
+                    disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || !canUseMarketplacePublishFlow || headlineValue === null}
+                  >
+                    {saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : 'Save & Send to Marketplace'}
+                  </button>
+                </div>
+                {actionRestrictionNote ? <p className={styles.resultActionNote}>{actionRestrictionNote}</p> : null}
+              </>
+            ) : (
+              <div className={styles.resultSignedOutNotice}>
+                <p>Create an account or sign in to save this valuation to your Asset Register or send it to Marketplace.</p>
+                <button type="button" onClick={() => router.push('/auth#signup')}>
+                  Create account or sign in
+                </button>
+              </div>
+            )}
           </section>
 
           {(isGeneric && genericResult) || tractorResult ? (
@@ -3178,6 +3372,17 @@ export default function ValuationClient() {
     return renderResultStep();
   }
 
+  const finalSaveReplacementPrice = getCurrentResultReplacementPriceExVat();
+  const finalSaveInputPrice = parseMoneyInput(userReplacementPrice);
+  const finalSaveHasPendingReplacementPrice = hasPendingReplacementPriceInput();
+  const finalSaveCanConfirm =
+    finalSaveReplacementPrice !== null &&
+    Number.isFinite(finalSaveReplacementPrice) &&
+    finalSaveReplacementPrice > 0 &&
+    !finalSaveHasPendingReplacementPrice;
+  const finalSaveTitle = finalSaveIntent === 'marketplace' ? 'Save & Send to Marketplace' : 'Save to Asset Register';
+  const finalSaveCta = finalSaveIntent === 'marketplace' ? 'Save and continue to Marketplace' : 'Confirm and save';
+
   return (
     <main className={styles.page}>
       <AppHeader active="valuation" />
@@ -3218,30 +3423,10 @@ export default function ValuationClient() {
                     type="button"
                     className={styles.secondaryButton}
                     onClick={resetToSectorSelection}
-                    disabled={saveLoading || isPublishingMarketplace}
+                    disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading}
                   >
                     New valuation
                   </button>
-                  {marketplaceMode && canUseMarketplacePublishFlow ? (
-                    <button
-                      type="button"
-                      className={styles.primaryButton}
-                      onClick={openMarketplacePublishModal}
-                      disabled={saveLoading || isPublishingMarketplace || !resultState}
-                    >
-                      {isPublishingMarketplace ? 'Publishing...' : 'Send to Marketplace'}
-                    </button>
-                  ) : null}
-                  {canSaveToAssetRegister ? (
-                    <button
-                      type="button"
-                      className={marketplaceMode ? styles.secondaryButton : styles.primaryButton}
-                      onClick={saveToAssetRegister}
-                      disabled={saveLoading || isPublishingMarketplace || !resultState}
-                    >
-                      {saveLoading ? 'Saving...' : 'Save to Asset Register'}
-                    </button>
-                  ) : null}
                 </div>
               ) : (
                 <button
@@ -3257,6 +3442,98 @@ export default function ValuationClient() {
           </div>
         </section>
       </div>
+
+      {finalSaveIntent ? (
+        <div className={styles.finalSaveOverlay} onClick={closeFinalSaveModal}>
+          <section
+            className={styles.finalSaveModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="final-save-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.finalSaveClose}
+              onClick={closeFinalSaveModal}
+              aria-label="Close final save step"
+              disabled={saveLoading || replacementRecalculateLoading}
+            >
+              ×
+            </button>
+
+            <div className={styles.finalSaveHeader}>
+              <span>Final save step</span>
+              <h2 id="final-save-title">{finalSaveTitle}</h2>
+              <p>
+                The saved/model replacement price is used by default. Change it only if it needs to become the official saved replacement price.
+              </p>
+            </div>
+
+            <div className={styles.finalSaveSummaryGrid}>
+              <div className={styles.finalSaveSummaryCard}>
+                <span>Current value excl. VAT</span>
+                <strong>{money(headlineValue)}</strong>
+              </div>
+              <div className={styles.finalSaveSummaryCard}>
+                <span>Replacement price excl. VAT</span>
+                <strong>{money(finalSaveReplacementPrice)}</strong>
+              </div>
+            </div>
+
+            <div className={styles.finalReplacementPanel}>
+              <label className={styles.finalReplacementField}>
+                <span>Confirm or update replacement price excl. VAT</span>
+                <div className={styles.finalReplacementCurrencyInput}>
+                  <span>R</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={userReplacementPrice}
+                    onChange={(event) => setUserReplacementPrice(event.target.value)}
+                    placeholder={finalSaveReplacementPrice ? String(Math.round(finalSaveReplacementPrice)) : 'Enter replacement price'}
+                  />
+                </div>
+              </label>
+              <button
+                type="button"
+                className={styles.finalReplacementRecalculateButton}
+                onClick={recalculateFinalReplacementPrice}
+                disabled={!finalSaveInputPrice || replacementRecalculateLoading || saveLoading}
+              >
+                {replacementRecalculateLoading ? 'Recalculating...' : 'Update and recalculate'}
+              </button>
+            </div>
+
+            {finalSaveHasPendingReplacementPrice ? (
+              <p className={styles.finalSaveWarning}>
+                You changed the replacement price input. Click Update and recalculate before saving or listing this asset.
+              </p>
+            ) : null}
+
+            {finalSaveError ? <p className={styles.finalSaveError}>{finalSaveError}</p> : null}
+
+            <div className={styles.finalSaveActions}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={closeFinalSaveModal}
+                disabled={saveLoading || replacementRecalculateLoading}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={confirmFinalSaveAction}
+                disabled={saveLoading || replacementRecalculateLoading || !finalSaveCanConfirm}
+              >
+                {saveLoading ? 'Saving...' : finalSaveCta}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {marketplaceMode && marketplaceIntroOpen ? (
         <div className={styles.marketplaceIntroOverlay} onClick={closeMarketplaceIntroModal}>
