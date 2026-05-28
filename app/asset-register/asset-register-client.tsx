@@ -6051,7 +6051,7 @@ export default function AssetRegisterClient() {
       ) : null}
 
       {isSummaryModalOpen ? (
-        <div className={styles.modalOverlay}>
+        <div className={`${styles.modalOverlay} ${styles.summaryModalOverlay}`}>
           <div className={styles.modalBackdrop} onClick={closeSummaryModal} />
 
           <div className={`${styles.modalCard} ${styles.summaryModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-register-summary-title">

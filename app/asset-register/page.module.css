@@ -19228,3 +19228,162 @@
     text-align: right;
   }
 }
+
+/* === Register summary modal: viewport-safe internal scroll fix === */
+.summaryModalOverlay {
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  padding: 24px !important;
+}
+
+.summaryModal {
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(100%, 1160px) !important;
+  max-height: calc(100vh - 48px) !important;
+  max-height: calc(100dvh - 48px) !important;
+  margin: auto !important;
+  overflow: hidden !important;
+  padding: clamp(1.45rem, 2vw, 1.9rem) !important;
+}
+
+.summaryModalHeader {
+  flex: 0 0 auto !important;
+  margin: 0 0 0.95rem !important;
+  padding: 0 0 0.95rem !important;
+}
+
+.summaryModalBody {
+  display: grid !important;
+  flex: 1 1 auto !important;
+  gap: 1rem !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding: 0.05rem 0.86rem 0.35rem 0.05rem !important;
+  margin-right: -0.36rem !important;
+  scrollbar-gutter: stable !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(22, 83, 64, 0.56) rgba(239, 244, 247, 0.98) !important;
+}
+
+.summaryModalBody::-webkit-scrollbar {
+  width: 0.82rem;
+}
+
+.summaryModalBody::-webkit-scrollbar-track {
+  margin: 0.2rem 0 0.35rem;
+  border-radius: 999px;
+  background: rgba(239, 244, 247, 0.98);
+  border-left: 0.22rem solid transparent;
+  border-right: 0.22rem solid transparent;
+  background-clip: padding-box;
+}
+
+.summaryModalBody::-webkit-scrollbar-thumb {
+  border: 0.22rem solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(26, 90, 69, 0.62) 0%, rgba(18, 66, 51, 0.82) 100%);
+  background-clip: padding-box;
+}
+
+.summaryValueTableHeader,
+.summaryValueTableRow {
+  grid-template-columns: minmax(190px, 1.25fr) minmax(82px, 0.34fr) minmax(170px, 0.72fr) minmax(170px, 0.72fr) !important;
+  column-gap: 0.95rem !important;
+}
+
+.summaryValueTableHeader {
+  min-height: 2.78rem !important;
+  padding: 0 1.45rem !important;
+}
+
+.summaryValueTableRows .summaryValueTableRow {
+  min-height: 3.34rem !important;
+  padding: 0.66rem 1.45rem !important;
+}
+
+.summaryReplacementPanel {
+  gap: 1rem !important;
+  padding: 1.05rem 1.15rem !important;
+}
+
+.summaryReplacementTableHeader,
+.summaryReplacementTableRow {
+  grid-template-columns: minmax(125px, 0.42fr) repeat(2, minmax(210px, 1fr)) !important;
+}
+
+.summaryReplacementTableRow {
+  min-height: 4.1rem !important;
+}
+
+@media (max-width: 1120px) {
+  .summaryModal {
+    width: min(100%, calc(100vw - 48px)) !important;
+  }
+
+  .summaryReplacementTableHeader,
+  .summaryReplacementTableRow {
+    grid-template-columns: minmax(125px, 0.42fr) repeat(2, minmax(190px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 860px) {
+  .summaryModalOverlay {
+    padding: 12px !important;
+  }
+
+  .summaryModal {
+    width: min(100%, calc(100vw - 24px)) !important;
+    max-height: calc(100vh - 24px) !important;
+    max-height: calc(100dvh - 24px) !important;
+    overflow: hidden !important;
+    padding: 1.1rem !important;
+  }
+
+  .summaryModalHeader {
+    margin-bottom: 0.85rem !important;
+    padding-bottom: 0.85rem !important;
+  }
+
+  .summaryModalBody {
+    gap: 0.9rem !important;
+    padding-right: 0.68rem !important;
+    margin-right: -0.28rem !important;
+  }
+
+  .summaryValueTableRows .summaryValueTableRow {
+    padding: 0.85rem 1rem !important;
+  }
+
+  .summaryReplacementTableHeader,
+  .summaryReplacementTableRow {
+    grid-template-columns: minmax(112px, 0.42fr) repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .summaryModalOverlay {
+    padding: 8px !important;
+  }
+
+  .summaryModal {
+    width: min(100%, calc(100vw - 16px)) !important;
+    max-height: calc(100vh - 16px) !important;
+    max-height: calc(100dvh - 16px) !important;
+    padding: 0.95rem !important;
+  }
+
+  .summaryModalBody {
+    padding-right: 0.52rem !important;
+    margin-right: -0.2rem !important;
+  }
+
+  .summaryReplacementTableRow {
+    grid-template-columns: 1fr !important;
+  }
+}
