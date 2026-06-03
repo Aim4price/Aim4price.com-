@@ -1,5 +1,6 @@
 -- Multi Asset Register support.
--- Creates one default register per owner and links saved assets to a register.
+-- Creates one default register per owner, links saved assets to a register,
+-- and stores one selected register per account.
 -- Safe to run more than once.
 
 create extension if not exists pgcrypto;
@@ -12,6 +13,7 @@ create table if not exists public.asset_registers (
   phone text,
   address_line_1 text,
   is_primary boolean not null default false,
+  is_selected boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -23,6 +25,7 @@ alter table public.asset_registers
   add column if not exists phone text,
   add column if not exists address_line_1 text,
   add column if not exists is_primary boolean not null default false,
+  add column if not exists is_selected boolean not null default false,
   add column if not exists created_at timestamptz not null default now(),
   add column if not exists updated_at timestamptz not null default now();
 
@@ -36,6 +39,7 @@ insert into public.asset_registers (
   phone,
   address_line_1,
   is_primary,
+  is_selected,
   created_at,
   updated_at
 )
@@ -45,6 +49,7 @@ select
   '' as email,
   coalesce(ap.phone, '') as phone,
   concat_ws(', ', nullif(trim(coalesce(ap.address_line_1, '')), ''), nullif(trim(coalesce(ap.address_line_2, '')), ''), nullif(trim(coalesce(ap.town_city, '')), ''), nullif(trim(coalesce(ap.province, '')), '')) as address_line_1,
+  true,
   true,
   now(),
   now()
@@ -69,9 +74,22 @@ with first_register as (
 )
 update public.asset_registers ar
 set is_primary = (ar.id = first_register.id),
-    updated_at = now()
+    updated_at = case when ar.id = first_register.id then now() else ar.updated_at end
 from first_register
 where ar.user_id = first_register.user_id;
+
+with selected_register as (
+  select distinct on (user_id)
+    user_id,
+    id
+  from public.asset_registers
+  order by user_id, is_selected desc, is_primary desc, updated_at desc nulls last, created_at asc, id asc
+)
+update public.asset_registers ar
+set is_selected = (ar.id = selected_register.id),
+    updated_at = case when ar.id = selected_register.id then now() else ar.updated_at end
+from selected_register
+where ar.user_id = selected_register.user_id;
 
 update public.asset_register_items ai
 set register_id = ar.id
@@ -85,6 +103,9 @@ create index if not exists idx_asset_registers_user_created
 
 create index if not exists idx_asset_registers_user_primary
   on public.asset_registers(user_id, is_primary);
+
+create index if not exists idx_asset_registers_user_selected
+  on public.asset_registers(user_id, is_selected);
 
 create index if not exists idx_asset_register_items_register
   on public.asset_register_items(user_id, register_id);
