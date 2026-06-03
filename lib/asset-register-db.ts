@@ -2,7 +2,7 @@ import { getDb } from './db';
 import {
   ensureAssetRegisterTables,
   getAssetRegisterForUser,
-  getOrCreatePrimaryAssetRegister,
+  getSelectedAssetRegister,
 } from './asset-registers';
 import type { CabType, ConditionKey, DriveType, TractorType } from './tractor-data';
 import type { MethodKey } from './valuation-runs';
@@ -1467,7 +1467,7 @@ export async function listAssetRegisterItems(userId: string, registerId?: string
   const db = getDb();
   const activeRegister = registerId
     ? await getAssetRegisterForUser(userId, registerId)
-    : await getOrCreatePrimaryAssetRegister(userId);
+    : await getSelectedAssetRegister(userId);
 
   if (!activeRegister) {
     throw new Error('ASSET_REGISTER_NOT_FOUND');
@@ -1503,7 +1503,7 @@ export async function createManualAssetRegisterItem(
   const db = getDb();
   const activeRegister = input.registerId
     ? await getAssetRegisterForUser(userId, input.registerId)
-    : await getOrCreatePrimaryAssetRegister(userId);
+    : await getSelectedAssetRegister(userId);
 
   if (!activeRegister) {
     throw new Error('ASSET_REGISTER_NOT_FOUND');
@@ -1907,7 +1907,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   const db = getDb();
   const activeRegister = input.registerId
     ? await getAssetRegisterForUser(input.userId, input.registerId)
-    : await getOrCreatePrimaryAssetRegister(input.userId);
+    : await getSelectedAssetRegister(input.userId);
 
   if (!activeRegister) {
     throw new Error('ASSET_REGISTER_NOT_FOUND');
@@ -2010,7 +2010,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   const db = getDb();
   const activeRegister = input.registerId
     ? await getAssetRegisterForUser(input.userId, input.registerId)
-    : await getOrCreatePrimaryAssetRegister(input.userId);
+    : await getSelectedAssetRegister(input.userId);
 
   if (!activeRegister) {
     throw new Error('ASSET_REGISTER_NOT_FOUND');

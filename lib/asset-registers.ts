@@ -8,6 +8,7 @@ export type AssetRegisterSummary = {
   phone: string;
   addressLine1: string;
   isPrimary: boolean;
+  isSelected: boolean;
   assetCount: number;
   totalValue: number;
   totalReplacementPrice: number;
@@ -23,6 +24,12 @@ export type AssetRegisterInput = {
   address?: string | null;
 };
 
+export type DeleteAssetRegisterResult = {
+  deletedRegisterId: string;
+  movedCount: number;
+  selectedRegister: AssetRegisterSummary;
+};
+
 type AssetRegisterRow = {
   id: string;
   user_id: string;
@@ -31,6 +38,7 @@ type AssetRegisterRow = {
   phone: string | null;
   address_line_1: string | null;
   is_primary: boolean | null;
+  is_selected: boolean | null;
   created_at: string | Date | null;
   updated_at: string | Date | null;
   asset_count?: string | number | null;
@@ -48,6 +56,14 @@ type AccountProfileRow = {
   address_line_2: string | null;
   town_city: string | null;
   province: string | null;
+};
+
+type RegisterIdRow = {
+  id: string;
+};
+
+type CountRow = {
+  count: string | number | null;
 };
 
 let assetRegisterTablesPromise: Promise<void> | null = null;
@@ -98,6 +114,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterSummary {
     phone: cleanText(row.phone),
     addressLine1: cleanText(row.address_line_1),
     isPrimary: Boolean(row.is_primary),
+    isSelected: Boolean(row.is_selected),
     assetCount: Math.max(0, Math.round(numberValue(row.asset_count))),
     totalValue: Math.round(numberValue(row.total_value)),
     totalReplacementPrice: Math.round(numberValue(row.total_replacement_price)),
@@ -120,6 +137,7 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
       phone text,
       address_line_1 text,
       is_primary boolean not null default false,
+      is_selected boolean not null default false,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     )
@@ -133,6 +151,7 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
       add column if not exists phone text,
       add column if not exists address_line_1 text,
       add column if not exists is_primary boolean not null default false,
+      add column if not exists is_selected boolean not null default false,
       add column if not exists created_at timestamptz not null default now(),
       add column if not exists updated_at timestamptz not null default now()
   `);
@@ -150,6 +169,11 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
   await db.query(`
     create index if not exists idx_asset_registers_user_primary
       on public.asset_registers(user_id, is_primary)
+  `);
+
+  await db.query(`
+    create index if not exists idx_asset_registers_user_selected
+      on public.asset_registers(user_id, is_selected)
   `);
 
   await db.query(`
@@ -216,7 +240,56 @@ async function readProfileDefaults(userId: string): Promise<{
   };
 }
 
-async function insertAssetRegister(userId: string, input: Required<Pick<AssetRegisterInput, 'businessName'>> & AssetRegisterInput, isPrimary: boolean): Promise<AssetRegisterSummary> {
+async function setSinglePrimaryRegister(userId: string, registerId: string): Promise<void> {
+  const db = getDb();
+  await db.query(
+    `
+      update public.asset_registers
+      set is_primary = (id::text = $2),
+          updated_at = case when id::text = $2 then now() else updated_at end
+      where user_id = $1
+    `,
+    [userId, registerId],
+  );
+}
+
+async function setSingleSelectedRegister(userId: string, registerId: string): Promise<void> {
+  const db = getDb();
+  await db.query(
+    `
+      update public.asset_registers
+      set is_selected = (id::text = $2),
+          updated_at = case when id::text = $2 then now() else updated_at end
+      where user_id = $1
+    `,
+    [userId, registerId],
+  );
+}
+
+async function normalizeSelectedRegister(userId: string, fallbackRegisterId: string): Promise<string> {
+  const db = getDb();
+  const selected = await db.query<RegisterIdRow>(
+    `
+      select id::text as id
+      from public.asset_registers
+      where user_id = $1 and is_selected = true
+      order by updated_at desc nulls last, created_at desc nulls last, id desc
+      limit 1
+    `,
+    [userId],
+  );
+
+  const selectedId = cleanText(selected.rows[0]?.id) || fallbackRegisterId;
+  await setSingleSelectedRegister(userId, selectedId);
+  return selectedId;
+}
+
+async function insertAssetRegister(
+  userId: string,
+  input: Required<Pick<AssetRegisterInput, 'businessName'>> & AssetRegisterInput,
+  isPrimary: boolean,
+  isSelected = false,
+): Promise<AssetRegisterSummary> {
   const db = getDb();
   await ensureAssetRegisterTables();
 
@@ -234,10 +307,11 @@ async function insertAssetRegister(userId: string, input: Required<Pick<AssetReg
         phone,
         address_line_1,
         is_primary,
+        is_selected,
         created_at,
         updated_at
       )
-      values ($1, $2, $3, $4, $5, $6, now(), now())
+      values ($1, $2, $3, $4, $5, $6, $7, now(), now())
       returning
         id,
         user_id,
@@ -246,13 +320,14 @@ async function insertAssetRegister(userId: string, input: Required<Pick<AssetReg
         phone,
         address_line_1,
         is_primary,
+        is_selected,
         created_at,
         updated_at,
         0::integer as asset_count,
         0::numeric as total_value,
         0::numeric as total_replacement_price
     `,
-    [userId, businessName, email, phone, addressLine1, isPrimary],
+    [userId, businessName, email, phone, addressLine1, isPrimary, isSelected],
   );
 
   return mapAssetRegisterRow(result.rows[0]);
@@ -272,6 +347,7 @@ export async function getOrCreatePrimaryAssetRegister(userId: string): Promise<A
         phone,
         address_line_1,
         is_primary,
+        is_selected,
         created_at,
         updated_at,
         0::integer as asset_count,
@@ -298,6 +374,7 @@ export async function getOrCreatePrimaryAssetRegister(userId: string): Promise<A
           phone,
           address_line_1,
           is_primary,
+          is_selected,
           created_at,
           updated_at,
           0::integer as asset_count,
@@ -313,14 +390,7 @@ export async function getOrCreatePrimaryAssetRegister(userId: string): Promise<A
 
     if (existingAny.rows[0]) {
       const firstId = String(existingAny.rows[0].id);
-      await db.query(
-        `
-          update public.asset_registers
-          set is_primary = (id::text = $2), updated_at = now()
-          where user_id = $1
-        `,
-        [userId, firstId],
-      );
+      await setSinglePrimaryRegister(userId, firstId);
       primary = { ...mapAssetRegisterRow(existingAny.rows[0]), isPrimary: true };
     }
   }
@@ -336,6 +406,7 @@ export async function getOrCreatePrimaryAssetRegister(userId: string): Promise<A
         addressLine1: defaults.addressLine1,
       },
       true,
+      true,
     );
   }
 
@@ -348,11 +419,13 @@ export async function getOrCreatePrimaryAssetRegister(userId: string): Promise<A
     [userId, primary.id],
   ).catch(() => undefined);
 
-  return primary;
+  const selectedId = await normalizeSelectedRegister(userId, primary.id);
+  return { ...primary, isSelected: selectedId === primary.id };
 }
 
 export async function getAssetRegisterForUser(userId: string, registerId: string): Promise<AssetRegisterSummary | null> {
   const db = getDb();
+
   await getOrCreatePrimaryAssetRegister(userId);
 
   const result = await db.query<AssetRegisterRow>(
@@ -365,6 +438,7 @@ export async function getAssetRegisterForUser(userId: string, registerId: string
         ar.phone,
         ar.address_line_1,
         ar.is_primary,
+        ar.is_selected,
         ar.created_at,
         ar.updated_at,
         count(ai.id)::integer as asset_count,
@@ -384,6 +458,46 @@ export async function getAssetRegisterForUser(userId: string, registerId: string
   return result.rows[0] ? mapAssetRegisterRow(result.rows[0]) : null;
 }
 
+export async function getSelectedAssetRegister(userId: string): Promise<AssetRegisterSummary> {
+  const db = getDb();
+  const primary = await getOrCreatePrimaryAssetRegister(userId);
+
+  const result = await db.query<AssetRegisterRow>(
+    `
+      select
+        ar.id,
+        ar.user_id,
+        ar.business_name,
+        ar.email,
+        ar.phone,
+        ar.address_line_1,
+        ar.is_primary,
+        ar.is_selected,
+        ar.created_at,
+        ar.updated_at,
+        count(ai.id)::integer as asset_count,
+        coalesce(sum(coalesce(ai.value, ai.selected_value_ex_vat, 0)), 0)::numeric as total_value,
+        coalesce(sum(coalesce(ai.replacement_price_used_ex_vat, ai.user_replacement_price_ex_vat, 0)), 0)::numeric as total_replacement_price
+      from public.asset_registers ar
+      left join public.asset_register_items ai
+        on ai.user_id = ar.user_id
+       and ai.register_id = ar.id
+      where ar.user_id = $1 and ar.is_selected = true
+      group by ar.id
+      order by ar.updated_at desc nulls last, ar.created_at desc nulls last, ar.id desc
+      limit 1
+    `,
+    [userId],
+  );
+
+  if (result.rows[0]) {
+    return mapAssetRegisterRow(result.rows[0]);
+  }
+
+  await setSingleSelectedRegister(userId, primary.id);
+  return { ...primary, isSelected: true };
+}
+
 export async function listAssetRegisters(userId: string): Promise<AssetRegisterSummary[]> {
   const db = getDb();
   await getOrCreatePrimaryAssetRegister(userId);
@@ -398,6 +512,7 @@ export async function listAssetRegisters(userId: string): Promise<AssetRegisterS
         ar.phone,
         ar.address_line_1,
         ar.is_primary,
+        ar.is_selected,
         ar.created_at,
         ar.updated_at,
         count(ai.id)::integer as asset_count,
@@ -409,7 +524,7 @@ export async function listAssetRegisters(userId: string): Promise<AssetRegisterS
        and ai.register_id = ar.id
       where ar.user_id = $1
       group by ar.id
-      order by ar.is_primary desc, ar.updated_at desc nulls last, ar.created_at desc nulls last, ar.id desc
+      order by ar.is_selected desc, ar.is_primary desc, ar.updated_at desc nulls last, ar.created_at desc nulls last, ar.id desc
     `,
     [userId],
   );
@@ -425,7 +540,7 @@ export async function createAssetRegister(userId: string, input: AssetRegisterIn
   }
 
   await getOrCreatePrimaryAssetRegister(userId);
-  return insertAssetRegister(userId, { ...input, businessName }, false);
+  return insertAssetRegister(userId, { ...input, businessName }, false, false);
 }
 
 export async function updateAssetRegister(userId: string, registerId: string, input: AssetRegisterInput): Promise<AssetRegisterSummary> {
@@ -456,6 +571,7 @@ export async function updateAssetRegister(userId: string, registerId: string, in
         phone,
         address_line_1,
         is_primary,
+        is_selected,
         created_at,
         updated_at,
         0::integer as asset_count,
@@ -478,6 +594,26 @@ export async function updateAssetRegister(userId: string, registerId: string, in
 
   const refreshed = await getAssetRegisterForUser(userId, String(result.rows[0].id));
   return refreshed ?? mapAssetRegisterRow(result.rows[0]);
+}
+
+export async function selectAssetRegister(userId: string, registerId: string): Promise<AssetRegisterSummary> {
+  const cleanedRegisterId = cleanText(registerId);
+  if (!cleanedRegisterId) {
+    throw new Error('ASSET_REGISTER_NOT_FOUND');
+  }
+
+  const existing = await getAssetRegisterForUser(userId, cleanedRegisterId);
+  if (!existing) {
+    throw new Error('ASSET_REGISTER_NOT_FOUND');
+  }
+
+  await setSingleSelectedRegister(userId, existing.id);
+  const refreshed = await getAssetRegisterForUser(userId, existing.id);
+  if (!refreshed) {
+    throw new Error('ASSET_REGISTER_NOT_FOUND');
+  }
+
+  return refreshed;
 }
 
 export async function moveAssetRegisterItems(input: {
@@ -510,6 +646,129 @@ export async function moveAssetRegisterItems(input: {
   );
 
   return result.rowCount ?? 0;
+}
+
+export async function deleteAssetRegister(input: {
+  userId: string;
+  registerId: string;
+  targetRegisterId?: string | null;
+}): Promise<DeleteAssetRegisterResult> {
+  const db = getDb();
+  const registerId = cleanText(input.registerId);
+  const targetRegisterId = cleanText(input.targetRegisterId);
+
+  if (!registerId) {
+    throw new Error('ASSET_REGISTER_NOT_FOUND');
+  }
+
+  const registers = await listAssetRegisters(input.userId);
+  const register = registers.find((entry) => entry.id === registerId) ?? null;
+
+  if (!register) {
+    throw new Error('ASSET_REGISTER_NOT_FOUND');
+  }
+
+  if (registers.length <= 1) {
+    throw new Error('ASSET_REGISTER_LAST_REGISTER');
+  }
+
+  const assetCountResult = await db.query<CountRow>(
+    `
+      select count(*)::integer as count
+      from public.asset_register_items
+      where user_id = $1 and register_id = $2::uuid
+    `,
+    [input.userId, register.id],
+  );
+  const assetCount = Math.max(0, Math.round(numberValue(assetCountResult.rows[0]?.count)));
+  let movedCount = 0;
+  let selectedFallbackId = '';
+
+  if (assetCount > 0) {
+    if (!targetRegisterId) {
+      throw new Error('ASSET_REGISTER_DELETE_TARGET_REQUIRED');
+    }
+
+    if (targetRegisterId === register.id) {
+      throw new Error('ASSET_REGISTER_DELETE_TARGET_INVALID');
+    }
+
+    const targetRegister = registers.find((entry) => entry.id === targetRegisterId) ?? null;
+    if (!targetRegister) {
+      throw new Error('ASSET_REGISTER_NOT_FOUND');
+    }
+
+    const moveResult = await db.query(
+      `
+        update public.asset_register_items
+        set register_id = $3::uuid,
+            updated_at = now()
+        where user_id = $1 and register_id = $2::uuid
+      `,
+      [input.userId, register.id, targetRegister.id],
+    );
+
+    movedCount = moveResult.rowCount ?? 0;
+    selectedFallbackId = targetRegister.id;
+  }
+
+  await db.query(
+    `
+      delete from public.asset_registers
+      where user_id = $1 and id::text = $2
+    `,
+    [input.userId, register.id],
+  );
+
+  const remaining = await db.query<AssetRegisterRow>(
+    `
+      select
+        id,
+        user_id,
+        business_name,
+        email,
+        phone,
+        address_line_1,
+        is_primary,
+        is_selected,
+        created_at,
+        updated_at,
+        0::integer as asset_count,
+        0::numeric as total_value,
+        0::numeric as total_replacement_price
+      from public.asset_registers
+      where user_id = $1
+      order by is_primary desc, updated_at desc nulls last, created_at asc, id asc
+    `,
+    [input.userId],
+  );
+
+  if (!remaining.rows.length) {
+    throw new Error('ASSET_REGISTER_NOT_FOUND');
+  }
+
+  const remainingIds = remaining.rows.map((row) => String(row.id));
+  let nextPrimaryId = remaining.rows.find((row) => Boolean(row.is_primary))?.id;
+  if (!nextPrimaryId || !remainingIds.includes(String(nextPrimaryId))) {
+    nextPrimaryId = remaining.rows[0].id;
+    await setSinglePrimaryRegister(input.userId, String(nextPrimaryId));
+  }
+
+  let nextSelectedId = remaining.rows.find((row) => Boolean(row.is_selected))?.id;
+  if (register.isSelected || !nextSelectedId || !remainingIds.includes(String(nextSelectedId))) {
+    nextSelectedId = selectedFallbackId || nextPrimaryId || remaining.rows[0].id;
+    await setSingleSelectedRegister(input.userId, String(nextSelectedId));
+  } else {
+    await setSingleSelectedRegister(input.userId, String(nextSelectedId));
+  }
+
+  const selectedRegister = await getSelectedAssetRegister(input.userId);
+
+  return {
+    deletedRegisterId: register.id,
+    movedCount,
+    selectedRegister,
+  };
 }
 
 export async function userOwnsAssetRegister(userId: string, registerId: string | null | undefined): Promise<boolean> {
