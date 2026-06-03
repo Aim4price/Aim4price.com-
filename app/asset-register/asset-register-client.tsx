@@ -258,6 +258,7 @@ type AssetRegisterSummary = {
   phone: string;
   addressLine1: string;
   isPrimary: boolean;
+  isSelected: boolean;
   assetCount: number;
   totalValue: number;
   totalReplacementPrice: number;
@@ -2857,7 +2858,7 @@ export default function AssetRegisterClient() {
   const activeRegisterMeta = activeRegister
     ? [
         `${activeRegister.assetCount} asset${activeRegister.assetCount === 1 ? '' : 's'}`,
-        assetRegisters.length ? `${assetRegisters.length} register${assetRegisters.length === 1 ? '' : 's'} on this account` : '',
+        activeRegister?.isSelected ? 'Selected register' : '',
         activeRegister.email || reportProfile?.email || '',
         activeRegister.phone || reportProfile?.phone || '',
       ].filter(Boolean).join(' • ')
@@ -5531,6 +5532,14 @@ export default function AssetRegisterClient() {
         ) : null}
 
         <section className={styles.registerPanel}>
+          {activeRegister ? (
+            <div className={styles.selectedRegisterNotice}>
+              <strong>{activeRegister.businessName} is selected.</strong>
+              <span>You will only see assets in this register until you change the selected register.</span>
+              <Link href="/asset-registers">Change selected register</Link>
+            </div>
+          ) : null}
+
           <div className={styles.registerHeader}>
             <div className={`${styles.registerTitleBlock} ${styles.businessRegisterTitleBlock}`}>
               <h1>{activeRegister?.businessName || buildOwnerName(reportProfile)}</h1>
@@ -5538,8 +5547,8 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.headerActions} ${canUseOwnerOnlyAssetActions ? styles.ownerRegisterHeaderActions : styles.sharedRegisterHeaderActions}`}>
-              <Link className={`${styles.secondaryButton} ${styles.headerOptionsButton}`} href="/account">
-                All registers
+              <Link className={`${styles.secondaryButton} ${styles.headerOptionsButton}`} href="/asset-registers">
+                Change register
               </Link>
               {canUseOwnerOnlyAssetActions ? (
                 <button
