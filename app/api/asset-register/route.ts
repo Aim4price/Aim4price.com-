@@ -4,7 +4,7 @@ import { getAccountProfile } from '../../../lib/account-profile';
 import { attachOpenPartnerNotesToAssets } from '../../../lib/partner-access';
 import {
   getAssetRegisterForUser,
-  getOrCreatePrimaryAssetRegister,
+  getSelectedAssetRegister,
   listAssetRegisters,
 } from '../../../lib/asset-registers';
 import {
@@ -357,7 +357,7 @@ export async function GET(request: NextRequest) {
     const requestedRegisterId = String(searchParams.get('registerId') ?? '').trim();
     const register = requestedRegisterId
       ? await getAssetRegisterForUser(session.user.id, requestedRegisterId)
-      : await getOrCreatePrimaryAssetRegister(session.user.id);
+      : await getSelectedAssetRegister(session.user.id);
 
     if (!register) {
       return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
