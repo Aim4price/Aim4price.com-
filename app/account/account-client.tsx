@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
@@ -55,6 +56,52 @@ type ScanPinApiResponse = {
   error?: string;
 };
 
+type AssetRegisterSummary = {
+  id: string;
+  userId: string;
+  businessName: string;
+  email: string;
+  phone: string;
+  addressLine1: string;
+  isPrimary: boolean;
+  assetCount: number;
+  totalValue: number;
+  totalReplacementPrice: number;
+  createdAtIso: string;
+  updatedAtIso: string;
+};
+
+type RegisterAsset = {
+  id: string;
+  userId: string;
+  registerId: string | null;
+  kind: string;
+  title: string;
+  value: number;
+  replacementPriceExVat: number | null;
+  serialNumber: string;
+  brandName: string;
+  modelName: string;
+  yearModel: number | null;
+  updatedAtIso: string;
+};
+
+type AssetRegistersApiResponse = {
+  ok: boolean;
+  registers?: AssetRegisterSummary[];
+  register?: AssetRegisterSummary;
+  items?: RegisterAsset[];
+  movedCount?: number;
+  error?: string;
+};
+
+type AssetRegisterDraft = {
+  businessName: string;
+  email: string;
+  phone: string;
+  addressLine1: string;
+};
+
 type ProfileDraft = {
   displayName: string;
   logoUrl: string;
@@ -105,6 +152,13 @@ const initialProfileDraft: ProfileDraft = {
   partnerServiceRadiusKm: '',
   partnerBrandFocus: '',
   partnerServices: '',
+};
+
+const initialAssetRegisterDraft: AssetRegisterDraft = {
+  businessName: '',
+  email: '',
+  phone: '',
+  addressLine1: '',
 };
 
 const initialScanPinStatus: AccountScanPinStatus = {
@@ -283,6 +337,62 @@ function buildProfileDraft(profile: AccountProfile | null): ProfileDraft {
   };
 }
 
+function buildAssetRegisterDraftFromProfile(profile: AccountProfile | null): AssetRegisterDraft {
+  if (!profile) {
+    return initialAssetRegisterDraft;
+  }
+
+  return {
+    businessName: '',
+    email: profile.email,
+    phone: profile.phone,
+    addressLine1: buildProfileLocation(profile),
+  };
+}
+
+function buildAssetRegisterDraftFromRegister(register: AssetRegisterSummary): AssetRegisterDraft {
+  return {
+    businessName: register.businessName,
+    email: register.email,
+    phone: register.phone,
+    addressLine1: register.addressLine1,
+  };
+}
+
+function buildAssetRegisterOpenHref(registerId: string): string {
+  return `/asset-register?registerId=${encodeURIComponent(registerId)}`;
+}
+
+function money(value: unknown): string {
+  const numeric = Number(value);
+  const safeValue = Number.isFinite(numeric) ? numeric : 0;
+
+  return new Intl.NumberFormat('en-ZA', {
+    style: 'currency',
+    currency: 'ZAR',
+    maximumFractionDigits: 0,
+  }).format(Math.round(safeValue));
+}
+
+function registerContactLine(register: AssetRegisterSummary): string {
+  const parts = [register.email, register.phone, register.addressLine1]
+    .map((value) => String(value ?? '').trim())
+    .filter(Boolean);
+
+  return parts.join(' • ') || 'No contact details saved yet';
+}
+
+function compactAssetMeta(asset: RegisterAsset): string {
+  const parts = [
+    asset.serialNumber ? `Serial: ${asset.serialNumber}` : '',
+    asset.brandName,
+    asset.modelName,
+    asset.yearModel ? String(asset.yearModel) : '',
+  ].filter(Boolean);
+
+  return parts.join(' • ') || 'No asset details saved';
+}
+
 function formatDate(value?: string | null): string {
   if (!value) return '—';
 
@@ -407,6 +517,17 @@ function extractErrorMessage(payload: unknown, fallback: string): string {
 export default function AccountClient() {
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(initialProfileDraft);
+  const [assetRegisters, setAssetRegisters] = useState<AssetRegisterSummary[]>([]);
+  const [isLoadingAssetRegisters, setIsLoadingAssetRegisters] = useState(false);
+  const [isAddAssetRegisterModalOpen, setIsAddAssetRegisterModalOpen] = useState(false);
+  const [isManageAssetRegisterModalOpen, setIsManageAssetRegisterModalOpen] = useState(false);
+  const [registerDraft, setRegisterDraft] = useState<AssetRegisterDraft>(initialAssetRegisterDraft);
+  const [managedRegister, setManagedRegister] = useState<AssetRegisterSummary | null>(null);
+  const [managedRegisterAssets, setManagedRegisterAssets] = useState<RegisterAsset[]>([]);
+  const [assetMoveTargets, setAssetMoveTargets] = useState<Record<string, string>>({});
+  const [isLoadingManagedAssets, setIsLoadingManagedAssets] = useState(false);
+  const [isSavingRegister, setIsSavingRegister] = useState(false);
+  const [movingAssetId, setMovingAssetId] = useState<string | null>(null);
   const [scanPinStatus, setScanPinStatus] = useState<AccountScanPinStatus>(initialScanPinStatus);
   const [scanPinDraft, setScanPinDraft] = useState('');
   const [scanPinConfirmDraft, setScanPinConfirmDraft] = useState('');
@@ -426,6 +547,7 @@ export default function AccountClient() {
   const partnerPinMarkerRef = useRef<any>(null);
   const partnerRadiusCircleRef = useRef<any>(null);
   const businessDetailsSectionRef = useRef<HTMLElement | null>(null);
+  const assetRegistersSectionRef = useRef<HTMLElement | null>(null);
   const scanPinSectionRef = useRef<HTMLElement | null>(null);
   const marketplaceSectionRef = useRef<HTMLElement | null>(null);
   const partnerDirectorySectionRef = useRef<HTMLElement | null>(null);
@@ -561,6 +683,7 @@ export default function AccountClient() {
   const isDealerAccount = normalizedAccountType === 'dealer';
   const isPartnerAccount = !isOwnerAccount;
   const showScanPinControls = !isLoading && isOwnerAccount;
+  const showAssetRegisterControls = !isLoading && isOwnerAccount;
   const showPartnerDirectory = !isLoading && isPartnerAccount;
   const showMarketplaceContact = isLoading || isOwnerAccount || isDealerAccount;
   const accountDisplayName = profileDraft.displayName.trim() || profile?.name || 'Aim4price user';
@@ -597,6 +720,18 @@ export default function AccountClient() {
   );
   const directoryStatusLabel = profileDraft.partnerDirectoryEnabled ? 'Visible' : 'Hidden';
   const scanPinDisplayLabel = isLoadingScanPin ? 'Loading' : scanPinStatus.hasPin ? scanPinStatusLabel : 'Not set';
+  const managedRegisterMoveTargets = managedRegister
+    ? assetRegisters.filter((register) => register.id !== managedRegister.id)
+    : [];
+
+  useEffect(() => {
+    if (!showAssetRegisterControls) {
+      setAssetRegisters([]);
+      return;
+    }
+
+    void refreshAssetRegisters(true);
+  }, [showAssetRegisterControls]);
 
   useEffect(() => {
     if (isLoading || !isPartnerAccount || !partnerMapElementRef.current) {
@@ -832,6 +967,242 @@ export default function AccountClient() {
     }
   }
 
+  async function refreshAssetRegisters(showLoading = false): Promise<AssetRegisterSummary[]> {
+    if (showLoading) {
+      setIsLoadingAssetRegisters(true);
+    }
+
+    try {
+      const response = await fetch('/api/asset-registers', {
+        cache: 'no-store',
+        credentials: 'include',
+      });
+
+      const payload = await readResponsePayload(response);
+      const data = (payload ?? null) as AssetRegistersApiResponse | null;
+
+      if (!response.ok || !data?.ok || !Array.isArray(data.registers)) {
+        throw new Error(extractErrorMessage(payload, 'Failed to load asset registers.'));
+      }
+
+      setAssetRegisters(data.registers);
+      return data.registers;
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to load asset registers.',
+      });
+      return [];
+    } finally {
+      if (showLoading) {
+        setIsLoadingAssetRegisters(false);
+      }
+    }
+  }
+
+  async function loadManagedRegisterAssets(register: AssetRegisterSummary) {
+    setIsLoadingManagedAssets(true);
+    setManagedRegisterAssets([]);
+    setAssetMoveTargets({});
+
+    try {
+      const params = new URLSearchParams({ registerId: register.id });
+      const response = await fetch(`/api/asset-register?${params.toString()}`, {
+        cache: 'no-store',
+        credentials: 'include',
+      });
+
+      const payload = await readResponsePayload(response);
+      const data = (payload ?? null) as AssetRegistersApiResponse | null;
+
+      if (!response.ok || !data?.ok || !Array.isArray(data.items)) {
+        throw new Error(extractErrorMessage(payload, 'Failed to load register assets.'));
+      }
+
+      setManagedRegisterAssets(data.items);
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to load register assets.',
+      });
+    } finally {
+      setIsLoadingManagedAssets(false);
+    }
+  }
+
+  function openAddAssetRegisterModal() {
+    setRegisterDraft(buildAssetRegisterDraftFromProfile(profile));
+    setIsAddAssetRegisterModalOpen(true);
+  }
+
+  function closeAddAssetRegisterModal() {
+    if (isSavingRegister) return;
+    setIsAddAssetRegisterModalOpen(false);
+    setRegisterDraft(initialAssetRegisterDraft);
+  }
+
+  function openManageAssetRegister(register: AssetRegisterSummary) {
+    setManagedRegister(register);
+    setRegisterDraft(buildAssetRegisterDraftFromRegister(register));
+    setIsManageAssetRegisterModalOpen(true);
+    void loadManagedRegisterAssets(register);
+  }
+
+  function closeManageAssetRegisterModal() {
+    if (isSavingRegister || movingAssetId) return;
+    setIsManageAssetRegisterModalOpen(false);
+    setManagedRegister(null);
+    setManagedRegisterAssets([]);
+    setAssetMoveTargets({});
+  }
+
+  async function handleCreateAssetRegister(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!registerDraft.businessName.trim()) {
+      setNotice({ tone: 'error', message: 'Business name is required for a new asset register.' });
+      return;
+    }
+
+    setIsSavingRegister(true);
+
+    try {
+      const response = await fetch('/api/asset-registers', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(registerDraft),
+      });
+
+      const payload = await readResponsePayload(response);
+      const data = (payload ?? null) as AssetRegistersApiResponse | null;
+
+      if (!response.ok || !data?.ok || !data.register || !Array.isArray(data.registers)) {
+        throw new Error(extractErrorMessage(payload, 'Failed to create asset register.'));
+      }
+
+      setAssetRegisters(data.registers);
+      setIsAddAssetRegisterModalOpen(false);
+      setRegisterDraft(initialAssetRegisterDraft);
+      setNotice({ tone: 'success', message: 'Asset register created.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to create asset register.',
+      });
+    } finally {
+      setIsSavingRegister(false);
+    }
+  }
+
+  async function handleUpdateAssetRegister(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!managedRegister) {
+      return;
+    }
+
+    if (!registerDraft.businessName.trim()) {
+      setNotice({ tone: 'error', message: 'Business name is required.' });
+      return;
+    }
+
+    setIsSavingRegister(true);
+
+    try {
+      const response = await fetch('/api/asset-registers', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          registerId: managedRegister.id,
+          ...registerDraft,
+        }),
+      });
+
+      const payload = await readResponsePayload(response);
+      const data = (payload ?? null) as AssetRegistersApiResponse | null;
+
+      if (!response.ok || !data?.ok || !data.register || !Array.isArray(data.registers)) {
+        throw new Error(extractErrorMessage(payload, 'Failed to update asset register.'));
+      }
+
+      setAssetRegisters(data.registers);
+      setManagedRegister(data.register);
+      setRegisterDraft(buildAssetRegisterDraftFromRegister(data.register));
+      setNotice({ tone: 'success', message: 'Asset register details saved.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to update asset register.',
+      });
+    } finally {
+      setIsSavingRegister(false);
+    }
+  }
+
+  async function handleMoveAssetToRegister(asset: RegisterAsset) {
+    if (!managedRegister) {
+      return;
+    }
+
+    const targetRegisterId = String(assetMoveTargets[asset.id] ?? '').trim();
+
+    if (!targetRegisterId) {
+      setNotice({ tone: 'error', message: 'Choose the target asset register first.' });
+      return;
+    }
+
+    setMovingAssetId(asset.id);
+
+    try {
+      const response = await fetch('/api/asset-registers/move-assets', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          assetId: asset.id,
+          targetRegisterId,
+        }),
+      });
+
+      const payload = await readResponsePayload(response);
+      const data = (payload ?? null) as AssetRegistersApiResponse | null;
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(extractErrorMessage(payload, 'Failed to move asset.'));
+      }
+
+      setManagedRegisterAssets((current) => current.filter((entry) => entry.id !== asset.id));
+      setAssetMoveTargets((current) => {
+        const next = { ...current };
+        delete next[asset.id];
+        return next;
+      });
+
+      const registers = await refreshAssetRegisters(false);
+      const refreshedManagedRegister = registers.find((register) => register.id === managedRegister.id);
+      if (refreshedManagedRegister) {
+        setManagedRegister(refreshedManagedRegister);
+      }
+
+      setNotice({ tone: 'success', message: 'Asset moved to the selected register.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to move asset.',
+      });
+    } finally {
+      setMovingAssetId(null);
+    }
+  }
+
   async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const didSave = await saveProfileDraft(profileDraft);
@@ -950,6 +1321,10 @@ export default function AccountClient() {
   function openBusinessEditor() {
     setIsBusinessEditorOpen(true);
     scrollToSection(businessDetailsSectionRef);
+  }
+
+  function openAssetRegistersSection() {
+    scrollToSection(assetRegistersSectionRef);
   }
 
   function openMarketplaceEditor() {
@@ -1106,6 +1481,22 @@ export default function AccountClient() {
                 <span className={styles.quickActionChevron}>›</span>
               </button>
 
+              {showAssetRegisterControls ? (
+                <button type="button" className={styles.quickActionButton} onClick={openAddAssetRegisterModal}>
+                  <span className={styles.quickActionIcon}>＋</span>
+                  <strong>Add asset register</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              {showAssetRegisterControls ? (
+                <button type="button" className={styles.quickActionButton} onClick={openAssetRegistersSection}>
+                  <span className={styles.quickActionIcon}>▤</span>
+                  <strong>Manage asset registers</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
               {showScanPinControls ? (
                 <button type="button" className={styles.quickActionButton} onClick={openScanPinEditor}>
                   <span className={styles.quickActionIcon}>⌘</span>
@@ -1138,6 +1529,69 @@ export default function AccountClient() {
             </div>
           </section>
         </section>
+
+        {showAssetRegisterControls ? (
+          <section ref={assetRegistersSectionRef} className={`${styles.card} ${styles.assetRegisterSection}`}>
+            <div className={styles.cardTitleRow}>
+              <div>
+                <h2>Asset registers</h2>
+                <p>Create separate business registers, open each register, or move assets between them.</p>
+              </div>
+              <button type="button" className={styles.sectionActionButton} onClick={openAddAssetRegisterModal}>
+                Add asset register
+              </button>
+            </div>
+
+            {isLoadingAssetRegisters ? (
+              <p className={styles.loading}>Loading asset registers...</p>
+            ) : assetRegisters.length ? (
+              <div className={styles.assetRegisterGrid}>
+                {assetRegisters.map((register) => (
+                  <article key={register.id} className={styles.assetRegisterCard}>
+                    <div className={styles.assetRegisterCardHeader}>
+                      <div>
+                        <h3>{register.businessName}</h3>
+                        <p>{registerContactLine(register)}</p>
+                      </div>
+                      {register.isPrimary ? <span className={styles.assetRegisterBadge}>Primary</span> : null}
+                    </div>
+
+                    <div className={styles.assetRegisterStats}>
+                      <div>
+                        <span>Assets</span>
+                        <strong>{register.assetCount}</strong>
+                      </div>
+                      <div>
+                        <span>Register value</span>
+                        <strong>{money(register.totalValue)}</strong>
+                      </div>
+                      <div>
+                        <span>Replacement value</span>
+                        <strong>{money(register.totalReplacementPrice)}</strong>
+                      </div>
+                    </div>
+
+                    <div className={styles.assetRegisterActions}>
+                      <Link
+                        className={styles.primaryButton}
+                        href={buildAssetRegisterOpenHref(register.id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Open
+                      </Link>
+                      <button type="button" className={styles.secondaryButton} onClick={() => openManageAssetRegister(register)}>
+                        Manage
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className={styles.loading}>No asset registers found yet. Create your first register to start.</p>
+            )}
+          </section>
+        ) : null}
 
         <section ref={businessDetailsSectionRef} className={`${styles.card} ${styles.detailCard}`}>
           <div className={styles.cardTitleRow}>
@@ -1522,6 +1976,200 @@ export default function AccountClient() {
           </button>
         </section>
       </section>
+
+      {isAddAssetRegisterModalOpen ? (
+        <div className={styles.modalBackdrop} onClick={closeAddAssetRegisterModal}>
+          <section className={`${styles.modalCard} ${styles.registerModalCard}`} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Add asset register</h2>
+              <p>Create a separate register for another business, trust, farm, company or entity.</p>
+            </div>
+
+            <form className={styles.modalForm} onSubmit={handleCreateAssetRegister}>
+              <div className={styles.registerModalGrid}>
+                <label className={styles.modalField}>
+                  <span>Business name</span>
+                  <input
+                    value={registerDraft.businessName}
+                    onChange={(event) => setRegisterDraft((current) => ({ ...current, businessName: event.target.value }))}
+                    placeholder="Example: Bashan Boerdery Pty Ltd"
+                    autoFocus
+                  />
+                </label>
+
+                <label className={styles.modalField}>
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    value={registerDraft.email}
+                    onChange={(event) => setRegisterDraft((current) => ({ ...current, email: event.target.value }))}
+                    placeholder="accounts@example.co.za"
+                  />
+                </label>
+
+                <label className={styles.modalField}>
+                  <span>Phone</span>
+                  <input
+                    type="tel"
+                    value={registerDraft.phone}
+                    onChange={(event) => setRegisterDraft((current) => ({ ...current, phone: event.target.value }))}
+                    placeholder="082 000 0000"
+                  />
+                </label>
+
+                <label className={`${styles.modalField} ${styles.fullWidth}`}>
+                  <span>Address</span>
+                  <textarea
+                    value={registerDraft.addressLine1}
+                    onChange={(event) => setRegisterDraft((current) => ({ ...current, addressLine1: event.target.value }))}
+                    placeholder="Farm, town, province"
+                  />
+                </label>
+              </div>
+
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.ghostButton} onClick={closeAddAssetRegisterModal}>
+                  Cancel
+                </button>
+                <button type="submit" className={styles.primaryButton} disabled={isSavingRegister}>
+                  {isSavingRegister ? 'Creating...' : 'Create register'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
+
+      {isManageAssetRegisterModalOpen && managedRegister ? (
+        <div className={styles.modalBackdrop} onClick={closeManageAssetRegisterModal}>
+          <section className={`${styles.modalCard} ${styles.registerManageModalCard}`} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Manage asset register</h2>
+              <p>Update the register details or move assets to another register on the same account.</p>
+            </div>
+
+            <form className={styles.modalForm} onSubmit={handleUpdateAssetRegister}>
+              <div className={styles.registerModalGrid}>
+                <label className={styles.modalField}>
+                  <span>Business name</span>
+                  <input
+                    value={registerDraft.businessName}
+                    onChange={(event) => setRegisterDraft((current) => ({ ...current, businessName: event.target.value }))}
+                    placeholder="Business name"
+                  />
+                </label>
+
+                <label className={styles.modalField}>
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    value={registerDraft.email}
+                    onChange={(event) => setRegisterDraft((current) => ({ ...current, email: event.target.value }))}
+                    placeholder="Email"
+                  />
+                </label>
+
+                <label className={styles.modalField}>
+                  <span>Phone</span>
+                  <input
+                    type="tel"
+                    value={registerDraft.phone}
+                    onChange={(event) => setRegisterDraft((current) => ({ ...current, phone: event.target.value }))}
+                    placeholder="Phone"
+                  />
+                </label>
+
+                <label className={`${styles.modalField} ${styles.fullWidth}`}>
+                  <span>Address</span>
+                  <textarea
+                    value={registerDraft.addressLine1}
+                    onChange={(event) => setRegisterDraft((current) => ({ ...current, addressLine1: event.target.value }))}
+                    placeholder="Address"
+                  />
+                </label>
+              </div>
+
+              <div className={styles.modalActions}>
+                <Link
+                  className={styles.secondaryButton}
+                  href={buildAssetRegisterOpenHref(managedRegister.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open register
+                </Link>
+                <button type="submit" className={styles.primaryButton} disabled={isSavingRegister}>
+                  {isSavingRegister ? 'Saving...' : 'Save details'}
+                </button>
+              </div>
+            </form>
+
+            <div className={styles.assetMovePanel}>
+              <div className={styles.assetMoveHeader}>
+                <h3>Move assets</h3>
+                <p>Move individual assets from {managedRegister.businessName} to another register.</p>
+              </div>
+
+              {isLoadingManagedAssets ? (
+                <p className={styles.loading}>Loading assets...</p>
+              ) : managedRegisterAssets.length ? (
+                <div className={styles.assetMoveList}>
+                  {managedRegisterAssets.map((asset) => (
+                    <div key={asset.id} className={styles.assetMoveRow}>
+                      <div className={styles.assetMoveCopy}>
+                        <strong>{asset.title}</strong>
+                        <span>{compactAssetMeta(asset)}</span>
+                        <small>{money(asset.value)} current value</small>
+                      </div>
+
+                      <div className={styles.assetMoveControls}>
+                        <select
+                          value={assetMoveTargets[asset.id] ?? ''}
+                          onChange={(event) =>
+                            setAssetMoveTargets((current) => ({
+                              ...current,
+                              [asset.id]: event.target.value,
+                            }))
+                          }
+                          disabled={!managedRegisterMoveTargets.length || movingAssetId === asset.id}
+                        >
+                          <option value="">Choose target register</option>
+                          {managedRegisterMoveTargets.map((register) => (
+                            <option key={register.id} value={register.id}>
+                              {register.businessName}
+                            </option>
+                          ))}
+                        </select>
+
+                        <button
+                          type="button"
+                          className={styles.secondaryButton}
+                          onClick={() => handleMoveAssetToRegister(asset)}
+                          disabled={!assetMoveTargets[asset.id] || movingAssetId === asset.id}
+                        >
+                          {movingAssetId === asset.id ? 'Moving...' : 'Move'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.loading}>No assets saved in this register yet.</p>
+              )}
+
+              {!managedRegisterMoveTargets.length ? (
+                <p className={styles.assetRegisterMuted}>Create another asset register before moving assets.</p>
+              ) : null}
+            </div>
+
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.ghostButton} onClick={closeManageAssetRegisterModal}>
+                Close
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {isDeleteDialogOpen ? (
         <div className={styles.modalBackdrop} onClick={closeDeleteDialog}>

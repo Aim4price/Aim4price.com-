@@ -1662,3 +1662,235 @@
     margin-top: 0.12rem;
   }
 }
+
+/* === Multi asset register controls === */
+.assetRegisterSection {
+  display: grid;
+  gap: 1rem;
+}
+
+.assetRegisterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 0.95rem;
+}
+
+.assetRegisterCard {
+  min-width: 0;
+  display: grid;
+  gap: 0.95rem;
+  padding: 1rem;
+  border-radius: 1.25rem;
+  border: 1px solid var(--account-line, rgba(18, 45, 37, 0.09));
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.assetRegisterCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+
+.assetRegisterCardHeader h3 {
+  margin: 0;
+  color: #17362c;
+  font-size: 1.05rem;
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+  font-weight: 850;
+}
+
+.assetRegisterCardHeader p {
+  margin: 0.35rem 0 0;
+  color: #667586;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.assetRegisterBadge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.8rem;
+  padding: 0 0.65rem;
+  border-radius: 999px;
+  color: #176047;
+  background: rgba(31, 138, 102, 0.1);
+  border: 1px solid rgba(31, 138, 102, 0.16);
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.assetRegisterStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.assetRegisterStats > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border-radius: 0.95rem;
+  border: 1px solid var(--account-line, rgba(18, 45, 37, 0.08));
+  background: #ffffff;
+}
+
+.assetRegisterStats span {
+  color: #7a8792;
+  font-size: 0.68rem;
+  font-weight: 780;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.assetRegisterStats strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #41525f;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  font-weight: 760;
+}
+
+.assetRegisterActions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.assetRegisterActions .primaryButton,
+.assetRegisterActions .secondaryButton {
+  flex: 1 1 8rem;
+  min-height: 2.75rem;
+}
+
+.registerModalCard {
+  width: min(100%, 42rem);
+}
+
+.registerManageModalCard {
+  width: min(100%, 64rem);
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+}
+
+.registerModalGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+}
+
+.assetMovePanel {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1.05rem;
+  padding-top: 1.05rem;
+  border-top: 1px solid var(--account-line, rgba(18, 45, 37, 0.08));
+}
+
+.assetMoveHeader {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.assetMoveHeader h3 {
+  margin: 0;
+  color: #17362c;
+  font-size: 1rem;
+  line-height: 1.2;
+  font-weight: 850;
+}
+
+.assetMoveHeader p,
+.assetRegisterMuted {
+  margin: 0;
+  color: #667586;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.assetMoveList {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.assetMoveRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.55fr);
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem;
+  border-radius: 1rem;
+  border: 1px solid var(--account-line, rgba(18, 45, 37, 0.08));
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.assetMoveCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.24rem;
+}
+
+.assetMoveCopy strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #17362c;
+  font-size: 0.92rem;
+  line-height: 1.25;
+  font-weight: 820;
+}
+
+.assetMoveCopy span,
+.assetMoveCopy small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #667586;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  font-weight: 650;
+}
+
+.assetMoveControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.assetMoveControls select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0 0.85rem;
+  border-radius: 0.9rem;
+  border: 1px solid var(--account-line, rgba(18, 45, 37, 0.12));
+  color: #20313b;
+  background: #ffffff;
+  font: inherit;
+}
+
+.assetMoveControls .secondaryButton {
+  min-height: 2.75rem;
+}
+
+@media (max-width: 760px) {
+  .assetRegisterStats,
+  .registerModalGrid,
+  .assetMoveRow,
+  .assetMoveControls {
+    grid-template-columns: 1fr;
+  }
+
+  .assetRegisterActions .primaryButton,
+  .assetRegisterActions .secondaryButton,
+  .assetMoveControls .secondaryButton {
+    width: 100%;
+  }
+}
