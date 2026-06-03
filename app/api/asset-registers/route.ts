@@ -3,7 +3,10 @@ import { getServerSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
 import {
   createAssetRegister,
+  deleteAssetRegister,
+  getSelectedAssetRegister,
   listAssetRegisters,
+  selectAssetRegister,
   updateAssetRegister,
 } from '../../../lib/asset-registers';
 
@@ -11,7 +14,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type AssetRegisterBody = {
+  action?: unknown;
   registerId?: unknown;
+  targetRegisterId?: unknown;
   businessName?: unknown;
   email?: unknown;
   phone?: unknown;
@@ -58,6 +63,21 @@ function errorResponse(error: unknown, fallback: string) {
       return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
     }
 
+    if (error.message === 'ASSET_REGISTER_LAST_REGISTER') {
+      return NextResponse.json({ ok: false, error: 'You must keep at least one asset register on the account.' }, { status: 400 });
+    }
+
+    if (error.message === 'ASSET_REGISTER_DELETE_TARGET_REQUIRED') {
+      return NextResponse.json(
+        { ok: false, error: 'Choose another asset register to receive these assets before removing this register.' },
+        { status: 400 },
+      );
+    }
+
+    if (error.message === 'ASSET_REGISTER_DELETE_TARGET_INVALID') {
+      return NextResponse.json({ ok: false, error: 'Choose a different target asset register.' }, { status: 400 });
+    }
+
     if (error.message) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
@@ -78,7 +98,8 @@ export async function GET() {
 
   try {
     const registers = await listAssetRegisters(session.user.id);
-    return NextResponse.json({ ok: true, registers });
+    const selectedRegister = registers.find((register) => register.isSelected) ?? await getSelectedAssetRegister(session.user.id);
+    return NextResponse.json({ ok: true, registers, selectedRegister });
   } catch (error) {
     console.error('asset registers GET failed', error);
     return errorResponse(error, 'Failed to load asset registers.');
@@ -99,7 +120,8 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as AssetRegisterBody;
     const register = await createAssetRegister(session.user.id, readRegisterInput(body));
     const registers = await listAssetRegisters(session.user.id);
-    return NextResponse.json({ ok: true, register, registers });
+    const selectedRegister = registers.find((entry) => entry.isSelected) ?? await getSelectedAssetRegister(session.user.id);
+    return NextResponse.json({ ok: true, register, registers, selectedRegister });
   } catch (error) {
     console.error('asset registers POST failed', error);
     return errorResponse(error, 'Failed to create asset register.');
@@ -124,11 +146,55 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Asset register id is required.' }, { status: 400 });
     }
 
-    const register = await updateAssetRegister(session.user.id, registerId, readRegisterInput(body));
+    const action = String(body.action ?? '').trim().toLowerCase();
+    const register = action === 'select'
+      ? await selectAssetRegister(session.user.id, registerId)
+      : await updateAssetRegister(session.user.id, registerId, readRegisterInput(body));
     const registers = await listAssetRegisters(session.user.id);
-    return NextResponse.json({ ok: true, register, registers });
+    const selectedRegister = registers.find((entry) => entry.isSelected) ?? await getSelectedAssetRegister(session.user.id);
+    return NextResponse.json({ ok: true, register, registers, selectedRegister });
   } catch (error) {
     console.error('asset registers PUT failed', error);
     return errorResponse(error, 'Failed to update asset register.');
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const session = await getServerSession();
+
+  if (!session?.user?.id) {
+    return unauthorized();
+  }
+
+  const ownerError = await requireOwnerAccount(session.user);
+  if (ownerError) return ownerError;
+
+  try {
+    const body = (await request.json().catch(() => ({}))) as AssetRegisterBody;
+    const registerId = String(body.registerId ?? '').trim();
+    const targetRegisterId = String(body.targetRegisterId ?? '').trim();
+
+    if (!registerId) {
+      return NextResponse.json({ ok: false, error: 'Asset register id is required.' }, { status: 400 });
+    }
+
+    const result = await deleteAssetRegister({
+      userId: session.user.id,
+      registerId,
+      targetRegisterId: targetRegisterId || null,
+    });
+    const registers = await listAssetRegisters(session.user.id);
+    const selectedRegister = registers.find((entry) => entry.isSelected) ?? result.selectedRegister;
+
+    return NextResponse.json({
+      ok: true,
+      deletedRegisterId: result.deletedRegisterId,
+      movedCount: result.movedCount,
+      registers,
+      selectedRegister,
+    });
+  } catch (error) {
+    console.error('asset registers DELETE failed', error);
+    return errorResponse(error, 'Failed to remove asset register.');
   }
 }
