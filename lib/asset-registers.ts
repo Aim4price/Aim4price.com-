@@ -66,7 +66,12 @@ type CountRow = {
   count: string | number | null;
 };
 
+type ColumnNameRow = {
+  column_name: string;
+};
+
 let assetRegisterTablesPromise: Promise<void> | null = null;
+let assetRegisterItemColumnsPromise: Promise<Set<string>> | null = null;
 
 function cleanText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -123,6 +128,68 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterSummary {
   };
 }
 
+async function readAssetRegisterItemColumns(): Promise<Set<string>> {
+  const db = getDb();
+
+  const result = await db.query<ColumnNameRow>(
+    `
+      select column_name
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'asset_register_items'
+    `,
+  );
+
+  return new Set(result.rows.map((row) => row.column_name));
+}
+
+async function getAssetRegisterItemColumns(): Promise<Set<string>> {
+  if (!assetRegisterItemColumnsPromise) {
+    assetRegisterItemColumnsPromise = readAssetRegisterItemColumns().catch((error) => {
+      assetRegisterItemColumnsPromise = null;
+      throw error;
+    });
+  }
+
+  return assetRegisterItemColumnsPromise;
+}
+
+function numericColumnExpression(alias: string, columns: Set<string>, candidates: string[]): string {
+  const availableColumns = candidates
+    .filter((column) => columns.has(column))
+    .map((column) => `${alias}.${column}`);
+
+  if (!availableColumns.length) {
+    return '0';
+  }
+
+  return `coalesce(${availableColumns.join(', ')}, 0)`;
+}
+
+async function buildAssetRegisterTotalsSql(): Promise<{
+  totalValueSql: string;
+  totalReplacementPriceSql: string;
+}> {
+  const columns = await getAssetRegisterItemColumns();
+  const currentValueExpression = numericColumnExpression('ai', columns, [
+    'selected_value_ex_vat',
+    'value',
+    'selected_value',
+    'saved_value_ex_vat',
+  ]);
+  const replacementPriceExpression = numericColumnExpression('ai', columns, [
+    'replacement_price_used_ex_vat',
+    'user_replacement_price_ex_vat',
+    'replacement_price_ex_vat',
+    'official_replacement_price_ex_vat',
+  ]);
+
+  return {
+    totalValueSql: `coalesce(sum(${currentValueExpression}), 0)::numeric as total_value`,
+    totalReplacementPriceSql: `coalesce(sum(${replacementPriceExpression}), 0)::numeric as total_replacement_price`,
+  };
+}
+
 async function ensureAssetRegisterTablesOnce(): Promise<void> {
   const db = getDb();
 
@@ -160,6 +227,8 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
     alter table if exists public.asset_register_items
       add column if not exists register_id uuid
   `);
+
+  assetRegisterItemColumnsPromise = null;
 
   await db.query(`
     create index if not exists idx_asset_registers_user_created
@@ -427,6 +496,7 @@ export async function getAssetRegisterForUser(userId: string, registerId: string
   const db = getDb();
 
   await getOrCreatePrimaryAssetRegister(userId);
+  const totalsSql = await buildAssetRegisterTotalsSql();
 
   const result = await db.query<AssetRegisterRow>(
     `
@@ -442,8 +512,8 @@ export async function getAssetRegisterForUser(userId: string, registerId: string
         ar.created_at,
         ar.updated_at,
         count(ai.id)::integer as asset_count,
-        coalesce(sum(coalesce(ai.value, ai.selected_value_ex_vat, 0)), 0)::numeric as total_value,
-        coalesce(sum(coalesce(ai.replacement_price_used_ex_vat, ai.user_replacement_price_ex_vat, 0)), 0)::numeric as total_replacement_price
+        ${totalsSql.totalValueSql},
+        ${totalsSql.totalReplacementPriceSql}
       from public.asset_registers ar
       left join public.asset_register_items ai
         on ai.user_id = ar.user_id
@@ -461,6 +531,7 @@ export async function getAssetRegisterForUser(userId: string, registerId: string
 export async function getSelectedAssetRegister(userId: string): Promise<AssetRegisterSummary> {
   const db = getDb();
   const primary = await getOrCreatePrimaryAssetRegister(userId);
+  const totalsSql = await buildAssetRegisterTotalsSql();
 
   const result = await db.query<AssetRegisterRow>(
     `
@@ -476,8 +547,8 @@ export async function getSelectedAssetRegister(userId: string): Promise<AssetReg
         ar.created_at,
         ar.updated_at,
         count(ai.id)::integer as asset_count,
-        coalesce(sum(coalesce(ai.value, ai.selected_value_ex_vat, 0)), 0)::numeric as total_value,
-        coalesce(sum(coalesce(ai.replacement_price_used_ex_vat, ai.user_replacement_price_ex_vat, 0)), 0)::numeric as total_replacement_price
+        ${totalsSql.totalValueSql},
+        ${totalsSql.totalReplacementPriceSql}
       from public.asset_registers ar
       left join public.asset_register_items ai
         on ai.user_id = ar.user_id
@@ -501,6 +572,7 @@ export async function getSelectedAssetRegister(userId: string): Promise<AssetReg
 export async function listAssetRegisters(userId: string): Promise<AssetRegisterSummary[]> {
   const db = getDb();
   await getOrCreatePrimaryAssetRegister(userId);
+  const totalsSql = await buildAssetRegisterTotalsSql();
 
   const result = await db.query<AssetRegisterRow>(
     `
@@ -516,8 +588,8 @@ export async function listAssetRegisters(userId: string): Promise<AssetRegisterS
         ar.created_at,
         ar.updated_at,
         count(ai.id)::integer as asset_count,
-        coalesce(sum(coalesce(ai.value, ai.selected_value_ex_vat, 0)), 0)::numeric as total_value,
-        coalesce(sum(coalesce(ai.replacement_price_used_ex_vat, ai.user_replacement_price_ex_vat, 0)), 0)::numeric as total_replacement_price
+        ${totalsSql.totalValueSql},
+        ${totalsSql.totalReplacementPriceSql}
       from public.asset_registers ar
       left join public.asset_register_items ai
         on ai.user_id = ar.user_id
