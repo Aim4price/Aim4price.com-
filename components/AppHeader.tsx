@@ -93,7 +93,7 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
 
   return [
     ...BASE_NAV_ITEMS,
-    { key: 'asset-register', href: '/asset-registers', label: 'Asset Registers' },
+    { key: 'asset-register', href: '/asset-register', label: 'Asset Registers' },
     { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
   ];
 }
