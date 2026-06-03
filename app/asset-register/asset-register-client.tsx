@@ -193,6 +193,7 @@ type OpenPartnerNote = {
 type RegisterAsset = {
   id: string;
   userId: string;
+  registerId: string | null;
   valuationRunId: number | null;
   sectorId: number | null;
   equipmentFamilyId: number | null;
@@ -249,10 +250,27 @@ type RegisterAsset = {
   openPartnerNote?: OpenPartnerNote | null;
 };
 
+type AssetRegisterSummary = {
+  id: string;
+  userId: string;
+  businessName: string;
+  email: string;
+  phone: string;
+  addressLine1: string;
+  isPrimary: boolean;
+  assetCount: number;
+  totalValue: number;
+  totalReplacementPrice: number;
+  createdAtIso: string;
+  updatedAtIso: string;
+};
+
 type AssetRegisterApiResponse = {
   ok: boolean;
   items?: RegisterAsset[];
   assets?: RegisterAsset[];
+  register?: AssetRegisterSummary;
+  registers?: AssetRegisterSummary[];
   profile?: AccountProfile;
   summary?: {
     count: number;
@@ -2542,6 +2560,51 @@ function downloadBlob(blob: Blob, fileName: string) {
   window.URL.revokeObjectURL(objectUrl);
 }
 
+function readRegisterIdFromLocation(): string {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  return new URLSearchParams(window.location.search).get('registerId')?.trim() ?? '';
+}
+
+function buildAssetRegisterApiUrl(registerId?: string | null): string {
+  const cleanedRegisterId = String(registerId ?? '').trim();
+
+  if (!cleanedRegisterId) {
+    return '/api/asset-register';
+  }
+
+  const params = new URLSearchParams({ registerId: cleanedRegisterId });
+  return `/api/asset-register?${params.toString()}`;
+}
+
+function buildAssetRegisterExportUrl(registerId?: string | null): string {
+  const params = new URLSearchParams({ format: 'xlsx' });
+  const cleanedRegisterId = String(registerId ?? '').trim();
+
+  if (cleanedRegisterId) {
+    params.set('registerId', cleanedRegisterId);
+  }
+
+  return `/api/asset-register/export?${params.toString()}`;
+}
+
+function mergeProfileWithRegister(profile: AccountProfile | null, register: AssetRegisterSummary | null): AccountProfile | null {
+  if (!profile || !register) {
+    return profile;
+  }
+
+  return {
+    ...profile,
+    businessName: register.businessName || profile.businessName,
+    email: register.email || profile.email,
+    phone: register.phone || profile.phone,
+    addressLine1: register.addressLine1 || profile.addressLine1,
+    addressLine2: '',
+  };
+}
+
 function loadLeaflet(): Promise<any> {
   if (typeof window === 'undefined') {
     return Promise.reject(new Error('Leaflet can only load in the browser.'));
@@ -2704,6 +2767,9 @@ function renderQuoteOptionIcon(leadType: AssetLeadType, className?: string) {
 export default function AssetRegisterClient() {
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
+  const [assetRegisters, setAssetRegisters] = useState<AssetRegisterSummary[]>([]);
+  const [activeRegister, setActiveRegister] = useState<AssetRegisterSummary | null>(null);
+  const [activeRegisterId, setActiveRegisterId] = useState('');
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
@@ -2784,7 +2850,18 @@ export default function AssetRegisterClient() {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 16 }, (_, index) => currentYear + index);
   }, []);
-  const reportProfile = accountProfile;
+  const reportProfile = useMemo(
+    () => mergeProfileWithRegister(accountProfile, activeRegister),
+    [accountProfile, activeRegister],
+  );
+  const activeRegisterMeta = activeRegister
+    ? [
+        `${activeRegister.assetCount} asset${activeRegister.assetCount === 1 ? '' : 's'}`,
+        assetRegisters.length ? `${assetRegisters.length} register${assetRegisters.length === 1 ? '' : 's'} on this account` : '',
+        activeRegister.email || reportProfile?.email || '',
+        activeRegister.phone || reportProfile?.phone || '',
+      ].filter(Boolean).join(' • ')
+    : 'Aim4price asset register';
   const canUseOwnerOnlyAssetActions = true;
   const canUseMarketplaceActions = true;
   const isQuoteModalOpen = Boolean(quoteAsset);
@@ -2855,8 +2932,11 @@ export default function AssetRegisterClient() {
       setIsLoading(true);
 
       try {
+        const requestedRegisterId = readRegisterIdFromLocation();
+        setActiveRegisterId(requestedRegisterId);
+
         const [assetsResponse, profileResponse] = await Promise.all([
-          fetch('/api/asset-register', {
+          fetch(buildAssetRegisterApiUrl(requestedRegisterId), {
             cache: 'no-store',
             credentials: 'include',
           }),
@@ -2880,6 +2960,13 @@ export default function AssetRegisterClient() {
             ? assetsData.assets
             : [];
         setAssets(loadedAssets);
+        if (assetsData.register) {
+          setActiveRegister(assetsData.register);
+          setActiveRegisterId(assetsData.register.id);
+        }
+        if (Array.isArray(assetsData.registers)) {
+          setAssetRegisters(assetsData.registers);
+        }
         if (profileResponse) {
           try {
             const profileData = (await profileResponse.json()) as AccountProfileApiResponse;
@@ -4261,6 +4348,7 @@ export default function AssetRegisterClient() {
       const documents = normalizeDocuments([...assetDraft.documents, ...uploadedDocuments]);
 
       const payload = {
+        registerId: activeRegister?.id || activeRegisterId || null,
         kind: editingAsset?.valuationRunId ? editingAsset.kind : assetDraft.kind,
         title: assetDraft.title,
         value,
@@ -5209,9 +5297,7 @@ export default function AssetRegisterClient() {
   }
 
   async function handleExportXlsx() {
-    const params = new URLSearchParams({ format: 'xlsx' });
-
-    const response = await fetch(`/api/asset-register/export?${params.toString()}`, {
+    const response = await fetch(buildAssetRegisterExportUrl(activeRegister?.id || activeRegisterId), {
       credentials: 'include',
       cache: 'no-store',
     });
@@ -5447,10 +5533,14 @@ export default function AssetRegisterClient() {
         <section className={styles.registerPanel}>
           <div className={styles.registerHeader}>
             <div className={`${styles.registerTitleBlock} ${styles.businessRegisterTitleBlock}`}>
-              <h1>{buildOwnerName(reportProfile)}</h1>
+              <h1>{activeRegister?.businessName || buildOwnerName(reportProfile)}</h1>
+              <p>{activeRegisterMeta}</p>
             </div>
 
             <div className={`${styles.headerActions} ${canUseOwnerOnlyAssetActions ? styles.ownerRegisterHeaderActions : styles.sharedRegisterHeaderActions}`}>
+              <Link className={`${styles.secondaryButton} ${styles.headerOptionsButton}`} href="/account">
+                All registers
+              </Link>
               {canUseOwnerOnlyAssetActions ? (
                 <button
                   type="button"
