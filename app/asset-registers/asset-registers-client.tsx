@@ -1357,7 +1357,7 @@ export default function AssetRegistersClient() {
             </button>
 
             <div className={styles.deleteConfirmContent}>
-              <h3 id="delete-register-title">Delete this asset register?</h3>
+              <h3 id="delete-register-title">Are you sure you want to delete this?</h3>
               <p id="delete-register-copy">
                 This removes{" "}
                 <strong>{deleteCandidateRegister.businessName}</strong> from
