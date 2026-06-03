@@ -6,6 +6,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type FocusEvent,
   type FormEvent,
   type SVGProps,
 } from "react";
@@ -141,6 +142,14 @@ function TrashIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="m6 9 6 6 6-6" />
+    </IconBase>
+  );
+}
+
 function buildOpenHref(registerId: string): string {
   return `/asset-register?registerId=${encodeURIComponent(registerId)}`;
 }
@@ -231,6 +240,119 @@ function extractErrorMessage(payload: unknown, fallback: string): string {
   return fallback;
 }
 
+type RegisterTargetDropdownProps = {
+  dropdownId: string;
+  value: string;
+  targets: AssetRegisterSummary[];
+  placeholder: string;
+  disabled?: boolean;
+  openDropdownId: string | null;
+  onOpenDropdownChange: (dropdownId: string | null) => void;
+  onChange: (value: string) => void;
+};
+
+function RegisterTargetDropdown({
+  dropdownId,
+  value,
+  targets,
+  placeholder,
+  disabled = false,
+  openDropdownId,
+  onOpenDropdownChange,
+  onChange,
+}: RegisterTargetDropdownProps) {
+  const selectedTarget = targets.find((target) => target.id === value) ?? null;
+  const isDisabled = disabled || !targets.length;
+  const isOpen = openDropdownId === dropdownId && !isDisabled;
+  const displayLabel = selectedTarget
+    ? selectedTarget.businessName
+    : targets.length
+      ? placeholder
+      : "No target register available";
+
+  function closeDropdown() {
+    onOpenDropdownChange(null);
+  }
+
+  function handleBlur(event: FocusEvent<HTMLDivElement>) {
+    const nextFocus = event.relatedTarget;
+
+    if (
+      !(nextFocus instanceof Node) ||
+      !event.currentTarget.contains(nextFocus)
+    ) {
+      closeDropdown();
+    }
+  }
+
+  return (
+    <div className={styles.targetSelect} onBlur={handleBlur}>
+      <button
+        type="button"
+        className={`${styles.targetSelectButton} ${
+          !selectedTarget ? styles.targetSelectButtonPlaceholder : ""
+        } ${isOpen ? styles.targetSelectButtonOpen : ""}`}
+        onClick={() => onOpenDropdownChange(isOpen ? null : dropdownId)}
+        disabled={isDisabled}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+      >
+        <span>{displayLabel}</span>
+        <ChevronDownIcon className={styles.targetSelectChevron} />
+      </button>
+
+      {isOpen ? (
+        <div className={styles.targetSelectMenu} role="listbox">
+          <button
+            type="button"
+            className={`${styles.targetSelectOption} ${
+              !value ? styles.targetSelectOptionSelected : ""
+            }`}
+            role="option"
+            aria-selected={!value}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              onChange("");
+              closeDropdown();
+            }}
+          >
+            <span>{placeholder}</span>
+            <small>Select a register before moving assets.</small>
+          </button>
+
+          {targets.map((target) => {
+            const isSelected = target.id === value;
+
+            return (
+              <button
+                key={target.id}
+                type="button"
+                className={`${styles.targetSelectOption} ${
+                  isSelected ? styles.targetSelectOptionSelected : ""
+                }`}
+                role="option"
+                aria-selected={isSelected}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  onChange(target.id);
+                  closeDropdown();
+                }}
+              >
+                <span>{target.businessName}</span>
+                <small>
+                  {`${target.assetCount} asset${
+                    target.assetCount === 1 ? "" : "s"
+                  } · ${money(target.totalValue)} register value`}
+                </small>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function AssetRegistersClient() {
   const router = useRouter();
   const [registers, setRegisters] = useState<AssetRegisterSummary[]>([]);
@@ -259,6 +381,9 @@ export default function AssetRegistersClient() {
     null,
   );
   const [movingAssetId, setMovingAssetId] = useState<string | null>(null);
+  const [openTargetDropdownId, setOpenTargetDropdownId] = useState<
+    string | null
+  >(null);
   const [removingRegisterId, setRemovingRegisterId] = useState<string | null>(
     null,
   );
@@ -351,6 +476,11 @@ export default function AssetRegistersClient() {
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        if (openTargetDropdownId) {
+          setOpenTargetDropdownId(null);
+          return;
+        }
+
         if (isCreateModalOpen && !isCreating) {
           closeCreateModal();
         }
@@ -378,6 +508,7 @@ export default function AssetRegistersClient() {
     isSavingDetails,
     managedRegister,
     movingAssetId,
+    openTargetDropdownId,
     removingRegisterId,
   ]);
 
@@ -422,6 +553,7 @@ export default function AssetRegistersClient() {
   }
 
   function openCreateModal() {
+    setOpenTargetDropdownId(null);
     setIsCreateModalOpen(true);
   }
 
@@ -429,9 +561,11 @@ export default function AssetRegistersClient() {
     if (isCreating) return;
     setIsCreateModalOpen(false);
     setCreateDraft(emptyRegisterDraft);
+    setOpenTargetDropdownId(null);
   }
 
   function openManagePanel(register: AssetRegisterSummary) {
+    setOpenTargetDropdownId(null);
     setManagedRegisterId(register.id);
     setEditDraft(draftFromRegister(register));
     void loadManagedAssets(register);
@@ -442,6 +576,7 @@ export default function AssetRegistersClient() {
     setEditDraft(emptyRegisterDraft);
     setManagedAssets([]);
     setAssetMoveTargets({});
+    setOpenTargetDropdownId(null);
   }
 
   function openRegister(register: AssetRegisterSummary) {
@@ -462,6 +597,7 @@ export default function AssetRegistersClient() {
       return;
     }
 
+    setOpenTargetDropdownId(null);
     setDeleteCandidateRegister(register);
     setDeleteTargetRegisterId("");
   }
@@ -470,6 +606,7 @@ export default function AssetRegistersClient() {
     if (removingRegisterId) return;
     setDeleteCandidateRegister(null);
     setDeleteTargetRegisterId("");
+    setOpenTargetDropdownId(null);
   }
 
   async function handleCreateRegister(event: FormEvent<HTMLFormElement>) {
@@ -872,7 +1009,7 @@ export default function AssetRegistersClient() {
                           </button>
                           <button
                             type="button"
-                            className={styles.unitButton}
+                            className={`${styles.unitButton} ${styles.manageUnitButton}`}
                             onClick={() => openManagePanel(register)}
                             disabled={isLoadingManagedAssets}
                           >
@@ -1038,26 +1175,24 @@ export default function AssetRegistersClient() {
                       </div>
 
                       <div className={styles.assetMoveControls}>
-                        <select
+                        <RegisterTargetDropdown
+                          dropdownId={`move-${asset.id}`}
                           value={assetMoveTargets[asset.id] ?? ""}
-                          onChange={(event) =>
-                            setAssetMoveTargets((current) => ({
-                              ...current,
-                              [asset.id]: event.target.value,
-                            }))
-                          }
+                          targets={managedMoveTargets}
+                          placeholder="Choose target register"
                           disabled={
                             !managedMoveTargets.length ||
                             movingAssetId === asset.id
                           }
-                        >
-                          <option value="">Choose target register</option>
-                          {managedMoveTargets.map((target) => (
-                            <option key={target.id} value={target.id}>
-                              {target.businessName}
-                            </option>
-                          ))}
-                        </select>
+                          openDropdownId={openTargetDropdownId}
+                          onOpenDropdownChange={setOpenTargetDropdownId}
+                          onChange={(value) =>
+                            setAssetMoveTargets((current) => ({
+                              ...current,
+                              [asset.id]: value,
+                            }))
+                          }
+                        />
 
                         <button
                           type="button"
@@ -1097,7 +1232,10 @@ export default function AssetRegistersClient() {
           aria-modal="true"
           aria-labelledby="add-register-title"
         >
-          <form className={styles.modalCard} onSubmit={handleCreateRegister}>
+          <form
+            className={`${styles.modalCard} ${styles.createModalCard}`}
+            onSubmit={handleCreateRegister}
+          >
             <div className={styles.modalHeader}>
               <div>
                 <h2 id="add-register-title">Create a new asset register</h2>
@@ -1238,23 +1376,19 @@ export default function AssetRegistersClient() {
               </div>
 
               {deleteCandidateRegister.assetCount > 0 ? (
-                <label className={`${styles.field} ${styles.deleteMoveField}`}>
+                <div className={`${styles.field} ${styles.deleteMoveField}`}>
                   <span>Move assets to</span>
-                  <select
+                  <RegisterTargetDropdown
+                    dropdownId={`delete-${deleteCandidateRegister.id}`}
                     value={deleteTargetRegisterId}
-                    onChange={(event) =>
-                      setDeleteTargetRegisterId(event.target.value)
-                    }
+                    targets={deleteMoveTargets}
+                    placeholder="Choose target register"
                     disabled={removingRegisterId === deleteCandidateRegister.id}
-                  >
-                    <option value="">Choose target register</option>
-                    {deleteMoveTargets.map((target) => (
-                      <option key={target.id} value={target.id}>
-                        {target.businessName}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    openDropdownId={openTargetDropdownId}
+                    onOpenDropdownChange={setOpenTargetDropdownId}
+                    onChange={setDeleteTargetRegisterId}
+                  />
+                </div>
               ) : null}
 
               <div className={styles.deleteConfirmActions}>
