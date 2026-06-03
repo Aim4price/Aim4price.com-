@@ -1138,7 +1138,7 @@ export default function AssetRegistersClient() {
               <div className={styles.formActions}>
                 <button
                   type="submit"
-                  className={styles.primaryButton}
+                  className={`${styles.primaryButton} ${styles.manageSaveButton}`}
                   disabled={isSavingDetails}
                 >
                   {isSavingDetails ? "Saving..." : "Save"}
