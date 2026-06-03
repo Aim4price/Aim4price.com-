@@ -1,4 +1,9 @@
 import { getDb } from './db';
+import {
+  ensureAssetRegisterTables,
+  getAssetRegisterForUser,
+  getOrCreatePrimaryAssetRegister,
+} from './asset-registers';
 import type { CabType, ConditionKey, DriveType, TractorType } from './tractor-data';
 import type { MethodKey } from './valuation-runs';
 import type { Result } from './tractor-logic';
@@ -21,6 +26,7 @@ export type AssetRegisterDocument = {
 export type AssetRegisterItem = {
   id: string;
   userId: string;
+  registerId: string | null;
   valuationRunId: number | null;
   sectorId: number | null;
   equipmentFamilyId: number | null;
@@ -77,6 +83,7 @@ export type AssetRegisterItem = {
 };
 
 export type CreateManualAssetInput = {
+  registerId?: string | null;
   kind: AssetRegisterItemKind;
   title: string;
   value: number;
@@ -124,6 +131,7 @@ export type UpdateAssetRegisterItemInput = {
 type AssetRegisterRow = {
   id: string | number;
   user_id: string | null;
+  register_id: string | null;
   valuation_run_id: string | number | null;
   sector_id: string | number | null;
   equipment_family_id: string | number | null;
@@ -770,6 +778,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
   return {
     id: asIdText(row.id),
     userId: asText(row.user_id),
+    registerId: asText(row.register_id) || null,
     valuationRunId: asNumber(row.valuation_run_id),
     sectorId: asNumber(row.sector_id),
     equipmentFamilyId: asNumber(row.equipment_family_id),
@@ -865,6 +874,7 @@ async function getTableSchema(tableName: string): Promise<TableSchema> {
 }
 
 async function getAssetRegisterSchema(): Promise<TableSchema> {
+  await ensureAssetRegisterTables();
   return getTableSchema('asset_register_items');
 }
 
@@ -897,6 +907,7 @@ function isJsonColumn(meta: ColumnMetaRow | null): boolean {
 
 function buildSelectList(schema: TableSchema): string {
   const userIdColumn = resolveColumn(schema, 'user_id');
+  const registerIdColumn = resolveColumn(schema, 'register_id');
   const valuationRunIdColumn = resolveColumn(schema, 'valuation_run_id', 'run_id');
   const sectorIdColumn = resolveColumn(schema, 'sector_id');
   const equipmentFamilyIdColumn = resolveColumn(schema, 'equipment_family_id');
@@ -994,6 +1005,7 @@ function buildSelectList(schema: TableSchema): string {
   const selectParts = [
     'id',
     userIdColumn ? `${userIdColumn} as user_id` : `''::text as user_id`,
+    registerIdColumn ? `${registerIdColumn} as register_id` : 'null::uuid as register_id',
     valuationRunIdColumn ? `${valuationRunIdColumn} as valuation_run_id` : 'null::bigint as valuation_run_id',
     sectorIdColumn ? `${sectorIdColumn} as sector_id` : 'null::bigint as sector_id',
     `${equipmentFamilyIdExpression} as equipment_family_id`,
@@ -1151,6 +1163,7 @@ function pushDocumentField(fields: SqlField[], schema: TableSchema, documents: A
 
 type RequiredFieldContext = {
   userId: string;
+  registerId?: string | null;
   valuationRunId?: number | null;
   title: string;
   kind: AssetRegisterItemKind;
@@ -1182,6 +1195,10 @@ function buildRequiredFallbackField(meta: ColumnMetaRow, context: RequiredFieldC
 
   if (column === 'user_id') {
     return buildFieldFromMeta(meta, context.userId);
+  }
+
+  if (column === 'register_id') {
+    return context.registerId ? buildFieldFromMeta(meta, context.registerId) : null;
   }
 
   if (column === 'valuation_run_id' || column === 'run_id') {
@@ -1446,8 +1463,16 @@ export async function getAssetRegisterItemById(userId: string, assetId: string):
   return row ? mapAssetRegisterRow(row) : null;
 }
 
-export async function listAssetRegisterItems(userId: string): Promise<AssetRegisterItem[]> {
+export async function listAssetRegisterItems(userId: string, registerId?: string | null): Promise<AssetRegisterItem[]> {
   const db = getDb();
+  const activeRegister = registerId
+    ? await getAssetRegisterForUser(userId, registerId)
+    : await getOrCreatePrimaryAssetRegister(userId);
+
+  if (!activeRegister) {
+    throw new Error('ASSET_REGISTER_NOT_FOUND');
+  }
+
   const schema = await getAssetRegisterSchema();
 
   const updatedOrderColumn = resolveColumn(schema, 'updated_at', 'modified_at', 'updatedon');
@@ -1462,10 +1487,10 @@ export async function listAssetRegisterItems(userId: string): Promise<AssetRegis
       select
         ${buildSelectList(schema)}
       from asset_register_items
-      where user_id = $1
+      where user_id = $1 and register_id = $2::uuid
       order by ${primaryOrderExpression} desc nulls last${secondaryOrderClause}, id desc
     `,
-    [userId],
+    [userId, activeRegister.id],
   );
 
   return result.rows.map(mapAssetRegisterRow);
@@ -1476,6 +1501,14 @@ export async function createManualAssetRegisterItem(
   input: CreateManualAssetInput,
 ): Promise<AssetRegisterItem> {
   const db = getDb();
+  const activeRegister = input.registerId
+    ? await getAssetRegisterForUser(userId, input.registerId)
+    : await getOrCreatePrimaryAssetRegister(userId);
+
+  if (!activeRegister) {
+    throw new Error('ASSET_REGISTER_NOT_FOUND');
+  }
+
   const schema = await getAssetRegisterSchema();
   const now = new Date();
   const nextValue = Math.round(Number(input.value) || 0);
@@ -1492,6 +1525,7 @@ export async function createManualAssetRegisterItem(
   const fields: SqlField[] = [];
 
   pushField(fields, schema, ['user_id'], userId);
+  pushField(fields, schema, ['register_id'], activeRegister.id);
   pushField(fields, schema, ['valuation_run_id', 'run_id'], null);
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
   pushField(fields, schema, ['title', 'name', 'asset_name'], asText(input.title));
@@ -1521,6 +1555,7 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
   ensureRequiredFields(fields, schema, {
     userId,
+    registerId: activeRegister.id,
     valuationRunId: null,
     title: asText(input.title),
     kind: nextKind,
@@ -1859,6 +1894,7 @@ export async function deleteAssetRegisterItem(userId: string, assetId: string): 
 
 export async function createAssetRegisterItemFromValuation(input: {
   userId: string;
+  registerId?: string | null;
   valuationRunId: number;
   result: Result;
   selectedMethod: MethodKey;
@@ -1869,6 +1905,14 @@ export async function createAssetRegisterItemFromValuation(input: {
   photos?: string[];
 }): Promise<AssetRegisterItem> {
   const db = getDb();
+  const activeRegister = input.registerId
+    ? await getAssetRegisterForUser(input.userId, input.registerId)
+    : await getOrCreatePrimaryAssetRegister(input.userId);
+
+  if (!activeRegister) {
+    throw new Error('ASSET_REGISTER_NOT_FOUND');
+  }
+
   const schema = await getAssetRegisterSchema();
   const valuationSchema = await getValuationRunsSchema();
   const valuationRow = await fetchValuationRunRowById(input.userId, input.valuationRunId);
@@ -1894,6 +1938,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   copySharedFieldsFromValuationRun(fields, schema, valuationSchema, valuationRow);
 
   pushField(fields, schema, ['user_id'], input.userId);
+  pushField(fields, schema, ['register_id'], activeRegister.id);
   pushField(fields, schema, ['valuation_run_id', 'run_id'], input.valuationRunId);
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], 'tractor');
   pushField(fields, schema, ['title', 'name', 'asset_name'], title);
@@ -1922,6 +1967,7 @@ export async function createAssetRegisterItemFromValuation(input: {
 
   ensureRequiredFields(fields, schema, {
     userId: input.userId,
+    registerId: activeRegister.id,
     valuationRunId: input.valuationRunId,
     title,
     kind: 'tractor',
@@ -1953,6 +1999,7 @@ export async function createAssetRegisterItemFromValuation(input: {
 
 export async function createAssetRegisterItemFromGenericValuation(input: {
   userId: string;
+  registerId?: string | null;
   valuationRunId: number;
   result: GenericValuationResult;
   selectedMethod: GenericSelectedMethod;
@@ -1961,6 +2008,14 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   photos?: string[];
 }): Promise<AssetRegisterItem> {
   const db = getDb();
+  const activeRegister = input.registerId
+    ? await getAssetRegisterForUser(input.userId, input.registerId)
+    : await getOrCreatePrimaryAssetRegister(input.userId);
+
+  if (!activeRegister) {
+    throw new Error('ASSET_REGISTER_NOT_FOUND');
+  }
+
   const schema = await getAssetRegisterSchema();
   const valuationSchema = await getValuationRunsSchema();
   const valuationRow = await fetchValuationRunRowById(input.userId, input.valuationRunId);
@@ -1989,6 +2044,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   copySharedFieldsFromValuationRun(fields, schema, valuationSchema, valuationRow);
 
   pushField(fields, schema, ['user_id'], input.userId);
+  pushField(fields, schema, ['register_id'], activeRegister.id);
   pushField(fields, schema, ['valuation_run_id', 'run_id'], input.valuationRunId);
   pushField(fields, schema, ['sector_id'], valuationResult.sector.id);
   pushField(fields, schema, ['equipment_family_id'], valuationResult.family.id);
@@ -2024,6 +2080,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
 
   ensureRequiredFields(fields, schema, {
     userId: input.userId,
+    registerId: activeRegister.id,
     valuationRunId: input.valuationRunId,
     title,
     kind: 'equipment',

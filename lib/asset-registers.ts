@@ -1,0 +1,519 @@
+import { getDb } from './db';
+
+export type AssetRegisterSummary = {
+  id: string;
+  userId: string;
+  businessName: string;
+  email: string;
+  phone: string;
+  addressLine1: string;
+  isPrimary: boolean;
+  assetCount: number;
+  totalValue: number;
+  totalReplacementPrice: number;
+  createdAtIso: string;
+  updatedAtIso: string;
+};
+
+export type AssetRegisterInput = {
+  businessName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  addressLine1?: string | null;
+  address?: string | null;
+};
+
+type AssetRegisterRow = {
+  id: string;
+  user_id: string;
+  business_name: string | null;
+  email: string | null;
+  phone: string | null;
+  address_line_1: string | null;
+  is_primary: boolean | null;
+  created_at: string | Date | null;
+  updated_at: string | Date | null;
+  asset_count?: string | number | null;
+  total_value?: string | number | null;
+  total_replacement_price?: string | number | null;
+};
+
+type AccountProfileRow = {
+  user_id: string;
+  display_name: string | null;
+  business_name: string | null;
+  phone: string | null;
+  email?: string | null;
+  address_line_1: string | null;
+  address_line_2: string | null;
+  town_city: string | null;
+  province: string | null;
+};
+
+let assetRegisterTablesPromise: Promise<void> | null = null;
+
+function cleanText(value: unknown): string {
+  return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function normalizeEmail(value: unknown): string {
+  return cleanText(value).toLowerCase();
+}
+
+function normalizeRegisterName(value: unknown): string {
+  return cleanText(value).slice(0, 160);
+}
+
+function normalizePhone(value: unknown): string {
+  return cleanText(value).slice(0, 80);
+}
+
+function normalizeAddress(value: unknown): string {
+  return cleanText(value).slice(0, 300);
+}
+
+function numberValue(value: unknown): number {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function isoDate(value: unknown): string {
+  if (value instanceof Date && Number.isFinite(value.getTime())) {
+    return value.toISOString();
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    return value;
+  }
+
+  return new Date().toISOString();
+}
+
+function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterSummary {
+  return {
+    id: String(row.id ?? ''),
+    userId: String(row.user_id ?? ''),
+    businessName: cleanText(row.business_name) || 'Main Asset Register',
+    email: cleanText(row.email),
+    phone: cleanText(row.phone),
+    addressLine1: cleanText(row.address_line_1),
+    isPrimary: Boolean(row.is_primary),
+    assetCount: Math.max(0, Math.round(numberValue(row.asset_count))),
+    totalValue: Math.round(numberValue(row.total_value)),
+    totalReplacementPrice: Math.round(numberValue(row.total_replacement_price)),
+    createdAtIso: isoDate(row.created_at),
+    updatedAtIso: isoDate(row.updated_at ?? row.created_at),
+  };
+}
+
+async function ensureAssetRegisterTablesOnce(): Promise<void> {
+  const db = getDb();
+
+  await db.query(`create extension if not exists pgcrypto`);
+
+  await db.query(`
+    create table if not exists public.asset_registers (
+      id uuid primary key default gen_random_uuid(),
+      user_id text not null,
+      business_name text not null,
+      email text,
+      phone text,
+      address_line_1 text,
+      is_primary boolean not null default false,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    )
+  `);
+
+  await db.query(`
+    alter table public.asset_registers
+      add column if not exists user_id text,
+      add column if not exists business_name text,
+      add column if not exists email text,
+      add column if not exists phone text,
+      add column if not exists address_line_1 text,
+      add column if not exists is_primary boolean not null default false,
+      add column if not exists created_at timestamptz not null default now(),
+      add column if not exists updated_at timestamptz not null default now()
+  `);
+
+  await db.query(`
+    alter table if exists public.asset_register_items
+      add column if not exists register_id uuid
+  `);
+
+  await db.query(`
+    create index if not exists idx_asset_registers_user_created
+      on public.asset_registers(user_id, created_at desc)
+  `);
+
+  await db.query(`
+    create index if not exists idx_asset_registers_user_primary
+      on public.asset_registers(user_id, is_primary)
+  `);
+
+  await db.query(`
+    create index if not exists idx_asset_register_items_register
+      on public.asset_register_items(user_id, register_id, updated_at desc)
+  `).catch(async () => {
+    await db.query(`
+      create index if not exists idx_asset_register_items_register
+        on public.asset_register_items(user_id, register_id)
+    `);
+  });
+}
+
+export async function ensureAssetRegisterTables(): Promise<void> {
+  if (!assetRegisterTablesPromise) {
+    assetRegisterTablesPromise = ensureAssetRegisterTablesOnce().catch((error) => {
+      assetRegisterTablesPromise = null;
+      throw error;
+    });
+  }
+
+  return assetRegisterTablesPromise;
+}
+
+async function readProfileDefaults(userId: string): Promise<{
+  businessName: string;
+  email: string;
+  phone: string;
+  addressLine1: string;
+}> {
+  const db = getDb();
+
+  const result = await db.query<AccountProfileRow>(
+    `
+      select
+        user_id,
+        display_name,
+        business_name,
+        phone,
+        address_line_1,
+        address_line_2,
+        town_city,
+        province
+      from public.account_profiles
+      where user_id = $1
+      limit 1
+    `,
+    [userId],
+  ).catch(() => ({ rows: [] as AccountProfileRow[] }));
+
+  const profile = result.rows[0] ?? null;
+  const addressLine1 = profile
+    ? [profile.address_line_1, profile.address_line_2, profile.town_city, profile.province]
+        .map((part) => cleanText(part))
+        .filter(Boolean)
+        .join(', ')
+    : '';
+
+  return {
+    businessName: normalizeRegisterName(profile?.business_name) || normalizeRegisterName(profile?.display_name) || 'Main Asset Register',
+    email: '',
+    phone: normalizePhone(profile?.phone),
+    addressLine1,
+  };
+}
+
+async function insertAssetRegister(userId: string, input: Required<Pick<AssetRegisterInput, 'businessName'>> & AssetRegisterInput, isPrimary: boolean): Promise<AssetRegisterSummary> {
+  const db = getDb();
+  await ensureAssetRegisterTables();
+
+  const businessName = normalizeRegisterName(input.businessName) || 'Main Asset Register';
+  const email = normalizeEmail(input.email);
+  const phone = normalizePhone(input.phone);
+  const addressLine1 = normalizeAddress(input.addressLine1 ?? input.address);
+
+  const result = await db.query<AssetRegisterRow>(
+    `
+      insert into public.asset_registers (
+        user_id,
+        business_name,
+        email,
+        phone,
+        address_line_1,
+        is_primary,
+        created_at,
+        updated_at
+      )
+      values ($1, $2, $3, $4, $5, $6, now(), now())
+      returning
+        id,
+        user_id,
+        business_name,
+        email,
+        phone,
+        address_line_1,
+        is_primary,
+        created_at,
+        updated_at,
+        0::integer as asset_count,
+        0::numeric as total_value,
+        0::numeric as total_replacement_price
+    `,
+    [userId, businessName, email, phone, addressLine1, isPrimary],
+  );
+
+  return mapAssetRegisterRow(result.rows[0]);
+}
+
+export async function getOrCreatePrimaryAssetRegister(userId: string): Promise<AssetRegisterSummary> {
+  const db = getDb();
+  await ensureAssetRegisterTables();
+
+  const existingPrimary = await db.query<AssetRegisterRow>(
+    `
+      select
+        id,
+        user_id,
+        business_name,
+        email,
+        phone,
+        address_line_1,
+        is_primary,
+        created_at,
+        updated_at,
+        0::integer as asset_count,
+        0::numeric as total_value,
+        0::numeric as total_replacement_price
+      from public.asset_registers
+      where user_id = $1 and is_primary = true
+      order by created_at asc, id asc
+      limit 1
+    `,
+    [userId],
+  );
+
+  let primary = existingPrimary.rows[0] ? mapAssetRegisterRow(existingPrimary.rows[0]) : null;
+
+  if (!primary) {
+    const existingAny = await db.query<AssetRegisterRow>(
+      `
+        select
+          id,
+          user_id,
+          business_name,
+          email,
+          phone,
+          address_line_1,
+          is_primary,
+          created_at,
+          updated_at,
+          0::integer as asset_count,
+          0::numeric as total_value,
+          0::numeric as total_replacement_price
+        from public.asset_registers
+        where user_id = $1
+        order by created_at asc, id asc
+        limit 1
+      `,
+      [userId],
+    );
+
+    if (existingAny.rows[0]) {
+      const firstId = String(existingAny.rows[0].id);
+      await db.query(
+        `
+          update public.asset_registers
+          set is_primary = (id::text = $2), updated_at = now()
+          where user_id = $1
+        `,
+        [userId, firstId],
+      );
+      primary = { ...mapAssetRegisterRow(existingAny.rows[0]), isPrimary: true };
+    }
+  }
+
+  if (!primary) {
+    const defaults = await readProfileDefaults(userId);
+    primary = await insertAssetRegister(
+      userId,
+      {
+        businessName: defaults.businessName,
+        email: defaults.email,
+        phone: defaults.phone,
+        addressLine1: defaults.addressLine1,
+      },
+      true,
+    );
+  }
+
+  await db.query(
+    `
+      update public.asset_register_items
+      set register_id = $2::uuid
+      where user_id = $1 and register_id is null
+    `,
+    [userId, primary.id],
+  ).catch(() => undefined);
+
+  return primary;
+}
+
+export async function getAssetRegisterForUser(userId: string, registerId: string): Promise<AssetRegisterSummary | null> {
+  const db = getDb();
+  await getOrCreatePrimaryAssetRegister(userId);
+
+  const result = await db.query<AssetRegisterRow>(
+    `
+      select
+        ar.id,
+        ar.user_id,
+        ar.business_name,
+        ar.email,
+        ar.phone,
+        ar.address_line_1,
+        ar.is_primary,
+        ar.created_at,
+        ar.updated_at,
+        count(ai.id)::integer as asset_count,
+        coalesce(sum(coalesce(ai.value, ai.selected_value_ex_vat, 0)), 0)::numeric as total_value,
+        coalesce(sum(coalesce(ai.replacement_price_used_ex_vat, ai.user_replacement_price_ex_vat, 0)), 0)::numeric as total_replacement_price
+      from public.asset_registers ar
+      left join public.asset_register_items ai
+        on ai.user_id = ar.user_id
+       and ai.register_id = ar.id
+      where ar.user_id = $1 and ar.id::text = $2
+      group by ar.id
+      limit 1
+    `,
+    [userId, registerId],
+  );
+
+  return result.rows[0] ? mapAssetRegisterRow(result.rows[0]) : null;
+}
+
+export async function listAssetRegisters(userId: string): Promise<AssetRegisterSummary[]> {
+  const db = getDb();
+  await getOrCreatePrimaryAssetRegister(userId);
+
+  const result = await db.query<AssetRegisterRow>(
+    `
+      select
+        ar.id,
+        ar.user_id,
+        ar.business_name,
+        ar.email,
+        ar.phone,
+        ar.address_line_1,
+        ar.is_primary,
+        ar.created_at,
+        ar.updated_at,
+        count(ai.id)::integer as asset_count,
+        coalesce(sum(coalesce(ai.value, ai.selected_value_ex_vat, 0)), 0)::numeric as total_value,
+        coalesce(sum(coalesce(ai.replacement_price_used_ex_vat, ai.user_replacement_price_ex_vat, 0)), 0)::numeric as total_replacement_price
+      from public.asset_registers ar
+      left join public.asset_register_items ai
+        on ai.user_id = ar.user_id
+       and ai.register_id = ar.id
+      where ar.user_id = $1
+      group by ar.id
+      order by ar.is_primary desc, ar.updated_at desc nulls last, ar.created_at desc nulls last, ar.id desc
+    `,
+    [userId],
+  );
+
+  return result.rows.map(mapAssetRegisterRow);
+}
+
+export async function createAssetRegister(userId: string, input: AssetRegisterInput): Promise<AssetRegisterSummary> {
+  const businessName = normalizeRegisterName(input.businessName);
+
+  if (!businessName) {
+    throw new Error('ASSET_REGISTER_NAME_REQUIRED');
+  }
+
+  await getOrCreatePrimaryAssetRegister(userId);
+  return insertAssetRegister(userId, { ...input, businessName }, false);
+}
+
+export async function updateAssetRegister(userId: string, registerId: string, input: AssetRegisterInput): Promise<AssetRegisterSummary> {
+  const db = getDb();
+  await getOrCreatePrimaryAssetRegister(userId);
+
+  const businessName = normalizeRegisterName(input.businessName);
+
+  if (!businessName) {
+    throw new Error('ASSET_REGISTER_NAME_REQUIRED');
+  }
+
+  const result = await db.query<AssetRegisterRow>(
+    `
+      update public.asset_registers
+      set
+        business_name = $3,
+        email = $4,
+        phone = $5,
+        address_line_1 = $6,
+        updated_at = now()
+      where user_id = $1 and id::text = $2
+      returning
+        id,
+        user_id,
+        business_name,
+        email,
+        phone,
+        address_line_1,
+        is_primary,
+        created_at,
+        updated_at,
+        0::integer as asset_count,
+        0::numeric as total_value,
+        0::numeric as total_replacement_price
+    `,
+    [
+      userId,
+      registerId,
+      businessName,
+      normalizeEmail(input.email),
+      normalizePhone(input.phone),
+      normalizeAddress(input.addressLine1 ?? input.address),
+    ],
+  );
+
+  if (!result.rows[0]) {
+    throw new Error('ASSET_REGISTER_NOT_FOUND');
+  }
+
+  const refreshed = await getAssetRegisterForUser(userId, String(result.rows[0].id));
+  return refreshed ?? mapAssetRegisterRow(result.rows[0]);
+}
+
+export async function moveAssetRegisterItems(input: {
+  userId: string;
+  assetIds: string[];
+  targetRegisterId: string;
+}): Promise<number> {
+  const db = getDb();
+  const assetIds = Array.from(new Set(input.assetIds.map((id) => cleanText(id)).filter(Boolean)));
+
+  if (!assetIds.length) {
+    throw new Error('ASSET_ID_REQUIRED');
+  }
+
+  const targetRegister = await getAssetRegisterForUser(input.userId, cleanText(input.targetRegisterId));
+
+  if (!targetRegister) {
+    throw new Error('ASSET_REGISTER_NOT_FOUND');
+  }
+
+  const result = await db.query(
+    `
+      update public.asset_register_items
+      set register_id = $3::uuid,
+          updated_at = now()
+      where user_id = $1
+        and id::text = any($2::text[])
+    `,
+    [input.userId, assetIds, targetRegister.id],
+  );
+
+  return result.rowCount ?? 0;
+}
+
+export async function userOwnsAssetRegister(userId: string, registerId: string | null | undefined): Promise<boolean> {
+  const id = cleanText(registerId);
+  if (!id) return false;
+  return Boolean(await getAssetRegisterForUser(userId, id));
+}
