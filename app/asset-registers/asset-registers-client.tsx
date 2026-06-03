@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   useEffect,
@@ -1063,8 +1062,7 @@ export default function AssetRegistersClient() {
                   {managedRegister.businessName}
                 </h2>
                 <p className={styles.modalIntro}>
-                  Update register details or move assets from this register to
-                  another register on the same account.
+                  Update register details or move assets from this register to another register on the same account.
                 </p>
               </div>
               <button
@@ -1143,14 +1141,8 @@ export default function AssetRegistersClient() {
                   className={styles.primaryButton}
                   disabled={isSavingDetails}
                 >
-                  {isSavingDetails ? "Saving..." : "Save details"}
+                  {isSavingDetails ? "Saving..." : "Save"}
                 </button>
-                <Link
-                  className={styles.secondaryButton}
-                  href={buildOpenHref(managedRegister.id)}
-                >
-                  Open register
-                </Link>
               </div>
             </form>
 
@@ -1196,7 +1188,11 @@ export default function AssetRegistersClient() {
 
                         <button
                           type="button"
-                          className={styles.secondaryButton}
+                          className={
+                            assetMoveTargets[asset.id] && movingAssetId !== asset.id
+                              ? `${styles.primaryButton} ${styles.assetMoveReadyButton}`
+                              : styles.secondaryButton
+                          }
                           onClick={() => handleMoveAsset(asset)}
                           disabled={
                             !assetMoveTargets[asset.id] ||

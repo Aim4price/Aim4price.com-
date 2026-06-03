@@ -1013,6 +1013,11 @@
   font-weight: 700;
 }
 
+.manageModalCard .modalIntro {
+  max-width: none;
+  white-space: nowrap;
+}
+
 .closeButton,
 .deleteConfirmCloseButton {
   border-color: rgba(216, 225, 234, 0.98);
@@ -1125,14 +1130,21 @@
 }
 
 .manageModalCard .editForm {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   padding: clamp(1.1rem, 2vw, 1.55rem) clamp(1.25rem, 2.4vw, 1.9rem);
-  gap: 1rem 1.1rem;
+  gap: 1.05rem clamp(1.25rem, 2.2vw, 1.8rem);
   border-bottom: 1px solid rgba(216, 225, 234, 0.96);
   background: rgba(255, 255, 255, 0.72);
 }
 
+.manageModalCard .editForm .field {
+  align-self: start;
+}
+
 .manageModalCard .formActions {
-  padding-top: 0.15rem;
+  justify-content: flex-end;
+  padding-top: 0.2rem;
 }
 
 .manageModalCard .formActions > * {
@@ -1182,11 +1194,27 @@
   gap: 0.75rem;
 }
 
-.assetMoveControls .secondaryButton {
+.assetMoveControls .secondaryButton,
+.assetMoveControls .assetMoveReadyButton {
   min-height: 3.25rem;
   min-width: 5.8rem;
   border-radius: 1rem;
   font-weight: 900;
+}
+
+.assetMoveReadyButton {
+  color: #ffffff;
+  background: linear-gradient(180deg, #197454 0%, #0f5840 100%);
+  border-color: #0f6248;
+  box-shadow:
+    0 14px 26px rgba(25, 116, 84, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.assetMoveReadyButton:hover:not(:disabled) {
+  color: #ffffff;
+  background: linear-gradient(180deg, #218462 0%, #0b4b37 100%);
+  border-color: #0b4b37;
 }
 
 .targetSelect {
@@ -1448,6 +1476,18 @@
   .cardHeader,
   .modalHeader {
     display: grid;
+  }
+
+  .manageModalCard .modalIntro {
+    white-space: normal;
+  }
+
+  .manageModalCard .editForm {
+    grid-template-columns: 1fr;
+  }
+
+  .manageModalCard .formActions {
+    justify-content: stretch;
   }
 
   .formActions,
