@@ -2855,14 +2855,6 @@ export default function AssetRegisterClient() {
     () => mergeProfileWithRegister(accountProfile, activeRegister),
     [accountProfile, activeRegister],
   );
-  const activeRegisterMeta = activeRegister
-    ? [
-        `${activeRegister.assetCount} asset${activeRegister.assetCount === 1 ? '' : 's'}`,
-        activeRegister?.isSelected ? 'Selected register' : '',
-        activeRegister.email || reportProfile?.email || '',
-        activeRegister.phone || reportProfile?.phone || '',
-      ].filter(Boolean).join(' • ')
-    : 'Aim4price asset register';
   const canUseOwnerOnlyAssetActions = true;
   const canUseMarketplaceActions = true;
   const isQuoteModalOpen = Boolean(quoteAsset);
@@ -5532,24 +5524,12 @@ export default function AssetRegisterClient() {
         ) : null}
 
         <section className={styles.registerPanel}>
-          {activeRegister ? (
-            <div className={styles.selectedRegisterNotice}>
-              <strong>{activeRegister.businessName} is selected.</strong>
-              <span>You will only see assets in this register until you change the selected register.</span>
-              <Link href="/asset-registers">Change selected register</Link>
-            </div>
-          ) : null}
-
           <div className={styles.registerHeader}>
             <div className={`${styles.registerTitleBlock} ${styles.businessRegisterTitleBlock}`}>
               <h1>{activeRegister?.businessName || buildOwnerName(reportProfile)}</h1>
-              <p>{activeRegisterMeta}</p>
             </div>
 
             <div className={`${styles.headerActions} ${canUseOwnerOnlyAssetActions ? styles.ownerRegisterHeaderActions : styles.sharedRegisterHeaderActions}`}>
-              <Link className={`${styles.secondaryButton} ${styles.headerOptionsButton}`} href="/asset-registers">
-                Change register
-              </Link>
               {canUseOwnerOnlyAssetActions ? (
                 <button
                   type="button"
