@@ -3,6 +3,11 @@ import { getServerSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { attachOpenPartnerNotesToAssets } from '../../../lib/partner-access';
 import {
+  getAssetRegisterForUser,
+  getOrCreatePrimaryAssetRegister,
+  listAssetRegisters,
+} from '../../../lib/asset-registers';
+import {
   deleteUnreferencedAssetRegisterUploads,
   listInternalAssetRegisterUploadIds,
   MAX_ASSET_REGISTER_PHOTOS,
@@ -337,7 +342,7 @@ function formatUnknownError(error: unknown, fallback: string): string {
   return fallback;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await getServerSession();
 
   if (!session?.user?.id) {
@@ -348,11 +353,24 @@ export async function GET() {
     const ownerError = await requireOwnerAccount(session.user);
     if (ownerError) return ownerError;
 
-    const baseItems = await listAssetRegisterItems(session.user.id);
+    const { searchParams } = new URL(request.url);
+    const requestedRegisterId = String(searchParams.get('registerId') ?? '').trim();
+    const register = requestedRegisterId
+      ? await getAssetRegisterForUser(session.user.id, requestedRegisterId)
+      : await getOrCreatePrimaryAssetRegister(session.user.id);
+
+    if (!register) {
+      return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
+    }
+
+    const baseItems = await listAssetRegisterItems(session.user.id, register.id);
     const items = await attachOpenPartnerNotesToAssets(session.user.id, baseItems);
+    const registers = await listAssetRegisters(session.user.id);
 
     return NextResponse.json({
       ok: true,
+      register,
+      registers,
       items,
       summary: {
         count: items.length,
@@ -413,6 +431,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const item = await createManualAssetRegisterItem(session.user.id, {
+      registerId: String((body as { registerId?: unknown }).registerId ?? '').trim() || null,
       kind: normalizeKind(body.kind),
       title,
       value,
@@ -436,6 +455,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, item });
   } catch (error) {
+    if (error instanceof Error && error.message === 'ASSET_REGISTER_NOT_FOUND') {
+      return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
+    }
+
+    if (error instanceof Error && error.message === 'REPLACEMENT_PRICE_REQUIRED') {
+      return NextResponse.json({ ok: false, error: 'Replacement price is required and must be greater than zero.' }, { status: 400 });
+    }
+
     console.error('asset register POST failed', error);
     return NextResponse.json(
       { ok: false, error: formatUnknownError(error, 'Failed to create asset.') },
