@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { listAssetRegisterItems, type AssetRegisterItem } from '../../../../lib/asset-register-db';
-import { getAssetRegisterForUser, getOrCreatePrimaryAssetRegister } from '../../../../lib/asset-registers';
+import { getAssetRegisterForUser, getSelectedAssetRegister } from '../../../../lib/asset-registers';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
 
 export const runtime = 'nodejs';
@@ -1135,7 +1135,7 @@ export async function GET(request: NextRequest) {
     const requestedRegisterId = String(params.get('registerId') ?? '').trim();
     const register = requestedRegisterId
       ? await getAssetRegisterForUser(session.user.id, requestedRegisterId)
-      : await getOrCreatePrimaryAssetRegister(session.user.id);
+      : await getSelectedAssetRegister(session.user.id);
 
     if (!register) {
       return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
