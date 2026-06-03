@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation';
 import { getAccountProfile } from '../../lib/account-profile';
 import { getServerSession } from '../../lib/auth-session';
-import AssetRegistersClient from './asset-registers-client';
+import AssetRegisterClient from './asset-register-client';
 
 export const runtime = 'nodejs';
 
-export default async function AssetRegistersPage() {
+export default async function AssetRegisterPage() {
   const session = await getServerSession();
 
   if (!session) {
@@ -22,5 +22,5 @@ export default async function AssetRegistersPage() {
     redirect('/leads');
   }
 
-  return <AssetRegistersClient />;
+  return <AssetRegisterClient />;
 }
