@@ -952,6 +952,10 @@ export default function AccountClient() {
     scrollToSection(businessDetailsSectionRef);
   }
 
+  function openAssetRegistersPage() {
+    window.location.assign('/asset-registers');
+  }
+
   function openMarketplaceEditor() {
     setIsMarketplaceEditorOpen(true);
     scrollToSection(marketplaceSectionRef);
@@ -1105,6 +1109,14 @@ export default function AccountClient() {
                 <strong>Edit business details</strong>
                 <span className={styles.quickActionChevron}>›</span>
               </button>
+
+              {isOwnerAccount ? (
+                <button type="button" className={styles.quickActionButton} onClick={openAssetRegistersPage}>
+                  <span className={styles.quickActionIcon}>▤</span>
+                  <strong>Manage asset registers</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
 
               {showScanPinControls ? (
                 <button type="button" className={styles.quickActionButton} onClick={openScanPinEditor}>
