@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { listAssetRegisterItems, type AssetRegisterItem } from '../../../../lib/asset-register-db';
+import { getAssetRegisterForUser, getOrCreatePrimaryAssetRegister } from '../../../../lib/asset-registers';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
 
 export const runtime = 'nodejs';
@@ -1131,7 +1132,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Asset Register export is only available to owner accounts.' }, { status: 403 });
     }
 
-    const items = await listAssetRegisterItems(session.user.id);
+    const requestedRegisterId = String(params.get('registerId') ?? '').trim();
+    const register = requestedRegisterId
+      ? await getAssetRegisterForUser(session.user.id, requestedRegisterId)
+      : await getOrCreatePrimaryAssetRegister(session.user.id);
+
+    if (!register) {
+      return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
+    }
+
+    const exportProfile: AccountProfileResult = {
+      ...profile,
+      businessName: register.businessName || profile.businessName,
+      phone: register.phone || profile.phone,
+      email: register.email || profile.email,
+      addressLine1: register.addressLine1 || profile.addressLine1,
+      addressLine2: '',
+    };
+
+    const items = await listAssetRegisterItems(session.user.id, register.id);
     const generatedAt = new Date();
     const filenameDate = generatedAt.toISOString().slice(0, 10);
 
@@ -1141,8 +1160,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ ok: false, error: 'Only the full Asset Register PDF is available from this endpoint.' }, { status: 400 });
       }
 
-      const pdf = buildFullRegisterPdf(items, profile, generatedAt);
-      const ownerSlug = pdfFileSlug(buildOwnerName(profile));
+      const pdf = buildFullRegisterPdf(items, exportProfile, generatedAt);
+      const ownerSlug = pdfFileSlug(buildOwnerName(exportProfile));
       const fileName = `aim4price-full-asset-register-${ownerSlug}-${filenameDate}.pdf`;
 
       return new NextResponse(pdf, {
@@ -1156,8 +1175,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const workbook = createXlsxWorkbook(buildWorkbookSheets(items, profile, generatedAt));
-    const fileName = `aim4price-full-asset-register-${filenameDate}.xlsx`;
+    const workbook = createXlsxWorkbook(buildWorkbookSheets(items, exportProfile, generatedAt));
+    const ownerSlug = pdfFileSlug(buildOwnerName(exportProfile));
+    const fileName = `aim4price-full-asset-register-${ownerSlug}-${filenameDate}.xlsx`;
 
     return new NextResponse(workbook, {
       status: 200,
