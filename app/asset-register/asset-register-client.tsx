@@ -2937,23 +2937,37 @@ export default function AssetRegisterClient() {
   useEffect(() => {
     let mounted = true;
 
+    async function loadAccountProfile() {
+      try {
+        const profileResponse = await fetch('/api/account-profile', {
+          cache: 'no-store',
+          credentials: 'include',
+        });
+
+        const profileData = (await profileResponse.json()) as AccountProfileApiResponse;
+
+        if (mounted && profileResponse.ok && profileData.ok && profileData.profile) {
+          setAccountProfile(profileData.profile);
+        }
+      } catch {
+        // The register data is the important path here. Profile data can fail without blocking the page.
+      }
+    }
+
     async function loadAssetRegister() {
       setIsLoading(true);
+      setActiveRegister(null);
+      setAssets([]);
 
       try {
         const requestedRegisterId = readRegisterIdFromLocation();
         setActiveRegisterId(requestedRegisterId);
+        void loadAccountProfile();
 
-        const [assetsResponse, profileResponse] = await Promise.all([
-          fetch(buildAssetRegisterApiUrl(requestedRegisterId), {
-            cache: 'no-store',
-            credentials: 'include',
-          }),
-          fetch('/api/account-profile', {
-            cache: 'no-store',
-            credentials: 'include',
-          }).catch(() => null),
-        ]);
+        const assetsResponse = await fetch(buildAssetRegisterApiUrl(requestedRegisterId), {
+          cache: 'no-store',
+          credentials: 'include',
+        });
 
         const assetsData = (await assetsResponse.json()) as AssetRegisterApiResponse;
 
@@ -2968,23 +2982,18 @@ export default function AssetRegisterClient() {
           : Array.isArray(assetsData.assets)
             ? assetsData.assets
             : [];
+
         setAssets(loadedAssets);
+
         if (assetsData.register) {
           setActiveRegister(assetsData.register);
           setActiveRegisterId(assetsData.register.id);
+        } else {
+          setActiveRegister(null);
         }
+
         if (Array.isArray(assetsData.registers)) {
           setAssetRegisters(assetsData.registers);
-        }
-        if (profileResponse) {
-          try {
-            const profileData = (await profileResponse.json()) as AccountProfileApiResponse;
-            if (profileResponse.ok && profileData.ok && profileData.profile) {
-              setAccountProfile(profileData.profile);
-            }
-          } catch {
-            // no-op
-          }
         }
       } catch (error) {
         if (!mounted) return;
@@ -5543,7 +5552,7 @@ export default function AssetRegisterClient() {
         <section className={styles.registerPanel}>
           <div className={styles.registerHeader}>
             <div className={`${styles.registerTitleBlock} ${styles.businessRegisterTitleBlock}`}>
-              <h1>{activeRegister?.businessName || buildOwnerName(reportProfile)}</h1>
+              <h1>{isLoading ? 'Loading...' : activeRegister?.businessName || buildOwnerName(reportProfile)}</h1>
             </div>
 
             <div className={`${styles.headerActions} ${canUseOwnerOnlyAssetActions ? styles.ownerRegisterHeaderActions : styles.sharedRegisterHeaderActions}`}>
