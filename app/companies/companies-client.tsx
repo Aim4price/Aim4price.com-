@@ -307,9 +307,6 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
   }, [companies, searchTerm, selectedProvince, selectedType]);
 
   const activeFilterCount = [selectedProvince, selectedType !== 'all' ? selectedType : ''].filter(Boolean).length;
-  const resultLabel = isLoading
-    ? 'Loading companies'
-    : `${filteredCompanies.length} ${filteredCompanies.length === 1 ? 'company' : 'companies'} shown`;
 
   function handleTypeSelect(type: CompanyTypeFilter) {
     setSelectedType((current) => (current === type ? 'all' : type));
@@ -436,12 +433,7 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
       <section className={styles.shell}>
         <section className={styles.heroCard}>
           <div className={styles.heroTitleRow}>
-            <div>
-              <span>Partner directory</span>
-              <h1>List of companies</h1>
-              <p>Finance providers, insurers, brokers and dealers listed on Aim4price.</p>
-            </div>
-            <strong>{resultLabel}</strong>
+            <h1>List of companies</h1>
           </div>
 
           <div className={styles.categoryGrid} aria-label="Company types">
