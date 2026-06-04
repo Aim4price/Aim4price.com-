@@ -122,8 +122,6 @@ const initialScanPinStatus: AccountScanPinStatus = {
 
 const PROFILE_COMPLETION_TOTAL = 7;
 const MAX_LOGO_UPLOAD_BYTES = 2 * 1024 * 1024;
-const MAX_BUSINESS_EXTRA_PHOTOS = 6;
-const MAX_BUSINESS_PHOTO_UPLOAD_BYTES = 3 * 1024 * 1024;
 const ALLOWED_LOGO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const DEFAULT_PARTNER_MAP_CENTER: [number, number] = [-29.0, 24.0];
@@ -257,32 +255,6 @@ function buildProfileLocation(profile: AccountProfile): string {
     .join(', ');
 }
 
-function normalizeImageUrlList(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  const seen = new Set<string>();
-  const urls: string[] = [];
-
-  for (const entry of value) {
-    const url = String(entry ?? '').trim();
-
-    if (!url || seen.has(url)) {
-      continue;
-    }
-
-    seen.add(url);
-    urls.push(url);
-
-    if (urls.length >= MAX_BUSINESS_EXTRA_PHOTOS) {
-      break;
-    }
-  }
-
-  return urls;
-}
-
 function formatWebsiteLabel(value: string): string {
   const text = String(value ?? '').trim();
 
@@ -305,7 +277,7 @@ function buildProfileDraft(profile: AccountProfile | null): ProfileDraft {
     displayName,
     logoUrl: profile.logoUrl,
     websiteUrl: profile.websiteUrl,
-    extraPhotoUrls: normalizeImageUrlList(profile.extraPhotoUrls),
+    extraPhotoUrls: [],
     businessName: profile.businessName,
     phone: profile.phone,
     accountType: profile.accountType || 'owner',
@@ -469,7 +441,6 @@ export default function AccountClient() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isReadingLogo, setIsReadingLogo] = useState(false);
-  const [isReadingBusinessPhotos, setIsReadingBusinessPhotos] = useState(false);
   const partnerMapElementRef = useRef<HTMLDivElement | null>(null);
   const partnerLeafletMapRef = useRef<any>(null);
   const partnerPinMarkerRef = useRef<any>(null);
@@ -619,10 +590,6 @@ export default function AccountClient() {
   );
   const scanPinStatusLabel = scanPinStatus.enabled ? 'Active' : 'Disabled';
   const logoUrl = profileDraft.logoUrl.trim();
-  const extraPhotoUrls = useMemo(
-    () => normalizeImageUrlList(profileDraft.extraPhotoUrls),
-    [profileDraft.extraPhotoUrls],
-  );
   const websiteUrl = profileDraft.websiteUrl.trim();
   const websiteDisplayLabel = formatWebsiteLabel(websiteUrl);
   const marketplaceSellerName =
@@ -854,74 +821,6 @@ export default function AccountClient() {
     await saveProfileDraft(nextDraft, 'Logo removed.');
   }
 
-  async function handleBusinessPhotoFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []);
-    event.target.value = '';
-
-    if (!files.length) {
-      return;
-    }
-
-    const currentPhotoUrls = normalizeImageUrlList(profileDraft.extraPhotoUrls);
-    const availableSlots = MAX_BUSINESS_EXTRA_PHOTOS - currentPhotoUrls.length;
-
-    if (availableSlots <= 0) {
-      setNotice({ tone: 'error', message: `You can upload up to ${MAX_BUSINESS_EXTRA_PHOTOS} extra photos.` });
-      return;
-    }
-
-    if (files.length > availableSlots) {
-      setNotice({
-        tone: 'error',
-        message: `You can add ${availableSlots} more photo${availableSlots === 1 ? '' : 's'}. Remove an existing photo first.`,
-      });
-      return;
-    }
-
-    for (const file of files) {
-      const fileType = String(file.type ?? '').trim().toLowerCase();
-
-      if (!ALLOWED_LOGO_TYPES.has(fileType)) {
-        setNotice({ tone: 'error', message: 'Upload JPG, PNG or WEBP business photos.' });
-        return;
-      }
-
-      if (file.size > MAX_BUSINESS_PHOTO_UPLOAD_BYTES) {
-        setNotice({
-          tone: 'error',
-          message: `Each business photo must be ${formatUploadSize(MAX_BUSINESS_PHOTO_UPLOAD_BYTES)} or smaller.`,
-        });
-        return;
-      }
-    }
-
-    setIsReadingBusinessPhotos(true);
-
-    try {
-      const dataUrls = await Promise.all(files.map((file) => readFileAsDataUrl(file)));
-      const nextDraft = {
-        ...profileDraft,
-        extraPhotoUrls: normalizeImageUrlList([...currentPhotoUrls, ...dataUrls]),
-      };
-      setProfileDraft(nextDraft);
-      await saveProfileDraft(nextDraft, dataUrls.length === 1 ? 'Business photo saved.' : 'Business photos saved.');
-    } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to read business photos.' });
-    } finally {
-      setIsReadingBusinessPhotos(false);
-    }
-  }
-
-  async function handleRemoveBusinessPhoto(photoIndex: number) {
-    const currentPhotoUrls = normalizeImageUrlList(profileDraft.extraPhotoUrls);
-    const nextDraft = {
-      ...profileDraft,
-      extraPhotoUrls: currentPhotoUrls.filter((_, index) => index !== photoIndex),
-    };
-    setProfileDraft(nextDraft);
-    await saveProfileDraft(nextDraft, 'Business photo removed.');
-  }
-
   async function saveProfileDraft(nextDraft: ProfileDraft, successMessage = 'Account details saved.'): Promise<boolean> {
     setIsSavingProfile(true);
 
@@ -932,7 +831,7 @@ export default function AccountClient() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(nextDraft),
+        body: JSON.stringify({ ...nextDraft, extraPhotoUrls: [] }),
       });
 
       const data = (await response.json()) as ProfileApiResponse;
@@ -1166,7 +1065,7 @@ export default function AccountClient() {
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleLogoFileChange}
-                disabled={isReadingLogo || isSavingProfile || isReadingBusinessPhotos}
+                disabled={isReadingLogo || isSavingProfile}
               />
               {logoUrl ? <img src={logoUrl} alt="Business logo" /> : <span>{profileInitials}</span>}
             </label>
@@ -1349,9 +1248,9 @@ export default function AccountClient() {
                 <div className={`${styles.mediaUploadField} ${styles.fullWidth}`}>
                   <div className={styles.mediaUploadHeader}>
                     <div>
-                      <span>Business media</span>
-                      <strong>Logo and extra photos</strong>
-                      <p>Upload a logo plus up to {MAX_BUSINESS_EXTRA_PHOTOS} extra photos for your business profile.</p>
+                      <span>Business logo</span>
+                      <strong>Logo for company profile</strong>
+                      <p>Upload one clear logo for your business profile.</p>
                     </div>
                   </div>
 
@@ -1367,7 +1266,7 @@ export default function AccountClient() {
                             type="file"
                             accept="image/jpeg,image/png,image/webp"
                             onChange={handleLogoFileChange}
-                            disabled={isReadingLogo || isSavingProfile || isReadingBusinessPhotos}
+                            disabled={isReadingLogo || isSavingProfile}
                           />
                           {logoUrl ? 'Replace logo' : 'Upload logo'}
                         </label>
@@ -1377,7 +1276,7 @@ export default function AccountClient() {
                             type="button"
                             className={styles.ghostButton}
                             onClick={handleRemoveLogo}
-                            disabled={isSavingProfile || isReadingLogo || isReadingBusinessPhotos}
+                            disabled={isSavingProfile || isReadingLogo}
                           >
                             Remove logo
                           </button>
@@ -1385,53 +1284,6 @@ export default function AccountClient() {
                       </div>
 
                       <small>JPG, PNG or WEBP. Maximum {formatUploadSize(MAX_LOGO_UPLOAD_BYTES)}.</small>
-                    </section>
-
-                    <section className={styles.businessPhotosPanel}>
-                      <div className={styles.businessPhotosToolbar}>
-                        <div>
-                          <strong>Extra photos</strong>
-                          <small>{extraPhotoUrls.length}/{MAX_BUSINESS_EXTRA_PHOTOS} uploaded</small>
-                        </div>
-
-                        <label className={styles.uploadButton}>
-                          <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            multiple
-                            onChange={handleBusinessPhotoFileChange}
-                            disabled={
-                              isReadingBusinessPhotos ||
-                              isSavingProfile ||
-                              isReadingLogo ||
-                              extraPhotoUrls.length >= MAX_BUSINESS_EXTRA_PHOTOS
-                            }
-                          />
-                          {isReadingBusinessPhotos ? 'Uploading...' : 'Upload photos'}
-                        </label>
-                      </div>
-
-                      {extraPhotoUrls.length ? (
-                        <div className={styles.businessPhotoGrid}>
-                          {extraPhotoUrls.map((photoUrl, index) => (
-                            <figure key={`${photoUrl}-${index}`} className={styles.businessPhotoThumb}>
-                              <img src={photoUrl} alt={`Business extra photo ${index + 1}`} />
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveBusinessPhoto(index)}
-                                aria-label={`Remove business photo ${index + 1}`}
-                                disabled={isSavingProfile || isReadingBusinessPhotos}
-                              >
-                                ×
-                              </button>
-                            </figure>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className={styles.businessPhotoEmpty}>No extra photos uploaded yet.</div>
-                      )}
-
-                      <small>JPG, PNG or WEBP. Maximum {formatUploadSize(MAX_BUSINESS_PHOTO_UPLOAD_BYTES)} each.</small>
                     </section>
                   </div>
                 </div>
@@ -1474,7 +1326,7 @@ export default function AccountClient() {
                 <button type="button" className={styles.ghostButton} onClick={() => setIsBusinessEditorOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo || isReadingBusinessPhotos}>
+                <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
                   {isSavingProfile ? 'Saving...' : 'Save'}
                 </button>
               </div>
@@ -1516,23 +1368,6 @@ export default function AccountClient() {
                   <span>Account email</span>
                   <strong>{accountEmailLabel}</strong>
                 </div>
-
-                {isPartnerAccount ? (
-                  <div className={styles.businessMediaSummary}>
-                    <div className={styles.businessMediaSummaryHeader}>
-                      <span>Extra photos</span>
-                      <strong>{extraPhotoUrls.length ? `${extraPhotoUrls.length} uploaded` : 'No extra photos uploaded yet'}</strong>
-                    </div>
-
-                    {extraPhotoUrls.length ? (
-                      <div className={styles.businessPhotoStrip}>
-                        {extraPhotoUrls.slice(0, MAX_BUSINESS_EXTRA_PHOTOS).map((photoUrl, index) => (
-                          <img key={`${photoUrl}-${index}`} src={photoUrl} alt={`Business photo ${index + 1}`} />
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
               </div>
 
               {showScanPinControls ? (
@@ -1690,7 +1525,7 @@ export default function AccountClient() {
               </label>
 
               <div className={styles.actionsRow}>
-                <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo || isReadingBusinessPhotos}>
+                <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
                   {isSavingProfile ? 'Saving...' : 'Save directory'}
                 </button>
               </div>
@@ -1755,7 +1590,7 @@ export default function AccountClient() {
                   <button type="button" className={styles.ghostButton} onClick={() => setIsMarketplaceEditorOpen(false)}>
                     Cancel
                   </button>
-                  <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo || isReadingBusinessPhotos}>
+                  <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
                     {isSavingProfile ? 'Saving...' : 'Save marketplace'}
                   </button>
                 </div>
