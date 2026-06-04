@@ -79,7 +79,7 @@ type ColumnNameRow = {
 let assetRegisterTablesPromise: Promise<void> | null = null;
 let assetRegisterItemColumnsPromise: Promise<Set<string>> | null = null;
 
-const MAX_ASSET_REGISTER_LOGOS = 8;
+const MAX_ASSET_REGISTER_LOGOS = 1;
 const MAX_ASSET_REGISTER_LOGO_URL_LENGTH = 4_000_000;
 
 function cleanText(value: unknown): string {
