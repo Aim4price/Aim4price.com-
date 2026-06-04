@@ -2943,7 +2943,6 @@ export default function AssetRegisterClient() {
     () => quotePartners.find((partner) => partner.userId === selectedQuotePartnerId) ?? null,
     [quotePartners, selectedQuotePartnerId],
   );
-  const selectedQuotePartnerPhotos = selectedQuotePartner?.extraPhotoUrls?.filter(Boolean).slice(0, 3) ?? [];
   const selectedQuotePartnerWebsiteHref = selectedQuotePartner ? normalizeWebsiteHref(selectedQuotePartner.websiteUrl) : '';
   const selectedQuotePartnerEmailHref = selectedQuotePartner ? normalizeEmailHref(selectedQuotePartner.email) : '';
   const selectedQuotePartnerPhoneHref = selectedQuotePartner ? normalizePhoneHref(selectedQuotePartner.phone) : '';
@@ -7083,11 +7082,6 @@ export default function AssetRegisterClient() {
                                     <span className={styles.assetQuoteSelectedLogoFallback}>{quotePartnerInitial(selectedQuotePartner)}</span>
                                   )}
                                 </span>
-                                {selectedQuotePartnerPhotos.map((photoUrl, index) => (
-                                  <span key={`${photoUrl}-${index}`} className={styles.assetQuoteSelectedMediaTile}>
-                                    <img src={photoUrl} alt={`${quotePartnerName(selectedQuotePartner)} business photo ${index + 1}`} />
-                                  </span>
-                                ))}
                               </div>
 
                               <div className={styles.assetQuoteSelectedCompanyInfo}>

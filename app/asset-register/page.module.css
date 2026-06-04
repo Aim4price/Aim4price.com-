@@ -6935,7 +6935,7 @@
 
 .qrActionsGrid {
   display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-columns: minmax(0, 1fr) !important;
   gap: 0.8rem !important;
 }
 
@@ -13728,7 +13728,7 @@
   overflow: hidden !important;
   border: 1px solid rgba(204, 219, 232, 0.96) !important;
   border-radius: 1.55rem !important;
-  background: #eef4f1 !important;
+  background: #ffffff !important;
   box-shadow:
     0 22px 58px rgba(18, 45, 37, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
@@ -15604,7 +15604,7 @@
 
   .heroSummaryValue,
   .heroRegisterValue {
-    font-size: 2.15rem !important;
+    font-size: 3.1rem !important;
   }
 
   .heroVatFooter {
@@ -19885,9 +19885,9 @@
 
 .assetQuoteSelectedMediaGrid {
   display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-columns: minmax(0, 1fr) !important;
   gap: 0 !important;
-  background: #eef4f1 !important;
+  background: #ffffff !important;
   border-bottom: 1px solid rgba(204, 219, 232, 0.84) !important;
 }
 
@@ -19895,11 +19895,11 @@
   position: relative !important;
   display: grid !important;
   place-items: center !important;
-  min-height: 8rem !important;
-  aspect-ratio: 1.12 / 1 !important;
+  min-height: 12.2rem !important;
+  aspect-ratio: 1.85 / 1 !important;
   overflow: hidden !important;
   background: #f8fbf9 !important;
-  border-right: 1px solid rgba(204, 219, 232, 0.84) !important;
+  border-right: 0 !important;
   border-bottom: 1px solid rgba(204, 219, 232, 0.84) !important;
 }
 
@@ -19912,7 +19912,7 @@
 
 .assetQuoteSelectedLogoTile img {
   object-fit: contain !important;
-  padding: 0.82rem !important;
+  padding: 1.05rem !important;
   background: #ffffff !important;
 }
 
@@ -19923,7 +19923,7 @@
   place-items: center !important;
   color: #12644d !important;
   background: linear-gradient(135deg, #f8fcfa 0%, #e4f3ec 100%) !important;
-  font-size: 2.15rem !important;
+  font-size: 3.1rem !important;
   font-weight: 900 !important;
 }
 
@@ -20037,7 +20037,7 @@
 
 @media (max-width: 620px) {
   .assetQuoteSelectedMediaTile {
-    min-height: 6.9rem !important;
+    min-height: 9.8rem !important;
   }
 
   .assetQuoteSelectedContactRow {
