@@ -1141,11 +1141,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
     }
 
+    const registerLogoUrl = register.showLogosOnRegister !== false && Array.isArray(register.logoUrls)
+      ? cleanText(register.logoUrls[0])
+      : '';
+
     const exportProfile: AccountProfileResult = {
       ...profile,
       businessName: register.businessName || profile.businessName,
       phone: register.phone || profile.phone,
       email: register.email || profile.email,
+      logoUrl: registerLogoUrl || profile.logoUrl,
       addressLine1: register.addressLine1 || profile.addressLine1,
       addressLine2: '',
     };
