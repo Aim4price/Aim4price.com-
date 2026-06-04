@@ -844,10 +844,19 @@ export default function AssetRegistersClient() {
         );
       }
 
-      setRegisters(data.registers);
+      const updatedRegister: AssetRegisterSummary = {
+        ...data.register,
+        logoUrls: normalizeLogoUrls(data.register.logoUrls),
+        showLogosOnRegister: data.register.showLogosOnRegister !== false,
+      };
+      const updatedRegisters = data.registers.map((entry) =>
+        entry.id === updatedRegister.id ? { ...entry, ...updatedRegister } : entry,
+      );
 
-      if (managedRegisterId === data.register.id) {
-        setEditDraft(draftFromRegister(data.register));
+      setRegisters(updatedRegisters);
+
+      if (managedRegisterId === updatedRegister.id) {
+        setEditDraft(draftFromRegister(updatedRegister));
       }
 
       setNotice({ tone: "success", message: "Register logo updated from the card." });
