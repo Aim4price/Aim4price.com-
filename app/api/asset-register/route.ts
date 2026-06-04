@@ -5,7 +5,6 @@ import { attachOpenPartnerNotesToAssets } from '../../../lib/partner-access';
 import {
   getAssetRegisterForUser,
   getSelectedAssetRegister,
-  listAssetRegisters,
 } from '../../../lib/asset-registers';
 import {
   deleteUnreferencedAssetRegisterUploads,
@@ -365,12 +364,10 @@ export async function GET(request: NextRequest) {
 
     const baseItems = await listAssetRegisterItems(session.user.id, register.id);
     const items = await attachOpenPartnerNotesToAssets(session.user.id, baseItems);
-    const registers = await listAssetRegisters(session.user.id);
 
     return NextResponse.json({
       ok: true,
       register,
-      registers,
       items,
       summary: {
         count: items.length,
