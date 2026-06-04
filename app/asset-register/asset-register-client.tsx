@@ -2136,7 +2136,7 @@ function createMarketplaceDraft(asset: RegisterAsset, profile: AccountProfile | 
       'Aim4price seller',
     sellerCompany: profile?.businessName?.trim() || '',
     sellerPhone: asset.sellerPhone?.trim() || profile?.marketplacePhone?.trim() || profile?.phone?.trim() || '',
-    sellerEmail: profile?.marketplaceEmail?.trim() || profile?.email?.trim() || '',
+    sellerEmail: profile?.marketplaceEmail?.trim() || '',
     province: profile?.province?.trim() || '',
     area: profile?.marketplaceLocation?.trim() || profile?.townCity?.trim() || '',
     askingPriceExVat: '',
@@ -2435,7 +2435,7 @@ function buildOwnerMeta(profile: AccountProfile | null): string {
 
   const location = [profile.townCity, profile.province].filter(Boolean).join(', ');
   const address = [profile.addressLine1, profile.addressLine2].filter(Boolean).join(', ');
-  const parts = [profile.email, profile.phone, location, address].filter(Boolean);
+  const parts = [profile.marketplaceEmail, profile.phone, location, address].filter(Boolean);
 
   return parts.join(' • ') || 'Aim4price asset register summary';
 }
@@ -2609,7 +2609,8 @@ function mergeProfileWithRegister(profile: AccountProfile | null, register: Asse
   return {
     ...profile,
     businessName: register.businessName || profile.businessName,
-    email: register.email || profile.email,
+    email: register.email || profile.marketplaceEmail || '',
+    marketplaceEmail: register.email || profile.marketplaceEmail || '',
     phone: register.phone || profile.phone,
     logoUrl: registerLogoUrl,
     addressLine1: register.addressLine1 || profile.addressLine1,
@@ -4881,7 +4882,7 @@ export default function AssetRegisterClient() {
     const profileLocation = [ownerProfile?.townCity, ownerProfile?.province].filter(Boolean).join(' ');
     const profileAddress = [ownerProfile?.addressLine1, ownerProfile?.addressLine2, profileLocation].filter(Boolean).join(' ');
     const ownerName = ownerProfile?.businessName?.trim() || ownerProfile?.name?.trim() || 'Aim4price client';
-    const ownerEmail = ownerProfile?.email?.trim() || '—';
+    const ownerEmail = ownerProfile?.marketplaceEmail?.trim() || '—';
     const ownerPhone = ownerProfile?.phone?.trim() || '—';
     const familyLabel = assetKindLabel(asset);
     const initialModelValue = asset.modelName || asset.typedModelName || '';
@@ -4928,7 +4929,7 @@ export default function AssetRegisterClient() {
       issuerEmail: 'aim4price@gmail.com',
       clientRows: [
         { label: 'Name', value: ownerName },
-        { label: 'Email', value: ownerEmail },
+        { label: 'Business email', value: ownerEmail },
         { label: 'Phone', value: ownerPhone },
         ...(profileAddress ? [{ label: 'Address', value: profileAddress }] : []),
       ],
@@ -5280,7 +5281,7 @@ export default function AssetRegisterClient() {
     const profileLocation = [profile?.townCity, profile?.province].filter(Boolean).join(' ');
     const profileAddress = [profile?.addressLine1, profile?.addressLine2, profileLocation].filter(Boolean).join(' ');
     const ownerName = buildOwnerName(profile);
-    const ownerEmail = profile?.email?.trim() || '—';
+    const ownerEmail = profile?.marketplaceEmail?.trim() || '—';
     const ownerPhone = profile?.phone?.trim() || '—';
 
     const didOpen = openAssetRegisterSummaryPrint({
@@ -5298,7 +5299,7 @@ export default function AssetRegisterClient() {
       registerValueNote: `VAT excluded · ${money(reportValueInclVat)} incl. VAT · Replacement ${money(reportReplacementValue)} excl. VAT`,
       ownerRows: [
         { label: 'Name', value: ownerName },
-        { label: 'Email', value: ownerEmail },
+        { label: 'Business email', value: ownerEmail },
         { label: 'Phone', value: ownerPhone },
         { label: 'Address', value: profileAddress || '—' },
       ],
@@ -7095,13 +7096,13 @@ export default function AssetRegisterClient() {
                                 <div className={styles.assetQuoteSelectedContactList}>
                                   {selectedQuotePartner.email && selectedQuotePartnerEmailHref ? (
                                     <a className={styles.assetQuoteSelectedContactRow} href={selectedQuotePartnerEmailHref}>
-                                      <small>Email</small>
+                                      <small>Business email</small>
                                       <span>{selectedQuotePartner.email}</span>
                                     </a>
                                   ) : (
                                     <span className={styles.assetQuoteSelectedContactRow}>
-                                      <small>Email</small>
-                                      <span>Email not saved</span>
+                                      <small>Business email</small>
+                                      <span>Business email not saved</span>
                                     </span>
                                   )}
 
@@ -7167,8 +7168,8 @@ export default function AssetRegisterClient() {
                               <strong>Disclaimer and POPIA note</strong>
                               <p>
                                 {isFullRegisterQuoteLead
-                                  ? 'By sending this request, you allow Aim4price to share a once-off full Asset Register snapshot, saved valuation details and your account contact details with the chosen company.'
-                                  : 'By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your account contact details with the chosen company.'}
+                                  ? 'By sending this request, you allow Aim4price to share a once-off full Asset Register snapshot, saved valuation details and your saved business contact details with the chosen company.'
+                                  : 'By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your saved business contact details with the chosen company.'}
                                 {' '}This is only a lead request and does not create a finance, insurance, valuation or sales agreement.
                               </p>
                               <p>
@@ -7891,13 +7892,13 @@ export default function AssetRegisterClient() {
                       </label>
 
                       <label className={`${styles.field} ${styles.marketplaceContactField} ${styles.marketplaceWideField}`}>
-                        <span>Email</span>
+                        <span>Business email</span>
                         <input
                           type="email"
                           value={marketplaceDraft.sellerEmail}
                           onChange={(event) => setMarketplaceDraft((current) => (current ? { ...current, sellerEmail: event.target.value } : current))}
-                          placeholder="Email"
-                          aria-label="Email"
+                          placeholder="Business email"
+                          aria-label="Business email"
                         />
                       </label>
 
