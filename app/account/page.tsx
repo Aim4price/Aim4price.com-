@@ -120,7 +120,7 @@ const initialScanPinStatus: AccountScanPinStatus = {
   updatedAtIso: null,
 };
 
-const PROFILE_COMPLETION_TOTAL = 6;
+const PROFILE_COMPLETION_TOTAL = 7;
 const MAX_LOGO_UPLOAD_BYTES = 2 * 1024 * 1024;
 const MAX_BUSINESS_EXTRA_PHOTOS = 6;
 const MAX_BUSINESS_PHOTO_UPLOAD_BYTES = 3 * 1024 * 1024;
@@ -317,7 +317,7 @@ function buildProfileDraft(profile: AccountProfile | null): ProfileDraft {
     notes: profile.notes,
     marketplaceSellerName: profile.marketplaceSellerName || profile.businessName || displayName,
     marketplacePhone: profile.marketplacePhone || profile.phone,
-    marketplaceEmail: profile.marketplaceEmail || profile.email,
+    marketplaceEmail: profile.marketplaceEmail,
     marketplaceLocation: profile.marketplaceLocation || fallbackLocation,
     partnerDirectoryEnabled: Boolean(profile.partnerDirectoryEnabled),
     partnerDirectoryStatus: profile.partnerDirectoryStatus || 'approved',
@@ -364,6 +364,7 @@ function countCompletedFields(profile: ProfileDraft): number {
     profile.displayName,
     profile.businessName,
     profile.phone,
+    profile.marketplaceEmail,
     profile.province,
     profile.townCity,
     profile.addressLine1,
@@ -627,7 +628,7 @@ export default function AccountClient() {
   const marketplaceSellerName =
     profileDraft.marketplaceSellerName.trim() || profileDraft.businessName.trim() || accountDisplayName;
   const marketplacePhone = profileDraft.marketplacePhone.trim() || profileDraft.phone.trim() || 'No contact details saved yet';
-  const marketplaceEmail = profileDraft.marketplaceEmail.trim() || profile?.email || 'No email found';
+  const marketplaceEmail = profileDraft.marketplaceEmail.trim() || 'No business email saved yet';
   const marketplaceLocation =
     profileDraft.marketplaceLocation.trim() || (addressLines.length ? addressLines.join(', ') : 'No location saved yet');
   const partnerDirectoryPin = useMemo(
@@ -641,12 +642,13 @@ export default function AccountClient() {
   const updatedLabel = formatDate(profile?.updatedAtIso || profile?.createdAtIso);
   const businessNameLabel = profileDraft.businessName.trim() || 'No business name saved yet';
   const businessContactDetailsLabel = profileDraft.phone.trim() || 'No contact details saved yet';
-  const businessEmailLabel = profile?.email || 'No email found';
+  const accountEmailLabel = profile?.email || 'No account email found';
+  const businessEmailLabel = profileDraft.marketplaceEmail.trim() || 'No business email saved yet';
   const businessLocationLabel = addressLines.length ? addressLines.join(', ') : 'No location saved yet';
   const marketplaceProfileComplete = Boolean(
     (profileDraft.marketplaceSellerName.trim() || profileDraft.businessName.trim() || accountDisplayName) &&
       (profileDraft.marketplacePhone.trim() || profileDraft.phone.trim()) &&
-      (profileDraft.marketplaceEmail.trim() || profile?.email) &&
+      profileDraft.marketplaceEmail.trim() &&
       (profileDraft.marketplaceLocation.trim() || addressLines.length),
   );
   const directoryStatusLabel = profileDraft.partnerDirectoryEnabled ? 'Visible' : 'Hidden';
@@ -1297,8 +1299,9 @@ export default function AccountClient() {
               </label>
 
               <label className={`${styles.field} ${styles.halfField}`}>
-                <span>Email</span>
+                <span>Account email</span>
                 <input value={profile?.email ?? ''} disabled />
+                <small className={styles.fieldHint}>Used only for login and account access.</small>
               </label>
 
               <label className={`${styles.field} ${styles.halfField}`}>
@@ -1311,6 +1314,16 @@ export default function AccountClient() {
               </label>
 
               <label className={`${styles.field} ${styles.halfField}`}>
+                <span>Business email</span>
+                <input
+                  type="email"
+                  value={profileDraft.marketplaceEmail}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceEmail: event.target.value }))}
+                  placeholder="business@email.co.za"
+                />
+              </label>
+
+              <label className={`${styles.field} ${isPartnerAccount ? styles.halfField : styles.fullWidth}`}>
                 <span>Contact details</span>
                 <input
                   type="text"
@@ -1474,12 +1487,12 @@ export default function AccountClient() {
                   <strong>{businessNameLabel}</strong>
                 </div>
                 <div className={styles.detailRow}>
-                  <span>Contact details</span>
-                  <strong>{businessContactDetailsLabel}</strong>
+                  <span>Business email</span>
+                  <strong>{businessEmailLabel}</strong>
                 </div>
                 <div className={styles.detailRow}>
-                  <span>Email</span>
-                  <strong>{businessEmailLabel}</strong>
+                  <span>Contact details</span>
+                  <strong>{businessContactDetailsLabel}</strong>
                 </div>
                 {isPartnerAccount ? (
                   <div className={styles.detailRow}>
@@ -1498,6 +1511,10 @@ export default function AccountClient() {
                 <div className={styles.detailRow}>
                   <span>Location</span>
                   <strong>{businessLocationLabel}</strong>
+                </div>
+                <div className={styles.detailRow}>
+                  <span>Account email</span>
+                  <strong>{accountEmailLabel}</strong>
                 </div>
 
                 {isPartnerAccount ? (
@@ -1716,12 +1733,12 @@ export default function AccountClient() {
                 </label>
 
                 <label className={styles.field}>
-                  <span>Email</span>
+                  <span>Business email</span>
                   <input
                     type="email"
                     value={profileDraft.marketplaceEmail}
                     onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceEmail: event.target.value }))}
-                    placeholder={marketplaceEmail}
+                    placeholder="business@email.co.za"
                   />
                 </label>
 
@@ -1755,7 +1772,7 @@ export default function AccountClient() {
                     <strong>{marketplacePhone}</strong>
                   </div>
                   <div className={styles.detailRow}>
-                    <span>Email</span>
+                    <span>Business email</span>
                     <strong>{marketplaceEmail}</strong>
                   </div>
                   <div className={styles.detailRow}>
