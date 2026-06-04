@@ -653,7 +653,7 @@ function buildWorkbookSheet(definition: SheetDefinition, profile: AccountProfile
     [textCell('Generated', 'metaLabel'), { value: generatedAt, style: 'date' }],
     [textCell('Owner', 'metaLabel'), textOrNaCell(ownerName, 'metaValue')],
     [textCell('Address', 'metaLabel'), textOrNaCell(ownerAddress, 'metaValue')],
-    [textCell('Email', 'metaLabel'), textOrNaCell(ownerEmail, 'metaValue')],
+    [textCell('Business email', 'metaLabel'), textOrNaCell(ownerEmail, 'metaValue')],
     [textCell('Phone', 'metaLabel'), textOrNaCell(ownerPhone, 'metaValue')],
     [textCell('VAT number', 'metaLabel'), textOrNaCell(ownerVatNumber, 'metaValue')],
     [],
@@ -1025,7 +1025,7 @@ function buildFullRegisterPdf(items: AssetRegisterItem[], profile: AccountProfil
   state.y -= 18;
   const detailsTop = state.y;
   drawPdfRect(state, PDF_MARGIN, detailsTop - 52, PDF_PAGE_WIDTH - PDF_MARGIN * 2, 52, '0.98 0.99 1.00');
-  drawPdfKeyValue(state, 'Email', ownerEmail, PDF_MARGIN + 12, detailsTop - 14, 176);
+  drawPdfKeyValue(state, 'Business email', ownerEmail, PDF_MARGIN + 12, detailsTop - 14, 176);
   drawPdfKeyValue(state, 'Phone', ownerPhone, PDF_MARGIN + 205, detailsTop - 14, 126);
   drawPdfKeyValue(state, 'Replacement incl VAT', formatPdfMoney(replacementValueInclVat), PDF_MARGIN + 350, detailsTop - 14, 130);
   state.y -= 74;
@@ -1147,7 +1147,8 @@ export async function GET(request: NextRequest) {
       ...profile,
       businessName: register.businessName || profile.businessName,
       phone: register.phone || profile.phone,
-      email: register.email || profile.email,
+      email: register.email || profile.marketplaceEmail || '',
+      marketplaceEmail: register.email || profile.marketplaceEmail || '',
       logoUrl: registerLogoUrl,
       addressLine1: register.addressLine1 || profile.addressLine1,
       addressLine2: '',
