@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { listAssetRegisterItems, type AssetRegisterItem } from '../../../../lib/asset-register-db';
-import { getAssetRegisterForUser, getSelectedAssetRegister } from '../../../../lib/asset-registers';
+import { getAssetRegisterForUser, getSelectedAssetRegister, getVisibleAssetRegisterLogoUrl } from '../../../../lib/asset-registers';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
 
 export const runtime = 'nodejs';
@@ -1141,16 +1141,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
     }
 
-    const registerLogoUrl = register.showLogosOnRegister !== false && Array.isArray(register.logoUrls)
-      ? cleanText(register.logoUrls[0])
-      : '';
+    const registerLogoUrl = getVisibleAssetRegisterLogoUrl(register);
 
     const exportProfile: AccountProfileResult = {
       ...profile,
       businessName: register.businessName || profile.businessName,
       phone: register.phone || profile.phone,
       email: register.email || profile.email,
-      logoUrl: registerLogoUrl || profile.logoUrl,
+      logoUrl: registerLogoUrl,
       addressLine1: register.addressLine1 || profile.addressLine1,
       addressLine2: '',
     };
