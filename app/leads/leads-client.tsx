@@ -782,7 +782,7 @@ function buildClientRows(lead: AssetLead): Array<{ label: string; value: string 
     { label: 'Business name', value: lead.ownerBusinessName || '—' },
     { label: 'Contact person', value: lead.ownerContactName || ownerDisplayName(lead) },
     { label: 'Contact number', value: ownerPhone(lead) || '—' },
-    { label: 'Email', value: ownerEmail(lead) || '—' },
+    { label: 'Business email', value: ownerEmail(lead) || '—' },
     { label: 'Location', value: ownerLocation(lead) },
   ];
 }
@@ -904,7 +904,7 @@ function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = '
       { label: 'Business', value: lead.ownerBusinessName || '—' },
       { label: 'Contact', value: ownerDisplayName(lead) },
       { label: 'Phone', value: ownerPhone(lead) || '—' },
-      { label: 'Email', value: ownerEmail(lead) || '—' },
+      { label: 'Business email', value: ownerEmail(lead) || '—' },
       { label: 'Location', value: ownerLocation(lead) },
     ],
     stats: [
@@ -975,7 +975,7 @@ function downloadLeadAsset(lead: AssetLead, reportKind: PdfReportKind = 'full'):
     contactRows: [
       { label: 'Owner', value: ownerDisplayName(lead) },
       { label: 'Phone', value: ownerPhone(lead) || '—' },
-      { label: 'Email', value: ownerEmail(lead) || '—' },
+      { label: 'Business email', value: ownerEmail(lead) || '—' },
     ],
     footerNote: 'Lead asset valuation PDF. This lead is for private partner follow-up outside Aim4price.',
   });
