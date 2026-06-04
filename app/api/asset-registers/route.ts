@@ -63,7 +63,7 @@ function readRegisterInput(body: AssetRegisterBody) {
 
   if (Object.prototype.hasOwnProperty.call(body, 'logoUrls')) {
     input.logoUrls = Array.isArray(body.logoUrls)
-      ? body.logoUrls.map((logoUrl) => String(logoUrl ?? '').trim())
+      ? body.logoUrls.map((logoUrl) => String(logoUrl ?? '').trim()).filter(Boolean).slice(0, 1)
       : [];
   }
 
