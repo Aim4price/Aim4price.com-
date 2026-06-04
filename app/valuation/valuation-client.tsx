@@ -1491,7 +1491,7 @@ export default function ValuationClient() {
         : '') || '';
     const sellerCompany = (isSignedIn ? accountProfile?.businessName : '') || '';
     const sellerPhone = (isSignedIn ? accountProfile?.marketplacePhone || accountProfile?.phone : '') || '';
-    const sellerEmail = (isSignedIn ? accountProfile?.marketplaceEmail || accountProfile?.email : '') || '';
+    const sellerEmail = (isSignedIn ? accountProfile?.marketplaceEmail : '') || '';
     const area = (isSignedIn ? accountProfile?.marketplaceLocation || accountProfile?.townCity : '') || '';
 
     return {
@@ -3698,7 +3698,7 @@ export default function ValuationClient() {
                     <input name="sellerPhone" value={marketplaceDraft.sellerPhone} onChange={handleMarketplaceDraftChange} required />
                   </label>
                   <label className={`${styles.marketplaceField} ${styles.marketplaceWideField}`}>
-                    <span>Email</span>
+                    <span>Business email</span>
                     <input type="email" name="sellerEmail" value={marketplaceDraft.sellerEmail} onChange={handleMarketplaceDraftChange} />
                   </label>
                   <label className={styles.marketplaceField}>
