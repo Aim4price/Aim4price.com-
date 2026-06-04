@@ -39,3 +39,9 @@
 --   14-account-profile-subtype.sql
 --   15-account-role-split-and-partner-notes.sql
 --   16-remove-shared-register-access.sql
+--   17-owner-contact-requests.sql
+--   18-asset-partner-note-pdf-attachments.sql
+--   19-asset-register-manual-replacement-price.sql
+--   20-multi-asset-registers.sql
+--   21-asset-register-logos.sql
+--   22-account-profile-business-media.sql
