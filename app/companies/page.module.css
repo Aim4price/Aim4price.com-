@@ -285,20 +285,24 @@
   right: 0;
   width: min(23rem, calc(100vw - 2rem));
   display: grid;
-  gap: 0.95rem;
+  gap: 1rem;
   padding: 1.05rem;
   border: 1px solid rgba(204, 219, 232, 0.98);
-  border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 22px 56px rgba(10, 32, 27, 0.16);
+  border-radius: 1.45rem;
+  background:
+    radial-gradient(circle at top right, rgba(31, 108, 83, 0.08), transparent 16rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(247, 251, 249, 0.98) 100%);
+  box-shadow:
+    0 22px 56px rgba(10, 32, 27, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
 .filterField {
   display: grid;
-  gap: 0.42rem;
+  gap: 0.46rem;
 }
 
-.filterField span {
+.filterLabel {
   color: #41574f;
   font-size: 0.82rem;
   font-weight: 900;
@@ -306,22 +310,102 @@
   text-transform: uppercase;
 }
 
+.selectWrap {
+  position: relative;
+  min-width: 0;
+  display: block;
+  border-radius: 1.15rem;
+}
+
 .filterField select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   width: 100%;
-  min-height: 3.1rem;
-  border: 1px solid rgba(204, 219, 232, 0.96);
-  border-radius: 0.9rem;
-  background: #ffffff;
+  min-height: 3.7rem;
+  border: 1.5px solid rgba(191, 210, 216, 0.98);
+  border-radius: 1.15rem;
+  background:
+    radial-gradient(circle at top right, rgba(31, 108, 83, 0.07), transparent 10.5rem),
+    linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
   color: #102f27;
-  padding: 0 0.9rem;
+  padding: 0.82rem 4.35rem 0.82rem 1.05rem;
   font: inherit;
-  font-weight: 720;
+  font-size: 1rem;
+  font-weight: 820;
+  line-height: 1.18;
   outline: 0;
+  cursor: pointer;
+  box-shadow:
+    0 10px 22px rgba(16, 45, 37, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.filterField select:hover {
+  border-color: rgba(31, 108, 83, 0.34);
+  box-shadow:
+    0 13px 28px rgba(16, 45, 37, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
 .filterField select:focus {
-  border-color: rgba(31, 108, 83, 0.46);
-  box-shadow: 0 0 0 4px rgba(31, 108, 83, 0.09);
+  border-color: rgba(31, 108, 83, 0.48);
+  box-shadow:
+    0 0 0 4px rgba(31, 108, 83, 0.09),
+    0 14px 30px rgba(16, 45, 37, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.filterField select::-ms-expand {
+  display: none;
+}
+
+.selectChevron {
+  position: absolute;
+  top: 50%;
+  right: 0.52rem;
+  width: 2.64rem;
+  height: 2.64rem;
+  display: grid;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 1px solid rgba(191, 210, 216, 0.98);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff 0%, #edf7f3 100%);
+  color: #0f3d32;
+  pointer-events: none;
+  box-shadow:
+    0 8px 18px rgba(16, 45, 37, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
+}
+
+.selectWrap:focus-within .selectChevron,
+.selectWrap:hover .selectChevron {
+  border-color: rgba(31, 108, 83, 0.36);
+  background: linear-gradient(180deg, #ffffff 0%, #e6f5ee 100%);
+  color: #0b3329;
+  box-shadow:
+    0 10px 22px rgba(16, 45, 37, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.selectChevronIcon {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .filterActions {

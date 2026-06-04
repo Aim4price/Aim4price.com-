@@ -489,23 +489,33 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
             {isFilterOpen ? (
               <div className={styles.filterPopover}>
                 <label className={styles.filterField}>
-                  <span>Company type</span>
-                  <select value={selectedType} onChange={(event) => setSelectedType(event.target.value as CompanyTypeFilter)}>
-                    <option value="all">All companies</option>
-                    <option value="finance">Finance</option>
-                    <option value="insurance">Insurance</option>
-                    <option value="dealer">Dealers</option>
-                  </select>
+                  <span className={styles.filterLabel}>Company type</span>
+                  <span className={styles.selectWrap}>
+                    <select value={selectedType} onChange={(event) => setSelectedType(event.target.value as CompanyTypeFilter)}>
+                      <option value="all">All companies</option>
+                      <option value="finance">Finance</option>
+                      <option value="insurance">Insurance</option>
+                      <option value="dealer">Dealers</option>
+                    </select>
+                    <span className={styles.selectChevron} aria-hidden="true">
+                      <ChevronDownIcon className={styles.selectChevronIcon} />
+                    </span>
+                  </span>
                 </label>
 
                 <label className={styles.filterField}>
-                  <span>Province</span>
-                  <select value={selectedProvince} onChange={(event) => setSelectedProvince(event.target.value)}>
-                    <option value="">All provinces</option>
-                    {PROVINCES.map((province) => (
-                      <option key={province} value={province}>{province}</option>
-                    ))}
-                  </select>
+                  <span className={styles.filterLabel}>Province</span>
+                  <span className={styles.selectWrap}>
+                    <select value={selectedProvince} onChange={(event) => setSelectedProvince(event.target.value)}>
+                      <option value="">All provinces</option>
+                      {PROVINCES.map((province) => (
+                        <option key={province} value={province}>{province}</option>
+                      ))}
+                    </select>
+                    <span className={styles.selectChevron} aria-hidden="true">
+                      <ChevronDownIcon className={styles.selectChevronIcon} />
+                    </span>
+                  </span>
                 </label>
 
                 <div className={styles.filterActions}>
