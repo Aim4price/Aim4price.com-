@@ -2607,10 +2607,19 @@ function mergeProfileWithRegister(profile: AccountProfile | null, register: Asse
     businessName: register.businessName || profile.businessName,
     email: register.email || profile.email,
     phone: register.phone || profile.phone,
-    logoUrl: registerLogoUrl || profile.logoUrl,
+    logoUrl: registerLogoUrl,
     addressLine1: register.addressLine1 || profile.addressLine1,
     addressLine2: '',
   };
+}
+
+
+function getRegisterReportLogoUrl(register: AssetRegisterSummary | null): string {
+  const registerLogoUrl = register?.showLogosOnRegister !== false && Array.isArray(register?.logoUrls)
+    ? String(register.logoUrls[0] ?? '').trim()
+    : '';
+
+  return toAbsoluteUrl(registerLogoUrl) ?? '';
 }
 
 function loadLeaflet(): Promise<any> {
@@ -4831,7 +4840,7 @@ export default function AssetRegisterClient() {
     ];
 
     const didOpen = openAssetSheetPrint({
-      logoUrl: toAbsoluteUrl(ownerProfile?.logoUrl) ?? toAbsoluteUrl('/brand/aim4price-mark-black.png') ?? '',
+      logoUrl: getRegisterReportLogoUrl(activeRegister),
       generatedAt: formatDate(new Date().toISOString()),
       assetBadge: familyLabel,
       heroTitle: asset.title,
@@ -5079,6 +5088,7 @@ export default function AssetRegisterClient() {
         generatedAtIso,
         ownerName: buildOwnerName(profile),
         ownerMeta: buildOwnerMeta(profile),
+        logoUrl: getRegisterReportLogoUrl(activeRegister),
         assetCount: assets.length,
         totalAssets: assets.length,
         totalValue,
@@ -5201,7 +5211,7 @@ export default function AssetRegisterClient() {
     const ownerPhone = profile?.phone?.trim() || '—';
 
     const didOpen = openAssetRegisterSummaryPrint({
-      logoUrl: toAbsoluteUrl(profile?.logoUrl) ?? toAbsoluteUrl('/brand/aim4price-mark-black.png') ?? '',
+      logoUrl: getRegisterReportLogoUrl(activeRegister),
       generatedAt: formatDate(new Date().toISOString()),
       reportTitle: `${reportOption.label} Report`,
       reportSubtitle: 'Aim4price asset register',
