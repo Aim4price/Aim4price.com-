@@ -193,22 +193,8 @@ function typePillClass(type: PartnerType): string {
   return styles.typePillDealer;
 }
 
-function mediaUrlsForCompany(company: PartnerDirectoryEntry): string[] {
-  const urls: string[] = [];
-  const seen = new Set<string>();
-
-  [company.logoUrl, ...company.extraPhotoUrls].forEach((url) => {
-    const next = String(url ?? '').trim();
-
-    if (!next || seen.has(next)) {
-      return;
-    }
-
-    seen.add(next);
-    urls.push(next);
-  });
-
-  return urls.slice(0, 4);
+function logoUrlForCompany(company: PartnerDirectoryEntry): string {
+  return String(company.logoUrl ?? '').trim();
 }
 
 function extractApiError(payload: unknown, fallback: string): string {
@@ -416,7 +402,7 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
   }
 
   function renderCompanyDetails(company: PartnerDirectoryEntry) {
-    const mediaUrls = mediaUrlsForCompany(company);
+    const logoUrl = logoUrlForCompany(company);
     const websiteHref = normalizeWebsiteHref(company.websiteUrl);
     const emailHref = normalizeEmailHref(company.email);
     const phoneHref = normalizePhoneHref(company.phone);
@@ -425,15 +411,10 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
       <section className={styles.detailPanel} aria-label={`${companyName(company)} details`}>
         <aside className={styles.mediaPanel}>
           <div className={styles.mediaGrid}>
-            {mediaUrls.length ? (
-              mediaUrls.map((url, index) => (
-                <span
-                  key={`${company.userId}-${url}-${index}`}
-                  className={`${styles.mediaTile} ${index === 0 && company.logoUrl ? styles.logoTile : ''}`}
-                >
-                  <img src={url} alt={index === 0 && company.logoUrl ? `${companyName(company)} logo` : `${companyName(company)} photo ${index + 1}`} />
-                </span>
-              ))
+            {logoUrl ? (
+              <span className={`${styles.mediaTile} ${styles.logoTile}`}>
+                <img src={logoUrl} alt={`${companyName(company)} logo`} />
+              </span>
             ) : (
               <span className={`${styles.mediaTile} ${styles.emptyLogoTile}`}>
                 <span>{companyInitial(company)}</span>
