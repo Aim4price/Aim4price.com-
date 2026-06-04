@@ -20045,3 +20045,37 @@
     gap: 0.2rem !important;
   }
 }
+
+/* Companies page entry point in partner picker */
+.assetQuoteSearchBar,
+.assetQuotePartnerPickerModal .assetQuoteSearchBar {
+  grid-template-columns: minmax(0, 1fr) auto auto !important;
+}
+
+.assetQuoteAllCompaniesButton {
+  min-height: 4.25rem !important;
+  min-width: 11.25rem !important;
+  border-radius: 1.25rem !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  color: #102f27 !important;
+  background: #ffffff !important;
+  border-color: rgba(18, 45, 37, 0.16) !important;
+}
+
+.assetQuoteAllCompaniesButton:hover {
+  color: #12644d !important;
+  border-color: rgba(31, 108, 83, 0.32) !important;
+  box-shadow: 0 14px 28px rgba(18, 45, 37, 0.08) !important;
+}
+
+@media (max-width: 860px) {
+  .assetQuoteSearchBar,
+  .assetQuotePartnerPickerModal .assetQuoteSearchBar {
+    grid-template-columns: 1fr !important;
+  }
+
+  .assetQuoteAllCompaniesButton {
+    width: 100% !important;
+  }
+}

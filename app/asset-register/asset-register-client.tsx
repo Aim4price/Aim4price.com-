@@ -6989,6 +6989,9 @@ export default function AssetRegisterClient() {
                       <SearchIcon className={styles.buttonIcon} />
                       <span>{isLoadingQuotePartners ? 'Searching...' : 'Search'}</span>
                     </button>
+                    <Link href="/companies" className={`${styles.secondaryButton} ${styles.assetQuoteAllCompaniesButton}`}>
+                      <span>All Companies</span>
+                    </Link>
                   </form>
 
                   <div className={styles.assetQuoteMapStage}>
