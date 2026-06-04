@@ -478,14 +478,13 @@ export async function createInitialAccountProfile(
         display_name,
         account_type,
         account_subtype,
-        marketplace_email,
         created_at,
         updated_at
       )
-      values ($1, $2, $3, $4, $5, now(), now())
+      values ($1, $2, $3, $4, now(), now())
       on conflict (user_id) do nothing
     `,
-    [user.id, asText(user.name) || null, initialAccountType, initialAccountSubtype, asText(user.email).toLowerCase() || null],
+    [user.id, asText(user.name) || null, initialAccountType, initialAccountSubtype],
   );
 }
 

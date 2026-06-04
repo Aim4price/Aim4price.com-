@@ -1014,7 +1014,7 @@ export async function createAssetLead(input: {
   const ownerProfile = await getAccountProfile({ id: input.ownerUserId, name: input.ownerName, email: input.ownerEmail });
   const ownerContactName = ownerProfile.businessName || ownerProfile.name || input.ownerName || 'Aim4price owner';
   const ownerContactPhone = ownerProfile.phone;
-  const ownerContactEmail = ownerProfile.email || asText(input.ownerEmail);
+  const ownerContactEmail = ownerProfile.marketplaceEmail;
 
   const db = getDb();
   const insertResult = await db.query<{ id: string }>(
