@@ -22,6 +22,8 @@ type AssetRegisterBody = {
   phone?: unknown;
   address?: unknown;
   addressLine1?: unknown;
+  logoUrls?: unknown;
+  showLogosOnRegister?: unknown;
 };
 
 function unauthorized() {
@@ -45,12 +47,34 @@ async function requireOwnerAccount(user: { id: string; name?: string | null; ema
 }
 
 function readRegisterInput(body: AssetRegisterBody) {
-  return {
+  const input: {
+    businessName: string;
+    email: string;
+    phone: string;
+    addressLine1: string;
+    logoUrls?: string[] | null;
+    showLogosOnRegister?: boolean | null;
+  } = {
     businessName: String(body.businessName ?? '').trim(),
     email: String(body.email ?? '').trim(),
     phone: String(body.phone ?? '').trim(),
     addressLine1: String(body.addressLine1 ?? body.address ?? '').trim(),
   };
+
+  if (Object.prototype.hasOwnProperty.call(body, 'logoUrls')) {
+    input.logoUrls = Array.isArray(body.logoUrls)
+      ? body.logoUrls.map((logoUrl) => String(logoUrl ?? '').trim())
+      : [];
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, 'showLogosOnRegister')) {
+    const normalizedVisibility = String(body.showLogosOnRegister ?? '').trim().toLowerCase();
+    input.showLogosOnRegister = typeof body.showLogosOnRegister === 'boolean'
+      ? body.showLogosOnRegister
+      : !['false', '0', 'no', 'off', 'hide', 'hidden'].includes(normalizedVisibility);
+  }
+
+  return input;
 }
 
 function errorResponse(error: unknown, fallback: string) {
