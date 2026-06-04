@@ -1,5 +1,6 @@
 import { ensureAccountProfileColumns, getAccountProfile } from './account-profile';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
+import { getAssetRegisterReportLogoUrl } from './asset-registers';
 import { getDb } from './db';
 
 export type AccountRole = 'owner' | 'dealer' | 'finance' | 'insurance';
@@ -899,6 +900,7 @@ export async function createAssetLead(input: {
   }
 
   const includedSections = input.includedSections ?? { assetDetails: true, valuationSummary: true, mainPhoto: true };
+  const registerLogoUrl = await getAssetRegisterReportLogoUrl(input.ownerUserId, asset.registerId).catch(() => '');
 
   const ownerProfile = await getAccountProfile({ id: input.ownerUserId, name: input.ownerName, email: input.ownerEmail });
   const ownerContactName = ownerProfile.businessName || ownerProfile.name || input.ownerName || 'Aim4price owner';
@@ -931,7 +933,7 @@ export async function createAssetLead(input: {
       input.partnerUserId,
       asset.id,
       input.leadType,
-      JSON.stringify(buildAssetLeadSnapshot(asset, includedSections)),
+      JSON.stringify({ ...buildAssetLeadSnapshot(asset, includedSections), logoUrl: registerLogoUrl }),
       JSON.stringify(includedSections),
       asText(input.ownerMessage) || null,
       ownerContactName,

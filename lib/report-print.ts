@@ -734,7 +734,7 @@ function openPrintWindow(title: string, html: string): boolean {
 function renderLogoBlock(logoUrl: string, documentLabel: string): string {
   return `
     <div class="brandLockup">
-      <img class="logo" src="${escapeHtml(logoUrl)}" alt="Aim4price" />
+      ${logoUrl ? `<img class="logo" src="${escapeHtml(logoUrl)}" alt="Logo" />` : ''}
       <div>
         <span class="documentKicker">${escapeHtml(documentLabel)}</span>
       </div>
@@ -1208,7 +1208,7 @@ function renderValuationReportDocument(payload: ValuationReportPayload): string 
 
     <div class="page">
       <header class="pageHeader">
-        <img class="logo" src="${escapeHtml(payload.logoUrl)}" alt="Aim4price" />
+        ${payload.logoUrl ? `<img class="logo" src="${escapeHtml(payload.logoUrl)}" alt="Logo" />` : ''}
         <div class="generatedBlock">
           <span class="generatedLabel">Generated</span>
           <span class="generatedValue">${escapeHtml(payload.generatedAt)}</span>
@@ -2030,7 +2030,7 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
     <main class="assetReportPage">
       <div class="assetReportInner">
         <header class="assetReportHeader">
-          <div class="assetReportLogoWrap">${payload.logoUrl ? `<img class="assetReportLogo" src="${escapeHtml(payload.logoUrl)}" alt="Aim4price" />` : ''}</div>
+          <div class="assetReportLogoWrap">${payload.logoUrl ? `<img class="assetReportLogo" src="${escapeHtml(payload.logoUrl)}" alt="Logo" />` : ''}</div>
           <div class="assetReportDocumentTitle">
             <strong>Asset Valuation Report</strong>
             <span>Aim4price asset register</span>
@@ -2899,7 +2899,7 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
     <main class="fullRegisterPage">
       <header class="fullRegisterHeader">
         <div class="fullRegisterBrand">
-          <img class="fullRegisterLogo" src="${escapeHtml(payload.logoUrl)}" alt="Aim4price" />
+          ${payload.logoUrl ? `<img class="fullRegisterLogo" src="${escapeHtml(payload.logoUrl)}" alt="Logo" />` : ''}
           <div class="fullRegisterTitleBlock">
             <h1>${escapeHtml(reportTitle)}</h1>
             <p>${escapeHtml(reportSubtitle)}</p>

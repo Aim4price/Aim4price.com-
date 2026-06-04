@@ -988,6 +988,26 @@ export async function deleteAssetRegister(input: {
   };
 }
 
+
+export function getVisibleAssetRegisterLogoUrl(
+  register: Pick<AssetRegisterSummary, 'logoUrls' | 'showLogosOnRegister'> | null | undefined,
+): string {
+  if (!register || register.showLogosOnRegister === false) {
+    return '';
+  }
+
+  return normalizeLogoUrls(register.logoUrls)[0] ?? '';
+}
+
+export async function getAssetRegisterReportLogoUrl(userId: string, registerId?: string | null): Promise<string> {
+  const cleanedRegisterId = cleanText(registerId);
+  const register = cleanedRegisterId
+    ? await getAssetRegisterForUser(userId, cleanedRegisterId)
+    : await getSelectedAssetRegister(userId);
+
+  return getVisibleAssetRegisterLogoUrl(register);
+}
+
 export async function userOwnsAssetRegister(userId: string, registerId: string | null | undefined): Promise<boolean> {
   const id = cleanText(registerId);
   if (!id) return false;
