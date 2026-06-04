@@ -14,6 +14,7 @@ export type PartnerDirectoryEntry = {
   displayName: string;
   businessName: string;
   phone: string;
+  email: string;
   province: string;
   townCity: string;
   addressLine1: string;
@@ -98,6 +99,7 @@ type AccountPartnerProfileRow = {
   display_name: string | null;
   business_name: string | null;
   phone: string | null;
+  marketplace_email: string | null;
   account_type: string | null;
   province: string | null;
   town_city: string | null;
@@ -539,6 +541,7 @@ function mapPartnerRow(row: AccountPartnerProfileRow): PartnerDirectoryEntry {
     displayName,
     businessName,
     phone: asText(row.phone),
+    email: asText(row.marketplace_email),
     province: asText(row.province),
     townCity: asText(row.town_city),
     addressLine1: asText(row.address_line_1),
@@ -777,6 +780,7 @@ export async function listPartnerDirectory(input: {
         display_name,
         business_name,
         phone,
+        marketplace_email,
         account_type,
         province,
         town_city,
@@ -814,6 +818,7 @@ async function getPartnerProfile(partnerUserId: string): Promise<AccountPartnerP
         display_name,
         business_name,
         phone,
+        marketplace_email,
         account_type,
         province,
         town_city,
