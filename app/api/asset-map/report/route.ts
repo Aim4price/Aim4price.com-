@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { listAssetRegisterItems, type AssetRegisterItem } from '../../../../lib/asset-register-db';
+import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -505,7 +506,7 @@ function renderSelectedAssetRows(asset: PrintableAsset): string {
     .join('');
 }
 
-function buildReportHtml(assets: PrintableAsset[], generatedDate: string, generatedTime: string, ownerEmail: string): string {
+function buildReportHtml(assets: PrintableAsset[], generatedDate: string, generatedTime: string, ownerEmail: string, logoUrl: string): string {
   const singleAsset = assets.length === 1 ? assets[0] : null;
   const documentTitle = 'Asset Map Report';
   const heroTitle = singleAsset ? singleAsset.title : 'Fleet Location Map';
@@ -1166,7 +1167,7 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
     <main class="assetMapReportPage">
       <div class="assetMapReportInner">
         <header class="assetMapReportHeader">
-          <div class="assetMapReportLogoWrap"><img class="assetMapReportLogo" src="/brand/aim4price-mark-black.png" alt="Aim4price" /></div>
+          <div class="assetMapReportLogoWrap">${logoUrl ? `<img class="assetMapReportLogo" src="${escapeHtml(logoUrl)}" alt="Logo" />` : ''}</div>
           <div class="assetMapReportDocumentTitle">
             <strong>${escapeHtml(documentTitle)}</strong>
             <span>Aim4price fleet visibility</span>
@@ -1351,7 +1352,8 @@ export async function GET(request: Request) {
     const reportItems = filterAssetsBySelection(mappedItems, selection);
     const printableAssets = reportItems.map(toPrintableAsset);
     const now = new Date();
-    const html = buildReportHtml(printableAssets, formatDate(now), formatTime(now), asText(session.user.email));
+    const logoUrl = await getAssetRegisterReportLogoUrl(session.user.id).catch(() => '');
+    const html = buildReportHtml(printableAssets, formatDate(now), formatTime(now), asText(session.user.email), logoUrl);
     const filename = buildReportFilename(printableAssets, now);
 
     return new NextResponse(html, {
