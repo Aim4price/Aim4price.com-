@@ -302,11 +302,41 @@ function extractErrorMessage(payload: unknown, fallback: string): string {
   return fallback;
 }
 
-function RegisterLogoBlock({ register }: { register: AssetRegisterSummary }) {
+type RegisterLogoBlockProps = {
+  register: AssetRegisterSummary;
+  isUploading: boolean;
+  disabled: boolean;
+  onUpload: (
+    register: AssetRegisterSummary,
+    event: ChangeEvent<HTMLInputElement>,
+  ) => void;
+};
+
+function RegisterLogoBlock({
+  register,
+  isUploading,
+  disabled,
+  onUpload,
+}: RegisterLogoBlockProps) {
   const logoUrl = visibleLogoUrls(register)[0] ?? "";
+  const hasHiddenLogo = normalizeLogoUrls(register.logoUrls).length > 0 && !register.showLogosOnRegister;
+  const uploadDisabled = disabled || isUploading;
+  const uploadLabel = isUploading ? "Uploading logo..." : logoUrl ? "Replace logo" : "Upload logo";
 
   return (
-    <div className={styles.registerLogoPanel} aria-label={`${register.businessName} logo`}>
+    <label
+      className={`${styles.registerLogoPanel} ${isUploading ? styles.registerLogoPanelUploading : ""} ${uploadDisabled ? styles.registerLogoPanelDisabled : ""}`}
+      aria-label={`${uploadLabel} for ${register.businessName}`}
+      title={uploadDisabled ? "Logo upload is temporarily unavailable" : uploadLabel}
+    >
+      <input
+        className={styles.cardLogoUploadInput}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        onChange={(event) => onUpload(register, event)}
+        disabled={uploadDisabled}
+      />
+
       {logoUrl ? (
         <div className={`${styles.registerLogoGrid} ${styles.registerLogoGridSingle}`}>
           <div className={styles.registerLogoTile}>
@@ -316,100 +346,16 @@ function RegisterLogoBlock({ register }: { register: AssetRegisterSummary }) {
       ) : (
         <div className={styles.registerLogoPlaceholder}>
           <span>Logo</span>
-          <small>
-            {normalizeLogoUrls(register.logoUrls).length && !register.showLogosOnRegister
-              ? "Hidden on cards"
-              : "Optional"}
-          </small>
+          <small>{hasHiddenLogo ? "Hidden on cards" : "Optional"}</small>
         </div>
       )}
-    </div>
-  );
-}
 
-type RegisterLogoManagerProps = {
-  logoUrls: string[];
-  showLogosOnRegister: boolean;
-  isUploading: boolean;
-  disabled: boolean;
-  inputId: string;
-  onUpload: (event: ChangeEvent<HTMLInputElement>) => void;
-  onRemove: (index: number) => void;
-  onToggleShow: (value: boolean) => void;
-};
-
-function RegisterLogoManager({
-  logoUrls,
-  showLogosOnRegister,
-  isUploading,
-  disabled,
-  inputId,
-  onUpload,
-  onRemove,
-  onToggleShow,
-}: RegisterLogoManagerProps) {
-  const logoUrl = normalizeLogoUrls(logoUrls)[0] ?? "";
-  const isUploadDisabled = disabled || isUploading;
-
-  return (
-    <div className={styles.logoManager}>
-      <div className={styles.logoManagerHeader}>
-        <div>
-          <span>Register logo</span>
-          <small>
-            Choose one logo for this register. Leave it empty when no farm or business branding is needed.
-          </small>
-        </div>
-      </div>
-
-      <div className={styles.logoChoicePanel}>
-        <div className={`${styles.logoChoicePreview} ${logoUrl ? styles.logoChoicePreviewActive : ""}`}>
-          {logoUrl ? (
-            <img src={logoUrl} alt="Selected register logo" />
-          ) : (
-            <div className={styles.logoChoiceEmpty}>
-              <span>No logo selected</span>
-              <small>The register card will show the clean Optional placeholder.</small>
-            </div>
-          )}
-        </div>
-
-        <div className={styles.logoChoiceActions}>
-          <label className={`${styles.logoUploadButton} ${isUploadDisabled ? styles.logoUploadButtonDisabled : ""}`}>
-            <input
-              id={inputId}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={onUpload}
-              disabled={isUploadDisabled}
-            />
-            <PlusIcon className={styles.buttonIcon} />
-            <span>{isUploading ? "Uploading..." : logoUrl ? "Replace logo" : "Attach logo"}</span>
-          </label>
-
-          {logoUrl ? (
-            <button
-              type="button"
-              className={styles.logoClearButton}
-              onClick={() => onRemove(0)}
-              disabled={disabled || isUploading}
-            >
-              Remove logo
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      <label className={styles.logoVisibilityToggle}>
-        <input
-          type="checkbox"
-          checked={showLogosOnRegister}
-          onChange={(event) => onToggleShow(event.target.checked)}
-          disabled={disabled || isUploading || !logoUrl}
-        />
-        <span>Show logo on the asset register cards</span>
-      </label>
-    </div>
+      <span className={styles.cardLogoHoverOverlay} aria-hidden="true">
+        <PlusIcon className={styles.buttonIcon} />
+        <span>{isUploading ? "Uploading..." : logoUrl ? "Replace logo" : "Upload logo"}</span>
+        <small>JPG, PNG or WEBP</small>
+      </span>
+    </label>
   );
 }
 
@@ -548,10 +494,9 @@ export default function AssetRegistersClient() {
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const [isUploadingCreateLogos, setIsUploadingCreateLogos] = useState(false);
+  const [uploadingRegisterLogoId, setUploadingRegisterLogoId] = useState<string | null>(null);
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [manageSaveState, setManageSaveState] = useState<"idle" | "saved">("idle");
-  const [isUploadingEditLogos, setIsUploadingEditLogos] = useState(false);
   const [isLoadingManagedAssets, setIsLoadingManagedAssets] = useState(false);
   const [selectingRegisterId, setSelectingRegisterId] = useState<string | null>(
     null,
@@ -659,10 +604,10 @@ export default function AssetRegistersClient() {
           return;
         }
 
-        if (isCreateModalOpen && !isCreating && !isUploadingCreateLogos) {
+        if (isCreateModalOpen && !isCreating) {
           closeCreateModal();
         }
-        if (managedRegister && !isSavingDetails && !isUploadingEditLogos && !movingAssetId) {
+        if (managedRegister && !isSavingDetails && !movingAssetId) {
           closeManagePanel();
         }
 
@@ -684,9 +629,7 @@ export default function AssetRegistersClient() {
     isBlockingModalOpen,
     isCreateModalOpen,
     isCreating,
-    isUploadingCreateLogos,
     isSavingDetails,
-    isUploadingEditLogos,
     managedRegister,
     movingAssetId,
     openTargetDropdownId,
@@ -739,7 +682,7 @@ export default function AssetRegistersClient() {
   }
 
   function closeCreateModal() {
-    if (isCreating || isUploadingCreateLogos) return;
+    if (isCreating) return;
     setIsCreateModalOpen(false);
     setCreateDraft(emptyRegisterDraft);
     setOpenTargetDropdownId(null);
@@ -754,7 +697,7 @@ export default function AssetRegistersClient() {
   }
 
   function closeManagePanel() {
-    if (isSavingDetails || isUploadingEditLogos || movingAssetId) return;
+    if (isSavingDetails || movingAssetId) return;
     setManagedRegisterId("");
     setEditDraft(emptyRegisterDraft);
     setManageSaveState("idle");
@@ -853,11 +796,18 @@ export default function AssetRegistersClient() {
     return uploadedLogoUrls;
   }
 
-  async function handleCreateLogoUpload(event: ChangeEvent<HTMLInputElement>) {
+  async function handleCardLogoUpload(
+    register: AssetRegisterSummary,
+    event: ChangeEvent<HTMLInputElement>,
+  ) {
     const fileList = event.target.files;
     event.target.value = "";
 
-    setIsUploadingCreateLogos(true);
+    if (uploadingRegisterLogoId) {
+      return;
+    }
+
+    setUploadingRegisterLogoId(register.id);
 
     try {
       const uploadedLogoUrls = await uploadRegisterLogoFiles(fileList);
@@ -866,63 +816,49 @@ export default function AssetRegistersClient() {
         return;
       }
 
-      setCreateDraft((current) => ({
-        ...current,
-        logoUrls: normalizeLogoUrls(uploadedLogoUrls),
-        showLogosOnRegister: true,
-      }));
-      setNotice({ tone: "success", message: "Logo attached. Click Create register to save." });
-    } catch (error) {
-      setNotice({
-        tone: "error",
-        message: error instanceof Error ? error.message : "Failed to upload the register logo.",
+      const response = await fetch("/api/asset-registers", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          registerId: register.id,
+          businessName: register.businessName,
+          email: register.email,
+          phone: register.phone,
+          addressLine1: register.addressLine1,
+          logoUrls: normalizeLogoUrls(uploadedLogoUrls),
+          showLogosOnRegister: true,
+        }),
       });
-    } finally {
-      setIsUploadingCreateLogos(false);
-    }
-  }
+      const payload = await readJsonPayload(response);
+      const data = (payload ?? null) as AssetRegistersApiResponse | null;
 
-  async function handleEditLogoUpload(event: ChangeEvent<HTMLInputElement>) {
-    const fileList = event.target.files;
-    event.target.value = "";
-
-    setIsUploadingEditLogos(true);
-
-    try {
-      const uploadedLogoUrls = await uploadRegisterLogoFiles(fileList);
-
-      if (!uploadedLogoUrls.length) {
-        return;
+      if (
+        !response.ok ||
+        !data?.ok ||
+        !data.register ||
+        !Array.isArray(data.registers)
+      ) {
+        throw new Error(
+          extractErrorMessage(payload, "Failed to update the register logo."),
+        );
       }
 
-      applyEditDraftChange((current) => ({
-        ...current,
-        logoUrls: normalizeLogoUrls(uploadedLogoUrls),
-        showLogosOnRegister: true,
-      }));
-      setNotice({ tone: "success", message: "Logo selected. Click Save to store it." });
+      setRegisters(data.registers);
+
+      if (managedRegisterId === data.register.id) {
+        setEditDraft(draftFromRegister(data.register));
+      }
+
+      setNotice({ tone: "success", message: "Register logo updated from the card." });
     } catch (error) {
       setNotice({
         tone: "error",
-        message: error instanceof Error ? error.message : "Failed to upload the register logo.",
+        message: error instanceof Error ? error.message : "Failed to update the register logo.",
       });
     } finally {
-      setIsUploadingEditLogos(false);
+      setUploadingRegisterLogoId(null);
     }
-  }
-
-  function removeCreateLogo(index: number) {
-    setCreateDraft((current) => ({
-      ...current,
-      logoUrls: current.logoUrls.filter((_, logoIndex) => logoIndex !== index),
-    }));
-  }
-
-  function removeEditLogo(index: number) {
-    applyEditDraftChange((current) => ({
-      ...current,
-      logoUrls: current.logoUrls.filter((_, logoIndex) => logoIndex !== index),
-    }));
   }
 
   async function handleCreateRegister(event: FormEvent<HTMLFormElement>) {
@@ -930,11 +866,6 @@ export default function AssetRegistersClient() {
 
     if (!createDraft.businessName.trim()) {
       setNotice({ tone: "error", message: "Business name is required." });
-      return;
-    }
-
-    if (isUploadingCreateLogos) {
-      setNotice({ tone: "error", message: "Wait for the logo upload to finish before creating the register." });
       return;
     }
 
@@ -1038,11 +969,6 @@ export default function AssetRegistersClient() {
 
     if (!editDraft.businessName.trim()) {
       setNotice({ tone: "error", message: "Business name is required." });
-      return;
-    }
-
-    if (isUploadingEditLogos) {
-      setNotice({ tone: "error", message: "Wait for the logo upload to finish before saving the register." });
       return;
     }
 
@@ -1279,13 +1205,20 @@ export default function AssetRegistersClient() {
                 {visibleRegisters.map((register) => {
                   const isBusySelecting = selectingRegisterId === register.id;
                   const isBusyRemoving = removingRegisterId === register.id;
+                  const isLogoUploading = uploadingRegisterLogoId === register.id;
+                  const isLogoUploadDisabled = Boolean(uploadingRegisterLogoId) && !isLogoUploading;
 
                   return (
                     <article
                       key={register.id}
                       className={`${styles.registerCard} ${register.isSelected ? styles.registerCardSelected : ""}`}
                     >
-                      <RegisterLogoBlock register={register} />
+                      <RegisterLogoBlock
+                        register={register}
+                        isUploading={isLogoUploading}
+                        disabled={isLogoUploadDisabled || Boolean(removingRegisterId) || Boolean(selectingRegisterId)}
+                        onUpload={handleCardLogoUpload}
+                      />
 
                       <div className={styles.registerInfo}>
                         <div className={styles.registerTitleBlock}>
@@ -1400,7 +1333,7 @@ export default function AssetRegistersClient() {
                 type="button"
                 className={styles.closeButton}
                 onClick={closeManagePanel}
-                disabled={isSavingDetails || isUploadingEditLogos || Boolean(movingAssetId)}
+                disabled={isSavingDetails || Boolean(movingAssetId)}
                 aria-label="Close manage asset register modal"
               >
                 ×
@@ -1466,31 +1399,13 @@ export default function AssetRegistersClient() {
                 />
               </label>
 
-              <div className={`${styles.logoManagerField} ${styles.fullField}`}>
-                <RegisterLogoManager
-                  logoUrls={editDraft.logoUrls}
-                  showLogosOnRegister={editDraft.showLogosOnRegister}
-                  isUploading={isUploadingEditLogos}
-                  disabled={isSavingDetails || Boolean(movingAssetId)}
-                  inputId="edit-register-logo-upload"
-                  onUpload={handleEditLogoUpload}
-                  onRemove={removeEditLogo}
-                  onToggleShow={(value) =>
-                    applyEditDraftChange((current) => ({
-                      ...current,
-                      showLogosOnRegister: value,
-                    }))
-                  }
-                />
-              </div>
-
               <div className={styles.formActions}>
                 <button
                   type="submit"
                   className={`${styles.primaryButton} ${styles.manageSaveButton} ${manageSaveState === "saved" ? styles.manageSaveButtonSaved : ""}`}
-                  disabled={isSavingDetails || isUploadingEditLogos}
+                  disabled={isSavingDetails}
                 >
-                  {isSavingDetails ? "Saving..." : isUploadingEditLogos ? "Uploading..." : manageSaveState === "saved" ? "Saved" : "Save"}
+                  {isSavingDetails ? "Saving..." : manageSaveState === "saved" ? "Saved" : "Save"}
                 </button>
               </div>
             </form>
@@ -1586,14 +1501,14 @@ export default function AssetRegistersClient() {
                 <h2 id="add-register-title">Create a new asset register</h2>
                 <p className={styles.modalIntro}>
                   Add the business details for the register. Only the business
-                  name is required.
+                  name is required. Logos are added from the register card after creation.
                 </p>
               </div>
               <button
                 type="button"
                 className={styles.closeButton}
                 onClick={closeCreateModal}
-                disabled={isCreating || isUploadingCreateLogos}
+                disabled={isCreating}
                 aria-label="Close add asset register modal"
               >
                 ×
@@ -1659,24 +1574,6 @@ export default function AssetRegistersClient() {
                   placeholder="Farm, town, province"
                 />
               </label>
-
-              <div className={`${styles.logoManagerField} ${styles.fullField}`}>
-                <RegisterLogoManager
-                  logoUrls={createDraft.logoUrls}
-                  showLogosOnRegister={createDraft.showLogosOnRegister}
-                  isUploading={isUploadingCreateLogos}
-                  disabled={isCreating}
-                  inputId="create-register-logo-upload"
-                  onUpload={handleCreateLogoUpload}
-                  onRemove={removeCreateLogo}
-                  onToggleShow={(value) =>
-                    setCreateDraft((current) => ({
-                      ...current,
-                      showLogosOnRegister: value,
-                    }))
-                  }
-                />
-              </div>
             </div>
 
             <div className={styles.modalFooter}>
@@ -1684,16 +1581,16 @@ export default function AssetRegistersClient() {
                 type="button"
                 className={styles.modalCancelButton}
                 onClick={closeCreateModal}
-                disabled={isCreating || isUploadingCreateLogos}
+                disabled={isCreating}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 className={styles.modalPrimaryButton}
-                disabled={isCreating || isUploadingCreateLogos}
+                disabled={isCreating}
               >
-                {isCreating ? "Creating..." : isUploadingCreateLogos ? "Uploading..." : "Create register"}
+                {isCreating ? "Creating..." : "Create register"}
               </button>
             </div>
           </form>

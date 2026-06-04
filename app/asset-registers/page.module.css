@@ -2420,3 +2420,141 @@
     width: 100%;
   }
 }
+
+/* === 2026-06-04 update: logo upload lives on the register card only === */
+.registerLogoPanel {
+  position: relative;
+  cursor: pointer;
+  isolation: isolate;
+  transition:
+    transform 170ms ease,
+    border-color 170ms ease,
+    box-shadow 170ms ease,
+    background 170ms ease,
+    opacity 170ms ease;
+}
+
+.registerLogoPanel:hover:not(.registerLogoPanelDisabled),
+.registerLogoPanel:focus-within:not(.registerLogoPanelDisabled) {
+  transform: translateY(-2px);
+  border-color: rgba(25, 116, 84, 0.56);
+  box-shadow:
+    0 18px 34px rgba(15, 88, 64, 0.13),
+    0 0 0 4px rgba(25, 116, 84, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.registerLogoPanelDisabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.registerLogoPanelUploading {
+  pointer-events: none;
+}
+
+.cardLogoUploadInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.cardLogoHoverOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.28rem;
+  padding: 1rem;
+  border-radius: inherit;
+  color: #ffffff;
+  text-align: center;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.18), transparent 40%),
+    linear-gradient(135deg, rgba(15, 88, 64, 0.92) 0%, rgba(25, 116, 84, 0.88) 50%, rgba(8, 60, 43, 0.93) 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  opacity: 0;
+  transform: scale(0.985);
+  pointer-events: none;
+  transition:
+    opacity 170ms ease,
+    transform 170ms ease;
+}
+
+.registerLogoPanel:hover:not(.registerLogoPanelDisabled) .cardLogoHoverOverlay,
+.registerLogoPanel:focus-within:not(.registerLogoPanelDisabled) .cardLogoHoverOverlay,
+.registerLogoPanelUploading .cardLogoHoverOverlay {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.cardLogoHoverOverlay > svg {
+  width: 1.45rem;
+  height: 1.45rem;
+  stroke-width: 2.4;
+}
+
+.cardLogoHoverOverlay > span {
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.cardLogoHoverOverlay > small {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+/* === 2026-06-04 update: cleaner manage-modal scrollbar === */
+.manageModalCard {
+  max-height: min(86dvh, 52rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(25, 116, 84, 0.74) transparent;
+}
+
+.manageModalCard::-webkit-scrollbar {
+  width: 0.56rem;
+  height: 0.56rem;
+}
+
+.manageModalCard::-webkit-scrollbar-track {
+  margin: 1rem 0.28rem;
+  border-radius: 999px;
+  background: rgba(232, 242, 239, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(196, 214, 210, 0.38);
+}
+
+.manageModalCard::-webkit-scrollbar-thumb {
+  min-height: 4rem;
+  border: 2px solid rgba(248, 252, 251, 0.95);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #218462 0%, #197454 52%, #0f5840 100%);
+  background-clip: padding-box;
+  box-shadow:
+    0 6px 14px rgba(15, 88, 64, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.manageModalCard::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #2b9a73 0%, #1f7d5d 52%, #0b4b37 100%);
+  background-clip: padding-box;
+}
+
+.manageModalCard::-webkit-scrollbar-button,
+.manageModalCard::-webkit-scrollbar-corner {
+  width: 0;
+  height: 0;
+  background: transparent;
+}
