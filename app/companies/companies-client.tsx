@@ -420,88 +420,36 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
     const websiteHref = normalizeWebsiteHref(company.websiteUrl);
     const emailHref = normalizeEmailHref(company.email);
     const phoneHref = normalizePhoneHref(company.phone);
-    const logoUrl = String(company.logoUrl ?? '').trim();
-    const primaryMediaUrl = mediaUrls.find((url) => url !== logoUrl) ?? mediaUrls[0] ?? '';
-    const primaryMediaIsLogo = Boolean(primaryMediaUrl && logoUrl && primaryMediaUrl === logoUrl);
-    const logoBadgeUrl = logoUrl && primaryMediaUrl && primaryMediaUrl !== logoUrl ? logoUrl : '';
-    const secondaryMediaUrls = mediaUrls.filter((url) => url !== primaryMediaUrl && url !== logoBadgeUrl).slice(0, 3);
-    const websiteDisplay = formatWebsiteDisplay(company.websiteUrl);
-    const hasQuickActions = Boolean(phoneHref || emailHref || websiteHref);
 
     return (
       <section className={styles.detailPanel} aria-label={`${companyName(company)} details`}>
-        <aside className={styles.mediaPanel} aria-label={`${companyName(company)} media`}>
-          <div className={styles.mediaShowcase}>
-            <span className={`${styles.heroMediaTile} ${primaryMediaIsLogo ? styles.logoHeroTile : ''}`}>
-              {primaryMediaUrl ? (
-                <img
-                  src={primaryMediaUrl}
-                  alt={primaryMediaIsLogo ? `${companyName(company)} logo` : `${companyName(company)} photo`}
-                />
-              ) : (
-                <span className={styles.emptyBrandMark}>{companyInitial(company)}</span>
-              )}
-              {logoBadgeUrl ? (
-                <span className={styles.mediaLogoBadge}>
-                  <img src={logoBadgeUrl} alt={`${companyName(company)} logo`} />
+        <aside className={styles.mediaPanel}>
+          <div className={styles.mediaGrid}>
+            {mediaUrls.length ? (
+              mediaUrls.map((url, index) => (
+                <span
+                  key={`${company.userId}-${url}-${index}`}
+                  className={`${styles.mediaTile} ${index === 0 && company.logoUrl ? styles.logoTile : ''}`}
+                >
+                  <img src={url} alt={index === 0 && company.logoUrl ? `${companyName(company)} logo` : `${companyName(company)} photo ${index + 1}`} />
                 </span>
-              ) : null}
-            </span>
-
-            {secondaryMediaUrls.length ? (
-              <div className={styles.mediaThumbGrid} aria-label="Additional company photos">
-                {secondaryMediaUrls.map((url, index) => (
-                  <span key={`${company.userId}-thumb-${url}-${index}`} className={styles.mediaThumbTile}>
-                    <img src={url} alt={`${companyName(company)} photo ${index + 2}`} />
-                  </span>
-                ))}
-              </div>
-            ) : null}
-          </div>
-
-          <div className={styles.mediaInfoCard}>
-            <small>Listed profile</small>
-            <strong>{companyTypeDescription(company.partnerType)}</strong>
-            <span>{companyRadius(company)}</span>
+              ))
+            ) : (
+              <span className={`${styles.mediaTile} ${styles.emptyLogoTile}`}>
+                <span>{companyInitial(company)}</span>
+              </span>
+            )}
           </div>
         </aside>
 
         <div className={styles.detailContent}>
-          <div className={styles.detailHero}>
-            <div className={styles.detailTitleBlock}>
-              <span className={`${styles.typePill} ${typePillClass(company.partnerType)}`}>{companyTypeDescription(company.partnerType)}</span>
-              <h3>{companyName(company)}</h3>
-              <p>{companyLocation(company)}</p>
-            </div>
-
-            <div className={styles.quickActionRow} aria-label="Quick company actions">
-              {phoneHref ? <a className={styles.quickActionButton} href={phoneHref}>Call</a> : null}
-              {emailHref ? <a className={styles.quickActionButton} href={emailHref}>Email</a> : null}
-              {websiteHref ? (
-                <a className={styles.quickActionGhost} href={websiteHref} target="_blank" rel="noreferrer">
-                  Website
-                </a>
-              ) : null}
-              {!hasQuickActions ? <span className={styles.quickActionMuted}>No quick contact saved</span> : null}
-            </div>
+          <div className={styles.detailTitleBlock}>
+            <span className={`${styles.typePill} ${typePillClass(company.partnerType)}`}>{companyTypeDescription(company.partnerType)}</span>
+            <h3>{companyName(company)}</h3>
+            <p>{companyLocation(company)}</p>
           </div>
 
-          <div className={styles.detailFeatureGrid} aria-label="Company summary">
-            <span className={styles.featureCard}>
-              <small>Service area</small>
-              <strong>{companyRadius(company)}</strong>
-            </span>
-            <span className={styles.featureCard}>
-              <small>Services</small>
-              <strong>{companyServices(company)}</strong>
-            </span>
-            <span className={styles.featureCard}>
-              <small>Brands</small>
-              <strong>{company.brandFocus || 'Brands not saved'}</strong>
-            </span>
-          </div>
-
-          <div className={styles.contactGrid}>
+          <div className={styles.detailMatrix}>
             {phoneHref ? (
               <a className={styles.detailRow} href={phoneHref}>
                 <small>Contact</small>
@@ -529,18 +477,33 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
             {websiteHref ? (
               <a className={styles.detailRow} href={websiteHref} target="_blank" rel="noreferrer">
                 <small>Website</small>
-                <span>{websiteDisplay}</span>
+                <span>{formatWebsiteDisplay(websiteHref)}</span>
               </a>
             ) : (
               <span className={styles.detailRow}>
                 <small>Website</small>
-                <span>{websiteDisplay}</span>
+                <span>{formatWebsiteDisplay(company.websiteUrl)}</span>
               </span>
             )}
 
-            <span className={`${styles.detailRow} ${styles.spanWide}`}>
+            <span className={styles.detailRow}>
               <small>Address</small>
               <span>{companyAddress(company)}</span>
+            </span>
+
+            <span className={styles.detailRow}>
+              <small>Service area</small>
+              <span>{companyRadius(company)}</span>
+            </span>
+
+            <span className={styles.detailRow}>
+              <small>Services</small>
+              <span>{companyServices(company)}</span>
+            </span>
+
+            <span className={styles.detailRow}>
+              <small>Brands</small>
+              <span>{company.brandFocus || 'Brands not saved'}</span>
             </span>
           </div>
 
