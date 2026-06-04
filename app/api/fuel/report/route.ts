@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getFuelStorageById, listFuelEventsForReport, listFuelLedger, type FuelLedgerEvent } from '../../../../lib/fuel-ledger';
+import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -208,6 +209,7 @@ function buildReportHtml(options: {
   subtitle: string;
   generatedAt: string;
   ownerEmail: string;
+  logoUrl: string;
   dateRangeLabel: string;
   storageName: string;
   storageCode: string;
@@ -802,7 +804,7 @@ function buildReportHtml(options: {
     <main class="assetReportPage">
       <div class="assetReportInner">
         <header class="assetReportHeader">
-          <div class="assetReportLogoWrap"><img class="assetReportLogo" src="/brand/aim4price-mark-black.png" alt="Aim4price" /></div>
+          <div class="assetReportLogoWrap">${options.logoUrl ? `<img class="assetReportLogo" src="${escapeHtml(options.logoUrl)}" alt="Logo" />` : ''}</div>
           <div class="assetReportDocumentTitle">
             <strong>Fuel Ledger Report</strong>
             <span>Aim4price fuel tracking system</span>
@@ -965,12 +967,14 @@ export async function GET(request: NextRequest) {
     const subtitle = storage
       ? `${storage.fuelType.toUpperCase()} storage report for ${dateRange.label}.`
       : `All fuel storage and issue transactions for ${dateRange.label}.`;
+    const logoUrl = await getAssetRegisterReportLogoUrl(session.user.id).catch(() => '');
 
     const html = buildReportHtml({
       title,
       subtitle,
       generatedAt,
       ownerEmail,
+      logoUrl,
       dateRangeLabel: dateRange.label,
       storageName,
       storageCode,
