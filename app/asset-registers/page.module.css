@@ -2158,3 +2158,265 @@
     width: 100%;
   }
 }
+
+/* === 2026-06-04 refinement: single-logo manager, sleeker modal scrollbar, lighter card stats === */
+.manageModalCard {
+  max-height: min(88dvh, 54rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #126348 #edf5f2;
+}
+
+.manageModalCard::-webkit-scrollbar {
+  width: 0.68rem;
+}
+
+.manageModalCard::-webkit-scrollbar-track {
+  margin: 1.15rem 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(237, 247, 242, 0.98) 0%, rgba(248, 252, 251, 0.98) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(203, 221, 215, 0.92),
+    inset 0 0 0 4px rgba(255, 255, 255, 0.56);
+}
+
+.manageModalCard::-webkit-scrollbar-thumb {
+  min-height: 4.25rem;
+  border: 2px solid rgba(248, 252, 251, 0.98);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #1f8a67 0%, #176f52 50%, #0e523d 100%);
+  box-shadow:
+    0 7px 16px rgba(15, 88, 64, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+
+.manageModalCard::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #24946d 0%, #197454 50%, #0b4b37 100%);
+}
+
+.manageModalCard::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.registerCard {
+  background:
+    radial-gradient(circle at 2% 0%, rgba(25, 116, 84, 0.055) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.995) 0%, rgba(249, 252, 252, 0.99) 100%);
+}
+
+.registerDetails {
+  color: #5f7080;
+  font-weight: 620;
+}
+
+.statGrid {
+  gap: 0.32rem;
+}
+
+.statGrid div {
+  grid-template-columns: minmax(8.6rem, 0.48fr) minmax(0, 1fr);
+  gap: 0.82rem;
+  align-items: baseline;
+}
+
+.statGrid span {
+  color: #42515b;
+  font-size: clamp(0.91rem, 1.04vw, 1rem);
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+
+.statGrid strong {
+  color: #0b3f35;
+  font-size: clamp(0.98rem, 1.16vw, 1.08rem);
+  font-weight: 760;
+  letter-spacing: -0.014em;
+}
+
+.logoManager {
+  gap: 1rem;
+  padding: clamp(0.95rem, 1.6vw, 1.2rem);
+  border: 1px solid rgba(193, 211, 218, 0.95);
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.07) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfb 100%);
+  box-shadow:
+    0 10px 24px rgba(16, 36, 40, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.logoManagerHeader span {
+  color: #0b3b31;
+  font-size: 0.98rem;
+  font-weight: 850;
+}
+
+.logoManagerHeader small,
+.logoEmptyState {
+  color: #667788;
+  font-weight: 600;
+}
+
+.logoChoicePanel {
+  display: grid;
+  grid-template-columns: minmax(10rem, 13.5rem) minmax(0, 1fr);
+  gap: clamp(0.9rem, 1.5vw, 1.2rem);
+  align-items: stretch;
+}
+
+.logoChoicePreview {
+  min-height: 7.6rem;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1.4px dashed rgba(25, 116, 84, 0.38);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at 25% 0%, rgba(25, 116, 84, 0.08), transparent 50%),
+    linear-gradient(180deg, #ffffff 0%, #f3f8f6 100%);
+}
+
+.logoChoicePreviewActive {
+  border-style: solid;
+  border-color: rgba(25, 116, 84, 0.32);
+  background: #ffffff;
+  box-shadow: inset 0 0 0 5px rgba(246, 250, 249, 0.96);
+}
+
+.logoChoicePreview img {
+  width: 100%;
+  height: 100%;
+  max-height: 9.4rem;
+  object-fit: contain;
+  padding: 0.8rem;
+}
+
+.logoChoiceEmpty {
+  display: grid;
+  place-items: center;
+  gap: 0.22rem;
+  padding: 1rem;
+  color: #0f3e33;
+  text-align: center;
+}
+
+.logoChoiceEmpty span {
+  font-size: 0.98rem;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.logoChoiceEmpty small {
+  max-width: 11rem;
+  color: #6c7b88;
+  font-size: 0.78rem;
+  font-weight: 620;
+  line-height: 1.35;
+}
+
+.logoChoiceActions {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.logoUploadButton {
+  min-height: 3rem;
+  padding: 0 1.05rem;
+  color: #ffffff;
+  border-color: #0f6248;
+  background: linear-gradient(135deg, #238764 0%, #197454 48%, #0f5840 100%);
+  box-shadow:
+    0 12px 24px rgba(25, 116, 84, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.logoUploadButton:hover:not(.logoUploadButtonDisabled) {
+  border-color: #0b4b37;
+  background: linear-gradient(135deg, #2b9a73 0%, #1f7d5d 48%, #0b4b37 100%);
+  box-shadow:
+    0 15px 28px rgba(25, 116, 84, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.logoClearButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(232, 188, 188, 0.96);
+  border-radius: 999px;
+  color: #962c2c;
+  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 820;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    opacity 160ms ease;
+}
+
+.logoClearButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(203, 110, 110, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #ffe9e9 100%);
+}
+
+.logoClearButton:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.logoVisibilityToggle {
+  width: fit-content;
+  min-height: 2.35rem;
+  padding: 0.45rem 0.72rem;
+  border: 1px solid rgba(216, 225, 234, 0.9);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #3f505a;
+  font-weight: 720;
+}
+
+.logoVisibilityToggle input:disabled + span {
+  color: #8a97a3;
+}
+
+.manageSaveButtonSaved,
+.manageSaveButtonSaved:hover:not(:disabled),
+.manageSaveButtonSaved:focus-visible:not(:disabled) {
+  color: #ffffff;
+  border-color: #0b5f44;
+  background: linear-gradient(135deg, #26a06f 0%, #17845d 50%, #0d6749 100%);
+  box-shadow:
+    0 18px 34px rgba(25, 116, 84, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+@media (max-width: 700px) {
+  .logoChoicePanel {
+    grid-template-columns: 1fr;
+  }
+
+  .logoChoiceActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .logoClearButton {
+    width: 100%;
+  }
+}
