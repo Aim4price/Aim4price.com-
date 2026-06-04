@@ -22,6 +22,7 @@ type PartnerDirectoryEntry = {
   displayName: string;
   businessName: string;
   phone: string;
+  email: string;
   province: string;
   townCity: string;
   addressLine1: string;
@@ -2763,6 +2764,23 @@ function normalizePhoneHref(value: string): string {
   return cleaned ? `tel:${cleaned}` : '';
 }
 
+function normalizeEmailHref(value: string): string {
+  const trimmed = value.trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed) ? `mailto:${trimmed}` : '';
+}
+
+function quotePartnerAddress(partner: PartnerDirectoryEntry): string {
+  return [partner.addressLine1, partner.townCity, partner.province].filter(Boolean).join(', ') || 'Address not saved';
+}
+
+function quotePartnerServicesDisplay(partner: PartnerDirectoryEntry): string {
+  return partner.services || formatQuotePartnerType(partner.partnerType);
+}
+
+function quotePartnerRadiusDisplay(partner: PartnerDirectoryEntry): string {
+  return partner.serviceRadiusKm ? `${partner.serviceRadiusKm} km service radius` : 'Radius not saved';
+}
+
 function hasQuotePartnerCoordinates(partner: PartnerDirectoryEntry): boolean {
   return (
     partner.latitude !== null &&
@@ -2787,46 +2805,22 @@ function escapeHtml(value: string): string {
 function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry): string {
   const name = escapeHtml(quotePartnerName(partner));
   const location = escapeHtml(quotePartnerLocation(partner));
-  const radius = partner.serviceRadiusKm ? escapeHtml(`${partner.serviceRadiusKm} km service radius`) : '';
+  const radius = escapeHtml(quotePartnerRadiusDisplay(partner));
   const brands = partner.brandFocus ? escapeHtml(partner.brandFocus) : '';
-  const services = partner.services ? escapeHtml(partner.services) : '';
-  const description = partner.description ? escapeHtml(partner.description) : '';
-  const phone = partner.phone ? escapeHtml(partner.phone) : '';
-  const phoneHref = normalizePhoneHref(partner.phone);
-  const websiteHref = normalizeWebsiteHref(partner.websiteUrl);
-  const websiteLabel = websiteHref ? escapeHtml(formatWebsiteDisplay(websiteHref)) : '';
-  const logoUrl = partner.logoUrl ? escapeHtml(partner.logoUrl) : '';
-  const initial = escapeHtml(quotePartnerInitial(partner));
-  const photoMarkup = partner.extraPhotoUrls
-    .filter(Boolean)
-    .slice(0, 3)
-    .map((photoUrl, index) => `<img src="${escapeHtml(photoUrl)}" alt="${name} photo ${index + 1}" />`)
-    .join('');
+  const services = escapeHtml(quotePartnerServicesDisplay(partner));
   const details = [
     `<div><span>Location</span><strong>${location}</strong></div>`,
-    radius ? `<div><span>Radius</span><strong>${radius}</strong></div>` : '',
+    services ? `<div><span>Service</span><strong>${services}</strong></div>` : '',
     brands ? `<div><span>Brands</span><strong>${brands}</strong></div>` : '',
-    services ? `<div><span>Services</span><strong>${services}</strong></div>` : '',
-  ].filter(Boolean).join('');
-  const actionLinks = [
-    websiteHref && websiteLabel ? `<a href="${escapeHtml(websiteHref)}" target="_blank" rel="noopener noreferrer">Website</a>` : '',
-    phoneHref && phone ? `<a href="${escapeHtml(phoneHref)}">Contact</a>` : '',
+    `<div><span>Radius</span><strong>${radius}</strong></div>`,
   ].filter(Boolean).join('');
 
   return `
-    <div class="assetQuotePopupCard">
-      ${photoMarkup ? `<div class="assetQuotePopupPhotos">${photoMarkup}</div>` : ''}
-      <div class="assetQuotePopupHeader">
-        <span class="assetQuotePopupLogo">
-          ${logoUrl ? `<img src="${logoUrl}" alt="${name} logo" />` : `<span>${initial}</span>`}
-        </span>
-        <div>
-          <strong>${name}</strong>
-          ${description ? `<p>${description}</p>` : ''}
-        </div>
+    <div class="assetQuotePopupCard assetQuotePopupCardSimple">
+      <div class="assetQuotePopupSimpleHeader">
+        <strong>${name}</strong>
       </div>
-      <div class="assetQuotePopupDetails">${details}</div>
-      ${actionLinks ? `<div class="assetQuotePopupActions">${actionLinks}</div>` : ''}
+      <div class="assetQuotePopupDetails assetQuotePopupSimpleDetails">${details}</div>
       <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" class="assetQuotePopupChooseButton">Choose this business</button>
     </div>
   `;
@@ -2948,6 +2942,10 @@ export default function AssetRegisterClient() {
     () => quotePartners.find((partner) => partner.userId === selectedQuotePartnerId) ?? null,
     [quotePartners, selectedQuotePartnerId],
   );
+  const selectedQuotePartnerPhotos = selectedQuotePartner?.extraPhotoUrls?.filter(Boolean).slice(0, 3) ?? [];
+  const selectedQuotePartnerWebsiteHref = selectedQuotePartner ? normalizeWebsiteHref(selectedQuotePartner.websiteUrl) : '';
+  const selectedQuotePartnerEmailHref = selectedQuotePartner ? normalizeEmailHref(selectedQuotePartner.email) : '';
+  const selectedQuotePartnerPhoneHref = selectedQuotePartner ? normalizePhoneHref(selectedQuotePartner.phone) : '';
   const quotePartnersWithCoordinates = useMemo(() => quotePartners.filter(hasQuotePartnerCoordinates), [quotePartners]);
 
   useEffect(() => {
@@ -7012,22 +7010,15 @@ export default function AssetRegisterClient() {
                               className={`${styles.assetQuotePartnerCard} ${quoteToneClassForPartnerType(partner.partnerType)} ${selectedQuotePartnerId === partner.userId ? styles.assetQuotePartnerCardActive : ''}`}
                               onClick={() => focusQuotePartnerOnMap(partner)}
                             >
-                              <span className={styles.assetQuotePartnerLogo}>
-                                {partner.logoUrl ? (
-                                  <img src={partner.logoUrl} alt={`${quotePartnerName(partner)} logo`} />
-                                ) : (
-                                  <span>{quotePartnerInitial(partner)}</span>
-                                )}
-                              </span>
                               <span className={styles.assetQuotePartnerBody}>
                                 <span className={styles.assetQuotePartnerHeader}>
                                   <strong>{quotePartnerName(partner)}</strong>
                                 </span>
                                 <span className={styles.assetQuotePartnerMeta}>
                                   <span>{quotePartnerLocation(partner)}</span>
-                                  {partner.serviceRadiusKm ? <span>{partner.serviceRadiusKm} km radius</span> : null}
+                                  <span>{quotePartnerServicesDisplay(partner)}</span>
+                                  <span>{quotePartnerRadiusDisplay(partner)}</span>
                                 </span>
-                                {partner.websiteUrl ? <span className={styles.assetQuotePartnerCopy}>{formatWebsiteDisplay(partner.websiteUrl)}</span> : null}
                                 {partner.brandFocus ? <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span> : null}
                               </span>
                             </button>
@@ -7060,7 +7051,7 @@ export default function AssetRegisterClient() {
                         disabled={isSendingQuoteLead}
                       />
 
-                      <section className={styles.assetQuoteStepModal} aria-live="polite">
+                      <section className={`${styles.assetQuoteStepModal} ${quoteLeadStep === 'message' ? styles.assetQuoteMessageStepModal : ''}`} aria-live="polite">
                         <div className={styles.assetQuoteStepHeader}>
                           <div>
                             <span>{quotePartnerName(selectedQuotePartner)}</span>
@@ -7078,28 +7069,97 @@ export default function AssetRegisterClient() {
                         </div>
 
                         {quoteLeadStep === 'message' ? (
-                          <div className={styles.assetQuoteStepBody}>
-                            <p className={styles.assetQuoteStepNotice}>
-                              {isFullRegisterQuoteLead
-                                ? 'This sends a once-off full Asset Register snapshot. It does not grant live register access.'
-                                : 'This sends one asset only. It does not share the full register.'}
-                            </p>
+                          <div className={`${styles.assetQuoteStepBody} ${styles.assetQuoteMessageStepBody}`}>
+                            <aside className={styles.assetQuoteSelectedCompanyPanel} aria-label="Selected company details">
+                              <div className={styles.assetQuoteSelectedMediaGrid}>
+                                <span className={`${styles.assetQuoteSelectedMediaTile} ${styles.assetQuoteSelectedLogoTile}`}>
+                                  {selectedQuotePartner.logoUrl ? (
+                                    <img src={selectedQuotePartner.logoUrl} alt={`${quotePartnerName(selectedQuotePartner)} logo`} />
+                                  ) : (
+                                    <span className={styles.assetQuoteSelectedLogoFallback}>{quotePartnerInitial(selectedQuotePartner)}</span>
+                                  )}
+                                </span>
+                                {selectedQuotePartnerPhotos.map((photoUrl, index) => (
+                                  <span key={`${photoUrl}-${index}`} className={styles.assetQuoteSelectedMediaTile}>
+                                    <img src={photoUrl} alt={`${quotePartnerName(selectedQuotePartner)} business photo ${index + 1}`} />
+                                  </span>
+                                ))}
+                              </div>
 
-                            <label className={styles.assetQuoteMessageField}>
-                              <span>
-                                Message to company
-                                <small>Optional</small>
-                              </span>
-                              <textarea
-                                value={quoteOwnerMessage}
-                                onChange={(event) => setQuoteOwnerMessage(event.target.value)}
-                                placeholder={
-                                  isFullRegisterQuoteLead
-                                    ? 'Example: Please review my full register for refinance or insurance options.'
-                                    : 'Example: Please contact me about cover or finance options for this asset.'
-                                }
-                              />
-                            </label>
+                              <div className={styles.assetQuoteSelectedCompanyInfo}>
+                                <div className={styles.assetQuoteSelectedCompanyTitle}>
+                                  <strong>{quotePartnerName(selectedQuotePartner)}</strong>
+                                  <span>{quotePartnerLocation(selectedQuotePartner)}</span>
+                                </div>
+
+                                <div className={styles.assetQuoteSelectedContactList}>
+                                  {selectedQuotePartner.email && selectedQuotePartnerEmailHref ? (
+                                    <a className={styles.assetQuoteSelectedContactRow} href={selectedQuotePartnerEmailHref}>
+                                      <small>Email</small>
+                                      <span>{selectedQuotePartner.email}</span>
+                                    </a>
+                                  ) : (
+                                    <span className={styles.assetQuoteSelectedContactRow}>
+                                      <small>Email</small>
+                                      <span>Email not saved</span>
+                                    </span>
+                                  )}
+
+                                  {selectedQuotePartner.phone && selectedQuotePartnerPhoneHref ? (
+                                    <a className={styles.assetQuoteSelectedContactRow} href={selectedQuotePartnerPhoneHref}>
+                                      <small>Contact</small>
+                                      <span>{selectedQuotePartner.phone}</span>
+                                    </a>
+                                  ) : (
+                                    <span className={styles.assetQuoteSelectedContactRow}>
+                                      <small>Contact</small>
+                                      <span>Contact not saved</span>
+                                    </span>
+                                  )}
+
+                                  {selectedQuotePartnerWebsiteHref ? (
+                                    <a className={styles.assetQuoteSelectedContactRow} href={selectedQuotePartnerWebsiteHref} target="_blank" rel="noreferrer">
+                                      <small>Website</small>
+                                      <span>{formatWebsiteDisplay(selectedQuotePartnerWebsiteHref)}</span>
+                                    </a>
+                                  ) : (
+                                    <span className={styles.assetQuoteSelectedContactRow}>
+                                      <small>Website</small>
+                                      <span>Website not saved</span>
+                                    </span>
+                                  )}
+
+                                  <span className={styles.assetQuoteSelectedContactRow}>
+                                    <small>Address</small>
+                                    <span>{quotePartnerAddress(selectedQuotePartner)}</span>
+                                  </span>
+                                </div>
+                              </div>
+                            </aside>
+
+                            <div className={styles.assetQuoteMessagePanel}>
+                              <p className={styles.assetQuoteStepNotice}>
+                                {isFullRegisterQuoteLead
+                                  ? 'This sends a once-off full Asset Register snapshot. It does not grant live register access.'
+                                  : 'This sends one asset only. It does not share the full register.'}
+                              </p>
+
+                              <label className={styles.assetQuoteMessageField}>
+                                <span>
+                                  Message to company
+                                  <small>Optional</small>
+                                </span>
+                                <textarea
+                                  value={quoteOwnerMessage}
+                                  onChange={(event) => setQuoteOwnerMessage(event.target.value)}
+                                  placeholder={
+                                    isFullRegisterQuoteLead
+                                      ? 'Example: Please review my full register for refinance or insurance options.'
+                                      : 'Example: Please contact me about cover or finance options for this asset.'
+                                  }
+                                />
+                              </label>
+                            </div>
                           </div>
                         ) : (
                           <div className={styles.assetQuoteStepBody}>

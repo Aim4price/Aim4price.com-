@@ -19754,3 +19754,294 @@
     order: 1 !important;
   }
 }
+
+/* === Partner map simplification + selected-company message card === */
+.assetQuotePartnerCard {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+  padding: 1rem 1.18rem !important;
+  background: #ffffff !important;
+}
+
+.assetQuotePartnerLogo,
+.assetQuotePartnerNumber {
+  display: none !important;
+}
+
+.assetQuotePartnerBody {
+  gap: 0.46rem !important;
+}
+
+.assetQuotePartnerHeader strong {
+  color: #102f27 !important;
+  font-size: 1rem !important;
+  font-weight: 850 !important;
+  line-height: 1.16 !important;
+}
+
+.assetQuotePartnerMeta {
+  display: grid !important;
+  gap: 0.24rem !important;
+  color: #607283 !important;
+  font-size: 0.82rem !important;
+  font-weight: 650 !important;
+  line-height: 1.35 !important;
+}
+
+.assetQuotePartnerMeta span:not(:last-child)::after {
+  content: none !important;
+  margin: 0 !important;
+}
+
+.assetQuotePartnerCopy {
+  color: #607283 !important;
+  font-size: 0.82rem !important;
+  font-weight: 650 !important;
+  line-height: 1.35 !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupPhotos),
+.assetQuoteMapShell :global(.assetQuotePopupLogo),
+.assetQuoteMapShell :global(.assetQuotePopupActions) {
+  display: none !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupCardSimple) {
+  width: min(100%, 340px) !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), Arial, sans-serif !important;
+  color: #172f2b !important;
+  background: #ffffff !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupSimpleHeader) {
+  display: block !important;
+  padding: 1.05rem 1rem 0.8rem !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupSimpleHeader strong) {
+  display: block !important;
+  color: #102f27 !important;
+  font-size: 1.08rem !important;
+  font-weight: 900 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.035em !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupSimpleDetails) {
+  display: grid !important;
+  gap: 0.56rem !important;
+  padding: 0 1rem 0.95rem !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupSimpleDetails div) {
+  display: grid !important;
+  gap: 0.14rem !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupSimpleDetails span) {
+  color: #718390 !important;
+  font-size: 0.66rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.055em !important;
+  text-transform: uppercase !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupSimpleDetails strong) {
+  color: #213b35 !important;
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  line-height: 1.32 !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupChooseButton) {
+  width: calc(100% - 2rem) !important;
+  min-height: 3rem !important;
+  margin: 0 1rem 1rem !important;
+  border-radius: 0.92rem !important;
+  box-shadow: 0 12px 24px rgba(18, 110, 76, 0.18) !important;
+}
+
+.assetQuoteMessageStepModal {
+  width: min(100%, 1040px) !important;
+}
+
+.assetQuoteMessageStepBody {
+  display: grid !important;
+  grid-template-columns: minmax(18rem, 23.5rem) minmax(0, 1fr) !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.assetQuoteSelectedCompanyPanel {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  border-right: 1px solid rgba(204, 219, 232, 0.84) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%) !important;
+  overflow-y: auto !important;
+}
+
+.assetQuoteSelectedMediaGrid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0 !important;
+  background: #eef4f1 !important;
+  border-bottom: 1px solid rgba(204, 219, 232, 0.84) !important;
+}
+
+.assetQuoteSelectedMediaTile {
+  position: relative !important;
+  display: grid !important;
+  place-items: center !important;
+  min-height: 8rem !important;
+  aspect-ratio: 1.12 / 1 !important;
+  overflow: hidden !important;
+  background: #f8fbf9 !important;
+  border-right: 1px solid rgba(204, 219, 232, 0.84) !important;
+  border-bottom: 1px solid rgba(204, 219, 232, 0.84) !important;
+}
+
+.assetQuoteSelectedMediaTile img {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  object-fit: cover !important;
+}
+
+.assetQuoteSelectedLogoTile img {
+  object-fit: contain !important;
+  padding: 0.82rem !important;
+  background: #ffffff !important;
+}
+
+.assetQuoteSelectedLogoFallback {
+  width: 100% !important;
+  height: 100% !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #12644d !important;
+  background: linear-gradient(135deg, #f8fcfa 0%, #e4f3ec 100%) !important;
+  font-size: 2.15rem !important;
+  font-weight: 900 !important;
+}
+
+.assetQuoteSelectedCompanyInfo {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 1.05rem !important;
+  align-content: start !important;
+  padding: 1.15rem 1.2rem 1.25rem !important;
+}
+
+.assetQuoteSelectedCompanyTitle {
+  display: grid !important;
+  gap: 0.28rem !important;
+}
+
+.assetQuoteSelectedCompanyTitle strong {
+  color: #102f27 !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
+  font-size: 1.14rem !important;
+  font-weight: 900 !important;
+  line-height: 1.12 !important;
+  letter-spacing: -0.035em !important;
+  overflow-wrap: anywhere !important;
+}
+
+.assetQuoteSelectedCompanyTitle span {
+  color: #657684 !important;
+  font-size: 0.86rem !important;
+  font-weight: 680 !important;
+  line-height: 1.35 !important;
+}
+
+.assetQuoteSelectedContactList {
+  display: grid !important;
+  gap: 0 !important;
+  border-top: 1px solid rgba(213, 224, 232, 0.84) !important;
+}
+
+.assetQuoteSelectedContactRow {
+  display: grid !important;
+  grid-template-columns: 5.35rem minmax(0, 1fr) !important;
+  gap: 0.75rem !important;
+  align-items: start !important;
+  padding: 0.7rem 0 !important;
+  border-bottom: 1px solid rgba(213, 224, 232, 0.84) !important;
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+.assetQuoteSelectedContactRow:hover {
+  color: #12644d !important;
+}
+
+.assetQuoteSelectedContactRow small {
+  color: #738391 !important;
+  font-size: 0.68rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.055em !important;
+  line-height: 1.25 !important;
+  text-transform: uppercase !important;
+}
+
+.assetQuoteSelectedContactRow span {
+  min-width: 0 !important;
+  color: #213b35 !important;
+  font-size: 0.84rem !important;
+  font-weight: 690 !important;
+  line-height: 1.35 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.assetQuoteMessagePanel {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  display: grid !important;
+  align-content: start !important;
+  gap: 1.1rem !important;
+  padding: clamp(1.25rem, 2vw, 1.8rem) clamp(1.35rem, 2.2vw, 2rem) !important;
+  overflow-y: auto !important;
+}
+
+.assetQuoteMessageStepBody .assetQuoteStepNotice {
+  font-weight: 780 !important;
+}
+
+.assetQuoteMessageStepBody .assetQuoteMessageField textarea {
+  min-height: 12rem !important;
+}
+
+@media (max-width: 900px) {
+  .assetQuoteMessageStepModal {
+    width: min(100%, 42rem) !important;
+  }
+
+  .assetQuoteMessageStepBody {
+    grid-template-columns: 1fr !important;
+    overflow-y: auto !important;
+  }
+
+  .assetQuoteSelectedCompanyPanel {
+    border-right: 0 !important;
+    border-bottom: 1px solid rgba(204, 219, 232, 0.84) !important;
+    overflow: visible !important;
+  }
+
+  .assetQuoteMessagePanel {
+    overflow: visible !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .assetQuoteSelectedMediaTile {
+    min-height: 6.9rem !important;
+  }
+
+  .assetQuoteSelectedContactRow {
+    grid-template-columns: 1fr !important;
+    gap: 0.2rem !important;
+  }
+}
