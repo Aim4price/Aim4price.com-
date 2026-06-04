@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getAssetRegisterItemById, type AssetRegisterItem } from '../../../../lib/asset-register-db';
+import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
 import { listScanEventsForAsset, type ScanEventRecord } from '../../../../lib/scan-assets';
 
 export const runtime = 'nodejs';
@@ -936,6 +937,7 @@ function buildReportHtml(options: {
   ownerName: string;
   ownerEmail: string;
   generatedAt: string;
+  logoUrl: string;
   summary: ReportSummary;
   recordRows: KeyValueRow[];
   bodyHtml: string;
@@ -1685,7 +1687,7 @@ function buildReportHtml(options: {
     <main class="assetReportPage">
       <div class="assetReportInner">
         <header class="assetReportHeader">
-          <div class="assetReportLogoWrap"><img class="assetReportLogo" src="/brand/aim4price-mark-black.png" alt="Aim4price" /></div>
+          <div class="assetReportLogoWrap">${options.logoUrl ? `<img class="assetReportLogo" src="${escapeHtml(options.logoUrl)}" alt="Logo" />` : ''}</div>
           <div class="assetReportDocumentTitle">
             <strong>${escapeHtml(reportTitle)}</strong>
             <span>Aim4price asset register</span>
@@ -1805,20 +1807,21 @@ function buildReportHtml(options: {
 </html>`;
 }
 
-function buildScanReport(asset: AssetRegisterItem, events: ScanEventRecord[], ownerName: string, ownerEmail: string, generatedAt: string): string {
+function buildScanReport(asset: AssetRegisterItem, events: ScanEventRecord[], ownerName: string, ownerEmail: string, generatedAt: string, logoUrl: string): string {
   return buildReportHtml({
     reportKind: 'scan',
     asset,
     ownerName,
     ownerEmail,
     generatedAt,
+    logoUrl,
     summary: buildScanReportSummary(asset, events),
     recordRows: buildScanRecordRows(asset, events),
     bodyHtml: buildScanBody(asset, events),
   });
 }
 
-function buildFuelReport(asset: AssetRegisterItem, events: ScanEventRecord[], ownerName: string, ownerEmail: string, generatedAt: string): string {
+function buildFuelReport(asset: AssetRegisterItem, events: ScanEventRecord[], ownerName: string, ownerEmail: string, generatedAt: string, logoUrl: string): string {
   const fuelEvents = events.filter((event) => typeof event.fuelPercent === 'number' && Number.isFinite(event.fuelPercent));
 
   return buildReportHtml({
@@ -1827,13 +1830,14 @@ function buildFuelReport(asset: AssetRegisterItem, events: ScanEventRecord[], ow
     ownerName,
     ownerEmail,
     generatedAt,
+    logoUrl,
     summary: buildFuelReportSummary(asset, fuelEvents),
     recordRows: buildFuelRecordRows(asset, fuelEvents),
     bodyHtml: buildFuelBody(asset, fuelEvents),
   });
 }
 
-function buildMaintenanceReport(asset: AssetRegisterItem, events: ScanEventRecord[], ownerName: string, ownerEmail: string, generatedAt: string): string {
+function buildMaintenanceReport(asset: AssetRegisterItem, events: ScanEventRecord[], ownerName: string, ownerEmail: string, generatedAt: string, logoUrl: string): string {
   const maintenanceEntries = events.map((event) => parseMaintenanceEvent(event)).filter((entry): entry is MaintenanceEntry => Boolean(entry));
 
   return buildReportHtml({
@@ -1842,6 +1846,7 @@ function buildMaintenanceReport(asset: AssetRegisterItem, events: ScanEventRecor
     ownerName,
     ownerEmail,
     generatedAt,
+    logoUrl,
     summary: buildMaintenanceReportSummary(asset, maintenanceEntries),
     recordRows: buildMaintenanceRecordRows(asset, maintenanceEntries),
     bodyHtml: buildMaintenanceBody(asset, maintenanceEntries),
@@ -1874,13 +1879,14 @@ export async function GET(request: NextRequest) {
   const ownerName = asText(session.user.name) || asText(session.user.email) || 'Owner session';
   const ownerEmail = asText(session.user.email);
   const generatedAt = formatDate(new Date().toISOString());
+  const logoUrl = await getAssetRegisterReportLogoUrl(session.user.id, asset.registerId).catch(() => '');
 
   const html =
     reportKind === 'fuel'
-      ? buildFuelReport(asset, events, ownerName, ownerEmail, generatedAt)
+      ? buildFuelReport(asset, events, ownerName, ownerEmail, generatedAt, logoUrl)
       : reportKind === 'maintenance'
-        ? buildMaintenanceReport(asset, events, ownerName, ownerEmail, generatedAt)
-        : buildScanReport(asset, events, ownerName, ownerEmail, generatedAt);
+        ? buildMaintenanceReport(asset, events, ownerName, ownerEmail, generatedAt, logoUrl)
+        : buildScanReport(asset, events, ownerName, ownerEmail, generatedAt, logoUrl);
 
   const fileName = `${slugifyFileSegment(asset.title)}-${slugifyFileSegment(asset.plateLabel || asset.publicAssetCode || asset.id)}-${slugifyFileSegment(REPORT_LABELS[reportKind])}.html`;
 
