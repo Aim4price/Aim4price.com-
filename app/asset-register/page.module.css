@@ -19439,3 +19439,318 @@
     width: 100%;
   }
 }
+
+/* === Partner map directory cleanup: Google-style list, no numbers/pills === */
+.assetQuotePartnerPickerModal .assetQuoteModalHeader h3,
+.assetQuoteModalHeader h3 {
+  letter-spacing: -0.055em !important;
+}
+
+.assetQuoteSearchBar {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: stretch !important;
+}
+
+.assetQuoteMapStage {
+  grid-template-columns: minmax(20rem, 25rem) minmax(0, 1fr) !important;
+  background: #f4f7f6 !important;
+}
+
+.assetQuoteMapSidebar {
+  background: #ffffff !important;
+}
+
+.assetQuoteSidebarHeader {
+  justify-content: flex-start !important;
+  padding: 0.85rem 1rem !important;
+  border-bottom: 1px solid rgba(211, 222, 230, 0.78) !important;
+}
+
+.assetQuoteSidebarHeader strong {
+  display: none !important;
+}
+
+.assetQuoteBackButton {
+  border: 0 !important;
+  border-radius: 0.78rem !important;
+  background: transparent !important;
+  color: #173f61 !important;
+  box-shadow: none !important;
+  min-height: 2.35rem !important;
+  padding: 0 0.45rem !important;
+}
+
+.assetQuoteBackButton:hover:not(:disabled) {
+  background: #f1f6f8 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.assetQuotePartnerList {
+  gap: 0 !important;
+  padding: 0 !important;
+}
+
+.assetQuotePartnerCard {
+  grid-template-columns: 3.55rem minmax(0, 1fr) !important;
+  gap: 0.85rem !important;
+  align-items: center !important;
+  padding: 1rem 1.08rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(211, 222, 230, 0.72) !important;
+  border-radius: 0 !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease !important;
+}
+
+.assetQuotePartnerCard:hover,
+.assetQuotePartnerCardActive,
+.assetQuotePartnerCard.assetQuoteToneFinance:hover,
+.assetQuotePartnerCard.assetQuoteToneInsurance:hover,
+.assetQuotePartnerCard.assetQuoteToneDealer:hover,
+.assetQuotePartnerCard.assetQuoteToneFinance.assetQuotePartnerCardActive,
+.assetQuotePartnerCard.assetQuoteToneInsurance.assetQuotePartnerCardActive,
+.assetQuotePartnerCard.assetQuoteToneDealer.assetQuotePartnerCardActive {
+  transform: none !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(211, 222, 230, 0.72) !important;
+  background: #f4fbf8 !important;
+  box-shadow: inset 4px 0 0 var(--quote-accent, #159063) !important;
+}
+
+.assetQuotePartnerCardActive,
+.assetQuotePartnerCard.assetQuoteToneFinance.assetQuotePartnerCardActive,
+.assetQuotePartnerCard.assetQuoteToneInsurance.assetQuotePartnerCardActive,
+.assetQuotePartnerCard.assetQuoteToneDealer.assetQuotePartnerCardActive {
+  outline: 0 !important;
+}
+
+.assetQuotePartnerNumber {
+  display: none !important;
+}
+
+.assetQuotePartnerLogo {
+  display: grid !important;
+  place-items: center !important;
+  width: 3.15rem !important;
+  height: 3.15rem !important;
+  border-radius: 0.92rem !important;
+  overflow: hidden !important;
+  background: linear-gradient(135deg, #f5fbf8 0%, #e4f3ec 100%) !important;
+  border: 1px solid rgba(204, 219, 232, 0.9) !important;
+  color: #12644d !important;
+  font-size: 1rem !important;
+  font-weight: 900 !important;
+  flex: 0 0 auto !important;
+}
+
+.assetQuotePartnerLogo img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  background: #ffffff !important;
+}
+
+.assetQuotePartnerLogo > span {
+  display: grid !important;
+  place-items: center !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.assetQuotePartnerHeader {
+  gap: 0 !important;
+}
+
+.assetQuotePartnerHeader strong {
+  color: #172f2b !important;
+  font-size: 0.98rem !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.assetQuotePartnerHeader small,
+.assetQuotePartnerCard.assetQuoteToneFinance .assetQuotePartnerHeader small,
+.assetQuotePartnerCard.assetQuoteToneInsurance .assetQuotePartnerHeader small,
+.assetQuotePartnerCard.assetQuoteToneDealer .assetQuotePartnerHeader small {
+  display: none !important;
+}
+
+.assetQuotePartnerMeta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.3rem 0.55rem !important;
+  color: #5f7180 !important;
+}
+
+.assetQuotePartnerCopy {
+  color: #647585 !important;
+  font-size: 0.8rem !important;
+}
+
+.assetQuoteMapShell :global(.assetQuoteMapMarkerPin) {
+  width: 32px !important;
+  height: 32px !important;
+  border-width: 3px !important;
+}
+
+.assetQuoteMapShell :global(.assetQuoteMapMarkerPin b) {
+  display: none !important;
+}
+
+.assetQuoteMapShell :global(.leaflet-popup-content-wrapper) {
+  border-radius: 1.1rem !important;
+  overflow: hidden !important;
+}
+
+.assetQuoteMapShell :global(.leaflet-popup-content) {
+  margin: 0 !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupCard) {
+  width: min(100%, 430px) !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), Arial, sans-serif !important;
+  color: #172f2b !important;
+  background: #ffffff !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupPhotos) {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 2px !important;
+  height: 7.25rem !important;
+  background: #eef3f1 !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupPhotos img) {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupHeader) {
+  display: grid !important;
+  grid-template-columns: 3.75rem minmax(0, 1fr) !important;
+  gap: 0.9rem !important;
+  align-items: center !important;
+  padding: 1rem 1rem 0.75rem !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupLogo) {
+  display: grid !important;
+  place-items: center !important;
+  width: 3.4rem !important;
+  height: 3.4rem !important;
+  border-radius: 0.95rem !important;
+  overflow: hidden !important;
+  color: #12644d !important;
+  background: linear-gradient(135deg, #f5fbf8 0%, #e4f3ec 100%) !important;
+  border: 1px solid rgba(204, 219, 232, 0.9) !important;
+  font-size: 1.06rem !important;
+  font-weight: 900 !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupLogo img) {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  background: #ffffff !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupHeader strong) {
+  display: block !important;
+  color: #172f2b !important;
+  font-size: 1.05rem !important;
+  font-weight: 900 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupHeader p) {
+  margin: 0.28rem 0 0 !important;
+  color: #667684 !important;
+  font-size: 0.82rem !important;
+  line-height: 1.35 !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupDetails) {
+  display: grid !important;
+  gap: 0.62rem !important;
+  padding: 0 1rem 0.95rem !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupDetails div) {
+  display: grid !important;
+  gap: 0.18rem !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupDetails span) {
+  color: #778792 !important;
+  font-size: 0.68rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.055em !important;
+  text-transform: uppercase !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupDetails strong) {
+  color: #233b36 !important;
+  font-size: 0.9rem !important;
+  font-weight: 760 !important;
+  line-height: 1.32 !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupActions) {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.55rem !important;
+  padding: 0 1rem 1rem !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupActions a) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 2.35rem !important;
+  padding: 0 0.85rem !important;
+  border-radius: 0.8rem !important;
+  color: #17466d !important;
+  background: #eef6fb !important;
+  border: 1px solid rgba(185, 210, 226, 0.9) !important;
+  font-size: 0.82rem !important;
+  font-weight: 850 !important;
+  text-decoration: none !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupChooseButton) {
+  width: calc(100% - 2rem) !important;
+  min-height: 3rem !important;
+  margin: 0 1rem 1rem !important;
+  border: 0 !important;
+  border-radius: 0.9rem !important;
+  background: #159063 !important;
+  color: #ffffff !important;
+  font-family: inherit !important;
+  font-size: 0.9rem !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  box-shadow: 0 14px 28px rgba(22, 130, 88, 0.24) !important;
+}
+
+@media (max-width: 860px) {
+  .assetQuoteMapStage {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: minmax(14rem, 42vh) minmax(0, 1fr) !important;
+  }
+
+  .assetQuoteMapSidebar {
+    order: 2 !important;
+  }
+
+  .assetQuoteMapShell {
+    order: 1 !important;
+  }
+}

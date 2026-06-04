@@ -25,6 +25,9 @@ type PartnerDirectoryEntry = {
   province: string;
   townCity: string;
   addressLine1: string;
+  logoUrl: string;
+  websiteUrl: string;
+  extraPhotoUrls: string[];
   description: string;
   latitude: number | null;
   longitude: number | null;
@@ -589,10 +592,10 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     partnerType: 'finance',
     title: 'Get finance offer',
     shortTitle: 'Finance offer',
-    descriptionLines: ['Send this asset to a finance partner.', 'Request finance or refinance.'],
-    mapTitle: 'Choose a finance partner.',
+    descriptionLines: ['Send this asset to a finance provider.', 'Request finance or refinance.'],
+    mapTitle: 'Choose a finance provider.',
     sendLabel: 'Send finance request',
-    emptyPartnerText: 'No listed finance partners found yet. Finance partners must enable their directory listing under Account details.',
+    emptyPartnerText: 'No listed finance providers found yet. Finance accounts must enable their directory listing under Account details.',
   },
   {
     leadType: 'insurance',
@@ -600,9 +603,9 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     title: 'Get insurance quote',
     shortTitle: 'Insurance quote',
     descriptionLines: ['Send this asset to an insurer or broker.', 'Request cover or value review.'],
-    mapTitle: 'Choose an insurance partner.',
+    mapTitle: 'Choose an insurer or broker.',
     sendLabel: 'Send insurance request',
-    emptyPartnerText: 'No listed insurance or finance partners found yet. Partners must enable their directory listing under Account details.',
+    emptyPartnerText: 'No listed insurers or brokers found yet. Insurance accounts must enable their directory listing under Account details.',
   },
   {
     leadType: 'replacement_quote',
@@ -610,7 +613,7 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     title: 'Get replacement quote',
     shortTitle: 'Replacement quote',
     descriptionLines: ['Send this asset to a dealer.', 'Request a quote.'],
-    mapTitle: 'Choose a dealer partner.',
+    mapTitle: 'Choose a dealer.',
     sendLabel: 'Send replacement quote request',
     emptyPartnerText: 'No listed dealers found yet. Dealer accounts must enable their directory listing under Account details.',
   },
@@ -2712,11 +2715,52 @@ function quoteMarkerClassForPartnerType(partnerType: PartnerType | null | undefi
 }
 
 function quotePartnerName(partner: PartnerDirectoryEntry): string {
-  return partner.businessName || partner.displayName || 'Aim4price partner';
+  return partner.businessName || partner.displayName || 'Aim4price business';
 }
 
 function quotePartnerLocation(partner: PartnerDirectoryEntry): string {
   return [partner.townCity, partner.province].filter(Boolean).join(', ') || 'Location not saved';
+}
+
+function quotePartnerInitial(partner: PartnerDirectoryEntry): string {
+  return (quotePartnerName(partner).trim().charAt(0) || 'A').toUpperCase();
+}
+
+function normalizeWebsiteHref(value: string): string {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return '';
+  }
+
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+
+  try {
+    const parsed = new URL(withProtocol);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : '';
+  } catch {
+    return '';
+  }
+}
+
+function formatWebsiteDisplay(value: string): string {
+  const href = normalizeWebsiteHref(value);
+
+  if (!href) {
+    return '';
+  }
+
+  try {
+    const parsed = new URL(href);
+    return parsed.hostname.replace(/^www\./i, '');
+  } catch {
+    return value.replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/$/, '');
+  }
+}
+
+function normalizePhoneHref(value: string): string {
+  const cleaned = value.replace(/[^+\d]/g, '');
+  return cleaned ? `tel:${cleaned}` : '';
 }
 
 function hasQuotePartnerCoordinates(partner: PartnerDirectoryEntry): boolean {
@@ -2740,27 +2784,50 @@ function escapeHtml(value: string): string {
 }
 
 
-function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry, markerNumber: number): string {
+function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry): string {
   const name = escapeHtml(quotePartnerName(partner));
-  const type = escapeHtml(formatQuotePartnerType(partner.partnerType));
   const location = escapeHtml(quotePartnerLocation(partner));
   const radius = partner.serviceRadiusKm ? escapeHtml(`${partner.serviceRadiusKm} km service radius`) : '';
   const brands = partner.brandFocus ? escapeHtml(partner.brandFocus) : '';
   const services = partner.services ? escapeHtml(partner.services) : '';
-  const tone = quoteStyleForPartnerType(partner.partnerType);
+  const description = partner.description ? escapeHtml(partner.description) : '';
+  const phone = partner.phone ? escapeHtml(partner.phone) : '';
+  const phoneHref = normalizePhoneHref(partner.phone);
+  const websiteHref = normalizeWebsiteHref(partner.websiteUrl);
+  const websiteLabel = websiteHref ? escapeHtml(formatWebsiteDisplay(websiteHref)) : '';
+  const logoUrl = partner.logoUrl ? escapeHtml(partner.logoUrl) : '';
+  const initial = escapeHtml(quotePartnerInitial(partner));
+  const photoMarkup = partner.extraPhotoUrls
+    .filter(Boolean)
+    .slice(0, 3)
+    .map((photoUrl, index) => `<img src="${escapeHtml(photoUrl)}" alt="${name} photo ${index + 1}" />`)
+    .join('');
+  const details = [
+    `<div><span>Location</span><strong>${location}</strong></div>`,
+    radius ? `<div><span>Radius</span><strong>${radius}</strong></div>` : '',
+    brands ? `<div><span>Brands</span><strong>${brands}</strong></div>` : '',
+    services ? `<div><span>Services</span><strong>${services}</strong></div>` : '',
+  ].filter(Boolean).join('');
+  const actionLinks = [
+    websiteHref && websiteLabel ? `<a href="${escapeHtml(websiteHref)}" target="_blank" rel="noopener noreferrer">Website</a>` : '',
+    phoneHref && phone ? `<a href="${escapeHtml(phoneHref)}">Contact</a>` : '',
+  ].filter(Boolean).join('');
 
   return `
-    <div style="min-width: 340px; max-width: 430px; font-family: Montserrat, Inter, Arial, sans-serif; color: #122f2a;">
-      <div style="display:inline-flex; align-items:center; justify-content:center; min-width:36px; height:36px; padding:0 11px; border-radius:999px; color:#fff; background:${tone.primary}; box-shadow:0 12px 24px ${tone.shadow}; font-size:15px; font-weight:900; margin-bottom:14px;">${markerNumber}</div>
-      <div style="font-weight: 900; font-size: 20px; line-height: 1.12; margin-bottom: 10px; letter-spacing: -0.045em;">${name}</div>
-      <div style="display:inline-flex; align-items:center; justify-content:center; padding:7px 11px; border-radius:999px; color:${tone.text}; background:${tone.soft}; border:1px solid ${tone.border}; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:14px;">${type}</div>
-      <div style="display:grid; gap:9px; font-size:14px; line-height:1.42; color:#53666b;">
-        <div><strong style="color:#132d2d;">Location:</strong> ${location}</div>
-        ${radius ? `<div><strong style="color:#132d2d;">Radius:</strong> ${radius}</div>` : ''}
-        ${brands ? `<div><strong style="color:#132d2d;">Brands:</strong> ${brands}</div>` : ''}
-        ${services ? `<div><strong style="color:#132d2d;">Services:</strong> ${services}</div>` : ''}
+    <div class="assetQuotePopupCard">
+      ${photoMarkup ? `<div class="assetQuotePopupPhotos">${photoMarkup}</div>` : ''}
+      <div class="assetQuotePopupHeader">
+        <span class="assetQuotePopupLogo">
+          ${logoUrl ? `<img src="${logoUrl}" alt="${name} logo" />` : `<span>${initial}</span>`}
+        </span>
+        <div>
+          <strong>${name}</strong>
+          ${description ? `<p>${description}</p>` : ''}
+        </div>
       </div>
-      <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" style="width:100%; margin-top:18px; border:0; border-radius:15px; background:${tone.primary}; color:#fff; font-size:14px; font-weight:900; padding:15px 18px; cursor:pointer; font-family:inherit; box-shadow:0 14px 28px ${tone.shadow};">Choose this partner</button>
+      <div class="assetQuotePopupDetails">${details}</div>
+      ${actionLinks ? `<div class="assetQuotePopupActions">${actionLinks}</div>` : ''}
+      <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" class="assetQuotePopupChooseButton">Choose this business</button>
     </div>
   `;
 }
@@ -3204,23 +3271,22 @@ export default function AssetRegisterClient() {
         quoteMarkersByPartnerRef.current.clear();
         const bounds = L.latLngBounds([]);
 
-        quotePartnersWithCoordinates.forEach((partner, index) => {
+        quotePartnersWithCoordinates.forEach((partner) => {
           const lat = Number(partner.latitude);
           const lng = Number(partner.longitude);
-          const markerNumber = index + 1;
           const isActive = selectedQuotePartnerId === partner.userId;
           const icon = L.divIcon({
             className: `assetQuoteMapMarker ${quoteMarkerClassForPartnerType(partner.partnerType)}${isActive ? ' assetQuoteMapMarker--active' : ''}`,
-            html: `<span class="assetQuoteMapMarkerPin"><b>${markerNumber}</b></span>`,
-            iconSize: [42, 48],
-            iconAnchor: [21, 44],
-            popupAnchor: [0, -38],
+            html: '<span class="assetQuoteMapMarkerPin"></span>',
+            iconSize: [38, 44],
+            iconAnchor: [19, 40],
+            popupAnchor: [0, -36],
           });
           const marker = L.marker([lat, lng], { icon, title: quotePartnerName(partner) }).addTo(quoteMarkerLayerRef.current);
-          marker.bindPopup(buildQuotePartnerPopupHtml(partner, markerNumber), {
+          marker.bindPopup(buildQuotePartnerPopupHtml(partner), {
             className: 'assetQuotePartnerPopup',
-            minWidth: 340,
-            maxWidth: 460,
+            minWidth: 320,
+            maxWidth: 430,
             autoPan: true,
             autoPanPadding: [34, 34],
           });
@@ -3866,7 +3932,7 @@ export default function AssetRegisterClient() {
 
   function goToQuoteLeadConsent() {
     if (!selectedQuotePartner || !selectedQuoteOption) {
-      setNotice({ tone: 'error', message: 'Choose a partner first.' });
+      setNotice({ tone: 'error', message: 'Choose a company first.' });
       return;
     }
 
@@ -3889,7 +3955,7 @@ export default function AssetRegisterClient() {
     const leadAssetId = quoteAsset.id;
 
     if (!selectedQuotePartner) {
-      setNotice({ tone: 'error', message: `Choose a ${formatQuotePartnerType(selectedQuoteOption.partnerType).toLowerCase()} partner first.` });
+      setNotice({ tone: 'error', message: `Choose a ${formatQuotePartnerType(selectedQuoteOption.partnerType).toLowerCase()} company first.` });
       return;
     }
 
@@ -6918,7 +6984,7 @@ export default function AssetRegisterClient() {
                       value={quotePartnerSearch}
                       onChange={(event) => setQuotePartnerSearch(event.target.value)}
                       placeholder="Search by business, town, province, service or brand"
-                      aria-label="Search partner directory"
+                      aria-label="Search business directory"
                     />
                     <button type="submit" className={styles.secondaryButton} disabled={isLoadingQuotePartners}>
                       <SearchIcon className={styles.buttonIcon} />
@@ -6927,37 +6993,41 @@ export default function AssetRegisterClient() {
                   </form>
 
                   <div className={styles.assetQuoteMapStage}>
-                    <aside className={styles.assetQuoteMapSidebar} aria-label="Available partners">
+                    <aside className={styles.assetQuoteMapSidebar} aria-label="Available companies">
                       <div className={styles.assetQuoteSidebarHeader}>
                         <button type="button" className={styles.assetQuoteBackButton} onClick={goBackToQuoteOptions} disabled={isSendingQuoteLead}>
                           <ChevronLeftIcon className={styles.buttonIcon} />
                           <span>Back</span>
                         </button>
-                        <strong>Partners</strong>
                       </div>
 
                       <div className={styles.assetQuotePartnerList}>
                         {isLoadingQuotePartners ? (
-                          <p className={styles.assetQuoteEmptyState}>Loading partners...</p>
+                          <p className={styles.assetQuoteEmptyState}>Loading companies...</p>
                         ) : quotePartners.length ? (
-                          quotePartners.map((partner, index) => (
+                          quotePartners.map((partner) => (
                             <button
                               key={partner.userId}
                               type="button"
                               className={`${styles.assetQuotePartnerCard} ${quoteToneClassForPartnerType(partner.partnerType)} ${selectedQuotePartnerId === partner.userId ? styles.assetQuotePartnerCardActive : ''}`}
                               onClick={() => focusQuotePartnerOnMap(partner)}
                             >
-                              <span className={styles.assetQuotePartnerNumber}>{index + 1}</span>
+                              <span className={styles.assetQuotePartnerLogo}>
+                                {partner.logoUrl ? (
+                                  <img src={partner.logoUrl} alt={`${quotePartnerName(partner)} logo`} />
+                                ) : (
+                                  <span>{quotePartnerInitial(partner)}</span>
+                                )}
+                              </span>
                               <span className={styles.assetQuotePartnerBody}>
                                 <span className={styles.assetQuotePartnerHeader}>
                                   <strong>{quotePartnerName(partner)}</strong>
-                                  <small>{formatQuotePartnerType(partner.partnerType)}</small>
                                 </span>
                                 <span className={styles.assetQuotePartnerMeta}>
                                   <span>{quotePartnerLocation(partner)}</span>
                                   {partner.serviceRadiusKm ? <span>{partner.serviceRadiusKm} km radius</span> : null}
                                 </span>
-                                {partner.description ? <span className={styles.assetQuotePartnerCopy}>{partner.description}</span> : null}
+                                {partner.websiteUrl ? <span className={styles.assetQuotePartnerCopy}>{formatWebsiteDisplay(partner.websiteUrl)}</span> : null}
                                 {partner.brandFocus ? <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span> : null}
                               </span>
                             </button>
@@ -6970,11 +7040,11 @@ export default function AssetRegisterClient() {
 
                     <div className={styles.assetQuoteMapShell}>
                       {quotePartnersWithCoordinates.length ? (
-                        <div ref={quoteMapElementRef} className={styles.assetQuoteMapCanvas} aria-label="Partner map" />
+                        <div ref={quoteMapElementRef} className={styles.assetQuoteMapCanvas} aria-label="Business map" />
                       ) : (
                         <div className={styles.assetQuoteMapFallback}>
                           <OptionsIcon className={styles.buttonIcon} />
-                          <p>Partners with saved latitude and longitude will appear on this map.</p>
+                          <p>Businesses with saved latitude and longitude will appear on this map.</p>
                         </div>
                       )}
                     </div>
@@ -6986,7 +7056,7 @@ export default function AssetRegisterClient() {
                         type="button"
                         className={styles.assetQuoteStepBackdrop}
                         onClick={closeQuoteLeadStep}
-                        aria-label="Close partner request step"
+                        aria-label="Close request step"
                         disabled={isSendingQuoteLead}
                       />
 
@@ -6994,13 +7064,13 @@ export default function AssetRegisterClient() {
                         <div className={styles.assetQuoteStepHeader}>
                           <div>
                             <span>{quotePartnerName(selectedQuotePartner)}</span>
-                            <h4>{quoteLeadStep === 'message' ? `Message for ${formatQuotePartnerType(selectedQuotePartner.partnerType).toLowerCase()} partner` : 'Confirm and send request'}</h4>
+                            <h4>{quoteLeadStep === 'message' ? 'Message to selected company' : 'Confirm and send request'}</h4>
                           </div>
                           <button
                             type="button"
                             className={styles.assetQuoteStepCloseButton}
                             onClick={closeQuoteLeadStep}
-                            aria-label="Close partner request step"
+                            aria-label="Close request step"
                             disabled={isSendingQuoteLead}
                           >
                             <CloseIcon className={styles.buttonIcon} />
@@ -7017,7 +7087,7 @@ export default function AssetRegisterClient() {
 
                             <label className={styles.assetQuoteMessageField}>
                               <span>
-                                Message to partner
+                                Message to company
                                 <small>Optional</small>
                               </span>
                               <textarea
@@ -7037,14 +7107,14 @@ export default function AssetRegisterClient() {
                               <strong>Disclaimer and POPIA note</strong>
                               <p>
                                 {isFullRegisterQuoteLead
-                                  ? 'By sending this request, you allow Aim4price to share a once-off full Asset Register snapshot, saved valuation details and your account contact details with the chosen partner.'
-                                  : 'By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your account contact details with the chosen partner.'}
+                                  ? 'By sending this request, you allow Aim4price to share a once-off full Asset Register snapshot, saved valuation details and your account contact details with the chosen company.'
+                                  : 'By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your account contact details with the chosen company.'}
                                 {' '}This is only a lead request and does not create a finance, insurance, valuation or sales agreement.
                               </p>
                               <p>
                                 {isFullRegisterQuoteLead
-                                  ? 'You confirm that you have permission to share the complete register information and understand that the selected partner may contact you outside Aim4price.'
-                                  : 'You confirm that you have permission to share this asset information and understand that the selected partner may contact you outside Aim4price.'}
+                                  ? 'You confirm that you have permission to share the complete register information and understand that the selected company may contact you outside Aim4price.'
+                                  : 'You confirm that you have permission to share this asset information and understand that the selected company may contact you outside Aim4price.'}
                               </p>
                             </div>
 
