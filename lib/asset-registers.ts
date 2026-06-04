@@ -80,7 +80,7 @@ let assetRegisterTablesPromise: Promise<void> | null = null;
 let assetRegisterItemColumnsPromise: Promise<Set<string>> | null = null;
 
 const MAX_ASSET_REGISTER_LOGOS = 1;
-const MAX_ASSET_REGISTER_LOGO_URL_LENGTH = 4_000_000;
+const MAX_ASSET_REGISTER_LOGO_URL_LENGTH = 8_000_000;
 
 function cleanText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -808,6 +808,62 @@ export async function updateAssetRegister(userId: string, registerId: string, in
   }
 
   const refreshed = await getAssetRegisterForUser(userId, String(result.rows[0].id));
+  return refreshed ?? mapAssetRegisterRow(result.rows[0]);
+}
+
+export async function updateAssetRegisterLogo(input: {
+  userId: string;
+  registerId: string;
+  logoUrls: string[];
+  showLogosOnRegister?: boolean | null;
+}): Promise<AssetRegisterSummary> {
+  const db = getDb();
+  const registerId = cleanText(input.registerId);
+
+  if (!registerId) {
+    throw new Error('ASSET_REGISTER_NOT_FOUND');
+  }
+
+  await getOrCreatePrimaryAssetRegister(input.userId);
+
+  const result = await db.query<AssetRegisterRow>(
+    `
+      update public.asset_registers
+      set
+        logo_urls = $3::jsonb,
+        show_logos_on_register = $4,
+        updated_at = now()
+      where user_id = $1 and id::text = $2
+      returning
+        id,
+        user_id,
+        business_name,
+        email,
+        phone,
+        address_line_1,
+        logo_urls,
+        show_logos_on_register,
+        is_primary,
+        is_selected,
+        created_at,
+        updated_at,
+        0::integer as asset_count,
+        0::numeric as total_value,
+        0::numeric as total_replacement_price
+    `,
+    [
+      input.userId,
+      registerId,
+      JSON.stringify(normalizeLogoUrls(input.logoUrls)),
+      normalizeLogoVisibility(input.showLogosOnRegister, true),
+    ],
+  );
+
+  if (!result.rows[0]) {
+    throw new Error('ASSET_REGISTER_NOT_FOUND');
+  }
+
+  const refreshed = await getAssetRegisterForUser(input.userId, String(result.rows[0].id));
   return refreshed ?? mapAssetRegisterRow(result.rows[0]);
 }
 
