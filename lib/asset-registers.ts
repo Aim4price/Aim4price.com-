@@ -7,6 +7,8 @@ export type AssetRegisterSummary = {
   email: string;
   phone: string;
   addressLine1: string;
+  logoUrls: string[];
+  showLogosOnRegister: boolean;
   isPrimary: boolean;
   isSelected: boolean;
   assetCount: number;
@@ -22,6 +24,8 @@ export type AssetRegisterInput = {
   phone?: string | null;
   addressLine1?: string | null;
   address?: string | null;
+  logoUrls?: string[] | null;
+  showLogosOnRegister?: boolean | null;
 };
 
 export type DeleteAssetRegisterResult = {
@@ -37,6 +41,8 @@ type AssetRegisterRow = {
   email: string | null;
   phone: string | null;
   address_line_1: string | null;
+  logo_urls: unknown;
+  show_logos_on_register: boolean | null;
   is_primary: boolean | null;
   is_selected: boolean | null;
   created_at: string | Date | null;
@@ -73,6 +79,9 @@ type ColumnNameRow = {
 let assetRegisterTablesPromise: Promise<void> | null = null;
 let assetRegisterItemColumnsPromise: Promise<Set<string>> | null = null;
 
+const MAX_ASSET_REGISTER_LOGOS = 8;
+const MAX_ASSET_REGISTER_LOGO_URL_LENGTH = 4_000_000;
+
 function cleanText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
@@ -91,6 +100,77 @@ function normalizePhone(value: unknown): string {
 
 function normalizeAddress(value: unknown): string {
   return cleanText(value).slice(0, 300);
+}
+
+function normalizeLogoUrls(value: unknown): string[] {
+  let values: unknown[] = [];
+
+  if (Array.isArray(value)) {
+    values = value;
+  } else if (typeof value === 'string' && value.trim()) {
+    const trimmed = value.trim();
+
+    try {
+      const parsed = JSON.parse(trimmed) as unknown;
+      values = Array.isArray(parsed) ? parsed : [trimmed];
+    } catch {
+      values = trimmed.split(/[\n,]+/);
+    }
+  }
+
+  const seen = new Set<string>();
+  const logoUrls: string[] = [];
+
+  for (const entry of values) {
+    const logoUrl = cleanText(entry).slice(0, MAX_ASSET_REGISTER_LOGO_URL_LENGTH);
+    const lowerUrl = logoUrl.toLowerCase();
+
+    if (!logoUrl || seen.has(logoUrl)) {
+      continue;
+    }
+
+    if (
+      !lowerUrl.startsWith('data:image/') &&
+      !lowerUrl.startsWith('https://') &&
+      !lowerUrl.startsWith('http://') &&
+      !lowerUrl.startsWith('/api/asset-register/uploads/')
+    ) {
+      continue;
+    }
+
+    seen.add(logoUrl);
+    logoUrls.push(logoUrl);
+
+    if (logoUrls.length >= MAX_ASSET_REGISTER_LOGOS) {
+      break;
+    }
+  }
+
+  return logoUrls;
+}
+
+function normalizeLogoVisibility(value: unknown, fallback = true): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+
+    if (['false', '0', 'no', 'off', 'hide', 'hidden'].includes(normalized)) {
+      return false;
+    }
+
+    if (['true', '1', 'yes', 'on', 'show', 'visible'].includes(normalized)) {
+      return true;
+    }
+  }
+
+  return fallback;
 }
 
 function numberValue(value: unknown): number {
@@ -118,6 +198,8 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterSummary {
     email: cleanText(row.email),
     phone: cleanText(row.phone),
     addressLine1: cleanText(row.address_line_1),
+    logoUrls: normalizeLogoUrls(row.logo_urls),
+    showLogosOnRegister: normalizeLogoVisibility(row.show_logos_on_register, true),
     isPrimary: Boolean(row.is_primary),
     isSelected: Boolean(row.is_selected),
     assetCount: Math.max(0, Math.round(numberValue(row.asset_count))),
@@ -203,6 +285,8 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
       email text,
       phone text,
       address_line_1 text,
+      logo_urls jsonb not null default '[]'::jsonb,
+      show_logos_on_register boolean not null default true,
       is_primary boolean not null default false,
       is_selected boolean not null default false,
       created_at timestamptz not null default now(),
@@ -217,6 +301,8 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
       add column if not exists email text,
       add column if not exists phone text,
       add column if not exists address_line_1 text,
+      add column if not exists logo_urls jsonb not null default '[]'::jsonb,
+      add column if not exists show_logos_on_register boolean not null default true,
       add column if not exists is_primary boolean not null default false,
       add column if not exists is_selected boolean not null default false,
       add column if not exists created_at timestamptz not null default now(),
@@ -226,6 +312,26 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
   await db.query(`
     alter table if exists public.asset_register_items
       add column if not exists register_id uuid
+  `);
+
+  await db.query(`
+    update public.asset_registers
+    set logo_urls = '[]'::jsonb
+    where logo_urls is null
+  `);
+
+  await db.query(`
+    update public.asset_registers
+    set show_logos_on_register = true
+    where show_logos_on_register is null
+  `);
+
+  await db.query(`
+    alter table public.asset_registers
+      alter column logo_urls set default '[]'::jsonb,
+      alter column logo_urls set not null,
+      alter column show_logos_on_register set default true,
+      alter column show_logos_on_register set not null
   `);
 
   assetRegisterItemColumnsPromise = null;
@@ -366,6 +472,8 @@ async function insertAssetRegister(
   const email = normalizeEmail(input.email);
   const phone = normalizePhone(input.phone);
   const addressLine1 = normalizeAddress(input.addressLine1 ?? input.address);
+  const logoUrls = normalizeLogoUrls(input.logoUrls);
+  const showLogosOnRegister = normalizeLogoVisibility(input.showLogosOnRegister, true);
 
   const result = await db.query<AssetRegisterRow>(
     `
@@ -375,12 +483,14 @@ async function insertAssetRegister(
         email,
         phone,
         address_line_1,
+        logo_urls,
+        show_logos_on_register,
         is_primary,
         is_selected,
         created_at,
         updated_at
       )
-      values ($1, $2, $3, $4, $5, $6, $7, now(), now())
+      values ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, now(), now())
       returning
         id,
         user_id,
@@ -388,6 +498,8 @@ async function insertAssetRegister(
         email,
         phone,
         address_line_1,
+        logo_urls,
+        show_logos_on_register,
         is_primary,
         is_selected,
         created_at,
@@ -396,7 +508,17 @@ async function insertAssetRegister(
         0::numeric as total_value,
         0::numeric as total_replacement_price
     `,
-    [userId, businessName, email, phone, addressLine1, isPrimary, isSelected],
+    [
+      userId,
+      businessName,
+      email,
+      phone,
+      addressLine1,
+      JSON.stringify(logoUrls),
+      showLogosOnRegister,
+      isPrimary,
+      isSelected,
+    ],
   );
 
   return mapAssetRegisterRow(result.rows[0]);
@@ -415,6 +537,8 @@ export async function getOrCreatePrimaryAssetRegister(userId: string): Promise<A
         email,
         phone,
         address_line_1,
+        logo_urls,
+        show_logos_on_register,
         is_primary,
         is_selected,
         created_at,
@@ -442,6 +566,8 @@ export async function getOrCreatePrimaryAssetRegister(userId: string): Promise<A
           email,
           phone,
           address_line_1,
+          logo_urls,
+          show_logos_on_register,
           is_primary,
           is_selected,
           created_at,
@@ -507,6 +633,8 @@ export async function getAssetRegisterForUser(userId: string, registerId: string
         ar.email,
         ar.phone,
         ar.address_line_1,
+        ar.logo_urls,
+        ar.show_logos_on_register,
         ar.is_primary,
         ar.is_selected,
         ar.created_at,
@@ -542,6 +670,8 @@ export async function getSelectedAssetRegister(userId: string): Promise<AssetReg
         ar.email,
         ar.phone,
         ar.address_line_1,
+        ar.logo_urls,
+        ar.show_logos_on_register,
         ar.is_primary,
         ar.is_selected,
         ar.created_at,
@@ -583,6 +713,8 @@ export async function listAssetRegisters(userId: string): Promise<AssetRegisterS
         ar.email,
         ar.phone,
         ar.address_line_1,
+        ar.logo_urls,
+        ar.show_logos_on_register,
         ar.is_primary,
         ar.is_selected,
         ar.created_at,
@@ -625,6 +757,9 @@ export async function updateAssetRegister(userId: string, registerId: string, in
     throw new Error('ASSET_REGISTER_NAME_REQUIRED');
   }
 
+  const hasLogoUrls = Object.prototype.hasOwnProperty.call(input, 'logoUrls');
+  const hasLogoVisibility = Object.prototype.hasOwnProperty.call(input, 'showLogosOnRegister');
+
   const result = await db.query<AssetRegisterRow>(
     `
       update public.asset_registers
@@ -633,6 +768,8 @@ export async function updateAssetRegister(userId: string, registerId: string, in
         email = $4,
         phone = $5,
         address_line_1 = $6,
+        logo_urls = case when $7 then $8::jsonb else logo_urls end,
+        show_logos_on_register = case when $9 then $10 else show_logos_on_register end,
         updated_at = now()
       where user_id = $1 and id::text = $2
       returning
@@ -642,6 +779,8 @@ export async function updateAssetRegister(userId: string, registerId: string, in
         email,
         phone,
         address_line_1,
+        logo_urls,
+        show_logos_on_register,
         is_primary,
         is_selected,
         created_at,
@@ -657,6 +796,10 @@ export async function updateAssetRegister(userId: string, registerId: string, in
       normalizeEmail(input.email),
       normalizePhone(input.phone),
       normalizeAddress(input.addressLine1 ?? input.address),
+      hasLogoUrls,
+      JSON.stringify(normalizeLogoUrls(input.logoUrls)),
+      hasLogoVisibility,
+      normalizeLogoVisibility(input.showLogosOnRegister, true),
     ],
   );
 
@@ -801,6 +944,8 @@ export async function deleteAssetRegister(input: {
         email,
         phone,
         address_line_1,
+        logo_urls,
+        show_logos_on_register,
         is_primary,
         is_selected,
         created_at,
