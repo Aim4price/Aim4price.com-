@@ -888,7 +888,7 @@ function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = '
   });
 
   return openAssetRegisterSummaryPrint({
-    logoUrl: '/brand/aim4price-mark-black.png',
+    logoUrl: asText(snapshot?.logoUrl),
     generatedAt: formatDate(new Date().toISOString()),
     reportTitle: `${reportOption.label} Report`,
     reportSubtitle: 'Aim4price full asset register lead',
@@ -932,7 +932,7 @@ function downloadLeadAsset(lead: AssetLead, reportKind: PdfReportKind = 'full'):
   const replacementPrice = snapshotReplacementPrice(lead.assetSnapshot);
   const photos = assetPhotos(lead);
   const didOpen = openAssetSheetPrint({
-    logoUrl: '/brand/aim4price-mark-black.png',
+    logoUrl: asText(lead.assetSnapshot.logoUrl),
     generatedAt: formatDate(new Date().toISOString()),
     assetBadge: asText(lead.assetSnapshot.equipmentFamilyLabel) || asText(lead.assetSnapshot.kind) || 'Asset',
     heroTitle: assetTitle(lead),
