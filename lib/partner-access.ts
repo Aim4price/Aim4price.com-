@@ -547,7 +547,7 @@ function mapPartnerRow(row: AccountPartnerProfileRow): PartnerDirectoryEntry {
     addressLine1: asText(row.address_line_1),
     logoUrl: sanitizePartnerImageUrl(row.logo_url),
     websiteUrl: sanitizePartnerWebsiteUrl(row.website_url),
-    extraPhotoUrls: sanitizePartnerExtraPhotoUrls(row.extra_photo_urls),
+    extraPhotoUrls: [],
     description: asText(row.partner_description),
     latitude: asNumber(row.partner_latitude),
     longitude: asNumber(row.partner_longitude),

@@ -422,7 +422,7 @@ function mapAccountProfileRow(
     email: asText(user.email),
     logoUrl: sanitizeLogoUrl(row?.logo_url),
     websiteUrl: sanitizeWebsiteUrl(row?.website_url),
-    extraPhotoUrls: sanitizeExtraPhotoUrls(row?.extra_photo_urls),
+    extraPhotoUrls: [],
     businessName: asText(row?.business_name),
     phone: asText(row?.phone),
     accountType,
@@ -567,7 +567,7 @@ export async function upsertAccountProfile(
   );
   const normalizedMarketplaceEmail = asText(input.marketplaceEmail).toLowerCase();
   const normalizedWebsiteUrl = sanitizeWebsiteUrl(input.websiteUrl);
-  const normalizedExtraPhotoUrls = sanitizeExtraPhotoUrls(input.extraPhotoUrls);
+  const normalizedExtraPhotoUrls: string[] = [];
   const normalizedLatitude = asNullableNumber(input.partnerLatitude);
   const normalizedLongitude = asNullableNumber(input.partnerLongitude);
   const normalizedServiceRadiusKm = asNullableInteger(input.partnerServiceRadiusKm);
