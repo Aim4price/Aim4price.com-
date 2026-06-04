@@ -6,6 +6,8 @@ export type AccountProfile = {
   displayName: string;
   email: string;
   logoUrl: string;
+  websiteUrl: string;
+  extraPhotoUrls: string[];
   businessName: string;
   phone: string;
   accountType: string;
@@ -41,6 +43,8 @@ export type AccountScanPinStatus = {
 export type UpsertAccountProfileInput = {
   displayName?: string | null;
   logoUrl?: string | null;
+  websiteUrl?: string | null;
+  extraPhotoUrls?: unknown;
   businessName?: string | null;
   phone?: string | null;
   accountType?: string | null;
@@ -69,6 +73,8 @@ type AccountProfileRow = {
   user_id: string;
   display_name: string | null;
   logo_url: string | null;
+  website_url: string | null;
+  extra_photo_urls: unknown;
   business_name: string | null;
   phone: string | null;
   account_type: string | null;
@@ -107,6 +113,9 @@ type AccountTypeRow = {
 };
 
 const MAX_LOGO_URL_LENGTH = 3_000_000;
+const MAX_BUSINESS_EXTRA_PHOTOS = 6;
+const MAX_BUSINESS_PHOTO_URL_LENGTH = 7_000_000;
+const MAX_WEBSITE_URL_LENGTH = 300;
 let accountProfileColumnsEnsured = false;
 
 function asText(value: unknown): string {
@@ -202,9 +211,13 @@ function asNullableInteger(value: unknown): number | null {
 }
 
 function sanitizeLogoUrl(value: unknown): string {
+  return sanitizeImageUrl(value, MAX_LOGO_URL_LENGTH);
+}
+
+function sanitizeImageUrl(value: unknown, maxLength = MAX_BUSINESS_PHOTO_URL_LENGTH): string {
   const next = asText(value);
 
-  if (!next || next.length > MAX_LOGO_URL_LENGTH) {
+  if (!next || next.length > maxLength) {
     return '';
   }
 
@@ -219,6 +232,77 @@ function sanitizeLogoUrl(value: unknown): string {
   return '';
 }
 
+function asStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((entry) => asText(entry)).filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed) as unknown;
+      return Array.isArray(parsed) ? parsed.map((entry) => asText(entry)).filter(Boolean) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+function sanitizeExtraPhotoUrls(value: unknown): string[] {
+  const seen = new Set<string>();
+  const urls: string[] = [];
+
+  for (const entry of asStringArray(value)) {
+    const url = sanitizeImageUrl(entry);
+
+    if (!url || seen.has(url)) {
+      continue;
+    }
+
+    seen.add(url);
+    urls.push(url);
+
+    if (urls.length >= MAX_BUSINESS_EXTRA_PHOTOS) {
+      break;
+    }
+  }
+
+  return urls;
+}
+
+function sanitizeWebsiteUrl(value: unknown): string {
+  const raw = asText(value);
+
+  if (!raw || raw.length > MAX_WEBSITE_URL_LENGTH) {
+    return '';
+  }
+
+  const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+
+  try {
+    const parsed = new URL(withProtocol);
+
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return '';
+    }
+
+    if (!parsed.hostname || !parsed.hostname.includes('.')) {
+      return '';
+    }
+
+    return parsed.href.slice(0, MAX_WEBSITE_URL_LENGTH);
+  } catch {
+    return '';
+  }
+}
+
 export async function ensureAccountProfileColumns(): Promise<void> {
   if (accountProfileColumnsEnsured) {
     return;
@@ -231,6 +315,8 @@ export async function ensureAccountProfileColumns(): Promise<void> {
       user_id text primary key,
       display_name text,
       logo_url text,
+      website_url text,
+      extra_photo_urls jsonb not null default '[]'::jsonb,
       business_name text,
       phone text,
       account_type text not null default 'owner',
@@ -265,6 +351,8 @@ export async function ensureAccountProfileColumns(): Promise<void> {
     alter table account_profiles
       add column if not exists display_name text,
       add column if not exists logo_url text,
+      add column if not exists website_url text,
+      add column if not exists extra_photo_urls jsonb not null default '[]'::jsonb,
       add column if not exists business_name text,
       add column if not exists phone text,
       add column if not exists account_type text not null default 'owner',
@@ -295,6 +383,18 @@ export async function ensureAccountProfileColumns(): Promise<void> {
   `);
 
   await db.query(`
+    update account_profiles
+    set extra_photo_urls = '[]'::jsonb
+    where extra_photo_urls is null
+  `);
+
+  await db.query(`
+    alter table account_profiles
+      alter column extra_photo_urls set default '[]'::jsonb,
+      alter column extra_photo_urls set not null
+  `);
+
+  await db.query(`
     create index if not exists idx_account_profiles_user_id
       on account_profiles(user_id)
   `);
@@ -321,6 +421,8 @@ function mapAccountProfileRow(
     displayName,
     email: asText(user.email),
     logoUrl: sanitizeLogoUrl(row?.logo_url),
+    websiteUrl: sanitizeWebsiteUrl(row?.website_url),
+    extraPhotoUrls: sanitizeExtraPhotoUrls(row?.extra_photo_urls),
     businessName: asText(row?.business_name),
     phone: asText(row?.phone),
     accountType,
@@ -402,6 +504,8 @@ export async function getAccountProfile(user: {
         user_id,
         display_name,
         logo_url,
+        website_url,
+        extra_photo_urls,
         business_name,
         phone,
         account_type,
@@ -463,6 +567,8 @@ export async function upsertAccountProfile(
     asText(existingAccount?.account_subtype) || input.accountSubtype,
   );
   const normalizedMarketplaceEmail = asText(input.marketplaceEmail).toLowerCase();
+  const normalizedWebsiteUrl = sanitizeWebsiteUrl(input.websiteUrl);
+  const normalizedExtraPhotoUrls = sanitizeExtraPhotoUrls(input.extraPhotoUrls);
   const normalizedLatitude = asNullableNumber(input.partnerLatitude);
   const normalizedLongitude = asNullableNumber(input.partnerLongitude);
   const normalizedServiceRadiusKm = asNullableInteger(input.partnerServiceRadiusKm);
@@ -474,6 +580,8 @@ export async function upsertAccountProfile(
         user_id,
         display_name,
         logo_url,
+        website_url,
+        extra_photo_urls,
         business_name,
         phone,
         account_type,
@@ -500,13 +608,15 @@ export async function upsertAccountProfile(
         updated_at
       )
       values (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-        $17, $18, $19, $20, $21, $22, $23, $24, $25, now(), now()
+        $1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+        $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, now(), now()
       )
       on conflict (user_id)
       do update set
         display_name = excluded.display_name,
         logo_url = excluded.logo_url,
+        website_url = excluded.website_url,
+        extra_photo_urls = excluded.extra_photo_urls,
         business_name = excluded.business_name,
         phone = excluded.phone,
         account_type = excluded.account_type,
@@ -534,6 +644,8 @@ export async function upsertAccountProfile(
         user_id,
         display_name,
         logo_url,
+        website_url,
+        extra_photo_urls,
         business_name,
         phone,
         account_type,
@@ -563,6 +675,8 @@ export async function upsertAccountProfile(
       user.id,
       asText(input.displayName) || asText(user.name) || null,
       sanitizeLogoUrl(input.logoUrl) || null,
+      normalizedWebsiteUrl || null,
+      JSON.stringify(normalizedExtraPhotoUrls),
       asText(input.businessName) || null,
       asText(input.phone) || null,
       normalizedAccountType,
