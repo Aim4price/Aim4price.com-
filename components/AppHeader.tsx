@@ -651,7 +651,7 @@ export default function AppHeader({
                       </div>
 
                       <Link href="/account" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                        Account details
+                        Account Details
                       </Link>
 
                       <Link href="/companies" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
@@ -660,11 +660,11 @@ export default function AppHeader({
                       {isOwnerAccount ? (
                         <>
                           <Link href="/asset-map" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                            Asset map
+                            My Asset Map
                           </Link>
 
                           <Link href="/fuel" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                            Fuel ledger
+                            My Fuel Ledger
                           </Link>
                         </>
                       ) : null}
