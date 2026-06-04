@@ -75,7 +75,13 @@ type AssetUploadApiResponse = {
     contentType?: string;
     byteSize?: number;
   }>;
+  register?: AssetRegisterSummary;
   error?: string;
+};
+
+type RegisterLogoUploadResult = {
+  logoUrls: string[];
+  register?: AssetRegisterSummary;
 };
 
 type RegisterDraft = {
@@ -88,7 +94,7 @@ type RegisterDraft = {
 };
 
 const MAX_REGISTER_LOGOS = 1;
-const MAX_REGISTER_LOGO_UPLOAD_BYTES = 2 * 1024 * 1024;
+const MAX_REGISTER_LOGO_UPLOAD_BYTES = 5 * 1024 * 1024;
 const ALLOWED_REGISTER_LOGO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const emptyRegisterDraft: RegisterDraft = {
@@ -741,11 +747,9 @@ export default function AssetRegistersClient() {
     setOpenTargetDropdownId(null);
   }
 
-  async function uploadRegisterLogoFiles(fileList: FileList | File[] | null): Promise<string[]> {
-    const files = Array.from(fileList ?? []);
-
+  async function uploadRegisterLogoFiles(registerId: string, files: File[]): Promise<RegisterLogoUploadResult> {
     if (!files.length) {
-      return [];
+      return { logoUrls: [] };
     }
 
     if (files.length > MAX_REGISTER_LOGOS) {
@@ -769,7 +773,8 @@ export default function AssetRegistersClient() {
     }
 
     const formData = new FormData();
-    formData.append("uploadType", "photo");
+    formData.append("uploadType", "register-logo");
+    formData.append("registerId", registerId);
     files.forEach((file) => formData.append("files", file));
 
     const response = await fetch("/api/asset-register/uploads", {
@@ -793,14 +798,14 @@ export default function AssetRegistersClient() {
       throw new Error("No logo URL was returned after upload.");
     }
 
-    return uploadedLogoUrls;
+    return { logoUrls: uploadedLogoUrls, register: data.register };
   }
 
   async function handleCardLogoUpload(
     register: AssetRegisterSummary,
     event: ChangeEvent<HTMLInputElement>,
   ) {
-    const fileList = event.target.files;
+    const selectedFiles = Array.from(event.target.files ?? []);
     event.target.value = "";
 
     if (uploadingRegisterLogoId) {
@@ -810,56 +815,29 @@ export default function AssetRegistersClient() {
     setUploadingRegisterLogoId(register.id);
 
     try {
-      const uploadedLogoUrls = await uploadRegisterLogoFiles(fileList);
+      const uploadResult = await uploadRegisterLogoFiles(register.id, selectedFiles);
 
-      if (!uploadedLogoUrls.length) {
+      if (!uploadResult.logoUrls.length) {
         return;
       }
 
-      const response = await fetch("/api/asset-registers", {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          registerId: register.id,
-          businessName: register.businessName,
-          email: register.email,
-          phone: register.phone,
-          addressLine1: register.addressLine1,
-          logoUrls: normalizeLogoUrls(uploadedLogoUrls),
-          showLogosOnRegister: true,
-        }),
-      });
-      const payload = await readJsonPayload(response);
-      const data = (payload ?? null) as AssetRegistersApiResponse | null;
-
-      if (
-        !response.ok ||
-        !data?.ok ||
-        !data.register ||
-        !Array.isArray(data.registers)
-      ) {
-        throw new Error(
-          extractErrorMessage(payload, "Failed to update the register logo."),
-        );
-      }
-
       const updatedRegister: AssetRegisterSummary = {
-        ...data.register,
-        logoUrls: normalizeLogoUrls(data.register.logoUrls),
-        showLogosOnRegister: data.register.showLogosOnRegister !== false,
+        ...(uploadResult.register ?? register),
+        logoUrls: normalizeLogoUrls(uploadResult.register?.logoUrls ?? uploadResult.logoUrls),
+        showLogosOnRegister: true,
       };
-      const updatedRegisters = data.registers.map((entry) =>
-        entry.id === updatedRegister.id ? { ...entry, ...updatedRegister } : entry,
-      );
 
-      setRegisters(updatedRegisters);
+      setRegisters((currentRegisters) =>
+        currentRegisters.map((entry) =>
+          entry.id === updatedRegister.id ? { ...entry, ...updatedRegister } : entry,
+        ),
+      );
 
       if (managedRegisterId === updatedRegister.id) {
         setEditDraft(draftFromRegister(updatedRegister));
       }
 
-      setNotice({ tone: "success", message: "Register logo updated from the card." });
+      setNotice({ tone: "success", message: "Register logo uploaded and saved." });
     } catch (error) {
       setNotice({
         tone: "error",
