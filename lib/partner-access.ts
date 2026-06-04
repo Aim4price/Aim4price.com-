@@ -17,6 +17,9 @@ export type PartnerDirectoryEntry = {
   province: string;
   townCity: string;
   addressLine1: string;
+  logoUrl: string;
+  websiteUrl: string;
+  extraPhotoUrls: string[];
   description: string;
   latitude: number | null;
   longitude: number | null;
@@ -99,6 +102,9 @@ type AccountPartnerProfileRow = {
   province: string | null;
   town_city: string | null;
   address_line_1: string | null;
+  logo_url: string | null;
+  website_url: string | null;
+  extra_photo_urls: unknown;
   partner_description: string | null;
   partner_latitude: string | number | null;
   partner_longitude: string | number | null;
@@ -168,6 +174,95 @@ let partnerAccessTablesEnsured = false;
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function asStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((entry) => asText(entry)).filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed) as unknown;
+      return Array.isArray(parsed) ? parsed.map((entry) => asText(entry)).filter(Boolean) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+function sanitizePartnerImageUrl(value: unknown): string {
+  const next = asText(value);
+
+  if (!next || next.length > 7_000_000) {
+    return '';
+  }
+
+  if (/^data:image\/(png|jpe?g|webp);base64,[a-z0-9+/=\s]+$/i.test(next)) {
+    return next.replace(/\s+/g, '');
+  }
+
+  if (next.startsWith('/') || next.startsWith('https://')) {
+    return next;
+  }
+
+  return '';
+}
+
+function sanitizePartnerExtraPhotoUrls(value: unknown): string[] {
+  const seen = new Set<string>();
+  const urls: string[] = [];
+
+  for (const entry of asStringArray(value)) {
+    const url = sanitizePartnerImageUrl(entry);
+
+    if (!url || seen.has(url)) {
+      continue;
+    }
+
+    seen.add(url);
+    urls.push(url);
+
+    if (urls.length >= 3) {
+      break;
+    }
+  }
+
+  return urls;
+}
+
+function sanitizePartnerWebsiteUrl(value: unknown): string {
+  const raw = asText(value);
+
+  if (!raw || raw.length > 300) {
+    return '';
+  }
+
+  const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+
+  try {
+    const parsed = new URL(withProtocol);
+
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return '';
+    }
+
+    if (!parsed.hostname || !parsed.hostname.includes('.')) {
+      return '';
+    }
+
+    return parsed.href.slice(0, 300);
+  } catch {
+    return '';
+  }
 }
 
 function asNumber(value: unknown): number | null {
@@ -436,7 +531,7 @@ export async function ensurePartnerAccessTables(): Promise<void> {
 function mapPartnerRow(row: AccountPartnerProfileRow): PartnerDirectoryEntry {
   const partnerType = normalizePartnerType(row.account_type) ?? 'dealer';
   const businessName = asText(row.business_name);
-  const displayName = asText(row.display_name) || businessName || 'Aim4price partner';
+  const displayName = asText(row.display_name) || businessName || 'Aim4price business';
 
   return {
     userId: row.user_id,
@@ -447,6 +542,9 @@ function mapPartnerRow(row: AccountPartnerProfileRow): PartnerDirectoryEntry {
     province: asText(row.province),
     townCity: asText(row.town_city),
     addressLine1: asText(row.address_line_1),
+    logoUrl: sanitizePartnerImageUrl(row.logo_url),
+    websiteUrl: sanitizePartnerWebsiteUrl(row.website_url),
+    extraPhotoUrls: sanitizePartnerExtraPhotoUrls(row.extra_photo_urls),
     description: asText(row.partner_description),
     latitude: asNumber(row.partner_latitude),
     longitude: asNumber(row.partner_longitude),
@@ -683,6 +781,9 @@ export async function listPartnerDirectory(input: {
         province,
         town_city,
         address_line_1,
+        logo_url,
+        website_url,
+        extra_photo_urls,
         partner_description,
         partner_latitude,
         partner_longitude,
@@ -717,6 +818,9 @@ async function getPartnerProfile(partnerUserId: string): Promise<AccountPartnerP
         province,
         town_city,
         address_line_1,
+        logo_url,
+        website_url,
+        extra_photo_urls,
         partner_description,
         partner_latitude,
         partner_longitude,
