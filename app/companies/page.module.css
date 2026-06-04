@@ -310,30 +310,33 @@
   text-transform: uppercase;
 }
 
-.selectWrap {
+.filterSelect {
   position: relative;
   min-width: 0;
   display: block;
-  border-radius: 1.15rem;
+  width: 100%;
 }
 
-.filterField select {
+.filterSelectButton {
   appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
   width: 100%;
   min-height: 3.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
   border: 1.5px solid rgba(191, 210, 216, 0.98);
   border-radius: 1.15rem;
   background:
     radial-gradient(circle at top right, rgba(31, 108, 83, 0.07), transparent 10.5rem),
     linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
   color: #102f27;
-  padding: 0.82rem 4.35rem 0.82rem 1.05rem;
+  padding: 0.82rem 0.52rem 0.82rem 1.05rem;
   font: inherit;
   font-size: 1rem;
   font-weight: 820;
   line-height: 1.18;
+  text-align: left;
   outline: 0;
   cursor: pointer;
   box-shadow:
@@ -342,60 +345,64 @@
   transition:
     border-color 160ms ease,
     box-shadow 160ms ease,
-    background 160ms ease;
+    background 160ms ease,
+    transform 160ms ease;
 }
 
-.filterField select:hover {
-  border-color: rgba(31, 108, 83, 0.34);
-  box-shadow:
-    0 13px 28px rgba(16, 45, 37, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+.filterSelectButton > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.filterField select:focus {
-  border-color: rgba(31, 108, 83, 0.48);
+.filterSelectButton:hover,
+.filterSelectButtonOpen,
+.filterSelectButton:focus-visible {
+  border-color: rgba(31, 108, 83, 0.44);
+  background:
+    radial-gradient(circle at top right, rgba(31, 108, 83, 0.1), transparent 10.5rem),
+    linear-gradient(180deg, #ffffff 0%, #eef8f3 100%);
   box-shadow:
     0 0 0 4px rgba(31, 108, 83, 0.09),
     0 14px 30px rgba(16, 45, 37, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
-.filterField select::-ms-expand {
-  display: none;
-}
-
-.selectChevron {
-  position: absolute;
-  top: 50%;
-  right: 0.52rem;
+.filterSelectChevron {
+  flex: 0 0 auto;
   width: 2.64rem;
   height: 2.64rem;
   display: grid;
   place-items: center;
-  transform: translateY(-50%);
   border: 1px solid rgba(191, 210, 216, 0.98);
   border-radius: 999px;
   background: linear-gradient(180deg, #ffffff 0%, #edf7f3 100%);
   color: #0f3d32;
-  pointer-events: none;
   box-shadow:
     0 8px 18px rgba(16, 45, 37, 0.075),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
   transition:
+    transform 160ms ease,
     border-color 160ms ease,
     background 160ms ease,
     box-shadow 160ms ease,
     color 160ms ease;
 }
 
-.selectWrap:focus-within .selectChevron,
-.selectWrap:hover .selectChevron {
+.filterSelectButton:hover .filterSelectChevron,
+.filterSelectButtonOpen .filterSelectChevron,
+.filterSelectButton:focus-visible .filterSelectChevron {
   border-color: rgba(31, 108, 83, 0.36);
   background: linear-gradient(180deg, #ffffff 0%, #e6f5ee 100%);
   color: #0b3329;
   box-shadow:
     0 10px 22px rgba(16, 45, 37, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.filterSelectButtonOpen .filterSelectChevron {
+  transform: rotate(180deg);
 }
 
 .selectChevronIcon {
@@ -406,6 +413,114 @@
   stroke-width: 2.65;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.filterSelectMenu {
+  position: absolute;
+  z-index: 45;
+  top: calc(100% + 0.42rem);
+  left: 0;
+  right: 0;
+  display: grid;
+  gap: 0.28rem;
+  max-height: min(17rem, 42vh);
+  padding: 0.42rem;
+  overflow-y: auto;
+  border: 1.5px solid rgba(191, 210, 216, 0.98);
+  border-radius: 1.15rem;
+  background:
+    radial-gradient(circle at top right, rgba(31, 108, 83, 0.07), transparent 10.5rem),
+    linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
+  box-shadow:
+    0 22px 54px rgba(10, 32, 27, 0.18),
+    0 8px 18px rgba(10, 32, 27, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.filterSelectOption {
+  appearance: none;
+  width: 100%;
+  min-height: 2.72rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.7rem 0.78rem;
+  border: 1px solid transparent;
+  border-radius: 0.86rem;
+  background: transparent;
+  color: #17362c;
+  font: inherit;
+  font-size: 0.96rem;
+  font-weight: 780;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.filterSelectOption:hover,
+.filterSelectOption:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(31, 108, 83, 0.18);
+  background: rgba(237, 248, 242, 0.8);
+  color: #073b30;
+  outline: none;
+}
+
+.filterSelectOption span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filterSelectOption b {
+  flex: 0 0 auto;
+  width: 1.55rem;
+  height: 1.55rem;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #12644d;
+  font-size: 0.8rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.filterSelectOptionActive,
+.filterSelectOptionActive:hover,
+.filterSelectOptionActive:focus-visible {
+  border-color: rgba(18, 100, 77, 0.24);
+  background:
+    radial-gradient(circle at top left, rgba(31, 108, 83, 0.1), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #e9f7f0 100%);
+  color: #073b30;
+}
+
+.filterSelectMenu::-webkit-scrollbar {
+  width: 0.65rem;
+}
+
+.filterSelectMenu::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(237, 244, 242, 0.95);
+}
+
+.filterSelectMenu::-webkit-scrollbar-thumb {
+  border: 0.18rem solid rgba(255, 255, 255, 0.95);
+  border-radius: 999px;
+  background: rgba(18, 100, 77, 0.55);
+}
+
+.filterSelectMenu {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(18, 100, 77, 0.55) rgba(237, 244, 242, 0.95);
 }
 
 .filterActions {
