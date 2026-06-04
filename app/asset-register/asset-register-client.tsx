@@ -609,7 +609,7 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     partnerType: 'dealer',
     title: 'Get replacement quote',
     shortTitle: 'Replacement quote',
-    descriptionLines: ['Send this asset to a machinery dealer.', 'Request a replacement quote.'],
+    descriptionLines: ['Send this asset to a dealer.', 'Request a quote.'],
     mapTitle: 'Choose a dealer partner.',
     sendLabel: 'Send replacement quote request',
     emptyPartnerText: 'No listed dealers found yet. Dealer accounts must enable their directory listing under Account details.',
