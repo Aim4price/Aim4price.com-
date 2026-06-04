@@ -257,6 +257,8 @@ type AssetRegisterSummary = {
   email: string;
   phone: string;
   addressLine1: string;
+  logoUrls?: string[];
+  showLogosOnRegister?: boolean;
   isPrimary: boolean;
   isSelected: boolean;
   assetCount: number;
@@ -2596,11 +2598,16 @@ function mergeProfileWithRegister(profile: AccountProfile | null, register: Asse
     return profile;
   }
 
+  const registerLogoUrl = register.showLogosOnRegister !== false
+    ? (Array.isArray(register.logoUrls) ? String(register.logoUrls[0] ?? '').trim() : '')
+    : '';
+
   return {
     ...profile,
     businessName: register.businessName || profile.businessName,
     email: register.email || profile.email,
     phone: register.phone || profile.phone,
+    logoUrl: registerLogoUrl || profile.logoUrl,
     addressLine1: register.addressLine1 || profile.addressLine1,
     addressLine2: '',
   };
