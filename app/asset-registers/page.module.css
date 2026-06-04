@@ -1802,3 +1802,359 @@
     min-width: 0 !important;
   }
 }
+
+/* === Asset register card logo layout and register-logo manager === */
+.registerCard {
+  grid-template-columns: minmax(150px, 220px) minmax(0, 1fr) minmax(235px, 300px);
+  align-items: center;
+  min-height: 225px;
+  padding: clamp(1.35rem, 2vw, 1.8rem);
+  border-radius: clamp(1.85rem, 2.8vw, 2.45rem);
+}
+
+.registerLogoPanel {
+  width: min(100%, 190px);
+  aspect-ratio: 1 / 1;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1.6px solid rgba(18, 54, 47, 0.18);
+  border-radius: clamp(1.2rem, 2vw, 1.65rem);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(25, 116, 84, 0.07), transparent 46%),
+    linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 14px 28px rgba(16, 36, 40, 0.055);
+}
+
+.registerLogoGrid {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 0.8rem;
+}
+
+.registerLogoGridSingle {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.registerLogoGridMultiple {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 0.45rem;
+}
+
+.registerLogoTile {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(216, 225, 234, 0.92);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.registerLogoTile img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 0.35rem;
+}
+
+.registerLogoCount {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0 0.45rem;
+  border: 1px solid rgba(15, 88, 64, 0.24);
+  border-radius: 999px;
+  color: #0f5840;
+  background: rgba(239, 249, 244, 0.96);
+  font-size: 0.78rem;
+  font-weight: 950;
+  box-shadow: 0 8px 16px rgba(15, 88, 64, 0.12);
+}
+
+.registerLogoPlaceholder {
+  display: grid;
+  place-items: center;
+  gap: 0.25rem;
+  color: #0b342c;
+  text-align: center;
+}
+
+.registerLogoPlaceholder span {
+  font-size: clamp(1.25rem, 2vw, 1.6rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+}
+
+.registerLogoPlaceholder small {
+  max-width: 8.8rem;
+  color: #6b7b87;
+  font-size: 0.76rem;
+  font-weight: 720;
+  line-height: 1.25;
+}
+
+.registerInfo {
+  align-content: center;
+  gap: clamp(0.7rem, 1.1vw, 0.95rem);
+}
+
+.registerTitleBlock h2 {
+  font-size: clamp(1.55rem, 2.1vw, 2rem);
+  letter-spacing: -0.052em;
+}
+
+.registerDetails {
+  font-size: clamp(0.92rem, 1.15vw, 1.05rem);
+  font-weight: 720;
+}
+
+.statGrid {
+  grid-template-columns: 1fr;
+  gap: 0.22rem;
+  max-width: 31rem;
+}
+
+.statGrid div {
+  display: grid;
+  grid-template-columns: minmax(8.7rem, 0.52fr) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.65rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.statGrid span {
+  color: #1f313a;
+  font-size: clamp(0.96rem, 1.12vw, 1.08rem);
+  font-weight: 880;
+  letter-spacing: -0.02em;
+}
+
+.statGrid strong {
+  margin: 0;
+  color: #073b30;
+  font-size: clamp(1.02rem, 1.28vw, 1.17rem);
+  font-weight: 900;
+}
+
+.registerAside {
+  min-width: 0;
+  align-self: stretch;
+  grid-template-rows: auto 1fr;
+}
+
+.unitActions {
+  align-self: center;
+}
+
+.logoManagerField {
+  min-width: 0;
+}
+
+.logoManager {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.95rem;
+  border: 1px solid rgba(216, 225, 234, 0.98);
+  border-radius: 1.15rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.045) 0%, rgba(25, 116, 84, 0) 42%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+}
+
+.logoManagerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.logoManagerHeader > div {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.logoManagerHeader span {
+  color: #0b342c;
+  font-size: 0.92rem;
+  font-weight: 920;
+}
+
+.logoManagerHeader small,
+.logoEmptyState {
+  margin: 0;
+  color: #657586;
+  font-size: 0.84rem;
+  font-weight: 650;
+  line-height: 1.42;
+}
+
+.logoUploadButton {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 0.92rem;
+  border: 1px solid var(--action-copper-soft-border);
+  border-radius: 999px;
+  color: var(--action-copper-soft-text);
+  background: linear-gradient(180deg, #fffdfb 0%, var(--action-copper-soft-bg) 100%);
+  font-size: 0.88rem;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(180, 107, 43, 0.08);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    opacity 160ms ease;
+}
+
+.logoUploadButton:hover:not(.logoUploadButtonDisabled) {
+  transform: translateY(-1px);
+  border-color: var(--action-copper-soft-border-hover);
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-copper-soft-bg-hover) 100%);
+}
+
+.logoUploadButton input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.logoUploadButtonDisabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.logoThumbGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.2rem, 1fr));
+  gap: 0.65rem;
+}
+
+.logoThumbCard {
+  position: relative;
+  aspect-ratio: 1.4 / 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(216, 225, 234, 0.96);
+  border-radius: 0.95rem;
+  background: #ffffff;
+}
+
+.logoThumbCard img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 0.45rem;
+}
+
+.logoRemoveButton {
+  position: absolute;
+  top: 0.38rem;
+  right: 0.38rem;
+  width: 1.75rem;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  border: 1px solid rgba(232, 188, 188, 0.96);
+  border-radius: 999px;
+  color: #962c2c;
+  background: rgba(255, 246, 246, 0.98);
+  font-size: 1.15rem;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.logoRemoveButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.logoVisibilityToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #3f4f59;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.logoVisibilityToggle input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--action-primary);
+}
+
+@media (max-width: 980px) {
+  .registerCard {
+    grid-template-columns: minmax(130px, 180px) minmax(0, 1fr);
+  }
+
+  .registerLogoPanel {
+    width: min(100%, 165px);
+  }
+
+  .registerAside {
+    grid-column: 1 / -1;
+  }
+
+  .badgeStack {
+    justify-content: flex-start;
+  }
+
+  .unitActions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .registerCard {
+    grid-template-columns: 1fr;
+  }
+
+  .registerLogoPanel {
+    width: min(100%, 12.5rem);
+    justify-self: center;
+  }
+
+  .statGrid div {
+    grid-template-columns: 1fr;
+    gap: 0.12rem;
+  }
+
+  .logoManagerHeader {
+    display: grid;
+  }
+
+  .logoUploadButton {
+    width: 100%;
+  }
+}

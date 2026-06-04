@@ -5,6 +5,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type ChangeEvent,
   type FocusEvent,
   type FormEvent,
   type SVGProps,
@@ -21,6 +22,8 @@ type AssetRegisterSummary = {
   email: string;
   phone: string;
   addressLine1: string;
+  logoUrls: string[];
+  showLogosOnRegister: boolean;
   isPrimary: boolean;
   isSelected: boolean;
   assetCount: number;
@@ -63,18 +66,38 @@ type AssetRegisterItemsApiResponse = {
   error?: string;
 };
 
+type AssetUploadApiResponse = {
+  ok: boolean;
+  uploads?: Array<{
+    uploadId?: string;
+    url?: string;
+    fileName?: string;
+    contentType?: string;
+    byteSize?: number;
+  }>;
+  error?: string;
+};
+
 type RegisterDraft = {
   businessName: string;
   email: string;
   phone: string;
   addressLine1: string;
+  logoUrls: string[];
+  showLogosOnRegister: boolean;
 };
+
+const MAX_REGISTER_LOGOS = 8;
+const MAX_REGISTER_LOGO_UPLOAD_BYTES = 2 * 1024 * 1024;
+const ALLOWED_REGISTER_LOGO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const emptyRegisterDraft: RegisterDraft = {
   businessName: "",
   email: "",
   phone: "",
   addressLine1: "",
+  logoUrls: [],
+  showLogosOnRegister: true,
 };
 
 function IconBase(props: SVGProps<SVGSVGElement>) {
@@ -153,12 +176,50 @@ function buildOpenHref(registerId: string): string {
   return `/asset-register?registerId=${encodeURIComponent(registerId)}`;
 }
 
+function normalizeLogoUrls(value: unknown): string[] {
+  const source = Array.isArray(value) ? value : [];
+  const seen = new Set<string>();
+  const logoUrls: string[] = [];
+
+  for (const entry of source) {
+    const logoUrl = String(entry ?? "").trim();
+
+    if (!logoUrl || seen.has(logoUrl)) {
+      continue;
+    }
+
+    seen.add(logoUrl);
+    logoUrls.push(logoUrl);
+
+    if (logoUrls.length >= MAX_REGISTER_LOGOS) {
+      break;
+    }
+  }
+
+  return logoUrls;
+}
+
+function visibleLogoUrls(register: Pick<AssetRegisterSummary, "logoUrls" | "showLogosOnRegister">): string[] {
+  if (!register.showLogosOnRegister) {
+    return [];
+  }
+
+  return normalizeLogoUrls(register.logoUrls);
+}
+
+function formatUploadSize(bytes: number): string {
+  const megabytes = bytes / (1024 * 1024);
+  return `${Number.isInteger(megabytes) ? megabytes.toFixed(0) : megabytes.toFixed(1)} MB`;
+}
+
 function draftFromRegister(register: AssetRegisterSummary): RegisterDraft {
   return {
     businessName: register.businessName,
     email: register.email,
     phone: register.phone,
     addressLine1: register.addressLine1,
+    logoUrls: normalizeLogoUrls(register.logoUrls),
+    showLogosOnRegister: register.showLogosOnRegister,
   };
 }
 
@@ -174,7 +235,7 @@ function money(value: unknown): string {
 }
 
 function contactLine(register: AssetRegisterSummary): string {
-  const parts = [register.email, register.phone, register.addressLine1]
+  const parts = [register.phone, register.addressLine1, register.email]
     .map((value) => String(value ?? "").trim())
     .filter(Boolean);
 
@@ -207,6 +268,8 @@ function matchesRegisterSearch(
     register.email,
     register.phone,
     register.addressLine1,
+    normalizeLogoUrls(register.logoUrls).length ? "logo logos branding farm" : "no logo trust placeholder",
+    register.showLogosOnRegister ? "show logo visible" : "hide logo hidden",
     register.isSelected ? "selected active current" : "",
     register.isPrimary ? "primary main" : "",
   ]
@@ -237,6 +300,120 @@ function extractErrorMessage(payload: unknown, fallback: string): string {
   }
 
   return fallback;
+}
+
+function RegisterLogoBlock({ register }: { register: AssetRegisterSummary }) {
+  const logoUrls = visibleLogoUrls(register);
+  const extraLogoCount = Math.max(0, logoUrls.length - 4);
+
+  return (
+    <div className={styles.registerLogoPanel} aria-label={`${register.businessName} logos`}>
+      {logoUrls.length ? (
+        <div
+          className={`${styles.registerLogoGrid} ${
+            logoUrls.length === 1 ? styles.registerLogoGridSingle : styles.registerLogoGridMultiple
+          }`}
+        >
+          {logoUrls.slice(0, 4).map((logoUrl, index) => (
+            <div key={`register-logo-${index}-${logoUrl.length}`} className={styles.registerLogoTile}>
+              <img src={logoUrl} alt={`${register.businessName} logo ${index + 1}`} />
+            </div>
+          ))}
+          {extraLogoCount ? <span className={styles.registerLogoCount}>+{extraLogoCount}</span> : null}
+        </div>
+      ) : (
+        <div className={styles.registerLogoPlaceholder}>
+          <span>Logo</span>
+          <small>
+            {normalizeLogoUrls(register.logoUrls).length && !register.showLogosOnRegister
+              ? "Hidden on cards"
+              : "Optional for trusts"}
+          </small>
+        </div>
+      )}
+    </div>
+  );
+}
+
+type RegisterLogoManagerProps = {
+  logoUrls: string[];
+  showLogosOnRegister: boolean;
+  isUploading: boolean;
+  disabled: boolean;
+  inputId: string;
+  onUpload: (event: ChangeEvent<HTMLInputElement>) => void;
+  onRemove: (index: number) => void;
+  onToggleShow: (value: boolean) => void;
+};
+
+function RegisterLogoManager({
+  logoUrls,
+  showLogosOnRegister,
+  isUploading,
+  disabled,
+  inputId,
+  onUpload,
+  onRemove,
+  onToggleShow,
+}: RegisterLogoManagerProps) {
+  const normalizedLogos = normalizeLogoUrls(logoUrls);
+  const isUploadDisabled = disabled || isUploading || normalizedLogos.length >= MAX_REGISTER_LOGOS;
+
+  return (
+    <div className={styles.logoManager}>
+      <div className={styles.logoManagerHeader}>
+        <div>
+          <span>Register logos</span>
+          <small>
+            Attach up to {MAX_REGISTER_LOGOS} farm, business or trust logos. If none are attached, the card keeps a clean logo placeholder.
+          </small>
+        </div>
+        <label className={`${styles.logoUploadButton} ${isUploadDisabled ? styles.logoUploadButtonDisabled : ""}`}>
+          <input
+            id={inputId}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            onChange={onUpload}
+            disabled={isUploadDisabled}
+          />
+          <PlusIcon className={styles.buttonIcon} />
+          <span>{isUploading ? "Uploading..." : "Attach logo"}</span>
+        </label>
+      </div>
+
+      {normalizedLogos.length ? (
+        <div className={styles.logoThumbGrid}>
+          {normalizedLogos.map((logoUrl, index) => (
+            <div key={`logo-thumb-${index}-${logoUrl.length}`} className={styles.logoThumbCard}>
+              <img src={logoUrl} alt={`Register logo ${index + 1}`} />
+              <button
+                type="button"
+                className={styles.logoRemoveButton}
+                onClick={() => onRemove(index)}
+                disabled={disabled || isUploading}
+                aria-label={`Remove register logo ${index + 1}`}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className={styles.logoEmptyState}>No logo attached yet. This is fine for a trust or a register without farm branding.</p>
+      )}
+
+      <label className={styles.logoVisibilityToggle}>
+        <input
+          type="checkbox"
+          checked={showLogosOnRegister}
+          onChange={(event) => onToggleShow(event.target.checked)}
+          disabled={disabled || isUploading}
+        />
+        <span>Show attached logos on the asset register cards</span>
+      </label>
+    </div>
+  );
 }
 
 type RegisterTargetDropdownProps = {
@@ -374,7 +551,9 @@ export default function AssetRegistersClient() {
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [isUploadingCreateLogos, setIsUploadingCreateLogos] = useState(false);
   const [isSavingDetails, setIsSavingDetails] = useState(false);
+  const [isUploadingEditLogos, setIsUploadingEditLogos] = useState(false);
   const [isLoadingManagedAssets, setIsLoadingManagedAssets] = useState(false);
   const [selectingRegisterId, setSelectingRegisterId] = useState<string | null>(
     null,
@@ -480,10 +659,10 @@ export default function AssetRegistersClient() {
           return;
         }
 
-        if (isCreateModalOpen && !isCreating) {
+        if (isCreateModalOpen && !isCreating && !isUploadingCreateLogos) {
           closeCreateModal();
         }
-        if (managedRegister && !isSavingDetails && !movingAssetId) {
+        if (managedRegister && !isSavingDetails && !isUploadingEditLogos && !movingAssetId) {
           closeManagePanel();
         }
 
@@ -504,7 +683,9 @@ export default function AssetRegistersClient() {
     isBlockingModalOpen,
     isCreateModalOpen,
     isCreating,
+    isUploadingCreateLogos,
     isSavingDetails,
+    isUploadingEditLogos,
     managedRegister,
     movingAssetId,
     openTargetDropdownId,
@@ -557,7 +738,7 @@ export default function AssetRegistersClient() {
   }
 
   function closeCreateModal() {
-    if (isCreating) return;
+    if (isCreating || isUploadingCreateLogos) return;
     setIsCreateModalOpen(false);
     setCreateDraft(emptyRegisterDraft);
     setOpenTargetDropdownId(null);
@@ -571,6 +752,7 @@ export default function AssetRegistersClient() {
   }
 
   function closeManagePanel() {
+    if (isSavingDetails || isUploadingEditLogos || movingAssetId) return;
     setManagedRegisterId("");
     setEditDraft(emptyRegisterDraft);
     setManagedAssets([]);
@@ -608,11 +790,148 @@ export default function AssetRegistersClient() {
     setOpenTargetDropdownId(null);
   }
 
+  async function uploadRegisterLogoFiles(fileList: FileList | File[] | null, currentLogoCount: number): Promise<string[]> {
+    const files = Array.from(fileList ?? []);
+
+    if (!files.length) {
+      return [];
+    }
+
+    const remainingSlots = MAX_REGISTER_LOGOS - currentLogoCount;
+
+    if (remainingSlots <= 0) {
+      throw new Error(`You can attach a maximum of ${MAX_REGISTER_LOGOS} logos per register.`);
+    }
+
+    if (files.length > remainingSlots) {
+      throw new Error(`You can still attach ${remainingSlots} logo${remainingSlots === 1 ? "" : "s"} to this register.`);
+    }
+
+    for (const file of files) {
+      const fileType = String(file.type ?? "").trim().toLowerCase();
+
+      if (!ALLOWED_REGISTER_LOGO_TYPES.has(fileType)) {
+        throw new Error("Upload JPG, PNG or WEBP logos only.");
+      }
+
+      if (!file.size) {
+        throw new Error("One of the selected logo files is empty.");
+      }
+
+      if (file.size > MAX_REGISTER_LOGO_UPLOAD_BYTES) {
+        throw new Error(`Each logo must be ${formatUploadSize(MAX_REGISTER_LOGO_UPLOAD_BYTES)} or smaller.`);
+      }
+    }
+
+    const formData = new FormData();
+    formData.append("uploadType", "photo");
+    files.forEach((file) => formData.append("files", file));
+
+    const response = await fetch("/api/asset-register/uploads", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    const payload = await readJsonPayload(response);
+    const data = (payload ?? null) as AssetUploadApiResponse | null;
+
+    if (!response.ok || !data?.ok || !Array.isArray(data.uploads)) {
+      throw new Error(extractErrorMessage(payload, "Failed to upload register logos."));
+    }
+
+    const uploadedLogoUrls = data.uploads
+      .map((upload) => String(upload.url ?? "").trim())
+      .filter(Boolean);
+
+    if (!uploadedLogoUrls.length) {
+      throw new Error("No logo URL was returned after upload.");
+    }
+
+    return uploadedLogoUrls;
+  }
+
+  async function handleCreateLogoUpload(event: ChangeEvent<HTMLInputElement>) {
+    const fileList = Array.from(event.target.files ?? []);
+    event.target.value = "";
+
+    setIsUploadingCreateLogos(true);
+
+    try {
+      const uploadedLogoUrls = await uploadRegisterLogoFiles(fileList, createDraft.logoUrls.length);
+
+      if (!uploadedLogoUrls.length) {
+        return;
+      }
+
+      setCreateDraft((current) => ({
+        ...current,
+        logoUrls: normalizeLogoUrls([...current.logoUrls, ...uploadedLogoUrls]),
+        showLogosOnRegister: true,
+      }));
+      setNotice({ tone: "success", message: `${uploadedLogoUrls.length} logo${uploadedLogoUrls.length === 1 ? "" : "s"} attached. Click Create register to save.` });
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "Failed to upload register logos.",
+      });
+    } finally {
+      setIsUploadingCreateLogos(false);
+    }
+  }
+
+  async function handleEditLogoUpload(event: ChangeEvent<HTMLInputElement>) {
+    const fileList = Array.from(event.target.files ?? []);
+    event.target.value = "";
+
+    setIsUploadingEditLogos(true);
+
+    try {
+      const uploadedLogoUrls = await uploadRegisterLogoFiles(fileList, editDraft.logoUrls.length);
+
+      if (!uploadedLogoUrls.length) {
+        return;
+      }
+
+      setEditDraft((current) => ({
+        ...current,
+        logoUrls: normalizeLogoUrls([...current.logoUrls, ...uploadedLogoUrls]),
+        showLogosOnRegister: true,
+      }));
+      setNotice({ tone: "success", message: `${uploadedLogoUrls.length} logo${uploadedLogoUrls.length === 1 ? "" : "s"} attached. Click Save to store it.` });
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "Failed to upload register logos.",
+      });
+    } finally {
+      setIsUploadingEditLogos(false);
+    }
+  }
+
+  function removeCreateLogo(index: number) {
+    setCreateDraft((current) => ({
+      ...current,
+      logoUrls: current.logoUrls.filter((_, logoIndex) => logoIndex !== index),
+    }));
+  }
+
+  function removeEditLogo(index: number) {
+    setEditDraft((current) => ({
+      ...current,
+      logoUrls: current.logoUrls.filter((_, logoIndex) => logoIndex !== index),
+    }));
+  }
+
   async function handleCreateRegister(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!createDraft.businessName.trim()) {
       setNotice({ tone: "error", message: "Business name is required." });
+      return;
+    }
+
+    if (isUploadingCreateLogos) {
+      setNotice({ tone: "error", message: "Wait for the logo upload to finish before creating the register." });
       return;
     }
 
@@ -716,6 +1035,11 @@ export default function AssetRegistersClient() {
 
     if (!editDraft.businessName.trim()) {
       setNotice({ tone: "error", message: "Business name is required." });
+      return;
+    }
+
+    if (isUploadingEditLogos) {
+      setNotice({ tone: "error", message: "Wait for the logo upload to finish before saving the register." });
       return;
     }
 
@@ -956,6 +1280,8 @@ export default function AssetRegistersClient() {
                       key={register.id}
                       className={`${styles.registerCard} ${register.isSelected ? styles.registerCardSelected : ""}`}
                     >
+                      <RegisterLogoBlock register={register} />
+
                       <div className={styles.registerInfo}>
                         <div className={styles.registerTitleBlock}>
                           <h2>{register.businessName}</h2>
@@ -1069,7 +1395,7 @@ export default function AssetRegistersClient() {
                 type="button"
                 className={styles.closeButton}
                 onClick={closeManagePanel}
-                disabled={isSavingDetails || Boolean(movingAssetId)}
+                disabled={isSavingDetails || isUploadingEditLogos || Boolean(movingAssetId)}
                 aria-label="Close manage asset register modal"
               >
                 ×
@@ -1135,13 +1461,31 @@ export default function AssetRegistersClient() {
                 />
               </label>
 
+              <div className={`${styles.logoManagerField} ${styles.fullField}`}>
+                <RegisterLogoManager
+                  logoUrls={editDraft.logoUrls}
+                  showLogosOnRegister={editDraft.showLogosOnRegister}
+                  isUploading={isUploadingEditLogos}
+                  disabled={isSavingDetails || Boolean(movingAssetId)}
+                  inputId="edit-register-logo-upload"
+                  onUpload={handleEditLogoUpload}
+                  onRemove={removeEditLogo}
+                  onToggleShow={(value) =>
+                    setEditDraft((current) => ({
+                      ...current,
+                      showLogosOnRegister: value,
+                    }))
+                  }
+                />
+              </div>
+
               <div className={styles.formActions}>
                 <button
                   type="submit"
                   className={`${styles.primaryButton} ${styles.manageSaveButton}`}
-                  disabled={isSavingDetails}
+                  disabled={isSavingDetails || isUploadingEditLogos}
                 >
-                  {isSavingDetails ? "Saving..." : "Save"}
+                  {isSavingDetails ? "Saving..." : isUploadingEditLogos ? "Uploading..." : "Save"}
                 </button>
               </div>
             </form>
@@ -1244,7 +1588,7 @@ export default function AssetRegistersClient() {
                 type="button"
                 className={styles.closeButton}
                 onClick={closeCreateModal}
-                disabled={isCreating}
+                disabled={isCreating || isUploadingCreateLogos}
                 aria-label="Close add asset register modal"
               >
                 ×
@@ -1310,6 +1654,24 @@ export default function AssetRegistersClient() {
                   placeholder="Farm, town, province"
                 />
               </label>
+
+              <div className={`${styles.logoManagerField} ${styles.fullField}`}>
+                <RegisterLogoManager
+                  logoUrls={createDraft.logoUrls}
+                  showLogosOnRegister={createDraft.showLogosOnRegister}
+                  isUploading={isUploadingCreateLogos}
+                  disabled={isCreating}
+                  inputId="create-register-logo-upload"
+                  onUpload={handleCreateLogoUpload}
+                  onRemove={removeCreateLogo}
+                  onToggleShow={(value) =>
+                    setCreateDraft((current) => ({
+                      ...current,
+                      showLogosOnRegister: value,
+                    }))
+                  }
+                />
+              </div>
             </div>
 
             <div className={styles.modalFooter}>
@@ -1317,16 +1679,16 @@ export default function AssetRegistersClient() {
                 type="button"
                 className={styles.modalCancelButton}
                 onClick={closeCreateModal}
-                disabled={isCreating}
+                disabled={isCreating || isUploadingCreateLogos}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 className={styles.modalPrimaryButton}
-                disabled={isCreating}
+                disabled={isCreating || isUploadingCreateLogos}
               >
-                {isCreating ? "Creating..." : "Create register"}
+                {isCreating ? "Creating..." : isUploadingCreateLogos ? "Uploading..." : "Create register"}
               </button>
             </div>
           </form>
