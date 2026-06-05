@@ -844,13 +844,21 @@
 }
 
 .logoTile {
+  padding: clamp(1rem, 1.8vw, 1.55rem);
   background: #ffffff;
 }
 
 .logoTile img {
+  width: auto;
+  height: auto;
+  max-width: 82%;
+  max-height: 82%;
+  display: block;
   object-fit: contain;
-  padding: clamp(1rem, 1.8vw, 1.55rem);
-  background: #ffffff;
+  object-position: center center;
+  padding: 0;
+  background: transparent;
+  margin: auto;
 }
 
 .emptyLogoTile {
