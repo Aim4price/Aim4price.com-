@@ -136,11 +136,27 @@
 .topActions {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   justify-content: stretch;
-  gap: clamp(0.78rem, 1.35vw, 1.25rem);
+  gap: clamp(0.7rem, 1vw, 0.95rem);
   margin: 0;
+  padding: clamp(0.62rem, 0.9vw, 0.82rem);
+  border: 1px solid rgba(218, 226, 233, 0.92);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow:
+    0 10px 24px rgba(16, 36, 40, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.topActionButtons {
+  width: min(100%, 30rem);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  justify-content: end;
+  gap: clamp(0.62rem, 0.9vw, 0.82rem);
 }
 
 .primaryButton,
@@ -233,10 +249,10 @@
 
 .topActions .topActionButton {
   width: 100%;
-  min-height: clamp(3.45rem, 4.2vw, 3.9rem);
-  padding-inline: clamp(1rem, 1.8vw, 1.45rem);
-  border-radius: clamp(1rem, 1.45vw, 1.22rem);
-  font-size: clamp(0.98rem, 1.15vw, 1.08rem);
+  min-height: clamp(3.25rem, 3.8vw, 3.72rem);
+  padding-inline: clamp(1rem, 1.55vw, 1.32rem);
+  border-radius: clamp(0.95rem, 1.35vw, 1.14rem);
+  font-size: clamp(0.96rem, 1.08vw, 1.04rem);
   font-weight: 860;
 }
 
@@ -274,24 +290,6 @@
   box-shadow:
     0 14px 28px rgba(15, 59, 100, 0.115),
     inset 0 1px 0 rgba(255, 255, 255, 1);
-}
-
-.topFilterButton {
-  color: #ffffff;
-  background: linear-gradient(180deg, var(--action-primary) 0%, var(--action-primary-deep) 100%);
-  border-color: var(--action-primary-border);
-  box-shadow:
-    0 14px 26px var(--action-primary-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-}
-
-.topFilterButton:hover:not(:disabled) {
-  color: #ffffff;
-  background: linear-gradient(180deg, #218462 0%, var(--action-primary-hover) 100%);
-  border-color: var(--action-primary-hover);
-  box-shadow:
-    0 18px 32px rgba(25, 116, 84, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .buttonIcon,
@@ -388,6 +386,11 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
+.topActions .searchWrap {
+  min-height: clamp(3.25rem, 3.8vw, 3.72rem);
+  border-radius: clamp(0.95rem, 1.35vw, 1.14rem);
+}
+
 .searchWrap:focus-within {
   border-color: rgba(25, 116, 84, 0.42);
   box-shadow:
@@ -416,8 +419,9 @@
 }
 
 .searchInput::placeholder {
-  color: #8a95a2;
-  font-weight: 560;
+  color: #17362c;
+  opacity: 0.72;
+  font-weight: 760;
 }
 
 .clearSearchButton {
@@ -1242,11 +1246,13 @@
 }
 
 @media (max-width: 960px) {
-  .toolbar {
+  .toolbar,
+  .topActions {
     grid-template-columns: 1fr;
   }
 
-  .toolbarPrimaryButton {
+  .toolbarPrimaryButton,
+  .topActionButtons {
     width: 100%;
   }
 }
@@ -1404,6 +1410,13 @@
 
   .topActions {
     gap: 0.55rem;
+    padding: 0.55rem;
+    border-radius: 1rem;
+  }
+
+  .topActionButtons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
   }
 
   .topActions .topActionButton {
@@ -1503,7 +1516,7 @@
     bottom: 0;
     z-index: 90;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.55rem;
     padding: 0.7rem max(0.78rem, env(safe-area-inset-left)) calc(0.7rem + env(safe-area-inset-bottom)) max(0.78rem, env(safe-area-inset-right));
     border-top: 1px solid rgba(199, 214, 226, 0.98);
@@ -1783,94 +1796,6 @@
 }
 
 
-/* === Fuel view filter modal: match fuel report filter step === */
-.filterModal {
-  width: min(100%, 980px) !important;
-}
-
-.fuelViewFilterBox {
-  grid-template-columns: minmax(14rem, 1.32fr) repeat(3, minmax(10rem, 0.9fr));
-  align-items: start;
-}
-
-.filterSearchField {
-  min-width: 0;
-  display: grid;
-  gap: 0.38rem;
-  color: #253b34;
-  font-size: 0.82rem;
-  font-weight: 850;
-}
-
-.filterSearchField > span {
-  color: #253b34;
-  font-size: 0.82rem;
-  font-weight: 850;
-  line-height: 1.2;
-}
-
-.filterSearchField input {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 100%;
-  min-height: 3.35rem;
-  padding: 0 1rem;
-  border: 1px solid rgba(216, 226, 236, 0.98);
-  border-radius: 1rem;
-  color: #19352d;
-  background:
-    radial-gradient(circle at 8% 0%, rgba(25, 116, 84, 0.055) 0%, rgba(25, 116, 84, 0) 40%),
-    linear-gradient(180deg, #ffffff 0%, #f6fafb 100%);
-  box-shadow:
-    0 8px 18px rgba(16, 31, 28, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-  font: inherit;
-  font-size: 0.98rem;
-  font-weight: 720;
-  line-height: 1;
-  outline: none;
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease,
-    background 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
-}
-
-.filterSearchField input::placeholder {
-  color: #6f7d78;
-  opacity: 0.9;
-}
-
-.filterSearchField input:hover {
-  border-color: rgba(184, 202, 218, 0.98);
-  background:
-    radial-gradient(circle at 8% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 42%),
-    linear-gradient(180deg, #ffffff 0%, #eef5fb 100%);
-  box-shadow:
-    0 12px 24px rgba(16, 31, 28, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-}
-
-.filterSearchField input:focus {
-  border-color: rgba(149, 204, 178, 0.98);
-  background:
-    radial-gradient(circle at 8% 0%, rgba(22, 83, 64, 0.1) 0%, rgba(22, 83, 64, 0) 44%),
-    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
-  box-shadow:
-    0 0 0 4px rgba(22, 83, 64, 0.11),
-    0 12px 24px rgba(16, 31, 28, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-}
-
-.filterActions {
-  justify-content: flex-end !important;
-}
-
-.filterActions .filterPrimaryButton {
-  min-width: 12.4rem !important;
-}
-
 .exportActions .exportPrimaryButton,
 .exportActions .exportPrimaryButton:visited {
   min-width: 13.5rem !important;
@@ -2139,8 +2064,7 @@
   }
 
   .exportChoices,
-  .reportFilterBox,
-  .fuelViewFilterBox {
+  .reportFilterBox {
     grid-template-columns: 1fr !important;
   }
 
@@ -2168,10 +2092,6 @@
     font-size: 1.58rem !important;
   }
 
-  .filterSearchField input {
-    min-height: 3.35rem;
-    font-size: 16px;
-  }
 
   .deleteConfirmActions .deleteConfirmButton {
     min-width: 0 !important;

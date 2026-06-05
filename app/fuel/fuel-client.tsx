@@ -5,12 +5,10 @@ import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
 type FuelStorageStatus = 'active' | 'archived';
-type ModalMode = 'create-storage' | 'edit-storage' | 'pin' | 'filter' | 'report' | null;
-type FilterMode = 'all' | 'low' | 'empty' | 'full';
+type ModalMode = 'create-storage' | 'edit-storage' | 'pin' | 'report' | null;
 type ReportFormat = 'pdf' | 'xlsx';
 type ReportStep = 'format' | 'filters';
 type ReportSelectKey = 'storage' | 'year' | 'month';
-type FilterSelectKey = 'status' | 'year' | 'month';
 
 type FuelLedgerStorage = {
   id: string;
@@ -164,16 +162,6 @@ function TrashIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-
-function FilterIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <IconBase {...props}>
-      <path d="M4 6h16" />
-      <path d="M7 12h10" />
-      <path d="M10 18h4" />
-    </IconBase>
-  );
-}
 
 function DownloadIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -338,19 +326,12 @@ function getProgressPercent(storage: FuelLedgerStorage): number {
   return Math.max(0, Math.min(100, rawPercent));
 }
 
-function matchesFilter(storage: FuelLedgerStorage, filterMode: FilterMode, searchTerm: string): boolean {
+function matchesSearch(storage: FuelLedgerStorage, searchTerm: string): boolean {
   const normalizedSearch = searchTerm.trim().toLowerCase();
+  if (!normalizedSearch) return true;
+
   const searchableText = [storage.name, storage.fuelType, storage.locationLabel, storage.publicFuelStorageCode].join(' ').toLowerCase();
-
-  if (normalizedSearch && !searchableText.includes(normalizedSearch)) {
-    return false;
-  }
-
-  if (filterMode === 'low') return isLowStorage(storage);
-  if (filterMode === 'empty') return storage.currentLitres <= 0;
-  if (filterMode === 'full') return storage.stockPercent !== null && storage.stockPercent >= 95;
-
-  return true;
+  return searchableText.includes(normalizedSearch);
 }
 
 function eventDateParts(event: FuelLedgerEvent): { year: string; month: string } | null {
@@ -424,17 +405,13 @@ export default function FuelClient() {
   const [busyDeleteId, setBusyDeleteId] = useState<string | null>(null);
   const [storageDraft, setStorageDraft] = useState<StorageDraft>(emptyStorageDraft);
   const [pinDraft, setPinDraft] = useState('');
-  const [filterMode, setFilterMode] = useState<FilterMode>('all');
-  const [filterText, setFilterText] = useState('');
-  const [filterYear, setFilterYear] = useState('all');
-  const [filterMonth, setFilterMonth] = useState('all');
+  const [searchText, setSearchText] = useState('');
   const [reportStorageId, setReportStorageId] = useState('all');
   const [reportYear, setReportYear] = useState('all');
   const [reportMonth, setReportMonth] = useState('all');
   const [reportFormat, setReportFormat] = useState<ReportFormat>('pdf');
   const [reportStep, setReportStep] = useState<ReportStep>('format');
   const [openReportSelect, setOpenReportSelect] = useState<ReportSelectKey | null>(null);
-  const [openFilterSelect, setOpenFilterSelect] = useState<FilterSelectKey | null>(null);
 
   const selectedStorage = useMemo(
     () => storages.find((storage) => storage.id === selectedStorageId) ?? null,
@@ -442,36 +419,12 @@ export default function FuelClient() {
   );
 
   const visibleStorages = useMemo(
-    () => storages.filter((storage) => matchesFilter(storage, filterMode, filterText)),
-    [filterMode, filterText, storages],
+    () => storages.filter((storage) => matchesSearch(storage, searchText)),
+    [searchText, storages],
   );
 
   const yearOptions = useMemo(() => getYearOptions(recentEvents), [recentEvents]);
-  const filterMonthOptions = useMemo(() => getMonthOptions(recentEvents, filterYear), [filterYear, recentEvents]);
   const reportMonthOptions = useMemo(() => getMonthOptions(recentEvents, reportYear), [recentEvents, reportYear]);
-  const filterStatusOptions = useMemo<ReportSelectOption[]>(
-    () => [
-      { value: 'all', label: 'All storage' },
-      { value: 'low', label: 'Low storage' },
-      { value: 'empty', label: 'Empty storage' },
-      { value: 'full', label: 'Full storage' },
-    ],
-    [],
-  );
-  const filterYearOptions = useMemo<ReportSelectOption[]>(
-    () => [
-      { value: 'all', label: 'All years' },
-      ...yearOptions.map((year) => ({ value: year, label: year })),
-    ],
-    [yearOptions],
-  );
-  const filterMonthSelectOptions = useMemo<ReportSelectOption[]>(
-    () => [
-      { value: 'all', label: 'All months' },
-      ...filterMonthOptions.map((month) => ({ value: month, label: MONTH_LABELS[Number(month) - 1] })),
-    ],
-    [filterMonthOptions],
-  );
   const reportStorageOptions = useMemo<ReportSelectOption[]>(
     () => [
       { value: 'all', label: 'All storage units' },
@@ -524,19 +477,18 @@ export default function FuelClient() {
   }, []);
 
   useEffect(() => {
-    if (!openReportSelect && !openFilterSelect) return undefined;
+    if (!openReportSelect) return undefined;
 
     function handlePointerDown(event: MouseEvent) {
       const target = event.target as HTMLElement | null;
       if (!target?.closest('[data-report-select-root="true"]')) {
         setOpenReportSelect(null);
-        setOpenFilterSelect(null);
       }
     }
 
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, [openReportSelect, openFilterSelect]);
+  }, [openReportSelect]);
 
   function openCreateStorage() {
     setSelectedStorageId(null);
@@ -559,21 +511,13 @@ export default function FuelClient() {
     setModalMode('pin');
   }
 
-  function openFilterModal() {
-    setOpenReportSelect(null);
-    setOpenFilterSelect(null);
-    setNotice(null);
-    setModalMode('filter');
-  }
-
   function openReportModal() {
-    setReportYear(filterYear);
-    setReportMonth(filterYear === 'all' ? 'all' : filterMonth);
+    setReportYear('all');
+    setReportMonth('all');
     setReportStorageId('all');
     setReportFormat('pdf');
     setReportStep('format');
     setOpenReportSelect(null);
-    setOpenFilterSelect(null);
     setNotice(null);
     setModalMode('report');
   }
@@ -587,15 +531,10 @@ export default function FuelClient() {
     setReportStep('format');
     setReportFormat('pdf');
     setOpenReportSelect(null);
-    setOpenFilterSelect(null);
   }
 
-  function clearFilters() {
-    setFilterMode('all');
-    setFilterText('');
-    setFilterYear('all');
-    setFilterMonth('all');
-    setOpenFilterSelect(null);
+  function clearSearch() {
+    setSearchText('');
   }
 
   async function applyLedgerResponse(response: Response) {
@@ -704,26 +643,6 @@ export default function FuelClient() {
     setOpenReportSelect((current) => (current === selectKey ? null : selectKey));
   }
 
-  function toggleFilterSelect(selectKey: FilterSelectKey) {
-    setOpenFilterSelect((current) => (current === selectKey ? null : selectKey));
-  }
-
-  function selectFilterStatus(value: string) {
-    setFilterMode(value as FilterMode);
-    setOpenFilterSelect(null);
-  }
-
-  function selectFilterYear(value: string) {
-    setFilterYear(value);
-    setFilterMonth('all');
-    setOpenFilterSelect(null);
-  }
-
-  function selectFilterMonth(value: string) {
-    setFilterMonth(value);
-    setOpenFilterSelect(null);
-  }
-
   function selectReportStorage(value: string) {
     setReportStorageId(value);
     setOpenReportSelect(null);
@@ -761,7 +680,7 @@ export default function FuelClient() {
     closeModal();
   }
 
-  const hasActiveFilters = filterMode !== 'all' || filterText.trim().length > 0 || filterYear !== 'all' || filterMonth !== 'all';
+  const hasActiveSearch = searchText.trim().length > 0;
 
   return (
     <>
@@ -778,30 +697,39 @@ export default function FuelClient() {
               </div>
 
               <div className={styles.topActions}>
-                <button
-                  type="button"
-                  className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topAddButton}`}
-                  onClick={openCreateStorage}
-                >
-                  <PlusIcon className={styles.buttonIcon} />
-                  <span>Add Storage Tank</span>
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topReportButton}`}
-                  onClick={openReportModal}
-                >
-                  <DownloadIcon className={styles.buttonIcon} />
-                  <span>Fuel Report</span>
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topFilterButton}`}
-                  onClick={openFilterModal}
-                >
-                  <FilterIcon className={styles.buttonIcon} />
-                  <span>{hasActiveFilters ? 'Filter Active' : 'Filter'}</span>
-                </button>
+                <div className={styles.searchWrap}>
+                  <input
+                    type="search"
+                    className={styles.searchInput}
+                    value={searchText}
+                    onChange={(event) => setSearchText(event.target.value)}
+                    placeholder="Search"
+                    aria-label="Search fuel storage tanks"
+                  />
+                  {hasActiveSearch ? (
+                    <button type="button" className={styles.clearSearchButton} onClick={clearSearch} aria-label="Clear search">
+                      ×
+                    </button>
+                  ) : null}
+                </div>
+
+                <div className={styles.topActionButtons}>
+                  <button
+                    type="button"
+                    className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topAddButton}`}
+                    onClick={openCreateStorage}
+                  >
+                    <PlusIcon className={styles.buttonIcon} />
+                    <span>Add Storage Tank</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topReportButton}`}
+                    onClick={openReportModal}
+                  >
+                    <span>Fuel Report</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -818,9 +746,9 @@ export default function FuelClient() {
 
             {!isLoading && storages.length > 0 && visibleStorages.length === 0 ? (
               <div className={styles.emptyState}>
-                <strong>No storage matches the filter.</strong>
-                <button type="button" className={styles.secondaryButton} onClick={clearFilters}>
-                  Clear Filter
+                <strong>No storage matches the search.</strong>
+                <button type="button" className={styles.secondaryButton} onClick={clearSearch}>
+                  Clear Search
                 </button>
               </div>
             ) : null}
@@ -899,14 +827,6 @@ export default function FuelClient() {
           <button type="button" className={styles.mobileQuickButton} onClick={openReportModal}>
             <DownloadIcon className={styles.buttonIcon} />
             <span>Reports</span>
-          </button>
-          <button
-            type="button"
-            className={`${styles.mobileQuickButton} ${hasActiveFilters ? styles.mobileQuickButtonActive : ''}`}
-            onClick={openFilterModal}
-          >
-            <FilterIcon className={styles.buttonIcon} />
-            <span>{hasActiveFilters ? 'Filtered' : 'Filter'}</span>
           </button>
         </nav>
       </main>
@@ -994,66 +914,6 @@ export default function FuelClient() {
               <button type="submit" className={styles.fuelModalPrimaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save PIN'}</button>
             </div>
           </form>
-        </div>
-      ) : null}
-
-      {modalMode === 'filter' ? (
-        <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-labelledby="fuel-filter-title">
-          <div className={`${styles.modalCard} ${styles.exportModal} ${styles.filterModal}`}>
-            <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
-              <div className={styles.modalHeaderText}>
-                <h2 id="fuel-filter-title">Filter fuel view</h2>
-              </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close fuel filters">×</button>
-            </div>
-
-            <div className={styles.exportModalScrollBody}>
-              <div className={styles.exportModalBody}>
-                <div className={`${styles.reportFilterBox} ${styles.fuelViewFilterBox}`}>
-                  <label className={styles.filterSearchField}>
-                    <span>Storage search</span>
-                    <input value={filterText} onChange={(event) => setFilterText(event.target.value)} placeholder="Main tank, diesel, Farm 1..." />
-                  </label>
-
-                  <ReportSelect
-                    label="Stock status"
-                    value={filterMode}
-                    options={filterStatusOptions}
-                    isOpen={openFilterSelect === 'status'}
-                    onToggle={() => toggleFilterSelect('status')}
-                    onChange={selectFilterStatus}
-                  />
-
-                  <ReportSelect
-                    label="Year available"
-                    value={filterYear}
-                    options={filterYearOptions}
-                    isOpen={openFilterSelect === 'year'}
-                    onToggle={() => toggleFilterSelect('year')}
-                    onChange={selectFilterYear}
-                  />
-
-                  <ReportSelect
-                    label="Month available"
-                    value={filterMonth}
-                    options={filterMonthSelectOptions}
-                    isOpen={openFilterSelect === 'month'}
-                    disabled={filterYear === 'all'}
-                    onToggle={() => toggleFilterSelect('month')}
-                    onChange={selectFilterMonth}
-                  />
-                </div>
-
-                <div className={`${styles.modalActions} ${styles.exportActions} ${styles.filterActions}`}>
-                  <button type="button" className={`${styles.secondaryButton} ${styles.exportSecondaryButton}`} onClick={clearFilters}>Clear filters</button>
-                  <button type="button" className={`${styles.primaryButton} ${styles.exportPrimaryButton} ${styles.filterPrimaryButton}`} onClick={closeModal}>
-                    <FilterIcon className={styles.buttonIcon} />
-                    <span>Filter</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       ) : null}
 
