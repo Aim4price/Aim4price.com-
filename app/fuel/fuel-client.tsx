@@ -9,6 +9,7 @@ type ModalMode = 'create-storage' | 'edit-storage' | 'pin' | 'filter' | 'report'
 type FilterMode = 'all' | 'low' | 'empty' | 'full';
 type ReportFormat = 'pdf' | 'xlsx';
 type ReportStep = 'format' | 'filters';
+type ReportSelectKey = 'storage' | 'year' | 'month';
 
 type FuelLedgerStorage = {
   id: string;
@@ -72,6 +73,21 @@ type StorageDraft = {
 type Notice = {
   tone: 'success' | 'error';
   message: string;
+};
+
+type ReportSelectOption = {
+  value: string;
+  label: string;
+};
+
+type ReportSelectProps = {
+  label: string;
+  value: string;
+  options: ReportSelectOption[];
+  isOpen: boolean;
+  disabled?: boolean;
+  onToggle: () => void;
+  onChange: (value: string) => void;
 };
 
 const emptyStorageDraft: StorageDraft = {
@@ -176,6 +192,14 @@ function ChevronRightIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="m6 9 6 6 6-6" />
+    </IconBase>
+  );
+}
+
 function PdfIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -216,6 +240,37 @@ function ExportGraphic({ src, alt, icon }: ExportGraphicProps) {
   }
 
   return <img src={src} alt={alt} className={styles.exportGraphicImage} onError={() => setHasError(true)} />;
+}
+
+function ReportSelect({ label, value, options, isOpen, disabled = false, onToggle, onChange }: ReportSelectProps) {
+  const selectedOption = options.find((option) => option.value === value) ?? options[0];
+
+  return (
+    <div className={`${styles.reportSelectField} ${isOpen ? styles.reportSelectFieldOpen : ''} ${disabled ? styles.reportSelectFieldDisabled : ''}`} data-report-select-root="true">
+      <span className={styles.reportSelectLabel}>{label}</span>
+      <button type="button" className={styles.reportSelectButton} onClick={onToggle} disabled={disabled} aria-haspopup="listbox" aria-expanded={isOpen}>
+        <span>{selectedOption?.label ?? 'Select option'}</span>
+        <ChevronDownIcon className={styles.reportSelectChevron} />
+      </button>
+
+      {isOpen && !disabled ? (
+        <div className={styles.reportSelectMenu} role="listbox" aria-label={label}>
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`${styles.reportSelectOption} ${option.value === value ? styles.reportSelectOptionActive : ''}`}
+              onClick={() => onChange(option.value)}
+              role="option"
+              aria-selected={option.value === value}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function PlusIcon(props: SVGProps<SVGSVGElement>) {
@@ -377,6 +432,7 @@ export default function FuelClient() {
   const [reportMonth, setReportMonth] = useState('all');
   const [reportFormat, setReportFormat] = useState<ReportFormat>('pdf');
   const [reportStep, setReportStep] = useState<ReportStep>('format');
+  const [openReportSelect, setOpenReportSelect] = useState<ReportSelectKey | null>(null);
 
   const selectedStorage = useMemo(
     () => storages.find((storage) => storage.id === selectedStorageId) ?? null,
@@ -391,6 +447,27 @@ export default function FuelClient() {
   const yearOptions = useMemo(() => getYearOptions(recentEvents), [recentEvents]);
   const filterMonthOptions = useMemo(() => getMonthOptions(recentEvents, filterYear), [filterYear, recentEvents]);
   const reportMonthOptions = useMemo(() => getMonthOptions(recentEvents, reportYear), [recentEvents, reportYear]);
+  const reportStorageOptions = useMemo<ReportSelectOption[]>(
+    () => [
+      { value: 'all', label: 'All storage units' },
+      ...storages.map((storage) => ({ value: storage.id, label: storage.name })),
+    ],
+    [storages],
+  );
+  const reportYearOptions = useMemo<ReportSelectOption[]>(
+    () => [
+      { value: 'all', label: 'All years' },
+      ...yearOptions.map((year) => ({ value: year, label: year })),
+    ],
+    [yearOptions],
+  );
+  const reportMonthSelectOptions = useMemo<ReportSelectOption[]>(
+    () => [
+      { value: 'all', label: 'All months' },
+      ...reportMonthOptions.map((month) => ({ value: month, label: MONTH_LABELS[Number(month) - 1] })),
+    ],
+    [reportMonthOptions],
+  );
 
 
   async function loadLedger(options: { silent?: boolean } = {}) {
@@ -420,6 +497,20 @@ export default function FuelClient() {
   useEffect(() => {
     void loadLedger();
   }, []);
+
+  useEffect(() => {
+    if (!openReportSelect) return undefined;
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest('[data-report-select-root="true"]')) {
+        setOpenReportSelect(null);
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [openReportSelect]);
 
   function openCreateStorage() {
     setSelectedStorageId(null);
@@ -453,6 +544,7 @@ export default function FuelClient() {
     setReportStorageId('all');
     setReportFormat('pdf');
     setReportStep('format');
+    setOpenReportSelect(null);
     setNotice(null);
     setModalMode('report');
   }
@@ -465,6 +557,7 @@ export default function FuelClient() {
     setPinDraft('');
     setReportStep('format');
     setReportFormat('pdf');
+    setOpenReportSelect(null);
   }
 
   function clearFilters() {
@@ -567,11 +660,33 @@ export default function FuelClient() {
   }
 
   function handleReportNext() {
+    setOpenReportSelect(null);
     setReportStep('filters');
   }
 
   function handleReportBack() {
+    setOpenReportSelect(null);
     setReportStep('format');
+  }
+
+  function toggleReportSelect(selectKey: ReportSelectKey) {
+    setOpenReportSelect((current) => (current === selectKey ? null : selectKey));
+  }
+
+  function selectReportStorage(value: string) {
+    setReportStorageId(value);
+    setOpenReportSelect(null);
+  }
+
+  function selectReportYear(value: string) {
+    setReportYear(value);
+    setReportMonth('all');
+    setOpenReportSelect(null);
+  }
+
+  function selectReportMonth(value: string) {
+    setReportMonth(value);
+    setOpenReportSelect(null);
   }
 
   function handleDownloadSelectedReport() {
@@ -893,7 +1008,7 @@ export default function FuelClient() {
           <div className={`${styles.modalCard} ${styles.exportModal}`}>
             <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h2 id="fuel-report-title">{reportStep === 'format' ? 'Fuel report' : 'Fuel report filters'}</h2>
+                <h2 id="fuel-report-title">Export fuel report</h2>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close fuel report options">×</button>
             </div>
@@ -937,8 +1052,8 @@ export default function FuelClient() {
                     </div>
 
                     <div className={`${styles.modalActions} ${styles.exportActions}`}>
-                      <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
-                      <button type="button" className={styles.primaryButton} onClick={handleReportNext}>
+                      <button type="button" className={`${styles.secondaryButton} ${styles.exportSecondaryButton}`} onClick={closeModal}>Cancel</button>
+                      <button type="button" className={`${styles.primaryButton} ${styles.exportPrimaryButton}`} onClick={handleReportNext}>
                         <ChevronRightIcon className={styles.buttonIcon} />
                         <span>Next</span>
                       </button>
@@ -947,42 +1062,38 @@ export default function FuelClient() {
                 ) : (
                   <>
                     <div className={styles.reportFilterBox}>
-                      <label>
-                        Storage unit
-                        <select value={reportStorageId} onChange={(event) => setReportStorageId(event.target.value)}>
-                          <option value="all">All storage units</option>
-                          {storages.map((storage) => <option key={storage.id} value={storage.id}>{storage.name}</option>)}
-                        </select>
-                      </label>
+                      <ReportSelect
+                        label="Storage unit"
+                        value={reportStorageId}
+                        options={reportStorageOptions}
+                        isOpen={openReportSelect === 'storage'}
+                        onToggle={() => toggleReportSelect('storage')}
+                        onChange={selectReportStorage}
+                      />
 
-                      <label>
-                        Year
-                        <select
-                          value={reportYear}
-                          onChange={(event) => {
-                            setReportYear(event.target.value);
-                            setReportMonth('all');
-                          }}
-                        >
-                          <option value="all">All years</option>
-                          {yearOptions.map((year) => <option key={year} value={year}>{year}</option>)}
-                        </select>
-                      </label>
+                      <ReportSelect
+                        label="Year"
+                        value={reportYear}
+                        options={reportYearOptions}
+                        isOpen={openReportSelect === 'year'}
+                        onToggle={() => toggleReportSelect('year')}
+                        onChange={selectReportYear}
+                      />
 
-                      <label>
-                        Month
-                        <select value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} disabled={reportYear === 'all'}>
-                          <option value="all">All months</option>
-                          {reportMonthOptions.map((month) => (
-                            <option key={month} value={month}>{MONTH_LABELS[Number(month) - 1]}</option>
-                          ))}
-                        </select>
-                      </label>
+                      <ReportSelect
+                        label="Month"
+                        value={reportMonth}
+                        options={reportMonthSelectOptions}
+                        isOpen={openReportSelect === 'month'}
+                        disabled={reportYear === 'all'}
+                        onToggle={() => toggleReportSelect('month')}
+                        onChange={selectReportMonth}
+                      />
                     </div>
 
                     <div className={`${styles.modalActions} ${styles.exportActions}`}>
-                      <button type="button" className={styles.secondaryButton} onClick={handleReportBack}>Back</button>
-                      <button type="button" className={styles.primaryButton} onClick={handleDownloadSelectedReport}>
+                      <button type="button" className={`${styles.secondaryButton} ${styles.exportSecondaryButton}`} onClick={handleReportBack}>Back</button>
+                      <button type="button" className={`${styles.primaryButton} ${styles.exportPrimaryButton}`} onClick={handleDownloadSelectedReport}>
                         <DownloadIcon className={styles.buttonIcon} />
                         <span>{reportFormat === 'pdf' ? 'Download PDF' : 'Download XLSX'}</span>
                       </button>
