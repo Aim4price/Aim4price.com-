@@ -84,15 +84,16 @@
 }
 
 .categoryButton {
+  position: relative;
   appearance: none;
   width: 100%;
   min-width: 0;
-  min-height: clamp(3.45rem, 4.2vw, 3.9rem);
+  min-height: clamp(3.9rem, 4.9vw, 4.8rem);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.58rem;
-  padding-inline: clamp(1rem, 1.8vw, 1.45rem);
+  padding: clamp(0.9rem, 1.35vw, 1.15rem) clamp(1rem, 1.8vw, 1.45rem) clamp(1.25rem, 1.85vw, 1.55rem);
   border-radius: clamp(1rem, 1.45vw, 1.22rem);
   border: 1.5px solid transparent;
   font: inherit;
@@ -129,15 +130,18 @@
 }
 
 .categoryCount {
+  position: absolute;
+  right: clamp(0.65rem, 1vw, 0.92rem);
+  bottom: clamp(0.42rem, 0.72vw, 0.62rem);
   display: inline-flex;
   align-items: center;
-  min-height: 1.55rem;
-  padding: 0 0.58rem;
+  min-height: 1.34rem;
+  padding: 0 0.52rem;
   border-radius: 999px;
   color: inherit;
-  background: rgba(255, 255, 255, 0.58);
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  font-size: 0.78rem;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  font-size: 0.7rem;
   font-weight: 900;
   line-height: 1;
 }
@@ -1049,8 +1053,10 @@ a.detailRow:hover {
   }
 
   .categoryButton {
-    min-height: 3.55rem;
-    justify-content: space-between;
+    min-height: 4.15rem;
+    justify-content: center;
+    padding-right: clamp(1rem, 1.8vw, 1.45rem);
+    padding-bottom: 1.35rem;
   }
 
   .companySummary {
