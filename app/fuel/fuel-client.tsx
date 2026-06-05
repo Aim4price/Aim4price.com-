@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type FormEvent, type SVGProps } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode, type SVGProps } from 'react';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
@@ -8,6 +8,7 @@ type FuelStorageStatus = 'active' | 'archived';
 type ModalMode = 'create-storage' | 'edit-storage' | 'pin' | 'filter' | 'report' | null;
 type FilterMode = 'all' | 'low' | 'empty' | 'full';
 type ReportFormat = 'pdf' | 'xlsx';
+type ReportStep = 'format' | 'filters';
 
 type FuelLedgerStorage = {
   id: string;
@@ -167,6 +168,56 @@ function DownloadIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function ChevronRightIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="m9 18 6-6-6-6" />
+    </IconBase>
+  );
+}
+
+function PdfIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M6 2h8l4 4v16H6z" />
+      <path d="M14 2v5h5" />
+      <path d="M8 13h1.5a1.5 1.5 0 0 0 0-3H8v6" />
+      <path d="M12.5 16v-6h1.2a2.3 2.3 0 0 1 0 6z" />
+      <path d="M17 10h3" />
+      <path d="M17 13h2" />
+      <path d="M17 10v6" />
+    </IconBase>
+  );
+}
+
+function SpreadsheetIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 4h16v16H4z" />
+      <path d="M4 9h16" />
+      <path d="M4 14h16" />
+      <path d="M9 4v16" />
+      <path d="M14 4v16" />
+    </IconBase>
+  );
+}
+
+type ExportGraphicProps = {
+  src: string;
+  alt: string;
+  icon: ReactNode;
+};
+
+function ExportGraphic({ src, alt, icon }: ExportGraphicProps) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return <span className={styles.exportGraphicFallback}>{icon}</span>;
+  }
+
+  return <img src={src} alt={alt} className={styles.exportGraphicImage} onError={() => setHasError(true)} />;
+}
+
 function PlusIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -324,6 +375,8 @@ export default function FuelClient() {
   const [reportStorageId, setReportStorageId] = useState('all');
   const [reportYear, setReportYear] = useState('all');
   const [reportMonth, setReportMonth] = useState('all');
+  const [reportFormat, setReportFormat] = useState<ReportFormat>('pdf');
+  const [reportStep, setReportStep] = useState<ReportStep>('format');
 
   const selectedStorage = useMemo(
     () => storages.find((storage) => storage.id === selectedStorageId) ?? null,
@@ -398,6 +451,8 @@ export default function FuelClient() {
     setReportYear(filterYear);
     setReportMonth(filterYear === 'all' ? 'all' : filterMonth);
     setReportStorageId('all');
+    setReportFormat('pdf');
+    setReportStep('format');
     setNotice(null);
     setModalMode('report');
   }
@@ -408,6 +463,8 @@ export default function FuelClient() {
     setSelectedStorageId(null);
     setStorageDraft(emptyStorageDraft);
     setPinDraft('');
+    setReportStep('format');
+    setReportFormat('pdf');
   }
 
   function clearFilters() {
@@ -507,6 +564,23 @@ export default function FuelClient() {
     const normalizedMonth = reportYear === 'all' ? 'all' : reportMonth;
     window.open(buildReportUrl(reportStorageId, reportYear, normalizedMonth, 'pdf'), '_blank', 'noopener,noreferrer');
     closeModal();
+  }
+
+  function handleReportNext() {
+    setReportStep('filters');
+  }
+
+  function handleReportBack() {
+    setReportStep('format');
+  }
+
+  function handleDownloadSelectedReport() {
+    if (reportFormat === 'xlsx') {
+      handleDownloadXlsxReport();
+      return;
+    }
+
+    handleOpenReport();
   }
 
   function handleDownloadXlsxReport() {
@@ -741,7 +815,6 @@ export default function FuelClient() {
           <form className={styles.modalCardSmall} onSubmit={handlePinSubmit}>
             <div className={styles.modalHeader}>
               <div>
-                <span className={styles.modalEyebrow}>Change PIN</span>
                 <h2>{selectedStorage.name}</h2>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal}>×</button>
@@ -816,52 +889,107 @@ export default function FuelClient() {
       ) : null}
 
       {modalMode === 'report' ? (
-        <div className={styles.modalOverlay} role="dialog" aria-modal="true">
-          <div className={styles.modalCardSmall}>
-            <div className={styles.modalHeader}>
-              <div>
-                <span className={styles.modalEyebrow}>Fuel Report</span>
-                <h2>Choose report filters</h2>
+        <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-labelledby="fuel-report-title">
+          <div className={`${styles.modalCard} ${styles.exportModal}`}>
+            <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h2 id="fuel-report-title">{reportStep === 'format' ? 'Fuel report' : 'Fuel report filters'}</h2>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal}>×</button>
+              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close fuel report options">×</button>
             </div>
 
-            <div className={styles.formGridSingle}>
-              <label>
-                Storage unit
-                <select value={reportStorageId} onChange={(event) => setReportStorageId(event.target.value)}>
-                  <option value="all">All storage units</option>
-                  {storages.map((storage) => <option key={storage.id} value={storage.id}>{storage.name}</option>)}
-                </select>
-              </label>
-              <label>
-                Year available
-                <select
-                  value={reportYear}
-                  onChange={(event) => {
-                    setReportYear(event.target.value);
-                    setReportMonth('all');
-                  }}
-                >
-                  <option value="all">All years</option>
-                  {yearOptions.map((year) => <option key={year} value={year}>{year}</option>)}
-                </select>
-              </label>
-              <label>
-                Month available
-                <select value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} disabled={reportYear === 'all'}>
-                  <option value="all">All months</option>
-                  {reportMonthOptions.map((month) => (
-                    <option key={month} value={month}>{MONTH_LABELS[Number(month) - 1]}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
+            <div className={styles.exportModalScrollBody}>
+              <div className={styles.exportModalBody}>
+                {reportStep === 'format' ? (
+                  <>
+                    <div className={styles.exportChoices}>
+                      <button
+                        type="button"
+                        className={`${styles.exportOption} ${reportFormat === 'pdf' ? styles.exportOptionActive : ''}`}
+                        onClick={() => setReportFormat('pdf')}
+                        aria-pressed={reportFormat === 'pdf'}
+                      >
+                        <span className={styles.exportGraphic}>
+                          <ExportGraphic src="/brand/pdf.png" alt="PDF fuel report" icon={<PdfIcon className={styles.exportOptionIcon} />} />
+                        </span>
 
-            <div className={styles.modalActions}>
-              <button type="button" className={`${styles.secondaryButton} ${styles.modalCancelAction}`} onClick={closeModal}>Cancel</button>
-              <button type="button" className={`${styles.secondaryButton} ${styles.modalSubmitButton} ${styles.reportExportAction}`} onClick={handleDownloadXlsxReport}>Download XLSX</button>
-              <button type="button" className={`${styles.primaryButton} ${styles.modalSubmitButton} ${styles.modalPrimaryAction}`} onClick={handleOpenReport}>Print / Save PDF</button>
+                        <span className={styles.exportOptionTitleBlock}>
+                          <strong>PDF report</strong>
+                          <small>Download a clean printable Fuel Ledger report.</small>
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`${styles.exportOption} ${reportFormat === 'xlsx' ? styles.exportOptionActive : ''}`}
+                        onClick={() => setReportFormat('xlsx')}
+                        aria-pressed={reportFormat === 'xlsx'}
+                      >
+                        <span className={styles.exportGraphic}>
+                          <ExportGraphic src="/brand/sheet.png" alt="Fuel spreadsheet export" icon={<SpreadsheetIcon className={styles.exportOptionIcon} />} />
+                        </span>
+
+                        <span className={styles.exportOptionTitleBlock}>
+                          <strong>XLSX workbook</strong>
+                          <small>Download the filtered fuel ledger rows in Excel format.</small>
+                        </span>
+                      </button>
+                    </div>
+
+                    <div className={`${styles.modalActions} ${styles.exportActions}`}>
+                      <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
+                      <button type="button" className={styles.primaryButton} onClick={handleReportNext}>
+                        <ChevronRightIcon className={styles.buttonIcon} />
+                        <span>Next</span>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className={styles.reportFilterBox}>
+                      <label>
+                        Storage unit
+                        <select value={reportStorageId} onChange={(event) => setReportStorageId(event.target.value)}>
+                          <option value="all">All storage units</option>
+                          {storages.map((storage) => <option key={storage.id} value={storage.id}>{storage.name}</option>)}
+                        </select>
+                      </label>
+
+                      <label>
+                        Year
+                        <select
+                          value={reportYear}
+                          onChange={(event) => {
+                            setReportYear(event.target.value);
+                            setReportMonth('all');
+                          }}
+                        >
+                          <option value="all">All years</option>
+                          {yearOptions.map((year) => <option key={year} value={year}>{year}</option>)}
+                        </select>
+                      </label>
+
+                      <label>
+                        Month
+                        <select value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} disabled={reportYear === 'all'}>
+                          <option value="all">All months</option>
+                          {reportMonthOptions.map((month) => (
+                            <option key={month} value={month}>{MONTH_LABELS[Number(month) - 1]}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <div className={`${styles.modalActions} ${styles.exportActions}`}>
+                      <button type="button" className={styles.secondaryButton} onClick={handleReportBack}>Back</button>
+                      <button type="button" className={styles.primaryButton} onClick={handleDownloadSelectedReport}>
+                        <DownloadIcon className={styles.buttonIcon} />
+                        <span>{reportFormat === 'pdf' ? 'Download PDF' : 'Download XLSX'}</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
