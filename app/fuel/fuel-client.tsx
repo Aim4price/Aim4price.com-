@@ -727,7 +727,8 @@ export default function FuelClient() {
                     className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topReportButton}`}
                     onClick={openReportModal}
                   >
-                    <span>Fuel Report</span>
+                    <DownloadIcon className={styles.buttonIcon} />
+                    <span>Download</span>
                   </button>
                 </div>
               </div>

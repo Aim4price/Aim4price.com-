@@ -141,13 +141,11 @@
   justify-content: stretch;
   gap: clamp(0.7rem, 1vw, 0.95rem);
   margin: 0;
-  padding: clamp(0.62rem, 0.9vw, 0.82rem);
-  border: 1px solid rgba(218, 226, 233, 0.92);
-  border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow:
-    0 10px 24px rgba(16, 36, 40, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .topActionButtons {
@@ -1410,8 +1408,8 @@
 
   .topActions {
     gap: 0.55rem;
-    padding: 0.55rem;
-    border-radius: 1rem;
+    padding: 0;
+    border-radius: 0;
   }
 
   .topActionButtons {
