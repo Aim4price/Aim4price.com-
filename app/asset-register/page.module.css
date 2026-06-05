@@ -19902,26 +19902,40 @@
 }
 
 .assetQuoteSelectedMediaTile {
+  --asset-quote-selected-logo-padding: clamp(1.15rem, 2vw, 1.55rem);
   position: relative !important;
-  display: grid !important;
-  place-items: center !important;
-  min-height: 12.2rem !important;
-  aspect-ratio: 1.85 / 1 !important;
-  overflow: hidden !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-height: 14.75rem !important;
+  height: clamp(14.75rem, 22vw, 16.25rem) !important;
+  padding: var(--asset-quote-selected-logo-padding) !important;
+  aspect-ratio: auto !important;
+  overflow: visible !important;
   background: #f8fbf9 !important;
   border-right: 0 !important;
   border-bottom: 1px solid rgba(204, 219, 232, 0.84) !important;
 }
 
 .assetQuoteSelectedMediaTile img {
-  width: 100% !important;
-  height: 100% !important;
+  flex: 0 1 auto !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 82% !important;
+  max-height: calc(100% - 0.75rem) !important;
   display: block !important;
-  object-fit: cover !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  padding: 0 !important;
+  background: transparent !important;
+  margin: auto !important;
 }
 
 .assetQuoteSelectedLogoTile {
-  padding: clamp(1rem, 2vw, 1.4rem) !important;
   background: #ffffff !important;
 }
 
@@ -19929,7 +19943,7 @@
   width: auto !important;
   height: auto !important;
   max-width: 82% !important;
-  max-height: 82% !important;
+  max-height: calc(100% - 0.75rem) !important;
   display: block !important;
   object-fit: contain !important;
   object-position: center center !important;
@@ -20059,7 +20073,9 @@
 
 @media (max-width: 620px) {
   .assetQuoteSelectedMediaTile {
-    min-height: 9.8rem !important;
+    min-height: 11.75rem !important;
+    height: clamp(11.75rem, 54vw, 14rem) !important;
+    padding: clamp(0.95rem, 4vw, 1.25rem) !important;
   }
 
   .assetQuoteSelectedContactRow {
