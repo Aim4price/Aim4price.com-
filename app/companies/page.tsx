@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { getAccountProfile } from '../../lib/account-profile';
 import { getServerSession } from '../../lib/auth-session';
 import CompaniesClient, { type CompanyTypeFilter } from './companies-client';
 
@@ -50,6 +51,12 @@ export default async function CompaniesPage({ searchParams }: CompaniesPageProps
 
   if (!session) {
     redirect('/auth#signup');
+  }
+
+  const profile = await getAccountProfile(session.user);
+
+  if (profile.accountType !== 'owner') {
+    redirect('/account');
   }
 
   return <CompaniesClient initialType={normalizeInitialType(searchParams?.type)} />;
