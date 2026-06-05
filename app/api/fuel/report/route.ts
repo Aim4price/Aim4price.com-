@@ -1,21 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
-import { getFuelStorageById, listFuelEventsForReport, listFuelLedger, type FuelLedgerEvent } from '../../../../lib/fuel-ledger';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
+import { getFuelStorageById, listFuelEventsForReport, listFuelLedger, type FuelLedgerEvent } from '../../../../lib/fuel-ledger';
+import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxPrimitiveCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+type ReportFormat = 'pdf' | 'xlsx';
+
 type KeyValueRow = {
   label: string;
   value: string;
-  valueHtml?: string;
 };
 
 type SummaryCard = {
   label: string;
   value: string;
   subtext: string;
+};
+
+type FuelReportOptions = {
+  title: string;
+  subtitle: string;
+  generatedAt: string;
+  ownerEmail: string;
+  logoUrl: string;
+  dateRangeLabel: string;
+  storageName: string;
+  storageCode: string;
+  storageFuelType: string;
+  totalIssued: number;
+  totalStockIn: number;
+  currentLitres: number;
+  storageCount: number;
+  eventCount: number;
+  events: FuelLedgerEvent[];
+  xlsxUrl: string;
 };
 
 function asText(value: unknown): string {
@@ -33,6 +54,10 @@ function escapeHtml(value: unknown): string {
 
 function normalizeSpaces(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function roundLitres(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 function formatDate(value = new Date()): string {
@@ -59,9 +84,34 @@ function formatDateTime(value?: string | null): string {
   }).format(date);
 }
 
+function formatExcelDateTime(value?: string | null): string {
+  if (!value) return '';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const parts = new Intl.DateTimeFormat('en-ZA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Africa/Johannesburg',
+  }).formatToParts(date);
+
+  const valueFor = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+  return `${valueFor('year')}-${valueFor('month')}-${valueFor('day')} ${valueFor('hour')}:${valueFor('minute')}`;
+}
+
 function formatLitres(value: number | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
   return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L`;
+}
+
+function formatNumber(value: number | null | undefined): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+  return value.toLocaleString('en-ZA', { maximumFractionDigits: 2 });
 }
 
 function formatPercent(value: number | null | undefined): string {
@@ -80,12 +130,33 @@ function formatLocation(event: FuelLedgerEvent): string {
   return '-';
 }
 
-function eventTypeLabel(value: string): string {
-  if (value === 'opening_balance') return 'Opening balance';
-  if (value === 'stock_in') return 'Stock in';
-  if (value === 'asset_issue') return 'Asset issue';
-  if (value === 'dip') return 'Manual dip';
+function eventActivityLabel(event: FuelLedgerEvent): string {
+  if (event.eventType === 'opening_balance') return 'Opening balance';
+  if (event.eventType === 'stock_in') return 'Tank filled';
+  if (event.eventType === 'asset_issue') return 'Asset filled';
+  if (event.eventType === 'dip') return 'Tank dip / stock count';
+  return 'Manual correction';
+}
+
+function eventDirectionLabel(event: FuelLedgerEvent): string {
+  if (event.eventType === 'opening_balance' || event.eventType === 'stock_in') return 'In';
+  if (event.eventType === 'asset_issue') return 'Out';
+  if (event.eventType === 'dip') return 'Level check';
+
+  if (typeof event.storageLevelBefore === 'number' && typeof event.storageLevelAfter === 'number') {
+    if (event.storageLevelAfter > event.storageLevelBefore) return 'In';
+    if (event.storageLevelAfter < event.storageLevelBefore) return 'Out';
+  }
+
   return 'Adjustment';
+}
+
+function eventTargetLabel(event: FuelLedgerEvent): string {
+  if (event.eventType === 'asset_issue') {
+    return event.assetTitle || event.assetPlateLabel || 'Asset';
+  }
+
+  return event.storageName || 'Fuel storage';
 }
 
 function slugifyFileSegment(value: string): string {
@@ -110,6 +181,10 @@ function parseReportMonth(value: string): number | null {
   return month >= 1 && month <= 12 ? month : null;
 }
 
+function parseReportFormat(value: string): ReportFormat {
+  return value.toLowerCase() === 'xlsx' ? 'xlsx' : 'pdf';
+}
+
 function buildReportDateRange(year: number | null, month: number | null): { fromIso?: string; toIso?: string; label: string } {
   if (!year) {
     return { label: 'All available entries' };
@@ -129,6 +204,12 @@ function buildReportDateRange(year: number | null, month: number | null): { from
   };
 }
 
+function buildFormatUrl(request: NextRequest, format: ReportFormat): string {
+  const url = new URL(request.url);
+  url.searchParams.set('format', format);
+  return `${url.pathname}${url.search}`;
+}
+
 function renderRows(rows: KeyValueRow[], emptyText = 'No details available.'): string {
   const visibleRows = rows.filter((row) => asText(row.label));
 
@@ -143,7 +224,7 @@ function renderRows(rows: KeyValueRow[], emptyText = 'No details available.'): s
           (row) => `
             <div class="assetReportRow">
               <span>${escapeHtml(row.label)}</span>
-              <strong>${row.valueHtml ?? escapeHtml(row.value || '-')}</strong>
+              <strong>${escapeHtml(row.value || '-')}</strong>
             </div>
           `,
         )
@@ -159,19 +240,18 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
 
   const rows = events
     .map((event) => {
-      const asset = event.assetTitle || event.assetPlateLabel || '-';
       const note = normalizeSpaces(event.note) || '-';
 
       return `
         <tr>
           <td>${escapeHtml(formatDateTime(event.createdAtIso))}</td>
-          <td>${escapeHtml(eventTypeLabel(event.eventType))}</td>
+          <td>${escapeHtml(eventActivityLabel(event))}</td>
+          <td><strong>${escapeHtml(eventDirectionLabel(event))}</strong></td>
           <td>${escapeHtml(event.storageName || '-')}</td>
-          <td>${escapeHtml(asset)}</td>
-          <td>${escapeHtml(formatLitres(event.litres))}</td>
+          <td>${escapeHtml(eventTargetLabel(event))}</td>
+          <td><strong>${escapeHtml(formatLitres(event.litres))}</strong></td>
           <td>${escapeHtml(formatLitres(event.storageLevelBefore))}</td>
-          <td>${escapeHtml(formatLitres(event.storageLevelAfter))}</td>
-          <td><strong>${escapeHtml(formatPercent(event.assetFuelPercentAfter))}</strong></td>
+          <td><strong>${escapeHtml(formatLitres(event.storageLevelAfter))}</strong></td>
           <td>${escapeHtml(event.operatorName || '-')}</td>
           <td>${escapeHtml(formatLocation(event))}</td>
           <td>${escapeHtml(note.length > 170 ? `${note.slice(0, 167)}...` : note)}</td>
@@ -185,14 +265,14 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
       <table class="assetReportTable assetReportFuelLedgerTable">
         <thead>
           <tr>
-            <th>Date / Time</th>
-            <th>Type</th>
-            <th>Storage</th>
-            <th>Asset</th>
-            <th>Litres</th>
-            <th>Before</th>
-            <th>After</th>
-            <th>Asset Fuel</th>
+            <th>Date</th>
+            <th>Activity</th>
+            <th>Direction</th>
+            <th>Storage Unit</th>
+            <th>Asset / Target</th>
+            <th>Litres filled up with</th>
+            <th>Tank before</th>
+            <th>Litres left in tank</th>
             <th>Operator</th>
             <th>Location</th>
             <th>Notes</th>
@@ -204,23 +284,7 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
   `;
 }
 
-function buildReportHtml(options: {
-  title: string;
-  subtitle: string;
-  generatedAt: string;
-  ownerEmail: string;
-  logoUrl: string;
-  dateRangeLabel: string;
-  storageName: string;
-  storageCode: string;
-  storageFuelType: string;
-  totalIssued: number;
-  totalStockIn: number;
-  currentLitres: number;
-  storageCount: number;
-  eventCount: number;
-  events: FuelLedgerEvent[];
-}): string {
+function buildReportHtml(options: FuelReportOptions): string {
   const cards: SummaryCard[] = [
     { label: 'Current Storage', value: formatLitres(options.currentLitres), subtext: 'Current ledger stock' },
     { label: 'Fuel Issued', value: formatLitres(options.totalIssued), subtext: 'Issued to assets' },
@@ -248,9 +312,6 @@ function buildReportHtml(options: {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escapeHtml(options.title)} - Aim4price Fuel Ledger</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <style>
       :root {
         color-scheme: light;
@@ -262,6 +323,7 @@ function buildReportHtml(options: {
         --soft-2: #fafbfc;
         --line: #d7dde5;
         --line-strong: #b9c2ce;
+        --green: #10382f;
       }
 
       * {
@@ -281,8 +343,8 @@ function buildReportHtml(options: {
         padding: 0;
         background: #eef1f4;
         color: var(--ink);
-        font-family: "Montserrat", "Segoe UI", Arial, Helvetica, sans-serif;
-        font-size: 9.4px;
+        font-family: Montserrat, "Segoe UI", Arial, Helvetica, sans-serif;
+        font-size: 9.2px;
         line-height: 1.35;
       }
 
@@ -306,12 +368,17 @@ function buildReportHtml(options: {
 
       .assetReportScreenActions {
         display: flex;
+        flex-wrap: wrap;
         gap: 10px;
+        justify-content: flex-end;
       }
 
       .assetReportButton {
         appearance: none;
         min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         padding: 0 16px;
         border: 1px solid #cfd5dd;
         border-radius: 999px;
@@ -321,11 +388,12 @@ function buildReportHtml(options: {
         font-size: 13px;
         font-weight: 700;
         cursor: pointer;
+        text-decoration: none;
       }
 
       .assetReportButtonPrimary {
-        border-color: var(--strong);
-        background: var(--strong);
+        border-color: var(--green);
+        background: var(--green);
         color: #ffffff;
       }
 
@@ -364,7 +432,7 @@ function buildReportHtml(options: {
       .assetReportLogo {
         display: block;
         width: 18mm;
-        height: auto;
+        max-height: 18mm;
         object-fit: contain;
       }
 
@@ -438,7 +506,7 @@ function buildReportHtml(options: {
       .assetReportTitle {
         margin: 0;
         color: var(--strong);
-        font-size: 21.5px;
+        font-size: 21px;
         line-height: 1.05;
         font-weight: 800;
         letter-spacing: -0.045em;
@@ -475,7 +543,7 @@ function buildReportHtml(options: {
         display: block;
         margin: 0;
         color: var(--strong);
-        font-size: 30px;
+        font-size: 29px;
         line-height: 0.96;
         font-weight: 800;
         letter-spacing: -0.055em;
@@ -546,7 +614,8 @@ function buildReportHtml(options: {
         break-inside: avoid;
       }
 
-      .assetReportSection {
+      .assetReportSection,
+      .assetReportSideCard {
         padding: 10px 11px 11px;
         border: 1px solid var(--line-strong);
         background: #ffffff;
@@ -570,6 +639,7 @@ function buildReportHtml(options: {
       .assetReportRow {
         display: grid;
         grid-template-columns: 34mm minmax(0, 1fr);
+        gap: 8px;
         min-height: 20px;
         align-items: center;
         border-bottom: 1px solid var(--line);
@@ -600,12 +670,6 @@ function buildReportHtml(options: {
       .assetReportSide {
         display: grid;
         gap: 10px;
-      }
-
-      .assetReportSideCard {
-        padding: 10px 10px 9px;
-        border: 1px solid var(--line-strong);
-        background: #ffffff;
       }
 
       .assetReportWideSection {
@@ -667,8 +731,8 @@ function buildReportHtml(options: {
         padding: 6px 5px 6px 0;
         border-bottom: 1px solid var(--line);
         color: #38404c;
-        font-size: 7.25px;
-        line-height: 1.35;
+        font-size: 6.8px;
+        line-height: 1.34;
         text-align: left;
         vertical-align: top;
         overflow-wrap: anywhere;
@@ -677,8 +741,8 @@ function buildReportHtml(options: {
 
       .assetReportTable th {
         color: var(--strong);
-        font-size: 6.6px;
-        line-height: 1.2;
+        font-size: 6.25px;
+        line-height: 1.15;
         font-weight: 800;
         letter-spacing: 0.04em;
         text-transform: uppercase;
@@ -690,25 +754,25 @@ function buildReportHtml(options: {
       }
 
       .assetReportFuelLedgerTable th:nth-child(1),
-      .assetReportFuelLedgerTable td:nth-child(1) { width: 23mm; }
+      .assetReportFuelLedgerTable td:nth-child(1) { width: 22mm; }
       .assetReportFuelLedgerTable th:nth-child(2),
-      .assetReportFuelLedgerTable td:nth-child(2) { width: 18mm; }
+      .assetReportFuelLedgerTable td:nth-child(2) { width: 22mm; }
       .assetReportFuelLedgerTable th:nth-child(3),
-      .assetReportFuelLedgerTable td:nth-child(3) { width: 24mm; }
+      .assetReportFuelLedgerTable td:nth-child(3) { width: 16mm; }
       .assetReportFuelLedgerTable th:nth-child(4),
-      .assetReportFuelLedgerTable td:nth-child(4) { width: 26mm; }
+      .assetReportFuelLedgerTable td:nth-child(4) { width: 24mm; }
       .assetReportFuelLedgerTable th:nth-child(5),
-      .assetReportFuelLedgerTable td:nth-child(5),
+      .assetReportFuelLedgerTable td:nth-child(5) { width: 28mm; }
       .assetReportFuelLedgerTable th:nth-child(6),
       .assetReportFuelLedgerTable td:nth-child(6),
       .assetReportFuelLedgerTable th:nth-child(7),
       .assetReportFuelLedgerTable td:nth-child(7),
       .assetReportFuelLedgerTable th:nth-child(8),
-      .assetReportFuelLedgerTable td:nth-child(8) { width: 14mm; }
+      .assetReportFuelLedgerTable td:nth-child(8) { width: 16mm; }
       .assetReportFuelLedgerTable th:nth-child(9),
-      .assetReportFuelLedgerTable td:nth-child(9) { width: 23mm; }
+      .assetReportFuelLedgerTable td:nth-child(9) { width: 22mm; }
       .assetReportFuelLedgerTable th:nth-child(10),
-      .assetReportFuelLedgerTable td:nth-child(10) { width: 34mm; }
+      .assetReportFuelLedgerTable td:nth-child(10) { width: 30mm; }
 
       .assetReportFooter {
         display: grid;
@@ -743,8 +807,19 @@ function buildReportHtml(options: {
       }
 
       @media screen and (max-width: 760px) {
+        .assetReportScreenBar,
+        .assetReportScreenActions {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .assetReportButton {
+          width: 100%;
+        }
+
         .assetReportPage {
-          padding: 24px;
+          padding: 20px;
+          margin: 0;
         }
 
         .assetReportHeader,
@@ -794,9 +869,10 @@ function buildReportHtml(options: {
   </head>
   <body>
     <div class="assetReportScreenBar">
-      <div class="assetReportScreenText">Choose <strong>Save as PDF</strong> in the print dialog to download this fuel ledger report.</div>
+      <div class="assetReportScreenText">Use <strong>Print / Save PDF</strong> for the PDF, or download the filtered XLSX workbook with Excel filters.</div>
       <div class="assetReportScreenActions">
         <button type="button" class="assetReportButton" onclick="window.close()">Close</button>
+        <a class="assetReportButton" href="${escapeHtml(options.xlsxUrl)}">Download Excel</a>
         <button type="button" class="assetReportButton assetReportButtonPrimary" onclick="window.print()">Print / Save PDF</button>
       </div>
     </div>
@@ -859,7 +935,7 @@ function buildReportHtml(options: {
             <div class="assetReportSectionHeading">
               <div>
                 <h2>Fuel Movement Records</h2>
-                <p>Each line shows stock movement, asset issue details, storage balance before and after, operator and GPS location where available.</p>
+                <p>Each line includes the date, activity, direction, litres filled up with, exact tank balance after the entry and the operator responsible.</p>
               </div>
               <strong>${escapeHtml(String(options.eventCount))} ${options.eventCount === 1 ? 'entry' : 'entries'}</strong>
             </div>
@@ -921,6 +997,107 @@ function buildReportHtml(options: {
 </html>`;
 }
 
+function styled(value: XlsxPrimitiveCellValue, style: XlsxCellStyle): XlsxCellValue {
+  return { value, style };
+}
+
+function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
+  const summaryRows: XlsxCellValue[][] = [
+    [styled(options.title, 'title'), '', '', '', ''],
+    [styled(options.subtitle, 'subtitle'), '', '', '', ''],
+    [],
+    [styled('Generated', 'metaLabel'), styled(options.generatedAt, 'metaValue')],
+    [styled('Period', 'metaLabel'), styled(options.dateRangeLabel, 'metaValue')],
+    [styled('Storage', 'metaLabel'), styled(options.storageName, 'metaValue')],
+    [styled('Fuel type', 'metaLabel'), styled(options.storageFuelType, 'metaValue')],
+    [styled('Storage code', 'metaLabel'), styled(options.storageCode, 'metaValue')],
+    [],
+    [styled('Storage units', 'tableHeader'), styled('Fuel issued', 'tableHeader'), styled('Fuel filled', 'tableHeader'), styled('Current stock', 'tableHeader'), styled('Entries', 'tableHeader')],
+    [
+      styled(options.storageCount, 'integer'),
+      styled(roundLitres(options.totalIssued), 'decimal'),
+      styled(roundLitres(options.totalStockIn), 'decimal'),
+      styled(roundLitres(options.currentLitres), 'decimal'),
+      styled(options.eventCount, 'integer'),
+    ],
+  ];
+
+  const movementHeader = [
+    'Date',
+    'Activity',
+    'Direction',
+    'Storage unit',
+    'Asset / target',
+    'Litres filled up with',
+    'Litres left in tank',
+    'Operator',
+    'Location',
+    'Notes',
+    'Tank before',
+    'Asset fuel after',
+    'Asset usage reading',
+    'Storage QR code',
+  ];
+
+  const movementHeaderRow = 7;
+  const movementRows: XlsxCellValue[][] = [
+    [styled('Fuel Movement Records', 'title'), '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    [styled(`Filtered report: ${options.dateRangeLabel}`, 'subtitle'), '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    [styled('PDF and XLSX include Date, Activity, Direction, litres filled up with, litres left in tank and operator.', 'note'), '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    [],
+    [styled('Storage', 'metaLabel'), styled(options.storageName, 'metaValue'), styled('Fuel type', 'metaLabel'), styled(options.storageFuelType, 'metaValue')],
+    [],
+    movementHeader.map((header) => styled(header, 'tableHeader')),
+    ...options.events.map((event) => [
+      styled(formatExcelDateTime(event.createdAtIso), 'text'),
+      styled(eventActivityLabel(event), 'text'),
+      styled(eventDirectionLabel(event), eventDirectionLabel(event) === 'Out' ? 'statusWarn' : eventDirectionLabel(event) === 'In' ? 'statusGood' : 'statusInfo'),
+      styled(event.storageName || '', 'text'),
+      styled(eventTargetLabel(event), 'text'),
+      styled(roundLitres(event.litres), 'decimal'),
+      styled(typeof event.storageLevelAfter === 'number' ? roundLitres(event.storageLevelAfter) : null, 'decimal'),
+      styled(event.operatorName || '', 'text'),
+      styled(formatLocation(event), 'text'),
+      styled(normalizeSpaces(event.note), 'note'),
+      styled(typeof event.storageLevelBefore === 'number' ? roundLitres(event.storageLevelBefore) : null, 'decimal'),
+      styled(formatPercent(event.assetFuelPercentAfter), 'text'),
+      styled(typeof event.assetUsageReading === 'number' ? event.assetUsageReading : null, 'decimal'),
+      styled(event.storagePublicCode || '', 'text'),
+    ]),
+  ];
+
+  return [
+    {
+      name: 'Summary',
+      rows: summaryRows,
+      columns: [28, 28, 28, 28, 16],
+      merges: [
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 5 },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 5 },
+      ],
+      tabColor: '10382F',
+    },
+    {
+      name: 'Fuel Movement Records',
+      rows: movementRows,
+      columns: [20, 22, 14, 24, 28, 18, 18, 22, 34, 42, 16, 16, 18, 20],
+      merges: [
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 14 },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 14 },
+        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: 14 },
+      ],
+      freezeRow: movementHeaderRow,
+      autoFilter: {
+        fromRow: movementHeaderRow,
+        fromColumn: 1,
+        toRow: Math.max(movementHeaderRow, movementHeaderRow + options.events.length),
+        toColumn: movementHeader.length,
+      },
+      tabColor: '176B4F',
+    },
+  ];
+}
+
 export async function GET(request: NextRequest) {
   const session = await getServerSession();
 
@@ -928,9 +1105,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
   }
 
-  const storageId = asText(request.nextUrl.searchParams.get('storageId'));
-  const year = parseReportYear(asText(request.nextUrl.searchParams.get('year')));
-  const month = year ? parseReportMonth(asText(request.nextUrl.searchParams.get('month'))) : null;
+  const params = request.nextUrl.searchParams;
+  const storageId = asText(params.get('storageId'));
+  const year = parseReportYear(asText(params.get('year')));
+  const month = year ? parseReportMonth(asText(params.get('month'))) : null;
+  const format = parseReportFormat(asText(params.get('format')));
   const dateRange = buildReportDateRange(year, month);
 
   try {
@@ -968,8 +1147,7 @@ export async function GET(request: NextRequest) {
       ? `${storage.fuelType.toUpperCase()} storage report for ${dateRange.label}.`
       : `All fuel storage and issue transactions for ${dateRange.label}.`;
     const logoUrl = await getAssetRegisterReportLogoUrl(session.user.id).catch(() => '');
-
-    const html = buildReportHtml({
+    const reportOptions: FuelReportOptions = {
       title,
       subtitle,
       generatedAt,
@@ -985,14 +1163,33 @@ export async function GET(request: NextRequest) {
       storageCount: storage ? 1 : ledger.summary.totalStorageUnits,
       eventCount: events.length,
       events,
-    });
+      xlsxUrl: buildFormatUrl(request, 'xlsx'),
+    };
+    const filenameDate = new Date().toISOString().slice(0, 10);
+    const baseFileName = `${slugifyFileSegment(title)}-${filenameDate}`;
+
+    if (format === 'xlsx') {
+      const workbook = createXlsxWorkbook(buildFuelWorkbook(reportOptions));
+
+      return new NextResponse(workbook, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': `attachment; filename="${baseFileName}.xlsx"`,
+          'Content-Length': String(workbook.length),
+          'Cache-Control': 'no-store',
+        },
+      });
+    }
+
+    const html = buildReportHtml(reportOptions);
 
     return new NextResponse(html, {
       status: 200,
       headers: {
         'content-type': 'text/html; charset=utf-8',
         'cache-control': 'no-store',
-        'content-disposition': `inline; filename="${slugifyFileSegment(title)}-${formatDate(new Date()).replace(/\s+/g, '-').toLowerCase()}.html"`,
+        'content-disposition': `inline; filename="${baseFileName}.html"`,
       },
     });
   } catch (error) {
