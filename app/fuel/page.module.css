@@ -1782,6 +1782,95 @@
   background-color: #f3f6f8;
 }
 
+
+/* === Fuel view filter modal: match fuel report filter step === */
+.filterModal {
+  width: min(100%, 980px) !important;
+}
+
+.fuelViewFilterBox {
+  grid-template-columns: minmax(14rem, 1.32fr) repeat(3, minmax(10rem, 0.9fr));
+  align-items: start;
+}
+
+.filterSearchField {
+  min-width: 0;
+  display: grid;
+  gap: 0.38rem;
+  color: #253b34;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.filterSearchField > span {
+  color: #253b34;
+  font-size: 0.82rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.filterSearchField input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 3.35rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  border-radius: 1rem;
+  color: #19352d;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(25, 116, 84, 0.055) 0%, rgba(25, 116, 84, 0) 40%),
+    linear-gradient(180deg, #ffffff 0%, #f6fafb 100%);
+  box-shadow:
+    0 8px 18px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 720;
+  line-height: 1;
+  outline: none;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.filterSearchField input::placeholder {
+  color: #6f7d78;
+  opacity: 0.9;
+}
+
+.filterSearchField input:hover {
+  border-color: rgba(184, 202, 218, 0.98);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 42%),
+    linear-gradient(180deg, #ffffff 0%, #eef5fb 100%);
+  box-shadow:
+    0 12px 24px rgba(16, 31, 28, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.filterSearchField input:focus {
+  border-color: rgba(149, 204, 178, 0.98);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(22, 83, 64, 0.1) 0%, rgba(22, 83, 64, 0) 44%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.11),
+    0 12px 24px rgba(16, 31, 28, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.filterActions {
+  justify-content: flex-end !important;
+}
+
+.filterActions .filterPrimaryButton {
+  min-width: 12.4rem !important;
+}
+
 .exportActions .exportPrimaryButton,
 .exportActions .exportPrimaryButton:visited {
   min-width: 13.5rem !important;
@@ -2050,7 +2139,8 @@
   }
 
   .exportChoices,
-  .reportFilterBox {
+  .reportFilterBox,
+  .fuelViewFilterBox {
     grid-template-columns: 1fr !important;
   }
 
@@ -2076,6 +2166,11 @@
 @media (max-width: 760px) {
   .exportModalHeader h2 {
     font-size: 1.58rem !important;
+  }
+
+  .filterSearchField input {
+    min-height: 3.35rem;
+    font-size: 16px;
   }
 
   .deleteConfirmActions .deleteConfirmButton {
