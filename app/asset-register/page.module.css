@@ -19549,10 +19549,15 @@
 }
 
 .assetQuotePartnerLogo img {
-  width: 100% !important;
-  height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: 82% !important;
+  max-height: 82% !important;
+  display: block !important;
   object-fit: contain !important;
-  background: #ffffff !important;
+  object-position: center center !important;
+  background: transparent !important;
+  margin: auto !important;
 }
 
 .assetQuotePartnerLogo > span {
@@ -19655,10 +19660,15 @@
 }
 
 .assetQuoteMapShell :global(.assetQuotePopupLogo img) {
-  width: 100% !important;
-  height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: 82% !important;
+  max-height: 82% !important;
+  display: block !important;
   object-fit: contain !important;
-  background: #ffffff !important;
+  object-position: center center !important;
+  background: transparent !important;
+  margin: auto !important;
 }
 
 .assetQuoteMapShell :global(.assetQuotePopupHeader strong) {
@@ -19910,10 +19920,22 @@
   object-fit: cover !important;
 }
 
-.assetQuoteSelectedLogoTile img {
-  object-fit: contain !important;
-  padding: 1.05rem !important;
+.assetQuoteSelectedLogoTile {
+  padding: clamp(1rem, 2vw, 1.4rem) !important;
   background: #ffffff !important;
+}
+
+.assetQuoteSelectedLogoTile img {
+  width: auto !important;
+  height: auto !important;
+  max-width: 82% !important;
+  max-height: 82% !important;
+  display: block !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  padding: 0 !important;
+  background: transparent !important;
+  margin: auto !important;
 }
 
 .assetQuoteSelectedLogoFallback {
