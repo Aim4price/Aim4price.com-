@@ -1782,6 +1782,223 @@
   background-color: #f3f6f8;
 }
 
+.exportActions .exportPrimaryButton,
+.exportActions .exportPrimaryButton:visited {
+  min-width: 13.5rem !important;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #197454 0%, #0f5840 100%) !important;
+  border: 1px solid #0f6248 !important;
+  box-shadow:
+    0 16px 30px rgba(7, 63, 49, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.exportActions .exportPrimaryButton:hover:not(:disabled),
+.exportActions .exportPrimaryButton:focus-visible:not(:disabled) {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #218462 0%, #0b4b37 100%) !important;
+  border-color: #0b4b37 !important;
+  box-shadow:
+    0 18px 32px rgba(25, 116, 84, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+
+.exportActions .exportPrimaryButton:disabled {
+  color: #ffffff !important;
+  opacity: 0.62 !important;
+  cursor: not-allowed !important;
+}
+
+.exportActions .exportSecondaryButton {
+  color: #17362c !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%) !important;
+  border: 1px solid rgba(18, 45, 37, 0.82) !important;
+  box-shadow: none !important;
+}
+
+.exportActions .exportSecondaryButton:hover:not(:disabled),
+.exportActions .exportSecondaryButton:focus-visible:not(:disabled) {
+  color: #0d2f26 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f8f6 100%) !important;
+  border-color: rgba(18, 45, 37, 0.95) !important;
+  box-shadow: none !important;
+}
+
+.reportSelectField {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  gap: 0.38rem;
+  color: #253b34;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.reportSelectFieldOpen {
+  z-index: 12;
+}
+
+.reportSelectLabel {
+  color: #253b34;
+  font-size: 0.82rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.reportSelectButton {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 3.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  border-radius: 1rem;
+  color: #19352d;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(25, 116, 84, 0.055) 0%, rgba(25, 116, 84, 0) 40%),
+    linear-gradient(180deg, #ffffff 0%, #f6fafb 100%);
+  box-shadow:
+    0 8px 18px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 720;
+  line-height: 1;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.reportSelectButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(184, 202, 218, 0.98);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 42%),
+    linear-gradient(180deg, #ffffff 0%, #eef5fb 100%);
+  box-shadow:
+    0 12px 24px rgba(16, 31, 28, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.reportSelectButton:focus-visible,
+.reportSelectFieldOpen .reportSelectButton {
+  outline: none;
+  border-color: rgba(149, 204, 178, 0.98);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(22, 83, 64, 0.1) 0%, rgba(22, 83, 64, 0) 44%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.11),
+    0 12px 24px rgba(16, 31, 28, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.reportSelectButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.66;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f6f8 100%);
+  transform: none;
+}
+
+.reportSelectButton span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reportSelectChevron {
+  width: 1.08rem;
+  height: 1.08rem;
+  flex: 0 0 auto;
+  color: #19352d;
+  transition: transform 160ms ease;
+}
+
+.reportSelectFieldOpen .reportSelectChevron {
+  transform: rotate(180deg);
+}
+
+.reportSelectMenu {
+  position: absolute;
+  top: calc(100% + 0.42rem);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  max-height: 15.5rem;
+  overflow: auto;
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.42rem;
+  border: 1px solid rgba(199, 216, 228, 0.98);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.075), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
+  box-shadow:
+    0 22px 44px rgba(11, 21, 34, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 83, 64, 0.34) transparent;
+}
+
+.reportSelectOption {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 2.78rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0.72rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 0.78rem;
+  color: #19352d;
+  background: transparent;
+  font: inherit;
+  font-size: 0.94rem;
+  font-weight: 720;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.reportSelectOption:hover,
+.reportSelectOption:focus-visible {
+  outline: none;
+  color: #10352b;
+  background: rgba(237, 248, 242, 0.96);
+  border-color: rgba(190, 224, 206, 0.98);
+}
+
+.reportSelectOptionActive {
+  color: #0f3329;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.1), transparent 44%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  border-color: rgba(190, 224, 206, 0.98);
+  font-weight: 850;
+}
+
+.reportSelectFieldDisabled .reportSelectLabel {
+  opacity: 0.68;
+}
+
 /* === Fuel delete modal: match Asset Register delete confirmation === */
 @media (min-width: 761px) {
   .deleteConfirmModal {
