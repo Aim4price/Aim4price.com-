@@ -382,7 +382,7 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
     });
   }, [companies, searchTerm, selectedProvince, selectedType]);
 
-  const activeFilterCount = [selectedProvince, selectedType !== 'all' ? selectedType : ''].filter(Boolean).length;
+  const activeFilterCount = selectedProvince ? 1 : 0;
 
   function handleTypeSelect(type: CompanyTypeFilter) {
     setSelectedType((current) => (current === type ? 'all' : type));
@@ -395,9 +395,7 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
   }
 
   function clearFilters() {
-    setSelectedType('all');
     setSelectedProvince('');
-    setSearchTerm('');
     setOpenCompanyId(null);
   }
 
@@ -558,24 +556,6 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
 
             {isFilterOpen ? (
               <div className={styles.filterPopover}>
-                <div className={styles.filterField}>
-                  <span className={styles.filterLabel}>Company type</span>
-                  <FilterSelect
-                    label="Company type"
-                    value={selectedType}
-                    options={[
-                      { value: 'all', label: 'All companies' },
-                      { value: 'finance', label: 'Finance' },
-                      { value: 'insurance', label: 'Insurance' },
-                      { value: 'dealer', label: 'Dealers' },
-                    ]}
-                    onChange={(value) => {
-                      setSelectedType(value as CompanyTypeFilter);
-                      setOpenCompanyId(null);
-                    }}
-                  />
-                </div>
-
                 <div className={styles.filterField}>
                   <span className={styles.filterLabel}>Province</span>
                   <FilterSelect
