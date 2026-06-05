@@ -654,11 +654,12 @@ export default function AppHeader({
                         Account Details
                       </Link>
 
-                      <Link href="/companies" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                        Companies
-                      </Link>
                       {isOwnerAccount ? (
                         <>
+                          <Link href="/companies" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                            Companies
+                          </Link>
+
                           <Link href="/asset-map" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
                             My Asset Map
                           </Link>
