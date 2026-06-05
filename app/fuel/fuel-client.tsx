@@ -7,6 +7,7 @@ import styles from './page.module.css';
 type FuelStorageStatus = 'active' | 'archived';
 type ModalMode = 'create-storage' | 'edit-storage' | 'pin' | 'filter' | 'report' | null;
 type FilterMode = 'all' | 'low' | 'empty' | 'full';
+type ReportFormat = 'pdf' | 'xlsx';
 
 type FuelLedgerStorage = {
   id: string;
@@ -285,8 +286,9 @@ function getYearOptions(events: FuelLedgerEvent[]): string[] {
 }
 
 
-function buildReportUrl(storageId: string, year: string, month: string): string {
+function buildReportUrl(storageId: string, year: string, month: string, format: ReportFormat = 'pdf'): string {
   const url = new URL('/api/fuel/report', window.location.origin);
+  url.searchParams.set('format', format);
 
   if (storageId !== 'all') {
     url.searchParams.set('storageId', storageId);
@@ -503,7 +505,19 @@ export default function FuelClient() {
 
   function handleOpenReport() {
     const normalizedMonth = reportYear === 'all' ? 'all' : reportMonth;
-    window.open(buildReportUrl(reportStorageId, reportYear, normalizedMonth), '_blank', 'noopener,noreferrer');
+    window.open(buildReportUrl(reportStorageId, reportYear, normalizedMonth, 'pdf'), '_blank', 'noopener,noreferrer');
+    closeModal();
+  }
+
+  function handleDownloadXlsxReport() {
+    const normalizedMonth = reportYear === 'all' ? 'all' : reportMonth;
+    const downloadLink = document.createElement('a');
+    downloadLink.href = buildReportUrl(reportStorageId, reportYear, normalizedMonth, 'xlsx');
+    downloadLink.download = '';
+    downloadLink.rel = 'noreferrer';
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    downloadLink.remove();
     closeModal();
   }
 
@@ -636,6 +650,25 @@ export default function FuelClient() {
             </div>
           </section>
         </section>
+
+        <nav className={styles.mobileQuickActions} aria-label="Fuel quick actions">
+          <button type="button" className={styles.mobileQuickButton} onClick={openCreateStorage}>
+            <PlusIcon className={styles.buttonIcon} />
+            <span>Add</span>
+          </button>
+          <button type="button" className={styles.mobileQuickButton} onClick={openReportModal}>
+            <DownloadIcon className={styles.buttonIcon} />
+            <span>Reports</span>
+          </button>
+          <button
+            type="button"
+            className={`${styles.mobileQuickButton} ${hasActiveFilters ? styles.mobileQuickButtonActive : ''}`}
+            onClick={openFilterModal}
+          >
+            <FilterIcon className={styles.buttonIcon} />
+            <span>{hasActiveFilters ? 'Filtered' : 'Filter'}</span>
+          </button>
+        </nav>
       </main>
 
       {modalMode === 'create-storage' || modalMode === 'edit-storage' ? (
@@ -827,7 +860,8 @@ export default function FuelClient() {
 
             <div className={styles.modalActions}>
               <button type="button" className={`${styles.secondaryButton} ${styles.modalCancelAction}`} onClick={closeModal}>Cancel</button>
-              <button type="button" className={`${styles.primaryButton} ${styles.modalSubmitButton} ${styles.modalPrimaryAction}`} onClick={handleOpenReport}>Open Fuel Report</button>
+              <button type="button" className={`${styles.secondaryButton} ${styles.modalSubmitButton} ${styles.reportExportAction}`} onClick={handleDownloadXlsxReport}>Download XLSX</button>
+              <button type="button" className={`${styles.primaryButton} ${styles.modalSubmitButton} ${styles.modalPrimaryAction}`} onClick={handleOpenReport}>Print / Save PDF</button>
             </div>
           </div>
         </div>
