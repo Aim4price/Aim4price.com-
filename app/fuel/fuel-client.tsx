@@ -10,6 +10,7 @@ type FilterMode = 'all' | 'low' | 'empty' | 'full';
 type ReportFormat = 'pdf' | 'xlsx';
 type ReportStep = 'format' | 'filters';
 type ReportSelectKey = 'storage' | 'year' | 'month';
+type FilterSelectKey = 'status' | 'year' | 'month';
 
 type FuelLedgerStorage = {
   id: string;
@@ -433,6 +434,7 @@ export default function FuelClient() {
   const [reportFormat, setReportFormat] = useState<ReportFormat>('pdf');
   const [reportStep, setReportStep] = useState<ReportStep>('format');
   const [openReportSelect, setOpenReportSelect] = useState<ReportSelectKey | null>(null);
+  const [openFilterSelect, setOpenFilterSelect] = useState<FilterSelectKey | null>(null);
 
   const selectedStorage = useMemo(
     () => storages.find((storage) => storage.id === selectedStorageId) ?? null,
@@ -447,6 +449,29 @@ export default function FuelClient() {
   const yearOptions = useMemo(() => getYearOptions(recentEvents), [recentEvents]);
   const filterMonthOptions = useMemo(() => getMonthOptions(recentEvents, filterYear), [filterYear, recentEvents]);
   const reportMonthOptions = useMemo(() => getMonthOptions(recentEvents, reportYear), [recentEvents, reportYear]);
+  const filterStatusOptions = useMemo<ReportSelectOption[]>(
+    () => [
+      { value: 'all', label: 'All storage' },
+      { value: 'low', label: 'Low storage' },
+      { value: 'empty', label: 'Empty storage' },
+      { value: 'full', label: 'Full storage' },
+    ],
+    [],
+  );
+  const filterYearOptions = useMemo<ReportSelectOption[]>(
+    () => [
+      { value: 'all', label: 'All years' },
+      ...yearOptions.map((year) => ({ value: year, label: year })),
+    ],
+    [yearOptions],
+  );
+  const filterMonthSelectOptions = useMemo<ReportSelectOption[]>(
+    () => [
+      { value: 'all', label: 'All months' },
+      ...filterMonthOptions.map((month) => ({ value: month, label: MONTH_LABELS[Number(month) - 1] })),
+    ],
+    [filterMonthOptions],
+  );
   const reportStorageOptions = useMemo<ReportSelectOption[]>(
     () => [
       { value: 'all', label: 'All storage units' },
@@ -499,18 +524,19 @@ export default function FuelClient() {
   }, []);
 
   useEffect(() => {
-    if (!openReportSelect) return undefined;
+    if (!openReportSelect && !openFilterSelect) return undefined;
 
     function handlePointerDown(event: MouseEvent) {
       const target = event.target as HTMLElement | null;
       if (!target?.closest('[data-report-select-root="true"]')) {
         setOpenReportSelect(null);
+        setOpenFilterSelect(null);
       }
     }
 
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, [openReportSelect]);
+  }, [openReportSelect, openFilterSelect]);
 
   function openCreateStorage() {
     setSelectedStorageId(null);
@@ -534,6 +560,8 @@ export default function FuelClient() {
   }
 
   function openFilterModal() {
+    setOpenReportSelect(null);
+    setOpenFilterSelect(null);
     setNotice(null);
     setModalMode('filter');
   }
@@ -545,6 +573,7 @@ export default function FuelClient() {
     setReportFormat('pdf');
     setReportStep('format');
     setOpenReportSelect(null);
+    setOpenFilterSelect(null);
     setNotice(null);
     setModalMode('report');
   }
@@ -558,6 +587,7 @@ export default function FuelClient() {
     setReportStep('format');
     setReportFormat('pdf');
     setOpenReportSelect(null);
+    setOpenFilterSelect(null);
   }
 
   function clearFilters() {
@@ -565,6 +595,7 @@ export default function FuelClient() {
     setFilterText('');
     setFilterYear('all');
     setFilterMonth('all');
+    setOpenFilterSelect(null);
   }
 
   async function applyLedgerResponse(response: Response) {
@@ -671,6 +702,26 @@ export default function FuelClient() {
 
   function toggleReportSelect(selectKey: ReportSelectKey) {
     setOpenReportSelect((current) => (current === selectKey ? null : selectKey));
+  }
+
+  function toggleFilterSelect(selectKey: FilterSelectKey) {
+    setOpenFilterSelect((current) => (current === selectKey ? null : selectKey));
+  }
+
+  function selectFilterStatus(value: string) {
+    setFilterMode(value as FilterMode);
+    setOpenFilterSelect(null);
+  }
+
+  function selectFilterYear(value: string) {
+    setFilterYear(value);
+    setFilterMonth('all');
+    setOpenFilterSelect(null);
+  }
+
+  function selectFilterMonth(value: string) {
+    setFilterMonth(value);
+    setOpenFilterSelect(null);
   }
 
   function selectReportStorage(value: string) {
@@ -947,57 +998,60 @@ export default function FuelClient() {
       ) : null}
 
       {modalMode === 'filter' ? (
-        <div className={styles.modalOverlay} role="dialog" aria-modal="true">
-          <div className={styles.modalCardSmall}>
-            <div className={styles.modalHeader}>
-              <div>
-                <span className={styles.modalEyebrow}>Filter</span>
-                <h2>Filter fuel view</h2>
+        <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-labelledby="fuel-filter-title">
+          <div className={`${styles.modalCard} ${styles.exportModal} ${styles.filterModal}`}>
+            <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h2 id="fuel-filter-title">Filter fuel view</h2>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal}>×</button>
+              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close fuel filters">×</button>
             </div>
 
-            <div className={styles.formGridSingle}>
-              <label>
-                Storage search
-                <input value={filterText} onChange={(event) => setFilterText(event.target.value)} placeholder="Main tank, diesel, Farm 1..." />
-              </label>
-              <label>
-                Stock status
-                <select value={filterMode} onChange={(event) => setFilterMode(event.target.value as FilterMode)}>
-                  <option value="all">All storage</option>
-                  <option value="low">Low storage</option>
-                  <option value="empty">Empty storage</option>
-                  <option value="full">Full storage</option>
-                </select>
-              </label>
-              <label>
-                Year available
-                <select
-                  value={filterYear}
-                  onChange={(event) => {
-                    setFilterYear(event.target.value);
-                    setFilterMonth('all');
-                  }}
-                >
-                  <option value="all">All years</option>
-                  {yearOptions.map((year) => <option key={year} value={year}>{year}</option>)}
-                </select>
-              </label>
-              <label>
-                Month available
-                <select value={filterMonth} onChange={(event) => setFilterMonth(event.target.value)} disabled={filterYear === 'all'}>
-                  <option value="all">All months</option>
-                  {filterMonthOptions.map((month) => (
-                    <option key={month} value={month}>{MONTH_LABELS[Number(month) - 1]}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
+            <div className={styles.exportModalScrollBody}>
+              <div className={styles.exportModalBody}>
+                <div className={`${styles.reportFilterBox} ${styles.fuelViewFilterBox}`}>
+                  <label className={styles.filterSearchField}>
+                    <span>Storage search</span>
+                    <input value={filterText} onChange={(event) => setFilterText(event.target.value)} placeholder="Main tank, diesel, Farm 1..." />
+                  </label>
 
-            <div className={styles.modalActions}>
-              <button type="button" className={`${styles.secondaryButton} ${styles.modalCancelAction}`} onClick={clearFilters}>Clear filters</button>
-              <button type="button" className={`${styles.primaryButton} ${styles.modalSubmitButton} ${styles.modalPrimaryAction}`} onClick={closeModal}>Apply Filters</button>
+                  <ReportSelect
+                    label="Stock status"
+                    value={filterMode}
+                    options={filterStatusOptions}
+                    isOpen={openFilterSelect === 'status'}
+                    onToggle={() => toggleFilterSelect('status')}
+                    onChange={selectFilterStatus}
+                  />
+
+                  <ReportSelect
+                    label="Year available"
+                    value={filterYear}
+                    options={filterYearOptions}
+                    isOpen={openFilterSelect === 'year'}
+                    onToggle={() => toggleFilterSelect('year')}
+                    onChange={selectFilterYear}
+                  />
+
+                  <ReportSelect
+                    label="Month available"
+                    value={filterMonth}
+                    options={filterMonthSelectOptions}
+                    isOpen={openFilterSelect === 'month'}
+                    disabled={filterYear === 'all'}
+                    onToggle={() => toggleFilterSelect('month')}
+                    onChange={selectFilterMonth}
+                  />
+                </div>
+
+                <div className={`${styles.modalActions} ${styles.exportActions} ${styles.filterActions}`}>
+                  <button type="button" className={`${styles.secondaryButton} ${styles.exportSecondaryButton}`} onClick={clearFilters}>Clear filters</button>
+                  <button type="button" className={`${styles.primaryButton} ${styles.exportPrimaryButton} ${styles.filterPrimaryButton}`} onClick={closeModal}>
+                    <FilterIcon className={styles.buttonIcon} />
+                    <span>Filter</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
