@@ -520,9 +520,8 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
                   onClick={() => handleTypeSelect(tab.value)}
                   aria-pressed={isActive}
                 >
-                  <strong>{tab.title}</strong>
-                  <span>{tab.description}</span>
-                  <small>{count} listed</small>
+                  <span className={styles.categoryButtonMain}>{tab.title}</span>
+                  <span className={styles.categoryCount}>{count} listed</span>
                 </button>
               );
             })}
@@ -612,10 +611,12 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
               const isOpen = openCompanyId === company.userId;
 
               return (
-                <article key={company.userId} className={`${styles.companyCard} ${isOpen ? styles.companyCardOpen : ''}`}>
+                <article
+                  key={company.userId}
+                  className={`${styles.companyCard} ${typeToneClass(company.partnerType)} ${isOpen ? styles.companyCardOpen : ''}`}
+                >
                   <div className={styles.companySummary}>
                     <div className={styles.companyIdentity}>
-                      <span className={`${styles.typePill} ${typePillClass(company.partnerType)}`}>{companyTypeLabel(company.partnerType)}</span>
                       <h2>{companyName(company)}</h2>
                       <p>{companyLocation(company)}</p>
                     </div>
