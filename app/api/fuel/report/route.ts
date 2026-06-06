@@ -119,6 +119,43 @@ function formatPercent(value: number | null | undefined): string {
   return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
 }
 
+function percentForExcel(value: number | null | undefined): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  return Math.max(0, Math.min(100, value)) / 100;
+}
+
+function calculateAssetDieselBeforeFill(event: FuelLedgerEvent): number | null {
+  const litresIssued = event.litres;
+  const beforePercent = event.assetFuelPercentBefore;
+  const afterPercent = event.assetFuelPercentAfter;
+
+  if (
+    typeof litresIssued !== 'number' ||
+    !Number.isFinite(litresIssued) ||
+    litresIssued < 0 ||
+    typeof beforePercent !== 'number' ||
+    !Number.isFinite(beforePercent) ||
+    typeof afterPercent !== 'number' ||
+    !Number.isFinite(afterPercent)
+  ) {
+    return null;
+  }
+
+  const safeBefore = Math.max(0, Math.min(100, beforePercent));
+  const safeAfter = Math.max(0, Math.min(100, afterPercent));
+  const percentIncrease = safeAfter - safeBefore;
+
+  if (percentIncrease <= 0) {
+    return null;
+  }
+
+  return roundLitres((litresIssued * safeBefore) / percentIncrease);
+}
+
+function assetDieselBeforeFillFormula(rowNumber: number): string {
+  return `IF(AND(F${rowNumber}>0,J${rowNumber}<>"",K${rowNumber}<>"",K${rowNumber}>J${rowNumber}),ROUND(F${rowNumber}*J${rowNumber}/(K${rowNumber}-J${rowNumber}),2),"")`;
+}
+
 function formatLocation(event: FuelLedgerEvent): string {
   const text = asText(event.locationText);
   if (text) return text;
@@ -258,6 +295,7 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
           <td>${escapeHtml(event.storageName || '-')}</td>
           <td>${escapeHtml(eventTargetLabel(event))}</td>
           <td><strong>${escapeHtml(formatLitres(event.litres))}</strong></td>
+          <td><strong>${escapeHtml(formatLitres(calculateAssetDieselBeforeFill(event)))}</strong></td>
           <td>${escapeHtml(formatLitres(event.storageLevelBefore))}</td>
           <td><strong>${escapeHtml(formatLitres(event.storageLevelAfter))}</strong></td>
           <td>${escapeHtml(formatPercent(event.assetFuelPercentBefore))}</td>
@@ -284,8 +322,9 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
             <th>Storage Unit</th>
             <th>Asset / Target</th>
             <th>Litres filled up with</th>
-            <th>Tank before</th>
-            <th>Litres left in tank</th>
+            <th>Asset diesel before fill</th>
+            <th>Storage tank before</th>
+            <th>Storage litres left</th>
             <th>Asset fuel before</th>
             <th>Asset fuel after</th>
             <th>Hours / km</th>
@@ -772,37 +811,39 @@ function buildReportHtml(options: FuelReportOptions): string {
       }
 
       .assetReportFuelLedgerTable th:nth-child(1),
-      .assetReportFuelLedgerTable td:nth-child(1) { width: 20mm; }
+      .assetReportFuelLedgerTable td:nth-child(1) { width: 17mm; }
       .assetReportFuelLedgerTable th:nth-child(2),
-      .assetReportFuelLedgerTable td:nth-child(2) { width: 18mm; }
+      .assetReportFuelLedgerTable td:nth-child(2) { width: 16mm; }
       .assetReportFuelLedgerTable th:nth-child(3),
-      .assetReportFuelLedgerTable td:nth-child(3) { width: 12mm; }
+      .assetReportFuelLedgerTable td:nth-child(3) { width: 10mm; }
       .assetReportFuelLedgerTable th:nth-child(4),
-      .assetReportFuelLedgerTable td:nth-child(4) { width: 18mm; }
+      .assetReportFuelLedgerTable td:nth-child(4) { width: 16mm; }
       .assetReportFuelLedgerTable th:nth-child(5),
-      .assetReportFuelLedgerTable td:nth-child(5) { width: 24mm; }
+      .assetReportFuelLedgerTable td:nth-child(5) { width: 22mm; }
       .assetReportFuelLedgerTable th:nth-child(6),
-      .assetReportFuelLedgerTable td:nth-child(6),
+      .assetReportFuelLedgerTable td:nth-child(6) { width: 13mm; }
       .assetReportFuelLedgerTable th:nth-child(7),
-      .assetReportFuelLedgerTable td:nth-child(7),
+      .assetReportFuelLedgerTable td:nth-child(7) { width: 15mm; }
       .assetReportFuelLedgerTable th:nth-child(8),
-      .assetReportFuelLedgerTable td:nth-child(8) { width: 14mm; }
+      .assetReportFuelLedgerTable td:nth-child(8) { width: 13mm; }
       .assetReportFuelLedgerTable th:nth-child(9),
-      .assetReportFuelLedgerTable td:nth-child(9),
+      .assetReportFuelLedgerTable td:nth-child(9) { width: 14mm; }
       .assetReportFuelLedgerTable th:nth-child(10),
-      .assetReportFuelLedgerTable td:nth-child(10) { width: 12mm; }
+      .assetReportFuelLedgerTable td:nth-child(10),
       .assetReportFuelLedgerTable th:nth-child(11),
-      .assetReportFuelLedgerTable td:nth-child(11) { width: 13mm; }
+      .assetReportFuelLedgerTable td:nth-child(11) { width: 10mm; }
       .assetReportFuelLedgerTable th:nth-child(12),
-      .assetReportFuelLedgerTable td:nth-child(12) { width: 18mm; }
+      .assetReportFuelLedgerTable td:nth-child(12) { width: 12mm; }
       .assetReportFuelLedgerTable th:nth-child(13),
-      .assetReportFuelLedgerTable td:nth-child(13) { width: 25mm; }
+      .assetReportFuelLedgerTable td:nth-child(13) { width: 16mm; }
       .assetReportFuelLedgerTable th:nth-child(14),
-      .assetReportFuelLedgerTable td:nth-child(14),
+      .assetReportFuelLedgerTable td:nth-child(14) { width: 23mm; }
       .assetReportFuelLedgerTable th:nth-child(15),
-      .assetReportFuelLedgerTable td:nth-child(15) { width: 19mm; }
+      .assetReportFuelLedgerTable td:nth-child(15),
       .assetReportFuelLedgerTable th:nth-child(16),
-      .assetReportFuelLedgerTable td:nth-child(16) { width: 30mm; }
+      .assetReportFuelLedgerTable td:nth-child(16) { width: 18mm; }
+      .assetReportFuelLedgerTable th:nth-child(17),
+      .assetReportFuelLedgerTable td:nth-child(17) { width: 26mm; }
 
       .assetReportFooter {
         display: grid;
@@ -965,7 +1006,7 @@ function buildReportHtml(options: FuelReportOptions): string {
             <div class="assetReportSectionHeading">
               <div>
                 <h2>Fuel Movement Records</h2>
-                <p>Each line includes the date, activity, direction, litres filled up with, exact tank balance after the entry and the operator responsible.</p>
+                <p>Each line includes the date, activity, direction, litres filled up with, the calculated asset diesel before refilling, storage balances and the operator responsible.</p>
               </div>
               <strong>${escapeHtml(String(options.eventCount))} ${options.eventCount === 1 ? 'entry' : 'entries'}</strong>
             </div>
@@ -976,7 +1017,7 @@ function buildReportHtml(options: FuelReportOptions): string {
         <footer class="assetReportFooter">
           <div>
             <p class="assetReportPowered">Powered by Aim4price.com</p>
-            <div class="assetReportDisclaimer">Fuel ledger records are operational records captured from storage QR entries and owner stock adjustments. They support internal fuel-control and asset-management workflows. Final fuel use and stock levels remain subject to physical verification.</div>
+            <div class="assetReportDisclaimer">Fuel ledger records are operational records captured from storage QR entries and owner stock adjustments. The asset diesel-before-fill value is calculated from litres issued and the captured fuel-gauge percentage change, and remains subject to physical verification.</div>
           </div>
           <div class="assetReportPageNumber">Page 1 of 1</div>
         </footer>
@@ -1059,8 +1100,9 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     'Storage unit',
     'Asset / target',
     'Litres filled up with',
-    'Tank before',
-    'Litres left in tank',
+    'Asset diesel before fill',
+    'Storage tank before',
+    'Storage litres left',
     'Asset fuel before',
     'Asset fuel after',
     'Hours / km reading',
@@ -1074,32 +1116,42 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
 
   const movementHeaderRow = 7;
   const movementRows: XlsxCellValue[][] = [
-    [styled('Fuel Movement Records', 'title'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-    [styled(`Filtered report: ${options.dateRangeLabel}`, 'subtitle'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-    [styled('PDF and XLSX include date, asset, hours, fuel levels, litres, operator, GPS, work activity and work area.', 'note'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    [styled('Fuel Movement Records', 'title'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    [styled(`Filtered report: ${options.dateRangeLabel}`, 'subtitle'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    [styled('PDF and XLSX include date, asset, hours, fuel levels, litres, calculated asset diesel before fill, operator, GPS, work activity and work area.', 'note'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
     [],
     [styled('Storage', 'metaLabel'), styled(options.storageName, 'metaValue'), styled('Fuel type', 'metaLabel'), styled(options.storageFuelType, 'metaValue')],
     [],
     movementHeader.map((header) => styled(header, 'tableHeader')),
-    ...options.events.map((event) => [
-      styled(formatExcelDateTime(event.createdAtIso), 'text'),
-      styled(eventActivityLabel(event), 'text'),
-      styled(eventDirectionLabel(event), eventDirectionLabel(event) === 'Out' ? 'statusWarn' : eventDirectionLabel(event) === 'In' ? 'statusGood' : 'statusInfo'),
-      styled(event.storageName || '', 'text'),
-      styled(eventTargetLabel(event), 'text'),
-      styled(roundLitres(event.litres), 'decimal'),
-      styled(typeof event.storageLevelBefore === 'number' ? roundLitres(event.storageLevelBefore) : null, 'decimal'),
-      styled(typeof event.storageLevelAfter === 'number' ? roundLitres(event.storageLevelAfter) : null, 'decimal'),
-      styled(formatPercent(event.assetFuelPercentBefore), 'text'),
-      styled(formatPercent(event.assetFuelPercentAfter), 'text'),
-      styled(typeof event.assetUsageReading === 'number' ? event.assetUsageReading : null, 'decimal'),
-      styled(event.operatorName || '', 'text'),
-      styled(formatLocation(event), 'text'),
-      styled(eventWorkActivityLabel(event), 'text'),
-      styled(eventWorkAreaLabel(event), 'text'),
-      styled(normalizeSpaces(event.note), 'note'),
-      styled(event.storagePublicCode || '', 'text'),
-    ]),
+    ...options.events.map((event, index) => {
+      const rowNumber = movementHeaderRow + 1 + index;
+      const directionLabel = eventDirectionLabel(event);
+
+      return [
+        styled(formatExcelDateTime(event.createdAtIso), 'text'),
+        styled(eventActivityLabel(event), 'text'),
+        styled(directionLabel, directionLabel === 'Out' ? 'statusWarn' : directionLabel === 'In' ? 'statusGood' : 'statusInfo'),
+        styled(event.storageName || '', 'text'),
+        styled(eventTargetLabel(event), 'text'),
+        styled(roundLitres(event.litres), 'decimal'),
+        {
+          value: calculateAssetDieselBeforeFill(event),
+          formula: assetDieselBeforeFillFormula(rowNumber),
+          style: 'decimal' as XlsxCellStyle,
+        },
+        styled(typeof event.storageLevelBefore === 'number' ? roundLitres(event.storageLevelBefore) : null, 'decimal'),
+        styled(typeof event.storageLevelAfter === 'number' ? roundLitres(event.storageLevelAfter) : null, 'decimal'),
+        styled(percentForExcel(event.assetFuelPercentBefore), 'percent'),
+        styled(percentForExcel(event.assetFuelPercentAfter), 'percent'),
+        styled(typeof event.assetUsageReading === 'number' ? event.assetUsageReading : null, 'decimal'),
+        styled(event.operatorName || '', 'text'),
+        styled(formatLocation(event), 'text'),
+        styled(eventWorkActivityLabel(event), 'text'),
+        styled(eventWorkAreaLabel(event), 'text'),
+        styled(normalizeSpaces(event.note), 'note'),
+        styled(event.storagePublicCode || '', 'text'),
+      ];
+    }),
   ];
 
   return [
@@ -1116,11 +1168,11 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     {
       name: 'Fuel Movement Records',
       rows: movementRows,
-      columns: [20, 22, 14, 24, 28, 18, 16, 18, 16, 16, 18, 22, 34, 24, 24, 42, 20],
+      columns: [20, 22, 14, 24, 28, 18, 20, 18, 18, 16, 16, 18, 22, 34, 24, 24, 42, 20],
       merges: [
-        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 17 },
-        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 17 },
-        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: 17 },
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 18 },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 18 },
+        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: 18 },
       ],
       freezeRow: movementHeaderRow,
       autoFilter: {
