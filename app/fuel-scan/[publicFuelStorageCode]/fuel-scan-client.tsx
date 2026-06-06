@@ -5,6 +5,7 @@ import styles from './page.module.css';
 
 type FuelStorageStatus = 'active' | 'archived';
 type FuelStorageEventType = 'opening_balance' | 'stock_in' | 'asset_issue' | 'dip' | 'adjustment';
+type IssueStep = 'asset' | 'usage' | 'beforeFuel' | 'filledFuel' | 'operator' | 'work' | 'notes';
 
 type FuelStoragePublicPreview = {
   id: string;
@@ -37,6 +38,7 @@ type FuelLedgerAsset = {
   assetTypeLabel: string;
   brandName: string;
   modelName: string;
+  serialNumber: string;
   plateLabel: string;
   publicAssetCode: string;
   hours: number | null;
@@ -60,6 +62,8 @@ type FuelLedgerEvent = {
   assetFuelPercentAfter: number | null;
   assetUsageReading: number | null;
   operatorName: string;
+  activityText: string;
+  workAreaText: string;
   note: string;
   latitude: number | null;
   longitude: number | null;
@@ -100,6 +104,16 @@ type FuelScanClientProps = {
 };
 
 const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
+const ISSUE_STEPS: IssueStep[] = ['asset', 'usage', 'beforeFuel', 'filledFuel', 'operator', 'work', 'notes'];
+const STEP_LABELS: Record<IssueStep, string> = {
+  asset: 'Choose asset',
+  usage: 'Hours / km',
+  beforeFuel: 'Fuel before',
+  filledFuel: 'Fuel filled',
+  operator: 'Operator',
+  work: 'Activity',
+  notes: 'Notes',
+};
 
 function normalizeIntegerInput(value: string): string {
   return value.replace(/\D+/g, '');
@@ -113,6 +127,10 @@ function normalizeOperatorName(value: string): string {
   return value.replace(/\s+/g, ' ').slice(0, 80);
 }
 
+function normalizeShortText(value: string, maxLength = 120): string {
+  return value.replace(/\s+/g, ' ').slice(0, maxLength);
+}
+
 function formatLitres(value: number | null | undefined): string {
   if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return '—';
   return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L`;
@@ -124,12 +142,18 @@ function formatPercent(value: number | null | undefined): string {
 }
 
 function formatHours(value: number | null | undefined): string {
-  if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return '—';
+  if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return 'Not captured';
   return new Intl.NumberFormat('en-ZA').format(Math.round(value));
 }
 
 function assetDisplayName(asset: FuelLedgerAsset): string {
   return asset.title || [asset.brandName, asset.modelName].filter(Boolean).join(' ') || asset.assetTypeLabel || 'Asset';
+}
+
+function assetIdentityLine(asset: FuelLedgerAsset): string {
+  const serial = asset.serialNumber || 'Serial not captured';
+  const plate = asset.plateLabel || 'No number plate';
+  return `Serial: ${serial} · Plate: ${plate}`;
 }
 
 function assetSearchText(asset: FuelLedgerAsset): string {
@@ -139,7 +163,9 @@ function assetSearchText(asset: FuelLedgerAsset): string {
     asset.modelName,
     asset.assetTypeLabel,
     asset.kind,
+    asset.serialNumber,
     asset.plateLabel,
+    asset.publicAssetCode,
   ]
     .filter(Boolean)
     .join(' ')
@@ -154,6 +180,12 @@ function fuelPercentText(value: string): string {
   return String(Math.max(0, Math.min(100, parsed)));
 }
 
+function safeNumber(value: string): number | null {
+  if (!value.trim()) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClientProps) {
   const normalizedCode = normalizeFuelCode(publicFuelStorageCode);
   const [preview, setPreview] = useState<FuelStoragePublicPreview | null>(null);
@@ -164,18 +196,23 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   const [operatorName, setOperatorName] = useState('');
   const [assetId, setAssetId] = useState('');
   const [assetSearch, setAssetSearch] = useState('');
-  const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
   const [litres, setLitres] = useState('');
+  const [assetFuelPercentBefore, setAssetFuelPercentBefore] = useState('');
   const [assetFuelPercentAfter, setAssetFuelPercentAfter] = useState('');
   const [assetUsageReading, setAssetUsageReading] = useState('');
+  const [usageNotApplicable, setUsageNotApplicable] = useState(false);
+  const [activityText, setActivityText] = useState('');
+  const [workAreaText, setWorkAreaText] = useState('');
   const [note, setNote] = useState('');
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
-  const [locationStatus, setLocationStatus] = useState('GPS will be captured automatically after unlocking.');
+  const [locationStatus, setLocationStatus] = useState('Capture GPS before entering the fuel PIN.');
   const [notice, setNotice] = useState<Notice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   const [isDone, setIsDone] = useState(false);
+  const [issueStep, setIssueStep] = useState<IssueStep>('asset');
 
   const selectedAsset = useMemo(() => assets.find((asset) => asset.id === assetId) ?? null, [assetId, assets]);
   const selectedAssetName = selectedAsset ? assetDisplayName(selectedAsset) : '';
@@ -183,6 +220,9 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   const visibleStorageName = storage?.name || preview?.name || 'Fuel storage';
   const visibleFuelType = storage?.fuelType || preview?.fuelType || 'Diesel';
   const unauthenticated = !storage;
+  const issueStepIndex = ISSUE_STEPS.indexOf(issueStep);
+  const issueStepNumber = issueStepIndex + 1;
+  const issueStepProgress = ((issueStepNumber || 1) / ISSUE_STEPS.length) * 100;
 
   const filteredAssets = useMemo(() => {
     const query = assetSearch.trim().toLowerCase();
@@ -192,10 +232,12 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
 
   function captureLocation() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setLocationStatus('GPS is not available on this device.');
+      setCoordinates(null);
+      setLocationStatus('GPS is not available on this device. Location must be enabled to continue.');
       return;
     }
 
+    setIsCapturingLocation(true);
     setLocationStatus('Getting GPS location...');
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -205,12 +247,14 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
         };
         setCoordinates(nextCoordinates);
         setLocationStatus(`GPS captured: ${nextCoordinates.latitude.toFixed(6)}, ${nextCoordinates.longitude.toFixed(6)}`);
+        setIsCapturingLocation(false);
       },
       () => {
         setCoordinates(null);
-        setLocationStatus('GPS permission is required before saving fuel.');
+        setLocationStatus('GPS permission is required. Enable location access and capture GPS again.');
+        setIsCapturingLocation(false);
       },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
     );
   }
 
@@ -253,7 +297,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     setPreview(data.storage);
     setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || '');
     setAssets(data.assets ?? []);
-    captureLocation();
+    setIssueStep('asset');
   }
 
   useEffect(() => {
@@ -287,29 +331,38 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     setAssets([]);
     setAssetId('');
     setAssetSearch('');
-    setIsAssetPickerOpen(false);
     setLitres('');
+    setAssetFuelPercentBefore('');
     setAssetFuelPercentAfter('');
     setAssetUsageReading('');
+    setUsageNotApplicable(false);
+    setActivityText('');
+    setWorkAreaText('');
     setNote('');
     setCoordinates(null);
-    setLocationStatus('GPS will be captured automatically after unlocking.');
+    setLocationStatus('Capture GPS before entering the fuel PIN.');
+    setIssueStep('asset');
     void loadPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [normalizedCode]);
 
   useEffect(() => {
     if (!assetId) {
+      setAssetFuelPercentBefore('');
       setAssetFuelPercentAfter('');
       setAssetUsageReading('');
+      setUsageNotApplicable(false);
       return;
     }
 
     const asset = assets.find((entry) => entry.id === assetId);
     if (!asset) return;
 
-    setAssetFuelPercentAfter(asset.fuelPercent !== null ? String(asset.fuelPercent) : '0');
-    setAssetUsageReading(asset.hours !== null ? String(asset.hours) : '');
+    const currentFuelPercent = asset.fuelPercent !== null ? String(asset.fuelPercent) : '0';
+    setAssetFuelPercentBefore(currentFuelPercent);
+    setAssetFuelPercentAfter(currentFuelPercent);
+    setAssetUsageReading('');
+    setUsageNotApplicable(false);
   }, [assetId, assets]);
 
   useEffect(() => {
@@ -327,6 +380,10 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     setNotice(null);
 
     try {
+      if (!coordinates) {
+        throw new Error('Capture GPS first. Location must be enabled before this fuel QR can continue.');
+      }
+
       const response = await fetch('/api/fuel-scan/auth', {
         method: 'POST',
         credentials: 'include',
@@ -349,8 +406,77 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     }
   }
 
-  async function handleIssueSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function validateUsageStep() {
+    if (usageNotApplicable) return;
+
+    const reading = safeNumber(assetUsageReading);
+    if (reading === null || reading < 0) {
+      throw new Error('Enter the new hours / km reading, or mark it not applicable.');
+    }
+
+    if (selectedAsset?.hours !== null && typeof selectedAsset?.hours !== 'undefined' && reading < selectedAsset.hours) {
+      throw new Error('The new reading cannot be lower than the last recorded reading.');
+    }
+  }
+
+  function validateCurrentStep() {
+    if (issueStep === 'asset' && !assetId) {
+      throw new Error('Choose the asset that received fuel.');
+    }
+
+    if (issueStep === 'usage') {
+      validateUsageStep();
+    }
+
+    if (issueStep === 'filledFuel') {
+      const litresNumber = safeNumber(litres);
+      const beforeNumber = Number(fuelPercentText(assetFuelPercentBefore));
+      const afterNumber = Number(fuelPercentText(assetFuelPercentAfter));
+
+      if (litresNumber === null || litresNumber <= 0) {
+        throw new Error('Enter the litres filled into the asset.');
+      }
+
+      if (afterNumber < beforeNumber) {
+        throw new Error('The fuel level after filling cannot be lower than the level before filling.');
+      }
+    }
+
+    if (issueStep === 'operator' && operatorName.trim().length < 2) {
+      throw new Error('Enter the manager or operator name.');
+    }
+
+    if (issueStep === 'work') {
+      if (activityText.trim().length < 2) {
+        throw new Error('Enter what activity the asset will do.');
+      }
+      if (workAreaText.trim().length < 2) {
+        throw new Error('Enter where the asset will work.');
+      }
+    }
+  }
+
+  function goToNextStep() {
+    setNotice(null);
+
+    try {
+      validateCurrentStep();
+      const nextStep = ISSUE_STEPS[Math.min(issueStepIndex + 1, ISSUE_STEPS.length - 1)];
+      setIssueStep(nextStep);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Complete this step before continuing.' });
+    }
+  }
+
+  function goToPreviousStep() {
+    setNotice(null);
+    const previousStep = ISSUE_STEPS[Math.max(issueStepIndex - 1, 0)];
+    setIssueStep(previousStep);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function handleIssueSubmit() {
     setIsSaving(true);
     setNotice(null);
 
@@ -359,12 +485,22 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
         throw new Error('Choose the asset that received fuel.');
       }
 
+      validateUsageStep();
+
       if (!litres || Number(litres) <= 0) {
         throw new Error('Enter the litres issued.');
       }
 
+      if (operatorName.trim().length < 2) {
+        throw new Error('Enter the manager or operator name.');
+      }
+
+      if (activityText.trim().length < 2 || workAreaText.trim().length < 2) {
+        throw new Error('Enter the work activity and where the asset will work.');
+      }
+
       if (!coordinates) {
-        throw new Error('GPS location is required. Press Capture GPS and allow location access.');
+        throw new Error('GPS location is required. Enable location and capture GPS again.');
       }
 
       const response = await fetch(`/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/issue`, {
@@ -374,9 +510,12 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
         body: JSON.stringify({
           assetId,
           litres: Number(litres),
-          assetFuelPercentAfter: assetFuelPercentAfter === '' ? null : Number(assetFuelPercentAfter),
-          assetUsageReading: assetUsageReading === '' ? null : Number(assetUsageReading),
+          assetFuelPercentBefore: Number(fuelPercentText(assetFuelPercentBefore)),
+          assetFuelPercentAfter: Number(fuelPercentText(assetFuelPercentAfter)),
+          assetUsageReading: usageNotApplicable ? null : Number(assetUsageReading),
           operatorName,
+          activityText,
+          workAreaText,
           note,
           latitude: coordinates.latitude,
           longitude: coordinates.longitude,
@@ -393,7 +532,6 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       setPreview(data.storage);
       setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || accountBusinessName);
       setAssets(data.assets ?? []);
-      setIsAssetPickerOpen(false);
       setNotice(null);
       setIsDone(true);
 
@@ -416,7 +554,230 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   function chooseAsset(nextAssetId: string) {
     setAssetId(nextAssetId);
     setAssetSearch('');
-    setIsAssetPickerOpen(false);
+    setIssueStep('usage');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function renderStepControls({ canContinue = true, submit = false }: { canContinue?: boolean; submit?: boolean } = {}) {
+    return (
+      <div className={styles.stepControls}>
+        {issueStepIndex > 0 ? (
+          <button type="button" className={styles.secondaryButton} onClick={goToPreviousStep} disabled={isSaving}>
+            Back
+          </button>
+        ) : null}
+        {submit ? (
+          <button type="button" className={styles.primaryButton} onClick={handleIssueSubmit} disabled={isSaving || !canContinue}>
+            {isSaving ? 'Saving...' : 'Save fuel issue'}
+          </button>
+        ) : (
+          <button type="button" className={styles.primaryButton} onClick={goToNextStep} disabled={!canContinue || isSaving}>
+            Continue
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  function renderFuelSlider(value: string, onChange: (value: string) => void) {
+    return (
+      <div className={styles.fuelSliderBlock}>
+        <strong>{fuelPercentText(value)}%</strong>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          className={styles.rangeInput}
+          value={fuelPercentText(value)}
+          onChange={(event) => onChange(fuelPercentText(event.target.value))}
+        />
+        <div className={styles.quickFuelGrid}>
+          {QUICK_FUEL_OPTIONS.map((option) => (
+            <button
+              type="button"
+              key={option}
+              className={`${styles.quickFuelButton} ${fuelPercentText(value) === String(option) ? styles.quickFuelButtonActive : ''}`}
+              onClick={() => onChange(String(option))}
+              disabled={isSaving}
+            >
+              {option}%
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function renderIssueStep() {
+    if (issueStep === 'asset') {
+      return (
+        <section className={`${styles.stepCard} ${styles.assetStepCard}`}>
+          <div className={styles.stepTitleBlock}>
+            <span>Step {issueStepNumber} of {ISSUE_STEPS.length}</span>
+            <h1>Choose asset</h1>
+            <p>Tap the asset that received fuel.</p>
+          </div>
+          <label className={styles.searchField}>
+            <span>Search</span>
+            <input value={assetSearch} onChange={(event) => setAssetSearch(event.target.value)} placeholder="Search asset title, serial or plate" autoFocus />
+          </label>
+          <div className={styles.assetChoiceList}>
+            {filteredAssets.map((asset) => (
+              <button
+                type="button"
+                key={asset.id}
+                className={`${styles.assetChoiceButton} ${asset.id === assetId ? styles.assetChoiceButtonActive : ''}`}
+                onClick={() => chooseAsset(asset.id)}
+              >
+                <strong>{assetDisplayName(asset)}</strong>
+                <span>{assetIdentityLine(asset)}</span>
+              </button>
+            ))}
+            {!filteredAssets.length ? <p className={styles.emptyText}>No assets found.</p> : null}
+          </div>
+        </section>
+      );
+    }
+
+    if (issueStep === 'usage') {
+      return (
+        <section className={styles.stepCard}>
+          <div className={styles.stepTitleBlock}>
+            <span>Step {issueStepNumber} of {ISSUE_STEPS.length}</span>
+            <h1>Hours / km</h1>
+            <p>{selectedAssetName}</p>
+          </div>
+          <div className={styles.readingCard}>
+            <span>Last recorded</span>
+            <strong>{formatHours(selectedAsset?.hours)}</strong>
+          </div>
+          <label className={styles.field}>
+            <span>New recorded hours / km</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={assetUsageReading}
+              onChange={(event) => {
+                setAssetUsageReading(event.target.value);
+                setUsageNotApplicable(false);
+              }}
+              placeholder="Current reading"
+              disabled={usageNotApplicable}
+              autoFocus
+            />
+          </label>
+          <button
+            type="button"
+            className={`${styles.optionButton} ${usageNotApplicable ? styles.optionButtonActive : ''}`}
+            onClick={() => {
+              setUsageNotApplicable((current) => !current);
+              setAssetUsageReading('');
+            }}
+          >
+            No hour / km meter on this asset
+          </button>
+          {renderStepControls()}
+        </section>
+      );
+    }
+
+    if (issueStep === 'beforeFuel') {
+      return (
+        <section className={styles.stepCard}>
+          <div className={styles.stepTitleBlock}>
+            <span>Step {issueStepNumber} of {ISSUE_STEPS.length}</span>
+            <h1>Fuel before</h1>
+            <p>Set the asset fuel gauge before filling.</p>
+          </div>
+          {renderFuelSlider(assetFuelPercentBefore, setAssetFuelPercentBefore)}
+          {renderStepControls()}
+        </section>
+      );
+    }
+
+    if (issueStep === 'filledFuel') {
+      return (
+        <section className={styles.stepCard}>
+          <div className={styles.stepTitleBlock}>
+            <span>Step {issueStepNumber} of {ISSUE_STEPS.length}</span>
+            <h1>Fuel filled</h1>
+            <p>Enter litres and the fuel gauge after filling.</p>
+          </div>
+          <label className={styles.field}>
+            <span>Litres filled</span>
+            <input type="number" min="0" step="0.01" value={litres} onChange={(event) => setLitres(event.target.value)} placeholder="Litres" autoFocus />
+          </label>
+          <div className={styles.compactMetaGrid}>
+            <div><span>Before</span><strong>{fuelPercentText(assetFuelPercentBefore)}%</strong></div>
+            <div><span>After</span><strong>{fuelPercentText(assetFuelPercentAfter)}%</strong></div>
+          </div>
+          {renderFuelSlider(assetFuelPercentAfter, setAssetFuelPercentAfter)}
+          {renderStepControls()}
+        </section>
+      );
+    }
+
+    if (issueStep === 'operator') {
+      return (
+        <section className={styles.stepCard}>
+          <div className={styles.stepTitleBlock}>
+            <span>Step {issueStepNumber} of {ISSUE_STEPS.length}</span>
+            <h1>Operator</h1>
+            <p>Who issued or received the fuel?</p>
+          </div>
+          <label className={styles.field}>
+            <span>Manager / operator</span>
+            <input value={operatorName} onChange={(event) => setOperatorName(normalizeOperatorName(event.target.value))} placeholder="Name" autoFocus />
+          </label>
+          {renderStepControls()}
+        </section>
+      );
+    }
+
+    if (issueStep === 'work') {
+      return (
+        <section className={styles.stepCard}>
+          <div className={styles.stepTitleBlock}>
+            <span>Step {issueStepNumber} of {ISSUE_STEPS.length}</span>
+            <h1>Activity</h1>
+            <p>What will the asset do, and where?</p>
+          </div>
+          <label className={styles.field}>
+            <span>What activity</span>
+            <input value={activityText} onChange={(event) => setActivityText(normalizeShortText(event.target.value))} placeholder="Example: Planting, spraying, transport" autoFocus />
+          </label>
+          <label className={styles.field}>
+            <span>Where</span>
+            <input value={workAreaText} onChange={(event) => setWorkAreaText(normalizeShortText(event.target.value))} placeholder="Example: Bashan B6, Shed 2, Road camp" />
+          </label>
+          {renderStepControls()}
+        </section>
+      );
+    }
+
+    return (
+      <section className={styles.stepCard}>
+        <div className={styles.stepTitleBlock}>
+          <span>Step {issueStepNumber} of {ISSUE_STEPS.length}</span>
+          <h1>Notes</h1>
+          <p>Add anything important, then save.</p>
+        </div>
+        <label className={styles.field}>
+          <span>Optional note</span>
+          <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={4} placeholder="Optional note" autoFocus />
+        </label>
+        <div className={styles.reviewBox}>
+          <div><span>Asset</span><strong>{selectedAssetName || '—'}</strong></div>
+          <div><span>Litres</span><strong>{litres ? formatLitres(Number(litres)) : '—'}</strong></div>
+          <div><span>Fuel</span><strong>{fuelPercentText(assetFuelPercentBefore)}% → {fuelPercentText(assetFuelPercentAfter)}%</strong></div>
+          <div><span>Activity</span><strong>{activityText || '—'}</strong></div>
+          <div><span>Where</span><strong>{workAreaText || '—'}</strong></div>
+        </div>
+        {renderStepControls({ submit: true })}
+      </section>
+    );
   }
 
   if (isLoading) {
@@ -427,8 +788,8 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     return (
       <main className={styles.scanPage}>
         <section className={styles.thankYouScreen}>
-          <h1>Thank you.</h1>
-          <p>The fuel issue has been saved and this QR session is closed.</p>
+          <h1>Saved.</h1>
+          <p>The fuel issue was added to the fuel ledger and the asset record.</p>
         </section>
       </main>
     );
@@ -437,164 +798,55 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   return (
     <main className={styles.scanPage}>
       <div className={styles.scanShell}>
-        {unauthenticated ? (
-          <section className={styles.accountCard}>
-            <span>Fuel QR for</span>
-            <h1>{visibleAccountName}</h1>
-            <p>{visibleStorageName} · {visibleFuelType}</p>
-          </section>
-        ) : (
-          <section className={styles.storageOpenCard}>
-            <div>
-              <span>Fuel storage unlocked</span>
-              <h1>{visibleStorageName}</h1>
-              <p>{visibleFuelType} · {formatLitres(storage.currentLitres)} available</p>
-            </div>
-            <div className={styles.storageProgress} aria-hidden="true">
-              <i style={{ width: `${Math.max(0, Math.min(100, storage.stockPercent ?? 0))}%` }} />
-            </div>
-          </section>
-        )}
-
         {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
 
         {unauthenticated ? (
-          <form className={styles.pinCard} onSubmit={handlePinSubmit}>
-            <div className={styles.titleBlock}>
-              <h2>Enter fuel storage PIN</h2>
-              <p>Unlock fuel issue access for this account.</p>
+          <section className={styles.pinStepCard}>
+            <div className={styles.qrTitleBlock}>
+              <span>Fuel QR for</span>
+              <h1>{visibleAccountName}</h1>
+              <p>{visibleStorageName} · {visibleFuelType}</p>
             </div>
-            <label className={styles.field}>
-              <span>Fuel PIN</span>
-              <input
-                value={pin}
-                onChange={(event) => setPin(normalizeIntegerInput(event.target.value).slice(0, 8))}
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                placeholder="4 to 8 digits"
-                autoFocus
-                required
-              />
-            </label>
-            <button type="submit" className={styles.primaryButton} disabled={isAuthenticating || pin.length < 4}>{isAuthenticating ? 'Checking...' : 'Unlock fuel storage'}</button>
-          </form>
+            <form className={styles.pinForm} onSubmit={handlePinSubmit}>
+              <div className={`${styles.locationGate} ${coordinates ? styles.locationGateReady : ''}`}>
+                <div>
+                  <strong>Location required</strong>
+                  <span>{locationStatus}</span>
+                </div>
+                <button type="button" onClick={captureLocation} disabled={isCapturingLocation}>
+                  {isCapturingLocation ? 'Capturing...' : coordinates ? 'Recapture GPS' : 'Capture GPS'}
+                </button>
+              </div>
+              <label className={styles.field}>
+                <span>Fuel PIN</span>
+                <input
+                  value={pin}
+                  onChange={(event) => setPin(normalizeIntegerInput(event.target.value).slice(0, 8))}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="4 to 8 digits"
+                  required
+                />
+              </label>
+              <button type="submit" className={styles.primaryButton} disabled={isAuthenticating || pin.length < 4 || !coordinates}>
+                {isAuthenticating ? 'Checking...' : 'Continue'}
+              </button>
+            </form>
+          </section>
         ) : (
-          <form className={styles.issueCard} onSubmit={handleIssueSubmit}>
-            <div className={styles.titleBlock}>
-              <h2>Issue fuel</h2>
-              <p>Choose the asset, enter litres, set fuel level, then save.</p>
-            </div>
-
-            <button type="button" className={styles.assetPickerButton} onClick={() => setIsAssetPickerOpen(true)}>
-              <span>Asset that received fuel</span>
-              <strong>{selectedAsset ? selectedAssetName : 'Choose asset'}</strong>
-              <small>{selectedAsset ? 'Tap to change asset' : `${assets.length} asset${assets.length === 1 ? '' : 's'} available`}</small>
-            </button>
-
-            {selectedAsset ? (
-              <div className={styles.assetSnapshot}>
-                <div><span>Fuel</span><strong>{formatPercent(selectedAsset.fuelPercent)}</strong></div>
-                <div><span>Hours / km</span><strong>{formatHours(selectedAsset.hours)}</strong></div>
-                <div><span>Type</span><strong>{selectedAsset.assetTypeLabel || selectedAsset.kind || 'Asset'}</strong></div>
-              </div>
-            ) : null}
-
-            <label className={styles.field}>
-              <span>Litres issued</span>
-              <input type="number" min="0" step="0.01" value={litres} onChange={(event) => setLitres(event.target.value)} placeholder="Litres" required />
-            </label>
-
-            <div className={styles.fuelSliderBlock}>
-              <span>Asset fuel % after fill</span>
-              <strong>{fuelPercentText(assetFuelPercentAfter)}%</strong>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-                className={styles.rangeInput}
-                value={fuelPercentText(assetFuelPercentAfter)}
-                onChange={(event) => setAssetFuelPercentAfter(fuelPercentText(event.target.value))}
-                required
-              />
-              <div className={styles.quickFuelGrid}>
-                {QUICK_FUEL_OPTIONS.map((option) => (
-                  <button
-                    type="button"
-                    key={option}
-                    className={`${styles.quickFuelButton} ${assetFuelPercentAfter === String(option) ? styles.quickFuelButtonActive : ''}`}
-                    onClick={() => setAssetFuelPercentAfter(String(option))}
-                    disabled={isSaving}
-                  >
-                    {option}%
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.twoColumnFields}>
-              <label className={styles.field}>
-                <span>Hour / km reading</span>
-                <input type="number" min="0" step="1" value={assetUsageReading} onChange={(event) => setAssetUsageReading(event.target.value)} placeholder="Optional" />
-              </label>
-              <label className={styles.field}>
-                <span>Manager / operator</span>
-                <input value={operatorName} onChange={(event) => setOperatorName(normalizeOperatorName(event.target.value))} placeholder="Name" required />
-              </label>
-            </div>
-
-            <label className={styles.field}>
-              <span>Note</span>
-              <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={2} placeholder="Optional note" />
-            </label>
-
-            <div className={`${styles.gpsBox} ${coordinates ? styles.gpsBoxReady : ''}`}>
+          <>
+            <div className={styles.stepProgress} aria-label={`Step ${issueStepNumber} of ${ISSUE_STEPS.length}: ${STEP_LABELS[issueStep]}`}>
               <div>
-                <strong>Location</strong>
-                <span>{locationStatus}</span>
+                <span>Fuel issue</span>
+                <strong>{STEP_LABELS[issueStep]}</strong>
               </div>
-              <button type="button" onClick={captureLocation}>Capture GPS</button>
+              <small>{issueStepNumber}/{ISSUE_STEPS.length}</small>
+              <i><b style={{ width: `${issueStepProgress}%` }} /></i>
             </div>
-
-            <button type="submit" className={styles.primaryButton} disabled={isSaving || !coordinates}>{isSaving ? 'Saving fuel...' : 'Save fuel issue'}</button>
-          </form>
+            {renderIssueStep()}
+          </>
         )}
       </div>
-
-      {isAssetPickerOpen ? (
-        <div className={styles.assetPickerOverlay} role="dialog" aria-modal="true" aria-labelledby="fuel-asset-picker-title">
-          <button type="button" className={styles.assetPickerBackdrop} onClick={() => setIsAssetPickerOpen(false)} aria-label="Close asset chooser" />
-          <section className={styles.assetPickerSheet}>
-            <div className={styles.assetPickerHeader}>
-              <div>
-                <h2 id="fuel-asset-picker-title">Choose asset</h2>
-                <p>Tap the asset that received fuel.</p>
-              </div>
-              <button type="button" onClick={() => setIsAssetPickerOpen(false)} aria-label="Close asset chooser">×</button>
-            </div>
-            <input
-              className={styles.assetSearchInput}
-              value={assetSearch}
-              onChange={(event) => setAssetSearch(event.target.value)}
-              placeholder="Search asset title"
-              autoFocus
-            />
-            <div className={styles.assetChoiceList}>
-              {filteredAssets.map((asset) => (
-                <button
-                  type="button"
-                  key={asset.id}
-                  className={`${styles.assetChoiceButton} ${asset.id === assetId ? styles.assetChoiceButtonActive : ''}`}
-                  onClick={() => chooseAsset(asset.id)}
-                >
-                  {assetDisplayName(asset)}
-                </button>
-              ))}
-              {!filteredAssets.length ? <p>No assets found.</p> : null}
-            </div>
-          </section>
-        </div>
-      ) : null}
     </main>
   );
 }

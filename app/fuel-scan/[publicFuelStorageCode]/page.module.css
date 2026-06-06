@@ -6,7 +6,6 @@
   --line-strong: #c3d4de;
   --text: #083c2e;
   --text-soft: #53677a;
-  --blue-text: #16395f;
   --green: #176b4f;
   --green-strong: #0c4d3a;
   --green-soft: #ecf8f2;
@@ -28,46 +27,71 @@
 }
 
 .scanShell {
-  width: min(calc(100% - 1rem), 760px);
+  width: min(calc(100% - 1rem), 620px);
+  min-height: 100dvh;
   margin: 0 auto;
-  padding: 0.7rem 0 1.45rem;
+  padding: 0.75rem 0 1rem;
   display: grid;
-  gap: 0.95rem;
+  align-content: start;
+  gap: 0.75rem;
 }
 
-.card,
-.accountCard,
-.storageOpenCard,
-.pinCard,
-.issueCard,
+.pinStepCard,
+.stepCard,
 .notice,
-.assetPickerSheet,
+.stepProgress,
 .thankYouScreen {
   border: 1px solid rgba(200, 217, 228, 0.96);
-  border-radius: 1.45rem;
+  border-radius: 1.35rem;
   background:
-    radial-gradient(circle at top left, rgba(23, 107, 79, 0.06), transparent 42%),
+    radial-gradient(circle at top left, rgba(23, 107, 79, 0.055), transparent 42%),
     linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
   box-shadow:
-    0 22px 50px rgba(11, 32, 48, 0.09),
+    0 20px 45px rgba(11, 32, 48, 0.09),
     0 8px 18px rgba(11, 32, 48, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
-.card,
-.accountCard,
-.storageOpenCard,
-.pinCard,
-.issueCard,
-.thankYouScreen {
-  padding: clamp(1.15rem, 4.5vw, 1.7rem);
+.pinStepCard,
+.stepCard {
+  min-height: calc(100dvh - 1.5rem);
+  padding: clamp(1.1rem, 4.5vw, 1.55rem);
+  display: grid;
+  align-content: start;
+  gap: 1rem;
 }
 
-.card h1,
-.accountCard h1,
-.storageOpenCard h1,
-.titleBlock h2,
-.assetPickerHeader h2,
+.pinStepCard {
+  align-content: center;
+}
+
+.stepProgress + .stepCard {
+  min-height: calc(100dvh - 6.35rem);
+}
+
+.qrTitleBlock,
+.stepTitleBlock {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.qrTitleBlock span,
+.stepTitleBlock span,
+.field span,
+.searchField span,
+.readingCard span,
+.compactMetaGrid span,
+.reviewBox span,
+.stepProgress span {
+  color: #657789;
+  font-size: clamp(0.78rem, 2.7vw, 0.92rem);
+  font-weight: 900;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+
+.qrTitleBlock h1,
+.stepTitleBlock h1,
 .thankYouScreen h1 {
   margin: 0;
   color: var(--text);
@@ -76,88 +100,165 @@
   letter-spacing: -0.062em;
 }
 
-.card h1,
-.accountCard h1,
-.storageOpenCard h1 {
-  font-size: clamp(2.1rem, 8.8vw, 3.4rem);
+.qrTitleBlock h1 {
+  font-size: clamp(2.25rem, 10vw, 3.5rem);
 }
 
-.titleBlock h2,
-.assetPickerHeader h2,
+.stepTitleBlock h1,
 .thankYouScreen h1 {
-  font-size: clamp(1.9rem, 8vw, 2.8rem);
+  font-size: clamp(2.25rem, 10vw, 3.25rem);
 }
 
-.accountCard,
-.storageOpenCard,
-.pinCard,
-.issueCard,
-.titleBlock {
-  display: grid;
-}
-
-.accountCard,
-.storageOpenCard,
-.pinCard,
-.issueCard {
-  gap: 1.05rem;
-}
-
-.titleBlock {
-  gap: 0.45rem;
-}
-
-.accountCard span,
-.storageOpenCard span,
-.field span,
-.fuelSliderBlock > span,
-.assetPickerButton > span {
-  color: #657789;
-  font-size: clamp(0.78rem, 2.7vw, 0.92rem);
-  font-weight: 900;
-  letter-spacing: 0.065em;
-  text-transform: uppercase;
-}
-
-.accountCard p,
-.storageOpenCard p,
-.titleBlock p,
-.assetPickerHeader p,
-.thankYouScreen p {
+.qrTitleBlock p,
+.stepTitleBlock p,
+.thankYouScreen p,
+.emptyText {
   margin: 0;
   color: var(--text-soft);
-  font-size: clamp(1.02rem, 3.5vw, 1.22rem);
-  font-weight: 690;
-  line-height: 1.36;
+  font-size: clamp(1.02rem, 3.5vw, 1.2rem);
+  font-weight: 720;
+  line-height: 1.34;
 }
 
-.storageOpenCard {
-  gap: 0.95rem;
+.pinForm,
+.field,
+.searchField {
+  display: grid;
+  gap: 0.65rem;
 }
 
-.storageOpenCard h1 {
-  margin-top: 0.12rem;
+.pinForm {
+  gap: 1rem;
 }
 
-.storageProgress {
-  height: 0.75rem;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #dfe9e5;
-  border: 1px solid rgba(18, 45, 37, 0.06);
+.field input,
+.field textarea,
+.searchField input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 1.2rem;
+  background: #ffffff;
+  color: #1e2f3d;
+  font: inherit;
+  font-size: 1.12rem;
+  font-weight: 760;
+  box-shadow:
+    0 8px 18px rgba(23, 45, 75, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
-.storageProgress i {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #176b4f 0%, #43a879 100%);
+.field input,
+.searchField input {
+  min-height: 4.2rem;
+  padding: 0 1.1rem;
+}
+
+.field textarea {
+  min-height: 9rem;
+  padding: 1rem 1.1rem;
+  line-height: 1.45;
+  resize: none;
+}
+
+.field input:disabled {
+  background: #f3f7f8;
+  color: #9aa6b2;
+}
+
+.field input:focus,
+.field textarea:focus,
+.searchField input:focus,
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.optionButton:focus-visible,
+.locationGate button:focus-visible,
+.quickFuelButton:focus-visible,
+.assetChoiceButton:focus-visible {
+  outline: none;
+  border-color: rgba(23, 107, 79, 0.55);
+  box-shadow:
+    0 0 0 5px rgba(23, 107, 79, 0.11),
+    0 10px 24px rgba(23, 45, 75, 0.06);
+}
+
+.field input::placeholder,
+.field textarea::placeholder,
+.searchField input::placeholder {
+  color: #9aa6b2;
+  font-weight: 640;
+}
+
+.primaryButton,
+.secondaryButton,
+.optionButton,
+.locationGate button,
+.assetChoiceButton,
+.quickFuelButton {
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.primaryButton:hover,
+.secondaryButton:hover,
+.optionButton:hover,
+.locationGate button:hover,
+.assetChoiceButton:hover,
+.quickFuelButton:hover {
+  transform: translateY(-1px);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.optionButton:disabled,
+.locationGate button:disabled,
+.quickFuelButton:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.primaryButton,
+.secondaryButton {
+  min-height: 4.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.72rem;
+  border-radius: 1.25rem;
+  padding: 0 1.2rem;
+  font-size: 1.1rem;
+  font-weight: 900;
+  line-height: 1.12;
+  text-decoration: none;
+}
+
+.primaryButton {
+  border: 1px solid rgba(16, 68, 52, 0.34);
+  color: #ffffff;
+  background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
+  box-shadow:
+    0 16px 32px rgba(16, 68, 52, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.secondaryButton {
+  border: 1px solid rgba(18, 45, 37, 0.10);
+  color: #17362c;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.06);
 }
 
 .notice {
-  min-height: 3.7rem;
-  padding: 1.05rem 1.18rem;
-  font-size: 1.04rem;
+  min-height: 3.55rem;
+  padding: 0.95rem 1.05rem;
+  font-size: 1rem;
   font-weight: 820;
   line-height: 1.35;
 }
@@ -174,178 +275,187 @@
   border-color: rgba(239, 196, 196, 0.98);
 }
 
-.field {
+.locationGate {
   display: grid;
-  gap: 0.68rem;
+  gap: 0.85rem;
+  padding: 1rem;
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, #fffafa 0%, #fff3f3 100%);
+  border: 1px solid rgba(239, 196, 196, 0.98);
 }
 
-.field input,
-.field textarea,
-.assetSearchInput {
-  width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 1.22rem;
-  background: #ffffff;
-  color: #1e2f3d;
-  font: inherit;
-  font-size: 1.16rem;
-  font-weight: 720;
-  box-shadow:
-    0 8px 18px rgba(23, 45, 75, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+.locationGateReady {
+  background: linear-gradient(180deg, #f1fbf6 0%, #e5f6ec 100%);
+  border-color: rgba(159, 218, 185, 0.98);
 }
 
-.field input,
-.assetSearchInput {
-  min-height: 4.35rem;
-  padding: 0 1.15rem;
+.locationGate div {
+  display: grid;
+  gap: 0.3rem;
 }
 
-.field textarea {
-  min-height: 7rem;
-  padding: 1.08rem 1.15rem;
-  line-height: 1.45;
-  resize: vertical;
-}
-
-.field input:focus,
-.field textarea:focus,
-.assetSearchInput:focus,
-.assetPickerButton:focus-visible,
-.quickFuelButton:focus-visible,
-.primaryButton:focus-visible,
-.gpsBox button:focus-visible,
-.assetChoiceButton:focus-visible {
-  outline: none;
-  border-color: rgba(23, 107, 79, 0.55);
-  box-shadow:
-    0 0 0 5px rgba(23, 107, 79, 0.11),
-    0 10px 24px rgba(23, 45, 75, 0.06);
-}
-
-.field input::placeholder,
-.field textarea::placeholder,
-.assetSearchInput::placeholder {
-  color: #9aa6b2;
-  font-weight: 640;
-}
-
-.primaryButton,
-.gpsBox button,
-.assetChoiceButton,
-.quickFuelButton,
-.assetPickerButton {
-  font: inherit;
-  cursor: pointer;
-  touch-action: manipulation;
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease,
-    background 160ms ease,
-    border-color 160ms ease,
-    opacity 160ms ease;
-}
-
-.primaryButton:hover,
-.gpsBox button:hover,
-.assetChoiceButton:hover,
-.quickFuelButton:hover,
-.assetPickerButton:hover {
-  transform: translateY(-1px);
-}
-
-.primaryButton:disabled,
-.gpsBox button:disabled,
-.quickFuelButton:disabled {
-  opacity: 0.52;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.primaryButton {
-  min-height: 4.45rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.72rem;
-  border: 1px solid rgba(16, 68, 52, 0.34);
-  border-radius: 1.35rem;
-  padding: 0 1.25rem;
-  color: #ffffff;
-  background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
-  font-size: 1.14rem;
+.locationGate strong {
+  color: var(--text);
+  font-size: 1.08rem;
   font-weight: 900;
-  line-height: 1.12;
-  text-decoration: none;
-  box-shadow:
-    0 16px 32px rgba(16, 68, 52, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
-.assetPickerButton {
-  width: 100%;
-  min-height: 6.4rem;
+.locationGate span {
+  color: var(--text-soft);
+  font-size: 0.92rem;
+  font-weight: 780;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.locationGate button,
+.optionButton,
+.quickFuelButton {
+  min-height: 3.3rem;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(18, 45, 37, 0.10);
+  background: #ffffff;
+  color: #17362c;
+  padding: 0 1rem;
+  font-size: 1rem;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.055);
+}
+
+.stepProgress {
+  position: sticky;
+  top: 0.45rem;
+  z-index: 10;
+  padding: 0.78rem 0.9rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem 0.9rem;
+  align-items: center;
+}
+
+.stepProgress strong {
+  display: block;
+  color: var(--text);
+  font-size: 1.08rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.stepProgress small {
+  color: var(--text-soft);
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.stepProgress i {
+  grid-column: 1 / -1;
+  height: 0.42rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dfe9e5;
+}
+
+.stepProgress b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #176b4f 0%, #43a879 100%);
+}
+
+.assetStepCard {
+  min-height: calc(100dvh - 6.35rem);
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.assetChoiceList {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.62rem;
+  overflow: auto;
+  padding: 0.05rem 0.1rem 0.2rem;
+  overscroll-behavior: contain;
+}
+
+.assetChoiceButton {
+  min-height: 5.2rem;
   display: grid;
   gap: 0.35rem;
+  align-content: center;
   text-align: left;
-  border: 1px solid var(--line);
-  border-radius: 1.32rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f6fafb 100%);
-  padding: 1rem 1.12rem;
+  border: 1px solid rgba(214, 226, 236, 0.96);
+  border-radius: 1.15rem;
+  background: #ffffff;
   color: var(--text);
+  padding: 0.92rem 1rem;
+  box-shadow: 0 8px 18px rgba(23, 45, 75, 0.035);
+}
+
+.assetChoiceButton strong {
+  min-width: 0;
+  color: inherit;
+  font-size: 1.12rem;
+  font-weight: 900;
+  line-height: 1.12;
+}
+
+.assetChoiceButton span {
+  min-width: 0;
+  color: var(--text-soft);
+  font-size: 0.92rem;
+  font-weight: 760;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.assetChoiceButtonActive {
+  color: #ffffff;
+  background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
+  border-color: rgba(16, 68, 52, 0.34);
+  box-shadow: 0 14px 28px rgba(16, 68, 52, 0.18);
+}
+
+.assetChoiceButtonActive span {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.readingCard,
+.compactMetaGrid > div,
+.reviewBox {
+  border: 1px solid rgba(214, 226, 236, 0.96);
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
   box-shadow:
     0 10px 22px rgba(23, 45, 75, 0.05),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
-.assetPickerButton strong {
-  color: var(--text);
-  font-size: clamp(1.35rem, 5vw, 1.75rem);
-  font-weight: 900;
-  line-height: 1.05;
-  letter-spacing: -0.035em;
-}
-
-.assetPickerButton small {
-  color: var(--text-soft);
-  font-size: 0.96rem;
-  font-weight: 760;
-}
-
-.assetSnapshot {
+.readingCard {
+  min-height: 5.4rem;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.72rem;
+  align-content: center;
+  gap: 0.25rem;
+  padding: 1rem;
 }
 
-.assetSnapshot > div {
-  min-width: 0;
-  display: grid;
-  gap: 0.24rem;
-  min-height: 4.65rem;
-  padding: 0.85rem 0.95rem;
-  border-radius: 1.1rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
-  border: 1px solid rgba(214, 226, 236, 0.96);
-}
-
-.assetSnapshot span {
-  color: #657789;
-  font-size: 0.76rem;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.assetSnapshot strong {
-  min-width: 0;
+.readingCard strong {
   color: var(--text);
-  font-size: 1.08rem;
-  font-weight: 880;
-  line-height: 1.16;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: clamp(1.8rem, 8vw, 2.55rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.optionButton {
+  text-align: center;
+}
+
+.optionButtonActive,
+.quickFuelButtonActive {
+  color: #ffffff;
+  background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
+  border-color: rgba(16, 68, 52, 0.34);
+  box-shadow: 0 14px 28px rgba(16, 68, 52, 0.18);
 }
 
 .fuelSliderBlock {
@@ -364,7 +474,7 @@
   display: grid;
   place-items: center;
   color: #123b30;
-  font-size: clamp(3rem, 15vw, 5rem);
+  font-size: clamp(3.4rem, 18vw, 5.2rem);
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.065em;
@@ -394,80 +504,54 @@
   gap: 0.65rem;
 }
 
-.quickFuelButton {
-  min-height: 3.45rem;
-  border-radius: 1.05rem;
-  border: 1px solid rgba(18, 45, 37, 0.10);
-  background: #ffffff;
-  color: #17362c;
-  font-size: 1.03rem;
-  font-weight: 900;
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.055);
-}
-
-.quickFuelButtonActive {
-  color: #ffffff;
-  background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
-  border-color: rgba(16, 68, 52, 0.34);
-  box-shadow: 0 14px 28px rgba(16, 68, 52, 0.18);
-}
-
-.twoColumnFields {
+.compactMetaGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
+  gap: 0.72rem;
 }
 
-.gpsBox {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem;
-  border-radius: 1.25rem;
-  background: linear-gradient(180deg, #f8fbfa 0%, #f1f8f4 100%);
-  border: 1px solid rgba(18, 45, 37, 0.08);
-}
-
-.gpsBoxReady {
-  background: linear-gradient(180deg, #f1fbf6 0%, #e5f6ec 100%);
-  border-color: rgba(159, 218, 185, 0.98);
-}
-
-.gpsBox div {
-  min-width: 0;
+.compactMetaGrid > div {
+  min-height: 4rem;
   display: grid;
-  gap: 0.32rem;
+  align-content: center;
+  gap: 0.2rem;
+  padding: 0.82rem 0.95rem;
 }
 
-.gpsBox strong {
+.compactMetaGrid strong {
   color: var(--text);
-  font-size: 1.14rem;
+  font-size: 1.2rem;
   font-weight: 900;
 }
 
-.gpsBox span {
-  color: var(--text-soft);
-  font-size: 0.9rem;
-  font-weight: 820;
-  line-height: 1.3;
+.reviewBox {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.95rem;
+}
+
+.reviewBox > div {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.reviewBox strong {
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 860;
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
-.gpsBox button {
-  flex: 0 0 auto;
-  min-height: 3.3rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 1.1rem;
-  border: 1px solid rgba(18, 45, 37, 0.09);
-  padding: 0 1.15rem;
-  background: #ffffff;
-  color: #17362c;
-  font-size: 1rem;
-  font-weight: 900;
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.06);
+.stepControls {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.72rem;
+}
+
+.stepControls .primaryButton:only-child {
+  grid-column: 1 / -1;
 }
 
 .thankYouScreen {
@@ -478,6 +562,7 @@
   place-content: center;
   justify-items: center;
   gap: 0.78rem;
+  padding: 1.5rem;
   text-align: center;
   box-shadow: none;
   background:
@@ -485,302 +570,29 @@
     linear-gradient(180deg, #ffffff 0%, #eef5f7 100%);
 }
 
-.thankYouScreen h1 {
-  font-size: clamp(2.35rem, 11vw, 3.45rem);
-}
-
 .thankYouScreen p {
   max-width: 28rem;
 }
 
-.assetPickerOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  display: grid;
-  align-items: end;
-}
-
-.assetPickerBackdrop {
-  position: absolute;
-  inset: 0;
-  border: 0;
-  background: rgba(5, 20, 18, 0.46);
-  backdrop-filter: blur(10px);
-}
-
-.assetPickerSheet {
-  position: relative;
-  width: min(calc(100% - 1rem), 760px);
-  max-height: min(82dvh, 720px);
-  margin: 0 auto 0.5rem;
-  padding: 1rem;
-  display: grid;
-  gap: 0.9rem;
-  overflow: hidden;
-}
-
-.assetPickerHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.assetPickerHeader div {
-  display: grid;
-  gap: 0.3rem;
-}
-
-.assetPickerHeader button {
-  width: 3rem;
-  height: 3rem;
-  flex: 0 0 auto;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: #ffffff;
-  color: var(--text);
-  font-size: 2rem;
-  line-height: 1;
-  font-weight: 760;
-  cursor: pointer;
-}
-
-.assetChoiceList {
-  min-height: 0;
-  display: grid;
-  gap: 0.62rem;
-  overflow: auto;
-  padding-right: 0.1rem;
-}
-
-.assetChoiceButton {
-  min-height: 4.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  text-align: left;
-  border: 1px solid rgba(214, 226, 236, 0.96);
-  border-radius: 1.15rem;
-  background: #ffffff;
-  color: var(--text);
-  padding: 0.9rem 1rem;
-  font-size: 1.14rem;
-  font-weight: 900;
-  line-height: 1.12;
-  box-shadow: 0 8px 18px rgba(23, 45, 75, 0.035);
-}
-
-.assetChoiceButtonActive {
-  color: #ffffff;
-  background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
-  border-color: rgba(16, 68, 52, 0.34);
-  box-shadow: 0 14px 28px rgba(16, 68, 52, 0.18);
-}
-
-.assetChoiceList p {
-  margin: 0;
-  color: var(--text-soft);
-  font-size: 1rem;
-  font-weight: 760;
-}
-
-@media (min-width: 760px) {
-  .assetPickerOverlay {
-    align-items: center;
-  }
-
-  .assetPickerSheet {
-    margin-bottom: 0;
-  }
-}
-
 @media (max-width: 640px) {
   .scanShell {
-    width: min(calc(100% - 1rem), 520px);
+    width: min(calc(100% - 0.8rem), 520px);
+    padding: 0.55rem 0 0.85rem;
   }
 
-  .accountCard,
-  .storageOpenCard,
-  .pinCard,
-  .issueCard,
+  .pinStepCard,
+  .stepCard,
   .notice,
-  .assetPickerSheet {
-    border-radius: 1.35rem;
+  .stepProgress {
+    border-radius: 1.25rem;
   }
 
-  .accountCard h1,
-  .storageOpenCard h1 {
-    font-size: clamp(2.15rem, 11vw, 3.05rem);
-  }
-
-  .twoColumnFields,
-  .assetSnapshot {
-    grid-template-columns: 1fr;
+  .pinStepCard,
+  .stepCard {
+    padding: 1.02rem;
   }
 
   .quickFuelGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .gpsBox {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .gpsBox button,
-  .primaryButton {
-    width: 100%;
-  }
-}
-
-@media (max-width: 640px) {
-  .scanPage {
-    min-height: 100svh;
-  }
-
-  .scanShell {
-    width: 100%;
-    padding: 0.55rem 0.55rem 1rem;
-    gap: 0.7rem;
-  }
-
-  .card,
-  .accountCard,
-  .storageOpenCard,
-  .pinCard,
-  .issueCard,
-  .notice,
-  .assetPickerSheet,
-  .thankYouScreen {
-    border-radius: 1.12rem;
-  }
-
-  .card,
-  .accountCard,
-  .storageOpenCard,
-  .pinCard,
-  .issueCard,
-  .thankYouScreen {
-    padding: 1rem;
-  }
-
-  .accountCard,
-  .storageOpenCard,
-  .pinCard,
-  .issueCard {
-    gap: 0.82rem;
-  }
-
-  .card h1,
-  .accountCard h1,
-  .storageOpenCard h1 {
-    font-size: clamp(1.78rem, 9.6vw, 2.55rem);
-    line-height: 0.98;
-  }
-
-  .titleBlock h2,
-  .assetPickerHeader h2,
-  .thankYouScreen h1 {
-    font-size: clamp(1.65rem, 8.4vw, 2.35rem);
-  }
-
-  .field {
-    gap: 0.48rem;
-  }
-
-  .field input,
-  .field textarea,
-  .assetSearchInput {
-    border-radius: 1rem;
-    font-size: 16px;
-  }
-
-  .field input,
-  .assetSearchInput {
-    min-height: 3.75rem;
-    padding-inline: 0.95rem;
-  }
-
-  .field textarea {
-    min-height: 5.6rem;
-    padding: 0.95rem;
-  }
-
-  .assetPickerButton {
-    min-height: 5.15rem;
-    border-radius: 1.05rem;
-    padding: 0.88rem 0.92rem;
-  }
-
-  .assetPickerButton strong {
-    font-size: clamp(1.18rem, 5.7vw, 1.45rem);
-  }
-
-  .assetSnapshot > div {
-    min-height: 3.85rem;
-    padding: 0.75rem 0.85rem;
-    border-radius: 0.95rem;
-  }
-
-  .fuelSliderBlock {
-    gap: 0.78rem;
-    padding: 0.85rem;
-    border-radius: 1.05rem;
-  }
-
-  .fuelSliderBlock strong {
-    min-height: 3.45rem;
-    font-size: clamp(2.4rem, 14vw, 3.85rem);
-  }
-
-  .quickFuelButton {
-    min-height: 3.25rem;
-    border-radius: 0.92rem;
-  }
-
-  .gpsBox {
-    padding: 0.85rem;
-    border-radius: 1rem;
-  }
-
-  .primaryButton {
-    min-height: 4.05rem;
-    border-radius: 1.08rem;
-    font-size: 1.06rem;
-  }
-
-  .issueCard > .primaryButton {
-    position: sticky;
-    bottom: 0.55rem;
-    z-index: 5;
-  }
-
-  .assetPickerOverlay {
-    align-items: end;
-  }
-
-  .assetPickerSheet {
-    width: 100%;
-    max-height: 88dvh;
-    margin: 0;
-    padding: 0.9rem;
-    border-radius: 1.35rem 1.35rem 0 0;
-  }
-
-  .assetPickerHeader {
-    gap: 0.65rem;
-  }
-
-  .assetPickerHeader button {
-    width: 2.75rem;
-    height: 2.75rem;
-  }
-
-  .assetChoiceButton {
-    min-height: 3.85rem;
-    border-radius: 0.95rem;
-    padding: 0.78rem 0.85rem;
-    font-size: 1.02rem;
   }
 }
