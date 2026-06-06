@@ -5,7 +5,7 @@ import styles from './page.module.css';
 
 type FuelStorageStatus = 'active' | 'archived';
 type FuelStorageEventType = 'opening_balance' | 'stock_in' | 'asset_issue' | 'dip' | 'adjustment';
-type IssueStep = 'asset' | 'usage' | 'beforeFuel' | 'filledFuel' | 'work' | 'notes';
+type IssueStep = 'asset' | 'usage' | 'beforeFuel' | 'litres' | 'filledFuel' | 'work' | 'notes';
 
 type FuelStoragePublicPreview = {
   id: string;
@@ -104,12 +104,13 @@ type FuelScanClientProps = {
 };
 
 const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
-const TOTAL_SCAN_PAGES = 7;
-const ISSUE_STEPS: IssueStep[] = ['asset', 'usage', 'beforeFuel', 'filledFuel', 'work', 'notes'];
+const TOTAL_SCAN_PAGES = 8;
+const ISSUE_STEPS: IssueStep[] = ['asset', 'usage', 'beforeFuel', 'litres', 'filledFuel', 'work', 'notes'];
 const STEP_LABELS: Record<IssueStep, string> = {
   asset: 'Choose asset',
   usage: 'New recorded',
   beforeFuel: 'Fuel before',
+  litres: 'Litres issued',
   filledFuel: 'Fuel after',
   work: 'Activity',
   notes: 'Confirm',
@@ -136,10 +137,6 @@ function formatLitres(value: number | null | undefined): string {
   return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L`;
 }
 
-function formatPercent(value: number | null | undefined): string {
-  if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return '—';
-  return `${Math.round(value)}%`;
-}
 
 function formatHours(value: number | null | undefined): string {
   if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return 'Not captured';
@@ -154,9 +151,6 @@ function assetSerialText(asset: FuelLedgerAsset): string {
   return asset.serialNumber || 'Not captured';
 }
 
-function assetPlateText(asset: FuelLedgerAsset): string {
-  return asset.plateLabel || 'No plate';
-}
 
 function assetSearchText(asset: FuelLedgerAsset): string {
   return [
@@ -438,20 +432,22 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       validateUsageStep();
     }
 
-    if (issueStep === 'filledFuel') {
+    if (issueStep === 'litres') {
       const litresNumber = safeNumber(litres);
-      const beforeNumber = Number(fuelPercentText(assetFuelPercentBefore));
-      const afterNumber = Number(fuelPercentText(assetFuelPercentAfter));
 
       if (litresNumber === null || litresNumber <= 0) {
         throw new Error('Enter the litres issued to the asset.');
       }
+    }
+
+    if (issueStep === 'filledFuel') {
+      const beforeNumber = Number(fuelPercentText(assetFuelPercentBefore));
+      const afterNumber = Number(fuelPercentText(assetFuelPercentAfter));
 
       if (afterNumber < beforeNumber) {
         throw new Error('The fuel level after filling cannot be lower than the level before filling.');
       }
     }
-
 
     if (issueStep === 'work') {
       if (activityText.trim().length < 2) {
@@ -496,6 +492,10 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
 
       if (!litres || Number(litres) <= 0) {
         throw new Error('Enter the litres issued.');
+      }
+
+      if (Number(fuelPercentText(assetFuelPercentAfter)) < Number(fuelPercentText(assetFuelPercentBefore))) {
+        throw new Error('The fuel level after filling cannot be lower than the level before filling.');
       }
 
       if (operatorName.trim().length < 2) {
@@ -642,7 +642,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
           <div className={styles.assetSearchWrap}>
             <label className={styles.searchField}>
               <span>Search</span>
-              <input value={assetSearch} onChange={(event) => setAssetSearch(event.target.value)} placeholder="Search asset title, serial or plate" autoFocus />
+              <input value={assetSearch} onChange={(event) => setAssetSearch(event.target.value)} placeholder="Search asset title or serial" autoFocus />
             </label>
             <div className={styles.assetSearchSummary}>
               <span>{filteredAssets.length} {filteredAssets.length === 1 ? 'asset' : 'assets'} available</span>
@@ -673,9 +673,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
                   <strong>{displayName}</strong>
                   <div className={styles.assetDetailRows}>
                     <span><b>Serial</b><em>{assetSerialText(asset)}</em></span>
-                    <span><b>Plate</b><em>{assetPlateText(asset)}</em></span>
                     <span><b>Last recorded</b><em>{formatHours(asset.hours)}</em></span>
-                    <span><b>Fuel</b><em>{formatPercent(asset.fuelPercent)}</em></span>
                   </div>
                 </button>
               );
@@ -743,21 +741,38 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       );
     }
 
-    if (issueStep === 'filledFuel') {
+    if (issueStep === 'litres') {
       return (
         <section className={styles.stepCard}>
           <div className={styles.stepTitleBlock}>
             <span>Step {issueStepNumber} of {TOTAL_SCAN_PAGES}</span>
-            <h1>Fuel after</h1>
-            <p>Enter litres issued and set the fuel gauge after filling.</p>
+            <h1>Litres issued</h1>
+            <p>Enter the litres filled into the selected asset.</p>
           </div>
           <label className={styles.field}>
             <span>Litres issued</span>
             <input type="number" min="0" step="0.01" value={litres} onChange={(event) => setLitres(event.target.value)} placeholder="Litres issued" autoFocus />
           </label>
           <div className={styles.compactMetaGrid}>
-            <div><span>Before</span><strong>{fuelPercentText(assetFuelPercentBefore)}%</strong></div>
-            <div><span>After</span><strong>{fuelPercentText(assetFuelPercentAfter)}%</strong></div>
+            <div><span>Asset</span><strong>{selectedAssetName || '—'}</strong></div>
+            <div><span>Fuel before</span><strong>{fuelPercentText(assetFuelPercentBefore)}%</strong></div>
+          </div>
+          {renderStepControls()}
+        </section>
+      );
+    }
+
+    if (issueStep === 'filledFuel') {
+      return (
+        <section className={styles.stepCard}>
+          <div className={styles.stepTitleBlock}>
+            <span>Step {issueStepNumber} of {TOTAL_SCAN_PAGES}</span>
+            <h1>Fuel after</h1>
+            <p>Set the asset fuel gauge after filling.</p>
+          </div>
+          <div className={styles.compactMetaGrid}>
+            <div><span>Litres</span><strong>{litres ? formatLitres(Number(litres)) : '—'}</strong></div>
+            <div><span>Fuel before</span><strong>{fuelPercentText(assetFuelPercentBefore)}%</strong></div>
           </div>
           {renderFuelSlider(assetFuelPercentAfter, setAssetFuelPercentAfter)}
           {renderStepControls()}
