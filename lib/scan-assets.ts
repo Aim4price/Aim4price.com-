@@ -630,11 +630,37 @@ export async function getScanAssetAccessContext(publicAssetCode: string): Promis
   };
 }
 
-export async function listScanEventsForAsset(assetId: string, limit = 250): Promise<ScanEventRecord[]> {
+export type ScanEventListFilters = {
+  fromIso?: string;
+  toIso?: string;
+  onlyFuel?: boolean;
+};
+
+export async function listScanEventsForAsset(assetId: string, limit = 250, filters?: ScanEventListFilters): Promise<ScanEventRecord[]> {
   await ensureFuelLedgerTables();
 
   const db = getDb();
   const safeLimit = Math.max(1, Math.min(500, Math.round(limit || 250)));
+  const queryParams: unknown[] = [assetId];
+  const whereClauses = ['e.asset_id = $1'];
+
+  if (filters?.fromIso) {
+    queryParams.push(filters.fromIso);
+    whereClauses.push(`e.created_at >= $${queryParams.length}`);
+  }
+
+  if (filters?.toIso) {
+    queryParams.push(filters.toIso);
+    whereClauses.push(`e.created_at < $${queryParams.length}`);
+  }
+
+  if (filters?.onlyFuel) {
+    whereClauses.push(`(
+          e.fuel_percent is not null
+          or nullif(to_jsonb(e)->>'fuel_storage_event_id', '') is not null
+          or fse.id is not null
+        )`);
+  }
 
   const result = await db.query<ScanEventRow>(
     `
@@ -671,11 +697,11 @@ export async function listScanEventsForAsset(assetId: string, limit = 250): Prom
         on fse.id::text = nullif(to_jsonb(e)->>'fuel_storage_event_id', '')
       left join public.fuel_storage_units fsu
         on fsu.id = fse.storage_id
-      where e.asset_id = $1
+      where ${whereClauses.join('\n        and ')}
       order by e.created_at desc, e.id desc
       limit ${safeLimit}
     `,
-    [assetId],
+    queryParams,
   );
 
   return result.rows.map(mapScanEventRow);
