@@ -20117,3 +20117,252 @@
     width: 100% !important;
   }
 }
+
+/* === Asset fuel report export filter modal === */
+.assetFuelReportModal {
+  width: min(100%, 760px) !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.assetFuelReportFilterBox {
+  position: relative !important;
+  z-index: 2 !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.92rem !important;
+  margin-bottom: 1.05rem !important;
+  padding: 1rem !important;
+  border: 1px solid rgba(216, 226, 236, 0.94) !important;
+  border-radius: 1.25rem !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.06), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.reportSelectField {
+  position: relative !important;
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 0.38rem !important;
+  color: #253b34 !important;
+  font-size: 0.82rem !important;
+  font-weight: 850 !important;
+}
+
+.reportSelectFieldOpen {
+  z-index: 12 !important;
+}
+
+.reportSelectLabel {
+  color: #253b34 !important;
+  font-size: 0.82rem !important;
+  font-weight: 850 !important;
+  line-height: 1.2 !important;
+}
+
+.reportSelectButton {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 100% !important;
+  min-height: 3.35rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+  padding: 0 1rem !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  border-radius: 1rem !important;
+  color: #19352d !important;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(25, 116, 84, 0.055) 0%, rgba(25, 116, 84, 0) 40%),
+    linear-gradient(180deg, #ffffff 0%, #f6fafb 100%) !important;
+  box-shadow:
+    0 8px 18px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  font: inherit !important;
+  font-size: 0.98rem !important;
+  font-weight: 720 !important;
+  line-height: 1 !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease !important;
+}
+
+.reportSelectButton:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  border-color: rgba(184, 202, 218, 0.98) !important;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 42%),
+    linear-gradient(180deg, #ffffff 0%, #eef5fb 100%) !important;
+  box-shadow:
+    0 12px 24px rgba(16, 31, 28, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.reportSelectButton:focus-visible,
+.reportSelectFieldOpen .reportSelectButton {
+  outline: none !important;
+  border-color: rgba(149, 204, 178, 0.98) !important;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(22, 83, 64, 0.1) 0%, rgba(22, 83, 64, 0) 44%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%) !important;
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.11),
+    0 12px 24px rgba(16, 31, 28, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.reportSelectButton:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.66 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f6f8 100%) !important;
+  transform: none !important;
+}
+
+.reportSelectButton span {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.reportSelectChevron {
+  width: 1.08rem !important;
+  height: 1.08rem !important;
+  flex: 0 0 auto !important;
+  color: #19352d !important;
+  transition: transform 160ms ease !important;
+}
+
+.reportSelectFieldOpen .reportSelectChevron {
+  transform: rotate(180deg) !important;
+}
+
+.reportSelectMenu {
+  position: absolute !important;
+  top: calc(100% + 0.42rem) !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 40 !important;
+  max-height: 15.5rem !important;
+  overflow: auto !important;
+  display: grid !important;
+  gap: 0.28rem !important;
+  padding: 0.42rem !important;
+  border: 1px solid rgba(199, 216, 228, 0.98) !important;
+  border-radius: 1rem !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.075), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafc 100%) !important;
+  box-shadow:
+    0 22px 44px rgba(11, 21, 34, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(22, 83, 64, 0.34) transparent !important;
+}
+
+.reportSelectOption {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 100% !important;
+  min-height: 2.78rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  padding: 0.72rem 0.85rem !important;
+  border: 1px solid transparent !important;
+  border-radius: 0.78rem !important;
+  color: #19352d !important;
+  background: transparent !important;
+  font: inherit !important;
+  font-size: 0.94rem !important;
+  font-weight: 720 !important;
+  line-height: 1.25 !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease !important;
+}
+
+.reportSelectOption:hover,
+.reportSelectOption:focus-visible {
+  outline: none !important;
+  color: #10352b !important;
+  background: rgba(237, 248, 242, 0.96) !important;
+  border-color: rgba(190, 224, 206, 0.98) !important;
+}
+
+.reportSelectOptionActive {
+  color: #0f3329 !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.1), transparent 44%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%) !important;
+  border-color: rgba(190, 224, 206, 0.98) !important;
+  font-weight: 850 !important;
+}
+
+.reportSelectFieldDisabled .reportSelectLabel {
+  opacity: 0.68 !important;
+}
+
+.assetFuelReportActions {
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 0.72rem !important;
+  margin-top: 0 !important;
+}
+
+.assetFuelReportActions .primaryButton,
+.assetFuelReportActions .secondaryButton {
+  min-height: 3.15rem !important;
+  border-radius: 1rem !important;
+  padding-inline: 1.15rem !important;
+  font-size: 0.96rem !important;
+  font-weight: 850 !important;
+  box-shadow: none !important;
+}
+
+.assetFuelReportActions .primaryButton {
+  min-width: 13.5rem !important;
+  background: #126b52 !important;
+  border-color: #126b52 !important;
+  color: #ffffff !important;
+}
+
+.assetFuelReportActions .secondaryButton {
+  color: #17362c !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%) !important;
+  border: 1px solid rgba(18, 45, 37, 0.82) !important;
+}
+
+@media (max-width: 760px) {
+  .assetFuelReportModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+  }
+
+  .assetFuelReportFilterBox {
+    grid-template-columns: 1fr !important;
+    padding: 0.86rem !important;
+  }
+
+  .assetFuelReportActions {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .assetFuelReportActions .primaryButton,
+  .assetFuelReportActions .secondaryButton {
+    width: 100% !important;
+  }
+}

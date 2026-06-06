@@ -78,6 +78,28 @@ type ExportFormat = 'pdf' | 'xlsx';
 type ExportStep = 'format' | 'pdf-report';
 type PdfReportKind = 'full' | 'financed' | 'insured' | 'licensed' | 'not-financed' | 'not-insured' | 'not-licensed';
 type AssetScanReportKind = 'fuel' | 'scan' | 'maintenance';
+type AssetFuelReportSelectKey = 'year' | 'month';
+type AssetReportStep = 'options' | 'fuel-filter';
+
+type AssetFuelReportFilters = {
+  year: string;
+  month: string;
+};
+
+type ReportSelectOption = {
+  value: string;
+  label: string;
+};
+
+type ReportSelectProps = {
+  label: string;
+  value: string;
+  options: ReportSelectOption[];
+  isOpen: boolean;
+  disabled?: boolean;
+  onToggle: () => void;
+  onChange: (value: string) => void;
+};
 
 type PdfReportOption = {
   value: PdfReportKind;
@@ -87,6 +109,21 @@ type PdfReportOption = {
   sectionTitle: string;
   emptyLabel: string;
 };
+
+const MONTH_LABELS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+] as const;
 
 const PDF_REPORT_OPTIONS: PdfReportOption[] = [
   {
@@ -1045,6 +1082,40 @@ function ExportGraphic({ src, alt, icon }: ExportGraphicProps) {
   }
 
   return <img src={src} alt={alt} className={styles.exportGraphicImage} onError={() => setHasError(true)} />;
+}
+
+function ReportSelect({ label, value, options, isOpen, disabled = false, onToggle, onChange }: ReportSelectProps) {
+  const selectedOption = options.find((option) => option.value === value) ?? options[0];
+
+  return (
+    <div
+      className={`${styles.reportSelectField} ${isOpen ? styles.reportSelectFieldOpen : ''} ${disabled ? styles.reportSelectFieldDisabled : ''}`}
+      data-asset-fuel-report-select-root="true"
+    >
+      <span className={styles.reportSelectLabel}>{label}</span>
+      <button type="button" className={styles.reportSelectButton} onClick={onToggle} disabled={disabled} aria-haspopup="listbox" aria-expanded={isOpen}>
+        <span>{selectedOption?.label ?? 'Select option'}</span>
+        <ChevronDownIcon className={styles.reportSelectChevron} />
+      </button>
+
+      {isOpen && !disabled ? (
+        <div className={styles.reportSelectMenu} role="listbox" aria-label={label}>
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`${styles.reportSelectOption} ${option.value === value ? styles.reportSelectOptionActive : ''}`}
+              onClick={() => onChange(option.value)}
+              role="option"
+              aria-selected={option.value === value}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 type ModalSelectOption<T extends string> = {
@@ -2476,8 +2547,53 @@ function buildAssetQrSvgUrl(asset: RegisterAsset): string {
   return `/api/asset-register/qr?assetId=${encodeURIComponent(asset.id)}&format=svg`;
 }
 
-function buildAssetScanReportUrl(asset: RegisterAsset, reportKind: AssetScanReportKind = 'scan'): string {
-  return `/api/asset-register/scan-report?assetId=${encodeURIComponent(asset.id)}&report=${encodeURIComponent(reportKind)}`;
+function buildAssetScanReportUrl(asset: RegisterAsset, reportKind: AssetScanReportKind = 'scan', filters?: AssetFuelReportFilters): string {
+  const searchParams = new URLSearchParams({
+    assetId: asset.id,
+    report: reportKind,
+  });
+
+  if (reportKind === 'fuel' && filters?.year && filters.year !== 'all') {
+    searchParams.set('year', filters.year);
+
+    if (filters.month && filters.month !== 'all') {
+      searchParams.set('month', filters.month);
+    }
+  }
+
+  return `/api/asset-register/scan-report?${searchParams.toString()}`;
+}
+
+function extractAssetReportYear(value?: string | null): number | null {
+  if (!value) return null;
+
+  const date = new Date(value);
+  const year = date.getFullYear();
+
+  if (!Number.isFinite(year) || year < 2000 || year > 2100) {
+    return null;
+  }
+
+  return year;
+}
+
+function getAssetFuelReportYearValues(asset: RegisterAsset | null): string[] {
+  const currentYear = new Date().getFullYear();
+  const candidateYears = [
+    currentYear,
+    extractAssetReportYear(asset?.lastScannedAtIso),
+    extractAssetReportYear(asset?.updatedAtIso),
+    extractAssetReportYear(asset?.createdAtIso),
+  ].filter((year): year is number => typeof year === 'number' && Number.isFinite(year));
+  const minYear = Math.min(...candidateYears, currentYear);
+  const maxYear = Math.max(...candidateYears, currentYear);
+
+  const years: string[] = [];
+  for (let year = maxYear; year >= minYear; year -= 1) {
+    years.push(String(year));
+  }
+
+  return years;
 }
 
 function buildAssetQrPrintUrl(asset: RegisterAsset): string {
@@ -2875,6 +2991,10 @@ export default function AssetRegisterClient() {
   const quoteMarkerLayerRef = useRef<any>(null);
   const quoteMarkersByPartnerRef = useRef<Map<string, any>>(new Map());
   const [isAssetReportModalOpen, setIsAssetReportModalOpen] = useState(false);
+  const [assetReportStep, setAssetReportStep] = useState<AssetReportStep>('options');
+  const [assetFuelReportYear, setAssetFuelReportYear] = useState('all');
+  const [assetFuelReportMonth, setAssetFuelReportMonth] = useState('all');
+  const [openAssetFuelReportSelect, setOpenAssetFuelReportSelect] = useState<AssetFuelReportSelectKey | null>(null);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [copiedScanLinkAssetId, setCopiedScanLinkAssetId] = useState<string | null>(null);
@@ -2928,6 +3048,18 @@ export default function AssetRegisterClient() {
   const projectionYearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 16 }, (_, index) => currentYear + index);
+  }, []);
+  const assetFuelReportYearOptions = useMemo<ReportSelectOption[]>(() => {
+    return [
+      { value: 'all', label: 'All years' },
+      ...getAssetFuelReportYearValues(activeAsset).map((year) => ({ value: year, label: year })),
+    ];
+  }, [activeAsset]);
+  const assetFuelReportMonthOptions = useMemo<ReportSelectOption[]>(() => {
+    return [
+      { value: 'all', label: 'All months' },
+      ...MONTH_LABELS.map((label, index) => ({ value: String(index + 1).padStart(2, '0'), label })),
+    ];
   }, []);
   const reportProfile = useMemo(
     () => mergeProfileWithRegister(accountProfile, activeRegister),
@@ -3118,6 +3250,23 @@ export default function AssetRegisterClient() {
     document.addEventListener('pointerdown', handlePointerDown);
     return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, [isAssetFilterOpen]);
+
+  useEffect(() => {
+    if (!openAssetFuelReportSelect) return undefined;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+
+      if (target instanceof HTMLElement && target.closest('[data-asset-fuel-report-select-root="true"]')) {
+        return;
+      }
+
+      setOpenAssetFuelReportSelect(null);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [openAssetFuelReportSelect]);
 
   const anyModalOpen =
     isAddChoiceModalOpen ||
@@ -4027,11 +4176,19 @@ export default function AssetRegisterClient() {
     setIsPricingModalOpen(false);
     setIsQrModalOpen(false);
     setCopiedScanLinkAssetId(null);
+    setAssetReportStep('options');
+    setAssetFuelReportYear('all');
+    setAssetFuelReportMonth('all');
+    setOpenAssetFuelReportSelect(null);
     setIsAssetReportModalOpen(true);
   }
 
   function closeAssetReportDialog() {
     setIsAssetReportModalOpen(false);
+    setAssetReportStep('options');
+    setAssetFuelReportYear('all');
+    setAssetFuelReportMonth('all');
+    setOpenAssetFuelReportSelect(null);
   }
 
   function openPricingDialog() {
@@ -4997,8 +5154,8 @@ export default function AssetRegisterClient() {
     return 'Scan report';
   }
 
-  function handleOpenScanReport(asset: RegisterAsset, reportKind: AssetScanReportKind = 'scan'): boolean {
-    const reportUrl = buildAssetScanReportUrl(asset, reportKind);
+  function handleOpenScanReport(asset: RegisterAsset, reportKind: AssetScanReportKind = 'scan', filters?: AssetFuelReportFilters): boolean {
+    const reportUrl = buildAssetScanReportUrl(asset, reportKind, filters);
     const opened = window.open(reportUrl, '_blank', 'noopener,noreferrer');
     const reportLabel = scanReportLabel(reportKind);
 
@@ -5019,6 +5176,44 @@ export default function AssetRegisterClient() {
 
   function handleDownloadScanReport(asset: RegisterAsset, reportKind: AssetScanReportKind = 'scan') {
     const didOpen = handleOpenScanReport(asset, reportKind);
+
+    if (didOpen) {
+      closeActionDialog();
+    }
+  }
+
+  function openAssetFuelReportFilter() {
+    setAssetReportStep('fuel-filter');
+    setAssetFuelReportYear('all');
+    setAssetFuelReportMonth('all');
+    setOpenAssetFuelReportSelect(null);
+  }
+
+  function backToAssetReportOptions() {
+    setAssetReportStep('options');
+    setOpenAssetFuelReportSelect(null);
+  }
+
+  function toggleAssetFuelReportSelect(selectKey: AssetFuelReportSelectKey) {
+    setOpenAssetFuelReportSelect((currentSelectKey) => (currentSelectKey === selectKey ? null : selectKey));
+  }
+
+  function selectAssetFuelReportYear(value: string) {
+    setAssetFuelReportYear(value);
+    setAssetFuelReportMonth('all');
+    setOpenAssetFuelReportSelect(null);
+  }
+
+  function selectAssetFuelReportMonth(value: string) {
+    setAssetFuelReportMonth(value);
+    setOpenAssetFuelReportSelect(null);
+  }
+
+  function handleDownloadFilteredFuelReport(asset: RegisterAsset) {
+    const didOpen = handleOpenScanReport(asset, 'fuel', {
+      year: assetFuelReportYear,
+      month: assetFuelReportYear === 'all' ? 'all' : assetFuelReportMonth,
+    });
 
     if (didOpen) {
       closeActionDialog();
@@ -7533,10 +7728,15 @@ export default function AssetRegisterClient() {
         <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
           <div className={styles.modalBackdrop} onClick={closeAssetReportDialog} />
 
-          <div className={`${styles.modalCard} ${styles.assetReportModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-report-title">
+          <div
+            className={`${styles.modalCard} ${styles.assetReportModal} ${assetReportStep === 'fuel-filter' ? styles.assetFuelReportModal : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="asset-report-title"
+          >
             <div className={`${styles.modalHeader} ${styles.assetReportModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-report-title">Download PDF Reports</h3>
+                <h3 id="asset-report-title">{assetReportStep === 'fuel-filter' ? 'Export fuel report' : 'Download PDF Reports'}</h3>
                 <p>{activeAsset.title}</p>
               </div>
 
@@ -7546,43 +7746,76 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.assetReportModalBody}`}>
-              <div className={styles.assetReportOptionsGrid}>
-                <button type="button" className={styles.assetReportOptionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
-                  <PdfIcon className={styles.buttonIcon} />
-                  <span>
-                    <strong>Download asset valuation</strong>
-                    <small>Asset details, value summary, notes and saved documents.</small>
-                  </span>
-                </button>
+              {assetReportStep === 'fuel-filter' ? (
+                <>
+                  <div className={styles.assetFuelReportFilterBox}>
+                    <ReportSelect
+                      label="Year"
+                      value={assetFuelReportYear}
+                      options={assetFuelReportYearOptions}
+                      isOpen={openAssetFuelReportSelect === 'year'}
+                      onToggle={() => toggleAssetFuelReportSelect('year')}
+                      onChange={selectAssetFuelReportYear}
+                    />
 
-                {canUseOwnerOnlyAssetActions ? (
-                  <>
-                    <button type="button" className={styles.assetReportOptionButton} onClick={() => handleDownloadScanReport(activeAsset, 'fuel')}>
-                      <DocumentIcon className={styles.buttonIcon} />
-                      <span>
-                        <strong>Download fuel report</strong>
-                        <small>Date, usage reading, tank percentage, operator and scan location.</small>
-                      </span>
-                    </button>
+                    <ReportSelect
+                      label="Month"
+                      value={assetFuelReportMonth}
+                      options={assetFuelReportMonthOptions}
+                      isOpen={openAssetFuelReportSelect === 'month'}
+                      disabled={assetFuelReportYear === 'all'}
+                      onToggle={() => toggleAssetFuelReportSelect('month')}
+                      onChange={selectAssetFuelReportMonth}
+                    />
+                  </div>
 
-                    <button type="button" className={styles.assetReportOptionButton} onClick={() => handleDownloadScanReport(activeAsset, 'scan')}>
-                      <DocumentIcon className={styles.buttonIcon} />
-                      <span>
-                        <strong>Download scan report</strong>
-                        <small>Full QR scan history, updates, usage, fuel, notes, photos and locations.</small>
-                      </span>
+                  <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
+                    <button type="button" className={styles.secondaryButton} onClick={backToAssetReportOptions}>Back</button>
+                    <button type="button" className={styles.primaryButton} onClick={() => handleDownloadFilteredFuelReport(activeAsset)}>
+                      <DownloadIcon className={styles.buttonIcon} />
+                      <span>Download PDF</span>
                     </button>
+                  </div>
+                </>
+              ) : (
+                <div className={styles.assetReportOptionsGrid}>
+                  <button type="button" className={styles.assetReportOptionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
+                    <PdfIcon className={styles.buttonIcon} />
+                    <span>
+                      <strong>Download asset valuation</strong>
+                      <small>Asset details, value summary, notes and saved documents.</small>
+                    </span>
+                  </button>
 
-                    <button type="button" className={styles.assetReportOptionButton} onClick={() => handleDownloadScanReport(activeAsset, 'maintenance')}>
-                      <DocumentIcon className={styles.buttonIcon} />
-                      <span>
-                        <strong>Download maintenance report</strong>
-                        <small>Checks, services, repairs, company details, mechanic details and locations.</small>
-                      </span>
-                    </button>
-                  </>
-                ) : null}
-              </div>
+                  {canUseOwnerOnlyAssetActions ? (
+                    <>
+                      <button type="button" className={styles.assetReportOptionButton} onClick={openAssetFuelReportFilter}>
+                        <DocumentIcon className={styles.buttonIcon} />
+                        <span>
+                          <strong>Download fuel report</strong>
+                          <small>Choose a year and month before exporting the asset fuel PDF.</small>
+                        </span>
+                      </button>
+
+                      <button type="button" className={styles.assetReportOptionButton} onClick={() => handleDownloadScanReport(activeAsset, 'scan')}>
+                        <DocumentIcon className={styles.buttonIcon} />
+                        <span>
+                          <strong>Download scan report</strong>
+                          <small>Full QR scan history, updates, usage, fuel, notes, photos and locations.</small>
+                        </span>
+                      </button>
+
+                      <button type="button" className={styles.assetReportOptionButton} onClick={() => handleDownloadScanReport(activeAsset, 'maintenance')}>
+                        <DocumentIcon className={styles.buttonIcon} />
+                        <span>
+                          <strong>Download maintenance report</strong>
+                          <small>Checks, services, repairs, company details, mechanic details and locations.</small>
+                        </span>
+                      </button>
+                    </>
+                  ) : null}
+                </div>
+              )}
             </div>
           </div>
         </div>
