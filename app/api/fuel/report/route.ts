@@ -159,6 +159,14 @@ function eventTargetLabel(event: FuelLedgerEvent): string {
   return event.storageName || 'Fuel storage';
 }
 
+function eventWorkActivityLabel(event: FuelLedgerEvent): string {
+  return asText(event.activityText) || '-';
+}
+
+function eventWorkAreaLabel(event: FuelLedgerEvent): string {
+  return asText(event.workAreaText) || '-';
+}
+
 function slugifyFileSegment(value: string): string {
   const normalized = value
     .trim()
@@ -252,8 +260,13 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
           <td><strong>${escapeHtml(formatLitres(event.litres))}</strong></td>
           <td>${escapeHtml(formatLitres(event.storageLevelBefore))}</td>
           <td><strong>${escapeHtml(formatLitres(event.storageLevelAfter))}</strong></td>
+          <td>${escapeHtml(formatPercent(event.assetFuelPercentBefore))}</td>
+          <td>${escapeHtml(formatPercent(event.assetFuelPercentAfter))}</td>
+          <td>${escapeHtml(formatNumber(event.assetUsageReading))}</td>
           <td>${escapeHtml(event.operatorName || '-')}</td>
           <td>${escapeHtml(formatLocation(event))}</td>
+          <td>${escapeHtml(eventWorkActivityLabel(event))}</td>
+          <td>${escapeHtml(eventWorkAreaLabel(event))}</td>
           <td>${escapeHtml(note.length > 170 ? `${note.slice(0, 167)}...` : note)}</td>
         </tr>
       `;
@@ -273,8 +286,13 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
             <th>Litres filled up with</th>
             <th>Tank before</th>
             <th>Litres left in tank</th>
+            <th>Asset fuel before</th>
+            <th>Asset fuel after</th>
+            <th>Hours / km</th>
             <th>Operator</th>
-            <th>Location</th>
+            <th>GPS location</th>
+            <th>Work activity</th>
+            <th>Work area</th>
             <th>Notes</th>
           </tr>
         </thead>
@@ -731,8 +749,8 @@ function buildReportHtml(options: FuelReportOptions): string {
         padding: 6px 5px 6px 0;
         border-bottom: 1px solid var(--line);
         color: #38404c;
-        font-size: 6.8px;
-        line-height: 1.34;
+        font-size: 5.85px;
+        line-height: 1.25;
         text-align: left;
         vertical-align: top;
         overflow-wrap: anywhere;
@@ -741,8 +759,8 @@ function buildReportHtml(options: FuelReportOptions): string {
 
       .assetReportTable th {
         color: var(--strong);
-        font-size: 6.25px;
-        line-height: 1.15;
+        font-size: 5.45px;
+        line-height: 1.12;
         font-weight: 800;
         letter-spacing: 0.04em;
         text-transform: uppercase;
@@ -754,25 +772,37 @@ function buildReportHtml(options: FuelReportOptions): string {
       }
 
       .assetReportFuelLedgerTable th:nth-child(1),
-      .assetReportFuelLedgerTable td:nth-child(1) { width: 22mm; }
+      .assetReportFuelLedgerTable td:nth-child(1) { width: 20mm; }
       .assetReportFuelLedgerTable th:nth-child(2),
-      .assetReportFuelLedgerTable td:nth-child(2) { width: 22mm; }
+      .assetReportFuelLedgerTable td:nth-child(2) { width: 18mm; }
       .assetReportFuelLedgerTable th:nth-child(3),
-      .assetReportFuelLedgerTable td:nth-child(3) { width: 16mm; }
+      .assetReportFuelLedgerTable td:nth-child(3) { width: 12mm; }
       .assetReportFuelLedgerTable th:nth-child(4),
-      .assetReportFuelLedgerTable td:nth-child(4) { width: 24mm; }
+      .assetReportFuelLedgerTable td:nth-child(4) { width: 18mm; }
       .assetReportFuelLedgerTable th:nth-child(5),
-      .assetReportFuelLedgerTable td:nth-child(5) { width: 28mm; }
+      .assetReportFuelLedgerTable td:nth-child(5) { width: 24mm; }
       .assetReportFuelLedgerTable th:nth-child(6),
       .assetReportFuelLedgerTable td:nth-child(6),
       .assetReportFuelLedgerTable th:nth-child(7),
       .assetReportFuelLedgerTable td:nth-child(7),
       .assetReportFuelLedgerTable th:nth-child(8),
-      .assetReportFuelLedgerTable td:nth-child(8) { width: 16mm; }
+      .assetReportFuelLedgerTable td:nth-child(8) { width: 14mm; }
       .assetReportFuelLedgerTable th:nth-child(9),
-      .assetReportFuelLedgerTable td:nth-child(9) { width: 22mm; }
+      .assetReportFuelLedgerTable td:nth-child(9),
       .assetReportFuelLedgerTable th:nth-child(10),
-      .assetReportFuelLedgerTable td:nth-child(10) { width: 30mm; }
+      .assetReportFuelLedgerTable td:nth-child(10) { width: 12mm; }
+      .assetReportFuelLedgerTable th:nth-child(11),
+      .assetReportFuelLedgerTable td:nth-child(11) { width: 13mm; }
+      .assetReportFuelLedgerTable th:nth-child(12),
+      .assetReportFuelLedgerTable td:nth-child(12) { width: 18mm; }
+      .assetReportFuelLedgerTable th:nth-child(13),
+      .assetReportFuelLedgerTable td:nth-child(13) { width: 25mm; }
+      .assetReportFuelLedgerTable th:nth-child(14),
+      .assetReportFuelLedgerTable td:nth-child(14),
+      .assetReportFuelLedgerTable th:nth-child(15),
+      .assetReportFuelLedgerTable td:nth-child(15) { width: 19mm; }
+      .assetReportFuelLedgerTable th:nth-child(16),
+      .assetReportFuelLedgerTable td:nth-child(16) { width: 30mm; }
 
       .assetReportFooter {
         display: grid;
@@ -1024,26 +1054,29 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
 
   const movementHeader = [
     'Date',
-    'Activity',
+    'Ledger activity',
     'Direction',
     'Storage unit',
     'Asset / target',
     'Litres filled up with',
-    'Litres left in tank',
-    'Operator',
-    'Location',
-    'Notes',
     'Tank before',
+    'Litres left in tank',
+    'Asset fuel before',
     'Asset fuel after',
-    'Asset usage reading',
+    'Hours / km reading',
+    'Operator',
+    'GPS location',
+    'Work activity',
+    'Work area',
+    'Notes',
     'Storage QR code',
   ];
 
   const movementHeaderRow = 7;
   const movementRows: XlsxCellValue[][] = [
-    [styled('Fuel Movement Records', 'title'), '', '', '', '', '', '', '', '', '', '', '', '', ''],
-    [styled(`Filtered report: ${options.dateRangeLabel}`, 'subtitle'), '', '', '', '', '', '', '', '', '', '', '', '', ''],
-    [styled('PDF and XLSX include Date, Activity, Direction, litres filled up with, litres left in tank and operator.', 'note'), '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    [styled('Fuel Movement Records', 'title'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    [styled(`Filtered report: ${options.dateRangeLabel}`, 'subtitle'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    [styled('PDF and XLSX include date, asset, hours, fuel levels, litres, operator, GPS, work activity and work area.', 'note'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
     [],
     [styled('Storage', 'metaLabel'), styled(options.storageName, 'metaValue'), styled('Fuel type', 'metaLabel'), styled(options.storageFuelType, 'metaValue')],
     [],
@@ -1055,13 +1088,16 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
       styled(event.storageName || '', 'text'),
       styled(eventTargetLabel(event), 'text'),
       styled(roundLitres(event.litres), 'decimal'),
-      styled(typeof event.storageLevelAfter === 'number' ? roundLitres(event.storageLevelAfter) : null, 'decimal'),
-      styled(event.operatorName || '', 'text'),
-      styled(formatLocation(event), 'text'),
-      styled(normalizeSpaces(event.note), 'note'),
       styled(typeof event.storageLevelBefore === 'number' ? roundLitres(event.storageLevelBefore) : null, 'decimal'),
+      styled(typeof event.storageLevelAfter === 'number' ? roundLitres(event.storageLevelAfter) : null, 'decimal'),
+      styled(formatPercent(event.assetFuelPercentBefore), 'text'),
       styled(formatPercent(event.assetFuelPercentAfter), 'text'),
       styled(typeof event.assetUsageReading === 'number' ? event.assetUsageReading : null, 'decimal'),
+      styled(event.operatorName || '', 'text'),
+      styled(formatLocation(event), 'text'),
+      styled(eventWorkActivityLabel(event), 'text'),
+      styled(eventWorkAreaLabel(event), 'text'),
+      styled(normalizeSpaces(event.note), 'note'),
       styled(event.storagePublicCode || '', 'text'),
     ]),
   ];
@@ -1080,11 +1116,11 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     {
       name: 'Fuel Movement Records',
       rows: movementRows,
-      columns: [20, 22, 14, 24, 28, 18, 18, 22, 34, 42, 16, 16, 18, 20],
+      columns: [20, 22, 14, 24, 28, 18, 16, 18, 16, 16, 18, 22, 34, 24, 24, 42, 20],
       merges: [
-        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 14 },
-        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 14 },
-        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: 14 },
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 17 },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 17 },
+        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: 17 },
       ],
       freezeRow: movementHeaderRow,
       autoFilter: {
