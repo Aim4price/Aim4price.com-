@@ -49,6 +49,8 @@ export type FuelLedgerEvent = {
   assetFuelPercentAfter: number | null;
   assetUsageReading: number | null;
   operatorName: string;
+  activityText: string;
+  workAreaText: string;
   note: string;
   latitude: number | null;
   longitude: number | null;
@@ -63,6 +65,7 @@ export type FuelLedgerAsset = {
   assetTypeLabel: string;
   brandName: string;
   modelName: string;
+  serialNumber: string;
   plateLabel: string;
   publicAssetCode: string;
   hours: number | null;
@@ -140,6 +143,8 @@ type FuelEventRow = {
   asset_fuel_percent_after: string | number | null;
   asset_usage_reading: string | number | null;
   operator_name: string | null;
+  activity_text: string | null;
+  work_area_text: string | null;
   note: string | null;
   latitude: string | number | null;
   longitude: string | number | null;
@@ -155,6 +160,7 @@ type FuelAssetRow = {
   model_name: string | null;
   typed_model_name: string | null;
   equipment_family_label: string | null;
+  serial_number: string | null;
   plate_label: string | null;
   public_asset_code: string | null;
   hours: string | number | null;
@@ -512,6 +518,8 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
     assetFuelPercentAfter: normalizeFuelPercent(row.asset_fuel_percent_after),
     assetUsageReading: normalizeUsageReading(row.asset_usage_reading),
     operatorName: asText(row.operator_name),
+    activityText: asText(row.activity_text),
+    workAreaText: asText(row.work_area_text),
     note: asText(row.note),
     latitude: normalizeCoordinate(row.latitude, 90),
     longitude: normalizeCoordinate(row.longitude, 180),
@@ -576,6 +584,7 @@ function mapFuelAssetRow(row: FuelAssetRow): FuelLedgerAsset {
     assetTypeLabel: familyLabel || titleCase(kind || 'asset'),
     brandName: asText(row.brand_name),
     modelName: asText(row.model_name) || asText(row.typed_model_name),
+    serialNumber: asText(row.serial_number),
     plateLabel: asText(row.plate_label),
     publicAssetCode: asText(row.public_asset_code),
     hours: normalizeUsageReading(row.hours),
@@ -622,6 +631,8 @@ function fuelEventSelectSql(): string {
     e.asset_fuel_percent_after,
     e.asset_usage_reading,
     e.operator_name,
+    e.activity_text,
+    e.work_area_text,
     e.note,
     e.latitude,
     e.longitude,
@@ -655,6 +666,8 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       asset_id uuid not null,
       actor_type text not null default 'scan_pin',
       operator_name text,
+      activity_text text,
+      work_area_text text,
       hours numeric(14,2),
       fuel_percent integer,
       condition text,
@@ -668,6 +681,8 @@ export async function ensureFuelLedgerTables(): Promise<void> {
 
     alter table if exists public.asset_scan_events
       add column if not exists operator_name text,
+      add column if not exists activity_text text,
+      add column if not exists work_area_text text,
       add column if not exists hours numeric(14,2),
       add column if not exists fuel_percent integer,
       add column if not exists fuel_litres numeric(12,2),
@@ -749,6 +764,8 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       asset_fuel_percent_after integer,
       asset_usage_reading numeric(14,2),
       operator_name text,
+      activity_text text,
+      work_area_text text,
       note text,
       latitude double precision,
       longitude double precision,
@@ -768,6 +785,8 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       add column if not exists asset_fuel_percent_after integer,
       add column if not exists asset_usage_reading numeric(14,2),
       add column if not exists operator_name text,
+      add column if not exists activity_text text,
+      add column if not exists work_area_text text,
       add column if not exists note text,
       add column if not exists latitude double precision,
       add column if not exists longitude double precision,
@@ -846,6 +865,7 @@ export async function listFuelAssetsForUser(userId: string): Promise<FuelLedgerA
         a.model_name,
         a.typed_model_name,
         coalesce(ef.family_label, '') as equipment_family_label,
+        coalesce(to_jsonb(a)->>'serial_number', to_jsonb(a)->>'serialNumber', '') as serial_number,
         to_jsonb(a)->>'plate_label' as plate_label,
         to_jsonb(a)->>'public_asset_code' as public_asset_code,
         a.hours,
@@ -1324,6 +1344,8 @@ export async function recordFuelStorageStock(
       assetFuelPercentAfter: null,
       assetUsageReading: null,
       operatorName,
+      activityText: null,
+      workAreaText: null,
       note: asText(input.note) || (eventType === 'stock_in' ? 'Fuel added to storage.' : 'Manual storage dip captured.'),
       latitude: null,
       longitude: null,
@@ -1358,6 +1380,8 @@ async function insertFuelStorageEvent(
     assetFuelPercentAfter: number | null;
     assetUsageReading: number | null;
     operatorName: string;
+    activityText: string | null;
+    workAreaText: string | null;
     note: string | null;
     latitude: number | null;
     longitude: number | null;
@@ -1378,13 +1402,15 @@ async function insertFuelStorageEvent(
         asset_fuel_percent_after,
         asset_usage_reading,
         operator_name,
+        activity_text,
+        work_area_text,
         note,
         latitude,
         longitude,
         location_text,
         created_at
       )
-      values ($1::uuid, $2, $3, $4, $5::numeric, $6::numeric, $7::numeric, $8::integer, $9::integer, $10::numeric, $11, $12, $13::double precision, $14::double precision, $15, now())
+      values ($1::uuid, $2, $3, $4, $5::numeric, $6::numeric, $7::numeric, $8::integer, $9::integer, $10::numeric, $11, $12, $13, $14, $15::double precision, $16::double precision, $17, now())
       returning id::text
     `,
     [
@@ -1399,6 +1425,8 @@ async function insertFuelStorageEvent(
       input.assetFuelPercentAfter,
       input.assetUsageReading,
       input.operatorName,
+      input.activityText,
+      input.workAreaText,
       input.note,
       input.latitude,
       input.longitude,
@@ -1437,9 +1465,12 @@ export async function recordFuelAssetIssue(
     storageId: string;
     assetId: string;
     litres?: unknown;
+    assetFuelPercentBefore?: unknown;
     assetFuelPercentAfter?: unknown;
     assetUsageReading?: unknown;
     operatorName?: unknown;
+    activityText?: unknown;
+    workAreaText?: unknown;
     note?: unknown;
     latitude?: unknown;
     longitude?: unknown;
@@ -1451,11 +1482,14 @@ export async function recordFuelAssetIssue(
   const db = getDb();
   const client = await db.connect();
   const litres = normalizePositiveLitres(input.litres);
+  const assetFuelPercentBeforeInput = normalizeFuelPercent(input.assetFuelPercentBefore);
   const assetFuelPercentAfter = normalizeFuelPercent(input.assetFuelPercentAfter);
   const assetUsageReading = normalizeUsageReading(input.assetUsageReading);
   const latitude = normalizeCoordinate(input.latitude, 90);
   const longitude = normalizeCoordinate(input.longitude, 180);
   const operatorName = asText(input.operatorName).slice(0, 80);
+  const activityText = asText(input.activityText).slice(0, 120);
+  const workAreaText = asText(input.workAreaText).slice(0, 120);
   let committed = false;
 
   if (assetFuelPercentAfter === null) {
@@ -1464,6 +1498,14 @@ export async function recordFuelAssetIssue(
 
   if (operatorName.length < 2) {
     throw new Error('Enter the operator or manager name.');
+  }
+
+  if (input.actorType === 'scan_pin' && activityText.length < 2) {
+    throw new Error('Enter what activity the asset will do.');
+  }
+
+  if (input.actorType === 'scan_pin' && workAreaText.length < 2) {
+    throw new Error('Enter where the asset will work.');
   }
 
   if (latitude === null || longitude === null) {
@@ -1541,7 +1583,7 @@ export async function recordFuelAssetIssue(
 
     const storageBefore = storage.currentLitres;
     const storageAfter = roundLitres(storageBefore - litres);
-    const assetFuelPercentBefore = normalizeFuelPercent(asset.fuel_percent);
+    const assetFuelPercentBefore = assetFuelPercentBeforeInput ?? normalizeFuelPercent(asset.fuel_percent);
     const noteText = asText(input.note);
     const storageNote = `Fuel issued from ${storage.name}: ${litres.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} litres.`;
     const eventNote = [storageNote, noteText].filter(Boolean).join('\n\n');
@@ -1567,6 +1609,8 @@ export async function recordFuelAssetIssue(
       assetFuelPercentAfter,
       assetUsageReading,
       operatorName,
+      activityText: activityText || null,
+      workAreaText: workAreaText || null,
       note: eventNote,
       latitude,
       longitude,
@@ -1596,6 +1640,8 @@ export async function recordFuelAssetIssue(
           asset_id,
           actor_type,
           operator_name,
+          activity_text,
+          work_area_text,
           hours,
           fuel_percent,
           fuel_litres,
@@ -1609,12 +1655,14 @@ export async function recordFuelAssetIssue(
           location_text,
           created_at
         )
-        values ($1::uuid, $2, $3, $4::numeric, $5::integer, $6::numeric, $7::uuid, $8::uuid, null, $9, '[]'::jsonb, $10::double precision, $11::double precision, $12, now())
+        values ($1::uuid, $2, $3, $4, $5, $6::numeric, $7::integer, $8::numeric, $9::uuid, $10::uuid, null, $11, '[]'::jsonb, $12::double precision, $13::double precision, $14, now())
       `,
       [
         input.assetId,
         input.actorType === 'owner_session' ? 'owner_session' : 'scan_pin',
         operatorName,
+        activityText || null,
+        workAreaText || null,
         assetUsageReading,
         assetFuelPercentAfter,
         litres,
