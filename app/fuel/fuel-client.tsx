@@ -89,6 +89,20 @@ type ReportSelectProps = {
   onChange: (value: string) => void;
 };
 
+type StorageFuelTypeSelectProps = {
+  value: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  onChange: (value: string) => void;
+};
+
+const FUEL_TYPE_OPTIONS: ReportSelectOption[] = [
+  { value: 'diesel', label: 'Diesel' },
+  { value: 'petrol', label: 'Petrol' },
+  { value: 'adblue', label: 'AdBlue' },
+  { value: 'paraffin', label: 'Paraffin' },
+];
+
 const emptyStorageDraft: StorageDraft = {
   name: '',
   fuelType: 'diesel',
@@ -262,6 +276,36 @@ function ReportSelect({ label, value, options, isOpen, disabled = false, onToggl
   );
 }
 
+function StorageFuelTypeSelect({ value, isOpen, onToggle, onChange }: StorageFuelTypeSelectProps) {
+  const selectedOption = FUEL_TYPE_OPTIONS.find((option) => option.value === value);
+
+  return (
+    <div className={`${styles.storageFuelTypeSelect} ${isOpen ? styles.storageFuelTypeSelectOpen : ''}`} data-storage-fuel-select-root="true">
+      <button type="button" className={styles.storageFuelTypeButton} onClick={onToggle} aria-haspopup="listbox" aria-expanded={isOpen} aria-label="Select fuel type">
+        <span>{selectedOption?.label ?? formatFuelType(value)}</span>
+        <ChevronDownIcon className={styles.storageFuelTypeChevron} />
+      </button>
+
+      {isOpen ? (
+        <div className={styles.storageFuelTypeMenu} role="listbox" aria-label="Fuel type">
+          {FUEL_TYPE_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`${styles.storageFuelTypeOption} ${option.value === value ? styles.storageFuelTypeOptionActive : ''}`}
+              onClick={() => onChange(option.value)}
+              role="option"
+              aria-selected={option.value === value}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function PlusIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -412,6 +456,7 @@ export default function FuelClient() {
   const [reportFormat, setReportFormat] = useState<ReportFormat>('pdf');
   const [reportStep, setReportStep] = useState<ReportStep>('format');
   const [openReportSelect, setOpenReportSelect] = useState<ReportSelectKey | null>(null);
+  const [isStorageFuelSelectOpen, setIsStorageFuelSelectOpen] = useState(false);
 
   const selectedStorage = useMemo(
     () => storages.find((storage) => storage.id === selectedStorageId) ?? null,
@@ -490,9 +535,24 @@ export default function FuelClient() {
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, [openReportSelect]);
 
+  useEffect(() => {
+    if (!isStorageFuelSelectOpen) return undefined;
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest('[data-storage-fuel-select-root="true"]')) {
+        setIsStorageFuelSelectOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [isStorageFuelSelectOpen]);
+
   function openCreateStorage() {
     setSelectedStorageId(null);
     setStorageDraft(emptyStorageDraft);
+    setIsStorageFuelSelectOpen(false);
     setNotice(null);
     setModalMode('create-storage');
   }
@@ -500,6 +560,7 @@ export default function FuelClient() {
   function openEditStorage(storage: FuelLedgerStorage) {
     setSelectedStorageId(storage.id);
     setStorageDraft(buildStorageDraft(storage));
+    setIsStorageFuelSelectOpen(false);
     setNotice(null);
     setModalMode('edit-storage');
   }
@@ -507,6 +568,7 @@ export default function FuelClient() {
   function openPin(storage: FuelLedgerStorage) {
     setSelectedStorageId(storage.id);
     setPinDraft('');
+    setIsStorageFuelSelectOpen(false);
     setNotice(null);
     setModalMode('pin');
   }
@@ -518,6 +580,7 @@ export default function FuelClient() {
     setReportFormat('pdf');
     setReportStep('format');
     setOpenReportSelect(null);
+    setIsStorageFuelSelectOpen(false);
     setNotice(null);
     setModalMode('report');
   }
@@ -531,6 +594,7 @@ export default function FuelClient() {
     setReportStep('format');
     setReportFormat('pdf');
     setOpenReportSelect(null);
+    setIsStorageFuelSelectOpen(false);
   }
 
   function clearSearch() {
@@ -641,6 +705,15 @@ export default function FuelClient() {
 
   function toggleReportSelect(selectKey: ReportSelectKey) {
     setOpenReportSelect((current) => (current === selectKey ? null : selectKey));
+  }
+
+  function toggleStorageFuelSelect() {
+    setIsStorageFuelSelectOpen((current) => !current);
+  }
+
+  function selectStorageFuelType(value: string) {
+    setStorageDraft((current) => ({ ...current, fuelType: value }));
+    setIsStorageFuelSelectOpen(false);
   }
 
   function selectReportStorage(value: string) {
@@ -837,26 +910,20 @@ export default function FuelClient() {
           <form className={styles.modalCard} onSubmit={handleStorageSubmit}>
             <div className={styles.modalHeader}>
               <div>
-                {modalMode === 'create-storage' ? <span className={styles.modalEyebrow}>Add Storage Tank</span> : null}
                 <h2>{modalMode === 'create-storage' ? 'Add Fuel Storage' : selectedStorage?.name ?? 'Manage Fuel Storage'}</h2>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal}>×</button>
             </div>
 
             <div className={styles.formGrid}>
-              <label>
+              <label className={styles.storageNameField}>
                 Storage name
                 <input value={storageDraft.name} onChange={(event) => setStorageDraft((current) => ({ ...current, name: event.target.value }))} placeholder="Main diesel tank" required />
               </label>
-              <label>
-                Fuel type
-                <select value={storageDraft.fuelType} onChange={(event) => setStorageDraft((current) => ({ ...current, fuelType: event.target.value }))}>
-                  <option value="diesel">Diesel</option>
-                  <option value="petrol">Petrol</option>
-                  <option value="adblue">AdBlue</option>
-                  <option value="paraffin">Paraffin</option>
-                </select>
-              </label>
+              <div className={styles.storageFuelTypeField}>
+                <span>Fuel type</span>
+                <StorageFuelTypeSelect value={storageDraft.fuelType} isOpen={isStorageFuelSelectOpen} onToggle={toggleStorageFuelSelect} onChange={selectStorageFuelType} />
+              </div>
               <label>
                 Capacity litres
                 <input type="number" min="0" step="0.01" value={storageDraft.capacityLitres} onChange={(event) => setStorageDraft((current) => ({ ...current, capacityLitres: event.target.value }))} placeholder="10000" />
@@ -869,7 +936,7 @@ export default function FuelClient() {
                 Reorder level
                 <input type="number" min="0" step="0.01" value={storageDraft.reorderLevelLitres} onChange={(event) => setStorageDraft((current) => ({ ...current, reorderLevelLitres: event.target.value }))} placeholder="1500" />
               </label>
-              <label>
+              <label className={styles.locationLabelField}>
                 Location label
                 <input value={storageDraft.locationLabel} onChange={(event) => setStorageDraft((current) => ({ ...current, locationLabel: event.target.value }))} placeholder="Yard / Workshop / Farm 1" />
               </label>

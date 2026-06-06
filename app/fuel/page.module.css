@@ -776,7 +776,7 @@
 .formGrid,
 .formGridSingle {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.72rem 0.85rem;
 }
 
@@ -786,6 +786,7 @@
 
 .formGrid label,
 .formGridSingle label,
+.storageFuelTypeField,
 .pinField {
   min-width: 0;
   display: grid;
@@ -800,7 +801,8 @@
 .formGrid textarea,
 .formGridSingle input,
 .formGridSingle select,
-.pinField input {
+.pinField input,
+.storageFuelTypeButton {
   width: 100%;
   min-height: 3.05rem;
   padding: 0.82rem 0.95rem;
@@ -842,13 +844,145 @@
 .formGrid textarea:focus,
 .formGridSingle input:focus,
 .formGridSingle select:focus,
-.pinField input:focus {
+.pinField input:focus,
+.storageFuelTypeButton:focus-visible {
   border-color: rgba(23, 77, 62, 0.36);
   box-shadow: 0 0 0 4px rgba(23, 77, 62, 0.08);
 }
 
+.storageNameField {
+  grid-column: span 2;
+}
+
+.locationLabelField {
+  grid-column: span 2;
+}
+
 .fullField {
   grid-column: 1 / -1;
+}
+
+.storageFuelTypeField {
+  position: relative;
+}
+
+.storageFuelTypeSelect {
+  position: relative;
+  width: 100%;
+}
+
+.storageFuelTypeSelectOpen {
+  z-index: 40;
+}
+
+.storageFuelTypeButton {
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  text-align: left;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(249, 253, 251, 0.98) 100%);
+  border-color: rgba(18, 45, 37, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.storageFuelTypeButton:hover {
+  border-color: rgba(23, 77, 62, 0.24);
+  background: #ffffff;
+}
+
+.storageFuelTypeSelectOpen .storageFuelTypeButton {
+  border-color: rgba(23, 77, 62, 0.42);
+  background: #ffffff;
+  box-shadow:
+    0 0 0 4px rgba(23, 77, 62, 0.08),
+    0 12px 24px rgba(10, 48, 38, 0.08);
+}
+
+.storageFuelTypeButton span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.storageFuelTypeChevron {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+  color: #17382e;
+  transition: transform 160ms ease;
+}
+
+.storageFuelTypeSelectOpen .storageFuelTypeChevron {
+  transform: rotate(180deg);
+}
+
+.storageFuelTypeMenu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  right: 0;
+  z-index: 45;
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.35rem;
+  border: 1px solid rgba(23, 77, 62, 0.26);
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow:
+    0 22px 42px rgba(10, 30, 24, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.storageFuelTypeOption {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 2.55rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0.62rem 0.72rem;
+  border: 0;
+  border-radius: 0.74rem;
+  color: #19352d;
+  background: transparent;
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.storageFuelTypeOption:hover,
+.storageFuelTypeOption:focus-visible {
+  outline: none;
+  color: #0b4636;
+  background: rgba(25, 116, 84, 0.08);
+}
+
+.storageFuelTypeOptionActive,
+.storageFuelTypeOptionActive:hover,
+.storageFuelTypeOptionActive:focus-visible {
+  color: #ffffff;
+  background: linear-gradient(180deg, #1a7355 0%, #0b503d 100%);
+  box-shadow:
+    0 8px 16px rgba(7, 63, 49, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .modalActions {
@@ -1253,6 +1387,16 @@
   .topActionButtons {
     width: 100%;
   }
+
+  .formGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .storageNameField,
+  .locationLabelField,
+  .fullField {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1337,6 +1481,8 @@
     min-width: 0;
   }
 
+  .storageNameField,
+  .locationLabelField,
   .fullField {
     grid-column: auto;
   }
