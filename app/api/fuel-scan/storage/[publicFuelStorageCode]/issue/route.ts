@@ -13,9 +13,12 @@ type RouteContext = {
 type FuelIssueRequest = {
   assetId?: unknown;
   litres?: unknown;
+  assetFuelPercentBefore?: unknown;
   assetFuelPercentAfter?: unknown;
   assetUsageReading?: unknown;
   operatorName?: unknown;
+  activityText?: unknown;
+  workAreaText?: unknown;
   note?: unknown;
   latitude?: unknown;
   longitude?: unknown;
@@ -71,9 +74,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
       storageId: access.storage.id,
       assetId,
       litres: body.litres,
+      assetFuelPercentBefore: body.assetFuelPercentBefore,
       assetFuelPercentAfter: body.assetFuelPercentAfter,
       assetUsageReading: body.assetUsageReading,
       operatorName: body.operatorName,
+      activityText: body.activityText,
+      workAreaText: body.workAreaText,
       note: body.note,
       latitude: body.latitude,
       longitude: body.longitude,
