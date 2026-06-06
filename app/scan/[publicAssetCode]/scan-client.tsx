@@ -439,6 +439,21 @@ function usagePlaceholder(asset: ScanSafeAsset): string {
     : "Enter current hours";
 }
 
+function assetScanMeta(asset: ScanSafeAsset | null): string {
+  if (!asset) return "Enter the farm PIN to open this asset.";
+
+  const serialText = asset.serialNumber
+    ? `Serial ${asset.serialNumber}`
+    : "Serial not captured";
+  const usageText = formatUsage(asset);
+
+  if (!usageText || usageText === "—" || usageText === "Not tracked") {
+    return serialText;
+  }
+
+  return `${serialText} · ${usageText}`;
+}
+
 function assetPlaceholderLabel(asset: ScanSafeAsset): string {
   const label = asset.equipmentFamilyLabel || asset.kind || "Asset";
   return label.replace(/[_-]+/g, " ").trim() || "Asset";
@@ -737,6 +752,18 @@ function CameraIcon({ className }: IconProps) {
   );
 }
 
+function ShareIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <path d="m8.7 10.6 6.6-4.2" />
+      <path d="m8.7 13.4 6.6 4.2" />
+    </svg>
+  );
+}
+
 function LocationIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
@@ -779,7 +806,7 @@ export default function ScanClient({
   const [isUploading, setIsUploading] = useState(false);
   const [locationState, setLocationState] = useState<LocationState>("idle");
   const [locationMessage, setLocationMessage] = useState(
-    "Location will be captured automatically once the asset is unlocked.",
+    "Location must be enabled before this asset QR can continue.",
   );
   const [isUnavailable, setIsUnavailable] = useState(false);
   const [activeEditor, setActiveEditor] = useState<EditorKey | null>(null);
@@ -837,7 +864,7 @@ export default function ScanClient({
     setShowServiceDetailsStep(false);
     setLocationState("idle");
     setLocationMessage(
-      "Location will be captured automatically once the asset is unlocked.",
+      "Location must be enabled before this asset QR can continue.",
     );
     autoLocationKeyRef.current = "";
   }, [normalizedCode]);
@@ -899,6 +926,12 @@ export default function ScanClient({
     if (!asset?.id) return;
     if (autoLocationKeyRef.current === asset.id) return;
     autoLocationKeyRef.current = asset.id;
+
+    if (hasLocationCaptured(draft)) {
+      setLocationState("ready");
+      return;
+    }
+
     void captureLocation(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asset?.id]);
@@ -939,12 +972,15 @@ export default function ScanClient({
       setAsset(data.asset);
       setSavedAsset(data.asset);
       setAssetPreview(data.asset);
-      setDraft(initialDraft);
+      setDraft((current) => ({
+        ...initialDraft,
+        latitude: current.latitude,
+        longitude: current.longitude,
+      }));
       setPendingUpdate(initialPendingUpdate);
       setIsDone(false);
-      setShowLocationReminder(true);
-      setLocationState("idle");
-      setLocationMessage("Capturing GPS automatically…");
+      setShowLocationReminder(false);
+      setLocationState("ready");
     } finally {
       setIsLoadingAsset(false);
     }
@@ -962,6 +998,12 @@ export default function ScanClient({
 
     if (cleanOperatorName.length < 2) {
       setNotice({ tone: "error", message: "Enter your name before opening the asset." });
+      return;
+    }
+
+    if (!hasLocationCaptured(draft)) {
+      setNotice({ tone: "error", message: "Capture GPS first. Location must be enabled before this asset QR can continue." });
+      void captureLocation(false);
       return;
     }
 
@@ -1116,6 +1158,19 @@ export default function ScanClient({
     setActiveEditor(null);
   }
 
+  function handleShareTap() {
+    setNotice({ tone: "success", message: "Share button added for the new layout. The share action can be connected next." });
+  }
+
+  function handleFuelTap() {
+    if (!asset?.canUpdateFuel) {
+      setNotice({ tone: "error", message: "Fuel updates are not enabled for this asset yet." });
+      return;
+    }
+
+    openEditor("fuel");
+  }
+
   async function captureLocation(isAutomatic = false) {
     if (typeof window === "undefined" || !window.isSecureContext) {
       setLocationState("error");
@@ -1132,8 +1187,8 @@ export default function ScanClient({
     setLocationState("capturing");
     setLocationMessage(
       isAutomatic
-        ? "Capturing the asset location automatically…"
-        : "Capturing your current location…",
+        ? "Refreshing GPS location…"
+        : "Getting GPS location...",
     );
 
     await new Promise<void>((resolve) => {
@@ -1141,24 +1196,25 @@ export default function ScanClient({
         (position) => {
           const latitude = String(position.coords.latitude);
           const longitude = String(position.coords.longitude);
+          const locationText = `GPS captured: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
           setDraft((current) => ({ ...current, latitude, longitude }));
           setLocationState("ready");
-          setLocationMessage("GPS is ready for this update.");
-          if (!isAutomatic) setNotice({ tone: "success", message: "Location captured." });
+          setLocationMessage(locationText);
+          if (!isAutomatic && asset) setNotice({ tone: "success", message: "Location captured." });
           resolve();
         },
-        (error) => {
+        () => {
           setLocationState("error");
-          setLocationMessage(error.message || "Location is required before this QR update can be saved.");
-          if (!isAutomatic) {
+          setLocationMessage("GPS permission is required. Enable location access and capture GPS again.");
+          if (!isAutomatic && asset) {
             setNotice({
               tone: "error",
-              message: error.message || "Failed to capture location.",
+              message: "GPS permission is required. Enable location access and capture GPS again.",
             });
           }
           resolve();
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
       );
     });
   }
@@ -1495,44 +1551,6 @@ export default function ScanClient({
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
-        {!asset && !isUnavailable ? (
-          <section className={styles.assetPreviewCard}>
-            <div className={styles.assetPreviewHeader}>
-              <h1>{prePinAsset?.title || "Asset scan"}</h1>
-              <p>
-                {prePinAsset
-                  ? prePinAsset.serialNumber
-                    ? `Serial ${prePinAsset.serialNumber}`
-                    : prePinAsset.equipmentFamilyLabel || prePinAsset.plateLabel || "Ready to unlock"
-                  : "Enter the farm PIN to open this asset."}
-              </p>
-            </div>
-
-            {prePinAsset ? (
-              <div className={styles.previewDetailGrid}>
-                <div>
-                  <span>Type</span>
-                  <strong>{assetPlaceholderLabel(prePinAsset)}</strong>
-                </div>
-                <div>
-                  <span>{usageTitle(prePinAsset)}</span>
-                  <strong>{formatUsage(prePinAsset)}</strong>
-                </div>
-                <div>
-                  <span>Serial</span>
-                  <strong>{prePinAsset.serialNumber || "—"}</strong>
-                </div>
-                {prePinAsset.licenseStatus === "yes" && prePinAsset.licenseRegistrationNumber ? (
-                  <div className={styles.registrationDetailCell}>
-                    <span>Registration</span>
-                    <strong>{prePinAsset.licenseRegistrationNumber}</strong>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </section>
-        ) : null}
-
         {notice ? (
           <div className={`${styles.notice} ${notice.tone === "success" ? styles.noticeSuccess : styles.noticeError}`}>
             {notice.message}
@@ -1540,10 +1558,11 @@ export default function ScanClient({
         ) : null}
 
         {!asset && !isUnavailable ? (
-          <section className={styles.pinCard}>
-            <div className={styles.pinCardCopy}>
-              <h2>Enter farm PIN</h2>
-              <p>This protects the owner’s asset history.</p>
+          <section className={`${styles.pinCard} ${!locationReady ? styles.pinCardBlocked : ""}`}>
+            <div className={styles.assetScanTitleBlock}>
+              <span>Asset QR for</span>
+              <h1>{prePinAsset?.title || "Asset scan"}</h1>
+              <p>{assetScanMeta(prePinAsset)}</p>
             </div>
 
             <form className={styles.pinForm} onSubmit={handlePinSubmit}>
@@ -1555,7 +1574,7 @@ export default function ScanClient({
                   placeholder="4 to 8 digits"
                   value={pin}
                   onChange={(event) => setPin(normalizePinInput(event.target.value))}
-                  disabled={isSubmittingPin || isLoadingAsset}
+                  disabled={isSubmittingPin || isLoadingAsset || !locationReady}
                 />
               </label>
 
@@ -1566,9 +1585,21 @@ export default function ScanClient({
                   placeholder="Name of person scanning"
                   value={operatorName}
                   onChange={(event) => setOperatorName(normalizeOperatorName(event.target.value))}
-                  disabled={isSubmittingPin || isLoadingAsset}
+                  disabled={isSubmittingPin || isLoadingAsset || !locationReady}
                 />
               </label>
+
+              {locationReady ? (
+                <div className={`${styles.locationGate} ${styles.locationGateReady}`}>
+                  <div>
+                    <strong>Location ready</strong>
+                    <span>{locationMessage}</span>
+                  </div>
+                  <button type="button" onClick={() => void captureLocation(false)} disabled={locationState === "capturing"}>
+                    {locationState === "capturing" ? "Capturing..." : "Recapture GPS"}
+                  </button>
+                </div>
+              ) : null}
 
               <button
                 type="submit"
@@ -1576,6 +1607,7 @@ export default function ScanClient({
                 disabled={
                   isSubmittingPin ||
                   isLoadingAsset ||
+                  !locationReady ||
                   pin.length < 4 ||
                   operatorName.trim().length < 2
                 }
@@ -1583,6 +1615,20 @@ export default function ScanClient({
                 {isSubmittingPin || isLoadingAsset ? "Opening…" : "Unlock asset"}
               </button>
             </form>
+
+            {!locationReady ? (
+              <div className={styles.locationPromptBackdrop} role="dialog" aria-modal="true" aria-labelledby="asset-location-title">
+                <div className={styles.locationPromptCard}>
+                  <div className={styles.locationPromptIcon} aria-hidden="true">⌖</div>
+                  <h2 id="asset-location-title">Keep location on</h2>
+                  <p>Every QR save stores a GPS point automatically. Allow location access on this phone before saving updates.</p>
+                  <span>{locationMessage}</span>
+                  <button type="button" className={styles.primaryButton} onClick={() => void captureLocation(false)} disabled={locationState === "capturing"}>
+                    {locationState === "capturing" ? "Capturing..." : "Continue"}
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -1598,8 +1644,10 @@ export default function ScanClient({
         {asset ? (
           <>
             <section className={styles.assetOpenedCard}>
-              <div>
+              <div className={styles.assetScanTitleBlock}>
+                <span>Asset QR update</span>
                 <h1>{asset.title}</h1>
+                <p>{assetScanMeta(asset)}</p>
               </div>
               <button
                 type="button"
@@ -1618,26 +1666,21 @@ export default function ScanClient({
               </button>
             </section>
 
-
             <section className={styles.actionGrid}>
-              {showUsageAction ? (
-                <button type="button" className={styles.actionCard} onClick={() => openEditor("usage")}>
-                  <span className={styles.actionIconWrap}><MeterIcon className={styles.actionIcon} /></span>
-                  <strong>Update Meter</strong>
-                  <small>{buildEditorSummary("usage", asset)}</small>
-                </button>
-              ) : null}
+              <button type="button" className={styles.actionCard} onClick={handleShareTap}>
+                <span className={styles.actionIconWrap}><ShareIcon className={styles.actionIcon} /></span>
+                <strong>Share</strong>
+                <small>Coming next</small>
+              </button>
 
-              {showFuelAction ? (
-                <button type="button" className={styles.actionCard} onClick={() => openEditor("fuel")}>
-                  <span className={styles.actionIconWrap}><FuelIcon className={styles.actionIcon} /></span>
-                  <strong>Update Fuel</strong>
-                  <small>{buildEditorSummary("fuel", asset)}</small>
-                </button>
-              ) : null}
+              <button type="button" className={styles.actionCard} onClick={handleFuelTap}>
+                <span className={styles.actionIconWrap}><FuelIcon className={styles.actionIcon} /></span>
+                <strong>Fuel</strong>
+                <small>{showFuelAction ? buildEditorSummary("fuel", asset) : "Fuel tracking not enabled"}</small>
+              </button>
 
               <button type="button" className={styles.actionCard} onClick={() => openEditor("service")}>
-                <span className={styles.actionIconWrap}><ServiceIcon className={styles.actionIcon} /></span>
+                <span className={styles.actionIconWrap}><WrenchIcon className={styles.actionIcon} /></span>
                 <strong>Maintenance</strong>
                 <small>{buildEditorSummary("service", asset)}</small>
               </button>

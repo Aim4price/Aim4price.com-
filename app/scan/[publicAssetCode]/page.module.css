@@ -28,11 +28,13 @@
 }
 
 .shell {
-  width: min(calc(100% - 1rem), 760px);
+  width: min(calc(100% - 1rem), 620px);
+  min-height: 100dvh;
   margin: 0 auto;
-  padding: 0.7rem 0 1.45rem;
+  padding: 0.75rem 0 1rem;
   display: grid;
-  gap: 0.95rem;
+  align-content: start;
+  gap: 0.75rem;
 }
 
 .assetPreviewCard,
@@ -70,6 +72,7 @@
 .modalStack,
 .centerStack,
 .pinCardCopy,
+.assetScanTitleBlock,
 .assetPreviewHeader {
   display: grid;
 }
@@ -83,12 +86,14 @@
 }
 
 .assetPreviewHeader,
+.assetScanTitleBlock,
 .pinCardCopy,
 .editorTitleBlock {
   gap: 0.42rem;
 }
 
 .assetPreviewHeader h1,
+.assetScanTitleBlock h1,
 .pinCard h2,
 .unavailableCard h2,
 .assetOpenedCard h1,
@@ -103,6 +108,7 @@
 }
 
 .assetPreviewHeader h1,
+.assetScanTitleBlock h1,
 .assetOpenedCard h1,
 .thankYouScreen h1 {
   font-size: clamp(2.15rem, 8.8vw, 3.25rem);
@@ -116,6 +122,7 @@
 }
 
 .assetPreviewHeader p,
+.assetScanTitleBlock p,
 .pinCard p,
 .unavailableCard p,
 .assetOpenedCard p,
@@ -128,6 +135,163 @@
   font-size: clamp(1.05rem, 3.6vw, 1.28rem);
   font-weight: 690;
   line-height: 1.36;
+}
+
+.pinCard {
+  position: relative;
+  min-height: calc(100dvh - 1.5rem);
+  align-content: center;
+  overflow: hidden;
+}
+
+.pinCardBlocked > .assetScanTitleBlock,
+.pinCardBlocked > .pinForm {
+  filter: blur(6px);
+  transform: scale(0.992);
+  pointer-events: none;
+  user-select: none;
+}
+
+.assetScanTitleBlock span {
+  line-height: 1.1;
+}
+
+.locationPromptBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 4vw, 1.3rem);
+  background: rgba(20, 34, 42, 0.48);
+  backdrop-filter: blur(10px);
+}
+
+.locationPromptCard {
+  width: min(100%, 31rem);
+  display: grid;
+  justify-items: center;
+  gap: 0.85rem;
+  padding: clamp(1.35rem, 5vw, 1.8rem);
+  text-align: center;
+  border: 1px solid rgba(215, 228, 234, 0.96);
+  border-radius: 1.45rem;
+  background:
+    radial-gradient(circle at top left, rgba(23, 107, 79, 0.055), transparent 44%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 252, 251, 0.98) 100%);
+  box-shadow:
+    0 28px 70px rgba(5, 23, 32, 0.28),
+    0 12px 28px rgba(5, 23, 32, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.locationPromptIcon {
+  width: 5.2rem;
+  height: 5.2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 1.35rem;
+  color: #ffffff;
+  background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
+  box-shadow: 0 18px 34px rgba(16, 68, 52, 0.22);
+  font-size: 2.5rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.locationPromptCard h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(2.2rem, 9vw, 3.35rem);
+  font-weight: 900;
+  line-height: 0.96;
+  letter-spacing: -0.06em;
+}
+
+.locationPromptCard p {
+  max-width: 27rem;
+  margin: 0;
+  color: var(--text-soft);
+  font-size: clamp(1rem, 3.5vw, 1.16rem);
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.locationPromptCard > span {
+  color: #5d7182;
+  font-size: 0.9rem;
+  font-weight: 820;
+  line-height: 1.32;
+  overflow-wrap: anywhere;
+}
+
+.locationPromptCard .primaryButton {
+  width: 100%;
+  margin-top: 0.15rem;
+}
+
+.locationGate {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.95rem;
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, #fffafa 0%, #fff3f3 100%);
+  border: 1px solid rgba(239, 196, 196, 0.98);
+}
+
+.locationGateReady {
+  background: linear-gradient(180deg, #f1fbf6 0%, #e5f6ec 100%);
+  border-color: rgba(159, 218, 185, 0.98);
+}
+
+.locationGate div {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.locationGate strong {
+  color: var(--text);
+  font-size: 1.08rem;
+  font-weight: 900;
+}
+
+.locationGate span {
+  color: var(--text-soft);
+  font-size: 0.92rem;
+  font-weight: 780;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.locationGate button {
+  min-height: 3.3rem;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(18, 45, 37, 0.10);
+  background: #ffffff;
+  color: #17362c;
+  padding: 0 1rem;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.055);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.locationGate button:hover {
+  transform: translateY(-1px);
+}
+
+.locationGate button:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .previewDetailGrid {
@@ -150,6 +314,7 @@
 }
 
 .previewDetailGrid span,
+.assetScanTitleBlock span,
 .field span {
   color: #657789;
   font-size: clamp(0.78rem, 2.7vw, 0.92rem);
@@ -370,7 +535,7 @@
   position: relative;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.15rem;
+  gap: 0.98rem;
   align-items: start;
 }
 
@@ -425,16 +590,16 @@
 .actionGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
+  gap: 0.95rem;
 }
 
 .actionCard {
-  min-height: 9.35rem;
+  min-height: 13.4rem;
   display: grid;
   align-content: start;
   justify-items: start;
-  gap: 0.86rem;
-  padding: 1.15rem;
+  gap: 1.02rem;
+  padding: 1.28rem;
   color: inherit;
   text-align: left;
   cursor: pointer;
@@ -453,9 +618,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 4.05rem;
-  height: 4.05rem;
-  border-radius: 1.28rem;
+  width: 5.75rem;
+  height: 5.75rem;
+  border-radius: 1.55rem;
   color: #0f6040;
   background:
     radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.95), transparent 42%),
@@ -467,16 +632,16 @@
 }
 
 .actionIcon {
-  width: 2.05rem;
-  height: 2.05rem;
+  width: 2.85rem;
+  height: 2.85rem;
 }
 
 .actionCard strong {
   color: var(--text);
-  font-size: clamp(1.24rem, 4.8vw, 1.55rem);
+  font-size: clamp(1.55rem, 6.2vw, 2rem);
   font-weight: 900;
-  line-height: 1.02;
-  letter-spacing: -0.035em;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
 }
 
 .actionCard small {
@@ -485,16 +650,16 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   color: var(--text-soft);
-  font-size: clamp(0.98rem, 3.3vw, 1.12rem);
-  font-weight: 700;
-  line-height: 1.25;
+  font-size: clamp(1.02rem, 3.65vw, 1.16rem);
+  font-weight: 730;
+  line-height: 1.24;
 }
 
 .doneButton {
   width: 100%;
-  min-height: 4.85rem;
+  min-height: 5.05rem;
   border-radius: 1.32rem;
-  font-size: 1.28rem;
+  font-size: 1.32rem;
 }
 
 .locationReminderOverlay,
@@ -1055,7 +1220,7 @@
 
 @media (max-width: 420px) {
   .shell {
-    width: min(calc(100% - 0.75rem), 760px);
+    width: min(calc(100% - 0.75rem), 620px);
     padding-top: 0.45rem;
     gap: 0.78rem;
   }
@@ -1070,17 +1235,22 @@
   }
 
   .actionGrid {
-    gap: 0.72rem;
+    gap: 0.78rem;
   }
 
   .actionCard {
-    min-height: 8.55rem;
-    padding: 0.95rem;
+    min-height: 11.65rem;
+    padding: 1rem;
   }
 
   .actionIconWrap {
-    width: 3.65rem;
-    height: 3.65rem;
+    width: 5rem;
+    height: 5rem;
+  }
+
+  .actionIcon {
+    width: 2.48rem;
+    height: 2.48rem;
   }
 
   .editorHeader {
