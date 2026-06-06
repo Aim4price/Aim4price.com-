@@ -639,25 +639,47 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
             <h1>Choose asset</h1>
             <p>Tap the asset that received fuel.</p>
           </div>
-          <label className={styles.searchField}>
-            <span>Search</span>
-            <input value={assetSearch} onChange={(event) => setAssetSearch(event.target.value)} placeholder="Search asset title, serial or plate" autoFocus />
-          </label>
+          <div className={styles.assetSearchWrap}>
+            <label className={styles.searchField}>
+              <span>Search</span>
+              <input value={assetSearch} onChange={(event) => setAssetSearch(event.target.value)} placeholder="Search asset title, serial or plate" autoFocus />
+            </label>
+            <div className={styles.assetSearchSummary}>
+              <span>{filteredAssets.length} {filteredAssets.length === 1 ? 'asset' : 'assets'} available</span>
+              {assetSearch.trim() ? (
+                <button type="button" onClick={() => setAssetSearch('')}>
+                  Clear search
+                </button>
+              ) : null}
+            </div>
+          </div>
           <div className={styles.assetChoiceList}>
-            {filteredAssets.map((asset) => (
-              <button
-                type="button"
-                key={asset.id}
-                className={`${styles.assetChoiceButton} ${asset.id === assetId ? styles.assetChoiceButtonActive : ''}`}
-                onClick={() => chooseAsset(asset.id)}
-              >
-                <strong>{assetDisplayName(asset)}</strong>
-                <div className={styles.assetIdentityGrid}>
-                  <span><b>Serial</b><em>{assetSerialText(asset)}</em></span>
-                  <span><b>Plate</b><em>{assetPlateText(asset)}</em></span>
-                </div>
-              </button>
-            ))}
+            {filteredAssets.map((asset) => {
+              const displayName = assetDisplayName(asset);
+              const typeText = asset.assetTypeLabel || asset.kind || 'Asset';
+
+              return (
+                <button
+                  type="button"
+                  key={asset.id}
+                  className={`${styles.assetChoiceButton} ${asset.id === assetId ? styles.assetChoiceButtonActive : ''}`}
+                  onClick={() => chooseAsset(asset.id)}
+                  aria-label={`Choose ${displayName}`}
+                >
+                  <div className={styles.assetChoiceTopline}>
+                    <span>{typeText}</span>
+                    <i aria-hidden="true">Tap</i>
+                  </div>
+                  <strong>{displayName}</strong>
+                  <div className={styles.assetDetailRows}>
+                    <span><b>Serial</b><em>{assetSerialText(asset)}</em></span>
+                    <span><b>Plate</b><em>{assetPlateText(asset)}</em></span>
+                    <span><b>Last recorded</b><em>{formatHours(asset.hours)}</em></span>
+                    <span><b>Fuel</b><em>{formatPercent(asset.fuelPercent)}</em></span>
+                  </div>
+                </button>
+              );
+            })}
             {!filteredAssets.length ? <p className={styles.emptyText}>No assets found.</p> : null}
           </div>
         </section>
