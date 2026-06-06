@@ -5,7 +5,7 @@ import styles from './page.module.css';
 
 type FuelStorageStatus = 'active' | 'archived';
 type FuelStorageEventType = 'opening_balance' | 'stock_in' | 'asset_issue' | 'dip' | 'adjustment';
-type IssueStep = 'asset' | 'usage' | 'beforeFuel' | 'filledFuel' | 'operator' | 'work' | 'notes';
+type IssueStep = 'asset' | 'usage' | 'beforeFuel' | 'filledFuel' | 'work' | 'notes';
 
 type FuelStoragePublicPreview = {
   id: string;
@@ -104,15 +104,15 @@ type FuelScanClientProps = {
 };
 
 const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
-const ISSUE_STEPS: IssueStep[] = ['asset', 'usage', 'beforeFuel', 'filledFuel', 'operator', 'work', 'notes'];
+const TOTAL_SCAN_PAGES = 7;
+const ISSUE_STEPS: IssueStep[] = ['asset', 'usage', 'beforeFuel', 'filledFuel', 'work', 'notes'];
 const STEP_LABELS: Record<IssueStep, string> = {
   asset: 'Choose asset',
-  usage: 'Hours / km',
+  usage: 'New recorded',
   beforeFuel: 'Fuel before',
-  filledFuel: 'Fuel filled',
-  operator: 'Operator',
+  filledFuel: 'Fuel after',
   work: 'Activity',
-  notes: 'Notes',
+  notes: 'Confirm',
 };
 
 function normalizeIntegerInput(value: string): string {
@@ -150,10 +150,12 @@ function assetDisplayName(asset: FuelLedgerAsset): string {
   return asset.title || [asset.brandName, asset.modelName].filter(Boolean).join(' ') || asset.assetTypeLabel || 'Asset';
 }
 
-function assetIdentityLine(asset: FuelLedgerAsset): string {
-  const serial = asset.serialNumber || 'Serial not captured';
-  const plate = asset.plateLabel || 'No number plate';
-  return `Serial: ${serial} · Plate: ${plate}`;
+function assetSerialText(asset: FuelLedgerAsset): string {
+  return asset.serialNumber || 'Not captured';
+}
+
+function assetPlateText(asset: FuelLedgerAsset): string {
+  return asset.plateLabel || 'No plate';
 }
 
 function assetSearchText(asset: FuelLedgerAsset): string {
@@ -205,7 +207,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   const [workAreaText, setWorkAreaText] = useState('');
   const [note, setNote] = useState('');
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
-  const [locationStatus, setLocationStatus] = useState('Capture GPS before entering the fuel PIN.');
+  const [locationStatus, setLocationStatus] = useState('Location must be enabled before this fuel QR can continue.');
   const [notice, setNotice] = useState<Notice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -221,8 +223,8 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   const visibleFuelType = storage?.fuelType || preview?.fuelType || 'Diesel';
   const unauthenticated = !storage;
   const issueStepIndex = ISSUE_STEPS.indexOf(issueStep);
-  const issueStepNumber = issueStepIndex + 1;
-  const issueStepProgress = ((issueStepNumber || 1) / ISSUE_STEPS.length) * 100;
+  const issueStepNumber = issueStepIndex + 2;
+  const issueStepProgress = (issueStepNumber / TOTAL_SCAN_PAGES) * 100;
 
   const filteredAssets = useMemo(() => {
     const query = assetSearch.trim().toLowerCase();
@@ -340,7 +342,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     setWorkAreaText('');
     setNote('');
     setCoordinates(null);
-    setLocationStatus('Capture GPS before entering the fuel PIN.');
+    setLocationStatus('Location must be enabled before this fuel QR can continue.');
     setIssueStep('asset');
     void loadPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -382,6 +384,14 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     try {
       if (!coordinates) {
         throw new Error('Capture GPS first. Location must be enabled before this fuel QR can continue.');
+      }
+
+      if (pin.length < 4) {
+        throw new Error('Enter the fuel PIN.');
+      }
+
+      if (operatorName.trim().length < 2) {
+        throw new Error('Enter your name before continuing.');
       }
 
       const response = await fetch('/api/fuel-scan/auth', {
@@ -434,7 +444,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       const afterNumber = Number(fuelPercentText(assetFuelPercentAfter));
 
       if (litresNumber === null || litresNumber <= 0) {
-        throw new Error('Enter the litres filled into the asset.');
+        throw new Error('Enter the litres issued to the asset.');
       }
 
       if (afterNumber < beforeNumber) {
@@ -442,9 +452,6 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       }
     }
 
-    if (issueStep === 'operator' && operatorName.trim().length < 2) {
-      throw new Error('Enter the manager or operator name.');
-    }
 
     if (issueStep === 'work') {
       if (activityText.trim().length < 2) {
@@ -492,7 +499,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       }
 
       if (operatorName.trim().length < 2) {
-        throw new Error('Enter the manager or operator name.');
+        throw new Error('Enter your name on the first page before saving.');
       }
 
       if (activityText.trim().length < 2 || workAreaText.trim().length < 2) {
@@ -568,7 +575,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
         ) : null}
         {submit ? (
           <button type="button" className={styles.primaryButton} onClick={handleIssueSubmit} disabled={isSaving || !canContinue}>
-            {isSaving ? 'Saving...' : 'Save fuel issue'}
+            {isSaving ? 'Saving...' : 'Save fuel'}
           </button>
         ) : (
           <button type="button" className={styles.primaryButton} onClick={goToNextStep} disabled={!canContinue || isSaving}>
@@ -580,24 +587,38 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   }
 
   function renderFuelSlider(value: string, onChange: (value: string) => void) {
+    const currentFuelPercent = fuelPercentText(value);
+
     return (
       <div className={styles.fuelSliderBlock}>
-        <strong>{fuelPercentText(value)}%</strong>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="5"
-          className={styles.rangeInput}
-          value={fuelPercentText(value)}
-          onChange={(event) => onChange(fuelPercentText(event.target.value))}
-        />
+        <div className={styles.fuelValueRow}>
+          <strong>{currentFuelPercent}%</strong>
+          <span>Asset fuel gauge</span>
+        </div>
+        <div className={styles.sliderTrackWrap}>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            className={styles.rangeInput}
+            value={currentFuelPercent}
+            style={{
+              background: `linear-gradient(90deg, #176b4f 0%, #176b4f ${currentFuelPercent}%, #dce8e4 ${currentFuelPercent}%, #dce8e4 100%)`,
+            }}
+            onChange={(event) => onChange(fuelPercentText(event.target.value))}
+          />
+          <div className={styles.fuelScale}>
+            <span>Empty</span>
+            <span>Full</span>
+          </div>
+        </div>
         <div className={styles.quickFuelGrid}>
           {QUICK_FUEL_OPTIONS.map((option) => (
             <button
               type="button"
               key={option}
-              className={`${styles.quickFuelButton} ${fuelPercentText(value) === String(option) ? styles.quickFuelButtonActive : ''}`}
+              className={`${styles.quickFuelButton} ${currentFuelPercent === String(option) ? styles.quickFuelButtonActive : ''}`}
               onClick={() => onChange(String(option))}
               disabled={isSaving}
             >
@@ -614,7 +635,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       return (
         <section className={`${styles.stepCard} ${styles.assetStepCard}`}>
           <div className={styles.stepTitleBlock}>
-            <span>Step {issueStepNumber} of {ISSUE_STEPS.length}</span>
+            <span>Step {issueStepNumber} of {TOTAL_SCAN_PAGES}</span>
             <h1>Choose asset</h1>
             <p>Tap the asset that received fuel.</p>
           </div>
@@ -631,7 +652,10 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
                 onClick={() => chooseAsset(asset.id)}
               >
                 <strong>{assetDisplayName(asset)}</strong>
-                <span>{assetIdentityLine(asset)}</span>
+                <div className={styles.assetIdentityGrid}>
+                  <span><b>Serial</b><em>{assetSerialText(asset)}</em></span>
+                  <span><b>Plate</b><em>{assetPlateText(asset)}</em></span>
+                </div>
               </button>
             ))}
             {!filteredAssets.length ? <p className={styles.emptyText}>No assets found.</p> : null}
@@ -644,8 +668,8 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       return (
         <section className={styles.stepCard}>
           <div className={styles.stepTitleBlock}>
-            <span>Step {issueStepNumber} of {ISSUE_STEPS.length}</span>
-            <h1>Hours / km</h1>
+            <span>Step {issueStepNumber} of {TOTAL_SCAN_PAGES}</span>
+            <h1>New recorded</h1>
             <p>{selectedAssetName}</p>
           </div>
           <div className={styles.readingCard}>
@@ -653,7 +677,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
             <strong>{formatHours(selectedAsset?.hours)}</strong>
           </div>
           <label className={styles.field}>
-            <span>New recorded hours / km</span>
+            <span>New hours / km reading</span>
             <input
               type="number"
               min="0"
@@ -687,7 +711,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       return (
         <section className={styles.stepCard}>
           <div className={styles.stepTitleBlock}>
-            <span>Step {issueStepNumber} of {ISSUE_STEPS.length}</span>
+            <span>Step {issueStepNumber} of {TOTAL_SCAN_PAGES}</span>
             <h1>Fuel before</h1>
             <p>Set the asset fuel gauge before filling.</p>
           </div>
@@ -701,13 +725,13 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       return (
         <section className={styles.stepCard}>
           <div className={styles.stepTitleBlock}>
-            <span>Step {issueStepNumber} of {ISSUE_STEPS.length}</span>
-            <h1>Fuel filled</h1>
-            <p>Enter litres and the fuel gauge after filling.</p>
+            <span>Step {issueStepNumber} of {TOTAL_SCAN_PAGES}</span>
+            <h1>Fuel after</h1>
+            <p>Enter litres issued and set the fuel gauge after filling.</p>
           </div>
           <label className={styles.field}>
-            <span>Litres filled</span>
-            <input type="number" min="0" step="0.01" value={litres} onChange={(event) => setLitres(event.target.value)} placeholder="Litres" autoFocus />
+            <span>Litres issued</span>
+            <input type="number" min="0" step="0.01" value={litres} onChange={(event) => setLitres(event.target.value)} placeholder="Litres issued" autoFocus />
           </label>
           <div className={styles.compactMetaGrid}>
             <div><span>Before</span><strong>{fuelPercentText(assetFuelPercentBefore)}%</strong></div>
@@ -719,28 +743,11 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       );
     }
 
-    if (issueStep === 'operator') {
-      return (
-        <section className={styles.stepCard}>
-          <div className={styles.stepTitleBlock}>
-            <span>Step {issueStepNumber} of {ISSUE_STEPS.length}</span>
-            <h1>Operator</h1>
-            <p>Who issued or received the fuel?</p>
-          </div>
-          <label className={styles.field}>
-            <span>Manager / operator</span>
-            <input value={operatorName} onChange={(event) => setOperatorName(normalizeOperatorName(event.target.value))} placeholder="Name" autoFocus />
-          </label>
-          {renderStepControls()}
-        </section>
-      );
-    }
-
     if (issueStep === 'work') {
       return (
         <section className={styles.stepCard}>
           <div className={styles.stepTitleBlock}>
-            <span>Step {issueStepNumber} of {ISSUE_STEPS.length}</span>
+            <span>Step {issueStepNumber} of {TOTAL_SCAN_PAGES}</span>
             <h1>Activity</h1>
             <p>What will the asset do, and where?</p>
           </div>
@@ -760,9 +767,9 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     return (
       <section className={styles.stepCard}>
         <div className={styles.stepTitleBlock}>
-          <span>Step {issueStepNumber} of {ISSUE_STEPS.length}</span>
-          <h1>Notes</h1>
-          <p>Add anything important, then save.</p>
+          <span>Step {issueStepNumber} of {TOTAL_SCAN_PAGES}</span>
+          <h1>Notes + confirm</h1>
+          <p>Check the details, then save.</p>
         </div>
         <label className={styles.field}>
           <span>Optional note</span>
@@ -772,6 +779,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
           <div><span>Asset</span><strong>{selectedAssetName || '—'}</strong></div>
           <div><span>Litres</span><strong>{litres ? formatLitres(Number(litres)) : '—'}</strong></div>
           <div><span>Fuel</span><strong>{fuelPercentText(assetFuelPercentBefore)}% → {fuelPercentText(assetFuelPercentAfter)}%</strong></div>
+          <div><span>Your name</span><strong>{operatorName || '—'}</strong></div>
           <div><span>Activity</span><strong>{activityText || '—'}</strong></div>
           <div><span>Where</span><strong>{workAreaText || '—'}</strong></div>
         </div>
@@ -801,22 +809,13 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
         {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
 
         {unauthenticated ? (
-          <section className={styles.pinStepCard}>
+          <section className={`${styles.pinStepCard} ${!coordinates ? styles.pinStepCardBlocked : ''}`}>
             <div className={styles.qrTitleBlock}>
               <span>Fuel QR for</span>
               <h1>{visibleAccountName}</h1>
               <p>{visibleStorageName} · {visibleFuelType}</p>
             </div>
             <form className={styles.pinForm} onSubmit={handlePinSubmit}>
-              <div className={`${styles.locationGate} ${coordinates ? styles.locationGateReady : ''}`}>
-                <div>
-                  <strong>Location required</strong>
-                  <span>{locationStatus}</span>
-                </div>
-                <button type="button" onClick={captureLocation} disabled={isCapturingLocation}>
-                  {isCapturingLocation ? 'Capturing...' : coordinates ? 'Recapture GPS' : 'Capture GPS'}
-                </button>
-              </div>
               <label className={styles.field}>
                 <span>Fuel PIN</span>
                 <input
@@ -828,19 +827,58 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
                   required
                 />
               </label>
-              <button type="submit" className={styles.primaryButton} disabled={isAuthenticating || pin.length < 4 || !coordinates}>
+              <label className={styles.field}>
+                <span>Your name</span>
+                <input
+                  value={operatorName}
+                  onChange={(event) => setOperatorName(normalizeOperatorName(event.target.value))}
+                  autoComplete="name"
+                  placeholder="Name of person scanning"
+                  required
+                />
+              </label>
+              {coordinates ? (
+                <div className={`${styles.locationGate} ${styles.locationGateReady}`}>
+                  <div>
+                    <strong>Location ready</strong>
+                    <span>{locationStatus}</span>
+                  </div>
+                  <button type="button" onClick={captureLocation} disabled={isCapturingLocation}>
+                    {isCapturingLocation ? 'Capturing...' : 'Recapture GPS'}
+                  </button>
+                </div>
+              ) : null}
+              <button
+                type="submit"
+                className={styles.primaryButton}
+                disabled={isAuthenticating || pin.length < 4 || !coordinates || operatorName.trim().length < 2}
+              >
                 {isAuthenticating ? 'Checking...' : 'Continue'}
               </button>
             </form>
+
+            {!coordinates ? (
+              <div className={styles.locationPromptBackdrop} role="dialog" aria-modal="true" aria-labelledby="fuel-location-title">
+                <div className={styles.locationPromptCard}>
+                  <div className={styles.locationPromptIcon} aria-hidden="true">⌖</div>
+                  <h2 id="fuel-location-title">Keep location on</h2>
+                  <p>Every fuel issue saves a GPS point automatically. Allow location access on this phone before continuing.</p>
+                  <span>{locationStatus}</span>
+                  <button type="button" className={styles.primaryButton} onClick={captureLocation} disabled={isCapturingLocation}>
+                    {isCapturingLocation ? 'Capturing...' : 'Continue'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </section>
         ) : (
           <>
-            <div className={styles.stepProgress} aria-label={`Step ${issueStepNumber} of ${ISSUE_STEPS.length}: ${STEP_LABELS[issueStep]}`}>
+            <div className={styles.stepProgress} aria-label={`Step ${issueStepNumber} of ${TOTAL_SCAN_PAGES}: ${STEP_LABELS[issueStep]}`}>
               <div>
                 <span>Fuel issue</span>
                 <strong>{STEP_LABELS[issueStep]}</strong>
               </div>
-              <small>{issueStepNumber}/{ISSUE_STEPS.length}</small>
+              <small>{issueStepNumber}/{TOTAL_SCAN_PAGES}</small>
               <i><b style={{ width: `${issueStepProgress}%` }} /></i>
             </div>
             {renderIssueStep()}
