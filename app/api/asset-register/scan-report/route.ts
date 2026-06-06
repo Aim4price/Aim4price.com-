@@ -194,6 +194,60 @@ function normalizeReportKind(value: unknown): ScanReportKind {
   return 'scan';
 }
 
+type ReportDateRange = {
+  fromIso?: string;
+  toIso?: string;
+  label: string;
+};
+
+function parseReportYear(value: string): number | null {
+  const normalized = value.trim();
+
+  if (!/^\d{4}$/.test(normalized)) return null;
+
+  const year = Number(normalized);
+  return year >= 2000 && year <= 2100 ? year : null;
+}
+
+function parseReportMonth(value: string): number | null {
+  const normalized = value.trim();
+
+  if (!/^\d{1,2}$/.test(normalized)) return null;
+
+  const month = Number(normalized);
+  return month >= 1 && month <= 12 ? month : null;
+}
+
+function monthYearLabel(year: number, month: number): string {
+  return new Intl.DateTimeFormat('en-ZA', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(year, month - 1, 1)));
+}
+
+function buildReportDateRange(year: number | null, month: number | null): ReportDateRange {
+  if (!year) {
+    return { label: 'All available entries' };
+  }
+
+  if (month) {
+    const from = new Date(Date.UTC(year, month - 1, 1));
+    const to = new Date(Date.UTC(year, month, 1));
+
+    return {
+      fromIso: from.toISOString(),
+      toIso: to.toISOString(),
+      label: monthYearLabel(year, month),
+    };
+  }
+
+  const from = new Date(Date.UTC(year, 0, 1));
+  const to = new Date(Date.UTC(year + 1, 0, 1));
+
+  return {
+    fromIso: from.toISOString(),
+    toIso: to.toISOString(),
+    label: String(year),
+  };
+}
+
 function formatDate(value?: string | null): string {
   if (!value) return '-';
 
@@ -749,7 +803,7 @@ function buildScanRecordRows(asset: AssetRegisterItem, events: ScanEventRecord[]
   ];
 }
 
-function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventRecord[]): KeyValueRow[] {
+function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventRecord[], dateRangeLabel = 'All available entries'): KeyValueRow[] {
   const latestFuelEvent = fuelEvents[0];
   const fuelValues = fuelEvents
     .map((event) => event.assetFuelPercentAfter ?? event.fuelPercent)
@@ -764,6 +818,7 @@ function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventReco
     { label: 'Serial Number', value: asset.serialNumber || '-' },
     { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
     ...licenseRegistrationRows(asset),
+    { label: 'Report Period', value: dateRangeLabel },
     { label: 'Fuel Entries', value: String(fuelEvents.length) },
     { label: 'Total Litres Issued', value: formatLitres(totalLitres) },
     { label: 'Latest Storage Unit', value: latestFuelEvent ? fuelStorageLabel(latestFuelEvent) : '-' },
@@ -1049,8 +1104,10 @@ function buildReportHtml(options: {
   const pageSize = isFuelReport ? 'A4 landscape' : 'A4';
   const pageWidth = isFuelReport ? '297mm' : '210mm';
   const pageMinHeight = isFuelReport ? '210mm' : '297mm';
-  const innerMinHeight = isFuelReport ? 'calc(210mm - 20mm)' : 'calc(297mm - 20mm)';
-  const printPageMinHeight = isFuelReport ? '194mm' : '281mm';
+  const pageMargin = isFuelReport ? '6mm 6mm 7mm' : '8mm 9mm 8mm';
+  const pagePadding = isFuelReport ? '7mm 6mm 7mm' : '11mm 11mm 9mm';
+  const innerMinHeight = isFuelReport ? 'calc(210mm - 14mm)' : 'calc(297mm - 20mm)';
+  const printPageMinHeight = isFuelReport ? '197mm' : '281mm';
   const printInnerMinHeight = printPageMinHeight;
 
   return `<!doctype html>
@@ -1084,7 +1141,7 @@ function buildReportHtml(options: {
 
       @page {
         size: ${pageSize};
-        margin: 8mm 9mm 8mm;
+        margin: ${pageMargin};
       }
 
       html,
@@ -1145,7 +1202,7 @@ function buildReportHtml(options: {
         width: min(100%, ${pageWidth});
         min-height: ${pageMinHeight};
         margin: 18px auto;
-        padding: 11mm 11mm 9mm;
+        padding: ${pagePadding};
         background: var(--paper);
         box-shadow: 0 16px 44px rgba(17, 24, 39, 0.13);
       }
@@ -1531,8 +1588,9 @@ function buildReportHtml(options: {
         line-height: 1.42;
         text-align: left;
         vertical-align: top;
-        overflow-wrap: anywhere;
+        overflow-wrap: break-word;
         word-break: normal;
+        hyphens: auto;
       }
 
       .assetReportTable th {
@@ -1551,60 +1609,61 @@ function buildReportHtml(options: {
 
       .assetReportFuelTable th,
       .assetReportFuelTable td {
-        font-size: 5.85px;
-        line-height: 1.25;
+        padding: 6px 4.5px 6px 0;
+        font-size: 5.75px;
+        line-height: 1.32;
       }
 
       .assetReportFuelTable th {
-        font-size: 5.35px;
-        line-height: 1.12;
+        font-size: 5.25px;
+        line-height: 1.18;
       }
 
       .assetReportFuelTable th:nth-child(1),
       .assetReportFuelTable td:nth-child(1) {
-        width: 18mm;
+        width: 20mm;
       }
 
       .assetReportFuelTable th:nth-child(2),
       .assetReportFuelTable td:nth-child(2) {
-        width: 16mm;
+        width: 17mm;
       }
 
       .assetReportFuelTable th:nth-child(3),
       .assetReportFuelTable td:nth-child(3) {
-        width: 18mm;
+        width: 19mm;
       }
 
       .assetReportFuelTable th:nth-child(4),
       .assetReportFuelTable td:nth-child(4) {
-        width: 13mm;
+        width: 14mm;
       }
 
       .assetReportFuelTable th:nth-child(5),
       .assetReportFuelTable td:nth-child(5) {
-        width: 16mm;
+        width: 17mm;
       }
 
       .assetReportFuelTable th:nth-child(6),
       .assetReportFuelTable td:nth-child(6) {
-        width: 13mm;
+        width: 15mm;
       }
 
       .assetReportFuelTable th:nth-child(7),
       .assetReportFuelTable td:nth-child(7) {
-        width: 14mm;
+        width: 15mm;
       }
 
       .assetReportFuelTable th:nth-child(8),
       .assetReportFuelTable td:nth-child(8),
       .assetReportFuelTable th:nth-child(9),
       .assetReportFuelTable td:nth-child(9) {
-        width: 10mm;
+        width: 11mm;
       }
 
       .assetReportFuelTable th:nth-child(10),
       .assetReportFuelTable td:nth-child(10) {
-        width: 13mm;
+        width: 15mm;
       }
 
       .assetReportFuelTable th:nth-child(11),
@@ -1614,24 +1673,27 @@ function buildReportHtml(options: {
 
       .assetReportFuelTable th:nth-child(12),
       .assetReportFuelTable td:nth-child(12) {
-        width: 23mm;
+        width: 27mm;
       }
 
       .assetReportFuelTable th:nth-child(13),
-      .assetReportFuelTable td:nth-child(13),
+      .assetReportFuelTable td:nth-child(13) {
+        width: 18mm;
+      }
+
       .assetReportFuelTable th:nth-child(14),
       .assetReportFuelTable td:nth-child(14) {
-        width: 18mm;
+        width: 17mm;
       }
 
       .assetReportFuelTable th:nth-child(15),
       .assetReportFuelTable td:nth-child(15) {
-        width: 28mm;
+        width: 29mm;
       }
 
       .assetReportFuelTable th:nth-child(16),
       .assetReportFuelTable td:nth-child(16) {
-        width: 18mm;
+        width: 23mm;
       }
 
       .assetReportScanTable th:nth-child(1),
@@ -1992,7 +2054,15 @@ function buildScanReport(asset: AssetRegisterItem, events: ScanEventRecord[], ow
   });
 }
 
-function buildFuelReport(asset: AssetRegisterItem, events: ScanEventRecord[], ownerName: string, ownerEmail: string, generatedAt: string, logoUrl: string): string {
+function buildFuelReport(
+  asset: AssetRegisterItem,
+  events: ScanEventRecord[],
+  ownerName: string,
+  ownerEmail: string,
+  generatedAt: string,
+  logoUrl: string,
+  dateRangeLabel = 'All available entries',
+): string {
   const fuelEvents = events.filter((event) => typeof event.fuelPercent === 'number' && Number.isFinite(event.fuelPercent));
 
   return buildReportHtml({
@@ -2003,7 +2073,7 @@ function buildFuelReport(asset: AssetRegisterItem, events: ScanEventRecord[], ow
     generatedAt,
     logoUrl,
     summary: buildFuelReportSummary(asset, fuelEvents),
-    recordRows: buildFuelRecordRows(asset, fuelEvents),
+    recordRows: buildFuelRecordRows(asset, fuelEvents, dateRangeLabel),
     bodyHtml: buildFuelBody(asset, fuelEvents),
   });
 }
@@ -2035,6 +2105,9 @@ export async function GET(request: NextRequest) {
   const reportKind = normalizeReportKind(
     request.nextUrl.searchParams.get('report') ?? request.nextUrl.searchParams.get('reportType') ?? request.nextUrl.searchParams.get('type'),
   );
+  const reportYear = parseReportYear(asText(request.nextUrl.searchParams.get('year')));
+  const reportMonth = reportYear ? parseReportMonth(asText(request.nextUrl.searchParams.get('month'))) : null;
+  const reportDateRange = buildReportDateRange(reportYear, reportMonth);
 
   if (!assetId) {
     return NextResponse.json({ ok: false, error: 'Asset ID is required.' }, { status: 400 });
@@ -2046,7 +2119,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
   }
 
-  const events = await listScanEventsForAsset(asset.id, 500);
+  const events = await listScanEventsForAsset(
+    asset.id,
+    500,
+    reportKind === 'fuel'
+      ? { fromIso: reportDateRange.fromIso, toIso: reportDateRange.toIso, onlyFuel: true }
+      : undefined,
+  );
   const ownerName = asText(session.user.name) || asText(session.user.email) || 'Owner session';
   const ownerEmail = asText(session.user.email);
   const generatedAt = formatDate(new Date().toISOString());
@@ -2054,7 +2133,7 @@ export async function GET(request: NextRequest) {
 
   const html =
     reportKind === 'fuel'
-      ? buildFuelReport(asset, events, ownerName, ownerEmail, generatedAt, logoUrl)
+      ? buildFuelReport(asset, events, ownerName, ownerEmail, generatedAt, logoUrl, reportDateRange.label)
       : reportKind === 'maintenance'
         ? buildMaintenanceReport(asset, events, ownerName, ownerEmail, generatedAt, logoUrl)
         : buildScanReport(asset, events, ownerName, ownerEmail, generatedAt, logoUrl);
