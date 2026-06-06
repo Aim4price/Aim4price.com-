@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
+import { getAccountProfile, type AccountProfile } from '../../../../lib/account-profile';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
 import { getFuelStorageById, listFuelEventsForReport, listFuelLedger, type FuelLedgerEvent } from '../../../../lib/fuel-ledger';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxPrimitiveCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
@@ -14,6 +15,13 @@ type KeyValueRow = {
   value: string;
 };
 
+type OwnerReportDetails = {
+  businessName: string;
+  contactDetails: string;
+  businessEmail: string;
+  locationAddress: string;
+};
+
 type SummaryCard = {
   label: string;
   value: string;
@@ -25,6 +33,7 @@ type FuelReportOptions = {
   subtitle: string;
   generatedAt: string;
   ownerEmail: string;
+  ownerDetails: OwnerReportDetails;
   logoUrl: string;
   dateRangeLabel: string;
   storageName: string;
@@ -255,6 +264,51 @@ function buildFormatUrl(request: NextRequest, format: ReportFormat): string {
   return `${url.pathname}${url.search}`;
 }
 
+function buildOwnerLocationAddress(profile: AccountProfile | null): string {
+  if (!profile) return '';
+
+  const address = [profile.addressLine1, profile.addressLine2, profile.townCity, profile.province]
+    .map((part) => asText(part))
+    .filter(Boolean)
+    .join(', ');
+
+  return address || asText(profile.marketplaceLocation);
+}
+
+function buildOwnerReportDetails(
+  profile: AccountProfile | null,
+  fallbackUser: { name?: unknown; email?: unknown },
+): OwnerReportDetails {
+  const fallbackEmail = asText(fallbackUser.email);
+  const businessName =
+    asText(profile?.businessName) ||
+    asText(profile?.marketplaceSellerName) ||
+    asText(profile?.displayName) ||
+    asText(profile?.name) ||
+    asText(fallbackUser.name) ||
+    fallbackEmail ||
+    'Aim4price account';
+  const contactDetails = asText(profile?.marketplacePhone) || asText(profile?.phone);
+  const businessEmail = asText(profile?.marketplaceEmail) || asText(profile?.email) || fallbackEmail;
+  const locationAddress = buildOwnerLocationAddress(profile);
+
+  return {
+    businessName,
+    contactDetails,
+    businessEmail,
+    locationAddress,
+  };
+}
+
+function buildOwnerRows(ownerDetails: OwnerReportDetails): KeyValueRow[] {
+  return [
+    { label: 'Business Name', value: ownerDetails.businessName || '-' },
+    { label: 'Contact Details', value: ownerDetails.contactDetails || '-' },
+    { label: 'Business Email', value: ownerDetails.businessEmail || '-' },
+    { label: 'Location / Address', value: ownerDetails.locationAddress || '-' },
+  ];
+}
+
 function renderRows(rows: KeyValueRow[], emptyText = 'No details available.'): string {
   const visibleRows = rows.filter((row) => asText(row.label));
 
@@ -320,14 +374,14 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
             <th>Activity</th>
             <th>Direction</th>
             <th>Storage Unit</th>
-            <th>Asset / Target</th>
-            <th>Litres filled up with</th>
-            <th>Asset diesel before fill</th>
-            <th>Storage tank before</th>
-            <th>Storage litres left</th>
-            <th>Asset fuel before</th>
-            <th>Asset fuel after</th>
-            <th>Hours / km</th>
+            <th>Asset</th>
+            <th>Litres Filled</th>
+            <th>Litres Before</th>
+            <th>Storage Before</th>
+            <th>Storage After</th>
+            <th>% Before</th>
+            <th>% After</th>
+            <th>Odometer</th>
             <th>Operator</th>
             <th>GPS location</th>
             <th>Work activity</th>
@@ -959,7 +1013,7 @@ function buildReportHtml(options: FuelReportOptions): string {
           </div>
           <div class="assetReportHeaderMeta">
             <div class="assetReportMetaLine"><span>Generated</span><strong>${escapeHtml(options.generatedAt)}</strong></div>
-            ${options.ownerEmail ? `<div class="assetReportMetaLine"><span>Email</span><strong>${escapeHtml(options.ownerEmail)}</strong></div>` : ''}
+            ${options.ownerEmail ? `<div class="assetReportMetaLine"><span>Business Email</span><strong>${escapeHtml(options.ownerEmail)}</strong></div>` : ''}
           </div>
         </header>
 
@@ -987,6 +1041,11 @@ function buildReportHtml(options: FuelReportOptions): string {
               <h2>Fuel Summary</h2>
               ${renderRows(cards.map((card) => ({ label: card.label, value: `${card.value} - ${card.subtext}` })), 'No fuel summary available.')}
             </section>
+
+            <section class="assetReportSection assetReportClientCard">
+              <h2>Owner Details</h2>
+              ${renderRows(buildOwnerRows(options.ownerDetails), 'No owner details available.')}
+            </section>
           </div>
 
           <aside class="assetReportSide">
@@ -1007,7 +1066,7 @@ function buildReportHtml(options: FuelReportOptions): string {
             <div class="assetReportSectionHeading">
               <div>
                 <h2>Fuel Movement Records</h2>
-                <p>Each line includes the date, activity, direction, litres filled up with, the calculated asset diesel before refilling, storage balances and the operator responsible.</p>
+                <p>Each line includes the date, activity, direction, asset, litres filled, litres before fill, storage balances, odometer and the operator responsible.</p>
               </div>
               <strong>${escapeHtml(String(options.eventCount))} ${options.eventCount === 1 ? 'entry' : 'entries'}</strong>
             </div>
@@ -1018,7 +1077,7 @@ function buildReportHtml(options: FuelReportOptions): string {
         <footer class="assetReportFooter">
           <div>
             <p class="assetReportPowered">Powered by Aim4price.com</p>
-            <div class="assetReportDisclaimer">Fuel ledger records are operational records captured from storage QR entries and owner stock adjustments. The asset diesel-before-fill value is calculated from litres issued and the captured fuel-gauge percentage change, and remains subject to physical verification.</div>
+            <div class="assetReportDisclaimer">Fuel ledger records are operational records captured from storage QR entries and owner stock adjustments. The litres-before value is calculated from litres issued and the captured fuel-gauge percentage change, and remains subject to physical verification.</div>
           </div>
           <div class="assetReportPageNumber">Page 1 of 1</div>
         </footer>
@@ -1080,6 +1139,10 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     [],
     [styled('Generated', 'metaLabel'), styled(options.generatedAt, 'metaValue')],
     [styled('Period', 'metaLabel'), styled(options.dateRangeLabel, 'metaValue')],
+    [styled('Business name', 'metaLabel'), styled(options.ownerDetails.businessName, 'metaValue')],
+    [styled('Contact details', 'metaLabel'), styled(options.ownerDetails.contactDetails, 'metaValue')],
+    [styled('Business email', 'metaLabel'), styled(options.ownerDetails.businessEmail, 'metaValue')],
+    [styled('Location / address', 'metaLabel'), styled(options.ownerDetails.locationAddress, 'metaValue')],
     [styled('Storage', 'metaLabel'), styled(options.storageName, 'metaValue')],
     [styled('Fuel type', 'metaLabel'), styled(options.storageFuelType, 'metaValue')],
     [styled('Storage code', 'metaLabel'), styled(options.storageCode, 'metaValue')],
@@ -1099,27 +1162,26 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     'Ledger activity',
     'Direction',
     'Storage unit',
-    'Asset / target',
-    'Litres filled up with',
-    'Asset diesel before fill',
-    'Storage tank before',
-    'Storage litres left',
-    'Asset fuel before',
-    'Asset fuel after',
-    'Hours / km reading',
+    'Asset',
+    'Litres Filled',
+    'Litres Before',
+    'Storage Before',
+    'Storage After',
+    '% Before',
+    '% After',
+    'Odometer',
     'Operator',
     'GPS location',
     'Work activity',
     'Work area',
     'Notes',
-    'Storage QR code',
   ];
 
   const movementHeaderRow = 7;
   const movementRows: XlsxCellValue[][] = [
-    [styled('Fuel Movement Records', 'title'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-    [styled(`Filtered report: ${options.dateRangeLabel}`, 'subtitle'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-    [styled('PDF and XLSX include date, asset, hours, fuel levels, litres, calculated asset diesel before fill, operator, GPS, work activity and work area.', 'note'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    [styled('Fuel Movement Records', 'title'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    [styled(`Filtered report: ${options.dateRangeLabel}`, 'subtitle'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    [styled('PDF and XLSX include date, asset, odometer, fuel percentages, litres, litres before fill, operator, GPS, work activity and work area.', 'note'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
     [],
     [styled('Storage', 'metaLabel'), styled(options.storageName, 'metaValue'), styled('Fuel type', 'metaLabel'), styled(options.storageFuelType, 'metaValue')],
     [],
@@ -1150,7 +1212,6 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
         styled(eventWorkActivityLabel(event), 'text'),
         styled(eventWorkAreaLabel(event), 'text'),
         styled(normalizeSpaces(event.note), 'note'),
-        styled(event.storagePublicCode || '', 'text'),
       ];
     }),
   ];
@@ -1169,11 +1230,11 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     {
       name: 'Fuel Movement Records',
       rows: movementRows,
-      columns: [20, 22, 14, 24, 28, 18, 20, 18, 18, 16, 16, 18, 22, 34, 24, 24, 42, 20],
+      columns: [20, 22, 14, 24, 28, 18, 18, 18, 18, 14, 14, 18, 22, 34, 24, 24, 42],
       merges: [
-        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 18 },
-        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 18 },
-        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: 18 },
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 17 },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 17 },
+        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: 17 },
       ],
       freezeRow: movementHeaderRow,
       autoFilter: {
@@ -1222,7 +1283,13 @@ export async function GET(request: NextRequest) {
     const totalStockIn = events
       .filter((event) => event.eventType === 'stock_in' || event.eventType === 'opening_balance')
       .reduce((sum, event) => sum + event.litres, 0);
-    const ownerEmail = asText(session.user.email);
+    const ownerProfile = await getAccountProfile({
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    });
+    const ownerDetails = buildOwnerReportDetails(ownerProfile, session.user);
+    const ownerEmail = ownerDetails.businessEmail;
     const generatedAt = new Intl.DateTimeFormat('en-ZA', {
       dateStyle: 'medium',
       timeStyle: 'short',
@@ -1241,6 +1308,7 @@ export async function GET(request: NextRequest) {
       subtitle,
       generatedAt,
       ownerEmail,
+      ownerDetails,
       logoUrl,
       dateRangeLabel: dateRange.label,
       storageName,
