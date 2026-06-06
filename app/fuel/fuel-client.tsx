@@ -187,6 +187,15 @@ function DownloadIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function SearchIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </IconBase>
+  );
+}
+
 function ChevronRightIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -374,7 +383,15 @@ function matchesSearch(storage: FuelLedgerStorage, searchTerm: string): boolean 
   const normalizedSearch = searchTerm.trim().toLowerCase();
   if (!normalizedSearch) return true;
 
-  const searchableText = [storage.name, storage.fuelType, storage.locationLabel, storage.publicFuelStorageCode].join(' ').toLowerCase();
+  const searchableText = [
+    storage.name,
+    formatFuelType(storage.fuelType),
+    storage.fuelType,
+    storage.publicFuelStorageCode,
+    storage.locationLabel,
+  ]
+    .join(' ')
+    .toLowerCase();
   return searchableText.includes(normalizedSearch);
 }
 
@@ -770,21 +787,22 @@ export default function FuelClient() {
               </div>
 
               <div className={styles.topActions}>
-                <div className={styles.searchWrap}>
+                <label className={styles.searchWrap}>
+                  <SearchIcon className={styles.searchIcon} />
                   <input
                     type="search"
                     className={styles.searchInput}
                     value={searchText}
                     onChange={(event) => setSearchText(event.target.value)}
-                    placeholder="Search"
-                    aria-label="Search fuel storage tanks"
+                    placeholder="Search by storage name, type or serial"
+                    aria-label="Search by storage name, type or serial"
                   />
                   {hasActiveSearch ? (
                     <button type="button" className={styles.clearSearchButton} onClick={clearSearch} aria-label="Clear search">
                       ×
                     </button>
                   ) : null}
-                </div>
+                </label>
 
                 <div className={styles.topActionButtons}>
                   <button
