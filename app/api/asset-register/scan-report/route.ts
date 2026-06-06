@@ -341,6 +341,14 @@ function formatOperatorLabel(event: ScanEventRecord): string {
   return asText(event.operatorName) || formatActorType(event.actorType);
 }
 
+function formatEventActivity(event: ScanEventRecord): string {
+  return asText(event.activityText) || '-';
+}
+
+function formatEventWorkArea(event: ScanEventRecord): string {
+  return asText(event.workAreaText) || '-';
+}
+
 function formatPhotoCount(event: ScanEventRecord): string {
   const count = event.photoUrls.length;
   if (!count) return '-';
@@ -706,6 +714,8 @@ function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventReco
     { label: 'Fuel Entries', value: String(fuelEvents.length) },
     { label: 'Total Litres', value: formatLitres(totalLitres) },
     { label: 'Latest Fuel', value: formatFuel(fuelEvents[0]?.fuelPercent) },
+    { label: 'Latest Activity', value: displayValue(fuelEvents[0]?.activityText) },
+    { label: 'Latest Work Area', value: displayValue(fuelEvents[0]?.workAreaText) },
     { label: 'Lowest Fuel', value: formatFuel(fuelValues.length ? Math.min(...fuelValues) : null) },
     { label: 'Highest Fuel', value: formatFuel(fuelValues.length ? Math.max(...fuelValues) : null) },
     { label: 'Average Fuel', value: formatFuel(averageFuel) },
@@ -781,6 +791,8 @@ function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
     escapeHtml(formatEventUsage(asset, event)),
     escapeHtml(formatLitres(event.fuelLitres)),
     `<strong>${escapeHtml(formatFuel(event.fuelPercent))}</strong>`,
+    escapeHtml(formatEventActivity(event)),
+    escapeHtml(formatEventWorkArea(event)),
     escapeHtml(formatLocationText(event.locationText, event.latitude, event.longitude)),
   ]);
 
@@ -789,13 +801,13 @@ function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
       <div class="assetReportSectionHeading">
         <div>
           <h2>Fuel Readings</h2>
-          <p>Each line shows QR fuel percentage plus Fuel Ledger litres where the fuel was issued from a storage QR code.</p>
+          <p>Each line shows hours / km, litres, fuel gauge, operator, work activity, work area and scan GPS.</p>
         </div>
         <strong>${escapeHtml(formatNumber(events.length))} ${events.length === 1 ? 'entry' : 'entries'}${totalLitres > 0 ? ` • ${escapeHtml(formatLitres(totalLitres))}` : ''}</strong>
       </div>
       ${renderTable({
         className: 'assetReportFuelTable',
-        headers: ['Date / Time', 'Updated By', 'Usage Reading', 'Litres', 'Fuel %', 'Scan Location'],
+        headers: ['Date / Time', 'Updated By', 'Usage Reading', 'Litres', 'Fuel %', 'Work Activity', 'Work Area', 'Scan Location'],
         rows,
         emptyText: 'No fuel readings have been recorded for this asset yet.',
       })}
@@ -809,6 +821,8 @@ function buildScanBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
     escapeHtml(formatOperatorLabel(event)),
     escapeHtml(formatEventUsage(asset, event)),
     escapeHtml(formatFuel(event.fuelPercent)),
+    escapeHtml(formatEventActivity(event)),
+    escapeHtml(formatEventWorkArea(event)),
     escapeHtml(summarizeScanEvent(asset, event)),
     escapeHtml(formatLocationText(event.locationText, event.latitude, event.longitude)),
   ]);
@@ -824,7 +838,7 @@ function buildScanBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
       </div>
       ${renderTable({
         className: 'assetReportScanTable',
-        headers: ['Date / Time', 'Updated By', 'Usage', 'Fuel', 'Update Summary', 'Scan Location'],
+        headers: ['Date / Time', 'Updated By', 'Usage', 'Fuel', 'Work Activity', 'Work Area', 'Update Summary', 'Scan Location'],
         rows,
         emptyText: 'No QR scan updates have been recorded for this asset yet.',
       })}
