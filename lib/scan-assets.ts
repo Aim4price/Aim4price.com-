@@ -1,5 +1,6 @@
 import { getDb } from './db';
 import { MAX_ASSET_REGISTER_PHOTOS } from './asset-register-uploads';
+import { ensureFuelLedgerTables } from './fuel-ledger';
 
 export type ScanAssetQrStatus = 'active' | 'transferred' | 'retired' | 'deleted' | '';
 export type ScanAssetUsageMode = 'hours' | 'percent' | 'km' | 'none';
@@ -58,6 +59,14 @@ export type ScanEventRecord = {
   fuelLitres: number | null;
   fuelStorageId: string;
   fuelStorageEventId: string;
+  fuelStorageName: string;
+  fuelStoragePublicCode: string;
+  fuelLedgerEventType: string;
+  fuelStorageLevelBefore: number | null;
+  fuelStorageLevelAfter: number | null;
+  assetFuelPercentBefore: number | null;
+  assetFuelPercentAfter: number | null;
+  assetUsageReading: number | null;
   condition: string;
   note: string;
   photoUrls: string[];
@@ -133,6 +142,16 @@ type ScanEventRow = {
   fuel_litres: string | number | null;
   fuel_storage_id: string | number | null;
   fuel_storage_event_id: string | number | null;
+  fuel_ledger_storage_id: string | number | null;
+  fuel_ledger_litres: string | number | null;
+  fuel_storage_name: string | null;
+  fuel_storage_public_code: string | null;
+  fuel_ledger_event_type: string | null;
+  fuel_storage_level_before_litres: string | number | null;
+  fuel_storage_level_after_litres: string | number | null;
+  asset_fuel_percent_before: string | number | null;
+  asset_fuel_percent_after: string | number | null;
+  asset_usage_reading: string | number | null;
   condition: string | null;
   note: string | null;
   photo_urls: unknown;
@@ -496,6 +515,10 @@ function mapScanSafeAsset(row: ScanAccessRow): ScanSafeAsset {
 }
 
 function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
+  const fuelLedgerLitres = asNumber(row.fuel_ledger_litres);
+  const assetFuelPercentAfter = asNumber(row.asset_fuel_percent_after) ?? asNumber(row.fuel_percent);
+  const assetUsageReading = asNumber(row.asset_usage_reading) ?? asNumber(row.hours);
+
   return {
     id: asId(row.id),
     actorType: normalizeActorType(row.actor_type),
@@ -503,10 +526,18 @@ function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
     activityText: asText(row.activity_text),
     workAreaText: asText(row.work_area_text),
     hours: asNumber(row.hours),
-    fuelPercent: asNumber(row.fuel_percent),
-    fuelLitres: asNumber(row.fuel_litres),
-    fuelStorageId: asId(row.fuel_storage_id),
+    fuelPercent: assetFuelPercentAfter,
+    fuelLitres: asNumber(row.fuel_litres) ?? fuelLedgerLitres,
+    fuelStorageId: asId(row.fuel_storage_id) || asId(row.fuel_ledger_storage_id),
     fuelStorageEventId: asId(row.fuel_storage_event_id),
+    fuelStorageName: asText(row.fuel_storage_name),
+    fuelStoragePublicCode: asText(row.fuel_storage_public_code),
+    fuelLedgerEventType: asText(row.fuel_ledger_event_type),
+    fuelStorageLevelBefore: asNumber(row.fuel_storage_level_before_litres),
+    fuelStorageLevelAfter: asNumber(row.fuel_storage_level_after_litres),
+    assetFuelPercentBefore: asNumber(row.asset_fuel_percent_before),
+    assetFuelPercentAfter,
+    assetUsageReading,
     condition: normalizeCondition(row.condition),
     note: asText(row.note),
     photoUrls: normalizePhotos(row.photo_urls),
@@ -600,6 +631,8 @@ export async function getScanAssetAccessContext(publicAssetCode: string): Promis
 }
 
 export async function listScanEventsForAsset(assetId: string, limit = 250): Promise<ScanEventRecord[]> {
+  await ensureFuelLedgerTables();
+
   const db = getDb();
   const safeLimit = Math.max(1, Math.min(500, Math.round(limit || 250)));
 
@@ -616,6 +649,16 @@ export async function listScanEventsForAsset(assetId: string, limit = 250): Prom
         to_jsonb(e)->>'fuel_litres' as fuel_litres,
         to_jsonb(e)->>'fuel_storage_id' as fuel_storage_id,
         to_jsonb(e)->>'fuel_storage_event_id' as fuel_storage_event_id,
+        fse.storage_id::text as fuel_ledger_storage_id,
+        fse.litres as fuel_ledger_litres,
+        coalesce(fsu.name, '') as fuel_storage_name,
+        coalesce(fsu.public_fuel_storage_code, '') as fuel_storage_public_code,
+        coalesce(fse.event_type, '') as fuel_ledger_event_type,
+        fse.storage_level_before_litres as fuel_storage_level_before_litres,
+        fse.storage_level_after_litres as fuel_storage_level_after_litres,
+        fse.asset_fuel_percent_before as asset_fuel_percent_before,
+        fse.asset_fuel_percent_after as asset_fuel_percent_after,
+        fse.asset_usage_reading as asset_usage_reading,
         e.condition,
         e.note,
         e.photo_urls,
@@ -623,7 +666,11 @@ export async function listScanEventsForAsset(assetId: string, limit = 250): Prom
         e.longitude,
         e.location_text,
         e.created_at
-      from asset_scan_events e
+      from public.asset_scan_events e
+      left join public.fuel_storage_events fse
+        on fse.id::text = nullif(to_jsonb(e)->>'fuel_storage_event_id', '')
+      left join public.fuel_storage_units fsu
+        on fsu.id = fse.storage_id
       where e.asset_id = $1
       order by e.created_at desc, e.id desc
       limit ${safeLimit}
@@ -764,7 +811,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
 
     const valuationStaleReasons: string[] = [];
     if (hasSavedValuation(existingRow)) {
-      if (nextHours !== null && currentAsset.hours !== null && nextHours !== currentAsset.hours) {
+      if (nextHours !== null && nextHours !== currentAsset.hours) {
         valuationStaleReasons.push('usage changed');
       }
 

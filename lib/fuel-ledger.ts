@@ -3,7 +3,6 @@ import type { PoolClient } from 'pg';
 import type { NextRequest, NextResponse } from 'next/server';
 import { getDb } from './db';
 import { hashScanPin, verifyScanPin } from './scan-pin';
-import { revalueAssetRegisterItem } from './asset-register-revaluation';
 import { ensureAccountProfileColumns } from './account-profile';
 
 export const FUEL_SCAN_COOKIE_NAME = 'aim4price_fuel_scan';
@@ -1576,8 +1575,8 @@ export async function recordFuelAssetIssue(
     }
 
     const usageReadingChanged = assetUsageReading !== null && assetUsageReading !== currentUsageReading;
-    const shouldTryRevalueAfterCommit = usageReadingChanged && hasSavedFuelAssetValuation(asset);
-    const nextSpecsJson = shouldTryRevalueAfterCommit
+    const shouldMarkValuationNeedsUpdate = usageReadingChanged && hasSavedFuelAssetValuation(asset);
+    const nextSpecsJson = shouldMarkValuationNeedsUpdate
       ? markFuelAssetValuationNeedsUpdate(asRecord(asset.specs_json), ['usage changed'])
       : asRecord(asset.specs_json);
 
@@ -1688,16 +1687,6 @@ export async function recordFuelAssetIssue(
     await client.query('COMMIT');
     committed = true;
 
-    if (shouldTryRevalueAfterCommit) {
-      try {
-        await revalueAssetRegisterItem({
-          userId: input.userId,
-          assetId: input.assetId,
-        });
-      } catch (error) {
-        console.warn('fuel ledger automatic asset revaluation failed', error);
-      }
-    }
 
     const assets = await listFuelAssetsForUser(input.userId);
 
