@@ -5035,11 +5035,22 @@ export default function AssetRegisterClient() {
       .filter((photoUrl): photoUrl is string => Boolean(photoUrl));
     const documentsCount = assetDocuments(asset).length;
     const ownerProfile = reportProfile;
-    const profileLocation = [ownerProfile?.townCity, ownerProfile?.province].filter(Boolean).join(' ');
-    const profileAddress = [ownerProfile?.addressLine1, ownerProfile?.addressLine2, profileLocation].filter(Boolean).join(' ');
-    const ownerName = ownerProfile?.businessName?.trim() || ownerProfile?.name?.trim() || 'Aim4price client';
-    const ownerEmail = ownerProfile?.marketplaceEmail?.trim() || '—';
-    const ownerPhone = ownerProfile?.phone?.trim() || '—';
+    const profileLocation = [ownerProfile?.townCity, ownerProfile?.province]
+      .map((part) => String(part ?? '').trim())
+      .filter(Boolean)
+      .join(', ');
+    const profileAddress = [ownerProfile?.addressLine1, ownerProfile?.addressLine2, profileLocation]
+      .map((part) => String(part ?? '').trim())
+      .filter(Boolean)
+      .join(', ');
+    const ownerBusinessName =
+      ownerProfile?.businessName?.trim() ||
+      ownerProfile?.marketplaceSellerName?.trim() ||
+      ownerProfile?.name?.trim() ||
+      'Aim4price client';
+    const ownerBusinessEmail = ownerProfile?.marketplaceEmail?.trim() || ownerProfile?.email?.trim() || '—';
+    const ownerContactDetails = ownerProfile?.marketplacePhone?.trim() || ownerProfile?.phone?.trim() || '—';
+    const ownerLocationAddress = profileAddress || ownerProfile?.marketplaceLocation?.trim() || '—';
     const familyLabel = assetKindLabel(asset);
     const initialModelValue = asset.modelName || asset.typedModelName || '';
     const reportBrandName = deriveAssetReportBrandName(asset, initialModelValue);
@@ -5084,10 +5095,10 @@ export default function AssetRegisterClient() {
       issuerPhone: '',
       issuerEmail: 'aim4price@gmail.com',
       clientRows: [
-        { label: 'Name', value: ownerName },
-        { label: 'Business email', value: ownerEmail },
-        { label: 'Phone', value: ownerPhone },
-        ...(profileAddress ? [{ label: 'Address', value: profileAddress }] : []),
+        { label: 'Business Name', value: ownerBusinessName },
+        { label: 'Contact Details', value: ownerContactDetails },
+        { label: 'Business Email', value: ownerBusinessEmail },
+        { label: 'Location / Address', value: ownerLocationAddress },
       ],
       photoUrl: assetPhotoUrls[0] ?? null,
       photoUrls: assetPhotoUrls,
