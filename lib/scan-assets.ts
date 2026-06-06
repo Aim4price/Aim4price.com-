@@ -51,6 +51,8 @@ export type ScanEventRecord = {
   id: string;
   actorType: ScanEventActorType;
   operatorName: string;
+  activityText: string;
+  workAreaText: string;
   hours: number | null;
   fuelPercent: number | null;
   fuelLitres: number | null;
@@ -124,6 +126,8 @@ type ScanEventRow = {
   id: string | number;
   actor_type: string | null;
   operator_name: string | null;
+  activity_text: string | null;
+  work_area_text: string | null;
   hours: string | number | null;
   fuel_percent: string | number | null;
   fuel_litres: string | number | null;
@@ -496,6 +500,8 @@ function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
     id: asId(row.id),
     actorType: normalizeActorType(row.actor_type),
     operatorName: asText(row.operator_name),
+    activityText: asText(row.activity_text),
+    workAreaText: asText(row.work_area_text),
     hours: asNumber(row.hours),
     fuelPercent: asNumber(row.fuel_percent),
     fuelLitres: asNumber(row.fuel_litres),
@@ -603,6 +609,8 @@ export async function listScanEventsForAsset(assetId: string, limit = 250): Prom
         e.id,
         e.actor_type,
         e.operator_name,
+        to_jsonb(e)->>'activity_text' as activity_text,
+        to_jsonb(e)->>'work_area_text' as work_area_text,
         e.hours,
         e.fuel_percent,
         to_jsonb(e)->>'fuel_litres' as fuel_litres,
