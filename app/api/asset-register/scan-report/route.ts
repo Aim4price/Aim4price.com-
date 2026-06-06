@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
+import { getAccountProfile, type AccountProfile } from '../../../../lib/account-profile';
 import { getAssetRegisterItemById, type AssetRegisterItem } from '../../../../lib/asset-register-db';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
 import { listScanEventsForAsset, type ScanEventRecord } from '../../../../lib/scan-assets';
@@ -15,6 +16,13 @@ type KeyValueRow = {
   label: string;
   value: string;
   valueHtml?: string;
+};
+
+type OwnerReportDetails = {
+  businessName: string;
+  contactDetails: string;
+  businessEmail: string;
+  locationAddress: string;
 };
 
 type ReportSummary = {
@@ -400,10 +408,6 @@ function fuelStorageLabel(event: ScanEventRecord): string {
   return asText(event.fuelStorageName) || (event.fuelStorageId ? 'Fuel storage' : '-');
 }
 
-function fuelStorageCodeLabel(event: ScanEventRecord): string {
-  return asText(event.fuelStoragePublicCode) || '-';
-}
-
 function formatPercent(value: number | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return '-';
@@ -747,6 +751,7 @@ function buildAssetDetailRows(asset: AssetRegisterItem): KeyValueRow[] {
     { label: 'Usage', value: formatLatestUsage(asset) },
     { label: 'Condition', value: formatCondition(asset.condition) },
     { label: 'Replacement Price', value: formatMoney(readAssetReplacementPriceExVat(asset)) },
+    { label: 'Serial Number', value: asset.serialNumber || '-' },
     { label: 'Financed', value: statusChoiceReportLabel(readFinanceStatusChoice(asset)) },
     { label: 'Insured', value: statusChoiceReportLabel(readInsuranceStatusChoice(asset)) },
     { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
@@ -754,12 +759,49 @@ function buildAssetDetailRows(asset: AssetRegisterItem): KeyValueRow[] {
   ];
 }
 
-function buildClientRows(options: { ownerName: string; ownerEmail: string; asset: AssetRegisterItem }): KeyValueRow[] {
+function buildOwnerLocationAddress(profile: AccountProfile | null): string {
+  if (!profile) return '';
+
+  const address = [profile.addressLine1, profile.addressLine2, profile.townCity, profile.province]
+    .map((part) => asText(part))
+    .filter(Boolean)
+    .join(', ');
+
+  return address || asText(profile.marketplaceLocation);
+}
+
+function buildOwnerReportDetails(
+  profile: AccountProfile | null,
+  fallbackUser: { name?: unknown; email?: unknown },
+  asset?: AssetRegisterItem,
+): OwnerReportDetails {
+  const fallbackEmail = asText(fallbackUser.email);
+  const businessName =
+    asText(profile?.businessName) ||
+    asText(profile?.marketplaceSellerName) ||
+    asText(profile?.displayName) ||
+    asText(profile?.name) ||
+    asText(fallbackUser.name) ||
+    fallbackEmail ||
+    'Aim4price client';
+  const contactDetails = asText(profile?.marketplacePhone) || asText(profile?.phone) || asText(asset?.sellerPhone);
+  const businessEmail = asText(profile?.marketplaceEmail) || asText(profile?.email) || fallbackEmail;
+  const locationAddress = buildOwnerLocationAddress(profile);
+
+  return {
+    businessName,
+    contactDetails,
+    businessEmail,
+    locationAddress,
+  };
+}
+
+function buildClientRows(ownerDetails: OwnerReportDetails): KeyValueRow[] {
   return [
-    { label: 'Name', value: options.ownerName || '-' },
-    { label: 'Email', value: options.ownerEmail || '-' },
-    { label: 'Phone', value: options.asset.sellerPhone || '-' },
-    { label: 'Address', value: '-' },
+    { label: 'Business Name', value: ownerDetails.businessName || '-' },
+    { label: 'Contact Details', value: ownerDetails.contactDetails || '-' },
+    { label: 'Business Email', value: ownerDetails.businessEmail || '-' },
+    { label: 'Location / Address', value: ownerDetails.locationAddress || '-' },
   ];
 }
 
@@ -805,31 +847,16 @@ function buildScanRecordRows(asset: AssetRegisterItem, events: ScanEventRecord[]
 
 function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventRecord[], dateRangeLabel = 'All available entries'): KeyValueRow[] {
   const latestFuelEvent = fuelEvents[0];
-  const fuelValues = fuelEvents
-    .map((event) => event.assetFuelPercentAfter ?? event.fuelPercent)
-    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
   const litreValues = fuelEvents
     .map((event) => event.fuelLitres)
     .filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0);
   const totalLitres = litreValues.length ? litreValues.reduce((sum, value) => sum + value, 0) : null;
-  const averageFuel = fuelValues.length ? fuelValues.reduce((sum, value) => sum + value, 0) / fuelValues.length : null;
-
   return [
-    { label: 'Serial Number', value: asset.serialNumber || '-' },
-    { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
-    ...licenseRegistrationRows(asset),
     { label: 'Report Period', value: dateRangeLabel },
     { label: 'Fuel Entries', value: String(fuelEvents.length) },
-    { label: 'Total Litres Issued', value: formatLitres(totalLitres) },
-    { label: 'Latest Storage Unit', value: latestFuelEvent ? fuelStorageLabel(latestFuelEvent) : '-' },
-    { label: 'Latest Asset Diesel Before Fill', value: latestFuelEvent ? formatLitres(calculateAssetDieselBeforeFill(latestFuelEvent)) : '-' },
-    { label: 'Latest Fuel Before', value: latestFuelEvent ? formatFuel(latestFuelEvent.assetFuelPercentBefore) : '-' },
-    { label: 'Latest Fuel After', value: latestFuelEvent ? formatFuel(latestFuelEvent.assetFuelPercentAfter ?? latestFuelEvent.fuelPercent) : '-' },
-    { label: 'Latest Activity', value: latestFuelEvent ? displayValue(latestFuelEvent.activityText) : '-' },
-    { label: 'Latest Work Area', value: latestFuelEvent ? displayValue(latestFuelEvent.workAreaText) : '-' },
-    { label: 'Lowest Fuel After', value: formatFuel(fuelValues.length ? Math.min(...fuelValues) : null) },
-    { label: 'Highest Fuel After', value: formatFuel(fuelValues.length ? Math.max(...fuelValues) : null) },
-    { label: 'Average Fuel After', value: formatFuel(averageFuel) },
+    { label: 'Total Litres Filled', value: formatLitres(totalLitres) },
+    { label: 'Latest Storage', value: latestFuelEvent ? fuelStorageLabel(latestFuelEvent) : '-' },
+    { label: 'Last Scanned', value: latestFuelEvent ? formatDateTime(latestFuelEvent.createdAtIso) : formatDateTime(asset.lastScannedAtIso) },
     { label: 'Updated', value: formatDate(latestFuelEvent?.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso) },
   ];
 }
@@ -915,7 +942,6 @@ function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
       escapeHtml(formatEventActivity(event)),
       escapeHtml(formatEventWorkArea(event)),
       escapeHtml(note.length > 150 ? `${note.slice(0, 147)}...` : note),
-      escapeHtml(fuelStorageCodeLabel(event)),
     ];
   });
 
@@ -924,7 +950,7 @@ function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
       <div class="assetReportSectionHeading">
         <div>
           <h2>Fuel Movement Records</h2>
-          <p>Each line mirrors the Fuel Ledger as closely as possible: storage unit, litres issued, calculated asset diesel before refilling, storage balances, fuel percentages, usage reading, operator and GPS record.</p>
+          <p>Each line mirrors the Fuel Ledger as closely as possible: storage unit, litres filled, before-fill litres, storage balances, fuel percentages, odometer, operator and GPS record.</p>
         </div>
         <strong>${escapeHtml(formatNumber(events.length))} ${events.length === 1 ? 'entry' : 'entries'}${totalLitres > 0 ? ` • ${escapeHtml(formatLitres(totalLitres))}` : ''}</strong>
       </div>
@@ -935,18 +961,17 @@ function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
           'Ledger Activity',
           'Storage Unit',
           'Litres Filled',
-          'Asset Diesel Before Fill',
-          'Storage Tank Before',
-          'Storage Litres Left',
-          'Asset Fuel Before',
-          'Asset Fuel After',
-          'Usage Reading',
+          'Before Fill',
+          'Storage Before',
+          'Storage After',
+          '% Before',
+          '% After',
+          'Odometer',
           'Operator',
           'GPS Location',
           'Work Activity',
           'Work Area',
           'Notes',
-          'Storage QR Code',
         ],
         rows,
         emptyText: 'No fuel readings have been recorded for this asset yet.',
@@ -1019,7 +1044,7 @@ function renderMaintenanceCards(asset: AssetRegisterItem, entries: MaintenanceEn
                   <strong>${escapeHtml(formatOperatorLabel(entry.event))}</strong>
                 </div>
                 <div>
-                  <span>Usage Reading</span>
+                  <span>Odometer</span>
                   <strong>${escapeHtml(formatEventUsage(asset, entry.event))}</strong>
                 </div>
               </div>
@@ -1075,7 +1100,7 @@ function buildMaintenanceBody(asset: AssetRegisterItem, entries: MaintenanceEntr
 
 function buildReportDisclaimer(reportKind: ScanReportKind): string {
   if (reportKind === 'fuel') {
-    return 'Fuel readings, litres and calculated asset diesel before refilling are operational records captured from asset QR updates and Fuel Ledger storage QR entries. The before-fill litres are calculated from litres issued and the asset fuel percentage movement, and final fuel use remains subject to physical verification.';
+    return 'Fuel readings, litres and before-fill values are operational records captured from asset QR updates and Fuel Ledger storage QR entries. Before-fill litres are calculated from litres issued and the asset fuel percentage movement, and final fuel use remains subject to physical verification.';
   }
 
   if (reportKind === 'maintenance') {
@@ -1088,8 +1113,7 @@ function buildReportDisclaimer(reportKind: ScanReportKind): string {
 function buildReportHtml(options: {
   reportKind: ScanReportKind;
   asset: AssetRegisterItem;
-  ownerName: string;
-  ownerEmail: string;
+  ownerDetails: OwnerReportDetails;
   generatedAt: string;
   logoUrl: string;
   summary: ReportSummary;
@@ -1620,81 +1644,35 @@ function buildReportHtml(options: {
       }
 
       .assetReportFuelTable th:nth-child(1),
-      .assetReportFuelTable td:nth-child(1) {
-        width: 20mm;
-      }
-
+      .assetReportFuelTable td:nth-child(1) { width: 20mm; }
       .assetReportFuelTable th:nth-child(2),
-      .assetReportFuelTable td:nth-child(2) {
-        width: 17mm;
-      }
-
+      .assetReportFuelTable td:nth-child(2) { width: 17mm; }
       .assetReportFuelTable th:nth-child(3),
-      .assetReportFuelTable td:nth-child(3) {
-        width: 19mm;
-      }
-
+      .assetReportFuelTable td:nth-child(3) { width: 19mm; }
       .assetReportFuelTable th:nth-child(4),
-      .assetReportFuelTable td:nth-child(4) {
-        width: 14mm;
-      }
-
+      .assetReportFuelTable td:nth-child(4) { width: 14mm; }
       .assetReportFuelTable th:nth-child(5),
-      .assetReportFuelTable td:nth-child(5) {
-        width: 17mm;
-      }
-
+      .assetReportFuelTable td:nth-child(5) { width: 15mm; }
       .assetReportFuelTable th:nth-child(6),
-      .assetReportFuelTable td:nth-child(6) {
-        width: 15mm;
-      }
-
+      .assetReportFuelTable td:nth-child(6) { width: 16mm; }
       .assetReportFuelTable th:nth-child(7),
-      .assetReportFuelTable td:nth-child(7) {
-        width: 15mm;
-      }
-
+      .assetReportFuelTable td:nth-child(7) { width: 16mm; }
       .assetReportFuelTable th:nth-child(8),
       .assetReportFuelTable td:nth-child(8),
       .assetReportFuelTable th:nth-child(9),
-      .assetReportFuelTable td:nth-child(9) {
-        width: 11mm;
-      }
-
+      .assetReportFuelTable td:nth-child(9) { width: 10mm; }
       .assetReportFuelTable th:nth-child(10),
-      .assetReportFuelTable td:nth-child(10) {
-        width: 15mm;
-      }
-
+      .assetReportFuelTable td:nth-child(10) { width: 15mm; }
       .assetReportFuelTable th:nth-child(11),
-      .assetReportFuelTable td:nth-child(11) {
-        width: 16mm;
-      }
-
+      .assetReportFuelTable td:nth-child(11) { width: 16mm; }
       .assetReportFuelTable th:nth-child(12),
-      .assetReportFuelTable td:nth-child(12) {
-        width: 27mm;
-      }
-
+      .assetReportFuelTable td:nth-child(12) { width: 27mm; }
       .assetReportFuelTable th:nth-child(13),
-      .assetReportFuelTable td:nth-child(13) {
-        width: 18mm;
-      }
-
+      .assetReportFuelTable td:nth-child(13) { width: 20mm; }
       .assetReportFuelTable th:nth-child(14),
-      .assetReportFuelTable td:nth-child(14) {
-        width: 17mm;
-      }
-
+      .assetReportFuelTable td:nth-child(14) { width: 18mm; }
       .assetReportFuelTable th:nth-child(15),
-      .assetReportFuelTable td:nth-child(15) {
-        width: 29mm;
-      }
-
-      .assetReportFuelTable th:nth-child(16),
-      .assetReportFuelTable td:nth-child(16) {
-        width: 23mm;
-      }
+      .assetReportFuelTable td:nth-child(15) { width: 35mm; }
 
       .assetReportScanTable th:nth-child(1),
       .assetReportScanTable td:nth-child(1) {
@@ -1927,7 +1905,7 @@ function buildReportHtml(options: {
           </div>
           <div class="assetReportHeaderMeta">
             <div class="assetReportMetaLine"><span>Generated</span><strong>${escapeHtml(options.generatedAt)}</strong></div>
-            ${options.ownerEmail ? `<div class="assetReportMetaLine"><span>Email</span><strong>${escapeHtml(options.ownerEmail)}</strong></div>` : ''}
+            ${options.ownerDetails.businessEmail ? `<div class="assetReportMetaLine"><span>Business Email</span><strong>${escapeHtml(options.ownerDetails.businessEmail)}</strong></div>` : ''}
           </div>
         </header>
 
@@ -1958,7 +1936,7 @@ function buildReportHtml(options: {
 
             <section class="assetReportSection assetReportClientCard">
               <h2>Client / Asset Owner</h2>
-              ${renderRows(buildClientRows({ ownerName: options.ownerName, ownerEmail: options.ownerEmail, asset }), 'No client details available.')}
+              ${renderRows(buildClientRows(options.ownerDetails), 'No client details available.')}
             </section>
           </div>
 
@@ -2040,12 +2018,11 @@ function buildReportHtml(options: {
 </html>`;
 }
 
-function buildScanReport(asset: AssetRegisterItem, events: ScanEventRecord[], ownerName: string, ownerEmail: string, generatedAt: string, logoUrl: string): string {
+function buildScanReport(asset: AssetRegisterItem, events: ScanEventRecord[], ownerDetails: OwnerReportDetails, generatedAt: string, logoUrl: string): string {
   return buildReportHtml({
     reportKind: 'scan',
     asset,
-    ownerName,
-    ownerEmail,
+    ownerDetails,
     generatedAt,
     logoUrl,
     summary: buildScanReportSummary(asset, events),
@@ -2057,8 +2034,7 @@ function buildScanReport(asset: AssetRegisterItem, events: ScanEventRecord[], ow
 function buildFuelReport(
   asset: AssetRegisterItem,
   events: ScanEventRecord[],
-  ownerName: string,
-  ownerEmail: string,
+  ownerDetails: OwnerReportDetails,
   generatedAt: string,
   logoUrl: string,
   dateRangeLabel = 'All available entries',
@@ -2068,8 +2044,7 @@ function buildFuelReport(
   return buildReportHtml({
     reportKind: 'fuel',
     asset,
-    ownerName,
-    ownerEmail,
+    ownerDetails,
     generatedAt,
     logoUrl,
     summary: buildFuelReportSummary(asset, fuelEvents),
@@ -2078,14 +2053,13 @@ function buildFuelReport(
   });
 }
 
-function buildMaintenanceReport(asset: AssetRegisterItem, events: ScanEventRecord[], ownerName: string, ownerEmail: string, generatedAt: string, logoUrl: string): string {
+function buildMaintenanceReport(asset: AssetRegisterItem, events: ScanEventRecord[], ownerDetails: OwnerReportDetails, generatedAt: string, logoUrl: string): string {
   const maintenanceEntries = events.map((event) => parseMaintenanceEvent(event)).filter((entry): entry is MaintenanceEntry => Boolean(entry));
 
   return buildReportHtml({
     reportKind: 'maintenance',
     asset,
-    ownerName,
-    ownerEmail,
+    ownerDetails,
     generatedAt,
     logoUrl,
     summary: buildMaintenanceReportSummary(asset, maintenanceEntries),
@@ -2126,17 +2100,21 @@ export async function GET(request: NextRequest) {
       ? { fromIso: reportDateRange.fromIso, toIso: reportDateRange.toIso, onlyFuel: true }
       : undefined,
   );
-  const ownerName = asText(session.user.name) || asText(session.user.email) || 'Owner session';
-  const ownerEmail = asText(session.user.email);
+  const ownerProfile = await getAccountProfile({
+    id: session.user.id,
+    name: session.user.name,
+    email: session.user.email,
+  });
+  const ownerDetails = buildOwnerReportDetails(ownerProfile, session.user, asset);
   const generatedAt = formatDate(new Date().toISOString());
   const logoUrl = await getAssetRegisterReportLogoUrl(session.user.id, asset.registerId).catch(() => '');
 
   const html =
     reportKind === 'fuel'
-      ? buildFuelReport(asset, events, ownerName, ownerEmail, generatedAt, logoUrl, reportDateRange.label)
+      ? buildFuelReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label)
       : reportKind === 'maintenance'
-        ? buildMaintenanceReport(asset, events, ownerName, ownerEmail, generatedAt, logoUrl)
-        : buildScanReport(asset, events, ownerName, ownerEmail, generatedAt, logoUrl);
+        ? buildMaintenanceReport(asset, events, ownerDetails, generatedAt, logoUrl)
+        : buildScanReport(asset, events, ownerDetails, generatedAt, logoUrl);
 
   const fileName = `${slugifyFileSegment(asset.title)}-${slugifyFileSegment(asset.plateLabel || asset.publicAssetCode || asset.id)}-${slugifyFileSegment(REPORT_LABELS[reportKind])}.html`;
 
