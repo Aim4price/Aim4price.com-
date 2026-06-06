@@ -291,11 +291,63 @@ function formatFuel(value: number | null | undefined): string {
 }
 
 function formatLitres(value: number | null | undefined): string {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
     return '-';
   }
 
   return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L`;
+}
+
+function roundLitres(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function calculateAssetDieselBeforeFill(event: ScanEventRecord): number | null {
+  const litresIssued = event.fuelLitres;
+  const beforePercent = event.assetFuelPercentBefore;
+  const afterPercent = event.assetFuelPercentAfter ?? event.fuelPercent;
+
+  if (
+    typeof litresIssued !== 'number' ||
+    !Number.isFinite(litresIssued) ||
+    litresIssued < 0 ||
+    typeof beforePercent !== 'number' ||
+    !Number.isFinite(beforePercent) ||
+    typeof afterPercent !== 'number' ||
+    !Number.isFinite(afterPercent)
+  ) {
+    return null;
+  }
+
+  const safeBefore = Math.max(0, Math.min(100, beforePercent));
+  const safeAfter = Math.max(0, Math.min(100, afterPercent));
+  const percentIncrease = safeAfter - safeBefore;
+
+  if (percentIncrease <= 0) {
+    return null;
+  }
+
+  return roundLitres((litresIssued * safeBefore) / percentIncrease);
+}
+
+function fuelLedgerActivityLabel(event: ScanEventRecord): string {
+  const normalized = asText(event.fuelLedgerEventType).toLowerCase();
+
+  if (normalized === 'asset_issue') return 'Asset filled';
+  if (normalized === 'stock_in') return 'Tank filled';
+  if (normalized === 'opening_balance') return 'Opening balance';
+  if (normalized === 'dip') return 'Tank dip / stock count';
+  if (normalized === 'adjustment') return 'Manual correction';
+
+  return event.fuelStorageEventId ? 'Fuel ledger entry' : 'QR fuel reading';
+}
+
+function fuelStorageLabel(event: ScanEventRecord): string {
+  return asText(event.fuelStorageName) || (event.fuelStorageId ? 'Fuel storage' : '-');
+}
+
+function fuelStorageCodeLabel(event: ScanEventRecord): string {
+  return asText(event.fuelStoragePublicCode) || '-';
 }
 
 function formatPercent(value: number | null | undefined): string {
@@ -698,8 +750,9 @@ function buildScanRecordRows(asset: AssetRegisterItem, events: ScanEventRecord[]
 }
 
 function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventRecord[]): KeyValueRow[] {
+  const latestFuelEvent = fuelEvents[0];
   const fuelValues = fuelEvents
-    .map((event) => event.fuelPercent)
+    .map((event) => event.assetFuelPercentAfter ?? event.fuelPercent)
     .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
   const litreValues = fuelEvents
     .map((event) => event.fuelLitres)
@@ -712,14 +765,17 @@ function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventReco
     { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
     ...licenseRegistrationRows(asset),
     { label: 'Fuel Entries', value: String(fuelEvents.length) },
-    { label: 'Total Litres', value: formatLitres(totalLitres) },
-    { label: 'Latest Fuel', value: formatFuel(fuelEvents[0]?.fuelPercent) },
-    { label: 'Latest Activity', value: displayValue(fuelEvents[0]?.activityText) },
-    { label: 'Latest Work Area', value: displayValue(fuelEvents[0]?.workAreaText) },
-    { label: 'Lowest Fuel', value: formatFuel(fuelValues.length ? Math.min(...fuelValues) : null) },
-    { label: 'Highest Fuel', value: formatFuel(fuelValues.length ? Math.max(...fuelValues) : null) },
-    { label: 'Average Fuel', value: formatFuel(averageFuel) },
-    { label: 'Updated', value: formatDate(fuelEvents[0]?.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso) },
+    { label: 'Total Litres Issued', value: formatLitres(totalLitres) },
+    { label: 'Latest Storage Unit', value: latestFuelEvent ? fuelStorageLabel(latestFuelEvent) : '-' },
+    { label: 'Latest Asset Diesel Before Fill', value: latestFuelEvent ? formatLitres(calculateAssetDieselBeforeFill(latestFuelEvent)) : '-' },
+    { label: 'Latest Fuel Before', value: latestFuelEvent ? formatFuel(latestFuelEvent.assetFuelPercentBefore) : '-' },
+    { label: 'Latest Fuel After', value: latestFuelEvent ? formatFuel(latestFuelEvent.assetFuelPercentAfter ?? latestFuelEvent.fuelPercent) : '-' },
+    { label: 'Latest Activity', value: latestFuelEvent ? displayValue(latestFuelEvent.activityText) : '-' },
+    { label: 'Latest Work Area', value: latestFuelEvent ? displayValue(latestFuelEvent.workAreaText) : '-' },
+    { label: 'Lowest Fuel After', value: formatFuel(fuelValues.length ? Math.min(...fuelValues) : null) },
+    { label: 'Highest Fuel After', value: formatFuel(fuelValues.length ? Math.max(...fuelValues) : null) },
+    { label: 'Average Fuel After', value: formatFuel(averageFuel) },
+    { label: 'Updated', value: formatDate(latestFuelEvent?.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso) },
   ];
 }
 
@@ -785,29 +841,58 @@ function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
     .map((event) => event.fuelLitres)
     .filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0)
     .reduce((sum, value) => sum + value, 0);
-  const rows = events.map((event) => [
-    escapeHtml(formatDateTime(event.createdAtIso)),
-    escapeHtml(formatOperatorLabel(event)),
-    escapeHtml(formatEventUsage(asset, event)),
-    escapeHtml(formatLitres(event.fuelLitres)),
-    `<strong>${escapeHtml(formatFuel(event.fuelPercent))}</strong>`,
-    escapeHtml(formatEventActivity(event)),
-    escapeHtml(formatEventWorkArea(event)),
-    escapeHtml(formatLocationText(event.locationText, event.latitude, event.longitude)),
-  ]);
+  const rows = events.map((event) => {
+    const note = normalizeSpaces(event.note) || '-';
+
+    return [
+      escapeHtml(formatDateTime(event.createdAtIso)),
+      escapeHtml(fuelLedgerActivityLabel(event)),
+      escapeHtml(fuelStorageLabel(event)),
+      `<strong>${escapeHtml(formatLitres(event.fuelLitres))}</strong>`,
+      `<strong>${escapeHtml(formatLitres(calculateAssetDieselBeforeFill(event)))}</strong>`,
+      escapeHtml(formatLitres(event.fuelStorageLevelBefore)),
+      `<strong>${escapeHtml(formatLitres(event.fuelStorageLevelAfter))}</strong>`,
+      escapeHtml(formatFuel(event.assetFuelPercentBefore)),
+      `<strong>${escapeHtml(formatFuel(event.assetFuelPercentAfter ?? event.fuelPercent))}</strong>`,
+      escapeHtml(formatEventUsage(asset, event)),
+      escapeHtml(formatOperatorLabel(event)),
+      escapeHtml(formatLocationText(event.locationText, event.latitude, event.longitude)),
+      escapeHtml(formatEventActivity(event)),
+      escapeHtml(formatEventWorkArea(event)),
+      escapeHtml(note.length > 150 ? `${note.slice(0, 147)}...` : note),
+      escapeHtml(fuelStorageCodeLabel(event)),
+    ];
+  });
 
   return `
     <section class="assetReportSection assetReportWideSection">
       <div class="assetReportSectionHeading">
         <div>
-          <h2>Fuel Readings</h2>
-          <p>Each line shows hours / km, litres, fuel gauge, operator, work activity, work area and scan GPS.</p>
+          <h2>Fuel Movement Records</h2>
+          <p>Each line mirrors the Fuel Ledger as closely as possible: storage unit, litres issued, calculated asset diesel before refilling, storage balances, fuel percentages, usage reading, operator and GPS record.</p>
         </div>
         <strong>${escapeHtml(formatNumber(events.length))} ${events.length === 1 ? 'entry' : 'entries'}${totalLitres > 0 ? ` • ${escapeHtml(formatLitres(totalLitres))}` : ''}</strong>
       </div>
       ${renderTable({
         className: 'assetReportFuelTable',
-        headers: ['Date / Time', 'Updated By', 'Usage Reading', 'Litres', 'Fuel %', 'Work Activity', 'Work Area', 'Scan Location'],
+        headers: [
+          'Date / Time',
+          'Ledger Activity',
+          'Storage Unit',
+          'Litres Filled',
+          'Asset Diesel Before Fill',
+          'Storage Tank Before',
+          'Storage Litres Left',
+          'Asset Fuel Before',
+          'Asset Fuel After',
+          'Usage Reading',
+          'Operator',
+          'GPS Location',
+          'Work Activity',
+          'Work Area',
+          'Notes',
+          'Storage QR Code',
+        ],
         rows,
         emptyText: 'No fuel readings have been recorded for this asset yet.',
       })}
@@ -935,7 +1020,7 @@ function buildMaintenanceBody(asset: AssetRegisterItem, entries: MaintenanceEntr
 
 function buildReportDisclaimer(reportKind: ScanReportKind): string {
   if (reportKind === 'fuel') {
-    return 'Fuel readings and litres are operational records captured from asset QR updates and Fuel Ledger storage QR entries. They support internal asset management and fuel-control workflows. Final fuel use remains subject to physical verification.';
+    return 'Fuel readings, litres and calculated asset diesel before refilling are operational records captured from asset QR updates and Fuel Ledger storage QR entries. The before-fill litres are calculated from litres issued and the asset fuel percentage movement, and final fuel use remains subject to physical verification.';
   }
 
   if (reportKind === 'maintenance') {
@@ -960,6 +1045,13 @@ function buildReportHtml(options: {
   const asset = options.asset;
   const safeTitle = escapeHtml(asset.title || 'Asset');
   const disclaimer = buildReportDisclaimer(options.reportKind);
+  const isFuelReport = options.reportKind === 'fuel';
+  const pageSize = isFuelReport ? 'A4 landscape' : 'A4';
+  const pageWidth = isFuelReport ? '297mm' : '210mm';
+  const pageMinHeight = isFuelReport ? '210mm' : '297mm';
+  const innerMinHeight = isFuelReport ? 'calc(210mm - 20mm)' : 'calc(297mm - 20mm)';
+  const printPageMinHeight = isFuelReport ? '194mm' : '281mm';
+  const printInnerMinHeight = printPageMinHeight;
 
   return `<!doctype html>
 <html lang="en">
@@ -991,7 +1083,7 @@ function buildReportHtml(options: {
       }
 
       @page {
-        size: A4;
+        size: ${pageSize};
         margin: 8mm 9mm 8mm;
       }
 
@@ -1050,8 +1142,8 @@ function buildReportHtml(options: {
       }
 
       .assetReportPage {
-        width: min(100%, 210mm);
-        min-height: 297mm;
+        width: min(100%, ${pageWidth});
+        min-height: ${pageMinHeight};
         margin: 18px auto;
         padding: 11mm 11mm 9mm;
         background: var(--paper);
@@ -1061,7 +1153,7 @@ function buildReportHtml(options: {
       .assetReportInner {
         position: relative;
         display: flex;
-        min-height: calc(297mm - 20mm);
+        min-height: ${innerMinHeight};
         flex-direction: column;
       }
 
@@ -1457,24 +1549,89 @@ function buildReportHtml(options: {
         font-weight: 800;
       }
 
+      .assetReportFuelTable th,
+      .assetReportFuelTable td {
+        font-size: 5.85px;
+        line-height: 1.25;
+      }
+
+      .assetReportFuelTable th {
+        font-size: 5.35px;
+        line-height: 1.12;
+      }
+
       .assetReportFuelTable th:nth-child(1),
       .assetReportFuelTable td:nth-child(1) {
-        width: 27mm;
+        width: 18mm;
       }
 
       .assetReportFuelTable th:nth-child(2),
       .assetReportFuelTable td:nth-child(2) {
-        width: 27mm;
+        width: 16mm;
       }
 
       .assetReportFuelTable th:nth-child(3),
       .assetReportFuelTable td:nth-child(3) {
-        width: 24mm;
+        width: 18mm;
       }
 
       .assetReportFuelTable th:nth-child(4),
       .assetReportFuelTable td:nth-child(4) {
+        width: 13mm;
+      }
+
+      .assetReportFuelTable th:nth-child(5),
+      .assetReportFuelTable td:nth-child(5) {
+        width: 16mm;
+      }
+
+      .assetReportFuelTable th:nth-child(6),
+      .assetReportFuelTable td:nth-child(6) {
+        width: 13mm;
+      }
+
+      .assetReportFuelTable th:nth-child(7),
+      .assetReportFuelTable td:nth-child(7) {
         width: 14mm;
+      }
+
+      .assetReportFuelTable th:nth-child(8),
+      .assetReportFuelTable td:nth-child(8),
+      .assetReportFuelTable th:nth-child(9),
+      .assetReportFuelTable td:nth-child(9) {
+        width: 10mm;
+      }
+
+      .assetReportFuelTable th:nth-child(10),
+      .assetReportFuelTable td:nth-child(10) {
+        width: 13mm;
+      }
+
+      .assetReportFuelTable th:nth-child(11),
+      .assetReportFuelTable td:nth-child(11) {
+        width: 16mm;
+      }
+
+      .assetReportFuelTable th:nth-child(12),
+      .assetReportFuelTable td:nth-child(12) {
+        width: 23mm;
+      }
+
+      .assetReportFuelTable th:nth-child(13),
+      .assetReportFuelTable td:nth-child(13),
+      .assetReportFuelTable th:nth-child(14),
+      .assetReportFuelTable td:nth-child(14) {
+        width: 18mm;
+      }
+
+      .assetReportFuelTable th:nth-child(15),
+      .assetReportFuelTable td:nth-child(15) {
+        width: 28mm;
+      }
+
+      .assetReportFuelTable th:nth-child(16),
+      .assetReportFuelTable td:nth-child(16) {
+        width: 18mm;
       }
 
       .assetReportScanTable th:nth-child(1),
@@ -1667,7 +1824,7 @@ function buildReportHtml(options: {
 
         .assetReportPage {
           width: auto;
-          min-height: 281mm;
+          min-height: ${printPageMinHeight};
           margin: 0;
           padding: 0;
           box-shadow: none;
@@ -1675,7 +1832,7 @@ function buildReportHtml(options: {
         }
 
         .assetReportInner {
-          min-height: 281mm;
+          min-height: ${printInnerMinHeight};
         }
 
         .assetReportHeader {
