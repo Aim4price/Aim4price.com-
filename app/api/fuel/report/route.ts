@@ -391,7 +391,7 @@ function buildReportHtml(options: FuelReportOptions): string {
 
       @page {
         size: A4 landscape;
-        margin: 8mm 9mm 8mm;
+        margin: 6mm 6mm 7mm;
       }
 
       html,
@@ -458,7 +458,7 @@ function buildReportHtml(options: FuelReportOptions): string {
         width: min(100%, 297mm);
         min-height: 210mm;
         margin: 18px auto;
-        padding: 10mm 10mm 8mm;
+        padding: 7mm 6mm 7mm;
         background: var(--paper);
         box-shadow: 0 16px 44px rgba(17, 24, 39, 0.13);
       }
@@ -466,7 +466,7 @@ function buildReportHtml(options: FuelReportOptions): string {
       .assetReportInner {
         position: relative;
         display: flex;
-        min-height: calc(210mm - 18mm);
+        min-height: calc(210mm - 14mm);
         flex-direction: column;
       }
 
@@ -785,21 +785,22 @@ function buildReportHtml(options: FuelReportOptions): string {
 
       .assetReportTable th,
       .assetReportTable td {
-        padding: 6px 5px 6px 0;
+        padding: 6px 4.5px 6px 0;
         border-bottom: 1px solid var(--line);
         color: #38404c;
-        font-size: 5.85px;
-        line-height: 1.25;
+        font-size: 5.75px;
+        line-height: 1.32;
         text-align: left;
         vertical-align: top;
-        overflow-wrap: anywhere;
+        overflow-wrap: break-word;
         word-break: normal;
+        hyphens: auto;
       }
 
       .assetReportTable th {
         color: var(--strong);
-        font-size: 5.45px;
-        line-height: 1.12;
+        font-size: 5.25px;
+        line-height: 1.18;
         font-weight: 800;
         letter-spacing: 0.04em;
         text-transform: uppercase;
@@ -811,39 +812,39 @@ function buildReportHtml(options: FuelReportOptions): string {
       }
 
       .assetReportFuelLedgerTable th:nth-child(1),
-      .assetReportFuelLedgerTable td:nth-child(1) { width: 17mm; }
+      .assetReportFuelLedgerTable td:nth-child(1) { width: 19mm; }
       .assetReportFuelLedgerTable th:nth-child(2),
-      .assetReportFuelLedgerTable td:nth-child(2) { width: 16mm; }
+      .assetReportFuelLedgerTable td:nth-child(2) { width: 17mm; }
       .assetReportFuelLedgerTable th:nth-child(3),
       .assetReportFuelLedgerTable td:nth-child(3) { width: 10mm; }
       .assetReportFuelLedgerTable th:nth-child(4),
-      .assetReportFuelLedgerTable td:nth-child(4) { width: 16mm; }
+      .assetReportFuelLedgerTable td:nth-child(4) { width: 18mm; }
       .assetReportFuelLedgerTable th:nth-child(5),
-      .assetReportFuelLedgerTable td:nth-child(5) { width: 22mm; }
+      .assetReportFuelLedgerTable td:nth-child(5) { width: 23mm; }
       .assetReportFuelLedgerTable th:nth-child(6),
-      .assetReportFuelLedgerTable td:nth-child(6) { width: 13mm; }
+      .assetReportFuelLedgerTable td:nth-child(6) { width: 15mm; }
       .assetReportFuelLedgerTable th:nth-child(7),
-      .assetReportFuelLedgerTable td:nth-child(7) { width: 15mm; }
+      .assetReportFuelLedgerTable td:nth-child(7) { width: 16mm; }
       .assetReportFuelLedgerTable th:nth-child(8),
-      .assetReportFuelLedgerTable td:nth-child(8) { width: 13mm; }
+      .assetReportFuelLedgerTable td:nth-child(8) { width: 15mm; }
       .assetReportFuelLedgerTable th:nth-child(9),
-      .assetReportFuelLedgerTable td:nth-child(9) { width: 14mm; }
+      .assetReportFuelLedgerTable td:nth-child(9) { width: 15mm; }
       .assetReportFuelLedgerTable th:nth-child(10),
       .assetReportFuelLedgerTable td:nth-child(10),
       .assetReportFuelLedgerTable th:nth-child(11),
-      .assetReportFuelLedgerTable td:nth-child(11) { width: 10mm; }
+      .assetReportFuelLedgerTable td:nth-child(11) { width: 11mm; }
       .assetReportFuelLedgerTable th:nth-child(12),
-      .assetReportFuelLedgerTable td:nth-child(12) { width: 12mm; }
+      .assetReportFuelLedgerTable td:nth-child(12) { width: 13mm; }
       .assetReportFuelLedgerTable th:nth-child(13),
       .assetReportFuelLedgerTable td:nth-child(13) { width: 16mm; }
       .assetReportFuelLedgerTable th:nth-child(14),
-      .assetReportFuelLedgerTable td:nth-child(14) { width: 23mm; }
+      .assetReportFuelLedgerTable td:nth-child(14) { width: 24mm; }
       .assetReportFuelLedgerTable th:nth-child(15),
-      .assetReportFuelLedgerTable td:nth-child(15),
+      .assetReportFuelLedgerTable td:nth-child(15) { width: 18mm; }
       .assetReportFuelLedgerTable th:nth-child(16),
-      .assetReportFuelLedgerTable td:nth-child(16) { width: 18mm; }
+      .assetReportFuelLedgerTable td:nth-child(16) { width: 17mm; }
       .assetReportFuelLedgerTable th:nth-child(17),
-      .assetReportFuelLedgerTable td:nth-child(17) { width: 26mm; }
+      .assetReportFuelLedgerTable td:nth-child(17) { width: 23mm; }
 
       .assetReportFooter {
         display: grid;
@@ -925,7 +926,7 @@ function buildReportHtml(options: FuelReportOptions): string {
 
         .assetReportPage {
           width: auto;
-          min-height: 194mm;
+          min-height: 197mm;
           margin: 0;
           padding: 0;
           box-shadow: none;
@@ -933,7 +934,7 @@ function buildReportHtml(options: FuelReportOptions): string {
         }
 
         .assetReportInner {
-          min-height: 194mm;
+          min-height: 197mm;
         }
       }
     </style>
