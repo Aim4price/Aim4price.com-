@@ -1434,23 +1434,17 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
   const clientRows = (payload.clientRows?.length
     ? payload.clientRows
     : [
-        { label: 'Name', value: '-' },
-        { label: 'Email', value: '-' },
-        { label: 'Phone', value: '-' },
+        { label: 'Business Name', value: '-' },
+        { label: 'Contact Details', value: '-' },
+        { label: 'Business Email', value: '-' },
+        { label: 'Location / Address', value: '-' },
       ]
   ).filter((row) => String(row.label ?? '').trim());
-  const hiddenFactLabels = new Set(['value basis', 'last updated', 'serial number', 'insured', 'financed', 'licensed', 'registration', 'license registration', 'numberplate / registration', 'documents']);
+  const hiddenFactLabels = new Set(['value basis', 'last updated', 'insured', 'financed', 'documents']);
   const detailRows = payload.facts.filter((row) => !hiddenFactLabels.has(String(row.label ?? '').trim().toLowerCase()));
-  const registrationValue =
-    getAssetSheetValue(payload.facts, 'Registration') ||
-    getAssetSheetValue(payload.facts, 'License Registration') ||
-    getAssetSheetValue(payload.facts, 'Numberplate / Registration');
   const recordRows: ReportKeyValue[] = [
-    { label: 'Serial Number', value: getAssetSheetValue(payload.facts, 'Serial Number') },
     { label: 'Insured', value: getAssetSheetValue(payload.facts, 'Insured') },
     { label: 'Financed', value: getAssetSheetValue(payload.facts, 'Financed') },
-    { label: 'Licensed', value: getAssetSheetValue(payload.facts, 'Licensed') },
-    ...(registrationValue ? [{ label: 'Registration', value: registrationValue }] : []),
     { label: 'Documents', value: getAssetSheetValue(payload.facts, 'Documents') },
     { label: 'Updated', value: updatedLabel },
   ];
