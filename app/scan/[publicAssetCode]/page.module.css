@@ -655,6 +655,83 @@
   line-height: 1.24;
 }
 
+.usageGateCard {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.15rem, 4.5vw, 1.7rem);
+  border: 1px solid rgba(200, 217, 228, 0.96);
+  border-radius: 1.45rem;
+  background:
+    radial-gradient(circle at top left, rgba(23, 107, 79, 0.06), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  box-shadow:
+    0 22px 50px rgba(11, 32, 48, 0.09),
+    0 8px 18px rgba(11, 32, 48, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.usageGateTitleBlock {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.usageGateTitleBlock span,
+.usageGateReadingCard span {
+  color: #657789;
+  font-size: clamp(0.78rem, 2.7vw, 0.92rem);
+  font-weight: 900;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+
+.usageGateTitleBlock h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(2.05rem, 8.5vw, 3.05rem);
+  font-weight: 900;
+  line-height: 0.96;
+  letter-spacing: -0.062em;
+}
+
+.usageGateTitleBlock p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: clamp(1.05rem, 3.6vw, 1.28rem);
+  font-weight: 690;
+  line-height: 1.36;
+}
+
+.usageGateReadingCard {
+  min-height: 6.2rem;
+  display: grid;
+  align-content: center;
+  gap: 0.28rem;
+  padding: 1.05rem 1.15rem;
+  border-radius: 1.22rem;
+  background:
+    radial-gradient(circle at top left, rgba(23, 107, 79, 0.08), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
+  border: 1px solid rgba(214, 226, 236, 0.96);
+  box-shadow:
+    0 10px 22px rgba(23, 45, 75, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.usageGateReadingCard strong {
+  color: var(--text);
+  font-size: clamp(1.55rem, 6.5vw, 2.25rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.usageGateCard .primaryButton {
+  width: 100%;
+  min-height: 4.85rem;
+  border-radius: 1.28rem;
+  font-size: 1.24rem;
+}
+
 .doneButton {
   width: 100%;
   min-height: 5.05rem;
@@ -729,6 +806,30 @@
   border-radius: 0;
   overflow: hidden;
   background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+}
+
+.fuelEditorCard {
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+}
+
+.fuelEditorCard .editorHeader {
+  background: rgba(255, 255, 255, 0.99);
+}
+
+.fuelEditorCard .editorHeader h3 {
+  font-size: clamp(2.35rem, 10.5vw, 3.35rem);
+}
+
+.fuelEditorCard .editorHeader p {
+  font-size: clamp(1.02rem, 3.7vw, 1.22rem);
+  font-weight: 720;
+}
+
+.fuelEditorCard .editorBody {
+  align-content: start;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(23, 107, 79, 0.045), transparent 38%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
 }
 
 .editorHeader {
@@ -809,24 +910,116 @@
   letter-spacing: -0.065em;
 }
 
+.fuelSliderBlock {
+  width: 100%;
+  display: grid;
+  gap: 1rem;
+  padding: 1.08rem;
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(circle at top left, rgba(23, 107, 79, 0.12), transparent 44%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f3 100%);
+  border: 1px solid rgba(23, 77, 62, 0.14);
+  box-shadow:
+    0 12px 26px rgba(23, 45, 75, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.fuelValueRow {
+  display: grid;
+  justify-items: center;
+  gap: 0.26rem;
+}
+
+.fuelValueRow strong {
+  min-height: 3.8rem;
+  display: grid;
+  place-items: center;
+  color: #123b30;
+  font-size: clamp(3.35rem, 18vw, 5.25rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.065em;
+}
+
+.fuelValueRow span {
+  color: #66798a;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.sliderTrackWrap {
+  display: grid;
+  gap: 0.4rem;
+}
+
 .rangeInput {
   width: 100%;
-  height: 2.35rem;
-  accent-color: var(--green);
+  height: 1.08rem;
+  margin: 0.78rem 0 0.2rem;
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  box-shadow:
+    inset 0 1px 3px rgba(9, 42, 32, 0.14),
+    0 6px 14px rgba(23, 45, 75, 0.045);
+  touch-action: pan-x;
 }
 
 .rangeInput::-webkit-slider-runnable-track {
-  height: 0.68rem;
+  height: 1.08rem;
   border-radius: 999px;
+  background: transparent;
 }
 
 .rangeInput::-webkit-slider-thumb {
-  width: 2.1rem;
-  height: 2.1rem;
-  margin-top: -0.72rem;
+  width: 2.35rem;
+  height: 2.35rem;
+  margin-top: -0.64rem;
+  border: 0.48rem solid var(--green);
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow:
+    0 12px 24px rgba(16, 68, 52, 0.26),
+    0 0 0 0.45rem rgba(23, 107, 79, 0.08);
+  -webkit-appearance: none;
+}
+
+.rangeInput::-moz-range-track {
+  height: 1.08rem;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.rangeInput::-moz-range-thumb {
+  width: 1.45rem;
+  height: 1.45rem;
+  border: 0.48rem solid var(--green);
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow:
+    0 12px 24px rgba(16, 68, 52, 0.26),
+    0 0 0 0.45rem rgba(23, 107, 79, 0.08);
+}
+
+.fuelScale {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #6a7c8e;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
 }
 
 .quickOptionGrid,
+.quickFuelGrid,
 .mediaChoiceGrid,
 .serviceModeGrid,
 .optionList,
@@ -841,6 +1034,54 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   justify-self: center;
   gap: 0.95rem;
+}
+
+.quickFuelGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.quickFuelButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease;
+  min-height: 4.25rem;
+  padding: 0.7rem 1rem;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(18, 45, 37, 0.10);
+  background: #ffffff;
+  color: #17362c;
+  font-size: 1.08rem;
+  font-weight: 900;
+  line-height: 1.12;
+  text-align: center;
+  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.055);
+}
+
+.quickFuelButton:hover {
+  transform: translateY(-1px);
+}
+
+.quickFuelButton:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.quickFuelButtonActive {
+  color: #ffffff;
+  background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
+  border-color: rgba(16, 68, 52, 0.34);
+  box-shadow: 0 14px 28px rgba(16, 68, 52, 0.18);
 }
 
 .choiceButton {
@@ -860,6 +1101,7 @@
     0 14px 28px rgba(16, 68, 52, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
+
 
 .serviceModeGrid,
 .mediaChoiceGrid {
@@ -1140,6 +1382,22 @@
   font-size: 1.18rem;
 }
 
+.fuelEditorCard .editorFooter {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 0;
+  background: transparent;
+  box-shadow: none;
+  padding-top: 0;
+}
+
+.fuelEditorCard .editorFooter .secondaryButton {
+  order: 1;
+}
+
+.fuelEditorCard .editorFooter .primaryButton {
+  order: 2;
+}
+
 .thankYouScreen {
   min-height: 100dvh;
   border: 0;
@@ -1213,7 +1471,8 @@
 
 
 @media (max-width: 640px) {
-  .assetInfoGrid {
+  .assetInfoGrid,
+  .quickFuelGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1230,7 +1489,8 @@
   .unavailableCard,
   .assetOpenedCard,
   .assetInfoCard,
-  .actionCard {
+  .actionCard,
+  .usageGateCard {
     border-radius: 1.24rem;
   }
 
@@ -1270,7 +1530,8 @@
   .previewDetailGrid,
   .assetInfoGrid,
   .actionGrid,
-  .quickOptionGrid {
+  .quickOptionGrid,
+  .quickFuelGrid {
     grid-template-columns: 1fr;
   }
 }

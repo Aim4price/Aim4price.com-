@@ -374,6 +374,14 @@ function formatFuel(value: number | null): string {
   return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
 }
 
+function normalizeFuelPercentText(value: string, fallback: number | null = null): string {
+  const source = value.trim() || (fallback !== null && Number.isFinite(fallback) ? String(fallback) : "0");
+  const parsed = Number(source);
+
+  if (!Number.isFinite(parsed)) return "0";
+  return String(Math.max(0, Math.min(100, Math.round(parsed))));
+}
+
 function formatPercent(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return "—";
   const rounded = Math.round(value * 10) / 10;
@@ -577,8 +585,8 @@ function buildEditorSummary(editor: EditorKey, asset: ScanSafeAsset | null): str
 
   if (editor === "fuel") {
     return asset?.fuelPercent !== null && typeof asset?.fuelPercent !== "undefined"
-      ? `${formatFuel(asset.fuelPercent)} current level`
-      : "Capture current tank level";
+      ? `${formatFuel(asset.fuelPercent)} fuel level`
+      : "Capture fuel level";
   }
 
   if (editor === "service") return "Check asset, note service, or note repairs.";
@@ -588,6 +596,34 @@ function buildEditorSummary(editor: EditorKey, asset: ScanSafeAsset | null): str
   }
 
   return "Upload or take photos";
+}
+
+function needsUsageUpdateBeforeActions(asset: ScanSafeAsset | null, update: PendingScanUpdate): boolean {
+  return Boolean(asset && asset.usageMode !== "none" && !update.hasUsage);
+}
+
+function requiredUsageTitle(asset: ScanSafeAsset): string {
+  if (asset.usageMode === "km") return "Update kilometres first";
+  if (asset.usageMode === "percent") return "Update worked percentage first";
+  return "Update hours first";
+}
+
+function requiredUsageCopy(asset: ScanSafeAsset): string {
+  if (asset.usageMode === "km") {
+    return "Enter the latest kilometre reading before fuel, maintenance or photos can be added.";
+  }
+
+  if (asset.usageMode === "percent") {
+    return "Enter the latest worked percentage before fuel, maintenance or photos can be added.";
+  }
+
+  return "Enter the latest hour-meter reading before fuel, maintenance or photos can be added.";
+}
+
+function requiredUsageButtonLabel(asset: ScanSafeAsset): string {
+  if (asset.usageMode === "km") return "Update kilometres";
+  if (asset.usageMode === "percent") return "Update percentage";
+  return "Update hours";
 }
 
 function toggleValue(values: string[], value: string): string[] {
@@ -969,17 +1005,43 @@ export default function ScanClient({
         throw new Error(data?.error ?? "Failed to open this asset.");
       }
 
-      setAsset(data.asset);
-      setSavedAsset(data.asset);
-      setAssetPreview(data.asset);
-      setDraft((current) => ({
-        ...initialDraft,
-        latitude: current.latitude,
-        longitude: current.longitude,
-      }));
+      const openedAsset = data.asset;
+      const requiresInitialUsageUpdate = openedAsset.usageMode !== "none";
+
+      setAsset(openedAsset);
+      setSavedAsset(openedAsset);
+      setAssetPreview(openedAsset);
+      setDraft((current) => {
+        const nextDraft = {
+          ...initialDraft,
+          latitude: current.latitude,
+          longitude: current.longitude,
+        };
+
+        if (openedAsset.usageMode === "percent") {
+          return {
+            ...nextDraft,
+            lifeWorkedPercent: openedAsset.lifeWorkedPercent !== null
+              ? String(openedAsset.lifeWorkedPercent)
+              : "",
+          };
+        }
+
+        if (openedAsset.usageMode === "hours" || openedAsset.usageMode === "km") {
+          return {
+            ...nextDraft,
+            hours: openedAsset.hours !== null
+              ? String(Math.round(openedAsset.hours))
+              : "",
+          };
+        }
+
+        return nextDraft;
+      });
       setPendingUpdate(initialPendingUpdate);
       setIsDone(false);
       setShowLocationReminder(false);
+      setActiveEditor(requiresInitialUsageUpdate ? "usage" : null);
       setLocationState("ready");
     } finally {
       setIsLoadingAsset(false);
@@ -1106,12 +1168,20 @@ export default function ScanClient({
   }
 
   function openEditor(nextEditor: EditorKey) {
+    const enforcedEditor = nextEditor !== "usage" && needsUsageUpdateBeforeActions(asset, pendingUpdate)
+      ? "usage"
+      : nextEditor;
+
+    if (enforcedEditor !== nextEditor && asset) {
+      setNotice({ tone: "error", message: requiredUsageCopy(asset) });
+    }
+
     setDraft((current) => {
       const nextDraft = keepCurrentLocation(current);
 
       if (!asset) return nextDraft;
 
-      if (nextEditor === "usage") {
+      if (enforcedEditor === "usage") {
         if (asset.usageMode === "percent") {
           const stagedPercent = pendingUpdate.hasUsage && pendingUpdate.lifeWorkedPercent
             ? pendingUpdate.lifeWorkedPercent
@@ -1133,7 +1203,7 @@ export default function ScanClient({
         }
       }
 
-      if (nextEditor === "fuel") {
+      if (enforcedEditor === "fuel") {
         const stagedFuel = pendingUpdate.hasFuel && pendingUpdate.fuelPercent
           ? pendingUpdate.fuelPercent
           : String(Math.round(asset.fuelPercent ?? 100));
@@ -1141,7 +1211,7 @@ export default function ScanClient({
         return { ...nextDraft, fuelPercent: stagedFuel };
       }
 
-      if (nextEditor === "photos") {
+      if (enforcedEditor === "photos") {
         return { ...nextDraft, photoUrls: pendingUpdate.photoUrls };
       }
 
@@ -1149,7 +1219,7 @@ export default function ScanClient({
     });
 
     setShowServiceDetailsStep(false);
-    setActiveEditor(nextEditor);
+    setActiveEditor(enforcedEditor);
   }
 
   function closeEditor() {
@@ -1260,7 +1330,7 @@ export default function ScanClient({
     }
 
     if (activeEditor === "fuel") {
-      if (!draft.fuelPercent.trim()) return { ok: false, message: "Choose the current tank level." };
+      if (!draft.fuelPercent.trim()) return { ok: false, message: "Choose the fuel level." };
       return { ok: true };
     }
 
@@ -1495,6 +1565,8 @@ export default function ScanClient({
 
   const locationReady = hasLocationCaptured(draft);
   const showUsageAction = asset ? asset.usageMode !== "none" : false;
+  const usageUpdateRequired = showUsageAction && needsUsageUpdateBeforeActions(asset, pendingUpdate);
+  const currentFuelPercent = normalizeFuelPercentText(draft.fuelPercent, asset?.fuelPercent ?? null);
   const showFuelAction = Boolean(asset?.canUpdateFuel);
   const serviceProfile = useMemo(() => resolveAssetServiceProfile(asset), [asset]);
   const checkedOptions = useMemo(() => checkedOptionsForProfile(serviceProfile), [serviceProfile]);
@@ -1535,7 +1607,9 @@ export default function ScanClient({
               ? serviceProfile === "implement"
                 ? "Next: workshop details"
                 : "Next: company details"
-              : "Add update";
+              : activeEditor === "usage" && usageUpdateRequired
+                ? "Continue"
+                : "Add update";
 
   if (isDone) {
     return (
@@ -1666,35 +1740,54 @@ export default function ScanClient({
               </button>
             </section>
 
-            <section className={styles.actionGrid}>
-              <button type="button" className={styles.actionCard} onClick={handleShareTap}>
-                <span className={styles.actionIconWrap}><ShareIcon className={styles.actionIcon} /></span>
-                <strong>Share</strong>
-                <small>Coming next</small>
-              </button>
+            {usageUpdateRequired ? (
+              <section className={styles.usageGateCard}>
+                <div className={styles.usageGateTitleBlock}>
+                  <span>Required first</span>
+                  <h2>{requiredUsageTitle(asset)}</h2>
+                  <p>{requiredUsageCopy(asset)}</p>
+                </div>
+                <div className={styles.usageGateReadingCard}>
+                  <span>Last recorded</span>
+                  <strong>{formatUsage(savedAsset ?? asset)}</strong>
+                </div>
+                <button type="button" className={styles.primaryButton} onClick={() => openEditor("usage")} disabled={isSaving || isUploading}>
+                  {requiredUsageButtonLabel(asset)}
+                </button>
+              </section>
+            ) : (
+              <>
+                <section className={styles.actionGrid}>
+                  <button type="button" className={styles.actionCard} onClick={handleShareTap}>
+                    <span className={styles.actionIconWrap}><ShareIcon className={styles.actionIcon} /></span>
+                    <strong>Share</strong>
+                    <small>Coming next</small>
+                  </button>
 
-              <button type="button" className={styles.actionCard} onClick={handleFuelTap}>
-                <span className={styles.actionIconWrap}><FuelIcon className={styles.actionIcon} /></span>
-                <strong>Fuel</strong>
-                <small>{showFuelAction ? buildEditorSummary("fuel", asset) : "Fuel tracking not enabled"}</small>
-              </button>
+                  <button type="button" className={styles.actionCard} onClick={handleFuelTap}>
+                    <span className={styles.actionIconWrap}><FuelIcon className={styles.actionIcon} /></span>
+                    <strong>Fuel</strong>
+                    <small>{showFuelAction ? buildEditorSummary("fuel", asset) : "Fuel tracking not enabled"}</small>
+                  </button>
 
-              <button type="button" className={styles.actionCard} onClick={() => openEditor("service")}>
-                <span className={styles.actionIconWrap}><WrenchIcon className={styles.actionIcon} /></span>
-                <strong>Maintenance</strong>
-                <small>{buildEditorSummary("service", asset)}</small>
-              </button>
+                  <button type="button" className={styles.actionCard} onClick={() => openEditor("service")}>
+                    <span className={styles.actionIconWrap}><WrenchIcon className={styles.actionIcon} /></span>
+                    <strong>Maintenance</strong>
+                    <small>{buildEditorSummary("service", asset)}</small>
+                  </button>
 
-              <button type="button" className={styles.actionCard} onClick={() => openEditor("photos")}>
-                <span className={styles.actionIconWrap}><CameraIcon className={styles.actionIcon} /></span>
-                <strong>Photos</strong>
-                <small>{buildEditorSummary("photos", asset)}</small>
-              </button>
-            </section>
+                  <button type="button" className={styles.actionCard} onClick={() => openEditor("photos")}>
+                    <span className={styles.actionIconWrap}><CameraIcon className={styles.actionIcon} /></span>
+                    <strong>Photos</strong>
+                    <small>{buildEditorSummary("photos", asset)}</small>
+                  </button>
+                </section>
 
-            <button type="button" className={styles.doneButton} onClick={() => void handleDone()} disabled={isSaving || isUploading}>
-              {isSaving && hasPendingScanUpdate(pendingUpdate) ? "Saving…" : "Done"}
-            </button>
+                <button type="button" className={styles.doneButton} onClick={() => void handleDone()} disabled={isSaving || isUploading}>
+                  {isSaving && hasPendingScanUpdate(pendingUpdate) ? "Saving…" : "Done"}
+                </button>
+              </>
+            )}
           </>
         ) : null}
       </div>
@@ -1719,7 +1812,7 @@ export default function ScanClient({
 
       {asset && activeEditor ? (
         <div className={styles.editorOverlay}>
-          <div className={styles.editorCard} role="dialog" aria-modal="true" aria-labelledby="scan-editor-title">
+          <div className={`${styles.editorCard} ${activeEditor === "fuel" ? styles.fuelEditorCard : ""}`} role="dialog" aria-modal="true" aria-labelledby="scan-editor-title">
             <div className={styles.editorHeader}>
               <div className={styles.editorTitleBlock}>
                 <h3 id="scan-editor-title">
@@ -1730,7 +1823,7 @@ export default function ScanClient({
                         ? "Capture the latest hours"
                         : "Update worked percentage"
                     : activeEditor === "fuel"
-                      ? "Current tank level"
+                      ? "Fuel level"
                       : activeEditor === "service"
                         ? draft.serviceMode === "checked"
                           ? serviceCopy.checkedTitle
@@ -1751,7 +1844,7 @@ export default function ScanClient({
                       ? "Enter the current percentage worked."
                       : "Use the latest reading shown on the machine."
                     : activeEditor === "fuel"
-                      ? "Save the tank level as it is now."
+                      ? "Save the asset fuel gauge as it is now."
                       : activeEditor === "service"
                         ? draft.serviceMode === "checked"
                           ? serviceCopy.checkedPrompt
@@ -1808,31 +1901,41 @@ export default function ScanClient({
               ) : null}
 
               {activeEditor === "fuel" ? (
-                <div className={styles.centerStack}>
-                  <div className={styles.fuelReadout}>
-                    {draft.fuelPercent || (asset.fuelPercent !== null ? String(asset.fuelPercent) : "0")}%
+                <div className={styles.fuelSliderBlock}>
+                  <div className={styles.fuelValueRow}>
+                    <strong>{currentFuelPercent}%</strong>
+                    <span>Asset fuel gauge</span>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    className={styles.rangeInput}
-                    value={draft.fuelPercent || (asset.fuelPercent !== null ? String(asset.fuelPercent) : "0")}
-                    onChange={(event) =>
-                      setDraft((current) => ({
-                        ...current,
-                        fuelPercent: normalizeIntegerInput(event.target.value).slice(0, 3),
-                      }))
-                    }
-                    disabled={isSaving}
-                  />
-                  <div className={styles.quickOptionGrid}>
+                  <div className={styles.sliderTrackWrap}>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      className={styles.rangeInput}
+                      value={currentFuelPercent}
+                      style={{
+                        background: `linear-gradient(90deg, #176b4f 0%, #176b4f ${currentFuelPercent}%, #dce8e4 ${currentFuelPercent}%, #dce8e4 100%)`,
+                      }}
+                      onChange={(event) =>
+                        setDraft((current) => ({
+                          ...current,
+                          fuelPercent: normalizeFuelPercentText(event.target.value),
+                        }))
+                      }
+                      disabled={isSaving}
+                    />
+                    <div className={styles.fuelScale}>
+                      <span>Empty</span>
+                      <span>Full</span>
+                    </div>
+                  </div>
+                  <div className={styles.quickFuelGrid}>
                     {QUICK_FUEL_OPTIONS.map((option) => (
                       <button
                         type="button"
                         key={option}
-                        className={`${styles.choiceButton} ${draft.fuelPercent === String(option) ? styles.choiceButtonActive : ""}`}
+                        className={`${styles.quickFuelButton} ${currentFuelPercent === String(option) ? styles.quickFuelButtonActive : ""}`}
                         onClick={() => setDraft((current) => ({ ...current, fuelPercent: String(option) }))}
                         disabled={isSaving}
                       >
