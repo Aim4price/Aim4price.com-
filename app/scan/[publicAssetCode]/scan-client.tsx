@@ -523,15 +523,15 @@ function servicedOptionsForProfile(profile: AssetServiceProfile): readonly Servi
 function serviceCopyForProfile(profile: AssetServiceProfile) {
   if (profile === "implement") {
     return {
-      checkedDescription: "Quick implement or tool inspection.",
-      servicedDescription: "Routine service, workshop job or wear-part replacement.",
-      repairedDescription: "Breakage, fault or repair completed.",
+      checkedDescription: "Quick inspection.",
+      servicedDescription: "Service or wear-part job.",
+      repairedDescription: "Repair completed.",
       checkedTitle: "Implement check",
       servicedTitle: "Implement service",
       repairedTitle: "Implement repair",
       checkedPrompt: "Tap each implement item that was inspected.",
       servicedPrompt: "Tap each job or replacement that was completed.",
-      repairedPrompt: "Explain exactly what was repaired before saving the maintenance record.",
+      repairedPrompt: "Explain exactly what was repaired before saving.",
       checkedHeader: "What was checked?",
       checkedSubheader: "Select every implement item that was inspected.",
       servicedHeader: "What was serviced?",
@@ -552,15 +552,15 @@ function serviceCopyForProfile(profile: AssetServiceProfile) {
   }
 
   return {
-    checkedDescription: "Quick driver or manager inspection.",
-    servicedDescription: "Routine service, dealer or mechanic job.",
-    repairedDescription: "Breakage, fault or repair completed.",
+    checkedDescription: "Quick inspection.",
+    servicedDescription: "Routine service job.",
+    repairedDescription: "Repair completed.",
     checkedTitle: "Machine check",
     servicedTitle: "Machine service",
     repairedTitle: "Machine repair",
     checkedPrompt: "Tap each item that was inspected.",
     servicedPrompt: "Tap each job that was completed.",
-    repairedPrompt: "Explain exactly what was repaired before saving the maintenance record.",
+    repairedPrompt: "Explain exactly what was repaired before saving.",
     checkedHeader: "What was checked?",
     checkedSubheader: "Select every item that was inspected.",
     servicedHeader: "What was serviced?",
@@ -589,7 +589,7 @@ function buildEditorSummary(editor: EditorKey, asset: ScanSafeAsset | null): str
       : "Capture fuel level";
   }
 
-  if (editor === "service") return "Check asset, note service, or note repairs.";
+  if (editor === "service") return "Check, service or repair.";
 
   if (asset?.photos.length) {
     return `${asset.photos.length} photo${asset.photos.length === 1 ? "" : "s"} stored`;
@@ -1335,7 +1335,7 @@ export default function ScanClient({
     }
 
     if (activeEditor === "service") {
-      if (!draft.serviceMode) return { ok: false, message: "Choose a maintenance type." };
+      if (!draft.serviceMode) return { ok: false, message: "Choose a type." };
 
       const validationServiceCopy = serviceCopyForProfile(resolveAssetServiceProfile(asset));
 
@@ -1592,21 +1592,19 @@ export default function ScanClient({
   const saveButtonLabel = isSaving
     ? "Saving…"
     : activeEditor === "photos" && !draft.photoUrls.length
-      ? "Add photos first"
+      ? "Add photos"
       : activeEditor === "service" && !draft.serviceMode
-        ? "Choose maintenance type"
+        ? "Choose type"
         : activeEditor === "service" && !hasServiceSelection
           ? draft.serviceMode === "checked"
-            ? "Select checked items"
+            ? "Select items"
             : draft.serviceMode === "repaired"
               ? "Explain repair"
-              : "Select service items"
+              : "Select items"
           : serviceDetailsMissing
             ? "Complete details"
             : activeEditor === "service" && (draft.serviceMode === "serviced" || draft.serviceMode === "repaired") && !showServiceDetailsStep
-              ? serviceProfile === "implement"
-                ? "Next: workshop details"
-                : "Next: company details"
+              ? "Next"
               : activeEditor === "usage" && usageUpdateRequired
                 ? "Continue"
                 : "Add update";
@@ -1812,7 +1810,7 @@ export default function ScanClient({
 
       {asset && activeEditor ? (
         <div className={styles.editorOverlay}>
-          <div className={`${styles.editorCard} ${activeEditor === "fuel" ? styles.fuelEditorCard : ""}`} role="dialog" aria-modal="true" aria-labelledby="scan-editor-title">
+          <div className={`${styles.editorCard} ${activeEditor && activeEditor !== "usage" ? styles.actionEditorCard : ""} ${activeEditor === "fuel" ? styles.fuelEditorCard : ""}`} role="dialog" aria-modal="true" aria-labelledby="scan-editor-title">
             <div className={styles.editorHeader}>
               <div className={styles.editorTitleBlock}>
                 <h3 id="scan-editor-title">
@@ -1836,7 +1834,7 @@ export default function ScanClient({
                                 ? "Repair details"
                                 : serviceCopy.repairedTitle
                               : "Maintenance"
-                        : "Add fresh photos"}
+                        : "Add photos"}
                 </h3>
                 <p>
                   {activeEditor === "usage"
@@ -1856,8 +1854,8 @@ export default function ScanClient({
                               ? showServiceDetailsStep
                                 ? serviceCopy.detailsSubheader
                                 : serviceCopy.repairedPrompt
-                              : "Choose the maintenance update type."
-                        : "Upload from gallery or take photos with the camera."}
+                              : "Choose update type."
+                        : "Upload or take photos."}
                 </p>
               </div>
 
@@ -2280,7 +2278,7 @@ export default function ScanClient({
                       </span>
                       <span>
                         <strong>Upload photos</strong>
-                        <small>Choose from gallery</small>
+                        <small>Gallery</small>
                       </span>
                     </button>
                     <button
@@ -2294,7 +2292,7 @@ export default function ScanClient({
                       </span>
                       <span>
                         <strong>Take photos</strong>
-                        <small>Open camera</small>
+                        <small>Camera</small>
                       </span>
                     </button>
                   </div>

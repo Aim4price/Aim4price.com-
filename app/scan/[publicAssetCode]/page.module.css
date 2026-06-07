@@ -1382,6 +1382,22 @@
   font-size: 1.18rem;
 }
 
+.actionEditorCard .editorFooter {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 0;
+  background: transparent;
+  box-shadow: none;
+  padding-top: 0;
+}
+
+.actionEditorCard .editorFooter .secondaryButton {
+  order: 1;
+}
+
+.actionEditorCard .editorFooter .primaryButton {
+  order: 2;
+}
+
 .fuelEditorCard .editorFooter {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   border-top: 0;
