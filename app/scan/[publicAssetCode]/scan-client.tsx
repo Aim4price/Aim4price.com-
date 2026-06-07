@@ -16,6 +16,29 @@ type LocationState = "idle" | "capturing" | "ready" | "error";
 type ScanAssetUsageMode = "hours" | "percent" | "km" | "none";
 type ScanAssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
 type ServiceMode = "" | "checked" | "serviced" | "repaired";
+type PartnerType = "dealer" | "finance" | "insurance";
+type ShareLeadStep = "message" | "consent" | null;
+
+type PartnerDirectoryEntry = {
+  userId: string;
+  partnerType: PartnerType;
+  displayName: string;
+  businessName: string;
+  phone: string;
+  email: string;
+  province: string;
+  townCity: string;
+  addressLine1: string;
+  logoUrl: string;
+  websiteUrl: string;
+  extraPhotoUrls: string[];
+  description: string;
+  latitude: number | null;
+  longitude: number | null;
+  serviceRadiusKm: number | null;
+  brandFocus: string;
+  services: string;
+};
 
 type ScanSafeAsset = {
   id: string;
@@ -83,6 +106,20 @@ type SaveScanEventResponse = {
   pinRequired?: boolean;
 };
 
+type PartnerDirectoryApiResponse = {
+  ok: boolean;
+  partners?: PartnerDirectoryEntry[];
+  error?: string;
+  pinRequired?: boolean;
+};
+
+type DealerShareLeadResponse = {
+  ok: boolean;
+  lead?: unknown;
+  error?: string;
+  pinRequired?: boolean;
+};
+
 type DraftState = {
   hours: string;
   lifeWorkedPercent: string;
@@ -118,6 +155,13 @@ const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
 const QR_PHOTO_MAX_DIMENSION = 1400;
 const QR_PHOTO_JPEG_QUALITY = 0.72;
 const QR_PHOTO_SKIP_COMPRESSION_BYTES = 700 * 1024;
+const SCAN_LEAFLET_SCRIPT_ID = "aim4price-scan-leaflet-script";
+const SCAN_LEAFLET_CSS_ID = "aim4price-scan-leaflet-css";
+const SCAN_LEAFLET_JS_URL = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+const SCAN_LEAFLET_CSS_URL = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+const DEFAULT_DEALER_MAP_CENTER: [number, number] = [-29, 24];
+const DEFAULT_DEALER_MAP_ZOOM = 5;
+let scanLeafletLoaderPromise: Promise<any> | null = null;
 
 type ServiceOption = {
   label: string;
@@ -698,6 +742,146 @@ function buildServiceNote(draft: DraftState): string {
   return note;
 }
 
+declare global {
+  interface Window {
+    L?: any;
+  }
+}
+
+function loadScanLeaflet(): Promise<any> {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return Promise.reject(new Error("Map is only available in the browser."));
+  }
+
+  if (window.L) {
+    return Promise.resolve(window.L);
+  }
+
+  if (scanLeafletLoaderPromise) {
+    return scanLeafletLoaderPromise;
+  }
+
+  scanLeafletLoaderPromise = new Promise((resolve, reject) => {
+    if (!document.getElementById(SCAN_LEAFLET_CSS_ID)) {
+      const link = document.createElement("link");
+      link.id = SCAN_LEAFLET_CSS_ID;
+      link.rel = "stylesheet";
+      link.href = SCAN_LEAFLET_CSS_URL;
+      document.head.appendChild(link);
+    }
+
+    const existingScript = document.getElementById(SCAN_LEAFLET_SCRIPT_ID) as HTMLScriptElement | null;
+
+    const resolveWhenReady = () => {
+      if (window.L) {
+        resolve(window.L);
+      } else {
+        reject(new Error("Map could not be loaded."));
+      }
+    };
+
+    if (existingScript) {
+      existingScript.addEventListener("load", resolveWhenReady, { once: true });
+      existingScript.addEventListener("error", () => reject(new Error("Map could not be loaded.")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = SCAN_LEAFLET_SCRIPT_ID;
+    script.src = SCAN_LEAFLET_JS_URL;
+    script.async = true;
+    script.addEventListener("load", resolveWhenReady, { once: true });
+    script.addEventListener("error", () => reject(new Error("Map could not be loaded.")), { once: true });
+    document.body.appendChild(script);
+  });
+
+  return scanLeafletLoaderPromise;
+}
+
+function dealerPartnerName(partner: PartnerDirectoryEntry): string {
+  return partner.businessName || partner.displayName || "Aim4price dealer";
+}
+
+function dealerPartnerLocation(partner: PartnerDirectoryEntry): string {
+  return [partner.townCity, partner.province].filter(Boolean).join(", ") || "Location not saved";
+}
+
+function dealerPartnerInitial(partner: PartnerDirectoryEntry): string {
+  const name = dealerPartnerName(partner);
+  return name.trim().charAt(0).toUpperCase() || "D";
+}
+
+function dealerPartnerAddress(partner: PartnerDirectoryEntry): string {
+  return [partner.addressLine1, partner.townCity, partner.province].filter(Boolean).join(", ");
+}
+
+function dealerPartnerServicesDisplay(partner: PartnerDirectoryEntry): string {
+  return partner.services || partner.brandFocus || "Dealer services";
+}
+
+function dealerPartnerRadiusDisplay(partner: PartnerDirectoryEntry): string {
+  return partner.serviceRadiusKm && Number.isFinite(partner.serviceRadiusKm)
+    ? `${Math.round(partner.serviceRadiusKm)} km service radius`
+    : "Service radius not saved";
+}
+
+function hasDealerPartnerCoordinates(partner: PartnerDirectoryEntry): boolean {
+  return typeof partner.latitude === "number"
+    && Number.isFinite(partner.latitude)
+    && typeof partner.longitude === "number"
+    && Number.isFinite(partner.longitude);
+}
+
+function normalizeWebsiteHref(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
+function formatWebsiteDisplay(value: string): string {
+  return value.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+}
+
+function normalizePhoneHref(value: string): string {
+  const cleaned = value.replace(/[^+0-9]/g, "");
+  return cleaned ? `tel:${cleaned}` : "";
+}
+
+function normalizeEmailHref(value: string): string {
+  const email = value.trim();
+  return email ? `mailto:${email}` : "";
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function buildDealerPartnerPopupHtml(partner: PartnerDirectoryEntry): string {
+  const name = escapeHtml(dealerPartnerName(partner));
+  const location = escapeHtml(dealerPartnerLocation(partner));
+  const services = escapeHtml(dealerPartnerServicesDisplay(partner));
+  const userId = escapeHtml(partner.userId);
+
+  return `
+    <div class="scanSharePopup">
+      <strong>${name}</strong>
+      <span>${location}</span>
+      <small>${services}</small>
+      <button type="button" class="scanSharePopupChooseButton" data-scan-share-partner-id="${userId}">Send asset</button>
+    </div>
+  `;
+}
+
+function apiErrorMessage(payload: { error?: string } | null | undefined, fallback: string): string {
+  return payload?.error || fallback;
+}
+
 type IconProps = { className?: string };
 
 function MeterIcon({ className }: IconProps) {
@@ -849,10 +1033,23 @@ export default function ScanClient({
   const [showLocationReminder, setShowLocationReminder] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [showServiceDetailsStep, setShowServiceDetailsStep] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [sharePartners, setSharePartners] = useState<PartnerDirectoryEntry[]>([]);
+  const [sharePartnerSearch, setSharePartnerSearch] = useState("");
+  const [selectedSharePartnerId, setSelectedSharePartnerId] = useState("");
+  const [shareOwnerMessage, setShareOwnerMessage] = useState("");
+  const [shareLeadStep, setShareLeadStep] = useState<ShareLeadStep>(null);
+  const [shareConsentAccepted, setShareConsentAccepted] = useState(false);
+  const [isLoadingSharePartners, setIsLoadingSharePartners] = useState(false);
+  const [isSendingShareLead, setIsSendingShareLead] = useState(false);
 
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const autoLocationKeyRef = useRef<string>("");
+  const shareMapElementRef = useRef<HTMLDivElement | null>(null);
+  const shareLeafletMapRef = useRef<any>(null);
+  const shareMarkerLayerRef = useRef<any>(null);
+  const shareMarkersByPartnerRef = useRef<Map<string, any>>(new Map());
 
   useEffect(() => {
     const previousBodyBackground = document.body.style.background;
@@ -898,10 +1095,25 @@ export default function ScanClient({
     setShowLocationReminder(false);
     setIsDone(false);
     setShowServiceDetailsStep(false);
+    setIsShareModalOpen(false);
+    setSharePartners([]);
+    setSharePartnerSearch("");
+    setSelectedSharePartnerId("");
+    setShareOwnerMessage("");
+    setShareLeadStep(null);
+    setShareConsentAccepted(false);
+    setIsLoadingSharePartners(false);
+    setIsSendingShareLead(false);
     setLocationState("idle");
     setLocationMessage(
       "Location must be enabled before this asset QR can continue.",
     );
+    if (shareLeafletMapRef.current) {
+      shareLeafletMapRef.current.remove();
+      shareLeafletMapRef.current = null;
+      shareMarkerLayerRef.current = null;
+      shareMarkersByPartnerRef.current.clear();
+    }
     autoLocationKeyRef.current = "";
   }, [normalizedCode]);
 
@@ -950,13 +1162,120 @@ export default function ScanClient({
   }, [notice]);
 
   useEffect(() => {
-    if (!activeEditor) return undefined;
+    if (!activeEditor && !isShareModalOpen) return undefined;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [activeEditor]);
+  }, [activeEditor, isShareModalOpen]);
+
+  useEffect(() => {
+    if (!isShareModalOpen || !asset) return;
+    void loadSharePartners(sharePartnerSearch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isShareModalOpen, asset?.id]);
+
+  useEffect(() => {
+    if (!isShareModalOpen || shareLeadStep || !shareMapElementRef.current) return undefined;
+
+    const partnersWithCoordinates = sharePartners.filter(hasDealerPartnerCoordinates);
+    let isCancelled = false;
+
+    if (!partnersWithCoordinates.length) {
+      if (shareMarkerLayerRef.current) {
+        shareMarkerLayerRef.current.clearLayers();
+        shareMarkersByPartnerRef.current.clear();
+      }
+      return undefined;
+    }
+
+    async function renderShareMap() {
+      try {
+        const leaflet = await loadScanLeaflet();
+        if (isCancelled || !shareMapElementRef.current) return;
+
+        if (!shareLeafletMapRef.current) {
+          shareLeafletMapRef.current = leaflet
+            .map(shareMapElementRef.current, { scrollWheelZoom: false })
+            .setView(DEFAULT_DEALER_MAP_CENTER, DEFAULT_DEALER_MAP_ZOOM);
+
+          leaflet
+            .tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+              attribution: "&copy; OpenStreetMap contributors",
+              maxZoom: 19,
+            })
+            .addTo(shareLeafletMapRef.current);
+
+          shareMarkerLayerRef.current = leaflet.layerGroup().addTo(shareLeafletMapRef.current);
+        }
+
+        const map = shareLeafletMapRef.current;
+        const markerLayer = shareMarkerLayerRef.current;
+        markerLayer.clearLayers();
+        shareMarkersByPartnerRef.current.clear();
+
+        const bounds = leaflet.latLngBounds([]);
+
+        partnersWithCoordinates.forEach((partner) => {
+          const marker = leaflet.marker([partner.latitude, partner.longitude], {
+            icon: leaflet.divIcon({
+              className: "scanShareMapMarker",
+              html: `<span>${escapeHtml(dealerPartnerInitial(partner))}</span>`,
+              iconSize: [40, 40],
+              iconAnchor: [20, 20],
+            }),
+          });
+
+          marker.bindPopup(buildDealerPartnerPopupHtml(partner), {
+            closeButton: false,
+            maxWidth: 320,
+          });
+
+          marker.on("popupopen", () => {
+            window.setTimeout(() => {
+              const popupElement = marker.getPopup?.()?.getElement?.();
+              const button = popupElement?.querySelector?.("button[data-scan-share-partner-id]") as HTMLButtonElement | null;
+              button?.addEventListener("click", () => openShareLeadMessage(partner), { once: true });
+            }, 0);
+          });
+
+          marker.addTo(markerLayer);
+          shareMarkersByPartnerRef.current.set(partner.userId, marker);
+          bounds.extend([partner.latitude, partner.longitude]);
+        });
+
+        if (bounds.isValid()) {
+          map.fitBounds(bounds.pad(0.22), { maxZoom: 9 });
+        }
+
+        window.setTimeout(() => map.invalidateSize(), 120);
+      } catch {
+        // The dealer list remains usable if the map script cannot be loaded.
+      }
+    }
+
+    void renderShareMap();
+
+    return () => {
+      isCancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isShareModalOpen, shareLeadStep, sharePartners]);
+
+  useEffect(() => {
+    if (!isShareModalOpen || shareLeadStep || !selectedSharePartnerId) return;
+    const selectedPartner = sharePartners.find((partner) => partner.userId === selectedSharePartnerId);
+    if (!selectedPartner || !hasDealerPartnerCoordinates(selectedPartner)) return;
+
+    const map = shareLeafletMapRef.current;
+    const marker = shareMarkersByPartnerRef.current.get(selectedPartner.userId);
+
+    if (!map || !marker) return;
+
+    map.setView([selectedPartner.latitude, selectedPartner.longitude], Math.max(map.getZoom?.() ?? DEFAULT_DEALER_MAP_ZOOM, 8), { animate: true });
+    marker.openPopup();
+  }, [isShareModalOpen, shareLeadStep, selectedSharePartnerId, sharePartners]);
 
   useEffect(() => {
     if (!asset?.id) return;
@@ -1228,8 +1547,198 @@ export default function ScanClient({
     setActiveEditor(null);
   }
 
+  function removeShareMap() {
+    if (shareLeafletMapRef.current) {
+      shareLeafletMapRef.current.remove();
+      shareLeafletMapRef.current = null;
+    }
+
+    shareMarkerLayerRef.current = null;
+    shareMarkersByPartnerRef.current.clear();
+  }
+
+  function resetShareFlow() {
+    setSharePartnerSearch("");
+    setSelectedSharePartnerId("");
+    setShareOwnerMessage("");
+    setShareLeadStep(null);
+    setShareConsentAccepted(false);
+  }
+
+  function closeShareModal() {
+    if (isSaving || isSendingShareLead) return;
+    setIsShareModalOpen(false);
+    setSharePartners([]);
+    resetShareFlow();
+    removeShareMap();
+  }
+
+  async function loadSharePartners(searchValue = sharePartnerSearch) {
+    setIsLoadingSharePartners(true);
+
+    try {
+      const query = searchValue.trim() ? `?search=${encodeURIComponent(searchValue.trim())}` : "";
+      const response = await fetch(
+        `/api/scan/assets/${encodeURIComponent(normalizedCode)}/dealer-share${query}`,
+        {
+          credentials: "include",
+          cache: "no-store",
+        },
+      );
+      const data = (await response.json().catch(() => null)) as PartnerDirectoryApiResponse | null;
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(apiErrorMessage(data, "Failed to load local dealers."));
+      }
+
+      const nextPartners = data.partners ?? [];
+      setSharePartners(nextPartners);
+      setSelectedSharePartnerId((current) => {
+        if (!current) return current;
+        return nextPartners.some((partner) => partner.userId === current) ? current : "";
+      });
+    } catch (error) {
+      setSharePartners([]);
+      setNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "Failed to load local dealers.",
+      });
+    } finally {
+      setIsLoadingSharePartners(false);
+    }
+  }
+
+  function handleShareSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void loadSharePartners(sharePartnerSearch);
+  }
+
   function handleShareTap() {
-    setNotice({ tone: "success", message: "Share button added for the new layout. The share action can be connected next." });
+    if (!asset) return;
+
+    if (needsUsageUpdateBeforeActions(asset, pendingUpdate)) {
+      setNotice({ tone: "error", message: requiredUsageCopy(asset) });
+      openEditor("usage");
+      return;
+    }
+
+    if (!hasLocationCaptured(draft)) {
+      setNotice({ tone: "error", message: "GPS is required before sending this asset to a dealer." });
+      void captureLocation(false);
+      return;
+    }
+
+    resetShareFlow();
+    setShareOwnerMessage(
+      `Please assist with ${asset.title}.${asset.serialNumber ? ` Serial number: ${asset.serialNumber}.` : ""}`,
+    );
+    setIsShareModalOpen(true);
+    setNotice(null);
+  }
+
+  function selectSharePartner(partner: PartnerDirectoryEntry) {
+    setSelectedSharePartnerId(partner.userId);
+
+    if (hasDealerPartnerCoordinates(partner)) {
+      const map = shareLeafletMapRef.current;
+      const marker = shareMarkersByPartnerRef.current.get(partner.userId);
+
+      if (map && marker) {
+        map.setView([partner.latitude, partner.longitude], Math.max(map.getZoom?.() ?? DEFAULT_DEALER_MAP_ZOOM, 8), { animate: true });
+        marker.openPopup();
+      }
+    }
+  }
+
+  function openShareLeadMessage(partner: PartnerDirectoryEntry) {
+    setSelectedSharePartnerId(partner.userId);
+    setShareLeadStep("message");
+    setShareConsentAccepted(false);
+    removeShareMap();
+  }
+
+  function goBackToShareMap() {
+    if (isSendingShareLead) return;
+    setShareLeadStep(null);
+    setShareConsentAccepted(false);
+  }
+
+  function goToShareConsent() {
+    if (!selectedSharePartnerId) {
+      setNotice({ tone: "error", message: "Choose a dealer before sending." });
+      return;
+    }
+
+    setShareConsentAccepted(false);
+    setShareLeadStep("consent");
+  }
+
+  async function handleSendDealerShareLead() {
+    if (!asset) return;
+
+    const selectedPartner = sharePartners.find((partner) => partner.userId === selectedSharePartnerId);
+
+    if (!selectedPartner) {
+      setNotice({ tone: "error", message: "Choose a dealer before sending." });
+      return;
+    }
+
+    if (!shareConsentAccepted) {
+      setNotice({ tone: "error", message: "Confirm that the asset may be sent to the dealer." });
+      return;
+    }
+
+    if (operatorName.trim().length < 2) {
+      setNotice({ tone: "error", message: "Enter your name before sending to a dealer." });
+      return;
+    }
+
+    const shareLatitude = pendingUpdate.latitude || draft.latitude;
+    const shareLongitude = pendingUpdate.longitude || draft.longitude;
+
+    setIsSendingShareLead(true);
+
+    try {
+      const saved = await persistPendingScanUpdate();
+      if (!saved) return;
+
+      const response = await fetch(
+        `/api/scan/assets/${encodeURIComponent(normalizedCode)}/dealer-share`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            partnerUserId: selectedPartner.userId,
+            ownerMessage: shareOwnerMessage,
+            operatorName: operatorName.trim(),
+            latitude: shareLatitude,
+            longitude: shareLongitude,
+          }),
+        },
+      );
+      const data = (await response.json().catch(() => null)) as DealerShareLeadResponse | null;
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(apiErrorMessage(data, "Failed to send the asset to the dealer."));
+      }
+
+      setIsShareModalOpen(false);
+      setSharePartners([]);
+      resetShareFlow();
+      removeShareMap();
+      setNotice({
+        tone: "success",
+        message: `Asset sent to ${dealerPartnerName(selectedPartner)} as a dealer lead.`,
+      });
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "Failed to send the asset to the dealer.",
+      });
+    } finally {
+      setIsSendingShareLead(false);
+    }
   }
 
   function handleFuelTap() {
@@ -1489,15 +1998,11 @@ export default function ScanClient({
     }, 80);
   }
 
-  async function handleDone() {
-    if (!asset) {
-      closeDoneSession();
-      return;
-    }
+  async function persistPendingScanUpdate(): Promise<ScanSafeAsset | null> {
+    if (!asset) return null;
 
     if (!hasPendingScanUpdate(pendingUpdate)) {
-      closeDoneSession();
-      return;
+      return asset;
     }
 
     const finalLatitude = pendingUpdate.latitude || draft.latitude;
@@ -1505,13 +2010,13 @@ export default function ScanClient({
 
     if (operatorName.trim().length < 2) {
       setNotice({ tone: "error", message: "Enter your name before saving." });
-      return;
+      return null;
     }
 
     if (!finalLatitude.trim() || !finalLongitude.trim()) {
-      setNotice({ tone: "error", message: "Location is required. Allow GPS before tapping Done." });
+      setNotice({ tone: "error", message: "Location is required. Allow GPS before saving." });
       void captureLocation(false);
-      return;
+      return null;
     }
 
     setIsSaving(true);
@@ -1552,14 +2057,28 @@ export default function ScanClient({
       setAssetPreview(data.asset);
       setPendingUpdate(initialPendingUpdate);
       setDraft(initialDraft);
-      closeDoneSession();
+      return data.asset;
     } catch (error) {
       setNotice({
         tone: "error",
         message: error instanceof Error ? error.message : "Failed to save the QR update.",
       });
+      return null;
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleDone() {
+    if (!asset) {
+      closeDoneSession();
+      return;
+    }
+
+    const saved = await persistPendingScanUpdate();
+
+    if (saved) {
+      closeDoneSession();
     }
   }
 
@@ -1608,6 +2127,17 @@ export default function ScanClient({
               : activeEditor === "usage" && usageUpdateRequired
                 ? "Continue"
                 : "Add update";
+  const selectedSharePartner = useMemo(
+    () => sharePartners.find((partner) => partner.userId === selectedSharePartnerId) ?? null,
+    [sharePartners, selectedSharePartnerId],
+  );
+  const selectedSharePartnerPhoneHref = selectedSharePartner ? normalizePhoneHref(selectedSharePartner.phone) : "";
+  const selectedSharePartnerEmailHref = selectedSharePartner ? normalizeEmailHref(selectedSharePartner.email) : "";
+  const selectedSharePartnerWebsiteHref = selectedSharePartner ? normalizeWebsiteHref(selectedSharePartner.websiteUrl) : "";
+  const sharePartnersWithCoordinates = useMemo(
+    () => sharePartners.filter(hasDealerPartnerCoordinates),
+    [sharePartners],
+  );
 
   if (isDone) {
     return (
@@ -1760,7 +2290,7 @@ export default function ScanClient({
                     <span className={styles.actionIconWrap}><ShareIcon className={styles.actionIcon} /></span>
                     <span className={styles.actionTextBlock}>
                       <strong>Share</strong>
-                      <small>Coming next</small>
+                      <small>Dealer help</small>
                     </span>
                   </button>
 
@@ -1813,6 +2343,182 @@ export default function ScanClient({
               Continue
             </button>
           </div>
+        </div>
+      ) : null}
+
+      {asset && isShareModalOpen ? (
+        <div className={styles.shareOverlay}>
+          <div className={styles.modalBackdrop} onClick={closeShareModal} />
+          <section className={styles.shareModal} role="dialog" aria-modal="true" aria-labelledby="share-modal-title">
+            <header className={styles.shareHeader}>
+              <div className={styles.shareTitleBlock}>
+                <span>Dealer help</span>
+                <h3 id="share-modal-title">
+                  {shareLeadStep === "consent"
+                    ? "Confirm dealer lead"
+                    : shareLeadStep === "message"
+                      ? "Message to dealer"
+                      : "Send asset to dealer"}
+                </h3>
+                <p>Choose a local dealer and send the asset details, serial number, photos and latest QR update as a normal dealer lead.</p>
+              </div>
+              <button type="button" className={styles.iconButton} onClick={closeShareModal} aria-label="Close dealer share">
+                <CloseIcon className={styles.closeIcon} />
+              </button>
+            </header>
+
+            {!shareLeadStep ? (
+              <div className={styles.shareBody}>
+                <form className={styles.shareSearchBar} onSubmit={handleShareSearchSubmit}>
+                  <input
+                    type="search"
+                    placeholder="Search dealer, town, province or brand"
+                    value={sharePartnerSearch}
+                    onChange={(event) => setSharePartnerSearch(event.target.value)}
+                  />
+                  <button type="submit" className={styles.secondaryButton} disabled={isLoadingSharePartners}>
+                    {isLoadingSharePartners ? "Loading…" : "Search"}
+                  </button>
+                </form>
+
+                <div className={styles.shareMapStage}>
+                  <div className={styles.shareDealerList} aria-label="Dealer list">
+                    {isLoadingSharePartners ? (
+                      <div className={styles.shareEmptyState}>Loading approved dealers…</div>
+                    ) : null}
+
+                    {!isLoadingSharePartners && !sharePartners.length ? (
+                      <div className={styles.shareEmptyState}>No approved dealers found. Try a wider search.</div>
+                    ) : null}
+
+                    {sharePartners.map((partner) => (
+                      <button
+                        key={partner.userId}
+                        type="button"
+                        className={`${styles.shareDealerCard} ${selectedSharePartnerId === partner.userId ? styles.shareDealerCardActive : ""}`}
+                        onClick={() => selectSharePartner(partner)}
+                      >
+                        <span className={styles.shareDealerLogo}>
+                          {partner.logoUrl ? <img src={partner.logoUrl} alt="" /> : dealerPartnerInitial(partner)}
+                        </span>
+                        <span className={styles.shareDealerMeta}>
+                          <strong>{dealerPartnerName(partner)}</strong>
+                          <small>{dealerPartnerLocation(partner)}</small>
+                          <em>{dealerPartnerServicesDisplay(partner)}</em>
+                        </span>
+                        <span className={styles.shareDealerAction}>Select</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className={styles.shareMapShell}>
+                    {sharePartnersWithCoordinates.length ? (
+                      <div ref={shareMapElementRef} className={styles.shareMapCanvas} aria-label="Dealer map" />
+                    ) : (
+                      <div className={styles.shareMapFallback}>
+                        Dealer map pins are not available for the current results. Select a dealer from the list.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {selectedSharePartner ? (
+                  <div className={styles.shareSelectedPanel}>
+                    <div>
+                      <span>Selected dealer</span>
+                      <strong>{dealerPartnerName(selectedSharePartner)}</strong>
+                      <small>{dealerPartnerLocation(selectedSharePartner)} · {dealerPartnerRadiusDisplay(selectedSharePartner)}</small>
+                    </div>
+                    <button type="button" className={styles.primaryButton} onClick={() => openShareLeadMessage(selectedSharePartner)}>
+                      Send asset to this dealer
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : shareLeadStep === "message" && selectedSharePartner ? (
+              <>
+                <div className={styles.shareBody}>
+                  <div className={styles.shareSelectedPanel}>
+                    <div>
+                      <span>Dealer selected</span>
+                      <strong>{dealerPartnerName(selectedSharePartner)}</strong>
+                      <small>{dealerPartnerAddress(selectedSharePartner) || dealerPartnerLocation(selectedSharePartner)}</small>
+                    </div>
+                  </div>
+
+                  <div className={styles.shareContactList}>
+                    {selectedSharePartner.phone && selectedSharePartnerPhoneHref ? <a href={selectedSharePartnerPhoneHref}>Call {selectedSharePartner.phone}</a> : null}
+                    {selectedSharePartner.email && selectedSharePartnerEmailHref ? <a href={selectedSharePartnerEmailHref}>Email {selectedSharePartner.email}</a> : null}
+                    {selectedSharePartner.websiteUrl && selectedSharePartnerWebsiteHref ? (
+                      <a href={selectedSharePartnerWebsiteHref} target="_blank" rel="noreferrer">
+                        {formatWebsiteDisplay(selectedSharePartner.websiteUrl)}
+                      </a>
+                    ) : null}
+                  </div>
+
+                  <label className={`${styles.field} ${styles.shareMessageField}`}>
+                    <span>Message to dealer</span>
+                    <textarea
+                      value={shareOwnerMessage}
+                      onChange={(event) => setShareOwnerMessage(event.target.value.slice(0, 1600))}
+                      placeholder="Example: Please quote repair help or replacement parts for this asset."
+                    />
+                  </label>
+                </div>
+                <footer className={styles.shareFooter}>
+                  <button type="button" className={styles.secondaryButton} onClick={goBackToShareMap} disabled={isSendingShareLead || isSaving}>
+                    Back
+                  </button>
+                  <button type="button" className={styles.primaryButton} onClick={goToShareConsent} disabled={isSendingShareLead || isSaving}>
+                    Next
+                  </button>
+                </footer>
+              </>
+            ) : shareLeadStep === "consent" && selectedSharePartner ? (
+              <>
+                <div className={styles.shareBody}>
+                  <div className={styles.shareStepHeader}>
+                    <strong>{dealerPartnerName(selectedSharePartner)}</strong>
+                    <span>The asset will be sent as a replacement quote / dealer help lead.</span>
+                  </div>
+
+                  <div className={styles.sharePopiaBox}>
+                    <strong>Information included</strong>
+                    <p>Asset details, latest QR update, serial number, valuation summary, main photos and relevant documents will be shared with this dealer so they can respond through Aim4price.</p>
+                  </div>
+
+                  <label className={styles.shareConsentCheck}>
+                    <input
+                      type="checkbox"
+                      checked={shareConsentAccepted}
+                      onChange={(event) => setShareConsentAccepted(event.target.checked)}
+                    />
+                    <span>I confirm this asset may be sent to the selected dealer for help.</span>
+                  </label>
+                </div>
+                <footer className={styles.shareFooter}>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setShareLeadStep("message")} disabled={isSendingShareLead || isSaving}>
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => void handleSendDealerShareLead()}
+                    disabled={isSendingShareLead || isSaving || !shareConsentAccepted}
+                  >
+                    {isSendingShareLead || isSaving ? "Sending…" : "Send to dealer"}
+                  </button>
+                </footer>
+              </>
+            ) : (
+              <div className={styles.shareBody}>
+                <div className={styles.shareEmptyState}>Choose a dealer again before sending.</div>
+                <button type="button" className={styles.secondaryButton} onClick={goBackToShareMap}>
+                  Back to dealers
+                </button>
+              </div>
+            )}
+          </section>
         </div>
       ) : null}
 
