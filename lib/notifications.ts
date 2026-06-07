@@ -124,6 +124,20 @@ function leadTone(status: AssetLeadStatus): HeaderNotificationTone {
   return 'info';
 }
 
+function isQrDealerHelpLead(lead: AssetLead): boolean {
+  const sections = asRecord(lead.includedSections);
+  const source = asText(sections.source).toLowerCase();
+
+  return source === 'asset_qr_share' || source === 'qr_dealer_help' || source === 'scan_share';
+}
+
+function qrDealerHelpOperatorName(lead: AssetLead): string {
+  const sections = asRecord(lead.includedSections);
+  const operatorName = asText(sections.operatorName) || asText(sections.operator_name);
+
+  return operatorName || 'A manager';
+}
+
 function assetTitleFromLead(lead: AssetLead): string {
   const snapshot = asRecord(lead.assetSnapshot);
   const title = asText(snapshot.title);
@@ -208,13 +222,27 @@ async function listOwnerLeadNotifications(userId: string): Promise<HeaderNotific
 
     return leads
       .filter((lead) => lead.ownerUserId === userId)
-      .filter((lead) => lead.status !== 'sent')
+      .filter((lead) => lead.status !== 'sent' || isQrDealerHelpLead(lead))
       .filter((lead) => isWithinDays(lead.updatedAtIso || lead.createdAtIso, RECENT_LEAD_DAYS))
       .map((lead) => {
         const partner = lead.partnerBusinessName || lead.partnerName || 'A partner';
         const typeLabel = leadTypeLabel(lead.leadType);
         const statusLabel = leadStatusLabel(lead.status);
         const assetTitle = assetTitleFromLead(lead);
+
+        if (lead.status === 'sent' && isQrDealerHelpLead(lead)) {
+          const managerName = qrDealerHelpOperatorName(lead);
+
+          return {
+            id: `lead-owner-qr-help:${lead.id}:${lead.updatedAtIso}`,
+            category: 'lead',
+            tone: 'info',
+            title: 'Asset sent to dealer',
+            body: `${managerName} updated ${assetTitle} and sent the asset to ${partner} for dealer help.`,
+            href: '/leads',
+            createdAtIso: isoFallback(lead.updatedAtIso || lead.createdAtIso),
+          } satisfies HeaderNotificationItem;
+        }
 
         return {
           id: `lead-owner:${lead.id}:${lead.status}:${lead.updatedAtIso}`,
