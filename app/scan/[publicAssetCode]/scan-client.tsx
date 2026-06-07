@@ -523,60 +523,60 @@ function servicedOptionsForProfile(profile: AssetServiceProfile): readonly Servi
 function serviceCopyForProfile(profile: AssetServiceProfile) {
   if (profile === "implement") {
     return {
-      checkedDescription: "Quick inspection.",
-      servicedDescription: "Service or wear-part job.",
-      repairedDescription: "Repair completed.",
-      checkedTitle: "Implement check",
-      servicedTitle: "Implement service",
-      repairedTitle: "Implement repair",
-      checkedPrompt: "Tap each implement item that was inspected.",
-      servicedPrompt: "Tap each job or replacement that was completed.",
-      repairedPrompt: "Explain exactly what was repaired before saving.",
-      checkedHeader: "What was checked?",
-      checkedSubheader: "Select every implement item that was inspected.",
-      servicedHeader: "What was serviced?",
-      servicedSubheader: "Select all work completed, then continue to workshop details.",
-      repairedHeader: "What was repaired?",
-      repairedSubheader: "Write a clear repair note. Example: what failed, what was fixed and what was replaced.",
-      detailsHeader: "Who completed the work?",
-      detailsSubheader: "Add the company and technician name before saving.",
+      checkedDescription: "Inspection.",
+      servicedDescription: "Service job.",
+      repairedDescription: "Repair job.",
+      checkedTitle: "Check",
+      servicedTitle: "Service",
+      repairedTitle: "Repair",
+      checkedPrompt: "Select inspected items.",
+      servicedPrompt: "Select work done.",
+      repairedPrompt: "Fault · fix · parts.",
+      checkedHeader: "Checked items",
+      checkedSubheader: "Select every item inspected.",
+      servicedHeader: "Service work",
+      servicedSubheader: "Select work completed.",
+      repairedHeader: "Repair note",
+      repairedSubheader: "Capture the fault, fix and parts replaced.",
+      detailsHeader: "Who did the work?",
+      detailsSubheader: "Company and technician.",
       companyLabel: "Company / Workshop",
       companyPlaceholder: "Company or workshop name",
-      mechanicLabel: "Mechanic / Technician name",
-      mechanicPlaceholder: "Mechanic or technician name",
-      checkedNotePlaceholder: "Example: Bolts checked, pins checked, no visible cracks.",
-      servicedNotePlaceholder: "Example: Replaced worn points, tightened bolts and greased pins.",
-      repairedNotePlaceholder: "Example: Repaired cracked bracket, replaced two bushes and checked welds.",
-      repairedExtraNotePlaceholder: "Optional: add extra repair notes, parts used or follow-up needed.",
+      mechanicLabel: "Technician name",
+      mechanicPlaceholder: "Technician name",
+      checkedNotePlaceholder: "Example: bolts checked, pins checked, no visible cracks.",
+      servicedNotePlaceholder: "Example: replaced points, tightened bolts and greased pins.",
+      repairedNotePlaceholder: "Example: cracked bracket repaired; two bushes replaced; welds checked.",
+      repairedExtraNotePlaceholder: "Optional: parts used or follow-up needed.",
     };
   }
 
   return {
-    checkedDescription: "Quick inspection.",
-    servicedDescription: "Routine service job.",
-    repairedDescription: "Repair completed.",
-    checkedTitle: "Machine check",
-    servicedTitle: "Machine service",
-    repairedTitle: "Machine repair",
-    checkedPrompt: "Tap each item that was inspected.",
-    servicedPrompt: "Tap each job that was completed.",
-    repairedPrompt: "Explain exactly what was repaired before saving.",
-    checkedHeader: "What was checked?",
-    checkedSubheader: "Select every item that was inspected.",
-    servicedHeader: "What was serviced?",
-    servicedSubheader: "Select all work completed, then continue to company details.",
-    repairedHeader: "What was repaired?",
-    repairedSubheader: "Write a clear repair note. Example: what failed, what was fixed and what was replaced.",
-    detailsHeader: "Who completed the service?",
-    detailsSubheader: "Add the company and mechanic name before saving.",
+    checkedDescription: "Inspection.",
+    servicedDescription: "Service job.",
+    repairedDescription: "Repair job.",
+    checkedTitle: "Check",
+    servicedTitle: "Service",
+    repairedTitle: "Repair",
+    checkedPrompt: "Select inspected items.",
+    servicedPrompt: "Select work done.",
+    repairedPrompt: "Fault · fix · parts.",
+    checkedHeader: "Checked items",
+    checkedSubheader: "Select every item inspected.",
+    servicedHeader: "Service work",
+    servicedSubheader: "Select work completed.",
+    repairedHeader: "Repair note",
+    repairedSubheader: "Capture the fault, fix and parts replaced.",
+    detailsHeader: "Who did the work?",
+    detailsSubheader: "Company and mechanic.",
     companyLabel: "Company / Dealer",
     companyPlaceholder: "Company or dealer name",
     mechanicLabel: "Mechanic name",
     mechanicPlaceholder: "Mechanic name",
-    checkedNotePlaceholder: "Example: Oil checked, tyres checked, no visible leaks.",
-    servicedNotePlaceholder: "Example: Full service completed, oil and filters replaced.",
-    repairedNotePlaceholder: "Example: Repaired hydraulic leak, replaced hose and tested pressure.",
-    repairedExtraNotePlaceholder: "Optional: add extra repair notes, parts used or follow-up needed.",
+    checkedNotePlaceholder: "Example: oil checked, tyres checked, no visible leaks.",
+    servicedNotePlaceholder: "Example: full service completed; oil and filters replaced.",
+    repairedNotePlaceholder: "Example: hydraulic leak repaired; hose replaced; pressure tested.",
+    repairedExtraNotePlaceholder: "Optional: parts used or follow-up needed.",
   };
 }
 
@@ -589,7 +589,7 @@ function buildEditorSummary(editor: EditorKey, asset: ScanSafeAsset | null): str
       : "Capture fuel level";
   }
 
-  if (editor === "service") return "Check, service or repair.";
+  if (editor === "service") return "Check · service · repair";
 
   if (asset?.photos.length) {
     return `${asset.photos.length} photo${asset.photos.length === 1 ? "" : "s"} stored`;
@@ -1758,26 +1758,34 @@ export default function ScanClient({
                 <section className={styles.actionGrid}>
                   <button type="button" className={styles.actionCard} onClick={handleShareTap}>
                     <span className={styles.actionIconWrap}><ShareIcon className={styles.actionIcon} /></span>
-                    <strong>Share</strong>
-                    <small>Coming next</small>
+                    <span className={styles.actionTextBlock}>
+                      <strong>Share</strong>
+                      <small>Coming next</small>
+                    </span>
                   </button>
 
                   <button type="button" className={styles.actionCard} onClick={handleFuelTap}>
                     <span className={styles.actionIconWrap}><FuelIcon className={styles.actionIcon} /></span>
-                    <strong>Fuel</strong>
-                    <small>{showFuelAction ? buildEditorSummary("fuel", asset) : "Fuel tracking not enabled"}</small>
+                    <span className={styles.actionTextBlock}>
+                      <strong>Fuel</strong>
+                      <small>{showFuelAction ? buildEditorSummary("fuel", asset) : "Not enabled"}</small>
+                    </span>
                   </button>
 
                   <button type="button" className={styles.actionCard} onClick={() => openEditor("service")}>
                     <span className={styles.actionIconWrap}><WrenchIcon className={styles.actionIcon} /></span>
-                    <strong>Maintenance</strong>
-                    <small>{buildEditorSummary("service", asset)}</small>
+                    <span className={styles.actionTextBlock}>
+                      <strong>Maintenance</strong>
+                      <small>{buildEditorSummary("service", asset)}</small>
+                    </span>
                   </button>
 
                   <button type="button" className={styles.actionCard} onClick={() => openEditor("photos")}>
                     <span className={styles.actionIconWrap}><CameraIcon className={styles.actionIcon} /></span>
-                    <strong>Photos</strong>
-                    <small>{buildEditorSummary("photos", asset)}</small>
+                    <span className={styles.actionTextBlock}>
+                      <strong>Photos</strong>
+                      <small>{buildEditorSummary("photos", asset)}</small>
+                    </span>
                   </button>
                 </section>
 
@@ -1831,7 +1839,7 @@ export default function ScanClient({
                               : serviceCopy.servicedTitle
                             : draft.serviceMode === "repaired"
                               ? showServiceDetailsStep
-                                ? "Repair details"
+                                ? "Repairer details"
                                 : serviceCopy.repairedTitle
                               : "Maintenance"
                         : "Add photos"}
@@ -2041,10 +2049,10 @@ export default function ScanClient({
                           </strong>
                           <small>
                             {draft.serviceMode === "checked"
-                              ? "Complete this checked record before starting another update."
+                              ? "Inspection record"
                               : draft.serviceMode === "repaired"
-                                ? "Complete this repair record before starting another update."
-                                : "Complete this service record before starting another update."}
+                                ? "Repair record"
+                                : "Service record"}
                           </small>
                         </span>
                       </div>
@@ -2206,6 +2214,7 @@ export default function ScanClient({
                           <label className={styles.field}>
                             <span>Repair details</span>
                             <textarea
+                              className={styles.mainNoteInput}
                               placeholder={serviceCopy.repairedNotePlaceholder}
                               value={draft.repairDetails}
                               onChange={(event) => setDraft((current) => ({ ...current, repairDetails: event.target.value.slice(0, 1600) }))}
@@ -2216,6 +2225,7 @@ export default function ScanClient({
                           <label className={styles.field}>
                             <span>Extra notes</span>
                             <textarea
+                              className={styles.compactTextarea}
                               placeholder={serviceCopy.repairedExtraNotePlaceholder}
                               value={draft.note}
                               onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
@@ -2226,7 +2236,7 @@ export default function ScanClient({
                       ) : (
                         <div className={styles.serviceDetailsCard}>
                           <div className={styles.serviceSectionHeader}>
-                            <strong>Who completed the repair?</strong>
+                            <strong>{serviceCopy.detailsHeader}</strong>
                             <small>{serviceCopy.detailsSubheader}</small>
                           </div>
 
