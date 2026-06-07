@@ -1692,10 +1692,10 @@
 
 .shareMapStage {
   flex: 1 1 auto;
-  min-height: 28rem;
+  min-height: 31rem;
   display: grid;
-  grid-template-columns: minmax(17rem, 0.86fr) minmax(0, 1.14fr);
-  gap: 0.82rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
 }
 
 .shareDealerList,
@@ -1831,7 +1831,7 @@
 .shareMapShell {
   position: relative;
   display: grid;
-  min-height: 28rem;
+  min-height: 31rem;
   background: #eaf1f4;
 }
 
@@ -2093,12 +2093,8 @@
     grid-template-columns: 1fr;
   }
 
-  .shareDealerList {
-    max-height: 42dvh;
-  }
-
   .shareMapShell {
-    min-height: 17rem;
+    min-height: clamp(22rem, 50dvh, 32rem);
   }
 }
 

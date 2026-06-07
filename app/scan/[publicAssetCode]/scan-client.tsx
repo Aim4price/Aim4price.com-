@@ -819,12 +819,6 @@ function dealerPartnerServicesDisplay(partner: PartnerDirectoryEntry): string {
   return partner.services || partner.brandFocus || "Dealer services";
 }
 
-function dealerPartnerRadiusDisplay(partner: PartnerDirectoryEntry): string {
-  return partner.serviceRadiusKm && Number.isFinite(partner.serviceRadiusKm)
-    ? `${Math.round(partner.serviceRadiusKm)} km service radius`
-    : "Service radius not saved";
-}
-
 function hasDealerPartnerCoordinates(partner: PartnerDirectoryEntry): boolean {
   return typeof partner.latitude === "number"
     && Number.isFinite(partner.latitude)
@@ -873,7 +867,7 @@ function buildDealerPartnerPopupHtml(partner: PartnerDirectoryEntry): string {
       <strong>${name}</strong>
       <span>${location}</span>
       <small>${services}</small>
-      <button type="button" class="scanSharePopupChooseButton" data-scan-share-partner-id="${userId}">Send asset</button>
+      <button type="button" class="scanSharePopupChooseButton" data-scan-share-partner-id="${userId}">Get assistance</button>
     </div>
   `;
 }
@@ -1636,20 +1630,6 @@ export default function ScanClient({
     setNotice(null);
   }
 
-  function selectSharePartner(partner: PartnerDirectoryEntry) {
-    setSelectedSharePartnerId(partner.userId);
-
-    if (hasDealerPartnerCoordinates(partner)) {
-      const map = shareLeafletMapRef.current;
-      const marker = shareMarkersByPartnerRef.current.get(partner.userId);
-
-      if (map && marker) {
-        map.setView([partner.latitude, partner.longitude], Math.max(map.getZoom?.() ?? DEFAULT_DEALER_MAP_ZOOM, 8), { animate: true });
-        marker.openPopup();
-      }
-    }
-  }
-
   function openShareLeadMessage(partner: PartnerDirectoryEntry) {
     setSelectedSharePartnerId(partner.userId);
     setShareLeadStep("message");
@@ -1724,12 +1704,17 @@ export default function ScanClient({
       }
 
       setIsShareModalOpen(false);
+      setActiveEditor(null);
+      setIsDone(false);
       setSharePartners([]);
       resetShareFlow();
       removeShareMap();
       setNotice({
         tone: "success",
-        message: `Asset sent to ${dealerPartnerName(selectedPartner)} as a dealer lead.`,
+        message: `Dealer request sent to ${dealerPartnerName(selectedPartner)}.`,
+      });
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
       });
     } catch (error) {
       setNotice({
@@ -2355,12 +2340,12 @@ export default function ScanClient({
                 <span>Dealer help</span>
                 <h3 id="share-modal-title">
                   {shareLeadStep === "consent"
-                    ? "Confirm dealer lead"
+                    ? "Confirm request"
                     : shareLeadStep === "message"
                       ? "Message to dealer"
-                      : "Send asset to dealer"}
+                      : "Get assistance"}
                 </h3>
-                <p>Choose a local dealer and send the asset details, serial number, photos and latest QR update as a normal dealer lead.</p>
+                <p>Get parts quotes, repair help or dealer support.</p>
               </div>
               <button type="button" className={styles.iconButton} onClick={closeShareModal} aria-label="Close dealer share">
                 <CloseIcon className={styles.closeIcon} />
@@ -2382,58 +2367,20 @@ export default function ScanClient({
                 </form>
 
                 <div className={styles.shareMapStage}>
-                  <div className={styles.shareDealerList} aria-label="Dealer list">
-                    {isLoadingSharePartners ? (
-                      <div className={styles.shareEmptyState}>Loading approved dealers…</div>
-                    ) : null}
-
-                    {!isLoadingSharePartners && !sharePartners.length ? (
-                      <div className={styles.shareEmptyState}>No approved dealers found. Try a wider search.</div>
-                    ) : null}
-
-                    {sharePartners.map((partner) => (
-                      <button
-                        key={partner.userId}
-                        type="button"
-                        className={`${styles.shareDealerCard} ${selectedSharePartnerId === partner.userId ? styles.shareDealerCardActive : ""}`}
-                        onClick={() => selectSharePartner(partner)}
-                      >
-                        <span className={styles.shareDealerLogo}>
-                          {partner.logoUrl ? <img src={partner.logoUrl} alt="" /> : dealerPartnerInitial(partner)}
-                        </span>
-                        <span className={styles.shareDealerMeta}>
-                          <strong>{dealerPartnerName(partner)}</strong>
-                          <small>{dealerPartnerLocation(partner)}</small>
-                          <em>{dealerPartnerServicesDisplay(partner)}</em>
-                        </span>
-                        <span className={styles.shareDealerAction}>Select</span>
-                      </button>
-                    ))}
-                  </div>
-
                   <div className={styles.shareMapShell}>
-                    {sharePartnersWithCoordinates.length ? (
+                    {isLoadingSharePartners && !sharePartnersWithCoordinates.length ? (
+                      <div className={styles.shareMapFallback}>Loading approved dealers…</div>
+                    ) : sharePartnersWithCoordinates.length ? (
                       <div ref={shareMapElementRef} className={styles.shareMapCanvas} aria-label="Dealer map" />
                     ) : (
                       <div className={styles.shareMapFallback}>
-                        Dealer map pins are not available for the current results. Select a dealer from the list.
+                        {!sharePartners.length
+                          ? "No approved dealers found. Try a wider search."
+                          : "Map pins are not available for the current dealer results."}
                       </div>
                     )}
                   </div>
                 </div>
-
-                {selectedSharePartner ? (
-                  <div className={styles.shareSelectedPanel}>
-                    <div>
-                      <span>Selected dealer</span>
-                      <strong>{dealerPartnerName(selectedSharePartner)}</strong>
-                      <small>{dealerPartnerLocation(selectedSharePartner)} · {dealerPartnerRadiusDisplay(selectedSharePartner)}</small>
-                    </div>
-                    <button type="button" className={styles.primaryButton} onClick={() => openShareLeadMessage(selectedSharePartner)}>
-                      Send asset to this dealer
-                    </button>
-                  </div>
-                ) : null}
               </div>
             ) : shareLeadStep === "message" && selectedSharePartner ? (
               <>
