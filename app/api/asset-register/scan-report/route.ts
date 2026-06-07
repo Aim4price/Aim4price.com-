@@ -8,7 +8,7 @@ import { listScanEventsForAsset, type ScanEventRecord } from '../../../../lib/sc
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type ScanReportKind = 'scan' | 'fuel' | 'maintenance';
+type PdfReportKind = 'fuel' | 'maintenance';
 
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 
@@ -34,6 +34,7 @@ type ReportSummary = {
 };
 
 type MaintenanceKind = 'checked' | 'serviced' | 'repaired';
+type MaintenanceReportType = 'all' | MaintenanceKind;
 
 type MaintenanceEntry = {
   kind: MaintenanceKind;
@@ -45,10 +46,16 @@ type MaintenanceEntry = {
   event: ScanEventRecord;
 };
 
-const REPORT_LABELS: Record<ScanReportKind, string> = {
+const REPORT_LABELS: Record<PdfReportKind, string> = {
   fuel: 'Fuel Report',
-  scan: 'Scan Report',
   maintenance: 'Maintenance Report',
+};
+
+const MAINTENANCE_TYPE_LABELS: Record<MaintenanceReportType, string> = {
+  all: 'All',
+  checked: 'Checked',
+  serviced: 'Service',
+  repaired: 'Repair',
 };
 
 function asText(value: unknown): string {
@@ -183,7 +190,7 @@ function slugifyFileSegment(value: string): string {
   );
 }
 
-function normalizeReportKind(value: unknown): ScanReportKind {
+function normalizeReportKind(value: unknown): PdfReportKind | null {
   const normalized = String(value ?? '')
     .trim()
     .toLowerCase()
@@ -199,7 +206,19 @@ function normalizeReportKind(value: unknown): ScanReportKind {
     return 'maintenance';
   }
 
-  return 'scan';
+  return null;
+}
+
+function normalizeMaintenanceReportType(value: unknown): MaintenanceReportType {
+  const normalized = String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s-]+/g, '-');
+
+  if (normalized === 'checked' || normalized === 'check') return 'checked';
+  if (normalized === 'serviced' || normalized === 'service') return 'serviced';
+  if (normalized === 'repaired' || normalized === 'repair') return 'repaired';
+  return 'all';
 }
 
 type ReportDateRange = {
@@ -662,36 +681,6 @@ function parseMaintenanceEvent(event: ScanEventRecord): MaintenanceEntry | null 
   };
 }
 
-function summarizeScanEvent(asset: AssetRegisterItem, event: ScanEventRecord): string {
-  const maintenanceEntry = parseMaintenanceEvent(event);
-  if (maintenanceEntry) {
-    const label = maintenanceEntry.label;
-    const items = maintenanceEntry.items.length ? `: ${maintenanceEntry.items.join(', ')}` : '';
-    const extra = [maintenanceEntry.company, maintenanceEntry.mechanic, maintenanceEntry.notes].filter(Boolean).join(' • ');
-    return [ `${label}${items}`, extra ].filter(Boolean).join(' • ');
-  }
-
-  const note = normalizeSpaces(event.note);
-  const parts = [
-    note,
-    formatCondition(event.condition) !== '-' ? `Condition: ${formatCondition(event.condition)}` : '',
-    event.photoUrls.length > 0 ? `${formatPhotoCount(event)} added` : '',
-  ].filter(Boolean);
-
-  if (parts.length) {
-    const summary = parts.join(' • ');
-    return summary.length > 260 ? `${summary.slice(0, 257)}...` : summary;
-  }
-
-  const fallbackParts = [
-    formatEventUsage(asset, event) !== '-' ? 'Usage reading updated' : '',
-    formatLitres(event.fuelLitres) !== '-' ? `Fuel issued: ${formatLitres(event.fuelLitres)}` : '',
-    formatFuel(event.fuelPercent) !== '-' ? 'Fuel reading captured' : '',
-  ].filter(Boolean);
-
-  return fallbackParts.join(' • ') || 'QR scan recorded';
-}
-
 function renderRows(rows: KeyValueRow[], emptyText = 'No details available.'): string {
   const visibleRows = rows.filter((row) => String(row.label ?? '').trim());
 
@@ -819,32 +808,6 @@ function buildLocationRows(asset: AssetRegisterItem): KeyValueRow[] {
   ];
 }
 
-function buildScanRecordRows(asset: AssetRegisterItem, events: ScanEventRecord[]): KeyValueRow[] {
-  const fuelEvents = events.filter((event) => typeof event.fuelPercent === 'number' && Number.isFinite(event.fuelPercent));
-  const maintenanceEntries = events.map((event) => parseMaintenanceEvent(event)).filter((entry): entry is MaintenanceEntry => Boolean(entry));
-  const gpsEvents = events.filter(
-    (event) =>
-      typeof event.latitude === 'number' &&
-      Number.isFinite(event.latitude) &&
-      typeof event.longitude === 'number' &&
-      Number.isFinite(event.longitude),
-  );
-  const photoEvents = events.filter((event) => event.photoUrls.length > 0);
-
-  return [
-    { label: 'Serial Number', value: asset.serialNumber || '-' },
-    { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
-    ...licenseRegistrationRows(asset),
-    { label: 'QR Status', value: formatQrStatus(asset.qrStatus) },
-    { label: 'Total Scans', value: String(events.length) },
-    { label: 'Fuel Entries', value: String(fuelEvents.length) },
-    { label: 'Maintenance', value: String(maintenanceEntries.length) },
-    { label: 'GPS Locations', value: String(gpsEvents.length) },
-    { label: 'Photo Updates', value: String(photoEvents.length) },
-    { label: 'Updated', value: formatDate(asset.lastScannedAtIso || asset.updatedAtIso) },
-  ];
-}
-
 function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventRecord[], dateRangeLabel = 'All available entries'): KeyValueRow[] {
   const latestFuelEvent = fuelEvents[0];
   const litreValues = fuelEvents
@@ -861,7 +824,12 @@ function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventReco
   ];
 }
 
-function buildMaintenanceRecordRows(asset: AssetRegisterItem, entries: MaintenanceEntry[]): KeyValueRow[] {
+function buildMaintenanceRecordRows(
+  asset: AssetRegisterItem,
+  entries: MaintenanceEntry[],
+  dateRangeLabel = 'All available entries',
+  maintenanceTypeLabel = 'All',
+): KeyValueRow[] {
   const checkedCount = entries.filter((entry) => entry.kind === 'checked').length;
   const servicedCount = entries.filter((entry) => entry.kind === 'serviced').length;
   const repairedCount = entries.filter((entry) => entry.kind === 'repaired').length;
@@ -875,6 +843,8 @@ function buildMaintenanceRecordRows(asset: AssetRegisterItem, entries: Maintenan
   const photoCount = entries.filter((entry) => entry.event.photoUrls.length > 0).length;
 
   return [
+    { label: 'Report Type', value: maintenanceTypeLabel },
+    { label: 'Report Period', value: dateRangeLabel },
     { label: 'Serial Number', value: asset.serialNumber || '-' },
     { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
     ...licenseRegistrationRows(asset),
@@ -886,16 +856,6 @@ function buildMaintenanceRecordRows(asset: AssetRegisterItem, entries: Maintenan
     { label: 'Photo Records', value: String(photoCount) },
     { label: 'Updated', value: formatDate(entries[0]?.event.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso) },
   ];
-}
-
-function buildScanReportSummary(asset: AssetRegisterItem, events: ScanEventRecord[]): ReportSummary {
-  return {
-    label: 'QR Scans',
-    value: formatNumber(events.length),
-    subtext: 'stored QR updates',
-    basis: 'QR Activity',
-    updated: formatDate(events[0]?.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso),
-  };
 }
 
 function buildFuelReportSummary(asset: AssetRegisterItem, fuelEvents: ScanEventRecord[]): ReportSummary {
@@ -975,37 +935,6 @@ function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
         ],
         rows,
         emptyText: 'No fuel readings have been recorded for this asset yet.',
-      })}
-    </section>
-  `;
-}
-
-function buildScanBody(asset: AssetRegisterItem, events: ScanEventRecord[]): string {
-  const rows = events.map((event) => [
-    escapeHtml(formatDateTime(event.createdAtIso)),
-    escapeHtml(formatOperatorLabel(event)),
-    escapeHtml(formatEventUsage(asset, event)),
-    escapeHtml(formatFuel(event.fuelPercent)),
-    escapeHtml(formatEventActivity(event)),
-    escapeHtml(formatEventWorkArea(event)),
-    escapeHtml(summarizeScanEvent(asset, event)),
-    escapeHtml(formatLocationText(event.locationText, event.latitude, event.longitude)),
-  ]);
-
-  return `
-    <section class="assetReportSection assetReportWideSection">
-      <div class="assetReportSectionHeading">
-        <div>
-          <h2>QR Scan Updates</h2>
-          <p>Full QR activity trail showing who updated the asset, what changed, and where the scan was captured.</p>
-        </div>
-        <strong>${escapeHtml(formatNumber(events.length))} ${events.length === 1 ? 'scan' : 'scans'}</strong>
-      </div>
-      ${renderTable({
-        className: 'assetReportScanTable',
-        headers: ['Date / Time', 'Updated By', 'Usage', 'Fuel', 'Work Activity', 'Work Area', 'Update Summary', 'Scan Location'],
-        rows,
-        emptyText: 'No QR scan updates have been recorded for this asset yet.',
       })}
     </section>
   `;
@@ -1098,20 +1027,16 @@ function buildMaintenanceBody(asset: AssetRegisterItem, entries: MaintenanceEntr
   `;
 }
 
-function buildReportDisclaimer(reportKind: ScanReportKind): string {
+function buildReportDisclaimer(reportKind: PdfReportKind): string {
   if (reportKind === 'fuel') {
     return 'Fuel readings, litres and before-fill values are operational records captured from asset QR updates and Fuel Ledger storage QR entries. Before-fill litres are calculated from litres issued and the asset fuel percentage movement, and final fuel use remains subject to physical verification.';
   }
 
-  if (reportKind === 'maintenance') {
-    return 'Maintenance records are based on QR scan updates saved as checked, serviced or repaired. This is an operational maintenance trail and not a certified mechanical inspection report.';
-  }
-
-  return 'Scan records are operational records based on QR activity, saved usage readings, fuel percentages, notes, service/check records, photos and locations. This is not a certified inspection report.';
+  return 'Maintenance records are based on QR updates saved as checked, serviced or repaired. This is an operational maintenance trail and not a certified mechanical inspection report.';
 }
 
 function buildReportHtml(options: {
-  reportKind: ScanReportKind;
+  reportKind: PdfReportKind;
   asset: AssetRegisterItem;
   ownerDetails: OwnerReportDetails;
   generatedAt: string;
@@ -2018,19 +1943,6 @@ function buildReportHtml(options: {
 </html>`;
 }
 
-function buildScanReport(asset: AssetRegisterItem, events: ScanEventRecord[], ownerDetails: OwnerReportDetails, generatedAt: string, logoUrl: string): string {
-  return buildReportHtml({
-    reportKind: 'scan',
-    asset,
-    ownerDetails,
-    generatedAt,
-    logoUrl,
-    summary: buildScanReportSummary(asset, events),
-    recordRows: buildScanRecordRows(asset, events),
-    bodyHtml: buildScanBody(asset, events),
-  });
-}
-
 function buildFuelReport(
   asset: AssetRegisterItem,
   events: ScanEventRecord[],
@@ -2053,8 +1965,20 @@ function buildFuelReport(
   });
 }
 
-function buildMaintenanceReport(asset: AssetRegisterItem, events: ScanEventRecord[], ownerDetails: OwnerReportDetails, generatedAt: string, logoUrl: string): string {
-  const maintenanceEntries = events.map((event) => parseMaintenanceEvent(event)).filter((entry): entry is MaintenanceEntry => Boolean(entry));
+function buildMaintenanceReport(
+  asset: AssetRegisterItem,
+  events: ScanEventRecord[],
+  ownerDetails: OwnerReportDetails,
+  generatedAt: string,
+  logoUrl: string,
+  dateRangeLabel = 'All available entries',
+  maintenanceReportType: MaintenanceReportType = 'all',
+): string {
+  const allMaintenanceEntries = events.map((event) => parseMaintenanceEvent(event)).filter((entry): entry is MaintenanceEntry => Boolean(entry));
+  const maintenanceEntries = maintenanceReportType === 'all'
+    ? allMaintenanceEntries
+    : allMaintenanceEntries.filter((entry) => entry.kind === maintenanceReportType);
+  const maintenanceTypeLabel = MAINTENANCE_TYPE_LABELS[maintenanceReportType];
 
   return buildReportHtml({
     reportKind: 'maintenance',
@@ -2063,7 +1987,7 @@ function buildMaintenanceReport(asset: AssetRegisterItem, events: ScanEventRecor
     generatedAt,
     logoUrl,
     summary: buildMaintenanceReportSummary(asset, maintenanceEntries),
-    recordRows: buildMaintenanceRecordRows(asset, maintenanceEntries),
+    recordRows: buildMaintenanceRecordRows(asset, maintenanceEntries, dateRangeLabel, maintenanceTypeLabel),
     bodyHtml: buildMaintenanceBody(asset, maintenanceEntries),
   });
 }
@@ -2079,6 +2003,11 @@ export async function GET(request: NextRequest) {
   const reportKind = normalizeReportKind(
     request.nextUrl.searchParams.get('report') ?? request.nextUrl.searchParams.get('reportType') ?? request.nextUrl.searchParams.get('type'),
   );
+  const maintenanceReportType = normalizeMaintenanceReportType(
+    request.nextUrl.searchParams.get('maintenanceType') ??
+      request.nextUrl.searchParams.get('maintenanceKind') ??
+      (reportKind === 'maintenance' ? request.nextUrl.searchParams.get('type') : null),
+  );
   const reportYear = parseReportYear(asText(request.nextUrl.searchParams.get('year')));
   const reportMonth = reportYear ? parseReportMonth(asText(request.nextUrl.searchParams.get('month'))) : null;
   const reportDateRange = buildReportDateRange(reportYear, reportMonth);
@@ -2087,19 +2016,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Asset ID is required.' }, { status: 400 });
   }
 
+  if (!reportKind) {
+    return NextResponse.json({ ok: false, error: 'Report type must be fuel or maintenance.' }, { status: 400 });
+  }
+
   const asset = await getAssetRegisterItemById(session.user.id, assetId);
 
   if (!asset) {
     return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
   }
 
-  const events = await listScanEventsForAsset(
-    asset.id,
-    500,
-    reportKind === 'fuel'
-      ? { fromIso: reportDateRange.fromIso, toIso: reportDateRange.toIso, onlyFuel: true }
-      : undefined,
-  );
+  const events = await listScanEventsForAsset(asset.id, 500, {
+    fromIso: reportDateRange.fromIso,
+    toIso: reportDateRange.toIso,
+    onlyFuel: reportKind === 'fuel',
+  });
   const ownerProfile = await getAccountProfile({
     id: session.user.id,
     name: session.user.name,
@@ -2109,12 +2040,9 @@ export async function GET(request: NextRequest) {
   const generatedAt = formatDate(new Date().toISOString());
   const logoUrl = await getAssetRegisterReportLogoUrl(session.user.id, asset.registerId).catch(() => '');
 
-  const html =
-    reportKind === 'fuel'
-      ? buildFuelReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label)
-      : reportKind === 'maintenance'
-        ? buildMaintenanceReport(asset, events, ownerDetails, generatedAt, logoUrl)
-        : buildScanReport(asset, events, ownerDetails, generatedAt, logoUrl);
+  const html = reportKind === 'fuel'
+    ? buildFuelReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label)
+    : buildMaintenanceReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label, maintenanceReportType);
 
   const fileName = `${slugifyFileSegment(asset.title)}-${slugifyFileSegment(asset.plateLabel || asset.publicAssetCode || asset.id)}-${slugifyFileSegment(REPORT_LABELS[reportKind])}.html`;
 
