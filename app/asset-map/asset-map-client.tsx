@@ -7,7 +7,6 @@ import styles from './page.module.css';
 
 type NoticeTone = 'error';
 type BasemapMode = 'road' | 'satellite';
-type MarkerTone = 'recent' | 'warm' | 'older';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 type IconProps = { className?: string };
 
@@ -104,16 +103,6 @@ function RefreshIcon({ className }: IconProps) {
       <path d="M4 4v4h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M4 13a8 8 0 0 0 14.7 4.3L20 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M20 20v-4h-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function OptionsIcon({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M7 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M7 12h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M7 16h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -279,27 +268,9 @@ function buildAssetMeta(asset: AssetMapItem): string {
   ].join(' • ');
 }
 
-function buildAssetRegisterHref(asset: AssetMapItem, action?: 'options'): string {
+function buildAssetRegisterHref(asset: AssetMapItem): string {
   const hash = `asset-card-${encodeURIComponent(asset.id)}`;
-
-  if (action === 'options') {
-    const params = new URLSearchParams({ mapAction: 'options', assetId: asset.id });
-    return `/asset-register?${params.toString()}#${hash}`;
-  }
-
   return `/asset-register#${hash}`;
-}
-
-function formatAssetStatusChoice(value?: AssetStatusChoice | null): string {
-  if (value === 'yes') return 'Yes';
-  if (value === 'no') return 'No';
-  if (value === 'not_applicable') return 'Not applicable';
-  return 'Not sure';
-}
-
-function formatLatLng(asset: AssetMapItem): string {
-  if (!hasCoordinates(asset)) return '—';
-  return `${Number(asset.lastKnownLat).toFixed(6)}, ${Number(asset.lastKnownLng).toFixed(6)}`;
 }
 
 function hasCoordinates(asset: AssetMapItem): boolean {
@@ -321,77 +292,19 @@ function matchesSearch(asset: AssetMapItem, search: string): boolean {
 
   return [
     asset.title,
-    asset.plateLabel,
-    asset.publicAssetCode,
-    asset.lastKnownLocationText,
-    asset.serialNumber,
     asset.assetTypeLabel,
+    asset.kind,
+    asset.serialNumber,
     asset.brandName,
     asset.modelName,
     asset.typedModelName,
-    asset.licenseRegistrationNumber,
-    formatAssetStatusChoice(asset.financeStatus),
-    formatAssetStatusChoice(asset.insuranceStatus),
-    formatAssetStatusChoice(asset.licenseStatus),
+    asset.lastKnownLocationText,
+    formatCondition(asset.condition),
     asset.yearModel ? String(asset.yearModel) : '',
   ]
     .join(' ')
     .toLowerCase()
     .includes(normalizedSearch);
-}
-
-function getMarkerTone(asset: AssetMapItem): MarkerTone {
-  if (asset.lastScannedAtIso) {
-    const parsed = new Date(asset.lastScannedAtIso).getTime();
-    if (!Number.isNaN(parsed)) {
-      const ageDays = (Date.now() - parsed) / (1000 * 60 * 60 * 24);
-      if (ageDays <= 7) return 'recent';
-      if (ageDays <= 30) return 'warm';
-    }
-  }
-
-  return 'older';
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function buildPopupHtml(asset: AssetMapItem, markerNumber: number): string {
-  const title = escapeHtml(asset.title || 'Saved asset');
-  const plate = escapeHtml(asset.plateLabel || asset.publicAssetCode || 'No plate label');
-  const assetType = escapeHtml(asset.assetTypeLabel || 'Asset');
-  const fuel = escapeHtml(formatFuel(asset.fuelPercent));
-  const licensed = escapeHtml(formatAssetStatusChoice(asset.licenseStatus));
-  const registration = escapeHtml(asset.licenseRegistrationNumber || '');
-  const registrationRow = asset.licenseStatus === 'yes' && registration
-    ? `<div style="display:grid; gap:2px;"><span style="color:#607182; font-size:9.5px; font-weight:850; letter-spacing:0.075em; text-transform:uppercase;">Registration</span><strong style="color:#123130; font-size:11.5px; line-height:1.18; font-weight:850;">${registration}</strong></div>`
-    : '';
-  const gps = escapeHtml(formatLatLng(asset));
-
-  return `
-    <div style="min-width: 236px; max-width: 268px; font-family: Montserrat, Inter, Arial, sans-serif; color: #122f2a; padding:2px;">
-      <div style="display:flex; align-items:center; gap:9px; margin-bottom:11px; padding-right:12px;">
-        <div style="display:inline-flex; align-items:center; justify-content:center; width:29px; height:29px; border-radius:999px; color:#fff; background:#3768d5; font-size:12px; font-weight:900; box-shadow:0 9px 18px rgba(55,104,213,.24); flex:0 0 auto;">${markerNumber}</div>
-        <div style="min-width:0; display:grid; gap:2px;">
-          <div style="font-weight: 900; font-size: 14px; line-height: 1.12; letter-spacing: -0.032em; color:#0b3328; overflow-wrap:anywhere;">${title}</div>
-          <div style="font-size: 10.5px; color: #667581; font-weight:760;">${plate}</div>
-        </div>
-      </div>
-      <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 10px; font-size:11.5px; color:#53666b;">
-        <div style="display:grid; gap:2px;"><span style="color:#607182; font-size:9.5px; font-weight:850; letter-spacing:0.075em; text-transform:uppercase;">Asset type</span><strong style="color:#123130; font-size:11.5px; line-height:1.18; font-weight:850;">${assetType}</strong></div>
-        <div style="display:grid; gap:2px;"><span style="color:#607182; font-size:9.5px; font-weight:850; letter-spacing:0.075em; text-transform:uppercase;">Fuel</span><strong style="color:#123130; font-size:11.5px; line-height:1.18; font-weight:850;">${fuel}</strong></div>
-        <div style="display:grid; gap:2px;"><span style="color:#607182; font-size:9.5px; font-weight:850; letter-spacing:0.075em; text-transform:uppercase;">Licensed</span><strong style="color:#123130; font-size:11.5px; line-height:1.18; font-weight:850;">${licensed}</strong></div>
-        ${registrationRow}
-        <div style="grid-column:1 / -1; display:grid; gap:2px;"><span style="color:#607182; font-size:9.5px; font-weight:850; letter-spacing:0.075em; text-transform:uppercase;">GPS</span><strong style="color:#123130; font-size:11.5px; line-height:1.18; font-weight:850;">${gps}</strong></div>
-      </div>
-    </div>
-  `;
 }
 
 function sortMappedAssets(left: AssetMapItem, right: AssetMapItem): number {
@@ -411,10 +324,10 @@ export default function AssetMapClient() {
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [basemapMode, setBasemapMode] = useState<BasemapMode>('road');
-  const [summary, setSummary] = useState<AssetMapResponse['summary'] | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
@@ -456,7 +369,6 @@ export default function AssetMapClient() {
       }
 
       setAssets(data.assets);
-      setSummary(data.summary ?? null);
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load the asset map.' });
     } finally {
@@ -628,12 +540,11 @@ export default function AssetMapClient() {
     visibleAssets.forEach((asset, index) => {
       const lat = asset.lastKnownLat as number;
       const lng = asset.lastKnownLng as number;
-      const markerTone = getMarkerTone(asset);
       const isActive = asset.publicAssetCode === selectedCode;
       const markerNumber = index + 1;
 
       const icon = L.divIcon({
-        className: `aim4priceMapMarker aim4priceMapMarker--${markerTone}${isActive ? ' aim4priceMapMarker--active' : ''}`,
+        className: `aim4priceMapMarker${isActive ? ' aim4priceMapMarker--active' : ''}`,
         html: `<span class="aim4priceMapMarkerPin"><b>${markerNumber}</b></span>`,
         iconSize: [42, 48],
         iconAnchor: [21, 44],
@@ -682,6 +593,20 @@ export default function AssetMapClient() {
   }, [selectedCode]);
 
   useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map || typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const timeout = window.setTimeout(() => {
+      map.invalidateSize();
+    }, 180);
+
+    return () => window.clearTimeout(timeout);
+  }, [isSidebarCollapsed]);
+
+  useEffect(() => {
     return () => {
       const map = mapRef.current;
       if (!map) return;
@@ -711,20 +636,18 @@ export default function AssetMapClient() {
     ? `/api/asset-map/report?assetCode=${encodeURIComponent(selectedAsset.publicAssetCode)}`
     : null;
 
-  const totalAssets = summary?.totalAssets ?? assets.length;
-  const mappedAssetCount = summary?.assetsWithLocation ?? mappedAssets.length;
-  const unmappedAssetCount = summary?.assetsWithoutLocation ?? Math.max(0, totalAssets - mappedAssetCount);
-  const recentlyScannedCount = summary?.scannedLast30Days ?? 0;
   const selectedAssetPhotos = selectedAsset ? normalizePhotos(selectedAsset.photos) : [];
   const selectedAssetSafePhotoIndex = selectedAssetPhotos.length ? Math.min(selectedPhotoIndex, selectedAssetPhotos.length - 1) : 0;
   const selectedAssetPhoto = selectedAssetPhotos[selectedAssetSafePhotoIndex] ?? null;
   const selectedAssetGoogleMapsHref = selectedAsset ? buildGoogleMapsHref(selectedAsset) : null;
 
+  const hasActiveSearch = search.trim().length > 0;
+
   function handleSearchChange(value: string) {
     setSearch(value);
   }
 
-  function handleResetMapView() {
+  function clearSearch() {
     setSearch('');
     setSelectedCode(null);
   }
@@ -740,112 +663,113 @@ export default function AssetMapClient() {
 
       <section className={styles.shell}>
         <article className={styles.mapWorkspace} aria-label="QR scanned asset workspace">
-          <header className={styles.workspaceHeader}>
-            <div className={styles.mapTitleBlock}>
-              <span className={styles.eyebrow}>Asset location tracking</span>
-              <h1>Asset Map</h1>
-              <p>GPS view of scanned register assets, saved locations and asset photos.</p>
+          <header className={styles.panelHeader}>
+            <div className={styles.pageTitleBlock}>
+              <h1>QR ASSET MAP</h1>
             </div>
+
+            <form
+              className={styles.topActions}
+              onSubmit={(event) => {
+                event.preventDefault();
+              }}
+            >
+              <label className={styles.searchWrap} aria-label="Search by asset name, type or serial">
+                <SearchIcon className={styles.searchIcon} />
+                <input
+                  type="search"
+                  className={styles.searchInput}
+                  value={search}
+                  onChange={(event) => handleSearchChange(event.target.value)}
+                  placeholder="Search by asset name, type or serial"
+                />
+                {hasActiveSearch ? (
+                  <button type="button" className={styles.clearSearchButton} onClick={clearSearch} aria-label="Clear search">
+                    ×
+                  </button>
+                ) : null}
+              </label>
+
+              <div className={styles.topActionButtons}>
+                <button
+                  type="button"
+                  className={`${styles.secondaryAction} ${styles.topActionButton} ${styles.topRefreshButton}`}
+                  onClick={() => void fetchMapData('refresh')}
+                  disabled={isRefreshing || isLoading}
+                >
+                  <RefreshIcon className={styles.buttonIcon} />
+                  <span>{isRefreshing ? 'Refreshing…' : 'Refresh'}</span>
+                </button>
+                {fullMapReportHref ? (
+                  <a href={fullMapReportHref} target="_blank" rel="noreferrer" className={`${styles.primaryAction} ${styles.topActionButton} ${styles.topReportButton}`}>
+                    <DownloadIcon className={styles.buttonIcon} />
+                    <span>Download</span>
+                  </a>
+                ) : (
+                  <button type="button" className={`${styles.primaryAction} ${styles.topActionButton} ${styles.topReportButton} ${styles.actionDisabled}`} disabled>
+                    <DownloadIcon className={styles.buttonIcon} />
+                    <span>Download</span>
+                  </button>
+                )}
+              </div>
+            </form>
           </header>
 
           {notice ? <div className={styles.notice}>{notice.message}</div> : null}
 
-          <div className={styles.mapSummaryRow} aria-label="Asset map summary">
-            <div className={`${styles.mapSummaryTile} ${styles.mapSummaryTileMain}`}>
-              <span>Mapped assets</span>
-              <strong>{mappedAssetCount}</strong>
-              <small>{totalAssets ? `${mappedAssetCount} of ${totalAssets} saved assets` : 'No assets saved yet'}</small>
-            </div>
-            <div className={styles.mapSummaryTile}>
-              <span>Recently scanned</span>
-              <strong>{recentlyScannedCount}</strong>
-              <small>Scanned in the last 30 days</small>
-            </div>
-            <div className={styles.mapSummaryTile}>
-              <span>Without GPS</span>
-              <strong>{unmappedAssetCount}</strong>
-              <small>{visibleAssets.length ? `Showing ${visibleAssets.length} mapped assets` : 'No mapped assets showing'}</small>
-            </div>
-          </div>
-
-          <form
-            className={styles.mapToolbar}
-            onSubmit={(event) => {
-              event.preventDefault();
-            }}
-          >
-            <label className={styles.searchControl} aria-label="Search scanned assets">
-              <SearchIcon className={styles.searchIcon} />
-              <input
-                value={search}
-                onChange={(event) => handleSearchChange(event.target.value)}
-                placeholder="Search by asset, brand, model, serial or location"
-              />
-            </label>
-
-            <div className={styles.toolbarActions}>
-              <button type="button" className={styles.secondaryAction} onClick={() => void fetchMapData('refresh')} disabled={isRefreshing || isLoading}>
-                <RefreshIcon className={styles.buttonIcon} />
-                <span>{isRefreshing ? 'Refreshing…' : 'Refresh Map'}</span>
-              </button>
-              {fullMapReportHref ? (
-                <a href={fullMapReportHref} target="_blank" rel="noreferrer" className={styles.primaryAction}>
-                  <DownloadIcon className={styles.buttonIcon} />
-                  <span>Download Full Map</span>
-                </a>
-              ) : (
-                <button type="button" className={`${styles.primaryAction} ${styles.actionDisabled}`} disabled>
-                  <DownloadIcon className={styles.buttonIcon} />
-                  <span>Download Asset Map</span>
-                </button>
-              )}
-            </div>
-          </form>
-
-          <section className={styles.mapStage} aria-label="Mapped assets and locations">
-            <aside className={styles.assetSidebar} aria-label="Visible mapped assets">
+          <section className={`${styles.mapStage} ${isSidebarCollapsed ? styles.mapStageCollapsed : ''}`} aria-label="Mapped assets and locations">
+            <aside className={`${styles.assetSidebar} ${isSidebarCollapsed ? styles.assetSidebarCollapsed : ''}`} aria-label="Visible mapped assets">
               <div className={styles.assetSidebarHeader}>
-                <button type="button" className={styles.assetSidebarResetButton} onClick={handleResetMapView}>
-                  <span aria-hidden="true">‹</span>
-                  <span>All assets</span>
+                <button
+                  type="button"
+                  className={styles.sidebarToggleButton}
+                  onClick={() => setIsSidebarCollapsed((current) => !current)}
+                  aria-label={isSidebarCollapsed ? 'Expand asset list' : 'Collapse asset list'}
+                  aria-expanded={!isSidebarCollapsed}
+                >
+                  <span aria-hidden="true">{isSidebarCollapsed ? '>' : '<'}</span>
                 </button>
-              </div>
-
-              <div className={styles.assetList}>
-                {!isLoading && !mappedAssets.length ? (
-                  <p className={styles.emptyState}>No GPS locations saved yet. Scan an asset and save location data to place the first marker on this map.</p>
-                ) : !isLoading && !visibleAssets.length ? (
-                  <p className={styles.emptyState}>No mapped assets match this search. Clear the search to show all mapped assets.</p>
-                ) : !isLoading ? (
-                  visibleAssets.map((asset, index) => {
-                    const isActive = selectedCode === asset.publicAssetCode;
-                    const usageText = asset.hours === null ? 'Usage not saved' : `${formatHours(asset.hours)} hours`;
-
-                    return (
-                      <article key={asset.publicAssetCode} className={`${styles.assetCard} ${isActive ? styles.assetCardActive : ''}`}>
-                        <button type="button" className={styles.assetCardButton} onClick={() => setSelectedCode(asset.publicAssetCode)}>
-                          <span className={styles.assetNumber}>{index + 1}</span>
-                          <span className={styles.assetCardBody}>
-                            <span className={styles.assetCardHeader}>
-                              <strong>{asset.title || 'Saved asset'}</strong>
-                              <small>{asset.assetTypeLabel || asset.kind || 'Asset'}</small>
-                            </span>
-                            <span className={styles.assetCardMeta}>
-                              <span>{asset.yearModel ? formatYearModel(asset.yearModel) : 'Year not saved'}</span>
-                              <span>{formatCondition(asset.condition)}</span>
-                            </span>
-                            <span className={styles.assetCardCopy}>
-                              {(asset.plateLabel || asset.publicAssetCode || 'No plate label saved')}
-                              <span aria-hidden="true"> · </span>
-                              {usageText}
-                            </span>
-                          </span>
-                        </button>
-                      </article>
-                    );
-                  })
+                {!isSidebarCollapsed ? (
+                  <span className={styles.assetSidebarTitle}>
+                    <strong>{visibleAssets.length}</strong>
+                    <span>{visibleAssets.length === 1 ? 'mapped asset' : 'mapped assets'}</span>
+                  </span>
                 ) : null}
               </div>
+
+              {!isSidebarCollapsed ? (
+                <div className={styles.assetList}>
+                  {!isLoading && !mappedAssets.length ? (
+                    <p className={styles.emptyState}>No GPS locations saved yet. Scan an asset and save location data to place the first marker on this map.</p>
+                  ) : !isLoading && !visibleAssets.length ? (
+                    <p className={styles.emptyState}>No mapped assets match this search. Clear the search to show all mapped assets.</p>
+                  ) : !isLoading ? (
+                    visibleAssets.map((asset, index) => {
+                      const isActive = selectedCode === asset.publicAssetCode;
+                      const usageText = asset.hours === null ? 'Usage not saved' : `${formatHours(asset.hours)} hours`;
+
+                      return (
+                        <article key={asset.publicAssetCode} className={`${styles.assetCard} ${isActive ? styles.assetCardActive : ''}`}>
+                          <button type="button" className={styles.assetCardButton} onClick={() => setSelectedCode(asset.publicAssetCode)}>
+                            <span className={styles.assetNumber}>{index + 1}</span>
+                            <span className={styles.assetCardBody}>
+                              <span className={styles.assetCardHeader}>
+                                <strong>{asset.title || 'Saved asset'}</strong>
+                                <small>{asset.assetTypeLabel || asset.kind || 'Asset'}</small>
+                              </span>
+                              <span className={styles.assetCardMeta}>
+                                <span>{asset.yearModel ? formatYearModel(asset.yearModel) : 'Year not saved'}</span>
+                                <span>{formatCondition(asset.condition)}</span>
+                                <span>{usageText}</span>
+                              </span>
+                            </span>
+                          </button>
+                        </article>
+                      );
+                    })
+                  ) : null}
+                </div>
+              ) : null}
             </aside>
 
             <div className={styles.assetMapShell}>
@@ -910,8 +834,7 @@ export default function AssetMapClient() {
 
                     <div className={styles.selectedAssetContent}>
                       <div className={styles.selectedAssetHeader}>
-                        <div>
-                          <span className={styles.selectedAssetType}>{selectedAsset.assetTypeLabel || selectedAsset.kind || 'Asset'}</span>
+                        <div className={styles.selectedAssetTitleGroup}>
                           <h2>{selectedAsset.title || 'Saved asset'}</h2>
                           <p>{buildAssetMeta(selectedAsset)}</p>
                         </div>
@@ -925,24 +848,12 @@ export default function AssetMapClient() {
 
                       <div className={styles.selectedDetailGrid}>
                         <span>
-                          <small>Asset code</small>
-                          <strong>{selectedAsset.plateLabel || selectedAsset.publicAssetCode || '—'}</strong>
-                        </span>
-                        <span>
-                          <small>GPS</small>
-                          <strong>{formatLatLng(selectedAsset)}</strong>
-                        </span>
-                        <span>
-                          <small>Serial</small>
-                          <strong>{selectedAsset.serialNumber || '—'}</strong>
-                        </span>
-                        <span>
                           <small>Fuel</small>
                           <strong>{formatFuel(selectedAsset.fuelPercent)}</strong>
                         </span>
                         <span>
-                          <small>Licensed</small>
-                          <strong>{formatAssetStatusChoice(selectedAsset.licenseStatus)}</strong>
+                          <small>Serial</small>
+                          <strong>{selectedAsset.serialNumber || '—'}</strong>
                         </span>
                         <span>
                           <small>Last scanned</small>
@@ -951,10 +862,6 @@ export default function AssetMapClient() {
                       </div>
 
                       <div className={styles.selectedActionRow}>
-                        <Link href={buildAssetRegisterHref(selectedAsset, 'options')} className={`${styles.selectedActionButton} ${styles.selectedActionOptions}`}>
-                          <OptionsIcon className={styles.buttonIcon} />
-                          <span>Options</span>
-                        </Link>
                         <Link href={buildAssetRegisterHref(selectedAsset)} className={`${styles.selectedActionButton} ${styles.selectedActionRegister}`}>
                           <RegisterIcon className={styles.buttonIcon} />
                           <span>Asset Register</span>
