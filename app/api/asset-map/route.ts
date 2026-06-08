@@ -20,6 +20,9 @@ type AssetMapItem = {
   insuranceStatus: AssetStatusChoice;
   licenseStatus: AssetStatusChoice;
   licenseRegistrationNumber: string;
+  value: number;
+  selectedMethod: string;
+  replacementPriceExVat: number | null;
   hours: number | null;
   fuelPercent: number | null;
   serialNumber: string;
@@ -32,6 +35,7 @@ type AssetMapItem = {
   lastKnownLng: number | null;
   lastKnownLocationText: string;
   updatedAtIso: string;
+  photos: string[];
 };
 
 function unauthorized() {
@@ -165,6 +169,9 @@ function mapAssetForMap(item: AssetRegisterItem): AssetMapItem {
     insuranceStatus: readInsuranceStatusChoice(item),
     licenseStatus: readLicenseStatusChoice(item),
     licenseRegistrationNumber: readLicenseRegistrationNumber(item),
+    value: item.value,
+    selectedMethod: item.selectedMethod,
+    replacementPriceExVat: item.replacementPriceExVat,
     hours: item.hours,
     fuelPercent: item.fuelPercent,
     serialNumber: item.serialNumber,
@@ -177,6 +184,7 @@ function mapAssetForMap(item: AssetRegisterItem): AssetMapItem {
     lastKnownLng: item.lastKnownLng,
     lastKnownLocationText: item.lastKnownLocationText,
     updatedAtIso: item.updatedAtIso,
+    photos: Array.isArray(item.photos) ? item.photos.filter((photo) => typeof photo === 'string' && photo.trim()) : [],
   };
 }
 
