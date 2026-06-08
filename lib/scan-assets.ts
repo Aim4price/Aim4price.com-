@@ -76,6 +76,18 @@ export type ScanEventRecord = {
   createdAtIso: string;
 };
 
+export type AssetMaintenanceStatusKind = 'checked' | 'serviced' | 'repaired';
+
+export type AssetMaintenanceStatus = {
+  id: string;
+  assetRegisterItemId: string;
+  kind: AssetMaintenanceStatusKind;
+  summary: string;
+  note: string;
+  operatorName: string;
+  createdAtIso: string;
+};
+
 export type SaveScanAssetEventInput = {
   publicAssetCode: string;
   actorType: ScanEventActorType;
@@ -548,6 +560,96 @@ function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
   };
 }
 
+
+function splitMaintenanceNoteLines(note: string): string[] {
+  return String(note ?? '')
+    .split(/\r?\n+/)
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+}
+
+function extractMaintenanceNoteValue(note: string, label: string): string {
+  const prefix = `${label.toLowerCase()}:`;
+  const line = splitMaintenanceNoteLines(note).find((entry) => entry.toLowerCase().startsWith(prefix));
+
+  if (!line) {
+    return '';
+  }
+
+  return line.slice(prefix.length).replace(/\s+/g, ' ').trim();
+}
+
+function resolveMaintenanceStatusKind(note: string): AssetMaintenanceStatusKind | null {
+  const lines = splitMaintenanceNoteLines(note);
+  const firstLine = (lines[0] ?? '').toLowerCase();
+  const compactNote = lines.join(' ').toLowerCase();
+
+  if (/^repaired(?:\b|$)/.test(firstLine) || compactNote.includes('repair details:')) {
+    return 'repaired';
+  }
+
+  if (
+    /^serviced(?:\b|$)/.test(firstLine) ||
+    compactNote.includes('work done:') ||
+    compactNote.includes('service items:') ||
+    compactNote.includes('serviced items:')
+  ) {
+    return 'serviced';
+  }
+
+  if (/^checked(?:\b|$)/.test(firstLine) || compactNote.includes('checked items:')) {
+    return 'checked';
+  }
+
+  return null;
+}
+
+function summarizeMaintenanceStatus(note: string, kind: AssetMaintenanceStatusKind): { summary: string; note: string } {
+  const actionLabel = kind === 'checked' ? 'Checked' : kind === 'repaired' ? 'Repaired' : 'Serviced';
+  const detail =
+    kind === 'checked'
+      ? extractMaintenanceNoteValue(note, 'Checked items')
+      : kind === 'repaired'
+        ? extractMaintenanceNoteValue(note, 'Repair details')
+        : extractMaintenanceNoteValue(note, 'Work done') ||
+          extractMaintenanceNoteValue(note, 'Service items') ||
+          extractMaintenanceNoteValue(note, 'Serviced items');
+  const company = extractMaintenanceNoteValue(note, 'Company');
+  const mechanic = extractMaintenanceNoteValue(note, 'Mechanic');
+  const noteText = extractMaintenanceNoteValue(note, 'Notes');
+  const providerText = [company, mechanic].filter(Boolean).join(' · ');
+  const summaryParts = [
+    detail ? `${actionLabel}: ${detail}` : `${actionLabel} maintenance has been recorded.`,
+    providerText ? `By ${providerText}` : '',
+  ].filter(Boolean);
+
+  return {
+    summary: summaryParts.join(' • '),
+    note: noteText,
+  };
+}
+
+function mapMaintenanceStatusFromScanEvent(row: ScanEventRow & { asset_id?: string | number | null }): AssetMaintenanceStatus | null {
+  const note = asText(row.note);
+  const kind = resolveMaintenanceStatusKind(note);
+
+  if (!kind) {
+    return null;
+  }
+
+  const summary = summarizeMaintenanceStatus(note, kind);
+
+  return {
+    id: asId(row.id),
+    assetRegisterItemId: asId(row.asset_id),
+    kind,
+    summary: summary.summary,
+    note: summary.note,
+    operatorName: asText(row.operator_name),
+    createdAtIso: row.created_at ?? new Date().toISOString(),
+  };
+}
+
 export function normalizePublicAssetCode(value: unknown): string {
   return String(value ?? '')
     .trim()
@@ -709,6 +811,91 @@ export async function listScanEventsForAsset(assetId: string, limit = 250, filte
 
 export async function listRecentScanEvents(assetId: string, limit = 10): Promise<ScanEventRecord[]> {
   return listScanEventsForAsset(assetId, Math.max(1, Math.min(25, Math.round(limit || 10))));
+}
+
+
+export async function attachLatestMaintenanceStatusToAssets<T extends { id: string }>(
+  assets: T[],
+): Promise<Array<T & { latestMaintenanceStatus: AssetMaintenanceStatus | null }>> {
+  if (!assets.length) {
+    return [];
+  }
+
+  await ensureFuelLedgerTables();
+
+  const db = getDb();
+  const assetIds = assets.map((asset) => asset.id).filter(Boolean);
+
+  if (!assetIds.length) {
+    return assets.map((asset) => ({ ...asset, latestMaintenanceStatus: null }));
+  }
+
+  const result = await db.query<ScanEventRow & { asset_id: string | number | null }>(
+    `
+      select
+        e.id,
+        e.asset_id,
+        e.actor_type,
+        e.operator_name,
+        to_jsonb(e)->>'activity_text' as activity_text,
+        to_jsonb(e)->>'work_area_text' as work_area_text,
+        e.hours,
+        e.fuel_percent,
+        to_jsonb(e)->>'fuel_litres' as fuel_litres,
+        to_jsonb(e)->>'fuel_storage_id' as fuel_storage_id,
+        to_jsonb(e)->>'fuel_storage_event_id' as fuel_storage_event_id,
+        null::text as fuel_ledger_storage_id,
+        null::numeric as fuel_ledger_litres,
+        ''::text as fuel_storage_name,
+        ''::text as fuel_storage_public_code,
+        ''::text as fuel_ledger_event_type,
+        null::numeric as fuel_storage_level_before_litres,
+        null::numeric as fuel_storage_level_after_litres,
+        null::numeric as asset_fuel_percent_before,
+        null::numeric as asset_fuel_percent_after,
+        null::numeric as asset_usage_reading,
+        e.condition,
+        e.note,
+        e.photo_urls,
+        e.latitude,
+        e.longitude,
+        e.location_text,
+        e.created_at
+      from public.asset_scan_events e
+      where e.asset_id = any($1::uuid[])
+        and nullif(trim(coalesce(e.note, '')), '') is not null
+        and (
+          lower(coalesce(e.note, '')) like 'checked%'
+          or lower(coalesce(e.note, '')) like 'serviced%'
+          or lower(coalesce(e.note, '')) like 'repaired%'
+          or lower(coalesce(e.note, '')) like '%checked items:%'
+          or lower(coalesce(e.note, '')) like '%work done:%'
+          or lower(coalesce(e.note, '')) like '%service items:%'
+          or lower(coalesce(e.note, '')) like '%serviced items:%'
+          or lower(coalesce(e.note, '')) like '%repair details:%'
+        )
+      order by e.asset_id, e.created_at desc, e.id desc
+    `,
+    [assetIds],
+  );
+  const latestByAssetId = new Map<string, AssetMaintenanceStatus>();
+
+  result.rows.forEach((row: ScanEventRow & { asset_id: string | number | null }) => {
+    const maintenanceStatus = mapMaintenanceStatusFromScanEvent(row);
+
+    if (!maintenanceStatus || !maintenanceStatus.assetRegisterItemId) {
+      return;
+    }
+
+    if (!latestByAssetId.has(maintenanceStatus.assetRegisterItemId)) {
+      latestByAssetId.set(maintenanceStatus.assetRegisterItemId, maintenanceStatus);
+    }
+  });
+
+  return assets.map((asset) => ({
+    ...asset,
+    latestMaintenanceStatus: latestByAssetId.get(asset.id) ?? null,
+  }));
 }
 
 export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promise<{
