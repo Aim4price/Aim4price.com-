@@ -502,7 +502,7 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
       <section className={styles.shell}>
         <section className={styles.heroCard}>
           <div className={styles.heroTitleRow}>
-            <h1>List of companies</h1>
+            <h1>Finance, Insurance &amp; Dealers</h1>
           </div>
 
           <div className={styles.categoryGrid} aria-label="Company types">
