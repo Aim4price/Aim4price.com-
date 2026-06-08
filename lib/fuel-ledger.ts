@@ -675,6 +675,7 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       latitude double precision,
       longitude double precision,
       location_text text,
+      maintenance_noted_at timestamptz,
       created_at timestamptz not null default now()
     );
 
@@ -693,6 +694,7 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       add column if not exists latitude double precision,
       add column if not exists longitude double precision,
       add column if not exists location_text text,
+      add column if not exists maintenance_noted_at timestamptz,
       add column if not exists created_at timestamptz not null default now();
 
     create table if not exists public.fuel_storage_units (

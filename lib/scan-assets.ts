@@ -86,6 +86,7 @@ export type AssetMaintenanceStatus = {
   note: string;
   operatorName: string;
   createdAtIso: string;
+  notedAtIso: string | null;
 };
 
 export type SaveScanAssetEventInput = {
@@ -170,6 +171,7 @@ type ScanEventRow = {
   latitude: string | number | null;
   longitude: string | number | null;
   location_text: string | null;
+  maintenance_noted_at?: string | null;
   created_at: string | null;
 };
 
@@ -647,6 +649,7 @@ function mapMaintenanceStatusFromScanEvent(row: ScanEventRow & { asset_id?: stri
     note: summary.note,
     operatorName: asText(row.operator_name),
     createdAtIso: row.created_at ?? new Date().toISOString(),
+    notedAtIso: row.maintenance_noted_at ?? null,
   };
 }
 
@@ -793,6 +796,7 @@ export async function listScanEventsForAsset(assetId: string, limit = 250, filte
         e.latitude,
         e.longitude,
         e.location_text,
+        e.maintenance_noted_at::text as maintenance_noted_at,
         e.created_at
       from public.asset_scan_events e
       left join public.fuel_storage_events fse
@@ -860,6 +864,7 @@ export async function attachLatestMaintenanceStatusToAssets<T extends { id: stri
         e.latitude,
         e.longitude,
         e.location_text,
+        e.maintenance_noted_at::text as maintenance_noted_at,
         e.created_at
       from public.asset_scan_events e
       where e.asset_id = any($1::uuid[])
@@ -879,16 +884,20 @@ export async function attachLatestMaintenanceStatusToAssets<T extends { id: stri
     [assetIds],
   );
   const latestByAssetId = new Map<string, AssetMaintenanceStatus>();
+  const latestMaintenanceSeenAssetIds = new Set<string>();
 
   result.rows.forEach((row: ScanEventRow & { asset_id: string | number | null }) => {
     const maintenanceStatus = mapMaintenanceStatusFromScanEvent(row);
+    const assetId = maintenanceStatus?.assetRegisterItemId ?? '';
 
-    if (!maintenanceStatus || !maintenanceStatus.assetRegisterItemId) {
+    if (!maintenanceStatus || !assetId || latestMaintenanceSeenAssetIds.has(assetId)) {
       return;
     }
 
-    if (!latestByAssetId.has(maintenanceStatus.assetRegisterItemId)) {
-      latestByAssetId.set(maintenanceStatus.assetRegisterItemId, maintenanceStatus);
+    latestMaintenanceSeenAssetIds.add(assetId);
+
+    if (!maintenanceStatus.notedAtIso) {
+      latestByAssetId.set(assetId, maintenanceStatus);
     }
   });
 
@@ -896,6 +905,91 @@ export async function attachLatestMaintenanceStatusToAssets<T extends { id: stri
     ...asset,
     latestMaintenanceStatus: latestByAssetId.get(asset.id) ?? null,
   }));
+}
+
+
+function assetMaintenanceStatusSelectSql(whereClause: string): string {
+  return `
+    select
+      e.id,
+      e.asset_id,
+      e.actor_type,
+      e.operator_name,
+      to_jsonb(e)->>'activity_text' as activity_text,
+      to_jsonb(e)->>'work_area_text' as work_area_text,
+      e.hours,
+      e.fuel_percent,
+      to_jsonb(e)->>'fuel_litres' as fuel_litres,
+      to_jsonb(e)->>'fuel_storage_id' as fuel_storage_id,
+      to_jsonb(e)->>'fuel_storage_event_id' as fuel_storage_event_id,
+      null::text as fuel_ledger_storage_id,
+      null::numeric as fuel_ledger_litres,
+      ''::text as fuel_storage_name,
+      ''::text as fuel_storage_public_code,
+      ''::text as fuel_ledger_event_type,
+      null::numeric as fuel_storage_level_before_litres,
+      null::numeric as fuel_storage_level_after_litres,
+      null::numeric as asset_fuel_percent_before,
+      null::numeric as asset_fuel_percent_after,
+      null::numeric as asset_usage_reading,
+      e.condition,
+      e.note,
+      e.photo_urls,
+      e.latitude,
+      e.longitude,
+      e.location_text,
+      e.maintenance_noted_at::text as maintenance_noted_at,
+      e.created_at,
+      a.user_id::text as asset_owner_user_id
+    from public.asset_scan_events e
+    inner join public.asset_register_items a
+      on a.id = e.asset_id
+    ${whereClause}
+  `;
+}
+
+export async function markAssetMaintenanceStatusNoted(input: {
+  currentUserId: string;
+  maintenanceStatusId: string;
+}): Promise<AssetMaintenanceStatus> {
+  await ensureFuelLedgerTables();
+
+  const db = getDb();
+  const current = await db.query<ScanEventRow & { asset_id: string | number | null; asset_owner_user_id: string | null }>(
+    `${assetMaintenanceStatusSelectSql('where e.id = $1::uuid')} limit 1`,
+    [input.maintenanceStatusId],
+  );
+  const currentRow = current.rows[0] ?? null;
+  const currentStatus = currentRow ? mapMaintenanceStatusFromScanEvent(currentRow) : null;
+
+  if (!currentRow || !currentStatus || !currentStatus.assetRegisterItemId) {
+    throw new Error('MAINTENANCE_STATUS_NOT_FOUND');
+  }
+
+  if (asText(currentRow.asset_owner_user_id) !== input.currentUserId) {
+    throw new Error('MAINTENANCE_STATUS_FORBIDDEN');
+  }
+
+  await db.query(
+    `
+      update public.asset_scan_events
+      set maintenance_noted_at = coalesce(maintenance_noted_at, now())
+      where id = $1::uuid
+    `,
+    [input.maintenanceStatusId],
+  );
+
+  const updated = await db.query<ScanEventRow & { asset_id: string | number | null; asset_owner_user_id: string | null }>(
+    `${assetMaintenanceStatusSelectSql('where e.id = $1::uuid')} limit 1`,
+    [input.maintenanceStatusId],
+  );
+  const updatedStatus = updated.rows[0] ? mapMaintenanceStatusFromScanEvent(updated.rows[0]) : null;
+
+  if (!updatedStatus) {
+    throw new Error('MAINTENANCE_STATUS_NOT_FOUND');
+  }
+
+  return updatedStatus;
 }
 
 export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promise<{
