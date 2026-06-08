@@ -642,8 +642,17 @@ function buildEditorSummary(editor: EditorKey, asset: ScanSafeAsset | null): str
   return "Upload or take photos";
 }
 
-function needsUsageUpdateBeforeActions(asset: ScanSafeAsset | null, update: PendingScanUpdate): boolean {
-  return Boolean(asset && asset.usageMode !== "none" && !update.hasUsage);
+function needsUsageUpdateBeforeActions(
+  asset: ScanSafeAsset | null,
+  update: PendingScanUpdate,
+  hasCompletedRequiredUsageUpdate: boolean,
+): boolean {
+  return Boolean(
+    asset &&
+      asset.usageMode !== "none" &&
+      !update.hasUsage &&
+      !hasCompletedRequiredUsageUpdate,
+  );
 }
 
 function requiredUsageTitle(asset: ScanSafeAsset): string {
@@ -1026,6 +1035,7 @@ export default function ScanClient({
   const [activeEditor, setActiveEditor] = useState<EditorKey | null>(null);
   const [showLocationReminder, setShowLocationReminder] = useState(false);
   const [isDone, setIsDone] = useState(false);
+  const [hasCompletedRequiredUsageUpdate, setHasCompletedRequiredUsageUpdate] = useState(false);
   const [showServiceDetailsStep, setShowServiceDetailsStep] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [sharePartners, setSharePartners] = useState<PartnerDirectoryEntry[]>([]);
@@ -1088,6 +1098,7 @@ export default function ScanClient({
     setActiveEditor(null);
     setShowLocationReminder(false);
     setIsDone(false);
+    setHasCompletedRequiredUsageUpdate(false);
     setShowServiceDetailsStep(false);
     setIsShareModalOpen(false);
     setSharePartners([]);
@@ -1353,6 +1364,7 @@ export default function ScanClient({
       });
       setPendingUpdate(initialPendingUpdate);
       setIsDone(false);
+      setHasCompletedRequiredUsageUpdate(!requiresInitialUsageUpdate);
       setShowLocationReminder(false);
       setActiveEditor(requiresInitialUsageUpdate ? "usage" : null);
       setLocationState("ready");
@@ -1481,7 +1493,7 @@ export default function ScanClient({
   }
 
   function openEditor(nextEditor: EditorKey) {
-    const enforcedEditor = nextEditor !== "usage" && needsUsageUpdateBeforeActions(asset, pendingUpdate)
+    const enforcedEditor = nextEditor !== "usage" && needsUsageUpdateBeforeActions(asset, pendingUpdate, hasCompletedRequiredUsageUpdate)
       ? "usage"
       : nextEditor;
 
@@ -1610,7 +1622,7 @@ export default function ScanClient({
   function handleShareTap() {
     if (!asset) return;
 
-    if (needsUsageUpdateBeforeActions(asset, pendingUpdate)) {
+    if (needsUsageUpdateBeforeActions(asset, pendingUpdate, hasCompletedRequiredUsageUpdate)) {
       setNotice({ tone: "error", message: requiredUsageCopy(asset) });
       openEditor("usage");
       return;
@@ -1706,6 +1718,7 @@ export default function ScanClient({
       setIsShareModalOpen(false);
       setActiveEditor(null);
       setIsDone(false);
+      setHasCompletedRequiredUsageUpdate(true);
       setSharePartners([]);
       resetShareFlow();
       removeShareMap();
@@ -1914,6 +1927,8 @@ export default function ScanClient({
         }));
         setAsset((current) => current ? { ...current, hours: parsedHours } : current);
       }
+
+      setHasCompletedRequiredUsageUpdate(true);
     }
 
     if (activeEditor === "fuel") {
@@ -2040,6 +2055,9 @@ export default function ScanClient({
       setAsset(data.asset);
       setSavedAsset(data.asset);
       setAssetPreview(data.asset);
+      if (pendingUpdate.hasUsage) {
+        setHasCompletedRequiredUsageUpdate(true);
+      }
       setPendingUpdate(initialPendingUpdate);
       setDraft(initialDraft);
       return data.asset;
@@ -2069,7 +2087,7 @@ export default function ScanClient({
 
   const locationReady = hasLocationCaptured(draft);
   const showUsageAction = asset ? asset.usageMode !== "none" : false;
-  const usageUpdateRequired = showUsageAction && needsUsageUpdateBeforeActions(asset, pendingUpdate);
+  const usageUpdateRequired = showUsageAction && needsUsageUpdateBeforeActions(asset, pendingUpdate, hasCompletedRequiredUsageUpdate);
   const currentFuelPercent = normalizeFuelPercentText(draft.fuelPercent, asset?.fuelPercent ?? null);
   const showFuelAction = Boolean(asset?.canUpdateFuel);
   const serviceProfile = useMemo(() => resolveAssetServiceProfile(asset), [asset]);
