@@ -45,3 +45,4 @@
 --   20-multi-asset-registers.sql
 --   21-asset-register-logos.sql
 --   22-account-profile-business-media.sql
+--   23-asset-register-upload-storage.sql
