@@ -33,7 +33,7 @@
 
 .heroCard {
   display: grid;
-  gap: clamp(0.92rem, 1.35vw, 1.18rem);
+  gap: clamp(1.05rem, 1.35vw, 1.25rem);
   overflow: visible;
   border: 0;
   border-radius: 0;
@@ -44,95 +44,37 @@
 
 .heroTitleRow {
   width: 100%;
+  max-width: none;
   min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: clamp(0.8rem, 1.3vw, 1.1rem);
-  padding: clamp(1.15rem, 2.1vw, 1.65rem) clamp(1.2rem, 2.4vw, 1.9rem);
-  border: 1px solid rgba(193, 211, 218, 0.92);
-  border-radius: clamp(1.2rem, 1.85vw, 1.55rem);
-  background:
-    radial-gradient(circle at 5% 0%, rgba(25, 116, 84, 0.095) 0%, rgba(25, 116, 84, 0) 36%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.985) 0%, rgba(247, 251, 252, 0.96) 100%);
-  box-shadow:
-    0 16px 34px rgba(16, 36, 40, 0.048),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-}
-
-.heroCopy {
-  min-width: 0;
-  display: grid;
-  gap: 0.44rem;
-  align-content: center;
-}
-
-.heroEyebrow {
-  display: inline-flex;
-  width: fit-content;
-  align-items: center;
-  min-height: 1.72rem;
-  padding: 0 0.72rem;
-  border: 1px solid rgba(18, 100, 77, 0.16);
-  border-radius: 999px;
-  color: #12644d;
-  background: rgba(237, 248, 242, 0.82);
-  font-size: 0.74rem;
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: 0.075em;
-  text-transform: uppercase;
 }
 
 .heroTitleRow h1 {
+  width: 100%;
+  min-height: clamp(5.1rem, 7vw, 6.1rem);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
   margin: 0;
-  max-width: 68rem;
+  padding: clamp(1.15rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2rem);
+  border: 1.5px solid rgba(193, 211, 218, 0.98);
+  border-radius: clamp(1.25rem, 2vw, 1.7rem);
+  background:
+    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%);
+  box-shadow:
+    0 18px 38px rgba(16, 36, 40, 0.06),
+    0 6px 16px rgba(16, 36, 40, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
   color: #073b30;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(2.15rem, 3.25vw, 3.15rem);
+  font-size: clamp(2.35rem, 4.15vw, 3.55rem);
   font-weight: 900;
   line-height: 0.98;
-  letter-spacing: -0.055em;
-  text-transform: none;
+  letter-spacing: -0.062em;
+  text-transform: uppercase;
+  text-shadow: none;
   overflow-wrap: anywhere;
   text-wrap: balance;
-}
-
-.heroMeta {
-  min-width: clamp(8.8rem, 12vw, 10.5rem);
-  min-height: clamp(4.8rem, 6vw, 5.55rem);
-  display: grid;
-  align-content: center;
-  justify-items: center;
-  gap: 0.24rem;
-  padding: 0.8rem 1rem;
-  border: 1px solid rgba(193, 211, 218, 0.86);
-  border-radius: clamp(1rem, 1.45vw, 1.22rem);
-  background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.08), transparent 72%),
-    linear-gradient(180deg, #ffffff 0%, #eff7f4 100%);
-  color: #0f3d32;
-  box-shadow:
-    0 10px 22px rgba(16, 45, 37, 0.052),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-}
-
-.heroMeta strong {
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.7rem, 2.2vw, 2.15rem);
-  font-weight: 900;
-  line-height: 0.95;
-  letter-spacing: -0.05em;
-}
-
-.heroMeta span {
-  color: #607284;
-  font-size: 0.74rem;
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: 0.06em;
-  text-align: center;
-  text-transform: uppercase;
 }
 
 .categoryGrid {
@@ -704,9 +646,7 @@
 .companyCard {
   overflow: hidden;
   border-radius: 1.65rem;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.04) 0%, rgba(25, 116, 84, 0) 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.99) 100%);
+  background: #ffffff;
   box-shadow:
     0 14px 28px rgba(20, 43, 43, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
@@ -724,25 +664,11 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
-.companyCard.toneFinance {
-  border-color: rgba(213, 140, 75, 0.3);
-  background:
-    radial-gradient(circle at 2% 0%, rgba(213, 140, 75, 0.08), transparent 22rem),
-    linear-gradient(180deg, #fffdf9 0%, #fff8ee 100%);
-}
-
-.companyCard.toneInsurance {
-  border-color: rgba(146, 191, 230, 0.5);
-  background:
-    radial-gradient(circle at 2% 0%, rgba(37, 99, 235, 0.08), transparent 22rem),
-    linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%);
-}
-
+.companyCard.toneFinance,
+.companyCard.toneInsurance,
 .companyCard.toneDealer {
-  border-color: rgba(133, 207, 170, 0.5);
-  background:
-    radial-gradient(circle at 2% 0%, rgba(22, 130, 88, 0.08), transparent 22rem),
-    linear-gradient(180deg, #ffffff 0%, #eefaf4 100%);
+  border-color: rgba(204, 219, 232, 0.96);
+  background: #ffffff;
 }
 
 .companyCardOpen {
@@ -751,16 +677,10 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
-.companyCard.toneFinance.companyCardOpen {
-  border-color: rgba(213, 140, 75, 0.46);
-}
-
-.companyCard.toneInsurance.companyCardOpen {
-  border-color: rgba(109, 166, 216, 0.62);
-}
-
+.companyCard.toneFinance.companyCardOpen,
+.companyCard.toneInsurance.companyCardOpen,
 .companyCard.toneDealer.companyCardOpen {
-  border-color: rgba(88, 185, 133, 0.62);
+  border-color: rgba(186, 207, 216, 0.98);
 }
 
 .companySummary {
@@ -834,18 +754,63 @@
   min-height: 3.35rem;
   min-width: 10.25rem;
   padding: 0 1.25rem;
+  color: #0f3d32;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
+  border: 1.5px solid rgba(191, 210, 216, 0.98);
+  box-shadow:
+    0 9px 20px rgba(16, 45, 37, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.companyCard.toneFinance .viewDetailsButton {
+  color: #6d3f12;
+  background: linear-gradient(180deg, #fffdf9 0%, #fff0e3 100%);
+  border-color: #d58c4b;
+  box-shadow:
+    0 9px 20px rgba(109, 63, 18, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.companyCard.toneInsurance .viewDetailsButton {
   color: #113d66;
   background: linear-gradient(180deg, #ffffff 0%, #edf6ff 100%);
-  border: 1.5px solid #92bfe6;
+  border-color: #92bfe6;
   box-shadow:
     0 9px 20px rgba(18, 61, 102, 0.075),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
+.companyCard.toneDealer .viewDetailsButton {
+  color: #0d5a42;
+  background: linear-gradient(180deg, #ffffff 0%, #ebf9f2 100%);
+  border-color: #85cfaa;
+  box-shadow:
+    0 9px 20px rgba(10, 84, 61, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
 .viewDetailsButton:hover {
+  color: #0b3329;
+  background: linear-gradient(180deg, #ffffff 0%, #eef8f3 100%);
+  border-color: rgba(31, 108, 83, 0.34);
+}
+
+.companyCard.toneFinance .viewDetailsButton:hover {
+  color: #6d3f12;
+  background: linear-gradient(180deg, #fffaf4 0%, #ffe5cf 100%);
+  border-color: #bd6e28;
+}
+
+.companyCard.toneInsurance .viewDetailsButton:hover {
   color: #113d66;
   background: linear-gradient(180deg, #ffffff 0%, #deefff 100%);
   border-color: #6da6d8;
+}
+
+.companyCard.toneDealer .viewDetailsButton:hover {
+  color: #083f2f;
+  background: linear-gradient(180deg, #ffffff 0%, #ddf3e8 100%);
+  border-color: #58b985;
 }
 
 .detailPanel {
@@ -860,25 +825,13 @@
     linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%);
 }
 
-.companyCard.toneFinance .detailPanel {
-  border-top-color: rgba(213, 140, 75, 0.24);
-  background:
-    radial-gradient(circle at top left, rgba(213, 140, 75, 0.052), transparent 24rem),
-    linear-gradient(180deg, #ffffff 0%, #fffaf3 100%);
-}
-
-.companyCard.toneInsurance .detailPanel {
-  border-top-color: rgba(109, 166, 216, 0.34);
-  background:
-    radial-gradient(circle at top left, rgba(37, 99, 235, 0.05), transparent 24rem),
-    linear-gradient(180deg, #ffffff 0%, #f3f9ff 100%);
-}
-
+.companyCard.toneFinance .detailPanel,
+.companyCard.toneInsurance .detailPanel,
 .companyCard.toneDealer .detailPanel {
-  border-top-color: rgba(88, 185, 133, 0.34);
+  border-top-color: rgba(204, 219, 232, 0.9);
   background:
-    radial-gradient(circle at top left, rgba(22, 130, 88, 0.052), transparent 24rem),
-    linear-gradient(180deg, #ffffff 0%, #f1faf5 100%);
+    radial-gradient(circle at top left, rgba(31, 108, 83, 0.055), transparent 24rem),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%);
 }
 
 .mediaPanel {
@@ -1087,18 +1040,10 @@ a.detailRow:hover {
     width: min(calc(100% - 1.25rem), 1360px);
   }
 
-  .heroTitleRow,
   .searchPanel,
   .companySummary,
   .detailPanel {
     grid-template-columns: 1fr;
-  }
-
-  .heroMeta {
-    width: 100%;
-    min-width: 0;
-    min-height: 4.15rem;
-    justify-items: start;
   }
 
   .categoryGrid {
@@ -1145,26 +1090,12 @@ a.detailRow:hover {
     border-radius: 1.1rem;
   }
 
-  .heroTitleRow {
-    gap: 0.85rem;
-    padding: 1rem;
-    border-radius: 1.15rem;
-  }
-
-  .heroEyebrow {
-    min-height: 1.55rem;
-    padding: 0 0.62rem;
-    font-size: 0.68rem;
-  }
-
   .heroTitleRow h1 {
-    font-size: clamp(1.82rem, 8vw, 2.35rem);
+    min-height: 4.35rem;
+    padding: 1rem 1.05rem;
+    border-radius: 1.15rem;
+    font-size: clamp(1.72rem, 8.2vw, 2.2rem);
     letter-spacing: -0.045em;
-  }
-
-  .heroMeta {
-    min-height: 3.65rem;
-    padding: 0.72rem 0.85rem;
   }
 
   .categoryButton {

@@ -383,9 +383,6 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
   }, [companies, searchTerm, selectedProvince, selectedType]);
 
   const activeFilterCount = selectedProvince ? 1 : 0;
-  const listedCompanyCount = companies.length;
-  const listedCompanyCountText = isLoading ? '—' : String(listedCompanyCount);
-  const listedCompanyLabel = isLoading ? 'loading partners' : listedCompanyCount === 1 ? 'listed partner' : 'listed partners';
 
   function handleTypeSelect(type: CompanyTypeFilter) {
     setSelectedType((current) => (current === type ? 'all' : type));
@@ -505,14 +502,7 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
       <section className={styles.shell}>
         <section className={styles.heroCard}>
           <div className={styles.heroTitleRow}>
-            <div className={styles.heroCopy}>
-              <span className={styles.heroEyebrow}>Partner Directory</span>
-              <h1>Find finance, insurance or dealers</h1>
-            </div>
-            <div className={styles.heroMeta} aria-label="Listed companies">
-              <strong>{listedCompanyCountText}</strong>
-              <span>{listedCompanyLabel}</span>
-            </div>
+            <h1>Company Search</h1>
           </div>
 
           <div className={styles.categoryGrid} aria-label="Company types">
