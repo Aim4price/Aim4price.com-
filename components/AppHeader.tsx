@@ -64,6 +64,8 @@ type SmartLinkProps = {
 };
 
 
+const NOTIFICATIONS_PER_PAGE = 4;
+
 const BASE_NAV_ITEMS: NavItem[] = [
   { key: 'home', href: '/', label: 'Home' },
   { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
@@ -192,6 +194,7 @@ export default function AppHeader({
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const [notifications, setNotifications] = useState<HeaderNotificationItem[]>([]);
   const [notificationsSeenAt, setNotificationsSeenAt] = useState<string | null>(null);
+  const [notificationPage, setNotificationPage] = useState(1);
   const [processingContactRequestIds, setProcessingContactRequestIds] = useState<Set<string>>(() => new Set());
   const [canUseNotificationPortal, setCanUseNotificationPortal] = useState(false);
 
@@ -282,6 +285,12 @@ export default function AppHeader({
   }, [notificationOpen]);
 
   useEffect(() => {
+    if (notificationOpen) {
+      setNotificationPage(1);
+    }
+  }, [notificationOpen]);
+
+  useEffect(() => {
     if (!session?.id || typeof window === 'undefined') {
       setNotificationsSeenAt(null);
       return;
@@ -289,6 +298,12 @@ export default function AppHeader({
 
     setNotificationsSeenAt(window.localStorage.getItem(getNotificationSeenStorageKey(session.id)));
   }, [session?.id]);
+
+  useEffect(() => {
+    setNotificationPage((current) =>
+      Math.min(current, Math.max(1, Math.ceil(notifications.length / NOTIFICATIONS_PER_PAGE))),
+    );
+  }, [notifications.length]);
 
   useEffect(() => {
     let mounted = true;
@@ -343,6 +358,19 @@ export default function AppHeader({
     return notifications.filter((item) => parseTime(item.createdAtIso) > seenTime).length;
   }, [notifications, notificationsSeenAt]);
   const notificationBadgeText = unreadNotificationCount > 9 ? '9+' : String(unreadNotificationCount);
+  const notificationPageCount = Math.max(1, Math.ceil(notifications.length / NOTIFICATIONS_PER_PAGE));
+  const activeNotificationPage = Math.min(notificationPage, notificationPageCount);
+  const visibleNotifications = useMemo(() => {
+    const startIndex = (activeNotificationPage - 1) * NOTIFICATIONS_PER_PAGE;
+    return notifications.slice(startIndex, startIndex + NOTIFICATIONS_PER_PAGE);
+  }, [activeNotificationPage, notifications]);
+  const notificationRangeStart = notifications.length
+    ? (activeNotificationPage - 1) * NOTIFICATIONS_PER_PAGE + 1
+    : 0;
+  const notificationRangeEnd = notifications.length
+    ? Math.min(activeNotificationPage * NOTIFICATIONS_PER_PAGE, notifications.length)
+    : 0;
+  const hasNotificationPages = notifications.length > NOTIFICATIONS_PER_PAGE;
 
   function markNotificationsSeen() {
     if (!session?.id || typeof window === 'undefined') return;
@@ -482,7 +510,9 @@ export default function AppHeader({
                   {isLoadingNotifications
                     ? 'Checking activity'
                     : notifications.length
-                      ? `${notifications.length} ${notifications.length === 1 ? 'notification' : 'notifications'}`
+                      ? hasNotificationPages
+                        ? `${notificationRangeStart}-${notificationRangeEnd} of ${notifications.length} notifications`
+                        : `${notifications.length} ${notifications.length === 1 ? 'notification' : 'notifications'}`
                       : 'No notifications'}
                 </span>
                 <strong>
@@ -498,7 +528,7 @@ export default function AppHeader({
                 {isLoadingNotifications ? (
                   <div className={styles.notificationEmpty}>Loading notifications...</div>
                 ) : notifications.length ? (
-                  notifications.map((notification) =>
+                  visibleNotifications.map((notification) =>
                     notification.category === 'contact_request' && notification.contactRequestId ? (
                       <div
                         key={notification.id}
@@ -553,6 +583,32 @@ export default function AppHeader({
                   <div className={styles.notificationEmpty}>No new messages, notes or lead updates yet.</div>
                 )}
               </div>
+
+              {!isLoadingNotifications && hasNotificationPages ? (
+                <div className={styles.notificationPagination} role="navigation" aria-label="Notification pages">
+                  <button
+                    type="button"
+                    className={styles.notificationPaginationButton}
+                    onClick={() => setNotificationPage((current) => Math.max(1, current - 1))}
+                    disabled={activeNotificationPage <= 1}
+                  >
+                    Previous
+                  </button>
+                  <span className={styles.notificationPaginationText}>
+                    Page {activeNotificationPage} of {notificationPageCount}
+                  </span>
+                  <button
+                    type="button"
+                    className={styles.notificationPaginationButton}
+                    onClick={() =>
+                      setNotificationPage((current) => Math.min(notificationPageCount, current + 1))
+                    }
+                    disabled={activeNotificationPage >= notificationPageCount}
+                  >
+                    Next
+                  </button>
+                </div>
+              ) : null}
             </section>
           </div>,
           document.body,

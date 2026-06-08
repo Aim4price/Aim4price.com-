@@ -302,7 +302,7 @@
   max-height: min(48rem, calc(100dvh - 3rem));
   box-sizing: border-box;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 1rem;
   overflow: hidden;
   padding: 1.08rem;
@@ -433,6 +433,59 @@
 .notificationList::-webkit-scrollbar-thumb {
   border-radius: 999px;
   background: rgba(23, 77, 62, 0.24);
+}
+
+.notificationPagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.72rem;
+  padding: 0.05rem 0.55rem 0.08rem;
+}
+
+.notificationPaginationButton {
+  min-height: 2.55rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(18, 45, 37, 0.1);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.92);
+  color: #42514b;
+  font-size: 0.82rem;
+  font-weight: 850;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.035);
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease;
+}
+
+.notificationPaginationButton:hover:not(:disabled) {
+  color: #17362c;
+  background: rgba(23, 77, 62, 0.06);
+  border-color: rgba(23, 77, 62, 0.16);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(18, 45, 37, 0.07);
+}
+
+.notificationPaginationButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  transform: none;
+  box-shadow: none;
+}
+
+.notificationPaginationText {
+  color: #5d6b66;
+  font-size: 0.82rem;
+  font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .notificationItem {
@@ -614,6 +667,7 @@
 .notificationClearButton:focus-visible,
 .notificationCloseButton:focus-visible,
 .notificationItem:focus-visible,
+.notificationPaginationButton:focus-visible,
 .menuLink:focus-visible,
 .menuDangerButton:focus-visible {
   outline: 3px solid rgba(23, 77, 62, 0.18);
@@ -796,6 +850,22 @@
   .notificationList {
     padding-right: 0.12rem;
     padding-left: 0.04rem;
+  }
+
+  .notificationPagination {
+    gap: 0.52rem;
+    padding-inline: 0.12rem;
+  }
+
+  .notificationPaginationButton {
+    flex: 1 1 0;
+    min-height: 2.5rem;
+    padding: 0 0.72rem;
+  }
+
+  .notificationPaginationText {
+    flex: 0 0 auto;
+    font-size: 0.76rem;
   }
 
   .notificationItem {
