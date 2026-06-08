@@ -1842,6 +1842,111 @@ function shortDocumentName(value: string): string {
   return text.length > 34 ? `${text.slice(0, 18)}…${text.slice(-10)}` : text;
 }
 
+const DOCUMENT_OBJECT_URL_TTL_MS = 5 * 60 * 1000;
+
+type CachedDocumentObjectUrl = {
+  objectUrl: string;
+  timeoutId: number | null;
+};
+
+function isDataDocumentUrl(value: string): boolean {
+  return /^data:/i.test(String(value ?? '').trim());
+}
+
+function parseDataUrlToBlob(dataUrl: string): Blob {
+  const match = /^data:([^;,]*)(;base64)?,([\s\S]*)$/i.exec(dataUrl);
+
+  if (!match) {
+    throw new Error('Invalid document data.');
+  }
+
+  const mimeType = match[1] || 'application/octet-stream';
+  const isBase64 = Boolean(match[2]);
+  const payload = match[3] || '';
+
+  if (!isBase64) {
+    return new Blob([decodeURIComponent(payload)], { type: mimeType });
+  }
+
+  const binaryString = window.atob(payload.replace(/\s/g, ''));
+  const slices: Uint8Array[] = [];
+  const sliceSize = 8192;
+
+  for (let offset = 0; offset < binaryString.length; offset += sliceSize) {
+    const slice = binaryString.slice(offset, offset + sliceSize);
+    const bytes = new Uint8Array(slice.length);
+
+    for (let index = 0; index < slice.length; index += 1) {
+      bytes[index] = slice.charCodeAt(index);
+    }
+
+    slices.push(bytes);
+  }
+
+  return new Blob(slices, { type: mimeType });
+}
+
+async function createDataDocumentObjectUrl(dataUrl: string): Promise<string> {
+  try {
+    const response = await fetch(dataUrl);
+
+    if (response.ok) {
+      const blob = await response.blob();
+
+      if (blob.size > 0) {
+        return URL.createObjectURL(blob);
+      }
+    }
+  } catch {
+    // Fall back to manual decoding below. Some browsers are unreliable with large data URLs.
+  }
+
+  return URL.createObjectURL(parseDataUrlToBlob(dataUrl));
+}
+
+function writeDocumentOpeningPage(targetWindow: Window, fileName: string): void {
+  try {
+    targetWindow.document.title = fileName ? `Opening ${fileName}` : 'Opening document';
+    targetWindow.document.body.replaceChildren();
+    targetWindow.document.body.style.margin = '0';
+    targetWindow.document.body.style.fontFamily = 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    targetWindow.document.body.style.background = '#f5f7f8';
+    targetWindow.document.body.style.color = '#0b332a';
+
+    const wrapper = targetWindow.document.createElement('div');
+    wrapper.style.minHeight = '100vh';
+    wrapper.style.display = 'grid';
+    wrapper.style.placeItems = 'center';
+    wrapper.style.padding = '2rem';
+
+    const card = targetWindow.document.createElement('div');
+    card.style.maxWidth = '28rem';
+    card.style.width = '100%';
+    card.style.padding = '1.4rem';
+    card.style.borderRadius = '1.2rem';
+    card.style.background = '#ffffff';
+    card.style.boxShadow = '0 18px 44px rgba(15, 45, 37, 0.14)';
+    card.style.border = '1px solid rgba(184, 204, 196, 0.72)';
+
+    const title = targetWindow.document.createElement('strong');
+    title.textContent = 'Opening document';
+    title.style.display = 'block';
+    title.style.fontSize = '1rem';
+
+    const description = targetWindow.document.createElement('p');
+    description.textContent = fileName || 'Preparing saved file...';
+    description.style.margin = '0.45rem 0 0';
+    description.style.color = '#60736e';
+    description.style.fontSize = '0.92rem';
+
+    card.append(title, description);
+    wrapper.append(card);
+    targetWindow.document.body.append(wrapper);
+  } catch {
+    // The browser may block writing to the tab. The document still opens once the blob URL is ready.
+  }
+}
+
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -3073,6 +3178,95 @@ export default function AssetRegisterClient() {
   const [isLoadingProjection, setIsLoadingProjection] = useState(false);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const documentInputRef = useRef<HTMLInputElement | null>(null);
+  const documentObjectUrlsRef = useRef<Map<string, CachedDocumentObjectUrl>>(new Map());
+
+  useEffect(() => {
+    return () => {
+      documentObjectUrlsRef.current.forEach((entry) => {
+        URL.revokeObjectURL(entry.objectUrl);
+
+        if (entry.timeoutId !== null) {
+          window.clearTimeout(entry.timeoutId);
+        }
+      });
+      documentObjectUrlsRef.current.clear();
+    };
+  }, []);
+
+  function rememberDocumentObjectUrl(cacheKey: string, objectUrl: string): string {
+    const existingEntry = documentObjectUrlsRef.current.get(cacheKey);
+
+    if (existingEntry) {
+      URL.revokeObjectURL(existingEntry.objectUrl);
+
+      if (existingEntry.timeoutId !== null) {
+        window.clearTimeout(existingEntry.timeoutId);
+      }
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      const currentEntry = documentObjectUrlsRef.current.get(cacheKey);
+
+      if (currentEntry?.objectUrl === objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        documentObjectUrlsRef.current.delete(cacheKey);
+      }
+    }, DOCUMENT_OBJECT_URL_TTL_MS);
+
+    documentObjectUrlsRef.current.set(cacheKey, { objectUrl, timeoutId });
+    return objectUrl;
+  }
+
+  async function openAssetDocument(document: AssetDocument): Promise<void> {
+    const documentUrl = String(document.url ?? '').trim();
+
+    if (!documentUrl) {
+      setNotice({ tone: 'error', message: 'This document does not have a saved file link.' });
+      return;
+    }
+
+    if (!isDataDocumentUrl(documentUrl)) {
+      window.open(documentUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    const cacheKey = document.id || `${document.fileName}-${document.byteSize}-${documentUrl.length}`;
+    const cachedEntry = documentObjectUrlsRef.current.get(cacheKey);
+
+    if (cachedEntry?.objectUrl) {
+      window.open(cachedEntry.objectUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    const targetWindow = window.open('about:blank', '_blank');
+
+    if (!targetWindow) {
+      setNotice({ tone: 'error', message: 'Your browser blocked the document tab. Allow pop-ups and try opening it again.' });
+      return;
+    }
+
+    try {
+      targetWindow.opener = null;
+    } catch {
+      // Ignore browsers that prevent changing opener.
+    }
+
+    writeDocumentOpeningPage(targetWindow, document.fileName);
+
+    try {
+      const objectUrl = rememberDocumentObjectUrl(cacheKey, await createDataDocumentObjectUrl(documentUrl));
+      targetWindow.location.href = objectUrl;
+    } catch (error) {
+      try {
+        targetWindow.close();
+      } catch {
+        // Ignore close failures.
+      }
+
+      console.error('asset document open failed', error);
+      setNotice({ tone: 'error', message: 'The saved document could not be opened. Please remove and upload it again.' });
+    }
+  }
   const projectionRequestRef = useRef(0);
   const projectionResultRef = useRef<HTMLElement | null>(null);
   const [shouldScrollToProjectionResult, setShouldScrollToProjectionResult] = useState(false);
@@ -6341,10 +6535,16 @@ export default function AssetRegisterClient() {
                                     {detailDocuments.length ? (
                                       <div className={styles.assetDocumentList}>
                                         {detailDocuments.slice(0, 4).map((document) => (
-                                          <a href={document.url} target="_blank" rel="noreferrer" className={styles.assetDocumentLink} key={document.id}>
+                                          <button
+                                            type="button"
+                                            className={styles.assetDocumentLink}
+                                            key={document.id}
+                                            onClick={() => { void openAssetDocument(document); }}
+                                            title={`Open ${document.fileName}`}
+                                          >
                                             <DocumentIcon className={styles.buttonIcon} />
                                             <span>{shortDocumentName(document.fileName)}</span>
-                                          </a>
+                                          </button>
                                         ))}
                                       </div>
                                     ) : null}
@@ -7131,9 +7331,13 @@ export default function AssetRegisterClient() {
                               <strong>{shortDocumentName(document.fileName)}</strong>
                               <small>{formatByteSize(document.byteSize)}</small>
                             </div>
-                            <a href={document.url} target="_blank" rel="noreferrer" className={styles.documentOpenLink}>
+                            <button
+                              type="button"
+                              className={styles.documentOpenLink}
+                              onClick={() => { void openAssetDocument(document); }}
+                            >
                               Open
-                            </a>
+                            </button>
                             <button type="button" className={styles.documentRemoveButton} onClick={() => removeDraftDocument(document.id)}>
                               Remove
                             </button>
