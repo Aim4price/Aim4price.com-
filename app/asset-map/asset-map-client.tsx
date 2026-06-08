@@ -640,6 +640,19 @@ export default function AssetMapClient() {
   const selectedAssetSafePhotoIndex = selectedAssetPhotos.length ? Math.min(selectedPhotoIndex, selectedAssetPhotos.length - 1) : 0;
   const selectedAssetPhoto = selectedAssetPhotos[selectedAssetSafePhotoIndex] ?? null;
   const selectedAssetGoogleMapsHref = selectedAsset ? buildGoogleMapsHref(selectedAsset) : null;
+  const hasMultipleSelectedPhotos = selectedAssetPhotos.length > 1;
+
+  const showPreviousSelectedPhoto = useCallback(() => {
+    if (selectedAssetPhotos.length <= 1) return;
+
+    setSelectedPhotoIndex((currentIndex) => (currentIndex - 1 + selectedAssetPhotos.length) % selectedAssetPhotos.length);
+  }, [selectedAssetPhotos.length]);
+
+  const showNextSelectedPhoto = useCallback(() => {
+    if (selectedAssetPhotos.length <= 1) return;
+
+    setSelectedPhotoIndex((currentIndex) => (currentIndex + 1) % selectedAssetPhotos.length);
+  }, [selectedAssetPhotos.length]);
 
   const hasActiveSearch = search.trim().length > 0;
 
@@ -802,18 +815,41 @@ export default function AssetMapClient() {
 
                   <div className={styles.selectedAssetMain}>
                     <div className={styles.selectedPhotoPanel}>
-                      {selectedAssetPhoto ? (
-                        <img
-                          src={selectedAssetPhoto}
-                          alt={`${selectedAsset.title || 'Selected asset'} photo ${selectedAssetSafePhotoIndex + 1}`}
-                          className={styles.selectedPhotoImage}
-                        />
-                      ) : (
-                        <div className={styles.selectedPhotoPlaceholder}>
-                          <strong>No photos uploaded</strong>
-                          <span>Photos added in the Asset Register will show here.</span>
-                        </div>
-                      )}
+                      <div className={styles.selectedPhotoFrame}>
+                        {selectedAssetPhoto ? (
+                          <img
+                            src={selectedAssetPhoto}
+                            alt={`${selectedAsset.title || 'Selected asset'} photo ${selectedAssetSafePhotoIndex + 1}`}
+                            className={styles.selectedPhotoImage}
+                          />
+                        ) : (
+                          <div className={styles.selectedPhotoPlaceholder}>
+                            <strong>No photos uploaded</strong>
+                            <span>Photos added in the Asset Register will show here.</span>
+                          </div>
+                        )}
+
+                        {hasMultipleSelectedPhotos ? (
+                          <>
+                            <button
+                              type="button"
+                              className={`${styles.selectedPhotoNavButton} ${styles.selectedPhotoNavButtonPrevious}`}
+                              onClick={showPreviousSelectedPhoto}
+                              aria-label="Show previous photo"
+                            >
+                              <span aria-hidden="true">&lt;</span>
+                            </button>
+                            <button
+                              type="button"
+                              className={`${styles.selectedPhotoNavButton} ${styles.selectedPhotoNavButtonNext}`}
+                              onClick={showNextSelectedPhoto}
+                              aria-label="Show next photo"
+                            >
+                              <span aria-hidden="true">&gt;</span>
+                            </button>
+                          </>
+                        ) : null}
+                      </div>
 
                       {selectedAssetPhotos.length > 1 ? (
                         <div className={styles.selectedPhotoThumbRow} aria-label="Selected asset photos">

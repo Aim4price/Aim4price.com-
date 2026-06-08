@@ -763,6 +763,11 @@
   gap: 0.44rem;
 }
 
+.selectedPhotoFrame {
+  position: relative;
+  min-width: 0;
+}
+
 .selectedPhotoImage,
 .selectedPhotoPlaceholder {
   width: 100%;
@@ -798,6 +803,61 @@
   font-size: 0.78rem;
   line-height: 1.4;
   font-weight: 700;
+}
+
+.selectedPhotoNavButton {
+  appearance: none;
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  width: clamp(1.75rem, 2.35vw, 2.08rem);
+  min-width: clamp(1.75rem, 2.35vw, 2.08rem);
+  height: clamp(1.75rem, 2.35vw, 2.08rem);
+  min-height: clamp(1.75rem, 2.35vw, 2.08rem);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0 0.08rem;
+  border-radius: 999px;
+  border: 1px solid rgba(17, 24, 39, 0.28);
+  background: rgba(255, 255, 255, 0.82);
+  color: #111827;
+  box-shadow: 0 8px 16px rgba(17, 24, 39, 0.18);
+  font: inherit;
+  font-size: clamp(1.05rem, 1.5vw, 1.22rem);
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.selectedPhotoNavButton:hover {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(17, 24, 39, 0.45);
+  box-shadow: 0 10px 20px rgba(17, 24, 39, 0.22);
+  transform: translateY(-50%) scale(1.04);
+}
+
+.selectedPhotoNavButton:active {
+  transform: translateY(-50%) scale(0.98);
+}
+
+.selectedPhotoNavButton:focus-visible {
+  outline: 3px solid rgba(17, 24, 39, 0.22);
+  outline-offset: 2px;
+}
+
+.selectedPhotoNavButtonPrevious {
+  left: clamp(0.45rem, 0.72vw, 0.62rem);
+}
+
+.selectedPhotoNavButtonNext {
+  right: clamp(0.45rem, 0.72vw, 0.62rem);
 }
 
 .selectedPhotoThumbRow {
@@ -857,8 +917,10 @@
 .selectedAssetHeader h2 {
   grid-column: 1;
   grid-row: 1;
+  align-self: start;
   min-width: 0;
   margin: 0;
+  padding-top: clamp(0.38rem, 0.55vw, 0.52rem);
   color: var(--text);
   font-size: clamp(1.22rem, 1.65vw, 1.54rem);
   line-height: 1.06;
@@ -1215,6 +1277,10 @@
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
+  }
+
+  .selectedAssetHeader h2 {
+    padding-top: 0;
   }
 
   .selectedValueBlock {
