@@ -224,6 +224,7 @@ type LatestMaintenanceStatus = {
   note: string;
   operatorName: string;
   createdAtIso: string;
+  notedAtIso: string | null;
 };
 
 type OpenPartnerNote = {
@@ -3046,6 +3047,7 @@ export default function AssetRegisterClient() {
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const [busyMarketplaceRemoveId, setBusyMarketplaceRemoveId] = useState<string | null>(null);
   const [busyRevalueAssetId, setBusyRevalueAssetId] = useState<string | null>(null);
+  const [busyMaintenanceStatusId, setBusyMaintenanceStatusId] = useState<string | null>(null);
   const [busyRevalueAction, setBusyRevalueAction] = useState<RevalueMethod | null>(null);
   const [pricingPreview, setPricingPreview] = useState<PricingRevaluePreview | null>(null);
   const [isLoadingPricingPreview, setIsLoadingPricingPreview] = useState(false);
@@ -5072,6 +5074,37 @@ export default function AssetRegisterClient() {
     }
   }
 
+  async function handleMarkMaintenanceStatusNoted(maintenanceStatusId: string, assetId: string) {
+    setBusyMaintenanceStatusId(maintenanceStatusId);
+
+    try {
+      const response = await fetch(`/api/asset-maintenance-status/${encodeURIComponent(maintenanceStatusId)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'noted' }),
+      });
+      const data = (await response.json()) as { ok: boolean; error?: string };
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? 'Failed to mark maintenance as noted.');
+      }
+
+      setAssets((current) => current.map((entry) => (entry.id === assetId ? { ...entry, latestMaintenanceStatus: null } : entry)));
+      setActiveAsset((current) => (current?.id === assetId ? { ...current, latestMaintenanceStatus: null } : current));
+      setMarketplaceAsset((current) => (current?.id === assetId ? { ...current, latestMaintenanceStatus: null } : current));
+      setProjectionAsset((current) => (current?.id === assetId ? { ...current, latestMaintenanceStatus: null } : current));
+      setNotice({ tone: 'success', message: 'Maintenance marked as noted.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to mark maintenance as noted.',
+      });
+    } finally {
+      setBusyMaintenanceStatusId((current) => (current === maintenanceStatusId ? null : current));
+    }
+  }
+
   function handlePrintAssetSheet(asset: RegisterAsset) {
     const assetPhotoUrls = asset.photos
       .map((photo) => toAbsoluteUrl(photo))
@@ -6092,6 +6125,9 @@ export default function AssetRegisterClient() {
                           .filter(Boolean)
                           .join(' · ')
                       : '';
+                    const isMarkingMaintenanceNoted = latestMaintenanceStatus
+                      ? busyMaintenanceStatusId === latestMaintenanceStatus.id
+                      : false;
 
                     return (
                       <article
@@ -6205,6 +6241,14 @@ export default function AssetRegisterClient() {
                                 {latestMaintenanceStatus.note ? <p>Note: {latestMaintenanceStatus.note}</p> : null}
                                 {maintenanceDoneMeta ? <small className={styles.maintenanceDoneMeta}>{maintenanceDoneMeta}</small> : null}
                               </div>
+                              <button
+                                type="button"
+                                className={styles.partnerNoteButton}
+                                disabled={isMarkingMaintenanceNoted}
+                                onClick={() => void handleMarkMaintenanceStatusNoted(latestMaintenanceStatus.id, asset.id)}
+                              >
+                                {isMarkingMaintenanceNoted ? 'Noting...' : 'Noted'}
+                              </button>
                             </div>
                           ) : null}
                         </div>

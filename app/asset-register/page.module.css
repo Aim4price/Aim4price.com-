@@ -20526,6 +20526,24 @@
   color: #f9fafb !important;
 }
 
+.maintenanceDoneBanner .partnerNoteButton {
+  align-self: center;
+  border-color: rgba(249, 250, 251, 0.72) !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+  box-shadow: 0 10px 22px rgba(17, 24, 39, 0.18);
+}
+
+.maintenanceDoneBanner .partnerNoteButton:hover:not(:disabled) {
+  border-color: #ffffff !important;
+  background: #f3f4f6 !important;
+}
+
+.maintenanceDoneBanner .partnerNoteButton:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
 .maintenanceDoneMeta {
   color: rgba(249, 250, 251, 0.78);
   font-size: 0.82rem;
