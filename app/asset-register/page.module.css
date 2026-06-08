@@ -20498,3 +20498,37 @@
     grid-column: auto !important;
   }
 }
+
+/* === QR maintenance completed card state === */
+.assetCardMaintenanceDone {
+  border-color: rgba(75, 85, 99, 0.62) !important;
+  background: linear-gradient(180deg, #d1d5db 0%, #f5f6f7 58%, #ffffff 100%) !important;
+  box-shadow: 0 18px 42px rgba(75, 85, 99, 0.16) !important;
+}
+
+.assetCardMaintenanceDone:hover {
+  border-color: rgba(55, 65, 81, 0.78) !important;
+}
+
+.badgeMaintenanceDone {
+  color: #111827 !important;
+  background: #e5e7eb !important;
+  border-color: rgba(75, 85, 99, 0.32) !important;
+}
+
+.maintenanceDoneBanner {
+  border-color: rgba(31, 41, 55, 0.34) !important;
+  background: linear-gradient(135deg, rgba(55, 65, 81, 0.96), rgba(75, 85, 99, 0.9)) !important;
+}
+
+.maintenanceDoneBanner .partnerNoteText strong,
+.maintenanceDoneBanner .partnerNoteText p {
+  color: #f9fafb !important;
+}
+
+.maintenanceDoneMeta {
+  color: rgba(249, 250, 251, 0.78);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}

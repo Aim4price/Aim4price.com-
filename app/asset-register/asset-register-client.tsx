@@ -216,6 +216,16 @@ type OpenPartnerNoteAttachment = {
   url: string;
 };
 
+type LatestMaintenanceStatus = {
+  id: string;
+  assetRegisterItemId: string;
+  kind: 'checked' | 'serviced' | 'repaired';
+  summary: string;
+  note: string;
+  operatorName: string;
+  createdAtIso: string;
+};
+
 type OpenPartnerNote = {
   id: string;
   ownerUserId: string;
@@ -290,6 +300,7 @@ type RegisterAsset = {
   createdAtIso: string;
   updatedAtIso: string;
   openPartnerNote?: OpenPartnerNote | null;
+  latestMaintenanceStatus?: LatestMaintenanceStatus | null;
 };
 
 type AssetRegisterSummary = {
@@ -1992,7 +2003,8 @@ function assetNeedsEstimateAttention(asset: RegisterAsset): boolean {
 }
 
 function assetAttentionRank(asset: RegisterAsset): number {
-  if (asset.openPartnerNote) return 2;
+  if (asset.openPartnerNote) return 3;
+  if (asset.latestMaintenanceStatus) return 2;
   if (assetNeedsEstimateAttention(asset)) return 1;
 
   return 0;
@@ -2000,11 +2012,20 @@ function assetAttentionRank(asset: RegisterAsset): number {
 
 function assetAttentionTimestamp(asset: RegisterAsset): number {
   const openPartnerNote = asset.openPartnerNote ?? null;
+  const latestMaintenanceStatus = asset.latestMaintenanceStatus ?? null;
 
   if (openPartnerNote) {
     return (
       timestampFromIso(openPartnerNote.updatedAtIso) ||
       timestampFromIso(openPartnerNote.createdAtIso) ||
+      timestampFromIso(asset.updatedAtIso) ||
+      timestampFromIso(asset.createdAtIso)
+    );
+  }
+
+  if (latestMaintenanceStatus) {
+    return (
+      timestampFromIso(latestMaintenanceStatus.createdAtIso) ||
       timestampFromIso(asset.updatedAtIso) ||
       timestampFromIso(asset.createdAtIso)
     );
@@ -6056,22 +6077,38 @@ export default function AssetRegisterClient() {
                     const partnerNoteAuthor = openPartnerNote?.partnerBusinessName || openPartnerNote?.partnerName || 'Aim4price partner';
                     const partnerNoteToneClass = openPartnerNote ? quoteToneClassForPartnerType(openPartnerNote.partnerType) : '';
                     const partnerNoteLabel = openPartnerNote?.partnerType ? `${formatQuotePartnerType(openPartnerNote.partnerType)} note` : 'Partner note';
+                    const latestMaintenanceStatus = asset.latestMaintenanceStatus ?? null;
+                    const maintenanceDoneLabel =
+                      latestMaintenanceStatus?.kind === 'checked'
+                        ? 'Maintenance checked'
+                        : latestMaintenanceStatus?.kind === 'repaired'
+                          ? 'Maintenance repaired'
+                          : 'Maintenance serviced';
+                    const maintenanceDoneMeta = latestMaintenanceStatus
+                      ? [
+                          latestMaintenanceStatus.operatorName ? `By ${latestMaintenanceStatus.operatorName}` : '',
+                          latestMaintenanceStatus.createdAtIso ? formatDate(latestMaintenanceStatus.createdAtIso) : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')
+                      : '';
 
                     return (
                       <article
                         id={`asset-card-${asset.id}`}
-                        className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''}`}
+                        className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''}`}
                         key={asset.id}
                       >
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
-                            {isLive || estimateNeedsUpdate || openPartnerNote ? (
+                            {isLive || estimateNeedsUpdate || openPartnerNote || latestMaintenanceStatus ? (
                               <div className={styles.badgeRow}>
                                 {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
                                 {estimateNeedsUpdate ? (
                                   <span className={`${styles.badge} ${styles.badgeWarning}`}>Estimate needs update</span>
                                 ) : null}
                                 {openPartnerNote ? <span className={`${styles.badge} ${styles.badgeInfo} ${partnerNoteToneClass}`}>{partnerNoteLabel}</span> : null}
+                                {latestMaintenanceStatus ? <span className={`${styles.badge} ${styles.badgeMaintenanceDone}`}>{maintenanceDoneLabel}</span> : null}
                               </div>
                             ) : null}
                             <h2>{asset.title}</h2>
@@ -6157,6 +6194,17 @@ export default function AssetRegisterClient() {
                               >
                                 Noted
                               </button>
+                            </div>
+                          ) : null}
+
+                          {latestMaintenanceStatus ? (
+                            <div className={`${styles.partnerNoteBanner} ${styles.maintenanceDoneBanner}`}>
+                              <div className={styles.partnerNoteText}>
+                                <strong>Maintenance has been done</strong>
+                                <p>{latestMaintenanceStatus.summary}</p>
+                                {latestMaintenanceStatus.note ? <p>Note: {latestMaintenanceStatus.note}</p> : null}
+                                {maintenanceDoneMeta ? <small className={styles.maintenanceDoneMeta}>{maintenanceDoneMeta}</small> : null}
+                              </div>
                             </div>
                           ) : null}
                         </div>
