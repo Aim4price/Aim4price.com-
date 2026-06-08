@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { attachOpenPartnerNotesToAssets } from '../../../lib/partner-access';
+import { attachLatestMaintenanceStatusToAssets } from '../../../lib/scan-assets';
 import {
   getAssetRegisterForUser,
   getSelectedAssetRegister,
@@ -363,7 +364,8 @@ export async function GET(request: NextRequest) {
     }
 
     const baseItems = await listAssetRegisterItems(session.user.id, register.id);
-    const items = await attachOpenPartnerNotesToAssets(session.user.id, baseItems);
+    const itemsWithPartnerNotes = await attachOpenPartnerNotesToAssets(session.user.id, baseItems);
+    const items = await attachLatestMaintenanceStatusToAssets(itemsWithPartnerNotes);
 
     return NextResponse.json({
       ok: true,
@@ -561,8 +563,9 @@ export async function PUT(request: NextRequest) {
     });
 
     const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [item]);
+    const [itemWithMaintenanceStatus] = await attachLatestMaintenanceStatusToAssets(itemWithPartnerNote ? [itemWithPartnerNote] : [item]);
 
-    return NextResponse.json({ ok: true, item: itemWithPartnerNote ?? item });
+    return NextResponse.json({ ok: true, item: itemWithMaintenanceStatus ?? itemWithPartnerNote ?? item });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
