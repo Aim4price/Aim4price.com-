@@ -3179,6 +3179,7 @@ export default function AssetRegisterClient() {
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const documentInputRef = useRef<HTMLInputElement | null>(null);
   const documentObjectUrlsRef = useRef<Map<string, CachedDocumentObjectUrl>>(new Map());
+  const assetMapActionHandledRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -3452,6 +3453,31 @@ export default function AssetRegisterClient() {
     const timeout = window.setTimeout(() => setNotice(null), 3600);
     return () => window.clearTimeout(timeout);
   }, [notice]);
+
+  useEffect(() => {
+    if (assetMapActionHandledRef.current || isLoading || typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('mapAction');
+    const assetId = params.get('assetId');
+
+    if (!assetId || (action !== 'options' && action !== 'manage')) return;
+
+    const targetAsset = assets.find((asset) => asset.id === assetId);
+    if (!targetAsset) return;
+
+    assetMapActionHandledRef.current = true;
+    setExpandedAssetId(targetAsset.id);
+    scrollToAssetCard(targetAsset.id);
+
+    if (action === 'options') {
+      openAssetQuoteOptions(targetAsset);
+    } else {
+      openActionDialog(targetAsset);
+    }
+
+    window.history.replaceState(null, '', `${window.location.pathname}#asset-card-${encodeURIComponent(targetAsset.id)}`);
+  }, [assets, isLoading]);
 
   useEffect(() => {
     if (!projectionResult || !shouldScrollToProjectionResult) return undefined;
