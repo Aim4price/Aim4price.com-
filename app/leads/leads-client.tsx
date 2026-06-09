@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
-import { openAssetRegisterSummaryPrint, openAssetSheetPrint, type ReportMethodCard } from '../../lib/report-print';
+import { openAssetRegisterSummaryPrint, openAssetSheetPrint, type ReportKeyValue, type ReportMethodCard } from '../../lib/report-print';
 import assetStyles from '../asset-register/page.module.css';
 import styles from './page.module.css';
 
@@ -10,6 +10,7 @@ type LeadType = 'finance' | 'insurance' | 'replacement_quote';
 type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 type NoticeTone = 'success' | 'error';
 type LeadStatusFilter = 'all' | 'new' | 'opened';
+type FilterDropdownKey = 'month' | 'year' | 'status';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 type LeadReportStep = 'format' | 'pdf-report';
 type PdfReportKind = 'full' | 'financed' | 'insured' | 'licensed' | 'not-financed' | 'not-insured' | 'not-licensed';
@@ -21,6 +22,11 @@ type PdfReportOption = {
   intro: string;
   sectionTitle: string;
   emptyLabel: string;
+};
+
+type LeadFilterOption = {
+  value: string;
+  label: string;
 };
 
 type IconProps = {
@@ -56,6 +62,10 @@ type AssetLead = {
   partnerPhone: string;
   partnerProvince: string;
   partnerTownCity: string;
+  partnerNoteAttachmentCount?: number;
+  latestPartnerNoteAttachmentFileName?: string;
+  latestPartnerNoteAttachmentByteSize?: number | null;
+  latestPartnerNoteAttachmentCreatedAtIso?: string | null;
   createdAtIso: string;
   viewedAtIso: string | null;
   acceptedAtIso: string | null;
@@ -128,6 +138,14 @@ const MONTH_OPTIONS = [
 ];
 
 const MAX_LEAD_NOTE_PDF_BYTES = 12 * 1024 * 1024;
+const LEADS_PER_PAGE = 10;
+const PAGINATION_WINDOW = 5;
+
+const STATUS_FILTER_OPTIONS: LeadFilterOption[] = [
+  { value: 'all', label: 'All leads' },
+  { value: 'new', label: 'New leads' },
+  { value: 'opened', label: 'Opened leads' },
+];
 
 const PDF_REPORT_OPTIONS: PdfReportOption[] = [
   {
@@ -314,6 +332,71 @@ function ChevronRightIcon({ className }: IconProps) {
   );
 }
 
+type LeadFilterDropdownProps = {
+  label: string;
+  dropdownKey: FilterDropdownKey;
+  value: string;
+  options: LeadFilterOption[];
+  openDropdown: FilterDropdownKey | null;
+  onOpenChange: (key: FilterDropdownKey | null) => void;
+  onChange: (value: string) => void;
+};
+
+function LeadFilterDropdown({
+  label,
+  dropdownKey,
+  value,
+  options,
+  openDropdown,
+  onOpenChange,
+  onChange,
+}: LeadFilterDropdownProps) {
+  const selectedOption = options.find((option) => option.value === value) ?? options[0];
+  const isOpen = openDropdown === dropdownKey;
+
+  return (
+    <label className={`${assetStyles.field} ${styles.leadFilterField}`}>
+      <span>{label}</span>
+      <div className={styles.leadFilterDropdown}>
+        <button
+          type="button"
+          className={`${styles.leadFilterSelectButton} ${isOpen ? styles.leadFilterSelectButtonOpen : ''}`}
+          onClick={() => onOpenChange(isOpen ? null : dropdownKey)}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+        >
+          <span>{selectedOption?.label ?? 'Choose option'}</span>
+          <ChevronDownIcon className={styles.leadFilterSelectIcon} />
+        </button>
+
+        {isOpen ? (
+          <div className={styles.leadFilterSelectMenu} role="listbox" aria-label={label}>
+            {options.map((option) => {
+              const isSelected = option.value === value;
+
+              return (
+                <button
+                  type="button"
+                  key={`${dropdownKey}-${option.value}`}
+                  className={`${styles.leadFilterSelectOption} ${isSelected ? styles.leadFilterSelectOptionActive : ''}`}
+                  onClick={() => {
+                    onChange(option.value);
+                    onOpenChange(null);
+                  }}
+                  role="option"
+                  aria-selected={isSelected}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    </label>
+  );
+}
+
 function formatCurrency(value: unknown): string {
   return new Intl.NumberFormat('en-ZA', {
     style: 'currency',
@@ -392,6 +475,93 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 function asBoolean(value: unknown): boolean {
   return value === true || String(value ?? '').trim().toLowerCase() === 'true';
+}
+
+function asUnknownArray(value: unknown): unknown[] {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed) as unknown;
+      return Array.isArray(parsed) ? parsed : [trimmed];
+    } catch {
+      return [trimmed];
+    }
+  }
+
+  return [];
+}
+
+function snapshotDocumentCount(snapshot: Record<string, unknown> | null | undefined): number {
+  if (!snapshot) return 0;
+
+  const documents = asUnknownArray(
+    snapshot.documents ??
+      snapshot.documentUrls ??
+      snapshot.document_urls ??
+      snapshot.documentFiles ??
+      snapshot.document_files ??
+      snapshot.attachments ??
+      snapshot.files,
+  );
+
+  return documents.filter((document) => Boolean(document && String(document).trim())).length;
+}
+
+function snapshotDocumentStatusLabel(snapshot: Record<string, unknown> | null | undefined): string {
+  const count = snapshotDocumentCount(snapshot);
+
+  if (!count) return 'None';
+  return count === 1 ? 'Document attached' : `${count} documents attached`;
+}
+
+function leadPartnerPdfAttachmentCount(lead: AssetLead): number {
+  return Math.max(0, Math.round(Number(lead.partnerNoteAttachmentCount ?? 0) || 0));
+}
+
+function leadDocumentStatusLabel(lead: AssetLead): string {
+  const assetDocumentCount = snapshotDocumentCount(lead.assetSnapshot);
+  const quotePdfCount = leadPartnerPdfAttachmentCount(lead);
+
+  if (!assetDocumentCount && !quotePdfCount) {
+    return 'None';
+  }
+
+  if (assetDocumentCount && quotePdfCount) {
+    const total = assetDocumentCount + quotePdfCount;
+    return `${total} documents attached, including ${quotePdfCount} quote PDF${quotePdfCount === 1 ? '' : 's'}`;
+  }
+
+  if (quotePdfCount) {
+    return quotePdfCount === 1 ? 'Quote PDF attached' : `${quotePdfCount} quote PDFs attached`;
+  }
+
+  return snapshotDocumentStatusLabel(lead.assetSnapshot);
+}
+
+function leadAttachedDocumentNote(lead: AssetLead): string {
+  const statusLabel = leadDocumentStatusLabel(lead);
+
+  if (statusLabel === 'None') {
+    return '';
+  }
+
+  const fileName = asText(lead.latestPartnerNoteAttachmentFileName);
+  const byteSize = asNumber(lead.latestPartnerNoteAttachmentByteSize);
+
+  if (!fileName) {
+    return statusLabel;
+  }
+
+  return `${statusLabel}: ${fileName}${byteSize !== null && byteSize > 0 ? ` (${formatByteSize(byteSize)})` : ''}`;
 }
 
 function registerLeadSnapshot(lead: AssetLead): Record<string, unknown> | null {
@@ -881,7 +1051,7 @@ function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = '
       financed: asBoolean(asset.isFinanced) ? 'Yes' : 'No',
       licensed: asBoolean(asset.isLicensed) ? 'Yes' : 'No',
       licenseRegistrationNumber: asText(asset.licenseRegistrationNumber) || undefined,
-      documents: 'Not shared',
+      documents: snapshotDocumentStatusLabel(asset),
       updated: updated !== '—' ? `Updated ${updated}` : '—',
       photoUrl: asText(asset.photoUrl) || null,
     };
@@ -906,6 +1076,8 @@ function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = '
       { label: 'Phone', value: ownerPhone(lead) || '—' },
       { label: 'Business email', value: ownerEmail(lead) || '—' },
       { label: 'Location', value: ownerLocation(lead) },
+      ...(lead.ownerMessage ? [{ label: 'Owner message', value: lead.ownerMessage }] : []),
+      ...(leadAttachedDocumentNote(lead) ? [{ label: 'Attached document', value: leadAttachedDocumentNote(lead) }] : []),
     ],
     stats: [
       { label: 'Assets', value: String(reportAssets.length), note: isFullReport ? 'Saved register items.' : reportOption.description },
@@ -931,6 +1103,11 @@ function downloadLeadAsset(lead: AssetLead, reportKind: PdfReportKind = 'full'):
   const value = assetValue(lead);
   const replacementPrice = snapshotReplacementPrice(lead.assetSnapshot);
   const photos = assetPhotos(lead);
+  const attachedDocumentNote = leadAttachedDocumentNote(lead);
+  const leadReportNotes: ReportKeyValue[] = [
+    ...(lead.ownerMessage ? [{ label: 'Owner message', value: lead.ownerMessage }] : []),
+    ...(attachedDocumentNote ? [{ label: 'Attached document', value: attachedDocumentNote }] : []),
+  ];
   const didOpen = openAssetSheetPrint({
     logoUrl: asText(lead.assetSnapshot.logoUrl),
     generatedAt: formatDate(new Date().toISOString()),
@@ -966,11 +1143,9 @@ function downloadLeadAsset(lead: AssetLead, reportKind: PdfReportKind = 'full'):
       { label: 'Serial number', value: asText(lead.assetSnapshot.serialNumber) || '—' },
       { label: 'Financed', value: asBoolean(lead.assetSnapshot.isFinanced) ? 'Yes' : 'No' },
       { label: 'Insured', value: asBoolean(lead.assetSnapshot.isInsured) ? 'Yes' : 'No' },
+      { label: 'Documents', value: leadDocumentStatusLabel(lead) },
     ],
-    notes: [
-      { label: 'Owner message', value: lead.ownerMessage || '—' },
-      { label: 'Partner handling', value: 'Contact the owner privately. Do not place quotes back on Aim4price.' },
-    ],
+    notes: leadReportNotes,
     methodCards: buildMethodCards(lead),
     contactRows: [
       { label: 'Owner', value: ownerDisplayName(lead) },
@@ -1008,7 +1183,9 @@ export default function LeadsClient() {
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [leadPhotoIndexes, setLeadPhotoIndexes] = useState<Record<string, number>>({});
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
@@ -1041,6 +1218,14 @@ export default function LeadsClient() {
     return Array.from(years).sort((left, right) => Number(right) - Number(left));
   }, [receivedLeads]);
 
+  const yearFilterOptions = useMemo<LeadFilterOption[]>(
+    () => [
+      { value: 'all', label: 'All years' },
+      ...availableYears.map((year) => ({ value: year, label: year })),
+    ],
+    [availableYears],
+  );
+
   const periodLeads = useMemo(() => {
     return receivedLeads.filter((lead) => {
       const parts = leadDateParts(lead);
@@ -1063,6 +1248,26 @@ export default function LeadsClient() {
   }, [periodLeads, searchTerm, statusFilter]);
 
   const newLeadCount = useMemo(() => filteredLeads.filter((lead) => isNewLead(lead)).length, [filteredLeads]);
+  const totalLeadPages = Math.max(1, Math.ceil(filteredLeads.length / LEADS_PER_PAGE));
+  const visibleLeadPage = Math.min(Math.max(currentPage, 1), totalLeadPages);
+  const paginatedLeads = useMemo(() => {
+    const startIndex = (visibleLeadPage - 1) * LEADS_PER_PAGE;
+    return filteredLeads.slice(startIndex, startIndex + LEADS_PER_PAGE);
+  }, [filteredLeads, visibleLeadPage]);
+  const leadRangeStart = filteredLeads.length ? (visibleLeadPage - 1) * LEADS_PER_PAGE + 1 : 0;
+  const leadRangeEnd = Math.min(visibleLeadPage * LEADS_PER_PAGE, filteredLeads.length);
+  const leadPaginationPages = useMemo(() => {
+    const maxButtons = Math.min(PAGINATION_WINDOW, totalLeadPages);
+    const halfWindow = Math.floor(maxButtons / 2);
+    let startPage = Math.max(1, visibleLeadPage - halfWindow);
+    const endOverflow = startPage + maxButtons - 1 - totalLeadPages;
+
+    if (endOverflow > 0) {
+      startPage = Math.max(1, startPage - endOverflow);
+    }
+
+    return Array.from({ length: maxButtons }, (_item, index) => startPage + index);
+  }, [totalLeadPages, visibleLeadPage]);
   const hasActiveLeadFilter = monthFilter !== 'all' || yearFilter !== 'all' || statusFilter !== 'all';
   const activeLeadFilterLabel = useMemo(() => {
     const labels: string[] = [];
@@ -1122,6 +1327,14 @@ export default function LeadsClient() {
     const timeout = window.setTimeout(() => setNotice(null), 4200);
     return () => window.clearTimeout(timeout);
   }, [notice]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [monthFilter, searchTerm, statusFilter, yearFilter]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(Math.max(page, 1), totalLeadPages));
+  }, [totalLeadPages]);
 
   async function deleteLead(leadToDelete: AssetLead): Promise<boolean> {
     try {
@@ -1230,6 +1443,17 @@ export default function LeadsClient() {
     setMonthFilter('all');
     setYearFilter('all');
     setStatusFilter('all');
+    setOpenFilterDropdown(null);
+  }
+
+  function openLeadFilterModal() {
+    setOpenFilterDropdown(null);
+    setIsFilterModalOpen(true);
+  }
+
+  function closeLeadFilterModal() {
+    setOpenFilterDropdown(null);
+    setIsFilterModalOpen(false);
   }
 
   function handleDownloadLead(lead: AssetLead, reportKind: PdfReportKind = 'full'): boolean {
@@ -1243,10 +1467,11 @@ export default function LeadsClient() {
 
   function openLeadReportModal(lead: AssetLead) {
     setNotice(null);
+    setReportLead(null);
     setLeadReportStep('format');
     setLeadPdfReportSelection('');
-    setReportLead(lead);
     setManagedLead(null);
+    void handleLeadPdfReportDownload(lead, 'full');
   }
 
   function closeLeadReportModal() {
@@ -1378,7 +1603,25 @@ export default function LeadsClient() {
         throw new Error(data.error ?? 'Failed to save note.');
       }
 
-      const hasAttachment = Boolean(data.note.attachment ?? noteAttachmentFile);
+      const attachment = data.note.attachment ?? null;
+      const hasAttachment = Boolean(attachment ?? noteAttachmentFile);
+
+      if (attachment) {
+        setLeads((current) =>
+          current.map((lead) =>
+            lead.id === noteLead.id
+              ? {
+                  ...lead,
+                  partnerNoteAttachmentCount: leadPartnerPdfAttachmentCount(lead) + 1,
+                  latestPartnerNoteAttachmentFileName: attachment.fileName,
+                  latestPartnerNoteAttachmentByteSize: attachment.byteSize,
+                  latestPartnerNoteAttachmentCreatedAtIso: data.note?.createdAtIso ?? new Date().toISOString(),
+                }
+              : lead,
+          ),
+        );
+      }
+
       setNotice({ tone: 'success', message: hasAttachment ? 'Note and PDF quote saved on the lead asset.' : 'Note saved on the lead asset.' });
       setNoteLead(null);
       resetLeadNoteDraft();
@@ -1401,7 +1644,7 @@ export default function LeadsClient() {
   }
 
   function openEmail(lead: AssetLead) {
-    const email = ownerEmail(lead);
+    const email = ownerEmail(lead).replace(/\s+/g, '');
     if (!email) {
       setNotice({ tone: 'error', message: 'No client email address is saved on this lead.' });
       return;
@@ -1409,7 +1652,16 @@ export default function LeadsClient() {
 
     const subject = encodeURIComponent(`Aim4price lead: ${leadFollowUpSubject(lead)}`);
     const body = encodeURIComponent(`Good day ${ownerDisplayName(lead)},\n\nI received your Aim4price ${formatLeadDisplayType(lead).toLowerCase()} for ${leadFollowUpSubject(lead)}.\n\nKind regards`);
-    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
+
+    const link = document.createElement('a');
+    link.href = mailtoUrl;
+    link.target = '_self';
+    link.rel = 'noopener noreferrer';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    window.setTimeout(() => link.remove(), 0);
   }
 
   function callClient(lead: AssetLead) {
@@ -1836,7 +2088,7 @@ export default function LeadsClient() {
             <button
               type="button"
               className={`${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${styles.leadFilterButton} ${hasActiveLeadFilter ? assetStyles.filterTriggerButtonActive : ''}`}
-              onClick={() => setIsFilterModalOpen(true)}
+              onClick={openLeadFilterModal}
               disabled={isLoading}
             >
               <FilterIcon className={assetStyles.buttonIcon} />
@@ -1852,7 +2104,7 @@ export default function LeadsClient() {
 
           {!isLoading && filteredLeads.length ? (
             <div className={styles.leadStack}>
-              {filteredLeads.map((lead) => {
+              {paginatedLeads.map((lead) => {
                 const isLeadOpen = openLeadId === lead.id;
                 const isLeadNew = isNewLead(lead);
 
@@ -1936,12 +2188,59 @@ export default function LeadsClient() {
               })}
             </div>
           ) : null}
+
+          {!isLoading && filteredLeads.length > LEADS_PER_PAGE ? (
+            <nav className={styles.leadPagination} aria-label="Lead pagination">
+              <div className={styles.leadPaginationSummary}>
+                Showing <strong>{leadRangeStart}</strong>-<strong>{leadRangeEnd}</strong> of <strong>{filteredLeads.length}</strong> leads
+              </div>
+
+              <div className={styles.leadPaginationControls}>
+                <button
+                  type="button"
+                  className={styles.leadPaginationButton}
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={visibleLeadPage <= 1}
+                  aria-label="Show previous leads page"
+                >
+                  <ChevronLeftIcon className={assetStyles.buttonIcon} />
+                  <span>Previous</span>
+                </button>
+
+                <div className={styles.leadPaginationPages}>
+                  {leadPaginationPages.map((page) => (
+                    <button
+                      type="button"
+                      key={`lead-page-${page}`}
+                      className={`${styles.leadPaginationPageButton} ${page === visibleLeadPage ? styles.leadPaginationPageButtonActive : ''}`}
+                      onClick={() => setCurrentPage(page)}
+                      aria-current={page === visibleLeadPage ? 'page' : undefined}
+                      aria-label={`Show leads page ${page}`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.leadPaginationButton}
+                  onClick={() => setCurrentPage((page) => Math.min(totalLeadPages, page + 1))}
+                  disabled={visibleLeadPage >= totalLeadPages}
+                  aria-label="Show next leads page"
+                >
+                  <span>Next</span>
+                  <ChevronRightIcon className={assetStyles.buttonIcon} />
+                </button>
+              </div>
+            </nav>
+          ) : null}
         </section>
       </section>
 
       {isFilterModalOpen ? (
         <div className={assetStyles.modalOverlay}>
-          <div className={assetStyles.modalBackdrop} onClick={() => setIsFilterModalOpen(false)} />
+          <div className={assetStyles.modalBackdrop} onClick={closeLeadFilterModal} />
 
           <div className={`${assetStyles.modalCard} ${styles.leadFilterModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-filter-title">
             <div className={assetStyles.modalHeader}>
@@ -1950,46 +2249,48 @@ export default function LeadsClient() {
                 <p className={styles.leadFilterIntro}>Filter your inbox by the date the lead was received and the current lead status.</p>
               </div>
 
-              <button type="button" className={assetStyles.modalCloseButton} onClick={() => setIsFilterModalOpen(false)} aria-label="Close filter modal">
+              <button type="button" className={assetStyles.modalCloseButton} onClick={closeLeadFilterModal} aria-label="Close filter modal">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
 
             <div className={styles.leadFilterForm}>
-              <label className={`${assetStyles.field} ${styles.leadFilterField}`}>
-                <span>Month</span>
-                <select value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}>
-                  {MONTH_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
+              <LeadFilterDropdown
+                label="Month"
+                dropdownKey="month"
+                value={monthFilter}
+                options={MONTH_OPTIONS}
+                openDropdown={openFilterDropdown}
+                onOpenChange={setOpenFilterDropdown}
+                onChange={setMonthFilter}
+              />
 
-              <label className={`${assetStyles.field} ${styles.leadFilterField}`}>
-                <span>Year</span>
-                <select value={yearFilter} onChange={(event) => setYearFilter(event.target.value)}>
-                  <option value="all">All years</option>
-                  {availableYears.map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </label>
+              <LeadFilterDropdown
+                label="Year"
+                dropdownKey="year"
+                value={yearFilter}
+                options={yearFilterOptions}
+                openDropdown={openFilterDropdown}
+                onOpenChange={setOpenFilterDropdown}
+                onChange={setYearFilter}
+              />
 
-              <label className={`${assetStyles.field} ${styles.leadFilterField}`}>
-                <span>Status</span>
-                <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as LeadStatusFilter)}>
-                  <option value="all">All leads</option>
-                  <option value="new">New leads</option>
-                  <option value="opened">Opened leads</option>
-                </select>
-              </label>
+              <LeadFilterDropdown
+                label="Status"
+                dropdownKey="status"
+                value={statusFilter}
+                options={STATUS_FILTER_OPTIONS}
+                openDropdown={openFilterDropdown}
+                onOpenChange={setOpenFilterDropdown}
+                onChange={(value) => setStatusFilter(value as LeadStatusFilter)}
+              />
             </div>
 
             <div className={`${assetStyles.formActions} ${styles.leadFilterActions}`}>
               <button type="button" className={assetStyles.secondaryButton} onClick={resetLeadFilters} disabled={!hasActiveLeadFilter}>
                 Reset filters
               </button>
-              <button type="button" className={assetStyles.primaryButton} onClick={() => setIsFilterModalOpen(false)}>
+              <button type="button" className={assetStyles.primaryButton} onClick={closeLeadFilterModal}>
                 Apply filters
               </button>
             </div>
