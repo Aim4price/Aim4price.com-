@@ -1371,146 +1371,148 @@ export default function AssetRegistersClient() {
               </button>
             </div>
 
-            <form className={styles.editForm} onSubmit={handleUpdateRegister}>
-              <label className={styles.field}>
-                <span>Business name</span>
-                <input
-                  value={editDraft.businessName}
-                  onChange={(event) =>
-                    applyEditDraftChange((current) => ({
-                      ...current,
-                      businessName: event.target.value,
-                    }))
-                  }
-                  placeholder="Business name"
-                />
-              </label>
+            <div className={styles.manageModalScrollArea}>
+              <form className={styles.editForm} onSubmit={handleUpdateRegister}>
+                <label className={styles.field}>
+                  <span>Business name</span>
+                  <input
+                    value={editDraft.businessName}
+                    onChange={(event) =>
+                      applyEditDraftChange((current) => ({
+                        ...current,
+                        businessName: event.target.value,
+                      }))
+                    }
+                    placeholder="Business name"
+                  />
+                </label>
 
-              <label className={styles.field}>
-                <span>Email</span>
-                <input
-                  type="email"
-                  value={editDraft.email}
-                  onChange={(event) =>
-                    applyEditDraftChange((current) => ({
-                      ...current,
-                      email: event.target.value,
-                    }))
-                  }
-                  placeholder="Email"
-                />
-              </label>
+                <label className={styles.field}>
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    value={editDraft.email}
+                    onChange={(event) =>
+                      applyEditDraftChange((current) => ({
+                        ...current,
+                        email: event.target.value,
+                      }))
+                    }
+                    placeholder="Email"
+                  />
+                </label>
 
-              <label className={styles.field}>
-                <span>Phone</span>
-                <input
-                  type="tel"
-                  value={editDraft.phone}
-                  onChange={(event) =>
-                    applyEditDraftChange((current) => ({
-                      ...current,
-                      phone: event.target.value,
-                    }))
-                  }
-                  placeholder="Phone"
-                />
-              </label>
+                <label className={styles.field}>
+                  <span>Phone</span>
+                  <input
+                    type="tel"
+                    value={editDraft.phone}
+                    onChange={(event) =>
+                      applyEditDraftChange((current) => ({
+                        ...current,
+                        phone: event.target.value,
+                      }))
+                    }
+                    placeholder="Phone"
+                  />
+                </label>
 
-              <label className={styles.field}>
-                <span>Address</span>
-                <textarea
-                  value={editDraft.addressLine1}
-                  onChange={(event) =>
-                    applyEditDraftChange((current) => ({
-                      ...current,
-                      addressLine1: event.target.value,
-                    }))
-                  }
-                  placeholder="Address"
-                />
-              </label>
+                <label className={styles.field}>
+                  <span>Address</span>
+                  <textarea
+                    value={editDraft.addressLine1}
+                    onChange={(event) =>
+                      applyEditDraftChange((current) => ({
+                        ...current,
+                        addressLine1: event.target.value,
+                      }))
+                    }
+                    placeholder="Address"
+                  />
+                </label>
 
-              <div className={styles.formActions}>
-                <button
-                  type="submit"
-                  className={`${styles.primaryButton} ${styles.manageSaveButton} ${manageSaveState === "saved" ? styles.manageSaveButtonSaved : ""}`}
-                  disabled={isSavingDetails}
-                >
-                  {isSavingDetails ? "Saving..." : manageSaveState === "saved" ? "Saved" : "Save"}
-                </button>
-              </div>
-            </form>
-
-            <div className={styles.assetMovePanel}>
-              <div className={styles.subHeader}>
-                <h3>Move assets</h3>
-                <p>
-                  Move assets out of this register without duplicating them.
-                </p>
-              </div>
-
-              {isLoadingManagedAssets ? (
-                <p className={styles.loading}>Loading assets...</p>
-              ) : managedAssets.length ? (
-                <div className={styles.assetMoveList}>
-                  {managedAssets.map((asset) => (
-                    <div key={asset.id} className={styles.assetMoveRow}>
-                      <div className={styles.assetMoveCopy}>
-                        <strong>{asset.title}</strong>
-                        <span>{compactAssetMeta(asset)}</span>
-                        <small>{money(asset.value)} current value</small>
-                      </div>
-
-                      <div className={styles.assetMoveControls}>
-                        <RegisterTargetDropdown
-                          dropdownId={`move-${asset.id}`}
-                          value={assetMoveTargets[asset.id] ?? ""}
-                          targets={managedMoveTargets}
-                          placeholder="Choose target register"
-                          disabled={
-                            !managedMoveTargets.length ||
-                            movingAssetId === asset.id
-                          }
-                          openDropdownId={openTargetDropdownId}
-                          onOpenDropdownChange={setOpenTargetDropdownId}
-                          onChange={(value) =>
-                            setAssetMoveTargets((current) => ({
-                              ...current,
-                              [asset.id]: value,
-                            }))
-                          }
-                        />
-
-                        <button
-                          type="button"
-                          className={
-                            assetMoveTargets[asset.id] && movingAssetId !== asset.id
-                              ? `${styles.primaryButton} ${styles.assetMoveReadyButton}`
-                              : styles.secondaryButton
-                          }
-                          onClick={() => handleMoveAsset(asset)}
-                          disabled={
-                            !assetMoveTargets[asset.id] ||
-                            movingAssetId === asset.id
-                          }
-                        >
-                          {movingAssetId === asset.id ? "Moving..." : "Move"}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                <div className={styles.formActions}>
+                  <button
+                    type="submit"
+                    className={`${styles.primaryButton} ${styles.manageSaveButton} ${manageSaveState === "saved" ? styles.manageSaveButtonSaved : ""}`}
+                    disabled={isSavingDetails}
+                  >
+                    {isSavingDetails ? "Saving..." : manageSaveState === "saved" ? "Saved" : "Save"}
+                  </button>
                 </div>
-              ) : (
-                <p className={styles.loading}>
-                  No assets saved in this register yet.
-                </p>
-              )}
+              </form>
 
-              {!managedMoveTargets.length ? (
-                <p className={styles.muted}>
-                  Create another asset register before moving assets.
-                </p>
-              ) : null}
+              <div className={styles.assetMovePanel}>
+                <div className={styles.subHeader}>
+                  <h3>Move assets</h3>
+                  <p>
+                    Move assets out of this register without duplicating them.
+                  </p>
+                </div>
+
+                {isLoadingManagedAssets ? (
+                  <p className={styles.loading}>Loading assets...</p>
+                ) : managedAssets.length ? (
+                  <div className={styles.assetMoveList}>
+                    {managedAssets.map((asset) => (
+                      <div key={asset.id} className={styles.assetMoveRow}>
+                        <div className={styles.assetMoveCopy}>
+                          <strong>{asset.title}</strong>
+                          <span>{compactAssetMeta(asset)}</span>
+                          <small>{money(asset.value)} current value</small>
+                        </div>
+
+                        <div className={styles.assetMoveControls}>
+                          <RegisterTargetDropdown
+                            dropdownId={`move-${asset.id}`}
+                            value={assetMoveTargets[asset.id] ?? ""}
+                            targets={managedMoveTargets}
+                            placeholder="Choose target register"
+                            disabled={
+                              !managedMoveTargets.length ||
+                              movingAssetId === asset.id
+                            }
+                            openDropdownId={openTargetDropdownId}
+                            onOpenDropdownChange={setOpenTargetDropdownId}
+                            onChange={(value) =>
+                              setAssetMoveTargets((current) => ({
+                                ...current,
+                                [asset.id]: value,
+                              }))
+                            }
+                          />
+
+                          <button
+                            type="button"
+                            className={
+                              assetMoveTargets[asset.id] && movingAssetId !== asset.id
+                                ? `${styles.primaryButton} ${styles.assetMoveReadyButton}`
+                                : styles.secondaryButton
+                            }
+                            onClick={() => handleMoveAsset(asset)}
+                            disabled={
+                              !assetMoveTargets[asset.id] ||
+                              movingAssetId === asset.id
+                            }
+                          >
+                            {movingAssetId === asset.id ? "Moving..." : "Move"}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={styles.loading}>
+                    No assets saved in this register yet.
+                  </p>
+                )}
+
+                {!managedMoveTargets.length ? (
+                  <p className={styles.muted}>
+                    Create another asset register before moving assets.
+                  </p>
+                ) : null}
+              </div>
             </div>
           </section>
         </div>

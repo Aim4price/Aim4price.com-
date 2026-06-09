@@ -2583,56 +2583,105 @@
   line-height: 1.2;
 }
 
-/* === 2026-06-10 update: polished manage-modal scrollbar === */
+/* === 2026-06-10 update: exact Manage / Move assets scroll container === */
 .manageModalCard {
+  width: min(1180px, 100%);
   max-height: min(86dvh, 52rem);
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(22, 83, 64, 0.62) rgba(239, 244, 247, 0.62);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  scrollbar-width: none;
 }
 
 .manageModalCard::-webkit-scrollbar {
-  width: 0.72rem;
-  height: 0.72rem;
+  width: 0;
+  height: 0;
 }
 
-.manageModalCard::-webkit-scrollbar-track,
-.manageModalCard::-webkit-scrollbar-track-piece {
-  margin: 1.2rem 0.36rem;
-  border-radius: 999px;
-  background: rgba(239, 246, 243, 0.72);
-  box-shadow:
-    inset 0 0 0 1px rgba(202, 218, 213, 0.45),
-    inset 0 0 0 4px rgba(255, 255, 255, 0.45);
+.manageModalCard .modalHeader {
+  flex: 0 0 auto;
 }
 
-.manageModalCard::-webkit-scrollbar-thumb {
-  min-height: 5rem;
-  border: 3px solid transparent;
+.manageModalScrollArea {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0.18rem 0.46rem 0.46rem 0;
+  padding-right: 0.32rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(25, 116, 84, 0.46) transparent;
+}
+
+.manageModalScrollArea:hover {
+  scrollbar-color: rgba(25, 116, 84, 0.7) rgba(239, 246, 243, 0.26);
+}
+
+.manageModalScrollArea::-webkit-scrollbar {
+  width: 0.62rem;
+  height: 0.62rem;
+}
+
+.manageModalScrollArea::-webkit-scrollbar-track,
+.manageModalScrollArea::-webkit-scrollbar-track-piece {
+  margin: 0.82rem 0.12rem 0.82rem 0;
   border-radius: 999px;
-  background-image: linear-gradient(180deg, #238764 0%, #197454 54%, #0f5840 100%);
-  background-origin: padding-box;
+  background: rgba(239, 246, 243, 0.18);
+}
+
+.manageModalScrollArea:hover::-webkit-scrollbar-track,
+.manageModalScrollArea:hover::-webkit-scrollbar-track-piece {
+  background: rgba(239, 246, 243, 0.38);
+}
+
+.manageModalScrollArea::-webkit-scrollbar-thumb {
+  min-height: 4.25rem;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(43, 154, 115, 0.48) 0%,
+    rgba(25, 116, 84, 0.58) 54%,
+    rgba(15, 88, 64, 0.62) 100%
+  );
   background-clip: padding-box;
   box-shadow:
-    0 5px 14px rgba(15, 88, 64, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    0 4px 12px rgba(15, 88, 64, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.26);
 }
 
-.manageModalCard::-webkit-scrollbar-thumb:hover {
-  background-image: linear-gradient(180deg, #2b9a73 0%, #1f7d5d 54%, #0b4b37 100%);
-  background-origin: padding-box;
+.manageModalScrollArea:hover::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgba(43, 154, 115, 0.72) 0%,
+    rgba(25, 116, 84, 0.78) 54%,
+    rgba(15, 88, 64, 0.82) 100%
+  );
   background-clip: padding-box;
 }
 
-.manageModalCard::-webkit-scrollbar-button,
-.manageModalCard::-webkit-scrollbar-button:single-button,
-.manageModalCard::-webkit-scrollbar-button:vertical:start:decrement,
-.manageModalCard::-webkit-scrollbar-button:vertical:end:increment,
-.manageModalCard::-webkit-scrollbar-corner,
-.manageModalCard::-webkit-resizer {
+.manageModalScrollArea::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(43, 154, 115, 0.88) 0%,
+    rgba(25, 116, 84, 0.92) 54%,
+    rgba(11, 75, 55, 0.96) 100%
+  );
+  background-clip: padding-box;
+}
+
+.manageModalScrollArea::-webkit-scrollbar-button,
+.manageModalScrollArea::-webkit-scrollbar-button:single-button,
+.manageModalScrollArea::-webkit-scrollbar-button:vertical:start:decrement,
+.manageModalScrollArea::-webkit-scrollbar-button:vertical:end:increment,
+.manageModalScrollArea::-webkit-scrollbar-button:horizontal:start:decrement,
+.manageModalScrollArea::-webkit-scrollbar-button:horizontal:end:increment,
+.manageModalScrollArea::-webkit-scrollbar-corner,
+.manageModalScrollArea::-webkit-resizer {
   display: none;
   width: 0;
   height: 0;
@@ -2641,25 +2690,23 @@
   border: 0;
   background: transparent;
   background-image: none;
+  -webkit-appearance: none;
 }
 
 @media (max-width: 760px) {
   .manageModalCard {
+    max-height: calc(100dvh - 1rem);
+  }
+
+  .manageModalScrollArea {
+    margin: 0;
+    padding-right: 0;
     scrollbar-gutter: auto;
-    scrollbar-width: thin;
+    scrollbar-width: none;
   }
 
-  .manageModalCard::-webkit-scrollbar {
-    width: 0.58rem;
-    height: 0.58rem;
-  }
-
-  .manageModalCard::-webkit-scrollbar-track,
-  .manageModalCard::-webkit-scrollbar-track-piece {
-    margin: 0.9rem 0.24rem;
-  }
-
-  .manageModalCard::-webkit-scrollbar-thumb {
-    border-width: 2px;
+  .manageModalScrollArea::-webkit-scrollbar {
+    width: 0;
+    height: 0;
   }
 }
