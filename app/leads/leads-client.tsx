@@ -462,7 +462,7 @@ function asText(value: unknown): string {
 
 function formatInboxTitle(value: unknown): string {
   const title = asText(value);
-  return title ? title.toUpperCase() : 'LEADS INBOX';
+  return title ? title.toUpperCase() : 'LEADS INBOX LOADING...';
 }
 
 function asNumber(value: unknown): number | null {
@@ -1129,7 +1129,7 @@ function searchTextForLead(lead: AssetLead): string {
 export default function LeadsClient() {
   const [sessionUserId, setSessionUserId] = useState('');
   const [leads, setLeads] = useState<AssetLead[]>([]);
-  const [accountInboxTitle, setAccountInboxTitle] = useState('LEADS INBOX');
+  const [accountInboxTitle, setAccountInboxTitle] = useState('LEADS INBOX LOADING...');
   const [statusFilter, setStatusFilter] = useState<LeadStatusFilter>('all');
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
