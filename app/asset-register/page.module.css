@@ -20568,3 +20568,145 @@ button.documentOpenLink {
   border: 1px solid rgba(210, 222, 237, 0.98);
   cursor: pointer;
 }
+
+/* === Asset detail media quick upload + scrollable documents === */
+.previewStageClickable {
+  cursor: pointer !important;
+  outline: none !important;
+}
+
+.previewStageClickable:focus-visible {
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.9),
+    0 0 0 6px rgba(22, 83, 64, 0.32) !important;
+}
+
+.previewStageClickable:hover .previewImage,
+.previewStageClickable:hover .previewPlaceholder {
+  filter: saturate(1.03) brightness(0.98) !important;
+}
+
+.previewUploadPill {
+  position: absolute !important;
+  left: 0.75rem !important;
+  top: 0.75rem !important;
+  z-index: 4 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.38rem !important;
+  min-height: 2.12rem !important;
+  padding: 0 0.76rem !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.62) !important;
+  color: #10352b !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+  box-shadow: 0 10px 24px rgba(16, 31, 28, 0.16) !important;
+  backdrop-filter: blur(12px) !important;
+  font: inherit !important;
+  font-size: 0.78rem !important;
+  font-weight: 880 !important;
+  letter-spacing: -0.01em !important;
+  cursor: pointer !important;
+}
+
+.previewUploadPill:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(22, 83, 64, 0.2) !important;
+  transform: translateY(-1px) !important;
+}
+
+.previewUploadPill:disabled {
+  cursor: progress !important;
+  opacity: 0.82 !important;
+}
+
+.previewUploadPill .buttonIcon {
+  width: 0.96rem !important;
+  height: 0.96rem !important;
+}
+
+.assetMediaBusy::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 3 !important;
+  border-radius: inherit !important;
+  background: rgba(245, 249, 250, 0.42) !important;
+  pointer-events: none !important;
+}
+
+.assetDocumentsUploadCard {
+  width: 100% !important;
+  min-width: 0 !important;
+  appearance: none !important;
+  border: 1px solid rgba(220, 228, 236, 0.96) !important;
+  color: inherit !important;
+  font: inherit !important;
+  cursor: pointer !important;
+  position: relative !important;
+}
+
+.assetDocumentsUploadCard:hover:not(:disabled) {
+  border-color: rgba(22, 83, 64, 0.25) !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 38%),
+    linear-gradient(180deg, #fbfdfd 0%, #edf4f1 100%) !important;
+}
+
+.assetDocumentsUploadCard:focus-visible {
+  outline: none !important;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.9),
+    0 0 0 6px rgba(22, 83, 64, 0.28) !important;
+}
+
+.assetDocumentsUploadCard:disabled {
+  cursor: progress !important;
+  opacity: 0.82 !important;
+}
+
+.assetDocumentsMainLabel .buttonIcon {
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
+.assetDocumentsCard > .assetMediaHint {
+  display: block !important;
+  margin-top: 0.55rem !important;
+  color: #6c7b90 !important;
+  font-size: 0.78rem !important;
+  font-weight: 780 !important;
+  line-height: 1.35 !important;
+  letter-spacing: -0.01em !important;
+  text-align: center !important;
+}
+
+.assetDocumentList {
+  max-height: 11.7rem !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-right: 0.24rem !important;
+  scrollbar-width: thin !important;
+  overscroll-behavior: contain !important;
+}
+
+.assetDocumentList::-webkit-scrollbar {
+  width: 0.46rem !important;
+}
+
+.assetDocumentList::-webkit-scrollbar-track {
+  border-radius: 999px !important;
+  background: rgba(226, 234, 241, 0.7) !important;
+}
+
+.assetDocumentList::-webkit-scrollbar-thumb {
+  border-radius: 999px !important;
+  background: rgba(102, 117, 141, 0.42) !important;
+}
+
+@media (max-width: 860px) {
+  .assetDocumentList {
+    max-height: 14rem !important;
+  }
+}

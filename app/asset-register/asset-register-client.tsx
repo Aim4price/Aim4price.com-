@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
 import {
   openAssetRegisterSummaryPrint,
@@ -338,17 +338,26 @@ type AssetRegisterApiResponse = {
   error?: string;
 };
 
+type UploadedAssetFile = {
+  uploadId: string;
+  url: string;
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+};
+
 type AssetUploadApiResponse = {
   ok: boolean;
-  uploads?: Array<{
-    uploadId: string;
-    url: string;
-    fileName: string;
-    contentType: string;
-    byteSize: number;
-  }>;
+  uploads?: UploadedAssetFile[];
   error?: string;
 };
+
+type DetailMediaUploadType = 'photo' | 'document';
+
+type DetailMediaUploadState = {
+  assetId: string;
+  type: DetailMediaUploadType;
+} | null;
 
 type MarketplaceApiResponse = {
   ok: boolean;
@@ -1682,7 +1691,7 @@ function formatTractorType(value: string): string {
   return value || '—';
 }
 
-function normalizePhotos(value: string[]): string[] {
+function uniquePhotoUrls(value: string[]): string[] {
   const seen = new Set<string>();
 
   return value
@@ -1695,8 +1704,35 @@ function normalizePhotos(value: string[]): string[] {
 
       seen.add(entry);
       return true;
-    })
-    .slice(0, MAX_PHOTOS);
+    });
+}
+
+function normalizePhotos(value: string[]): string[] {
+  return uniquePhotoUrls(value).slice(0, MAX_PHOTOS);
+}
+
+function limitPhotosToNewest(value: string[]): string[] {
+  return uniquePhotoUrls(value).slice(-MAX_PHOTOS);
+}
+
+function limitDraftPhotosWithMainPreference(value: string[], shouldPreserveFirstPhoto: boolean): string[] {
+  const photos = uniquePhotoUrls(value);
+
+  if (photos.length <= MAX_PHOTOS) {
+    return photos;
+  }
+
+  if (!shouldPreserveFirstPhoto) {
+    return photos.slice(-MAX_PHOTOS);
+  }
+
+  const mainPhoto = photos[0];
+  const remainingPhotos = photos.slice(1).filter((photo) => photo !== mainPhoto);
+  return [mainPhoto, ...remainingPhotos.slice(-(MAX_PHOTOS - 1))];
+}
+
+function mediaInputId(assetId: string, type: DetailMediaUploadType): string {
+  return `asset-${type}-upload-${assetId}`;
 }
 
 function savedDraftPhotoKey(url: string): string {
@@ -3138,6 +3174,7 @@ export default function AssetRegisterClient() {
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
+  const [detailMediaUpload, setDetailMediaUpload] = useState<DetailMediaUploadState>(null);
   const [pendingPhotoFiles, setPendingPhotoFiles] = useState<PendingPhotoFile[]>([]);
   const [mainPhotoSelection, setMainPhotoSelection] = useState<MainPhotoSelection | null>(null);
   const pendingPhotoFilesRef = useRef<PendingPhotoFile[]>([]);
@@ -4193,6 +4230,13 @@ export default function AssetRegisterClient() {
     setProjectionAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
   }
 
+  function syncMediaUpdatedAsset(nextAsset: RegisterAsset) {
+    setAssets((current) => current.map((asset) => (asset.id === nextAsset.id ? nextAsset : asset)));
+    setActiveAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
+    setMarketplaceAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
+    setProjectionAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
+  }
+
   function resetAssetQuoteState(nextScope: QuoteScope = 'asset') {
     setQuoteScope(nextScope);
     setSelectedQuoteLeadType(null);
@@ -4531,27 +4575,26 @@ export default function AssetRegisterClient() {
       return;
     }
 
-    const remainingSlots = MAX_PHOTOS - assetDraft.photos.length - pendingPhotoFiles.length;
-
-    if (remainingSlots <= 0) {
-      setNotice({ tone: 'error', message: `You can upload a maximum of ${MAX_PHOTOS} photos per asset.` });
-      return;
-    }
-
-    const filesToQueue = selectedFiles.slice(0, remainingSlots).map((file) => ({
+    const filesToQueue = selectedFiles.slice(0, MAX_PHOTOS).map((file) => ({
       id: createPendingPhotoId(),
       file,
       previewUrl: createPhotoPreviewUrl(file),
     }));
 
     setPendingPhotoFiles((current) => {
-      const next = [...current, ...filesToQueue];
+      const combined = [...current, ...filesToQueue];
+      const next = combined.slice(-MAX_PHOTOS);
+      const removed = combined.slice(0, combined.length - next.length);
+
+      removed.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
       pendingPhotoFilesRef.current = next;
       return next;
     });
+
+    const willReplaceOldPhotos = assetDraft.photos.length + pendingPhotoFiles.length + filesToQueue.length > MAX_PHOTOS;
     setNotice({
       tone: 'success',
-      message: `${filesToQueue.length} photo${filesToQueue.length === 1 ? '' : 's'} ready. Choose Make main to show one first everywhere.`,
+      message: `${filesToQueue.length} photo${filesToQueue.length === 1 ? '' : 's'} ready.${willReplaceOldPhotos ? ` New photos will replace the oldest saved photos once the ${editingAsset ? 'asset is updated' : 'asset is added'}.` : ' Choose Make main to show one first everywhere.'}`,
     });
   }
 
@@ -4626,31 +4669,41 @@ export default function AssetRegisterClient() {
     setPendingDocumentFiles((current) => current.filter((_, index) => index !== fileIndex));
   }
 
-  async function uploadQueuedPhotoFiles(files: PendingPhotoFile[]): Promise<Map<string, string>> {
-    if (!files.length) return new Map<string, string>();
+  async function uploadAssetMediaFiles(files: File[], uploadType: DetailMediaUploadType): Promise<UploadedAssetFile[]> {
+    if (!files.length) return [];
 
     const formData = new FormData();
-    files.forEach((entry) => {
-      formData.append('files', entry.file);
+    formData.append('uploadType', uploadType);
+
+    files.forEach((file) => {
+      formData.append('files', file);
     });
+
+    const response = await fetch('/api/asset-register/uploads', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+
+    const data = (await response.json()) as AssetUploadApiResponse;
+
+    if (!response.ok || !data.ok || !data.uploads?.length) {
+      throw new Error(data.error ?? (uploadType === 'document' ? 'Failed to upload documents.' : 'Failed to upload images.'));
+    }
+
+    return data.uploads;
+  }
+
+  async function uploadQueuedPhotoFiles(files: PendingPhotoFile[]): Promise<Map<string, string>> {
+    if (!files.length) return new Map<string, string>();
 
     setIsUploadingPhotos(true);
 
     try {
-      const response = await fetch('/api/asset-register/uploads', {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      });
-
-      const data = (await response.json()) as AssetUploadApiResponse;
-
-      if (!response.ok || !data.ok || !data.uploads?.length) {
-        throw new Error(data.error ?? 'Failed to upload images.');
-      }
+      const uploads = await uploadAssetMediaFiles(files.map((entry) => entry.file), 'photo');
 
       return new Map(
-        data.uploads
+        uploads
           .map((entry, index) => {
             const pendingPhoto = files[index];
             return pendingPhoto ? ([pendingPhoto.id, entry.url] as const) : null;
@@ -4662,41 +4715,141 @@ export default function AssetRegisterClient() {
     }
   }
 
+  function uploadedFilesToDocuments(uploads: UploadedAssetFile[]): AssetDocument[] {
+    return uploads.map((entry) => ({
+      id: entry.uploadId || entry.url,
+      url: entry.url,
+      fileName: entry.fileName,
+      contentType: entry.contentType,
+      byteSize: entry.byteSize,
+      uploadedAtIso: new Date().toISOString(),
+    }));
+  }
+
   async function uploadQueuedDocumentFiles(files: File[]): Promise<AssetDocument[]> {
     if (!files.length) return [];
-
-    const formData = new FormData();
-    formData.append('uploadType', 'document');
-
-    files.forEach((file) => {
-      formData.append('files', file);
-    });
 
     setIsUploadingDocuments(true);
 
     try {
-      const response = await fetch('/api/asset-register/uploads', {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      });
-
-      const data = (await response.json()) as AssetUploadApiResponse;
-
-      if (!response.ok || !data.ok || !data.uploads?.length) {
-        throw new Error(data.error ?? 'Failed to upload documents.');
-      }
-
-      return data.uploads.map((entry) => ({
-        id: entry.uploadId || entry.url,
-        url: entry.url,
-        fileName: entry.fileName,
-        contentType: entry.contentType,
-        byteSize: entry.byteSize,
-        uploadedAtIso: new Date().toISOString(),
-      }));
+      const uploads = await uploadAssetMediaFiles(files, 'document');
+      return uploadedFilesToDocuments(uploads);
     } finally {
       setIsUploadingDocuments(false);
+    }
+  }
+
+  async function patchAssetMedia(asset: RegisterAsset, photos: string[], documents: AssetDocument[]): Promise<RegisterAsset> {
+    const response = await fetch('/api/asset-register', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        assetId: asset.id,
+        photos,
+        documents,
+      }),
+    });
+
+    const data = (await response.json()) as AssetRegisterApiResponse;
+
+    if (!response.ok || !data.ok || !data.item) {
+      throw new Error(data.error ?? 'Failed to update asset files.');
+    }
+
+    return data.item;
+  }
+
+  function triggerDetailMediaInput(assetId: string, type: DetailMediaUploadType) {
+    document.getElementById(mediaInputId(assetId, type))?.click();
+  }
+
+  function handleDetailMediaKeyDown(event: ReactKeyboardEvent<HTMLDivElement>, assetId: string, type: DetailMediaUploadType) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    triggerDetailMediaInput(assetId, type);
+  }
+
+  async function handleDetailPhotoFilesSelected(asset: RegisterAsset, event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    event.target.value = '';
+
+    if (!selectedFiles.length) {
+      return;
+    }
+
+    const filesToUpload = selectedFiles.slice(0, MAX_PHOTOS);
+    setDetailMediaUpload({ assetId: asset.id, type: 'photo' });
+
+    try {
+      const uploads = await uploadAssetMediaFiles(filesToUpload, 'photo');
+      const uploadedPhotoUrls = uploads.map((entry) => entry.url).filter(Boolean);
+      const nextPhotos = limitPhotosToNewest([...normalizePhotos(asset.photos), ...uploadedPhotoUrls]);
+      const updatedAsset = await patchAssetMedia(asset, nextPhotos, assetDocuments(asset));
+      const updatedPhotos = normalizePhotos(updatedAsset.photos);
+      const firstUploadedIndex = updatedPhotos.findIndex((photo) => uploadedPhotoUrls.includes(photo));
+
+      syncMediaUpdatedAsset(updatedAsset);
+      setExpandedAssetId(updatedAsset.id);
+
+      if (firstUploadedIndex >= 0) {
+        setDetailPhotoIndex(updatedAsset.id, firstUploadedIndex);
+      }
+
+      setNotice({
+        tone: 'success',
+        message: `${uploadedPhotoUrls.length} photo${uploadedPhotoUrls.length === 1 ? '' : 's'} uploaded.${normalizePhotos(asset.photos).length + uploadedPhotoUrls.length > MAX_PHOTOS ? ' Oldest photos were replaced to keep the asset at 12 photos.' : ''}`,
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to upload photos.',
+      });
+    } finally {
+      setDetailMediaUpload(null);
+    }
+  }
+
+  async function handleDetailDocumentFilesSelected(asset: RegisterAsset, event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    event.target.value = '';
+
+    if (!selectedFiles.length) {
+      return;
+    }
+
+    const currentDocuments = assetDocuments(asset);
+    const remainingSlots = MAX_DOCUMENTS - currentDocuments.length;
+
+    if (remainingSlots <= 0) {
+      setNotice({ tone: 'error', message: `This asset already has the maximum of ${MAX_DOCUMENTS} documents.` });
+      return;
+    }
+
+    const filesToUpload = selectedFiles.slice(0, remainingSlots);
+    setDetailMediaUpload({ assetId: asset.id, type: 'document' });
+
+    try {
+      const uploads = await uploadAssetMediaFiles(filesToUpload, 'document');
+      const uploadedDocuments = uploadedFilesToDocuments(uploads);
+      const nextDocuments = normalizeDocuments([...currentDocuments, ...uploadedDocuments]);
+      const updatedAsset = await patchAssetMedia(asset, normalizePhotos(asset.photos), nextDocuments);
+
+      syncMediaUpdatedAsset(updatedAsset);
+      setExpandedAssetId(updatedAsset.id);
+      setNotice({
+        tone: 'success',
+        message: `${uploadedDocuments.length} document${uploadedDocuments.length === 1 ? '' : 's'} uploaded.${selectedFiles.length > filesToUpload.length ? ` Only ${filesToUpload.length} could be added because the asset is limited to ${MAX_DOCUMENTS} documents.` : ''}`,
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to upload documents.',
+      });
+    } finally {
+      setDetailMediaUpload(null);
     }
   }
 
@@ -4844,10 +4997,12 @@ export default function AssetRegisterClient() {
         photoUrlsByKey.set(pendingDraftPhotoKey(pendingId), url);
       });
 
-      const photos = normalizePhotos(
+      const selectedMainPhotoKey = mainPhotoSelectionKey(mainPhotoSelection);
+      const photos = limitDraftPhotosWithMainPreference(
         orderedDraftPhotos
           .map((photo) => photoUrlsByKey.get(photo.key) ?? '')
           .filter(Boolean),
+        Boolean(selectedMainPhotoKey),
       );
       const documents = normalizeDocuments([...assetDraft.documents, ...uploadedDocuments]);
 
@@ -6109,7 +6264,8 @@ export default function AssetRegisterClient() {
           : 'Upload files if needed, then add the asset.';
   const selectedManualAssetType = getManualAssetOption(assetFormKind);
   const manualDraftDocumentCount = assetDraft.documents.length + pendingDocumentFiles.length;
-  const manualDraftPhotoCount = assetDraft.photos.length + pendingPhotoFiles.length;
+  const manualDraftRawPhotoCount = assetDraft.photos.length + pendingPhotoFiles.length;
+  const manualDraftPhotoCount = Math.min(MAX_PHOTOS, manualDraftRawPhotoCount);
   const draftPhotoItems = useMemo(
     () => buildDraftPhotoItems(assetDraft.photos, pendingPhotoFiles, mainPhotoSelection),
     [assetDraft.photos, mainPhotoSelection, pendingPhotoFiles],
@@ -6481,14 +6637,35 @@ export default function AssetRegisterClient() {
                               const detailPhoto = detailPhotos[detailPhotoIndex] || previewPhoto;
                               const hasMultiplePhotos = detailPhotos.length > 1;
                               const hasRealPhotos = detailPhotos.length > 0;
+                              const isDetailPhotoUploading = detailMediaUpload?.assetId === asset.id && detailMediaUpload.type === 'photo';
+                              const isDetailDocumentUploading = detailMediaUpload?.assetId === asset.id && detailMediaUpload.type === 'document';
 
                               return (
                                 <>
                                   <div className={styles.previewWrap}>
+                                    <input
+                                      id={mediaInputId(asset.id, 'photo')}
+                                      type="file"
+                                      accept="image/jpeg,image/png,image/webp"
+                                      multiple
+                                      className={styles.fileInput}
+                                      onChange={(event) => { void handleDetailPhotoFilesSelected(asset, event); }}
+                                      disabled={isDetailPhotoUploading}
+                                    />
+
                                     <div
-                                      className={styles.previewStage}
+                                      className={`${styles.previewStage} ${canUseOwnerOnlyAssetActions ? styles.previewStageClickable : ''} ${isDetailPhotoUploading ? styles.assetMediaBusy : ''}`}
+                                      role={canUseOwnerOnlyAssetActions ? 'button' : undefined}
+                                      tabIndex={canUseOwnerOnlyAssetActions ? 0 : undefined}
+                                      onClick={() => {
+                                        if (canUseOwnerOnlyAssetActions && !isDetailPhotoUploading) {
+                                          triggerDetailMediaInput(asset.id, 'photo');
+                                        }
+                                      }}
+                                      onKeyDown={(event) => handleDetailMediaKeyDown(event, asset.id, 'photo')}
                                       onTouchStart={(event) => handleDetailPhotoTouchStart(event.changedTouches[0]?.clientX ?? 0)}
                                       onTouchEnd={(event) => handleDetailPhotoTouchEnd(asset, event.changedTouches[0]?.clientX ?? 0)}
+                                      aria-label={hasRealPhotos ? 'Upload more asset photos' : 'Upload asset photos'}
                                     >
                                       {hasRealPhotos && detailPhoto ? (
                                         <>
@@ -6499,7 +6676,10 @@ export default function AssetRegisterClient() {
                                               <button
                                                 type="button"
                                                 className={`${styles.previewNavButton} ${styles.previewNavPrev}`}
-                                                onClick={() => cycleDetailPhoto(asset, -1)}
+                                                onClick={(event) => {
+                                                  event.stopPropagation();
+                                                  cycleDetailPhoto(asset, -1);
+                                                }}
                                                 aria-label="Show previous photo"
                                               >
                                                 <ChevronLeftIcon className={styles.buttonIcon} />
@@ -6508,7 +6688,10 @@ export default function AssetRegisterClient() {
                                               <button
                                                 type="button"
                                                 className={`${styles.previewNavButton} ${styles.previewNavNext}`}
-                                                onClick={() => cycleDetailPhoto(asset, 1)}
+                                                onClick={(event) => {
+                                                  event.stopPropagation();
+                                                  cycleDetailPhoto(asset, 1);
+                                                }}
                                                 aria-label="Show next photo"
                                               >
                                                 <ChevronRightIcon className={styles.buttonIcon} />
@@ -6529,6 +6712,21 @@ export default function AssetRegisterClient() {
                                           </div>
                                         </div>
                                       )}
+
+                                      {canUseOwnerOnlyAssetActions ? (
+                                        <button
+                                          type="button"
+                                          className={styles.previewUploadPill}
+                                          disabled={isDetailPhotoUploading}
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+                                            triggerDetailMediaInput(asset.id, 'photo');
+                                          }}
+                                        >
+                                          <PlusIcon className={styles.buttonIcon} />
+                                          <span>{isDetailPhotoUploading ? 'Uploading...' : hasRealPhotos ? 'Add photos' : 'Upload photos'}</span>
+                                        </button>
+                                      ) : null}
                                     </div>
 
                                     {hasMultiplePhotos ? (
@@ -6552,15 +6750,38 @@ export default function AssetRegisterClient() {
                                   </div>
 
                                   <div className={styles.assetDocumentsPanel}>
-                                    <div className={styles.assetDocumentsCard}>
+                                    <input
+                                      id={mediaInputId(asset.id, 'document')}
+                                      type="file"
+                                      accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain,image/jpeg,image/png,image/webp"
+                                      multiple
+                                      className={styles.fileInput}
+                                      onChange={(event) => { void handleDetailDocumentFilesSelected(asset, event); }}
+                                      disabled={isDetailDocumentUploading}
+                                    />
+
+                                    <button
+                                      type="button"
+                                      className={`${styles.assetDocumentsCard} ${styles.assetDocumentsUploadCard} ${isDetailDocumentUploading ? styles.assetMediaBusy : ''}`}
+                                      onClick={() => triggerDetailMediaInput(asset.id, 'document')}
+                                      disabled={isDetailDocumentUploading}
+                                    >
                                       <div className={styles.assetDocumentsMainLabel}>
+                                        <DocumentIcon className={styles.buttonIcon} />
                                         <strong>Documents</strong>
                                       </div>
-                                    </div>
+                                      <span className={styles.assetMediaHint}>
+                                        {isDetailDocumentUploading
+                                          ? 'Uploading...'
+                                          : detailDocuments.length
+                                            ? `${detailDocuments.length} saved · click to add`
+                                            : 'Click to upload documents'}
+                                      </span>
+                                    </button>
 
                                     {detailDocuments.length ? (
                                       <div className={styles.assetDocumentList}>
-                                        {detailDocuments.slice(0, 4).map((document) => (
+                                        {detailDocuments.map((document) => (
                                           <button
                                             type="button"
                                             className={styles.assetDocumentLink}
@@ -7324,9 +7545,9 @@ export default function AssetRegisterClient() {
                         <div className={styles.uploadPanel}>
                           <div className={styles.uploadRow}>
                             <label
-                              className={`${styles.secondaryButton} ${styles.filePickerButton} ${isUploadingPhotos || manualDraftPhotoCount >= MAX_PHOTOS ? styles.filePickerButtonDisabled : ''}`}
+                              className={`${styles.secondaryButton} ${styles.filePickerButton} ${isUploadingPhotos ? styles.filePickerButtonDisabled : ''}`}
                             >
-                              <span>{isUploadingPhotos ? 'Uploading...' : 'Add photos'}</span>
+                              <span>{isUploadingPhotos ? 'Uploading...' : manualDraftPhotoCount >= MAX_PHOTOS ? 'Add / replace photos' : 'Add photos'}</span>
                               <input
                                 ref={photoInputRef}
                                 type="file"
@@ -7334,7 +7555,7 @@ export default function AssetRegisterClient() {
                                 multiple
                                 className={styles.fileInput}
                                 onChange={handlePhotoFilesSelected}
-                                disabled={isUploadingPhotos || manualDraftPhotoCount >= MAX_PHOTOS}
+                                disabled={isUploadingPhotos}
                               />
                             </label>
 
