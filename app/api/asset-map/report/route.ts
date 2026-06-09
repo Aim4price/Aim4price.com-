@@ -26,6 +26,7 @@ type PrintableAsset = {
   condition: string;
   lastScanned: string;
   locationText: string;
+  photoUrls: string[];
   latitude: number;
   longitude: number;
   latLngText: string;
@@ -37,6 +38,35 @@ function unauthorized() {
 
 function asText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function normalizePhotoUrls(value: unknown): string[] {
+  const values = Array.isArray(value) ? value : typeof value === 'string' && value.trim() ? [value] : [];
+  const seen = new Set<string>();
+  const photos: string[] = [];
+
+  for (const entry of values) {
+    const url = asText(entry);
+    const lowerUrl = url.toLowerCase();
+
+    if (!url || seen.has(url)) {
+      continue;
+    }
+
+    if (
+      !lowerUrl.startsWith('data:image/') &&
+      !lowerUrl.startsWith('https://') &&
+      !lowerUrl.startsWith('http://') &&
+      !lowerUrl.startsWith('/api/asset-register/uploads/')
+    ) {
+      continue;
+    }
+
+    seen.add(url);
+    photos.push(url);
+  }
+
+  return photos;
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
@@ -351,6 +381,7 @@ function toPrintableAsset(asset: AssetRegisterItem, index: number): PrintableAss
     condition: formatCondition(asset.condition),
     lastScanned: formatDateTime(asset.lastScannedAtIso),
     locationText: asset.lastKnownLocationText || 'No written location note saved',
+    photoUrls: normalizePhotoUrls(asset.photos),
     latitude,
     longitude,
     latLngText: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
@@ -466,7 +497,7 @@ function renderKeyRows(assets: PrintableAsset[]): string {
             <span>GPS</span>
             <strong>${escapeHtml(asset.latLngText)}</strong>
           </div>
-          <div class="assetMapReportCell">
+          <div class="assetMapReportCell assetMapReportLastScannedCell">
             <span>Last scanned</span>
             <strong>${escapeHtml(asset.lastScanned)}</strong>
           </div>
@@ -506,6 +537,43 @@ function renderSelectedAssetRows(asset: PrintableAsset): string {
     .join('');
 }
 
+function renderAssetPhotoSection(asset: PrintableAsset | null): string {
+  if (!asset?.photoUrls.length) {
+    return '';
+  }
+
+  const maxReportPhotos = 12;
+  const photos = asset.photoUrls.slice(0, maxReportPhotos);
+  const extraPhotoCount = Math.max(0, asset.photoUrls.length - photos.length);
+  const gridClass = `assetMapReportPhotoGrid assetMapReportPhotoGridCount${Math.min(photos.length, 4)}`;
+
+  return `
+    <section class="assetMapReportSection assetMapReportPhotoSection">
+      <div class="assetMapReportSectionTitleRow">
+        <h2>Asset Photos</h2>
+        <span>${photos.length} photo${photos.length === 1 ? '' : 's'} shown</span>
+      </div>
+      <div class="${gridClass}">
+        ${photos
+          .map(
+            (photoUrl, index) => `
+              <figure class="assetMapReportPhotoTile">
+                <img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(`${asset.title} photo ${index + 1}`)}" />
+                <figcaption>Photo ${index + 1}</figcaption>
+              </figure>
+            `,
+          )
+          .join('')}
+      </div>
+      ${
+        extraPhotoCount
+          ? `<p class="assetMapReportPhotoNote">${extraPhotoCount} additional photo${extraPhotoCount === 1 ? '' : 's'} saved in the asset register.</p>`
+          : ''
+      }
+    </section>
+  `;
+}
+
 function buildReportHtml(assets: PrintableAsset[], generatedDate: string, generatedTime: string, ownerEmail: string, logoUrl: string): string {
   const singleAsset = assets.length === 1 ? assets[0] : null;
   const documentTitle = 'Asset Map Report';
@@ -517,6 +585,7 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
   const mapData = safeScriptJson(assets);
   const rowsHtml = renderKeyRows(assets);
   const selectedAssetRows = singleAsset ? renderSelectedAssetRows(singleAsset) : '';
+  const photoSectionHtml = renderAssetPhotoSection(singleAsset);
 
   return `<!doctype html>
 <html lang="en">
@@ -914,8 +983,8 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
 
       .assetMapReportKeyRow {
         display: grid;
-        grid-template-columns: 10mm minmax(38mm, 1fr) minmax(16mm, 0.35fr) minmax(20mm, 0.45fr) minmax(16mm, 0.35fr) minmax(18mm, 0.4fr) minmax(31mm, 0.65fr) minmax(31mm, 0.65fr);
-        gap: 8px;
+        grid-template-columns: 10mm minmax(34mm, 1.2fr) minmax(17mm, 0.48fr) minmax(22mm, 0.6fr) minmax(21mm, 0.58fr) minmax(16mm, 0.42fr) minmax(25mm, 0.62fr) minmax(32mm, 0.78fr) minmax(29mm, 0.72fr);
+        gap: 7px;
         min-height: 34px;
         align-items: center;
         padding: 7px 9px;
@@ -974,6 +1043,96 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
 
       .assetMapReportGpsCell strong {
         font-size: 7.9px;
+      }
+
+      .assetMapReportLastScannedCell strong {
+        font-size: 7.55px;
+        line-height: 1.18;
+      }
+
+      .assetMapReportSectionTitleRow {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .assetMapReportSectionTitleRow h2 {
+        margin: 0;
+      }
+
+      .assetMapReportSectionTitleRow span {
+        color: var(--muted);
+        font-size: 8px;
+        line-height: 1.2;
+        font-weight: 700;
+        text-align: right;
+      }
+
+      .assetMapReportPhotoSection {
+        break-inside: avoid;
+      }
+
+      .assetMapReportPhotoGrid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .assetMapReportPhotoGridCount1 {
+        grid-template-columns: minmax(0, 96mm);
+      }
+
+      .assetMapReportPhotoGridCount2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-width: 190mm;
+      }
+
+      .assetMapReportPhotoGridCount3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .assetMapReportPhotoTile {
+        min-width: 0;
+        margin: 0;
+        border: 1px solid var(--line);
+        background: var(--soft-2);
+        break-inside: avoid;
+      }
+
+      .assetMapReportPhotoTile img {
+        display: block;
+        width: 100%;
+        height: 34mm;
+        object-fit: contain;
+        background: #f1f4f7;
+      }
+
+      .assetMapReportPhotoGridCount1 .assetMapReportPhotoTile img {
+        height: 62mm;
+      }
+
+      .assetMapReportPhotoGridCount2 .assetMapReportPhotoTile img {
+        height: 50mm;
+      }
+
+      .assetMapReportPhotoGridCount3 .assetMapReportPhotoTile img {
+        height: 40mm;
+      }
+
+      .assetMapReportPhotoTile figcaption {
+        padding: 4px 7px 5px;
+        border-top: 1px solid var(--line);
+        color: #3f4652;
+        font-size: 7.5px;
+        font-weight: 700;
+      }
+
+      .assetMapReportPhotoNote {
+        margin: -2px 0 0;
+        color: var(--muted);
+        font-size: 7.8px;
+        font-weight: 600;
       }
 
       .assetMapReportEmpty {
@@ -1152,6 +1311,26 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
           min-height: 31px;
           padding: 6px 8px;
         }
+
+        .assetMapReportPhotoGrid {
+          gap: 6px;
+        }
+
+        .assetMapReportPhotoTile img {
+          height: 32mm;
+        }
+
+        .assetMapReportPhotoGridCount1 .assetMapReportPhotoTile img {
+          height: 58mm;
+        }
+
+        .assetMapReportPhotoGridCount2 .assetMapReportPhotoTile img {
+          height: 47mm;
+        }
+
+        .assetMapReportPhotoGridCount3 .assetMapReportPhotoTile img {
+          height: 38mm;
+        }
       }
     </style>
   </head>
@@ -1218,6 +1397,8 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
           <h2>Location Key</h2>
           <div class="assetMapReportKeyRows">${rowsHtml}</div>
         </section>
+
+        ${photoSectionHtml}
 
         <footer class="assetMapReportFooter">
           <div>
@@ -1306,12 +1487,34 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
           return Promise.resolve();
         }
 
+        function waitForImages() {
+          var images = Array.prototype.slice.call(document.images || []);
+
+          if (!images.length) {
+            return Promise.resolve();
+          }
+
+          return Promise.race([
+            Promise.all(images.map(function (image) {
+              if (image.complete) {
+                return Promise.resolve();
+              }
+
+              return new Promise(function (resolve) {
+                image.addEventListener('load', resolve, { once: true });
+                image.addEventListener('error', resolve, { once: true });
+              });
+            })),
+            new Promise(function (resolve) { window.setTimeout(resolve, 2800); }),
+          ]);
+        }
+
         function schedulePrint(tiles) {
           var printed = false;
           var printReport = function () {
             if (printed) return;
             printed = true;
-            waitForFonts().then(function () {
+            waitForFonts().then(waitForImages).then(function () {
               window.setTimeout(function () {
                 window.focus();
                 window.print();
