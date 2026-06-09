@@ -98,6 +98,8 @@ type UploadColumnInfo = {
   column_name: string;
   udt_name: string;
   data_type: string;
+  is_nullable: 'YES' | 'NO';
+  column_default: string | null;
 };
 
 let ensureAssetRegisterUploadsTablePromise: Promise<void> | null = null;
@@ -167,7 +169,7 @@ function columnInfoMap(columns: UploadColumnInfo[]): Map<string, UploadColumnInf
 async function readUploadTableColumns(): Promise<UploadColumnInfo[]> {
   const result = await getDb().query<UploadColumnInfo>(
     `
-      select column_name, udt_name, data_type
+      select column_name, udt_name, data_type, is_nullable, column_default
       from information_schema.columns
       where table_schema = 'public'
         and table_name = 'asset_register_uploads'
@@ -211,6 +213,123 @@ async function copyLegacyColumnValue(input: {
         and ${sourceColumnSql} is not null
     `);
   }
+}
+
+
+async function relaxLegacyUploadColumnNotNullConstraints(candidateColumns: string[]): Promise<void> {
+  const columns = columnInfoMap(await readUploadTableColumns());
+
+  for (const candidateColumn of candidateColumns) {
+    const column = columns.get(candidateColumn);
+
+    if (!column || column.is_nullable !== 'NO') {
+      continue;
+    }
+
+    await getDb().query(`
+      alter table public.asset_register_uploads
+        alter column ${quoteIdentifier(candidateColumn)} drop not null
+    `);
+  }
+}
+
+type UploadInsertField = {
+  name: string;
+  value: unknown;
+};
+
+function isByteaColumn(column: UploadColumnInfo | undefined): boolean {
+  return column?.udt_name === 'bytea';
+}
+
+function isTextColumn(column: UploadColumnInfo | undefined): boolean {
+  return Boolean(column && ['text', 'varchar', 'bpchar'].includes(column.udt_name));
+}
+
+function isNumericColumn(column: UploadColumnInfo | undefined): boolean {
+  return Boolean(column && ['int2', 'int4', 'int8', 'numeric', 'float4', 'float8'].includes(column.udt_name));
+}
+
+function pushUploadInsertField(input: {
+  columns: Map<string, UploadColumnInfo>;
+  fields: UploadInsertField[];
+  usedColumns: Set<string>;
+  columnName: string;
+  value: unknown;
+  allowColumn?: (column: UploadColumnInfo | undefined) => boolean;
+}): void {
+  const column = input.columns.get(input.columnName);
+
+  if (!column || input.usedColumns.has(input.columnName)) {
+    return;
+  }
+
+  if (input.allowColumn && !input.allowColumn(column)) {
+    return;
+  }
+
+  input.fields.push({ name: input.columnName, value: input.value });
+  input.usedColumns.add(input.columnName);
+}
+
+async function insertAssetRegisterUploadRow(input: {
+  id: string;
+  userId: string;
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+  buffer: Buffer;
+}): Promise<void> {
+  const columns = columnInfoMap(await readUploadTableColumns());
+  const fields: UploadInsertField[] = [];
+  const usedColumns = new Set<string>();
+  const push = (columnName: string, value: unknown, allowColumn?: (column: UploadColumnInfo | undefined) => boolean) =>
+    pushUploadInsertField({ columns, fields, usedColumns, columnName, value, allowColumn });
+
+  push('id', input.id);
+  push('user_id', input.userId);
+  push('owner_id', input.userId, isTextColumn);
+  push('created_by', input.userId, isTextColumn);
+  push('uploaded_by', input.userId, isTextColumn);
+  push('account_id', input.userId, isTextColumn);
+
+  push('file_name', input.fileName, isTextColumn);
+  for (const columnName of LEGACY_FILE_NAME_COLUMN_CANDIDATES) {
+    push(columnName, input.fileName, isTextColumn);
+  }
+
+  push('content_type', input.contentType, isTextColumn);
+  for (const columnName of LEGACY_CONTENT_TYPE_COLUMN_CANDIDATES) {
+    push(columnName, input.contentType, isTextColumn);
+  }
+
+  push('byte_size', input.byteSize, isNumericColumn);
+  for (const columnName of LEGACY_BYTE_SIZE_COLUMN_CANDIDATES) {
+    push(columnName, input.byteSize, isNumericColumn);
+  }
+
+  push('data', input.buffer, isByteaColumn);
+  for (const columnName of LEGACY_DATA_COLUMN_CANDIDATES) {
+    push(columnName, input.buffer, isByteaColumn);
+  }
+
+  const uploadedAt = new Date();
+  push('created_at', uploadedAt);
+  push('uploaded_at', uploadedAt);
+  push('created_on', uploadedAt);
+  push('updated_at', uploadedAt);
+
+  if (!usedColumns.has('data') && !LEGACY_DATA_COLUMN_CANDIDATES.some((columnName) => usedColumns.has(columnName))) {
+    throw new Error('Asset register upload storage is missing a usable bytea column.');
+  }
+
+  const columnSql = fields.map((field) => quoteIdentifier(field.name)).join(', ');
+  const valueSql = fields.map((_, index) => `$${index + 1}`).join(', ');
+
+  await getDb().query(
+    `insert into public.asset_register_uploads (${columnSql}) values (${valueSql})`,
+    fields.map((field) => field.value),
+  );
 }
 
 async function ensureAssetRegisterUploadsTableOnce(): Promise<void> {
@@ -260,6 +379,20 @@ async function ensureAssetRegisterUploadsTableOnce(): Promise<void> {
     allowedSourceUdtNames: new Set(['int2', 'int4', 'int8', 'numeric', 'float4', 'float8']),
     castExpression: (sourceColumnSql) => `greatest(0, round(coalesce(${sourceColumnSql}, 0)::numeric)::integer)`,
   });
+
+  await relaxLegacyUploadColumnNotNullConstraints([
+    ...LEGACY_DATA_COLUMN_CANDIDATES,
+    ...LEGACY_FILE_NAME_COLUMN_CANDIDATES,
+    ...LEGACY_CONTENT_TYPE_COLUMN_CANDIDATES,
+    ...LEGACY_BYTE_SIZE_COLUMN_CANDIDATES,
+    'owner_id',
+    'created_by',
+    'uploaded_by',
+    'account_id',
+    'uploaded_at',
+    'created_on',
+    'updated_at',
+  ]);
 
   await db.query(`
     update public.asset_register_uploads
@@ -368,20 +501,14 @@ export async function createAssetRegisterUpload(
   const byteSize = Number(input.file.size) || 0;
   const buffer = Buffer.from(await input.file.arrayBuffer());
 
-  await getDb().query(
-    `
-      insert into public.asset_register_uploads (
-        id,
-        user_id,
-        file_name,
-        content_type,
-        byte_size,
-        data,
-        created_at
-      ) values ($1, $2, $3, $4, $5, $6, now())
-    `,
-    [id, input.userId, fileName, contentType, byteSize, buffer],
-  );
+  await insertAssetRegisterUploadRow({
+    id,
+    userId: input.userId,
+    fileName,
+    contentType,
+    byteSize,
+    buffer,
+  });
 
   return {
     id,
