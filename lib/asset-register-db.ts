@@ -1579,6 +1579,55 @@ export async function createManualAssetRegisterItem(
   return mapAssetRegisterRow(row);
 }
 
+
+export async function updateAssetRegisterItemMedia(
+  userId: string,
+  input: {
+    assetId: string;
+    photos?: string[];
+    documents?: AssetRegisterDocument[];
+  },
+): Promise<AssetRegisterItem> {
+  const db = getDb();
+  const schema = await getAssetRegisterSchema();
+  const existing = await getAssetRegisterItemById(userId, input.assetId);
+
+  if (!existing) {
+    throw new Error('ASSET_NOT_FOUND');
+  }
+
+  const fields: SqlField[] = [];
+  const now = new Date();
+
+  pushPhotoField(fields, schema, input.photos ?? existing.photos);
+  pushDocumentField(fields, schema, input.documents ?? existing.documents);
+  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
+
+  if (!fields.length) {
+    return existing;
+  }
+
+  const update = buildUpdateSetClause(fields);
+  const result = await db.query<AssetRegisterRow>(
+    `
+      update asset_register_items
+      set
+        ${update.clause}
+      where user_id = $1 and id = $2
+      returning
+        ${buildSelectList(schema)}
+    `,
+    [userId, input.assetId, ...update.values],
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    throw new Error('ASSET_UPDATE_FAILED');
+  }
+
+  return mapAssetRegisterRow(row);
+}
+
 export async function updateAssetRegisterItem(
   userId: string,
   input: UpdateAssetRegisterItemInput,
