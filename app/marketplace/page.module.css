@@ -637,8 +637,7 @@
   line-height: 1.6;
 }
 
-.emptyState button,
-.showMoreButton {
+.emptyState button {
   min-height: 2.7rem;
   margin-top: 1rem;
   padding: 0 1rem;
@@ -649,19 +648,88 @@
   font-weight: 650;
 }
 
-.emptyState button:hover,
-.showMoreButton:hover {
+.emptyState button:hover {
   background: #123b30;
 }
 
-.showMoreWrap {
-  display: flex;
-  justify-content: center;
-  margin-top: 1.3rem;
+.paginationWrap {
+  display: grid;
+  justify-items: center;
+  gap: 0.78rem;
+  margin-top: 1.45rem;
+  padding: 1rem 0 0.15rem;
 }
 
-.showMoreButton {
-  min-width: 13rem;
+.paginationSummary {
+  margin: 0;
+  color: #65676b;
+  font-size: 0.91rem;
+  font-weight: 650;
+  text-align: center;
+}
+
+.paginationControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+}
+
+.paginationButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.32rem;
+  min-width: 2.45rem;
+  min-height: 2.45rem;
+  padding: 0 0.78rem;
+  border: 1px solid #ccd0d5;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #17362c;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(16, 31, 28, 0.045);
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.paginationButton svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  stroke: currentColor;
+  stroke-width: 2.2;
+}
+
+.paginationButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(22, 83, 64, 0.32);
+  background: #edf6f1;
+  color: #165340;
+}
+
+.paginationButton:disabled {
+  cursor: not-allowed;
+  color: #8a8d91;
+  background: #f0f2f5;
+  box-shadow: none;
+}
+
+.paginationButtonActive,
+.paginationButtonActive:hover:not(:disabled) {
+  border-color: #165340;
+  background: #165340;
+  color: #ffffff;
+}
+
+.paginationEllipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.65rem;
+  min-height: 2.45rem;
+  color: #65676b;
+  font-weight: 800;
 }
 
 .modalOverlay,
@@ -1409,6 +1477,19 @@
   .listingGrid {
     grid-template-columns: 1fr;
     gap: 0.85rem;
+  }
+
+
+  .paginationWrap {
+    align-items: stretch;
+  }
+
+  .paginationControls {
+    justify-content: flex-start;
+  }
+
+  .paginationButton {
+    flex: 1 1 auto;
   }
 
   .cardPrice {

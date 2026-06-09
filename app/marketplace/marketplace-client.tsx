@@ -77,7 +77,9 @@ type ActiveFilterChip = {
   onRemove: () => void;
 };
 
-const LISTINGS_PER_LOAD = 24;
+type PaginationItem = number | 'ellipsis-before' | 'ellipsis-after';
+
+const LISTINGS_PER_PAGE = 24;
 const JPEG_AD_WIDTH = 1600;
 const JPEG_AD_HEIGHT = 900;
 const JPEG_AD_LOGO_SRC = '/brand/Aim4price_Home_Logo.png';
@@ -1551,6 +1553,39 @@ function normaliseFamilyOption(family: EquipmentFamilyRecord): FamilyOption | nu
   };
 }
 
+function buildPaginationItems(currentPage: number, totalPages: number): PaginationItem[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages = new Set<number>([1, totalPages]);
+
+  if (currentPage <= 4) {
+    [2, 3, 4, 5].forEach((page) => pages.add(page));
+  } else if (currentPage >= totalPages - 3) {
+    [totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1].forEach((page) => pages.add(page));
+  } else {
+    [currentPage - 1, currentPage, currentPage + 1].forEach((page) => pages.add(page));
+  }
+
+  const orderedPages = Array.from(pages)
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((a, b) => a - b);
+  const items: PaginationItem[] = [];
+
+  orderedPages.forEach((page, index) => {
+    const previousPage = orderedPages[index - 1];
+
+    if (typeof previousPage === 'number' && page - previousPage > 1) {
+      items.push(previousPage === 1 ? 'ellipsis-before' : 'ellipsis-after');
+    }
+
+    items.push(page);
+  });
+
+  return items;
+}
+
 function mergeFamilies(records: EquipmentFamilyRecord[]): FamilyOption[] {
   const fromApi = records.map(normaliseFamilyOption).filter((item): item is FamilyOption => item !== null);
   const result: FamilyOption[] = [];
@@ -1609,8 +1644,9 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   const [conditionFilter, setConditionFilter] = useState<ConditionFilterValue>('');
   const [locationFilter, setLocationFilter] = useState('south-africa');
   const [distanceFilter, setDistanceFilter] = useState<DistanceFilterValue>('all');
-  const [visibleCount, setVisibleCount] = useState(LISTINGS_PER_LOAD);
+  const [currentPage, setCurrentPage] = useState(1);
   const modalDetailsRef = useRef<HTMLElement | null>(null);
+  const resultsAreaRef = useRef<HTMLElement | null>(null);
   const [modalScrollState, setModalScrollState] = useState({ visible: false, top: 0, height: 100 });
 
   useEffect(() => {
@@ -1779,8 +1815,16 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   }, [conditionFilter, distanceFilter, familyFilter, items, locationFilter, query, sectorFilter]);
 
   const visible = useMemo(() => sortListings(filtered), [filtered]);
-  const visibleListings = visible.slice(0, visibleCount);
-  const canShowMore = visibleCount < visible.length;
+  const totalPages = Math.max(1, Math.ceil(visible.length / LISTINGS_PER_PAGE));
+  const normalizedCurrentPage = Math.min(currentPage, totalPages);
+  const firstVisibleListingIndex = visible.length ? (normalizedCurrentPage - 1) * LISTINGS_PER_PAGE : 0;
+  const firstVisibleListingNumber = visible.length ? firstVisibleListingIndex + 1 : 0;
+  const lastVisibleListingNumber = Math.min(firstVisibleListingIndex + LISTINGS_PER_PAGE, visible.length);
+  const visibleListings = visible.slice(firstVisibleListingIndex, lastVisibleListingNumber);
+  const paginationItems = useMemo(
+    () => buildPaginationItems(normalizedCurrentPage, totalPages),
+    [normalizedCurrentPage, totalPages],
+  );
 
   const activeImages = useMemo(
     () => (activeListing ? getListingImages(activeListing) : []),
@@ -1896,8 +1940,14 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   }, [activeImages.length, activeListing, canDeleteActiveListing, isSignedIn, updateModalScrollRail]);
 
   useEffect(() => {
-    setVisibleCount(LISTINGS_PER_LOAD);
+    setCurrentPage(1);
   }, [conditionFilter, distanceFilter, familyFilter, locationFilter, query, sectorFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   useEffect(() => {
     if (!listingQueryId) {
@@ -2002,7 +2052,33 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
     setConditionFilter('');
     setLocationFilter('south-africa');
     setDistanceFilter('all');
-    setVisibleCount(LISTINGS_PER_LOAD);
+    setCurrentPage(1);
+  }
+
+  function scrollResultsIntoView() {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const node = resultsAreaRef.current;
+
+    if (!node) {
+      return;
+    }
+
+    const nextTop = node.getBoundingClientRect().top + window.scrollY - 120;
+    window.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+  }
+
+  function goToPage(nextPage: number) {
+    const boundedPage = Math.min(totalPages, Math.max(1, nextPage));
+
+    if (boundedPage === normalizedCurrentPage) {
+      return;
+    }
+
+    setCurrentPage(boundedPage);
+    window.setTimeout(scrollResultsIntoView, 0);
   }
 
   function goToMarketplaceEstimate() {
@@ -2356,7 +2432,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
           ) : null}
         </aside>
 
-        <section className={styles.resultsArea}>
+        <section ref={resultsAreaRef} className={styles.resultsArea}>
           {activeFilterChips.length ? (
             <div className={styles.activeFilters}>
               {activeFilterChips.map((chip) => (
@@ -2428,15 +2504,54 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
             </article>
           )}
 
-          {canShowMore ? (
-            <div className={styles.showMoreWrap}>
-              <button
-                type="button"
-                className={styles.showMoreButton}
-                onClick={() => setVisibleCount((current) => current + LISTINGS_PER_LOAD)}
-              >
-                Show more listings
-              </button>
+          {visible.length > 0 ? (
+            <div className={styles.paginationWrap}>
+              <p className={styles.paginationSummary}>
+                Showing {firstVisibleListingNumber}-{lastVisibleListingNumber} of {visible.length} listings
+                {totalPages > 1 ? ` · Page ${normalizedCurrentPage} of ${totalPages}` : ''}
+              </p>
+
+              {totalPages > 1 ? (
+                <nav className={styles.paginationControls} aria-label="Marketplace listing pages">
+                  <button
+                    type="button"
+                    className={styles.paginationButton}
+                    onClick={() => goToPage(normalizedCurrentPage - 1)}
+                    disabled={normalizedCurrentPage === 1}
+                  >
+                    <IconChevronLeft />
+                    Previous
+                  </button>
+
+                  {paginationItems.map((item) =>
+                    typeof item === 'number' ? (
+                      <button
+                        key={item}
+                        type="button"
+                        className={`${styles.paginationButton} ${item === normalizedCurrentPage ? styles.paginationButtonActive : ''}`}
+                        onClick={() => goToPage(item)}
+                        aria-current={item === normalizedCurrentPage ? 'page' : undefined}
+                      >
+                        {item}
+                      </button>
+                    ) : (
+                      <span key={item} className={styles.paginationEllipsis} aria-hidden="true">
+                        …
+                      </span>
+                    ),
+                  )}
+
+                  <button
+                    type="button"
+                    className={styles.paginationButton}
+                    onClick={() => goToPage(normalizedCurrentPage + 1)}
+                    disabled={normalizedCurrentPage === totalPages}
+                  >
+                    Next
+                    <IconChevronRight />
+                  </button>
+                </nav>
+              ) : null}
             </div>
           ) : null}
         </section>
