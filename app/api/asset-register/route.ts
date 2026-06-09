@@ -19,6 +19,7 @@ import {
   getAssetRegisterItemById,
   listAssetRegisterItems,
   updateAssetRegisterItem,
+  updateAssetRegisterItemMedia,
   type AssetRegisterDocument,
   type AssetRegisterItemKind,
   type CreateManualAssetInput,
@@ -586,6 +587,72 @@ export async function PUT(request: NextRequest) {
     console.error('asset register PUT failed', error);
     return NextResponse.json(
       { ok: false, error: formatUnknownError(error, 'Failed to update asset.') },
+      { status: 500 },
+    );
+  }
+}
+
+
+export async function PATCH(request: NextRequest) {
+  const session = await getServerSession();
+
+  if (!session?.user?.id) {
+    return unauthorized();
+  }
+
+  const ownerError = await requireOwnerAccount(session.user);
+  if (ownerError) return ownerError;
+
+  const body = (await request.json()) as {
+    assetId?: unknown;
+    photos?: unknown;
+    documents?: unknown;
+  };
+  const assetId = String(body.assetId ?? '').trim();
+
+  if (!assetId) {
+    return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
+  }
+
+  const existing = await getAssetRegisterItemById(session.user.id, assetId);
+
+  if (!existing) {
+    return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
+  }
+
+  const nextPhotos = Array.isArray(body.photos) ? normalizePhotos(body.photos) : existing.photos;
+  const nextDocuments = Array.isArray(body.documents) ? normalizeDocuments(body.documents) : existing.documents;
+  const nextDocumentUrls = documentUrls(nextDocuments);
+  const removedUploadIds = listInternalAssetRegisterUploadIds([
+    ...existing.photos.filter((photo) => !nextPhotos.includes(photo)),
+    ...documentUrls(existing.documents).filter((documentUrl) => !nextDocumentUrls.includes(documentUrl)),
+  ]);
+
+  try {
+    const item = await updateAssetRegisterItemMedia(session.user.id, {
+      assetId,
+      photos: nextPhotos,
+      documents: nextDocuments,
+    });
+
+    await deleteUnreferencedAssetRegisterUploads({
+      userId: session.user.id,
+      uploadIds: removedUploadIds,
+      excludeAssetId: assetId,
+    });
+
+    const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [item]);
+    const [itemWithMaintenanceStatus] = await attachLatestMaintenanceStatusToAssets(itemWithPartnerNote ? [itemWithPartnerNote] : [item]);
+
+    return NextResponse.json({ ok: true, item: itemWithMaintenanceStatus ?? itemWithPartnerNote ?? item });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
+      return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
+    }
+
+    console.error('asset register media PATCH failed', error);
+    return NextResponse.json(
+      { ok: false, error: formatUnknownError(error, 'Failed to update asset files.') },
       { status: 500 },
     );
   }
