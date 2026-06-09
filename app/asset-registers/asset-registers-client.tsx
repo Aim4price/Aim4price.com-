@@ -312,19 +312,37 @@ type RegisterLogoBlockProps = {
   register: AssetRegisterSummary;
   isUploading: boolean;
   disabled: boolean;
+  logoRevision: number;
   onUpload: (
     register: AssetRegisterSummary,
     event: ChangeEvent<HTMLInputElement>,
   ) => void;
 };
 
+function imageUrlWithRevision(url: string, revision: number): string {
+  const trimmedUrl = String(url ?? "").trim();
+
+  if (
+    !trimmedUrl ||
+    revision <= 0 ||
+    trimmedUrl.startsWith("data:") ||
+    trimmedUrl.startsWith("blob:")
+  ) {
+    return trimmedUrl;
+  }
+
+  return `${trimmedUrl}${trimmedUrl.includes("?") ? "&" : "?"}v=${encodeURIComponent(String(revision))}`;
+}
+
 function RegisterLogoBlock({
   register,
   isUploading,
   disabled,
+  logoRevision,
   onUpload,
 }: RegisterLogoBlockProps) {
   const logoUrl = visibleLogoUrls(register)[0] ?? "";
+  const logoImageSrc = imageUrlWithRevision(logoUrl, logoRevision);
   const hasHiddenLogo = normalizeLogoUrls(register.logoUrls).length > 0 && !register.showLogosOnRegister;
   const uploadDisabled = disabled || isUploading;
   const uploadLabel = isUploading ? "Uploading logo..." : logoUrl ? "Replace logo" : "Upload logo";
@@ -346,7 +364,11 @@ function RegisterLogoBlock({
       {logoUrl ? (
         <div className={`${styles.registerLogoGrid} ${styles.registerLogoGridSingle}`}>
           <div className={styles.registerLogoTile}>
-            <img src={logoUrl} alt={`${register.businessName} logo`} />
+            <img
+              key={`${register.id}-${logoUrl}-${logoRevision}`}
+              src={logoImageSrc}
+              alt={`${register.businessName} logo`}
+            />
           </div>
         </div>
       ) : (
@@ -501,6 +523,7 @@ export default function AssetRegistersClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [uploadingRegisterLogoId, setUploadingRegisterLogoId] = useState<string | null>(null);
+  const [logoRevisions, setLogoRevisions] = useState<Record<string, number>>({});
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [manageSaveState, setManageSaveState] = useState<"idle" | "saved">("idle");
   const [isLoadingManagedAssets, setIsLoadingManagedAssets] = useState(false);
@@ -808,6 +831,10 @@ export default function AssetRegistersClient() {
     const selectedFiles = Array.from(event.target.files ?? []);
     event.target.value = "";
 
+    if (!selectedFiles.length) {
+      return;
+    }
+
     if (uploadingRegisterLogoId) {
       return;
     }
@@ -826,12 +853,17 @@ export default function AssetRegistersClient() {
         logoUrls: normalizeLogoUrls(uploadResult.register?.logoUrls ?? uploadResult.logoUrls),
         showLogosOnRegister: true,
       };
+      const logoRevision = Date.now();
 
       setRegisters((currentRegisters) =>
         currentRegisters.map((entry) =>
           entry.id === updatedRegister.id ? { ...entry, ...updatedRegister } : entry,
         ),
       );
+      setLogoRevisions((currentRevisions) => ({
+        ...currentRevisions,
+        [updatedRegister.id]: logoRevision,
+      }));
 
       if (managedRegisterId === updatedRegister.id) {
         setEditDraft(draftFromRegister(updatedRegister));
@@ -1013,6 +1045,7 @@ export default function AssetRegistersClient() {
     }
 
     setMovingAssetId(asset.id);
+    const targetRegister = managedMoveTargets.find((target) => target.id === targetRegisterId);
 
     try {
       const response = await fetch("/api/asset-registers/move-assets", {
@@ -1039,7 +1072,9 @@ export default function AssetRegistersClient() {
       await refreshRegisters(false);
       setNotice({
         tone: "success",
-        message: "Asset moved to the selected register.",
+        message: targetRegister
+          ? `${asset.title} moved successfully to ${targetRegister.businessName}.`
+          : "Asset moved successfully.",
       });
     } catch (error) {
       setNotice({
@@ -1118,18 +1153,26 @@ export default function AssetRegistersClient() {
 
   return (
     <>
+      {notice ? (
+        <div
+          className={styles.toastViewport}
+          aria-live={notice.tone === "success" ? "polite" : "assertive"}
+          aria-atomic="true"
+        >
+          <div
+            className={`${styles.toast} ${notice.tone === "success" ? styles.toastSuccess : styles.toastError}`}
+            role={notice.tone === "success" ? "status" : "alert"}
+          >
+            <span className={styles.toastDot} aria-hidden="true" />
+            <span>{notice.message}</span>
+          </div>
+        </div>
+      ) : null}
+
       <main className={styles.page}>
         <AppHeader active="none" />
 
         <section className={styles.shell}>
-          {notice ? (
-            <div
-              className={`${styles.notice} ${notice.tone === "success" ? styles.noticeSuccess : styles.noticeError}`}
-            >
-              {notice.message}
-            </div>
-          ) : null}
-
           <section className={styles.managementPanel}>
             <div className={styles.panelHeader}>
               <div className={styles.pageTitleBlock}>
@@ -1204,6 +1247,7 @@ export default function AssetRegistersClient() {
                         register={register}
                         isUploading={isLogoUploading}
                         disabled={isLogoUploadDisabled || Boolean(removingRegisterId) || Boolean(selectingRegisterId)}
+                        logoRevision={logoRevisions[register.id] ?? 0}
                         onUpload={handleCardLogoUpload}
                       />
 
