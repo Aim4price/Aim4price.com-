@@ -123,18 +123,17 @@ function SmartLink({ href, className, children }: SmartLinkProps) {
   );
 }
 
-function getInitials(name: string): string {
-  const parts = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
-
-  if (!parts.length) {
-    return 'A';
-  }
-
-  return parts.map((part) => part.charAt(0).toUpperCase()).join('');
+function AccountProfileIcon({ className }: { className: string }) {
+  return (
+    <span className={className} aria-hidden="true">
+      <svg className={styles.accountAvatarIcon} viewBox="0 0 24 24" focusable="false">
+        <path
+          d="M12 12.15a4.15 4.15 0 1 0 0-8.3 4.15 4.15 0 0 0 0 8.3Zm0 2.1c-4.04 0-7.3 2.02-7.3 4.5 0 .78.63 1.4 1.4 1.4h11.8c.77 0 1.4-.62 1.4-1.4 0-2.48-3.26-4.5-7.3-4.5Z"
+          fill="currentColor"
+        />
+      </svg>
+    </span>
+  );
 }
 
 function clearLegacyPrototypeStorage() {
@@ -344,7 +343,6 @@ export default function AppHeader({
   }, [session?.id, pathname]);
 
   const accountName = useMemo(() => session?.name?.trim() || 'Aim4price User', [session]);
-  const accountInitials = useMemo(() => getInitials(accountName), [accountName]);
   const accountType = session?.accountType ?? null;
   const isOwnerAccount = accountType === 'owner';
   const navAccountType = isLoadingSession ? null : (session?.accountType ?? 'public');
@@ -691,16 +689,14 @@ export default function AppHeader({
                       setMenuOpen((current) => !current);
                     }}
                   >
-                    <span className={styles.accountAvatar} aria-hidden="true">
-                      {accountInitials}
-                    </span>
+                    <AccountProfileIcon className={styles.accountAvatar} />
                     <span className={styles.accountButtonText}>Account</span>
                   </button>
 
                   {menuOpen ? (
                     <div className={styles.accountPopover} role="menu">
                       <div className={styles.accountSummary}>
-                        <div className={styles.accountAvatarLarge}>{accountInitials}</div>
+                        <AccountProfileIcon className={styles.accountAvatarLarge} />
                         <div className={styles.accountSummaryText}>
                           <strong className={styles.accountName}>{accountName}</strong>
                         </div>
