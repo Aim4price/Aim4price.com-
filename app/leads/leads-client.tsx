@@ -54,6 +54,7 @@ type AssetLead = {
   ownerContactEmail: string;
   ownerName: string;
   ownerBusinessName: string;
+  ownerEmail: string;
   ownerPhone: string;
   ownerProvince: string;
   ownerTownCity: string;
@@ -477,91 +478,33 @@ function asBoolean(value: unknown): boolean {
   return value === true || String(value ?? '').trim().toLowerCase() === 'true';
 }
 
-function asUnknownArray(value: unknown): unknown[] {
-  if (Array.isArray(value)) {
-    return value;
-  }
-
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-
-    if (!trimmed) {
-      return [];
-    }
-
-    try {
-      const parsed = JSON.parse(trimmed) as unknown;
-      return Array.isArray(parsed) ? parsed : [trimmed];
-    } catch {
-      return [trimmed];
-    }
-  }
-
-  return [];
-}
-
-function snapshotDocumentCount(snapshot: Record<string, unknown> | null | undefined): number {
-  if (!snapshot) return 0;
-
-  const documents = asUnknownArray(
-    snapshot.documents ??
-      snapshot.documentUrls ??
-      snapshot.document_urls ??
-      snapshot.documentFiles ??
-      snapshot.document_files ??
-      snapshot.attachments ??
-      snapshot.files,
-  );
-
-  return documents.filter((document) => Boolean(document && String(document).trim())).length;
-}
-
-function snapshotDocumentStatusLabel(snapshot: Record<string, unknown> | null | undefined): string {
-  const count = snapshotDocumentCount(snapshot);
-
-  if (!count) return 'None';
-  return count === 1 ? 'Document attached' : `${count} documents attached`;
-}
-
 function leadPartnerPdfAttachmentCount(lead: AssetLead): number {
   return Math.max(0, Math.round(Number(lead.partnerNoteAttachmentCount ?? 0) || 0));
 }
 
-function leadDocumentStatusLabel(lead: AssetLead): string {
-  const assetDocumentCount = snapshotDocumentCount(lead.assetSnapshot);
-  const quotePdfCount = leadPartnerPdfAttachmentCount(lead);
-
-  if (!assetDocumentCount && !quotePdfCount) {
-    return 'None';
-  }
-
-  if (assetDocumentCount && quotePdfCount) {
-    const total = assetDocumentCount + quotePdfCount;
-    return `${total} documents attached, including ${quotePdfCount} quote PDF${quotePdfCount === 1 ? '' : 's'}`;
-  }
-
-  if (quotePdfCount) {
-    return quotePdfCount === 1 ? 'Quote PDF attached' : `${quotePdfCount} quote PDFs attached`;
-  }
-
-  return snapshotDocumentStatusLabel(lead.assetSnapshot);
+function leadResponseDocumentAttachedValue(lead: AssetLead): 'Yes' | 'No' {
+  return leadPartnerPdfAttachmentCount(lead) > 0 ? 'Yes' : 'No';
 }
 
-function leadAttachedDocumentNote(lead: AssetLead): string {
-  const statusLabel = leadDocumentStatusLabel(lead);
+function leadResponseDocumentRowValue(lead: AssetLead): string {
+  return `Response document: ${leadResponseDocumentAttachedValue(lead)}`;
+}
 
-  if (statusLabel === 'None') {
-    return '';
+function leadResponseDocumentDetail(lead: AssetLead): string {
+  const attachmentCount = leadPartnerPdfAttachmentCount(lead);
+
+  if (!attachmentCount) {
+    return 'No';
   }
 
   const fileName = asText(lead.latestPartnerNoteAttachmentFileName);
   const byteSize = asNumber(lead.latestPartnerNoteAttachmentByteSize);
+  const countLabel = attachmentCount === 1 ? '1 response document' : `${attachmentCount} response documents`;
+  const fileLabel = fileName
+    ? `Latest: ${fileName}${byteSize !== null && byteSize > 0 ? ` (${formatByteSize(byteSize)})` : ''}`
+    : '';
 
-  if (!fileName) {
-    return statusLabel;
-  }
-
-  return `${statusLabel}: ${fileName}${byteSize !== null && byteSize > 0 ? ` (${formatByteSize(byteSize)})` : ''}`;
+  return ['Yes', countLabel, fileLabel].filter(Boolean).join(' · ');
 }
 
 function registerLeadSnapshot(lead: AssetLead): Record<string, unknown> | null {
@@ -844,7 +787,16 @@ function ownerPhone(lead: AssetLead): string {
 }
 
 function ownerEmail(lead: AssetLead): string {
-  return lead.ownerContactEmail || '';
+  return lead.ownerContactEmail || lead.ownerEmail || '';
+}
+
+function leadEmailRecipient(lead: AssetLead): string {
+  const rawEmail = ownerEmail(lead);
+  const firstAddress = rawEmail.split(/[;,]/)[0]?.trim() ?? '';
+  const bracketMatch = firstAddress.match(/<([^>]+)>/);
+  const email = (bracketMatch?.[1] ?? firstAddress).replace(/\s+/g, '');
+
+  return email.includes('@') ? email : '';
 }
 
 function ownerLocation(lead: AssetLead): string {
@@ -1051,7 +1003,7 @@ function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = '
       financed: asBoolean(asset.isFinanced) ? 'Yes' : 'No',
       licensed: asBoolean(asset.isLicensed) ? 'Yes' : 'No',
       licenseRegistrationNumber: asText(asset.licenseRegistrationNumber) || undefined,
-      documents: snapshotDocumentStatusLabel(asset),
+      documents: leadResponseDocumentRowValue(lead),
       updated: updated !== '—' ? `Updated ${updated}` : '—',
       photoUrl: asText(asset.photoUrl) || null,
     };
@@ -1077,7 +1029,7 @@ function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = '
       { label: 'Business email', value: ownerEmail(lead) || '—' },
       { label: 'Location', value: ownerLocation(lead) },
       ...(lead.ownerMessage ? [{ label: 'Owner message', value: lead.ownerMessage }] : []),
-      ...(leadAttachedDocumentNote(lead) ? [{ label: 'Attached document', value: leadAttachedDocumentNote(lead) }] : []),
+      { label: 'Response document attached', value: leadResponseDocumentDetail(lead) },
     ],
     stats: [
       { label: 'Assets', value: String(reportAssets.length), note: isFullReport ? 'Saved register items.' : reportOption.description },
@@ -1103,10 +1055,9 @@ function downloadLeadAsset(lead: AssetLead, reportKind: PdfReportKind = 'full'):
   const value = assetValue(lead);
   const replacementPrice = snapshotReplacementPrice(lead.assetSnapshot);
   const photos = assetPhotos(lead);
-  const attachedDocumentNote = leadAttachedDocumentNote(lead);
   const leadReportNotes: ReportKeyValue[] = [
     ...(lead.ownerMessage ? [{ label: 'Owner message', value: lead.ownerMessage }] : []),
-    ...(attachedDocumentNote ? [{ label: 'Attached document', value: attachedDocumentNote }] : []),
+    { label: 'Response document attached', value: leadResponseDocumentDetail(lead) },
   ];
   const didOpen = openAssetSheetPrint({
     logoUrl: asText(lead.assetSnapshot.logoUrl),
@@ -1143,7 +1094,7 @@ function downloadLeadAsset(lead: AssetLead, reportKind: PdfReportKind = 'full'):
       { label: 'Serial number', value: asText(lead.assetSnapshot.serialNumber) || '—' },
       { label: 'Financed', value: asBoolean(lead.assetSnapshot.isFinanced) ? 'Yes' : 'No' },
       { label: 'Insured', value: asBoolean(lead.assetSnapshot.isInsured) ? 'Yes' : 'No' },
-      { label: 'Documents', value: leadDocumentStatusLabel(lead) },
+      { label: 'Response document attached', value: leadResponseDocumentAttachedValue(lead) },
     ],
     notes: leadReportNotes,
     methodCards: buildMethodCards(lead),
@@ -1644,7 +1595,7 @@ export default function LeadsClient() {
   }
 
   function openEmail(lead: AssetLead) {
-    const email = ownerEmail(lead).replace(/\s+/g, '');
+    const email = leadEmailRecipient(lead);
     if (!email) {
       setNotice({ tone: 'error', message: 'No client email address is saved on this lead.' });
       return;
@@ -1654,14 +1605,7 @@ export default function LeadsClient() {
     const body = encodeURIComponent(`Good day ${ownerDisplayName(lead)},\n\nI received your Aim4price ${formatLeadDisplayType(lead).toLowerCase()} for ${leadFollowUpSubject(lead)}.\n\nKind regards`);
     const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
 
-    const link = document.createElement('a');
-    link.href = mailtoUrl;
-    link.target = '_self';
-    link.rel = 'noopener noreferrer';
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    window.setTimeout(() => link.remove(), 0);
+    window.location.href = mailtoUrl;
   }
 
   function callClient(lead: AssetLead) {
@@ -2333,11 +2277,17 @@ export default function LeadsClient() {
                     </span>
                   </button>
 
-                  <button type="button" className={assetStyles.optionActionButton} onClick={() => openEmail(managedLead)}>
+                  <button
+                    type="button"
+                    className={assetStyles.optionActionButton}
+                    onClick={() => openEmail(managedLead)}
+                    disabled={!leadEmailRecipient(managedLead)}
+                    title={!leadEmailRecipient(managedLead) ? 'No client email address is saved on this lead.' : undefined}
+                  >
                     <EmailIcon className={assetStyles.buttonIcon} />
                     <span>
                       <strong>Email client</strong>
-                      <small>Open an email draft with asset context.</small>
+                      <small>{leadEmailRecipient(managedLead) ? 'Open an email draft with asset context.' : 'No client email address saved.'}</small>
                     </span>
                   </button>
 
