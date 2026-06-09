@@ -690,7 +690,7 @@ export default function AppHeader({
                     }}
                   >
                     <AccountProfileIcon className={styles.accountAvatar} />
-                    <span className={styles.accountButtonText}>Account</span>
+                    <span className={styles.accountButtonText}>My Account</span>
                   </button>
 
                   {menuOpen ? (
