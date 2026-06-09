@@ -202,9 +202,13 @@
 }
 
 .accountButton {
+  justify-content: flex-start;
   gap: 0.7rem;
   width: 100%;
   min-height: 3.28rem;
+  padding-left: 1rem;
+  padding-right: 1.1rem;
+  text-align: left;
   background: #ffffff;
   color: #17315c;
   border-color: rgba(62, 110, 213, 0.16);
@@ -249,6 +253,8 @@
 .accountButtonText {
   display: inline-flex;
   align-items: center;
+  min-width: 0;
+  text-align: left;
 }
 
 .notificationButton {
@@ -611,15 +617,18 @@
 .accountPopover {
   position: absolute;
   top: calc(100% + 0.6rem);
-  left: 0;
+  left: calc(-3.28rem - 0.42rem);
   right: auto;
-  width: 100%;
+  width: calc(100% + 3.28rem + 0.42rem);
   min-width: 0;
   max-width: none;
   box-sizing: border-box;
+  z-index: 120;
   padding: 0.5rem;
   display: grid;
   gap: 0.38rem;
+  justify-items: stretch;
+  text-align: left;
   border-radius: 1.2rem;
   background: rgba(255, 255, 255, 0.98);
   border: 1px solid rgba(18, 45, 37, 0.08);
@@ -631,8 +640,10 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0.52rem;
   align-items: center;
+  justify-items: start;
   width: 100%;
   padding: 0.65rem;
+  text-align: left;
   border-radius: 0.95rem;
   background: rgba(62, 110, 213, 0.08);
 }
@@ -641,6 +652,8 @@
   min-width: 0;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  text-align: left;
 }
 
 .accountName {
@@ -650,6 +663,7 @@
   font-size: 0.92rem;
   line-height: 1.25;
   font-weight: 800;
+  text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -661,6 +675,7 @@
   width: 100%;
   min-height: 3rem;
   padding: 0 0.95rem;
+  text-align: left;
   background: transparent;
   color: #25342e;
 }
@@ -821,9 +836,9 @@
   }
 
   .accountPopover {
-    left: 0;
+    left: calc(-3.2rem - 0.55rem);
     right: auto;
-    width: 100%;
+    width: calc(100% + 3.2rem + 0.55rem);
     min-width: 0;
     max-width: none;
   }
