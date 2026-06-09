@@ -52,6 +52,21 @@ const CONTENT_TYPE_BY_EXTENSION = new Map<string, string>([
   ['.webp', 'image/webp'],
 ]);
 
+const LEGACY_DATA_COLUMN_CANDIDATES = [
+  'file_data',
+  'upload_data',
+  'blob_data',
+  'binary_data',
+  'file_bytes',
+  'bytes',
+  'content',
+  'body',
+];
+
+const LEGACY_FILE_NAME_COLUMN_CANDIDATES = ['filename', 'name', 'original_name', 'original_file_name'];
+const LEGACY_CONTENT_TYPE_COLUMN_CANDIDATES = ['mime_type', 'mime', 'type'];
+const LEGACY_BYTE_SIZE_COLUMN_CANDIDATES = ['size_bytes', 'size', 'file_size'];
+
 type CreateAssetRegisterUploadInput = {
   userId: string;
   file: File;
@@ -73,10 +88,16 @@ type LegacyAssetRegisterUploadResponse = {
 };
 
 type AssetRegisterUploadRow = {
-  data: Buffer | Uint8Array | string;
+  data: Buffer | Uint8Array | string | null;
   content_type: string | null;
   byte_size: string | number | null;
   file_name: string | null;
+};
+
+type UploadColumnInfo = {
+  column_name: string;
+  udt_name: string;
+  data_type: string;
 };
 
 let ensureAssetRegisterUploadsTablePromise: Promise<void> | null = null;
@@ -119,7 +140,7 @@ function normalizeContentType(fileName: string, value: string): string {
   return CONTENT_TYPE_BY_EXTENSION.get(getFileExtension(fileName)) ?? 'application/octet-stream';
 }
 
-function normalizeDatabaseBuffer(value: Buffer | Uint8Array | string): Buffer {
+function normalizeDatabaseBuffer(value: Buffer | Uint8Array | string | null): Buffer {
   if (Buffer.isBuffer(value)) {
     return value;
   }
@@ -135,23 +156,185 @@ function normalizeDatabaseBuffer(value: Buffer | Uint8Array | string): Buffer {
   return Buffer.alloc(0);
 }
 
+function quoteIdentifier(value: string): string {
+  return `"${String(value).replace(/"/g, '""')}"`;
+}
+
+function columnInfoMap(columns: UploadColumnInfo[]): Map<string, UploadColumnInfo> {
+  return new Map(columns.map((column) => [column.column_name, column]));
+}
+
+async function readUploadTableColumns(): Promise<UploadColumnInfo[]> {
+  const result = await getDb().query<UploadColumnInfo>(
+    `
+      select column_name, udt_name, data_type
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'asset_register_uploads'
+    `,
+  );
+
+  return result.rows;
+}
+
+async function copyLegacyColumnValue(input: {
+  targetColumn: string;
+  candidateColumns: string[];
+  allowedSourceUdtNames?: Set<string>;
+  castExpression?: (sourceColumnSql: string) => string;
+}): Promise<void> {
+  const columns = columnInfoMap(await readUploadTableColumns());
+
+  if (!columns.has(input.targetColumn)) {
+    return;
+  }
+
+  for (const candidateColumn of input.candidateColumns) {
+    const sourceColumn = columns.get(candidateColumn);
+
+    if (!sourceColumn || candidateColumn === input.targetColumn) {
+      continue;
+    }
+
+    if (input.allowedSourceUdtNames && !input.allowedSourceUdtNames.has(sourceColumn.udt_name)) {
+      continue;
+    }
+
+    const targetColumnSql = quoteIdentifier(input.targetColumn);
+    const sourceColumnSql = quoteIdentifier(candidateColumn);
+    const sourceExpressionSql = input.castExpression ? input.castExpression(sourceColumnSql) : sourceColumnSql;
+
+    await getDb().query(`
+      update public.asset_register_uploads
+      set ${targetColumnSql} = ${sourceExpressionSql}
+      where ${targetColumnSql} is null
+        and ${sourceColumnSql} is not null
+    `);
+  }
+}
+
+async function ensureAssetRegisterUploadsTableOnce(): Promise<void> {
+  const db = getDb();
+
+  await db.query(`
+    create table if not exists public.asset_register_uploads (
+      id text primary key,
+      user_id text,
+      file_name text,
+      content_type text,
+      byte_size integer,
+      data bytea,
+      created_at timestamptz
+    )
+  `);
+
+  await db.query(`
+    alter table public.asset_register_uploads
+      add column if not exists id text,
+      add column if not exists user_id text,
+      add column if not exists file_name text,
+      add column if not exists content_type text,
+      add column if not exists byte_size integer,
+      add column if not exists data bytea,
+      add column if not exists created_at timestamptz
+  `);
+
+  await copyLegacyColumnValue({
+    targetColumn: 'data',
+    candidateColumns: LEGACY_DATA_COLUMN_CANDIDATES,
+    allowedSourceUdtNames: new Set(['bytea']),
+  });
+  await copyLegacyColumnValue({
+    targetColumn: 'file_name',
+    candidateColumns: LEGACY_FILE_NAME_COLUMN_CANDIDATES,
+    allowedSourceUdtNames: new Set(['text', 'varchar', 'bpchar']),
+  });
+  await copyLegacyColumnValue({
+    targetColumn: 'content_type',
+    candidateColumns: LEGACY_CONTENT_TYPE_COLUMN_CANDIDATES,
+    allowedSourceUdtNames: new Set(['text', 'varchar', 'bpchar']),
+  });
+  await copyLegacyColumnValue({
+    targetColumn: 'byte_size',
+    candidateColumns: LEGACY_BYTE_SIZE_COLUMN_CANDIDATES,
+    allowedSourceUdtNames: new Set(['int2', 'int4', 'int8', 'numeric', 'float4', 'float8']),
+    castExpression: (sourceColumnSql) => `greatest(0, round(coalesce(${sourceColumnSql}, 0)::numeric)::integer)`,
+  });
+
+  await db.query(`
+    update public.asset_register_uploads
+    set
+      file_name = coalesce(nullif(file_name, ''), 'asset-register-upload'),
+      content_type = coalesce(nullif(content_type, ''), 'application/octet-stream'),
+      byte_size = coalesce(byte_size, octet_length(data), 0),
+      created_at = coalesce(created_at, now())
+    where id is null
+       or file_name is null
+       or file_name = ''
+       or content_type is null
+       or content_type = ''
+       or byte_size is null
+       or created_at is null
+  `);
+
+  await db.query(`
+    alter table public.asset_register_uploads
+      alter column file_name set default 'asset-register-upload',
+      alter column content_type set default 'application/octet-stream',
+      alter column byte_size set default 0,
+      alter column created_at set default now()
+  `);
+
+  await db.query(`
+    do $$
+    begin
+      if not exists (
+        select 1
+        from public.asset_register_uploads
+        where id is null
+           or user_id is null
+           or file_name is null
+           or content_type is null
+           or byte_size is null
+           or created_at is null
+      ) then
+        alter table public.asset_register_uploads
+          alter column id set not null,
+          alter column user_id set not null,
+          alter column file_name set not null,
+          alter column content_type set not null,
+          alter column byte_size set not null,
+          alter column created_at set not null;
+      end if;
+
+      if not exists (
+        select 1
+        from public.asset_register_uploads
+        where data is null
+      ) then
+        alter table public.asset_register_uploads
+          alter column data set not null;
+      end if;
+    end $$;
+  `);
+
+  await db.query(`
+    create index if not exists asset_register_uploads_user_id_created_at_idx
+      on public.asset_register_uploads (user_id, created_at desc)
+  `);
+
+  await db.query(`
+    comment on table public.asset_register_uploads is
+      'Binary storage for Asset Register photos, documents and register logos. Asset JSON stores only the short API URL.';
+
+    comment on column public.asset_register_uploads.data is
+      'Raw uploaded file bytes streamed by /api/asset-register/uploads/<id>.';
+  `);
+}
+
 async function ensureAssetRegisterUploadsTable(): Promise<void> {
   if (!ensureAssetRegisterUploadsTablePromise) {
-    ensureAssetRegisterUploadsTablePromise = getDb()
-      .query(`
-        create table if not exists public.asset_register_uploads (
-          id text primary key,
-          user_id text not null,
-          file_name text not null,
-          content_type text not null,
-          byte_size integer not null,
-          data bytea not null,
-          created_at timestamptz not null default now()
-        );
-
-        create index if not exists asset_register_uploads_user_id_created_at_idx
-          on public.asset_register_uploads (user_id, created_at desc);
-      `)
+    ensureAssetRegisterUploadsTablePromise = ensureAssetRegisterUploadsTableOnce()
       .then(() => undefined)
       .catch((error) => {
         ensureAssetRegisterUploadsTablePromise = null;
@@ -193,8 +376,9 @@ export async function createAssetRegisterUpload(
         file_name,
         content_type,
         byte_size,
-        data
-      ) values ($1, $2, $3, $4, $5, $6)
+        data,
+        created_at
+      ) values ($1, $2, $3, $4, $5, $6, now())
     `,
     [id, input.userId, fileName, contentType, byteSize, buffer],
   );
@@ -257,15 +441,15 @@ export async function deleteUnreferencedAssetRegisterUploads(input: {
     `
       delete from public.asset_register_uploads upload
       where upload.user_id = $1
-        and upload.id = any($2::text[])
+        and upload.id::text = any($2::text[])
         and not exists (
           select 1
           from public.asset_register_items item
           where item.user_id = $1
             and ($3::text is null or item.id::text <> $3::text)
             and (
-              coalesce(item.photos::text, '') like '%' || $4::text || upload.id || '%'
-              or coalesce(item.documents::text, '') like '%' || $4::text || upload.id || '%'
+              coalesce(item.photos::text, '') like '%' || $4::text || upload.id::text || '%'
+              or coalesce(item.documents::text, '') like '%' || $4::text || upload.id::text || '%'
             )
         )
     `,
@@ -292,7 +476,7 @@ export async function getLegacyAssetRegisterUploadResponse(
     `
       select data, content_type, byte_size, file_name
       from public.asset_register_uploads
-      where id = $1
+      where id::text = $1
       limit 1
     `,
     [normalizedUploadId],
@@ -305,6 +489,10 @@ export async function getLegacyAssetRegisterUploadResponse(
   }
 
   const data = normalizeDatabaseBuffer(row.data);
+
+  if (!data.length) {
+    return null;
+  }
 
   return {
     data,
