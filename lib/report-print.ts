@@ -1353,7 +1353,20 @@ function renderAssetReportNotes(rows: ReportKeyValue[]): string {
   return `
     <section class="assetReportSection assetReportNotesSection">
       <h2>Notes</h2>
-      ${renderAssetReportRows(visibleRows, 'No notes saved.')}
+      <div class="assetReportNoteCards">
+        ${visibleRows
+          .map((row) => {
+            const isOwnerMessage = String(row.label ?? '').trim().toLowerCase() === 'owner message';
+
+            return `
+              <article class="assetReportNoteCard${isOwnerMessage ? ' assetReportOwnerMessageCard' : ''}">
+                <span>${escapeHtml(row.label)}</span>
+                <strong>${escapeHtml(row.value)}</strong>
+              </article>
+            `;
+          })
+          .join('')}
+      </div>
     </section>
   `;
 }
@@ -1448,7 +1461,7 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
     { label: 'Documents', value: getAssetSheetValue(payload.facts, 'Documents') },
     { label: 'Updated', value: updatedLabel },
   ];
-  const noteRows = [...(payload.contactRows ?? []), ...(payload.notes ?? [])].filter((row) => String(row.value ?? '').trim());
+  const noteRows = (payload.notes ?? []).filter((row) => String(row.value ?? '').trim());
   const photoSection = renderAssetReportMedia({ photoUrls, qrUrl: null, scanUrl: null, title: payload.heroTitle });
 
   return `<!doctype html>
@@ -1904,8 +1917,46 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
         line-height: 1.25;
       }
 
-      .assetReportNotesSection .assetReportRow {
-        grid-template-columns: 30mm minmax(0, 1fr);
+      .assetReportNotesSection {
+        padding: 11px 12px 12px;
+      }
+
+      .assetReportNoteCards {
+        display: grid;
+        gap: 7px;
+      }
+
+      .assetReportNoteCard {
+        min-height: 20mm;
+        display: grid;
+        align-content: start;
+        gap: 5px;
+        padding: 7px 8px;
+        border: 1px solid var(--line);
+        background: var(--soft-2);
+        break-inside: avoid;
+      }
+
+      .assetReportNoteCard span {
+        color: #38404c;
+        font-size: 8.3px;
+        line-height: 1.25;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .assetReportNoteCard strong {
+        color: var(--strong);
+        font-size: 9.2px;
+        line-height: 1.55;
+        font-weight: 650;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .assetReportOwnerMessageCard {
+        min-height: 28mm;
       }
 
       .assetReportFooter {
@@ -2162,10 +2213,17 @@ function renderFullRegisterMetaRows(rows: ReportKeyValue[]): string {
   return visibleRows
     .map(
       (row) => `
-        <div class="fullRegisterMetaRow${String(row.label ?? '').toLowerCase() === 'address' ? ' fullRegisterMetaRowTall' : ''}">
-          <span>${escapeHtml(row.label)}</span>
-          <strong>${escapeHtml(sanitizeRegisterDisplayValue(row.value))}</strong>
-        </div>
+        ${(() => {
+          const normalizedLabel = String(row.label ?? '').trim().toLowerCase();
+          const isTallRow = normalizedLabel === 'address' || normalizedLabel === 'owner message' || normalizedLabel === 'attached document';
+
+          return `
+            <div class="fullRegisterMetaRow${isTallRow ? ' fullRegisterMetaRowTall' : ''}">
+              <span>${escapeHtml(row.label)}</span>
+              <strong>${escapeHtml(sanitizeRegisterDisplayValue(row.value))}</strong>
+            </div>
+          `;
+        })()}
       `,
     )
     .join('');

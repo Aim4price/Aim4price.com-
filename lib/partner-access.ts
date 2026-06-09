@@ -53,6 +53,10 @@ export type AssetLead = {
   partnerPhone: string;
   partnerProvince: string;
   partnerTownCity: string;
+  partnerNoteAttachmentCount: number;
+  latestPartnerNoteAttachmentFileName: string;
+  latestPartnerNoteAttachmentByteSize: number | null;
+  latestPartnerNoteAttachmentCreatedAtIso: string | null;
   createdAtIso: string;
   viewedAtIso: string | null;
   acceptedAtIso: string | null;
@@ -164,6 +168,16 @@ type AssetPartnerNoteRow = {
   created_at: string | null;
   noted_at: string | null;
   updated_at: string | null;
+};
+
+type LeadAttachmentSummaryRow = {
+  owner_user_id: string;
+  partner_user_id: string;
+  asset_register_item_id: string;
+  attachment_count: string | number | null;
+  latest_attachment_file_name: string | null;
+  latest_attachment_byte_size: string | number | null;
+  latest_attachment_created_at: string | null;
 };
 
 const ACCOUNT_ROLES = new Set<AccountRole>(['owner', 'dealer', 'finance', 'insurance']);
@@ -588,6 +602,10 @@ function mapLeadRow(row: LeadRow): AssetLead {
     partnerPhone: asText(row.partner_phone),
     partnerProvince: asText(row.partner_province),
     partnerTownCity: asText(row.partner_town_city),
+    partnerNoteAttachmentCount: 0,
+    latestPartnerNoteAttachmentFileName: '',
+    latestPartnerNoteAttachmentByteSize: null,
+    latestPartnerNoteAttachmentCreatedAtIso: null,
     createdAtIso: isoNowFallback(row.created_at),
     viewedAtIso: row.viewed_at,
     acceptedAtIso: row.accepted_at,
@@ -636,6 +654,57 @@ function leadSelectSql(whereClause: string): string {
     left join account_profiles partner on partner.user_id = l.partner_user_id
     ${whereClause}
   `;
+}
+
+function leadAttachmentSummaryKey(input: Pick<AssetLead, 'ownerUserId' | 'partnerUserId' | 'assetRegisterItemId'>): string {
+  return `${input.ownerUserId}::${input.partnerUserId}::${input.assetRegisterItemId}`;
+}
+
+async function hydrateLeadAttachmentSummaries(leads: AssetLead[], currentUserId: string): Promise<AssetLead[]> {
+  if (!leads.length) {
+    return leads;
+  }
+
+  const db = getDb();
+  const result = await db.query<LeadAttachmentSummaryRow>(
+    `
+      select
+        owner_user_id,
+        partner_user_id,
+        asset_register_item_id::text,
+        count(*)::int as attachment_count,
+        (array_agg(attachment_file_name order by created_at desc, id desc))[1] as latest_attachment_file_name,
+        (array_agg(attachment_byte_size order by created_at desc, id desc))[1] as latest_attachment_byte_size,
+        max(created_at)::text as latest_attachment_created_at
+      from asset_partner_notes
+      where (owner_user_id = $1 or partner_user_id = $1)
+        and nullif(trim(coalesce(attachment_file_name, '')), '') is not null
+        and attachment_data is not null
+      group by owner_user_id, partner_user_id, asset_register_item_id
+    `,
+    [currentUserId],
+  );
+
+  const summaries = new Map<string, LeadAttachmentSummaryRow>();
+  result.rows.forEach((row) => {
+    summaries.set(`${row.owner_user_id}::${row.partner_user_id}::${row.asset_register_item_id}`, row);
+  });
+
+  return leads.map((lead) => {
+    const summary = summaries.get(leadAttachmentSummaryKey(lead));
+
+    if (!summary) {
+      return lead;
+    }
+
+    return {
+      ...lead,
+      partnerNoteAttachmentCount: asInteger(summary.attachment_count) ?? 0,
+      latestPartnerNoteAttachmentFileName: asText(summary.latest_attachment_file_name),
+      latestPartnerNoteAttachmentByteSize: asInteger(summary.latest_attachment_byte_size),
+      latestPartnerNoteAttachmentCreatedAtIso: summary.latest_attachment_created_at,
+    };
+  });
 }
 
 function normalizeAssetPartnerNoteStatus(value: unknown): AssetPartnerNoteStatus {
@@ -1075,7 +1144,7 @@ export async function listAssetLeadsForUser(userId: string): Promise<AssetLead[]
     [userId],
   );
 
-  return result.rows.map(mapLeadRow);
+  return hydrateLeadAttachmentSummaries(result.rows.map(mapLeadRow), userId);
 }
 
 export async function updateAssetLeadStatus(input: {
@@ -1124,7 +1193,7 @@ export async function updateAssetLeadStatus(input: {
   );
 
   const updated = await db.query<LeadRow>(`${leadSelectSql('where l.id = $1::uuid')} limit 1`, [input.leadId]);
-  const updatedLead = mapLeadRow(updated.rows[0]);
+  const [updatedLead] = await hydrateLeadAttachmentSummaries([mapLeadRow(updated.rows[0])], input.currentUserId);
   await writeAuditEvent({
     ownerUserId: updatedLead.ownerUserId,
     actorUserId: input.currentUserId,
