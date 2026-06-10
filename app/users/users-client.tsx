@@ -152,6 +152,8 @@ type DropdownOption = {
 };
 
 const USERS_PAGE_SIZE = 10;
+const USERS_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+type UsersPageSize = (typeof USERS_PAGE_SIZE_OPTIONS)[number];
 const ALL_PROVINCES_VALUE = 'all';
 const PROVINCE_NOT_SAVED_VALUE = '__province_not_saved__';
 const ALL_CONTACT_STATUS_VALUE: ContactAccessFilter = 'all';
@@ -388,6 +390,11 @@ function byteSizeLabel(value: number): string {
   if (!value) return '';
   if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
   return `${(value / (1024 * 1024)).toFixed(value >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+}
+
+function normalizeUsersPageSize(value: string): UsersPageSize {
+  const numeric = Number(value);
+  return USERS_PAGE_SIZE_OPTIONS.find((option) => option === numeric) ?? USERS_PAGE_SIZE;
 }
 
 function paginationPages(page: number, totalPages: number): number[] {
@@ -644,6 +651,7 @@ export default function UsersClient() {
   const [selectedProvince, setSelectedProvince] = useState<string>(ALL_PROVINCES_VALUE);
   const [selectedContactAccessFilter, setSelectedContactAccessFilter] = useState<ContactAccessFilter>(ALL_CONTACT_STATUS_VALUE);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<UsersPageSize>(USERS_PAGE_SIZE);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
   const [openOwnerId, setOpenOwnerId] = useState<string | null>(null);
@@ -675,7 +683,7 @@ export default function UsersClient() {
 
       const params = new URLSearchParams();
       params.set('page', String(currentPage));
-      params.set('pageSize', String(USERS_PAGE_SIZE));
+      params.set('pageSize', String(pageSize));
 
       const trimmedSearch = searchTerm.trim();
       if (trimmedSearch) params.set('search', trimmedSearch);
@@ -711,7 +719,7 @@ export default function UsersClient() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, searchTerm, selectedContactAccessFilter, selectedProvince]);
+  }, [currentPage, pageSize, searchTerm, selectedContactAccessFilter, selectedProvince]);
 
   const summaryCards = useMemo(() => [
     {
@@ -896,7 +904,19 @@ export default function UsersClient() {
   }
 
   function resetDirectoryPage() {
+    setOpenOwnerId(null);
     setCurrentPage(1);
+  }
+
+  function goToPage(nextPage: number) {
+    const safePage = Math.min(Math.max(1, nextPage), pagination.totalPages);
+    setOpenOwnerId(null);
+    setCurrentPage(safePage);
+  }
+
+  function handlePageSizeChange(value: string) {
+    setPageSize(normalizeUsersPageSize(value));
+    resetDirectoryPage();
   }
 
   function handleSearchChange(value: string) {
@@ -1545,45 +1565,80 @@ export default function UsersClient() {
   }
 
   function renderPagination() {
-    if (pagination.totalItems <= pagination.pageSize) return null;
+    if (!pagination.totalItems) return null;
+
+    const hasMultiplePages = pagination.totalPages > 1;
+    const shouldShowPageSizeSelector = pagination.totalItems > USERS_PAGE_SIZE_OPTIONS[0];
+
+    if (!hasMultiplePages && !shouldShowPageSizeSelector) return null;
 
     return (
       <nav className={styles.usersPagination} aria-label="Users pagination">
-        <div className={styles.usersPaginationSummary}>
-          Showing <strong>{pagination.rangeStart}</strong>-<strong>{pagination.rangeEnd}</strong> of <strong>{pagination.totalItems}</strong> users
-        </div>
-        <div className={styles.usersPaginationControls}>
-          <button
-            type="button"
-            className={styles.usersPaginationButton}
-            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-            disabled={!pagination.hasPreviousPage || isLoading}
-          >
-            Previous
-          </button>
-          <div className={styles.usersPaginationPages}>
-            {visiblePaginationPages.map((page) => (
-              <button
-                type="button"
-                key={`users-page-${page}`}
-                className={`${styles.usersPaginationPageButton} ${page === pagination.page ? styles.usersPaginationPageButtonActive : ''}`}
-                onClick={() => setCurrentPage(page)}
-                disabled={isLoading}
-                aria-current={page === pagination.page ? 'page' : undefined}
-              >
-                {page}
-              </button>
-            ))}
+        <div className={styles.usersPaginationInfo}>
+          <div className={styles.usersPaginationSummary}>
+            Showing <strong>{pagination.rangeStart}</strong>-<strong>{pagination.rangeEnd}</strong> of <strong>{pagination.totalItems}</strong> users
+            {hasMultiplePages ? (
+              <>
+                <span className={styles.usersPaginationDivider}>·</span>
+                Page <strong>{pagination.page}</strong> of <strong>{pagination.totalPages}</strong>
+              </>
+            ) : null}
           </div>
-          <button
-            type="button"
-            className={styles.usersPaginationButton}
-            onClick={() => setCurrentPage((page) => Math.min(pagination.totalPages, page + 1))}
-            disabled={!pagination.hasNextPage || isLoading}
-          >
-            Next
-          </button>
+
+          {shouldShowPageSizeSelector ? (
+            <label className={styles.usersPageSizeField}>
+              <span>Show</span>
+              <select
+                value={pageSize}
+                onChange={(event) => handlePageSizeChange(event.target.value)}
+                disabled={isLoading}
+                aria-label="Users per page"
+              >
+                {USERS_PAGE_SIZE_OPTIONS.map((option) => (
+                  <option key={`users-page-size-${option}`} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+              <span>per page</span>
+            </label>
+          ) : null}
         </div>
+
+        {hasMultiplePages ? (
+          <div className={styles.usersPaginationControls}>
+            <button
+              type="button"
+              className={styles.usersPaginationButton}
+              onClick={() => goToPage(pagination.page - 1)}
+              disabled={!pagination.hasPreviousPage || isLoading}
+            >
+              Previous
+            </button>
+            <div className={styles.usersPaginationPages}>
+              {visiblePaginationPages.map((page) => (
+                <button
+                  type="button"
+                  key={`users-page-${page}`}
+                  className={`${styles.usersPaginationPageButton} ${page === pagination.page ? styles.usersPaginationPageButtonActive : ''}`}
+                  onClick={() => goToPage(page)}
+                  disabled={isLoading}
+                  aria-current={page === pagination.page ? 'page' : undefined}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className={styles.usersPaginationButton}
+              onClick={() => goToPage(pagination.page + 1)}
+              disabled={!pagination.hasNextPage || isLoading}
+            >
+              Next
+            </button>
+          </div>
+        ) : null}
       </nav>
     );
   }
