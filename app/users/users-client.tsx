@@ -90,6 +90,16 @@ type UserMessage = {
   updatedAtIso: string;
 };
 
+type UserMessageAttachmentPreview = {
+  id: string;
+  kind: 'image' | 'document';
+  label: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  url: string;
+};
+
 type OwnerDirectoryPagination = {
   page: number;
   pageSize: number;
@@ -441,6 +451,38 @@ function isPdfAttachment(mimeType: string | undefined, fileName: string): boolea
   return normalizedMimeType === 'application/pdf' || fileNameHasExtension(fileName, ['pdf']);
 }
 
+function buildUserMessageAttachments(message: UserMessage): UserMessageAttachmentPreview[] {
+  const attachments: UserMessageAttachmentPreview[] = [];
+
+  if (message.hasImage && message.imageUrl) {
+    attachments.push({
+      id: `${message.id}:image`,
+      kind: 'image',
+      label: message.messageType === 'ad' ? 'Ad photo' : 'Photo',
+      fileName: message.imageFileName || 'aim4price-photo',
+      mimeType: message.imageMimeType,
+      sizeBytes: message.imageSizeBytes,
+      url: message.imageUrl,
+    });
+  }
+
+  if (message.hasDocument && message.documentUrl) {
+    const documentIsImage = isImageAttachment(message.documentMimeType, message.documentFileName);
+
+    attachments.push({
+      id: `${message.id}:document`,
+      kind: documentIsImage ? 'image' : 'document',
+      label: documentIsImage ? 'Attached photo' : 'Attached document',
+      fileName: message.documentFileName || 'aim4price-document',
+      mimeType: message.documentMimeType,
+      sizeBytes: message.documentSizeBytes,
+      url: message.documentUrl,
+    });
+  }
+
+  return attachments;
+}
+
 function selectedFileTypeLabel(file: File): string {
   if (isImageAttachment(file.type, file.name)) return 'Image preview';
   if (isPdfAttachment(file.type, file.name)) return 'PDF preview';
@@ -664,6 +706,7 @@ export default function UsersClient() {
   const [messageDocumentFile, setMessageDocumentFile] = useState<File | null>(null);
   const [adDocumentFile, setAdDocumentFile] = useState<File | null>(null);
   const [activeMessage, setActiveMessage] = useState<UserMessage | null>(null);
+  const [activeMessageAttachmentIndex, setActiveMessageAttachmentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -807,6 +850,10 @@ export default function UsersClient() {
   useEffect(() => {
     setOpenFilterDropdown(null);
   }, [isFilterModalOpen]);
+
+  useEffect(() => {
+    setActiveMessageAttachmentIndex(0);
+  }, [activeMessage?.id]);
 
   useEffect(() => {
     if (pagination.page !== currentPage) {
@@ -1406,7 +1453,7 @@ export default function UsersClient() {
               <button type="button" className={styles.sendChoiceCard} onClick={() => setSendStep('ad')}>
                 <ImageIcon className={styles.sendChoiceIcon} />
                 <strong>Send Ad</strong>
-                <span>Upload an ad image and optional short caption for the owner.</span>
+                <span>Upload an ad photo or attach a document for the owner.</span>
               </button>
               <button type="button" className={styles.sendChoiceCard} onClick={() => setSendStep('message')}>
                 <MessageIcon className={styles.sendChoiceIcon} />
@@ -1453,12 +1500,12 @@ export default function UsersClient() {
             <div className={styles.sendForm}>
               <FileUploadControl
                 id="owner-ad-image-upload"
-                label="Ad image"
+                label="Ad photo"
                 accept="image/png,image/jpeg,image/webp"
                 file={adImageFile}
-                buttonLabel="Upload ad image"
-                emptyLabel="No ad image selected"
-                helperText="JPG, PNG or WebP. Maximum 8 MB."
+                buttonLabel="Upload ad photo"
+                emptyLabel="No ad photo selected"
+                helperText="JPG, PNG or WebP. Maximum 8 MB. Or attach a document below."
                 iconType="image"
                 onFileChange={setAdImageFile}
               />
@@ -1473,7 +1520,7 @@ export default function UsersClient() {
               </label>
               <FileUploadControl
                 id="owner-ad-document-upload"
-                label="Optional document"
+                label="Ad document"
                 accept={DOCUMENT_ACCEPT_TYPES}
                 file={adDocumentFile}
                 buttonLabel="Upload document"
@@ -1486,7 +1533,7 @@ export default function UsersClient() {
                 <button type="button" className={styles.secondaryButton} onClick={() => setSendStep('choice')} disabled={isSending}>
                   Back
                 </button>
-                <button type="button" className={styles.primaryButton} onClick={() => handleSend('ad')} disabled={isSending || !adImageFile}>
+                <button type="button" className={styles.primaryButton} onClick={() => handleSend('ad')} disabled={isSending || (!adImageFile && !adDocumentFile)}>
                   {isSending ? 'Sending...' : 'Send Ad'}
                 </button>
               </div>
@@ -1502,11 +1549,18 @@ export default function UsersClient() {
 
     const senderName = getMessageSenderName(activeMessage);
     const isAd = activeMessage.messageType === 'ad';
-    const documentIsImage = activeMessage.hasDocument
-      ? isImageAttachment(activeMessage.documentMimeType, activeMessage.documentFileName)
+    const messageCopy = isAd ? activeMessage.adCaption || activeMessage.messageText : activeMessage.messageText;
+    const attachments = buildUserMessageAttachments(activeMessage);
+    const boundedAttachmentIndex = attachments.length
+      ? Math.min(activeMessageAttachmentIndex, attachments.length - 1)
+      : 0;
+    const activeAttachment = attachments[boundedAttachmentIndex] ?? null;
+    const hasMultipleAttachments = attachments.length > 1;
+    const activeAttachmentIsImage = activeAttachment
+      ? activeAttachment.kind === 'image' || isImageAttachment(activeAttachment.mimeType, activeAttachment.fileName)
       : false;
-    const documentIsPdf = activeMessage.hasDocument
-      ? isPdfAttachment(activeMessage.documentMimeType, activeMessage.documentFileName)
+    const activeAttachmentIsPdf = activeAttachment
+      ? isPdfAttachment(activeAttachment.mimeType, activeAttachment.fileName)
       : false;
 
     return (
@@ -1515,8 +1569,8 @@ export default function UsersClient() {
         <section className={styles.actionModal} role="dialog" aria-modal="true" aria-labelledby="incoming-message-title">
           <div className={styles.modalHeader}>
             <div className={styles.modalHeaderText}>
-              <h3 id="incoming-message-title">{isAd ? 'Ad received' : 'Message received'}</h3>
-              <p>{senderName} · {formatAccountType(activeMessage.senderAccountType)} account</p>
+              <h3 id="incoming-message-title">{isAd ? `Ad from ${senderName}` : `Message from ${senderName}`}</h3>
+              <p>{formatDate(activeMessage.createdAtIso)}</p>
             </div>
 
             <button type="button" className={styles.modalCloseButton} onClick={() => setActiveMessage(null)} aria-label="Close message">
@@ -1525,39 +1579,82 @@ export default function UsersClient() {
           </div>
 
           <div className={styles.incomingMessageBody}>
-            {activeMessage.hasImage ? (
-              <img src={activeMessage.imageUrl} alt={activeMessage.imageFileName || 'Sent ad'} className={styles.incomingMessageImage} />
-            ) : null}
-            <p>{isAd ? activeMessage.adCaption || 'No caption supplied.' : activeMessage.messageText}</p>
-            <small>{formatDate(activeMessage.createdAtIso)}</small>
-            {activeMessage.hasDocument ? (
-              <div className={styles.incomingDocumentPreview}>
-                {documentIsImage ? (
-                  <img
-                    src={activeMessage.documentUrl}
-                    alt={activeMessage.documentFileName || 'Attached image'}
-                    className={styles.incomingMessageImage}
-                  />
-                ) : documentIsPdf ? (
-                  <iframe
-                    src={activeMessage.documentUrl}
-                    title={activeMessage.documentFileName || 'Attached PDF'}
-                    className={styles.incomingDocumentFrame}
-                  />
-                ) : null}
-                <a
-                  href={activeMessage.documentUrl}
-                  className={styles.attachmentLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  download={activeMessage.documentFileName || undefined}
-                >
-                  <span>{documentIsImage || documentIsPdf ? 'Open attachment' : 'Attached document'}</span>
-                  <strong>{activeMessage.documentFileName || 'Open document'}</strong>
-                  {activeMessage.documentSizeBytes ? <small>{byteSizeLabel(activeMessage.documentSizeBytes)}</small> : null}
-                </a>
+            {activeAttachment ? (
+              <div className={styles.incomingAttachmentViewer}>
+                <div className={styles.incomingAttachmentStage}>
+                  {hasMultipleAttachments ? (
+                    <button
+                      type="button"
+                      className={`${styles.incomingAttachmentNavButton} ${styles.incomingAttachmentNavPrevious}`}
+                      onClick={() => setActiveMessageAttachmentIndex((current) => (current <= 0 ? attachments.length - 1 : current - 1))}
+                      aria-label="Previous attachment"
+                    >
+                      &lt;
+                    </button>
+                  ) : null}
+
+                  <div className={styles.incomingAttachmentContent}>
+                    {activeAttachmentIsImage ? (
+                      <img
+                        src={activeAttachment.url}
+                        alt={activeAttachment.fileName || activeAttachment.label}
+                        className={styles.incomingMessageImage}
+                      />
+                    ) : activeAttachmentIsPdf ? (
+                      <iframe
+                        src={activeAttachment.url}
+                        title={activeAttachment.fileName || activeAttachment.label}
+                        className={styles.incomingDocumentFrame}
+                      />
+                    ) : (
+                      <div className={styles.incomingDocumentPlaceholder}>
+                        <strong>{activeAttachment.label}</strong>
+                        <span>{activeAttachment.fileName || 'Open attached file'}</span>
+                        <small>Preview may open in a new tab for this file type.</small>
+                      </div>
+                    )}
+                  </div>
+
+                  {hasMultipleAttachments ? (
+                    <button
+                      type="button"
+                      className={`${styles.incomingAttachmentNavButton} ${styles.incomingAttachmentNavNext}`}
+                      onClick={() => setActiveMessageAttachmentIndex((current) => (current >= attachments.length - 1 ? 0 : current + 1))}
+                      aria-label="Next attachment"
+                    >
+                      &gt;
+                    </button>
+                  ) : null}
+                </div>
+
+                <div className={styles.incomingAttachmentToolbar}>
+                  <div className={styles.incomingAttachmentMeta}>
+                    <strong>{activeAttachment.label}</strong>
+                    <span>
+                      {activeAttachment.fileName || 'Attached file'}
+                      {activeAttachment.sizeBytes ? ` · ${byteSizeLabel(activeAttachment.sizeBytes)}` : ''}
+                    </span>
+                    {hasMultipleAttachments ? <small>{boundedAttachmentIndex + 1} of {attachments.length}</small> : null}
+                  </div>
+
+                  <div className={styles.incomingAttachmentActions}>
+                    <a href={activeAttachment.url} className={styles.attachmentActionButton} target="_blank" rel="noreferrer">
+                      Open
+                    </a>
+                    <a
+                      href={activeAttachment.url}
+                      className={styles.attachmentActionButton}
+                      download={activeAttachment.fileName || undefined}
+                    >
+                      Download
+                    </a>
+                  </div>
+                </div>
               </div>
             ) : null}
+
+            <p>{messageCopy || (isAd ? 'No caption supplied.' : 'No message text supplied.')}</p>
+            <small>{formatDate(activeMessage.createdAtIso)}</small>
           </div>
         </section>
       </div>
@@ -1849,7 +1946,7 @@ export default function UsersClient() {
     const isUnread = !message.readAtIso;
     const senderName = getMessageSenderName(message);
     const isAd = message.messageType === 'ad';
-    const preview = isAd ? message.adCaption || 'Ad image received.' : message.messageText;
+    const preview = isAd ? message.adCaption || 'Ad received.' : message.messageText;
 
     return (
       <article key={message.id} className={`${styles.messageCard} ${isUnread ? styles.messageCardUnread : ''}`}>
@@ -1862,7 +1959,7 @@ export default function UsersClient() {
           <p>{preview}</p>
           <small>{formatDate(message.createdAtIso)}</small>
         </div>
-        {message.hasImage ? <img src={message.imageUrl} alt={message.imageFileName || 'Ad image'} className={styles.messageThumb} /> : null}
+        {message.hasImage ? <img src={message.imageUrl} alt={message.imageFileName || 'Ad photo'} className={styles.messageThumb} /> : null}
         <button type="button" className={styles.outlineButton} onClick={() => handleOpenIncomingMessage(message)}>
           Open
         </button>
