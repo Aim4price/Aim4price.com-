@@ -23,6 +23,8 @@ export type FuelLedgerStorage = {
   reorderLevelLitres: number | null;
   locationLabel: string;
   notes: string;
+  dipstickNote: string;
+  dipstickNoteUpdatedAtIso: string | null;
   status: FuelStorageStatus;
   publicFuelStorageCode: string;
   pinEnabled: boolean;
@@ -117,6 +119,8 @@ type FuelStorageRow = {
   reorder_level_litres: string | number | null;
   location_label: string | null;
   notes: string | null;
+  dipstick_note: string | null;
+  dipstick_note_updated_at: string | null;
   status: string | null;
   public_fuel_storage_code: string | null;
   pin_hash: string | null;
@@ -490,6 +494,8 @@ function mapStorageRow(row: FuelStorageRow): FuelLedgerStorage {
     reorderLevelLitres: normalizeOptionalLitres(row.reorder_level_litres),
     locationLabel: asText(row.location_label),
     notes: asText(row.notes),
+    dipstickNote: asText(row.dipstick_note),
+    dipstickNoteUpdatedAtIso: row.dipstick_note_updated_at ?? null,
     status: normalizeStorageStatus(row.status),
     publicFuelStorageCode: normalizeFuelStorageCode(row.public_fuel_storage_code),
     pinEnabled: Boolean(row.pin_enabled) && Boolean(pinHash),
@@ -603,6 +609,8 @@ function fuelStorageSelectSql(): string {
     reorder_level_litres,
     location_label,
     notes,
+    dipstick_note,
+    dipstick_note_updated_at,
     status,
     public_fuel_storage_code,
     pin_hash,
@@ -707,6 +715,8 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       reorder_level_litres numeric(12,2),
       location_label text,
       notes text,
+      dipstick_note text,
+      dipstick_note_updated_at timestamptz,
       status text not null default 'active',
       public_fuel_storage_code text not null unique,
       pin_hash text,
@@ -725,6 +735,8 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       add column if not exists reorder_level_litres numeric(12,2),
       add column if not exists location_label text,
       add column if not exists notes text,
+      add column if not exists dipstick_note text,
+      add column if not exists dipstick_note_updated_at timestamptz,
       add column if not exists status text not null default 'active',
       add column if not exists public_fuel_storage_code text,
       add column if not exists pin_hash text,
@@ -959,7 +971,7 @@ export async function listFuelLedger(userId: string): Promise<FuelLedgerData> {
   const activeStorages = storages.filter((storage) => storage.status === 'active');
   const totalCapacityLitres = roundLitres(activeStorages.reduce((sum, storage) => sum + (storage.capacityLitres ?? 0), 0));
   const currentLitres = roundLitres(activeStorages.reduce((sum, storage) => sum + storage.currentLitres, 0));
-  const lowStorageCount = activeStorages.filter((storage) => storage.reorderLevelLitres !== null && storage.currentLitres <= storage.reorderLevelLitres).length;
+  const lowStorageCount = activeStorages.filter((storage) => storage.reorderLevelLitres !== null && storage.currentLitres < storage.reorderLevelLitres).length;
   const totals = totalsResult.rows[0];
 
   return {
@@ -1214,6 +1226,32 @@ export async function saveFuelStoragePin(userId: string, storageId: string, pin:
   return mapStorageRow(row);
 }
 
+export async function saveFuelStorageDipstickNote(userId: string, storageId: string, input: { dipstickNote?: unknown }): Promise<FuelLedgerStorage> {
+  await ensureFuelLedgerTables();
+  const db = getDb();
+  const dipstickNote = asText(input.dipstickNote).slice(0, 700);
+
+  const result = await db.query<FuelStorageRow>(
+    `
+      update public.fuel_storage_units
+      set
+        dipstick_note = nullif($3, ''),
+        dipstick_note_updated_at = case when nullif($3, '') is null then null else now() end,
+        updated_at = now()
+      where user_id = $1 and id::text = $2
+      returning ${fuelStorageSelectSql()}
+    `,
+    [userId, storageId, dipstickNote],
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    throw new Error('Fuel storage not found.');
+  }
+
+  return mapStorageRow(row);
+}
+
 export async function archiveFuelStorage(userId: string, storageId: string): Promise<void> {
   await ensureFuelLedgerTables();
   const db = getDb();
@@ -1292,6 +1330,9 @@ export async function recordFuelStorageStock(
     currentLitres?: unknown;
     operatorName?: unknown;
     note?: unknown;
+    latitude?: unknown;
+    longitude?: unknown;
+    locationText?: unknown;
   },
 ): Promise<{ storage: FuelLedgerStorage; event: FuelLedgerEvent }> {
   await ensureFuelLedgerTables();
@@ -1299,6 +1340,11 @@ export async function recordFuelStorageStock(
   const client = await db.connect();
   const mode = String(input.mode ?? '').trim().toLowerCase() === 'dip' ? 'dip' : 'stock_in';
   const operatorName = asText(input.operatorName) || 'Owner entry';
+  const latitude = normalizeCoordinate(input.latitude, 90);
+  const longitude = normalizeCoordinate(input.longitude, 180);
+  const locationText = latitude !== null && longitude !== null
+    ? asText(input.locationText) || `GPS ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+    : asText(input.locationText) || null;
 
   try {
     await client.query('BEGIN');
@@ -1319,9 +1365,14 @@ export async function recordFuelStorageStock(
     }
 
     const before = storage.currentLitres;
-    const litres = mode === 'stock_in' ? normalizePositiveLitres(input.litres) : Math.abs((normalizeOptionalLitres(input.currentLitres) ?? before) - before);
-    const after = mode === 'stock_in' ? roundLitres(before + litres) : (normalizeOptionalLitres(input.currentLitres) ?? before);
+    const nextCurrentLitres = normalizeOptionalLitres(input.currentLitres);
+    const litres = mode === 'stock_in' ? normalizePositiveLitres(input.litres) : Math.abs((nextCurrentLitres ?? before) - before);
+    const after = mode === 'stock_in' ? roundLitres(before + litres) : (nextCurrentLitres ?? before);
     const eventType: FuelStorageEventType = mode === 'stock_in' ? 'stock_in' : 'dip';
+
+    if (storage.capacityLitres !== null && after > storage.capacityLitres + 0.001) {
+      throw new Error(`Storage refill exceeds tank capacity. Capacity is ${storage.capacityLitres.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L.`);
+    }
 
     const updated = await client.query<FuelStorageRow>(
       `
@@ -1347,10 +1398,10 @@ export async function recordFuelStorageStock(
       operatorName,
       activityText: null,
       workAreaText: null,
-      note: asText(input.note) || (eventType === 'stock_in' ? 'Fuel added to storage.' : 'Manual storage dip captured.'),
-      latitude: null,
-      longitude: null,
-      locationText: null,
+      note: asText(input.note) || (eventType === 'stock_in' ? 'Fuel In / Storage Refill.' : 'Manual storage dip captured.'),
+      latitude,
+      longitude,
+      locationText,
     });
 
     await client.query('COMMIT');
