@@ -1,23 +1,37 @@
-import { Buffer } from 'node:buffer';
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccountProfile } from '../../../../lib/account-profile';
-import { getServerSession } from '../../../../lib/auth-session';
-import { createUserMessage, type UserMessageType } from '../../../../lib/user-messages';
-import { normalizePartnerType } from '../../../../lib/partner-access';
+import { getAccountProfile } from '../../../lib/account-profile';
+import { getServerSession } from '../../../lib/auth-session';
+import {
+  createContactDetailRequest,
+  listIncomingContactRequestsForOwner,
+  listOwnerDirectoryForRequester,
+  normalizeContactAccessFilter,
+} from '../../../lib/contact-requests';
+import { listIncomingUserMessagesForOwner } from '../../../lib/user-messages';
+import { normalizePartnerType } from '../../../lib/partner-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+type CreateContactRequestBody = {
+  ownerUserId?: unknown;
+};
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
 }
 
-function forbidden(message = 'Only finance, insurance and dealer accounts can send owners messages or ads.') {
+function forbidden(message = 'Only finance, insurance and dealer accounts can request owner contact details.') {
   return NextResponse.json({ ok: false, error: message }, { status: 403 });
 }
 
-function asText(value: FormDataEntryValue | null): string {
+function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function asPositiveInt(value: unknown, fallback: number): number {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? Math.trunc(numeric) : fallback;
 }
 
 function extractErrorMessage(error: unknown, fallback: string): string {
@@ -28,8 +42,58 @@ function extractErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-function normalizeMessageType(value: string): UserMessageType {
-  return value.toLowerCase() === 'ad' ? 'ad' : 'message';
+export async function GET(request: NextRequest) {
+  const session = await getServerSession();
+
+  if (!session?.user?.id) {
+    return unauthorized();
+  }
+
+  try {
+    const profile = await getAccountProfile({
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    });
+    const partnerType = normalizePartnerType(profile.accountType);
+
+    if (!partnerType) {
+      const [contactRequests, incomingMessages] = await Promise.all([
+        listIncomingContactRequestsForOwner(session.user.id),
+        listIncomingUserMessagesForOwner(session.user.id),
+      ]);
+
+      return NextResponse.json({
+        ok: true,
+        mode: 'requests',
+        accountType: profile.accountType,
+        contactRequests,
+        incomingMessages,
+      });
+    }
+
+    const { searchParams } = request.nextUrl;
+    const directory = await listOwnerDirectoryForRequester(session.user.id, {
+      search: searchParams.get('search') ?? undefined,
+      province: searchParams.get('province') ?? undefined,
+      contactAccess: normalizeContactAccessFilter(searchParams.get('contactAccess')),
+      page: asPositiveInt(searchParams.get('page'), 1),
+      pageSize: asPositiveInt(searchParams.get('pageSize'), 10),
+    });
+
+    return NextResponse.json({
+      ok: true,
+      mode: 'directory',
+      accountType: profile.accountType,
+      ...directory,
+    });
+  } catch (error) {
+    console.error('users GET failed', error);
+    return NextResponse.json(
+      { ok: false, error: extractErrorMessage(error, 'Failed to load users.') },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -39,18 +103,15 @@ export async function POST(request: NextRequest) {
     return unauthorized();
   }
 
-  let formData: FormData;
+  let body: CreateContactRequestBody;
 
   try {
-    formData = await request.formData();
+    body = (await request.json()) as CreateContactRequestBody;
   } catch {
-    return NextResponse.json({ ok: false, error: 'Send a valid message or ad.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Send a valid contact request.' }, { status: 400 });
   }
 
-  const ownerUserId = asText(formData.get('ownerUserId'));
-  const messageType = normalizeMessageType(asText(formData.get('messageType')));
-  const imageEntry = formData.get('image');
-  const documentEntry = formData.get('document');
+  const ownerUserId = asText(body.ownerUserId);
 
   try {
     const profile = await getAccountProfile({
@@ -63,30 +124,23 @@ export async function POST(request: NextRequest) {
       return forbidden();
     }
 
-    const imageFile = imageEntry instanceof File && imageEntry.size > 0 ? imageEntry : null;
-    const imageBytes = imageFile ? Buffer.from(await imageFile.arrayBuffer()) : null;
-    const documentFile = documentEntry instanceof File && documentEntry.size > 0 ? documentEntry : null;
-    const documentBytes = documentFile ? Buffer.from(await documentFile.arrayBuffer()) : null;
-
-    const message = await createUserMessage({
-      senderUserId: session.user.id,
+    const owner = await createContactDetailRequest({
+      requesterUserId: session.user.id,
       ownerUserId,
-      messageType,
-      messageText: formData.get('message'),
-      adCaption: formData.get('caption'),
-      imageFileName: imageFile?.name ?? '',
-      imageMimeType: imageFile?.type ?? '',
-      imageBytes,
-      documentFileName: documentFile?.name ?? '',
-      documentMimeType: documentFile?.type ?? '',
-      documentBytes,
     });
 
-    return NextResponse.json({ ok: true, message });
+    return NextResponse.json({ ok: true, owner });
   } catch (error) {
-    console.error('user message POST failed', error);
+    if (error instanceof Error && error.message === 'CONTACT_REQUEST_FORBIDDEN') {
+      return forbidden();
+    }
+
+    if (error instanceof Error && error.message === 'CONTACT_REQUEST_OWNER_NOT_FOUND') {
+      return NextResponse.json({ ok: false, error: 'Owner account not found.' }, { status: 404 });
+    }
+
     return NextResponse.json(
-      { ok: false, error: extractErrorMessage(error, 'Failed to send message.') },
+      { ok: false, error: extractErrorMessage(error, 'Failed to send contact request.') },
       { status: 400 },
     );
   }
