@@ -306,6 +306,27 @@ function MessageIcon({ className }: IconProps) {
   );
 }
 
+function UploadIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 16V4" />
+      <path d="m7 9 5-5 5 5" />
+      <path d="M5 20h14" />
+    </svg>
+  );
+}
+
+function DocumentIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 13h6" />
+      <path d="M9 17h4" />
+    </svg>
+  );
+}
+
 function asCleanText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -396,6 +417,153 @@ function statusPillClass(status: ContactRequestStatus | null): string {
   if (status === 'temporarily_denied' || status === 'permanently_denied') return styles.statusPillDanger;
   if (status === 'pending') return styles.statusPillWarning;
   return styles.ownerUnlockedPill;
+}
+
+function fileNameHasExtension(fileName: string, extensions: string[]): boolean {
+  const extension = fileName.split('.').pop()?.trim().toLowerCase() ?? '';
+  return extensions.includes(extension);
+}
+
+function isImageAttachment(mimeType: string | undefined, fileName: string): boolean {
+  const normalizedMimeType = asCleanText(mimeType).toLowerCase();
+  return normalizedMimeType.startsWith('image/') || fileNameHasExtension(fileName, ['jpg', 'jpeg', 'png', 'webp']);
+}
+
+function isPdfAttachment(mimeType: string | undefined, fileName: string): boolean {
+  const normalizedMimeType = asCleanText(mimeType).toLowerCase();
+  return normalizedMimeType === 'application/pdf' || fileNameHasExtension(fileName, ['pdf']);
+}
+
+function selectedFileTypeLabel(file: File): string {
+  if (isImageAttachment(file.type, file.name)) return 'Image preview';
+  if (isPdfAttachment(file.type, file.name)) return 'PDF preview';
+  if (fileNameHasExtension(file.name, ['csv'])) return 'CSV document';
+  if (fileNameHasExtension(file.name, ['xls', 'xlsx'])) return 'Excel document';
+  if (fileNameHasExtension(file.name, ['doc', 'docx'])) return 'Word document';
+
+  return 'Document';
+}
+
+type FileUploadControlProps = {
+  id: string;
+  label: string;
+  accept: string;
+  file: File | null;
+  buttonLabel: string;
+  emptyLabel: string;
+  helperText: string;
+  iconType: 'image' | 'document';
+  onFileChange: (file: File | null) => void;
+};
+
+function FileUploadControl({
+  id,
+  label,
+  accept,
+  file,
+  buttonLabel,
+  emptyLabel,
+  helperText,
+  iconType,
+  onFileChange,
+}: FileUploadControlProps) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const isImagePreview = file ? isImageAttachment(file.type, file.name) : false;
+  const isPdfPreview = file ? isPdfAttachment(file.type, file.name) : false;
+  const Icon = iconType === 'image' ? ImageIcon : DocumentIcon;
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl('');
+      return undefined;
+    }
+
+    const nextPreviewUrl = URL.createObjectURL(file);
+    setPreviewUrl(nextPreviewUrl);
+
+    return () => {
+      URL.revokeObjectURL(nextPreviewUrl);
+    };
+  }, [file]);
+
+  function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
+    onFileChange(event.target.files?.[0] ?? null);
+  }
+
+  function clearSelectedFile() {
+    if (inputRef.current) {
+      inputRef.current.value = '';
+    }
+
+    onFileChange(null);
+  }
+
+  return (
+    <div className={styles.fileUploadField}>
+      <span>{label}</span>
+      <div className={`${styles.fileUploadPanel} ${file ? styles.fileUploadPanelSelected : ''}`}>
+        <input
+          id={id}
+          ref={inputRef}
+          type="file"
+          accept={accept}
+          className={styles.fileUploadInput}
+          onChange={handleInputChange}
+        />
+
+        <div className={styles.fileUploadRow}>
+          <label htmlFor={id} className={styles.fileUploadButton}>
+            <UploadIcon className={styles.fileUploadButtonIcon} />
+            <span>{file ? 'Replace file' : buttonLabel}</span>
+          </label>
+
+          {file ? (
+            <div className={styles.fileUploadMeta}>
+              <strong>{file.name}</strong>
+              <span>{[selectedFileTypeLabel(file), byteSizeLabel(file.size)].filter(Boolean).join(' · ')}</span>
+            </div>
+          ) : (
+            <div className={styles.fileUploadEmptyCopy}>
+              <strong>{emptyLabel}</strong>
+              <small>{helperText}</small>
+            </div>
+          )}
+
+          {file ? (
+            <button type="button" className={styles.fileClearButton} onClick={clearSelectedFile}>
+              Remove
+            </button>
+          ) : null}
+        </div>
+
+        {file && previewUrl ? (
+          <div className={styles.filePreviewCard}>
+            <div className={styles.filePreviewHeader}>
+              <span className={styles.filePreviewIcon}>
+                <Icon className={styles.filePreviewIconSvg} />
+              </span>
+              <div className={styles.filePreviewHeaderText}>
+                <strong>Selected file preview</strong>
+                <span>{file.name}</span>
+              </div>
+              <a href={previewUrl} target="_blank" rel="noreferrer" className={styles.filePreviewOpen}>
+                Open
+              </a>
+            </div>
+
+            {isImagePreview ? (
+              <img src={previewUrl} alt={`Preview of ${file.name}`} className={styles.filePreviewMedia} />
+            ) : isPdfPreview ? (
+              <iframe src={previewUrl} title={`Preview of ${file.name}`} className={styles.filePreviewFrame} />
+            ) : (
+              <p className={styles.filePreviewNote}>This file is attached and can be opened for preview where the browser supports it.</p>
+            )}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 function FilterDropdown({
@@ -1239,15 +1407,17 @@ export default function UsersClient() {
                   rows={6}
                 />
               </label>
-              <label className={styles.fileUploadField}>
-                <span>Optional document</span>
-                <input
-                  type="file"
-                  accept={DOCUMENT_ACCEPT_TYPES}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => setMessageDocumentFile(event.target.files?.[0] ?? null)}
-                />
-                <small>{messageDocumentFile ? `${messageDocumentFile.name} · ${byteSizeLabel(messageDocumentFile.size)}` : 'PDF, Word, Excel, CSV or image. Maximum 10 MB.'}</small>
-              </label>
+              <FileUploadControl
+                id="owner-message-document-upload"
+                label="Optional document"
+                accept={DOCUMENT_ACCEPT_TYPES}
+                file={messageDocumentFile}
+                buttonLabel="Upload document"
+                emptyLabel="No document selected"
+                helperText="PDF, Word, Excel, CSV or image. Maximum 10 MB."
+                iconType="document"
+                onFileChange={setMessageDocumentFile}
+              />
               <div className={styles.modalActions}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setSendStep('choice')} disabled={isSending}>
                   Back
@@ -1261,15 +1431,17 @@ export default function UsersClient() {
 
           {sendStep === 'ad' ? (
             <div className={styles.sendForm}>
-              <label className={styles.fileUploadField}>
-                <span>Ad image</span>
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => setAdImageFile(event.target.files?.[0] ?? null)}
-                />
-                <small>{adImageFile ? `${adImageFile.name} · ${byteSizeLabel(adImageFile.size)}` : 'JPG, PNG or WebP. Maximum 8 MB.'}</small>
-              </label>
+              <FileUploadControl
+                id="owner-ad-image-upload"
+                label="Ad image"
+                accept="image/png,image/jpeg,image/webp"
+                file={adImageFile}
+                buttonLabel="Upload ad image"
+                emptyLabel="No ad image selected"
+                helperText="JPG, PNG or WebP. Maximum 8 MB."
+                iconType="image"
+                onFileChange={setAdImageFile}
+              />
               <label className={styles.textAreaField}>
                 <span>Optional caption</span>
                 <textarea
@@ -1279,15 +1451,17 @@ export default function UsersClient() {
                   rows={4}
                 />
               </label>
-              <label className={styles.fileUploadField}>
-                <span>Optional document</span>
-                <input
-                  type="file"
-                  accept={DOCUMENT_ACCEPT_TYPES}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => setAdDocumentFile(event.target.files?.[0] ?? null)}
-                />
-                <small>{adDocumentFile ? `${adDocumentFile.name} · ${byteSizeLabel(adDocumentFile.size)}` : 'PDF, Word, Excel, CSV or image. Maximum 10 MB.'}</small>
-              </label>
+              <FileUploadControl
+                id="owner-ad-document-upload"
+                label="Optional document"
+                accept={DOCUMENT_ACCEPT_TYPES}
+                file={adDocumentFile}
+                buttonLabel="Upload document"
+                emptyLabel="No document selected"
+                helperText="PDF, Word, Excel, CSV or image. Maximum 10 MB."
+                iconType="document"
+                onFileChange={setAdDocumentFile}
+              />
               <div className={styles.modalActions}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setSendStep('choice')} disabled={isSending}>
                   Back
@@ -1308,6 +1482,12 @@ export default function UsersClient() {
 
     const senderName = getMessageSenderName(activeMessage);
     const isAd = activeMessage.messageType === 'ad';
+    const documentIsImage = activeMessage.hasDocument
+      ? isImageAttachment(activeMessage.documentMimeType, activeMessage.documentFileName)
+      : false;
+    const documentIsPdf = activeMessage.hasDocument
+      ? isPdfAttachment(activeMessage.documentMimeType, activeMessage.documentFileName)
+      : false;
 
     return (
       <div className={styles.actionModalOverlay}>
@@ -1331,17 +1511,32 @@ export default function UsersClient() {
             <p>{isAd ? activeMessage.adCaption || 'No caption supplied.' : activeMessage.messageText}</p>
             <small>{formatDate(activeMessage.createdAtIso)}</small>
             {activeMessage.hasDocument ? (
-              <a
-                href={activeMessage.documentUrl}
-                className={styles.attachmentLink}
-                target="_blank"
-                rel="noreferrer"
-                download={activeMessage.documentFileName || undefined}
-              >
-                <span>Attached document</span>
-                <strong>{activeMessage.documentFileName || 'Open document'}</strong>
-                {activeMessage.documentSizeBytes ? <small>{byteSizeLabel(activeMessage.documentSizeBytes)}</small> : null}
-              </a>
+              <div className={styles.incomingDocumentPreview}>
+                {documentIsImage ? (
+                  <img
+                    src={activeMessage.documentUrl}
+                    alt={activeMessage.documentFileName || 'Attached image'}
+                    className={styles.incomingMessageImage}
+                  />
+                ) : documentIsPdf ? (
+                  <iframe
+                    src={activeMessage.documentUrl}
+                    title={activeMessage.documentFileName || 'Attached PDF'}
+                    className={styles.incomingDocumentFrame}
+                  />
+                ) : null}
+                <a
+                  href={activeMessage.documentUrl}
+                  className={styles.attachmentLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  download={activeMessage.documentFileName || undefined}
+                >
+                  <span>{documentIsImage || documentIsPdf ? 'Open attachment' : 'Attached document'}</span>
+                  <strong>{activeMessage.documentFileName || 'Open document'}</strong>
+                  {activeMessage.documentSizeBytes ? <small>{byteSizeLabel(activeMessage.documentSizeBytes)}</small> : null}
+                </a>
+              </div>
             ) : null}
           </div>
         </section>
