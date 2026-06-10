@@ -473,6 +473,84 @@
     linear-gradient(180deg, #ffffff 0%, #fff8f8 100%);
 }
 
+
+.storageWarningList {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.66rem;
+  margin-top: 0.12rem;
+}
+
+.storageWarningNote {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.82rem 0.92rem;
+  border: 1px solid rgba(222, 154, 154, 0.86);
+  border-radius: 1.05rem;
+  background:
+    radial-gradient(circle at top left, rgba(161, 58, 58, 0.07), transparent 42%),
+    linear-gradient(180deg, #fffdfd 0%, #ffecec 100%);
+  box-shadow:
+    0 10px 22px rgba(141, 44, 44, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.storageWarningNote > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.22rem;
+}
+
+.storageWarningNote strong {
+  color: #842727;
+  font-size: 0.98rem;
+  font-weight: 900;
+  line-height: 1.18;
+}
+
+.storageWarningNote span {
+  color: #6e3b3b;
+  font-size: 0.94rem;
+  font-weight: 720;
+  line-height: 1.36;
+  overflow-wrap: anywhere;
+}
+
+.clearDipstickButton {
+  min-height: 2.55rem;
+  border: 1px solid rgba(125, 40, 40, 0.28);
+  border-radius: 0.88rem;
+  background: rgba(255, 255, 255, 0.9);
+  color: #842727;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 900;
+  padding: 0 0.86rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 8px 16px rgba(125, 40, 40, 0.07);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.clearDipstickButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(125, 40, 40, 0.42);
+  background: #ffffff;
+  box-shadow: 0 11px 22px rgba(125, 40, 40, 0.11);
+}
+
+.clearDipstickButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .storageInfo {
   min-width: 0;
   display: grid;
@@ -617,20 +695,20 @@
 
 .unitActions .changePinButton {
   color: #111111;
-  background: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, #edf1f3 100%);
   border-color: #111111;
   border-width: 1.5px;
   box-shadow:
-    0 10px 22px rgba(17, 17, 17, 0.06),
+    0 10px 22px rgba(17, 17, 17, 0.075),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
 .unitActions .changePinButton:hover:not(:disabled) {
   color: #000000;
-  background: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, #e3e8eb 100%);
   border-color: #000000;
   box-shadow:
-    0 14px 28px rgba(17, 17, 17, 0.1),
+    0 14px 28px rgba(17, 17, 17, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
@@ -1445,6 +1523,15 @@
   .storageCard {
     padding: 1.05rem;
     border-radius: 1.25rem;
+  }
+
+  .storageWarningNote {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .clearDipstickButton {
+    width: 100%;
   }
 
   .storageDetails {

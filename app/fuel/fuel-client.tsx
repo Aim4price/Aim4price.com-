@@ -20,6 +20,8 @@ type FuelLedgerStorage = {
   reorderLevelLitres: number | null;
   locationLabel: string;
   notes: string;
+  dipstickNote: string;
+  dipstickNoteUpdatedAtIso: string | null;
   status: FuelStorageStatus;
   publicFuelStorageCode: string;
   pinEnabled: boolean;
@@ -371,7 +373,11 @@ function buildApiBodyFromStorageDraft(draft: StorageDraft) {
 }
 
 function isLowStorage(storage: FuelLedgerStorage): boolean {
-  return storage.reorderLevelLitres !== null && storage.currentLitres <= storage.reorderLevelLitres;
+  return storage.reorderLevelLitres !== null && storage.currentLitres < storage.reorderLevelLitres;
+}
+
+function getDipstickNote(storage: FuelLedgerStorage): string {
+  return storage.dipstickNote.trim();
 }
 
 function getProgressPercent(storage: FuelLedgerStorage): number {
@@ -682,6 +688,26 @@ export default function FuelClient() {
     }
   }
 
+
+  async function handleClearDipstickNote(storage: FuelLedgerStorage) {
+    setIsSaving(true);
+    setNotice(null);
+
+    try {
+      const response = await fetch(`/api/fuel/storage/${storage.id}/dipstick`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      await applyLedgerResponse(response);
+      setNotice({ tone: 'success', message: 'Dipstick note cleared.' });
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to clear dipstick note.' });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   async function handleConfirmDeleteStorage() {
     if (!deleteCandidateStorage) return;
 
@@ -849,9 +875,11 @@ export default function FuelClient() {
               {visibleStorages.map((storage) => {
                 const progress = getProgressPercent(storage);
                 const storageIsLow = isLowStorage(storage);
+                const dipstickNoteText = getDipstickNote(storage);
+                const hasStorageWarning = storageIsLow || Boolean(dipstickNoteText);
 
                 return (
-                  <article key={storage.id} className={`${styles.storageCard} ${storageIsLow ? styles.storageCardLow : ''}`}>
+                  <article key={storage.id} className={`${styles.storageCard} ${hasStorageWarning ? styles.storageCardLow : ''}`}>
                     <div className={styles.storageInfo}>
                       <div className={styles.storageTitleBlock}>
                         <h2>{storage.name}</h2>
@@ -904,6 +932,31 @@ export default function FuelClient() {
                         </button>
                       </div>
                     </div>
+
+                    {hasStorageWarning ? (
+                      <div className={styles.storageWarningList}>
+                        {storageIsLow ? (
+                          <div className={styles.storageWarningNote}>
+                            <div>
+                              <strong>Storage below reorder level</strong>
+                              <span>{formatLitres(storage.currentLitres)} remaining. Reorder level is {formatLitres(storage.reorderLevelLitres)}.</span>
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {dipstickNoteText ? (
+                          <div className={styles.storageWarningNote}>
+                            <div>
+                              <strong>Dipstick note</strong>
+                              <span>Dipstick note: {dipstickNoteText}</span>
+                            </div>
+                            <button type="button" className={styles.clearDipstickButton} onClick={() => handleClearDipstickNote(storage)} disabled={isSaving}>
+                              Clear note
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </article>
                 );
               })}
