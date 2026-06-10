@@ -341,8 +341,15 @@ export async function createUserMessage(input: {
   const imageBytes = input.imageBytes ? Buffer.from(input.imageBytes) : null;
   const documentFileName = sanitizeFileName(input.documentFileName, 'aim4price-document');
   const documentMimeType = normalizeDocumentMimeType(input.documentMimeType, documentFileName);
-  const documentBytes = input.documentBytes ? Buffer.from(input.documentBytes) : null;
-  const hasDocument = Boolean(documentBytes?.byteLength);
+  const normalizedDocumentBytes = input.documentBytes ? Buffer.from(input.documentBytes) : null;
+  const documentAttachment = normalizedDocumentBytes && normalizedDocumentBytes.byteLength > 0
+    ? {
+        bytes: normalizedDocumentBytes,
+        fileName: documentFileName,
+        mimeType: documentMimeType,
+        sizeBytes: normalizedDocumentBytes.byteLength,
+      }
+    : null;
 
   if (!ownerUserId || !senderUserId || ownerUserId === senderUserId) {
     throw new Error('Choose a valid owner account.');
@@ -376,12 +383,12 @@ export async function createUserMessage(input: {
     }
   }
 
-  if (hasDocument) {
-    if (!documentMimeType) {
+  if (documentAttachment) {
+    if (!documentAttachment.mimeType) {
       throw new Error('Attach a supported document: PDF, Word, Excel, CSV, JPG, PNG or WebP.');
     }
 
-    if (documentBytes.byteLength > MAX_DOCUMENT_BYTES) {
+    if (documentAttachment.sizeBytes > MAX_DOCUMENT_BYTES) {
       throw new Error('The attached document is too large. Please upload a file smaller than 10 MB.');
     }
   }
@@ -419,10 +426,10 @@ export async function createUserMessage(input: {
       messageType === 'ad' ? imageMimeType : null,
       messageType === 'ad' && imageBytes ? imageBytes.byteLength : null,
       messageType === 'ad' ? imageBytes : null,
-      hasDocument ? documentFileName : null,
-      hasDocument ? documentMimeType : null,
-      hasDocument && documentBytes ? documentBytes.byteLength : null,
-      hasDocument ? documentBytes : null,
+      documentAttachment ? documentAttachment.fileName : null,
+      documentAttachment ? documentAttachment.mimeType : null,
+      documentAttachment ? documentAttachment.sizeBytes : null,
+      documentAttachment ? documentAttachment.bytes : null,
     ],
   );
 
