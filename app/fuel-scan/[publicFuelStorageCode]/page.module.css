@@ -260,7 +260,8 @@
 .optionButton:focus-visible,
 .locationGate button:focus-visible,
 .quickFuelButton:focus-visible,
-.assetChoiceButton:focus-visible {
+.assetChoiceButton:focus-visible,
+.actionChoiceButton:focus-visible {
   outline: none;
   border-color: rgba(23, 107, 79, 0.55);
   box-shadow:
@@ -280,6 +281,7 @@
 .optionButton,
 .locationGate button,
 .assetChoiceButton,
+.actionChoiceButton,
 .quickFuelButton {
   font: inherit;
   cursor: pointer;
@@ -297,6 +299,7 @@
 .optionButton:hover,
 .locationGate button:hover,
 .assetChoiceButton:hover,
+.actionChoiceButton:hover,
 .quickFuelButton:hover {
   transform: translateY(-1px);
 }
@@ -305,6 +308,7 @@
 .secondaryButton:disabled,
 .optionButton:disabled,
 .locationGate button:disabled,
+.actionChoiceButton:disabled,
 .quickFuelButton:disabled {
   opacity: 0.52;
   cursor: not-allowed;
@@ -447,6 +451,117 @@
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #176b4f 0%, #43a879 100%);
+}
+
+
+.choiceCard {
+  align-content: center;
+}
+
+.actionChoiceList {
+  display: grid;
+  gap: 0.82rem;
+}
+
+.actionChoiceButton {
+  position: relative;
+  width: 100%;
+  min-height: 6.65rem;
+  display: grid;
+  align-content: center;
+  gap: 0.42rem;
+  overflow: hidden;
+  isolation: isolate;
+  text-align: left;
+  border: 1px solid rgba(206, 222, 231, 0.98);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at top left, rgba(23, 107, 79, 0.075), transparent 44%),
+    linear-gradient(180deg, #ffffff 0%, #f5fafb 100%);
+  color: var(--text);
+  padding: 1.05rem 1.08rem 1.05rem 1.25rem;
+  box-shadow:
+    0 13px 27px rgba(23, 45, 75, 0.062),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.actionChoiceButton::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0.36rem;
+  background: linear-gradient(180deg, rgba(23, 107, 79, 0.88) 0%, rgba(67, 168, 121, 0.48) 100%);
+  z-index: -1;
+}
+
+.actionChoiceButton strong {
+  color: inherit;
+  font-size: clamp(1.42rem, 6vw, 1.92rem);
+  font-weight: 900;
+  line-height: 1.02;
+  letter-spacing: -0.052em;
+}
+
+.actionChoiceButton span {
+  color: #53677a;
+  font-size: clamp(0.94rem, 3.4vw, 1.04rem);
+  font-weight: 760;
+  line-height: 1.34;
+}
+
+.actionChoiceButtonRefill {
+  border-color: rgba(151, 211, 181, 0.92);
+  background:
+    radial-gradient(circle at top left, rgba(23, 107, 79, 0.11), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #ecf8f2 100%);
+}
+
+.actionChoiceButtonAssets {
+  border-color: rgba(189, 215, 237, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(42, 106, 162, 0.10), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #eef6ff 100%);
+}
+
+.actionChoiceButtonAssets::before {
+  background: linear-gradient(180deg, #2b6fa6 0%, rgba(88, 151, 207, 0.50) 100%);
+}
+
+.actionChoiceButtonNote {
+  border-color: rgba(238, 204, 174, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(173, 96, 35, 0.10), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #fff6ed 100%);
+}
+
+.actionChoiceButtonNote::before {
+  background: linear-gradient(180deg, #b0652c 0%, rgba(225, 160, 96, 0.54) 100%);
+}
+
+.storageNoticeBox {
+  display: grid;
+  gap: 0.32rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(159, 218, 185, 0.98);
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, #f1fbf6 0%, #e5f6ec 100%);
+  box-shadow:
+    0 10px 22px rgba(16, 68, 52, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.storageNoticeBox strong {
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.storageNoticeBox span {
+  color: #516878;
+  font-size: 0.94rem;
+  font-weight: 760;
+  line-height: 1.36;
 }
 
 .assetStepCard {

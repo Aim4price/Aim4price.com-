@@ -6,6 +6,8 @@ import styles from './page.module.css';
 type FuelStorageStatus = 'active' | 'archived';
 type FuelStorageEventType = 'opening_balance' | 'stock_in' | 'asset_issue' | 'dip' | 'adjustment';
 type IssueStep = 'asset' | 'usage' | 'beforeFuel' | 'litres' | 'filledFuel' | 'work' | 'notes';
+type ScanMode = 'action-choice' | 'fuel-assets' | 'storage-refill' | 'dipstick-note';
+type DoneAction = 'asset_issue' | 'storage_refill' | 'dipstick_note';
 
 type FuelStoragePublicPreview = {
   id: string;
@@ -24,6 +26,8 @@ type FuelLedgerStorage = FuelStoragePublicPreview & {
   reorderLevelLitres: number | null;
   locationLabel: string;
   notes: string;
+  dipstickNote: string;
+  dipstickNoteUpdatedAtIso: string | null;
   pinEnabled: boolean;
   hasPin: boolean;
   pinUpdatedAtIso: string | null;
@@ -104,7 +108,7 @@ type FuelScanClientProps = {
 };
 
 const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
-const TOTAL_SCAN_PAGES = 8;
+const TOTAL_SCAN_PAGES = 9;
 const ISSUE_STEPS: IssueStep[] = ['asset', 'usage', 'beforeFuel', 'litres', 'filledFuel', 'work', 'notes'];
 const STEP_LABELS: Record<IssueStep, string> = {
   asset: 'Choose asset',
@@ -200,6 +204,11 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   const [activityText, setActivityText] = useState('');
   const [workAreaText, setWorkAreaText] = useState('');
   const [note, setNote] = useState('');
+  const [scanMode, setScanMode] = useState<ScanMode>('action-choice');
+  const [refillLitres, setRefillLitres] = useState('');
+  const [refillNote, setRefillNote] = useState('');
+  const [dipstickNote, setDipstickNote] = useState('');
+  const [doneAction, setDoneAction] = useState<DoneAction>('asset_issue');
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [locationStatus, setLocationStatus] = useState('Location must be enabled before this fuel QR can continue.');
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -217,8 +226,9 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   const visibleFuelType = storage?.fuelType || preview?.fuelType || 'Diesel';
   const unauthenticated = !storage;
   const issueStepIndex = ISSUE_STEPS.indexOf(issueStep);
-  const issueStepNumber = issueStepIndex + 2;
+  const issueStepNumber = issueStepIndex + 3;
   const issueStepProgress = (issueStepNumber / TOTAL_SCAN_PAGES) * 100;
+  const choiceStepProgress = (2 / TOTAL_SCAN_PAGES) * 100;
 
   const filteredAssets = useMemo(() => {
     const query = assetSearch.trim().toLowerCase();
@@ -294,6 +304,8 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || '');
     setAssets(data.assets ?? []);
     setIssueStep('asset');
+    setScanMode('action-choice');
+    setDipstickNote(data.storage.dipstickNote || '');
   }
 
   useEffect(() => {
@@ -335,6 +347,11 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     setActivityText('');
     setWorkAreaText('');
     setNote('');
+    setScanMode('action-choice');
+    setRefillLitres('');
+    setRefillNote('');
+    setDipstickNote('');
+    setDoneAction('asset_issue');
     setCoordinates(null);
     setLocationStatus('Location must be enabled before this fuel QR can continue.');
     setIssueStep('asset');
@@ -539,6 +556,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       setPreview(data.storage);
       setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || accountBusinessName);
       setAssets(data.assets ?? []);
+      setDoneAction('asset_issue');
       setNotice(null);
       setIsDone(true);
 
@@ -553,6 +571,155 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       }, 80);
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save fuel issue.' });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+
+  function returnToChoice() {
+    setNotice(null);
+    setScanMode('action-choice');
+    setIssueStep('asset');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function startFuelAssets() {
+    setNotice(null);
+    setScanMode('fuel-assets');
+    setIssueStep('asset');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function startStorageRefill() {
+    setNotice(null);
+    setRefillLitres('');
+    setRefillNote('');
+    setScanMode('storage-refill');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function startDipstickNote() {
+    setNotice(null);
+    setDipstickNote(storage?.dipstickNote || '');
+    setScanMode('dipstick-note');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function handleStorageRefillSubmit() {
+    setIsSaving(true);
+    setNotice(null);
+
+    try {
+      if (!storage) {
+        throw new Error('Fuel storage not loaded. Scan the QR code again.');
+      }
+
+      const litresNumber = safeNumber(refillLitres);
+      if (litresNumber === null || litresNumber <= 0) {
+        throw new Error('Enter the litres added to the storage tank.');
+      }
+
+      if (storage.capacityLitres !== null && storage.currentLitres + litresNumber > storage.capacityLitres + 0.001) {
+        throw new Error(`Storage refill exceeds tank capacity. ${formatLitres(storage.currentLitres)} is currently in the tank and capacity is ${formatLitres(storage.capacityLitres)}.`);
+      }
+
+      if (operatorName.trim().length < 2) {
+        throw new Error('Enter your name before saving the storage refill.');
+      }
+
+      if (!coordinates) {
+        throw new Error('GPS location is required. Enable location and capture GPS again.');
+      }
+
+      const response = await fetch(`/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/refill`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          litres: litresNumber,
+          operatorName,
+          note: refillNote,
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
+          locationText: `GPS ${coordinates.latitude.toFixed(6)}, ${coordinates.longitude.toFixed(6)}`,
+        }),
+      });
+      const data = (await response.json()) as PayloadResponse & { event?: FuelLedgerEvent };
+
+      if (!response.ok || !data.ok || !data.storage) {
+        throw new Error(data.error || 'Failed to save storage refill.');
+      }
+
+      setStorage(data.storage);
+      setPreview(data.storage);
+      setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || accountBusinessName);
+      setAssets(data.assets ?? []);
+      setDoneAction('storage_refill');
+      setNotice(null);
+      setIsDone(true);
+
+      try {
+        window.history.replaceState({ aim4priceFuelQrDone: true }, '', window.location.href);
+      } catch {
+        // Ignore history replacement errors.
+      }
+
+      window.setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 80);
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save storage refill.' });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDipstickNoteSubmit() {
+    setIsSaving(true);
+    setNotice(null);
+
+    try {
+      if (!storage) {
+        throw new Error('Fuel storage not loaded. Scan the QR code again.');
+      }
+
+      const noteText = dipstickNote.trim();
+      if (noteText.length < 2) {
+        throw new Error('Enter the dipstick note before saving.');
+      }
+
+      const response = await fetch(`/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/dipstick`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dipstickNote: noteText }),
+      });
+      const data = (await response.json()) as PayloadResponse;
+
+      if (!response.ok || !data.ok || !data.storage) {
+        throw new Error(data.error || 'Failed to save dipstick note.');
+      }
+
+      setStorage(data.storage);
+      setPreview(data.storage);
+      setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || accountBusinessName);
+      setAssets(data.assets ?? []);
+      setDoneAction('dipstick_note');
+      setNotice(null);
+      setIsDone(true);
+
+      try {
+        window.history.replaceState({ aim4priceFuelQrDone: true }, '', window.location.href);
+      } catch {
+        // Ignore history replacement errors.
+      }
+
+      window.setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 80);
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save dipstick note.' });
     } finally {
       setIsSaving(false);
     }
@@ -630,6 +797,127 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     );
   }
 
+
+  function renderActionChoice() {
+    return (
+      <section className={`${styles.stepCard} ${styles.choiceCard}`}>
+        <div className={styles.stepTitleBlock}>
+          <span>Step 2 of {TOTAL_SCAN_PAGES}</span>
+          <h1>Choose fuel action</h1>
+          <p>{visibleStorageName} · {formatLitres(storage?.currentLitres)} available</p>
+        </div>
+        <div className={styles.actionChoiceList}>
+          <button type="button" className={`${styles.actionChoiceButton} ${styles.actionChoiceButtonRefill}`} onClick={startStorageRefill} disabled={isSaving}>
+            <strong>Storage Refill</strong>
+            <span>Add fuel TO this storage tank. The tank level increases and the fuel ledger records Fuel In / Storage Refill.</span>
+          </button>
+          <button type="button" className={`${styles.actionChoiceButton} ${styles.actionChoiceButtonAssets}`} onClick={startFuelAssets} disabled={isSaving}>
+            <strong>Fuel Assets</strong>
+            <span>Issue fuel OUT of this storage tank to an asset. This continues the existing Fuel Out process.</span>
+          </button>
+          <button type="button" className={`${styles.actionChoiceButton} ${styles.actionChoiceButtonNote}`} onClick={startDipstickNote} disabled={isSaving}>
+            <strong>Dipstick Note</strong>
+            <span>Save an internal dipstick comment only. No litre change and no PDF or Excel fuel entry.</span>
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  function renderStorageRefillStep() {
+    const litresNumber = safeNumber(refillLitres);
+    const projectedLitres = storage && litresNumber !== null && litresNumber > 0 ? storage.currentLitres + litresNumber : null;
+
+    return (
+      <section className={styles.stepCard}>
+        <div className={styles.stepTitleBlock}>
+          <span>Storage refill</span>
+          <h1>Add fuel to tank</h1>
+          <p>You are adding fuel TO {visibleStorageName}. This increases the storage level and records Fuel In / Storage Refill in the fuel ledger.</p>
+        </div>
+        <div className={styles.storageNoticeBox}>
+          <strong>Storage level will increase</strong>
+          <span>Only enter litres physically delivered into the storage tank. This does not allocate fuel to an asset.</span>
+        </div>
+        <div className={styles.compactMetaGrid}>
+          <div><span>Current level</span><strong>{formatLitres(storage?.currentLitres)}</strong></div>
+          <div><span>After refill</span><strong>{projectedLitres !== null ? formatLitres(projectedLitres) : '—'}</strong></div>
+        </div>
+        <label className={styles.field}>
+          <span>Litres added to storage</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={refillLitres}
+            onChange={(event) => setRefillLitres(event.target.value)}
+            placeholder="Litres added"
+            autoFocus
+          />
+        </label>
+        <label className={styles.field}>
+          <span>Optional refill note</span>
+          <textarea value={refillNote} onChange={(event) => setRefillNote(event.target.value)} rows={4} placeholder="Example: Supplier delivery note, invoice number, driver note" />
+        </label>
+        <div className={styles.stepControls}>
+          <button type="button" className={styles.secondaryButton} onClick={returnToChoice} disabled={isSaving}>
+            Back
+          </button>
+          <button type="button" className={styles.primaryButton} onClick={handleStorageRefillSubmit} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save refill'}
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  function renderDipstickNoteStep() {
+    return (
+      <section className={styles.stepCard}>
+        <div className={styles.stepTitleBlock}>
+          <span>Dipstick note</span>
+          <h1>Record dipstick note</h1>
+          <p>This stores an internal note on {visibleStorageName}. It does not change litres and does not create a fuel export entry.</p>
+        </div>
+        <div className={styles.storageNoticeBox}>
+          <strong>Internal warning note only</strong>
+          <span>The latest dipstick note will show on the storage tank card until it is replaced or cleared.</span>
+        </div>
+        <label className={styles.field}>
+          <span>Dipstick note</span>
+          <textarea
+            value={dipstickNote}
+            onChange={(event) => setDipstickNote(event.target.value.slice(0, 700))}
+            rows={6}
+            placeholder="Example: Physical dipstick reading looks lower than system level."
+            autoFocus
+          />
+        </label>
+        <div className={styles.stepControls}>
+          <button type="button" className={styles.secondaryButton} onClick={returnToChoice} disabled={isSaving}>
+            Back
+          </button>
+          <button type="button" className={styles.primaryButton} onClick={handleDipstickNoteSubmit} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save note'}
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  function renderScanProgress(label: string, title: string, stepText: string, width: number) {
+    return (
+      <div className={styles.stepProgress} aria-label={`${label}: ${title}`}>
+        <div>
+          <span>{label}</span>
+          <strong>{title}</strong>
+        </div>
+        <small>{stepText}</small>
+        <i><b style={{ width: `${width}%` }} /></i>
+      </div>
+    );
+  }
+
   function renderIssueStep() {
     if (issueStep === 'asset') {
       return (
@@ -639,6 +927,9 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
             <h1>Choose asset</h1>
             <p>Tap the asset that received fuel.</p>
           </div>
+          <button type="button" className={styles.secondaryButton} onClick={returnToChoice} disabled={isSaving}>
+            Back to fuel actions
+          </button>
           <div className={styles.assetSearchWrap}>
             <label className={styles.searchField}>
               <span>Search</span>
@@ -830,11 +1121,26 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   }
 
   if (isDone) {
+    const doneCopy: Record<DoneAction, { title: string; message: string }> = {
+      asset_issue: {
+        title: 'Fuel out saved.',
+        message: 'The fuel issue was added to the fuel ledger and the asset record.',
+      },
+      storage_refill: {
+        title: 'Storage refill saved.',
+        message: 'The storage tank level was increased and Fuel In / Storage Refill was added to the fuel ledger.',
+      },
+      dipstick_note: {
+        title: 'Dipstick note saved.',
+        message: 'The note was saved on the storage tank card only. Tank litres and exports were not changed.',
+      },
+    };
+
     return (
       <main className={styles.scanPage}>
         <section className={styles.thankYouScreen}>
-          <h1>Saved.</h1>
-          <p>The fuel issue was added to the fuel ledger and the asset record.</p>
+          <h1>{doneCopy[doneAction].title}</h1>
+          <p>{doneCopy[doneAction].message}</p>
         </section>
       </main>
     );
@@ -908,16 +1214,24 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
               </div>
             ) : null}
           </section>
+        ) : scanMode === 'action-choice' ? (
+          <>
+            {renderScanProgress('Fuel QR', 'Choose action', `2/${TOTAL_SCAN_PAGES}`, choiceStepProgress)}
+            {renderActionChoice()}
+          </>
+        ) : scanMode === 'storage-refill' ? (
+          <>
+            {renderScanProgress('Storage refill', 'Add fuel to tank', 'Fuel In', 100)}
+            {renderStorageRefillStep()}
+          </>
+        ) : scanMode === 'dipstick-note' ? (
+          <>
+            {renderScanProgress('Dipstick note', 'Internal note', 'No export', 100)}
+            {renderDipstickNoteStep()}
+          </>
         ) : (
           <>
-            <div className={styles.stepProgress} aria-label={`Step ${issueStepNumber} of ${TOTAL_SCAN_PAGES}: ${STEP_LABELS[issueStep]}`}>
-              <div>
-                <span>Fuel issue</span>
-                <strong>{STEP_LABELS[issueStep]}</strong>
-              </div>
-              <small>{issueStepNumber}/{TOTAL_SCAN_PAGES}</small>
-              <i><b style={{ width: `${issueStepProgress}%` }} /></i>
-            </div>
+            {renderScanProgress('Fuel Assets', STEP_LABELS[issueStep], `${issueStepNumber}/${TOTAL_SCAN_PAGES}`, issueStepProgress)}
             {renderIssueStep()}
           </>
         )}
