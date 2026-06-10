@@ -5,7 +5,9 @@ import {
   createContactDetailRequest,
   listIncomingContactRequestsForOwner,
   listOwnerDirectoryForRequester,
+  normalizeContactAccessFilter,
 } from '../../../lib/contact-requests';
+import { listIncomingUserMessagesForOwner } from '../../../lib/user-messages';
 import { normalizePartnerType } from '../../../lib/partner-access';
 
 export const runtime = 'nodejs';
@@ -31,7 +33,12 @@ function extractErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-export async function GET() {
+function asPositiveInteger(value: string | null, fallback: number): number {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.max(1, Math.trunc(numeric)) : fallback;
+}
+
+export async function GET(request: NextRequest) {
   const session = await getServerSession();
 
   if (!session?.user?.id) {
@@ -48,13 +55,36 @@ export async function GET() {
     const partnerType = normalizePartnerType(profile.accountType);
 
     if (partnerType) {
-      const owners = await listOwnerDirectoryForRequester(session.user.id);
-      return NextResponse.json({ ok: true, mode: 'directory', accountType: profile.accountType, owners });
+      const searchParams = request.nextUrl.searchParams;
+      const directory = await listOwnerDirectoryForRequester(session.user.id, {
+        search: searchParams.get('search') ?? '',
+        province: searchParams.get('province') ?? 'all',
+        contactAccess: normalizeContactAccessFilter(searchParams.get('contactAccess')),
+        page: asPositiveInteger(searchParams.get('page'), 1),
+        pageSize: asPositiveInteger(searchParams.get('pageSize'), 10),
+      });
+
+      return NextResponse.json({
+        ok: true,
+        mode: 'directory',
+        accountType: profile.accountType,
+        ...directory,
+      });
     }
 
     if (profile.accountType === 'owner') {
-      const contactRequests = await listIncomingContactRequestsForOwner(session.user.id);
-      return NextResponse.json({ ok: true, mode: 'requests', accountType: profile.accountType, contactRequests });
+      const [contactRequests, incomingMessages] = await Promise.all([
+        listIncomingContactRequestsForOwner(session.user.id),
+        listIncomingUserMessagesForOwner(session.user.id),
+      ]);
+
+      return NextResponse.json({
+        ok: true,
+        mode: 'requests',
+        accountType: profile.accountType,
+        contactRequests,
+        incomingMessages,
+      });
     }
 
     return forbidden();
@@ -114,10 +144,12 @@ export async function POST(request: NextRequest) {
       return forbidden('Only finance, insurance and dealer accounts can request owner contact details.');
     }
 
+    const message = extractErrorMessage(error, 'Failed to send contact request.');
+    const status = /daily request limit/i.test(message) || /temporarily denied/i.test(message) || /permanently denied/i.test(message)
+      ? 409
+      : 500;
+
     console.error('users POST failed', error);
-    return NextResponse.json(
-      { ok: false, error: extractErrorMessage(error, 'Failed to send contact request.') },
-      { status: 500 },
-    );
+    return NextResponse.json({ ok: false, error: message }, { status });
   }
 }
