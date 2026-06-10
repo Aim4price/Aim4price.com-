@@ -2,6 +2,7 @@ import { getDb } from './db';
 
 const USER_ID_TABLES = ['fuel_storage_events', 'fuel_storage_units', 'asset_register_items', 'valuation_runs', 'account_profiles'] as const;
 const PARTNER_ACCESS_TABLES = ['asset_leads', 'asset_partner_notes', 'access_audit_events'] as const;
+const USER_COMMUNICATION_TABLES = ['account_contact_requests', 'account_user_messages'] as const;
 
 async function getExistingTableSet(tableNames: readonly string[]): Promise<Set<string>> {
   const db = getDb();
@@ -25,7 +26,7 @@ export async function deleteUserWorkspaceData(userId: string): Promise<void> {
   try {
     await client.query('BEGIN');
 
-    const tableSet = await getExistingTableSet([...USER_ID_TABLES, ...PARTNER_ACCESS_TABLES]);
+    const tableSet = await getExistingTableSet([...USER_ID_TABLES, ...PARTNER_ACCESS_TABLES, ...USER_COMMUNICATION_TABLES]);
 
     if (tableSet.has('asset_leads')) {
       await client.query('delete from asset_leads where owner_user_id = $1 or partner_user_id = $1', [userId]);
@@ -37,6 +38,14 @@ export async function deleteUserWorkspaceData(userId: string): Promise<void> {
 
     if (tableSet.has('access_audit_events')) {
       await client.query('delete from access_audit_events where owner_user_id = $1 or actor_user_id = $1', [userId]);
+    }
+
+    if (tableSet.has('account_contact_requests')) {
+      await client.query('delete from account_contact_requests where owner_user_id = $1 or requester_user_id = $1', [userId]);
+    }
+
+    if (tableSet.has('account_user_messages')) {
+      await client.query('delete from account_user_messages where owner_user_id = $1 or sender_user_id = $1', [userId]);
     }
 
     for (const tableName of USER_ID_TABLES) {
