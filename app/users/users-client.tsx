@@ -388,6 +388,10 @@ function temporaryDenialExpired(owner: OwnerDirectoryEntry): boolean {
   return Number.isFinite(retryTime) && retryTime <= Date.now();
 }
 
+function isOwnerDenied(owner: OwnerDirectoryEntry | null): boolean {
+  return owner?.requestStatus === 'temporarily_denied' || owner?.requestStatus === 'permanently_denied';
+}
+
 function statusPillClass(status: ContactRequestStatus | null): string {
   if (status === 'temporarily_denied' || status === 'permanently_denied') return styles.statusPillDanger;
   if (status === 'pending') return styles.statusPillWarning;
@@ -829,6 +833,15 @@ export default function UsersClient() {
   async function handleSend(kind: Exclude<SendModalStep, 'choice'>) {
     if (!sendOwner) return;
 
+    if (isOwnerDenied(sendOwner)) {
+      setNotice({
+        tone: 'error',
+        message: 'This owner account is denied. Sending is blocked.',
+      });
+      closeSendModal();
+      return;
+    }
+
     setNotice(null);
     setIsSending(true);
 
@@ -1165,7 +1178,7 @@ export default function UsersClient() {
   }
 
   function renderSendModal() {
-    if (!sendOwner) return null;
+    if (!sendOwner || isOwnerDenied(sendOwner)) return null;
 
     return (
       <div className={styles.actionModalOverlay}>
@@ -1458,6 +1471,7 @@ export default function UsersClient() {
             owners.map((owner) => {
               const isOpen = openOwnerId === owner.ownerUserId;
               const province = ownerProvince(owner);
+              const canSendToOwner = !isOwnerDenied(owner);
 
               return (
                 <article key={owner.ownerUserId} className={`${styles.ownerCard} ${isOpen ? styles.ownerCardOpen : ''}`}>
@@ -1468,17 +1482,19 @@ export default function UsersClient() {
                     </div>
 
                     <div className={styles.ownerActionRow}>
-                      <button
-                        type="button"
-                        className={`${styles.sendOwnerButton}`}
-                        onClick={() => {
-                          setSendOwner(owner);
-                          setSendStep('choice');
-                        }}
-                      >
-                        <SendIcon className={styles.buttonIcon} />
-                        Send
-                      </button>
+                      {canSendToOwner ? (
+                        <button
+                          type="button"
+                          className={`${styles.sendOwnerButton}`}
+                          onClick={() => {
+                            setSendOwner(owner);
+                            setSendStep('choice');
+                          }}
+                        >
+                          <SendIcon className={styles.buttonIcon} />
+                          Send
+                        </button>
+                      ) : null}
 
                       <button
                         type="button"
