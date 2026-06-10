@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { ensureAccountProfileColumns } from './account-profile';
+import { ensureContactRequestTables } from './contact-requests';
 import { getDb } from './db';
 import { normalizeAccountRole, type AccountRole } from './partner-access';
 
@@ -68,6 +69,10 @@ type UserMessageRow = {
 
 type AccountRoleRow = {
   account_type: string | null;
+};
+
+type ContactRequestAccessRow = {
+  status: string | null;
 };
 
 type ImageAttachmentRow = {
@@ -284,6 +289,42 @@ async function getAccountRole(userId: string): Promise<AccountRole> {
   return normalizeAccountRole(result.rows[0]?.account_type);
 }
 
+async function assertOwnerCanReceiveUserMessage(input: {
+  senderUserId: string;
+  ownerUserId: string;
+}): Promise<void> {
+  await ensureContactRequestTables();
+
+  const db = getDb();
+  const result = await db.query<ContactRequestAccessRow>(
+    `
+      select
+        case
+          when permanently_denied_at is not null or status = 'permanently_denied' then 'permanently_denied'
+          when status in ('temporarily_denied', 'denied') then 'temporarily_denied'
+          when status = 'approved' then 'approved'
+          when status = 'pending' then 'pending'
+          else null
+        end as status
+      from account_contact_requests
+      where owner_user_id = $1
+        and requester_user_id = $2
+      limit 1
+    `,
+    [input.ownerUserId, input.senderUserId],
+  );
+
+  const status = asText(result.rows[0]?.status).toLowerCase();
+
+  if (status === 'permanently_denied') {
+    throw new Error('Permanently denied. You cannot send messages or ads to this owner account.');
+  }
+
+  if (status === 'temporarily_denied') {
+    throw new Error('Temporarily denied. You cannot send messages or ads to this owner account.');
+  }
+}
+
 function messageSelectSql(whereClause: string): string {
   return `
     select
@@ -364,6 +405,11 @@ export async function createUserMessage(input: {
   if (ownerRole !== 'owner') {
     throw new Error('Owner account not found.');
   }
+
+  await assertOwnerCanReceiveUserMessage({
+    senderUserId,
+    ownerUserId,
+  });
 
   if (messageType === 'message' && !messageText) {
     throw new Error('Type a message before sending.');
