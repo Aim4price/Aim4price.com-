@@ -4,10 +4,13 @@ import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'rea
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
-type ContactRequestStatus = 'pending' | 'approved' | 'denied';
+type ContactRequestStatus = 'pending' | 'approved' | 'temporarily_denied' | 'permanently_denied';
+type ContactDecisionStatus = 'approved' | 'denied';
 type UsersMode = 'directory' | 'requests';
-type ContactLockFilter = 'all' | 'unlocked' | 'locked';
+type ContactAccessFilter = 'all' | 'unlocked' | 'locked' | 'pending' | 'temporarily_denied' | 'permanently_denied';
 type NoticeTone = 'success' | 'error';
+type FilterDropdownKey = 'province' | 'contactAccess';
+type SendModalStep = 'choice' | 'message' | 'ad';
 
 type OwnerDirectoryEntry = {
   ownerUserId: string;
@@ -15,6 +18,7 @@ type OwnerDirectoryEntry = {
   requestId: string | null;
   requestStatus: ContactRequestStatus | null;
   contactUnlocked: boolean;
+  popiaAcknowledged: boolean;
   contactName: string;
   contactPhone: string;
   contactEmail: string;
@@ -22,7 +26,12 @@ type OwnerDirectoryEntry = {
   ownerProvince: string;
   ownerTownCity: string;
   requestedAtIso: string | null;
+  lastRequestedAtIso: string | null;
   updatedAtIso: string | null;
+  deniedCount: number;
+  lastDeniedAtIso: string | null;
+  requestAgainAtIso: string | null;
+  permanentlyDeniedAtIso: string | null;
 };
 
 type ContactDetailRequest = {
@@ -42,9 +51,72 @@ type ContactDetailRequest = {
   ownerContactEmail: string;
   ownerContactLocation: string;
   createdAtIso: string;
+  lastRequestedAtIso: string | null;
   approvedAtIso: string | null;
   deniedAtIso: string | null;
   updatedAtIso: string;
+  deniedCount: number;
+  lastDeniedAtIso: string | null;
+  requestAgainAtIso: string | null;
+  permanentlyDeniedAtIso: string | null;
+  popiaAcknowledgedAtIso: string | null;
+};
+
+type UserMessage = {
+  id: string;
+  ownerUserId: string;
+  senderUserId: string;
+  messageType: 'message' | 'ad';
+  messageText: string;
+  adCaption: string;
+  senderAccountType: string;
+  senderDisplayName: string;
+  senderBusinessName: string;
+  senderPhone: string;
+  senderEmail: string;
+  senderLocation: string;
+  imageFileName: string;
+  imageMimeType: string;
+  imageSizeBytes: number;
+  imageUrl: string;
+  hasImage: boolean;
+  readAtIso: string | null;
+  createdAtIso: string;
+  updatedAtIso: string;
+};
+
+type OwnerDirectoryPagination = {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  rangeStart: number;
+  rangeEnd: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
+
+type OwnerDirectorySummary = {
+  totalOwners: number;
+  unlockedCount: number;
+  lockedCount: number;
+  pendingCount: number;
+  temporarilyDeniedCount: number;
+  permanentlyDeniedCount: number;
+};
+
+type OwnerProvinceOption = {
+  value: string;
+  label: string;
+  count: number;
+};
+
+type RequestAllowance = {
+  dailyLimit: number;
+  usedToday: number;
+  remainingToday: number;
+  resetTimezone: string;
+  isLimitReached: boolean;
 };
 
 type UsersResponse = {
@@ -55,6 +127,13 @@ type UsersResponse = {
   owner?: OwnerDirectoryEntry;
   contactRequests?: ContactDetailRequest[];
   contactRequest?: ContactDetailRequest;
+  incomingMessages?: UserMessage[];
+  message?: UserMessage;
+  pagination?: OwnerDirectoryPagination;
+  summary?: OwnerDirectorySummary;
+  provinceOptions?: OwnerProvinceOption[];
+  ownersWithoutProvinceCount?: number;
+  requestAllowance?: RequestAllowance;
   error?: string;
 };
 
@@ -62,9 +141,43 @@ type IconProps = {
   className?: string;
 };
 
+type DropdownOption = {
+  value: string;
+  label: string;
+};
+
+const USERS_PAGE_SIZE = 10;
 const ALL_PROVINCES_VALUE = 'all';
 const PROVINCE_NOT_SAVED_VALUE = '__province_not_saved__';
-const ALL_CONTACT_STATUS_VALUE: ContactLockFilter = 'all';
+const ALL_CONTACT_STATUS_VALUE: ContactAccessFilter = 'all';
+
+const EMPTY_PAGINATION: OwnerDirectoryPagination = {
+  page: 1,
+  pageSize: USERS_PAGE_SIZE,
+  totalItems: 0,
+  totalPages: 1,
+  rangeStart: 0,
+  rangeEnd: 0,
+  hasPreviousPage: false,
+  hasNextPage: false,
+};
+
+const EMPTY_SUMMARY: OwnerDirectorySummary = {
+  totalOwners: 0,
+  unlockedCount: 0,
+  lockedCount: 0,
+  pendingCount: 0,
+  temporarilyDeniedCount: 0,
+  permanentlyDeniedCount: 0,
+};
+
+const EMPTY_ALLOWANCE: RequestAllowance = {
+  dailyLimit: 5,
+  usedToday: 0,
+  remainingToday: 5,
+  resetTimezone: 'Africa/Johannesburg',
+  isLimitReached: false,
+};
 
 function SearchIcon({ className }: IconProps) {
   return (
@@ -136,6 +249,33 @@ function ChevronDownIcon({ className }: IconProps) {
   );
 }
 
+function SendIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M22 2 11 13" />
+      <path d="m22 2-7 20-4-9-9-4 20-7Z" />
+    </svg>
+  );
+}
+
+function ImageIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <circle cx="8" cy="10" r="1.5" />
+      <path d="m21 15-5-5L5 19" />
+    </svg>
+  );
+}
+
+function MessageIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z" />
+    </svg>
+  );
+}
+
 function asCleanText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -164,28 +304,21 @@ function formatDate(value: string | null | undefined): string {
 
 function requestStatusLabel(status: ContactRequestStatus | null): string {
   if (status === 'approved') return 'Contact details unlocked';
-  if (status === 'denied') return 'Request denied';
+  if (status === 'temporarily_denied') return 'Temporarily denied';
+  if (status === 'permanently_denied') return 'Permanently denied';
   if (status === 'pending') return 'Request pending';
   return 'No request yet';
 }
 
-function getRequesterName(request: ContactDetailRequest): string {
-  return request.requesterBusinessName || request.requesterDisplayName || 'Aim4price user';
+function requestDecisionLabel(status: ContactRequestStatus): string {
+  if (status === 'approved') return 'Shared';
+  if (status === 'temporarily_denied') return 'Temporarily denied';
+  if (status === 'permanently_denied') return 'Permanently denied';
+  return 'Pending';
 }
 
-function ownerSearchText(owner: OwnerDirectoryEntry): string {
-  return [
-    owner.companyName,
-    owner.ownerProvince,
-    owner.ownerTownCity,
-    owner.contactUnlocked ? owner.contactName : '',
-    owner.contactUnlocked ? owner.contactPhone : '',
-    owner.contactUnlocked ? owner.contactEmail : '',
-    owner.contactUnlocked ? owner.contactLocation : '',
-  ]
-    .map((value) => asCleanText(value).toLowerCase())
-    .filter(Boolean)
-    .join(' ');
+function getRequesterName(request: ContactDetailRequest): string {
+  return request.requesterBusinessName || request.requesterDisplayName || 'Aim4price user';
 }
 
 function ownerProvince(owner: OwnerDirectoryEntry): string {
@@ -196,27 +329,153 @@ function ownerTownCity(owner: OwnerDirectoryEntry): string {
   return asCleanText(owner.ownerTownCity);
 }
 
+function getMessageSenderName(message: UserMessage): string {
+  return message.senderBusinessName || message.senderDisplayName || 'Aim4price user';
+}
+
+function byteSizeLabel(value: number): string {
+  if (!value) return '';
+  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+  return `${(value / (1024 * 1024)).toFixed(value >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+}
+
+function paginationPages(page: number, totalPages: number): number[] {
+  const maxButtons = 5;
+  const safeTotal = Math.max(1, totalPages);
+
+  if (safeTotal <= maxButtons) {
+    return Array.from({ length: safeTotal }, (_, index) => index + 1);
+  }
+
+  const start = Math.max(1, Math.min(page - 2, safeTotal - maxButtons + 1));
+  return Array.from({ length: maxButtons }, (_, index) => start + index);
+}
+
+
+function temporaryDenialExpired(owner: OwnerDirectoryEntry): boolean {
+  if (owner.requestStatus !== 'temporarily_denied' || !owner.requestAgainAtIso) return false;
+  const retryTime = Date.parse(owner.requestAgainAtIso);
+  return Number.isFinite(retryTime) && retryTime <= Date.now();
+}
+
+function statusPillClass(status: ContactRequestStatus | null): string {
+  if (status === 'temporarily_denied' || status === 'permanently_denied') return styles.statusPillDanger;
+  if (status === 'pending') return styles.statusPillWarning;
+  return styles.ownerUnlockedPill;
+}
+
+function FilterDropdown({
+  label,
+  dropdownKey,
+  value,
+  options,
+  openDropdown,
+  onOpenChange,
+  onChange,
+}: {
+  label: string;
+  dropdownKey: FilterDropdownKey;
+  value: string;
+  options: DropdownOption[];
+  openDropdown: FilterDropdownKey | null;
+  onOpenChange: (key: FilterDropdownKey | null) => void;
+  onChange: (value: string) => void;
+}) {
+  const selectedOption = options.find((option) => option.value === value) ?? options[0];
+  const isOpen = openDropdown === dropdownKey;
+
+  return (
+    <label className={styles.filterField}>
+      <span>{label}</span>
+      <div className={styles.customSelect}>
+        <button
+          type="button"
+          className={`${styles.customSelectButton} ${isOpen ? styles.customSelectButtonOpen : ''}`}
+          onClick={() => onOpenChange(isOpen ? null : dropdownKey)}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+        >
+          <span>{selectedOption?.label ?? 'Choose option'}</span>
+          <ChevronDownIcon className={styles.customSelectIcon} />
+        </button>
+
+        {isOpen ? (
+          <div className={styles.customSelectMenu} role="listbox" aria-label={label}>
+            {options.map((option) => {
+              const isSelected = option.value === value;
+
+              return (
+                <button
+                  type="button"
+                  key={`${dropdownKey}-${option.value}`}
+                  className={`${styles.customSelectOption} ${isSelected ? styles.customSelectOptionActive : ''}`}
+                  onClick={() => {
+                    onChange(option.value);
+                    onOpenChange(null);
+                  }}
+                  role="option"
+                  aria-selected={isSelected}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    </label>
+  );
+}
+
 export default function UsersClient() {
   const [mode, setMode] = useState<UsersMode>('directory');
   const [accountType, setAccountType] = useState('owner');
   const [owners, setOwners] = useState<OwnerDirectoryEntry[]>([]);
   const [contactRequests, setContactRequests] = useState<ContactDetailRequest[]>([]);
+  const [incomingMessages, setIncomingMessages] = useState<UserMessage[]>([]);
+  const [pagination, setPagination] = useState<OwnerDirectoryPagination>(EMPTY_PAGINATION);
+  const [summary, setSummary] = useState<OwnerDirectorySummary>(EMPTY_SUMMARY);
+  const [requestAllowance, setRequestAllowance] = useState<RequestAllowance>(EMPTY_ALLOWANCE);
+  const [provinceOptions, setProvinceOptions] = useState<OwnerProvinceOption[]>([]);
+  const [ownersWithoutProvinceCount, setOwnersWithoutProvinceCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProvince, setSelectedProvince] = useState<string>(ALL_PROVINCES_VALUE);
-  const [selectedContactLockFilter, setSelectedContactLockFilter] = useState<ContactLockFilter>(ALL_CONTACT_STATUS_VALUE);
+  const [selectedContactAccessFilter, setSelectedContactAccessFilter] = useState<ContactAccessFilter>(ALL_CONTACT_STATUS_VALUE);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
   const [openOwnerId, setOpenOwnerId] = useState<string | null>(null);
+  const [popiaOwner, setPopiaOwner] = useState<OwnerDirectoryEntry | null>(null);
+  const [sendOwner, setSendOwner] = useState<OwnerDirectoryEntry | null>(null);
+  const [sendStep, setSendStep] = useState<SendModalStep>('choice');
+  const [messageText, setMessageText] = useState('');
+  const [adCaption, setAdCaption] = useState('');
+  const [adImageFile, setAdImageFile] = useState<File | null>(null);
+  const [activeMessage, setActiveMessage] = useState<UserMessage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
+  const [isSending, setIsSending] = useState(false);
   const [processingOwnerIds, setProcessingOwnerIds] = useState<Set<string>>(() => new Set());
   const [processingRequestIds, setProcessingRequestIds] = useState<Set<string>>(() => new Set());
+  const [processingPopiaIds, setProcessingPopiaIds] = useState<Set<string>>(() => new Set());
+  const [processingMessageIds, setProcessingMessageIds] = useState<Set<string>>(() => new Set());
 
   const loadUsers = useCallback(async () => {
     try {
       setIsLoading(true);
       setNotice(null);
 
-      const response = await fetch('/api/users', {
+      const params = new URLSearchParams();
+      params.set('page', String(currentPage));
+      params.set('pageSize', String(USERS_PAGE_SIZE));
+
+      const trimmedSearch = searchTerm.trim();
+      if (trimmedSearch) params.set('search', trimmedSearch);
+      if (selectedProvince !== ALL_PROVINCES_VALUE) params.set('province', selectedProvince);
+      if (selectedContactAccessFilter !== ALL_CONTACT_STATUS_VALUE) params.set('contactAccess', selectedContactAccessFilter);
+
+      const query = params.toString();
+      const response = await fetch(`/api/users${query ? `?${query}` : ''}`, {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -230,6 +489,12 @@ export default function UsersClient() {
       setAccountType(data.accountType ?? 'owner');
       setOwners(Array.isArray(data.owners) ? data.owners : []);
       setContactRequests(Array.isArray(data.contactRequests) ? data.contactRequests : []);
+      setIncomingMessages(Array.isArray(data.incomingMessages) ? data.incomingMessages : []);
+      setPagination(data.pagination ?? EMPTY_PAGINATION);
+      setSummary(data.summary ?? EMPTY_SUMMARY);
+      setProvinceOptions(Array.isArray(data.provinceOptions) ? data.provinceOptions : []);
+      setOwnersWithoutProvinceCount(Number(data.ownersWithoutProvinceCount ?? 0));
+      setRequestAllowance(data.requestAllowance ?? EMPTY_ALLOWANCE);
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -238,82 +503,21 @@ export default function UsersClient() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentPage, searchTerm, selectedContactAccessFilter, selectedProvince]);
 
   useEffect(() => {
     void loadUsers();
   }, [loadUsers]);
 
-  const provinceCounts = useMemo(() => {
-    return owners.reduce<Record<string, number>>((counts, owner) => {
-      const province = ownerProvince(owner);
-
-      if (!province) {
-        return counts;
-      }
-
-      counts[province] = (counts[province] ?? 0) + 1;
-      return counts;
-    }, {});
-  }, [owners]);
-
-  const provinceOptions = useMemo(() => {
-    return Object.keys(provinceCounts).sort((first, second) => first.localeCompare(second));
-  }, [provinceCounts]);
-
-  const ownersWithoutProvinceCount = useMemo(
-    () => owners.filter((owner) => !ownerProvince(owner)).length,
-    [owners],
-  );
-
-  const unlockedOwnerCount = useMemo(
-    () => owners.filter((owner) => owner.contactUnlocked).length,
-    [owners],
-  );
-
-  const lockedOwnerCount = Math.max(owners.length - unlockedOwnerCount, 0);
-
-  const pendingOwnerRequestCount = useMemo(
-    () => owners.filter((owner) => owner.requestStatus === 'pending').length,
-    [owners],
-  );
-
-  const hasActiveProvinceFilter = selectedProvince !== ALL_PROVINCES_VALUE;
-  const hasActiveContactLockFilter = selectedContactLockFilter !== ALL_CONTACT_STATUS_VALUE;
-  const activeFilterCount = Number(hasActiveProvinceFilter) + Number(hasActiveContactLockFilter);
-  const filterButtonLabel = activeFilterCount
-    ? `${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'}`
-    : 'Filters';
+  useEffect(() => {
+    setOpenFilterDropdown(null);
+  }, [isFilterModalOpen]);
 
   useEffect(() => {
-    if (selectedProvince === ALL_PROVINCES_VALUE) return;
-
-    if (selectedProvince === PROVINCE_NOT_SAVED_VALUE) {
-      if (ownersWithoutProvinceCount === 0) {
-        setSelectedProvince(ALL_PROVINCES_VALUE);
-      }
-      return;
+    if (pagination.page !== currentPage) {
+      setCurrentPage(pagination.page);
     }
-
-    if (!provinceOptions.includes(selectedProvince)) {
-      setSelectedProvince(ALL_PROVINCES_VALUE);
-    }
-  }, [ownersWithoutProvinceCount, provinceOptions, selectedProvince]);
-
-  const filteredOwners = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-
-    return owners.filter((owner) => {
-      const province = ownerProvince(owner);
-      const matchesSearch = !normalizedSearch || ownerSearchText(owner).includes(normalizedSearch);
-      const matchesProvince = selectedProvince === ALL_PROVINCES_VALUE
-        || (selectedProvince === PROVINCE_NOT_SAVED_VALUE ? !province : province.toLowerCase() === selectedProvince.toLowerCase());
-      const matchesContactLock = selectedContactLockFilter === ALL_CONTACT_STATUS_VALUE
-        || (selectedContactLockFilter === 'unlocked' ? owner.contactUnlocked : !owner.contactUnlocked);
-
-      return matchesSearch && matchesProvince && matchesContactLock;
-    });
-  }, [owners, searchTerm, selectedProvince, selectedContactLockFilter]);
+  }, [currentPage, pagination.page]);
 
   const pendingRequests = useMemo(
     () => contactRequests.filter((request) => request.status === 'pending'),
@@ -323,9 +527,79 @@ export default function UsersClient() {
     () => contactRequests.filter((request) => request.status !== 'pending'),
     [contactRequests],
   );
+  const unreadMessageCount = useMemo(
+    () => incomingMessages.filter((message) => !message.readAtIso).length,
+    [incomingMessages],
+  );
+
+  const hasActiveProvinceFilter = selectedProvince !== ALL_PROVINCES_VALUE;
+  const hasActiveContactLockFilter = selectedContactAccessFilter !== ALL_CONTACT_STATUS_VALUE;
+  const activeFilterCount = Number(hasActiveProvinceFilter) + Number(hasActiveContactLockFilter);
+  const filterButtonLabel = activeFilterCount
+    ? `${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'}`
+    : 'Filters';
+
+  const provinceFilterOptions = useMemo<DropdownOption[]>(() => {
+    const options: DropdownOption[] = [
+      { value: ALL_PROVINCES_VALUE, label: 'All provinces' },
+      ...provinceOptions.map((province) => ({
+        value: province.value,
+        label: `${province.label} (${province.count})`,
+      })),
+    ];
+
+    if (ownersWithoutProvinceCount > 0) {
+      options.push({ value: PROVINCE_NOT_SAVED_VALUE, label: `Province not saved (${ownersWithoutProvinceCount})` });
+    }
+
+    return options;
+  }, [ownersWithoutProvinceCount, provinceOptions]);
+
+  const contactAccessOptions = useMemo<DropdownOption[]>(() => [
+    { value: 'all', label: `All accounts (${summary.totalOwners})` },
+    { value: 'locked', label: `Locked / no request (${summary.lockedCount})` },
+    { value: 'pending', label: `Pending (${summary.pendingCount})` },
+    { value: 'unlocked', label: `Unlocked (${summary.unlockedCount})` },
+    { value: 'temporarily_denied', label: `Temporarily denied (${summary.temporarilyDeniedCount})` },
+    { value: 'permanently_denied', label: `Permanently denied (${summary.permanentlyDeniedCount})` },
+  ], [summary]);
+
+  const visiblePaginationPages = useMemo(
+    () => paginationPages(pagination.page, pagination.totalPages),
+    [pagination.page, pagination.totalPages],
+  );
 
   function updateOwnerRow(nextOwner: OwnerDirectoryEntry) {
     setOwners((current) => current.map((owner) => (owner.ownerUserId === nextOwner.ownerUserId ? nextOwner : owner)));
+  }
+
+  function updateMessageRow(nextMessage: UserMessage) {
+    setIncomingMessages((current) => current.map((message) => (message.id === nextMessage.id ? nextMessage : message)));
+  }
+
+  function resetDirectoryPage() {
+    setCurrentPage(1);
+  }
+
+  function handleSearchChange(value: string) {
+    setSearchTerm(value);
+    resetDirectoryPage();
+  }
+
+  function closeSendModal() {
+    setSendOwner(null);
+    setSendStep('choice');
+    setMessageText('');
+    setAdCaption('');
+    setAdImageFile(null);
+  }
+
+  function handleToggleOwnerDetails(owner: OwnerDirectoryEntry) {
+    setOpenOwnerId((current) => (current === owner.ownerUserId ? null : owner.ownerUserId));
+
+    if (owner.contactUnlocked && !owner.popiaAcknowledged) {
+      setPopiaOwner(owner);
+    }
   }
 
   async function handleRequestContact(owner: OwnerDirectoryEntry) {
@@ -354,6 +628,7 @@ export default function UsersClient() {
           ? 'Contact details are already unlocked for this owner.'
           : 'Contact request sent. The owner can share or deny contact details from their notification.',
       });
+      void loadUsers();
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -368,7 +643,86 @@ export default function UsersClient() {
     }
   }
 
-  async function handleContactDecision(request: ContactDetailRequest, status: Exclude<ContactRequestStatus, 'pending'>) {
+  async function handleAcknowledgePopia(owner: OwnerDirectoryEntry) {
+    if (!owner.requestId) return;
+
+    setNotice(null);
+    setProcessingPopiaIds((current) => new Set(current).add(owner.requestId as string));
+
+    try {
+      const response = await fetch(`/api/users/contact-requests/${encodeURIComponent(owner.requestId)}/popia`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      const data = (await response.json()) as UsersResponse;
+
+      if (!response.ok || !data.ok || !data.owner) {
+        throw new Error(data.error || 'Failed to acknowledge POPIA notice.');
+      }
+
+      updateOwnerRow(data.owner);
+      setPopiaOwner(null);
+      setOpenOwnerId(data.owner.ownerUserId);
+      setNotice({ tone: 'success', message: 'POPIA notice acknowledged. Contact details are now visible.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to acknowledge POPIA notice.',
+      });
+    } finally {
+      setProcessingPopiaIds((current) => {
+        const next = new Set(current);
+        if (owner.requestId) next.delete(owner.requestId);
+        return next;
+      });
+    }
+  }
+
+  async function handleSend(kind: Exclude<SendModalStep, 'choice'>) {
+    if (!sendOwner) return;
+
+    setNotice(null);
+    setIsSending(true);
+
+    try {
+      const formData = new FormData();
+      formData.set('ownerUserId', sendOwner.ownerUserId);
+      formData.set('messageType', kind);
+
+      if (kind === 'message') {
+        formData.set('message', messageText);
+      } else {
+        formData.set('caption', adCaption);
+        if (adImageFile) formData.set('image', adImageFile);
+      }
+
+      const response = await fetch('/api/users/messages', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+      const data = (await response.json()) as UsersResponse;
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || 'Failed to send.');
+      }
+
+      setNotice({
+        tone: 'success',
+        message: kind === 'message' ? 'Message sent to the owner account.' : 'Ad sent to the owner account.',
+      });
+      closeSendModal();
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to send.',
+      });
+    } finally {
+      setIsSending(false);
+    }
+  }
+
+  async function handleContactDecision(request: ContactDetailRequest, status: ContactDecisionStatus) {
     setNotice(null);
     setProcessingRequestIds((current) => new Set(current).add(request.id));
 
@@ -391,8 +745,10 @@ export default function UsersClient() {
       setNotice({
         tone: 'success',
         message: status === 'approved'
-          ? 'Contact details shared. The requester can now see your saved contact details.'
-          : 'Contact request denied.',
+          ? 'Contact details shared. The requester will see the POPIA notice before contact details are shown.'
+          : data.contactRequest.status === 'permanently_denied'
+            ? 'Contact request permanently denied.'
+            : `Contact request temporarily denied. The requester can try again after ${formatDate(data.contactRequest.requestAgainAtIso)}.`,
       });
     } catch (error) {
       setNotice({
@@ -408,11 +764,42 @@ export default function UsersClient() {
     }
   }
 
+  async function handleOpenIncomingMessage(message: UserMessage) {
+    setActiveMessage(message);
+
+    if (message.readAtIso || processingMessageIds.has(message.id)) {
+      return;
+    }
+
+    setProcessingMessageIds((current) => new Set(current).add(message.id));
+
+    try {
+      const response = await fetch(`/api/users/messages/${encodeURIComponent(message.id)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      const data = (await response.json()) as UsersResponse;
+
+      if (response.ok && data.ok && data.message) {
+        updateMessageRow(data.message);
+        setActiveMessage(data.message);
+      }
+    } finally {
+      setProcessingMessageIds((current) => {
+        const next = new Set(current);
+        next.delete(message.id);
+        return next;
+      });
+    }
+  }
+
   function renderOwnerDetails(owner: OwnerDirectoryEntry) {
     const province = ownerProvince(owner);
     const townCity = ownerTownCity(owner);
-    const requestedAt = formatDate(owner.requestedAtIso);
+    const requestedAt = formatDate(owner.lastRequestedAtIso || owner.requestedAtIso);
     const updatedAt = formatDate(owner.updatedAtIso);
+    const retryDate = formatDate(owner.requestAgainAtIso);
+    const isPopiaProcessing = owner.requestId ? processingPopiaIds.has(owner.requestId) : false;
 
     return (
       <div className={styles.ownerDetails}>
@@ -420,7 +807,17 @@ export default function UsersClient() {
           <div className={styles.detailPanel}>
             <span>Request status</span>
             <strong>{requestStatusLabel(owner.requestStatus)}</strong>
-            <p>{requestedAt ? `Requested ${requestedAt}` : 'No request has been sent yet.'}</p>
+            {owner.requestStatus === 'temporarily_denied' ? (
+              <p>{temporaryDenialExpired(owner) ? 'Temporary lockout has ended. You may request this owner again.' : retryDate ? `Try again in 90 days. Available again: ${retryDate}.` : 'Try again after the temporary lockout ends.'}</p>
+            ) : owner.requestStatus === 'permanently_denied' ? (
+              <p>This owner cannot be requested again after three declined requests.</p>
+            ) : owner.requestStatus === 'pending' ? (
+              <p>{requestedAt ? `Requested ${requestedAt}. Waiting for owner approval.` : 'Waiting for owner approval.'}</p>
+            ) : owner.requestStatus === 'approved' ? (
+              <p>{owner.popiaAcknowledged ? 'POPIA notice acknowledged.' : 'POPIA acknowledgement is required before contact details are shown.'}</p>
+            ) : (
+              <p>No request has been sent yet.</p>
+            )}
           </div>
 
           <div className={styles.detailPanel}>
@@ -430,19 +827,36 @@ export default function UsersClient() {
           </div>
 
           {owner.contactUnlocked ? (
-            <div className={`${styles.detailPanel} ${styles.contactDetailPanel}`}>
-              <span>Unlocked contact details</span>
-              <div className={styles.contactRows}>
-                <div className={styles.contactRow}>
-                  <PhoneIcon className={styles.contactIcon} />
-                  <strong>{owner.contactPhone || 'No phone saved yet'}</strong>
-                </div>
-                <div className={styles.contactRow}>
-                  <MailIcon className={styles.contactIcon} />
-                  <strong>{owner.contactEmail || 'No email saved yet'}</strong>
+            owner.popiaAcknowledged ? (
+              <div className={`${styles.detailPanel} ${styles.contactDetailPanel}`}>
+                <span>Unlocked contact details</span>
+                <div className={styles.contactRows}>
+                  <div className={styles.contactRow}>
+                    <PhoneIcon className={styles.contactIcon} />
+                    <strong>{owner.contactPhone || 'No phone saved yet'}</strong>
+                  </div>
+                  <div className={styles.contactRow}>
+                    <MailIcon className={styles.contactIcon} />
+                    <strong>{owner.contactEmail || 'No email saved yet'}</strong>
+                  </div>
+                  {owner.contactLocation ? <p>{owner.contactLocation}</p> : null}
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className={`${styles.detailPanel} ${styles.popiaPanel}`}>
+                <span>Contact details unlocked</span>
+                <strong>POPIA notice required</strong>
+                <p>Accept the POPIA notice before viewing the owner phone and email.</p>
+                <button
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.compactDetailButton}`}
+                  onClick={() => setPopiaOwner(owner)}
+                  disabled={isPopiaProcessing}
+                >
+                  {isPopiaProcessing ? 'Saving...' : 'Review POPIA notice'}
+                </button>
+              </div>
+            )
           ) : (
             <div className={`${styles.detailPanel} ${styles.lockedPanel}`}>
               <div className={styles.lockedIconBadge} aria-hidden="true">
@@ -450,13 +864,45 @@ export default function UsersClient() {
               </div>
               <div className={styles.lockedPanelContent}>
                 <span>Contact details locked</span>
-                <strong>Owner approval required</strong>
+                <strong>{owner.requestStatus === 'temporarily_denied' ? 'Temporary lockout active' : owner.requestStatus === 'permanently_denied' ? 'Access blocked' : 'Owner approval required'}</strong>
                 <p>{updatedAt ? `Last updated ${updatedAt}` : 'Contact details stay locked until the owner shares them.'}</p>
               </div>
             </div>
           )}
         </div>
       </div>
+    );
+  }
+
+  function renderRequestControl(owner: OwnerDirectoryEntry) {
+    const isProcessing = processingOwnerIds.has(owner.ownerUserId);
+    const hasPendingRequest = owner.requestStatus === 'pending';
+    const isTemporarilyDenied = owner.requestStatus === 'temporarily_denied';
+    const isTemporaryDenialExpired = temporaryDenialExpired(owner);
+    const isPermanentlyDenied = owner.requestStatus === 'permanently_denied';
+
+    if (owner.contactUnlocked) {
+      return <span className={`${styles.statusPill} ${styles.ownerUnlockedPill}`}>Unlocked</span>;
+    }
+
+    if (hasPendingRequest || (isTemporarilyDenied && !isTemporaryDenialExpired) || isPermanentlyDenied) {
+      return (
+        <span className={`${styles.statusPill} ${statusPillClass(owner.requestStatus)}`}>
+          {requestStatusLabel(owner.requestStatus)}
+        </span>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        className={`${styles.primaryButton} ${styles.ownerRequestButton}`}
+        onClick={() => handleRequestContact(owner)}
+        disabled={isProcessing || requestAllowance.isLimitReached}
+        title={requestAllowance.isLimitReached ? 'Daily request limit reached. You can request more users tomorrow.' : undefined}
+      >
+        {isProcessing ? 'Sending...' : requestAllowance.isLimitReached ? 'Limit reached' : isTemporaryDenialExpired ? 'Request again' : 'Request'}
+      </button>
     );
   }
 
@@ -485,25 +931,31 @@ export default function UsersClient() {
           </div>
 
           <div className={styles.filterModalForm}>
-            <label className={styles.filterField}>
-              <span>Saved province</span>
-              <select value={selectedProvince} onChange={(event) => setSelectedProvince(event.target.value)}>
-                <option value={ALL_PROVINCES_VALUE}>All provinces</option>
-                {provinceOptions.map((province) => (
-                  <option key={province} value={province}>{province}</option>
-                ))}
-                {ownersWithoutProvinceCount ? <option value={PROVINCE_NOT_SAVED_VALUE}>Province not saved</option> : null}
-              </select>
-            </label>
+            <FilterDropdown
+              label="Saved province"
+              dropdownKey="province"
+              value={selectedProvince}
+              options={provinceFilterOptions}
+              openDropdown={openFilterDropdown}
+              onOpenChange={setOpenFilterDropdown}
+              onChange={(value) => {
+                setSelectedProvince(value);
+                resetDirectoryPage();
+              }}
+            />
 
-            <label className={styles.filterField}>
-              <span>Contact access</span>
-              <select value={selectedContactLockFilter} onChange={(event) => setSelectedContactLockFilter(event.target.value as ContactLockFilter)}>
-                <option value={ALL_CONTACT_STATUS_VALUE}>All accounts</option>
-                <option value="unlocked">Unlocked</option>
-                <option value="locked">Locked</option>
-              </select>
-            </label>
+            <FilterDropdown
+              label="Contact access"
+              dropdownKey="contactAccess"
+              value={selectedContactAccessFilter}
+              options={contactAccessOptions}
+              openDropdown={openFilterDropdown}
+              onOpenChange={setOpenFilterDropdown}
+              onChange={(value) => {
+                setSelectedContactAccessFilter(value as ContactAccessFilter);
+                resetDirectoryPage();
+              }}
+            />
           </div>
 
           <div className={styles.modalActions}>
@@ -512,7 +964,8 @@ export default function UsersClient() {
               className={styles.secondaryButton}
               onClick={() => {
                 setSelectedProvince(ALL_PROVINCES_VALUE);
-                setSelectedContactLockFilter(ALL_CONTACT_STATUS_VALUE);
+                setSelectedContactAccessFilter(ALL_CONTACT_STATUS_VALUE);
+                resetDirectoryPage();
               }}
               disabled={!activeFilterCount}
             >
@@ -527,29 +980,245 @@ export default function UsersClient() {
     );
   }
 
+  function renderPopiaModal() {
+    if (!popiaOwner) return null;
+
+    const isProcessing = popiaOwner.requestId ? processingPopiaIds.has(popiaOwner.requestId) : false;
+
+    return (
+      <div className={styles.actionModalOverlay}>
+        <div className={styles.modalBackdrop} />
+        <section className={styles.actionModal} role="dialog" aria-modal="true" aria-labelledby="popia-notice-title">
+          <div className={styles.modalHeader}>
+            <div className={styles.modalHeaderText}>
+              <h3 id="popia-notice-title">POPIA Notice</h3>
+              <p>Unlocked contact details are private and must be handled responsibly.</p>
+            </div>
+          </div>
+
+          <div className={styles.popiaNoticeBody}>
+            <p>
+              These contact details were shared for use inside Aim4price only. You may not copy, distribute, sell,
+              forward, or share this information outside the intended business purpose. Please handle all owner contact
+              information responsibly and in line with POPIA.
+            </p>
+          </div>
+
+          <div className={styles.modalActions}>
+            <button type="button" className={styles.primaryButton} onClick={() => handleAcknowledgePopia(popiaOwner)} disabled={isProcessing}>
+              {isProcessing ? 'Saving...' : 'I understand'}
+            </button>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  function renderSendModal() {
+    if (!sendOwner) return null;
+
+    return (
+      <div className={styles.actionModalOverlay}>
+        <div className={styles.modalBackdrop} onClick={closeSendModal} />
+        <section className={styles.actionModal} role="dialog" aria-modal="true" aria-labelledby="send-owner-title">
+          <div className={styles.modalHeader}>
+            <div className={styles.modalHeaderText}>
+              <h3 id="send-owner-title">Send to {sendOwner.companyName}</h3>
+              <p>Send an internal message or ad without exposing private owner contact details.</p>
+            </div>
+
+            <button type="button" className={styles.modalCloseButton} onClick={closeSendModal} aria-label="Close send modal">
+              <CloseIcon className={styles.buttonIcon} />
+            </button>
+          </div>
+
+          {sendStep === 'choice' ? (
+            <div className={styles.sendChoiceGrid}>
+              <button type="button" className={styles.sendChoiceCard} onClick={() => setSendStep('ad')}>
+                <ImageIcon className={styles.sendChoiceIcon} />
+                <strong>Send Ad</strong>
+                <span>Upload an ad image and optional short caption for the owner.</span>
+              </button>
+              <button type="button" className={styles.sendChoiceCard} onClick={() => setSendStep('message')}>
+                <MessageIcon className={styles.sendChoiceIcon} />
+                <strong>Send Message</strong>
+                <span>Write an internal message for the owner account.</span>
+              </button>
+            </div>
+          ) : null}
+
+          {sendStep === 'message' ? (
+            <div className={styles.sendForm}>
+              <label className={styles.textAreaField}>
+                <span>Message</span>
+                <textarea
+                  value={messageText}
+                  onChange={(event) => setMessageText(event.target.value)}
+                  placeholder="Type your message to this owner"
+                  rows={6}
+                />
+              </label>
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setSendStep('choice')} disabled={isSending}>
+                  Back
+                </button>
+                <button type="button" className={styles.primaryButton} onClick={() => handleSend('message')} disabled={isSending || !messageText.trim()}>
+                  {isSending ? 'Sending...' : 'Send Message'}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {sendStep === 'ad' ? (
+            <div className={styles.sendForm}>
+              <label className={styles.fileUploadField}>
+                <span>Ad image</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setAdImageFile(event.target.files?.[0] ?? null)}
+                />
+                <small>{adImageFile ? `${adImageFile.name} · ${byteSizeLabel(adImageFile.size)}` : 'JPG, PNG or WebP. Maximum 8 MB.'}</small>
+              </label>
+              <label className={styles.textAreaField}>
+                <span>Optional caption</span>
+                <textarea
+                  value={adCaption}
+                  onChange={(event) => setAdCaption(event.target.value)}
+                  placeholder="Add a short note with the ad"
+                  rows={4}
+                />
+              </label>
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setSendStep('choice')} disabled={isSending}>
+                  Back
+                </button>
+                <button type="button" className={styles.primaryButton} onClick={() => handleSend('ad')} disabled={isSending || !adImageFile}>
+                  {isSending ? 'Sending...' : 'Send Ad'}
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </section>
+      </div>
+    );
+  }
+
+  function renderMessageModal() {
+    if (!activeMessage) return null;
+
+    const senderName = getMessageSenderName(activeMessage);
+    const isAd = activeMessage.messageType === 'ad';
+
+    return (
+      <div className={styles.actionModalOverlay}>
+        <div className={styles.modalBackdrop} onClick={() => setActiveMessage(null)} />
+        <section className={styles.actionModal} role="dialog" aria-modal="true" aria-labelledby="incoming-message-title">
+          <div className={styles.modalHeader}>
+            <div className={styles.modalHeaderText}>
+              <h3 id="incoming-message-title">{isAd ? 'Ad received' : 'Message received'}</h3>
+              <p>{senderName} · {formatAccountType(activeMessage.senderAccountType)} account</p>
+            </div>
+
+            <button type="button" className={styles.modalCloseButton} onClick={() => setActiveMessage(null)} aria-label="Close message">
+              <CloseIcon className={styles.buttonIcon} />
+            </button>
+          </div>
+
+          <div className={styles.incomingMessageBody}>
+            {activeMessage.hasImage ? (
+              <img src={activeMessage.imageUrl} alt={activeMessage.imageFileName || 'Sent ad'} className={styles.incomingMessageImage} />
+            ) : null}
+            <p>{isAd ? activeMessage.adCaption || 'No caption supplied.' : activeMessage.messageText}</p>
+            <small>{formatDate(activeMessage.createdAtIso)}</small>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  function renderPagination() {
+    if (pagination.totalItems <= pagination.pageSize) return null;
+
+    return (
+      <nav className={styles.usersPagination} aria-label="Users pagination">
+        <div className={styles.usersPaginationSummary}>
+          Showing <strong>{pagination.rangeStart}</strong>-<strong>{pagination.rangeEnd}</strong> of <strong>{pagination.totalItems}</strong> users
+        </div>
+        <div className={styles.usersPaginationControls}>
+          <button
+            type="button"
+            className={styles.usersPaginationButton}
+            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            disabled={!pagination.hasPreviousPage || isLoading}
+          >
+            Previous
+          </button>
+          <div className={styles.usersPaginationPages}>
+            {visiblePaginationPages.map((page) => (
+              <button
+                type="button"
+                key={`users-page-${page}`}
+                className={`${styles.usersPaginationPageButton} ${page === pagination.page ? styles.usersPaginationPageButtonActive : ''}`}
+                onClick={() => setCurrentPage(page)}
+                disabled={isLoading}
+                aria-current={page === pagination.page ? 'page' : undefined}
+              >
+                {page}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className={styles.usersPaginationButton}
+            onClick={() => setCurrentPage((page) => Math.min(pagination.totalPages, page + 1))}
+            disabled={!pagination.hasNextPage || isLoading}
+          >
+            Next
+          </button>
+        </div>
+      </nav>
+    );
+  }
+
   function renderOwnerDirectory() {
     return (
       <>
         <section className={styles.heroPanel}>
-          <h1>AIM4PRICE ACCOUNTS</h1>
+          <h1>AIM4PRICE USER LIST</h1>
         </section>
 
         <section className={styles.controlsPanel} aria-label="Owner account controls">
           <section className={styles.summaryGrid} aria-label="Users summary">
             <article className={styles.summaryCard}>
               <span>Total owner accounts</span>
-              <strong>{owners.length}</strong>
-              <small>Owner accounts available to your profile.</small>
+              <strong>{summary.totalOwners}</strong>
+              <small>Owner accounts matching your search and province filter.</small>
             </article>
             <article className={styles.summaryCard}>
               <span>Unlocked contacts</span>
-              <strong>{unlockedOwnerCount}</strong>
-              <small>Contact details already shared by owners.</small>
+              <strong>{summary.unlockedCount}</strong>
+              <small>Owners who have shared contact details.</small>
             </article>
             <article className={styles.summaryCard}>
               <span>Pending requests</span>
-              <strong>{pendingOwnerRequestCount}</strong>
+              <strong>{summary.pendingCount}</strong>
               <small>Waiting for owner approval.</small>
+            </article>
+            <article className={styles.summaryCard}>
+              <span>Temporarily denied</span>
+              <strong>{summary.temporarilyDeniedCount}</strong>
+              <small>Locked for 90 days from owner decline.</small>
+            </article>
+            <article className={styles.summaryCard}>
+              <span>Permanently denied</span>
+              <strong>{summary.permanentlyDeniedCount}</strong>
+              <small>Blocked after three declined requests.</small>
+            </article>
+            <article className={styles.summaryCard}>
+              <span>Daily requests</span>
+              <strong>{requestAllowance.remainingToday}</strong>
+              <small>{requestAllowance.remainingToday} of {requestAllowance.dailyLimit} requests remaining today.</small>
             </article>
           </section>
 
@@ -558,7 +1227,7 @@ export default function UsersClient() {
               <SearchIcon className={styles.searchIcon} />
               <input
                 value={searchTerm}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => setSearchTerm(event.target.value)}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => handleSearchChange(event.target.value)}
                 placeholder="Search by company, province or town"
                 aria-label="Search company names"
               />
@@ -566,7 +1235,7 @@ export default function UsersClient() {
                 <button
                   type="button"
                   className={styles.clearSearchButton}
-                  onClick={() => setSearchTerm('')}
+                  onClick={() => handleSearchChange('')}
                   aria-label="Clear company search"
                 >
                   <CloseIcon className={styles.buttonIcon} />
@@ -585,16 +1254,20 @@ export default function UsersClient() {
               <ChevronDownIcon className={styles.filterChevron} />
             </button>
           </section>
+
+          <div className={`${styles.requestAllowanceNote} ${requestAllowance.isLimitReached ? styles.requestAllowanceLimit : ''}`}>
+            {requestAllowance.isLimitReached
+              ? 'Daily request limit reached. You can request more users tomorrow.'
+              : `${requestAllowance.remainingToday} of ${requestAllowance.dailyLimit} requests remaining today.`}
+            <span> Daily reset uses South African time.</span>
+          </div>
         </section>
 
         <section className={styles.cardStack} aria-label="Owner accounts">
           {isLoading ? (
             <div className={styles.emptyState}>Loading owner accounts...</div>
-          ) : filteredOwners.length ? (
-            filteredOwners.map((owner) => {
-              const isProcessing = processingOwnerIds.has(owner.ownerUserId);
-              const hasPendingRequest = owner.requestStatus === 'pending';
-              const requestDenied = owner.requestStatus === 'denied';
+          ) : owners.length ? (
+            owners.map((owner) => {
               const isOpen = openOwnerId === owner.ownerUserId;
               const province = ownerProvince(owner);
 
@@ -609,30 +1282,25 @@ export default function UsersClient() {
                     <div className={styles.ownerActionRow}>
                       <button
                         type="button"
+                        className={`${styles.sendOwnerButton}`}
+                        onClick={() => {
+                          setSendOwner(owner);
+                          setSendStep('choice');
+                        }}
+                      >
+                        <SendIcon className={styles.buttonIcon} />
+                        Send
+                      </button>
+
+                      <button
+                        type="button"
                         className={`${styles.outlineButton} ${styles.ownerDetailsButton}`}
-                        onClick={() => setOpenOwnerId((current) => (current === owner.ownerUserId ? null : owner.ownerUserId))}
+                        onClick={() => handleToggleOwnerDetails(owner)}
                       >
                         {isOpen ? 'Close' : 'View Details'}
                       </button>
 
-                      {owner.contactUnlocked ? (
-                        <span className={`${styles.statusPill} ${styles.ownerUnlockedPill}`}>Unlocked</span>
-                      ) : (
-                        <button
-                          type="button"
-                          className={`${styles.primaryButton} ${styles.ownerRequestButton}`}
-                          onClick={() => handleRequestContact(owner)}
-                          disabled={isProcessing || hasPendingRequest}
-                        >
-                          {isProcessing
-                            ? 'Sending...'
-                            : hasPendingRequest
-                              ? 'Pending'
-                              : requestDenied
-                                ? 'Request again'
-                                : 'Request'}
-                        </button>
-                      )}
+                      {renderRequestControl(owner)}
                     </div>
                   </div>
 
@@ -645,7 +1313,10 @@ export default function UsersClient() {
           )}
         </section>
 
+        {renderPagination()}
         {renderFilterModal()}
+        {renderPopiaModal()}
+        {renderSendModal()}
       </>
     );
   }
@@ -653,17 +1324,26 @@ export default function UsersClient() {
   function renderContactRequestCard(request: ContactDetailRequest, isHistoric = false) {
     const isProcessing = processingRequestIds.has(request.id);
     const requesterName = getRequesterName(request);
+    const retryDate = formatDate(request.requestAgainAtIso);
 
     return (
       <article key={request.id} className={`${styles.requestCard} ${isHistoric ? styles.requestCardHistoric : ''}`}>
         <div className={styles.requestTopline}>
           <span>{formatAccountType(request.requesterAccountType)} account</span>
-          <strong>{request.status === 'pending' ? 'Pending' : request.status === 'approved' ? 'Shared' : 'Denied'}</strong>
+          <strong>{requestDecisionLabel(request.status)}</strong>
         </div>
         <div className={styles.requestBody}>
           <div>
             <h2>{requesterName}</h2>
-            <p>{requesterName} wants to be in contact with you. Share contact details or deny request.</p>
+            <p>
+              {request.status === 'pending'
+                ? `${requesterName} wants to be in contact with you. Share contact details or deny request.`
+                : request.status === 'approved'
+                  ? 'Contact details were shared with this account.'
+                  : request.status === 'permanently_denied'
+                    ? 'This account has been permanently denied after three declined requests.'
+                    : `This account was temporarily denied.${retryDate ? ` Available again: ${retryDate}.` : ''}`}
+            </p>
             <small>{formatDate(request.createdAtIso)}</small>
           </div>
           {request.status === 'pending' ? (
@@ -693,6 +1373,31 @@ export default function UsersClient() {
     );
   }
 
+  function renderIncomingMessageCard(message: UserMessage) {
+    const isUnread = !message.readAtIso;
+    const senderName = getMessageSenderName(message);
+    const isAd = message.messageType === 'ad';
+    const preview = isAd ? message.adCaption || 'Ad image received.' : message.messageText;
+
+    return (
+      <article key={message.id} className={`${styles.messageCard} ${isUnread ? styles.messageCardUnread : ''}`}>
+        <div className={styles.messageCardCopy}>
+          <div className={styles.requestTopline}>
+            <span>{formatAccountType(message.senderAccountType)} account</span>
+            <strong>{isUnread ? 'Unread' : 'Read'}</strong>
+          </div>
+          <h2>{senderName}</h2>
+          <p>{preview}</p>
+          <small>{formatDate(message.createdAtIso)}</small>
+        </div>
+        {message.hasImage ? <img src={message.imageUrl} alt={message.imageFileName || 'Ad image'} className={styles.messageThumb} /> : null}
+        <button type="button" className={styles.outlineButton} onClick={() => handleOpenIncomingMessage(message)}>
+          Open
+        </button>
+      </article>
+    );
+  }
+
   function renderOwnerRequests() {
     return (
       <>
@@ -700,7 +1405,7 @@ export default function UsersClient() {
           <h1>CONTACT REQUESTS</h1>
         </section>
 
-        <p className={styles.pageLead}>Control which finance, insurance and dealer accounts can see your saved contact details.</p>
+        <p className={styles.pageLead}>Control which finance, insurance and dealer accounts can see your saved contact details. Messages and ads sent to your owner account also appear here.</p>
 
         <section className={styles.summaryGrid} aria-label="Contact request summary">
           <article className={styles.summaryCard}>
@@ -713,7 +1418,11 @@ export default function UsersClient() {
           </article>
           <article className={styles.summaryCard}>
             <span>Denied</span>
-            <strong>{contactRequests.filter((request) => request.status === 'denied').length}</strong>
+            <strong>{contactRequests.filter((request) => request.status === 'temporarily_denied' || request.status === 'permanently_denied').length}</strong>
+          </article>
+          <article className={styles.summaryCard}>
+            <span>Unread messages</span>
+            <strong>{unreadMessageCount}</strong>
           </article>
         </section>
 
@@ -727,6 +1436,15 @@ export default function UsersClient() {
           )}
         </section>
 
+        {!isLoading ? (
+          <section className={styles.historySection} aria-label="Incoming messages and ads">
+            <h2>Messages and ads</h2>
+            <div className={styles.cardStack}>
+              {incomingMessages.length ? incomingMessages.slice(0, 20).map((message) => renderIncomingMessageCard(message)) : <div className={styles.emptyState}>No messages or ads have been sent to your account yet.</div>}
+            </div>
+          </section>
+        ) : null}
+
         {!isLoading && decidedRequests.length ? (
           <section className={styles.historySection} aria-label="Request history">
             <h2>Recent decisions</h2>
@@ -735,6 +1453,8 @@ export default function UsersClient() {
             </div>
           </section>
         ) : null}
+
+        {renderMessageModal()}
       </>
     );
   }
@@ -750,12 +1470,12 @@ export default function UsersClient() {
           </div>
         ) : null}
         {mode === 'directory' ? renderOwnerDirectory() : renderOwnerRequests()}
-        {!isLoading && mode === 'directory' && owners.length === 0 ? (
+        {!isLoading && mode === 'directory' && summary.totalOwners === 0 ? (
           <p className={styles.footerNote}>Owner accounts will appear here once they have created an Aim4price profile.</p>
         ) : null}
         <p className={styles.footerNote}>
           {mode === 'directory'
-            ? `${formatAccountType(accountType)} users only see company names until an owner shares contact details.`
+            ? `${formatAccountType(accountType)} users only see company names until an owner shares contact details and the POPIA notice is acknowledged.`
             : 'Your contact details remain locked unless you approve a request.'}
         </p>
       </div>

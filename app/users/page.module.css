@@ -1926,3 +1926,617 @@
     flex: 1 1 12rem;
   }
 }
+
+/* === Users page full workflow update: pagination, custom filters, POPIA, send modal, incoming messages === */
+.summaryCard small {
+  margin: 0;
+  color: #6c7d8f;
+  font-size: 0.82rem;
+  font-weight: 660;
+  line-height: 1.32;
+}
+
+.requestAllowanceNote {
+  margin-top: 0.85rem;
+  padding: 0.82rem 1rem;
+  border: 1px solid rgba(194, 220, 207, 0.96);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f1faf5 100%);
+  color: #164c39;
+  font-size: 0.92rem;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.requestAllowanceNote span {
+  color: #6c7c88;
+  font-weight: 650;
+}
+
+.requestAllowanceLimit {
+  border-color: rgba(239, 196, 196, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #fff3f3 100%);
+  color: #9b2f2f;
+}
+
+.statusPillWarning {
+  color: #7a4c08 !important;
+  border-color: rgba(230, 186, 107, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fff7e4 100%) !important;
+  box-shadow: 0 10px 20px rgba(156, 100, 14, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.statusPillDanger {
+  color: #9d2d2d !important;
+  border-color: rgba(230, 164, 164, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fff0f0 100%) !important;
+  box-shadow: 0 10px 20px rgba(180, 35, 24, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.sendOwnerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3.25rem;
+  padding: 0 1.2rem;
+  border-radius: 1.05rem;
+  border: 1.5px solid rgba(211, 139, 75, 0.78);
+  color: #7b4118;
+  background: linear-gradient(180deg, #fffaf4 0%, #f7e3ce 100%);
+  box-shadow:
+    0 12px 24px rgba(156, 91, 32, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  font: inherit;
+  font-size: clamp(0.96rem, 1.04vw, 1rem);
+  font-weight: 780;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.sendOwnerButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(188, 106, 45, 0.88);
+  background: linear-gradient(180deg, #fffaf4 0%, #f2d2b0 100%);
+  box-shadow:
+    0 15px 28px rgba(156, 91, 32, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.contactDetailPanel {
+  border-color: rgba(173, 213, 193, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f3fbf7 100%) !important;
+}
+
+.contactRows {
+  gap: 0.52rem !important;
+}
+
+.contactRow {
+  min-height: 2.4rem;
+  padding: 0.34rem 0.48rem;
+  border-radius: 0.82rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(214, 228, 234, 0.75);
+}
+
+.contactRow strong {
+  color: #253a45 !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.012em;
+}
+
+.contactIcon {
+  color: #167453 !important;
+}
+
+.popiaPanel {
+  align-content: start;
+  border-color: rgba(173, 213, 193, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f4fbf7 100%) !important;
+}
+
+.compactDetailButton {
+  width: fit-content;
+  min-height: 2.55rem !important;
+  margin-top: 0.25rem;
+  padding: 0 0.85rem !important;
+  border-radius: 0.8rem !important;
+  font-size: 0.88rem !important;
+}
+
+.filterModal {
+  overflow: visible !important;
+}
+
+.filterModalForm {
+  align-items: start;
+}
+
+.customSelect {
+  position: relative;
+  min-width: 0;
+}
+
+.customSelectButton {
+  width: 100%;
+  min-height: 3.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(207, 223, 236, 0.98);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdfe 100%);
+  color: #0d3028;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 760;
+  line-height: 1;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.customSelectButton:hover,
+.customSelectButtonOpen {
+  border-color: rgba(128, 175, 158, 0.82);
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbf9 100%);
+  box-shadow:
+    0 10px 22px rgba(15, 62, 48, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.customSelectButton span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customSelectIcon {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  color: #0d3028;
+  transition: transform 160ms ease;
+}
+
+.customSelectButtonOpen .customSelectIcon {
+  transform: rotate(180deg);
+}
+
+.customSelectMenu {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  left: 0;
+  z-index: 30;
+  max-height: min(18rem, 42vh);
+  overflow-y: auto;
+  padding: 0.35rem;
+  border: 1px solid rgba(187, 211, 224, 0.98);
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow:
+    0 18px 36px rgba(20, 36, 33, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.customSelectOption {
+  width: 100%;
+  min-height: 2.55rem;
+  display: flex;
+  align-items: center;
+  padding: 0 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: #18382f;
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 720;
+  line-height: 1.15;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    color 140ms ease;
+}
+
+.customSelectOption:hover,
+.customSelectOption:focus-visible {
+  border-color: rgba(207, 223, 236, 0.9);
+  background: #f3f8fb;
+  outline: none;
+}
+
+.customSelectOptionActive {
+  border-color: rgba(90, 188, 130, 0.45);
+  background: #eaf8f1;
+  color: #0d5a42;
+}
+
+.usersPagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(206, 218, 229, 0.98);
+  border-radius: 1.25rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 253, 0.98) 100%);
+  box-shadow: 0 12px 24px rgba(20, 36, 33, 0.035);
+}
+
+.usersPaginationSummary {
+  color: #607386;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.usersPaginationSummary strong {
+  color: #0f3329;
+  font-weight: 900;
+}
+
+.usersPaginationControls,
+.usersPaginationPages {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.usersPaginationButton,
+.usersPaginationPageButton {
+  min-height: 2.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(205, 219, 230, 0.98);
+  border-radius: 0.92rem;
+  background: #ffffff;
+  color: #17362c;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 780;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease,
+    color 150ms ease,
+    opacity 150ms ease;
+}
+
+.usersPaginationButton {
+  padding: 0 0.9rem;
+}
+
+.usersPaginationPageButton {
+  min-width: 2.65rem;
+  padding: 0 0.75rem;
+}
+
+.usersPaginationButton:hover:not(:disabled),
+.usersPaginationPageButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(140, 165, 181, 0.98);
+  background: #f6fafc;
+}
+
+.usersPaginationButton:disabled,
+.usersPaginationPageButton:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.usersPaginationPageButtonActive,
+.usersPaginationPageButtonActive:hover:not(:disabled) {
+  border-color: #176f52;
+  background: #176f52;
+  color: #ffffff;
+  box-shadow: 0 10px 20px rgba(18, 103, 76, 0.18);
+  transform: none;
+}
+
+.actionModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 3vh, 2rem);
+  overflow-y: auto;
+}
+
+.actionModal {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 760px);
+  max-height: min(88vh, calc(100dvh - 3rem));
+  overflow-y: auto;
+  padding: clamp(1.25rem, 2vw, 1.65rem);
+  border-radius: 1.85rem;
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  background: #ffffff;
+  box-shadow: 0 28px 70px rgba(16, 28, 45, 0.22);
+}
+
+.sendChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.sendChoiceCard {
+  min-height: 10rem;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 0.55rem;
+  padding: 1.1rem;
+  border: 1.5px solid rgba(207, 223, 236, 0.98);
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  color: #16372f;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(20, 36, 33, 0.04);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.sendChoiceCard:hover {
+  transform: translateY(-1px);
+  border-color: rgba(139, 194, 169, 0.9);
+  box-shadow: 0 16px 30px rgba(20, 36, 33, 0.065);
+}
+
+.sendChoiceCard strong {
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: 1.18rem;
+  font-weight: 820;
+  line-height: 1.12;
+}
+
+.sendChoiceCard span {
+  color: #627486;
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.42;
+}
+
+.sendChoiceIcon {
+  width: 1.45rem;
+  height: 1.45rem;
+  color: #a75c22;
+}
+
+.sendForm {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.textAreaField,
+.fileUploadField {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.textAreaField span,
+.fileUploadField span {
+  color: #33424c;
+  font-size: 0.86rem;
+  font-weight: 760;
+  line-height: 1.2;
+}
+
+.textAreaField textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 8rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(207, 223, 236, 0.98);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdfe 100%);
+  color: #20313b;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.45;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.textAreaField textarea:focus {
+  border-color: rgba(25, 116, 84, 0.42);
+  box-shadow: 0 0 0 4px rgba(25, 116, 84, 0.12);
+}
+
+.fileUploadField input {
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.78rem 1rem;
+  border: 1px dashed rgba(173, 198, 211, 0.98);
+  border-radius: 1rem;
+  background: #fbfdfe;
+  color: #20313b;
+  font: inherit;
+  font-size: 0.94rem;
+  font-weight: 650;
+}
+
+.fileUploadField small {
+  color: #6b7b89;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.popiaNoticeBody,
+.incomingMessageBody {
+  display: grid;
+  gap: 0.85rem;
+  color: #273e49;
+  font-size: 1rem;
+  font-weight: 640;
+  line-height: 1.58;
+}
+
+.popiaNoticeBody p,
+.incomingMessageBody p {
+  margin: 0;
+}
+
+.incomingMessageImage {
+  width: 100%;
+  max-height: 58vh;
+  object-fit: contain;
+  border: 1px solid rgba(207, 223, 236, 0.98);
+  border-radius: 1.2rem;
+  background: #f7fafb;
+}
+
+.incomingMessageBody small {
+  color: #6c7d8f;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.messageCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.9rem;
+  padding: clamp(1rem, 1.35vw, 1.18rem);
+  border: 1.5px solid rgba(198, 216, 223, 0.98);
+  border-radius: 1.35rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fcfd 100%);
+  box-shadow: 0 12px 24px rgba(20, 43, 43, 0.04);
+}
+
+.messageCardUnread {
+  border-color: rgba(128, 184, 159, 0.98);
+  background:
+    radial-gradient(circle at 0 0, rgba(25, 116, 84, 0.065), transparent 35%),
+    linear-gradient(180deg, #ffffff 0%, #f4fbf7 100%);
+}
+
+.messageCardCopy {
+  display: grid;
+  gap: 0.34rem;
+  min-width: 0;
+}
+
+.messageCardCopy h2 {
+  margin: 0;
+  color: #073b30;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(1.2rem, 1.5vw, 1.45rem);
+  font-weight: 760;
+  letter-spacing: -0.03em;
+}
+
+.messageCardCopy p {
+  margin: 0;
+  color: #5d6d7c;
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.messageCardCopy small {
+  color: #798797;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.messageThumb {
+  width: 5rem;
+  height: 4rem;
+  object-fit: cover;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(207, 223, 236, 0.98);
+  background: #f7fafb;
+}
+
+@media (max-width: 900px) {
+  .sendChoiceGrid,
+  .detailGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .messageCard {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .messageThumb {
+    width: 100%;
+    height: auto;
+    max-height: 14rem;
+  }
+}
+
+@media (max-width: 620px) {
+  .usersPagination,
+  .usersPaginationControls {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .usersPaginationControls {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .usersPaginationButton,
+  .usersPaginationPages {
+    width: 100%;
+  }
+
+  .usersPaginationPages {
+    justify-content: center;
+  }
+
+  .ownerActionRow {
+    justify-content: stretch !important;
+  }
+
+  .ownerActionRow > :is(button, span) {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .actionModalOverlay {
+    padding: 0.7rem;
+  }
+
+  .actionModal {
+    width: min(100%, calc(100vw - 1.4rem));
+    max-height: calc(100dvh - 1.4rem);
+    padding: 1.1rem;
+    border-radius: 1.45rem;
+  }
+}
