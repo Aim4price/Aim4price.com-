@@ -112,6 +112,16 @@ type UserMessage = {
   updatedAtIso: string;
 };
 
+type UserMessageAttachmentPreview = {
+  id: string;
+  kind: 'image' | 'document';
+  label: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  url: string;
+};
+
 type NotificationsResponse = {
   ok: boolean;
   notifications?: HeaderNotificationItem[];
@@ -280,6 +290,53 @@ function byteSizeLabel(value: number): string {
   return `${(value / (1024 * 1024)).toFixed(value >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
 }
 
+function fileNameHasExtension(fileName: string, extensions: string[]): boolean {
+  const extension = fileName.split('.').pop()?.trim().toLowerCase() ?? '';
+  return extensions.includes(extension);
+}
+
+function isImageAttachment(mimeType: string | undefined, fileName: string): boolean {
+  const normalizedMimeType = String(mimeType ?? '').trim().toLowerCase();
+  return normalizedMimeType.startsWith('image/') || fileNameHasExtension(fileName, ['jpg', 'jpeg', 'png', 'webp']);
+}
+
+function isPdfAttachment(mimeType: string | undefined, fileName: string): boolean {
+  const normalizedMimeType = String(mimeType ?? '').trim().toLowerCase();
+  return normalizedMimeType === 'application/pdf' || fileNameHasExtension(fileName, ['pdf']);
+}
+
+function buildUserMessageAttachments(message: UserMessage): UserMessageAttachmentPreview[] {
+  const attachments: UserMessageAttachmentPreview[] = [];
+
+  if (message.hasImage && message.imageUrl) {
+    attachments.push({
+      id: `${message.id}:image`,
+      kind: 'image',
+      label: message.messageType === 'ad' ? 'Ad photo' : 'Photo',
+      fileName: message.imageFileName || 'aim4price-photo',
+      mimeType: message.imageMimeType,
+      sizeBytes: message.imageSizeBytes,
+      url: message.imageUrl,
+    });
+  }
+
+  if (message.hasDocument && message.documentUrl) {
+    const documentIsImage = isImageAttachment(message.documentMimeType, message.documentFileName);
+
+    attachments.push({
+      id: `${message.id}:document`,
+      kind: documentIsImage ? 'image' : 'document',
+      label: documentIsImage ? 'Attached photo' : 'Attached document',
+      fileName: message.documentFileName || 'aim4price-document',
+      mimeType: message.documentMimeType,
+      sizeBytes: message.documentSizeBytes,
+      url: message.documentUrl,
+    });
+  }
+
+  return attachments;
+}
+
 function requestStatusText(request: ContactDetailRequest): string {
   if (request.status === 'approved') return 'Contact details shared.';
   if (request.status === 'permanently_denied') return 'This request has been permanently denied.';
@@ -318,6 +375,7 @@ export default function AppHeader({
   const [processingContactRequestIds, setProcessingContactRequestIds] = useState<Set<string>>(() => new Set());
   const [activeContactRequest, setActiveContactRequest] = useState<ContactDetailRequest | null>(null);
   const [activeUserMessage, setActiveUserMessage] = useState<UserMessage | null>(null);
+  const [activeMessageAttachmentIndex, setActiveMessageAttachmentIndex] = useState(0);
   const [notificationDetailError, setNotificationDetailError] = useState<string | null>(null);
   const [loadingNotificationActionId, setLoadingNotificationActionId] = useState<string | null>(null);
   const [canUseNotificationPortal, setCanUseNotificationPortal] = useState(false);
@@ -386,6 +444,7 @@ export default function AppHeader({
         setNotificationOpen(false);
         setActiveContactRequest(null);
         setActiveUserMessage(null);
+        setActiveMessageAttachmentIndex(0);
         setNotificationDetailError(null);
       }
     }
@@ -417,6 +476,10 @@ export default function AppHeader({
       setNotificationPage(1);
     }
   }, [notificationOpen]);
+
+  useEffect(() => {
+    setActiveMessageAttachmentIndex(0);
+  }, [activeUserMessage?.id]);
 
   useEffect(() => {
     if (!session?.id || typeof window === 'undefined') {
@@ -482,7 +545,7 @@ export default function AppHeader({
   );
   const unreadNotificationCount = useMemo(() => {
     const seenTime = parseTime(notificationsSeenAt);
-    return notifications.filter((item) => parseTime(item.createdAtIso) > seenTime).length;
+    return notifications.filter((item) => item.messageId || parseTime(item.createdAtIso) > seenTime).length;
   }, [notifications, notificationsSeenAt]);
   const notificationBadgeText = unreadNotificationCount > 9 ? '9+' : String(unreadNotificationCount);
   const notificationPageCount = Math.max(1, Math.ceil(notifications.length / NOTIFICATIONS_PER_PAGE));
@@ -510,6 +573,7 @@ export default function AppHeader({
   function closeNotificationDetailModal() {
     setActiveContactRequest(null);
     setActiveUserMessage(null);
+    setActiveMessageAttachmentIndex(0);
     setNotificationDetailError(null);
   }
 
@@ -573,6 +637,7 @@ export default function AppHeader({
       }
 
       setActiveContactRequest(null);
+      setActiveMessageAttachmentIndex(0);
       setActiveUserMessage(data.message);
       setNotifications((current) => current.filter((item) => item.messageId !== messageId));
       markNotificationsSeen();
@@ -657,7 +722,8 @@ export default function AppHeader({
 
   function renderNotificationItem(notification: HeaderNotificationItem) {
     const toneClass = styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`];
-    const baseClassName = `${styles.notificationItem} ${toneClass}`;
+    const messageClass = notification.messageId ? styles.notificationItemMessage : '';
+    const baseClassName = `${styles.notificationItem} ${toneClass} ${messageClass}`;
 
     if (notification.contactRequestId) {
       const loading = loadingNotificationActionId === `contact:${notification.contactRequestId}`;
@@ -799,14 +865,25 @@ export default function AppHeader({
     const senderName = messageSenderName(message);
     const isAd = message.messageType === 'ad';
     const messageCopy = isAd ? message.adCaption || message.messageText : message.messageText;
+    const attachments = buildUserMessageAttachments(message);
+    const boundedAttachmentIndex = attachments.length
+      ? Math.min(activeMessageAttachmentIndex, attachments.length - 1)
+      : 0;
+    const activeAttachment = attachments[boundedAttachmentIndex] ?? null;
+    const hasMultipleAttachments = attachments.length > 1;
+    const activeAttachmentIsImage = activeAttachment
+      ? activeAttachment.kind === 'image' || isImageAttachment(activeAttachment.mimeType, activeAttachment.fileName)
+      : false;
+    const activeAttachmentIsPdf = activeAttachment
+      ? isPdfAttachment(activeAttachment.mimeType, activeAttachment.fileName)
+      : false;
 
     return (
       <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="notification-message-title">
         <div className={styles.notificationDetailHeader}>
           <div className={styles.notificationDetailHeaderText}>
-            <span className={styles.notificationDetailKicker}>{isAd ? 'Ad received' : 'Message received'}</span>
-            <h2 id="notification-message-title">{senderName}</h2>
-            <p>{formatAccountTypeLabel(message.senderAccountType)} account · {formatDateTime(message.createdAtIso) || 'Just now'}</p>
+            <h2 id="notification-message-title">{isAd ? `Ad from ${senderName}` : `Message from ${senderName}`}</h2>
+            <p>{formatDateTime(message.createdAtIso) || 'Just now'}</p>
           </div>
           <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close message">
             ×
@@ -814,28 +891,84 @@ export default function AppHeader({
         </div>
 
         <div className={styles.notificationDetailBody}>
-          {message.hasImage ? (
-            <img src={message.imageUrl} alt={message.imageFileName || 'Sent ad image'} className={styles.notificationDetailImage} />
+          {activeAttachment ? (
+            <div className={styles.notificationMediaViewer}>
+              <div className={styles.notificationMediaStage}>
+                {hasMultipleAttachments ? (
+                  <button
+                    type="button"
+                    className={`${styles.notificationMediaNavButton} ${styles.notificationMediaNavPrevious}`}
+                    onClick={() => setActiveMessageAttachmentIndex((current) => (current <= 0 ? attachments.length - 1 : current - 1))}
+                    aria-label="Previous attachment"
+                  >
+                    &lt;
+                  </button>
+                ) : null}
+
+                <div className={styles.notificationMediaContent}>
+                  {activeAttachmentIsImage ? (
+                    <img
+                      src={activeAttachment.url}
+                      alt={activeAttachment.fileName || activeAttachment.label}
+                      className={styles.notificationDetailImage}
+                    />
+                  ) : activeAttachmentIsPdf ? (
+                    <iframe
+                      src={activeAttachment.url}
+                      title={activeAttachment.fileName || activeAttachment.label}
+                      className={styles.notificationDocumentFrame}
+                    />
+                  ) : (
+                    <div className={styles.notificationDocumentPlaceholder}>
+                      <strong>{activeAttachment.label}</strong>
+                      <span>{activeAttachment.fileName || 'Open attached file'}</span>
+                      <small>Preview may open in a new tab for this file type.</small>
+                    </div>
+                  )}
+                </div>
+
+                {hasMultipleAttachments ? (
+                  <button
+                    type="button"
+                    className={`${styles.notificationMediaNavButton} ${styles.notificationMediaNavNext}`}
+                    onClick={() => setActiveMessageAttachmentIndex((current) => (current >= attachments.length - 1 ? 0 : current + 1))}
+                    aria-label="Next attachment"
+                  >
+                    &gt;
+                  </button>
+                ) : null}
+              </div>
+
+              <div className={styles.notificationMediaToolbar}>
+                <div className={styles.notificationMediaMeta}>
+                  <strong>{activeAttachment.label}</strong>
+                  <span>
+                    {activeAttachment.fileName || 'Attached file'}
+                    {activeAttachment.sizeBytes ? ` · ${byteSizeLabel(activeAttachment.sizeBytes)}` : ''}
+                  </span>
+                  {hasMultipleAttachments ? <small>{boundedAttachmentIndex + 1} of {attachments.length}</small> : null}
+                </div>
+
+                <div className={styles.notificationMediaActions}>
+                  <a href={activeAttachment.url} className={styles.notificationMediaActionButton} target="_blank" rel="noreferrer">
+                    Open
+                  </a>
+                  <a
+                    href={activeAttachment.url}
+                    className={styles.notificationMediaActionButton}
+                    download={activeAttachment.fileName || undefined}
+                  >
+                    Download
+                  </a>
+                </div>
+              </div>
+            </div>
           ) : null}
 
           <div className={styles.notificationDetailMessageBox}>
             <strong>{isAd ? 'Caption / note' : 'Message'}</strong>
             <p>{messageCopy || (isAd ? 'No caption supplied.' : 'No message text supplied.')}</p>
           </div>
-
-          {message.hasDocument ? (
-            <a
-              href={message.documentUrl}
-              className={styles.notificationDocumentLink}
-              target="_blank"
-              rel="noreferrer"
-              download={message.documentFileName || undefined}
-            >
-              <span>Attached document</span>
-              <strong>{message.documentFileName || 'Open document'}</strong>
-              {message.documentSizeBytes ? <small>{byteSizeLabel(message.documentSizeBytes)}</small> : null}
-            </a>
-          ) : null}
         </div>
 
         <div className={styles.notificationDetailActions}>
