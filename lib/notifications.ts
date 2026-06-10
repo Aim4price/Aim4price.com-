@@ -335,7 +335,7 @@ async function listOwnerUserMessageNotifications(userId: string): Promise<Header
         return {
           id: `user-message-owner:${message.id}:${message.createdAtIso}`,
           category: 'account',
-          tone: 'info',
+          tone: 'success',
           title: isAd ? 'New ad received' : 'New message received',
           body: `${sender} sent you ${isAd ? 'an ad' : 'a message'}.${preview ? ` ${preview}` : ''}`,
           href: '',

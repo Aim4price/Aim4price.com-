@@ -416,16 +416,18 @@ export async function createUserMessage(input: {
   }
 
   if (messageType === 'ad') {
-    if (!imageBytes || !imageBytes.byteLength) {
-      throw new Error('Upload an ad image before sending.');
+    const hasAdImage = Boolean(imageBytes?.byteLength);
+
+    if (!hasAdImage && !documentAttachment) {
+      throw new Error('Upload an ad photo or document before sending.');
     }
 
-    if (!imageMimeType) {
-      throw new Error('Use a JPG, PNG or WebP image for the ad.');
+    if (hasAdImage && !imageMimeType) {
+      throw new Error('Use a JPG, PNG or WebP image for the ad photo.');
     }
 
-    if (imageBytes.byteLength > MAX_IMAGE_BYTES) {
-      throw new Error('The ad image is too large. Please upload an image smaller than 8 MB.');
+    if (hasAdImage && imageBytes && imageBytes.byteLength > MAX_IMAGE_BYTES) {
+      throw new Error('The ad photo is too large. Please upload an image smaller than 8 MB.');
     }
   }
 
