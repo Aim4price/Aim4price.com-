@@ -35,6 +35,8 @@ export type HeaderNotificationItem = {
   href: string;
   createdAtIso: string;
   contactRequestId?: string;
+  messageId?: string;
+  messageType?: 'message' | 'ad';
 };
 
 type OpenPartnerNoteRow = {
@@ -308,7 +310,7 @@ async function listOwnerContactRequestNotifications(userId: string): Promise<Hea
         tone: 'info',
         title: 'Contact detail request',
         body: `${requester} wants to be in contact with you. Share contact details or deny request.`,
-        href: '/users',
+        href: '',
         createdAtIso: isoFallback(request.createdAtIso || request.updatedAtIso),
         contactRequestId: request.id,
       } satisfies HeaderNotificationItem;
@@ -336,8 +338,10 @@ async function listOwnerUserMessageNotifications(userId: string): Promise<Header
           tone: 'info',
           title: isAd ? 'New ad received' : 'New message received',
           body: `${sender} sent you ${isAd ? 'an ad' : 'a message'}.${preview ? ` ${preview}` : ''}`,
-          href: '/users',
+          href: '',
           createdAtIso: isoFallback(message.createdAtIso),
+          messageId: message.id,
+          messageType: message.messageType,
         } satisfies HeaderNotificationItem;
       });
   } catch (error) {

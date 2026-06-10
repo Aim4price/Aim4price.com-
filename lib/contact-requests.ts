@@ -957,6 +957,22 @@ export async function listContactRequestsForRequester(requesterUserId: string): 
   return result.rows.map(mapContactRequestRow);
 }
 
+
+export async function getContactDetailRequestForOwner(input: {
+  ownerUserId: string;
+  requestId: string;
+}): Promise<ContactDetailRequest | null> {
+  await ensureContactRequestTables();
+  const db = getDb();
+
+  const result = await db.query<ContactRequestRow>(
+    `${contactRequestSelectSql('where r.owner_user_id = $1 and r.id = $2::uuid')} limit 1`,
+    [input.ownerUserId, input.requestId],
+  );
+
+  return result.rows[0] ? mapContactRequestRow(result.rows[0]) : null;
+}
+
 export async function updateContactDetailRequestStatus(input: {
   ownerUserId: string;
   requestId: string;

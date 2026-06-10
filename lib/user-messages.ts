@@ -23,6 +23,11 @@ export type UserMessage = {
   imageSizeBytes: number;
   imageUrl: string;
   hasImage: boolean;
+  documentFileName: string;
+  documentMimeType: string;
+  documentSizeBytes: number;
+  documentUrl: string;
+  hasDocument: boolean;
   readAtIso: string | null;
   createdAtIso: string;
   updatedAtIso: string;
@@ -52,6 +57,10 @@ type UserMessageRow = {
   image_mime_type: string | null;
   image_size_bytes: number | string | null;
   has_image: boolean | null;
+  document_file_name: string | null;
+  document_mime_type: string | null;
+  document_size_bytes: number | string | null;
+  has_document: boolean | null;
   read_at: string | null;
   created_at: string | null;
   updated_at: string | null;
@@ -61,17 +70,48 @@ type AccountRoleRow = {
   account_type: string | null;
 };
 
-type AttachmentRow = {
+type ImageAttachmentRow = {
   image_file_name: string | null;
   image_mime_type: string | null;
   image_size_bytes: number | string | null;
   image_bytes: Buffer | Uint8Array | null;
 };
 
+type DocumentAttachmentRow = {
+  document_file_name: string | null;
+  document_mime_type: string | null;
+  document_size_bytes: number | string | null;
+  document_bytes: Buffer | Uint8Array | null;
+};
+
 const MAX_TEXT_LENGTH = 2200;
 const MAX_CAPTION_LENGTH = 900;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const ALLOWED_DOCUMENT_TYPES = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/csv',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+const DOCUMENT_MIME_BY_EXTENSION: Record<string, string> = {
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  csv: 'text/csv',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+};
 let userMessageTablesEnsured = false;
 
 function asText(value: unknown): string {
@@ -95,9 +135,13 @@ function trimText(value: unknown, maxLength: number): string {
   return asText(value).replace(/\s+/g, ' ').slice(0, maxLength).trim();
 }
 
-function sanitizeFileName(value: unknown): string {
-  const clean = asText(value).replace(/[\\/\0\r\n]+/g, '-').replace(/\s+/g, ' ').trim();
-  return clean.slice(0, 180) || 'aim4price-ad-image';
+function sanitizeFileName(value: unknown, fallback = 'aim4price-file'): string {
+  const clean = asText(value)
+    .replace(/[\\/\0\r\n]+/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return clean.slice(0, 180) || fallback;
 }
 
 function normalizeImageMimeType(value: unknown): string {
@@ -105,8 +149,24 @@ function normalizeImageMimeType(value: unknown): string {
   return ALLOWED_IMAGE_TYPES.has(mimeType) ? mimeType : '';
 }
 
+function mimeTypeFromDocumentExtension(fileName: string): string {
+  const extension = fileName.split('.').pop()?.trim().toLowerCase() ?? '';
+  return DOCUMENT_MIME_BY_EXTENSION[extension] ?? '';
+}
+
+function normalizeDocumentMimeType(value: unknown, fileName: string): string {
+  const mimeType = asText(value).toLowerCase();
+
+  if (ALLOWED_DOCUMENT_TYPES.has(mimeType)) {
+    return mimeType;
+  }
+
+  return mimeTypeFromDocumentExtension(fileName);
+}
+
 function mapMessageRow(row: UserMessageRow): UserMessage {
   const hasImage = Boolean(row.has_image);
+  const hasDocument = Boolean(row.has_document);
   const id = row.id;
 
   return {
@@ -127,6 +187,11 @@ function mapMessageRow(row: UserMessageRow): UserMessage {
     imageSizeBytes: asInt(row.image_size_bytes),
     imageUrl: hasImage ? `/api/users/messages/${encodeURIComponent(id)}/image` : '',
     hasImage,
+    documentFileName: asText(row.document_file_name),
+    documentMimeType: asText(row.document_mime_type),
+    documentSizeBytes: asInt(row.document_size_bytes),
+    documentUrl: hasDocument ? `/api/users/messages/${encodeURIComponent(id)}/document` : '',
+    hasDocument,
     readAtIso: row.read_at,
     createdAtIso: isoNowFallback(row.created_at),
     updatedAtIso: isoNowFallback(row.updated_at),
@@ -159,6 +224,10 @@ export async function ensureUserMessageTables(): Promise<void> {
       image_mime_type text,
       image_size_bytes integer,
       image_bytes bytea,
+      document_file_name text,
+      document_mime_type text,
+      document_size_bytes integer,
+      document_bytes bytea,
       read_at timestamptz,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
@@ -176,6 +245,10 @@ export async function ensureUserMessageTables(): Promise<void> {
       add column if not exists image_mime_type text,
       add column if not exists image_size_bytes integer,
       add column if not exists image_bytes bytea,
+      add column if not exists document_file_name text,
+      add column if not exists document_mime_type text,
+      add column if not exists document_size_bytes integer,
+      add column if not exists document_bytes bytea,
       add column if not exists read_at timestamptz,
       add column if not exists created_at timestamptz not null default now(),
       add column if not exists updated_at timestamptz not null default now()
@@ -230,6 +303,10 @@ function messageSelectSql(whereClause: string): string {
       m.image_mime_type,
       m.image_size_bytes,
       (m.image_bytes is not null) as has_image,
+      m.document_file_name,
+      m.document_mime_type,
+      m.document_size_bytes,
+      (m.document_bytes is not null) as has_document,
       m.read_at::text,
       m.created_at::text,
       m.updated_at::text
@@ -248,6 +325,9 @@ export async function createUserMessage(input: {
   imageFileName?: unknown;
   imageMimeType?: unknown;
   imageBytes?: Buffer | Uint8Array | null;
+  documentFileName?: unknown;
+  documentMimeType?: unknown;
+  documentBytes?: Buffer | Uint8Array | null;
 }): Promise<UserMessage> {
   await ensureUserMessageTables();
 
@@ -256,9 +336,13 @@ export async function createUserMessage(input: {
   const messageType = normalizeMessageType(input.messageType);
   const messageText = trimText(input.messageText, MAX_TEXT_LENGTH);
   const adCaption = trimText(input.adCaption, MAX_CAPTION_LENGTH);
+  const imageFileName = sanitizeFileName(input.imageFileName, 'aim4price-ad-image');
   const imageMimeType = normalizeImageMimeType(input.imageMimeType);
   const imageBytes = input.imageBytes ? Buffer.from(input.imageBytes) : null;
-  const imageFileName = sanitizeFileName(input.imageFileName);
+  const documentFileName = sanitizeFileName(input.documentFileName, 'aim4price-document');
+  const documentMimeType = normalizeDocumentMimeType(input.documentMimeType, documentFileName);
+  const documentBytes = input.documentBytes ? Buffer.from(input.documentBytes) : null;
+  const hasDocument = Boolean(documentBytes?.byteLength);
 
   if (!ownerUserId || !senderUserId || ownerUserId === senderUserId) {
     throw new Error('Choose a valid owner account.');
@@ -292,6 +376,16 @@ export async function createUserMessage(input: {
     }
   }
 
+  if (hasDocument) {
+    if (!documentMimeType) {
+      throw new Error('Attach a supported document: PDF, Word, Excel, CSV, JPG, PNG or WebP.');
+    }
+
+    if (documentBytes.byteLength > MAX_DOCUMENT_BYTES) {
+      throw new Error('The attached document is too large. Please upload a file smaller than 10 MB.');
+    }
+  }
+
   const db = getDb();
   const inserted = await db.query<{ id: string }>(
     `
@@ -305,10 +399,14 @@ export async function createUserMessage(input: {
         image_mime_type,
         image_size_bytes,
         image_bytes,
+        document_file_name,
+        document_mime_type,
+        document_size_bytes,
+        document_bytes,
         created_at,
         updated_at
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), now())
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, now(), now())
       returning id::text
     `,
     [
@@ -321,6 +419,10 @@ export async function createUserMessage(input: {
       messageType === 'ad' ? imageMimeType : null,
       messageType === 'ad' && imageBytes ? imageBytes.byteLength : null,
       messageType === 'ad' ? imageBytes : null,
+      hasDocument ? documentFileName : null,
+      hasDocument ? documentMimeType : null,
+      hasDocument && documentBytes ? documentBytes.byteLength : null,
+      hasDocument ? documentBytes : null,
     ],
   );
 
@@ -404,7 +506,7 @@ export async function markUserMessageRead(ownerUserId: string, messageId: string
 export async function getUserMessageAttachment(ownerUserId: string, messageId: string): Promise<UserMessageAttachment | null> {
   await ensureUserMessageTables();
   const db = getDb();
-  const result = await db.query<AttachmentRow>(
+  const result = await db.query<ImageAttachmentRow>(
     `
       select image_file_name, image_mime_type, image_size_bytes, image_bytes
       from account_user_messages
@@ -425,8 +527,39 @@ export async function getUserMessageAttachment(ownerUserId: string, messageId: s
 
   return {
     bytes,
-    fileName: sanitizeFileName(row.image_file_name),
+    fileName: sanitizeFileName(row.image_file_name, 'aim4price-ad-image'),
     mimeType: normalizeImageMimeType(row.image_mime_type) || 'application/octet-stream',
     sizeBytes: asInt(row.image_size_bytes) || bytes.byteLength,
+  };
+}
+
+export async function getUserMessageDocumentAttachment(ownerUserId: string, messageId: string): Promise<UserMessageAttachment | null> {
+  await ensureUserMessageTables();
+  const db = getDb();
+  const result = await db.query<DocumentAttachmentRow>(
+    `
+      select document_file_name, document_mime_type, document_size_bytes, document_bytes
+      from account_user_messages
+      where owner_user_id = $1
+        and id = $2::uuid
+        and document_bytes is not null
+      limit 1
+    `,
+    [ownerUserId, messageId],
+  );
+  const row = result.rows[0];
+
+  if (!row?.document_bytes) {
+    return null;
+  }
+
+  const bytes = Buffer.from(row.document_bytes);
+  const fileName = sanitizeFileName(row.document_file_name, 'aim4price-document');
+
+  return {
+    bytes,
+    fileName,
+    mimeType: normalizeDocumentMimeType(row.document_mime_type, fileName) || 'application/octet-stream',
+    sizeBytes: asInt(row.document_size_bytes) || bytes.byteLength,
   };
 }
