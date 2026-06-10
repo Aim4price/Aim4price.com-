@@ -550,13 +550,13 @@ export default function UsersClient() {
       key: 'total-owner-accounts',
       label: 'Total owner accounts',
       value: summary.totalOwners,
-      detail: 'Owner accounts matching your search and province filter.',
+      detail: 'Owner accounts matching filters.',
     },
     {
       key: 'unlocked-contacts',
       label: 'Unlocked contacts',
       value: summary.unlockedCount,
-      detail: 'Owners who have shared contact details.',
+      detail: 'Shared contact details.',
     },
     {
       key: 'pending-requests',
@@ -568,19 +568,19 @@ export default function UsersClient() {
       key: 'temporarily-denied',
       label: 'Temporarily denied',
       value: summary.temporarilyDeniedCount,
-      detail: 'Locked for 90 days from owner decline.',
+      detail: 'Locked for 90 days.',
     },
     {
       key: 'permanently-denied',
       label: 'Permanently denied',
       value: summary.permanentlyDeniedCount,
-      detail: 'Blocked after three declined requests.',
+      detail: 'Blocked after 3 declined requests.',
     },
     {
       key: 'daily-requests',
       label: 'Daily requests',
       value: requestAllowance.remainingToday,
-      detail: `${requestAllowance.remainingToday} of ${requestAllowance.dailyLimit} requests remaining today.`,
+      detail: 'Daily request limit.',
     },
   ], [requestAllowance.dailyLimit, requestAllowance.remainingToday, summary]);
 

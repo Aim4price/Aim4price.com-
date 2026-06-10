@@ -2643,21 +2643,29 @@
 }
 
 /* === Users summary cards carousel update === */
+.page {
+  overflow-x: clip;
+}
+
 .controlsPanel {
-  --users-controls-panel-pad-x: clamp(1.05rem, 1.65vw, 1.42rem);
   overflow: visible;
 }
 
 .summaryCarousel {
   --summary-carousel-gap: clamp(0.95rem, 1.35vw, 1.25rem);
-  --summary-arrow-offset: max(-2.25rem, calc(0.45rem - (50vw - 50%)));
+  --summary-arrow-gap: clamp(0.72rem, 1vw, 0.95rem);
+  --summary-arrow-shift-left: calc(-100% - var(--summary-arrow-gap));
+  --summary-arrow-shift-right: calc(100% + var(--summary-arrow-gap));
   position: relative;
   display: block;
-  margin: 0 calc(0rem - var(--users-controls-panel-pad-x)) clamp(1rem, 1.4vw, 1.15rem);
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 clamp(1rem, 1.4vw, 1.15rem);
 }
 
 .summaryViewport {
   width: 100%;
+  max-width: 100%;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
@@ -2675,6 +2683,7 @@
 
 .summaryTrack {
   width: 100%;
+  min-width: 0;
   display: flex;
   align-items: stretch;
   gap: var(--summary-carousel-gap);
@@ -2691,6 +2700,11 @@
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 38%),
     linear-gradient(180deg, #ffffff 0%, #eef7f2 100%) !important;
   border-color: rgba(194, 218, 207, 0.98) !important;
+}
+
+.summaryTrack .summaryCard span,
+.summaryTrack .summaryCard small {
+  max-width: 100% !important;
 }
 
 .summaryArrow {
@@ -2722,18 +2736,27 @@
 }
 
 .summaryCarousel > .summaryArrow:first-of-type {
-  left: var(--summary-arrow-offset);
+  left: 0;
+  transform: translate(var(--summary-arrow-shift-left), -50%);
 }
 
 .summaryCarousel > .summaryArrow:last-of-type {
-  right: var(--summary-arrow-offset);
+  right: 0;
+  transform: translate(var(--summary-arrow-shift-right), -50%);
 }
 
 .summaryArrow:hover:not(:disabled) {
   color: #073b30;
   background: transparent;
   box-shadow: none;
-  transform: translateY(-50%) scale(1.08);
+}
+
+.summaryCarousel > .summaryArrow:first-of-type:hover:not(:disabled) {
+  transform: translate(var(--summary-arrow-shift-left), -50%) scale(1.08);
+}
+
+.summaryCarousel > .summaryArrow:last-of-type:hover:not(:disabled) {
+  transform: translate(var(--summary-arrow-shift-right), -50%) scale(1.08);
 }
 
 .summaryArrow:disabled {
@@ -2743,13 +2766,29 @@
   background: transparent;
   border: 0;
   box-shadow: none;
-  transform: translateY(-50%);
+}
+
+.summaryCarousel > .summaryArrow:first-of-type:disabled {
+  transform: translate(var(--summary-arrow-shift-left), -50%);
+}
+
+.summaryCarousel > .summaryArrow:last-of-type:disabled {
+  transform: translate(var(--summary-arrow-shift-right), -50%);
 }
 
 .summaryArrow:focus-visible,
 .summaryViewport:focus-visible {
   outline: 3px solid rgba(20, 112, 82, 0.18);
   outline-offset: 3px;
+}
+
+@media (min-width: 761px) {
+  .summaryTrack .summaryCard span,
+  .summaryTrack .summaryCard small {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
 }
 
 @media (max-width: 1080px) {
@@ -2761,8 +2800,6 @@
 @media (max-width: 760px) {
   .summaryCarousel {
     --summary-carousel-gap: 0.75rem;
-    margin-right: 0;
-    margin-left: 0;
   }
 
   .summaryTrack .summaryCard {
