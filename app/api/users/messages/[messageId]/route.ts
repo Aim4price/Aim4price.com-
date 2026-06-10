@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from '../../../../../lib/auth-session';
-import { markUserMessageRead } from '../../../../../lib/user-messages';
+import { getUserMessageForOwner, markUserMessageRead } from '../../../../../lib/user-messages';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,6 +13,27 @@ type RouteContext = {
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
+}
+
+export async function GET(_request: Request, context: RouteContext) {
+  const session = await getServerSession();
+
+  if (!session?.user?.id) {
+    return unauthorized();
+  }
+
+  try {
+    const message = await getUserMessageForOwner(session.user.id, context.params.messageId);
+
+    if (!message) {
+      return NextResponse.json({ ok: false, error: 'Message not found.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true, message });
+  } catch (error) {
+    console.error('user message GET failed', error);
+    return NextResponse.json({ ok: false, error: 'Failed to load message.' }, { status: 500 });
+  }
 }
 
 export async function PATCH(_request: Request, context: RouteContext) {
