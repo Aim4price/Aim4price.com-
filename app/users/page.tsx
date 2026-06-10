@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { getAccountProfile } from '../../lib/account-profile';
 import { getServerSession } from '../../lib/auth-session';
 import UsersClient from './users-client';
 
@@ -9,6 +10,16 @@ export default async function UsersPage() {
 
   if (!session) {
     redirect('/auth#signup');
+  }
+
+  const profile = await getAccountProfile({
+    id: session.user.id,
+    name: session.user.name,
+    email: session.user.email,
+  });
+
+  if (profile.accountType === 'owner') {
+    redirect('/asset-register');
   }
 
   return <UsersClient />;

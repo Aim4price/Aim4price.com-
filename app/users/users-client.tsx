@@ -80,6 +80,11 @@ type UserMessage = {
   imageSizeBytes: number;
   imageUrl: string;
   hasImage: boolean;
+  documentFileName: string;
+  documentMimeType: string;
+  documentSizeBytes: number;
+  documentUrl: string;
+  hasDocument: boolean;
   readAtIso: string | null;
   createdAtIso: string;
   updatedAtIso: string;
@@ -150,6 +155,23 @@ const USERS_PAGE_SIZE = 10;
 const ALL_PROVINCES_VALUE = 'all';
 const PROVINCE_NOT_SAVED_VALUE = '__province_not_saved__';
 const ALL_CONTACT_STATUS_VALUE: ContactAccessFilter = 'all';
+const DOCUMENT_ACCEPT_TYPES = [
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.xls',
+  '.xlsx',
+  '.csv',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/csv',
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+].join(',');
 
 const EMPTY_PAGINATION: OwnerDirectoryPagination = {
   page: 1,
@@ -451,6 +473,8 @@ export default function UsersClient() {
   const [messageText, setMessageText] = useState('');
   const [adCaption, setAdCaption] = useState('');
   const [adImageFile, setAdImageFile] = useState<File | null>(null);
+  const [messageDocumentFile, setMessageDocumentFile] = useState<File | null>(null);
+  const [adDocumentFile, setAdDocumentFile] = useState<File | null>(null);
   const [activeMessage, setActiveMessage] = useState<UserMessage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
@@ -592,6 +616,8 @@ export default function UsersClient() {
     setMessageText('');
     setAdCaption('');
     setAdImageFile(null);
+    setMessageDocumentFile(null);
+    setAdDocumentFile(null);
   }
 
   function handleToggleOwnerDetails(owner: OwnerDirectoryEntry) {
@@ -691,9 +717,11 @@ export default function UsersClient() {
 
       if (kind === 'message') {
         formData.set('message', messageText);
+        if (messageDocumentFile) formData.set('document', messageDocumentFile);
       } else {
         formData.set('caption', adCaption);
         if (adImageFile) formData.set('image', adImageFile);
+        if (adDocumentFile) formData.set('document', adDocumentFile);
       }
 
       const response = await fetch('/api/users/messages', {
@@ -1042,7 +1070,7 @@ export default function UsersClient() {
               <button type="button" className={styles.sendChoiceCard} onClick={() => setSendStep('message')}>
                 <MessageIcon className={styles.sendChoiceIcon} />
                 <strong>Send Message</strong>
-                <span>Write an internal message for the owner account.</span>
+                <span>Write a message and optionally attach a document.</span>
               </button>
             </div>
           ) : null}
@@ -1057,6 +1085,15 @@ export default function UsersClient() {
                   placeholder="Type your message to this owner"
                   rows={6}
                 />
+              </label>
+              <label className={styles.fileUploadField}>
+                <span>Optional document</span>
+                <input
+                  type="file"
+                  accept={DOCUMENT_ACCEPT_TYPES}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setMessageDocumentFile(event.target.files?.[0] ?? null)}
+                />
+                <small>{messageDocumentFile ? `${messageDocumentFile.name} · ${byteSizeLabel(messageDocumentFile.size)}` : 'PDF, Word, Excel, CSV or image. Maximum 10 MB.'}</small>
               </label>
               <div className={styles.modalActions}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setSendStep('choice')} disabled={isSending}>
@@ -1088,6 +1125,15 @@ export default function UsersClient() {
                   placeholder="Add a short note with the ad"
                   rows={4}
                 />
+              </label>
+              <label className={styles.fileUploadField}>
+                <span>Optional document</span>
+                <input
+                  type="file"
+                  accept={DOCUMENT_ACCEPT_TYPES}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setAdDocumentFile(event.target.files?.[0] ?? null)}
+                />
+                <small>{adDocumentFile ? `${adDocumentFile.name} · ${byteSizeLabel(adDocumentFile.size)}` : 'PDF, Word, Excel, CSV or image. Maximum 10 MB.'}</small>
               </label>
               <div className={styles.modalActions}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setSendStep('choice')} disabled={isSending}>
@@ -1131,6 +1177,19 @@ export default function UsersClient() {
             ) : null}
             <p>{isAd ? activeMessage.adCaption || 'No caption supplied.' : activeMessage.messageText}</p>
             <small>{formatDate(activeMessage.createdAtIso)}</small>
+            {activeMessage.hasDocument ? (
+              <a
+                href={activeMessage.documentUrl}
+                className={styles.attachmentLink}
+                target="_blank"
+                rel="noreferrer"
+                download={activeMessage.documentFileName || undefined}
+              >
+                <span>Attached document</span>
+                <strong>{activeMessage.documentFileName || 'Open document'}</strong>
+                {activeMessage.documentSizeBytes ? <small>{byteSizeLabel(activeMessage.documentSizeBytes)}</small> : null}
+              </a>
+            ) : null}
           </div>
         </section>
       </div>
@@ -1402,57 +1461,15 @@ export default function UsersClient() {
     return (
       <>
         <section className={styles.heroPanel}>
-          <h1>CONTACT REQUESTS</h1>
+          <h1>NOTIFICATIONS</h1>
         </section>
 
-        <p className={styles.pageLead}>Control which finance, insurance and dealer accounts can see your saved contact details. Messages and ads sent to your owner account also appear here.</p>
-
-        <section className={styles.summaryGrid} aria-label="Contact request summary">
-          <article className={styles.summaryCard}>
-            <span>Pending requests</span>
-            <strong>{pendingRequests.length}</strong>
-          </article>
-          <article className={styles.summaryCard}>
-            <span>Shared</span>
-            <strong>{contactRequests.filter((request) => request.status === 'approved').length}</strong>
-          </article>
-          <article className={styles.summaryCard}>
-            <span>Denied</span>
-            <strong>{contactRequests.filter((request) => request.status === 'temporarily_denied' || request.status === 'permanently_denied').length}</strong>
-          </article>
-          <article className={styles.summaryCard}>
-            <span>Unread messages</span>
-            <strong>{unreadMessageCount}</strong>
-          </article>
+        <section className={styles.ownerNotificationFallback} aria-label="Owner notifications">
+          <h2>Contact requests, messages and ads now open from the bell.</h2>
+          <p>
+            Use the notification bell in the header to review contact access requests, open messages, view ads and make accept/deny decisions from a centered modal. You do not need to leave your Asset Register page.
+          </p>
         </section>
-
-        <section className={styles.cardStack} aria-label="Pending contact requests">
-          {isLoading ? (
-            <div className={styles.emptyState}>Loading contact requests...</div>
-          ) : pendingRequests.length ? (
-            pendingRequests.map((request) => renderContactRequestCard(request))
-          ) : (
-            <div className={styles.emptyState}>No pending contact detail requests.</div>
-          )}
-        </section>
-
-        {!isLoading ? (
-          <section className={styles.historySection} aria-label="Incoming messages and ads">
-            <h2>Messages and ads</h2>
-            <div className={styles.cardStack}>
-              {incomingMessages.length ? incomingMessages.slice(0, 20).map((message) => renderIncomingMessageCard(message)) : <div className={styles.emptyState}>No messages or ads have been sent to your account yet.</div>}
-            </div>
-          </section>
-        ) : null}
-
-        {!isLoading && decidedRequests.length ? (
-          <section className={styles.historySection} aria-label="Request history">
-            <h2>Recent decisions</h2>
-            <div className={styles.cardStack}>
-              {decidedRequests.slice(0, 12).map((request) => renderContactRequestCard(request, true))}
-            </div>
-          </section>
-        ) : null}
 
         {renderMessageModal()}
       </>
@@ -1476,7 +1493,7 @@ export default function UsersClient() {
         <p className={styles.footerNote}>
           {mode === 'directory'
             ? `${formatAccountType(accountType)} users only see company names until an owner shares contact details and the POPIA notice is acknowledged.`
-            : 'Your contact details remain locked unless you approve a request.'}
+            : 'Owner contact requests, messages and ads are handled from the notification bell.'}
         </p>
       </div>
     </main>
