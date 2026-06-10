@@ -962,31 +962,50 @@ export default function UsersClient() {
     const requestedAt = formatDate(owner.lastRequestedAtIso || owner.requestedAtIso);
     const updatedAt = formatDate(owner.updatedAtIso);
     const retryDate = formatDate(owner.requestAgainAtIso);
+    const requestStatusNote = owner.requestStatus === 'temporarily_denied'
+      ? temporaryDenialExpired(owner)
+        ? 'Temporary lockout has ended. You may request this owner again.'
+        : retryDate
+          ? `Try again in 90 days. Available again: ${retryDate}.`
+          : 'Try again after the temporary lockout ends.'
+      : owner.requestStatus === 'permanently_denied'
+        ? 'This owner cannot be requested again after three declined requests.'
+        : owner.requestStatus === 'pending'
+          ? requestedAt
+            ? `Requested ${requestedAt}. Waiting for owner approval.`
+            : 'Waiting for owner approval.'
+          : owner.requestStatus === 'approved'
+            ? owner.popiaAcknowledged
+              ? 'POPIA notice acknowledged.'
+              : 'POPIA acknowledgement is required before contact details are shown.'
+            : 'No request has been sent yet.';
     const isPopiaProcessing = owner.requestId ? processingPopiaIds.has(owner.requestId) : false;
 
     return (
       <div className={styles.ownerDetails}>
         <div className={styles.detailGrid}>
-          <div className={styles.detailPanel}>
+          <div className={`${styles.detailPanel} ${styles.contactDetailPanel} ${styles.ownerInfoDetailPanel}`}>
             <span>Request status</span>
-            <strong>{requestStatusLabel(owner.requestStatus)}</strong>
-            {owner.requestStatus === 'temporarily_denied' ? (
-              <p>{temporaryDenialExpired(owner) ? 'Temporary lockout has ended. You may request this owner again.' : retryDate ? `Try again in 90 days. Available again: ${retryDate}.` : 'Try again after the temporary lockout ends.'}</p>
-            ) : owner.requestStatus === 'permanently_denied' ? (
-              <p>This owner cannot be requested again after three declined requests.</p>
-            ) : owner.requestStatus === 'pending' ? (
-              <p>{requestedAt ? `Requested ${requestedAt}. Waiting for owner approval.` : 'Waiting for owner approval.'}</p>
-            ) : owner.requestStatus === 'approved' ? (
-              <p>{owner.popiaAcknowledged ? 'POPIA notice acknowledged.' : 'POPIA acknowledgement is required before contact details are shown.'}</p>
-            ) : (
-              <p>No request has been sent yet.</p>
-            )}
+            <div className={styles.ownerInfoRows}>
+              <div className={styles.ownerInfoRow}>
+                <strong>{requestStatusLabel(owner.requestStatus)}</strong>
+              </div>
+              <div className={`${styles.ownerInfoRow} ${styles.ownerInfoNoteRow}`}>
+                <p>{requestStatusNote}</p>
+              </div>
+            </div>
           </div>
 
-          <div className={styles.detailPanel}>
+          <div className={`${styles.detailPanel} ${styles.contactDetailPanel} ${styles.ownerInfoDetailPanel}`}>
             <span>Saved province</span>
-            <strong>{province || 'Province not saved'}</strong>
-            <p>{townCity ? `Town / city: ${townCity}` : 'Town / city not saved.'}</p>
+            <div className={styles.ownerInfoRows}>
+              <div className={styles.ownerInfoRow}>
+                <strong>{province || 'Province not saved'}</strong>
+              </div>
+              <div className={`${styles.ownerInfoRow} ${styles.ownerInfoNoteRow}`}>
+                <p>{townCity ? `Town / city: ${townCity}` : 'Town / city not saved.'}</p>
+              </div>
+            </div>
           </div>
 
           {owner.contactUnlocked ? (
@@ -1002,7 +1021,6 @@ export default function UsersClient() {
                     <MailIcon className={styles.contactIcon} />
                     <strong>{owner.contactEmail || 'No email saved yet'}</strong>
                   </div>
-                  {owner.contactLocation ? <p>{owner.contactLocation}</p> : null}
                 </div>
               </div>
             ) : (

@@ -2814,3 +2814,48 @@
     border-radius: 1.25rem;
   }
 }
+
+/* === Users owner detail cards: align status/province with unlocked contact details === */
+.ownerInfoDetailPanel {
+  align-content: start !important;
+  border-color: rgba(173, 213, 193, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f3fbf7 100%) !important;
+}
+
+.ownerInfoRows {
+  display: grid;
+  gap: 0.52rem;
+}
+
+.ownerInfoRow {
+  min-height: 2.4rem;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0.34rem 0.48rem;
+  border-radius: 0.82rem;
+  border: 1px solid rgba(214, 228, 234, 0.75);
+  background: rgba(255, 255, 255, 0.72);
+  overflow-wrap: anywhere;
+}
+
+.ownerInfoRow strong {
+  min-width: 0;
+  color: #253a45 !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.012em;
+}
+
+.ownerInfoRow p {
+  margin: 0;
+  color: #5f7082 !important;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.ownerInfoNoteRow {
+  align-items: flex-start;
+  padding-top: 0.46rem;
+  padding-bottom: 0.46rem;
+}
