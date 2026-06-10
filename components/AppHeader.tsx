@@ -49,6 +49,67 @@ type HeaderNotificationItem = {
   href: string;
   createdAtIso: string;
   contactRequestId?: string;
+  messageId?: string;
+  messageType?: 'message' | 'ad';
+};
+
+type ContactRequestStatus = 'pending' | 'approved' | 'temporarily_denied' | 'permanently_denied';
+type ContactDecisionStatus = 'approved' | 'denied';
+
+type ContactDetailRequest = {
+  id: string;
+  ownerUserId: string;
+  requesterUserId: string;
+  status: ContactRequestStatus;
+  requesterAccountType: string;
+  requesterDisplayName: string;
+  requesterBusinessName: string;
+  requesterPhone: string;
+  requesterEmail: string;
+  requesterLocation: string;
+  ownerCompanyName: string;
+  ownerContactName: string;
+  ownerContactPhone: string;
+  ownerContactEmail: string;
+  ownerContactLocation: string;
+  createdAtIso: string;
+  lastRequestedAtIso: string | null;
+  approvedAtIso: string | null;
+  deniedAtIso: string | null;
+  updatedAtIso: string;
+  deniedCount: number;
+  lastDeniedAtIso: string | null;
+  requestAgainAtIso: string | null;
+  permanentlyDeniedAtIso: string | null;
+  popiaAcknowledgedAtIso: string | null;
+};
+
+type UserMessage = {
+  id: string;
+  ownerUserId: string;
+  senderUserId: string;
+  messageType: 'message' | 'ad';
+  messageText: string;
+  adCaption: string;
+  senderAccountType: string;
+  senderDisplayName: string;
+  senderBusinessName: string;
+  senderPhone: string;
+  senderEmail: string;
+  senderLocation: string;
+  imageFileName: string;
+  imageMimeType: string;
+  imageSizeBytes: number;
+  imageUrl: string;
+  hasImage: boolean;
+  documentFileName: string;
+  documentMimeType: string;
+  documentSizeBytes: number;
+  documentUrl: string;
+  hasDocument: boolean;
+  readAtIso: string | null;
+  createdAtIso: string;
+  updatedAtIso: string;
 };
 
 type NotificationsResponse = {
@@ -57,12 +118,23 @@ type NotificationsResponse = {
   error?: string;
 };
 
+type ContactRequestResponse = {
+  ok?: boolean;
+  contactRequest?: ContactDetailRequest;
+  error?: string;
+};
+
+type UserMessageResponse = {
+  ok?: boolean;
+  message?: UserMessage;
+  error?: string;
+};
+
 type SmartLinkProps = {
   href: string;
   className: string;
   children: ReactNode;
 };
-
 
 const NOTIFICATIONS_PER_PAGE = 4;
 
@@ -170,6 +242,55 @@ function formatNotificationTime(value: string): string {
   return new Intl.DateTimeFormat('en-ZA', { day: '2-digit', month: 'short' }).format(new Date(time));
 }
 
+function formatDateTime(value: string | null | undefined): string {
+  const time = parseTime(value);
+  if (!time) return '';
+
+  return new Intl.DateTimeFormat('en-ZA', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(time));
+}
+
+function formatAccountTypeLabel(value: string | null | undefined): string {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (normalized === 'finance') return 'Finance';
+  if (normalized === 'insurance') return 'Insurance';
+  if (normalized === 'dealer') return 'Dealer';
+  if (normalized === 'owner') return 'Owner';
+
+  return 'Aim4price';
+}
+
+function contactRequesterName(request: ContactDetailRequest): string {
+  return request.requesterBusinessName || request.requesterDisplayName || 'Aim4price user';
+}
+
+function messageSenderName(message: UserMessage): string {
+  return message.senderBusinessName || message.senderDisplayName || 'Aim4price user';
+}
+
+function byteSizeLabel(value: number): string {
+  if (!value) return '';
+  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+  return `${(value / (1024 * 1024)).toFixed(value >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+}
+
+function requestStatusText(request: ContactDetailRequest): string {
+  if (request.status === 'approved') return 'Contact details shared.';
+  if (request.status === 'permanently_denied') return 'This request has been permanently denied.';
+  if (request.status === 'temporarily_denied') {
+    const retryDate = formatDateTime(request.requestAgainAtIso);
+    return retryDate ? `This request has been temporarily denied. Try again after ${retryDate}.` : 'This request has been temporarily denied.';
+  }
+
+  return 'This account is requesting access to your saved owner contact details.';
+}
+
 export default function AppHeader({
   active,
   signupHref = '/auth#signup',
@@ -195,6 +316,10 @@ export default function AppHeader({
   const [notificationsSeenAt, setNotificationsSeenAt] = useState<string | null>(null);
   const [notificationPage, setNotificationPage] = useState(1);
   const [processingContactRequestIds, setProcessingContactRequestIds] = useState<Set<string>>(() => new Set());
+  const [activeContactRequest, setActiveContactRequest] = useState<ContactDetailRequest | null>(null);
+  const [activeUserMessage, setActiveUserMessage] = useState<UserMessage | null>(null);
+  const [notificationDetailError, setNotificationDetailError] = useState<string | null>(null);
+  const [loadingNotificationActionId, setLoadingNotificationActionId] = useState<string | null>(null);
   const [canUseNotificationPortal, setCanUseNotificationPortal] = useState(false);
 
   useEffect(() => {
@@ -239,7 +364,6 @@ export default function AppHeader({
     };
   }, [pathname]);
 
-
   useEffect(() => {
     function handleDocumentClick(event: MouseEvent) {
       const target = event.target as Node;
@@ -260,6 +384,9 @@ export default function AppHeader({
       if (event.key === 'Escape') {
         setMenuOpen(false);
         setNotificationOpen(false);
+        setActiveContactRequest(null);
+        setActiveUserMessage(null);
+        setNotificationDetailError(null);
       }
     }
 
@@ -272,8 +399,10 @@ export default function AppHeader({
     };
   }, []);
 
+  const hasBlockingModal = notificationOpen || Boolean(activeContactRequest) || Boolean(activeUserMessage) || Boolean(notificationDetailError);
+
   useEffect(() => {
-    if (!notificationOpen || typeof document === 'undefined') return;
+    if (!hasBlockingModal || typeof document === 'undefined') return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -281,7 +410,7 @@ export default function AppHeader({
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [notificationOpen]);
+  }, [hasBlockingModal]);
 
   useEffect(() => {
     if (notificationOpen) {
@@ -378,11 +507,18 @@ export default function AppHeader({
     setNotificationsSeenAt(nextSeenAt);
   }
 
+  function closeNotificationDetailModal() {
+    setActiveContactRequest(null);
+    setActiveUserMessage(null);
+    setNotificationDetailError(null);
+  }
+
   function handleNotificationToggle() {
     setNotificationOpen((current) => {
       const nextOpen = !current;
       if (nextOpen) {
         setMenuOpen(false);
+        closeNotificationDetailModal();
         markNotificationsSeen();
       }
       return nextOpen;
@@ -394,8 +530,62 @@ export default function AppHeader({
     setNotificationOpen(false);
   }
 
-  async function handleContactRequestDecision(contactRequestId: string, status: 'approved' | 'denied') {
+  async function handleOpenContactRequestNotification(contactRequestId: string) {
+    setNotificationOpen(false);
+    setNotificationDetailError(null);
+    setLoadingNotificationActionId(`contact:${contactRequestId}`);
+
+    try {
+      const response = await fetch(`/api/users/contact-requests/${encodeURIComponent(contactRequestId)}`, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const data = (await response.json()) as ContactRequestResponse;
+
+      if (!response.ok || !data.ok || !data.contactRequest) {
+        throw new Error(data.error || 'Failed to load contact request.');
+      }
+
+      setActiveUserMessage(null);
+      setActiveContactRequest(data.contactRequest);
+      markNotificationsSeen();
+    } catch (error) {
+      setNotificationDetailError(error instanceof Error ? error.message : 'Failed to load contact request.');
+    } finally {
+      setLoadingNotificationActionId(null);
+    }
+  }
+
+  async function handleOpenUserMessageNotification(messageId: string) {
+    setNotificationOpen(false);
+    setNotificationDetailError(null);
+    setLoadingNotificationActionId(`message:${messageId}`);
+
+    try {
+      const response = await fetch(`/api/users/messages/${encodeURIComponent(messageId)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      const data = (await response.json()) as UserMessageResponse;
+
+      if (!response.ok || !data.ok || !data.message) {
+        throw new Error(data.error || 'Failed to load message.');
+      }
+
+      setActiveContactRequest(null);
+      setActiveUserMessage(data.message);
+      setNotifications((current) => current.filter((item) => item.messageId !== messageId));
+      markNotificationsSeen();
+    } catch (error) {
+      setNotificationDetailError(error instanceof Error ? error.message : 'Failed to load message.');
+    } finally {
+      setLoadingNotificationActionId(null);
+    }
+  }
+
+  async function handleContactRequestDecision(contactRequestId: string, status: ContactDecisionStatus) {
     setProcessingContactRequestIds((current) => new Set(current).add(contactRequestId));
+    setNotificationDetailError(null);
 
     try {
       const response = await fetch(`/api/users/contact-requests/${encodeURIComponent(contactRequestId)}`, {
@@ -406,16 +596,18 @@ export default function AppHeader({
         },
         body: JSON.stringify({ status }),
       });
-      const data = (await response.json()) as { ok?: boolean; error?: string };
+      const data = (await response.json()) as ContactRequestResponse;
 
-      if (!response.ok || !data.ok) {
+      if (!response.ok || !data.ok || !data.contactRequest) {
         throw new Error(data.error || 'Failed to update contact request.');
       }
 
+      setActiveContactRequest(data.contactRequest);
       setNotifications((current) => current.filter((item) => item.contactRequestId !== contactRequestId));
       markNotificationsSeen();
     } catch (error) {
       console.error('Failed to update contact request notification', error);
+      setNotificationDetailError(error instanceof Error ? error.message : 'Failed to update contact request.');
     } finally {
       setProcessingContactRequestIds((current) => {
         const next = new Set(current);
@@ -449,6 +641,211 @@ export default function AppHeader({
     }
   }
 
+  function renderNotificationCopy(notification: HeaderNotificationItem, actionLabel?: string) {
+    return (
+      <>
+        <span className={styles.notificationDot} aria-hidden="true" />
+        <span className={styles.notificationCopy}>
+          <strong>{notification.title}</strong>
+          <span>{notification.body}</span>
+          <small>{formatNotificationTime(notification.createdAtIso)}</small>
+          {actionLabel ? <span className={styles.notificationOpenHint}>{actionLabel}</span> : null}
+        </span>
+      </>
+    );
+  }
+
+  function renderNotificationItem(notification: HeaderNotificationItem) {
+    const toneClass = styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`];
+    const baseClassName = `${styles.notificationItem} ${toneClass}`;
+
+    if (notification.contactRequestId) {
+      const loading = loadingNotificationActionId === `contact:${notification.contactRequestId}`;
+
+      return (
+        <button
+          type="button"
+          key={notification.id}
+          className={`${baseClassName} ${styles.notificationItemButton}`}
+          onClick={() => handleOpenContactRequestNotification(notification.contactRequestId as string)}
+          disabled={loading}
+        >
+          {renderNotificationCopy(notification, loading ? 'Opening request...' : 'Open request')}
+        </button>
+      );
+    }
+
+    if (notification.messageId) {
+      const loading = loadingNotificationActionId === `message:${notification.messageId}`;
+      const actionLabel = notification.messageType === 'ad' ? 'Open ad' : 'Open message';
+
+      return (
+        <button
+          type="button"
+          key={notification.id}
+          className={`${baseClassName} ${styles.notificationItemButton}`}
+          onClick={() => handleOpenUserMessageNotification(notification.messageId as string)}
+          disabled={loading}
+        >
+          {renderNotificationCopy(notification, loading ? 'Opening...' : actionLabel)}
+        </button>
+      );
+    }
+
+    if (notification.href) {
+      return (
+        <Link
+          key={notification.id}
+          href={notification.href}
+          className={baseClassName}
+          onClick={handleNotificationLinkClick}
+        >
+          {renderNotificationCopy(notification)}
+        </Link>
+      );
+    }
+
+    return (
+      <div key={notification.id} className={baseClassName}>
+        {renderNotificationCopy(notification)}
+      </div>
+    );
+  }
+
+  function renderContactRequestDetailModal(request: ContactDetailRequest) {
+    const requesterName = contactRequesterName(request);
+    const isProcessing = processingContactRequestIds.has(request.id);
+    const isPending = request.status === 'pending';
+
+    return (
+      <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="notification-contact-title">
+        <div className={styles.notificationDetailHeader}>
+          <div className={styles.notificationDetailHeaderText}>
+            <span className={styles.notificationDetailKicker}>Contact access request</span>
+            <h2 id="notification-contact-title">{requesterName}</h2>
+            <p>{formatAccountTypeLabel(request.requesterAccountType)} account requesting access to your saved owner contact details.</p>
+          </div>
+          <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close contact request">
+            ×
+          </button>
+        </div>
+
+        <div className={styles.notificationDetailBody}>
+          <div className={styles.notificationDetailMetaGrid}>
+            <div className={styles.notificationDetailMetaCard}>
+              <span>Business / account</span>
+              <strong>{request.requesterBusinessName || request.requesterDisplayName || 'Not supplied'}</strong>
+            </div>
+            <div className={styles.notificationDetailMetaCard}>
+              <span>Account type</span>
+              <strong>{formatAccountTypeLabel(request.requesterAccountType)}</strong>
+            </div>
+            <div className={styles.notificationDetailMetaCard}>
+              <span>Requested</span>
+              <strong>{formatDateTime(request.createdAtIso) || 'Just now'}</strong>
+            </div>
+            <div className={styles.notificationDetailMetaCard}>
+              <span>Requester location</span>
+              <strong>{request.requesterLocation || 'Not supplied'}</strong>
+            </div>
+          </div>
+
+          <div className={styles.notificationDetailMessageBox}>
+            <strong>What they are requesting</strong>
+            <p>
+              This account wants permission to view your saved phone and email contact details inside Aim4price. Accept only if you are comfortable sharing those details with this account.
+            </p>
+          </div>
+
+          {!isPending ? (
+            <div className={styles.notificationDetailStatusBox}>
+              <strong>Decision saved</strong>
+              <p>{requestStatusText(request)}</p>
+            </div>
+          ) : null}
+        </div>
+
+        {isPending ? (
+          <div className={styles.notificationDetailActions}>
+            <button
+              type="button"
+              className={styles.notificationSoftDangerButton}
+              onClick={() => handleContactRequestDecision(request.id, 'denied')}
+              disabled={isProcessing}
+            >
+              {isProcessing ? 'Saving...' : 'Deny request'}
+            </button>
+            <button
+              type="button"
+              className={styles.notificationPrimaryButton}
+              onClick={() => handleContactRequestDecision(request.id, 'approved')}
+              disabled={isProcessing}
+            >
+              {isProcessing ? 'Saving...' : 'Accept request'}
+            </button>
+          </div>
+        ) : (
+          <div className={styles.notificationDetailActions}>
+            <button type="button" className={styles.notificationSecondaryButton} onClick={closeNotificationDetailModal}>
+              Close
+            </button>
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  function renderUserMessageDetailModal(message: UserMessage) {
+    const senderName = messageSenderName(message);
+    const isAd = message.messageType === 'ad';
+    const messageCopy = isAd ? message.adCaption || message.messageText : message.messageText;
+
+    return (
+      <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="notification-message-title">
+        <div className={styles.notificationDetailHeader}>
+          <div className={styles.notificationDetailHeaderText}>
+            <span className={styles.notificationDetailKicker}>{isAd ? 'Ad received' : 'Message received'}</span>
+            <h2 id="notification-message-title">{senderName}</h2>
+            <p>{formatAccountTypeLabel(message.senderAccountType)} account · {formatDateTime(message.createdAtIso) || 'Just now'}</p>
+          </div>
+          <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close message">
+            ×
+          </button>
+        </div>
+
+        <div className={styles.notificationDetailBody}>
+          {message.hasImage ? (
+            <img src={message.imageUrl} alt={message.imageFileName || 'Sent ad image'} className={styles.notificationDetailImage} />
+          ) : null}
+
+          <div className={styles.notificationDetailMessageBox}>
+            <strong>{isAd ? 'Caption / note' : 'Message'}</strong>
+            <p>{messageCopy || (isAd ? 'No caption supplied.' : 'No message text supplied.')}</p>
+          </div>
+
+          {message.hasDocument ? (
+            <a
+              href={message.documentUrl}
+              className={styles.notificationDocumentLink}
+              target="_blank"
+              rel="noreferrer"
+              download={message.documentFileName || undefined}
+            >
+              <span>Attached document</span>
+              <strong>{message.documentFileName || 'Open document'}</strong>
+              {message.documentSizeBytes ? <small>{byteSizeLabel(message.documentSizeBytes)}</small> : null}
+            </a>
+          ) : null}
+        </div>
+
+        <div className={styles.notificationDetailActions}>
+          <button type="button" className={styles.notificationSecondaryButton} onClick={closeNotificationDetailModal}>
+            Close
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   const notificationPortal =
     notificationOpen && canUseNotificationPortal
@@ -478,8 +875,8 @@ export default function AppHeader({
                   </strong>
                   <span className={styles.notificationSubtitle}>
                     {isOwnerAccount
-                      ? 'Messages, notes, contact requests, QR scans and fuel updates.'
-                      : 'New lead opportunities and account requests.'}
+                      ? 'Messages, ads, contact requests, notes, QR scans and fuel updates.'
+                      : 'New lead opportunities and account request results.'}
                   </span>
                 </div>
 
@@ -526,59 +923,9 @@ export default function AppHeader({
                 {isLoadingNotifications ? (
                   <div className={styles.notificationEmpty}>Loading notifications...</div>
                 ) : notifications.length ? (
-                  visibleNotifications.map((notification) =>
-                    notification.category === 'contact_request' && notification.contactRequestId ? (
-                      <div
-                        key={notification.id}
-                        className={`${styles.notificationItem} ${styles.notificationItemActionable} ${styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`]}`}
-                      >
-                        <span className={styles.notificationDot} aria-hidden="true" />
-                        <span className={styles.notificationCopy}>
-                          <strong>{notification.title}</strong>
-                          <span>{notification.body}</span>
-                          <small>{formatNotificationTime(notification.createdAtIso)}</small>
-                          <span className={styles.notificationActionRow}>
-                            <button
-                              type="button"
-                              className={styles.notificationApproveButton}
-                              onClick={() =>
-                                handleContactRequestDecision(notification.contactRequestId as string, 'approved')
-                              }
-                              disabled={processingContactRequestIds.has(notification.contactRequestId)}
-                            >
-                              Share contact details
-                            </button>
-                            <button
-                              type="button"
-                              className={styles.notificationDenyButton}
-                              onClick={() =>
-                                handleContactRequestDecision(notification.contactRequestId as string, 'denied')
-                              }
-                              disabled={processingContactRequestIds.has(notification.contactRequestId)}
-                            >
-                              Deny request
-                            </button>
-                          </span>
-                        </span>
-                      </div>
-                    ) : (
-                      <Link
-                        key={notification.id}
-                        href={notification.href}
-                        className={`${styles.notificationItem} ${styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`]}`}
-                        onClick={handleNotificationLinkClick}
-                      >
-                        <span className={styles.notificationDot} aria-hidden="true" />
-                        <span className={styles.notificationCopy}>
-                          <strong>{notification.title}</strong>
-                          <span>{notification.body}</span>
-                          <small>{formatNotificationTime(notification.createdAtIso)}</small>
-                        </span>
-                      </Link>
-                    ),
-                  )
+                  visibleNotifications.map((notification) => renderNotificationItem(notification))
                 ) : (
-                  <div className={styles.notificationEmpty}>No new messages, notes or lead updates yet.</div>
+                  <div className={styles.notificationEmpty}>No new messages, ads, notes or lead updates yet.</div>
                 )}
               </div>
 
@@ -598,9 +945,7 @@ export default function AppHeader({
                   <button
                     type="button"
                     className={styles.notificationPaginationButton}
-                    onClick={() =>
-                      setNotificationPage((current) => Math.min(notificationPageCount, current + 1))
-                    }
+                    onClick={() => setNotificationPage((current) => Math.min(notificationPageCount, current + 1))}
                     disabled={activeNotificationPage >= notificationPageCount}
                   >
                     Next
@@ -613,147 +958,181 @@ export default function AppHeader({
         )
       : null;
 
+  const notificationDetailPortal =
+    canUseNotificationPortal && (activeContactRequest || activeUserMessage || notificationDetailError)
+      ? createPortal(
+          <div
+            className={styles.notificationDetailBackdrop}
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                closeNotificationDetailModal();
+              }
+            }}
+          >
+            {activeContactRequest ? renderContactRequestDetailModal(activeContactRequest) : null}
+            {activeUserMessage ? renderUserMessageDetailModal(activeUserMessage) : null}
+            {!activeContactRequest && !activeUserMessage && notificationDetailError ? (
+              <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="notification-error-title">
+                <div className={styles.notificationDetailHeader}>
+                  <div className={styles.notificationDetailHeaderText}>
+                    <span className={styles.notificationDetailKicker}>Notification</span>
+                    <h2 id="notification-error-title">Could not open this notification</h2>
+                    <p>{notificationDetailError}</p>
+                  </div>
+                  <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close notification error">
+                    ×
+                  </button>
+                </div>
+                <div className={styles.notificationDetailActions}>
+                  <button type="button" className={styles.notificationSecondaryButton} onClick={closeNotificationDetailModal}>
+                    Close
+                  </button>
+                </div>
+              </section>
+            ) : null}
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
     <>
       <header className={styles.header}>
-      <div className={styles.inner}>
-        <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
-          <Image
-            src="/brand/Aim4price_Home_Logo.png"
-            alt="Aim4price"
-            width={900}
-            height={240}
-            className={styles.brandLogo}
-            priority
-          />
-        </Link>
+        <div className={styles.inner}>
+          <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
+            <Image
+              src="/brand/Aim4price_Home_Logo.png"
+              alt="Aim4price"
+              width={900}
+              height={240}
+              className={styles.brandLogo}
+              priority
+            />
+          </Link>
 
-        <nav className={styles.nav} aria-label="Primary navigation">
-          <div className={styles.navRail}>
-            {navItems.map((item) => {
-              const isActive = active === item.key;
+          <nav className={styles.nav} aria-label="Primary navigation">
+            <div className={styles.navRail}>
+              {navItems.map((item) => {
+                const isActive = active === item.key;
 
-              return (
-                <Link
-                  key={`${item.key}-${item.href}`}
-                  href={item.href}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={`${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
-
-        <div className={styles.actions}>
-          <div className={styles.actionsRail}>
-            {isLoadingSession ? null : session ? (
-              <>
-                <div className={styles.notificationMenu} ref={notificationMenuRef}>
-                  <button
-                    type="button"
-                    className={`${styles.notificationButton} ${unreadNotificationCount ? styles.notificationButtonActive : ''}`}
-                    aria-expanded={notificationOpen}
-                    aria-haspopup="dialog"
-                    aria-controls={notificationOpen ? 'header-notifications-modal' : undefined}
-                    aria-label={
-                      unreadNotificationCount
-                        ? `Notifications, ${unreadNotificationCount} new`
-                        : 'Notifications'
-                    }
-                    onClick={handleNotificationToggle}
+                return (
+                  <Link
+                    key={`${item.key}-${item.href}`}
+                    href={item.href}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
                   >
-                    <svg className={styles.notificationIcon} viewBox="0 0 24 24" aria-hidden="true">
-                      <path
-                        d="M12 22a2.6 2.6 0 0 0 2.42-1.65H9.58A2.6 2.6 0 0 0 12 22Zm7.18-5.32-1.14-1.62a3.9 3.9 0 0 1-.72-2.25V9.7a5.35 5.35 0 0 0-4.05-5.18V3.9a1.27 1.27 0 1 0-2.54 0v.62A5.35 5.35 0 0 0 6.68 9.7v3.11c0 .81-.25 1.59-.72 2.25l-1.14 1.62a1.05 1.05 0 0 0 .86 1.66h12.64a1.05 1.05 0 0 0 .86-1.66Z"
-                        fill="currentColor"
-                      />
-                    </svg>
-                    {unreadNotificationCount ? (
-                      <span className={styles.notificationBadge}>{notificationBadgeText}</span>
-                    ) : null}
-                  </button>
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
 
-                </div>
-
-                <div className={styles.accountMenu} ref={accountMenuRef}>
-                  <button
-                    type="button"
-                    className={styles.accountButton}
-                    aria-expanded={menuOpen}
-                    aria-haspopup="menu"
-                    onClick={() => {
-                      setNotificationOpen(false);
-                      setMenuOpen((current) => !current);
-                    }}
-                  >
-                    <AccountProfileIcon className={styles.accountAvatar} />
-                    <span className={styles.accountButtonText}>My Account</span>
-                  </button>
-
-                  {menuOpen ? (
-                    <div className={styles.accountPopover} role="menu">
-                      <div className={styles.accountSummary}>
-                        <AccountProfileIcon className={styles.accountAvatarLarge} />
-                        <div className={styles.accountSummaryText}>
-                          <strong className={styles.accountName}>{accountName}</strong>
-                        </div>
-                      </div>
-
-                      <Link href="/account" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                        Account Details
-                      </Link>
-
-                      {isOwnerAccount ? (
-                        <>
-                          <Link href="/companies" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                            Companies
-                          </Link>
-
-                          <Link href="/asset-map" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                            My Asset Map
-                          </Link>
-
-                          <Link href="/fuel" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                            My Fuel Ledger
-                          </Link>
-                        </>
+          <div className={styles.actions}>
+            <div className={styles.actionsRail}>
+              {isLoadingSession ? null : session ? (
+                <>
+                  <div className={styles.notificationMenu} ref={notificationMenuRef}>
+                    <button
+                      type="button"
+                      className={`${styles.notificationButton} ${unreadNotificationCount ? styles.notificationButtonActive : ''}`}
+                      aria-expanded={notificationOpen}
+                      aria-haspopup="dialog"
+                      aria-controls={notificationOpen ? 'header-notifications-modal' : undefined}
+                      aria-label={unreadNotificationCount ? `Notifications, ${unreadNotificationCount} new` : 'Notifications'}
+                      onClick={handleNotificationToggle}
+                    >
+                      <svg className={styles.notificationIcon} viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                          d="M12 22a2.6 2.6 0 0 0 2.42-1.65H9.58A2.6 2.6 0 0 0 12 22Zm7.18-5.32-1.14-1.62a3.9 3.9 0 0 1-.72-2.25V9.7a5.35 5.35 0 0 0-4.05-5.18V3.9a1.27 1.27 0 1 0-2.54 0v.62A5.35 5.35 0 0 0 6.68 9.7v3.11c0 .81-.25 1.59-.72 2.25l-1.14 1.62a1.05 1.05 0 0 0 .86 1.66h12.64a1.05 1.05 0 0 0 .86-1.66Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                      {unreadNotificationCount ? (
+                        <span className={styles.notificationBadge}>{notificationBadgeText}</span>
                       ) : null}
+                    </button>
+                  </div>
 
-                      <button
-                        type="button"
-                        className={styles.menuDangerButton}
-                        onClick={handleSignOut}
-                        disabled={isSigningOut}
-                      >
-                        {isSigningOut ? 'Signing out...' : 'Sign out'}
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              </>
-            ) : (
-              <>
-                <SmartLink href={loginHref} className={styles.loginButton}>
-                  Login
-                </SmartLink>
+                  <div className={styles.accountMenu} ref={accountMenuRef}>
+                    <button
+                      type="button"
+                      className={styles.accountButton}
+                      aria-expanded={menuOpen}
+                      aria-haspopup="menu"
+                      onClick={() => {
+                        setNotificationOpen(false);
+                        setMenuOpen((current) => !current);
+                      }}
+                    >
+                      <AccountProfileIcon className={styles.accountAvatar} />
+                      <span className={styles.accountButtonText}>My Account</span>
+                    </button>
 
-                <span className={styles.actionDivider} aria-hidden="true">
-                  |
-                </span>
+                    {menuOpen ? (
+                      <div className={styles.accountPopover} role="menu">
+                        <div className={styles.accountSummary}>
+                          <AccountProfileIcon className={styles.accountAvatarLarge} />
+                          <div className={styles.accountSummaryText}>
+                            <strong className={styles.accountName}>{accountName}</strong>
+                          </div>
+                        </div>
 
-                <SmartLink href={primaryHref} className={styles.signupButton}>
-                  {ctaLabel}
-                </SmartLink>
-              </>
-            )}
+                        <Link href="/account" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                          Account Details
+                        </Link>
+
+                        {isOwnerAccount ? (
+                          <>
+                            <Link href="/companies" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                              Companies
+                            </Link>
+
+                            <Link href="/asset-map" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                              My Asset Map
+                            </Link>
+
+                            <Link href="/fuel" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
+                              My Fuel Ledger
+                            </Link>
+                          </>
+                        ) : null}
+
+                        <button
+                          type="button"
+                          className={styles.menuDangerButton}
+                          onClick={handleSignOut}
+                          disabled={isSigningOut}
+                        >
+                          {isSigningOut ? 'Signing out...' : 'Sign out'}
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <SmartLink href={loginHref} className={styles.loginButton}>
+                    Login
+                  </SmartLink>
+
+                  <span className={styles.actionDivider} aria-hidden="true">
+                    |
+                  </span>
+
+                  <SmartLink href={primaryHref} className={styles.signupButton}>
+                    {ctaLabel}
+                  </SmartLink>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      </div>
       </header>
       {notificationPortal}
+      {notificationDetailPortal}
     </>
   );
 }

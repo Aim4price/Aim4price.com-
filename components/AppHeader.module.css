@@ -700,10 +700,352 @@
 .notificationCloseButton:focus-visible,
 .notificationItem:focus-visible,
 .notificationPaginationButton:focus-visible,
+.notificationItemButton:focus-visible,
+.notificationDetailCloseButton:focus-visible,
+.notificationPrimaryButton:focus-visible,
+.notificationSoftDangerButton:focus-visible,
+.notificationSecondaryButton:focus-visible,
+.notificationDocumentLink:focus-visible,
 .menuLink:focus-visible,
 .menuDangerButton:focus-visible {
   outline: 3px solid rgba(23, 77, 62, 0.18);
   outline-offset: 3px;
+}
+
+
+.notificationItemButton {
+  width: 100%;
+  appearance: none;
+  border: 1px solid rgba(18, 45, 37, 0.085);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.notificationItemButton:disabled {
+  cursor: wait;
+  opacity: 0.76;
+  transform: none;
+}
+
+.notificationOpenHint {
+  width: fit-content;
+  margin-top: 0.18rem;
+  padding: 0.38rem 0.68rem;
+  border-radius: 999px;
+  color: #0f684f !important;
+  background: rgba(23, 126, 91, 0.09);
+  border: 1px solid rgba(23, 126, 91, 0.14);
+  font-size: 0.78rem !important;
+  line-height: 1 !important;
+  font-weight: 860 !important;
+}
+
+.notificationDetailBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  box-sizing: border-box;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.25rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.4) 0%, rgba(239, 246, 243, 0.22) 34%, rgba(7, 27, 21, 0.54) 100%),
+    rgba(7, 27, 21, 0.38);
+  backdrop-filter: blur(26px) saturate(0.88);
+  -webkit-backdrop-filter: blur(26px) saturate(0.88);
+}
+
+.notificationDetailModal {
+  width: min(43rem, calc(100vw - 2rem));
+  max-height: min(46rem, calc(100dvh - 3rem));
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border-radius: 1.7rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
+  border: 1px solid rgba(18, 45, 37, 0.12);
+  box-shadow:
+    0 32px 84px rgba(7, 27, 21, 0.28),
+    0 14px 36px rgba(18, 45, 37, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.notificationDetailHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: start;
+  padding: clamp(1.25rem, 2.3vw, 1.62rem);
+  border-bottom: 1px solid rgba(18, 45, 37, 0.09);
+}
+
+.notificationDetailHeaderText {
+  min-width: 0;
+}
+
+.notificationDetailKicker {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 0.45rem;
+  padding: 0.34rem 0.64rem;
+  border-radius: 999px;
+  color: #0f684f;
+  background: rgba(23, 126, 91, 0.09);
+  border: 1px solid rgba(23, 126, 91, 0.14);
+  font-size: 0.76rem;
+  font-weight: 860;
+  line-height: 1;
+}
+
+.notificationDetailHeader h2 {
+  margin: 0;
+  color: #073b30;
+  font-size: clamp(1.55rem, 2.7vw, 2.08rem);
+  line-height: 1.04;
+  font-weight: 920;
+  letter-spacing: -0.045em;
+}
+
+.notificationDetailHeader p {
+  margin: 0.5rem 0 0;
+  color: #5d6b66;
+  font-size: 0.98rem;
+  line-height: 1.42;
+  font-weight: 660;
+}
+
+.notificationDetailCloseButton {
+  width: 3rem;
+  height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(62, 110, 213, 0.16);
+  background: #f7fbff;
+  color: #17315c;
+  font-size: 1.55rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(41, 72, 145, 0.08);
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.notificationDetailCloseButton:hover {
+  transform: translateY(-1px);
+  background: #ffffff;
+  border-color: rgba(23, 77, 62, 0.16);
+  box-shadow: 0 14px 28px rgba(18, 45, 37, 0.1);
+}
+
+.notificationDetailBody {
+  min-height: 0;
+  display: grid;
+  gap: 1rem;
+  overflow: auto;
+  padding: clamp(1.1rem, 2vw, 1.5rem);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(23, 77, 62, 0.26) transparent;
+}
+
+.notificationDetailBody::-webkit-scrollbar {
+  width: 0.54rem;
+}
+
+.notificationDetailBody::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(23, 77, 62, 0.24);
+}
+
+.notificationDetailMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.78rem;
+}
+
+.notificationDetailMetaCard,
+.notificationDetailMessageBox,
+.notificationDetailStatusBox,
+.notificationDocumentLink {
+  border: 1px solid rgba(206, 218, 229, 0.94);
+  border-radius: 1.05rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.notificationDetailMetaCard {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.92rem 1rem;
+}
+
+.notificationDetailMetaCard span,
+.notificationDocumentLink span {
+  color: #68798b;
+  font-size: 0.76rem;
+  line-height: 1.15;
+  font-weight: 820;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.notificationDetailMetaCard strong,
+.notificationDocumentLink strong {
+  min-width: 0;
+  color: #123b31;
+  font-size: 0.98rem;
+  line-height: 1.25;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.notificationDetailMessageBox,
+.notificationDetailStatusBox {
+  display: grid;
+  gap: 0.42rem;
+  padding: 1rem 1.08rem;
+}
+
+.notificationDetailMessageBox strong,
+.notificationDetailStatusBox strong {
+  color: #17362c;
+  font-size: 0.98rem;
+  line-height: 1.22;
+  font-weight: 900;
+}
+
+.notificationDetailMessageBox p,
+.notificationDetailStatusBox p {
+  margin: 0;
+  color: #43524c;
+  font-size: 0.96rem;
+  line-height: 1.5;
+  font-weight: 630;
+  white-space: pre-wrap;
+}
+
+.notificationDetailStatusBox {
+  border-color: rgba(23, 126, 91, 0.22);
+  background: linear-gradient(180deg, rgba(240, 251, 246, 0.98) 0%, rgba(250, 253, 251, 0.98) 100%);
+}
+
+.notificationDetailActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  padding: 1rem clamp(1.25rem, 2.3vw, 1.62rem) clamp(1.25rem, 2.3vw, 1.62rem);
+  border-top: 1px solid rgba(18, 45, 37, 0.08);
+  background: rgba(250, 252, 251, 0.92);
+}
+
+.notificationPrimaryButton,
+.notificationSoftDangerButton,
+.notificationSecondaryButton {
+  min-height: 3.1rem;
+  padding: 0 1.15rem;
+  border-radius: 1rem;
+  font-size: 0.95rem;
+  line-height: 1;
+  font-weight: 880;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    opacity 180ms ease;
+}
+
+.notificationPrimaryButton {
+  color: #ffffff;
+  border: 1px solid rgba(15, 104, 79, 0.95);
+  background: linear-gradient(180deg, #1a8664 0%, #0f684f 100%);
+  box-shadow: 0 14px 26px rgba(15, 104, 79, 0.18);
+}
+
+.notificationSoftDangerButton {
+  color: #972626;
+  border: 1px solid rgba(151, 38, 38, 0.18);
+  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%);
+  box-shadow: 0 12px 22px rgba(151, 38, 38, 0.06);
+}
+
+.notificationSecondaryButton {
+  color: #1f3347;
+  border: 1px solid rgba(206, 218, 229, 0.98);
+  background: #ffffff;
+  box-shadow: 0 10px 20px rgba(16, 31, 28, 0.04);
+}
+
+.notificationPrimaryButton:hover:not(:disabled),
+.notificationSoftDangerButton:hover:not(:disabled),
+.notificationSecondaryButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.notificationPrimaryButton:disabled,
+.notificationSoftDangerButton:disabled,
+.notificationSecondaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+  box-shadow: none;
+}
+
+.notificationDetailImage {
+  display: block;
+  width: 100%;
+  max-height: min(42vh, 22rem);
+  object-fit: contain;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(206, 218, 229, 0.94);
+  background: #f7fafb;
+  box-shadow: 0 12px 28px rgba(16, 31, 28, 0.055);
+}
+
+.notificationDocumentLink {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.28rem 0.82rem;
+  align-items: center;
+  padding: 0.98rem 1rem;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.notificationDocumentLink:hover {
+  transform: translateY(-1px);
+  border-color: rgba(23, 77, 62, 0.18);
+  box-shadow: 0 14px 28px rgba(16, 31, 28, 0.07);
+}
+
+.notificationDocumentLink span,
+.notificationDocumentLink strong {
+  grid-column: 1;
+}
+
+.notificationDocumentLink small {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  justify-self: end;
+  color: #68798b;
+  font-size: 0.82rem;
+  font-weight: 820;
 }
 
 @media (max-width: 1240px) {
@@ -969,4 +1311,49 @@
 .notificationDenyButton:focus-visible {
   outline: 3px solid rgba(23, 77, 62, 0.18);
   outline-offset: 3px;
+}
+
+
+@media (max-width: 720px) {
+  .notificationDetailBackdrop {
+    padding: 1rem;
+  }
+
+  .notificationDetailModal {
+    width: 100%;
+    max-height: calc(100dvh - 2rem);
+    border-radius: 1.32rem;
+  }
+
+  .notificationDetailHeader {
+    padding: 1rem;
+  }
+
+  .notificationDetailHeader h2 {
+    font-size: clamp(1.36rem, 8vw, 1.7rem);
+  }
+
+  .notificationDetailCloseButton {
+    width: 2.72rem;
+    height: 2.72rem;
+  }
+
+  .notificationDetailBody {
+    padding: 1rem;
+  }
+
+  .notificationDetailMetaGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .notificationDetailActions {
+    flex-direction: column-reverse;
+    padding: 1rem;
+  }
+
+  .notificationPrimaryButton,
+  .notificationSoftDangerButton,
+  .notificationSecondaryButton {
+    width: 100%;
+  }
 }
