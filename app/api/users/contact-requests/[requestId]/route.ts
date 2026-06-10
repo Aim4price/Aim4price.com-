@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../../lib/auth-session';
-import { normalizeContactDecision, updateContactDetailRequestStatus } from '../../../../../lib/contact-requests';
+import {
+  getContactDetailRequestForOwner,
+  normalizeContactDecision,
+  updateContactDetailRequestStatus,
+} from '../../../../../lib/contact-requests';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,6 +29,34 @@ function extractErrorMessage(error: unknown, fallback: string): string {
   }
 
   return fallback;
+}
+
+
+export async function GET(_request: Request, context: RouteContext) {
+  const session = await getServerSession();
+
+  if (!session?.user?.id) {
+    return unauthorized();
+  }
+
+  try {
+    const contactRequest = await getContactDetailRequestForOwner({
+      ownerUserId: session.user.id,
+      requestId: context.params.requestId,
+    });
+
+    if (!contactRequest) {
+      return NextResponse.json({ ok: false, error: 'Contact request not found.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true, contactRequest });
+  } catch (error) {
+    console.error('contact request GET failed', error);
+    return NextResponse.json(
+      { ok: false, error: extractErrorMessage(error, 'Failed to load contact request.') },
+      { status: 500 },
+    );
+  }
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
