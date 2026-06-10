@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
   const ownerUserId = asText(formData.get('ownerUserId'));
   const messageType = normalizeMessageType(asText(formData.get('messageType')));
   const imageEntry = formData.get('image');
+  const documentEntry = formData.get('document');
 
   try {
     const profile = await getAccountProfile({
@@ -62,8 +63,10 @@ export async function POST(request: NextRequest) {
       return forbidden();
     }
 
-    const imageFile = imageEntry instanceof File ? imageEntry : null;
+    const imageFile = imageEntry instanceof File && imageEntry.size > 0 ? imageEntry : null;
     const imageBytes = imageFile ? Buffer.from(await imageFile.arrayBuffer()) : null;
+    const documentFile = documentEntry instanceof File && documentEntry.size > 0 ? documentEntry : null;
+    const documentBytes = documentFile ? Buffer.from(await documentFile.arrayBuffer()) : null;
 
     const message = await createUserMessage({
       senderUserId: session.user.id,
@@ -74,6 +77,9 @@ export async function POST(request: NextRequest) {
       imageFileName: imageFile?.name ?? '',
       imageMimeType: imageFile?.type ?? '',
       imageBytes,
+      documentFileName: documentFile?.name ?? '',
+      documentMimeType: documentFile?.type ?? '',
+      documentBytes,
     });
 
     return NextResponse.json({ ok: true, message });
