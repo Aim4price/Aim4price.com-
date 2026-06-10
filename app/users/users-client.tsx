@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
@@ -200,6 +200,14 @@ const EMPTY_ALLOWANCE: RequestAllowance = {
   resetTimezone: 'Africa/Johannesburg',
   isLimitReached: false,
 };
+
+function getSummaryCardsPerView() {
+  if (typeof window === 'undefined') return 3;
+  if (window.innerWidth <= 760) return 1;
+  if (window.innerWidth <= 1080) return 2;
+  return 3;
+}
+
 
 function SearchIcon({ className }: IconProps) {
   return (
@@ -483,6 +491,10 @@ export default function UsersClient() {
   const [processingRequestIds, setProcessingRequestIds] = useState<Set<string>>(() => new Set());
   const [processingPopiaIds, setProcessingPopiaIds] = useState<Set<string>>(() => new Set());
   const [processingMessageIds, setProcessingMessageIds] = useState<Set<string>>(() => new Set());
+  const summaryViewportRef = useRef<HTMLDivElement | null>(null);
+  const summaryScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [summaryStartIndex, setSummaryStartIndex] = useState(0);
+  const [summaryCardsPerView, setSummaryCardsPerView] = useState(3);
 
   const loadUsers = useCallback(async () => {
     try {
@@ -529,6 +541,85 @@ export default function UsersClient() {
     }
   }, [currentPage, searchTerm, selectedContactAccessFilter, selectedProvince]);
 
+  const summaryCards = useMemo(() => [
+    {
+      key: 'total-owner-accounts',
+      label: 'Total owner accounts',
+      value: summary.totalOwners,
+      detail: 'Owner accounts matching your search and province filter.',
+    },
+    {
+      key: 'unlocked-contacts',
+      label: 'Unlocked contacts',
+      value: summary.unlockedCount,
+      detail: 'Owners who have shared contact details.',
+    },
+    {
+      key: 'pending-requests',
+      label: 'Pending requests',
+      value: summary.pendingCount,
+      detail: 'Waiting for owner approval.',
+    },
+    {
+      key: 'temporarily-denied',
+      label: 'Temporarily denied',
+      value: summary.temporarilyDeniedCount,
+      detail: 'Locked for 90 days from owner decline.',
+    },
+    {
+      key: 'permanently-denied',
+      label: 'Permanently denied',
+      value: summary.permanentlyDeniedCount,
+      detail: 'Blocked after three declined requests.',
+    },
+    {
+      key: 'daily-requests',
+      label: 'Daily requests',
+      value: requestAllowance.remainingToday,
+      detail: `${requestAllowance.remainingToday} of ${requestAllowance.dailyLimit} requests remaining today.`,
+    },
+  ], [requestAllowance.dailyLimit, requestAllowance.remainingToday, summary]);
+
+  const summaryMaxIndex = Math.max(0, summaryCards.length - summaryCardsPerView);
+  const isSummaryAtStart = summaryStartIndex <= 0;
+  const isSummaryAtEnd = summaryStartIndex >= summaryMaxIndex;
+
+  const scrollSummaryToIndex = useCallback((nextIndex: number) => {
+    const viewport = summaryViewportRef.current;
+    if (!viewport) return;
+
+    const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+    const nextScrollLeft = summaryMaxIndex > 0 ? (maxScrollLeft * nextIndex) / summaryMaxIndex : 0;
+
+    window.requestAnimationFrame(() => {
+      viewport.scrollTo({ left: nextScrollLeft, behavior: 'smooth' });
+    });
+  }, [summaryMaxIndex]);
+
+  const handleSummarySlide = useCallback((direction: -1 | 1) => {
+    setSummaryStartIndex((currentIndex) => {
+      const nextIndex = Math.min(summaryMaxIndex, Math.max(0, currentIndex + direction));
+      scrollSummaryToIndex(nextIndex);
+      return nextIndex;
+    });
+  }, [scrollSummaryToIndex, summaryMaxIndex]);
+
+  const handleSummaryScroll = useCallback(() => {
+    const viewport = summaryViewportRef.current;
+    if (!viewport || summaryMaxIndex <= 0) return;
+
+    if (summaryScrollTimeoutRef.current) {
+      clearTimeout(summaryScrollTimeoutRef.current);
+    }
+
+    summaryScrollTimeoutRef.current = setTimeout(() => {
+      const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+      if (maxScrollLeft <= 0) return;
+
+      const nextIndex = Math.round((viewport.scrollLeft / maxScrollLeft) * summaryMaxIndex);
+      setSummaryStartIndex((currentIndex) => (currentIndex === nextIndex ? currentIndex : nextIndex));
+    }, 120);
+  }, [summaryMaxIndex]);
   useEffect(() => {
     void loadUsers();
   }, [loadUsers]);
@@ -542,6 +633,35 @@ export default function UsersClient() {
       setCurrentPage(pagination.page);
     }
   }, [currentPage, pagination.page]);
+
+
+  useEffect(() => {
+    function handleViewportChange() {
+      setSummaryCardsPerView(getSummaryCardsPerView());
+    }
+
+    handleViewportChange();
+    window.addEventListener('resize', handleViewportChange);
+
+    return () => {
+      window.removeEventListener('resize', handleViewportChange);
+    };
+  }, []);
+
+
+  useEffect(() => () => {
+    if (summaryScrollTimeoutRef.current) {
+      clearTimeout(summaryScrollTimeoutRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    setSummaryStartIndex((currentIndex) => Math.min(currentIndex, summaryMaxIndex));
+  }, [summaryMaxIndex]);
+
+  useEffect(() => {
+    scrollSummaryToIndex(Math.min(summaryStartIndex, summaryMaxIndex));
+  }, [scrollSummaryToIndex, summaryCardsPerView, summaryMaxIndex, summaryStartIndex]);
 
   const pendingRequests = useMemo(
     () => contactRequests.filter((request) => request.status === 'pending'),
@@ -592,6 +712,8 @@ export default function UsersClient() {
     () => paginationPages(pagination.page, pagination.totalPages),
     [pagination.page, pagination.totalPages],
   );
+
+
 
   function updateOwnerRow(nextOwner: OwnerDirectoryEntry) {
     setOwners((current) => current.map((owner) => (owner.ownerUserId === nextOwner.ownerUserId ? nextOwner : owner)));
@@ -1248,37 +1370,44 @@ export default function UsersClient() {
         </section>
 
         <section className={styles.controlsPanel} aria-label="Owner account controls">
-          <section className={styles.summaryGrid} aria-label="Users summary">
-            <article className={styles.summaryCard}>
-              <span>Total owner accounts</span>
-              <strong>{summary.totalOwners}</strong>
-              <small>Owner accounts matching your search and province filter.</small>
-            </article>
-            <article className={styles.summaryCard}>
-              <span>Unlocked contacts</span>
-              <strong>{summary.unlockedCount}</strong>
-              <small>Owners who have shared contact details.</small>
-            </article>
-            <article className={styles.summaryCard}>
-              <span>Pending requests</span>
-              <strong>{summary.pendingCount}</strong>
-              <small>Waiting for owner approval.</small>
-            </article>
-            <article className={styles.summaryCard}>
-              <span>Temporarily denied</span>
-              <strong>{summary.temporarilyDeniedCount}</strong>
-              <small>Locked for 90 days from owner decline.</small>
-            </article>
-            <article className={styles.summaryCard}>
-              <span>Permanently denied</span>
-              <strong>{summary.permanentlyDeniedCount}</strong>
-              <small>Blocked after three declined requests.</small>
-            </article>
-            <article className={styles.summaryCard}>
-              <span>Daily requests</span>
-              <strong>{requestAllowance.remainingToday}</strong>
-              <small>{requestAllowance.remainingToday} of {requestAllowance.dailyLimit} requests remaining today.</small>
-            </article>
+          <section className={styles.summaryCarousel} aria-label="Users summary">
+            <button
+              type="button"
+              className={styles.summaryArrow}
+              onClick={() => handleSummarySlide(-1)}
+              disabled={isSummaryAtStart}
+              aria-label="Show previous user summary cards"
+            >
+              <span aria-hidden="true">&lt;</span>
+            </button>
+
+            <div
+              className={styles.summaryViewport}
+              ref={summaryViewportRef}
+              onScroll={handleSummaryScroll}
+              tabIndex={0}
+              aria-label="Scrollable user summary cards"
+            >
+              <div className={styles.summaryTrack}>
+                {summaryCards.map((card) => (
+                  <article className={styles.summaryCard} key={card.key} data-summary-card="true">
+                    <span>{card.label}</span>
+                    <strong>{card.value}</strong>
+                    <small>{card.detail}</small>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className={styles.summaryArrow}
+              onClick={() => handleSummarySlide(1)}
+              disabled={isSummaryAtEnd}
+              aria-label="Show next user summary cards"
+            >
+              <span aria-hidden="true">&gt;</span>
+            </button>
           </section>
 
           <section className={styles.toolbar} aria-label="Search and filter owners">
