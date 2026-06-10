@@ -49,3 +49,4 @@
 --   24-asset-register-upload-storage-repair.sql
 --   25-asset-register-upload-file-bytes-compat.sql
 --   26-users-page-request-controls-and-messages.sql
+--   27-user-message-document-attachments.sql
