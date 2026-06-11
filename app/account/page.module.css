@@ -1684,238 +1684,6 @@
   }
 }
 
-/* === Multi asset register controls === */
-.assetRegisterSection {
-  display: grid;
-  gap: 1rem;
-}
-
-.assetRegisterGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-  gap: 0.95rem;
-}
-
-.assetRegisterCard {
-  min-width: 0;
-  display: grid;
-  gap: 0.95rem;
-  padding: 1rem;
-  border-radius: 1.25rem;
-  border: 1px solid var(--account-line, rgba(18, 45, 37, 0.09));
-  background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-.assetRegisterCardHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.8rem;
-}
-
-.assetRegisterCardHeader h3 {
-  margin: 0;
-  color: #17362c;
-  font-size: 1.05rem;
-  line-height: 1.18;
-  letter-spacing: -0.03em;
-  font-weight: 850;
-}
-
-.assetRegisterCardHeader p {
-  margin: 0.35rem 0 0;
-  color: #667586;
-  font-size: 0.82rem;
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-}
-
-.assetRegisterBadge {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 1.8rem;
-  padding: 0 0.65rem;
-  border-radius: 999px;
-  color: #176047;
-  background: rgba(31, 138, 102, 0.1);
-  border: 1px solid rgba(31, 138, 102, 0.16);
-  font-size: 0.68rem;
-  font-weight: 850;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.assetRegisterStats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.65rem;
-}
-
-.assetRegisterStats > div {
-  min-width: 0;
-  display: grid;
-  gap: 0.25rem;
-  padding: 0.75rem;
-  border-radius: 0.95rem;
-  border: 1px solid var(--account-line, rgba(18, 45, 37, 0.08));
-  background: #ffffff;
-}
-
-.assetRegisterStats span {
-  color: #7a8792;
-  font-size: 0.68rem;
-  font-weight: 780;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.assetRegisterStats strong {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  color: #41525f;
-  font-size: 0.9rem;
-  line-height: 1.2;
-  font-weight: 760;
-}
-
-.assetRegisterActions {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.assetRegisterActions .primaryButton,
-.assetRegisterActions .secondaryButton {
-  flex: 1 1 8rem;
-  min-height: 2.75rem;
-}
-
-.registerModalCard {
-  width: min(100%, 42rem);
-}
-
-.registerManageModalCard {
-  width: min(100%, 64rem);
-  max-height: calc(100dvh - 2rem);
-  overflow: auto;
-}
-
-.registerModalGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.9rem 1rem;
-}
-
-.assetMovePanel {
-  display: grid;
-  gap: 0.85rem;
-  margin-top: 1.05rem;
-  padding-top: 1.05rem;
-  border-top: 1px solid var(--account-line, rgba(18, 45, 37, 0.08));
-}
-
-.assetMoveHeader {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.assetMoveHeader h3 {
-  margin: 0;
-  color: #17362c;
-  font-size: 1rem;
-  line-height: 1.2;
-  font-weight: 850;
-}
-
-.assetMoveHeader p,
-.assetRegisterMuted {
-  margin: 0;
-  color: #667586;
-  font-size: 0.84rem;
-  line-height: 1.45;
-}
-
-.assetMoveList {
-  display: grid;
-  gap: 0.65rem;
-}
-
-.assetMoveRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.55fr);
-  align-items: center;
-  gap: 0.85rem;
-  padding: 0.85rem;
-  border-radius: 1rem;
-  border: 1px solid var(--account-line, rgba(18, 45, 37, 0.08));
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-}
-
-.assetMoveCopy {
-  min-width: 0;
-  display: grid;
-  gap: 0.24rem;
-}
-
-.assetMoveCopy strong {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  color: #17362c;
-  font-size: 0.92rem;
-  line-height: 1.25;
-  font-weight: 820;
-}
-
-.assetMoveCopy span,
-.assetMoveCopy small {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  color: #667586;
-  font-size: 0.78rem;
-  line-height: 1.35;
-  font-weight: 650;
-}
-
-.assetMoveControls {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.55rem;
-  align-items: center;
-}
-
-.assetMoveControls select {
-  width: 100%;
-  min-height: 2.75rem;
-  padding: 0 0.85rem;
-  border-radius: 0.9rem;
-  border: 1px solid var(--account-line, rgba(18, 45, 37, 0.12));
-  color: #20313b;
-  background: #ffffff;
-  font: inherit;
-}
-
-.assetMoveControls .secondaryButton {
-  min-height: 2.75rem;
-}
-
-@media (max-width: 760px) {
-  .assetRegisterStats,
-  .registerModalGrid,
-  .assetMoveRow,
-  .assetMoveControls {
-    grid-template-columns: 1fr;
-  }
-
-  .assetRegisterActions .primaryButton,
-  .assetRegisterActions .secondaryButton,
-  .assetMoveControls .secondaryButton {
-    width: 100%;
-  }
-}
-
 /* === Business logo field for dealer, finance and insurance accounts === */
 .mediaUploadField {
   display: grid;
@@ -2216,42 +1984,142 @@
   }
 }
 
+
+/* === Account quick-action icon refinements === */
+.quickActionButton {
+  grid-template-columns: 2.34rem minmax(0, 1fr) 1.1rem;
+  gap: 0.86rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 250, 0.98) 100%);
+  box-shadow:
+    0 12px 26px rgba(18, 45, 37, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.quickActionButton:hover {
+  border-color: rgba(31, 138, 102, 0.22);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(31, 138, 102, 0.075), transparent 12rem),
+    linear-gradient(180deg, #ffffff 0%, #f4faf7 100%);
+}
+
+.quickActionIcon {
+  position: relative;
+  overflow: hidden;
+  width: 2.34rem;
+  height: 2.34rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.86rem;
+  color: #155942;
+  background:
+    radial-gradient(circle at 24% 18%, rgba(255, 255, 255, 0.95), transparent 1.15rem),
+    linear-gradient(135deg, rgba(31, 138, 102, 0.18), rgba(31, 138, 102, 0.075));
+  border: 1px solid rgba(31, 138, 102, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 9px 18px rgba(18, 45, 37, 0.06);
+}
+
+.quickActionIcon svg {
+  position: relative;
+  z-index: 1;
+  width: 1.34rem;
+  height: 1.34rem;
+  display: block;
+  flex: 0 0 auto;
+}
+
+.quickActionButton:hover .quickActionIcon {
+  color: #103f33;
+  background:
+    radial-gradient(circle at 24% 18%, rgba(255, 255, 255, 0.98), transparent 1.25rem),
+    linear-gradient(135deg, rgba(31, 138, 102, 0.24), rgba(62, 110, 213, 0.1));
+  border-color: rgba(31, 138, 102, 0.24);
+}
+
+.quickActionChevron {
+  justify-self: end;
+  line-height: 1;
+}
+
+.quickActionDanger:hover {
+  border-color: rgba(198, 75, 75, 0.22);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(198, 75, 75, 0.07), transparent 12rem),
+    linear-gradient(180deg, #ffffff 0%, #fff8f8 100%);
+}
+
+.quickActionDanger .quickActionIcon,
+.quickActionDanger:hover .quickActionIcon {
+  color: #9d3434;
+  background:
+    radial-gradient(circle at 24% 18%, rgba(255, 255, 255, 0.96), transparent 1.15rem),
+    linear-gradient(135deg, rgba(198, 75, 75, 0.18), rgba(198, 75, 75, 0.075));
+  border-color: rgba(198, 75, 75, 0.18);
+}
+
+@media (max-width: 760px) {
+  .quickActionButton {
+    grid-template-columns: 2.22rem minmax(0, 1fr) 1rem;
+    min-height: 3.35rem;
+    gap: 0.78rem;
+  }
+
+  .quickActionIcon {
+    width: 2.22rem;
+    height: 2.22rem;
+    border-radius: 0.8rem;
+  }
+
+  .quickActionIcon svg {
+    width: 1.26rem;
+    height: 1.26rem;
+  }
+}
+
 /* === Account quick-action modal layout === */
 .accountActionModalCard {
   width: min(100%, 64rem);
   max-height: calc(100dvh - 2rem);
   overflow: auto;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: clamp(1.1rem, 1.8vw, 1.45rem);
+}
+
+.accountScrollableModalCard {
   scrollbar-gutter: stable;
   scrollbar-width: thin;
-  scrollbar-color: #7d978e #edf3f5;
+  scrollbar-color: #1f6c53 rgba(231, 241, 237, 0.96);
 }
 
-.accountActionModalCard::-webkit-scrollbar {
-  width: 0.72rem;
+.accountScrollableModalCard::-webkit-scrollbar {
+  width: 0.62rem;
+  height: 0.62rem;
 }
 
-.accountActionModalCard::-webkit-scrollbar-track {
+.accountScrollableModalCard::-webkit-scrollbar-track {
   margin: 1.05rem 0;
   border-radius: 999px;
-  border: 1px solid rgba(216, 226, 234, 0.9);
-  background: linear-gradient(180deg, #f4f8fa 0%, #eaf1f4 100%);
-  box-shadow: inset 0 1px 3px rgba(18, 45, 37, 0.06);
+  border: 1px solid rgba(204, 222, 216, 0.9);
+  background: linear-gradient(180deg, #f1f7f4 0%, #e4eee9 100%);
+  box-shadow: inset 0 1px 3px rgba(18, 45, 37, 0.055);
 }
 
-.accountActionModalCard::-webkit-scrollbar-thumb {
-  border: 2px solid #edf3f5;
+.accountScrollableModalCard::-webkit-scrollbar-thumb {
+  border: 2px solid #e7f1ed;
   border-radius: 999px;
-  background: linear-gradient(180deg, #1f8a66 0%, #2d746b 52%, #5e82cf 100%);
-  box-shadow: 0 4px 10px rgba(18, 45, 37, 0.12);
+  background: linear-gradient(180deg, #1f8a66 0%, #155942 100%);
+  box-shadow: 0 5px 12px rgba(18, 45, 37, 0.14);
 }
 
-.accountActionModalCard::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #176f53 0%, #245d57 52%, #4f70bb 100%);
+.accountScrollableModalCard::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #176f53 0%, #103c30 100%);
 }
 
-.accountActionModalCard::-webkit-scrollbar-button {
+.accountScrollableModalCard::-webkit-scrollbar-button {
   width: 0;
   height: 0;
   display: none;

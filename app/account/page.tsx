@@ -156,59 +156,73 @@ function QuickActionIcon({ name }: { name: QuickActionIconName }) {
 
   const strokeProps = {
     stroke: 'currentColor',
-    strokeWidth: 2,
+    strokeWidth: 1.85,
     strokeLinecap: 'round',
     strokeLinejoin: 'round',
+    vectorEffect: 'non-scaling-stroke',
   } as const;
 
   return (
     <span className={styles.quickActionIcon} aria-hidden="true">
       {name === 'business' ? (
         <svg {...svgProps}>
-          <path {...strokeProps} d="M12 20h9" />
-          <path {...strokeProps} d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+          <path d="M5.25 20.25h13.5V8.2L12 4.35 5.25 8.2v12.05Z" fill="currentColor" opacity="0.14" />
+          <path {...strokeProps} d="M5.25 20.25V8.2L12 4.35l6.75 3.85v12.05" />
+          <path {...strokeProps} d="M9 20.25v-5.4h6v5.4" />
+          <path {...strokeProps} d="M9.2 10.1h.02" />
+          <path {...strokeProps} d="M12 10.1h.02" />
+          <path {...strokeProps} d="M14.8 10.1h.02" />
         </svg>
       ) : null}
 
       {name === 'registers' ? (
         <svg {...svgProps}>
-          <path {...strokeProps} d="M7 4h10a2 2 0 0 1 2 2v13H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
-          <path {...strokeProps} d="M9 8h6" />
-          <path {...strokeProps} d="M9 12h6" />
-          <path {...strokeProps} d="M9 16h4" />
+          <path d="M7 5.25h10a2 2 0 0 1 2 2v11.5H7a2 2 0 0 1-2-2V7.25a2 2 0 0 1 2-2Z" fill="currentColor" opacity="0.14" />
+          <path {...strokeProps} d="M7 5.25h10a2 2 0 0 1 2 2v11.5H7a2 2 0 0 1-2-2V7.25a2 2 0 0 1 2-2Z" />
+          <path {...strokeProps} d="M8.6 9h6.8" />
+          <path {...strokeProps} d="M8.6 12.25h6.8" />
+          <path {...strokeProps} d="M8.6 15.5h4.5" />
+          <path {...strokeProps} d="M16.75 5.25V3.75" />
         </svg>
       ) : null}
 
       {name === 'pin' ? (
         <svg {...svgProps}>
-          <rect {...strokeProps} x="5" y="10" width="14" height="10" rx="2" />
-          <path {...strokeProps} d="M8 10V7a4 4 0 0 1 8 0v3" />
-          <path {...strokeProps} d="M12 14v2" />
+          <rect x="5" y="10" width="14" height="10" rx="2.25" fill="currentColor" opacity="0.14" />
+          <rect {...strokeProps} x="5" y="10" width="14" height="10" rx="2.25" />
+          <path {...strokeProps} d="M8.25 10V7.8a3.75 3.75 0 0 1 7.5 0V10" />
+          <path {...strokeProps} d="M12 14.25v1.9" />
+          <circle cx="12" cy="13.25" r="0.75" fill="currentColor" />
         </svg>
       ) : null}
 
       {name === 'marketplace' ? (
         <svg {...svgProps}>
-          <path {...strokeProps} d="M6 8h12l-1 12H7L6 8Z" />
-          <path {...strokeProps} d="M9 8a3 3 0 0 1 6 0" />
-          <path {...strokeProps} d="M9.5 13h5" />
+          <path d="M6.3 8.7h11.4l-.9 10.05H7.2L6.3 8.7Z" fill="currentColor" opacity="0.14" />
+          <path {...strokeProps} d="M6.3 8.7h11.4l-.9 10.05H7.2L6.3 8.7Z" />
+          <path {...strokeProps} d="M9 8.7a3 3 0 0 1 6 0" />
+          <path {...strokeProps} d="M9.6 13.1h4.8" />
+          <path {...strokeProps} d="M10.7 15.55h2.6" />
         </svg>
       ) : null}
 
       {name === 'directory' ? (
         <svg {...svgProps}>
-          <path {...strokeProps} d="M12 21s7-5.1 7-11a7 7 0 1 0-14 0c0 5.9 7 11 7 11Z" />
-          <circle {...strokeProps} cx="12" cy="10" r="2.4" />
+          <path d="M12 21s6.7-4.8 6.7-11a6.7 6.7 0 1 0-13.4 0C5.3 16.2 12 21 12 21Z" fill="currentColor" opacity="0.14" />
+          <path {...strokeProps} d="M12 21s6.7-4.8 6.7-11a6.7 6.7 0 1 0-13.4 0C5.3 16.2 12 21 12 21Z" />
+          <circle {...strokeProps} cx="12" cy="10" r="2.35" />
+          <path {...strokeProps} d="M8.4 18.55h7.2" />
         </svg>
       ) : null}
 
       {name === 'delete' ? (
         <svg {...svgProps}>
-          <path {...strokeProps} d="M4 7h16" />
-          <path {...strokeProps} d="M10 11v6" />
-          <path {...strokeProps} d="M14 11v6" />
-          <path {...strokeProps} d="M6 7l1 14h10l1-14" />
-          <path {...strokeProps} d="M9 7V4h6v3" />
+          <path d="M7.15 8.2h9.7l-.8 11.05H7.95L7.15 8.2Z" fill="currentColor" opacity="0.16" />
+          <path {...strokeProps} d="M4.75 8.2h14.5" />
+          <path {...strokeProps} d="M9.55 8.2V5.25h4.9V8.2" />
+          <path {...strokeProps} d="M7.15 8.2l.8 11.05h8.1l.8-11.05" />
+          <path {...strokeProps} d="M10.35 11.65v4.35" />
+          <path {...strokeProps} d="M13.65 11.65v4.35" />
         </svg>
       ) : null}
     </span>
@@ -897,6 +911,10 @@ export default function AccountClient() {
   ): Promise<boolean> {
     setIsSavingProfile(true);
 
+    const nextLogoUrl = nextDraft.logoUrl.trim();
+    const currentLogoUrl = (profile?.logoUrl ?? '').trim();
+    const shouldSyncPrimaryLogo = Boolean(options?.syncPrimaryLogoToRegister || nextLogoUrl !== currentLogoUrl);
+
     try {
       const response = await fetch('/api/account-profile', {
         method: 'PUT',
@@ -907,7 +925,7 @@ export default function AccountClient() {
         body: JSON.stringify({
           ...nextDraft,
           extraPhotoUrls: [],
-          syncPrimaryLogoToRegister: Boolean(options?.syncPrimaryLogoToRegister),
+          syncPrimaryLogoToRegister: shouldSyncPrimaryLogo,
         }),
       });
 
@@ -1290,7 +1308,7 @@ export default function AccountClient() {
       {activeAccountModal === 'business' ? (
         <div className={styles.modalBackdrop} onClick={closeActionModal}>
           <section
-            className={styles.accountActionModalCard + ' ' + styles.modalCard}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="business-details-modal-title"
@@ -1594,7 +1612,7 @@ export default function AccountClient() {
       {activeAccountModal === 'partnerDirectory' && showPartnerDirectory ? (
         <div className={styles.modalBackdrop} onClick={closeActionModal}>
           <section
-            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.partnerDirectoryModalCard}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.partnerDirectoryModalCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="partner-directory-modal-title"
