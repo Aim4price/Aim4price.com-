@@ -207,96 +207,6 @@ function extractApiError(payload: unknown, fallback: string): string {
   return fallback;
 }
 
-type FilterSelectOption = {
-  value: string;
-  label: string;
-};
-
-type FilterSelectProps = {
-  label: string;
-  value: string;
-  options: FilterSelectOption[];
-  onChange: (value: string) => void;
-};
-
-function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-  const selectedOption = options.find((option) => option.value === value) ?? options[0] ?? null;
-
-  useEffect(() => {
-    if (!isOpen) {
-      return undefined;
-    }
-
-    function handlePointerDown(event: PointerEvent) {
-      const target = event.target;
-
-      if (wrapRef.current && target instanceof Node && !wrapRef.current.contains(target)) {
-        setIsOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setIsOpen(false);
-      }
-    }
-
-    document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen]);
-
-  return (
-    <div className={styles.filterSelect} ref={wrapRef}>
-      <button
-        type="button"
-        className={`${styles.filterSelectButton} ${isOpen ? styles.filterSelectButtonOpen : ''}`}
-        onClick={() => setIsOpen((current) => !current)}
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
-        aria-label={label}
-      >
-        <span>{selectedOption?.label ?? 'Select option'}</span>
-        <span className={styles.filterSelectChevron} aria-hidden="true">
-          <ChevronDownIcon className={styles.selectChevronIcon} />
-        </span>
-      </button>
-
-      {isOpen ? (
-        <div className={styles.filterSelectMenu} role="listbox" aria-label={label}>
-          {options.map((option) => {
-            const isSelected = option.value === value;
-
-            return (
-              <button
-                key={option.value || option.label}
-                type="button"
-                role="option"
-                aria-selected={isSelected}
-                className={`${styles.filterSelectOption} ${isSelected ? styles.filterSelectOptionActive : ''}`}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  onChange(option.value);
-                  setIsOpen(false);
-                }}
-              >
-                <span>{option.label}</span>
-                {isSelected ? <b aria-hidden="true">✓</b> : null}
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 export default function CompaniesClient({ initialType }: CompaniesClientProps) {
   const [companies, setCompanies] = useState<PartnerDirectoryEntry[]>([]);
   const [selectedType, setSelectedType] = useState<CompanyTypeFilter>(initialType);
@@ -306,6 +216,7 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
   const [openCompanyId, setOpenCompanyId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const filterShellRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -346,6 +257,42 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isFilterOpen) {
+      return undefined;
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+
+      if (filterShellRef.current && target instanceof Node && !filterShellRef.current.contains(target)) {
+        setIsFilterOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsFilterOpen(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFilterOpen]);
+
+  const provinceOptions = useMemo(
+    () => [
+      { value: '', label: 'All provinces' },
+      ...PROVINCES.map((province) => ({ value: province, label: province })),
+    ],
+    [],
+  );
+
   const filteredCompanies = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
 
@@ -382,7 +329,6 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
     });
   }, [companies, searchTerm, selectedProvince, selectedType]);
 
-  const activeFilterCount = selectedProvince ? 1 : 0;
 
   function handleTypeSelect(type: CompanyTypeFilter) {
     setSelectedType((current) => (current === type ? 'all' : type));
@@ -394,9 +340,10 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
     setOpenCompanyId(null);
   }
 
-  function clearFilters() {
-    setSelectedProvince('');
+  function handleProvinceSelect(value: string) {
+    setSelectedProvince(value);
     setOpenCompanyId(null);
+    setIsFilterOpen(false);
   }
 
   function renderCompanyDetails(company: PartnerDirectoryEntry) {
@@ -542,40 +489,39 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
             ) : null}
           </label>
 
-          <div className={styles.filterShell}>
+          <div className={styles.filterShell} ref={filterShellRef}>
             <button
               type="button"
-              className={`${styles.filterButton} ${activeFilterCount ? styles.filterButtonActive : ''}`}
+              className={`${styles.filterButton} ${selectedProvince ? styles.filterButtonActive : ''} ${isFilterOpen ? styles.filterButtonOpen : ''}`}
               onClick={() => setIsFilterOpen((current) => !current)}
+              aria-haspopup="listbox"
               aria-expanded={isFilterOpen}
             >
               <FilterIcon className={styles.icon} />
-              <span>{activeFilterCount ? `Filters (${activeFilterCount})` : 'Filters'}</span>
+              <span>{selectedProvince || 'Filters'}</span>
               <ChevronDownIcon className={styles.chevronIcon} />
             </button>
 
             {isFilterOpen ? (
-              <div className={styles.filterPopover}>
-                <div className={styles.filterField}>
-                  <span className={styles.filterLabel}>Province</span>
-                  <FilterSelect
-                    label="Province"
-                    value={selectedProvince}
-                    options={[
-                      { value: '', label: 'All provinces' },
-                      ...PROVINCES.map((province) => ({ value: province, label: province })),
-                    ]}
-                    onChange={(value) => {
-                      setSelectedProvince(value);
-                      setOpenCompanyId(null);
-                    }}
-                  />
-                </div>
+              <div className={styles.provinceDropdown} role="listbox" aria-label="Province filter">
+                {provinceOptions.map((option) => {
+                  const isSelected = option.value === selectedProvince;
 
-                <div className={styles.filterActions}>
-                  <button type="button" className={styles.ghostButton} onClick={clearFilters}>Clear filters</button>
-                  <button type="button" className={styles.primaryButton} onClick={() => setIsFilterOpen(false)}>Apply</button>
-                </div>
+                  return (
+                    <button
+                      key={option.value || option.label}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      className={`${styles.provinceOption} ${isSelected ? styles.provinceOptionActive : ''}`}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => handleProvinceSelect(option.value)}
+                    >
+                      <span>{option.label}</span>
+                      {isSelected ? <b aria-hidden="true">✓</b> : null}
+                    </button>
+                  );
+                })}
               </div>
             ) : null}
           </div>
