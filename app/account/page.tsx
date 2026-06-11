@@ -5,6 +5,7 @@ import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
+type AccountActionModal = 'business' | 'assetRegisters' | 'scanPin' | 'marketplace' | 'partnerDirectory';
 
 type AccountProfile = {
   userId: string;
@@ -255,16 +256,6 @@ function buildProfileLocation(profile: AccountProfile): string {
     .join(', ');
 }
 
-function formatWebsiteLabel(value: string): string {
-  const text = String(value ?? '').trim();
-
-  if (!text) {
-    return 'No website saved yet';
-  }
-
-  return text.replace(/^https?:\/\//i, '').replace(/\/$/, '');
-}
-
 function buildProfileDraft(profile: AccountProfile | null): ProfileDraft {
   if (!profile) {
     return initialProfileDraft;
@@ -441,17 +432,11 @@ export default function AccountClient() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isReadingLogo, setIsReadingLogo] = useState(false);
+  const [activeAccountModal, setActiveAccountModal] = useState<AccountActionModal | null>(null);
   const partnerMapElementRef = useRef<HTMLDivElement | null>(null);
   const partnerLeafletMapRef = useRef<any>(null);
   const partnerPinMarkerRef = useRef<any>(null);
   const partnerRadiusCircleRef = useRef<any>(null);
-  const businessDetailsSectionRef = useRef<HTMLElement | null>(null);
-  const scanPinSectionRef = useRef<HTMLElement | null>(null);
-  const marketplaceSectionRef = useRef<HTMLElement | null>(null);
-  const partnerDirectorySectionRef = useRef<HTMLElement | null>(null);
-  const [isBusinessEditorOpen, setIsBusinessEditorOpen] = useState(false);
-  const [isMarketplaceEditorOpen, setIsMarketplaceEditorOpen] = useState(false);
-  const [isScanPinEditorOpen, setIsScanPinEditorOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -566,12 +551,36 @@ export default function AccountClient() {
     };
   }, [isDeleteDialogOpen, isDeletingAccount]);
 
+  useEffect(() => {
+    if (!activeAccountModal) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (
+        event.key === 'Escape' &&
+        !isSavingProfile &&
+        !isReadingLogo &&
+        !isSavingScanPin &&
+        !isDisablingScanPin
+      ) {
+        closeActionModal();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [activeAccountModal, isDisablingScanPin, isReadingLogo, isSavingProfile, isSavingScanPin]);
+
   const completedFields = useMemo(() => countCompletedFields(profileDraft), [profileDraft]);
   const completionPercentage = Math.round((completedFields / PROFILE_COMPLETION_TOTAL) * 100);
-  const completionLabel =
-    completedFields >= PROFILE_COMPLETION_TOTAL
-      ? 'Complete'
-      : `${PROFILE_COMPLETION_TOTAL - completedFields} left`;
   const addressLines = useMemo(() => buildAddressLines(profileDraft), [profileDraft]);
   const accountTypeLabel = useMemo(() => formatAccountTypeLabel(profileDraft.accountType), [profileDraft.accountType]);
   const normalizedAccountType = String(profile?.accountType || profileDraft.accountType || 'owner')
@@ -590,8 +599,6 @@ export default function AccountClient() {
   );
   const scanPinStatusLabel = scanPinStatus.enabled ? 'Active' : 'Disabled';
   const logoUrl = profileDraft.logoUrl.trim();
-  const websiteUrl = profileDraft.websiteUrl.trim();
-  const websiteDisplayLabel = formatWebsiteLabel(websiteUrl);
   const marketplaceSellerName =
     profileDraft.marketplaceSellerName.trim() || profileDraft.businessName.trim() || accountDisplayName;
   const marketplacePhone = profileDraft.marketplacePhone.trim() || profileDraft.phone.trim() || 'No contact details saved yet';
@@ -607,22 +614,11 @@ export default function AccountClient() {
     : 'No map pin selected yet';
   const memberSinceLabel = formatMemberSince(profile?.createdAtIso);
   const updatedLabel = formatDate(profile?.updatedAtIso || profile?.createdAtIso);
-  const businessNameLabel = profileDraft.businessName.trim() || 'No business name saved yet';
-  const businessContactDetailsLabel = profileDraft.phone.trim() || 'No contact details saved yet';
-  const accountEmailLabel = profile?.email || 'No account email found';
-  const businessEmailLabel = profileDraft.marketplaceEmail.trim() || 'No business email saved yet';
-  const businessLocationLabel = addressLines.length ? addressLines.join(', ') : 'No location saved yet';
-  const marketplaceProfileComplete = Boolean(
-    (profileDraft.marketplaceSellerName.trim() || profileDraft.businessName.trim() || accountDisplayName) &&
-      (profileDraft.marketplacePhone.trim() || profileDraft.phone.trim()) &&
-      profileDraft.marketplaceEmail.trim() &&
-      (profileDraft.marketplaceLocation.trim() || addressLines.length),
-  );
   const directoryStatusLabel = profileDraft.partnerDirectoryEnabled ? 'Visible' : 'Hidden';
   const scanPinDisplayLabel = isLoadingScanPin ? 'Loading' : scanPinStatus.hasPin ? scanPinStatusLabel : 'Not set';
 
   useEffect(() => {
-    if (isLoading || !isPartnerAccount || !partnerMapElementRef.current) {
+    if (isLoading || !isPartnerAccount || activeAccountModal !== 'partnerDirectory' || !partnerMapElementRef.current) {
       return undefined;
     }
 
@@ -729,6 +725,7 @@ export default function AccountClient() {
     };
   }, [
     accountDisplayName,
+    activeAccountModal,
     isLoading,
     isPartnerAccount,
     profileDraft.partnerLatitude,
@@ -860,8 +857,11 @@ export default function AccountClient() {
     const didSave = await saveProfileDraft(profileDraft);
 
     if (didSave) {
-      setIsBusinessEditorOpen(false);
-      setIsMarketplaceEditorOpen(false);
+      if (activeAccountModal === 'partnerDirectory') {
+        destroyPartnerMap();
+      }
+
+      setActiveAccountModal(null);
     }
   }
 
@@ -911,7 +911,7 @@ export default function AccountClient() {
       setScanPinStatus(data.scanPin);
       setScanPinDraft('');
       setScanPinConfirmDraft('');
-      setIsScanPinEditorOpen(false);
+      setActiveAccountModal(null);
       setNotice({ tone: 'success', message: 'Scan PIN saved. QR scan access is now active.' });
     } catch (error) {
       setNotice({
@@ -942,7 +942,7 @@ export default function AccountClient() {
       setScanPinStatus(data.scanPin);
       setScanPinDraft('');
       setScanPinConfirmDraft('');
-      setIsScanPinEditorOpen(false);
+      setActiveAccountModal(null);
       setNotice({ tone: 'success', message: 'Scan PIN disabled.' });
     } catch (error) {
       setNotice({
@@ -964,15 +964,52 @@ export default function AccountClient() {
     setDeleteConfirmText('');
   }
 
-  function scrollToSection(ref: { current: HTMLElement | null }) {
-    window.requestAnimationFrame(() => {
-      ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+  function destroyPartnerMap() {
+    if (partnerLeafletMapRef.current) {
+      partnerLeafletMapRef.current.remove();
+      partnerLeafletMapRef.current = null;
+      partnerPinMarkerRef.current = null;
+      partnerRadiusCircleRef.current = null;
+    }
+  }
+
+  function closeActionModal() {
+    if (isSavingProfile || isReadingLogo || isSavingScanPin || isDisablingScanPin) {
+      return;
+    }
+
+    destroyPartnerMap();
+
+    if (profile) {
+      setProfileDraft(buildProfileDraft(profile));
+    }
+
+    setScanPinDraft('');
+    setScanPinConfirmDraft('');
+    setActiveAccountModal(null);
+  }
+
+  function openActionModal(modal: AccountActionModal) {
+    destroyPartnerMap();
+
+    if (profile) {
+      setProfileDraft(buildProfileDraft(profile));
+    }
+
+    if (modal === 'scanPin') {
+      setScanPinDraft('');
+      setScanPinConfirmDraft('');
+    }
+
+    setActiveAccountModal(modal);
   }
 
   function openBusinessEditor() {
-    setIsBusinessEditorOpen(true);
-    scrollToSection(businessDetailsSectionRef);
+    openActionModal('business');
+  }
+
+  function openAssetRegistersModal() {
+    openActionModal('assetRegisters');
   }
 
   function openAssetRegistersPage() {
@@ -980,18 +1017,15 @@ export default function AccountClient() {
   }
 
   function openMarketplaceEditor() {
-    setIsMarketplaceEditorOpen(true);
-    scrollToSection(marketplaceSectionRef);
+    openActionModal('marketplace');
   }
 
   function openScanPinEditor() {
-    setIsBusinessEditorOpen(false);
-    setIsScanPinEditorOpen(true);
-    scrollToSection(scanPinSectionRef);
+    openActionModal('scanPin');
   }
 
   function openPartnerDirectory() {
-    scrollToSection(partnerDirectorySectionRef);
+    openActionModal('partnerDirectory');
   }
 
   async function handleDeleteAccount(event: FormEvent<HTMLFormElement>) {
@@ -1134,7 +1168,7 @@ export default function AccountClient() {
               </button>
 
               {isOwnerAccount ? (
-                <button type="button" className={styles.quickActionButton} onClick={openAssetRegistersPage}>
+                <button type="button" className={styles.quickActionButton} onClick={openAssetRegistersModal}>
                   <span className={styles.quickActionIcon}>▤</span>
                   <strong>Manage asset registers</strong>
                   <span className={styles.quickActionChevron}>›</span>
@@ -1174,271 +1208,355 @@ export default function AccountClient() {
           </section>
         </section>
 
-        <section ref={businessDetailsSectionRef} className={`${styles.card} ${styles.detailCard}`}>
-          <div className={styles.cardTitleRow}>
-            <div>
-              <h2>Business details</h2>
+      </section>
+
+      {activeAccountModal === 'assetRegisters' ? (
+        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+          <section
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountActionModalCardNarrow}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="asset-registers-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h2 id="asset-registers-modal-title">Manage asset registers</h2>
+              <p>Open the register workspace to manage asset lists, QR records and multi-register work.</p>
             </div>
-            <button type="button" className={styles.sectionActionButton} onClick={() => setIsBusinessEditorOpen((current) => !current)}>
-              {isBusinessEditorOpen ? 'Close' : 'Edit'}
-            </button>
-          </div>
 
-          {isLoading ? (
-            <p className={styles.loading}>Loading account details...</p>
-          ) : isBusinessEditorOpen ? (
-            <form className={`${styles.form} ${styles.compactEditForm}`} onSubmit={handleProfileSubmit}>
-              <label className={`${styles.field} ${styles.halfField}`}>
-                <span>Full name</span>
-                <input
-                  value={profileDraft.displayName}
-                  onChange={(event) => setProfileDraft((current) => ({ ...current, displayName: event.target.value }))}
-                  placeholder="Full name"
-                />
-              </label>
+            <div className={styles.accountActionIntro}>
+              <strong>Multi asset register</strong>
+              <p>Use this when you need to create, update or manage asset registers outside the account overview.</p>
+            </div>
 
-              <label className={`${styles.field} ${styles.halfField}`}>
-                <span>Account email</span>
-                <input value={profile?.email ?? ''} disabled />
-                <small className={styles.fieldHint}>Used only for login and account access.</small>
-              </label>
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.ghostButton} onClick={closeActionModal}>
+                Cancel
+              </button>
+              <button type="button" className={styles.primaryButton} onClick={openAssetRegistersPage}>
+                Open asset registers
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
-              <label className={`${styles.field} ${styles.halfField}`}>
-                <span>Business name</span>
-                <input
-                  value={profileDraft.businessName}
-                  onChange={(event) => setProfileDraft((current) => ({ ...current, businessName: event.target.value }))}
-                  placeholder="Business name"
-                />
-              </label>
+      {activeAccountModal === 'business' ? (
+        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+          <section
+            className={styles.accountActionModalCard + ' ' + styles.modalCard}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="business-details-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h2 id="business-details-modal-title">Business details</h2>
+              <p>Update the core account information used across Aim4price.</p>
+            </div>
 
-              <label className={`${styles.field} ${styles.halfField}`}>
-                <span>Business email</span>
-                <input
-                  type="email"
-                  value={profileDraft.marketplaceEmail}
-                  onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceEmail: event.target.value }))}
-                  placeholder="business@email.co.za"
-                />
-              </label>
-
-              <label className={`${styles.field} ${isPartnerAccount ? styles.halfField : styles.fullWidth}`}>
-                <span>Contact details</span>
-                <input
-                  type="text"
-                  value={profileDraft.phone}
-                  onChange={(event) => setProfileDraft((current) => ({ ...current, phone: event.target.value }))}
-                  placeholder="Phone, WhatsApp or office contact details"
-                />
-              </label>
-
-              {isPartnerAccount ? (
+            {isLoading ? (
+              <p className={styles.loading}>Loading account details...</p>
+            ) : (
+              <form className={`${styles.form} ${styles.compactEditForm}`} onSubmit={handleProfileSubmit}>
                 <label className={`${styles.field} ${styles.halfField}`}>
-                  <span>Website link</span>
+                  <span>Full name</span>
                   <input
-                    inputMode="url"
-                    value={profileDraft.websiteUrl}
-                    onChange={(event) => setProfileDraft((current) => ({ ...current, websiteUrl: event.target.value }))}
-                    placeholder="https://your-business.co.za"
+                    value={profileDraft.displayName}
+                    onChange={(event) => setProfileDraft((current) => ({ ...current, displayName: event.target.value }))}
+                    placeholder="Full name"
                   />
                 </label>
-              ) : null}
 
-              {isPartnerAccount ? (
-                <div className={`${styles.mediaUploadField} ${styles.fullWidth}`}>
-                  <div className={styles.mediaUploadHeader}>
-                    <div>
-                      <span>Business logo</span>
-                      <strong>Logo for company profile</strong>
-                      <p>Upload one clear logo for your business profile.</p>
+                <label className={`${styles.field} ${styles.halfField}`}>
+                  <span>Account email</span>
+                  <input value={profile?.email ?? ''} disabled />
+                  <small className={styles.fieldHint}>Used only for login and account access.</small>
+                </label>
+
+                <label className={`${styles.field} ${styles.halfField}`}>
+                  <span>Business name</span>
+                  <input
+                    value={profileDraft.businessName}
+                    onChange={(event) => setProfileDraft((current) => ({ ...current, businessName: event.target.value }))}
+                    placeholder="Business name"
+                  />
+                </label>
+
+                <label className={`${styles.field} ${styles.halfField}`}>
+                  <span>Business email</span>
+                  <input
+                    type="email"
+                    value={profileDraft.marketplaceEmail}
+                    onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceEmail: event.target.value }))}
+                    placeholder="business@email.co.za"
+                  />
+                </label>
+
+                <label className={`${styles.field} ${isPartnerAccount ? styles.halfField : styles.fullWidth}`}>
+                  <span>Contact details</span>
+                  <input
+                    type="text"
+                    value={profileDraft.phone}
+                    onChange={(event) => setProfileDraft((current) => ({ ...current, phone: event.target.value }))}
+                    placeholder="Phone, WhatsApp or office contact details"
+                  />
+                </label>
+
+                {isPartnerAccount ? (
+                  <label className={`${styles.field} ${styles.halfField}`}>
+                    <span>Website link</span>
+                    <input
+                      inputMode="url"
+                      value={profileDraft.websiteUrl}
+                      onChange={(event) => setProfileDraft((current) => ({ ...current, websiteUrl: event.target.value }))}
+                      placeholder="https://your-business.co.za"
+                    />
+                  </label>
+                ) : null}
+
+                {isPartnerAccount ? (
+                  <div className={`${styles.mediaUploadField} ${styles.fullWidth}`}>
+                    <div className={styles.mediaUploadHeader}>
+                      <div>
+                        <span>Business logo</span>
+                        <strong>Logo for company profile</strong>
+                        <p>Upload one clear logo for your business profile.</p>
+                      </div>
+                    </div>
+
+                    <div className={styles.businessMediaEditorGrid}>
+                      <section className={styles.businessLogoPanel}>
+                        <div className={styles.businessLogoPreview}>
+                          {logoUrl ? <img src={logoUrl} alt="Business logo preview" /> : <span>{profileInitials}</span>}
+                        </div>
+
+                        <div className={styles.businessMediaControls}>
+                          <label className={styles.uploadButton}>
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp"
+                              onChange={handleLogoFileChange}
+                              disabled={isReadingLogo || isSavingProfile}
+                            />
+                            {logoUrl ? 'Replace logo' : 'Upload logo'}
+                          </label>
+
+                          {logoUrl ? (
+                            <button
+                              type="button"
+                              className={styles.ghostButton}
+                              onClick={handleRemoveLogo}
+                              disabled={isSavingProfile || isReadingLogo}
+                            >
+                              Remove logo
+                            </button>
+                          ) : null}
+                        </div>
+
+                        <small>JPG, PNG or WEBP. Maximum {formatUploadSize(MAX_LOGO_UPLOAD_BYTES)}.</small>
+                      </section>
                     </div>
                   </div>
+                ) : null}
 
-                  <div className={styles.businessMediaEditorGrid}>
-                    <section className={styles.businessLogoPanel}>
-                      <div className={styles.businessLogoPreview}>
-                        {logoUrl ? <img src={logoUrl} alt="Business logo preview" /> : <span>{profileInitials}</span>}
-                      </div>
+                <label className={`${styles.field} ${styles.thirdField}`}>
+                  <span>Account type</span>
+                  <div className={styles.readOnlyValue}>{accountTypeLabel}</div>
+                  <small className={styles.fieldHint}>Account type is locked after signup.</small>
+                </label>
 
-                      <div className={styles.businessMediaControls}>
-                        <label className={styles.uploadButton}>
-                          <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            onChange={handleLogoFileChange}
-                            disabled={isReadingLogo || isSavingProfile}
-                          />
-                          {logoUrl ? 'Replace logo' : 'Upload logo'}
-                        </label>
+                <label className={`${styles.field} ${styles.thirdField}`}>
+                  <span>Province</span>
+                  <input
+                    value={profileDraft.province}
+                    onChange={(event) => setProfileDraft((current) => ({ ...current, province: event.target.value }))}
+                    placeholder="Province"
+                  />
+                </label>
 
-                        {logoUrl ? (
-                          <button
-                            type="button"
-                            className={styles.ghostButton}
-                            onClick={handleRemoveLogo}
-                            disabled={isSavingProfile || isReadingLogo}
-                          >
-                            Remove logo
-                          </button>
-                        ) : null}
-                      </div>
+                <label className={`${styles.field} ${styles.thirdField}`}>
+                  <span>Town / city</span>
+                  <input
+                    value={profileDraft.townCity}
+                    onChange={(event) => setProfileDraft((current) => ({ ...current, townCity: event.target.value }))}
+                    placeholder="Town or city"
+                  />
+                </label>
 
-                      <small>JPG, PNG or WEBP. Maximum {formatUploadSize(MAX_LOGO_UPLOAD_BYTES)}.</small>
-                    </section>
-                  </div>
+                <label className={`${styles.field} ${styles.fullWidth}`}>
+                  <span>Address line 1</span>
+                  <input
+                    value={profileDraft.addressLine1}
+                    onChange={(event) => setProfileDraft((current) => ({ ...current, addressLine1: event.target.value }))}
+                    placeholder="Address line 1"
+                  />
+                </label>
+
+                <div className={styles.actionsRow}>
+                  <button type="button" className={styles.ghostButton} onClick={closeActionModal} disabled={isSavingProfile || isReadingLogo}>
+                    Cancel
+                  </button>
+                  <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
+                    {isSavingProfile ? 'Saving...' : 'Save business details'}
+                  </button>
                 </div>
-              ) : null}
+              </form>
+            )}
+          </section>
+        </div>
+      ) : null}
 
-              <label className={`${styles.field} ${styles.thirdField}`}>
-                <span>Account type</span>
-                <div className={styles.readOnlyValue}>{accountTypeLabel}</div>
-                <small className={styles.fieldHint}>Account type is locked after signup.</small>
-              </label>
+      {activeAccountModal === 'scanPin' ? (
+        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+          <section
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountActionModalCardNarrow}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="scan-pin-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h2 id="scan-pin-modal-title">Update QR PIN</h2>
+              <p>Create or update the 4 to 8 digit PIN used for QR scan updates.</p>
+            </div>
 
-              <label className={`${styles.field} ${styles.thirdField}`}>
-                <span>Province</span>
-                <input
-                  value={profileDraft.province}
-                  onChange={(event) => setProfileDraft((current) => ({ ...current, province: event.target.value }))}
-                  placeholder="Province"
-                />
-              </label>
+            <div className={styles.pinModalStatus}>
+              <span>Current PIN status</span>
+              <strong>{scanPinDisplayLabel}</strong>
+              <p>{scanPinStatus.hasPin ? 'A PIN is already saved for QR scan access.' : 'No PIN is saved yet.'}</p>
+            </div>
 
-              <label className={`${styles.field} ${styles.thirdField}`}>
-                <span>Town / city</span>
-                <input
-                  value={profileDraft.townCity}
-                  onChange={(event) => setProfileDraft((current) => ({ ...current, townCity: event.target.value }))}
-                  placeholder="Town or city"
-                />
-              </label>
+            <form className={styles.modalForm} onSubmit={handleScanPinSubmit}>
+              <div className={styles.pinGrid}>
+                <label className={styles.field}>
+                  <span>New scan PIN</span>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    autoComplete="new-password"
+                    value={scanPinDraft}
+                    onChange={(event) => setScanPinDraft(normalizePinInput(event.target.value))}
+                    placeholder="4 to 8 digits"
+                  />
+                </label>
 
-              <label className={`${styles.field} ${styles.fullWidth}`}>
-                <span>Address line 1</span>
-                <input
-                  value={profileDraft.addressLine1}
-                  onChange={(event) => setProfileDraft((current) => ({ ...current, addressLine1: event.target.value }))}
-                  placeholder="Address line 1"
-                />
-              </label>
+                <label className={styles.field}>
+                  <span>Confirm scan PIN</span>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    autoComplete="new-password"
+                    value={scanPinConfirmDraft}
+                    onChange={(event) => setScanPinConfirmDraft(normalizePinInput(event.target.value))}
+                    placeholder="Repeat PIN"
+                  />
+                </label>
+              </div>
 
-              <div className={styles.actionsRow}>
-                <button type="button" className={styles.ghostButton} onClick={() => setIsBusinessEditorOpen(false)}>
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.ghostButton} onClick={closeActionModal} disabled={isSavingScanPin || isDisablingScanPin}>
                   Cancel
                 </button>
-                <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
-                  {isSavingProfile ? 'Saving...' : 'Save'}
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={handleDisableScanPin}
+                  disabled={isDisablingScanPin || isSavingScanPin || isLoadingScanPin || !scanPinStatus.hasPin}
+                >
+                  {isDisablingScanPin ? 'Disabling...' : 'Disable PIN'}
+                </button>
+                <button type="submit" className={styles.primaryButton} disabled={isSavingScanPin || isDisablingScanPin || isLoadingScanPin}>
+                  {isSavingScanPin ? 'Saving...' : scanPinStatus.hasPin ? 'Update PIN' : 'Save PIN'}
                 </button>
               </div>
             </form>
-          ) : (
-            <div className={`${styles.detailGrid} ${!showScanPinControls ? styles.detailGridSingle : ''}`}>
-              <div className={styles.detailList}>
-                <div className={styles.detailRow}>
-                  <span>Business name</span>
-                  <strong>{businessNameLabel}</strong>
-                </div>
-                <div className={styles.detailRow}>
-                  <span>Business email</span>
-                  <strong>{businessEmailLabel}</strong>
-                </div>
-                <div className={styles.detailRow}>
-                  <span>Contact details</span>
-                  <strong>{businessContactDetailsLabel}</strong>
-                </div>
-                {isPartnerAccount ? (
-                  <div className={styles.detailRow}>
-                    <span>Website</span>
-                    <strong>
-                      {websiteUrl ? (
-                        <a className={styles.websiteLink} href={websiteUrl} target="_blank" rel="noopener noreferrer">
-                          {websiteDisplayLabel}
-                        </a>
-                      ) : (
-                        websiteDisplayLabel
-                      )}
-                    </strong>
-                  </div>
-                ) : null}
-                <div className={styles.detailRow}>
-                  <span>Location</span>
-                  <strong>{businessLocationLabel}</strong>
-                </div>
-                <div className={styles.detailRow}>
-                  <span>Account email</span>
-                  <strong>{accountEmailLabel}</strong>
-                </div>
-              </div>
+          </section>
+        </div>
+      ) : null}
 
-              {showScanPinControls ? (
-                <aside ref={scanPinSectionRef} className={styles.pinSummaryCard}>
-                  <h3>QR Code PIN</h3>
-                  <p>Create your PIN to receive QR updates</p>
-                  <strong>{scanPinDisplayLabel}</strong>
-                  <small>4 to 8 digits</small>
-                  <button type="button" className={styles.primaryButton} onClick={() => setIsScanPinEditorOpen((current) => !current)}>
-                    {isScanPinEditorOpen ? 'Close PIN' : 'Manage PIN'}
-                  </button>
-
-                  {isScanPinEditorOpen ? (
-                    <form className={styles.pinForm} onSubmit={handleScanPinSubmit}>
-                      <div className={styles.pinGrid}>
-                        <label className={styles.field}>
-                          <span>New scan PIN</span>
-                          <input
-                            type="password"
-                            inputMode="numeric"
-                            autoComplete="new-password"
-                            value={scanPinDraft}
-                            onChange={(event) => setScanPinDraft(normalizePinInput(event.target.value))}
-                            placeholder="4 to 8 digits"
-                          />
-                        </label>
-
-                        <label className={styles.field}>
-                          <span>Confirm scan PIN</span>
-                          <input
-                            type="password"
-                            inputMode="numeric"
-                            autoComplete="new-password"
-                            value={scanPinConfirmDraft}
-                            onChange={(event) => setScanPinConfirmDraft(normalizePinInput(event.target.value))}
-                            placeholder="Repeat PIN"
-                          />
-                        </label>
-                      </div>
-
-                      <div className={styles.inlineActions}>
-                        <button type="submit" className={styles.primaryButton} disabled={isSavingScanPin}>
-                          {isSavingScanPin ? 'Saving...' : scanPinStatus.hasPin ? 'Update PIN' : 'Save PIN'}
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.secondaryButton}
-                          onClick={handleDisableScanPin}
-                          disabled={isDisablingScanPin || !scanPinStatus.hasPin}
-                        >
-                          {isDisablingScanPin ? 'Disabling...' : 'Disable PIN'}
-                        </button>
-                      </div>
-                    </form>
-                  ) : null}
-                </aside>
-              ) : null}
+      {activeAccountModal === 'marketplace' ? (
+        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+          <section
+            className={styles.accountActionModalCard + ' ' + styles.modalCard}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="marketplace-contact-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h2 id="marketplace-contact-modal-title">Marketplace contact</h2>
+              <p>These details are shown when customers contact you from the marketplace.</p>
             </div>
-          )}
-        </section>
 
-        {showPartnerDirectory ? (
-          <section ref={partnerDirectorySectionRef} className={`${styles.card} ${styles.partnerDirectoryCard}`}>
-            <div className={`${styles.cardTitleRow} ${styles.partnerDirectoryHeader}`}>
-              <div>
-                <h2>Partner directory</h2>
-                <p>Owners use this information when selecting a partner for quote leads.</p>
-              </div>
-              <span className={`${styles.directoryStatusPill} ${profileDraft.partnerDirectoryEnabled ? styles.directoryStatusOn : styles.directoryStatusOff}`}>
-                {directoryStatusLabel}
-              </span>
+            {isLoading ? (
+              <p className={styles.loading}>Loading marketplace contact...</p>
+            ) : (
+              <form className={`${styles.marketplaceFields} ${styles.compactEditForm}`} onSubmit={handleProfileSubmit}>
+                <label className={styles.field}>
+                  <span>Seller name</span>
+                  <input
+                    value={profileDraft.marketplaceSellerName}
+                    onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceSellerName: event.target.value }))}
+                    placeholder={marketplaceSellerName}
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Contact details</span>
+                  <input
+                    type="text"
+                    value={profileDraft.marketplacePhone}
+                    onChange={(event) => setProfileDraft((current) => ({ ...current, marketplacePhone: event.target.value }))}
+                    placeholder={marketplacePhone}
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Business email</span>
+                  <input
+                    type="email"
+                    value={profileDraft.marketplaceEmail}
+                    onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceEmail: event.target.value }))}
+                    placeholder="business@email.co.za"
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Location</span>
+                  <input
+                    value={profileDraft.marketplaceLocation}
+                    onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceLocation: event.target.value }))}
+                    placeholder={marketplaceLocation}
+                  />
+                </label>
+
+                <div className={styles.marketplaceActions}>
+                  <button type="button" className={styles.ghostButton} onClick={closeActionModal} disabled={isSavingProfile || isReadingLogo}>
+                    Cancel
+                  </button>
+                  <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
+                    {isSavingProfile ? 'Saving...' : 'Save marketplace'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </section>
+        </div>
+      ) : null}
+
+      {activeAccountModal === 'partnerDirectory' && showPartnerDirectory ? (
+        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+          <section
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.partnerDirectoryModalCard}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="partner-directory-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h2 id="partner-directory-modal-title">Partner directory</h2>
+              <p>Control whether owners can select this account when sending a quote lead.</p>
             </div>
 
             <form className={`${styles.form} ${styles.directoryForm}`} onSubmit={handleProfileSubmit}>
@@ -1525,124 +1643,17 @@ export default function AccountClient() {
               </label>
 
               <div className={styles.actionsRow}>
+                <button type="button" className={styles.ghostButton} onClick={closeActionModal} disabled={isSavingProfile || isReadingLogo}>
+                  Cancel
+                </button>
                 <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
                   {isSavingProfile ? 'Saving...' : 'Save directory'}
                 </button>
               </div>
             </form>
           </section>
-        ) : null}
-
-        {showMarketplaceContact ? (
-          <section ref={marketplaceSectionRef} className={`${styles.card} ${styles.marketplaceContactCard}`}>
-            <div className={styles.cardTitleRow}>
-              <div>
-                <h2>Marketplace contact</h2>
-              </div>
-              <button type="button" className={styles.sectionActionButton} onClick={() => setIsMarketplaceEditorOpen((current) => !current)}>
-                {isMarketplaceEditorOpen ? 'Close' : 'Edit'}
-              </button>
-            </div>
-
-            {isLoading ? (
-              <p className={styles.loading}>Loading marketplace contact...</p>
-            ) : isMarketplaceEditorOpen ? (
-              <form className={`${styles.marketplaceFields} ${styles.compactEditForm}`} onSubmit={handleProfileSubmit}>
-                <label className={styles.field}>
-                  <span>Seller name</span>
-                  <input
-                    value={profileDraft.marketplaceSellerName}
-                    onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceSellerName: event.target.value }))}
-                    placeholder={marketplaceSellerName}
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Contact details</span>
-                  <input
-                    type="text"
-                    value={profileDraft.marketplacePhone}
-                    onChange={(event) => setProfileDraft((current) => ({ ...current, marketplacePhone: event.target.value }))}
-                    placeholder={marketplacePhone}
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Business email</span>
-                  <input
-                    type="email"
-                    value={profileDraft.marketplaceEmail}
-                    onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceEmail: event.target.value }))}
-                    placeholder="business@email.co.za"
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Location</span>
-                  <input
-                    value={profileDraft.marketplaceLocation}
-                    onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceLocation: event.target.value }))}
-                    placeholder={marketplaceLocation}
-                  />
-                </label>
-
-                <div className={styles.marketplaceActions}>
-                  <button type="button" className={styles.ghostButton} onClick={() => setIsMarketplaceEditorOpen(false)}>
-                    Cancel
-                  </button>
-                  <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
-                    {isSavingProfile ? 'Saving...' : 'Save marketplace'}
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className={styles.marketplaceGrid}>
-                <div className={styles.detailList}>
-                  <div className={styles.detailRow}>
-                    <span>Contact name</span>
-                    <strong>{marketplaceSellerName}</strong>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span>Contact details</span>
-                    <strong>{marketplacePhone}</strong>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span>Business email</span>
-                    <strong>{marketplaceEmail}</strong>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span>Location</span>
-                    <strong>{marketplaceLocation}</strong>
-                  </div>
-                </div>
-
-                <aside className={styles.profileStatusCard}>
-                  <h3>Your marketplace profile</h3>
-                  <p>You are visible in the Aim4price marketplace</p>
-                  <ul>
-                    <li>Visible to customers</li>
-                    <li>Receiving quote leads</li>
-                    <li>{marketplaceProfileComplete ? 'Profile is up to date' : 'Profile needs contact details'}</li>
-                  </ul>
-                  <button type="button" className={styles.ghostButton} onClick={openMarketplaceEditor}>
-                    View marketplace
-                  </button>
-                </aside>
-              </div>
-            )}
-          </section>
-        ) : null}
-
-        <section className={`${styles.card} ${styles.accountDeleteCard}`}>
-          <div>
-            <h2>Delete account</h2>
-            <p>This action cannot be undone. All your data will be permanently removed.</p>
-          </div>
-          <button type="button" className={styles.dangerButton} onClick={() => setIsDeleteDialogOpen(true)}>
-            Delete account
-          </button>
-        </section>
-      </section>
+        </div>
+      ) : null}
 
       {isDeleteDialogOpen ? (
         <div className={styles.modalBackdrop} onClick={closeDeleteDialog}>
