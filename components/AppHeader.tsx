@@ -787,7 +787,6 @@ export default function AppHeader({
       <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="notification-contact-title">
         <div className={styles.notificationDetailHeader}>
           <div className={styles.notificationDetailHeaderText}>
-            <span className={styles.notificationDetailKicker}>Contact access request</span>
             <h2 id="notification-contact-title">{requesterName}</h2>
             <p>{formatAccountTypeLabel(request.requesterAccountType)} account requesting access to your saved owner contact details.</p>
           </div>
@@ -819,7 +818,7 @@ export default function AppHeader({
           <div className={styles.notificationDetailMessageBox}>
             <strong>What they are requesting</strong>
             <p>
-              This account wants permission to view your saved phone and email contact details inside Aim4price. Accept only if you are comfortable sharing those details with this account.
+              This account wants permission to view your saved phone and email contact details inside Aim4price so that messages/ads/documents can be sent via the Aim4price platform. Accept only if you are comfortable sharing those details with this account.
             </p>
           </div>
 
