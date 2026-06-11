@@ -3252,6 +3252,7 @@ export default function AssetRegisterClient() {
   const assetFilterWrapRef = useRef<HTMLDivElement | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
+  const [replacementValueVatMode, setReplacementValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [registerSummaryStartIndex, setRegisterSummaryStartIndex] = useState(0);
   const [registerSummaryCardsPerView, setRegisterSummaryCardsPerView] = useState(REGISTER_SUMMARY_VISIBLE_CARD_COUNT);
   const registerSummaryViewportRef = useRef<HTMLDivElement | null>(null);
@@ -3944,6 +3945,7 @@ export default function AssetRegisterClient() {
   const displayedRegisterValue = registerValueVatMode === 'included' ? totalValueInclVat : totalValue;
   const totalReplacementValue = useMemo(() => sumAssetReplacementValues(assets), [assets]);
   const totalReplacementValueInclVat = useMemo(() => Math.round(totalReplacementValue * 1.15), [totalReplacementValue]);
+  const displayedReplacementValue = replacementValueVatMode === 'included' ? totalReplacementValueInclVat : totalReplacementValue;
   const replacementPricedAssetCount = useMemo(() => countAssetsWithReplacementPrice(assets), [assets]);
 
   const aim4priceValuedEquipmentCount = useMemo(() => {
@@ -6702,21 +6704,31 @@ export default function AssetRegisterClient() {
                     <span className={styles.heroSummaryTitle}>Replacement value</span>
                   </div>
 
-                  <div className={styles.replacementSummaryBody}>
-                    <div className={styles.replacementSummaryMainValue}>
-                      <strong>{money(totalReplacementValue)}</strong>
-                      <span>Excl. VAT</span>
-                    </div>
+                  <div className={styles.heroSummaryValueRow}>
+                    <strong className={`${styles.heroSummaryValue} ${styles.heroRegisterValue}`}>
+                      {money(displayedReplacementValue)}
+                      {replacementValueVatMode === 'excluded' ? <span className={styles.heroRegisterVatSuffix}> + VAT</span> : null}
+                    </strong>
                   </div>
 
-                  <div className={`${styles.heroSummaryFooter} ${styles.replacementSummaryFooter}`}>
-                    <div className={styles.replacementSummaryMetric}>
-                      <span>Assets priced</span>
-                      <strong>{replacementPricedAssetCount}</strong>
-                    </div>
-                    <div className={styles.replacementSummaryMetric}>
-                      <span>Incl. VAT</span>
-                      <strong>{money(totalReplacementValueInclVat)}</strong>
+                  <div className={`${styles.heroSummaryFooter} ${styles.heroVatFooter}`}>
+                    <div className={styles.vatToggleGroup} aria-label="Replacement value VAT display">
+                      <button
+                        type="button"
+                        className={`${styles.vatToggleButton} ${replacementValueVatMode === 'excluded' ? styles.vatToggleButtonActive : ''}`}
+                        onClick={() => setReplacementValueVatMode('excluded')}
+                        aria-pressed={replacementValueVatMode === 'excluded'}
+                      >
+                        Excl. VAT
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.vatToggleButton} ${replacementValueVatMode === 'included' ? styles.vatToggleButtonActive : ''}`}
+                        onClick={() => setReplacementValueVatMode('included')}
+                        aria-pressed={replacementValueVatMode === 'included'}
+                      >
+                        Incl. VAT
+                      </button>
                     </div>
                   </div>
                 </div>
