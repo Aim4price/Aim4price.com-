@@ -8450,7 +8450,7 @@ export default function AssetRegisterClient() {
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Download reports</strong>
-                      <small>Valuation PDF plus fuel and maintenance PDF/Excel reports.</small>
+                      <small>Valuation, fuel and maintenance reports</small>
                     </span>
                   </button>
 
