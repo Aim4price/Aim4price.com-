@@ -67,6 +67,15 @@ declare global {
   }
 }
 
+const REGISTER_SUMMARY_CARD_COUNT = 3;
+
+function getRegisterSummaryCardsPerView(): number {
+  if (typeof window === 'undefined') return REGISTER_SUMMARY_CARD_COUNT;
+  if (window.innerWidth <= 760) return 1;
+  if (window.innerWidth <= 1180) return 2;
+  return REGISTER_SUMMARY_CARD_COUNT;
+}
+
 type AssetKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools';
 type AssetMethod = 'aim4price' | 'market' | 'manual';
 type RevalueMethod = Exclude<AssetMethod, 'manual'>;
@@ -3242,6 +3251,13 @@ export default function AssetRegisterClient() {
   const assetFilterWrapRef = useRef<HTMLDivElement | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
+  const [registerSummaryStartIndex, setRegisterSummaryStartIndex] = useState(0);
+  const [registerSummaryCardsPerView, setRegisterSummaryCardsPerView] = useState(REGISTER_SUMMARY_CARD_COUNT);
+  const registerSummaryViewportRef = useRef<HTMLDivElement | null>(null);
+  const registerSummaryScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const registerSummaryMaxIndex = Math.max(0, REGISTER_SUMMARY_CARD_COUNT - registerSummaryCardsPerView);
+  const isRegisterSummaryAtStart = registerSummaryStartIndex <= 0;
+  const isRegisterSummaryAtEnd = registerSummaryStartIndex >= registerSummaryMaxIndex;
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isRegisterShareModalOpen, setIsRegisterShareModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -3272,6 +3288,73 @@ export default function AssetRegisterClient() {
       documentObjectUrlsRef.current.clear();
     };
   }, []);
+
+  useEffect(() => {
+    function handleRegisterSummaryViewportChange() {
+      setRegisterSummaryCardsPerView(getRegisterSummaryCardsPerView());
+    }
+
+    handleRegisterSummaryViewportChange();
+    window.addEventListener('resize', handleRegisterSummaryViewportChange);
+
+    return () => {
+      window.removeEventListener('resize', handleRegisterSummaryViewportChange);
+    };
+  }, []);
+
+  useEffect(() => () => {
+    if (registerSummaryScrollTimeoutRef.current) {
+      clearTimeout(registerSummaryScrollTimeoutRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    setRegisterSummaryStartIndex((currentIndex) => Math.min(currentIndex, registerSummaryMaxIndex));
+  }, [registerSummaryMaxIndex]);
+
+  useEffect(() => {
+    scrollRegisterSummaryToIndex(Math.min(registerSummaryStartIndex, registerSummaryMaxIndex));
+  }, [registerSummaryCardsPerView, registerSummaryMaxIndex, registerSummaryStartIndex]);
+
+  function scrollRegisterSummaryToIndex(nextIndex: number) {
+    const viewport = registerSummaryViewportRef.current;
+    if (!viewport) return;
+
+    const safeIndex = Math.min(registerSummaryMaxIndex, Math.max(0, nextIndex));
+    const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+    const nextScrollLeft = registerSummaryMaxIndex > 0 ? (maxScrollLeft * safeIndex) / registerSummaryMaxIndex : 0;
+
+    window.requestAnimationFrame(() => {
+      viewport.scrollTo({ left: nextScrollLeft, behavior: 'smooth' });
+    });
+  }
+
+  function handleRegisterSummarySlide(direction: -1 | 1) {
+    if (registerSummaryMaxIndex <= 0) return;
+
+    setRegisterSummaryStartIndex((currentIndex) => {
+      const nextIndex = Math.min(registerSummaryMaxIndex, Math.max(0, currentIndex + direction));
+      scrollRegisterSummaryToIndex(nextIndex);
+      return nextIndex;
+    });
+  }
+
+  function handleRegisterSummaryScroll() {
+    const viewport = registerSummaryViewportRef.current;
+    if (!viewport || registerSummaryMaxIndex <= 0) return;
+
+    if (registerSummaryScrollTimeoutRef.current) {
+      clearTimeout(registerSummaryScrollTimeoutRef.current);
+    }
+
+    registerSummaryScrollTimeoutRef.current = setTimeout(() => {
+      const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+      if (maxScrollLeft <= 0) return;
+
+      const nextIndex = Math.round((viewport.scrollLeft / maxScrollLeft) * registerSummaryMaxIndex);
+      setRegisterSummaryStartIndex((currentIndex) => (currentIndex === nextIndex ? currentIndex : nextIndex));
+    }, 120);
+  }
 
   function rememberDocumentObjectUrl(cacheKey: string, objectUrl: string): string {
     const existingEntry = documentObjectUrlsRef.current.get(cacheKey);
@@ -6430,67 +6513,97 @@ export default function AssetRegisterClient() {
             </div>
           </div>
 
-          <div className={`${styles.summaryRow} ${styles.heroSummaryRow}`}>
-            <div className={`${styles.summaryTile} ${styles.registerValueTile} ${styles.heroSummaryTile} ${styles.heroRegisterTile}`}>
-              <div className={styles.heroSummaryHead}>
-                <span className={styles.heroSummaryTitle}>Register value</span>
-              </div>
+          <section className={styles.assetSummaryCarousel} aria-label="Asset register summary">
+            <button
+              type="button"
+              className={styles.assetSummaryArrow}
+              onClick={() => handleRegisterSummarySlide(-1)}
+              disabled={isRegisterSummaryAtStart}
+              aria-label="Show previous asset register summary cards"
+            >
+              <span aria-hidden="true">&lt;</span>
+            </button>
 
-              <div className={styles.heroSummaryValueRow}>
-                <strong className={`${styles.heroSummaryValue} ${styles.heroRegisterValue}`}>
-                  {money(displayedRegisterValue)}
-                  {registerValueVatMode === 'excluded' ? <span className={styles.heroRegisterVatSuffix}> + VAT</span> : null}
-                </strong>
-              </div>
+            <div
+              className={styles.assetSummaryViewport}
+              ref={registerSummaryViewportRef}
+              onScroll={handleRegisterSummaryScroll}
+              tabIndex={0}
+              aria-label="Scrollable asset register summary cards"
+            >
+              <div className={`${styles.summaryRow} ${styles.heroSummaryRow} ${styles.assetSummaryTrack}`}>
+                <div className={`${styles.summaryTile} ${styles.registerValueTile} ${styles.heroSummaryTile} ${styles.heroRegisterTile}`}>
+                  <div className={styles.heroSummaryHead}>
+                    <span className={styles.heroSummaryTitle}>Register value</span>
+                  </div>
 
-              <div className={`${styles.heroSummaryFooter} ${styles.heroVatFooter}`}>
-                <div className={styles.vatToggleGroup} aria-label="Register value VAT display">
-                  <button
-                    type="button"
-                    className={`${styles.vatToggleButton} ${registerValueVatMode === 'excluded' ? styles.vatToggleButtonActive : ''}`}
-                    onClick={() => setRegisterValueVatMode('excluded')}
-                    aria-pressed={registerValueVatMode === 'excluded'}
-                  >
-                    Excl. VAT
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.vatToggleButton} ${registerValueVatMode === 'included' ? styles.vatToggleButtonActive : ''}`}
-                    onClick={() => setRegisterValueVatMode('included')}
-                    aria-pressed={registerValueVatMode === 'included'}
-                  >
-                    Incl. VAT
-                  </button>
+                  <div className={styles.heroSummaryValueRow}>
+                    <strong className={`${styles.heroSummaryValue} ${styles.heroRegisterValue}`}>
+                      {money(displayedRegisterValue)}
+                      {registerValueVatMode === 'excluded' ? <span className={styles.heroRegisterVatSuffix}> + VAT</span> : null}
+                    </strong>
+                  </div>
+
+                  <div className={`${styles.heroSummaryFooter} ${styles.heroVatFooter}`}>
+                    <div className={styles.vatToggleGroup} aria-label="Register value VAT display">
+                      <button
+                        type="button"
+                        className={`${styles.vatToggleButton} ${registerValueVatMode === 'excluded' ? styles.vatToggleButtonActive : ''}`}
+                        onClick={() => setRegisterValueVatMode('excluded')}
+                        aria-pressed={registerValueVatMode === 'excluded'}
+                      >
+                        Excl. VAT
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.vatToggleButton} ${registerValueVatMode === 'included' ? styles.vatToggleButtonActive : ''}`}
+                        onClick={() => setRegisterValueVatMode('included')}
+                        aria-pressed={registerValueVatMode === 'included'}
+                      >
+                        Incl. VAT
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`${styles.summaryTile} ${styles.metricSummaryTile} ${styles.heroSummaryTile}`}>
+                  <div className={styles.heroSummaryHead}>
+                    <span className={styles.heroSummaryTitle}>Aim4price valued equipment</span>
+                  </div>
+
+                  <div className={styles.heroSummaryValueRow}>
+                    <strong className={styles.heroSummaryValue}>{aim4priceValuedEquipmentCount}</strong>
+                  </div>
+
+                  <div className={styles.heroSummaryFooter} aria-hidden="true" />
+                </div>
+
+                <div className={`${styles.summaryTile} ${styles.totalAssetsTile} ${styles.heroSummaryTile}`}>
+                  <div className={styles.heroSummaryHead}>
+                    <span className={styles.heroSummaryTitle}>Total assets</span>
+                  </div>
+
+                  <div className={styles.heroSummaryValueRow}>
+                    <strong className={styles.heroSummaryValue}>{assets.length}</strong>
+                  </div>
+
+                  <div className={`${styles.heroSummaryFooter} ${styles.heroTotalFooter}`}>
+                    <small>{registerRangeDescription}</small>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className={`${styles.summaryTile} ${styles.metricSummaryTile} ${styles.heroSummaryTile}`}>
-              <div className={styles.heroSummaryHead}>
-                <span className={styles.heroSummaryTitle}>Aim4price valued equipment</span>
-              </div>
-
-              <div className={styles.heroSummaryValueRow}>
-                <strong className={styles.heroSummaryValue}>{aim4priceValuedEquipmentCount}</strong>
-              </div>
-
-              <div className={styles.heroSummaryFooter} aria-hidden="true" />
-            </div>
-
-            <div className={`${styles.summaryTile} ${styles.totalAssetsTile} ${styles.heroSummaryTile}`}>
-              <div className={styles.heroSummaryHead}>
-                <span className={styles.heroSummaryTitle}>Total assets</span>
-              </div>
-
-              <div className={styles.heroSummaryValueRow}>
-                <strong className={styles.heroSummaryValue}>{assets.length}</strong>
-              </div>
-
-              <div className={`${styles.heroSummaryFooter} ${styles.heroTotalFooter}`}>
-                <small>{registerRangeDescription}</small>
-              </div>
-            </div>
-          </div>
+            <button
+              type="button"
+              className={styles.assetSummaryArrow}
+              onClick={() => handleRegisterSummarySlide(1)}
+              disabled={isRegisterSummaryAtEnd}
+              aria-label="Show next asset register summary cards"
+            >
+              <span aria-hidden="true">&gt;</span>
+            </button>
+          </section>
 
           <div className={styles.toolbar}>
             <label className={styles.searchWrap}>
@@ -7147,23 +7260,27 @@ export default function AssetRegisterClient() {
                 </div>
               </section>
 
-              <section className={styles.summaryReplacementPanel} aria-label="Replacement value summary">
-                <div className={styles.summaryReplacementCopy}>
-                  <span>Replacement value</span>
-                  <p>Total replacement cost for assets with saved replacement prices. This is separate from the current register-value totals above.</p>
+              <section className={`${styles.summaryReplacementPanel} ${styles.summaryReplacementRegisterTile}`} aria-label="Replacement value summary">
+                <div className={styles.summaryReplacementTileHead}>
+                  <div className={styles.summaryReplacementCopy}>
+                    <span>Replacement value</span>
+                    <p>Total replacement cost for assets with saved replacement prices. This is separate from the current register-value totals above.</p>
+                  </div>
                 </div>
 
-                <div className={styles.summaryReplacementTable} role="table" aria-label="Replacement value totals">
-                  <div className={styles.summaryReplacementTableHeader} role="row">
-                    <span role="columnheader">Assets priced</span>
-                    <span role="columnheader">Excl. VAT</span>
-                    <span role="columnheader">Incl. VAT</span>
-                  </div>
+                <div className={styles.summaryReplacementMainValue}>
+                  <strong>{money(totalReplacementValue)}</strong>
+                  <small>Excl. VAT</small>
+                </div>
 
-                  <div className={styles.summaryReplacementTableRow} role="row">
-                    <strong role="cell" data-label="Assets priced">{replacementPricedAssetCount}</strong>
-                    <strong role="cell" data-label="Excl. VAT">{money(totalReplacementValue)}</strong>
-                    <strong role="cell" data-label="Incl. VAT">{money(totalReplacementValueInclVat)}</strong>
+                <div className={styles.summaryReplacementTileFooter} aria-label="Replacement value supporting totals">
+                  <div className={styles.summaryReplacementFooterMetric}>
+                    <span>Incl. VAT</span>
+                    <strong>{money(totalReplacementValueInclVat)}</strong>
+                  </div>
+                  <div className={styles.summaryReplacementFooterMetric}>
+                    <span>Assets priced</span>
+                    <strong>{replacementPricedAssetCount}</strong>
                   </div>
                 </div>
               </section>

@@ -20728,3 +20728,429 @@ button.documentOpenLink {
     max-height: 14rem !important;
   }
 }
+
+/* === Asset Register summary carousel arrows + Register Summary modal refinement === */
+.page {
+  overflow-x: clip;
+}
+
+.assetSummaryCarousel {
+  --asset-summary-carousel-gap: clamp(0.95rem, 1.35vw, 1.18rem);
+  --asset-summary-arrow-offset: clamp(1.55rem, 1.9vw, 2.05rem);
+  --asset-summary-arrow-nudge: 0.18rem;
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 clamp(1.08rem, 1.35vw, 1.28rem) !important;
+}
+
+.assetSummaryViewport {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  border-radius: 1.45rem;
+}
+
+.assetSummaryViewport::-webkit-scrollbar {
+  display: none;
+}
+
+.assetSummaryTrack {
+  width: 100% !important;
+  min-width: 0 !important;
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: stretch !important;
+  gap: var(--asset-summary-carousel-gap) !important;
+  margin-bottom: 0 !important;
+}
+
+.assetSummaryTrack .heroSummaryTile {
+  flex: 0 0 calc((100% - var(--asset-summary-carousel-gap) - var(--asset-summary-carousel-gap)) / 3) !important;
+  min-width: 0 !important;
+  scroll-snap-align: start;
+}
+
+.assetSummaryTrack .registerValueTile,
+.assetSummaryTrack .heroRegisterTile {
+  grid-column: auto !important;
+}
+
+.assetSummaryArrow {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  width: 2rem;
+  height: clamp(3.9rem, 5.2vw, 4.9rem);
+  min-width: 0;
+  min-height: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: rgba(7, 59, 48, 0.78);
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  opacity: 0.9;
+  transform: translateY(-50%);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.assetSummaryArrow span {
+  display: none;
+}
+
+.assetSummaryArrow::before {
+  display: block;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(2.2rem, 2.7vw, 2.8rem);
+  font-weight: 520;
+  line-height: 0.78;
+  letter-spacing: -0.1em;
+  transform: translateY(-0.03em);
+}
+
+.assetSummaryCarousel > .assetSummaryArrow:first-of-type {
+  left: calc(0rem - var(--asset-summary-arrow-offset));
+}
+
+.assetSummaryCarousel > .assetSummaryArrow:first-of-type::before {
+  content: '‹';
+}
+
+.assetSummaryCarousel > .assetSummaryArrow:last-of-type {
+  right: calc(0rem - var(--asset-summary-arrow-offset));
+}
+
+.assetSummaryCarousel > .assetSummaryArrow:last-of-type::before {
+  content: '›';
+}
+
+.assetSummaryArrow:hover:not(:disabled) {
+  color: #073b30;
+  background: transparent;
+  box-shadow: none;
+  opacity: 1;
+}
+
+.assetSummaryCarousel > .assetSummaryArrow:first-of-type:hover:not(:disabled) {
+  transform: translate(calc(0rem - var(--asset-summary-arrow-nudge)), -50%);
+}
+
+.assetSummaryCarousel > .assetSummaryArrow:last-of-type:hover:not(:disabled) {
+  transform: translate(var(--asset-summary-arrow-nudge), -50%);
+}
+
+.assetSummaryArrow:disabled {
+  opacity: 0.22;
+  cursor: default;
+  color: rgba(7, 59, 48, 0.38);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.assetSummaryCarousel > .assetSummaryArrow:first-of-type:disabled,
+.assetSummaryCarousel > .assetSummaryArrow:last-of-type:disabled {
+  transform: translateY(-50%);
+}
+
+.assetSummaryArrow:focus-visible,
+.assetSummaryViewport:focus-visible {
+  outline: 2px solid rgba(20, 112, 82, 0.24);
+  outline-offset: 0.25rem;
+}
+
+@media (min-width: 761px) {
+  .assetSummaryTrack .heroSummaryTitle,
+  .assetSummaryTrack .heroTotalFooter small {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .assetSummaryTrack .heroSummaryTile {
+    flex-basis: calc((100% - var(--asset-summary-carousel-gap)) / 2) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .assetSummaryCarousel {
+    --asset-summary-carousel-gap: 0.8rem;
+  }
+
+  .assetSummaryTrack .heroSummaryTile {
+    flex-basis: 100% !important;
+  }
+
+  .assetSummaryArrow {
+    display: none !important;
+  }
+
+  .assetSummaryViewport {
+    border-radius: 1.25rem;
+  }
+}
+
+.summaryModal {
+  width: min(100%, 1180px) !important;
+  border-radius: 2.15rem !important;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(22, 83, 64, 0.06), transparent 38%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+}
+
+.summaryModalBody {
+  gap: clamp(1rem, 1.45vw, 1.25rem) !important;
+  padding-top: 0.08rem !important;
+}
+
+.summaryCurrentPanel {
+  display: grid !important;
+  gap: 0.95rem !important;
+  min-width: 0 !important;
+  padding: clamp(1rem, 1.45vw, 1.25rem) !important;
+  border: 1px solid rgba(205, 220, 231, 0.98) !important;
+  border-radius: 1.55rem !important;
+  background:
+    radial-gradient(circle at top left, rgba(23, 96, 72, 0.045), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+  box-shadow:
+    0 14px 28px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.summarySectionHeader {
+  align-items: flex-start !important;
+  padding: 0 0.08rem !important;
+}
+
+.summarySectionHeader span {
+  color: #0d3329 !important;
+  font-size: 0.84rem !important;
+  font-weight: 920 !important;
+  letter-spacing: 0.076em !important;
+}
+
+.summarySectionHeader p {
+  color: #62758a !important;
+  font-size: 0.94rem !important;
+  line-height: 1.42 !important;
+}
+
+.summaryValueTable {
+  border-radius: 1.38rem !important;
+  border-color: rgba(205, 220, 231, 0.98) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.summaryValueTableHeader {
+  background: rgba(246, 250, 252, 0.96) !important;
+}
+
+.summaryValueTableRows .summaryValueTableRow {
+  min-height: 3.58rem !important;
+  transition: background 160ms ease;
+}
+
+.summaryValueTableRows .summaryValueTableRow:hover {
+  background: rgba(244, 249, 248, 0.72) !important;
+}
+
+.summaryReplacementPanel.summaryReplacementRegisterTile {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  gap: clamp(0.85rem, 1.35vw, 1rem) !important;
+  min-height: clamp(13rem, 22vw, 16.5rem) !important;
+  min-width: 0 !important;
+  padding: clamp(1.2rem, 2vw, 1.65rem) !important;
+  border: 1px solid rgba(151, 205, 181, 0.96) !important;
+  border-radius: 1.65rem !important;
+  background:
+    radial-gradient(circle at 6% 0%, rgba(54, 153, 111, 0.13) 0%, rgba(54, 153, 111, 0) 42%),
+    linear-gradient(180deg, #fbfefd 0%, #edf8f3 100%) !important;
+  box-shadow:
+    0 18px 36px rgba(16, 31, 28, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+}
+
+.summaryReplacementTileHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.summaryReplacementRegisterTile .summaryReplacementCopy {
+  display: grid !important;
+  gap: 0.35rem !important;
+  min-width: 0 !important;
+}
+
+.summaryReplacementRegisterTile .summaryReplacementCopy span {
+  color: #52697f !important;
+  font-size: clamp(1.45rem, 2vw, 2rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.04em !important;
+  text-transform: none !important;
+}
+
+.summaryReplacementRegisterTile .summaryReplacementCopy p {
+  max-width: 48rem !important;
+  color: #617286 !important;
+  font-size: 0.94rem !important;
+  font-weight: 660 !important;
+  line-height: 1.45 !important;
+}
+
+.summaryReplacementMainValue {
+  display: flex;
+  align-items: baseline;
+  align-self: center;
+  flex-wrap: wrap;
+  gap: 0.58rem;
+  min-width: 0;
+  padding: 0.25rem 0 0.35rem;
+}
+
+.summaryReplacementMainValue strong {
+  color: #113228;
+  font-size: clamp(3rem, 4.9vw, 4.75rem);
+  font-weight: 920;
+  line-height: 0.9;
+  letter-spacing: -0.08em;
+  white-space: nowrap;
+}
+
+.summaryReplacementMainValue small {
+  color: #587087;
+  font-size: clamp(0.95rem, 1.15vw, 1.2rem);
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.summaryReplacementTileFooter {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  gap: 0.72rem;
+  min-width: 0;
+  padding-top: 0.82rem;
+  border-top: 1px solid rgba(193, 216, 207, 0.95);
+}
+
+.summaryReplacementFooterMetric {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  min-height: 2.72rem;
+  padding: 0.58rem 0.8rem;
+  border: 1px solid rgba(216, 225, 234, 0.95);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.summaryReplacementFooterMetric span {
+  flex: 0 0 auto;
+  color: #657386;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.summaryReplacementFooterMetric strong {
+  min-width: 0;
+  color: #0d3329;
+  font-size: clamp(1.08rem, 1.75vw, 1.58rem);
+  font-weight: 920;
+  line-height: 1;
+  letter-spacing: -0.055em;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .summaryCurrentPanel {
+    padding: 0.95rem !important;
+    border-radius: 1.28rem !important;
+  }
+
+  .summaryReplacementPanel.summaryReplacementRegisterTile {
+    min-height: auto !important;
+    padding: 1rem !important;
+    border-radius: 1.28rem !important;
+  }
+
+  .summaryReplacementRegisterTile .summaryReplacementCopy span {
+    font-size: clamp(1.35rem, 7vw, 1.85rem) !important;
+  }
+
+  .summaryReplacementMainValue strong {
+    font-size: clamp(2.25rem, 11vw, 3.15rem);
+    white-space: normal;
+  }
+
+  .summaryReplacementTileFooter {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryReplacementFooterMetric {
+    align-items: flex-start;
+    border-radius: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .summaryModalBody {
+    gap: 0.85rem !important;
+  }
+
+  .summarySectionHeader {
+    gap: 0.25rem !important;
+  }
+
+  .summaryReplacementMainValue {
+    gap: 0.4rem;
+  }
+
+  .summaryReplacementMainValue small {
+    flex-basis: 100%;
+  }
+
+  .summaryReplacementFooterMetric {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.32rem;
+  }
+
+  .summaryReplacementFooterMetric strong {
+    text-align: left;
+  }
+}
