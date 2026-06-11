@@ -105,6 +105,7 @@ export type AssetRegisterSummaryPayload = {
     value: string;
     note?: string;
   }>;
+  notes?: ReportKeyValue[];
   rows: AssetRegisterSummaryRow[];
   footerNote?: string;
 };
@@ -1438,9 +1439,6 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
   const issuerPhone = String(payload.issuerPhone ?? '').trim();
   const issuerEmail = String(payload.issuerEmail ?? '').trim();
   const updatedLabel = payload.statusLabel || getAssetSheetValue(payload.facts, 'Last Updated') || payload.generatedAt;
-  const basisFromPayload = String(payload.valueNote ?? '').replace(/\s+value\s+basis\s*$/i, '').trim();
-  const basisFromFacts = getAssetSheetValue(payload.facts, 'Value Basis');
-  const valueBasis = basisFromPayload && !isBlankReportValue(basisFromPayload) ? basisFromPayload : basisFromFacts;
   const footerNote =
     payload.footerNote ??
     'Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition, location and live market demand.';
@@ -2099,7 +2097,6 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
             <strong class="assetReportValue">${escapeHtml(payload.value)}</strong>
             <span class="assetReportVat">VAT excluded</span>
             <div class="assetReportValueMeta">
-              <div><span>Basis</span><strong>${escapeHtml(valueBasis)}</strong></div>
               <div><span>Updated</span><strong>${escapeHtml(updatedLabel)}</strong></div>
             </div>
           </aside>
@@ -2215,7 +2212,7 @@ function renderFullRegisterMetaRows(rows: ReportKeyValue[]): string {
       (row) => `
         ${(() => {
           const normalizedLabel = String(row.label ?? '').trim().toLowerCase();
-          const isTallRow = normalizedLabel === 'address' || normalizedLabel === 'owner message' || normalizedLabel === 'attached document';
+          const isTallRow = normalizedLabel === 'address' || normalizedLabel === 'owner message' || normalizedLabel === 'attached document' || normalizedLabel.includes('note') || normalizedLabel.includes('reply');
 
           return `
             <div class="fullRegisterMetaRow${isTallRow ? ' fullRegisterMetaRowTall' : ''}">
@@ -2249,6 +2246,35 @@ function renderFullRegisterStats(payload: AssetRegisterSummaryPayload): string {
           `,
         )
         .join('')}
+    </section>
+  `;
+}
+
+function renderFullRegisterNotes(rows: ReportKeyValue[]): string {
+  const visibleRows = rows.filter((row) => String(row.label ?? '').trim() && String(row.value ?? '').trim());
+
+  if (!visibleRows.length) {
+    return '';
+  }
+
+  return `
+    <section class="fullRegisterPanel fullRegisterNotesPanel">
+      <div class="fullRegisterSectionTitle">
+        <h2>Partner Notes / Replies</h2>
+        <span>${escapeHtml(String(visibleRows.length))} ${visibleRows.length === 1 ? 'note' : 'notes'}</span>
+      </div>
+      <div class="fullRegisterNoteCards">
+        ${visibleRows
+          .map(
+            (row) => `
+              <article class="fullRegisterNoteCard">
+                <span>${escapeHtml(row.label)}</span>
+                <strong>${escapeHtml(row.value)}</strong>
+              </article>
+            `,
+          )
+          .join('')}
+      </div>
     </section>
   `;
 }
@@ -2341,6 +2367,7 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
         { label: 'Account', value: payload.ownerName },
         { label: 'Details', value: payload.ownerMeta },
       ];
+  const noteRows = payload.notes ?? [];
   const footerNote =
     payload.footerNote ??
     'Values are indicative estimates based on saved Aim4price asset-register information and available pricing inputs. Values exclude VAT unless stated otherwise. This is not a certified valuation, inspection report or guarantee of selling price. Final values remain subject to physical inspection, documents, attachments, condition, location and live market demand.';
@@ -2629,6 +2656,46 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
 
       .fullRegisterOwnerDetailsPanel .fullRegisterMetaRowTall {
         min-height: 14mm;
+      }
+
+      .fullRegisterNotesPanel {
+        margin-top: 5.5mm;
+        padding: 5.8mm 6.2mm 6.2mm;
+      }
+
+      .fullRegisterNoteCards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4mm;
+      }
+
+      .fullRegisterNoteCard {
+        min-height: 22mm;
+        display: grid;
+        align-content: start;
+        gap: 2mm;
+        padding: 4mm;
+        border: 1px solid var(--line);
+        background: var(--soft);
+        break-inside: avoid;
+      }
+
+      .fullRegisterNoteCard span {
+        color: #344054;
+        font-size: 6.8pt;
+        line-height: 1.2;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+
+      .fullRegisterNoteCard strong {
+        color: var(--strong);
+        font-size: 7.6pt;
+        line-height: 1.5;
+        font-weight: 650;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
       }
 
       .fullRegisterAssetSection {
@@ -2989,6 +3056,8 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
         </div>
         <div class="fullRegisterMetaRows">${renderFullRegisterMetaRows(ownerRows)}</div>
       </section>
+
+      ${renderFullRegisterNotes(noteRows)}
 
       <section class="fullRegisterPanel fullRegisterAssetSection">
         <div class="fullRegisterSectionTitle">
