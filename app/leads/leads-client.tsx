@@ -318,6 +318,25 @@ function FilterIcon({ className }: IconProps) {
   );
 }
 
+function RefreshIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M20 11a8 8 0 0 0-14.7-4.3L4 8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 4v4h4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 13a8 8 0 0 0 14.7 4.3L20 16" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 20v-4h-4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" className={className} aria-hidden="true">
+      <path d="m5 12.5 4.2 4.2L19 7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function ChevronDownIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
@@ -447,7 +466,7 @@ function formatLeadType(value: LeadType): string {
 function formatStatus(value: LeadStatus): string {
   if (value === 'sent') return 'New';
   if (value === 'viewed' || value === 'accepted') return 'Opened';
-  if (value === 'quoted') return 'Quoted';
+  if (value === 'quoted') return 'Done';
   if (value === 'declined') return 'Deleted';
   return 'Closed';
 }
@@ -455,6 +474,11 @@ function formatStatus(value: LeadStatus): string {
 function isNewLead(lead: AssetLead): boolean {
   return lead.status === 'sent' && !lead.viewedAtIso;
 }
+
+function isCompletedLead(lead: AssetLead): boolean {
+  return lead.status === 'quoted' || lead.status === 'closed';
+}
+
 function leadDateParts(lead: AssetLead): { month: string; year: string } | null {
   const parsed = new Date(lead.createdAtIso);
   if (Number.isNaN(parsed.getTime())) return null;
@@ -1211,6 +1235,7 @@ export default function LeadsClient() {
   const [isNoteAttachmentDragging, setIsNoteAttachmentDragging] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [isDeletingLead, setIsDeletingLead] = useState(false);
+  const [markingLeadDoneId, setMarkingLeadDoneId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
 
@@ -1294,7 +1319,7 @@ export default function LeadsClient() {
     return `${labels.length} filters`;
   }, [monthFilter, statusFilter, yearFilter]);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (): Promise<boolean> => {
     setIsLoading(true);
 
     try {
@@ -1322,8 +1347,10 @@ export default function LeadsClient() {
       setSessionUserId(sessionData.user.id);
       setAccountInboxTitle(formatInboxTitle(accountTitle));
       setLeads(leadsData.leads);
+      return true;
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load leads.' });
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -1447,6 +1474,62 @@ export default function LeadsClient() {
         tone: 'error',
         message: error instanceof Error ? error.message : 'Lead opened, but it could not be marked as opened.',
       });
+    }
+  }
+
+  async function refreshLeads() {
+    if (isLoading) return;
+
+    setNotice(null);
+    const didRefresh = await loadData();
+
+    if (didRefresh) {
+      setNotice({ tone: 'success', message: 'Leads refreshed.' });
+    }
+  }
+
+  async function markLeadDone(leadToMark: AssetLead) {
+    if (isCompletedLead(leadToMark) || markingLeadDoneId) return;
+
+    const doneAtIso = new Date().toISOString();
+    setNotice(null);
+    setMarkingLeadDoneId(leadToMark.id);
+
+    setLeads((current) =>
+      current.map((lead) =>
+        lead.id === leadToMark.id
+          ? {
+              ...lead,
+              status: 'quoted',
+              viewedAtIso: lead.viewedAtIso ?? doneAtIso,
+              quotedAtIso: lead.quotedAtIso ?? doneAtIso,
+              updatedAtIso: doneAtIso,
+            }
+          : lead,
+      ),
+    );
+
+    try {
+      const response = await fetch(`/api/asset-leads/${encodeURIComponent(leadToMark.id)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'quoted' }),
+      });
+      const data = (await response.json()) as LeadsResponse;
+
+      if (!response.ok || !data.ok || !data.lead) {
+        throw new Error(data.error ?? 'Failed to mark lead as done.');
+      }
+
+      const updatedLead = data.lead;
+      setLeads((current) => current.map((lead) => (lead.id === updatedLead.id ? updatedLead : lead)));
+      setNotice({ tone: 'success', message: 'Lead marked done.' });
+    } catch (error) {
+      setLeads((current) => current.map((lead) => (lead.id === leadToMark.id ? leadToMark : lead)));
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to mark lead as done.' });
+    } finally {
+      setMarkingLeadDoneId((current) => (current === leadToMark.id ? null : current));
     }
   }
 
@@ -2185,16 +2268,28 @@ export default function LeadsClient() {
               ) : null}
             </label>
 
-            <button
-              type="button"
-              className={`${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${styles.leadFilterButton} ${hasActiveLeadFilter ? assetStyles.filterTriggerButtonActive : ''}`}
-              onClick={openLeadFilterModal}
-              disabled={isLoading}
-            >
-              <FilterIcon className={assetStyles.buttonIcon} />
-              <span>{activeLeadFilterLabel}</span>
-              <ChevronDownIcon className={assetStyles.filterChevron} />
-            </button>
+            <div className={styles.leadToolbarActions}>
+              <button
+                type="button"
+                className={`${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${styles.leadFilterButton} ${hasActiveLeadFilter ? assetStyles.filterTriggerButtonActive : ''}`}
+                onClick={openLeadFilterModal}
+                disabled={isLoading}
+              >
+                <FilterIcon className={assetStyles.buttonIcon} />
+                <span>{activeLeadFilterLabel}</span>
+                <ChevronDownIcon className={assetStyles.filterChevron} />
+              </button>
+
+              <button
+                type="button"
+                className={`${assetStyles.secondaryButton} ${styles.leadRefreshButton}`}
+                onClick={() => void refreshLeads()}
+                disabled={isLoading}
+              >
+                <RefreshIcon className={`${assetStyles.buttonIcon} ${isLoading ? styles.leadRefreshIconActive : ''}`} />
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
 
 
@@ -2207,43 +2302,68 @@ export default function LeadsClient() {
               {paginatedLeads.map((lead) => {
                 const isLeadOpen = openLeadId === lead.id;
                 const isLeadNew = isNewLead(lead);
+                const isLeadDone = isCompletedLead(lead);
+                const isMarkingThisLeadDone = markingLeadDoneId === lead.id;
 
                 return (
-                  <article key={lead.id} className={`${styles.leadThread} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadOpen ? styles.leadThreadOpen : ''}`}>
+                  <article key={lead.id} className={`${styles.leadThread} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isLeadOpen ? styles.leadThreadOpen : ''}`}>
                     <div className={styles.clientPanel}>
                       <div className={styles.clientPanelHeader}>
                         <div className={styles.clientIdentity}>
                           <span className={styles.clientKicker}>Received {formatDate(lead.createdAtIso)}</span>
-                          <h3>{lead.ownerBusinessName || ownerDisplayName(lead)}</h3>
+                          <div className={styles.leadCardTitleRow}>
+                            <h3>{lead.ownerBusinessName || ownerDisplayName(lead)}</h3>
+                            {isLeadNew ? <span className={`${styles.leadStatusBadge} ${styles.leadStatusBadgeNew}`}>New</span> : null}
+                            {isLeadDone ? <span className={`${styles.leadStatusBadge} ${styles.leadStatusBadgeDone}`}>Done</span> : null}
+                          </div>
                         </div>
 
                         <div className={styles.clientDecisionArea}>
-                          {isLeadOpen ? (
-                            <button
-                              type="button"
-                              className={`${assetStyles.secondaryButton} ${styles.closeLeadButton}`}
-                              onClick={() => {
-                                setOpenLeadId(null);
-                              }}
-                            >
-                              Close
-                            </button>
-                          ) : (
-                            <div className={styles.clientActionRow}>
-                              <button type="button" className={`${assetStyles.secondaryButton} ${styles.deleteLeadButton}`} onClick={() => setDeleteLeadTarget(lead)}>
-                                Delete
-                              </button>
+                          <div className={styles.clientActionRow}>
+                            {isLeadDone ? (
+                              <span className={styles.doneLeadPill}>
+                                <CheckIcon className={assetStyles.buttonIcon} />
+                                Done
+                              </span>
+                            ) : (
                               <button
                                 type="button"
-                                className={`${assetStyles.primaryButton} ${styles.openLeadButton}`}
+                                className={`${assetStyles.secondaryButton} ${styles.markDoneLeadButton}`}
+                                onClick={() => void markLeadDone(lead)}
+                                disabled={Boolean(markingLeadDoneId)}
+                              >
+                                <CheckIcon className={assetStyles.buttonIcon} />
+                                <span>{isMarkingThisLeadDone ? 'Marking...' : 'Mark done'}</span>
+                              </button>
+                            )}
+
+                            {isLeadOpen ? (
+                              <button
+                                type="button"
+                                className={`${assetStyles.secondaryButton} ${styles.closeLeadButton}`}
                                 onClick={() => {
-                                  void openLead(lead);
+                                  setOpenLeadId(null);
                                 }}
                               >
-                                Open
+                                Close
                               </button>
-                            </div>
-                          )}
+                            ) : (
+                              <>
+                                <button type="button" className={`${assetStyles.secondaryButton} ${styles.deleteLeadButton}`} onClick={() => setDeleteLeadTarget(lead)}>
+                                  Delete
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`${assetStyles.primaryButton} ${styles.openLeadButton}`}
+                                  onClick={() => {
+                                    void openLead(lead);
+                                  }}
+                                >
+                                  Open
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
