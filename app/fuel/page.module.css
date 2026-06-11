@@ -695,7 +695,7 @@
 
 .unitActions .changePinButton {
   color: #111111;
-  background: linear-gradient(180deg, #ffffff 0%, #edf1f3 100%);
+  background: linear-gradient(180deg, #f7f8f9 0%, #e6ebee 100%);
   border-color: #111111;
   border-width: 1.5px;
   box-shadow:
@@ -705,7 +705,7 @@
 
 .unitActions .changePinButton:hover:not(:disabled) {
   color: #000000;
-  background: linear-gradient(180deg, #ffffff 0%, #e3e8eb 100%);
+  background: linear-gradient(180deg, #f1f3f4 0%, #dbe2e6 100%);
   border-color: #000000;
   box-shadow:
     0 14px 28px rgba(17, 17, 17, 0.12),

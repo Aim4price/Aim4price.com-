@@ -939,7 +939,7 @@ export default function FuelClient() {
                           <div className={styles.storageWarningNote}>
                             <div>
                               <strong>Storage below reorder level</strong>
-                              <span>{formatLitres(storage.currentLitres)} remaining. Reorder level is {formatLitres(storage.reorderLevelLitres)}.</span>
+                              <span>{formatLitres(storage.currentLitres)} remaining. Reorder at {formatLitres(storage.reorderLevelLitres)}.</span>
                             </div>
                           </div>
                         ) : null}
@@ -948,7 +948,7 @@ export default function FuelClient() {
                           <div className={styles.storageWarningNote}>
                             <div>
                               <strong>Dipstick note</strong>
-                              <span>Dipstick note: {dipstickNoteText}</span>
+                              <span>{dipstickNoteText}</span>
                             </div>
                             <button type="button" className={styles.clearDipstickButton} onClick={() => handleClearDipstickNote(storage)} disabled={isSaving}>
                               Clear note
