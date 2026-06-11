@@ -1846,7 +1846,6 @@ function buildReportHtml(options: {
             <strong class="assetReportValue">${escapeHtml(options.summary.value)}</strong>
             <span class="assetReportVat">${escapeHtml(options.summary.subtext)}</span>
             <div class="assetReportValueMeta">
-              <div><span>Basis</span><strong>${escapeHtml(options.summary.basis)}</strong></div>
               <div><span>Updated</span><strong>${escapeHtml(options.summary.updated)}</strong></div>
             </div>
           </aside>
