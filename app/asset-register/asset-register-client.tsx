@@ -89,6 +89,7 @@ type ExportFormat = 'pdf' | 'xlsx';
 type ExportStep = 'format' | 'pdf-report';
 type PdfReportKind = 'full' | 'financed' | 'insured' | 'licensed' | 'not-financed' | 'not-insured' | 'not-licensed';
 type AssetPdfReportKind = 'fuel' | 'maintenance';
+type AssetReportFormat = 'pdf' | 'xlsx';
 type AssetReportSelectKey = 'type' | 'year' | 'month';
 type AssetReportStep = 'options' | 'fuel-filter' | 'maintenance-filter';
 
@@ -2723,11 +2724,20 @@ function buildAssetQrSvgUrl(asset: RegisterAsset): string {
   return `/api/asset-register/qr?assetId=${encodeURIComponent(asset.id)}&format=svg`;
 }
 
-function buildAssetPdfReportUrl(asset: RegisterAsset, reportKind: AssetPdfReportKind, filters?: AssetPdfReportFilters): string {
+function buildAssetPdfReportUrl(
+  asset: RegisterAsset,
+  reportKind: AssetPdfReportKind,
+  filters?: AssetPdfReportFilters,
+  format: AssetReportFormat = 'pdf',
+): string {
   const searchParams = new URLSearchParams({
     assetId: asset.id,
     report: reportKind,
   });
+
+  if (format === 'xlsx') {
+    searchParams.set('format', 'xlsx');
+  }
 
   if (filters?.year && filters.year !== 'all') {
     searchParams.set('year', filters.year);
@@ -5751,7 +5761,7 @@ export default function AssetRegisterClient() {
   }
 
   function handleOpenAssetPdfReport(asset: RegisterAsset, reportKind: AssetPdfReportKind, filters?: AssetPdfReportFilters): boolean {
-    const reportUrl = buildAssetPdfReportUrl(asset, reportKind, filters);
+    const reportUrl = buildAssetPdfReportUrl(asset, reportKind, filters, 'pdf');
     const opened = window.open(reportUrl, '_blank', 'noopener,noreferrer');
     const reportLabel = assetReportLabel(reportKind);
 
@@ -5768,6 +5778,42 @@ export default function AssetRegisterClient() {
       message: `${reportLabel} opened in a new tab. Use Print to save it as a PDF.`,
     });
     return true;
+  }
+
+  async function handleDownloadAssetReportXlsx(asset: RegisterAsset, reportKind: AssetPdfReportKind, filters?: AssetPdfReportFilters) {
+    const reportLabel = assetReportLabel(reportKind);
+
+    try {
+      const response = await fetch(buildAssetPdfReportUrl(asset, reportKind, filters, 'xlsx'), {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        try {
+          const data = (await response.json()) as { error?: string };
+          throw new Error(data.error ?? `Failed to download the ${reportLabel.toLowerCase()} Excel file.`);
+        } catch (error) {
+          if (error instanceof Error) {
+            throw error;
+          }
+
+          throw new Error(`Failed to download the ${reportLabel.toLowerCase()} Excel file.`);
+        }
+      }
+
+      const blob = await response.blob();
+      const fallbackName = `${asset.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'asset'}-${reportKind}-report.xlsx`;
+      const fileName = parseDownloadFileName(response, fallbackName);
+      downloadBlob(blob, fileName);
+      setNotice({ tone: 'success', message: `${reportLabel} Excel downloaded.` });
+      closeActionDialog();
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : `Failed to download the ${reportLabel.toLowerCase()} Excel file.`,
+      });
+    }
   }
 
   function openAssetFuelReportFilter() {
@@ -5821,23 +5867,37 @@ export default function AssetRegisterClient() {
     setOpenAssetReportSelect(null);
   }
 
-  function handleDownloadFilteredFuelReport(asset: RegisterAsset) {
-    const didOpen = handleOpenAssetPdfReport(asset, 'fuel', {
+  async function handleDownloadFilteredFuelReport(asset: RegisterAsset, format: AssetReportFormat = 'pdf') {
+    const filters: AssetPdfReportFilters = {
       year: assetFuelReportYear,
       month: assetFuelReportYear === 'all' ? 'all' : assetFuelReportMonth,
-    });
+    };
+
+    if (format === 'xlsx') {
+      await handleDownloadAssetReportXlsx(asset, 'fuel', filters);
+      return;
+    }
+
+    const didOpen = handleOpenAssetPdfReport(asset, 'fuel', filters);
 
     if (didOpen) {
       closeActionDialog();
     }
   }
 
-  function handleDownloadFilteredMaintenanceReport(asset: RegisterAsset) {
-    const didOpen = handleOpenAssetPdfReport(asset, 'maintenance', {
+  async function handleDownloadFilteredMaintenanceReport(asset: RegisterAsset, format: AssetReportFormat = 'pdf') {
+    const filters: AssetPdfReportFilters = {
       maintenanceType: assetMaintenanceReportType,
       year: assetMaintenanceReportYear,
       month: assetMaintenanceReportYear === 'all' ? 'all' : assetMaintenanceReportMonth,
-    });
+    };
+
+    if (format === 'xlsx') {
+      await handleDownloadAssetReportXlsx(asset, 'maintenance', filters);
+      return;
+    }
+
+    const didOpen = handleOpenAssetPdfReport(asset, 'maintenance', filters);
 
     if (didOpen) {
       closeActionDialog();
@@ -8389,8 +8449,8 @@ export default function AssetRegisterClient() {
                   <button type="button" className={styles.optionActionButton} onClick={openAssetReportDialog}>
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>
-                      <strong>Download PDF reports</strong>
-                      <small>Valuation, fuel and maintenance reports.</small>
+                      <strong>Download reports</strong>
+                      <small>Valuation PDF plus fuel and maintenance PDF/Excel reports.</small>
                     </span>
                   </button>
 
@@ -8652,12 +8712,12 @@ export default function AssetRegisterClient() {
                     ? 'Export fuel report'
                     : assetReportStep === 'maintenance-filter'
                       ? 'Export maintenance report'
-                      : 'Download PDF Reports'}
+                      : 'Download reports'}
                 </h3>
                 <p>{activeAsset.title}</p>
               </div>
 
-              <button type="button" className={styles.modalCloseButton} onClick={closeAssetReportDialog} aria-label="Close PDF report options">
+              <button type="button" className={styles.modalCloseButton} onClick={closeAssetReportDialog} aria-label="Close report options">
                 <CloseIcon className={styles.buttonIcon} />
               </button>
             </div>
@@ -8688,9 +8748,17 @@ export default function AssetRegisterClient() {
 
                   <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
                     <button type="button" className={styles.secondaryButton} onClick={backToAssetReportOptions}>Back</button>
-                    <button type="button" className={styles.primaryButton} onClick={() => handleDownloadFilteredFuelReport(activeAsset)}>
-                      <DownloadIcon className={styles.buttonIcon} />
+                    <button type="button" className={styles.primaryButton} onClick={() => void handleDownloadFilteredFuelReport(activeAsset, 'pdf')}>
+                      <PdfIcon className={styles.buttonIcon} />
                       <span>Download PDF</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.primaryButton} ${styles.assetReportExcelButton}`}
+                      onClick={() => void handleDownloadFilteredFuelReport(activeAsset, 'xlsx')}
+                    >
+                      <SpreadsheetIcon className={styles.buttonIcon} />
+                      <span>Download Excel</span>
                     </button>
                   </div>
                 </>
@@ -8728,9 +8796,17 @@ export default function AssetRegisterClient() {
 
                   <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
                     <button type="button" className={styles.secondaryButton} onClick={backToAssetReportOptions}>Back</button>
-                    <button type="button" className={styles.primaryButton} onClick={() => handleDownloadFilteredMaintenanceReport(activeAsset)}>
-                      <DownloadIcon className={styles.buttonIcon} />
+                    <button type="button" className={styles.primaryButton} onClick={() => void handleDownloadFilteredMaintenanceReport(activeAsset, 'pdf')}>
+                      <PdfIcon className={styles.buttonIcon} />
                       <span>Download PDF</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.primaryButton} ${styles.assetReportExcelButton}`}
+                      onClick={() => void handleDownloadFilteredMaintenanceReport(activeAsset, 'xlsx')}
+                    >
+                      <SpreadsheetIcon className={styles.buttonIcon} />
+                      <span>Download Excel</span>
                     </button>
                   </div>
                 </>
@@ -8750,7 +8826,7 @@ export default function AssetRegisterClient() {
                         <DocumentIcon className={styles.buttonIcon} />
                         <span>
                           <strong>Download fuel report</strong>
-                          <small>Choose a year and month before exporting the asset fuel PDF.</small>
+                          <small>Choose a year and month, then download PDF or Excel.</small>
                         </span>
                       </button>
 
@@ -8758,7 +8834,7 @@ export default function AssetRegisterClient() {
                         <DocumentIcon className={styles.buttonIcon} />
                         <span>
                           <strong>Download maintenance report</strong>
-                          <small>Filter by type, year and month before exporting maintenance records.</small>
+                          <small>Filter by type, year and month, then download PDF or Excel.</small>
                         </span>
                       </button>
                     </>
