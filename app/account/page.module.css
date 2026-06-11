@@ -2090,39 +2090,161 @@
 }
 
 .accountScrollableModalCard {
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: #1f6c53 rgba(231, 241, 237, 0.96);
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  scrollbar-width: none;
 }
 
-.accountScrollableModalCard::-webkit-scrollbar {
-  width: 0.62rem;
-  height: 0.62rem;
-}
-
-.accountScrollableModalCard::-webkit-scrollbar-track {
-  margin: 1.05rem 0;
-  border-radius: 999px;
-  border: 1px solid rgba(204, 222, 216, 0.9);
-  background: linear-gradient(180deg, #f1f7f4 0%, #e4eee9 100%);
-  box-shadow: inset 0 1px 3px rgba(18, 45, 37, 0.055);
-}
-
-.accountScrollableModalCard::-webkit-scrollbar-thumb {
-  border: 2px solid #e7f1ed;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #1f8a66 0%, #155942 100%);
-  box-shadow: 0 5px 12px rgba(18, 45, 37, 0.14);
-}
-
-.accountScrollableModalCard::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #176f53 0%, #103c30 100%);
-}
-
-.accountScrollableModalCard::-webkit-scrollbar-button {
+.accountScrollableModalCard::-webkit-scrollbar,
+.accountScrollableModalCard::-webkit-scrollbar-button,
+.accountScrollableModalCard::-webkit-scrollbar-corner {
   width: 0;
   height: 0;
   display: none;
+  background: transparent;
+}
+
+.accountModalScrollShell {
+  position: relative;
+  width: 100%;
+  max-height: inherit;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(31, 138, 102, 0.028), transparent 18rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.995) 0%, rgba(248, 251, 250, 0.995) 100%);
+}
+
+.accountModalScrollViewport {
+  max-height: inherit;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.accountModalScrollViewport::-webkit-scrollbar,
+.accountModalScrollViewport::-webkit-scrollbar-button,
+.accountModalScrollViewport::-webkit-scrollbar-corner {
+  width: 0;
+  height: 0;
+  display: none;
+  background: transparent;
+}
+
+.accountModalScrollContent {
+  min-width: 0;
+  padding: clamp(1.1rem, 1.8vw, 1.45rem);
+  padding-right: clamp(1.75rem, 2.2vw, 2.15rem);
+}
+
+.accountModalScrollRail {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.48rem;
+  bottom: 0.9rem;
+  z-index: 4;
+  width: 0.64rem;
+  border-radius: 999px;
+  border: 1px solid rgba(202, 219, 213, 0.82);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.2)),
+    linear-gradient(180deg, rgba(238, 246, 243, 0.96) 0%, rgba(224, 236, 231, 0.96) 100%);
+  box-shadow:
+    inset 0 1px 3px rgba(18, 45, 37, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.54);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease, width 160ms ease, right 160ms ease, background 160ms ease;
+}
+
+.accountModalScrollRail::before {
+  content: '';
+  position: absolute;
+  inset: 0.38rem 50% 0.38rem auto;
+  width: 1px;
+  border-radius: 999px;
+  background: rgba(31, 108, 83, 0.08);
+  transform: translateX(50%);
+}
+
+.accountModalScrollRailVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.accountModalScrollRailVisible:hover {
+  right: 0.42rem;
+  width: 0.76rem;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.26)),
+    linear-gradient(180deg, rgba(233, 244, 240, 0.98) 0%, rgba(215, 232, 226, 0.98) 100%);
+}
+
+.accountModalScrollThumb {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0.38rem;
+  min-height: 2.9rem;
+  margin-left: -0.19rem;
+  border-radius: 999px;
+  cursor: grab;
+  touch-action: none;
+  background:
+    linear-gradient(180deg, rgba(45, 161, 119, 0.98) 0%, rgba(21, 89, 66, 0.98) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 7px 16px rgba(18, 45, 37, 0.18);
+  transition: width 160ms ease, margin-left 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.accountModalScrollRailVisible:hover .accountModalScrollThumb,
+.accountModalScrollThumb:active {
+  width: 0.48rem;
+  margin-left: -0.24rem;
+  background:
+    linear-gradient(180deg, rgba(31, 138, 102, 1) 0%, rgba(13, 67, 49, 1) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.36),
+    0 8px 18px rgba(18, 45, 37, 0.22);
+}
+
+.accountModalScrollThumb:active {
+  cursor: grabbing;
+}
+
+@media (max-width: 760px) {
+  .accountModalScrollContent {
+    padding: 1rem 1.45rem 1rem 1rem;
+  }
+
+  .accountModalScrollRail {
+    top: 0.78rem;
+    right: 0.32rem;
+    bottom: 0.78rem;
+    width: 0.56rem;
+  }
+
+  .accountModalScrollRailVisible:hover {
+    right: 0.3rem;
+    width: 0.62rem;
+  }
+
+  .accountModalScrollThumb {
+    width: 0.34rem;
+    margin-left: -0.17rem;
+  }
+
+  .accountModalScrollRailVisible:hover .accountModalScrollThumb,
+  .accountModalScrollThumb:active {
+    width: 0.42rem;
+    margin-left: -0.21rem;
+  }
 }
 
 .accountActionModalCardNarrow {
