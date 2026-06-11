@@ -67,13 +67,14 @@ declare global {
   }
 }
 
-const REGISTER_SUMMARY_CARD_COUNT = 3;
+const REGISTER_SUMMARY_VISIBLE_CARD_COUNT = 3;
+const REGISTER_SUMMARY_TOTAL_CARD_COUNT = 8;
 
 function getRegisterSummaryCardsPerView(): number {
-  if (typeof window === 'undefined') return REGISTER_SUMMARY_CARD_COUNT;
+  if (typeof window === 'undefined') return REGISTER_SUMMARY_VISIBLE_CARD_COUNT;
   if (window.innerWidth <= 760) return 1;
   if (window.innerWidth <= 1180) return 2;
-  return REGISTER_SUMMARY_CARD_COUNT;
+  return REGISTER_SUMMARY_VISIBLE_CARD_COUNT;
 }
 
 type AssetKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools';
@@ -3252,10 +3253,10 @@ export default function AssetRegisterClient() {
   const [currentPage, setCurrentPage] = useState(1);
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [registerSummaryStartIndex, setRegisterSummaryStartIndex] = useState(0);
-  const [registerSummaryCardsPerView, setRegisterSummaryCardsPerView] = useState(REGISTER_SUMMARY_CARD_COUNT);
+  const [registerSummaryCardsPerView, setRegisterSummaryCardsPerView] = useState(REGISTER_SUMMARY_VISIBLE_CARD_COUNT);
   const registerSummaryViewportRef = useRef<HTMLDivElement | null>(null);
   const registerSummaryScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const registerSummaryMaxIndex = Math.max(0, REGISTER_SUMMARY_CARD_COUNT - registerSummaryCardsPerView);
+  const registerSummaryMaxIndex = Math.max(0, REGISTER_SUMMARY_TOTAL_CARD_COUNT - registerSummaryCardsPerView);
   const isRegisterSummaryAtStart = registerSummaryStartIndex <= 0;
   const isRegisterSummaryAtEnd = registerSummaryStartIndex >= registerSummaryMaxIndex;
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
@@ -6589,6 +6590,134 @@ export default function AssetRegisterClient() {
 
                   <div className={`${styles.heroSummaryFooter} ${styles.heroTotalFooter}`}>
                     <small>{registerRangeDescription}</small>
+                  </div>
+                </div>
+
+                <div className={`${styles.summaryTile} ${styles.metricSummaryTile} ${styles.heroSummaryTile} ${styles.summaryBreakdownTile}`}>
+                  <div className={styles.heroSummaryHead}>
+                    <span className={styles.heroSummaryTitle}>Manual assets</span>
+                  </div>
+
+                  <div className={styles.summaryBreakdownBody}>
+                    <div className={styles.summaryBreakdownCount}>
+                      <span>Count</span>
+                      <strong>{manualAssetStats.count}</strong>
+                    </div>
+
+                    <div className={styles.summaryBreakdownValues}>
+                      <div className={styles.summaryBreakdownValueRow}>
+                        <span>Excl. VAT</span>
+                        <strong>{money(manualAssetStats.value)}</strong>
+                      </div>
+                      <div className={styles.summaryBreakdownValueRow}>
+                        <span>Incl. VAT</span>
+                        <strong>{money(Math.round(manualAssetStats.value * 1.15))}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.heroSummaryFooter} aria-hidden="true" />
+                </div>
+
+                <div className={`${styles.summaryTile} ${styles.metricSummaryTile} ${styles.heroSummaryTile} ${styles.summaryBreakdownTile}`}>
+                  <div className={styles.heroSummaryHead}>
+                    <span className={styles.heroSummaryTitle}>Assets financed</span>
+                  </div>
+
+                  <div className={styles.summaryBreakdownBody}>
+                    <div className={styles.summaryBreakdownCount}>
+                      <span>Count</span>
+                      <strong>{financedAssetStats.count}</strong>
+                    </div>
+
+                    <div className={styles.summaryBreakdownValues}>
+                      <div className={styles.summaryBreakdownValueRow}>
+                        <span>Excl. VAT</span>
+                        <strong>{money(financedAssetStats.value)}</strong>
+                      </div>
+                      <div className={styles.summaryBreakdownValueRow}>
+                        <span>Incl. VAT</span>
+                        <strong>{money(Math.round(financedAssetStats.value * 1.15))}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.heroSummaryFooter} aria-hidden="true" />
+                </div>
+
+                <div className={`${styles.summaryTile} ${styles.metricSummaryTile} ${styles.heroSummaryTile} ${styles.summaryBreakdownTile}`}>
+                  <div className={styles.heroSummaryHead}>
+                    <span className={styles.heroSummaryTitle}>Assets insured</span>
+                  </div>
+
+                  <div className={styles.summaryBreakdownBody}>
+                    <div className={styles.summaryBreakdownCount}>
+                      <span>Count</span>
+                      <strong>{insuredAssetStats.count}</strong>
+                    </div>
+
+                    <div className={styles.summaryBreakdownValues}>
+                      <div className={styles.summaryBreakdownValueRow}>
+                        <span>Excl. VAT</span>
+                        <strong>{money(insuredAssetStats.value)}</strong>
+                      </div>
+                      <div className={styles.summaryBreakdownValueRow}>
+                        <span>Incl. VAT</span>
+                        <strong>{money(Math.round(insuredAssetStats.value * 1.15))}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.heroSummaryFooter} aria-hidden="true" />
+                </div>
+
+                <div className={`${styles.summaryTile} ${styles.metricSummaryTile} ${styles.heroSummaryTile} ${styles.summaryBreakdownTile}`}>
+                  <div className={styles.heroSummaryHead}>
+                    <span className={styles.heroSummaryTitle}>Assets licensed</span>
+                  </div>
+
+                  <div className={styles.summaryBreakdownBody}>
+                    <div className={styles.summaryBreakdownCount}>
+                      <span>Count</span>
+                      <strong>{licensedAssetStats.count}</strong>
+                    </div>
+
+                    <div className={styles.summaryBreakdownValues}>
+                      <div className={styles.summaryBreakdownValueRow}>
+                        <span>Excl. VAT</span>
+                        <strong>{money(licensedAssetStats.value)}</strong>
+                      </div>
+                      <div className={styles.summaryBreakdownValueRow}>
+                        <span>Incl. VAT</span>
+                        <strong>{money(Math.round(licensedAssetStats.value * 1.15))}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.heroSummaryFooter} aria-hidden="true" />
+                </div>
+
+                <div className={`${styles.summaryTile} ${styles.registerValueTile} ${styles.heroSummaryTile} ${styles.heroRegisterTile} ${styles.replacementSummaryTile}`}>
+                  <div className={styles.heroSummaryHead}>
+                    <span className={styles.heroSummaryTitle}>Replacement value</span>
+                  </div>
+
+                  <div className={styles.replacementSummaryBody}>
+                    <div className={styles.replacementSummaryMainValue}>
+                      <strong>{money(totalReplacementValue)}</strong>
+                      <span>Excl. VAT</span>
+                    </div>
+                  </div>
+
+                  <div className={`${styles.heroSummaryFooter} ${styles.replacementSummaryFooter}`}>
+                    <div className={styles.replacementSummaryMetric}>
+                      <span>Assets priced</span>
+                      <strong>{replacementPricedAssetCount}</strong>
+                    </div>
+                    <div className={styles.replacementSummaryMetric}>
+                      <span>Incl. VAT</span>
+                      <strong>{money(totalReplacementValueInclVat)}</strong>
+                    </div>
                   </div>
                 </div>
               </div>
