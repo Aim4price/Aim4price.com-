@@ -1,4 +1,5 @@
 import { getDb } from './db';
+import { getOrCreatePrimaryAssetRegister, updateAssetRegisterLogo } from './asset-registers';
 
 export type AccountProfile = {
   userId: string;
@@ -67,6 +68,7 @@ export type UpsertAccountProfileInput = {
   partnerServiceRadiusKm?: string | number | null;
   partnerBrandFocus?: string | null;
   partnerServices?: string | null;
+  syncPrimaryLogoToRegister?: boolean | null;
 };
 
 type AccountProfileRow = {
@@ -450,6 +452,18 @@ function mapAccountProfileRow(
   };
 }
 
+async function syncPrimaryAssetRegisterLogo(userId: string, logoUrl: string): Promise<void> {
+  const normalizedLogoUrl = sanitizeLogoUrl(logoUrl);
+  const primaryRegister = await getOrCreatePrimaryAssetRegister(userId);
+
+  await updateAssetRegisterLogo({
+    userId,
+    registerId: primaryRegister.id,
+    logoUrls: normalizedLogoUrl ? [normalizedLogoUrl] : [],
+    showLogosOnRegister: true,
+  });
+}
+
 function mapAccountScanPinRow(row?: AccountScanPinRow): AccountScanPinStatus {
   const hasPin = Boolean(asText(row?.scan_pin_hash));
   const enabled = Boolean(row?.scan_pin_enabled) && hasPin;
@@ -701,7 +715,15 @@ export async function upsertAccountProfile(
     ],
   );
 
-  return mapAccountProfileRow(result.rows[0], user);
+  const savedProfile = mapAccountProfileRow(result.rows[0], user);
+
+  if (normalizedAccountType === 'owner' && input.syncPrimaryLogoToRegister === true) {
+    await syncPrimaryAssetRegisterLogo(user.id, savedProfile.logoUrl).catch((error) => {
+      console.warn('Failed to sync account logo to primary asset register.', error);
+    });
+  }
+
+  return savedProfile;
 }
 
 export async function getAccountScanPinStatus(userId: string): Promise<AccountScanPinStatus> {

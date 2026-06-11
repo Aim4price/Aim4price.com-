@@ -58,6 +58,7 @@ type AccountProfileRow = {
   business_name: string | null;
   phone: string | null;
   email?: string | null;
+  logo_url?: string | null;
   address_line_1: string | null;
   address_line_2: string | null;
   town_city: string | null;
@@ -378,6 +379,7 @@ async function readProfileDefaults(userId: string): Promise<{
   email: string;
   phone: string;
   addressLine1: string;
+  logoUrls: string[];
 }> {
   const db = getDb();
 
@@ -388,6 +390,7 @@ async function readProfileDefaults(userId: string): Promise<{
         display_name,
         business_name,
         phone,
+        logo_url,
         address_line_1,
         address_line_2,
         town_city,
@@ -412,6 +415,7 @@ async function readProfileDefaults(userId: string): Promise<{
     email: '',
     phone: normalizePhone(profile?.phone),
     addressLine1,
+    logoUrls: normalizeLogoUrls(profile?.logo_url),
   };
 }
 
@@ -599,6 +603,8 @@ export async function getOrCreatePrimaryAssetRegister(userId: string): Promise<A
         email: defaults.email,
         phone: defaults.phone,
         addressLine1: defaults.addressLine1,
+        logoUrls: defaults.logoUrls,
+        showLogosOnRegister: true,
       },
       true,
       true,
