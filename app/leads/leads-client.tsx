@@ -67,6 +67,7 @@ type AssetLead = {
   latestPartnerNoteAttachmentFileName?: string;
   latestPartnerNoteAttachmentByteSize?: number | null;
   latestPartnerNoteAttachmentCreatedAtIso?: string | null;
+  partnerNotes?: LeadPartnerNote[];
   createdAtIso: string;
   viewedAtIso: string | null;
   acceptedAtIso: string | null;
@@ -90,14 +91,22 @@ type LeadNoteAttachment = {
   url: string;
 };
 
+type LeadPartnerNote = {
+  id: string;
+  noteText: string;
+  status?: string;
+  partnerType?: string | null;
+  partnerName?: string;
+  partnerBusinessName?: string;
+  attachment?: LeadNoteAttachment | null;
+  createdAtIso: string;
+  notedAtIso?: string | null;
+  updatedAtIso?: string;
+};
+
 type PartnerNoteResponse = {
   ok: boolean;
-  note?: {
-    id: string;
-    noteText: string;
-    attachment?: LeadNoteAttachment | null;
-    createdAtIso: string;
-  };
+  note?: LeadPartnerNote;
   error?: string;
 };
 
@@ -478,8 +487,17 @@ function asBoolean(value: unknown): boolean {
   return value === true || String(value ?? '').trim().toLowerCase() === 'true';
 }
 
+function leadPartnerNotes(lead: AssetLead): LeadPartnerNote[] {
+  return Array.isArray(lead.partnerNotes)
+    ? lead.partnerNotes.filter((note) => asText(note.noteText) || note.attachment)
+    : [];
+}
+
 function leadPartnerPdfAttachmentCount(lead: AssetLead): number {
-  return Math.max(0, Math.round(Number(lead.partnerNoteAttachmentCount ?? 0) || 0));
+  const savedCount = Math.round(Number(lead.partnerNoteAttachmentCount ?? 0) || 0);
+  const noteAttachmentCount = leadPartnerNotes(lead).filter((note) => Boolean(note.attachment)).length;
+
+  return Math.max(0, savedCount, noteAttachmentCount);
 }
 
 function leadResponseDocumentAttachedValue(lead: AssetLead): 'Yes' | 'No' {
@@ -497,8 +515,9 @@ function leadResponseDocumentDetail(lead: AssetLead): string {
     return 'No';
   }
 
-  const fileName = asText(lead.latestPartnerNoteAttachmentFileName);
-  const byteSize = asNumber(lead.latestPartnerNoteAttachmentByteSize);
+  const latestNoteAttachment = leadPartnerNotes(lead).find((note) => note.attachment)?.attachment ?? null;
+  const fileName = asText(lead.latestPartnerNoteAttachmentFileName) || asText(latestNoteAttachment?.fileName);
+  const byteSize = asNumber(lead.latestPartnerNoteAttachmentByteSize) ?? asNumber(latestNoteAttachment?.byteSize);
   const countLabel = attachmentCount === 1 ? '1 response document' : `${attachmentCount} response documents`;
   const fileLabel = fileName
     ? `Latest: ${fileName}${byteSize !== null && byteSize > 0 ? ` (${formatByteSize(byteSize)})` : ''}`
@@ -894,6 +913,41 @@ function calculateRegisterLeadStats(assets: Record<string, unknown>[], predicate
   };
 }
 
+function formatPartnerNoteType(value: unknown): string {
+  const normalized = asText(value).toLowerCase();
+  if (normalized === 'dealer') return 'Dealer';
+  if (normalized === 'finance') return 'Finance';
+  if (normalized === 'insurance') return 'Insurance';
+  return 'Partner';
+}
+
+function partnerNoteAuthor(note: LeadPartnerNote): string {
+  return asText(note.partnerBusinessName) || asText(note.partnerName) || 'Aim4price partner';
+}
+
+function partnerNoteLabel(note: LeadPartnerNote, index: number): string {
+  const type = formatPartnerNoteType(note.partnerType);
+  const author = partnerNoteAuthor(note);
+  return `${type} note ${index + 1} · ${author}`;
+}
+
+function partnerNoteValue(note: LeadPartnerNote): string {
+  const attachment = note.attachment ?? null;
+  const attachmentLabel = attachment
+    ? `Attached PDF: ${attachment.fileName}${attachment.byteSize ? ` (${formatByteSize(attachment.byteSize)})` : ''}`
+    : '';
+  const sentLabel = note.createdAtIso ? `Sent: ${formatDate(note.createdAtIso)}` : '';
+
+  return [asText(note.noteText), attachmentLabel, sentLabel].filter(Boolean).join('\n');
+}
+
+function buildLeadPartnerNoteRows(lead: AssetLead): ReportKeyValue[] {
+  return leadPartnerNotes(lead).map((note, index) => ({
+    label: partnerNoteLabel(note, index),
+    value: partnerNoteValue(note),
+  }));
+}
+
 function leadFollowUpSubject(lead: AssetLead): string {
   return isFullRegisterLead(lead) ? 'your full Aim4price asset register' : assetTitle(lead);
 }
@@ -1031,6 +1085,7 @@ function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = '
       ...(lead.ownerMessage ? [{ label: 'Owner message', value: lead.ownerMessage }] : []),
       { label: 'Response document attached', value: leadResponseDocumentDetail(lead) },
     ],
+    notes: buildLeadPartnerNoteRows(lead),
     stats: [
       { label: 'Assets', value: String(reportAssets.length), note: isFullReport ? 'Saved register items.' : reportOption.description },
       { label: 'Value ex VAT', value: formatCurrency(reportValue), note: 'Filtered report total excluding VAT.' },
@@ -1057,6 +1112,7 @@ function downloadLeadAsset(lead: AssetLead, reportKind: PdfReportKind = 'full'):
   const photos = assetPhotos(lead);
   const leadReportNotes: ReportKeyValue[] = [
     ...(lead.ownerMessage ? [{ label: 'Owner message', value: lead.ownerMessage }] : []),
+    ...buildLeadPartnerNoteRows(lead),
     { label: 'Response document attached', value: leadResponseDocumentDetail(lead) },
   ];
   const didOpen = openAssetSheetPrint({
@@ -1140,6 +1196,10 @@ export default function LeadsClient() {
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [leadPhotoIndexes, setLeadPhotoIndexes] = useState<Record<string, number>>({});
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
+  const [emailLead, setEmailLead] = useState<AssetLead | null>(null);
+  const [emailSubjectDraft, setEmailSubjectDraft] = useState('');
+  const [emailBodyDraft, setEmailBodyDraft] = useState('');
+  const [isEmailDraftCopied, setIsEmailDraftCopied] = useState(false);
   const [reportLead, setReportLead] = useState<AssetLead | null>(null);
   const [leadReportStep, setLeadReportStep] = useState<LeadReportStep>('format');
   const [leadPdfReportSelection, setLeadPdfReportSelection] = useState<PdfReportKind | ''>('');
@@ -1554,24 +1614,30 @@ export default function LeadsClient() {
         throw new Error(data.error ?? 'Failed to save note.');
       }
 
-      const attachment = data.note.attachment ?? null;
+      const savedNote = data.note;
+      const attachment = savedNote.attachment ?? null;
       const hasAttachment = Boolean(attachment ?? noteAttachmentFile);
 
-      if (attachment) {
-        setLeads((current) =>
-          current.map((lead) =>
-            lead.id === noteLead.id
+      setLeads((current) =>
+        current.map((lead) => {
+          if (lead.id !== noteLead.id) return lead;
+
+          const currentNotes = leadPartnerNotes(lead).filter((note) => note.id !== savedNote.id);
+
+          return {
+            ...lead,
+            partnerNotes: [savedNote, ...currentNotes],
+            ...(attachment
               ? {
-                  ...lead,
                   partnerNoteAttachmentCount: leadPartnerPdfAttachmentCount(lead) + 1,
                   latestPartnerNoteAttachmentFileName: attachment.fileName,
                   latestPartnerNoteAttachmentByteSize: attachment.byteSize,
-                  latestPartnerNoteAttachmentCreatedAtIso: data.note?.createdAtIso ?? new Date().toISOString(),
+                  latestPartnerNoteAttachmentCreatedAtIso: savedNote.createdAtIso ?? new Date().toISOString(),
                 }
-              : lead,
-          ),
-        );
-      }
+              : {}),
+          };
+        }),
+      );
 
       setNotice({ tone: 'success', message: hasAttachment ? 'Note and PDF quote saved on the lead asset.' : 'Note saved on the lead asset.' });
       setNoteLead(null);
@@ -1594,6 +1660,14 @@ export default function LeadsClient() {
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank', 'noopener,noreferrer');
   }
 
+  function buildLeadEmailSubject(lead: AssetLead): string {
+    return `Aim4price lead: ${leadFollowUpSubject(lead)}`;
+  }
+
+  function buildLeadEmailBody(lead: AssetLead): string {
+    return `Good day ${ownerDisplayName(lead)},\n\nI received your Aim4price ${formatLeadDisplayType(lead).toLowerCase()} for ${leadFollowUpSubject(lead)}.\n\nKind regards`;
+  }
+
   function openEmail(lead: AssetLead) {
     const email = leadEmailRecipient(lead);
     if (!email) {
@@ -1601,11 +1675,93 @@ export default function LeadsClient() {
       return;
     }
 
-    const subject = encodeURIComponent(`Aim4price lead: ${leadFollowUpSubject(lead)}`);
-    const body = encodeURIComponent(`Good day ${ownerDisplayName(lead)},\n\nI received your Aim4price ${formatLeadDisplayType(lead).toLowerCase()} for ${leadFollowUpSubject(lead)}.\n\nKind regards`);
-    const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
+    setNotice(null);
+    setEmailLead(lead);
+    setEmailSubjectDraft(buildLeadEmailSubject(lead));
+    setEmailBodyDraft(buildLeadEmailBody(lead));
+    setIsEmailDraftCopied(false);
+    setManagedLead(null);
+  }
+
+  function closeEmailModal() {
+    setEmailLead(null);
+    setEmailSubjectDraft('');
+    setEmailBodyDraft('');
+    setIsEmailDraftCopied(false);
+  }
+
+  function activeEmailRecipient(): string {
+    return emailLead ? leadEmailRecipient(emailLead) : '';
+  }
+
+  function activeMailtoUrl(): string {
+    const email = activeEmailRecipient();
+    if (!email) return '';
+
+    return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(emailSubjectDraft)}&body=${encodeURIComponent(emailBodyDraft)}`;
+  }
+
+  function activeGmailComposeUrl(): string {
+    const email = activeEmailRecipient();
+    if (!email) return '';
+
+    return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(emailSubjectDraft)}&body=${encodeURIComponent(emailBodyDraft)}`;
+  }
+
+  function activeEmailDraftText(): string {
+    const email = activeEmailRecipient();
+    return [`To: ${email}`, `Subject: ${emailSubjectDraft}`, '', emailBodyDraft].join('\n');
+  }
+
+  function openDefaultEmailClient() {
+    const mailtoUrl = activeMailtoUrl();
+    if (!mailtoUrl) {
+      setNotice({ tone: 'error', message: 'No client email address is saved on this lead.' });
+      return;
+    }
 
     window.location.href = mailtoUrl;
+  }
+
+  function openGmailCompose() {
+    const gmailUrl = activeGmailComposeUrl();
+    if (!gmailUrl) {
+      setNotice({ tone: 'error', message: 'No client email address is saved on this lead.' });
+      return;
+    }
+
+    const popup = window.open(gmailUrl, 'aim4priceLeadEmail', 'width=980,height=720');
+    if (!popup) {
+      setNotice({ tone: 'error', message: 'Allow pop-ups, or copy the email draft and paste it into your email app.' });
+      return;
+    }
+
+    popup.opener = null;
+    popup.focus();
+  }
+
+  async function copyEmailDraft() {
+    const draftText = activeEmailDraftText();
+
+    try {
+      await navigator.clipboard.writeText(draftText);
+      setIsEmailDraftCopied(true);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = draftText;
+      textarea.setAttribute('readonly', 'true');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+
+      try {
+        document.execCommand('copy');
+        setIsEmailDraftCopied(true);
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
   }
 
   function callClient(lead: AssetLead) {
@@ -2300,6 +2456,57 @@ export default function LeadsClient() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {emailLead ? (
+        <div className={assetStyles.modalOverlay}>
+          <div className={assetStyles.modalBackdrop} onClick={closeEmailModal} />
+
+          <div className={`${assetStyles.modalCard} ${styles.leadEmailModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-email-title">
+            <div className={assetStyles.modalHeader}>
+              <div className={assetStyles.modalHeaderText}>
+                <h3 id="lead-email-title">Email client</h3>
+                <p>{assetTitle(emailLead)} · {ownerDisplayName(emailLead)}</p>
+              </div>
+
+              <button type="button" className={assetStyles.modalCloseButton} onClick={closeEmailModal} aria-label="Close email draft">
+                <CloseIcon className={assetStyles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={styles.leadEmailDraftPanel}>
+              <div className={styles.leadEmailRecipientCard}>
+                <span>To</span>
+                <strong>{activeEmailRecipient()}</strong>
+              </div>
+
+              <label className={`${assetStyles.field} ${styles.leadEmailField}`}>
+                <span>Subject</span>
+                <input value={emailSubjectDraft} onChange={(event) => setEmailSubjectDraft(event.target.value)} autoFocus />
+              </label>
+
+              <label className={`${assetStyles.field} ${styles.leadEmailField}`}>
+                <span>Message</span>
+                <textarea value={emailBodyDraft} onChange={(event) => setEmailBodyDraft(event.target.value)} />
+              </label>
+            </div>
+
+            <div className={styles.leadEmailActions}>
+              <button type="button" className={assetStyles.secondaryButton} onClick={closeEmailModal}>
+                Cancel
+              </button>
+              <button type="button" className={assetStyles.secondaryButton} onClick={() => void copyEmailDraft()}>
+                {isEmailDraftCopied ? 'Copied' : 'Copy draft'}
+              </button>
+              <button type="button" className={assetStyles.secondaryButton} onClick={openDefaultEmailClient}>
+                Open email app
+              </button>
+              <button type="button" className={assetStyles.primaryButton} onClick={openGmailCompose}>
+                Open Gmail
+              </button>
             </div>
           </div>
         </div>

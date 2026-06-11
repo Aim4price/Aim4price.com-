@@ -1565,3 +1565,71 @@
     justify-content: center;
   }
 }
+
+/* === Leads desktop email draft modal === */
+.leadEmailModal {
+  width: min(100%, 860px) !important;
+  padding: clamp(1.2rem, 2vw, 1.55rem) !important;
+}
+
+.leadEmailDraftPanel {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 0.85rem;
+}
+
+.leadEmailRecipientCard {
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.86rem 0.98rem;
+  border: 1px solid rgba(207, 223, 236, 0.98);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+}
+
+.leadEmailRecipientCard span,
+.leadEmailField span {
+  color: #657587;
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.085em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.leadEmailRecipientCard strong {
+  color: #103b31;
+  font-size: 1rem;
+  font-weight: 820;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+
+.leadEmailField textarea {
+  min-height: 10.5rem !important;
+  line-height: 1.55 !important;
+}
+
+.leadEmailActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.72rem;
+  margin-top: 1.08rem;
+}
+
+.leadEmailActions > button {
+  min-height: 2.75rem;
+}
+
+@media (max-width: 620px) {
+  .leadEmailActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .leadEmailActions > button {
+    width: 100%;
+  }
+}
