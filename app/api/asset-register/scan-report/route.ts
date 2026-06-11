@@ -4,11 +4,13 @@ import { getAccountProfile, type AccountProfile } from '../../../../lib/account-
 import { getAssetRegisterItemById, type AssetRegisterItem } from '../../../../lib/asset-register-db';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
 import { listScanEventsForAsset, type ScanEventRecord } from '../../../../lib/scan-assets';
+import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxPrimitiveCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type PdfReportKind = 'fuel' | 'maintenance';
+type ReportFormat = 'pdf' | 'xlsx';
 
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 
@@ -221,6 +223,10 @@ function normalizeMaintenanceReportType(value: unknown): MaintenanceReportType {
   return 'all';
 }
 
+function parseReportFormat(value: unknown): ReportFormat {
+  return String(value ?? '').trim().toLowerCase() === 'xlsx' ? 'xlsx' : 'pdf';
+}
+
 type ReportDateRange = {
   fromIso?: string;
   toIso?: string;
@@ -303,6 +309,26 @@ function formatDateTime(value?: string | null): string {
   }).format(parsed);
 }
 
+function formatExcelDateTime(value?: string | null): string {
+  if (!value) return '';
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+
+  const parts = new Intl.DateTimeFormat('en-ZA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Africa/Johannesburg',
+  }).formatToParts(parsed);
+
+  const valueFor = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+  return `${valueFor('year')}-${valueFor('month')}-${valueFor('day')} ${valueFor('hour')}:${valueFor('minute')}`;
+}
+
 function formatInteger(value: number | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return '-';
@@ -381,6 +407,24 @@ function formatLitres(value: number | null | undefined): string {
 
 function roundLitres(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function numberForExcel(value: number | null | undefined, digits = 2): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+
+  const factor = 10 ** Math.max(0, digits);
+  return Math.round(value * factor) / factor;
+}
+
+function percentForExcel(value: number | null | undefined): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+
+  return Math.max(0, Math.min(100, value)) / 100;
+}
+
+function excelText(value: unknown): string {
+  const text = normalizeSpaces(value);
+  return text === '-' ? '' : text;
 }
 
 function calculateAssetDieselBeforeFill(event: ScanEventRecord): number | null {
@@ -1991,6 +2035,271 @@ function buildMaintenanceReport(
   });
 }
 
+function styled(value: XlsxPrimitiveCellValue, style: XlsxCellStyle): XlsxCellValue {
+  return { value, style };
+}
+
+function fullWidthRow(value: XlsxPrimitiveCellValue, style: XlsxCellStyle, columnCount: number): XlsxCellValue[] {
+  return [styled(value, style), ...Array.from({ length: Math.max(0, columnCount - 1) }, () => '')];
+}
+
+function keyValueWorkbookRows(rows: KeyValueRow[]): XlsxCellValue[][] {
+  return rows.map((row) => [styled(row.label, 'metaLabel'), styled(excelText(row.value), 'metaValue')]);
+}
+
+function buildReportSummaryWorkbookSheet(options: {
+  reportKind: PdfReportKind;
+  asset: AssetRegisterItem;
+  ownerDetails: OwnerReportDetails;
+  generatedAt: string;
+  dateRangeLabel: string;
+  recordRows: KeyValueRow[];
+}): XlsxSheet {
+  const title = `${options.asset.title || 'Asset'} - ${REPORT_LABELS[options.reportKind]}`;
+  const subtitle = `${formatAssetHeroMeta(options.asset)} • ${options.dateRangeLabel}`;
+  const rows: XlsxCellValue[][] = [
+    [styled(title, 'title'), '', '', ''],
+    [styled(subtitle, 'subtitle'), '', '', ''],
+    [],
+    [styled('Generated', 'metaLabel'), styled(options.generatedAt, 'metaValue')],
+    [styled('Report period', 'metaLabel'), styled(options.dateRangeLabel, 'metaValue')],
+    [styled('Report type', 'metaLabel'), styled(REPORT_LABELS[options.reportKind], 'metaValue')],
+    [],
+    [styled('Client', 'section'), '', '', ''],
+    ...keyValueWorkbookRows(buildClientRows(options.ownerDetails)),
+    [],
+    [styled('Asset', 'section'), '', '', ''],
+    ...keyValueWorkbookRows(buildAssetDetailRows(options.asset)),
+    [],
+    [styled('Report summary', 'section'), '', '', ''],
+    ...keyValueWorkbookRows(options.recordRows),
+    [],
+    [styled('Latest location', 'section'), '', '', ''],
+    ...keyValueWorkbookRows(buildLocationRows(options.asset)),
+  ];
+
+  return {
+    name: 'Summary',
+    rows,
+    columns: [24, 36, 24, 36],
+    merges: [
+      { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 4 },
+      { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 4 },
+      { fromRow: 8, fromColumn: 1, toRow: 8, toColumn: 4 },
+      { fromRow: 8 + buildClientRows(options.ownerDetails).length + 2, fromColumn: 1, toRow: 8 + buildClientRows(options.ownerDetails).length + 2, toColumn: 4 },
+    ],
+    tabColor: options.reportKind === 'fuel' ? '176B4F' : '10382F',
+  };
+}
+
+function buildFuelReportWorkbook(
+  asset: AssetRegisterItem,
+  events: ScanEventRecord[],
+  ownerDetails: OwnerReportDetails,
+  generatedAt: string,
+  dateRangeLabel = 'All available entries',
+): XlsxSheet[] {
+  const fuelEvents = events.filter((event) => typeof event.fuelPercent === 'number' && Number.isFinite(event.fuelPercent));
+  const recordRows = buildFuelRecordRows(asset, fuelEvents, dateRangeLabel);
+  const headers = [
+    'Date / Time',
+    'Ledger Activity',
+    'Storage Unit',
+    'Litres Filled',
+    'Before Fill Litres',
+    'Storage Before',
+    'Storage After',
+    'Fuel % Before',
+    'Fuel % After',
+    'Usage Reading',
+    'Usage Display',
+    'Operator',
+    'GPS Location',
+    'Latitude',
+    'Longitude',
+    'Work Activity',
+    'Work Area',
+    'Notes',
+  ];
+  const headerRow = 7;
+  const recordSheetRows: XlsxCellValue[][] = [
+    fullWidthRow(`${asset.title || 'Asset'} - Fuel Report`, 'title', headers.length),
+    fullWidthRow(`Filtered report: ${dateRangeLabel}`, 'subtitle', headers.length),
+    fullWidthRow('Editable fuel records exported from the asset QR fuel report.', 'note', headers.length),
+    [],
+    [
+      styled('Asset', 'metaLabel'),
+      styled(asset.title || '', 'metaValue'),
+      styled('Serial number', 'metaLabel'),
+      styled(asset.serialNumber || '', 'metaValue'),
+      styled('Plate / QR', 'metaLabel'),
+      styled(asset.plateLabel || asset.publicAssetCode || '', 'metaValue'),
+    ],
+    [],
+    headers.map((header) => styled(header, 'tableHeader')),
+    ...fuelEvents.map((event) => [
+      styled(formatExcelDateTime(event.createdAtIso), 'text'),
+      styled(fuelLedgerActivityLabel(event), 'text'),
+      styled(excelText(fuelStorageLabel(event)), 'text'),
+      styled(numberForExcel(event.fuelLitres), 'decimal'),
+      styled(numberForExcel(calculateAssetDieselBeforeFill(event)), 'decimal'),
+      styled(numberForExcel(event.fuelStorageLevelBefore), 'decimal'),
+      styled(numberForExcel(event.fuelStorageLevelAfter), 'decimal'),
+      styled(percentForExcel(event.assetFuelPercentBefore), 'percent'),
+      styled(percentForExcel(event.assetFuelPercentAfter ?? event.fuelPercent), 'percent'),
+      styled(numberForExcel(event.assetUsageReading ?? event.hours), 'decimal'),
+      styled(formatEventUsage(asset, event), 'text'),
+      styled(formatOperatorLabel(event), 'text'),
+      styled(excelText(formatLocationText(event.locationText, event.latitude, event.longitude)), 'text'),
+      styled(numberForExcel(event.latitude, 6), 'decimal'),
+      styled(numberForExcel(event.longitude, 6), 'decimal'),
+      styled(excelText(formatEventActivity(event)), 'text'),
+      styled(excelText(formatEventWorkArea(event)), 'text'),
+      styled(normalizeSpaces(event.note), 'note'),
+    ]),
+  ];
+
+  return [
+    buildReportSummaryWorkbookSheet({
+      reportKind: 'fuel',
+      asset,
+      ownerDetails,
+      generatedAt,
+      dateRangeLabel,
+      recordRows,
+    }),
+    {
+      name: 'Fuel Records',
+      rows: recordSheetRows,
+      columns: [20, 22, 24, 16, 18, 18, 18, 14, 14, 16, 20, 22, 34, 14, 14, 24, 24, 42],
+      merges: [
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: headers.length },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: headers.length },
+        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: headers.length },
+      ],
+      freezeRow: headerRow,
+      autoFilter: {
+        fromRow: headerRow,
+        fromColumn: 1,
+        toRow: Math.max(headerRow, headerRow + fuelEvents.length),
+        toColumn: headers.length,
+      },
+      tabColor: '176B4F',
+    },
+  ];
+}
+
+function buildMaintenanceReportWorkbook(
+  asset: AssetRegisterItem,
+  events: ScanEventRecord[],
+  ownerDetails: OwnerReportDetails,
+  generatedAt: string,
+  dateRangeLabel = 'All available entries',
+  maintenanceReportType: MaintenanceReportType = 'all',
+): XlsxSheet[] {
+  const allMaintenanceEntries = events.map((event) => parseMaintenanceEvent(event)).filter((entry): entry is MaintenanceEntry => Boolean(entry));
+  const maintenanceEntries = maintenanceReportType === 'all'
+    ? allMaintenanceEntries
+    : allMaintenanceEntries.filter((entry) => entry.kind === maintenanceReportType);
+  const maintenanceTypeLabel = MAINTENANCE_TYPE_LABELS[maintenanceReportType];
+  const recordRows = buildMaintenanceRecordRows(asset, maintenanceEntries, dateRangeLabel, maintenanceTypeLabel);
+  const headers = [
+    'Date / Time',
+    'Record Type',
+    'Detail Label',
+    'Work / Items',
+    'Company / Dealer',
+    'Mechanic / Technician',
+    'Usage Reading',
+    'Usage Display',
+    'Operator',
+    'Condition',
+    'Fuel %',
+    'GPS Location',
+    'Latitude',
+    'Longitude',
+    'Photo Count',
+    'Photo URLs',
+    'Work Activity',
+    'Work Area',
+    'Notes',
+    'Raw QR Note',
+  ];
+  const headerRow = 7;
+  const recordSheetRows: XlsxCellValue[][] = [
+    fullWidthRow(`${asset.title || 'Asset'} - Maintenance Report`, 'title', headers.length),
+    fullWidthRow(`Filtered report: ${dateRangeLabel} • Type: ${maintenanceTypeLabel}`, 'subtitle', headers.length),
+    fullWidthRow('Editable maintenance records exported from the asset QR maintenance report.', 'note', headers.length),
+    [],
+    [
+      styled('Asset', 'metaLabel'),
+      styled(asset.title || '', 'metaValue'),
+      styled('Serial number', 'metaLabel'),
+      styled(asset.serialNumber || '', 'metaValue'),
+      styled('Plate / QR', 'metaLabel'),
+      styled(asset.plateLabel || asset.publicAssetCode || '', 'metaValue'),
+    ],
+    [],
+    headers.map((header) => styled(header, 'tableHeader')),
+    ...maintenanceEntries.map((entry) => {
+      const detailLabel = entry.kind === 'checked' ? 'Checked Items' : entry.kind === 'repaired' ? 'Repair Details' : 'Work Completed';
+      const recordStyle: XlsxCellStyle = entry.kind === 'repaired' ? 'statusWarn' : entry.kind === 'serviced' ? 'statusGood' : 'statusInfo';
+
+      return [
+        styled(formatExcelDateTime(entry.event.createdAtIso), 'text'),
+        styled(entry.label, recordStyle),
+        styled(detailLabel, 'text'),
+        styled(entry.items.join(', '), 'text'),
+        styled(entry.company, 'text'),
+        styled(entry.mechanic, 'text'),
+        styled(numberForExcel(entry.event.assetUsageReading ?? entry.event.hours), 'decimal'),
+        styled(formatEventUsage(asset, entry.event), 'text'),
+        styled(formatOperatorLabel(entry.event), 'text'),
+        styled(excelText(formatCondition(entry.event.condition)), 'text'),
+        styled(percentForExcel(entry.event.fuelPercent), 'percent'),
+        styled(excelText(formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude)), 'text'),
+        styled(numberForExcel(entry.event.latitude, 6), 'decimal'),
+        styled(numberForExcel(entry.event.longitude, 6), 'decimal'),
+        styled(entry.event.photoUrls.length, 'integer'),
+        styled(entry.event.photoUrls.join('\n'), 'note'),
+        styled(excelText(formatEventActivity(entry.event)), 'text'),
+        styled(excelText(formatEventWorkArea(entry.event)), 'text'),
+        styled(entry.notes, 'note'),
+        styled(normalizeSpaces(entry.event.note), 'note'),
+      ];
+    }),
+  ];
+
+  return [
+    buildReportSummaryWorkbookSheet({
+      reportKind: 'maintenance',
+      asset,
+      ownerDetails,
+      generatedAt,
+      dateRangeLabel,
+      recordRows,
+    }),
+    {
+      name: 'Maintenance Records',
+      rows: recordSheetRows,
+      columns: [20, 16, 20, 34, 24, 24, 16, 20, 22, 18, 14, 34, 14, 14, 14, 42, 24, 24, 42, 48],
+      merges: [
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: headers.length },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: headers.length },
+        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: headers.length },
+      ],
+      freezeRow: headerRow,
+      autoFilter: {
+        fromRow: headerRow,
+        fromColumn: 1,
+        toRow: Math.max(headerRow, headerRow + maintenanceEntries.length),
+        toColumn: headers.length,
+      },
+      tabColor: '10382F',
+    },
+  ];
+}
+
 export async function GET(request: NextRequest) {
   const session = await getServerSession();
 
@@ -2007,6 +2316,7 @@ export async function GET(request: NextRequest) {
       request.nextUrl.searchParams.get('maintenanceKind') ??
       (reportKind === 'maintenance' ? request.nextUrl.searchParams.get('type') : null),
   );
+  const reportFormat = parseReportFormat(request.nextUrl.searchParams.get('format'));
   const reportYear = parseReportYear(asText(request.nextUrl.searchParams.get('year')));
   const reportMonth = reportYear ? parseReportMonth(asText(request.nextUrl.searchParams.get('month'))) : null;
   const reportDateRange = buildReportDateRange(reportYear, reportMonth);
@@ -2039,18 +2349,37 @@ export async function GET(request: NextRequest) {
   const generatedAt = formatDate(new Date().toISOString());
   const logoUrl = await getAssetRegisterReportLogoUrl(session.user.id, asset.registerId).catch(() => '');
 
+  const baseFileName = `${slugifyFileSegment(asset.title)}-${slugifyFileSegment(asset.plateLabel || asset.publicAssetCode || asset.id)}-${slugifyFileSegment(REPORT_LABELS[reportKind])}`;
+
+  if (reportFormat === 'xlsx') {
+    const workbook = createXlsxWorkbook(
+      reportKind === 'fuel'
+        ? buildFuelReportWorkbook(asset, events, ownerDetails, generatedAt, reportDateRange.label)
+        : buildMaintenanceReportWorkbook(asset, events, ownerDetails, generatedAt, reportDateRange.label, maintenanceReportType),
+    );
+
+    return new NextResponse(workbook, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename="${baseFileName}.xlsx"`,
+        'Content-Length': String(workbook.length),
+        'Cache-Control': 'private, no-store',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  }
+
   const html = reportKind === 'fuel'
     ? buildFuelReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label)
     : buildMaintenanceReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label, maintenanceReportType);
-
-  const fileName = `${slugifyFileSegment(asset.title)}-${slugifyFileSegment(asset.plateLabel || asset.publicAssetCode || asset.id)}-${slugifyFileSegment(REPORT_LABELS[reportKind])}.html`;
 
   return new NextResponse(html, {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'private, no-store',
-      'Content-Disposition': `inline; filename="${fileName}"`,
+      'Content-Disposition': `inline; filename="${baseFileName}.html"`,
       'X-Content-Type-Options': 'nosniff',
     },
   });
