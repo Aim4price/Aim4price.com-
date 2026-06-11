@@ -6852,6 +6852,7 @@ export default function AssetRegisterClient() {
                     const partnerNoteToneClass = openPartnerNote ? quoteToneClassForPartnerType(openPartnerNote.partnerType) : '';
                     const partnerNoteLabel = openPartnerNote?.partnerType ? `${formatQuotePartnerType(openPartnerNote.partnerType)} note` : 'Partner note';
                     const latestMaintenanceStatus = asset.latestMaintenanceStatus ?? null;
+                    const isManualValueAsset = asset.selectedMethod === 'manual';
                     const maintenanceDoneLabel =
                       latestMaintenanceStatus?.kind === 'checked'
                         ? 'Maintenance checked'
@@ -6894,6 +6895,13 @@ export default function AssetRegisterClient() {
                               <span className={styles.assetValueMethodLabel}>{methodLabel(asset.selectedMethod)} value</span>
                               <span className={styles.assetSavedDateLabel}>{assetStatusDateLabel(asset)}</span>
                             </div>
+
+                            {isManualValueAsset ? (
+                              <div className={styles.manualValueNotice} role="note">
+                                <span className={styles.manualValueNoticeIcon} aria-hidden="true">i</span>
+                                <span>Manual value is fixed — it will not automatically update by itself.</span>
+                              </div>
+                            ) : null}
 
                           </div>
 
