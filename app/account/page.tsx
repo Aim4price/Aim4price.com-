@@ -5,7 +5,7 @@ import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
-type AccountActionModal = 'business' | 'assetRegisters' | 'scanPin' | 'marketplace' | 'partnerDirectory';
+type AccountActionModal = 'business' | 'scanPin' | 'marketplace' | 'partnerDirectory';
 
 type AccountProfile = {
   userId: string;
@@ -142,6 +142,78 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   insurer: 'Insurance',
   bank: 'Finance',
 };
+
+type QuickActionIconName = 'business' | 'registers' | 'pin' | 'marketplace' | 'directory' | 'delete';
+
+function QuickActionIcon({ name }: { name: QuickActionIconName }) {
+  const svgProps = {
+    'aria-hidden': true,
+    focusable: 'false',
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    xmlns: 'http://www.w3.org/2000/svg',
+  } as const;
+
+  const strokeProps = {
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+  } as const;
+
+  return (
+    <span className={styles.quickActionIcon} aria-hidden="true">
+      {name === 'business' ? (
+        <svg {...svgProps}>
+          <path {...strokeProps} d="M12 20h9" />
+          <path {...strokeProps} d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+        </svg>
+      ) : null}
+
+      {name === 'registers' ? (
+        <svg {...svgProps}>
+          <path {...strokeProps} d="M7 4h10a2 2 0 0 1 2 2v13H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+          <path {...strokeProps} d="M9 8h6" />
+          <path {...strokeProps} d="M9 12h6" />
+          <path {...strokeProps} d="M9 16h4" />
+        </svg>
+      ) : null}
+
+      {name === 'pin' ? (
+        <svg {...svgProps}>
+          <rect {...strokeProps} x="5" y="10" width="14" height="10" rx="2" />
+          <path {...strokeProps} d="M8 10V7a4 4 0 0 1 8 0v3" />
+          <path {...strokeProps} d="M12 14v2" />
+        </svg>
+      ) : null}
+
+      {name === 'marketplace' ? (
+        <svg {...svgProps}>
+          <path {...strokeProps} d="M6 8h12l-1 12H7L6 8Z" />
+          <path {...strokeProps} d="M9 8a3 3 0 0 1 6 0" />
+          <path {...strokeProps} d="M9.5 13h5" />
+        </svg>
+      ) : null}
+
+      {name === 'directory' ? (
+        <svg {...svgProps}>
+          <path {...strokeProps} d="M12 21s7-5.1 7-11a7 7 0 1 0-14 0c0 5.9 7 11 7 11Z" />
+          <circle {...strokeProps} cx="12" cy="10" r="2.4" />
+        </svg>
+      ) : null}
+
+      {name === 'delete' ? (
+        <svg {...svgProps}>
+          <path {...strokeProps} d="M4 7h16" />
+          <path {...strokeProps} d="M10 11v6" />
+          <path {...strokeProps} d="M14 11v6" />
+          <path {...strokeProps} d="M6 7l1 14h10l1-14" />
+          <path {...strokeProps} d="M9 7V4h6v3" />
+        </svg>
+      ) : null}
+    </span>
+  );
+}
 
 function loadLeaflet(): Promise<any> {
   if (typeof window === 'undefined') {
@@ -804,7 +876,7 @@ export default function AccountClient() {
       const dataUrl = await readFileAsDataUrl(file);
       const nextDraft = { ...profileDraft, logoUrl: dataUrl };
       setProfileDraft(nextDraft);
-      await saveProfileDraft(nextDraft, 'Logo saved.');
+      await saveProfileDraft(nextDraft, 'Logo saved.', { syncPrimaryLogoToRegister: true });
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to read image file.' });
     } finally {
@@ -815,10 +887,14 @@ export default function AccountClient() {
   async function handleRemoveLogo() {
     const nextDraft = { ...profileDraft, logoUrl: '' };
     setProfileDraft(nextDraft);
-    await saveProfileDraft(nextDraft, 'Logo removed.');
+    await saveProfileDraft(nextDraft, 'Logo removed.', { syncPrimaryLogoToRegister: true });
   }
 
-  async function saveProfileDraft(nextDraft: ProfileDraft, successMessage = 'Account details saved.'): Promise<boolean> {
+  async function saveProfileDraft(
+    nextDraft: ProfileDraft,
+    successMessage = 'Account details saved.',
+    options?: { syncPrimaryLogoToRegister?: boolean },
+  ): Promise<boolean> {
     setIsSavingProfile(true);
 
     try {
@@ -828,7 +904,11 @@ export default function AccountClient() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ...nextDraft, extraPhotoUrls: [] }),
+        body: JSON.stringify({
+          ...nextDraft,
+          extraPhotoUrls: [],
+          syncPrimaryLogoToRegister: Boolean(options?.syncPrimaryLogoToRegister),
+        }),
       });
 
       const data = (await response.json()) as ProfileApiResponse;
@@ -1008,10 +1088,6 @@ export default function AccountClient() {
     openActionModal('business');
   }
 
-  function openAssetRegistersModal() {
-    openActionModal('assetRegisters');
-  }
-
   function openAssetRegistersPage() {
     window.location.assign('/asset-registers');
   }
@@ -1162,22 +1238,22 @@ export default function AccountClient() {
 
             <div className={styles.quickActionList}>
               <button type="button" className={styles.quickActionButton} onClick={openBusinessEditor}>
-                <span className={styles.quickActionIcon}>✎</span>
+                <QuickActionIcon name="business" />
                 <strong>Edit business details</strong>
                 <span className={styles.quickActionChevron}>›</span>
               </button>
 
               {isOwnerAccount ? (
-                <button type="button" className={styles.quickActionButton} onClick={openAssetRegistersModal}>
-                  <span className={styles.quickActionIcon}>▤</span>
-                  <strong>Manage asset registers</strong>
+                <button type="button" className={styles.quickActionButton} onClick={openAssetRegistersPage}>
+                  <QuickActionIcon name="registers" />
+                  <strong>Manage multiple asset registers</strong>
                   <span className={styles.quickActionChevron}>›</span>
                 </button>
               ) : null}
 
               {showScanPinControls ? (
                 <button type="button" className={styles.quickActionButton} onClick={openScanPinEditor}>
-                  <span className={styles.quickActionIcon}>⌘</span>
+                  <QuickActionIcon name="pin" />
                   <strong>Update QR PIN</strong>
                   <span className={styles.quickActionChevron}>›</span>
                 </button>
@@ -1185,7 +1261,7 @@ export default function AccountClient() {
 
               {showMarketplaceContact ? (
                 <button type="button" className={styles.quickActionButton} onClick={openMarketplaceEditor}>
-                  <span className={styles.quickActionIcon}>▣</span>
+                  <QuickActionIcon name="marketplace" />
                   <strong>Marketplace contact</strong>
                   <span className={styles.quickActionChevron}>›</span>
                 </button>
@@ -1193,14 +1269,14 @@ export default function AccountClient() {
 
               {showPartnerDirectory ? (
                 <button type="button" className={styles.quickActionButton} onClick={openPartnerDirectory}>
-                  <span className={styles.quickActionIcon}>◎</span>
+                  <QuickActionIcon name="directory" />
                   <strong>Partner directory</strong>
                   <span className={styles.quickActionChevron}>›</span>
                 </button>
               ) : null}
 
               <button type="button" className={`${styles.quickActionButton} ${styles.quickActionDanger}`} onClick={() => setIsDeleteDialogOpen(true)}>
-                <span className={styles.quickActionIcon}>!</span>
+                <QuickActionIcon name="delete" />
                 <strong>Delete account</strong>
                 <span className={styles.quickActionChevron}>›</span>
               </button>
@@ -1210,36 +1286,6 @@ export default function AccountClient() {
 
       </section>
 
-      {activeAccountModal === 'assetRegisters' ? (
-        <div className={styles.modalBackdrop} onClick={closeActionModal}>
-          <section
-            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountActionModalCardNarrow}`}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="asset-registers-modal-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className={styles.modalHeader}>
-              <h2 id="asset-registers-modal-title">Manage asset registers</h2>
-              <p>Open the register workspace to manage asset lists, QR records and multi-register work.</p>
-            </div>
-
-            <div className={styles.accountActionIntro}>
-              <strong>Multi asset register</strong>
-              <p>Use this when you need to create, update or manage asset registers outside the account overview.</p>
-            </div>
-
-            <div className={styles.modalActions}>
-              <button type="button" className={styles.ghostButton} onClick={closeActionModal}>
-                Cancel
-              </button>
-              <button type="button" className={styles.primaryButton} onClick={openAssetRegistersPage}>
-                Open asset registers
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : null}
 
       {activeAccountModal === 'business' ? (
         <div className={styles.modalBackdrop} onClick={closeActionModal}>
