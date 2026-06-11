@@ -112,6 +112,7 @@ type AccountScanPinRow = {
 type AccountTypeRow = {
   account_type: string | null;
   account_subtype: string | null;
+  logo_url: string | null;
 };
 
 const MAX_LOGO_URL_LENGTH = 3_000_000;
@@ -563,7 +564,7 @@ export async function upsertAccountProfile(
 
   const existingAccountTypeResult = await db.query<AccountTypeRow>(
     `
-      select account_type, account_subtype
+      select account_type, account_subtype, logo_url
       from account_profiles
       where user_id = $1
       limit 1
@@ -579,6 +580,10 @@ export async function upsertAccountProfile(
     normalizedAccountType,
     asText(existingAccount?.account_subtype) || input.accountSubtype,
   );
+  const normalizedLogoUrl = sanitizeLogoUrl(input.logoUrl);
+  const previousLogoUrl = sanitizeLogoUrl(existingAccount?.logo_url);
+  const shouldSyncPrimaryLogo =
+    normalizedAccountType === 'owner' && (input.syncPrimaryLogoToRegister === true || normalizedLogoUrl !== previousLogoUrl);
   const normalizedMarketplaceEmail = asText(input.marketplaceEmail).toLowerCase();
   const normalizedWebsiteUrl = sanitizeWebsiteUrl(input.websiteUrl);
   const normalizedExtraPhotoUrls: string[] = [];
@@ -687,7 +692,7 @@ export async function upsertAccountProfile(
     [
       user.id,
       asText(input.displayName) || asText(user.name) || null,
-      sanitizeLogoUrl(input.logoUrl) || null,
+      normalizedLogoUrl || null,
       normalizedWebsiteUrl || null,
       JSON.stringify(normalizedExtraPhotoUrls),
       asText(input.businessName) || null,
@@ -717,7 +722,7 @@ export async function upsertAccountProfile(
 
   const savedProfile = mapAccountProfileRow(result.rows[0], user);
 
-  if (normalizedAccountType === 'owner' && input.syncPrimaryLogoToRegister === true) {
+  if (shouldSyncPrimaryLogo) {
     await syncPrimaryAssetRegisterLogo(user.id, savedProfile.logoUrl).catch((error) => {
       console.warn('Failed to sync account logo to primary asset register.', error);
     });
