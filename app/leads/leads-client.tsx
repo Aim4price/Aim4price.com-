@@ -1488,48 +1488,48 @@ export default function LeadsClient() {
     }
   }
 
-  async function markLeadDone(leadToMark: AssetLead) {
-    if (isCompletedLead(leadToMark) || markingLeadDoneId) return;
+  async function toggleLeadDone(leadToToggle: AssetLead) {
+    if (markingLeadDoneId) return;
 
-    const doneAtIso = new Date().toISOString();
+    const isCurrentlyDone = isCompletedLead(leadToToggle);
+    const nextStatus: LeadStatus = isCurrentlyDone ? 'viewed' : 'quoted';
+    const updatedAtIso = new Date().toISOString();
+    const optimisticLead: AssetLead = {
+      ...leadToToggle,
+      status: nextStatus,
+      viewedAtIso: leadToToggle.viewedAtIso ?? updatedAtIso,
+      updatedAtIso,
+      ...(nextStatus === 'quoted' ? { quotedAtIso: leadToToggle.quotedAtIso ?? updatedAtIso } : {}),
+    };
+
     setNotice(null);
-    setMarkingLeadDoneId(leadToMark.id);
-
-    setLeads((current) =>
-      current.map((lead) =>
-        lead.id === leadToMark.id
-          ? {
-              ...lead,
-              status: 'quoted',
-              viewedAtIso: lead.viewedAtIso ?? doneAtIso,
-              quotedAtIso: lead.quotedAtIso ?? doneAtIso,
-              updatedAtIso: doneAtIso,
-            }
-          : lead,
-      ),
-    );
+    setMarkingLeadDoneId(leadToToggle.id);
+    setLeads((current) => current.map((lead) => (lead.id === leadToToggle.id ? optimisticLead : lead)));
 
     try {
-      const response = await fetch(`/api/asset-leads/${encodeURIComponent(leadToMark.id)}`, {
+      const response = await fetch(`/api/asset-leads/${encodeURIComponent(leadToToggle.id)}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'quoted' }),
+        body: JSON.stringify({ status: nextStatus }),
       });
       const data = (await response.json()) as LeadsResponse;
 
       if (!response.ok || !data.ok || !data.lead) {
-        throw new Error(data.error ?? 'Failed to mark lead as done.');
+        throw new Error(data.error ?? (isCurrentlyDone ? 'Failed to mark lead as not done.' : 'Failed to mark lead as done.'));
       }
 
       const updatedLead = data.lead;
       setLeads((current) => current.map((lead) => (lead.id === updatedLead.id ? updatedLead : lead)));
-      setNotice({ tone: 'success', message: 'Lead marked done.' });
+      setNotice({ tone: 'success', message: isCurrentlyDone ? 'Lead moved back to Mark done.' : 'Lead marked done.' });
     } catch (error) {
-      setLeads((current) => current.map((lead) => (lead.id === leadToMark.id ? leadToMark : lead)));
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to mark lead as done.' });
+      setLeads((current) => current.map((lead) => (lead.id === leadToToggle.id ? leadToToggle : lead)));
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : isCurrentlyDone ? 'Failed to mark lead as not done.' : 'Failed to mark lead as done.',
+      });
     } finally {
-      setMarkingLeadDoneId((current) => (current === leadToMark.id ? null : current));
+      setMarkingLeadDoneId((current) => (current === leadToToggle.id ? null : current));
     }
   }
 
@@ -2320,22 +2320,17 @@ export default function LeadsClient() {
 
                         <div className={styles.clientDecisionArea}>
                           <div className={styles.clientActionRow}>
-                            {isLeadDone ? (
-                              <span className={styles.doneLeadPill}>
-                                <CheckIcon className={assetStyles.buttonIcon} />
-                                Done
-                              </span>
-                            ) : (
-                              <button
-                                type="button"
-                                className={`${assetStyles.secondaryButton} ${styles.markDoneLeadButton}`}
-                                onClick={() => void markLeadDone(lead)}
-                                disabled={Boolean(markingLeadDoneId)}
-                              >
-                                <CheckIcon className={assetStyles.buttonIcon} />
-                                <span>{isMarkingThisLeadDone ? 'Marking...' : 'Mark done'}</span>
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              className={`${assetStyles.secondaryButton} ${isLeadDone ? styles.doneLeadPill : styles.markDoneLeadButton}`}
+                              onClick={() => void toggleLeadDone(lead)}
+                              disabled={Boolean(markingLeadDoneId)}
+                              aria-pressed={isLeadDone}
+                              title={isLeadDone ? 'Click to move this lead back to Mark done' : 'Mark this lead as done'}
+                            >
+                              <CheckIcon className={assetStyles.buttonIcon} />
+                              <span>{isMarkingThisLeadDone ? 'Updating...' : isLeadDone ? 'Done' : 'Mark done'}</span>
+                            </button>
 
                             {isLeadOpen ? (
                               <button
