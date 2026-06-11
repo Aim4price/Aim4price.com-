@@ -20495,6 +20495,21 @@
   min-width: 14.5rem !important;
 }
 
+.assetFuelReportActions {
+  flex-wrap: wrap !important;
+}
+
+.assetFuelReportActions .assetReportExcelButton {
+  background: linear-gradient(180deg, #168465 0%, #0f644d 100%) !important;
+  border-color: #0f644d !important;
+  color: #ffffff !important;
+}
+
+.assetFuelReportActions .assetReportExcelButton:hover:not(:disabled) {
+  background: linear-gradient(180deg, #197f63 0%, #0d5a45 100%) !important;
+  border-color: #0d5a45 !important;
+}
+
 @media (max-width: 760px) {
   .assetReportModal,
   .assetFuelReportModal {
