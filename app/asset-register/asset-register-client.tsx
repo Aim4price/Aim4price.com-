@@ -6,6 +6,7 @@ import AppHeader from '../../components/AppHeader';
 import {
   openAssetRegisterSummaryPrint,
   openAssetSheetPrint,
+  type ReportKeyValue,
   type ReportMethodCard,
 } from '../../lib/report-print';
 import styles from './page.module.css';
@@ -301,6 +302,7 @@ type RegisterAsset = {
   createdAtIso: string;
   updatedAtIso: string;
   openPartnerNote?: OpenPartnerNote | null;
+  partnerNotes?: OpenPartnerNote[];
   latestMaintenanceStatus?: LatestMaintenanceStatus | null;
 };
 
@@ -2994,6 +2996,46 @@ function quoteToneClassForPartnerType(partnerType: PartnerType | null | undefine
   return '';
 }
 
+function assetPartnerNotes(asset: RegisterAsset): OpenPartnerNote[] {
+  const savedNotes = Array.isArray(asset.partnerNotes)
+    ? asset.partnerNotes.filter((note) => String(note.noteText ?? '').trim() || note.attachment)
+    : [];
+
+  if (savedNotes.length) {
+    return savedNotes;
+  }
+
+  return asset.openPartnerNote ? [asset.openPartnerNote] : [];
+}
+
+function partnerNoteAuthor(note: OpenPartnerNote): string {
+  return note.partnerBusinessName || note.partnerName || 'Aim4price partner';
+}
+
+function partnerNoteReportLabel(note: OpenPartnerNote, index: number, assetTitle?: string): string {
+  const partnerType = note.partnerType ? formatQuotePartnerType(note.partnerType) : 'Partner';
+  const assetSuffix = assetTitle ? ` · ${assetTitle}` : '';
+
+  return `${partnerType} note ${index + 1} · ${partnerNoteAuthor(note)}${assetSuffix}`;
+}
+
+function partnerNoteReportValue(note: OpenPartnerNote): string {
+  const attachmentLabel = note.attachment
+    ? `Attached PDF: ${note.attachment.fileName}${note.attachment.byteSize ? ` (${formatByteSize(note.attachment.byteSize)})` : ''}`
+    : '';
+  const statusLabel = note.status === 'noted' ? 'Status: Noted' : 'Status: Open';
+  const sentLabel = note.createdAtIso ? `Sent: ${formatDate(note.createdAtIso)}` : '';
+
+  return [note.noteText, attachmentLabel, statusLabel, sentLabel].filter(Boolean).join('\n');
+}
+
+function buildAssetPartnerNoteRows(asset: RegisterAsset, includeAssetTitle = false): ReportKeyValue[] {
+  return assetPartnerNotes(asset).map((note, index) => ({
+    label: partnerNoteReportLabel(note, index, includeAssetTitle ? asset.title : undefined),
+    value: partnerNoteReportValue(note),
+  }));
+}
+
 function quoteMarkerClassForPartnerType(partnerType: PartnerType | null | undefined): string {
   if (partnerType === 'finance') return 'assetQuoteMapMarker--finance';
   if (partnerType === 'insurance') return 'assetQuoteMapMarker--insurance';
@@ -5437,9 +5479,16 @@ export default function AssetRegisterClient() {
         throw new Error(data.error ?? 'Failed to mark note as noted.');
       }
 
-      setAssets((current) => current.map((entry) => (entry.id === assetId ? { ...entry, openPartnerNote: null } : entry)));
-      setActiveAsset((current) => (current?.id === assetId ? { ...current, openPartnerNote: null } : current));
-      setMarketplaceAsset((current) => (current?.id === assetId ? { ...current, openPartnerNote: null } : current));
+      const notedAtIso = new Date().toISOString();
+      const markNoteAsNoted = (asset: RegisterAsset): RegisterAsset => ({
+        ...asset,
+        openPartnerNote: null,
+        partnerNotes: asset.partnerNotes?.map((note) => (note.id === noteId ? { ...note, status: 'noted', notedAtIso } : note)),
+      });
+
+      setAssets((current) => current.map((entry) => (entry.id === assetId ? markNoteAsNoted(entry) : entry)));
+      setActiveAsset((current) => (current?.id === assetId ? markNoteAsNoted(current) : current));
+      setMarketplaceAsset((current) => (current?.id === assetId ? markNoteAsNoted(current) : current));
       setNotice({ tone: 'success', message: 'Partner note marked as noted.' });
     } catch (error) {
       setNotice({
@@ -5558,6 +5607,7 @@ export default function AssetRegisterClient() {
         ...(getManualAssetNote(asset.note) ? [{ label: 'Asset Notes', value: getManualAssetNote(asset.note) }] : []),
         ...(asset.financeNote ? [{ label: 'Finance Note', value: asset.financeNote }] : []),
         ...(readInsuranceNote(asset) ? [{ label: 'Insurance Note', value: readInsuranceNote(asset) }] : []),
+        ...buildAssetPartnerNoteRows(asset),
       ],
       methodCards,
       footerNote:
@@ -5995,6 +6045,7 @@ export default function AssetRegisterClient() {
         { label: 'Financed assets', value: String(reportFinancedStats.count), note: `${money(reportFinancedStats.value)} marked financed.` },
         { label: 'Licensed assets', value: String(reportLicensedStats.count), note: `${money(reportLicensedStats.value)} marked licensed.` },
       ],
+      notes: reportAssets.flatMap((asset) => buildAssetPartnerNoteRows(asset, true)),
       rows: reportAssets.map((asset) => {
         const initialModelValue = asset.modelName || asset.typedModelName || '';
         const reportBrandName = deriveAssetReportBrandName(asset, initialModelValue);
