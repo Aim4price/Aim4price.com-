@@ -49,6 +49,7 @@ export type AssetRevaluationResult = {
   marketCount?: number;
   marketSources?: AssetRevaluationMarketSource[];
   marketMatchStrategy?: string;
+  replacementPriceUsedExVat?: number | null;
 };
 
 type ValuationRunRow = Record<string, unknown> & {
@@ -116,6 +117,11 @@ function resolveReplacementPrice(value: unknown): number {
   }
 
   return parsed;
+}
+
+function optionalReplacementPrice(value: unknown): number | null {
+  const parsed = roundMoneyValue(value);
+  return parsed !== null && parsed > 0 ? parsed : null;
 }
 
 function mapTractorMarketSource(listing: MarketplaceListing): AssetRevaluationMarketSource {
@@ -492,6 +498,7 @@ async function revalueTractorAsset(input: {
   row: ValuationRunRow;
   preferredMethod: RevaluePreference;
   previewOnly?: boolean;
+  replacementPriceExVat?: number | null;
 }): Promise<AssetRevaluationResult> {
   const payload = asRecord(input.row.valuation_payload);
   const payloadInput = readNestedRecord(payload, 'input');
@@ -521,6 +528,8 @@ async function revalueTractorAsset(input: {
     throw new Error('This tractor is missing its condition, so Aim4price cannot re-run the estimate yet.');
   }
 
+  const replacementPriceOverrideExVat = optionalReplacementPrice(input.replacementPriceExVat);
+
   const valuationInput: RunValuationInput = {
     modelId,
     year,
@@ -532,6 +541,7 @@ async function revalueTractorAsset(input: {
     gpsType: normalizeGpsType(payloadInput.gpsType ?? input.row.gps_type),
     gpsYear: asText(payloadInput.gpsYear ?? input.row.gps_year) || null,
     userReplacementPriceExVat:
+      replacementPriceOverrideExVat ??
       asNumber(input.asset.replacementPriceExVat) ??
       asNumber(payloadInput.userReplacementPriceExVat) ??
       asNumber(payloadOutput.userReplacementPriceExVat) ??
@@ -561,6 +571,7 @@ async function revalueTractorAsset(input: {
       newValueExVat: selectedValueExVat,
       warning,
       previewOnly: true,
+      replacementPriceUsedExVat: roundMoneyValue(result.replacementPriceUsedExVat),
       ...marketEvidence,
     };
   }
@@ -593,6 +604,7 @@ async function revalueTractorAsset(input: {
     oldValueExVat: input.asset.value,
     newValueExVat: saved.selectedValueExVat,
     warning,
+    replacementPriceUsedExVat: roundMoneyValue(result.replacementPriceUsedExVat),
     ...marketEvidence,
   };
 }
@@ -603,6 +615,7 @@ async function revalueGenericAsset(input: {
   row: ValuationRunRow;
   preferredMethod: RevaluePreference;
   previewOnly?: boolean;
+  replacementPriceExVat?: number | null;
 }): Promise<AssetRevaluationResult> {
   const payload = asRecord(input.row.valuation_payload);
   const payloadInput = readNestedRecord(payload, 'input');
@@ -646,7 +659,9 @@ async function revalueGenericAsset(input: {
   const usageAmount = usePercentUsage
     ? null
     : asNumber(input.asset.hours) ?? asNumber(payloadInput.usageAmount) ?? asNumber(input.row.hours);
+  const replacementPriceOverrideExVat = optionalReplacementPrice(input.replacementPriceExVat);
   const userReplacementPriceExVat =
+    replacementPriceOverrideExVat ??
     asNumber(input.asset.replacementPriceExVat) ??
     asNumber(payloadInput.userReplacementPriceExVat) ??
     asNumber(input.row.user_replacement_price_ex_vat);
@@ -684,6 +699,7 @@ async function revalueGenericAsset(input: {
       newValueExVat: selectedValueExVat,
       warning,
       previewOnly: true,
+      replacementPriceUsedExVat: roundMoneyValue(result.replacementPriceUsedExVat),
       ...marketEvidence,
     };
   }
@@ -710,6 +726,7 @@ async function revalueGenericAsset(input: {
     oldValueExVat: input.asset.value,
     newValueExVat: saved.selectedValueExVat,
     warning,
+    replacementPriceUsedExVat: roundMoneyValue(result.replacementPriceUsedExVat),
     ...marketEvidence,
   };
 }
@@ -719,6 +736,7 @@ export async function revalueAssetRegisterItem(input: {
   assetId: string;
   selectedMethod?: unknown;
   previewOnly?: boolean;
+  replacementPriceExVat?: number | null;
 }): Promise<AssetRevaluationResult> {
   const asset = await getAssetRegisterItemById(input.userId, input.assetId);
 
@@ -747,6 +765,7 @@ export async function revalueAssetRegisterItem(input: {
       row,
       preferredMethod,
       previewOnly: input.previewOnly,
+      replacementPriceExVat: input.replacementPriceExVat,
     });
   }
 
@@ -756,5 +775,6 @@ export async function revalueAssetRegisterItem(input: {
     row,
     preferredMethod,
     previewOnly: input.previewOnly,
+    replacementPriceExVat: input.replacementPriceExVat,
   });
 }
