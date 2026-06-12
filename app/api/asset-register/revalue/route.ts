@@ -110,9 +110,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<RevalueAssetResponse>({ ok: false, error: 'You must be signed in.' }, { status: 401 });
   }
 
-  let body: { assetId?: unknown; selectedMethod?: unknown; previewOnly?: unknown; replacementPriceExVat?: unknown };
+  let body: {
+    assetId?: unknown;
+    selectedMethod?: unknown;
+    previewOnly?: unknown;
+    replacementPriceExVat?: unknown;
+    saveReplacementPrice?: unknown;
+  };
   try {
-    body = (await request.json()) as { assetId?: unknown; selectedMethod?: unknown; previewOnly?: unknown; replacementPriceExVat?: unknown };
+    body = (await request.json()) as {
+      assetId?: unknown;
+      selectedMethod?: unknown;
+      previewOnly?: unknown;
+      replacementPriceExVat?: unknown;
+      saveReplacementPrice?: unknown;
+    };
   } catch {
     return badRequest('Enter a valid estimate update request.');
   }
@@ -130,6 +142,12 @@ export async function POST(request: NextRequest) {
     return badRequest('Enter a valid replacement price excluding VAT.');
   }
 
+  const saveReplacementPrice = body.saveReplacementPrice === true;
+
+  if (saveReplacementPrice && replacementPriceExVat === null) {
+    return badRequest('Enter a valid replacement price excluding VAT before saving it as the new replacement price.');
+  }
+
   try {
     const result = await revalueAssetRegisterItem({
       userId: session.user.id,
@@ -137,6 +155,7 @@ export async function POST(request: NextRequest) {
       selectedMethod: body.selectedMethod,
       previewOnly: body.previewOnly === true,
       replacementPriceExVat,
+      saveReplacementPrice,
     });
 
     const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [result.item]);
