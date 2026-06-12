@@ -5945,12 +5945,8 @@ export default function AssetRegisterClient() {
       photoUrl: assetPhotoUrls[0] ?? null,
       photoUrls: assetPhotoUrls,
       facts: assetRows,
-      notes: [
-        ...(getManualAssetNote(asset.note) ? [{ label: 'Asset Notes', value: getManualAssetNote(asset.note) }] : []),
-        ...(asset.financeNote ? [{ label: 'Finance Note', value: asset.financeNote }] : []),
-        ...(readInsuranceNote(asset) ? [{ label: 'Insurance Note', value: readInsuranceNote(asset) }] : []),
-        ...buildAssetPartnerNoteRows(asset),
-      ],
+      // Owner-downloaded valuation reports must never expose internal, dealer, finance, or insurance notes.
+      notes: [],
       methodCards,
       footerNote:
         'Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition, location and live market demand.',
