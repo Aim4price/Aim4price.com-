@@ -23052,3 +23052,242 @@ button.documentOpenLink {
     min-height: 2.92rem !important;
   }
 }
+
+/* === Wizard-style Recalculate value modal: one guided step at a time === */
+.pricingResultModal {
+  width: min(100%, 840px) !important;
+  max-height: min(88vh, calc(100dvh - 1.25rem)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.pricingResultHeader {
+  flex: 0 0 auto !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0.86rem !important;
+  border-bottom: 1px solid rgba(218, 229, 237, 0.92) !important;
+}
+
+.pricingResultBody {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: grid !important;
+  align-content: start !important;
+  gap: 0.74rem !important;
+  overflow-y: auto !important;
+  padding: 0.72rem 0.82rem 0.16rem 0 !important;
+  margin-right: -0.32rem !important;
+  scrollbar-gutter: stable !important;
+  scroll-padding-bottom: 1rem !important;
+}
+
+.pricingPreviewIntroCopy {
+  padding: 0.68rem 0.86rem !important;
+  border: 1px solid rgba(218, 229, 237, 0.95) !important;
+  border-radius: 0.94rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+}
+
+.revalueStepIndicator {
+  display: grid !important;
+  gap: 0.5rem !important;
+}
+
+.revalueStepEyebrow {
+  color: #607287 !important;
+  font-size: 0.76rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.06em !important;
+  line-height: 1.15 !important;
+  text-transform: uppercase !important;
+}
+
+.revalueStepPills {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0.46rem !important;
+}
+
+.revalueStepPill {
+  min-width: 0 !important;
+  min-height: 2.06rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0.3rem 0.62rem !important;
+  border: 1px solid rgba(218, 229, 237, 0.96) !important;
+  border-radius: 999px !important;
+  color: #65768a !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+.revalueStepPillActive {
+  color: #ffffff !important;
+  border-color: rgba(17, 102, 75, 0.6) !important;
+  background: linear-gradient(180deg, #1b7557 0%, #11664b 100%) !important;
+  box-shadow: 0 10px 20px rgba(18, 66, 51, 0.12) !important;
+}
+
+.revalueStepPillDone {
+  color: #10352b !important;
+  border-color: rgba(190, 221, 207, 0.98) !important;
+  background: linear-gradient(180deg, #f6fcf8 0%, #e9f7f0 100%) !important;
+}
+
+.revalueReplacementPanel {
+  gap: 0.72rem !important;
+  padding: 0.95rem !important;
+  border-radius: 1.12rem !important;
+}
+
+.revalueReplacementHeader h4 {
+  font-size: clamp(1.14rem, 1.45vw, 1.32rem) !important;
+}
+
+.revalueSavedReplacementCard,
+.revalueDecisionCard,
+.revalueCustomReplacementCard,
+.revalueReplacementSummary {
+  border-radius: 1rem !important;
+}
+
+.revalueSavedReplacementCard {
+  padding: 0.92rem !important;
+}
+
+.revalueDecisionCard {
+  gap: 0.68rem !important;
+  padding: 0.92rem !important;
+}
+
+.revalueDecisionActions {
+  gap: 0.58rem !important;
+}
+
+.revalueCustomReplacementCard {
+  gap: 0.66rem !important;
+  padding: 0.92rem !important;
+}
+
+.revalueReplacementField input {
+  min-height: 2.82rem !important;
+}
+
+.pricingResultHero {
+  padding: 0.98rem !important;
+  border-radius: 1.08rem !important;
+}
+
+.pricingResultHero strong {
+  font-size: clamp(2.12rem, 3.6vw, 3rem) !important;
+}
+
+.pricingCompareGrid {
+  gap: 0.58rem !important;
+}
+
+.pricingCompareGrid > div {
+  padding: 0.74rem 0.82rem !important;
+  border-radius: 0.9rem !important;
+}
+
+.revalueReplacementSummary {
+  gap: 0.44rem !important;
+  padding: 0.78rem 0.86rem !important;
+}
+
+.pricingPreviewStatus {
+  min-height: 11.5rem !important;
+  align-content: center !important;
+  justify-items: center !important;
+  text-align: center !important;
+}
+
+.pricingPreviewActions {
+  flex: 0 0 auto !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 4 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 0.68rem !important;
+  margin: 0.74rem 0 0 !important;
+  padding: 0.82rem 0 0.05rem !important;
+  border-top: 1px solid rgba(218, 229, 237, 0.9) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, #ffffff 42%) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.pricingPreviewActionsSingle {
+  grid-template-columns: 1fr !important;
+}
+
+.pricingPreviewActions .secondaryButton,
+.pricingPreviewActions .primaryButton {
+  width: 100% !important;
+  min-height: 2.95rem !important;
+  border-radius: 0.92rem !important;
+}
+
+@media (min-width: 901px) {
+  .pricingResultModal {
+    min-height: 0 !important;
+  }
+
+  .pricingResultBody {
+    overflow-y: auto !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .revalueStepPills,
+  .revalueDecisionActions,
+  .pricingCompareGrid,
+  .pricingPreviewActions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .revalueStepPill {
+    justify-content: flex-start !important;
+    white-space: normal !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .pricingResultModal {
+    max-height: min(92vh, calc(100dvh - 0.75rem)) !important;
+    padding: 1rem !important;
+  }
+
+  .pricingResultBody {
+    gap: 0.68rem !important;
+    padding-right: 0.66rem !important;
+    padding-bottom: 0.12rem !important;
+    margin-right: -0.2rem !important;
+  }
+
+  .revalueReplacementPanel,
+  .revalueSavedReplacementCard,
+  .revalueDecisionCard,
+  .revalueCustomReplacementCard,
+  .revalueReplacementSummary,
+  .pricingResultHero {
+    padding: 0.82rem !important;
+  }
+
+  .pricingResultHero strong {
+    font-size: clamp(1.92rem, 11vw, 2.55rem) !important;
+  }
+
+  .pricingPreviewActions {
+    gap: 0.56rem !important;
+    margin-top: 0.6rem !important;
+    padding-top: 0.68rem !important;
+  }
+}

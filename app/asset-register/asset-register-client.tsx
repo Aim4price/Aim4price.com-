@@ -5546,17 +5546,57 @@ export default function AssetRegisterClient() {
   }
 
   function showCustomReplacementStep(asset: RegisterAsset) {
-    setPricingPreview((current) => ({
+    setPricingPreview({
       asset,
       method: 'aim4price',
       replacementMode: 'custom',
       replacementPriceExVat: null,
-      result: current?.asset.id === asset.id && current.method === 'aim4price' && current.replacementMode === 'custom' ? current.result : null,
+      result: null,
       error: null,
-    }));
+    });
     setIsLoadingPricingPreview(false);
     setIsSavingPricingPreview(false);
     setRevalueReplacementPriceError(null);
+  }
+
+  function showSavedReplacementStep(asset: RegisterAsset) {
+    setPricingPreview({
+      asset,
+      method: 'aim4price',
+      replacementMode: null,
+      replacementPriceExVat: null,
+      result: null,
+      error: null,
+    });
+    setIsLoadingPricingPreview(false);
+    setIsSavingPricingPreview(false);
+    setRevalueReplacementPriceError(null);
+    setSaveReplacementPriceWithRevalue(false);
+  }
+
+  function handlePreviousRevalueStep() {
+    if (!pricingPreview || pricingPreview.method !== 'aim4price' || isLoadingPricingPreview || isSavingPricingPreview) {
+      return;
+    }
+
+    if (pricingPreview.result || pricingPreview.error) {
+      if (pricingPreview.replacementMode === 'custom') {
+        setPricingPreview({
+          asset: pricingPreview.asset,
+          method: 'aim4price',
+          replacementMode: 'custom',
+          replacementPriceExVat: null,
+          result: null,
+          error: null,
+        });
+      } else {
+        showSavedReplacementStep(pricingPreview.asset);
+      }
+
+      return;
+    }
+
+    showSavedReplacementStep(pricingPreview.asset);
   }
 
   function openSavedReplacementPreview(asset: RegisterAsset) {
@@ -6726,6 +6766,25 @@ export default function AssetRegisterClient() {
         : 'New price used for preview only'
       : 'Using saved price'
     : null;
+  const pricingPreviewWizardStep = pricingPreview?.method === 'aim4price'
+    ? isLoadingPricingPreview || pricingPreview.result || pricingPreview.error
+      ? 3
+      : pricingPreview.replacementMode === 'custom'
+        ? 2
+        : 1
+    : null;
+  const pricingPreviewWizardTitle = pricingPreviewWizardStep === 1
+    ? 'Replacement price'
+    : pricingPreviewWizardStep === 2
+      ? 'Different price'
+      : pricingPreviewWizardStep === 3
+        ? 'Preview'
+        : '';
+  const canCalculateCustomReplacementPreview = Boolean(
+    normalizedRevalueReplacementPriceInput !== null &&
+    !isLoadingPricingPreview &&
+    !isSavingPricingPreview,
+  );
   const canSavePricingPreview = Boolean(
     pricingPreview?.result?.item &&
     !isLoadingPricingPreview &&
@@ -8849,7 +8908,7 @@ export default function AssetRegisterClient() {
                 className={styles.modalCloseButton}
                 onClick={closePricingPreviewDialog}
                 aria-label="Close value preview"
-                disabled={isLoadingPricingPreview || isSavingPricingPreview}
+                disabled={isSavingPricingPreview}
               >
                 <CloseIcon className={styles.buttonIcon} />
               </button>
@@ -8860,44 +8919,84 @@ export default function AssetRegisterClient() {
 
               {pricingPreview.method === 'aim4price' ? (
                 <>
-                  <section className={styles.revalueReplacementPanel}>
-                    <div className={styles.revalueReplacementHeader}>
-                      <div>
-                        <span>Step 1</span>
-                        <h4>Replacement price used</h4>
+                  <div className={styles.revalueStepIndicator} aria-label={`Step ${pricingPreviewWizardStep ?? 1} of 3`}>
+                    <span className={styles.revalueStepEyebrow}>
+                      Step {pricingPreviewWizardStep} of 3 — {pricingPreviewWizardTitle}
+                    </span>
+                    <div className={styles.revalueStepPills}>
+                      <span
+                        className={`${styles.revalueStepPill} ${
+                          pricingPreviewWizardStep === 1
+                            ? styles.revalueStepPillActive
+                            : pricingPreviewWizardStep === 2 || pricingPreviewWizardStep === 3
+                              ? styles.revalueStepPillDone
+                              : ''
+                        }`}
+                        aria-current={pricingPreviewWizardStep === 1 ? 'step' : undefined}
+                      >
+                        1 Replacement price
+                      </span>
+                      <span
+                        className={`${styles.revalueStepPill} ${
+                          pricingPreviewWizardStep === 2
+                            ? styles.revalueStepPillActive
+                            : pricingPreviewWizardStep === 3 && pricingPreview.replacementMode === 'custom'
+                              ? styles.revalueStepPillDone
+                              : ''
+                        }`}
+                        aria-current={pricingPreviewWizardStep === 2 ? 'step' : undefined}
+                      >
+                        2 Different price
+                      </span>
+                      <span
+                        className={`${styles.revalueStepPill} ${pricingPreviewWizardStep === 3 ? styles.revalueStepPillActive : ''}`}
+                        aria-current={pricingPreviewWizardStep === 3 ? 'step' : undefined}
+                      >
+                        3 Preview
+                      </span>
+                    </div>
+                  </div>
+
+                  {pricingPreviewWizardStep === 1 ? (
+                    <section className={styles.revalueReplacementPanel}>
+                      <div className={styles.revalueReplacementHeader}>
+                        <div>
+                          <span>Step 1</span>
+                          <h4>Replacement price used</h4>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className={styles.revalueSavedReplacementCard}>
-                      <span>Saved replacement price</span>
-                      <strong>{pricingPreviewSavedReplacementPriceExVat !== null ? `${money(pricingPreviewSavedReplacementPriceExVat)} excl. VAT` : 'No saved price'}</strong>
-                      <small>Saved replacement price on this asset.</small>
-                    </div>
-
-                    <div className={styles.revalueDecisionCard}>
-                      <strong>Do you want to use this replacement price?</strong>
-                      <div className={styles.revalueDecisionActions}>
-                        <button
-                          type="button"
-                          className={styles.revalueCustomReplacementButton}
-                          disabled={pricingPreviewSavedReplacementPriceExVat === null || isLoadingPricingPreview || isSavingPricingPreview}
-                          onClick={() => openSavedReplacementPreview(pricingPreview.asset)}
-                        >
-                          Yes, use saved price
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.revalueSecondaryButton}
-                          disabled={isLoadingPricingPreview || isSavingPricingPreview}
-                          onClick={() => showCustomReplacementStep(pricingPreview.asset)}
-                        >
-                          No, enter different price
-                        </button>
+                      <div className={styles.revalueSavedReplacementCard}>
+                        <span>Saved replacement price</span>
+                        <strong>{pricingPreviewSavedReplacementPriceExVat !== null ? `${money(pricingPreviewSavedReplacementPriceExVat)} excl. VAT` : 'No saved price'}</strong>
+                        <small>Saved replacement price on this asset.</small>
                       </div>
-                    </div>
-                  </section>
 
-                  {pricingPreview.replacementMode === 'custom' ? (
+                      <div className={styles.revalueDecisionCard}>
+                        <strong>Do you want to use this replacement price?</strong>
+                        <div className={styles.revalueDecisionActions}>
+                          <button
+                            type="button"
+                            className={styles.revalueCustomReplacementButton}
+                            disabled={pricingPreviewSavedReplacementPriceExVat === null || isLoadingPricingPreview || isSavingPricingPreview}
+                            onClick={() => openSavedReplacementPreview(pricingPreview.asset)}
+                          >
+                            Yes, use saved price
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.revalueSecondaryButton}
+                            disabled={isLoadingPricingPreview || isSavingPricingPreview}
+                            onClick={() => showCustomReplacementStep(pricingPreview.asset)}
+                          >
+                            No, enter different price
+                          </button>
+                        </div>
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {pricingPreviewWizardStep === 2 ? (
                     <section className={`${styles.revalueReplacementPanel} ${styles.revalueCustomStepPanel}`}>
                       <div className={styles.revalueReplacementHeader}>
                         <div>
@@ -8929,158 +9028,234 @@ export default function AssetRegisterClient() {
                           <span>Also save this as the new replacement price for this asset</span>
                         </label>
                         <p className={styles.revalueReplacementHelper}>Leave unticked to only use this price for this preview.</p>
-
-                        <button
-                          type="button"
-                          className={styles.revalueCustomReplacementButton}
-                          disabled={normalizedRevalueReplacementPriceInput === null || isLoadingPricingPreview || isSavingPricingPreview}
-                          onClick={() => openCustomReplacementPreview(pricingPreview.asset)}
-                        >
-                          Calculate new value
-                        </button>
                       </div>
 
                       {revalueReplacementPriceError ? <p className={styles.revalueReplacementError}>{revalueReplacementPriceError}</p> : null}
                     </section>
                   ) : null}
-                </>
-              ) : null}
 
-              {isLoadingPricingPreview ? (
-                <div className={styles.pricingPreviewStatus}>Calculating new value...</div>
-              ) : pricingPreview.error ? (
-                <div className={`${styles.pricingPreviewStatus} ${styles.pricingPreviewError}`}>
-                  <strong>Could not calculate preview</strong>
-                  <span>{pricingPreview.error}</span>
-                </div>
-              ) : pricingPreview.result?.item ? (
+                  {pricingPreviewWizardStep === 3 ? (
+                    isLoadingPricingPreview ? (
+                      <div className={styles.pricingPreviewStatus}>Calculating new value...</div>
+                    ) : pricingPreview.error ? (
+                      <div className={`${styles.pricingPreviewStatus} ${styles.pricingPreviewError}`}>
+                        <strong>Could not calculate preview</strong>
+                        <span>{pricingPreview.error}</span>
+                      </div>
+                    ) : pricingPreview.result?.item ? (
+                      <>
+                        <section className={`${styles.revalueReplacementPanel} ${styles.revaluePreviewPanel}`} aria-live="polite">
+                          <div className={styles.revalueReplacementHeader}>
+                            <div>
+                              <span>Step 3</span>
+                              <h4>Preview new value</h4>
+                            </div>
+                          </div>
+
+                          <div className={styles.pricingResultHero}>
+                            <span>New asset value</span>
+                            <strong>{money(pricingPreviewNewValueExVat)}</strong>
+                            <p>This is the value that will be saved if you continue.</p>
+                          </div>
+
+                          <div className={styles.pricingCompareGrid}>
+                            <div>
+                              <span>Current value</span>
+                              <strong>{money(pricingPreviewOldValueExVat)}</strong>
+                            </div>
+                            <div>
+                              <span>New value</span>
+                              <strong>{money(pricingPreviewNewValueExVat)}</strong>
+                            </div>
+                            <div>
+                              <span>Difference</span>
+                              <strong>{formatMoneyDifference(pricingPreviewDifferenceExVat)}</strong>
+                            </div>
+                          </div>
+
+                          <div className={styles.revalueReplacementSummary}>
+                            <div>
+                              <span>Replacement price used:</span>
+                              <strong>{pricingPreviewReplacementPriceExVat !== null ? money(pricingPreviewReplacementPriceExVat) : 'Not set'}</strong>
+                            </div>
+                            <div>
+                              <span>Replacement price action:</span>
+                              <strong>{pricingPreviewReplacementActionLabel}</strong>
+                            </div>
+                          </div>
+                        </section>
+
+                        {pricingPreview.result.warning ? (
+                          <p className={styles.pricingPreviewWarning}>{pricingPreview.result.warning}</p>
+                        ) : null}
+
+                        {pricingPreviewHasUnpreviewedReplacementInput ? (
+                          <p className={styles.revalueReplacementNotice}>Calculate the changed replacement price before saving.</p>
+                        ) : null}
+                      </>
+                    ) : null
+                  ) : null}
+                </>
+              ) : (
                 <>
-                  <section className={`${styles.revalueReplacementPanel} ${styles.revaluePreviewPanel}`} aria-live="polite">
-                    <div className={styles.revalueReplacementHeader}>
-                      <div>
-                        <span>{pricingPreview.method === 'aim4price' ? 'Step 3' : 'Preview'}</span>
-                        <h4>{pricingPreview.method === 'aim4price' ? 'Preview new value' : 'Preview value'}</h4>
-                      </div>
+                  {isLoadingPricingPreview ? (
+                    <div className={styles.pricingPreviewStatus}>Calculating new value...</div>
+                  ) : pricingPreview.error ? (
+                    <div className={`${styles.pricingPreviewStatus} ${styles.pricingPreviewError}`}>
+                      <strong>Could not calculate preview</strong>
+                      <span>{pricingPreview.error}</span>
                     </div>
-
-                    <div className={styles.pricingResultHero}>
-                      <span>New asset value</span>
-                      <strong>{money(pricingPreviewNewValueExVat)}</strong>
-                      <p>This is the value that will be saved if you continue.</p>
-                    </div>
-
-                    <div className={styles.pricingCompareGrid}>
-                      <div>
-                        <span>Current value</span>
-                        <strong>{money(pricingPreviewOldValueExVat)}</strong>
-                      </div>
-                      <div>
-                        <span>New value</span>
-                        <strong>{money(pricingPreviewNewValueExVat)}</strong>
-                      </div>
-                      <div>
-                        <span>Difference</span>
-                        <strong>{formatMoneyDifference(pricingPreviewDifferenceExVat)}</strong>
-                      </div>
-                    </div>
-
-                    {pricingPreview.method === 'aim4price' ? (
-                      <div className={styles.revalueReplacementSummary}>
-                        <div>
-                          <span>Replacement price used:</span>
-                          <strong>{pricingPreviewReplacementPriceExVat !== null ? money(pricingPreviewReplacementPriceExVat) : 'Not set'}</strong>
+                  ) : pricingPreview.result?.item ? (
+                    <>
+                      <section className={`${styles.revalueReplacementPanel} ${styles.revaluePreviewPanel}`} aria-live="polite">
+                        <div className={styles.revalueReplacementHeader}>
+                          <div>
+                            <span>Preview</span>
+                            <h4>Preview value</h4>
+                          </div>
                         </div>
-                        <div>
-                          <span>Replacement price action:</span>
-                          <strong>{pricingPreviewReplacementActionLabel}</strong>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className={styles.revalueReplacementSummary}>
-                        <div>
-                          <span>Pricing method:</span>
-                          <strong>{methodLabel(pricingPreview.result.selectedMethod ?? pricingPreview.result.item.selectedMethod)}</strong>
-                        </div>
-                      </div>
-                    )}
-                  </section>
 
-                  {pricingPreview.method === 'market' ? (
-                    <section className={styles.marketEvidenceCard}>
-                      <div className={styles.marketEvidenceHeader}>
-                        <div>
-                          <h3>Market evidence</h3>
-                          <p>Listings used after model, year, usage and price checks.</p>
+                        <div className={styles.pricingResultHero}>
+                          <span>New asset value</span>
+                          <strong>{money(pricingPreviewNewValueExVat)}</strong>
+                          <p>This is the value that will be saved if you continue.</p>
                         </div>
-                        <span className={styles.marketEvidenceCount}>
-                          {(pricingPreview.result.marketCount ?? pricingPreview.result.marketSources?.length ?? 0) > 0
-                            ? `${pricingPreview.result.marketCount ?? pricingPreview.result.marketSources?.length ?? 0} used`
-                            : 'No matches'}
-                        </span>
-                      </div>
 
-                      {(pricingPreview.result.marketAverageExVat ?? pricingPreview.result.newValueExVat ?? pricingPreview.result.item.marketMidExVat) !== null ? (
-                        <div className={styles.marketEvidenceSummary}>
-                          <span>Marketplace average</span>
-                          <strong>{money(pricingPreview.result.marketAverageExVat ?? pricingPreview.result.newValueExVat ?? pricingPreview.result.item.marketMidExVat)}</strong>
+                        <div className={styles.pricingCompareGrid}>
+                          <div>
+                            <span>Current value</span>
+                            <strong>{money(pricingPreviewOldValueExVat)}</strong>
+                          </div>
+                          <div>
+                            <span>New value</span>
+                            <strong>{money(pricingPreviewNewValueExVat)}</strong>
+                          </div>
+                          <div>
+                            <span>Difference</span>
+                            <strong>{formatMoneyDifference(pricingPreviewDifferenceExVat)}</strong>
+                          </div>
                         </div>
+
+                        <div className={styles.revalueReplacementSummary}>
+                          <div>
+                            <span>Pricing method:</span>
+                            <strong>{methodLabel(pricingPreview.result.selectedMethod ?? pricingPreview.result.item.selectedMethod)}</strong>
+                          </div>
+                        </div>
+                      </section>
+
+                      <section className={styles.marketEvidenceCard}>
+                        <div className={styles.marketEvidenceHeader}>
+                          <div>
+                            <h3>Market evidence</h3>
+                            <p>Listings used after model, year, usage and price checks.</p>
+                          </div>
+                          <span className={styles.marketEvidenceCount}>
+                            {(pricingPreview.result.marketCount ?? pricingPreview.result.marketSources?.length ?? 0) > 0
+                              ? `${pricingPreview.result.marketCount ?? pricingPreview.result.marketSources?.length ?? 0} used`
+                              : 'No matches'}
+                          </span>
+                        </div>
+
+                        {(pricingPreview.result.marketAverageExVat ?? pricingPreview.result.newValueExVat ?? pricingPreview.result.item.marketMidExVat) !== null ? (
+                          <div className={styles.marketEvidenceSummary}>
+                            <span>Marketplace average</span>
+                            <strong>{money(pricingPreview.result.marketAverageExVat ?? pricingPreview.result.newValueExVat ?? pricingPreview.result.item.marketMidExVat)}</strong>
+                          </div>
+                        ) : null}
+
+                        {pricingPreview.result.marketSources?.length ? (
+                          pricingPreview.result.marketSources.map((source) => {
+                            const sourceHref = normalizeExternalUrl(source.sourceUrl);
+                            const price = marketSourcePrice(source);
+
+                            return (
+                              <article key={String(source.id)} className={styles.marketEvidenceItem}>
+                                <div className={styles.marketEvidenceItemHeader}>
+                                  <span>{formatMarketSourceLabel(source.sourceName)}</span>
+                                  <small className={styles.marketEvidencePrice}>{money(price)}</small>
+                                </div>
+                                <strong>{source.title || 'Marketplace listing'}</strong>
+                                <p className={styles.marketEvidenceMeta}>{formatPricingMarketMeta(source)}</p>
+                                {sourceHref ? (
+                                  <a className={styles.marketEvidenceLink} href={sourceHref} target="_blank" rel="noreferrer">
+                                    Open listing →
+                                  </a>
+                                ) : (
+                                  <span className={styles.marketEvidenceNoLink}>No source link saved</span>
+                                )}
+                              </article>
+                            );
+                          })
+                        ) : (
+                          <div className={styles.marketEvidenceEmpty}>
+                            <strong>No matching marketplace average yet</strong>
+                            <p>When Aim4price finds similar listings, they will appear here as supporting evidence.</p>
+                          </div>
+                        )}
+                      </section>
+
+                      {pricingPreview.result.warning ? (
+                        <p className={styles.pricingPreviewWarning}>{pricingPreview.result.warning}</p>
                       ) : null}
-
-                      {pricingPreview.result.marketSources?.length ? (
-                        pricingPreview.result.marketSources.map((source) => {
-                          const sourceHref = normalizeExternalUrl(source.sourceUrl);
-                          const price = marketSourcePrice(source);
-
-                          return (
-                            <article key={String(source.id)} className={styles.marketEvidenceItem}>
-                              <div className={styles.marketEvidenceItemHeader}>
-                                <span>{formatMarketSourceLabel(source.sourceName)}</span>
-                                <small className={styles.marketEvidencePrice}>{money(price)}</small>
-                              </div>
-                              <strong>{source.title || 'Marketplace listing'}</strong>
-                              <p className={styles.marketEvidenceMeta}>{formatPricingMarketMeta(source)}</p>
-                              {sourceHref ? (
-                                <a className={styles.marketEvidenceLink} href={sourceHref} target="_blank" rel="noreferrer">
-                                  Open listing →
-                                </a>
-                              ) : (
-                                <span className={styles.marketEvidenceNoLink}>No source link saved</span>
-                              )}
-                            </article>
-                          );
-                        })
-                      ) : (
-                        <div className={styles.marketEvidenceEmpty}>
-                          <strong>No matching marketplace average yet</strong>
-                          <p>When Aim4price finds similar listings, they will appear here as supporting evidence.</p>
-                        </div>
-                      )}
-                    </section>
-                  ) : null}
-
-                  {pricingPreview.result.warning ? (
-                    <p className={styles.pricingPreviewWarning}>{pricingPreview.result.warning}</p>
-                  ) : null}
-
-                  {pricingPreview.result?.item && pricingPreviewHasUnpreviewedReplacementInput ? (
-                    <p className={styles.revalueReplacementNotice}>Calculate the changed replacement price before saving.</p>
+                    </>
                   ) : null}
                 </>
-              ) : null}
+              )}
+            </div>
 
-              <div className={styles.pricingPreviewActions}>
+            <div
+              className={`${styles.pricingPreviewActions} ${
+                pricingPreview.method === 'aim4price' && pricingPreviewWizardStep === 1 ? styles.pricingPreviewActionsSingle : ''
+              }`}
+            >
+              {pricingPreview.method === 'aim4price' && pricingPreviewWizardStep === 1 ? (
                 <button type="button" className={styles.secondaryButton} onClick={closePricingPreviewDialog} disabled={isSavingPricingPreview}>
                   Keep current value
                 </button>
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={() => void handleSavePricingPreview()}
-                  disabled={!canSavePricingPreview}
-                >
-                  {isSavingPricingPreview ? 'Saving...' : pricingPreviewShouldSaveReplacement ? 'Save value and replacement price' : 'Save new value'}
-                </button>
-              </div>
+              ) : pricingPreview.method === 'aim4price' && pricingPreviewWizardStep === 2 ? (
+                <>
+                  <button type="button" className={styles.secondaryButton} onClick={handlePreviousRevalueStep} disabled={isLoadingPricingPreview || isSavingPricingPreview}>
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => openCustomReplacementPreview(pricingPreview.asset)}
+                    disabled={!canCalculateCustomReplacementPreview}
+                  >
+                    Calculate new value
+                  </button>
+                </>
+              ) : pricingPreview.method === 'aim4price' && pricingPreviewWizardStep === 3 ? (
+                <>
+                  <button type="button" className={styles.secondaryButton} onClick={handlePreviousRevalueStep} disabled={isLoadingPricingPreview || isSavingPricingPreview}>
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => void handleSavePricingPreview()}
+                    disabled={!canSavePricingPreview}
+                  >
+                    {isSavingPricingPreview ? 'Saving...' : pricingPreviewShouldSaveReplacement ? 'Save value and replacement price' : 'Save new value'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button type="button" className={styles.secondaryButton} onClick={closePricingPreviewDialog} disabled={isSavingPricingPreview}>
+                    Keep current value
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => void handleSavePricingPreview()}
+                    disabled={!canSavePricingPreview}
+                  >
+                    {isSavingPricingPreview ? 'Saving...' : 'Save new value'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
