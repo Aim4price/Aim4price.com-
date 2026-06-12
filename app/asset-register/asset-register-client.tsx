@@ -3461,6 +3461,10 @@ export default function AssetRegisterClient() {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 16 }, (_, index) => currentYear + index);
   }, []);
+  const projectionYearSelectOptions = useMemo<Array<ModalSelectOption<string>>>(
+    () => projectionYearOptions.map((year) => ({ value: String(year), label: String(year) })),
+    [projectionYearOptions],
+  );
   const assetReportYearOptions = useMemo<ReportSelectOption[]>(() => {
     return [
       { value: 'all', label: 'All years' },
@@ -8610,7 +8614,7 @@ export default function AssetRegisterClient() {
                 >
                   <TrendIcon className={styles.buttonIcon} />
                   <span>
-                    <strong>Recalculate Aim4price value</strong>
+                    <strong>Recalculate value</strong>
                     <small>Preview a fresh Aim4price valuation before saving it.</small>
                   </span>
                 </button>
@@ -8623,7 +8627,7 @@ export default function AssetRegisterClient() {
                 >
                   <TrendIcon className={styles.buttonIcon} />
                   <span>
-                    <strong>Get newest market price</strong>
+                    <strong>Newest market price</strong>
                     <small>Preview the newest market midpoint before saving it.</small>
                   </span>
                 </button>
@@ -8637,7 +8641,7 @@ export default function AssetRegisterClient() {
                   <TrendIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Calculate future price</strong>
-                    <small>Open the future value calculator for year, inflation and hours.</small>
+                    <small>Calculate a future value, with inflation, hours & years.</small>
                   </span>
                 </button>
               </div>
@@ -9362,7 +9366,7 @@ export default function AssetRegisterClient() {
               <div className={styles.projectionSimpleBody}>
                 <div className={styles.projectionBaselineStrip}>
                   <div>
-                    <span>Current value</span>
+                    <span>Current saved value</span>
                     <strong>{money(projectionAsset.value)}</strong>
                   </div>
                   <div>
@@ -9382,19 +9386,13 @@ export default function AssetRegisterClient() {
                   </div>
 
                   <div className={styles.projectionInputRow}>
-                    <label className={styles.field}>
-                      <span>Target year</span>
-                      <select
-                        value={projectionForm.targetYear}
-                        onChange={(event) => updateProjectionForm({ targetYear: event.target.value })}
-                      >
-                        {projectionYearOptions.map((year) => (
-                          <option key={year} value={String(year)}>
-                            {year}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    <ModalSelect<string>
+                      label="Target year"
+                      value={projectionForm.targetYear}
+                      options={projectionYearSelectOptions}
+                      onChange={(value) => updateProjectionForm({ targetYear: value })}
+                      className={styles.projectionYearSelectField}
+                    />
 
                     <label className={styles.field}>
                       <span>Inflation % p.a.</span>
