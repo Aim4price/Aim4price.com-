@@ -80,6 +80,7 @@ function getRegisterSummaryCardsPerView(): number {
 type AssetKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools';
 type AssetMethod = 'aim4price' | 'market' | 'manual';
 type RevalueMethod = Exclude<AssetMethod, 'manual'>;
+type RevalueReplacementMode = 'saved' | 'custom';
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
 type UsageMetric = 'hours' | 'km';
@@ -478,12 +479,15 @@ type RevalueAssetApiResponse = {
   marketCount?: number;
   marketSources?: PricingMarketSource[];
   marketMatchStrategy?: string;
+  replacementPriceUsedExVat?: number | null;
   error?: string;
 };
 
 type PricingRevaluePreview = {
   asset: RegisterAsset;
   method: RevalueMethod;
+  replacementMode: RevalueReplacementMode | null;
+  replacementPriceExVat: number | null;
   result: RevalueAssetApiResponse | null;
   error: string | null;
 };
@@ -3268,6 +3272,8 @@ export default function AssetRegisterClient() {
   const [pricingPreview, setPricingPreview] = useState<PricingRevaluePreview | null>(null);
   const [isLoadingPricingPreview, setIsLoadingPricingPreview] = useState(false);
   const [isSavingPricingPreview, setIsSavingPricingPreview] = useState(false);
+  const [revalueReplacementPriceInput, setRevalueReplacementPriceInput] = useState('');
+  const [revalueReplacementPriceError, setRevalueReplacementPriceError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [assetFilter, setAssetFilter] = useState<AssetFilterKey>('all');
   const [isAssetFilterOpen, setIsAssetFilterOpen] = useState(false);
@@ -4706,16 +4712,24 @@ export default function AssetRegisterClient() {
     setOpenAssetReportSelect(null);
   }
 
+  function resetRevalueReplacementForm(asset: RegisterAsset | null) {
+    const savedReplacementPrice = asset ? readAssetReplacementPriceExVat(asset) : null;
+    setRevalueReplacementPriceInput(savedReplacementPrice !== null ? formatRegisterValueInput(savedReplacementPrice) : '');
+    setRevalueReplacementPriceError(null);
+  }
+
   function openPricingDialog() {
     setIsAssetReportModalOpen(false);
     setIsQrModalOpen(false);
     setCopiedScanLinkAssetId(null);
+    resetRevalueReplacementForm(activeAsset);
     setIsPricingModalOpen(true);
   }
 
   function closePricingDialog() {
     if (isLoadingPricingPreview || isSavingPricingPreview) return;
     setPricingPreview(null);
+    setRevalueReplacementPriceError(null);
     setIsPricingModalOpen(false);
   }
 
@@ -5477,6 +5491,43 @@ export default function AssetRegisterClient() {
   }
 
 
+  function handleRevalueReplacementPriceChange(event: ChangeEvent<HTMLInputElement>) {
+    setRevalueReplacementPriceInput(formatRegisterValueInput(event.target.value));
+    if (revalueReplacementPriceError) {
+      setRevalueReplacementPriceError(null);
+    }
+  }
+
+  function openSavedReplacementPreview(asset: RegisterAsset) {
+    const savedReplacementPrice = readAssetReplacementPriceExVat(asset);
+
+    if (savedReplacementPrice === null || savedReplacementPrice <= 0) {
+      setRevalueReplacementPriceError('A saved replacement price is required before this value can be recalculated.');
+      return;
+    }
+
+    setRevalueReplacementPriceError(null);
+    void openRevaluePreviewDialog(asset, 'aim4price', {
+      replacementMode: 'saved',
+      replacementPriceExVat: savedReplacementPrice,
+    });
+  }
+
+  function openCustomReplacementPreview(asset: RegisterAsset) {
+    const customReplacementPrice = parseMoneyInput(revalueReplacementPriceInput);
+
+    if (customReplacementPrice === null || customReplacementPrice <= 0) {
+      setRevalueReplacementPriceError('Enter a valid replacement price excluding VAT.');
+      return;
+    }
+
+    setRevalueReplacementPriceError(null);
+    void openRevaluePreviewDialog(asset, 'aim4price', {
+      replacementMode: 'custom',
+      replacementPriceExVat: Math.round(customReplacementPrice),
+    });
+  }
+
   async function handleUpdateEstimate(asset: RegisterAsset, selectedMethod?: RevalueMethod, closePricingAfterSuccess = false) {
     setBusyRevalueAssetId(asset.id);
     setBusyRevalueAction(selectedMethod ?? null);
@@ -5528,10 +5579,21 @@ export default function AssetRegisterClient() {
       : 'Aim4price will rerun the saved valuation using the latest asset details. Review the new value before saving it to the Asset Register.';
   }
 
-  async function openRevaluePreviewDialog(asset: RegisterAsset, method: RevalueMethod) {
+  async function openRevaluePreviewDialog(
+    asset: RegisterAsset,
+    method: RevalueMethod,
+    options?: { replacementMode?: RevalueReplacementMode | null; replacementPriceExVat?: number | null },
+  ) {
+    const replacementPriceExVat =
+      typeof options?.replacementPriceExVat === 'number' && Number.isFinite(options.replacementPriceExVat) && options.replacementPriceExVat > 0
+        ? Math.round(options.replacementPriceExVat)
+        : null;
+    const replacementMode = options?.replacementMode ?? null;
     const initialPreview: PricingRevaluePreview = {
       asset,
       method,
+      replacementMode,
+      replacementPriceExVat,
       result: null,
       error: null,
     };
@@ -5549,6 +5611,7 @@ export default function AssetRegisterClient() {
           assetId: asset.id,
           selectedMethod: method,
           previewOnly: true,
+          ...(replacementPriceExVat !== null ? { replacementPriceExVat } : {}),
         }),
       });
       const data = (await response.json()) as RevalueAssetApiResponse;
@@ -5588,7 +5651,7 @@ export default function AssetRegisterClient() {
   async function handleSavePricingPreview() {
     if (!pricingPreview) return;
 
-    const { asset, method } = pricingPreview;
+    const { asset, method, replacementMode, replacementPriceExVat } = pricingPreview;
     setIsSavingPricingPreview(true);
 
     try {
@@ -5599,6 +5662,7 @@ export default function AssetRegisterClient() {
         body: JSON.stringify({
           assetId: asset.id,
           selectedMethod: method,
+          ...(replacementPriceExVat !== null ? { replacementPriceExVat } : {}),
         }),
       });
       const data = (await response.json()) as RevalueAssetApiResponse;
@@ -5615,9 +5679,12 @@ export default function AssetRegisterClient() {
       const updatedMethod = data.selectedMethod ?? updatedAsset.selectedMethod;
       const updateLabel = updatedMethod === 'market' ? 'market price' : 'Aim4price value';
       const marketplaceNote = isLiveOnMarketplace(asset) ? ' Marketplace asking price was not changed.' : '';
+      const replacementNote = replacementMode === 'custom' && replacementPriceExVat !== null
+        ? ` Replacement price saved at ${money(replacementPriceExVat)}.`
+        : '';
       setNotice({
         tone: 'success',
-        message: `${updatedAsset.title} ${updateLabel} saved at ${money(updatedAsset.value)}.${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
+        message: `${updatedAsset.title} ${updateLabel} saved at ${money(updatedAsset.value)}.${replacementNote}${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
       });
     } catch (error) {
       setPricingPreview((current) => (current ? {
@@ -6550,6 +6617,15 @@ export default function AssetRegisterClient() {
       ? 'Update marketplace listing'
       : 'Send to marketplace'
     : '';
+  const pricingPreviewReplacementPriceExVat = pricingPreview
+    ? pricingPreview.replacementPriceExVat ?? (pricingPreview.result?.item
+      ? readAssetReplacementPriceExVat(pricingPreview.result.item)
+      : readAssetReplacementPriceExVat(pricingPreview.asset))
+    : null;
+  const pricingPreviewUsesCustomReplacement =
+    pricingPreview?.method === 'aim4price' &&
+    pricingPreview.replacementMode === 'custom' &&
+    pricingPreviewReplacementPriceExVat !== null;
 
   return (
     <main className={styles.page}>
@@ -8605,20 +8681,57 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.pricingModalBody}`}>
-              <div className={styles.pricingOptionsGrid}>
-                <button
-                  type="button"
-                  className={styles.pricingOptionButton}
-                  disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
-                  onClick={() => void openRevaluePreviewDialog(activeAsset, 'aim4price')}
-                >
-                  <TrendIcon className={styles.buttonIcon} />
-                  <span>
-                    <strong>Recalculate value</strong>
-                    <small>Preview a fresh Aim4price valuation before saving it.</small>
-                  </span>
-                </button>
+              <section className={styles.revalueReplacementPanel}>
+                <div className={styles.revalueReplacementHeader}>
+                  <div>
+                    <span>Recalculate value</span>
+                    <h4>Choose the replacement price basis</h4>
+                  </div>
+                  <p>The saved replacement price is used by default. Enter a different replacement price only when the machine's replacement value has changed.</p>
+                </div>
 
+                <div className={styles.revalueReplacementGrid}>
+                  <button
+                    type="button"
+                    className={styles.revalueSavedReplacementButton}
+                    disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
+                    onClick={() => openSavedReplacementPreview(activeAsset)}
+                  >
+                    <TrendIcon className={styles.buttonIcon} />
+                    <span>
+                      <strong>Use saved replacement price</strong>
+                      <small>{readAssetReplacementPriceExVat(activeAsset) !== null ? `${money(readAssetReplacementPriceExVat(activeAsset))} excl. VAT` : 'No replacement price saved yet'}</small>
+                    </span>
+                  </button>
+
+                  <div className={styles.revalueCustomReplacementCard}>
+                    <label className={styles.revalueReplacementField}>
+                      <span>Different replacement price excl. VAT</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={revalueReplacementPriceInput}
+                        onChange={handleRevalueReplacementPriceChange}
+                        placeholder="Example: 950 000"
+                        disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
+                      />
+                    </label>
+                    <p>If you save the preview, this replacement price is also saved to the Asset Register.</p>
+                    <button
+                      type="button"
+                      className={styles.revalueCustomReplacementButton}
+                      disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
+                      onClick={() => openCustomReplacementPreview(activeAsset)}
+                    >
+                      Calculate with this price
+                    </button>
+                  </div>
+                </div>
+
+                {revalueReplacementPriceError ? <p className={styles.revalueReplacementError}>{revalueReplacementPriceError}</p> : null}
+              </section>
+
+              <div className={`${styles.pricingOptionsGrid} ${styles.pricingSecondaryOptionsGrid}`}>
                 <button
                   type="button"
                   className={styles.pricingOptionButton}
@@ -8707,6 +8820,13 @@ export default function AssetRegisterClient() {
                       <span>Pricing method</span>
                       <strong>{methodLabel(pricingPreview.result.selectedMethod ?? pricingPreview.result.item.selectedMethod)}</strong>
                     </div>
+                    {pricingPreview.method === 'aim4price' ? (
+                      <div>
+                        <span>Replacement used</span>
+                        <strong>{pricingPreviewReplacementPriceExVat !== null ? money(pricingPreviewReplacementPriceExVat) : 'Not set'}</strong>
+                        <small>{pricingPreview.replacementMode === 'custom' ? 'Will save with this value' : 'Saved replacement price'}</small>
+                      </div>
+                    ) : null}
                   </div>
 
                   {pricingPreview.method === 'market' ? (
@@ -8771,7 +8891,7 @@ export default function AssetRegisterClient() {
                       Keep current value
                     </button>
                     <button type="button" className={styles.primaryButton} onClick={() => void handleSavePricingPreview()} disabled={isSavingPricingPreview}>
-                      {isSavingPricingPreview ? 'Saving...' : 'Save new value'}
+                      {isSavingPricingPreview ? 'Saving...' : pricingPreviewUsesCustomReplacement ? 'Save value + replacement price' : 'Save new value'}
                     </button>
                   </div>
                 </>

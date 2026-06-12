@@ -21986,3 +21986,317 @@ button.documentOpenLink {
     padding: 0.72rem !important;
   }
 }
+
+/* === Revalue replacement-price options + market evidence scroll polish: June 2026 === */
+.pricingModal {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.pricingModalHeader,
+.pricingResultHeader {
+  flex: 0 0 auto !important;
+}
+
+.pricingModalBody {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: grid !important;
+  align-content: start !important;
+  gap: 1rem !important;
+  overflow-y: auto !important;
+  padding: 0.08rem 1rem 0.25rem 0 !important;
+  margin-right: -0.34rem !important;
+}
+
+.revalueReplacementPanel {
+  display: grid !important;
+  gap: 1rem !important;
+  padding: clamp(1rem, 1.5vw, 1.25rem) !important;
+  border: 1px solid rgba(190, 221, 207, 0.98) !important;
+  border-radius: 1.45rem !important;
+  background:
+    radial-gradient(circle at 5% 0%, rgba(22, 83, 64, 0.09), transparent 38%),
+    linear-gradient(180deg, #fbfefd 0%, #eef8f3 100%) !important;
+  box-shadow:
+    0 16px 32px rgba(16, 42, 34, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.revalueReplacementHeader {
+  display: grid !important;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.35fr) !important;
+  gap: 0.9rem !important;
+  align-items: end !important;
+}
+
+.revalueReplacementHeader span {
+  color: #607386 !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.075em !important;
+  text-transform: uppercase !important;
+}
+
+.revalueReplacementHeader h4 {
+  margin: 0.2rem 0 0 !important;
+  color: #0c3429 !important;
+  font-size: clamp(1.22rem, 1.65vw, 1.45rem) !important;
+  font-weight: 850 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.042em !important;
+}
+
+.revalueReplacementHeader p,
+.revalueCustomReplacementCard p {
+  margin: 0 !important;
+  color: #607287 !important;
+  font-size: 0.92rem !important;
+  font-weight: 650 !important;
+  line-height: 1.46 !important;
+}
+
+.revalueReplacementGrid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.35fr) !important;
+  gap: 0.9rem !important;
+  align-items: stretch !important;
+}
+
+.revalueSavedReplacementButton,
+.revalueCustomReplacementCard {
+  width: 100% !important;
+  min-height: 9.25rem !important;
+  border: 1px solid rgba(210, 224, 234, 0.98) !important;
+  border-radius: 1.22rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fafb 100%) !important;
+  box-shadow:
+    0 12px 24px rgba(16, 42, 34, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.revalueSavedReplacementButton {
+  display: grid !important;
+  grid-template-columns: 3.15rem minmax(0, 1fr) !important;
+  gap: 0.9rem !important;
+  align-items: center !important;
+  padding: 1rem !important;
+  color: #143d31 !important;
+  cursor: pointer !important;
+  font: inherit !important;
+  text-align: left !important;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease !important;
+}
+
+.revalueSavedReplacementButton:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  border-color: rgba(22, 83, 64, 0.28) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eff8f3 100%) !important;
+  box-shadow:
+    0 18px 34px rgba(16, 42, 34, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.revalueSavedReplacementButton:disabled,
+.revalueCustomReplacementButton:disabled,
+.revalueReplacementField input:disabled {
+  opacity: 0.56 !important;
+  cursor: not-allowed !important;
+}
+
+.revalueSavedReplacementButton > .buttonIcon {
+  width: 3.05rem !important;
+  height: 3.05rem !important;
+  padding: 0.78rem !important;
+  box-sizing: border-box !important;
+  border-radius: 1rem !important;
+  color: #143d31 !important;
+  background:
+    radial-gradient(circle at 25% 0%, rgba(22, 83, 64, 0.16), transparent 48%),
+    linear-gradient(180deg, #ffffff 0%, #eef8f2 100%) !important;
+  border: 1px solid rgba(190, 221, 207, 0.98) !important;
+}
+
+.revalueSavedReplacementButton > span {
+  display: grid !important;
+  gap: 0.3rem !important;
+  min-width: 0 !important;
+}
+
+.revalueSavedReplacementButton strong,
+.revalueReplacementField > span {
+  color: #0c3429 !important;
+  font-size: 1rem !important;
+  font-weight: 840 !important;
+  line-height: 1.16 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.revalueSavedReplacementButton small {
+  color: #607287 !important;
+  font-size: 0.9rem !important;
+  font-weight: 680 !important;
+  line-height: 1.35 !important;
+}
+
+.revalueCustomReplacementCard {
+  display: grid !important;
+  gap: 0.78rem !important;
+  padding: 1rem !important;
+}
+
+.revalueReplacementField {
+  display: grid !important;
+  gap: 0.45rem !important;
+}
+
+.revalueReplacementField input {
+  width: 100% !important;
+  min-height: 3.1rem !important;
+  padding: 0 0.95rem !important;
+  border: 1px solid rgba(196, 213, 226, 0.98) !important;
+  border-radius: 0.95rem !important;
+  background: #ffffff !important;
+  color: #102f27 !important;
+  font: inherit !important;
+  font-size: 1rem !important;
+  font-weight: 760 !important;
+  outline: none !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.revalueReplacementField input:focus {
+  border-color: rgba(22, 83, 64, 0.42) !important;
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.1) !important;
+}
+
+.revalueCustomReplacementButton {
+  justify-self: end !important;
+  min-height: 2.8rem !important;
+  padding: 0 1rem !important;
+  border: 1px solid rgba(17, 102, 75, 0.24) !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #1b7557 0%, #11664b 100%) !important;
+  box-shadow: 0 12px 24px rgba(18, 66, 51, 0.18) !important;
+  cursor: pointer !important;
+  font: inherit !important;
+  font-size: 0.9rem !important;
+  font-weight: 840 !important;
+}
+
+.revalueReplacementError {
+  margin: 0 !important;
+  padding: 0.76rem 0.9rem !important;
+  border: 1px solid rgba(239, 164, 164, 0.92) !important;
+  border-radius: 0.95rem !important;
+  color: #8a2e2e !important;
+  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%) !important;
+  font-size: 0.88rem !important;
+  font-weight: 720 !important;
+  line-height: 1.4 !important;
+}
+
+.pricingSecondaryOptionsGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  margin-top: 0 !important;
+}
+
+.pricingResultModal {
+  width: min(100%, 860px) !important;
+  max-height: min(90vh, calc(100dvh - 1.5rem)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.pricingResultBody {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding: 0.04rem 1rem 0.35rem 0 !important;
+  margin-right: -0.38rem !important;
+  scrollbar-gutter: stable !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(22, 83, 64, 0.68) rgba(239, 244, 247, 0.98) !important;
+}
+
+.pricingResultBody::-webkit-scrollbar {
+  width: 0.88rem !important;
+}
+
+.pricingResultBody::-webkit-scrollbar-track {
+  margin: 0.22rem 0 0.35rem !important;
+  border-radius: 999px !important;
+  background: rgba(239, 244, 247, 0.98) !important;
+  border-left: 0.26rem solid transparent !important;
+  border-right: 0.26rem solid transparent !important;
+  background-clip: padding-box !important;
+}
+
+.pricingResultBody::-webkit-scrollbar-thumb {
+  border: 0.26rem solid transparent !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, rgba(29, 96, 72, 0.72) 0%, rgba(18, 70, 53, 0.9) 100%) !important;
+  background-clip: padding-box !important;
+}
+
+.pricingResultBody::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(29, 96, 72, 0.86) 0%, rgba(18, 70, 53, 0.98) 100%) !important;
+  background-clip: padding-box !important;
+}
+
+.pricingCompareGrid small {
+  color: #607287 !important;
+  font-size: 0.78rem !important;
+  font-weight: 680 !important;
+  line-height: 1.28 !important;
+}
+
+.marketEvidenceCard {
+  background:
+    radial-gradient(circle at 6% 0%, rgba(22, 83, 64, 0.06), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%) !important;
+}
+
+@media (max-width: 900px) {
+  .revalueReplacementHeader,
+  .revalueReplacementGrid,
+  .pricingSecondaryOptionsGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .revalueCustomReplacementButton {
+    justify-self: stretch !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .pricingModalBody,
+  .pricingResultBody {
+    padding-right: 0.74rem !important;
+    margin-right: -0.24rem !important;
+  }
+
+  .revalueReplacementPanel {
+    padding: 0.88rem !important;
+    border-radius: 1.18rem !important;
+  }
+
+  .revalueSavedReplacementButton {
+    grid-template-columns: 2.8rem minmax(0, 1fr) !important;
+    min-height: 7rem !important;
+  }
+
+  .revalueSavedReplacementButton > .buttonIcon {
+    width: 2.65rem !important;
+    height: 2.65rem !important;
+    padding: 0.66rem !important;
+  }
+}
