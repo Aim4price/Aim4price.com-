@@ -22894,3 +22894,161 @@ button.documentOpenLink {
     padding: 0.88rem !important;
   }
 }
+
+/* === Guided Recalculate value modal flow: June 2026 === */
+.pricingResultBody {
+  gap: 0.9rem !important;
+  padding: 0.02rem 0.82rem 1rem 0 !important;
+  scroll-padding-bottom: 5.4rem !important;
+}
+
+.revalueReplacementPanel {
+  gap: 0.78rem !important;
+}
+
+.revalueReplacementHeader {
+  gap: 0 !important;
+}
+
+.revalueSavedReplacementCard {
+  min-height: 0 !important;
+  padding: 1rem !important;
+}
+
+.revalueDecisionCard {
+  display: grid !important;
+  gap: 0.78rem !important;
+  padding: 1rem !important;
+  border: 1px solid rgba(210, 224, 234, 0.98) !important;
+  border-radius: 1.05rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%) !important;
+  box-shadow:
+    0 10px 18px rgba(16, 42, 34, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.revalueDecisionCard > strong {
+  color: #0c3429 !important;
+  font-size: clamp(1.02rem, 1.28vw, 1.14rem) !important;
+  font-weight: 850 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.revalueDecisionActions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.65rem !important;
+}
+
+.revalueDecisionActions .revalueCustomReplacementButton,
+.revalueDecisionActions .revalueSecondaryButton {
+  width: 100% !important;
+  justify-self: stretch !important;
+  min-height: 2.86rem !important;
+}
+
+.revalueCustomStepPanel .revalueCustomReplacementCard {
+  min-height: 0 !important;
+  gap: 0.66rem !important;
+}
+
+.revalueReplacementHelper {
+  margin: -0.22rem 0 0.08rem 1.66rem !important;
+  color: #607287 !important;
+  font-size: 0.82rem !important;
+  font-weight: 650 !important;
+  line-height: 1.35 !important;
+}
+
+.revaluePreviewPanel {
+  background:
+    radial-gradient(circle at 6% 0%, rgba(22, 83, 64, 0.07), transparent 36%),
+    linear-gradient(180deg, #fbfefd 0%, #f2faf6 100%) !important;
+}
+
+.revaluePreviewPanel .pricingResultHero {
+  margin: 0 !important;
+}
+
+.revalueReplacementSummary {
+  display: grid !important;
+  gap: 0.55rem !important;
+  padding: 0.9rem 0.95rem !important;
+  border: 1px solid rgba(216, 226, 236, 0.95) !important;
+  border-radius: 1rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%) !important;
+}
+
+.revalueReplacementSummary > div {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: baseline !important;
+  gap: 0.35rem 0.48rem !important;
+  min-width: 0 !important;
+}
+
+.revalueReplacementSummary span {
+  color: #607287 !important;
+  font-size: 0.86rem !important;
+  font-weight: 760 !important;
+  line-height: 1.32 !important;
+}
+
+.revalueReplacementSummary strong {
+  color: #10352b !important;
+  font-size: 0.92rem !important;
+  font-weight: 840 !important;
+  line-height: 1.26 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.pricingPreviewActions {
+  bottom: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) !important;
+  gap: 0.68rem !important;
+  margin: 0.38rem 0 0 !important;
+  padding: 0.82rem 0 0.05rem !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.84) 0%, #ffffff 38%) !important;
+}
+
+.pricingPreviewActions .primaryButton:disabled {
+  opacity: 0.58 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+@media (max-width: 700px) {
+  .revalueDecisionActions,
+  .pricingPreviewActions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .revalueReplacementHelper {
+    margin-left: 1.54rem !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .pricingResultBody {
+    gap: 0.78rem !important;
+    padding-right: 0.66rem !important;
+    padding-bottom: 0.85rem !important;
+  }
+
+  .revalueDecisionCard,
+  .revalueSavedReplacementCard,
+  .revalueReplacementSummary {
+    padding: 0.84rem !important;
+  }
+
+  .revalueReplacementToggle {
+    align-items: flex-start !important;
+  }
+
+  .pricingPreviewActions .secondaryButton,
+  .pricingPreviewActions .primaryButton {
+    min-height: 2.92rem !important;
+  }
+}
