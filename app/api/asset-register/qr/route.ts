@@ -197,11 +197,19 @@ function buildPrintHtml(options: {
       }
 
       .toolbar {
-        display: flex;
-        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
-        gap: 14px;
-        flex-wrap: wrap;
+        gap: 12px 16px;
+        padding: 12px 14px;
+        border: 1px solid rgba(217, 227, 235, 0.92);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 16px 36px rgba(16, 31, 28, 0.08);
+        backdrop-filter: blur(12px);
       }
 
       .titleBlock {
@@ -226,17 +234,29 @@ function buildPrintHtml(options: {
       }
 
       .toolbar button {
-        min-height: 48px;
+        appearance: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        min-width: 162px;
         padding: 0 20px;
         border-radius: 999px;
-        border: 1px solid rgba(210, 222, 237, 0.98);
-        background: linear-gradient(180deg, #ffffff 0%, #eef4fb 100%);
-        color: #1d3b62;
+        border: 1px solid var(--brand-dark);
+        background: var(--brand-dark);
+        color: #ffffff;
         font: inherit;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
         cursor: pointer;
-        box-shadow: 0 12px 24px rgba(23, 45, 75, 0.07);
+        box-shadow: 0 14px 26px rgba(16, 56, 47, 0.18);
+      }
+
+      .toolbar button:focus-visible {
+        outline: 3px solid rgba(16, 56, 47, 0.18);
+        outline-offset: 2px;
       }
 
       .previewArea {
@@ -433,6 +453,27 @@ function buildPrintHtml(options: {
           padding: 12px;
         }
 
+        .toolbar {
+          grid-template-columns: 1fr;
+          border-radius: 20px;
+          padding: 10px 12px 12px;
+        }
+
+        .titleBlock h1 {
+          font-size: clamp(26px, 9vw, 34px);
+        }
+
+        .titleBlock p {
+          font-size: 13px;
+        }
+
+        .toolbar button {
+          width: 100%;
+          min-width: 0;
+          min-height: 44px;
+          font-size: 13px;
+        }
+
         .previewArea {
           padding: 12px;
           border-radius: 24px;
@@ -454,9 +495,9 @@ function buildPrintHtml(options: {
       <div class="toolbar">
         <div class="titleBlock">
           <h1>Aim4price QR label</h1>
-          <p>Print this compact label and attach it to the asset.</p>
+          <p>Save or print this compact QR label for the asset.</p>
         </div>
-        <button type="button" onclick="window.print()">Print QR label</button>
+        <button type="button" onclick="window.print()">Print / Save Label</button>
       </div>
 
       <main class="previewArea">
