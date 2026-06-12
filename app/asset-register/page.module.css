@@ -22491,3 +22491,155 @@ button.documentOpenLink {
     width: 100% !important;
   }
 }
+
+/* === Manage pricing modal: centered option-only tiles === */
+.pricingModalBody {
+  align-content: start !important;
+  gap: clamp(1rem, 1.45vw, 1.28rem) !important;
+}
+
+.pricingModalIntro {
+  display: flex !important;
+  justify-content: center !important;
+  margin: 0.08rem auto 0.06rem !important;
+  text-align: center !important;
+}
+
+.pricingModalIntro span {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 2.15rem !important;
+  padding: 0.28rem 0.95rem !important;
+  border: 1px solid rgba(190, 221, 207, 0.96) !important;
+  border-radius: 999px !important;
+  color: #0c3429 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eef8f2 100%) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 42, 34, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  font-size: 0.76rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  line-height: 1.1 !important;
+  text-transform: uppercase !important;
+}
+
+.pricingModalIntro p {
+  display: none !important;
+}
+
+.pricingOptionsGrid {
+  width: 100% !important;
+  max-width: 980px !important;
+  margin: 0 auto !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+  gap: clamp(0.88rem, 1.35vw, 1.16rem) !important;
+}
+
+.pricingOptionButton {
+  min-height: 8.35rem !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: auto auto !important;
+  align-content: center !important;
+  align-items: center !important;
+  justify-items: center !important;
+  gap: 0.82rem !important;
+  padding: clamp(1.08rem, 1.45vw, 1.32rem) 1rem !important;
+  border-radius: 1.48rem !important;
+  text-align: center !important;
+  background:
+    radial-gradient(circle at 50% -18%, rgba(22, 83, 64, 0.12), transparent 46%),
+    linear-gradient(180deg, #ffffff 0%, #f5f9fb 100%) !important;
+}
+
+.pricingOptionButton::after {
+  inset: 0 18% auto 18% !important;
+  height: 3px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, transparent, rgba(22, 83, 64, 0.64), transparent) !important;
+  opacity: 0.62 !important;
+}
+
+.pricingOptionButton:hover:not(:disabled) {
+  transform: translateY(-3px) !important;
+  border-color: rgba(190, 221, 207, 0.98) !important;
+  background:
+    radial-gradient(circle at 50% -18%, rgba(22, 83, 64, 0.16), transparent 48%),
+    linear-gradient(180deg, #ffffff 0%, #eef8f2 100%) !important;
+}
+
+.pricingOptionButton > .buttonIcon {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  justify-self: center !important;
+  width: 3.35rem !important;
+  height: 3.35rem !important;
+  padding: 0.86rem !important;
+  border-radius: 1.08rem !important;
+}
+
+.pricingOptionButton > span {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  text-align: center !important;
+}
+
+.pricingOptionButton strong {
+  width: 100% !important;
+  max-width: 13rem !important;
+  margin: 0 auto !important;
+  color: #0c3429 !important;
+  font-size: clamp(1.08rem, 1.32vw, 1.28rem) !important;
+  font-weight: 850 !important;
+  line-height: 1.16 !important;
+  letter-spacing: -0.036em !important;
+  text-align: center !important;
+  text-wrap: balance !important;
+}
+
+.pricingOptionButton small {
+  display: none !important;
+}
+
+.pricingOptionHint {
+  width: min(100%, 42rem) !important;
+  margin: 0.1rem auto 0 !important;
+  text-align: center !important;
+}
+
+@media (max-width: 900px) {
+  .pricingOptionsGrid {
+    max-width: 30rem !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .pricingOptionButton {
+    min-height: 7rem !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .pricingModalIntro {
+    margin-top: 0 !important;
+  }
+
+  .pricingOptionButton {
+    min-height: 6.7rem !important;
+    gap: 0.7rem !important;
+    padding: 1rem 0.86rem !important;
+  }
+
+  .pricingOptionButton > .buttonIcon {
+    width: 3.05rem !important;
+    height: 3.05rem !important;
+    padding: 0.76rem !important;
+  }
+}

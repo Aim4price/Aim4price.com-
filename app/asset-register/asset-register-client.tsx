@@ -8717,7 +8717,6 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalScrollBody} ${styles.pricingModalBody}`}>
               <div className={styles.pricingModalIntro}>
                 <span>Manage pricing</span>
-                <p>Choose one pricing action first. Replacement-price controls only appear inside the Recalculate value preview.</p>
               </div>
 
               <div className={styles.pricingOptionsGrid}>
@@ -8730,7 +8729,6 @@ export default function AssetRegisterClient() {
                   <TrendIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Recalculate value</strong>
-                    <small>Use Aim4price depreciation with the replacement price saved on this asset.</small>
                   </span>
                 </button>
 
@@ -8743,7 +8741,6 @@ export default function AssetRegisterClient() {
                   <TrendIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Newest market price</strong>
-                    <small>Preview the newest market midpoint before saving it.</small>
                   </span>
                 </button>
 
@@ -8756,7 +8753,6 @@ export default function AssetRegisterClient() {
                   <TrendIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Calculate future price</strong>
-                    <small>Calculate a future value, with inflation, hours & years.</small>
                   </span>
                 </button>
               </div>
