@@ -638,43 +638,62 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         position: sticky;
         top: 0;
         z-index: 10;
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 14px 18px;
+        gap: 10px 16px;
+        padding: 12px 16px;
         background: rgba(255, 255, 255, 0.96);
         border-bottom: 1px solid #d7dce2;
+        box-shadow: 0 10px 26px rgba(17, 24, 39, 0.07);
       }
 
       .assetMapReportScreenText {
+        min-width: 0;
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12.5px;
+        line-height: 1.4;
       }
 
       .assetMapReportScreenActions {
         display: flex;
-        gap: 10px;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: nowrap;
       }
 
       .assetMapReportButton {
         appearance: none;
-        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        min-height: 42px;
         padding: 0 16px;
         border: 1px solid #cfd5dd;
         border-radius: 999px;
         background: #ffffff;
         color: var(--ink);
         font: inherit;
-        font-size: 13px;
-        font-weight: 700;
+        font-size: 12.5px;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
         cursor: pointer;
       }
 
       .assetMapReportButtonPrimary {
+        min-width: 150px;
         border-color: var(--strong);
         background: var(--strong);
         color: #ffffff;
+        box-shadow: 0 12px 22px rgba(7, 11, 18, 0.18);
+      }
+
+      .assetMapReportButton:focus-visible {
+        outline: 3px solid rgba(17, 24, 39, 0.18);
+        outline-offset: 2px;
       }
 
       .assetMapReportPage {
@@ -1238,6 +1257,33 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
           width: min(100% - 24px, 297mm);
         }
 
+        .assetMapReportScreenBar {
+          grid-template-columns: 1fr;
+          padding: 10px 12px 12px;
+        }
+
+        .assetMapReportScreenText {
+          font-size: 12px;
+        }
+
+        .assetMapReportScreenActions {
+          display: grid;
+          grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+          width: 100%;
+          gap: 8px;
+        }
+
+        .assetMapReportButton {
+          width: 100%;
+          min-height: 44px;
+          padding: 0 10px;
+          font-size: 12px;
+        }
+
+        .assetMapReportButtonPrimary {
+          min-width: 0;
+        }
+
         .assetMapReportHeader,
         .assetMapReportOverview,
         .assetMapReportContentGrid {
@@ -1254,6 +1300,12 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         .assetMapReportValueMeta strong,
         .assetMapReportDetailRow strong {
           text-align: left;
+        }
+      }
+
+      @media screen and (max-width: 380px) {
+        .assetMapReportScreenActions {
+          grid-template-columns: 1fr;
         }
       }
 
@@ -1336,10 +1388,10 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
   </head>
   <body>
     <div class="assetMapReportScreenBar">
-      <div class="assetMapReportScreenText">Choose <strong>Save as PDF</strong> in the print dialog to download this asset map report.</div>
+      <div class="assetMapReportScreenText">Save or print this asset map report. In the print dialog, choose <strong>Save as PDF</strong>.</div>
       <div class="assetMapReportScreenActions">
         <button type="button" class="assetMapReportButton" onclick="window.close()">Close</button>
-        <button type="button" class="assetMapReportButton assetMapReportButtonPrimary" onclick="window.print()">Print / Save PDF</button>
+        <button type="button" class="assetMapReportButton assetMapReportButtonPrimary" onclick="window.print()">Save PDF / Print</button>
       </div>
     </div>
 
