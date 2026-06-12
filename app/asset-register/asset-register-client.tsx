@@ -5667,12 +5667,6 @@ export default function AssetRegisterClient() {
     }
   }
 
-  function pricingPreviewIntro(method: RevalueMethod): string {
-    return method === 'market'
-      ? 'Market preview only. Nothing changes in the Asset Register until you save the new value.'
-      : 'Nothing is saved until you press Save new value.';
-  }
-
   async function openRevaluePreviewDialog(
     asset: RegisterAsset,
     method: RevalueMethod,
@@ -6773,13 +6767,6 @@ export default function AssetRegisterClient() {
         ? 2
         : 1
     : null;
-  const pricingPreviewWizardTitle = pricingPreviewWizardStep === 1
-    ? 'Replacement price'
-    : pricingPreviewWizardStep === 2
-      ? 'Different price'
-      : pricingPreviewWizardStep === 3
-        ? 'Preview'
-        : '';
   const canCalculateCustomReplacementPreview = Boolean(
     normalizedRevalueReplacementPriceInput !== null &&
     !isLoadingPricingPreview &&
@@ -8915,65 +8902,30 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.pricingResultBody}`}>
-              <p className={styles.pricingPreviewIntroCopy}>{pricingPreviewIntro(pricingPreview.method)}</p>
+              {pricingPreview.method === 'market' ? (
+                <p className={styles.pricingPreviewIntroCopy}>Market preview only. Nothing changes in the Asset Register until you save the new value.</p>
+              ) : null}
 
               {pricingPreview.method === 'aim4price' ? (
                 <>
-                  <div className={styles.revalueStepIndicator} aria-label={`Step ${pricingPreviewWizardStep ?? 1} of 3`}>
-                    <span className={styles.revalueStepEyebrow}>
-                      Step {pricingPreviewWizardStep} of 3 — {pricingPreviewWizardTitle}
-                    </span>
-                    <div className={styles.revalueStepPills}>
-                      <span
-                        className={`${styles.revalueStepPill} ${
-                          pricingPreviewWizardStep === 1
-                            ? styles.revalueStepPillActive
-                            : pricingPreviewWizardStep === 2 || pricingPreviewWizardStep === 3
-                              ? styles.revalueStepPillDone
-                              : ''
-                        }`}
-                        aria-current={pricingPreviewWizardStep === 1 ? 'step' : undefined}
-                      >
-                        1 Replacement price
-                      </span>
-                      <span
-                        className={`${styles.revalueStepPill} ${
-                          pricingPreviewWizardStep === 2
-                            ? styles.revalueStepPillActive
-                            : pricingPreviewWizardStep === 3 && pricingPreview.replacementMode === 'custom'
-                              ? styles.revalueStepPillDone
-                              : ''
-                        }`}
-                        aria-current={pricingPreviewWizardStep === 2 ? 'step' : undefined}
-                      >
-                        2 Different price
-                      </span>
-                      <span
-                        className={`${styles.revalueStepPill} ${pricingPreviewWizardStep === 3 ? styles.revalueStepPillActive : ''}`}
-                        aria-current={pricingPreviewWizardStep === 3 ? 'step' : undefined}
-                      >
-                        3 Preview
-                      </span>
-                    </div>
-                  </div>
-
                   {pricingPreviewWizardStep === 1 ? (
-                    <section className={styles.revalueReplacementPanel}>
+                    <section className={`${styles.revalueReplacementPanel} ${styles.revalueSavedStepPanel}`}>
                       <div className={styles.revalueReplacementHeader}>
                         <div>
-                          <span>Step 1</span>
-                          <h4>Replacement price used</h4>
+                          <span>Step 1 of 3</span>
+                          <h4>Use saved replacement price?</h4>
+                          <p className={styles.revalueStepCopy}>Choose whether the saved replacement price should be used for the recalculation.</p>
                         </div>
                       </div>
 
                       <div className={styles.revalueSavedReplacementCard}>
-                        <span>Saved replacement price</span>
+                        <span>Current replacement price</span>
                         <strong>{pricingPreviewSavedReplacementPriceExVat !== null ? `${money(pricingPreviewSavedReplacementPriceExVat)} excl. VAT` : 'No saved price'}</strong>
-                        <small>Saved replacement price on this asset.</small>
+                        <small>This is the replacement price currently saved on this asset.</small>
                       </div>
 
                       <div className={styles.revalueDecisionCard}>
-                        <strong>Do you want to use this replacement price?</strong>
+                        <strong>Continue with this replacement price?</strong>
                         <div className={styles.revalueDecisionActions}>
                           <button
                             type="button"
@@ -8981,7 +8933,7 @@ export default function AssetRegisterClient() {
                             disabled={pricingPreviewSavedReplacementPriceExVat === null || isLoadingPricingPreview || isSavingPricingPreview}
                             onClick={() => openSavedReplacementPreview(pricingPreview.asset)}
                           >
-                            Yes, use saved price
+                            Use this price
                           </button>
                           <button
                             type="button"
@@ -8989,7 +8941,7 @@ export default function AssetRegisterClient() {
                             disabled={isLoadingPricingPreview || isSavingPricingPreview}
                             onClick={() => showCustomReplacementStep(pricingPreview.asset)}
                           >
-                            No, enter different price
+                            Enter different price
                           </button>
                         </div>
                       </div>
@@ -9000,14 +8952,15 @@ export default function AssetRegisterClient() {
                     <section className={`${styles.revalueReplacementPanel} ${styles.revalueCustomStepPanel}`}>
                       <div className={styles.revalueReplacementHeader}>
                         <div>
-                          <span>Step 2</span>
-                          <h4>Enter different replacement price</h4>
+                          <span>Step 2 of 3</span>
+                          <h4>Enter a different price</h4>
+                          <p className={styles.revalueStepCopy}>Type the replacement price excluding VAT. Aim4price will use it to calculate the new value.</p>
                         </div>
                       </div>
 
                       <div className={styles.revalueCustomReplacementCard}>
                         <label className={styles.revalueReplacementField}>
-                          <span>New replacement price excl. VAT</span>
+                          <span>Replacement price excl. VAT</span>
                           <input
                             type="text"
                             inputMode="numeric"
@@ -9025,9 +8978,9 @@ export default function AssetRegisterClient() {
                             onChange={(event) => setSaveReplacementPriceWithRevalue(event.target.checked)}
                             disabled={isLoadingPricingPreview || isSavingPricingPreview}
                           />
-                          <span>Also save this as the new replacement price for this asset</span>
+                          <span>Save this as the replacement price on this asset</span>
                         </label>
-                        <p className={styles.revalueReplacementHelper}>Leave unticked to only use this price for this preview.</p>
+                        <p className={styles.revalueReplacementHelper}>Leave unticked to use this price for this calculation only.</p>
                       </div>
 
                       {revalueReplacementPriceError ? <p className={styles.revalueReplacementError}>{revalueReplacementPriceError}</p> : null}
@@ -9047,15 +9000,16 @@ export default function AssetRegisterClient() {
                         <section className={`${styles.revalueReplacementPanel} ${styles.revaluePreviewPanel}`} aria-live="polite">
                           <div className={styles.revalueReplacementHeader}>
                             <div>
-                              <span>Step 3</span>
-                              <h4>Preview new value</h4>
+                              <span>Step 3 of 3</span>
+                              <h4>Preview and save</h4>
+                              <p className={styles.revalueStepCopy}>Review the new value before saving it to the Asset Register.</p>
                             </div>
                           </div>
 
                           <div className={styles.pricingResultHero}>
                             <span>New asset value</span>
                             <strong>{money(pricingPreviewNewValueExVat)}</strong>
-                            <p>This is the value that will be saved if you continue.</p>
+                            <p>This is the value that will be saved to the asset.</p>
                           </div>
 
                           <div className={styles.pricingCompareGrid}>
@@ -9216,7 +9170,7 @@ export default function AssetRegisterClient() {
               ) : pricingPreview.method === 'aim4price' && pricingPreviewWizardStep === 2 ? (
                 <>
                   <button type="button" className={styles.secondaryButton} onClick={handlePreviousRevalueStep} disabled={isLoadingPricingPreview || isSavingPricingPreview}>
-                    Previous
+                    Back
                   </button>
                   <button
                     type="button"
@@ -9230,7 +9184,7 @@ export default function AssetRegisterClient() {
               ) : pricingPreview.method === 'aim4price' && pricingPreviewWizardStep === 3 ? (
                 <>
                   <button type="button" className={styles.secondaryButton} onClick={handlePreviousRevalueStep} disabled={isLoadingPricingPreview || isSavingPricingPreview}>
-                    Previous
+                    Back
                   </button>
                   <button
                     type="button"
