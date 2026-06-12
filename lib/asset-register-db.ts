@@ -1382,6 +1382,12 @@ function copySharedFieldsFromValuationRun(
     'document_files',
     'attachments',
     'files',
+    'replacement_price_used_ex_vat',
+    'replacement_price_ex_vat',
+    'official_replacement_price_ex_vat',
+    'user_replacement_price_ex_vat',
+    'user_replacement_price_year',
+    'replacement_price_basis',
   ]);
 
   for (const [columnName, meta] of assetSchema.columns.entries()) {
@@ -1741,6 +1747,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   year: number;
   hours: number;
   condition: ConditionKey;
+  saveReplacementPrice?: boolean;
 }): Promise<AssetRegisterItem> {
   const db = getDb();
   const schema = await getAssetRegisterSchema();
@@ -1789,9 +1796,11 @@ export async function updateAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['condition'], input.condition);
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(input.result.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(input.result.marketMid));
-  pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], replacementPriceUsedExVat);
-  pushField(fields, schema, ['user_replacement_price_ex_vat'], userReplacementPriceExVat);
-  pushField(fields, schema, ['replacement_price_basis'], input.result.replacementPriceBasis);
+  if (input.saveReplacementPrice === true) {
+    pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], replacementPriceUsedExVat);
+    pushField(fields, schema, ['user_replacement_price_ex_vat'], userReplacementPriceExVat);
+    pushField(fields, schema, ['replacement_price_basis'], input.result.replacementPriceBasis);
+  }
   pushField(
     fields,
     schema,
@@ -1836,6 +1845,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   result: GenericValuationResult;
   selectedMethod: GenericSelectedMethod;
   selectedValueExVat: number;
+  saveReplacementPrice?: boolean;
 }): Promise<AssetRegisterItem> {
   const db = getDb();
   const schema = await getAssetRegisterSchema();
@@ -1894,9 +1904,11 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
     '::jsonb',
   );
   pushField(fields, schema, ['depreciation_method_used'], valuationResult.depreciationMethodUsed);
-  pushField(fields, schema, ['replacement_price_basis'], valuationResult.replacementPriceBasis);
-  pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], replacementPriceUsedExVat);
-  pushField(fields, schema, ['user_replacement_price_ex_vat'], userReplacementPriceExVat);
+  if (input.saveReplacementPrice === true) {
+    pushField(fields, schema, ['replacement_price_basis'], valuationResult.replacementPriceBasis);
+    pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], replacementPriceUsedExVat);
+    pushField(fields, schema, ['user_replacement_price_ex_vat'], userReplacementPriceExVat);
+  }
   pushField(fields, schema, ['life_worked_percent'], valuationResult.lifeWorkedPercent);
   pushField(fields, schema, ['life_remaining_percent'], valuationResult.lifeRemainingPercent);
   pushField(fields, schema, ['estimated_hours'], valuationResult.estimatedHours);

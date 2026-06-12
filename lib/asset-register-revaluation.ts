@@ -499,6 +499,7 @@ async function revalueTractorAsset(input: {
   preferredMethod: RevaluePreference;
   previewOnly?: boolean;
   replacementPriceExVat?: number | null;
+  saveReplacementPrice?: boolean;
 }): Promise<AssetRevaluationResult> {
   const payload = asRecord(input.row.valuation_payload);
   const payloadInput = readNestedRecord(payload, 'input');
@@ -595,6 +596,7 @@ async function revalueTractorAsset(input: {
     year,
     hours,
     condition,
+    saveReplacementPrice: input.saveReplacementPrice === true,
   });
 
   return {
@@ -616,6 +618,7 @@ async function revalueGenericAsset(input: {
   preferredMethod: RevaluePreference;
   previewOnly?: boolean;
   replacementPriceExVat?: number | null;
+  saveReplacementPrice?: boolean;
 }): Promise<AssetRevaluationResult> {
   const payload = asRecord(input.row.valuation_payload);
   const payloadInput = readNestedRecord(payload, 'input');
@@ -717,6 +720,7 @@ async function revalueGenericAsset(input: {
     result,
     selectedMethod,
     selectedValueExVat: saved.selectedValueExVat,
+    saveReplacementPrice: input.saveReplacementPrice === true,
   });
 
   return {
@@ -737,6 +741,7 @@ export async function revalueAssetRegisterItem(input: {
   selectedMethod?: unknown;
   previewOnly?: boolean;
   replacementPriceExVat?: number | null;
+  saveReplacementPrice?: boolean;
 }): Promise<AssetRevaluationResult> {
   const asset = await getAssetRegisterItemById(input.userId, input.assetId);
 
@@ -766,6 +771,7 @@ export async function revalueAssetRegisterItem(input: {
       preferredMethod,
       previewOnly: input.previewOnly,
       replacementPriceExVat: input.replacementPriceExVat,
+      saveReplacementPrice: input.saveReplacementPrice,
     });
   }
 
@@ -776,5 +782,6 @@ export async function revalueAssetRegisterItem(input: {
     preferredMethod,
     previewOnly: input.previewOnly,
     replacementPriceExVat: input.replacementPriceExVat,
+    saveReplacementPrice: input.saveReplacementPrice,
   });
 }
