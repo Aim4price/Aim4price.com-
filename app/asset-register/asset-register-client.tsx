@@ -773,6 +773,17 @@ function SearchIcon({ className }: IconProps) {
   );
 }
 
+function RefreshIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M20 11a8 8 0 0 0-14.7-4.3L4 8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 4v4h4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 13a8 8 0 0 0 14.7 4.3L20 16" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 20v-4h-4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function FilterIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
@@ -3233,6 +3244,7 @@ export default function AssetRegisterClient() {
   const [copiedScanLinkAssetId, setCopiedScanLinkAssetId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshingRegister, setIsRefreshingRegister] = useState(false);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
@@ -3627,6 +3639,58 @@ export default function AssetRegisterClient() {
     const timeout = window.setTimeout(() => setNotice(null), 3600);
     return () => window.clearTimeout(timeout);
   }, [notice]);
+
+  async function handleRefreshAssetRegister() {
+    if (isLoading || isRefreshingRegister) return;
+
+    setIsRefreshingRegister(true);
+
+    try {
+      const requestedRegisterId = readRegisterIdFromLocation() || activeRegister?.id || activeRegisterId;
+      const assetsResponse = await fetch(buildAssetRegisterApiUrl(requestedRegisterId), {
+        cache: 'no-store',
+        credentials: 'include',
+      });
+
+      const assetsData = (await assetsResponse.json()) as AssetRegisterApiResponse;
+
+      if (!assetsResponse.ok || !assetsData.ok) {
+        throw new Error(assetsData.error ?? 'Failed to refresh asset register.');
+      }
+
+      const loadedAssets = Array.isArray(assetsData.items)
+        ? assetsData.items
+        : Array.isArray(assetsData.assets)
+          ? assetsData.assets
+          : [];
+
+      setAssets(loadedAssets);
+
+      if (assetsData.register) {
+        setActiveRegister(assetsData.register);
+        setActiveRegisterId(assetsData.register.id);
+      } else {
+        setActiveRegister(null);
+        setActiveRegisterId(requestedRegisterId);
+      }
+
+      if (Array.isArray(assetsData.registers)) {
+        setAssetRegisters(assetsData.registers);
+      }
+
+      setNotice({
+        tone: 'success',
+        message: 'Asset Register refreshed.',
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to refresh your asset register.',
+      });
+    } finally {
+      setIsRefreshingRegister(false);
+    }
+  }
 
   useEffect(() => {
     if (assetMapActionHandledRef.current || isLoading || typeof window === 'undefined') return;
@@ -6829,12 +6893,24 @@ export default function AssetRegisterClient() {
               ) : null}
             </label>
 
-            {canUseOwnerOnlyAssetActions ? (
-              <button type="button" className={`${styles.primaryButton} ${styles.toolbarPrimaryButton}`} onClick={openAddAssetChoiceModal}>
-                <PlusIcon className={styles.buttonIcon} />
-                <span>Add Asset</span>
+            <div className={styles.toolbarActions}>
+              <button
+                type="button"
+                className={`${styles.secondaryButton} ${styles.toolbarRefreshButton}`}
+                onClick={handleRefreshAssetRegister}
+                disabled={isLoading || isRefreshingRegister}
+              >
+                <RefreshIcon className={`${styles.buttonIcon} ${isRefreshingRegister ? styles.toolbarRefreshIconActive : ''}`} />
+                <span>{isRefreshingRegister ? 'Refreshing...' : 'Refresh'}</span>
               </button>
-            ) : null}
+
+              {canUseOwnerOnlyAssetActions ? (
+                <button type="button" className={`${styles.primaryButton} ${styles.toolbarPrimaryButton}`} onClick={openAddAssetChoiceModal}>
+                  <PlusIcon className={styles.buttonIcon} />
+                  <span>Add Asset</span>
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {!isLoading && assets.length ? (
