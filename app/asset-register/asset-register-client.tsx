@@ -5578,8 +5578,8 @@ export default function AssetRegisterClient() {
 
   function pricingPreviewIntro(method: RevalueMethod): string {
     return method === 'market'
-      ? 'Aim4price will refresh the market midpoint from the latest valuation data. Review the new value before saving it to the Asset Register.'
-      : 'Aim4price will rerun the saved valuation using the latest asset details. Review the new value before saving it to the Asset Register.';
+      ? 'Market preview only. Nothing changes in the Asset Register until you save the new value.'
+      : 'Preview only. Choose the replacement price to use, review the result, then save only if it looks correct.';
   }
 
   async function openRevaluePreviewDialog(
@@ -8790,29 +8790,30 @@ export default function AssetRegisterClient() {
                 <section className={styles.revalueReplacementPanel}>
                   <div className={styles.revalueReplacementHeader}>
                     <div>
-                      <span>Aim4price recalculation</span>
-                      <h4>Replacement price used</h4>
+                      <span>Step 1</span>
+                      <h4>Choose replacement price</h4>
                     </div>
-                    <p>This only affects the recalculation preview unless you choose to save it.</p>
+                    <p>Use the saved price, or test a different one. This does not save anything yet.</p>
                   </div>
 
                   <div className={styles.revalueReplacementGrid}>
                     <div className={styles.revalueSavedReplacementCard}>
-                      <span>Saved replacement price</span>
-                      <strong>{pricingPreviewSavedReplacementPriceExVat !== null ? `${money(pricingPreviewSavedReplacementPriceExVat)} excl. VAT` : 'Not saved yet'}</strong>
+                      <span>Saved price</span>
+                      <strong>{pricingPreviewSavedReplacementPriceExVat !== null ? `${money(pricingPreviewSavedReplacementPriceExVat)} excl. VAT` : 'No saved price'}</strong>
+                      <small>Use the replacement price already saved on this asset.</small>
                       <button
                         type="button"
                         className={styles.revalueSecondaryButton}
                         disabled={pricingPreviewSavedReplacementPriceExVat === null || isLoadingPricingPreview || isSavingPricingPreview}
                         onClick={() => openSavedReplacementPreview(pricingPreview.asset)}
                       >
-                        Calculate with saved price
+                        Use saved price
                       </button>
                     </div>
 
                     <div className={styles.revalueCustomReplacementCard}>
                       <label className={styles.revalueReplacementField}>
-                        <span>Use different replacement price</span>
+                        <span>Different price</span>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -8822,7 +8823,6 @@ export default function AssetRegisterClient() {
                           disabled={isLoadingPricingPreview || isSavingPricingPreview}
                         />
                       </label>
-                      <p>This only affects the recalculation preview unless you choose to save it.</p>
                       <label className={styles.revalueReplacementToggle}>
                         <input
                           type="checkbox"
@@ -8830,7 +8830,7 @@ export default function AssetRegisterClient() {
                           onChange={(event) => setSaveReplacementPriceWithRevalue(event.target.checked)}
                           disabled={normalizedRevalueReplacementPriceInput === null || isLoadingPricingPreview || isSavingPricingPreview}
                         />
-                        <span>Also save this as the new replacement price</span>
+                        <span>Save this replacement price on the asset</span>
                       </label>
                       <button
                         type="button"
@@ -8838,14 +8838,14 @@ export default function AssetRegisterClient() {
                         disabled={normalizedRevalueReplacementPriceInput === null || isLoadingPricingPreview || isSavingPricingPreview}
                         onClick={() => openCustomReplacementPreview(pricingPreview.asset)}
                       >
-                        Preview with this price
+                        Preview new value
                       </button>
                     </div>
                   </div>
 
                   {revalueReplacementPriceError ? <p className={styles.revalueReplacementError}>{revalueReplacementPriceError}</p> : null}
                   {pricingPreviewHasUnpreviewedReplacementInput ? (
-                    <p className={styles.revalueReplacementNotice}>Preview this replacement price before saving the new value.</p>
+                    <p className={styles.revalueReplacementNotice}>Preview the changed replacement price before saving.</p>
                   ) : null}
                 </section>
               ) : null}
@@ -8860,31 +8860,41 @@ export default function AssetRegisterClient() {
               ) : pricingPreview.result?.item ? (
                 <>
                   <section className={styles.pricingResultHero} aria-live="polite">
-                    <span>Preview value</span>
+                    <span>{pricingPreview.method === 'aim4price' ? 'Step 2 · Preview value' : 'Preview value'}</span>
                     <strong>{money(pricingPreview.result.newValueExVat ?? pricingPreview.result.item.value)}</strong>
-                    <p>This is not saved yet. Save it only if you want to replace the current Asset Register value.</p>
+                    <p>Not saved yet. Save only if this value is correct.</p>
                   </section>
 
                   <div className={styles.pricingCompareGrid}>
                     <div>
-                      <span>Current saved value</span>
+                      <span>Current register value</span>
                       <strong>{money(pricingPreview.result.oldValueExVat ?? pricingPreview.asset.value)}</strong>
                     </div>
-                    <div>
-                      <span>New preview value</span>
-                      <strong>{money(pricingPreview.result.newValueExVat ?? pricingPreview.result.item.value)}</strong>
-                    </div>
-                    <div>
-                      <span>Pricing method</span>
-                      <strong>{methodLabel(pricingPreview.result.selectedMethod ?? pricingPreview.result.item.selectedMethod)}</strong>
-                    </div>
                     {pricingPreview.method === 'aim4price' ? (
-                      <div>
-                        <span>Replacement used</span>
-                        <strong>{pricingPreviewReplacementPriceExVat !== null ? money(pricingPreviewReplacementPriceExVat) : 'Not set'}</strong>
-                        <small>{pricingPreview.replacementMode === 'custom' ? (pricingPreviewShouldSaveReplacement ? 'Will save as new replacement price' : 'Preview only') : 'Saved replacement price'}</small>
-                      </div>
-                    ) : null}
+                      <>
+                        <div>
+                          <span>Replacement price used</span>
+                          <strong>{pricingPreviewReplacementPriceExVat !== null ? money(pricingPreviewReplacementPriceExVat) : 'Not set'}</strong>
+                          <small>{pricingPreview.replacementMode === 'custom' ? 'Different price' : 'Saved price'}</small>
+                        </div>
+                        <div>
+                          <span>Replacement price action</span>
+                          <strong>{pricingPreview.replacementMode === 'custom' ? (pricingPreviewShouldSaveReplacement ? 'Will save' : 'Preview only') : 'Using saved price'}</strong>
+                          <small>{pricingPreview.replacementMode === 'custom' ? (pricingPreviewShouldSaveReplacement ? 'Updates the asset price too' : 'Only the value will change') : 'No replacement price change'}</small>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <span>New preview value</span>
+                          <strong>{money(pricingPreview.result.newValueExVat ?? pricingPreview.result.item.value)}</strong>
+                        </div>
+                        <div>
+                          <span>Pricing method</span>
+                          <strong>{methodLabel(pricingPreview.result.selectedMethod ?? pricingPreview.result.item.selectedMethod)}</strong>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {pricingPreview.method === 'market' ? (
