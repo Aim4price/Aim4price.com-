@@ -8715,10 +8715,6 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.pricingModalBody}`}>
-              <div className={styles.pricingModalIntro}>
-                <span>Manage pricing</span>
-              </div>
-
               <div className={styles.pricingOptionsGrid}>
                 <button
                   type="button"
