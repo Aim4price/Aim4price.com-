@@ -1152,43 +1152,62 @@ function buildReportHtml(options: {
         position: sticky;
         top: 0;
         z-index: 10;
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 14px 18px;
+        gap: 10px 16px;
+        padding: 12px 16px;
         background: rgba(255, 255, 255, 0.96);
         border-bottom: 1px solid #d7dce2;
+        box-shadow: 0 10px 26px rgba(17, 24, 39, 0.07);
       }
 
       .assetReportScreenText {
+        min-width: 0;
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12.5px;
+        line-height: 1.4;
       }
 
       .assetReportScreenActions {
         display: flex;
-        gap: 10px;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: nowrap;
       }
 
       .assetReportButton {
         appearance: none;
-        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        min-height: 42px;
         padding: 0 16px;
         border: 1px solid #cfd5dd;
         border-radius: 999px;
         background: #ffffff;
         color: var(--ink);
         font: inherit;
-        font-size: 13px;
-        font-weight: 700;
+        font-size: 12.5px;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
         cursor: pointer;
       }
 
       .assetReportButtonPrimary {
+        min-width: 150px;
         border-color: var(--strong);
         background: var(--strong);
         color: #ffffff;
+        box-shadow: 0 12px 22px rgba(7, 11, 18, 0.18);
+      }
+
+      .assetReportButton:focus-visible {
+        outline: 3px solid rgba(17, 24, 39, 0.18);
+        outline-offset: 2px;
       }
 
       .assetReportPage {
@@ -1787,6 +1806,33 @@ function buildReportHtml(options: {
       }
 
       @media screen and (max-width: 760px) {
+        .assetReportScreenBar {
+          grid-template-columns: 1fr;
+          padding: 10px 12px 12px;
+        }
+
+        .assetReportScreenText {
+          font-size: 12px;
+        }
+
+        .assetReportScreenActions {
+          display: grid;
+          grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+          width: 100%;
+          gap: 8px;
+        }
+
+        .assetReportButton {
+          width: 100%;
+          min-height: 44px;
+          padding: 0 10px;
+          font-size: 12px;
+        }
+
+        .assetReportButtonPrimary {
+          min-width: 0;
+        }
+
         .assetReportPage {
           padding: 24px;
         }
@@ -1818,6 +1864,12 @@ function buildReportHtml(options: {
         .assetReportMaintenanceHeader div,
         .assetReportMaintenanceDetail {
           border-right: 0;
+        }
+      }
+
+      @media screen and (max-width: 380px) {
+        .assetReportScreenActions {
+          grid-template-columns: 1fr;
         }
       }
 
@@ -1857,10 +1909,10 @@ function buildReportHtml(options: {
   </head>
   <body>
     <div class="assetReportScreenBar">
-      <div class="assetReportScreenText">Choose <strong>Save as PDF</strong> in the print dialog to download this ${escapeHtml(reportTitle.toLowerCase())}.</div>
+      <div class="assetReportScreenText">Save or print this ${escapeHtml(reportTitle.toLowerCase())}. In the print dialog, choose <strong>Save as PDF</strong>.</div>
       <div class="assetReportScreenActions">
         <button type="button" class="assetReportButton" onclick="window.close()">Close</button>
-        <button type="button" class="assetReportButton assetReportButtonPrimary" onclick="window.print()">Print / Save PDF</button>
+        <button type="button" class="assetReportButton assetReportButtonPrimary" onclick="window.print()">Save PDF / Print</button>
       </div>
     </div>
 
