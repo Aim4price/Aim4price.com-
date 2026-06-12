@@ -195,6 +195,28 @@ function calculateSnapshot(input: {
   };
 }
 
+function scaleSnapshotFromCurrentSavedValue(
+  snapshot: ProjectionSnapshot,
+  anchorFactor: number,
+  forcedRetailExVat?: number,
+): ProjectionSnapshot {
+  const safeFactor = Number.isFinite(anchorFactor) && anchorFactor > 0 ? anchorFactor : 1;
+  const retailExVat = Math.max(0, Math.round(forcedRetailExVat ?? snapshot.retailExVat * safeFactor));
+  const loaderExVat = Math.max(0, roundMoney(snapshot.loaderExVat * safeFactor));
+  const gpsExVat = Math.max(0, roundMoney(snapshot.gpsExVat * safeFactor));
+  const scaledTractorExVat = Math.max(0, roundMoney(snapshot.tractorExVat * safeFactor));
+  const componentAdjustment = retailExVat - (scaledTractorExVat + loaderExVat + gpsExVat);
+  const tractorExVat = Math.max(0, scaledTractorExVat + componentAdjustment);
+
+  return {
+    retailExVat,
+    hours: snapshot.hours,
+    tractorExVat,
+    loaderExVat,
+    gpsExVat,
+  };
+}
+
 async function fetchValuationRunRow(userId: string, runId: number): Promise<GenericDbRow | null> {
   const db = getDb();
   const result = await db.query<GenericDbRow>(
@@ -283,7 +305,7 @@ export async function calculateFuturePriceForAsset(input: {
   const valuationInput = valuationPayload.input;
 
   const selectedMethod = asset.selectedMethod;
-  const currentRegisterValueExVat = Math.round(asset.selectedValueExVat ?? asset.value);
+  const currentRegisterValueExVat = Math.max(0, Math.round(asNumber(asset.value) ?? asNumber(asset.selectedValueExVat) ?? 0));
   const baseYear = new Date().getFullYear();
   const targetYear = Math.max(baseYear, Math.round(input.targetYear));
   const yearsForward = Math.max(0, targetYear - baseYear);
@@ -328,7 +350,7 @@ export async function calculateFuturePriceForAsset(input: {
     throw new Error('REPLACEMENT_PRICE_NOT_AVAILABLE');
   }
 
-  const current = calculateSnapshot({
+  const currentModelSnapshot = calculateSnapshot({
     targetYear: baseYear,
     baseYear,
     replacementPriceExVat,
@@ -346,7 +368,7 @@ export async function calculateFuturePriceForAsset(input: {
     inflationRatePct: 0,
   }).snapshot;
 
-  const projected = calculateSnapshot({
+  const projectedModelSnapshot = calculateSnapshot({
     targetYear,
     baseYear,
     replacementPriceExVat,
@@ -363,6 +385,16 @@ export async function calculateFuturePriceForAsset(input: {
     gpsYear,
     inflationRatePct,
   }).snapshot;
+
+  const anchorFactor = currentRegisterValueExVat > 0 && currentModelSnapshot.retailExVat > 0
+    ? currentRegisterValueExVat / currentModelSnapshot.retailExVat
+    : 1;
+  const current = scaleSnapshotFromCurrentSavedValue(
+    currentModelSnapshot,
+    anchorFactor,
+    currentRegisterValueExVat || currentModelSnapshot.retailExVat,
+  );
+  const projected = scaleSnapshotFromCurrentSavedValue(projectedModelSnapshot, anchorFactor);
 
   return {
     assetId: asset.id,
