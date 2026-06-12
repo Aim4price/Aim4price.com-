@@ -183,45 +183,62 @@ function renderDocumentShell(options: {
         position: sticky;
         top: 0;
         z-index: 10;
-        display: flex;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
-        gap: 1rem;
-        padding: 0.95rem 1.15rem;
-        background: rgba(255, 255, 255, 0.92);
-        border-bottom: 1px solid rgba(17, 56, 45, 0.08);
+        gap: 0.75rem 1rem;
+        padding: 0.82rem clamp(0.85rem, 3vw, 1.2rem);
+        background: rgba(255, 255, 255, 0.96);
+        border-bottom: 1px solid rgba(17, 56, 45, 0.1);
+        box-shadow: 0 10px 28px rgba(15, 38, 31, 0.07);
         backdrop-filter: blur(14px);
       }
 
       .screenBarText {
+        min-width: 0;
         color: var(--muted);
-        font-size: 0.92rem;
-        line-height: 1.45;
+        font-size: 0.9rem;
+        line-height: 1.4;
       }
 
       .screenBarActions {
         display: flex;
-        gap: 0.75rem;
-        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.55rem;
+        flex-wrap: nowrap;
       }
 
       .screenButton {
         appearance: none;
-        border: 1px solid rgba(16, 56, 47, 0.1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        border: 1px solid rgba(16, 56, 47, 0.14);
         border-radius: 999px;
         background: var(--paper);
         color: var(--text);
-        min-height: 2.8rem;
+        min-height: 2.65rem;
         padding: 0 1rem;
         font: inherit;
-        font-weight: 700;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
         cursor: pointer;
       }
 
       .screenButtonPrimary {
+        min-width: 9.8rem;
         color: #ffffff;
         background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-mid) 100%);
         border-color: transparent;
+        box-shadow: 0 12px 24px rgba(16, 56, 47, 0.18);
+      }
+
+      .screenButton:focus-visible {
+        outline: 3px solid rgba(53, 95, 186, 0.22);
+        outline-offset: 2px;
       }
 
       .page {
@@ -633,6 +650,39 @@ function renderDocumentShell(options: {
           text-align: left;
           min-width: 0;
         }
+
+        .screenBar {
+          grid-template-columns: 1fr;
+          padding: 0.72rem 0.8rem 0.78rem;
+        }
+
+        .screenBarText {
+          font-size: 0.82rem;
+        }
+
+        .screenBarActions {
+          display: grid;
+          grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+          width: 100%;
+          gap: 0.5rem;
+        }
+
+        .screenButton {
+          width: 100%;
+          min-height: 2.7rem;
+          padding: 0 0.65rem;
+          font-size: 0.85rem;
+        }
+
+        .screenButtonPrimary {
+          min-width: 0;
+        }
+      }
+
+      @media (max-width: 380px) {
+        .screenBarActions {
+          grid-template-columns: 1fr;
+        }
       }
 
       @media print {
@@ -661,10 +711,10 @@ function renderDocumentShell(options: {
   </head>
   <body>
     <div class="screenBar">
-      <div class="screenBarText">Choose <strong>Save as PDF</strong> in the print dialog to create the final PDF file.</div>
+      <div class="screenBarText">Save or print this report. In the print dialog, choose <strong>Save as PDF</strong>.</div>
       <div class="screenBarActions">
         <button type="button" class="screenButton" onclick="window.close()">Close</button>
-        <button type="button" class="screenButton screenButtonPrimary" onclick="window.print()">Print / Save PDF</button>
+        <button type="button" class="screenButton screenButtonPrimary" onclick="window.print()">Save PDF / Print</button>
       </div>
     </div>
     ${options.contentHtml}
@@ -848,45 +898,62 @@ function renderValuationReportDocument(payload: ValuationReportPayload): string 
         position: sticky;
         top: 0;
         z-index: 20;
-        display: flex;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
-        gap: 1rem;
-        padding: 0.95rem 1.2rem;
-        border-bottom: 1px solid rgba(16, 56, 47, 0.08);
-        background: rgba(255, 255, 255, 0.94);
+        gap: 0.75rem 1rem;
+        padding: 0.82rem clamp(0.85rem, 3vw, 1.2rem);
+        border-bottom: 1px solid rgba(16, 56, 47, 0.1);
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 10px 28px rgba(15, 42, 34, 0.07);
         backdrop-filter: blur(12px);
       }
 
       .screenText {
+        min-width: 0;
         color: var(--muted);
-        font-size: 0.92rem;
-        line-height: 1.45;
+        font-size: 0.9rem;
+        line-height: 1.4;
       }
 
       .screenActions {
         display: flex;
-        gap: 0.75rem;
-        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.55rem;
+        flex-wrap: nowrap;
       }
 
       .screenButton {
         appearance: none;
-        border: 1px solid rgba(16, 56, 47, 0.1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        border: 1px solid rgba(16, 56, 47, 0.14);
         border-radius: 999px;
         background: #ffffff;
         color: var(--ink);
-        min-height: 2.7rem;
+        min-height: 2.65rem;
         padding: 0 1rem;
         font: inherit;
-        font-weight: 700;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
         cursor: pointer;
       }
 
       .screenButtonPrimary {
+        min-width: 9.8rem;
         border-color: transparent;
         background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-mid) 55%, var(--brand-blue) 100%);
         color: #ffffff;
+        box-shadow: 0 12px 24px rgba(16, 56, 47, 0.18);
+      }
+
+      .screenButton:focus-visible {
+        outline: 3px solid rgba(48, 95, 151, 0.22);
+        outline-offset: 2px;
       }
 
       .page {
@@ -1133,16 +1200,30 @@ function renderValuationReportDocument(payload: ValuationReportPayload): string 
 
       @media (max-width: 760px) {
         .screenBar {
-          flex-direction: column;
-          align-items: stretch;
+          grid-template-columns: 1fr;
+          padding: 0.72rem 0.8rem 0.78rem;
+        }
+
+        .screenText {
+          font-size: 0.82rem;
         }
 
         .screenActions {
+          display: grid;
+          grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
           width: 100%;
+          gap: 0.5rem;
         }
 
         .screenButton {
-          flex: 1 1 0;
+          width: 100%;
+          min-height: 2.7rem;
+          padding: 0 0.65rem;
+          font-size: 0.85rem;
+        }
+
+        .screenButtonPrimary {
+          min-width: 0;
         }
 
         .page {
@@ -1180,6 +1261,12 @@ function renderValuationReportDocument(payload: ValuationReportPayload): string 
         }
       }
 
+      @media (max-width: 380px) {
+        .screenActions {
+          grid-template-columns: 1fr;
+        }
+      }
+
       @media print {
         body {
           background: #ffffff;
@@ -1200,10 +1287,10 @@ function renderValuationReportDocument(payload: ValuationReportPayload): string 
   </head>
   <body>
     <div class="screenBar">
-      <div class="screenText">Choose <strong>Save as PDF</strong> in the print dialog to create the final valuation PDF.</div>
+      <div class="screenText">Save or print this valuation. In the print dialog, choose <strong>Save as PDF</strong>.</div>
       <div class="screenActions">
         <button type="button" class="screenButton" onclick="window.close()">Close</button>
-        <button type="button" class="screenButton screenButtonPrimary" onclick="window.print()">Print / Save PDF</button>
+        <button type="button" class="screenButton screenButtonPrimary" onclick="window.print()">Save PDF / Print</button>
       </div>
     </div>
 
@@ -1511,43 +1598,62 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
         position: sticky;
         top: 0;
         z-index: 10;
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 14px 18px;
+        gap: 10px 16px;
+        padding: 12px 16px;
         background: rgba(255, 255, 255, 0.96);
         border-bottom: 1px solid #d7dce2;
+        box-shadow: 0 10px 26px rgba(17, 24, 39, 0.07);
       }
 
       .assetReportScreenText {
+        min-width: 0;
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12.5px;
+        line-height: 1.4;
       }
 
       .assetReportScreenActions {
         display: flex;
-        gap: 10px;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: nowrap;
       }
 
       .assetReportButton {
         appearance: none;
-        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        min-height: 42px;
         padding: 0 16px;
         border: 1px solid #cfd5dd;
         border-radius: 999px;
         background: #ffffff;
         color: var(--ink);
         font: inherit;
-        font-size: 13px;
-        font-weight: 700;
+        font-size: 12.5px;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
         cursor: pointer;
       }
 
       .assetReportButtonPrimary {
+        min-width: 150px;
         border-color: var(--strong);
         background: var(--strong);
         color: #ffffff;
+        box-shadow: 0 12px 22px rgba(7, 11, 18, 0.18);
+      }
+
+      .assetReportButton:focus-visible {
+        outline: 3px solid rgba(17, 24, 39, 0.18);
+        outline-offset: 2px;
       }
 
       .assetReportPage {
@@ -1993,6 +2099,33 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
       }
 
       @media screen and (max-width: 760px) {
+        .assetReportScreenBar {
+          grid-template-columns: 1fr;
+          padding: 10px 12px 12px;
+        }
+
+        .assetReportScreenText {
+          font-size: 12px;
+        }
+
+        .assetReportScreenActions {
+          display: grid;
+          grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+          width: 100%;
+          gap: 8px;
+        }
+
+        .assetReportButton {
+          width: 100%;
+          min-height: 44px;
+          padding: 0 10px;
+          font-size: 12px;
+        }
+
+        .assetReportButtonPrimary {
+          min-width: 0;
+        }
+
         .assetReportPage {
           padding: 24px;
         }
@@ -2016,6 +2149,12 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
         }
 
         .assetReportTechnical .assetReportRows {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media screen and (max-width: 380px) {
+        .assetReportScreenActions {
           grid-template-columns: 1fr;
         }
       }
@@ -2063,10 +2202,10 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
   </head>
   <body>
     <div class="assetReportScreenBar">
-      <div class="assetReportScreenText">Choose <strong>Save as PDF</strong> in the print dialog to download this asset report.</div>
+      <div class="assetReportScreenText">Save or print this asset report. In the print dialog, choose <strong>Save as PDF</strong>.</div>
       <div class="assetReportScreenActions">
         <button type="button" class="assetReportButton" onclick="window.close()">Close</button>
-        <button type="button" class="assetReportButton assetReportButtonPrimary" onclick="window.print()">Print / Save PDF</button>
+        <button type="button" class="assetReportButton assetReportButtonPrimary" onclick="window.print()">Save PDF / Print</button>
       </div>
     </div>
 
@@ -2419,44 +2558,61 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
         position: sticky;
         top: 0;
         z-index: 20;
-        display: flex;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
-        gap: 1rem;
-        padding: 0.95rem 1.2rem;
-        background: rgba(255, 255, 255, 0.94);
+        gap: 0.75rem 1rem;
+        padding: 0.82rem clamp(0.85rem, 3vw, 1.2rem);
+        background: rgba(255, 255, 255, 0.96);
         border-bottom: 1px solid #d6dce5;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
         backdrop-filter: blur(14px);
       }
 
       .screenBarText {
+        min-width: 0;
         color: #667085;
-        font-size: 0.95rem;
-        line-height: 1.45;
+        font-size: 0.9rem;
+        line-height: 1.4;
       }
 
       .screenBarActions {
         display: flex;
-        gap: 0.75rem;
         align-items: center;
+        justify-content: flex-end;
+        gap: 0.55rem;
+        flex-wrap: nowrap;
       }
 
       .screenButton {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
         border: 1px solid #cbd5e1;
         border-radius: 999px;
         background: #ffffff;
         color: #101828;
         min-height: 2.65rem;
-        padding: 0 1.25rem;
+        padding: 0 1.1rem;
         font: inherit;
-        font-weight: 700;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
         cursor: pointer;
       }
 
       .screenButtonPrimary {
+        min-width: 9.8rem;
         background: #05070c;
         color: #ffffff;
         border-color: #05070c;
+        box-shadow: 0 12px 24px rgba(5, 7, 12, 0.18);
+      }
+
+      .screenButton:focus-visible {
+        outline: 3px solid rgba(16, 24, 40, 0.18);
+        outline-offset: 2px;
       }
 
       .fullRegisterPage {
@@ -2986,6 +3142,41 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
         }
       }
 
+      @media screen and (max-width: 760px) {
+        .screenBar {
+          grid-template-columns: 1fr;
+          padding: 0.72rem 0.8rem 0.78rem;
+        }
+
+        .screenBarText {
+          font-size: 0.82rem;
+        }
+
+        .screenBarActions {
+          display: grid;
+          grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+          width: 100%;
+          gap: 0.5rem;
+        }
+
+        .screenButton {
+          width: 100%;
+          min-height: 2.7rem;
+          padding: 0 0.65rem;
+          font-size: 0.85rem;
+        }
+
+        .screenButtonPrimary {
+          min-width: 0;
+        }
+      }
+
+      @media screen and (max-width: 380px) {
+        .screenBarActions {
+          grid-template-columns: 1fr;
+        }
+      }
+
       @media print {
         html,
         body {
@@ -3008,10 +3199,10 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
   </head>
   <body>
     <div class="screenBar">
-      <div class="screenBarText">Choose <strong>Save as PDF</strong> in the print dialog to download this asset register report.</div>
+      <div class="screenBarText">Save or print this asset register report. In the print dialog, choose <strong>Save as PDF</strong>.</div>
       <div class="screenBarActions">
         <button type="button" class="screenButton" onclick="window.close()">Close</button>
-        <button type="button" class="screenButton screenButtonPrimary" onclick="window.print()">Print / Save PDF</button>
+        <button type="button" class="screenButton screenButtonPrimary" onclick="window.print()">Save PDF / Print</button>
       </div>
     </div>
 
