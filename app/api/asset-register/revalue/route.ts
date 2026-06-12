@@ -21,11 +21,31 @@ type RevalueAssetResponse = {
   marketCount?: number;
   marketSources?: unknown[];
   marketMatchStrategy?: string;
+  replacementPriceUsedExVat?: number | null;
   error?: string;
 };
 
 function badRequest(message: string) {
   return NextResponse.json<RevalueAssetResponse>({ ok: false, error: message }, { status: 400 });
+}
+
+function normalizeReplacementPrice(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') {
+    return null;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? Math.round(value) : null;
+  }
+
+  if (typeof value === 'string') {
+    const digits = value.replace(/[^0-9]/g, '');
+    if (!digits) return null;
+    const parsed = Number(digits);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : null;
+  }
+
+  return null;
 }
 
 function formatError(error: unknown): { status: number; message: string } {
@@ -90,9 +110,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<RevalueAssetResponse>({ ok: false, error: 'You must be signed in.' }, { status: 401 });
   }
 
-  let body: { assetId?: unknown; selectedMethod?: unknown; previewOnly?: unknown };
+  let body: { assetId?: unknown; selectedMethod?: unknown; previewOnly?: unknown; replacementPriceExVat?: unknown };
   try {
-    body = (await request.json()) as { assetId?: unknown; selectedMethod?: unknown; previewOnly?: unknown };
+    body = (await request.json()) as { assetId?: unknown; selectedMethod?: unknown; previewOnly?: unknown; replacementPriceExVat?: unknown };
   } catch {
     return badRequest('Enter a valid estimate update request.');
   }
@@ -103,12 +123,20 @@ export async function POST(request: NextRequest) {
     return badRequest('Valid asset id is required.');
   }
 
+  const hasReplacementPriceOverride = Object.prototype.hasOwnProperty.call(body, 'replacementPriceExVat');
+  const replacementPriceExVat = normalizeReplacementPrice(body.replacementPriceExVat);
+
+  if (hasReplacementPriceOverride && replacementPriceExVat === null) {
+    return badRequest('Enter a valid replacement price excluding VAT.');
+  }
+
   try {
     const result = await revalueAssetRegisterItem({
       userId: session.user.id,
       assetId,
       selectedMethod: body.selectedMethod,
       previewOnly: body.previewOnly === true,
+      replacementPriceExVat,
     });
 
     const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [result.item]);
@@ -128,6 +156,7 @@ export async function POST(request: NextRequest) {
       marketCount: result.marketCount,
       marketSources: result.marketSources,
       marketMatchStrategy: result.marketMatchStrategy,
+      replacementPriceUsedExVat: result.replacementPriceUsedExVat,
     });
   } catch (error) {
     console.error('asset register revalue failed', error);
