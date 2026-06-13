@@ -2351,7 +2351,6 @@ function buildMaintenanceReportWorkbook(
         'Date / Time',
         'Record Type',
         'Work / Items',
-        'Usage Reading',
         'Usage Display',
         'Operator',
         'GPS Location',
@@ -2370,7 +2369,7 @@ function buildMaintenanceReportWorkbook(
         'Notes/Problems',
       ];
   const columns = isCheckedOnlyReport
-    ? [20, 16, 38, 16, 20, 22, 34, 42]
+    ? [20, 16, 38, 20, 22, 34, 42]
     : [20, 16, 20, 36, 24, 24, 20, 22, 34, 42];
   const headerRow = 7;
   const maintenanceRecordRows = maintenanceEntries.map((entry) => {
@@ -2382,7 +2381,6 @@ function buildMaintenanceReportWorkbook(
         styled(formatExcelDateTime(entry.event.createdAtIso), 'text'),
         styled(entry.label, recordStyle),
         styled(entry.items.join(', '), 'text'),
-        styled(numberForExcel(entry.event.assetUsageReading ?? entry.event.hours), 'decimal'),
         styled(formatEventUsage(asset, entry.event), 'text'),
         styled(formatOperatorLabel(entry.event), 'text'),
         styled(excelText(formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude)), 'text'),
