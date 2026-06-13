@@ -18,7 +18,10 @@ type DealerShareRequest = {
   operatorName?: unknown;
   latitude?: unknown;
   longitude?: unknown;
+  sharePhotoUrls?: unknown;
 };
+
+const MAX_DEALER_SHARE_PHOTOS = 1;
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -29,6 +32,22 @@ function normalizeCoordinate(value: unknown, maxAbsolute: number): number | null
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || Math.abs(parsed) > maxAbsolute) return null;
   return parsed;
+}
+
+function normalizeSharePhotoUrls(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  const seen = new Set<string>();
+  const urls: string[] = [];
+
+  value.forEach((entry) => {
+    const url = asText(entry).slice(0, 2000);
+    if (!url || !/^https?:\/\//i.test(url) || seen.has(url)) return;
+    seen.add(url);
+    urls.push(url);
+  });
+
+  return urls.slice(0, MAX_DEALER_SHARE_PHOTOS);
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -98,6 +117,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const longitude = normalizeCoordinate(body.longitude, 180);
   const locationText = latitude !== null && longitude !== null ? `GPS ${latitude.toFixed(6)}, ${longitude.toFixed(6)}` : '';
   const ownerMessage = asText(body.ownerMessage).slice(0, 1600);
+  const sharePhotoUrls = normalizeSharePhotoUrls(body.sharePhotoUrls);
 
   if (!partnerUserId) {
     return NextResponse.json({ ok: false, error: 'Choose a dealer before sending.' }, { status: 400 });
@@ -129,6 +149,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
         scanLocationText: locationText,
         scanLatitude: latitude,
         scanLongitude: longitude,
+        sharePhotoUrls,
+        ownerSharePhotoUrls: sharePhotoUrls,
+        ownerSharePhotoCount: sharePhotoUrls.length,
       },
     });
 
