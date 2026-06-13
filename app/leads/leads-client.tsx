@@ -734,14 +734,6 @@ function assetValue(lead: AssetLead): number {
   return asNumber(lead.assetSnapshot.value ?? lead.assetSnapshot.selectedValueExVat ?? lead.assetSnapshot.aim4priceValueExVat ?? lead.assetSnapshot.marketMidExVat) ?? 0;
 }
 
-function assetPhotos(lead: AssetLead): string[] {
-  if (isFullRegisterLead(lead)) {
-    return [];
-  }
-
-  return asStringArray(lead.assetSnapshot.photos);
-}
-
 function leadSharedPhotoUrls(lead: AssetLead): string[] {
   return asStringArray(lead.includedSections.sharePhotoUrls)
     .concat(asStringArray(lead.includedSections.ownerSharePhotoUrls))
@@ -749,6 +741,17 @@ function leadSharedPhotoUrls(lead: AssetLead): string[] {
     .concat(asStringArray(lead.assetSnapshot.ownerSharePhotoUrls))
     .filter((url, index, urls) => urls.indexOf(url) === index)
     .slice(0, 3);
+}
+
+function assetPhotos(lead: AssetLead): string[] {
+  if (isFullRegisterLead(lead)) {
+    return [];
+  }
+
+  const sharedPhotoSet = new Set(leadSharedPhotoUrls(lead));
+  return asStringArray(lead.assetSnapshot.photos)
+    .filter((url) => !sharedPhotoSet.has(url))
+    .filter((url, index, urls) => urls.indexOf(url) === index);
 }
 
 function assetSpecs(lead: AssetLead): Record<string, unknown> | null {
