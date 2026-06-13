@@ -1331,6 +1331,118 @@
   line-height: 1.32;
 }
 
+.maintenancePhotoButton {
+  width: 100%;
+  min-height: 4.75rem;
+  padding: 0.86rem 0.95rem;
+  border-radius: 1.18rem;
+  border: 1px solid rgba(23, 107, 79, 0.22);
+  background:
+    radial-gradient(circle at left top, rgba(23, 107, 79, 0.10), transparent 42%),
+    linear-gradient(180deg, #fbfffd 0%, #edf8f2 100%);
+  color: #124635;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.84rem;
+  text-align: left;
+  box-shadow: 0 10px 22px rgba(16, 68, 52, 0.08);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.maintenancePhotoButton:hover {
+  transform: translateY(-1px);
+  border-color: rgba(23, 107, 79, 0.36);
+  box-shadow: 0 14px 28px rgba(16, 68, 52, 0.11);
+}
+
+.maintenancePhotoButton:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.maintenancePhotoIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.35rem;
+  height: 3.35rem;
+  border-radius: 1rem;
+  color: #0f6040;
+  background: #ffffff;
+  border: 1px solid rgba(23, 107, 79, 0.16);
+  box-shadow: 0 8px 18px rgba(16, 68, 52, 0.06);
+}
+
+.maintenancePhotoIconSvg {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
+.maintenancePhotoText {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.maintenancePhotoText strong {
+  color: inherit;
+  font-size: clamp(1.02rem, 4vw, 1.2rem);
+  font-weight: 900;
+  letter-spacing: -0.024em;
+  line-height: 1.08;
+}
+
+.maintenancePhotoText small {
+  color: var(--text-soft);
+  font-size: clamp(0.88rem, 3.1vw, 0.98rem);
+  font-weight: 720;
+  line-height: 1.24;
+}
+
+.servicePhotoStep {
+  align-content: start;
+}
+
+.servicePhotoEmptyState {
+  min-height: 8.8rem;
+  padding: 1.1rem;
+  border-radius: 1.18rem;
+  border: 1px dashed rgba(23, 107, 79, 0.30);
+  background: rgba(237, 248, 242, 0.62);
+  color: #124635;
+  display: grid;
+  place-items: center;
+  gap: 0.36rem;
+  text-align: center;
+}
+
+.servicePhotoEmptyIcon {
+  width: 2.35rem;
+  height: 2.35rem;
+  color: #0f6040;
+}
+
+.servicePhotoEmptyState strong {
+  color: #123f32;
+  font-size: 1.02rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.servicePhotoEmptyState span {
+  color: var(--text-soft);
+  font-size: 0.94rem;
+  font-weight: 720;
+  line-height: 1.28;
+}
+
 .hiddenFileInput {
   position: fixed;
   left: -9999px;
@@ -1540,6 +1652,23 @@
 .actionEditorCard .selectedSummary {
   padding: 0.75rem 0.9rem;
   font-size: 0.94rem;
+}
+
+.actionEditorCard .maintenancePhotoButton {
+  min-height: 4.35rem;
+  padding: 0.75rem 0.82rem;
+  border-radius: 1.05rem;
+}
+
+.actionEditorCard .maintenancePhotoIcon {
+  width: 2.95rem;
+  height: 2.95rem;
+  border-radius: 0.88rem;
+}
+
+.actionEditorCard .maintenancePhotoIconSvg {
+  width: 1.38rem;
+  height: 1.38rem;
 }
 
 .actionEditorCard .serviceDetailsCard .selectedSummary {

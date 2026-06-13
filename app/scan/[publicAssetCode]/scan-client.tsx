@@ -718,7 +718,7 @@ function buildServiceNote(draft: DraftState): string {
     return [
       "Checked",
       draft.checkedItems.length ? `Checked items: ${draft.checkedItems.join(", ")}` : "",
-      note ? `Notes: ${note}` : "",
+      note ? `Notes/Problems: ${note}` : "",
     ]
       .filter(Boolean)
       .join("\n");
@@ -730,7 +730,7 @@ function buildServiceNote(draft: DraftState): string {
       draft.servicedItems.length ? `Work done: ${draft.servicedItems.join(", ")}` : "",
       draft.serviceCompany.trim() ? `Company: ${draft.serviceCompany.trim()}` : "",
       draft.mechanicName.trim() ? `Mechanic: ${draft.mechanicName.trim()}` : "",
-      note ? `Notes: ${note}` : "",
+      note ? `Notes/Problems: ${note}` : "",
     ]
       .filter(Boolean)
       .join("\n");
@@ -742,7 +742,7 @@ function buildServiceNote(draft: DraftState): string {
       draft.repairDetails.trim() ? `Repair details: ${draft.repairDetails.trim()}` : "",
       draft.serviceCompany.trim() ? `Company: ${draft.serviceCompany.trim()}` : "",
       draft.mechanicName.trim() ? `Mechanic: ${draft.mechanicName.trim()}` : "",
-      note ? `Notes: ${note}` : "",
+      note ? `Notes/Problems: ${note}` : "",
     ]
       .filter(Boolean)
       .join("\n");
@@ -1037,6 +1037,7 @@ export default function ScanClient({
   const [isDone, setIsDone] = useState(false);
   const [hasCompletedRequiredUsageUpdate, setHasCompletedRequiredUsageUpdate] = useState(false);
   const [showServiceDetailsStep, setShowServiceDetailsStep] = useState(false);
+  const [showServicePhotoStep, setShowServicePhotoStep] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [sharePartners, setSharePartners] = useState<PartnerDirectoryEntry[]>([]);
   const [sharePartnerSearch, setSharePartnerSearch] = useState("");
@@ -1100,6 +1101,7 @@ export default function ScanClient({
     setIsDone(false);
     setHasCompletedRequiredUsageUpdate(false);
     setShowServiceDetailsStep(false);
+    setShowServicePhotoStep(false);
     setIsShareModalOpen(false);
     setSharePartners([]);
     setSharePartnerSearch("");
@@ -1492,6 +1494,14 @@ export default function ScanClient({
     }));
   }
 
+  function openServicePhotoStep() {
+    setShowServicePhotoStep(true);
+  }
+
+  function closeServicePhotoStep() {
+    setShowServicePhotoStep(false);
+  }
+
   function openEditor(nextEditor: EditorKey) {
     const enforcedEditor = nextEditor !== "usage" && needsUsageUpdateBeforeActions(asset, pendingUpdate, hasCompletedRequiredUsageUpdate)
       ? "usage"
@@ -1536,6 +1546,10 @@ export default function ScanClient({
         return { ...nextDraft, fuelPercent: stagedFuel };
       }
 
+      if (enforcedEditor === "service") {
+        return { ...nextDraft, photoUrls: pendingUpdate.photoUrls };
+      }
+
       if (enforcedEditor === "photos") {
         return { ...nextDraft, photoUrls: pendingUpdate.photoUrls };
       }
@@ -1544,12 +1558,14 @@ export default function ScanClient({
     });
 
     setShowServiceDetailsStep(false);
+    setShowServicePhotoStep(false);
     setActiveEditor(enforcedEditor);
   }
 
   function closeEditor() {
     setDraft((current) => keepCurrentLocation(current));
     setShowServiceDetailsStep(false);
+    setShowServicePhotoStep(false);
     setActiveEditor(null);
   }
 
@@ -1848,14 +1864,14 @@ export default function ScanClient({
 
       if (draft.serviceMode === "checked") {
         if (!draft.checkedItems.length && !draft.note.trim()) {
-          return { ok: false, message: "Select what was checked or add a note." };
+          return { ok: false, message: "Select what was checked or add notes/problems." };
         }
         return { ok: true };
       }
 
       if (draft.serviceMode === "serviced") {
         if (!draft.servicedItems.length && !draft.note.trim()) {
-          return { ok: false, message: "Select what was serviced or add a note." };
+          return { ok: false, message: "Select what was serviced or add notes/problems." };
         }
       }
 
@@ -1866,6 +1882,7 @@ export default function ScanClient({
       }
 
       if (!showServiceDetailsStep && (!draft.serviceCompany.trim() || !draft.mechanicName.trim())) {
+        setShowServicePhotoStep(false);
         setShowServiceDetailsStep(true);
         return { ok: false };
       }
@@ -1947,14 +1964,24 @@ export default function ScanClient({
 
     if (activeEditor === "service") {
       const serviceNote = buildServiceNote(draft);
+      const stagedPhotos = mergeUniqueStrings(draft.photoUrls, MAX_QR_PHOTOS);
 
       setPendingUpdate((current) => ({
         ...current,
         notes: mergeUniqueStrings([...current.notes, serviceNote]),
+        photoUrls: mergeUniqueStrings([...current.photoUrls, ...stagedPhotos], MAX_QR_PHOTOS),
         latitude: savedLatitude || current.latitude,
         longitude: savedLongitude || current.longitude,
         hasService: true,
+        hasPhotos: stagedPhotos.length > 0 || current.hasPhotos,
       }));
+
+      if (stagedPhotos.length) {
+        setAsset((current) => current
+          ? { ...current, photos: mergeUniqueStrings([...current.photos, ...stagedPhotos], MAX_QR_PHOTOS) }
+          : current,
+        );
+      }
     }
 
     if (activeEditor === "photos") {
@@ -1976,6 +2003,7 @@ export default function ScanClient({
     setDraft({ ...initialDraft, latitude: savedLatitude, longitude: savedLongitude });
     setActiveEditor(null);
     setShowServiceDetailsStep(false);
+    setShowServicePhotoStep(false);
     setNotice({ tone: "success", message: "Update added. Tap Done to save it to the asset register." });
     setLocationState("ready");
     setLocationMessage("GPS is ready for this update.");
@@ -2105,31 +2133,36 @@ export default function ScanClient({
   const serviceDetailsMissing = (draft.serviceMode === "serviced" || draft.serviceMode === "repaired")
     && showServiceDetailsStep
     && (!draft.serviceCompany.trim() || !draft.mechanicName.trim());
+  const isServicePhotoStep = activeEditor === "service" && showServicePhotoStep;
   const saveBlockedByEmptyDraft = activeEditor === "photos"
     ? draft.photoUrls.length === 0
     : activeEditor === "service"
       ? !draft.serviceMode || !hasServiceSelection || serviceDetailsMissing
       : false;
-  const canPressSave = !isSaving && !isUploading && !saveBlockedByEmptyDraft;
+  const canPressSave = isServicePhotoStep
+    ? !isSaving && !isUploading
+    : !isSaving && !isUploading && !saveBlockedByEmptyDraft;
   const saveButtonLabel = isSaving
     ? "Saving…"
-    : activeEditor === "photos" && !draft.photoUrls.length
-      ? "Add photos"
-      : activeEditor === "service" && !draft.serviceMode
-        ? "Choose type"
-        : activeEditor === "service" && !hasServiceSelection
-          ? draft.serviceMode === "checked"
-            ? "Select items"
-            : draft.serviceMode === "repaired"
-              ? "Explain repair"
-              : "Select items"
-          : serviceDetailsMissing
-            ? "Complete details"
-            : activeEditor === "service" && (draft.serviceMode === "serviced" || draft.serviceMode === "repaired") && !showServiceDetailsStep
-              ? "Next"
-              : activeEditor === "usage" && usageUpdateRequired
-                ? "Continue"
-                : "Add update";
+    : isServicePhotoStep
+      ? "Done photos"
+      : activeEditor === "photos" && !draft.photoUrls.length
+        ? "Add photos"
+        : activeEditor === "service" && !draft.serviceMode
+          ? "Choose type"
+          : activeEditor === "service" && !hasServiceSelection
+            ? draft.serviceMode === "checked"
+              ? "Select items"
+              : draft.serviceMode === "repaired"
+                ? "Explain repair"
+                : "Select items"
+            : serviceDetailsMissing
+              ? "Complete details"
+              : activeEditor === "service" && (draft.serviceMode === "serviced" || draft.serviceMode === "repaired") && !showServiceDetailsStep
+                ? "Next"
+                : activeEditor === "usage" && usageUpdateRequired
+                  ? "Continue"
+                  : "Add update";
   const selectedSharePartner = useMemo(
     () => sharePartners.find((partner) => partner.userId === selectedSharePartnerId) ?? null,
     [sharePartners, selectedSharePartnerId],
@@ -2502,17 +2535,19 @@ export default function ScanClient({
                     : activeEditor === "fuel"
                       ? "Fuel level"
                       : activeEditor === "service"
-                        ? draft.serviceMode === "checked"
-                          ? serviceCopy.checkedTitle
-                          : draft.serviceMode === "serviced"
-                            ? showServiceDetailsStep
-                              ? "Service details"
-                              : serviceCopy.servicedTitle
-                            : draft.serviceMode === "repaired"
+                        ? showServicePhotoStep
+                          ? "Maintenance photos"
+                          : draft.serviceMode === "checked"
+                            ? serviceCopy.checkedTitle
+                            : draft.serviceMode === "serviced"
                               ? showServiceDetailsStep
-                                ? "Repairer details"
-                                : serviceCopy.repairedTitle
-                              : "Maintenance"
+                                ? "Service details"
+                                : serviceCopy.servicedTitle
+                              : draft.serviceMode === "repaired"
+                                ? showServiceDetailsStep
+                                  ? "Repairer details"
+                                  : serviceCopy.repairedTitle
+                                : "Maintenance"
                         : "Add photos"}
                 </h3>
                 <p>
@@ -2523,17 +2558,19 @@ export default function ScanClient({
                     : activeEditor === "fuel"
                       ? "Save the asset fuel gauge as it is now."
                       : activeEditor === "service"
-                        ? draft.serviceMode === "checked"
-                          ? serviceCopy.checkedPrompt
-                          : draft.serviceMode === "serviced"
-                            ? showServiceDetailsStep
-                              ? serviceCopy.detailsSubheader
-                              : serviceCopy.servicedPrompt
-                            : draft.serviceMode === "repaired"
+                        ? showServicePhotoStep
+                          ? "Attach photos to this maintenance record."
+                          : draft.serviceMode === "checked"
+                            ? serviceCopy.checkedPrompt
+                            : draft.serviceMode === "serviced"
                               ? showServiceDetailsStep
                                 ? serviceCopy.detailsSubheader
-                                : serviceCopy.repairedPrompt
-                              : "Choose update type."
+                                : serviceCopy.servicedPrompt
+                              : draft.serviceMode === "repaired"
+                                ? showServiceDetailsStep
+                                  ? serviceCopy.detailsSubheader
+                                  : serviceCopy.repairedPrompt
+                                : "Choose update type."
                         : "Upload or take photos."}
                 </p>
               </div>
@@ -2624,325 +2661,490 @@ export default function ScanClient({
               ) : null}
 
               {activeEditor === "service" ? (
-                <div className={styles.modalStack}>
-                  <div className={`${styles.serviceModeGrid} ${draft.serviceMode ? styles.serviceModeGridLocked : ""}`}>
-                    {!draft.serviceMode ? (
-                      <>
-                        <button
-                          type="button"
-                          className={styles.serviceModeCard}
-                          onClick={() => {
-                            setShowServiceDetailsStep(false);
-                            setDraft((current) => ({
-                              ...current,
-                              serviceMode: "checked",
-                              servicedItems: [],
-                              repairDetails: "",
-                              serviceCompany: "",
-                              mechanicName: "",
-                            }));
-                          }}
-                          disabled={isSaving}
-                        >
-                          <span className={styles.serviceModeIcon}>
-                            <CheckCircleIcon className={styles.serviceModeSvg} />
-                          </span>
-                          <span className={styles.serviceModeText}>
-                            <strong>Checked</strong>
-                            <small>{serviceCopy.checkedDescription}</small>
-                          </span>
-                        </button>
-
-                        <button
-                          type="button"
-                          className={styles.serviceModeCard}
-                          onClick={() => {
-                            setShowServiceDetailsStep(false);
-                            setDraft((current) => ({
-                              ...current,
-                              serviceMode: "serviced",
-                              checkedItems: [],
-                              repairDetails: "",
-                            }));
-                          }}
-                          disabled={isSaving}
-                        >
-                          <span className={styles.serviceModeIcon}>
-                            <WrenchIcon className={styles.serviceModeSvg} />
-                          </span>
-                          <span className={styles.serviceModeText}>
-                            <strong>Serviced</strong>
-                            <small>{serviceCopy.servicedDescription}</small>
-                          </span>
-                        </button>
-
-                        <button
-                          type="button"
-                          className={styles.serviceModeCard}
-                          onClick={() => {
-                            setShowServiceDetailsStep(false);
-                            setDraft((current) => ({
-                              ...current,
-                              serviceMode: "repaired",
-                              checkedItems: [],
-                              servicedItems: [],
-                            }));
-                          }}
-                          disabled={isSaving}
-                        >
-                          <span className={styles.serviceModeIcon}>
-                            <RepairIcon className={styles.serviceModeSvg} />
-                          </span>
-                          <span className={styles.serviceModeText}>
-                            <strong>Repaired</strong>
-                            <small>{serviceCopy.repairedDescription}</small>
-                          </span>
-                        </button>
-                      </>
-                    ) : (
-                      <div className={`${styles.serviceModeCard} ${styles.serviceModeCardActive} ${styles.serviceModeCardLocked}`}>
-                        <span className={styles.serviceModeIcon}>
-                          {draft.serviceMode === "checked" ? (
-                            <CheckCircleIcon className={styles.serviceModeSvg} />
-                          ) : draft.serviceMode === "repaired" ? (
-                            <RepairIcon className={styles.serviceModeSvg} />
-                          ) : (
-                            <WrenchIcon className={styles.serviceModeSvg} />
-                          )}
-                        </span>
-                        <span className={styles.serviceModeText}>
-                          <strong>
-                            {draft.serviceMode === "checked"
-                              ? "Checked"
-                              : draft.serviceMode === "repaired"
-                                ? "Repaired"
-                                : "Serviced"}
-                          </strong>
-                          <small>
-                            {draft.serviceMode === "checked"
-                              ? "Inspection record"
-                              : draft.serviceMode === "repaired"
-                                ? "Repair record"
-                                : "Service record"}
-                          </small>
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {draft.serviceMode === "checked" ? (
+                showServicePhotoStep ? (
+                  <div className={`${styles.modalStack} ${styles.servicePhotoStep}`}>
                     <div className={styles.servicePanel}>
                       <div className={styles.serviceSectionHeader}>
-                        <strong>{serviceCopy.checkedHeader}</strong>
-                        <small>{serviceCopy.checkedSubheader}</small>
+                        <strong>Add maintenance photos</strong>
+                        <small>Upload from the gallery or use the camera. These photos stay attached to this maintenance record and the asset.</small>
                       </div>
 
-                      <div className={styles.optionList}>
-                        {checkedOptions.map((option) => {
-                          const selected = draft.checkedItems.includes(option.label);
+                      <div className={styles.mediaChoiceGrid}>
+                        <button
+                          type="button"
+                          className={styles.mediaButton}
+                          onClick={() => galleryInputRef.current?.click()}
+                          disabled={isUploading || isSaving || draft.photoUrls.length >= MAX_QR_PHOTOS}
+                        >
+                          <span className={styles.mediaButtonIcon}>
+                            <UploadIcon className={styles.mediaButtonSvg} />
+                          </span>
+                          <span>
+                            <strong>Upload photos</strong>
+                            <small>Gallery</small>
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.mediaButton}
+                          onClick={() => cameraInputRef.current?.click()}
+                          disabled={isUploading || isSaving || draft.photoUrls.length >= MAX_QR_PHOTOS}
+                        >
+                          <span className={styles.mediaButtonIcon}>
+                            <CameraIcon className={styles.mediaButtonSvg} />
+                          </span>
+                          <span>
+                            <strong>Take photos</strong>
+                            <small>Camera</small>
+                          </span>
+                        </button>
+                      </div>
 
-                          return (
-                            <button
-                              type="button"
-                              key={option.label}
-                              className={`${styles.listOptionButton} ${selected ? styles.listOptionActive : ""}`}
-                              onClick={() =>
-                                setDraft((current) => ({
-                                  ...current,
-                                  checkedItems: toggleValue(current.checkedItems, option.label),
-                                }))
-                              }
-                              disabled={isSaving}
-                            >
-                              <span className={styles.listOptionText}>
-                                <strong>{option.label}</strong>
-                                <small>{option.description}</small>
+                      <input
+                        ref={galleryInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        multiple
+                        className={styles.hiddenFileInput}
+                        onChange={handleUploadChange}
+                        disabled={isUploading || isSaving}
+                      />
+                      <input
+                        ref={cameraInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        capture="environment"
+                        className={styles.hiddenFileInput}
+                        onChange={handleUploadChange}
+                        disabled={isUploading || isSaving}
+                      />
+
+                      <p className={styles.helperText}>
+                        {isUploading
+                          ? "Preparing and uploading photos…"
+                          : `${draft.photoUrls.length} of ${MAX_QR_PHOTOS} photos ready for this maintenance record.`}
+                      </p>
+
+                      {draft.photoUrls.length ? (
+                        <div className={styles.photoGrid}>
+                          {draft.photoUrls.map((url, index) => (
+                            <article key={`${url}-${index}`} className={styles.photoCard}>
+                              <img src={url} alt={`Maintenance photo ${index + 1}`} className={styles.photoImage} />
+                              <button type="button" className={styles.removePhotoButton} onClick={() => handleRemovePhoto(url)} disabled={isSaving}>
+                                Remove
+                              </button>
+                            </article>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className={styles.servicePhotoEmptyState}>
+                          <CameraIcon className={styles.servicePhotoEmptyIcon} />
+                          <strong>No maintenance photos added yet.</strong>
+                          <span>Use Upload photos or Take photos above.</span>
+                        </div>
+                      )}
+
+                      <button type="button" className={styles.secondaryButton} onClick={closeServicePhotoStep} disabled={isSaving || isUploading}>
+                        {showServiceDetailsStep ? "Back to details" : "Back to maintenance"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.modalStack}>
+                    <div className={`${styles.serviceModeGrid} ${draft.serviceMode ? styles.serviceModeGridLocked : ""}`}>
+                      {!draft.serviceMode ? (
+                        <>
+                          <button
+                            type="button"
+                            className={styles.serviceModeCard}
+                            onClick={() => {
+                              setShowServiceDetailsStep(false);
+                              setShowServicePhotoStep(false);
+                              setDraft((current) => ({
+                                ...current,
+                                serviceMode: "checked",
+                                servicedItems: [],
+                                repairDetails: "",
+                                serviceCompany: "",
+                                mechanicName: "",
+                              }));
+                            }}
+                            disabled={isSaving}
+                          >
+                            <span className={styles.serviceModeIcon}>
+                              <CheckCircleIcon className={styles.serviceModeSvg} />
+                            </span>
+                            <span className={styles.serviceModeText}>
+                              <strong>Checked</strong>
+                              <small>{serviceCopy.checkedDescription}</small>
+                            </span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className={styles.serviceModeCard}
+                            onClick={() => {
+                              setShowServiceDetailsStep(false);
+                              setShowServicePhotoStep(false);
+                              setDraft((current) => ({
+                                ...current,
+                                serviceMode: "serviced",
+                                checkedItems: [],
+                                repairDetails: "",
+                              }));
+                            }}
+                            disabled={isSaving}
+                          >
+                            <span className={styles.serviceModeIcon}>
+                              <WrenchIcon className={styles.serviceModeSvg} />
+                            </span>
+                            <span className={styles.serviceModeText}>
+                              <strong>Serviced</strong>
+                              <small>{serviceCopy.servicedDescription}</small>
+                            </span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className={styles.serviceModeCard}
+                            onClick={() => {
+                              setShowServiceDetailsStep(false);
+                              setShowServicePhotoStep(false);
+                              setDraft((current) => ({
+                                ...current,
+                                serviceMode: "repaired",
+                                checkedItems: [],
+                                servicedItems: [],
+                              }));
+                            }}
+                            disabled={isSaving}
+                          >
+                            <span className={styles.serviceModeIcon}>
+                              <RepairIcon className={styles.serviceModeSvg} />
+                            </span>
+                            <span className={styles.serviceModeText}>
+                              <strong>Repaired</strong>
+                              <small>{serviceCopy.repairedDescription}</small>
+                            </span>
+                          </button>
+                        </>
+                      ) : (
+                        <div className={`${styles.serviceModeCard} ${styles.serviceModeCardActive} ${styles.serviceModeCardLocked}`}>
+                          <span className={styles.serviceModeIcon}>
+                            {draft.serviceMode === "checked" ? (
+                              <CheckCircleIcon className={styles.serviceModeSvg} />
+                            ) : draft.serviceMode === "repaired" ? (
+                              <RepairIcon className={styles.serviceModeSvg} />
+                            ) : (
+                              <WrenchIcon className={styles.serviceModeSvg} />
+                            )}
+                          </span>
+                          <span className={styles.serviceModeText}>
+                            <strong>
+                              {draft.serviceMode === "checked"
+                                ? "Checked"
+                                : draft.serviceMode === "repaired"
+                                  ? "Repaired"
+                                  : "Serviced"}
+                            </strong>
+                            <small>
+                              {draft.serviceMode === "checked"
+                                ? "Inspection record"
+                                : draft.serviceMode === "repaired"
+                                  ? "Repair record"
+                                  : "Service record"}
+                            </small>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {draft.serviceMode === "checked" ? (
+                      <div className={styles.servicePanel}>
+                        <div className={styles.serviceSectionHeader}>
+                          <strong>{serviceCopy.checkedHeader}</strong>
+                          <small>{serviceCopy.checkedSubheader}</small>
+                        </div>
+
+                        <div className={styles.optionList}>
+                          {checkedOptions.map((option) => {
+                            const selected = draft.checkedItems.includes(option.label);
+
+                            return (
+                              <button
+                                type="button"
+                                key={option.label}
+                                className={`${styles.listOptionButton} ${selected ? styles.listOptionActive : ""}`}
+                                onClick={() =>
+                                  setDraft((current) => ({
+                                    ...current,
+                                    checkedItems: toggleValue(current.checkedItems, option.label),
+                                  }))
+                                }
+                                disabled={isSaving}
+                              >
+                                <span className={styles.listOptionText}>
+                                  <strong>{option.label}</strong>
+                                  <small>{option.description}</small>
+                                </span>
+                                <span className={styles.listOptionCheck}>{selected ? "✓" : ""}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {draft.checkedItems.length ? (
+                          <p className={styles.selectedSummary}>
+                            {draft.checkedItems.length} checked item{draft.checkedItems.length === 1 ? "" : "s"} selected.
+                          </p>
+                        ) : null}
+
+                        <label className={styles.field}>
+                          <span>Notes/Problems</span>
+                          <textarea
+                            placeholder={serviceCopy.checkedNotePlaceholder}
+                            value={draft.note}
+                            onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
+                            disabled={isSaving}
+                          />
+                        </label>
+
+                        <button type="button" className={styles.maintenancePhotoButton} onClick={openServicePhotoStep} disabled={isSaving || isUploading}>
+                          <span className={styles.maintenancePhotoIcon}>
+                            <CameraIcon className={styles.maintenancePhotoIconSvg} />
+                          </span>
+                          <span className={styles.maintenancePhotoText}>
+                            <strong>{draft.photoUrls.length ? "Manage maintenance photos" : "Add / take photos"}</strong>
+                            <small>
+                              {draft.photoUrls.length
+                                ? `${draft.photoUrls.length} photo${draft.photoUrls.length === 1 ? "" : "s"} ready for this record.`
+                                : "Attach photos to this maintenance record."}
+                            </small>
+                          </span>
+                        </button>
+                      </div>
+                    ) : null}
+
+                    {draft.serviceMode === "serviced" ? (
+                      <div className={styles.servicePanel}>
+                        {!showServiceDetailsStep ? (
+                          <>
+                            <div className={styles.serviceSectionHeader}>
+                              <strong>{serviceCopy.servicedHeader}</strong>
+                              <small>{serviceCopy.servicedSubheader}</small>
+                            </div>
+
+                            <div className={styles.optionList}>
+                              {servicedOptions.map((option) => {
+                                const selected = draft.servicedItems.includes(option.label);
+
+                                return (
+                                  <button
+                                    type="button"
+                                    key={option.label}
+                                    className={`${styles.listOptionButton} ${selected ? styles.listOptionActive : ""}`}
+                                    onClick={() =>
+                                      setDraft((current) => ({
+                                        ...current,
+                                        servicedItems: toggleValue(current.servicedItems, option.label),
+                                      }))
+                                    }
+                                    disabled={isSaving}
+                                  >
+                                    <span className={styles.listOptionText}>
+                                      <strong>{option.label}</strong>
+                                      <small>{option.description}</small>
+                                    </span>
+                                    <span className={styles.listOptionCheck}>{selected ? "✓" : ""}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {draft.servicedItems.length ? (
+                              <p className={styles.selectedSummary}>
+                                {draft.servicedItems.length} serviced item{draft.servicedItems.length === 1 ? "" : "s"} selected.
+                              </p>
+                            ) : null}
+
+                            <label className={styles.field}>
+                              <span>Notes/Problems</span>
+                              <textarea
+                                placeholder={serviceCopy.servicedNotePlaceholder}
+                                value={draft.note}
+                                onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
+                                disabled={isSaving}
+                              />
+                            </label>
+
+                            <button type="button" className={styles.maintenancePhotoButton} onClick={openServicePhotoStep} disabled={isSaving || isUploading}>
+                              <span className={styles.maintenancePhotoIcon}>
+                                <CameraIcon className={styles.maintenancePhotoIconSvg} />
                               </span>
-                              <span className={styles.listOptionCheck}>{selected ? "✓" : ""}</span>
+                              <span className={styles.maintenancePhotoText}>
+                                <strong>{draft.photoUrls.length ? "Manage maintenance photos" : "Add / take photos"}</strong>
+                                <small>
+                                  {draft.photoUrls.length
+                                    ? `${draft.photoUrls.length} photo${draft.photoUrls.length === 1 ? "" : "s"} ready for this record.`
+                                    : "Attach photos to this maintenance record."}
+                                </small>
+                              </span>
                             </button>
-                          );
-                        })}
+                          </>
+                        ) : (
+                          <div className={styles.serviceDetailsCard}>
+                            <div className={styles.serviceSectionHeader}>
+                              <strong>{serviceCopy.detailsHeader}</strong>
+                              <small>{serviceCopy.detailsSubheader}</small>
+                            </div>
+
+                            {draft.servicedItems.length ? (
+                              <p className={styles.selectedSummary}>
+                                Selected: {draft.servicedItems.join(", ")}
+                              </p>
+                            ) : null}
+
+                            <label className={styles.field}>
+                              <span>{serviceCopy.companyLabel}</span>
+                              <input
+                                placeholder={serviceCopy.companyPlaceholder}
+                                value={draft.serviceCompany}
+                                onChange={(event) => setDraft((current) => ({ ...current, serviceCompany: event.target.value.slice(0, 120) }))}
+                                disabled={isSaving}
+                              />
+                            </label>
+                            <label className={styles.field}>
+                              <span>{serviceCopy.mechanicLabel}</span>
+                              <input
+                                placeholder={serviceCopy.mechanicPlaceholder}
+                                value={draft.mechanicName}
+                                onChange={(event) => setDraft((current) => ({ ...current, mechanicName: event.target.value.slice(0, 120) }))}
+                                disabled={isSaving}
+                              />
+                            </label>
+
+                            <button type="button" className={styles.maintenancePhotoButton} onClick={openServicePhotoStep} disabled={isSaving || isUploading}>
+                              <span className={styles.maintenancePhotoIcon}>
+                                <CameraIcon className={styles.maintenancePhotoIconSvg} />
+                              </span>
+                              <span className={styles.maintenancePhotoText}>
+                                <strong>{draft.photoUrls.length ? "Manage maintenance photos" : "Add / take photos"}</strong>
+                                <small>
+                                  {draft.photoUrls.length
+                                    ? `${draft.photoUrls.length} photo${draft.photoUrls.length === 1 ? "" : "s"} ready for this record.`
+                                    : "Attach photos before saving this record."}
+                                </small>
+                              </span>
+                            </button>
+
+                            <button type="button" className={styles.secondaryButton} onClick={() => setShowServiceDetailsStep(false)} disabled={isSaving}>
+                              Back to service items
+                            </button>
+                          </div>
+                        )}
                       </div>
+                    ) : null}
 
-                      {draft.checkedItems.length ? (
-                        <p className={styles.selectedSummary}>
-                          {draft.checkedItems.length} checked item{draft.checkedItems.length === 1 ? "" : "s"} selected.
-                        </p>
-                      ) : null}
+                    {draft.serviceMode === "repaired" ? (
+                      <div className={styles.servicePanel}>
+                        {!showServiceDetailsStep ? (
+                          <>
+                            <div className={styles.serviceSectionHeader}>
+                              <strong>{serviceCopy.repairedHeader}</strong>
+                              <small>{serviceCopy.repairedSubheader}</small>
+                            </div>
 
-                      <label className={styles.field}>
-                        <span>Notes</span>
-                        <textarea
-                          placeholder={serviceCopy.checkedNotePlaceholder}
-                          value={draft.note}
-                          onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
-                          disabled={isSaving}
-                        />
-                      </label>
-                    </div>
-                  ) : null}
+                            <label className={styles.field}>
+                              <span>Repair details</span>
+                              <textarea
+                                className={styles.mainNoteInput}
+                                placeholder={serviceCopy.repairedNotePlaceholder}
+                                value={draft.repairDetails}
+                                onChange={(event) => setDraft((current) => ({ ...current, repairDetails: event.target.value.slice(0, 1600) }))}
+                                disabled={isSaving}
+                              />
+                            </label>
 
-                  {draft.serviceMode === "serviced" ? (
-                    <div className={styles.servicePanel}>
-                      {!showServiceDetailsStep ? (
-                        <>
-                          <div className={styles.serviceSectionHeader}>
-                            <strong>{serviceCopy.servicedHeader}</strong>
-                            <small>{serviceCopy.servicedSubheader}</small>
+                            <label className={styles.field}>
+                              <span>Notes/Problems</span>
+                              <textarea
+                                className={styles.compactTextarea}
+                                placeholder={serviceCopy.repairedExtraNotePlaceholder}
+                                value={draft.note}
+                                onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
+                                disabled={isSaving}
+                              />
+                            </label>
+
+                            <button type="button" className={styles.maintenancePhotoButton} onClick={openServicePhotoStep} disabled={isSaving || isUploading}>
+                              <span className={styles.maintenancePhotoIcon}>
+                                <CameraIcon className={styles.maintenancePhotoIconSvg} />
+                              </span>
+                              <span className={styles.maintenancePhotoText}>
+                                <strong>{draft.photoUrls.length ? "Manage maintenance photos" : "Add / take photos"}</strong>
+                                <small>
+                                  {draft.photoUrls.length
+                                    ? `${draft.photoUrls.length} photo${draft.photoUrls.length === 1 ? "" : "s"} ready for this record.`
+                                    : "Attach photos to this maintenance record."}
+                                </small>
+                              </span>
+                            </button>
+                          </>
+                        ) : (
+                          <div className={styles.serviceDetailsCard}>
+                            <div className={styles.serviceSectionHeader}>
+                              <strong>{serviceCopy.detailsHeader}</strong>
+                              <small>{serviceCopy.detailsSubheader}</small>
+                            </div>
+
+                            {draft.repairDetails.trim() ? (
+                              <p className={styles.selectedSummary}>
+                                Repair: {draft.repairDetails.trim()}
+                              </p>
+                            ) : null}
+
+                            <label className={styles.field}>
+                              <span>{serviceCopy.companyLabel}</span>
+                              <input
+                                placeholder={serviceCopy.companyPlaceholder}
+                                value={draft.serviceCompany}
+                                onChange={(event) => setDraft((current) => ({ ...current, serviceCompany: event.target.value.slice(0, 120) }))}
+                                disabled={isSaving}
+                              />
+                            </label>
+                            <label className={styles.field}>
+                              <span>{serviceCopy.mechanicLabel}</span>
+                              <input
+                                placeholder={serviceCopy.mechanicPlaceholder}
+                                value={draft.mechanicName}
+                                onChange={(event) => setDraft((current) => ({ ...current, mechanicName: event.target.value.slice(0, 120) }))}
+                                disabled={isSaving}
+                              />
+                            </label>
+
+                            <button type="button" className={styles.maintenancePhotoButton} onClick={openServicePhotoStep} disabled={isSaving || isUploading}>
+                              <span className={styles.maintenancePhotoIcon}>
+                                <CameraIcon className={styles.maintenancePhotoIconSvg} />
+                              </span>
+                              <span className={styles.maintenancePhotoText}>
+                                <strong>{draft.photoUrls.length ? "Manage maintenance photos" : "Add / take photos"}</strong>
+                                <small>
+                                  {draft.photoUrls.length
+                                    ? `${draft.photoUrls.length} photo${draft.photoUrls.length === 1 ? "" : "s"} ready for this record.`
+                                    : "Attach photos before saving this record."}
+                                </small>
+                              </span>
+                            </button>
+
+                            <button type="button" className={styles.secondaryButton} onClick={() => setShowServiceDetailsStep(false)} disabled={isSaving}>
+                              Back to repair details
+                            </button>
                           </div>
-
-                          <div className={styles.optionList}>
-                            {servicedOptions.map((option) => {
-                              const selected = draft.servicedItems.includes(option.label);
-
-                              return (
-                                <button
-                                  type="button"
-                                  key={option.label}
-                                  className={`${styles.listOptionButton} ${selected ? styles.listOptionActive : ""}`}
-                                  onClick={() =>
-                                    setDraft((current) => ({
-                                      ...current,
-                                      servicedItems: toggleValue(current.servicedItems, option.label),
-                                    }))
-                                  }
-                                  disabled={isSaving}
-                                >
-                                  <span className={styles.listOptionText}>
-                                    <strong>{option.label}</strong>
-                                    <small>{option.description}</small>
-                                  </span>
-                                  <span className={styles.listOptionCheck}>{selected ? "✓" : ""}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          {draft.servicedItems.length ? (
-                            <p className={styles.selectedSummary}>
-                              {draft.servicedItems.length} service item{draft.servicedItems.length === 1 ? "" : "s"} selected.
-                            </p>
-                          ) : null}
-
-                          <label className={styles.field}>
-                            <span>Notes</span>
-                            <textarea
-                              placeholder={serviceCopy.servicedNotePlaceholder}
-                              value={draft.note}
-                              onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
-                              disabled={isSaving}
-                            />
-                          </label>
-                        </>
-                      ) : (
-                        <div className={styles.serviceDetailsCard}>
-                          <div className={styles.serviceSectionHeader}>
-                            <strong>{serviceCopy.detailsHeader}</strong>
-                            <small>{serviceCopy.detailsSubheader}</small>
-                          </div>
-
-                          {draft.servicedItems.length ? (
-                            <p className={styles.selectedSummary}>
-                              Selected: {draft.servicedItems.join(", ")}
-                            </p>
-                          ) : null}
-
-                          <label className={styles.field}>
-                            <span>{serviceCopy.companyLabel}</span>
-                            <input
-                              placeholder={serviceCopy.companyPlaceholder}
-                              value={draft.serviceCompany}
-                              onChange={(event) => setDraft((current) => ({ ...current, serviceCompany: event.target.value.slice(0, 120) }))}
-                              disabled={isSaving}
-                            />
-                          </label>
-                          <label className={styles.field}>
-                            <span>{serviceCopy.mechanicLabel}</span>
-                            <input
-                              placeholder={serviceCopy.mechanicPlaceholder}
-                              value={draft.mechanicName}
-                              onChange={(event) => setDraft((current) => ({ ...current, mechanicName: event.target.value.slice(0, 120) }))}
-                              disabled={isSaving}
-                            />
-                          </label>
-                          <button type="button" className={styles.secondaryButton} onClick={() => setShowServiceDetailsStep(false)} disabled={isSaving}>
-                            Back to service items
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : null}
-
-                  {draft.serviceMode === "repaired" ? (
-                    <div className={styles.servicePanel}>
-                      {!showServiceDetailsStep ? (
-                        <>
-                          <div className={styles.serviceSectionHeader}>
-                            <strong>{serviceCopy.repairedHeader}</strong>
-                            <small>{serviceCopy.repairedSubheader}</small>
-                          </div>
-
-                          <label className={styles.field}>
-                            <span>Repair details</span>
-                            <textarea
-                              className={styles.mainNoteInput}
-                              placeholder={serviceCopy.repairedNotePlaceholder}
-                              value={draft.repairDetails}
-                              onChange={(event) => setDraft((current) => ({ ...current, repairDetails: event.target.value.slice(0, 1600) }))}
-                              disabled={isSaving}
-                            />
-                          </label>
-
-                          <label className={styles.field}>
-                            <span>Extra notes</span>
-                            <textarea
-                              className={styles.compactTextarea}
-                              placeholder={serviceCopy.repairedExtraNotePlaceholder}
-                              value={draft.note}
-                              onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
-                              disabled={isSaving}
-                            />
-                          </label>
-                        </>
-                      ) : (
-                        <div className={styles.serviceDetailsCard}>
-                          <div className={styles.serviceSectionHeader}>
-                            <strong>{serviceCopy.detailsHeader}</strong>
-                            <small>{serviceCopy.detailsSubheader}</small>
-                          </div>
-
-                          {draft.repairDetails.trim() ? (
-                            <p className={styles.selectedSummary}>
-                              Repair: {draft.repairDetails.trim()}
-                            </p>
-                          ) : null}
-
-                          <label className={styles.field}>
-                            <span>{serviceCopy.companyLabel}</span>
-                            <input
-                              placeholder={serviceCopy.companyPlaceholder}
-                              value={draft.serviceCompany}
-                              onChange={(event) => setDraft((current) => ({ ...current, serviceCompany: event.target.value.slice(0, 120) }))}
-                              disabled={isSaving}
-                            />
-                          </label>
-                          <label className={styles.field}>
-                            <span>{serviceCopy.mechanicLabel}</span>
-                            <input
-                              placeholder={serviceCopy.mechanicPlaceholder}
-                              value={draft.mechanicName}
-                              onChange={(event) => setDraft((current) => ({ ...current, mechanicName: event.target.value.slice(0, 120) }))}
-                              disabled={isSaving}
-                            />
-                          </label>
-                          <button type="button" className={styles.secondaryButton} onClick={() => setShowServiceDetailsStep(false)} disabled={isSaving}>
-                            Back to repair details
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : null}
-                </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                )
               ) : null}
 
               {activeEditor === "photos" ? (
@@ -3023,7 +3225,19 @@ export default function ScanClient({
               <button type="button" className={styles.secondaryButton} onClick={closeEditor} disabled={isSaving}>
                 Cancel
               </button>
-              <button type="button" className={styles.primaryButton} disabled={!canPressSave} onClick={() => void handleSaveUpdate()}>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                disabled={!canPressSave}
+                onClick={() => {
+                  if (isServicePhotoStep) {
+                    closeServicePhotoStep();
+                    return;
+                  }
+
+                  void handleSaveUpdate();
+                }}
+              >
                 {saveButtonLabel}
               </button>
             </div>
