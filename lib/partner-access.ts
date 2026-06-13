@@ -991,6 +991,8 @@ export async function markAssetPartnerNoteNoted(input: {
 
 function buildAssetLeadSnapshot(asset: AssetRegisterItem, includedSections: Record<string, unknown>): Record<string, unknown> {
   const ownerSharePhotoUrls = asStringArray(includedSections.sharePhotoUrls ?? includedSections.ownerSharePhotoUrls).slice(0, 3);
+  const ownerSharePhotoUrlSet = new Set(ownerSharePhotoUrls);
+  const assetGalleryPhotos = asset.photos.filter((url) => !ownerSharePhotoUrlSet.has(url));
   const replacementPriceExVat = asNumber(asset.replacementPriceExVat);
   const replacementPriceSnapshot =
     replacementPriceExVat !== null && replacementPriceExVat > 0
@@ -1041,10 +1043,7 @@ function buildAssetLeadSnapshot(asset: AssetRegisterItem, includedSections: Reco
     licenseRegistrationNumber: asset.licenseRegistrationNumber,
     aim4priceValueExVat: asset.aim4priceValueExVat,
     marketMidExVat: asset.marketMidExVat,
-    photos: asset.photos,
-    sharePhotoUrls: ownerSharePhotoUrls,
-    ownerSharePhotoUrls,
-    ownerSharePhotoCount: ownerSharePhotoUrls.length,
+    photos: assetGalleryPhotos,
     documents: leadDocumentsForSnapshot(asset.documents, includedSections),
     publicAssetCode: asset.publicAssetCode,
     lastScannedAtIso: asset.lastScannedAtIso,
