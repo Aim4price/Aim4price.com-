@@ -153,7 +153,7 @@ type PendingScanUpdate = {
 };
 
 const MAX_QR_PHOTOS = 12;
-const MAX_SHARE_PHOTOS = 1;
+const MAX_SHARE_PHOTOS = 3;
 const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
 const QR_PHOTO_MAX_DIMENSION = 1400;
 const QR_PHOTO_JPEG_QUALITY = 0.72;
@@ -1506,13 +1506,20 @@ export default function ScanClient({
     const selectedFiles = Array.from(event.target.files ?? []) as File[];
     if (!selectedFiles.length) return;
 
-    const files = selectedFiles.slice(0, MAX_SHARE_PHOTOS);
+    const remainingSlots = MAX_SHARE_PHOTOS - sharePhotoUrls.length;
+    if (remainingSlots <= 0) {
+      setNotice({ tone: "error", message: `You can attach up to ${MAX_SHARE_PHOTOS} photos to this dealer message.` });
+      event.target.value = "";
+      return;
+    }
+
+    const files = selectedFiles.slice(0, remainingSlots);
     setIsUploadingSharePhoto(true);
 
     try {
       const uploads = await uploadScanPhotoFiles(files);
-      const uploadedUrls = uploads.map((entry) => entry.url).filter(Boolean).slice(0, MAX_SHARE_PHOTOS);
-      setSharePhotoUrls(uploadedUrls);
+      const uploadedUrls = uploads.map((entry) => entry.url).filter(Boolean).slice(0, remainingSlots);
+      setSharePhotoUrls((current) => mergeUniqueStrings([...current, ...uploadedUrls], MAX_SHARE_PHOTOS));
       setNotice({ tone: "success", message: uploadedUrls.length === 1 ? "Photo attached." : `${uploadedUrls.length} photos attached.` });
     } catch (error) {
       setNotice({
@@ -2061,7 +2068,6 @@ export default function ScanClient({
     setNotice({ tone: "success", message: "Update added. Tap Done to save it to the asset register." });
     setLocationState("ready");
     setLocationMessage("GPS is ready for this update.");
-    void captureLocation(true);
   }
 
   function closeDoneSession() {
@@ -2089,6 +2095,10 @@ export default function ScanClient({
 
     const finalLatitude = pendingUpdate.latitude || draft.latitude;
     const finalLongitude = pendingUpdate.longitude || draft.longitude;
+    const sessionUsageAsset = savedAsset ?? asset;
+    const sessionHours = asset.usageMode === "hours" || asset.usageMode === "km"
+      ? pendingUpdate.hours || (sessionUsageAsset.hours !== null && Number.isFinite(sessionUsageAsset.hours) ? String(Math.round(sessionUsageAsset.hours)) : "")
+      : "";
 
     if (operatorName.trim().length < 2) {
       setNotice({ tone: "error", message: "Enter your name before saving." });
@@ -2112,10 +2122,7 @@ export default function ScanClient({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             operatorName: operatorName.trim(),
-            hours:
-              pendingUpdate.hasUsage && (asset.usageMode === "hours" || asset.usageMode === "km")
-                ? pendingUpdate.hours
-                : "",
+            hours: sessionHours,
             lifeWorkedPercent:
               pendingUpdate.hasUsage && asset.usageMode === "percent"
                 ? pendingUpdate.lifeWorkedPercent
@@ -2528,14 +2535,15 @@ export default function ScanClient({
                         <CameraIcon className={styles.sharePhotoButtonSvg} />
                       </span>
                       <span>
-                        <strong>{sharePhotoUrls.length ? "Change photo" : "Attach photo"}</strong>
-                        <small>{isUploadingSharePhoto ? "Uploading…" : "Optional"}</small>
+                        <strong>{sharePhotoUrls.length ? "Add photos" : "Attach photos"}</strong>
+                        <small>{isUploadingSharePhoto ? "Uploading…" : `${sharePhotoUrls.length} / ${MAX_SHARE_PHOTOS}`}</small>
                       </span>
                     </button>
                     <input
                       ref={sharePhotoInputRef}
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
+                      multiple
                       className={styles.hiddenFileInput}
                       onChange={handleSharePhotoChange}
                       disabled={isSaving || isSendingShareLead || isUploadingSharePhoto}
@@ -2548,7 +2556,7 @@ export default function ScanClient({
                             <img src={url} alt={`Attached dealer photo ${index + 1}`} />
                             <div>
                               <strong>Photo attached</strong>
-                              <span>Shown with this message.</span>
+                              <span>Saved under this message.</span>
                             </div>
                             <button type="button" onClick={() => handleRemoveSharePhoto(url)} disabled={isSaving || isSendingShareLead || isUploadingSharePhoto}>
                               Remove
@@ -2578,7 +2586,7 @@ export default function ScanClient({
 
                   <div className={styles.sharePopiaBox}>
                     <strong>Information included</strong>
-                    <p>Asset details, latest QR update, serial number, valuation summary, main photos{sharePhotoUrls.length ? ", the attached photo" : ""} and relevant documents will be shared with this dealer.</p>
+                    <p>Asset details, latest QR update, serial number, valuation summary, main photos{sharePhotoUrls.length ? ", attached photos" : ""} and relevant documents will be shared with this dealer.</p>
                   </div>
 
                   <label className={styles.shareConsentCheck}>
