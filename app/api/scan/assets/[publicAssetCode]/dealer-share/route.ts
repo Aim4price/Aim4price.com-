@@ -22,6 +22,7 @@ type DealerShareRequest = {
 };
 
 const MAX_DEALER_SHARE_PHOTOS = 3;
+const ASSET_REGISTER_UPLOAD_URL_PREFIX = '/api/asset-register/uploads/';
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -34,6 +35,24 @@ function normalizeCoordinate(value: unknown, maxAbsolute: number): number | null
   return parsed;
 }
 
+function normalizeSharePhotoUrl(value: unknown): string {
+  const rawUrl = asText(value).slice(0, 2000);
+
+  if (!rawUrl) {
+    return '';
+  }
+
+  if (rawUrl.startsWith(ASSET_REGISTER_UPLOAD_URL_PREFIX)) {
+    return rawUrl.split('?')[0] ?? rawUrl;
+  }
+
+  if (/^https?:\/\//i.test(rawUrl)) {
+    return rawUrl;
+  }
+
+  return '';
+}
+
 function normalizeSharePhotoUrls(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
 
@@ -41,13 +60,21 @@ function normalizeSharePhotoUrls(value: unknown): string[] {
   const urls: string[] = [];
 
   value.forEach((entry) => {
-    const url = asText(entry).slice(0, 2000);
-    if (!url || !/^https?:\/\//i.test(url) || seen.has(url)) return;
+    const url = normalizeSharePhotoUrl(entry);
+    if (!url || seen.has(url)) return;
     seen.add(url);
     urls.push(url);
   });
 
   return urls.slice(0, MAX_DEALER_SHARE_PHOTOS);
+}
+
+function buildOwnerMessagePhotoAttachments(photoUrls: string[]): Array<{ type: 'image'; source: 'asset_qr_share'; url: string }> {
+  return photoUrls.map((url) => ({
+    type: 'image',
+    source: 'asset_qr_share',
+    url,
+  }));
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -128,6 +155,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   try {
+    const ownerMessageAttachments = buildOwnerMessagePhotoAttachments(sharePhotoUrls);
     const lead = await createAssetLead({
       ownerUserId: access.ownerUserId,
       assetId: access.asset.id,
@@ -149,8 +177,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
         scanLocationText: locationText,
         scanLatitude: latitude,
         scanLongitude: longitude,
+        ownerMessagePhotoUrls: sharePhotoUrls,
+        messageAttachmentPhotoUrls: sharePhotoUrls,
         sharePhotoUrls,
         ownerSharePhotoUrls: sharePhotoUrls,
+        ownerMessageAttachments,
+        messageAttachments: ownerMessageAttachments,
         ownerSharePhotoCount: sharePhotoUrls.length,
       },
     });
