@@ -527,6 +527,65 @@ function asStringArray(value: unknown): string[] {
   return entries;
 }
 
+function normalizeLeadPhotoUrl(value: unknown): string {
+  const url = asText(value).slice(0, 2000);
+
+  if (!url) {
+    return '';
+  }
+
+  if (url.startsWith('/api/asset-register/uploads/')) {
+    return url.split('?')[0] ?? url;
+  }
+
+  if (url.startsWith('/') || /^https?:\/\//i.test(url)) {
+    return url;
+  }
+
+  return '';
+}
+
+function leadPhotoUrlsFromArray(value: unknown): string[] {
+  return asStringArray(value).map(normalizeLeadPhotoUrl).filter(Boolean);
+}
+
+function leadPhotoUrlsFromAttachments(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((entry) => {
+      const attachment = asRecord(entry);
+      return normalizeLeadPhotoUrl(
+        attachment?.url ?? attachment?.photoUrl ?? attachment?.photo_url ?? attachment?.href ?? entry,
+      );
+    })
+    .filter(Boolean);
+}
+
+function mergeLeadPhotoUrls(photoUrlGroups: string[][], maxCount = 3): string[] {
+  const seen = new Set<string>();
+  const urls: string[] = [];
+
+  for (const group of photoUrlGroups) {
+    for (const url of group) {
+      const normalizedUrl = normalizeLeadPhotoUrl(url);
+
+      if (!normalizedUrl || seen.has(normalizedUrl)) {
+        continue;
+      }
+
+      seen.add(normalizedUrl);
+      urls.push(normalizedUrl);
+
+      if (urls.length >= maxCount) {
+        return urls;
+      }
+    }
+  }
+
+  return urls;
+}
+
 function leadPartnerNotes(lead: AssetLead): LeadPartnerNote[] {
   return Array.isArray(lead.partnerNotes)
     ? lead.partnerNotes.filter((note) => asText(note.noteText) || note.attachment)
@@ -735,12 +794,20 @@ function assetValue(lead: AssetLead): number {
 }
 
 function leadSharedPhotoUrls(lead: AssetLead): string[] {
-  return asStringArray(lead.includedSections.sharePhotoUrls)
-    .concat(asStringArray(lead.includedSections.ownerSharePhotoUrls))
-    .concat(asStringArray(lead.assetSnapshot.sharePhotoUrls))
-    .concat(asStringArray(lead.assetSnapshot.ownerSharePhotoUrls))
-    .filter((url, index, urls) => urls.indexOf(url) === index)
-    .slice(0, 3);
+  return mergeLeadPhotoUrls([
+    leadPhotoUrlsFromArray(lead.includedSections.ownerMessagePhotoUrls),
+    leadPhotoUrlsFromArray(lead.includedSections.messageAttachmentPhotoUrls),
+    leadPhotoUrlsFromArray(lead.includedSections.ownerSharePhotoUrls),
+    leadPhotoUrlsFromArray(lead.includedSections.sharePhotoUrls),
+    leadPhotoUrlsFromAttachments(lead.includedSections.ownerMessageAttachments),
+    leadPhotoUrlsFromAttachments(lead.includedSections.messageAttachments),
+    leadPhotoUrlsFromArray(lead.assetSnapshot.ownerMessagePhotoUrls),
+    leadPhotoUrlsFromArray(lead.assetSnapshot.messageAttachmentPhotoUrls),
+    leadPhotoUrlsFromArray(lead.assetSnapshot.ownerSharePhotoUrls),
+    leadPhotoUrlsFromArray(lead.assetSnapshot.sharePhotoUrls),
+    leadPhotoUrlsFromAttachments(lead.assetSnapshot.ownerMessageAttachments),
+    leadPhotoUrlsFromAttachments(lead.assetSnapshot.messageAttachments),
+  ]);
 }
 
 function assetPhotos(lead: AssetLead): string[] {
@@ -748,9 +815,9 @@ function assetPhotos(lead: AssetLead): string[] {
     return [];
   }
 
-  const sharedPhotoSet = new Set(leadSharedPhotoUrls(lead));
+  const sharedPhotoSet = new Set(leadSharedPhotoUrls(lead).map(normalizeLeadPhotoUrl));
   return asStringArray(lead.assetSnapshot.photos)
-    .filter((url) => !sharedPhotoSet.has(url))
+    .filter((url) => !sharedPhotoSet.has(normalizeLeadPhotoUrl(url)))
     .filter((url, index, urls) => urls.indexOf(url) === index);
 }
 
@@ -1132,7 +1199,9 @@ function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = '
       { label: 'Phone', value: ownerPhone(lead) || '—' },
       { label: 'Business email', value: ownerEmail(lead) || '—' },
       { label: 'Location', value: ownerLocation(lead) },
-      ...(lead.ownerMessage ? [{ label: 'Owner message', value: lead.ownerMessage }] : []),
+      ...(lead.ownerMessage || leadSharedPhotoUrls(lead).length
+        ? [{ label: 'Owner message', value: lead.ownerMessage, photoUrls: leadSharedPhotoUrls(lead) }]
+        : []),
       { label: 'Response document attached', value: leadResponseDocumentDetail(lead) },
     ],
     notes: buildLeadPartnerNoteRows(lead),
@@ -1160,8 +1229,11 @@ function downloadLeadAsset(lead: AssetLead, reportKind: PdfReportKind = 'full'):
   const value = assetValue(lead);
   const replacementPrice = snapshotReplacementPrice(lead.assetSnapshot);
   const photos = assetPhotos(lead);
+  const ownerMessagePhotoUrls = leadSharedPhotoUrls(lead);
   const leadReportNotes: ReportKeyValue[] = [
-    ...(lead.ownerMessage ? [{ label: 'Owner message', value: lead.ownerMessage }] : []),
+    ...(lead.ownerMessage || ownerMessagePhotoUrls.length
+      ? [{ label: 'Owner message', value: lead.ownerMessage, photoUrls: ownerMessagePhotoUrls }]
+      : []),
     ...buildLeadPartnerNoteRows(lead),
     { label: 'Response document attached', value: leadResponseDocumentDetail(lead) },
   ];
@@ -2024,8 +2096,8 @@ export default function LeadsClient() {
     return (
       <div className={assetStyles.noteStack}>
         <div className={`${assetStyles.note} ${sharedPhotos.length ? styles.ownerSharedPhotoNote : ''}`}>
-          <strong>{lead.ownerMessage ? 'Owner message' : 'Attached photos'}</strong>
-          {lead.ownerMessage ? <p>{lead.ownerMessage}</p> : null}
+          <strong>Owner message</strong>
+          {lead.ownerMessage ? <p>{lead.ownerMessage}</p> : <p>Photo attachments sent from the QR share button.</p>}
 
           {sharedPhotos.length ? (
             <div className={styles.ownerSharedPhotoGrid} aria-label="Attached owner photos">
