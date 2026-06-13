@@ -208,6 +208,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   const [refillLitres, setRefillLitres] = useState('');
   const [refillNote, setRefillNote] = useState('');
   const [dipstickNote, setDipstickNote] = useState('');
+  const [showStorageRefillWarning, setShowStorageRefillWarning] = useState(false);
   const [doneAction, setDoneAction] = useState<DoneAction>('asset_issue');
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [locationStatus, setLocationStatus] = useState('Location must be enabled before this fuel QR can continue.');
@@ -351,6 +352,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     setRefillLitres('');
     setRefillNote('');
     setDipstickNote('');
+    setShowStorageRefillWarning(false);
     setDoneAction('asset_issue');
     setCoordinates(null);
     setLocationStatus('Location must be enabled before this fuel QR can continue.');
@@ -579,6 +581,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
 
   function returnToChoice() {
     setNotice(null);
+    setShowStorageRefillWarning(false);
     setScanMode('action-choice');
     setIssueStep('asset');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -586,6 +589,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
 
   function startFuelAssets() {
     setNotice(null);
+    setShowStorageRefillWarning(false);
     setScanMode('fuel-assets');
     setIssueStep('asset');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -593,14 +597,25 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
 
   function startStorageRefill() {
     setNotice(null);
+    setShowStorageRefillWarning(true);
+  }
+
+  function confirmStorageRefillStart() {
+    setNotice(null);
+    setShowStorageRefillWarning(false);
     setRefillLitres('');
     setRefillNote('');
     setScanMode('storage-refill');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  function cancelStorageRefillStart() {
+    setShowStorageRefillWarning(false);
+  }
+
   function startDipstickNote() {
     setNotice(null);
+    setShowStorageRefillWarning(false);
     setDipstickNote(storage?.dipstickNote || '');
     setScanMode('dipstick-note');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -824,6 +839,28 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     );
   }
 
+  function renderStorageRefillWarning() {
+    if (!showStorageRefillWarning) return null;
+
+    return (
+      <div className={styles.confirmationBackdrop} role="dialog" aria-modal="true" aria-labelledby="storage-refill-warning-title">
+        <div className={styles.confirmationCard}>
+          <div className={styles.confirmationIcon} aria-hidden="true">!</div>
+          <h2 id="storage-refill-warning-title">Storage refill warning</h2>
+          <p>You are about to add fuel to the storage tank. This will change the tank level and fuel ledger records.</p>
+          <div className={styles.confirmationActions}>
+            <button type="button" className={styles.secondaryButton} onClick={cancelStorageRefillStart}>
+              Back
+            </button>
+            <button type="button" className={styles.primaryButton} onClick={confirmStorageRefillStart}>
+              Continue
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function renderStorageRefillStep() {
     const litresNumber = safeNumber(refillLitres);
     const projectedLitres = storage && litresNumber !== null && litresNumber > 0 ? storage.currentLitres + litresNumber : null;
@@ -833,18 +870,18 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
         <div className={styles.stepTitleBlock}>
           <span>Storage refill</span>
           <h1>Add fuel to tank</h1>
-          <p>You are adding fuel TO {visibleStorageName}. This increases the storage level and records Fuel In / Storage Refill in the fuel ledger.</p>
+          <p>Adds delivered fuel into {visibleStorageName} and updates the fuel ledger.</p>
         </div>
         <div className={styles.storageNoticeBox}>
-          <strong>Storage level will increase</strong>
-          <span>Only enter litres physically delivered into the storage tank. This does not allocate fuel to an asset.</span>
+          <strong>Tank level increases</strong>
+          <span>Only enter fuel physically delivered into this storage tank.</span>
         </div>
         <div className={styles.compactMetaGrid}>
           <div><span>Current level</span><strong>{formatLitres(storage?.currentLitres)}</strong></div>
           <div><span>After refill</span><strong>{projectedLitres !== null ? formatLitres(projectedLitres) : '—'}</strong></div>
         </div>
         <label className={styles.field}>
-          <span>Litres added to storage</span>
+          <span>Litres added</span>
           <input
             type="number"
             min="0"
@@ -856,8 +893,8 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
           />
         </label>
         <label className={styles.field}>
-          <span>Optional refill note</span>
-          <textarea value={refillNote} onChange={(event) => setRefillNote(event.target.value)} rows={4} placeholder="Example: Supplier delivery note, invoice number, driver note" />
+          <span>Refill note (optional)</span>
+          <textarea value={refillNote} onChange={(event) => setRefillNote(event.target.value)} rows={3} placeholder="Delivery note, invoice or driver" />
         </label>
         <div className={styles.stepControls}>
           <button type="button" className={styles.secondaryButton} onClick={returnToChoice} disabled={isSaving}>
@@ -877,19 +914,19 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
         <div className={styles.stepTitleBlock}>
           <span>Dipstick note</span>
           <h1>Record dipstick note</h1>
-          <p>This stores an internal note on {visibleStorageName}. It does not change litres and does not create a fuel export entry.</p>
+          <p>Saves a note on {visibleStorageName}. No litre change. No export entry.</p>
         </div>
         <div className={styles.storageNoticeBox}>
-          <strong>Internal warning note only</strong>
-          <span>The latest dipstick note will show on the storage tank card until it is replaced or cleared.</span>
+          <strong>Note only</strong>
+          <span>Shows on the storage tank card until updated or cleared.</span>
         </div>
         <label className={styles.field}>
-          <span>Dipstick note</span>
+          <span>Note</span>
           <textarea
             value={dipstickNote}
             onChange={(event) => setDipstickNote(event.target.value.slice(0, 700))}
-            rows={6}
-            placeholder="Example: Physical dipstick reading looks lower than system level."
+            rows={5}
+            placeholder="Example: Dipstick lower than system level."
             autoFocus
           />
         </label>
@@ -1218,6 +1255,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
           <>
             {renderScanProgress('Fuel QR', 'Choose action', `2/${TOTAL_SCAN_PAGES}`, choiceStepProgress)}
             {renderActionChoice()}
+            {renderStorageRefillWarning()}
           </>
         ) : scanMode === 'storage-refill' ? (
           <>
