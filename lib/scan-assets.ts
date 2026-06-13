@@ -85,6 +85,8 @@ export type AssetMaintenanceStatus = {
   summary: string;
   note: string;
   operatorName: string;
+  photoUrls: string[];
+  photoCount: number;
   createdAtIso: string;
   notedAtIso: string | null;
 };
@@ -570,15 +572,30 @@ function splitMaintenanceNoteLines(note: string): string[] {
     .filter(Boolean);
 }
 
+function maintenanceLabelPrefixes(label: string): string[] {
+  const normalized = String(label ?? '').trim().toLowerCase();
+
+  if (normalized === 'notes' || normalized === 'notes/problems') {
+    return ['notes/problems:', 'notes:'];
+  }
+
+  return [`${normalized}:`];
+}
+
 function extractMaintenanceNoteValue(note: string, label: string): string {
-  const prefix = `${label.toLowerCase()}:`;
-  const line = splitMaintenanceNoteLines(note).find((entry) => entry.toLowerCase().startsWith(prefix));
+  const prefixes = maintenanceLabelPrefixes(label);
+  const line = splitMaintenanceNoteLines(note).find((entry) => {
+    const lowerEntry = entry.toLowerCase();
+    return prefixes.some((prefix) => lowerEntry.startsWith(prefix));
+  });
 
   if (!line) {
     return '';
   }
 
-  return line.slice(prefix.length).replace(/\s+/g, ' ').trim();
+  const lowerLine = line.toLowerCase();
+  const matchedPrefix = prefixes.find((prefix) => lowerLine.startsWith(prefix)) ?? '';
+  return line.slice(matchedPrefix.length).replace(/\s+/g, ' ').trim();
 }
 
 function resolveMaintenanceStatusKind(note: string): AssetMaintenanceStatusKind | null {
@@ -618,7 +635,7 @@ function summarizeMaintenanceStatus(note: string, kind: AssetMaintenanceStatusKi
           extractMaintenanceNoteValue(note, 'Serviced items');
   const company = extractMaintenanceNoteValue(note, 'Company');
   const mechanic = extractMaintenanceNoteValue(note, 'Mechanic');
-  const noteText = extractMaintenanceNoteValue(note, 'Notes');
+  const noteText = extractMaintenanceNoteValue(note, 'Notes/Problems');
   const providerText = [company, mechanic].filter(Boolean).join(' · ');
   const summaryParts = [
     detail ? `${actionLabel}: ${detail}` : `${actionLabel} maintenance has been recorded.`,
@@ -640,6 +657,7 @@ function mapMaintenanceStatusFromScanEvent(row: ScanEventRow & { asset_id?: stri
   }
 
   const summary = summarizeMaintenanceStatus(note, kind);
+  const photoUrls = normalizePhotos(row.photo_urls);
 
   return {
     id: asId(row.id),
@@ -648,6 +666,8 @@ function mapMaintenanceStatusFromScanEvent(row: ScanEventRow & { asset_id?: stri
     summary: summary.summary,
     note: summary.note,
     operatorName: asText(row.operator_name),
+    photoUrls,
+    photoCount: photoUrls.length,
     createdAtIso: row.created_at ?? new Date().toISOString(),
     notedAtIso: row.maintenance_noted_at ?? null,
   };
