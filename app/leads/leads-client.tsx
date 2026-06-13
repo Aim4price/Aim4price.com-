@@ -2020,25 +2020,20 @@ export default function LeadsClient() {
 
     return (
       <div className={assetStyles.noteStack}>
-        {lead.ownerMessage ? (
-          <div className={assetStyles.note}>
-            <strong>Owner message</strong>
-            <p>{lead.ownerMessage}</p>
-          </div>
-        ) : null}
+        <div className={`${assetStyles.note} ${sharedPhotos.length ? styles.ownerSharedPhotoNote : ''}`}>
+          <strong>{lead.ownerMessage ? 'Owner message' : 'Attached photos'}</strong>
+          {lead.ownerMessage ? <p>{lead.ownerMessage}</p> : null}
 
-        {sharedPhotos.length ? (
-          <div className={`${assetStyles.note} ${styles.ownerSharedPhotoNote}`}>
-            <strong>Attached photo</strong>
-            <div className={styles.ownerSharedPhotoGrid}>
+          {sharedPhotos.length ? (
+            <div className={styles.ownerSharedPhotoGrid} aria-label="Attached owner photos">
               {sharedPhotos.map((url, index) => (
                 <a key={`${url}-${index}`} href={url} target="_blank" rel="noreferrer" className={styles.ownerSharedPhotoLink}>
                   <img src={url} alt={`Owner attached photo ${index + 1}`} />
                 </a>
               ))}
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
     );
   }
