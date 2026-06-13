@@ -21,7 +21,7 @@ type DealerShareRequest = {
   sharePhotoUrls?: unknown;
 };
 
-const MAX_DEALER_SHARE_PHOTOS = 1;
+const MAX_DEALER_SHARE_PHOTOS = 3;
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
