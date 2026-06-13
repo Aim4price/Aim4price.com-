@@ -310,6 +310,24 @@ const initialPendingUpdate: PendingScanUpdate = {
   hasPhotos: false,
 };
 
+const DEFAULT_LOCATION_REQUIRED_MESSAGE = "Location must be enabled before this asset QR can continue.";
+const GPS_READY_SESSION_MESSAGE = "GPS ready for this QR scan session.";
+const QR_SCAN_SESSION_STORAGE_PREFIX = "aim4price_qr_scan_session_v1:";
+
+type QrScanSessionState = {
+  publicAssetCode: string;
+  assetId?: string;
+  latitude?: string;
+  longitude?: string;
+  locationMessage?: string;
+  locationCapturedAtIso?: string;
+  usageMode?: ScanAssetUsageMode;
+  hours?: string;
+  lifeWorkedPercent?: string;
+  hasUsage?: boolean;
+  updatedAtIso?: string;
+};
+
 function normalizePublicAssetCode(value: string): string {
   return value.trim().replace(/\s+/g, "").toUpperCase();
 }
@@ -335,6 +353,189 @@ function normalizePercentInput(value: string): string {
   if (!Number.isFinite(parsed)) return "";
   if (parsed > 100) return "100";
   return normalized;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function qrScanSessionStorageKey(publicAssetCode: string): string {
+  return `${QR_SCAN_SESSION_STORAGE_PREFIX}${normalizePublicAssetCode(publicAssetCode)}`;
+}
+
+function normalizeSessionString(value: unknown, maxLength = 2000): string {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+function normalizeSessionUsageMode(value: unknown): ScanAssetUsageMode | undefined {
+  if (value === "hours" || value === "percent" || value === "km" || value === "none") return value;
+  return undefined;
+}
+
+function readQrScanSession(publicAssetCode: string): QrScanSessionState | null {
+  if (typeof window === "undefined") return null;
+
+  const normalizedCode = normalizePublicAssetCode(publicAssetCode);
+  if (!normalizedCode) return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(qrScanSessionStorageKey(normalizedCode));
+    if (!raw) return null;
+
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return null;
+
+    const storedCode = normalizePublicAssetCode(normalizeSessionString(parsed.publicAssetCode));
+    if (storedCode !== normalizedCode) return null;
+
+    const session: QrScanSessionState = {
+      publicAssetCode: normalizedCode,
+      assetId: normalizeSessionString(parsed.assetId, 80) || undefined,
+      latitude: normalizeSessionString(parsed.latitude, 64) || undefined,
+      longitude: normalizeSessionString(parsed.longitude, 64) || undefined,
+      locationMessage: normalizeSessionString(parsed.locationMessage, 240) || undefined,
+      locationCapturedAtIso: normalizeSessionString(parsed.locationCapturedAtIso, 80) || undefined,
+      usageMode: normalizeSessionUsageMode(parsed.usageMode),
+      hours: normalizeSessionString(parsed.hours, 32) || undefined,
+      lifeWorkedPercent: normalizeSessionString(parsed.lifeWorkedPercent, 32) || undefined,
+      hasUsage: parsed.hasUsage === true,
+      updatedAtIso: normalizeSessionString(parsed.updatedAtIso, 80) || undefined,
+    };
+
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+function writeQrScanSession(publicAssetCode: string, session: QrScanSessionState): QrScanSessionState | null {
+  if (typeof window === "undefined") return null;
+
+  const normalizedCode = normalizePublicAssetCode(publicAssetCode);
+  if (!normalizedCode) return null;
+
+  const nextSession: QrScanSessionState = {
+    ...session,
+    publicAssetCode: normalizedCode,
+    updatedAtIso: new Date().toISOString(),
+  };
+
+  try {
+    window.sessionStorage.setItem(qrScanSessionStorageKey(normalizedCode), JSON.stringify(nextSession));
+    return nextSession;
+  } catch {
+    return nextSession;
+  }
+}
+
+function updateQrScanSession(
+  publicAssetCode: string,
+  updater: (current: QrScanSessionState) => QrScanSessionState,
+): QrScanSessionState | null {
+  const normalizedCode = normalizePublicAssetCode(publicAssetCode);
+  if (!normalizedCode) return null;
+
+  const current = readQrScanSession(normalizedCode) ?? { publicAssetCode: normalizedCode };
+  return writeQrScanSession(normalizedCode, updater(current));
+}
+
+function clearQrScanSession(publicAssetCode: string): void {
+  if (typeof window === "undefined") return;
+
+  const normalizedCode = normalizePublicAssetCode(publicAssetCode);
+  if (!normalizedCode) return;
+
+  try {
+    window.sessionStorage.removeItem(qrScanSessionStorageKey(normalizedCode));
+  } catch {
+    // Session storage is optional for this page.
+  }
+}
+
+function sessionHasLocation(session: QrScanSessionState | null): boolean {
+  return Boolean(session?.latitude?.trim() && session?.longitude?.trim());
+}
+
+function sessionLocationMessage(session: QrScanSessionState | null): string {
+  return session?.locationMessage?.trim() || GPS_READY_SESSION_MESSAGE;
+}
+
+function applySessionLocationToDraft(draft: DraftState, session: QrScanSessionState | null): DraftState {
+  if (!sessionHasLocation(session)) return draft;
+
+  return {
+    ...draft,
+    latitude: draft.latitude || session?.latitude || "",
+    longitude: draft.longitude || session?.longitude || "",
+  };
+}
+
+function sessionUsageForAsset(
+  asset: ScanSafeAsset,
+  session: QrScanSessionState | null,
+): { hasUsage: boolean; hours: string; lifeWorkedPercent: string } {
+  if (!session || normalizePublicAssetCode(session.publicAssetCode) !== normalizePublicAssetCode(asset.publicAssetCode)) {
+    return { hasUsage: false, hours: "", lifeWorkedPercent: "" };
+  }
+
+  if (session.assetId && session.assetId !== asset.id) {
+    return { hasUsage: false, hours: "", lifeWorkedPercent: "" };
+  }
+
+  if (session.usageMode && session.usageMode !== asset.usageMode) {
+    return { hasUsage: false, hours: "", lifeWorkedPercent: "" };
+  }
+
+  if (asset.usageMode === "percent") {
+    const lifeWorkedPercent = normalizePercentInput(session.lifeWorkedPercent || "");
+    return {
+      hasUsage: session.hasUsage === true && lifeWorkedPercent !== "",
+      hours: "",
+      lifeWorkedPercent,
+    };
+  }
+
+  if (asset.usageMode === "hours" || asset.usageMode === "km") {
+    const hours = normalizeIntegerInput(session.hours || "");
+    return {
+      hasUsage: session.hasUsage === true && hours !== "",
+      hours,
+      lifeWorkedPercent: "",
+    };
+  }
+
+  return { hasUsage: true, hours: "", lifeWorkedPercent: "" };
+}
+
+function applySessionUsageToAsset(asset: ScanSafeAsset, session: QrScanSessionState | null): ScanSafeAsset {
+  const usage = sessionUsageForAsset(asset, session);
+
+  if (!usage.hasUsage) return asset;
+
+  if (asset.usageMode === "percent" && usage.lifeWorkedPercent) {
+    const parsed = Number(usage.lifeWorkedPercent);
+    return Number.isFinite(parsed) ? { ...asset, lifeWorkedPercent: parsed } : asset;
+  }
+
+  if ((asset.usageMode === "hours" || asset.usageMode === "km") && usage.hours) {
+    const parsed = Number(usage.hours);
+    return Number.isFinite(parsed) ? { ...asset, hours: parsed } : asset;
+  }
+
+  return asset;
+}
+
+function seedQrSessionFromAsset(publicAssetCode: string, asset: ScanSafeAsset): QrScanSessionState | null {
+  return updateQrScanSession(publicAssetCode, (current) => ({
+    ...current,
+    publicAssetCode: normalizePublicAssetCode(asset.publicAssetCode),
+    assetId: asset.id,
+    usageMode: asset.usageMode,
+    hours: current.hours || (asset.hours !== null && Number.isFinite(asset.hours) ? String(Math.round(asset.hours)) : undefined),
+    lifeWorkedPercent:
+      current.lifeWorkedPercent ||
+      (asset.lifeWorkedPercent !== null && Number.isFinite(asset.lifeWorkedPercent) ? String(asset.lifeWorkedPercent) : undefined),
+  }));
 }
 
 function normalizeOperatorName(value: string): string {
@@ -706,11 +907,11 @@ function hasPendingScanUpdate(update: PendingScanUpdate): boolean {
   return update.hasUsage || update.hasFuel || update.hasService || update.hasPhotos;
 }
 
-function keepCurrentLocation(current: DraftState): DraftState {
+function keepCurrentLocation(current: DraftState, session: QrScanSessionState | null = null): DraftState {
   return {
     ...initialDraft,
-    latitude: current.latitude,
-    longitude: current.longitude,
+    latitude: current.latitude || session?.latitude || "",
+    longitude: current.longitude || session?.longitude || "",
   };
 }
 
@@ -1031,9 +1232,7 @@ export default function ScanClient({
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [locationState, setLocationState] = useState<LocationState>("idle");
-  const [locationMessage, setLocationMessage] = useState(
-    "Location must be enabled before this asset QR can continue.",
-  );
+  const [locationMessage, setLocationMessage] = useState(DEFAULT_LOCATION_REQUIRED_MESSAGE);
   const [isUnavailable, setIsUnavailable] = useState(false);
   const [activeEditor, setActiveEditor] = useState<EditorKey | null>(null);
   const [showLocationReminder, setShowLocationReminder] = useState(false);
@@ -1094,8 +1293,14 @@ export default function ScanClient({
     setAsset(null);
     setSavedAsset(null);
     setAssetPreview(null);
-    setDraft(initialDraft);
-    setPendingUpdate(initialPendingUpdate);
+    const restoredSession = readQrScanSession(normalizedCode);
+    const restoredDraft = applySessionLocationToDraft(initialDraft, restoredSession);
+    setDraft(restoredDraft);
+    setPendingUpdate({
+      ...initialPendingUpdate,
+      latitude: restoredDraft.latitude,
+      longitude: restoredDraft.longitude,
+    });
     setPin("");
     setIsUnavailable(false);
     setIsSubmittingPin(false);
@@ -1119,10 +1324,13 @@ export default function ScanClient({
     setIsLoadingSharePartners(false);
     setIsSendingShareLead(false);
     setIsUploadingSharePhoto(false);
-    setLocationState("idle");
-    setLocationMessage(
-      "Location must be enabled before this asset QR can continue.",
-    );
+    if (sessionHasLocation(restoredSession)) {
+      setLocationState("ready");
+      setLocationMessage(sessionLocationMessage(restoredSession));
+    } else {
+      setLocationState("idle");
+      setLocationMessage(DEFAULT_LOCATION_REQUIRED_MESSAGE);
+    }
     if (shareLeafletMapRef.current) {
       shareLeafletMapRef.current.remove();
       shareLeafletMapRef.current = null;
@@ -1297,8 +1505,13 @@ export default function ScanClient({
     if (autoLocationKeyRef.current === asset.id) return;
     autoLocationKeyRef.current = asset.id;
 
-    if (hasLocationCaptured(draft)) {
+    const storedSession = readQrScanSession(normalizedCode);
+    if (hasLocationCaptured(draft) || sessionHasLocation(storedSession)) {
+      if (!hasLocationCaptured(draft) && sessionHasLocation(storedSession)) {
+        setDraft((current) => applySessionLocationToDraft(current, storedSession));
+      }
       setLocationState("ready");
+      setLocationMessage(sessionLocationMessage(storedSession));
       return;
     }
 
@@ -1340,44 +1553,49 @@ export default function ScanClient({
       }
 
       const openedAsset = data.asset;
-      const requiresInitialUsageUpdate = openedAsset.usageMode !== "none";
+      const seededSession = seedQrSessionFromAsset(normalizedCode, openedAsset) ?? readQrScanSession(normalizedCode);
+      const sessionUsage = sessionUsageForAsset(openedAsset, seededSession);
+      const openedAssetWithSessionUsage = applySessionUsageToAsset(openedAsset, seededSession);
+      const requiresInitialUsageUpdate = openedAsset.usageMode !== "none" && !sessionUsage.hasUsage;
+      const restoredLatitude = seededSession?.latitude || draft.latitude;
+      const restoredLongitude = seededSession?.longitude || draft.longitude;
+      const nextDraftBase = {
+        ...initialDraft,
+        latitude: restoredLatitude,
+        longitude: restoredLongitude,
+      };
+      const nextDraft = openedAsset.usageMode === "percent"
+        ? {
+            ...nextDraftBase,
+            lifeWorkedPercent: sessionUsage.lifeWorkedPercent || (openedAsset.lifeWorkedPercent !== null ? String(openedAsset.lifeWorkedPercent) : ""),
+          }
+        : openedAsset.usageMode === "hours" || openedAsset.usageMode === "km"
+          ? {
+              ...nextDraftBase,
+              hours: sessionUsage.hours || (openedAsset.hours !== null ? String(Math.round(openedAsset.hours)) : ""),
+            }
+          : nextDraftBase;
 
-      setAsset(openedAsset);
+      setAsset(openedAssetWithSessionUsage);
       setSavedAsset(openedAsset);
-      setAssetPreview(openedAsset);
-      setDraft((current) => {
-        const nextDraft = {
-          ...initialDraft,
-          latitude: current.latitude,
-          longitude: current.longitude,
-        };
-
-        if (openedAsset.usageMode === "percent") {
-          return {
-            ...nextDraft,
-            lifeWorkedPercent: openedAsset.lifeWorkedPercent !== null
-              ? String(openedAsset.lifeWorkedPercent)
-              : "",
-          };
-        }
-
-        if (openedAsset.usageMode === "hours" || openedAsset.usageMode === "km") {
-          return {
-            ...nextDraft,
-            hours: openedAsset.hours !== null
-              ? String(Math.round(openedAsset.hours))
-              : "",
-          };
-        }
-
-        return nextDraft;
+      setAssetPreview(openedAssetWithSessionUsage);
+      setDraft(nextDraft);
+      setPendingUpdate({
+        ...initialPendingUpdate,
+        latitude: restoredLatitude,
+        longitude: restoredLongitude,
+        hours: sessionUsage.hours,
+        lifeWorkedPercent: sessionUsage.lifeWorkedPercent,
+        hasUsage: sessionUsage.hasUsage,
       });
-      setPendingUpdate(initialPendingUpdate);
       setIsDone(false);
       setHasCompletedRequiredUsageUpdate(!requiresInitialUsageUpdate);
       setShowLocationReminder(false);
       setActiveEditor(requiresInitialUsageUpdate ? "usage" : null);
-      setLocationState("ready");
+      if (restoredLatitude && restoredLongitude) {
+        setLocationState("ready");
+        setLocationMessage(sessionLocationMessage(seededSession));
+      }
     } finally {
       setIsLoadingAsset(false);
     }
@@ -1398,10 +1616,19 @@ export default function ScanClient({
       return;
     }
 
-    if (!hasLocationCaptured(draft)) {
+    const storedSession = readQrScanSession(normalizedCode);
+    const hasSessionLocation = hasLocationCaptured(draft) || sessionHasLocation(storedSession);
+
+    if (!hasSessionLocation) {
       setNotice({ tone: "error", message: "Capture GPS first. Location must be enabled before this asset QR can continue." });
       void captureLocation(false);
       return;
+    }
+
+    if (!hasLocationCaptured(draft) && sessionHasLocation(storedSession)) {
+      setDraft((current) => applySessionLocationToDraft(current, storedSession));
+      setLocationState("ready");
+      setLocationMessage(sessionLocationMessage(storedSession));
     }
 
     setIsSubmittingPin(true);
@@ -1561,7 +1788,7 @@ export default function ScanClient({
     }
 
     setDraft((current) => {
-      const nextDraft = keepCurrentLocation(current);
+      const nextDraft = keepCurrentLocation(current, readQrScanSession(normalizedCode));
 
       if (!asset) return nextDraft;
 
@@ -1612,7 +1839,7 @@ export default function ScanClient({
   }
 
   function closeEditor() {
-    setDraft((current) => keepCurrentLocation(current));
+    setDraft((current) => keepCurrentLocation(current, readQrScanSession(normalizedCode)));
     setShowServiceDetailsStep(false);
     setShowServicePhotoStep(false);
     setActiveEditor(null);
@@ -1694,10 +1921,19 @@ export default function ScanClient({
       return;
     }
 
-    if (!hasLocationCaptured(draft)) {
+    const storedSession = readQrScanSession(normalizedCode);
+    const hasSessionLocation = hasLocationCaptured(draft) || sessionHasLocation(storedSession);
+
+    if (!hasSessionLocation) {
       setNotice({ tone: "error", message: "GPS is required before sending this asset to a dealer." });
       void captureLocation(false);
       return;
+    }
+
+    if (!hasLocationCaptured(draft) && sessionHasLocation(storedSession)) {
+      setDraft((current) => applySessionLocationToDraft(current, storedSession));
+      setLocationState("ready");
+      setLocationMessage(sessionLocationMessage(storedSession));
     }
 
     resetShareFlow();
@@ -1761,8 +1997,15 @@ export default function ScanClient({
       return;
     }
 
-    const shareLatitude = pendingUpdate.latitude || draft.latitude;
-    const shareLongitude = pendingUpdate.longitude || draft.longitude;
+    const storedSession = readQrScanSession(normalizedCode);
+    const shareLatitude = pendingUpdate.latitude || draft.latitude || storedSession?.latitude || "";
+    const shareLongitude = pendingUpdate.longitude || draft.longitude || storedSession?.longitude || "";
+
+    if (!shareLatitude.trim() || !shareLongitude.trim()) {
+      setNotice({ tone: "error", message: "GPS is required before sending this asset to a dealer." });
+      void captureLocation(false);
+      return;
+    }
 
     setIsSendingShareLead(true);
 
@@ -1826,6 +2069,15 @@ export default function ScanClient({
   }
 
   async function captureLocation(isAutomatic = false) {
+    const storedSession = readQrScanSession(normalizedCode);
+
+    if (isAutomatic && sessionHasLocation(storedSession)) {
+      setDraft((current) => applySessionLocationToDraft(current, storedSession));
+      setLocationState("ready");
+      setLocationMessage(sessionLocationMessage(storedSession));
+      return;
+    }
+
     if (typeof window === "undefined" || !window.isSecureContext) {
       setLocationState("error");
       setLocationMessage("Location can only be captured on a secure HTTPS page.");
@@ -1841,7 +2093,7 @@ export default function ScanClient({
     setLocationState("capturing");
     setLocationMessage(
       isAutomatic
-        ? "Refreshing GPS location…"
+        ? "Checking GPS session…"
         : "Getting GPS location...",
     );
 
@@ -1850,10 +2102,19 @@ export default function ScanClient({
         (position) => {
           const latitude = String(position.coords.latitude);
           const longitude = String(position.coords.longitude);
-          const locationText = `GPS captured: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+          const locationText = GPS_READY_SESSION_MESSAGE;
+          const savedSession = updateQrScanSession(normalizedCode, (current) => ({
+            ...current,
+            assetId: asset?.id || current.assetId,
+            latitude,
+            longitude,
+            locationMessage: locationText,
+            locationCapturedAtIso: new Date().toISOString(),
+          }));
           setDraft((current) => ({ ...current, latitude, longitude }));
+          setPendingUpdate((current) => ({ ...current, latitude, longitude }));
           setLocationState("ready");
-          setLocationMessage(locationText);
+          setLocationMessage(sessionLocationMessage(savedSession));
           if (!isAutomatic && asset) setNotice({ tone: "success", message: "Location captured." });
           resolve();
         },
@@ -1882,7 +2143,7 @@ export default function ScanClient({
       return { ok: false, message: "Enter your name before saving." };
     }
 
-    if (!hasLocationCaptured(draft)) {
+    if (!hasLocationCaptured(draft) && !sessionHasLocation(readQrScanSession(normalizedCode))) {
       return {
         ok: false,
         message: "Location is required for every QR update. Allow GPS and try again.",
@@ -1974,8 +2235,19 @@ export default function ScanClient({
       return;
     }
 
-    const savedLatitude = draft.latitude;
-    const savedLongitude = draft.longitude;
+    const storedSession = readQrScanSession(normalizedCode);
+    const savedLatitude = draft.latitude || storedSession?.latitude || "";
+    const savedLongitude = draft.longitude || storedSession?.longitude || "";
+
+    if (savedLatitude && savedLongitude) {
+      updateQrScanSession(normalizedCode, (current) => ({
+        ...current,
+        assetId: asset.id,
+        latitude: savedLatitude,
+        longitude: savedLongitude,
+        locationMessage: current.locationMessage || GPS_READY_SESSION_MESSAGE,
+      }));
+    }
 
     if (activeEditor === "usage") {
       if (asset.usageMode === "percent") {
@@ -1990,6 +2262,17 @@ export default function ScanClient({
           longitude: savedLongitude || current.longitude,
           hasUsage: true,
         }));
+        updateQrScanSession(normalizedCode, (current) => ({
+          ...current,
+          assetId: asset.id,
+          usageMode: asset.usageMode,
+          hours: "",
+          lifeWorkedPercent: stagedPercent,
+          hasUsage: true,
+          latitude: savedLatitude || current.latitude,
+          longitude: savedLongitude || current.longitude,
+          locationMessage: current.locationMessage || GPS_READY_SESSION_MESSAGE,
+        }));
         setAsset((current) => current ? { ...current, lifeWorkedPercent: parsedPercent } : current);
       } else if (asset.usageMode === "hours" || asset.usageMode === "km") {
         const stagedHours = draft.hours.trim();
@@ -2002,6 +2285,17 @@ export default function ScanClient({
           latitude: savedLatitude || current.latitude,
           longitude: savedLongitude || current.longitude,
           hasUsage: true,
+        }));
+        updateQrScanSession(normalizedCode, (current) => ({
+          ...current,
+          assetId: asset.id,
+          usageMode: asset.usageMode,
+          hours: stagedHours,
+          lifeWorkedPercent: "",
+          hasUsage: true,
+          latitude: savedLatitude || current.latitude,
+          longitude: savedLongitude || current.longitude,
+          locationMessage: current.locationMessage || GPS_READY_SESSION_MESSAGE,
         }));
         setAsset((current) => current ? { ...current, hours: parsedHours } : current);
       }
@@ -2067,13 +2361,14 @@ export default function ScanClient({
     setShowServicePhotoStep(false);
     setNotice({ tone: "success", message: "Update added. Tap Done to save it to the asset register." });
     setLocationState("ready");
-    setLocationMessage("GPS is ready for this update.");
+    setLocationMessage(GPS_READY_SESSION_MESSAGE);
   }
 
   function closeDoneSession() {
     setActiveEditor(null);
     setShowLocationReminder(false);
     setIsDone(true);
+    clearQrScanSession(normalizedCode);
 
     try {
       window.history.replaceState({ aim4priceQrDone: true }, "", window.location.href);
@@ -2093,11 +2388,16 @@ export default function ScanClient({
       return asset;
     }
 
-    const finalLatitude = pendingUpdate.latitude || draft.latitude;
-    const finalLongitude = pendingUpdate.longitude || draft.longitude;
+    const storedSession = readQrScanSession(normalizedCode);
+    const storedSessionUsage = sessionUsageForAsset(asset, storedSession);
+    const finalLatitude = pendingUpdate.latitude || draft.latitude || storedSession?.latitude || "";
+    const finalLongitude = pendingUpdate.longitude || draft.longitude || storedSession?.longitude || "";
     const sessionUsageAsset = savedAsset ?? asset;
     const sessionHours = asset.usageMode === "hours" || asset.usageMode === "km"
-      ? pendingUpdate.hours || (sessionUsageAsset.hours !== null && Number.isFinite(sessionUsageAsset.hours) ? String(Math.round(sessionUsageAsset.hours)) : "")
+      ? pendingUpdate.hours || storedSessionUsage.hours || (sessionUsageAsset.hours !== null && Number.isFinite(sessionUsageAsset.hours) ? String(Math.round(sessionUsageAsset.hours)) : "")
+      : "";
+    const sessionLifeWorkedPercent = asset.usageMode === "percent"
+      ? pendingUpdate.lifeWorkedPercent || storedSessionUsage.lifeWorkedPercent
       : "";
 
     if (operatorName.trim().length < 2) {
@@ -2124,8 +2424,8 @@ export default function ScanClient({
             operatorName: operatorName.trim(),
             hours: sessionHours,
             lifeWorkedPercent:
-              pendingUpdate.hasUsage && asset.usageMode === "percent"
-                ? pendingUpdate.lifeWorkedPercent
+              (pendingUpdate.hasUsage || storedSessionUsage.hasUsage) && asset.usageMode === "percent"
+                ? sessionLifeWorkedPercent
                 : "",
             fuelPercent: pendingUpdate.hasFuel && asset.canUpdateFuel ? pendingUpdate.fuelPercent : "",
             note: pendingUpdate.notes.join("\n\n---\n\n"),
@@ -2141,15 +2441,38 @@ export default function ScanClient({
         throw new Error(data?.error ?? "Failed to save the QR update.");
       }
 
-      setAsset(data.asset);
-      setSavedAsset(data.asset);
-      setAssetPreview(data.asset);
-      if (pendingUpdate.hasUsage) {
+      const savedAssetFromResponse = data.asset;
+      const savedSession = updateQrScanSession(normalizedCode, (current) => ({
+        ...current,
+        assetId: savedAssetFromResponse.id,
+        usageMode: savedAssetFromResponse.usageMode,
+        hours: savedAssetFromResponse.hours !== null && Number.isFinite(savedAssetFromResponse.hours) ? String(Math.round(savedAssetFromResponse.hours)) : current.hours,
+        lifeWorkedPercent:
+          savedAssetFromResponse.lifeWorkedPercent !== null && Number.isFinite(savedAssetFromResponse.lifeWorkedPercent)
+            ? String(savedAssetFromResponse.lifeWorkedPercent)
+            : current.lifeWorkedPercent,
+        hasUsage: current.hasUsage || pendingUpdate.hasUsage || storedSessionUsage.hasUsage,
+        latitude: finalLatitude || current.latitude,
+        longitude: finalLongitude || current.longitude,
+        locationMessage: current.locationMessage || GPS_READY_SESSION_MESSAGE,
+      }));
+      setAsset(savedAssetFromResponse);
+      setSavedAsset(savedAssetFromResponse);
+      setAssetPreview(savedAssetFromResponse);
+      if (pendingUpdate.hasUsage || storedSessionUsage.hasUsage) {
         setHasCompletedRequiredUsageUpdate(true);
       }
-      setPendingUpdate(initialPendingUpdate);
-      setDraft(initialDraft);
-      return data.asset;
+      setPendingUpdate({
+        ...initialPendingUpdate,
+        latitude: finalLatitude,
+        longitude: finalLongitude,
+      });
+      setDraft(applySessionLocationToDraft({ ...initialDraft, latitude: finalLatitude, longitude: finalLongitude }, savedSession));
+      if (finalLatitude && finalLongitude) {
+        setLocationState("ready");
+        setLocationMessage(sessionLocationMessage(savedSession));
+      }
+      return savedAssetFromResponse;
     } catch (error) {
       setNotice({
         tone: "error",
@@ -2174,7 +2497,7 @@ export default function ScanClient({
     }
   }
 
-  const locationReady = hasLocationCaptured(draft);
+  const locationReady = hasLocationCaptured(draft) || sessionHasLocation(readQrScanSession(normalizedCode));
   const showUsageAction = asset ? asset.usageMode !== "none" : false;
   const usageUpdateRequired = showUsageAction && needsUsageUpdateBeforeActions(asset, pendingUpdate, hasCompletedRequiredUsageUpdate);
   const currentFuelPercent = normalizeFuelPercentText(draft.fuelPercent, asset?.fuelPercent ?? null);
