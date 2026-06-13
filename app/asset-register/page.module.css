@@ -20584,6 +20584,36 @@
   letter-spacing: 0.01em;
 }
 
+.maintenanceDonePhotoStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.55rem;
+}
+
+.maintenanceDonePhotoLink {
+  display: block;
+  width: 5.7rem;
+  height: 4.3rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 0.9rem;
+  background: rgba(249, 250, 251, 0.16);
+  box-shadow: 0 8px 18px rgba(17, 24, 39, 0.2);
+}
+
+.maintenanceDonePhotoLink img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.maintenanceDonePhotoLink:hover {
+  border-color: #ffffff;
+  transform: translateY(-1px);
+}
+
 /* === 2026-06-08 document opening reliability pass === */
 button.documentOpenLink,
 button.assetDocumentLink {

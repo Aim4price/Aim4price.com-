@@ -7173,10 +7173,13 @@ export default function AssetRegisterClient() {
                           .filter(Boolean)
                           .join(' · ')
                       : '';
+                    const maintenancePhotoUrls = latestMaintenanceStatus
+                      ? uniquePhotoUrls(latestMaintenanceStatus.photoUrls ?? []).slice(0, 6)
+                      : [];
                     const maintenancePhotoCount = latestMaintenanceStatus
                       ? typeof latestMaintenanceStatus.photoCount === 'number'
                         ? latestMaintenanceStatus.photoCount
-                        : latestMaintenanceStatus.photoUrls?.length ?? 0
+                        : maintenancePhotoUrls.length
                       : 0;
                     const isMarkingMaintenanceNoted = latestMaintenanceStatus
                       ? busyMaintenanceStatusId === latestMaintenanceStatus.id
@@ -7299,8 +7302,27 @@ export default function AssetRegisterClient() {
                                 <strong>Maintenance has been done</strong>
                                 <p>{latestMaintenanceStatus.summary}</p>
                                 {latestMaintenanceStatus.note ? <p>Notes/Problems: {latestMaintenanceStatus.note}</p> : null}
-                                {maintenancePhotoCount > 0 ? (
+                                {maintenancePhotoUrls.length ? (
+                                  <div className={styles.maintenanceDonePhotoStrip} aria-label="Maintenance photos">
+                                    {maintenancePhotoUrls.map((url, index) => (
+                                      <a
+                                        key={`${latestMaintenanceStatus.id}-maintenance-photo-${index}`}
+                                        href={url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={styles.maintenanceDonePhotoLink}
+                                      >
+                                        <img src={url} alt={`Maintenance photo ${index + 1}`} />
+                                      </a>
+                                    ))}
+                                  </div>
+                                ) : maintenancePhotoCount > 0 ? (
                                   <p>{maintenancePhotoCount} maintenance photo{maintenancePhotoCount === 1 ? '' : 's'} saved to this asset.</p>
+                                ) : null}
+                                {maintenancePhotoUrls.length > 0 && maintenancePhotoCount > maintenancePhotoUrls.length ? (
+                                  <small className={styles.maintenanceDoneMeta}>
+                                    Showing {maintenancePhotoUrls.length} of {maintenancePhotoCount} maintenance photos.
+                                  </small>
                                 ) : null}
                                 {maintenanceDoneMeta ? <small className={styles.maintenanceDoneMeta}>{maintenanceDoneMeta}</small> : null}
                               </div>
