@@ -77,6 +77,10 @@ function normalizeSpaces(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function displayValue(value: unknown, fallback = '-'): string {
   const text = normalizeSpaces(value);
   return text || fallback;
@@ -665,9 +669,18 @@ function splitItems(value: string): string[] {
 }
 
 function extractLabeledValue(text: string, label: string): string {
-  const labels = ['Checked items', 'Work done', 'Repair details', 'Company', 'Mechanic', 'Notes'];
-  const otherLabels = labels.filter((entry) => entry.toLowerCase() !== label.toLowerCase()).map((entry) => `${entry}:`).join('|');
-  const pattern = new RegExp(`${label}:\\s*([\\s\\S]*?)(?=\\s+(?:${otherLabels})|$)`, 'i');
+  const labels = ['Checked items', 'Work done', 'Repair details', 'Company', 'Mechanic', 'Notes/Problems', 'Notes'];
+  const normalizedLabel = label.toLowerCase();
+  const targetLabels = normalizedLabel === 'notes' || normalizedLabel === 'notes/problems'
+    ? ['Notes/Problems', 'Notes']
+    : [label];
+  const targetSet = new Set(targetLabels.map((entry) => entry.toLowerCase()));
+  const otherLabels = labels
+    .filter((entry) => !targetSet.has(entry.toLowerCase()))
+    .map((entry) => `${escapeRegExp(entry)}:`)
+    .join('|');
+  const targetPattern = targetLabels.map((entry) => escapeRegExp(entry)).join('|');
+  const pattern = new RegExp(`(?:${targetPattern}):\\s*([\\s\\S]*?)(?=\\s+(?:${otherLabels})|$)`, 'i');
   const match = text.match(pattern);
 
   return normalizeSpaces(match?.[1] ?? '');
@@ -712,7 +725,7 @@ function parseMaintenanceEvent(event: ScanEventRecord): MaintenanceEntry | null 
       : splitItems(workDone);
   const company = extractLabeledValue(note, 'Company');
   const mechanic = extractLabeledValue(note, 'Mechanic');
-  const notes = extractLabeledValue(note, 'Notes');
+  const notes = extractLabeledValue(note, 'Notes/Problems');
 
   return {
     kind,
@@ -997,9 +1010,44 @@ function renderMaintenanceCards(asset: AssetRegisterItem, entries: MaintenanceEn
           const detailText = entry.items.length ? entry.items.join(', ') : '-';
           const location = formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude);
           const notes = entry.notes || '-';
-          const company = entry.company || '-';
-          const mechanic = entry.mechanic || '-';
           const photos = formatPhotoCount(entry.event);
+          const providerDetailsHtml = entry.kind === 'checked'
+            ? ''
+            : `
+                <div class="assetReportMaintenanceDetail">
+                  <span>Company / Dealer</span>
+                  <strong>${escapeHtml(entry.company || '-')}</strong>
+                </div>
+                <div class="assetReportMaintenanceDetail">
+                  <span>Mechanic / Technician</span>
+                  <strong>${escapeHtml(entry.mechanic || '-')}</strong>
+                </div>
+              `;
+          const photoGridHtml = entry.event.photoUrls.length
+            ? `
+                <div class="assetReportMaintenancePhotos">
+                  <div class="assetReportMaintenancePhotosHeader">
+                    <span>Photos</span>
+                    <strong>${escapeHtml(photos)}</strong>
+                  </div>
+                  <div class="assetReportMaintenancePhotoGrid">
+                    ${entry.event.photoUrls
+                      .map((url, index) => `
+                        <figure class="assetReportMaintenancePhoto">
+                          <img src="${escapeHtml(url)}" alt="Maintenance photo ${index + 1}" />
+                          <figcaption>Photo ${index + 1}</figcaption>
+                        </figure>
+                      `)
+                      .join('')}
+                  </div>
+                </div>
+              `
+            : `
+                <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
+                  <span>Photos</span>
+                  <strong>-</strong>
+                </div>
+              `;
 
           return `
             <article class="assetReportMaintenanceCard">
@@ -1027,26 +1075,16 @@ function renderMaintenanceCards(asset: AssetRegisterItem, entries: MaintenanceEn
                   <span>${escapeHtml(detailLabel)}</span>
                   <strong>${escapeHtml(detailText)}</strong>
                 </div>
-                <div class="assetReportMaintenanceDetail">
-                  <span>Company / Dealer</span>
-                  <strong>${escapeHtml(company)}</strong>
-                </div>
-                <div class="assetReportMaintenanceDetail">
-                  <span>Mechanic / Technician</span>
-                  <strong>${escapeHtml(mechanic)}</strong>
-                </div>
+                ${providerDetailsHtml}
                 <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
-                  <span>Notes</span>
+                  <span>Notes/Problems</span>
                   <strong>${escapeHtml(notes)}</strong>
                 </div>
                 <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
                   <span>Scan Location</span>
                   <strong>${escapeHtml(location)}</strong>
                 </div>
-                <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
-                  <span>Photos</span>
-                  <strong>${escapeHtml(photos)}</strong>
-                </div>
+                ${photoGridHtml}
               </div>
             </article>
           `;
@@ -1717,7 +1755,8 @@ function buildReportHtml(options: {
       }
 
       .assetReportMaintenanceHeader span,
-      .assetReportMaintenanceDetail span {
+      .assetReportMaintenanceDetail span,
+      .assetReportMaintenancePhotosHeader span {
         display: block;
         margin-bottom: 3px;
         color: var(--muted);
@@ -1729,7 +1768,8 @@ function buildReportHtml(options: {
       }
 
       .assetReportMaintenanceHeader strong,
-      .assetReportMaintenanceDetail strong {
+      .assetReportMaintenanceDetail strong,
+      .assetReportMaintenancePhotosHeader strong {
         display: block;
         color: var(--strong);
         font-size: 8.6px;
@@ -1761,6 +1801,52 @@ function buildReportHtml(options: {
 
       .assetReportMaintenanceDetail:last-child {
         border-bottom: 0;
+      }
+
+      .assetReportMaintenancePhotos {
+        grid-column: 1 / -1;
+        padding: 7px 8px 8px;
+        border-bottom: 0;
+        background: #fbfdfc;
+      }
+
+      .assetReportMaintenancePhotosHeader {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+
+      .assetReportMaintenancePhotoGrid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .assetReportMaintenancePhoto {
+        min-width: 0;
+        margin: 0;
+      }
+
+      .assetReportMaintenancePhoto img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid var(--line);
+        background: #eef4f1;
+      }
+
+      .assetReportMaintenancePhoto figcaption {
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 6.8px;
+        line-height: 1.15;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
       }
 
       a {
@@ -1864,6 +1950,10 @@ function buildReportHtml(options: {
         .assetReportMaintenanceHeader div,
         .assetReportMaintenanceDetail {
           border-right: 0;
+        }
+
+        .assetReportMaintenancePhotoGrid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
       }
 
@@ -2255,29 +2345,64 @@ function buildMaintenanceReportWorkbook(
     : allMaintenanceEntries.filter((entry) => entry.kind === maintenanceReportType);
   const maintenanceTypeLabel = MAINTENANCE_TYPE_LABELS[maintenanceReportType];
   const recordRows = buildMaintenanceRecordRows(asset, maintenanceEntries, dateRangeLabel, maintenanceTypeLabel);
-  const headers = [
-    'Date / Time',
-    'Record Type',
-    'Detail Label',
-    'Work / Items',
-    'Company / Dealer',
-    'Mechanic / Technician',
-    'Usage Reading',
-    'Usage Display',
-    'Operator',
-    'Condition',
-    'Fuel %',
-    'GPS Location',
-    'Latitude',
-    'Longitude',
-    'Photo Count',
-    'Photo URLs',
-    'Work Activity',
-    'Work Area',
-    'Notes',
-    'Raw QR Note',
-  ];
+  const isCheckedOnlyReport = maintenanceReportType === 'checked';
+  const headers = isCheckedOnlyReport
+    ? [
+        'Date / Time',
+        'Record Type',
+        'Work / Items',
+        'Usage Reading',
+        'Usage Display',
+        'Operator',
+        'GPS Location',
+        'Notes/Problems',
+      ]
+    : [
+        'Date / Time',
+        'Record Type',
+        'Detail Label',
+        'Work / Items',
+        'Company / Dealer',
+        'Mechanic / Technician',
+        'Usage Display',
+        'Operator',
+        'GPS Location',
+        'Notes/Problems',
+      ];
+  const columns = isCheckedOnlyReport
+    ? [20, 16, 38, 16, 20, 22, 34, 42]
+    : [20, 16, 20, 36, 24, 24, 20, 22, 34, 42];
   const headerRow = 7;
+  const maintenanceRecordRows = maintenanceEntries.map((entry) => {
+    const detailLabel = entry.kind === 'checked' ? 'Checked Items' : entry.kind === 'repaired' ? 'Repair Details' : 'Work Completed';
+    const recordStyle: XlsxCellStyle = entry.kind === 'repaired' ? 'statusWarn' : entry.kind === 'serviced' ? 'statusGood' : 'statusInfo';
+
+    if (isCheckedOnlyReport) {
+      return [
+        styled(formatExcelDateTime(entry.event.createdAtIso), 'text'),
+        styled(entry.label, recordStyle),
+        styled(entry.items.join(', '), 'text'),
+        styled(numberForExcel(entry.event.assetUsageReading ?? entry.event.hours), 'decimal'),
+        styled(formatEventUsage(asset, entry.event), 'text'),
+        styled(formatOperatorLabel(entry.event), 'text'),
+        styled(excelText(formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude)), 'text'),
+        styled(entry.notes, 'note'),
+      ];
+    }
+
+    return [
+      styled(formatExcelDateTime(entry.event.createdAtIso), 'text'),
+      styled(entry.label, recordStyle),
+      styled(detailLabel, 'text'),
+      styled(entry.items.join(', '), 'text'),
+      styled(entry.kind === 'checked' ? '' : entry.company, 'text'),
+      styled(entry.kind === 'checked' ? '' : entry.mechanic, 'text'),
+      styled(formatEventUsage(asset, entry.event), 'text'),
+      styled(formatOperatorLabel(entry.event), 'text'),
+      styled(excelText(formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude)), 'text'),
+      styled(entry.notes, 'note'),
+    ];
+  });
   const recordSheetRows: XlsxCellValue[][] = [
     fullWidthRow(`${asset.title || 'Asset'} - Maintenance Report`, 'title', headers.length),
     fullWidthRow(`Filtered report: ${dateRangeLabel} • Type: ${maintenanceTypeLabel}`, 'subtitle', headers.length),
@@ -2293,33 +2418,7 @@ function buildMaintenanceReportWorkbook(
     ],
     [],
     headers.map((header) => styled(header, 'tableHeader')),
-    ...maintenanceEntries.map((entry) => {
-      const detailLabel = entry.kind === 'checked' ? 'Checked Items' : entry.kind === 'repaired' ? 'Repair Details' : 'Work Completed';
-      const recordStyle: XlsxCellStyle = entry.kind === 'repaired' ? 'statusWarn' : entry.kind === 'serviced' ? 'statusGood' : 'statusInfo';
-
-      return [
-        styled(formatExcelDateTime(entry.event.createdAtIso), 'text'),
-        styled(entry.label, recordStyle),
-        styled(detailLabel, 'text'),
-        styled(entry.items.join(', '), 'text'),
-        styled(entry.company, 'text'),
-        styled(entry.mechanic, 'text'),
-        styled(numberForExcel(entry.event.assetUsageReading ?? entry.event.hours), 'decimal'),
-        styled(formatEventUsage(asset, entry.event), 'text'),
-        styled(formatOperatorLabel(entry.event), 'text'),
-        styled(excelText(formatCondition(entry.event.condition)), 'text'),
-        styled(percentForExcel(entry.event.fuelPercent), 'percent'),
-        styled(excelText(formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude)), 'text'),
-        styled(numberForExcel(entry.event.latitude, 6), 'decimal'),
-        styled(numberForExcel(entry.event.longitude, 6), 'decimal'),
-        styled(entry.event.photoUrls.length, 'integer'),
-        styled(entry.event.photoUrls.join('\n'), 'note'),
-        styled(excelText(formatEventActivity(entry.event)), 'text'),
-        styled(excelText(formatEventWorkArea(entry.event)), 'text'),
-        styled(entry.notes, 'note'),
-        styled(normalizeSpaces(entry.event.note), 'note'),
-      ];
-    }),
+    ...maintenanceRecordRows,
   ];
 
   return [
@@ -2334,7 +2433,7 @@ function buildMaintenanceReportWorkbook(
     {
       name: 'Maintenance Records',
       rows: recordSheetRows,
-      columns: [20, 16, 20, 34, 24, 24, 16, 20, 22, 18, 14, 34, 14, 14, 14, 42, 24, 24, 42, 48],
+      columns,
       merges: [
         { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: headers.length },
         { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: headers.length },
