@@ -321,6 +321,105 @@ function leadDocumentsForSnapshot(
   return documents.filter((document) => !isBlockedLeadDocument(document));
 }
 
+function sanitizeLeadMessagePhotoUrl(value: unknown): string {
+  const url = asText(value).slice(0, 2000);
+
+  if (!url) {
+    return '';
+  }
+
+  if (url.startsWith('/api/asset-register/uploads/')) {
+    return url.split('?')[0] ?? url;
+  }
+
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+
+  return '';
+}
+
+function leadPhotoUrlsFromArray(value: unknown): string[] {
+  return asStringArray(value).map(sanitizeLeadMessagePhotoUrl).filter(Boolean);
+}
+
+function leadPhotoUrlsFromAttachments(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((entry) => {
+      const attachment = asRecord(entry);
+      return sanitizeLeadMessagePhotoUrl(
+        attachment.url ?? attachment.photoUrl ?? attachment.photo_url ?? attachment.href ?? entry,
+      );
+    })
+    .filter(Boolean);
+}
+
+function mergeUniqueLeadPhotoUrls(photoUrlGroups: string[][], maxCount = 3): string[] {
+  const seen = new Set<string>();
+  const urls: string[] = [];
+
+  for (const group of photoUrlGroups) {
+    for (const url of group) {
+      const normalizedUrl = sanitizeLeadMessagePhotoUrl(url);
+
+      if (!normalizedUrl || seen.has(normalizedUrl)) {
+        continue;
+      }
+
+      seen.add(normalizedUrl);
+      urls.push(normalizedUrl);
+
+      if (urls.length >= maxCount) {
+        return urls;
+      }
+    }
+  }
+
+  return urls;
+}
+
+function ownerMessagePhotoUrlsFromSections(sections: Record<string, unknown>): string[] {
+  return mergeUniqueLeadPhotoUrls([
+    leadPhotoUrlsFromArray(sections.ownerMessagePhotoUrls),
+    leadPhotoUrlsFromArray(sections.messageAttachmentPhotoUrls),
+    leadPhotoUrlsFromArray(sections.ownerSharePhotoUrls),
+    leadPhotoUrlsFromArray(sections.sharePhotoUrls),
+    leadPhotoUrlsFromAttachments(sections.ownerMessageAttachments),
+    leadPhotoUrlsFromAttachments(sections.messageAttachments),
+  ]);
+}
+
+function buildOwnerMessagePhotoAttachments(photoUrls: string[]): Array<{ type: 'image'; source: 'asset_qr_share'; url: string }> {
+  return photoUrls.map((url) => ({
+    type: 'image',
+    source: 'asset_qr_share',
+    url,
+  }));
+}
+
+function withNormalizedOwnerMessagePhotoSections(sections: Record<string, unknown>): Record<string, unknown> {
+  const ownerMessagePhotoUrls = ownerMessagePhotoUrlsFromSections(sections);
+
+  if (!ownerMessagePhotoUrls.length) {
+    return sections;
+  }
+
+  const ownerMessageAttachments = buildOwnerMessagePhotoAttachments(ownerMessagePhotoUrls);
+
+  return {
+    ...sections,
+    ownerMessagePhotoUrls,
+    messageAttachmentPhotoUrls: ownerMessagePhotoUrls,
+    ownerSharePhotoUrls: ownerMessagePhotoUrls,
+    sharePhotoUrls: ownerMessagePhotoUrls,
+    ownerMessageAttachments,
+    messageAttachments: ownerMessageAttachments,
+    ownerSharePhotoCount: ownerMessagePhotoUrls.length,
+  };
+}
+
 export function normalizeAccountRole(value: unknown): AccountRole {
   const normalized = asText(value).toLowerCase();
 
@@ -990,9 +1089,9 @@ export async function markAssetPartnerNoteNoted(input: {
 }
 
 function buildAssetLeadSnapshot(asset: AssetRegisterItem, includedSections: Record<string, unknown>): Record<string, unknown> {
-  const ownerSharePhotoUrls = asStringArray(includedSections.sharePhotoUrls ?? includedSections.ownerSharePhotoUrls).slice(0, 3);
-  const ownerSharePhotoUrlSet = new Set(ownerSharePhotoUrls);
-  const assetGalleryPhotos = asset.photos.filter((url) => !ownerSharePhotoUrlSet.has(url));
+  const ownerMessagePhotoUrls = ownerMessagePhotoUrlsFromSections(includedSections);
+  const ownerMessagePhotoUrlSet = new Set(ownerMessagePhotoUrls);
+  const assetGalleryPhotos = asset.photos.filter((url) => !ownerMessagePhotoUrlSet.has(sanitizeLeadMessagePhotoUrl(url)));
   const replacementPriceExVat = asNumber(asset.replacementPriceExVat);
   const replacementPriceSnapshot =
     replacementPriceExVat !== null && replacementPriceExVat > 0
@@ -1044,6 +1143,8 @@ function buildAssetLeadSnapshot(asset: AssetRegisterItem, includedSections: Reco
     aim4priceValueExVat: asset.aim4priceValueExVat,
     marketMidExVat: asset.marketMidExVat,
     photos: assetGalleryPhotos,
+    ownerMessagePhotoUrls,
+    messageAttachmentPhotoUrls: ownerMessagePhotoUrls,
     documents: leadDocumentsForSnapshot(asset.documents, includedSections),
     publicAssetCode: asset.publicAssetCode,
     lastScannedAtIso: asset.lastScannedAtIso,
@@ -1080,7 +1181,9 @@ export async function createAssetLead(input: {
     throw new Error('ASSET_NOT_FOUND');
   }
 
-  const includedSections = input.includedSections ?? { assetDetails: true, valuationSummary: true, mainPhoto: true };
+  const includedSections = withNormalizedOwnerMessagePhotoSections(
+    input.includedSections ?? { assetDetails: true, valuationSummary: true, mainPhoto: true },
+  );
   const registerLogoUrl = await getAssetRegisterReportLogoUrl(input.ownerUserId, asset.registerId).catch(() => '');
 
   const ownerProfile = await getAccountProfile({ id: input.ownerUserId, name: input.ownerName, email: input.ownerEmail });

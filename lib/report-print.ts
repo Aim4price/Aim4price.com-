@@ -3,6 +3,7 @@ export type ReportTone = 'high' | 'medium' | 'low';
 export type ReportKeyValue = {
   label: string;
   value: string;
+  photoUrls?: string[];
 };
 
 export type ReportMethodCard = {
@@ -1408,6 +1409,84 @@ function isBlankReportValue(value: string): boolean {
   return !normalized || normalized === '—' || normalized === '-';
 }
 
+function normalizeReportPhotoUrl(value: unknown): string {
+  const url = String(value ?? '').trim().slice(0, 2000);
+
+  if (!url) {
+    return '';
+  }
+
+  if (url.startsWith('/') && !url.startsWith('//') && typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}${url}`;
+  }
+
+  return url;
+}
+
+function reportRowPhotoUrls(row: ReportKeyValue, maxCount = 6): string[] {
+  const seen = new Set<string>();
+  const urls: string[] = [];
+
+  for (const rawUrl of row.photoUrls ?? []) {
+    const url = normalizeReportPhotoUrl(rawUrl);
+
+    if (!url || seen.has(url)) {
+      continue;
+    }
+
+    seen.add(url);
+    urls.push(url);
+
+    if (urls.length >= maxCount) {
+      break;
+    }
+  }
+
+  return urls;
+}
+
+function renderAssetReportNotePhotoGrid(photoUrls: string[], title: string): string {
+  if (!photoUrls.length) {
+    return '';
+  }
+
+  return `
+    <div class="assetReportNotePhotoGrid" aria-label="Owner message photo attachments">
+      ${photoUrls
+        .map(
+          (url, index) => `
+            <figure>
+              <img src="${escapeHtml(url)}" alt="${escapeHtml(`${title} owner message photo ${index + 1}`)}" />
+              <figcaption>Attachment ${index + 1}</figcaption>
+            </figure>
+          `,
+        )
+        .join('')}
+    </div>
+  `;
+}
+
+function renderFullRegisterNotePhotoGrid(photoUrls: string[], title: string): string {
+  if (!photoUrls.length) {
+    return '';
+  }
+
+  return `
+    <div class="fullRegisterNotePhotoGrid" aria-label="Owner message photo attachments">
+      ${photoUrls
+        .map(
+          (url, index) => `
+            <figure>
+              <img src="${escapeHtml(url)}" alt="${escapeHtml(`${title} owner message photo ${index + 1}`)}" />
+              <figcaption>Attachment ${index + 1}</figcaption>
+            </figure>
+          `,
+        )
+        .join('')}
+    </div>
+  `;
+}
+
 function renderAssetReportRows(rows: ReportKeyValue[], emptyLabel: string): string {
   const visibleRows = rows.filter((row) => String(row.label ?? '').trim());
 
@@ -1432,7 +1511,7 @@ function renderAssetReportRows(rows: ReportKeyValue[], emptyLabel: string): stri
 }
 
 function renderAssetReportNotes(rows: ReportKeyValue[]): string {
-  const visibleRows = rows.filter((row) => String(row.value ?? '').trim());
+  const visibleRows = rows.filter((row) => String(row.value ?? '').trim() || reportRowPhotoUrls(row).length);
 
   if (!visibleRows.length) {
     return '';
@@ -1445,11 +1524,14 @@ function renderAssetReportNotes(rows: ReportKeyValue[]): string {
         ${visibleRows
           .map((row) => {
             const isOwnerMessage = String(row.label ?? '').trim().toLowerCase() === 'owner message';
+            const notePhotoUrls = reportRowPhotoUrls(row);
+            const noteText = String(row.value ?? '').trim();
 
             return `
               <article class="assetReportNoteCard${isOwnerMessage ? ' assetReportOwnerMessageCard' : ''}">
                 <span>${escapeHtml(row.label)}</span>
-                <strong>${escapeHtml(row.value)}</strong>
+                ${noteText ? `<strong>${escapeHtml(noteText)}</strong>` : ''}
+                ${renderAssetReportNotePhotoGrid(notePhotoUrls, row.label)}
               </article>
             `;
           })
@@ -1465,7 +1547,7 @@ function renderAssetReportMedia(options: {
   scanUrl?: string | null;
   title: string;
 }): string {
-  const allPhotos = options.photoUrls.map((url) => String(url ?? '').trim()).filter(Boolean);
+  const allPhotos = options.photoUrls.map(normalizeReportPhotoUrl).filter(Boolean);
   const photos = allPhotos.slice(0, 2);
   const remainingPhotoCount = Math.max(0, allPhotos.length - photos.length);
 
@@ -1521,7 +1603,7 @@ function renderAssetReportBreakdown(payload: AssetSheetPayload): string {
 
 function renderAssetSheetDocument(payload: AssetSheetPayload): string {
   const rawPhotoUrls = payload.photoUrls?.length ? payload.photoUrls : payload.photoUrl ? [payload.photoUrl] : [];
-  const photoUrls = rawPhotoUrls.map((url) => String(url ?? '').trim()).filter(Boolean);
+  const photoUrls = rawPhotoUrls.map(normalizeReportPhotoUrl).filter(Boolean);
   const safeTitle = escapeHtml(payload.heroTitle);
   const issuerPhone = String(payload.issuerPhone ?? '').trim();
   const issuerEmail = String(payload.issuerEmail ?? '').trim();
@@ -1546,7 +1628,7 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
     { label: 'Documents', value: getAssetSheetValue(payload.facts, 'Documents') },
     { label: 'Updated', value: updatedLabel },
   ];
-  const noteRows = (payload.notes ?? []).filter((row) => String(row.value ?? '').trim());
+  const noteRows = (payload.notes ?? []).filter((row) => String(row.value ?? '').trim() || reportRowPhotoUrls(row).length);
   const photoSection = renderAssetReportMedia({ photoUrls, qrUrl: null, scanUrl: null, title: payload.heroTitle });
 
   return `<!doctype html>
@@ -2063,6 +2145,36 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
         min-height: 28mm;
       }
 
+      .assetReportNotePhotoGrid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        margin-top: 2px;
+      }
+
+      .assetReportNotePhotoGrid figure {
+        overflow: hidden;
+        margin: 0;
+        border: 1px solid var(--line);
+        background: #ffffff;
+      }
+
+      .assetReportNotePhotoGrid img {
+        display: block;
+        width: 100%;
+        height: 22mm;
+        object-fit: cover;
+      }
+
+      .assetReportNotePhotoGrid figcaption {
+        display: block;
+        padding: 3px 4px;
+        color: var(--muted);
+        font-size: 6.8px;
+        line-height: 1.15;
+        font-weight: 700;
+      }
+
       .assetReportFooter {
         position: absolute;
         right: 0;
@@ -2351,12 +2463,18 @@ function renderFullRegisterMetaRows(rows: ReportKeyValue[]): string {
       (row) => `
         ${(() => {
           const normalizedLabel = String(row.label ?? '').trim().toLowerCase();
-          const isTallRow = normalizedLabel === 'address' || normalizedLabel === 'owner message' || normalizedLabel === 'attached document' || normalizedLabel.includes('note') || normalizedLabel.includes('reply');
+          const notePhotoUrls = reportRowPhotoUrls(row);
+          const isTallRow = normalizedLabel === 'address' || normalizedLabel === 'owner message' || normalizedLabel === 'attached document' || normalizedLabel.includes('note') || normalizedLabel.includes('reply') || notePhotoUrls.length > 0;
+          const rawValue = String(row.value ?? '').trim();
+          const value = rawValue ? sanitizeRegisterDisplayValue(row.value) : '';
 
           return `
             <div class="fullRegisterMetaRow${isTallRow ? ' fullRegisterMetaRowTall' : ''}">
               <span>${escapeHtml(row.label)}</span>
-              <strong>${escapeHtml(sanitizeRegisterDisplayValue(row.value))}</strong>
+              <div class="fullRegisterMetaValue">
+                ${String(value ?? '').trim() ? `<strong>${escapeHtml(value)}</strong>` : ''}
+                ${renderFullRegisterNotePhotoGrid(notePhotoUrls, row.label)}
+              </div>
             </div>
           `;
         })()}
@@ -2390,7 +2508,7 @@ function renderFullRegisterStats(payload: AssetRegisterSummaryPayload): string {
 }
 
 function renderFullRegisterNotes(rows: ReportKeyValue[]): string {
-  const visibleRows = rows.filter((row) => String(row.label ?? '').trim() && String(row.value ?? '').trim());
+  const visibleRows = rows.filter((row) => String(row.label ?? '').trim() && (String(row.value ?? '').trim() || reportRowPhotoUrls(row).length));
 
   if (!visibleRows.length) {
     return '';
@@ -2404,14 +2522,18 @@ function renderFullRegisterNotes(rows: ReportKeyValue[]): string {
       </div>
       <div class="fullRegisterNoteCards">
         ${visibleRows
-          .map(
-            (row) => `
+          .map((row) => {
+            const notePhotoUrls = reportRowPhotoUrls(row);
+            const noteText = String(row.value ?? '').trim();
+
+            return `
               <article class="fullRegisterNoteCard">
                 <span>${escapeHtml(row.label)}</span>
-                <strong>${escapeHtml(row.value)}</strong>
+                ${noteText ? `<strong>${escapeHtml(noteText)}</strong>` : ''}
+                ${renderFullRegisterNotePhotoGrid(notePhotoUrls, row.label)}
               </article>
-            `,
-          )
+            `;
+          })
           .join('')}
       </div>
     </section>
@@ -2428,7 +2550,7 @@ function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[], emptyMessa
       ${rows
         .map((row, index) => {
           const title = sanitizeRegisterDisplayValue(row.asset);
-          const photoUrl = String(row.photoUrl ?? '').trim();
+          const photoUrl = normalizeReportPhotoUrl(row.photoUrl);
           const brand = sanitizeRegisterDisplayValue(row.brand);
           const model = sanitizeRegisterDisplayValue(row.model);
           const year = sanitizeRegisterDisplayValue(row.year);
@@ -2854,6 +2976,36 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
         overflow-wrap: anywhere;
       }
 
+      .fullRegisterNotePhotoGrid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 2mm;
+        margin-top: 1mm;
+      }
+
+      .fullRegisterNotePhotoGrid figure {
+        overflow: hidden;
+        margin: 0;
+        border: 1px solid var(--line);
+        background: #ffffff;
+      }
+
+      .fullRegisterNotePhotoGrid img {
+        display: block;
+        width: 100%;
+        height: 24mm;
+        object-fit: cover;
+      }
+
+      .fullRegisterNotePhotoGrid figcaption {
+        display: block;
+        padding: 1.1mm 1.3mm;
+        color: var(--muted);
+        font-size: 6.2pt;
+        line-height: 1.15;
+        font-weight: 700;
+      }
+
       .fullRegisterAssetSection {
         margin-top: 5.5mm;
       }
@@ -2912,6 +3064,12 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
         color: var(--strong);
         font-weight: 800;
         overflow-wrap: anywhere;
+      }
+
+      .fullRegisterMetaValue {
+        display: grid;
+        gap: 1.8mm;
+        min-width: 0;
       }
 
       .fullRegisterAssetList {
