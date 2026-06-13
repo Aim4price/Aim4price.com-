@@ -2333,3 +2333,291 @@
     min-width: 0 !important;
   }
 }
+
+/* === Fuel storage QR modal: matches Asset Register QR flow === */
+.subModalOverlay {
+  z-index: 175;
+  place-items: center;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 3vh, 2rem);
+  overflow-y: auto;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.modalBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(14, 22, 32, 0.44);
+  backdrop-filter: blur(14px) saturate(0.9);
+}
+
+.modalCloseButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 3.08rem !important;
+  min-width: 3.08rem !important;
+  min-height: 3.08rem !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(210, 222, 237, 0.98) !important;
+  background: linear-gradient(180deg, #f7fbff 0%, #edf4fb 100%) !important;
+  color: #1d3b62;
+  box-shadow:
+    0 10px 20px rgba(23, 45, 75, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.modalCloseButton:hover {
+  transform: translateY(-1px);
+  border-color: rgba(177, 197, 220, 0.98) !important;
+  box-shadow:
+    0 14px 26px rgba(23, 45, 75, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.qrModal {
+  position: relative !important;
+  z-index: 1;
+  width: min(100%, 860px) !important;
+  max-height: none !important;
+  overflow: visible !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  padding: clamp(1.35rem, 2vw, 1.7rem) !important;
+  border-radius: 1.95rem !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.995) 0%, rgba(247, 250, 252, 0.99) 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  box-shadow:
+    0 34px 88px rgba(11, 21, 34, 0.29),
+    0 14px 34px rgba(11, 21, 34, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.qrModalHeader {
+  flex: 0 0 auto;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: flex-start !important;
+  gap: 1.15rem !important;
+  margin: 0 0 1rem !important;
+  padding: 0 0 1rem !important;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9) !important;
+}
+
+.qrModalHeader h3 {
+  margin: 0 !important;
+  color: #0f3329;
+  font-size: clamp(1.55rem, 2.35vw, 1.98rem) !important;
+  font-weight: 760 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.047em !important;
+}
+
+.qrModalHeader p {
+  max-width: 48rem;
+  margin: 0 !important;
+  color: #617286;
+  font-size: 1rem;
+  font-weight: 620;
+  line-height: 1.52;
+}
+
+.qrModalScrollBody {
+  overflow: visible !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.qrModalBody {
+  display: grid !important;
+  grid-template-columns: minmax(250px, 300px) minmax(0, 1fr) !important;
+  gap: 1rem !important;
+  align-items: stretch !important;
+  margin: 0 !important;
+}
+
+.qrPreviewCard {
+  min-height: 0 !important;
+  align-self: stretch !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  gap: 0.85rem !important;
+  padding: 1rem !important;
+  border-radius: 1.25rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.qrPreviewEyebrow {
+  display: block;
+  color: #617286;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.055em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.qrPreviewFrame {
+  min-height: 238px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0.9rem !important;
+  border-radius: 1.1rem !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+}
+
+.qrPreviewFrame img {
+  width: 100% !important;
+  max-width: 214px !important;
+  height: auto !important;
+}
+
+.qrPreviewFallback {
+  margin: 0;
+  color: #607080;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.qrPrimaryActionsCard {
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0.95rem !important;
+  padding: 1rem !important;
+  border-radius: 1.25rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%) !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.qrPrimaryActionButton {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 100% !important;
+  min-height: 5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.9rem !important;
+  padding: 1rem 1.2rem !important;
+  border-radius: 1.16rem !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%) !important;
+  color: #1d3b62 !important;
+  box-shadow:
+    0 9px 18px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+  font: inherit !important;
+  cursor: pointer !important;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease !important;
+}
+
+.qrPrimaryActionButton:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(184, 202, 218, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eef5fb 100%) !important;
+  box-shadow:
+    0 16px 30px rgba(16, 31, 28, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.qrPrimaryActionButton > .buttonIcon {
+  flex: 0 0 auto !important;
+  width: 1.35rem !important;
+  height: 1.35rem !important;
+  color: #1d3b62 !important;
+}
+
+.qrPrimaryActionButton > span {
+  color: #10352b !important;
+  font-size: clamp(1.14rem, 2vw, 1.48rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.04em !important;
+  text-align: center !important;
+}
+
+.qrPrimaryActionButton.qrCopiedButton,
+.qrPrimaryActionButton.qrCopiedButton:hover {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #1a5a45 0%, #124233 100%) !important;
+  border-color: rgba(17, 70, 52, 0.3) !important;
+  box-shadow:
+    0 14px 26px rgba(17, 70, 52, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+.qrPrimaryActionButton.qrCopiedButton > .buttonIcon,
+.qrPrimaryActionButton.qrCopiedButton > span {
+  color: #ffffff !important;
+}
+
+@media (max-width: 760px) {
+  .subModalOverlay {
+    place-items: center !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.5rem !important;
+  }
+
+  .qrModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: min(88vh, calc(100dvh - 1rem)) !important;
+    overflow: hidden !important;
+    padding: 1rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .qrModalScrollBody {
+    overflow-y: auto !important;
+    padding-right: 0.55rem !important;
+    margin-right: -0.2rem !important;
+  }
+
+  .qrModalBody {
+    grid-template-columns: 1fr !important;
+  }
+
+  .qrPrimaryActionsCard {
+    grid-template-rows: none !important;
+  }
+
+  .qrPrimaryActionButton {
+    min-height: 4.8rem !important;
+  }
+}
+
+.modalScrollBody {
+  min-width: 0;
+}

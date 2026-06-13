@@ -5,7 +5,7 @@ import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
 type FuelStorageStatus = 'active' | 'archived';
-type ModalMode = 'create-storage' | 'edit-storage' | 'pin' | 'report' | null;
+type ModalMode = 'create-storage' | 'edit-storage' | 'pin' | 'report' | 'qr' | null;
 type ReportFormat = 'pdf' | 'xlsx';
 type ReportStep = 'format' | 'filters';
 type ReportSelectKey = 'storage' | 'year' | 'month';
@@ -153,6 +153,34 @@ function QrIcon(props: SVGProps<SVGSVGElement>) {
       <path d="M14 14h2v2h-2z" />
       <path d="M18 14h2v4h-2z" />
       <path d="M14 18h4v2h-4z" />
+    </IconBase>
+  );
+}
+
+function CopyIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </IconBase>
+  );
+}
+
+function PrintIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M7 8V3h10v5" />
+      <path d="M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" />
+      <path d="M7 14h10v7H7z" />
+    </IconBase>
+  );
+}
+
+function CloseIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="m6 6 12 12" />
+      <path d="m18 6-12 12" />
     </IconBase>
   );
 }
@@ -460,6 +488,66 @@ function buildReportUrl(storageId: string, year: string, month: string, format: 
   return url.toString();
 }
 
+
+function toAbsoluteUrl(value?: string | null): string | null {
+  const text = String(value ?? '').trim();
+
+  if (!text) {
+    return null;
+  }
+
+  if (/^(https?:|data:|blob:)/i.test(text)) {
+    return text;
+  }
+
+  if (typeof window === 'undefined') {
+    return text;
+  }
+
+  try {
+    return new URL(text, window.location.origin).toString();
+  } catch {
+    return text;
+  }
+}
+
+function buildFuelScanUrl(storage: FuelLedgerStorage): string | null {
+  const publicFuelStorageCode = String(storage.publicFuelStorageCode ?? '').trim();
+
+  if (!publicFuelStorageCode) {
+    return null;
+  }
+
+  return toAbsoluteUrl(`/fuel-scan/${encodeURIComponent(publicFuelStorageCode)}`);
+}
+
+function buildFuelQrSvgUrl(storage: FuelLedgerStorage): string {
+  return `/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=svg`;
+}
+
+function buildFuelQrPrintUrl(storage: FuelLedgerStorage): string {
+  return `/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=print`;
+}
+
+function parseDownloadFileName(response: Response, fallback: string): string {
+  const disposition = response.headers.get('content-disposition') || '';
+  const quotedMatch = /filename="([^"]+)"/i.exec(disposition);
+  const plainMatch = /filename=([^;]+)/i.exec(disposition);
+
+  return (quotedMatch?.[1] || plainMatch?.[1] || fallback).trim();
+}
+
+function downloadBlob(blob: Blob, fileName: string) {
+  const objectUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(objectUrl);
+}
+
 export default function FuelClient() {
   const [storages, setStorages] = useState<FuelLedgerStorage[]>([]);
   const [recentEvents, setRecentEvents] = useState<FuelLedgerEvent[]>([]);
@@ -480,6 +568,7 @@ export default function FuelClient() {
   const [reportStep, setReportStep] = useState<ReportStep>('format');
   const [openReportSelect, setOpenReportSelect] = useState<ReportSelectKey | null>(null);
   const [isStorageFuelSelectOpen, setIsStorageFuelSelectOpen] = useState(false);
+  const [copiedScanLinkStorageId, setCopiedScanLinkStorageId] = useState<string | null>(null);
 
   const selectedStorage = useMemo(
     () => storages.find((storage) => storage.id === selectedStorageId) ?? null,
@@ -596,6 +685,14 @@ export default function FuelClient() {
     setModalMode('pin');
   }
 
+  function openQrModal(storage: FuelLedgerStorage) {
+    setSelectedStorageId(storage.id);
+    setCopiedScanLinkStorageId(null);
+    setIsStorageFuelSelectOpen(false);
+    setNotice(null);
+    setModalMode('qr');
+  }
+
   function openReportModal() {
     setReportYear('all');
     setReportMonth('all');
@@ -618,6 +715,7 @@ export default function FuelClient() {
     setReportFormat('pdf');
     setOpenReportSelect(null);
     setIsStorageFuelSelectOpen(false);
+    setCopiedScanLinkStorageId(null);
   }
 
   function clearSearch() {
@@ -688,6 +786,86 @@ export default function FuelClient() {
     }
   }
 
+
+
+  async function handleCopyFuelScanLink(storage: FuelLedgerStorage) {
+    const scanUrl = buildFuelScanUrl(storage);
+
+    if (!scanUrl) {
+      setNotice({ tone: 'error', message: 'This fuel storage unit does not have a scan link yet.' });
+      return;
+    }
+
+    function markScanLinkCopied() {
+      setCopiedScanLinkStorageId(storage.id);
+      window.setTimeout(() => {
+        setCopiedScanLinkStorageId((current) => (current === storage.id ? null : current));
+      }, 2200);
+    }
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(scanUrl);
+        markScanLinkCopied();
+        setNotice({ tone: 'success', message: 'Fuel scan link copied.' });
+        return;
+      }
+
+      window.prompt('Copy this fuel scan link', scanUrl);
+      markScanLinkCopied();
+      setNotice({ tone: 'success', message: 'Fuel scan link ready to copy.' });
+    } catch (error) {
+      setCopiedScanLinkStorageId(null);
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to copy the fuel scan link.',
+      });
+    }
+  }
+
+  function handlePrintFuelQrLabel(storage: FuelLedgerStorage) {
+    const opened = window.open(buildFuelQrPrintUrl(storage), '_blank', 'noopener,noreferrer');
+
+    if (!opened) {
+      setNotice({ tone: 'error', message: 'Unable to open the fuel QR print page. Please allow pop-ups and try again.' });
+      return;
+    }
+
+    setNotice({ tone: 'success', message: 'Fuel QR print label opened in a new tab.' });
+  }
+
+  async function handleDownloadFuelQr(storage: FuelLedgerStorage) {
+    try {
+      const response = await fetch(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=png&download=1`, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        try {
+          const data = (await response.json()) as { error?: string };
+          throw new Error(data.error ?? 'Failed to download the fuel QR image.');
+        } catch (error) {
+          if (error instanceof Error) {
+            throw error;
+          }
+
+          throw new Error('Failed to download the fuel QR image.');
+        }
+      }
+
+      const blob = await response.blob();
+      const fallbackName = `${storage.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'fuel-storage'}-qr.png`;
+      const fileName = parseDownloadFileName(response, fallbackName);
+      downloadBlob(blob, fileName);
+      setNotice({ tone: 'success', message: 'Fuel QR image downloaded.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to download the fuel QR image.',
+      });
+    }
+  }
 
   async function handleClearDipstickNote(storage: FuelLedgerStorage) {
     setIsSaving(true);
@@ -913,10 +1091,10 @@ export default function FuelClient() {
                           <GearIcon className={styles.buttonIcon} />
                           <span>Manage</span>
                         </button>
-                        <a className={styles.unitButton} href={`/api/fuel/storage/${storage.id}/qr?format=print`} target="_blank" rel="noreferrer">
+                        <button type="button" className={styles.unitButton} onClick={() => openQrModal(storage)} disabled={isSaving}>
                           <QrIcon className={styles.buttonIcon} />
                           <span>QR Code</span>
-                        </a>
+                        </button>
                         <button
                           type="button"
                           className={`${styles.unitButton} ${styles.changePinButton}`}
@@ -1053,6 +1231,61 @@ export default function FuelClient() {
               <button type="submit" className={styles.fuelModalPrimaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save PIN'}</button>
             </div>
           </form>
+        </div>
+      ) : null}
+
+      {modalMode === 'qr' && selectedStorage ? (
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={closeModal} />
+
+          <div className={`${styles.modalCard} ${styles.qrModal}`} role="dialog" aria-modal="true" aria-labelledby="fuel-qr-title">
+            <div className={`${styles.modalHeader} ${styles.qrModalHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="fuel-qr-title">{selectedStorage.name}</h3>
+                <p>Use this permanent QR for fuel scan access. Public QR scans always ask for the fuel PIN.</p>
+              </div>
+
+              <button type="button" className={styles.modalCloseButton} onClick={closeModal} aria-label="Close QR code">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${styles.modalScrollBody} ${styles.qrModalScrollBody}`}>
+              <div className={styles.qrModalBody}>
+                <div className={styles.qrPreviewCard}>
+                  <span className={styles.qrPreviewEyebrow}>Permanent fuel QR</span>
+                  <div className={styles.qrPreviewFrame}>
+                    {selectedStorage.publicFuelStorageCode ? (
+                      <img src={buildFuelQrSvgUrl(selectedStorage)} alt={`QR code for ${selectedStorage.name}`} />
+                    ) : (
+                      <p className={styles.qrPreviewFallback}>QR artwork is not ready for this fuel storage unit yet.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className={styles.qrPrimaryActionsCard}>
+                  <button
+                    type="button"
+                    className={`${styles.qrPrimaryActionButton} ${copiedScanLinkStorageId === selectedStorage.id ? styles.qrCopiedButton : ''}`}
+                    onClick={() => void handleCopyFuelScanLink(selectedStorage)}
+                  >
+                    <CopyIcon className={styles.buttonIcon} />
+                    <span>{copiedScanLinkStorageId === selectedStorage.id ? 'Copied' : 'Copy scan link'}</span>
+                  </button>
+
+                  <button type="button" className={styles.qrPrimaryActionButton} onClick={() => handlePrintFuelQrLabel(selectedStorage)}>
+                    <PrintIcon className={styles.buttonIcon} />
+                    <span>Print QR label</span>
+                  </button>
+
+                  <button type="button" className={styles.qrPrimaryActionButton} onClick={() => void handleDownloadFuelQr(selectedStorage)}>
+                    <QrIcon className={styles.buttonIcon} />
+                    <span>Download QR</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       ) : null}
 
