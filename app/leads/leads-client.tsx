@@ -511,6 +511,22 @@ function asBoolean(value: unknown): boolean {
   return value === true || String(value ?? '').trim().toLowerCase() === 'true';
 }
 
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  const seen = new Set<string>();
+  const entries: string[] = [];
+
+  value.forEach((entry) => {
+    const text = asText(entry);
+    if (!text || seen.has(text)) return;
+    seen.add(text);
+    entries.push(text);
+  });
+
+  return entries;
+}
+
 function leadPartnerNotes(lead: AssetLead): LeadPartnerNote[] {
   return Array.isArray(lead.partnerNotes)
     ? lead.partnerNotes.filter((note) => asText(note.noteText) || note.attachment)
@@ -723,9 +739,16 @@ function assetPhotos(lead: AssetLead): string[] {
     return [];
   }
 
-  return Array.isArray(lead.assetSnapshot.photos)
-    ? lead.assetSnapshot.photos.map((photo) => String(photo ?? '').trim()).filter(Boolean)
-    : [];
+  return asStringArray(lead.assetSnapshot.photos);
+}
+
+function leadSharedPhotoUrls(lead: AssetLead): string[] {
+  return asStringArray(lead.includedSections.sharePhotoUrls)
+    .concat(asStringArray(lead.includedSections.ownerSharePhotoUrls))
+    .concat(asStringArray(lead.assetSnapshot.sharePhotoUrls))
+    .concat(asStringArray(lead.assetSnapshot.ownerSharePhotoUrls))
+    .filter((url, index, urls) => urls.indexOf(url) === index)
+    .slice(0, 3);
 }
 
 function assetSpecs(lead: AssetLead): Record<string, unknown> | null {
@@ -1990,6 +2013,36 @@ export default function LeadsClient() {
     );
   }
 
+  function renderOwnerMessageBlock(lead: AssetLead) {
+    const sharedPhotos = leadSharedPhotoUrls(lead);
+
+    if (!lead.ownerMessage && !sharedPhotos.length) return null;
+
+    return (
+      <div className={assetStyles.noteStack}>
+        {lead.ownerMessage ? (
+          <div className={assetStyles.note}>
+            <strong>Owner message</strong>
+            <p>{lead.ownerMessage}</p>
+          </div>
+        ) : null}
+
+        {sharedPhotos.length ? (
+          <div className={`${assetStyles.note} ${styles.ownerSharedPhotoNote}`}>
+            <strong>Attached photo</strong>
+            <div className={styles.ownerSharedPhotoGrid}>
+              {sharedPhotos.map((url, index) => (
+                <a key={`${url}-${index}`} href={url} target="_blank" rel="noreferrer" className={styles.ownerSharedPhotoLink}>
+                  <img src={url} alt={`Owner attached photo ${index + 1}`} />
+                </a>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   function renderFullRegisterLeadDetails(lead: AssetLead) {
     const snapshot = registerLeadSnapshot(lead);
     const registerAssets = registerLeadAssets(lead);
@@ -2025,14 +2078,7 @@ export default function LeadsClient() {
           </div>
         </div>
 
-        {lead.ownerMessage ? (
-          <div className={assetStyles.noteStack}>
-            <div className={assetStyles.note}>
-              <strong>Owner message</strong>
-              <p>{lead.ownerMessage}</p>
-            </div>
-          </div>
-        ) : null}
+        {renderOwnerMessageBlock(lead)}
       </div>
     );
   }
@@ -2169,14 +2215,7 @@ export default function LeadsClient() {
             <small>Excl. VAT</small>
           </div>
 
-          {lead.ownerMessage ? (
-            <div className={assetStyles.noteStack}>
-              <div className={assetStyles.note}>
-                <strong>Owner message</strong>
-                <p>{lead.ownerMessage}</p>
-              </div>
-            </div>
-          ) : null}
+          {renderOwnerMessageBlock(lead)}
         </div>
       </div>
     );

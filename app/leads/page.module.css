@@ -1874,3 +1874,30 @@
     grid-template-columns: 1fr;
   }
 }
+
+.ownerSharedPhotoNote {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ownerSharedPhotoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 0.75rem;
+}
+
+.ownerSharedPhotoLink {
+  display: block;
+  overflow: hidden;
+  border: 1px solid rgba(203, 216, 226, 0.98);
+  border-radius: 1rem;
+  background: #f4f7fa;
+  box-shadow: 0 8px 18px rgba(23, 45, 75, 0.045);
+}
+
+.ownerSharedPhotoLink img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
