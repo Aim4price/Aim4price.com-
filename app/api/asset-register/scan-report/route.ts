@@ -616,14 +616,32 @@ function extractLifeWorkedPercentFromNote(note: string): number | null {
   return Number.isFinite(parsed) ? Math.max(0, Math.min(100, parsed)) : null;
 }
 
-function formatEventUsage(asset: AssetRegisterItem, event: ScanEventRecord): string {
+function formatEventUsage(
+  asset: AssetRegisterItem,
+  event: ScanEventRecord,
+  options: { fallbackToLatest?: boolean } = {},
+): string {
+  const latestHours = typeof asset.hours === 'number' && Number.isFinite(asset.hours) ? asset.hours : null;
+
   if (typeof event.hours === 'number' && Number.isFinite(event.hours)) {
-    return `${formatInteger(event.hours)} ${getUsageUnit(asset)}`;
+    if (event.hours > 0 || !options.fallbackToLatest || latestHours === null || latestHours <= 0) {
+      return `${formatInteger(event.hours)} ${getUsageUnit(asset)}`;
+    }
   }
 
   const lifeWorkedPercent = extractLifeWorkedPercentFromNote(event.note);
   if (lifeWorkedPercent !== null) {
     return `${formatPercent(lifeWorkedPercent)} worked`;
+  }
+
+  if (options.fallbackToLatest) {
+    if (latestHours !== null && latestHours > 0) {
+      return `${formatInteger(latestHours)} ${getUsageUnit(asset)}`;
+    }
+
+    if (typeof asset.lifeWorkedPercent === 'number' && Number.isFinite(asset.lifeWorkedPercent)) {
+      return `${formatPercent(asset.lifeWorkedPercent)} worked`;
+    }
   }
 
   return '-';
@@ -1066,7 +1084,7 @@ function renderMaintenanceCards(asset: AssetRegisterItem, entries: MaintenanceEn
                 </div>
                 <div>
                   <span>Odometer</span>
-                  <strong>${escapeHtml(formatEventUsage(asset, entry.event))}</strong>
+                  <strong>${escapeHtml(formatEventUsage(asset, entry.event, { fallbackToLatest: true }))}</strong>
                 </div>
               </div>
 
@@ -2381,7 +2399,7 @@ function buildMaintenanceReportWorkbook(
         styled(formatExcelDateTime(entry.event.createdAtIso), 'text'),
         styled(entry.label, recordStyle),
         styled(entry.items.join(', '), 'text'),
-        styled(formatEventUsage(asset, entry.event), 'text'),
+        styled(formatEventUsage(asset, entry.event, { fallbackToLatest: true }), 'text'),
         styled(formatOperatorLabel(entry.event), 'text'),
         styled(excelText(formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude)), 'text'),
         styled(entry.notes, 'note'),
@@ -2395,7 +2413,7 @@ function buildMaintenanceReportWorkbook(
       styled(entry.items.join(', '), 'text'),
       styled(entry.kind === 'checked' ? '' : entry.company, 'text'),
       styled(entry.kind === 'checked' ? '' : entry.mechanic, 'text'),
-      styled(formatEventUsage(asset, entry.event), 'text'),
+      styled(formatEventUsage(asset, entry.event, { fallbackToLatest: true }), 'text'),
       styled(formatOperatorLabel(entry.event), 'text'),
       styled(excelText(formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude)), 'text'),
       styled(entry.notes, 'note'),
