@@ -846,7 +846,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       <div className={styles.confirmationBackdrop} role="dialog" aria-modal="true" aria-labelledby="storage-refill-warning-title">
         <div className={styles.confirmationCard}>
           <div className={styles.confirmationIcon} aria-hidden="true">!</div>
-          <h2 id="storage-refill-warning-title">Storage refill warning</h2>
+          <h2 id="storage-refill-warning-title">Warning</h2>
           <p>You are about to add fuel to the storage tank. This will change the tank level and fuel ledger records.</p>
           <div className={styles.confirmationActions}>
             <button type="button" className={styles.secondaryButton} onClick={cancelStorageRefillStart}>
@@ -913,7 +913,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       <section className={styles.stepCard}>
         <div className={styles.stepTitleBlock}>
           <span>Dipstick note</span>
-          <h1>Record dipstick note</h1>
+          <h1>Dipstick note</h1>
           <p>Saves a note on {visibleStorageName}. No litre change. No export entry.</p>
         </div>
         <div className={styles.storageNoticeBox}>
