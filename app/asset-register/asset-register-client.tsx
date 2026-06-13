@@ -236,6 +236,8 @@ type LatestMaintenanceStatus = {
   summary: string;
   note: string;
   operatorName: string;
+  photoUrls?: string[];
+  photoCount?: number;
   createdAtIso: string;
   notedAtIso: string | null;
 };
@@ -7171,6 +7173,11 @@ export default function AssetRegisterClient() {
                           .filter(Boolean)
                           .join(' · ')
                       : '';
+                    const maintenancePhotoCount = latestMaintenanceStatus
+                      ? typeof latestMaintenanceStatus.photoCount === 'number'
+                        ? latestMaintenanceStatus.photoCount
+                        : latestMaintenanceStatus.photoUrls?.length ?? 0
+                      : 0;
                     const isMarkingMaintenanceNoted = latestMaintenanceStatus
                       ? busyMaintenanceStatusId === latestMaintenanceStatus.id
                       : false;
@@ -7291,7 +7298,10 @@ export default function AssetRegisterClient() {
                               <div className={styles.partnerNoteText}>
                                 <strong>Maintenance has been done</strong>
                                 <p>{latestMaintenanceStatus.summary}</p>
-                                {latestMaintenanceStatus.note ? <p>Note: {latestMaintenanceStatus.note}</p> : null}
+                                {latestMaintenanceStatus.note ? <p>Notes/Problems: {latestMaintenanceStatus.note}</p> : null}
+                                {maintenancePhotoCount > 0 ? (
+                                  <p>{maintenancePhotoCount} maintenance photo{maintenancePhotoCount === 1 ? '' : 's'} saved to this asset.</p>
+                                ) : null}
                                 {maintenanceDoneMeta ? <small className={styles.maintenanceDoneMeta}>{maintenanceDoneMeta}</small> : null}
                               </div>
                               <button
