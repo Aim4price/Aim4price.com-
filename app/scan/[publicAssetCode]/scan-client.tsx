@@ -86,15 +86,17 @@ type ScanAuthResponse = {
   error?: string;
 };
 
+type ScanUploadedPhoto = {
+  uploadId: string;
+  url: string;
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+};
+
 type ScanUploadResponse = {
   ok: boolean;
-  uploads?: Array<{
-    uploadId: string;
-    url: string;
-    fileName: string;
-    contentType: string;
-    byteSize: number;
-  }>;
+  uploads?: ScanUploadedPhoto[];
   error?: string;
   pinRequired?: boolean;
 };
@@ -151,6 +153,7 @@ type PendingScanUpdate = {
 };
 
 const MAX_QR_PHOTOS = 12;
+const MAX_SHARE_PHOTOS = 1;
 const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
 const QR_PHOTO_MAX_DIMENSION = 1400;
 const QR_PHOTO_JPEG_QUALITY = 0.72;
@@ -1043,13 +1046,16 @@ export default function ScanClient({
   const [sharePartnerSearch, setSharePartnerSearch] = useState("");
   const [selectedSharePartnerId, setSelectedSharePartnerId] = useState("");
   const [shareOwnerMessage, setShareOwnerMessage] = useState("");
+  const [sharePhotoUrls, setSharePhotoUrls] = useState<string[]>([]);
   const [shareLeadStep, setShareLeadStep] = useState<ShareLeadStep>(null);
   const [shareConsentAccepted, setShareConsentAccepted] = useState(false);
   const [isLoadingSharePartners, setIsLoadingSharePartners] = useState(false);
   const [isSendingShareLead, setIsSendingShareLead] = useState(false);
+  const [isUploadingSharePhoto, setIsUploadingSharePhoto] = useState(false);
 
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const sharePhotoInputRef = useRef<HTMLInputElement | null>(null);
   const autoLocationKeyRef = useRef<string>("");
   const shareMapElementRef = useRef<HTMLDivElement | null>(null);
   const shareLeafletMapRef = useRef<any>(null);
@@ -1107,10 +1113,12 @@ export default function ScanClient({
     setSharePartnerSearch("");
     setSelectedSharePartnerId("");
     setShareOwnerMessage("");
+    setSharePhotoUrls([]);
     setShareLeadStep(null);
     setShareConsentAccepted(false);
     setIsLoadingSharePartners(false);
     setIsSendingShareLead(false);
+    setIsUploadingSharePhoto(false);
     setLocationState("idle");
     setLocationMessage(
       "Location must be enabled before this asset QR can continue.",
@@ -1431,6 +1439,26 @@ export default function ScanClient({
     }
   }
 
+  async function uploadScanPhotoFiles(files: File[]): Promise<ScanUploadedPhoto[]> {
+    const compressedFiles = await Promise.all(files.map((file) => compressQrPhoto(file)));
+    const formData = new FormData();
+    formData.set("publicAssetCode", normalizedCode);
+    compressedFiles.forEach((file) => formData.append("files", file));
+
+    const response = await fetch("/api/scan/uploads", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    const data = (await response.json().catch(() => null)) as ScanUploadResponse | null;
+
+    if (!response.ok || !data?.ok || !data.uploads?.length) {
+      throw new Error(data?.error ?? "Failed to upload photos.");
+    }
+
+    return data.uploads;
+  }
+
   async function handleUploadChange(event: ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.target.files ?? []) as File[];
     if (!selectedFiles.length) return;
@@ -1446,35 +1474,22 @@ export default function ScanClient({
     setIsUploading(true);
 
     try {
-      const compressedFiles = await Promise.all(files.map((file) => compressQrPhoto(file)));
-      const formData = new FormData();
-      formData.set("publicAssetCode", normalizedCode);
-      compressedFiles.forEach((file) => formData.append("files", file));
-
-      const response = await fetch("/api/scan/uploads", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-      const data = (await response.json().catch(() => null)) as ScanUploadResponse | null;
-
-      if (!response.ok || !data?.ok || !data.uploads?.length) {
-        throw new Error(data?.error ?? "Failed to upload photos.");
-      }
+      const uploads = await uploadScanPhotoFiles(files);
+      const uploadedUrls = uploads.map((entry) => entry.url);
 
       setDraft((current) => ({
         ...current,
         photoUrls: Array.from(
           new Set([
             ...current.photoUrls,
-            ...data.uploads!.map((entry) => entry.url),
+            ...uploadedUrls,
           ]),
         ).slice(0, MAX_QR_PHOTOS),
       }));
 
       setNotice({
         tone: "success",
-        message: `${data.uploads.length} photo${data.uploads.length === 1 ? "" : "s"} added.`,
+        message: `${uploads.length} photo${uploads.length === 1 ? "" : "s"} added.`,
       });
     } catch (error) {
       setNotice({
@@ -1485,6 +1500,33 @@ export default function ScanClient({
       event.target.value = "";
       setIsUploading(false);
     }
+  }
+
+  async function handleSharePhotoChange(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.target.files ?? []) as File[];
+    if (!selectedFiles.length) return;
+
+    const files = selectedFiles.slice(0, MAX_SHARE_PHOTOS);
+    setIsUploadingSharePhoto(true);
+
+    try {
+      const uploads = await uploadScanPhotoFiles(files);
+      const uploadedUrls = uploads.map((entry) => entry.url).filter(Boolean).slice(0, MAX_SHARE_PHOTOS);
+      setSharePhotoUrls(uploadedUrls);
+      setNotice({ tone: "success", message: uploadedUrls.length === 1 ? "Photo attached." : `${uploadedUrls.length} photos attached.` });
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "Failed to attach photo.",
+      });
+    } finally {
+      event.target.value = "";
+      setIsUploadingSharePhoto(false);
+    }
+  }
+
+  function handleRemoveSharePhoto(url: string) {
+    setSharePhotoUrls((current) => current.filter((entry) => entry !== url));
   }
 
   function handleRemovePhoto(url: string) {
@@ -1583,12 +1625,13 @@ export default function ScanClient({
     setSharePartnerSearch("");
     setSelectedSharePartnerId("");
     setShareOwnerMessage("");
+    setSharePhotoUrls([]);
     setShareLeadStep(null);
     setShareConsentAccepted(false);
   }
 
   function closeShareModal() {
-    if (isSaving || isSendingShareLead) return;
+    if (isSaving || isSendingShareLead || isUploadingSharePhoto) return;
     setIsShareModalOpen(false);
     setSharePartners([]);
     resetShareFlow();
@@ -1666,7 +1709,7 @@ export default function ScanClient({
   }
 
   function goBackToShareMap() {
-    if (isSendingShareLead) return;
+    if (isSendingShareLead || isUploadingSharePhoto) return;
     setShareLeadStep(null);
     setShareConsentAccepted(false);
   }
@@ -1674,6 +1717,11 @@ export default function ScanClient({
   function goToShareConsent() {
     if (!selectedSharePartnerId) {
       setNotice({ tone: "error", message: "Choose a dealer before sending." });
+      return;
+    }
+
+    if (isUploadingSharePhoto) {
+      setNotice({ tone: "error", message: "Wait for the photo upload to finish." });
       return;
     }
 
@@ -1693,6 +1741,11 @@ export default function ScanClient({
 
     if (!shareConsentAccepted) {
       setNotice({ tone: "error", message: "Confirm that the asset may be sent to the dealer." });
+      return;
+    }
+
+    if (isUploadingSharePhoto) {
+      setNotice({ tone: "error", message: "Wait for the photo upload to finish." });
       return;
     }
 
@@ -1722,6 +1775,7 @@ export default function ScanClient({
             operatorName: operatorName.trim(),
             latitude: shareLatitude,
             longitude: shareLongitude,
+            sharePhotoUrls,
           }),
         },
       );
@@ -2145,7 +2199,7 @@ export default function ScanClient({
   const saveButtonLabel = isSaving
     ? "Saving…"
     : isServicePhotoStep
-      ? "Done photos"
+      ? "Done"
       : activeEditor === "photos" && !draft.photoUrls.length
         ? "Add photos"
         : activeEditor === "service" && !draft.serviceMode
@@ -2462,12 +2516,54 @@ export default function ScanClient({
                       placeholder="Example: Please quote repair help or replacement parts for this asset."
                     />
                   </label>
+
+                  <div className={styles.sharePhotoPanel}>
+                    <button
+                      type="button"
+                      className={styles.sharePhotoButton}
+                      onClick={() => sharePhotoInputRef.current?.click()}
+                      disabled={isSaving || isSendingShareLead || isUploadingSharePhoto}
+                    >
+                      <span className={styles.sharePhotoButtonIcon}>
+                        <CameraIcon className={styles.sharePhotoButtonSvg} />
+                      </span>
+                      <span>
+                        <strong>{sharePhotoUrls.length ? "Change photo" : "Attach photo"}</strong>
+                        <small>{isUploadingSharePhoto ? "Uploading…" : "Optional"}</small>
+                      </span>
+                    </button>
+                    <input
+                      ref={sharePhotoInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className={styles.hiddenFileInput}
+                      onChange={handleSharePhotoChange}
+                      disabled={isSaving || isSendingShareLead || isUploadingSharePhoto}
+                    />
+
+                    {sharePhotoUrls.length ? (
+                      <div className={styles.sharePhotoPreviewGrid}>
+                        {sharePhotoUrls.map((url, index) => (
+                          <article key={`${url}-${index}`} className={styles.sharePhotoPreviewCard}>
+                            <img src={url} alt={`Attached dealer photo ${index + 1}`} />
+                            <div>
+                              <strong>Photo attached</strong>
+                              <span>Shown with this message.</span>
+                            </div>
+                            <button type="button" onClick={() => handleRemoveSharePhoto(url)} disabled={isSaving || isSendingShareLead || isUploadingSharePhoto}>
+                              Remove
+                            </button>
+                          </article>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
                 <footer className={styles.shareFooter}>
-                  <button type="button" className={styles.secondaryButton} onClick={goBackToShareMap} disabled={isSendingShareLead || isSaving}>
+                  <button type="button" className={styles.secondaryButton} onClick={goBackToShareMap} disabled={isSendingShareLead || isSaving || isUploadingSharePhoto}>
                     Back
                   </button>
-                  <button type="button" className={styles.primaryButton} onClick={goToShareConsent} disabled={isSendingShareLead || isSaving}>
+                  <button type="button" className={styles.primaryButton} onClick={goToShareConsent} disabled={isSendingShareLead || isSaving || isUploadingSharePhoto}>
                     Next
                   </button>
                 </footer>
@@ -2482,7 +2578,7 @@ export default function ScanClient({
 
                   <div className={styles.sharePopiaBox}>
                     <strong>Information included</strong>
-                    <p>Asset details, latest QR update, serial number, valuation summary, main photos and relevant documents will be shared with this dealer so they can respond through Aim4price.</p>
+                    <p>Asset details, latest QR update, serial number, valuation summary, main photos{sharePhotoUrls.length ? ", the attached photo" : ""} and relevant documents will be shared with this dealer.</p>
                   </div>
 
                   <label className={styles.shareConsentCheck}>
@@ -2495,16 +2591,16 @@ export default function ScanClient({
                   </label>
                 </div>
                 <footer className={styles.shareFooter}>
-                  <button type="button" className={styles.secondaryButton} onClick={() => setShareLeadStep("message")} disabled={isSendingShareLead || isSaving}>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setShareLeadStep("message")} disabled={isSendingShareLead || isSaving || isUploadingSharePhoto}>
                     Back
                   </button>
                   <button
                     type="button"
                     className={styles.primaryButton}
                     onClick={() => void handleSendDealerShareLead()}
-                    disabled={isSendingShareLead || isSaving || !shareConsentAccepted}
+                    disabled={isSendingShareLead || isSaving || isUploadingSharePhoto || !shareConsentAccepted}
                   >
-                    {isSendingShareLead || isSaving ? "Sending…" : "Send to dealer"}
+                    {isSendingShareLead || isSaving ? "Sending…" : isUploadingSharePhoto ? "Uploading…" : "Send to dealer"}
                   </button>
                 </footer>
               </>
@@ -2536,7 +2632,7 @@ export default function ScanClient({
                       ? "Fuel level"
                       : activeEditor === "service"
                         ? showServicePhotoStep
-                          ? "Maintenance photos"
+                          ? "Photos"
                           : draft.serviceMode === "checked"
                             ? serviceCopy.checkedTitle
                             : draft.serviceMode === "serviced"
@@ -2548,7 +2644,7 @@ export default function ScanClient({
                                   ? "Repairer details"
                                   : serviceCopy.repairedTitle
                                 : "Maintenance"
-                        : "Add photos"}
+                        : "Photos"}
                 </h3>
                 <p>
                   {activeEditor === "usage"
@@ -2559,7 +2655,7 @@ export default function ScanClient({
                       ? "Save the asset fuel gauge as it is now."
                       : activeEditor === "service"
                         ? showServicePhotoStep
-                          ? "Attach photos to this maintenance record."
+                          ? "Add clear photos."
                           : draft.serviceMode === "checked"
                             ? serviceCopy.checkedPrompt
                             : draft.serviceMode === "serviced"
@@ -2571,7 +2667,7 @@ export default function ScanClient({
                                   ? serviceCopy.detailsSubheader
                                   : serviceCopy.repairedPrompt
                                 : "Choose update type."
-                        : "Upload or take photos."}
+                        : "Add clear photos."}
                 </p>
               </div>
 
@@ -2665,8 +2761,8 @@ export default function ScanClient({
                   <div className={`${styles.modalStack} ${styles.servicePhotoStep}`}>
                     <div className={styles.servicePanel}>
                       <div className={styles.serviceSectionHeader}>
-                        <strong>Add maintenance photos</strong>
-                        <small>Upload from the gallery or use the camera. These photos stay attached to this maintenance record and the asset.</small>
+                        <strong>Photos</strong>
+                        <small>Add clear photos to this record.</small>
                       </div>
 
                       <div className={styles.mediaChoiceGrid}>
@@ -2680,8 +2776,7 @@ export default function ScanClient({
                             <UploadIcon className={styles.mediaButtonSvg} />
                           </span>
                           <span>
-                            <strong>Upload photos</strong>
-                            <small>Gallery</small>
+                            <strong>Upload</strong>
                           </span>
                         </button>
                         <button
@@ -2694,8 +2789,7 @@ export default function ScanClient({
                             <CameraIcon className={styles.mediaButtonSvg} />
                           </span>
                           <span>
-                            <strong>Take photos</strong>
-                            <small>Camera</small>
+                            <strong>Take photo</strong>
                           </span>
                         </button>
                       </div>
@@ -2721,8 +2815,8 @@ export default function ScanClient({
 
                       <p className={styles.helperText}>
                         {isUploading
-                          ? "Preparing and uploading photos…"
-                          : `${draft.photoUrls.length} of ${MAX_QR_PHOTOS} photos ready for this maintenance record.`}
+                          ? "Uploading…"
+                          : `${draft.photoUrls.length} / ${MAX_QR_PHOTOS} photos`}
                       </p>
 
                       {draft.photoUrls.length ? (
@@ -2739,8 +2833,8 @@ export default function ScanClient({
                       ) : (
                         <div className={styles.servicePhotoEmptyState}>
                           <CameraIcon className={styles.servicePhotoEmptyIcon} />
-                          <strong>No maintenance photos added yet.</strong>
-                          <span>Use Upload photos or Take photos above.</span>
+                          <strong>No photos yet.</strong>
+                          <span>Add photos above.</span>
                         </div>
                       )}
 
@@ -2914,11 +3008,11 @@ export default function ScanClient({
                             <CameraIcon className={styles.maintenancePhotoIconSvg} />
                           </span>
                           <span className={styles.maintenancePhotoText}>
-                            <strong>{draft.photoUrls.length ? "Manage maintenance photos" : "Add / take photos"}</strong>
+                            <strong>{draft.photoUrls.length ? "Photos" : "Add photos"}</strong>
                             <small>
                               {draft.photoUrls.length
                                 ? `${draft.photoUrls.length} photo${draft.photoUrls.length === 1 ? "" : "s"} ready for this record.`
-                                : "Attach photos to this maintenance record."}
+                                : "Optional."}
                             </small>
                           </span>
                         </button>
@@ -2982,11 +3076,11 @@ export default function ScanClient({
                                 <CameraIcon className={styles.maintenancePhotoIconSvg} />
                               </span>
                               <span className={styles.maintenancePhotoText}>
-                                <strong>{draft.photoUrls.length ? "Manage maintenance photos" : "Add / take photos"}</strong>
+                                <strong>{draft.photoUrls.length ? "Photos" : "Add photos"}</strong>
                                 <small>
                                   {draft.photoUrls.length
                                     ? `${draft.photoUrls.length} photo${draft.photoUrls.length === 1 ? "" : "s"} ready for this record.`
-                                    : "Attach photos to this maintenance record."}
+                                    : "Optional."}
                                 </small>
                               </span>
                             </button>
@@ -3028,11 +3122,11 @@ export default function ScanClient({
                                 <CameraIcon className={styles.maintenancePhotoIconSvg} />
                               </span>
                               <span className={styles.maintenancePhotoText}>
-                                <strong>{draft.photoUrls.length ? "Manage maintenance photos" : "Add / take photos"}</strong>
+                                <strong>{draft.photoUrls.length ? "Photos" : "Add photos"}</strong>
                                 <small>
                                   {draft.photoUrls.length
                                     ? `${draft.photoUrls.length} photo${draft.photoUrls.length === 1 ? "" : "s"} ready for this record.`
-                                    : "Attach photos before saving this record."}
+                                    : "Optional."}
                                 </small>
                               </span>
                             </button>
@@ -3081,11 +3175,11 @@ export default function ScanClient({
                                 <CameraIcon className={styles.maintenancePhotoIconSvg} />
                               </span>
                               <span className={styles.maintenancePhotoText}>
-                                <strong>{draft.photoUrls.length ? "Manage maintenance photos" : "Add / take photos"}</strong>
+                                <strong>{draft.photoUrls.length ? "Photos" : "Add photos"}</strong>
                                 <small>
                                   {draft.photoUrls.length
                                     ? `${draft.photoUrls.length} photo${draft.photoUrls.length === 1 ? "" : "s"} ready for this record.`
-                                    : "Attach photos to this maintenance record."}
+                                    : "Optional."}
                                 </small>
                               </span>
                             </button>
@@ -3127,11 +3221,11 @@ export default function ScanClient({
                                 <CameraIcon className={styles.maintenancePhotoIconSvg} />
                               </span>
                               <span className={styles.maintenancePhotoText}>
-                                <strong>{draft.photoUrls.length ? "Manage maintenance photos" : "Add / take photos"}</strong>
+                                <strong>{draft.photoUrls.length ? "Photos" : "Add photos"}</strong>
                                 <small>
                                   {draft.photoUrls.length
                                     ? `${draft.photoUrls.length} photo${draft.photoUrls.length === 1 ? "" : "s"} ready for this record.`
-                                    : "Attach photos before saving this record."}
+                                    : "Optional."}
                                 </small>
                               </span>
                             </button>
@@ -3160,8 +3254,7 @@ export default function ScanClient({
                         <UploadIcon className={styles.mediaButtonSvg} />
                       </span>
                       <span>
-                        <strong>Upload photos</strong>
-                        <small>Gallery</small>
+                        <strong>Upload</strong>
                       </span>
                     </button>
                     <button
@@ -3174,8 +3267,7 @@ export default function ScanClient({
                         <CameraIcon className={styles.mediaButtonSvg} />
                       </span>
                       <span>
-                        <strong>Take photos</strong>
-                        <small>Camera</small>
+                        <strong>Take photo</strong>
                       </span>
                     </button>
                   </div>
@@ -3201,8 +3293,8 @@ export default function ScanClient({
 
                   <p className={styles.helperText}>
                     {isUploading
-                      ? "Preparing and uploading photos…"
-                      : `${draft.photoUrls.length} of ${MAX_QR_PHOTOS} photos ready for this update.`}
+                      ? "Uploading…"
+                      : `${draft.photoUrls.length} / ${MAX_QR_PHOTOS} photos`}
                   </p>
 
                   {draft.photoUrls.length ? (
@@ -3216,7 +3308,13 @@ export default function ScanClient({
                         </article>
                       ))}
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className={styles.servicePhotoEmptyState}>
+                      <CameraIcon className={styles.servicePhotoEmptyIcon} />
+                      <strong>No photos yet.</strong>
+                      <span>Add photos above.</span>
+                    </div>
+                  )}
                 </div>
               ) : null}
             </div>
