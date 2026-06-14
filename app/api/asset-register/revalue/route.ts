@@ -21,6 +21,9 @@ type RevalueAssetResponse = {
   marketCount?: number;
   marketSources?: unknown[];
   marketMatchStrategy?: string;
+  marketAdjustmentExVat?: number | null;
+  marketRawAverageExVat?: number | null;
+  marketValueMode?: string;
   replacementPriceUsedExVat?: number | null;
   error?: string;
 };
@@ -175,6 +178,9 @@ export async function POST(request: NextRequest) {
       marketCount: result.marketCount,
       marketSources: result.marketSources,
       marketMatchStrategy: result.marketMatchStrategy,
+      marketAdjustmentExVat: result.marketAdjustmentExVat,
+      marketRawAverageExVat: result.marketRawAverageExVat,
+      marketValueMode: result.marketValueMode,
       replacementPriceUsedExVat: result.replacementPriceUsedExVat,
     });
   } catch (error) {
