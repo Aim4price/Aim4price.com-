@@ -2,6 +2,14 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import styles from './page.module.css';
+import {
+  createOfflineClientEventId,
+  enqueueOfflineMutation,
+  getOfflineMutationCount,
+  isOfflineNetworkError,
+  syncOfflineMutations,
+  type OfflineMutationKind,
+} from '../../../lib/offline-mutation-queue';
 
 type FuelStorageStatus = 'active' | 'archived';
 type FuelStorageEventType = 'opening_balance' | 'stock_in' | 'asset_issue' | 'dip' | 'adjustment';
@@ -101,6 +109,8 @@ type Notice = {
 type Coordinates = {
   latitude: number;
   longitude: number;
+  accuracyMeters: number | null;
+  capturedAtIso: string;
 };
 
 type FuelScanClientProps = {
@@ -110,6 +120,8 @@ type FuelScanClientProps = {
 const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
 const TOTAL_SCAN_PAGES = 9;
 const ISSUE_STEPS: IssueStep[] = ['asset', 'usage', 'beforeFuel', 'litres', 'filledFuel', 'work', 'notes'];
+const FUEL_OFFLINE_KINDS: OfflineMutationKind[] = ['fuel-ledger-issue', 'fuel-ledger-refill', 'fuel-ledger-dipstick'];
+const LOCAL_SAVE_MESSAGE = 'Saved on this phone. It will sync when signal returns.';
 const STEP_LABELS: Record<IssueStep, string> = {
   asset: 'Choose asset',
   usage: 'New recorded',
@@ -186,6 +198,14 @@ function safeNumber(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function locationTextForCoordinates(coordinates: Coordinates): string {
+  return `GPS ${coordinates.latitude.toFixed(6)}, ${coordinates.longitude.toFixed(6)}`;
+}
+
+function gpsAccuracyPayload(coordinates: Coordinates): number | '' {
+  return coordinates.accuracyMeters !== null && Number.isFinite(coordinates.accuracyMeters) ? coordinates.accuracyMeters : '';
+}
+
 export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClientProps) {
   const normalizedCode = normalizeFuelCode(publicFuelStorageCode);
   const [preview, setPreview] = useState<FuelStoragePublicPreview | null>(null);
@@ -213,6 +233,8 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [locationStatus, setLocationStatus] = useState('Location must be enabled before this fuel QR can continue.');
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const [doneOverrideMessage, setDoneOverrideMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -248,9 +270,11 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     setLocationStatus('Getting GPS location...');
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const nextCoordinates = {
+        const nextCoordinates: Coordinates = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
+          accuracyMeters: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null,
+          capturedAtIso: new Date(position.timestamp || Date.now()).toISOString(),
         };
         setCoordinates(nextCoordinates);
         setLocationStatus(`GPS captured: ${nextCoordinates.latitude.toFixed(6)}, ${nextCoordinates.longitude.toFixed(6)}`);
@@ -336,6 +360,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
 
   useEffect(() => {
     setIsDone(false);
+    setDoneOverrideMessage('');
     setStorage(null);
     setAssets([]);
     setAssetId('');
@@ -388,6 +413,48 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       // Local storage is optional for this scan screen.
     }
   }, [operatorName]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const kinds = FUEL_OFFLINE_KINDS;
+
+    async function syncQueuedFuelUpdates() {
+      const result = await syncOfflineMutations({ kinds });
+      if (!isMounted) return;
+      setPendingSyncCount(result.pendingCount);
+      if (result.syncedCount > 0) {
+        setNotice({
+          tone: 'success',
+          message: result.syncedCount === 1 ? 'Saved phone fuel update synced.' : `${result.syncedCount} saved phone fuel updates synced.`,
+        });
+      }
+    }
+
+    async function refreshPendingCount() {
+      const count = await getOfflineMutationCount(kinds);
+      if (isMounted) setPendingSyncCount(count);
+    }
+
+    void refreshPendingCount();
+    void syncQueuedFuelUpdates();
+
+    const handleOnline = () => void syncQueuedFuelUpdates();
+    const handleFocus = () => void syncQueuedFuelUpdates();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') void syncQueuedFuelUpdates();
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   async function handlePinSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -498,6 +565,23 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  function finishScan(action: DoneAction, overrideMessage = '') {
+    setDoneAction(action);
+    setDoneOverrideMessage(overrideMessage);
+    setNotice(null);
+    setIsDone(true);
+
+    try {
+      window.history.replaceState({ aim4priceFuelQrDone: true }, '', window.location.href);
+    } catch {
+      // Ignore history replacement errors.
+    }
+
+    window.setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 80);
+  }
+
   async function handleIssueSubmit() {
     setIsSaving(true);
     setNotice(null);
@@ -529,48 +613,59 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
         throw new Error('GPS location is required. Enable location and capture GPS again.');
       }
 
-      const response = await fetch(`/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/issue`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          assetId,
-          litres: Number(litres),
-          assetFuelPercentBefore: Number(fuelPercentText(assetFuelPercentBefore)),
-          assetFuelPercentAfter: Number(fuelPercentText(assetFuelPercentAfter)),
-          assetUsageReading: usageNotApplicable ? null : Number(assetUsageReading),
-          operatorName,
-          activityText,
-          workAreaText,
-          note,
-          latitude: coordinates.latitude,
-          longitude: coordinates.longitude,
-          locationText: `GPS ${coordinates.latitude.toFixed(6)}, ${coordinates.longitude.toFixed(6)}`,
-        }),
-      });
-      const data = (await response.json()) as PayloadResponse & { event?: FuelLedgerEvent };
-
-      if (!response.ok || !data.ok || !data.storage) {
-        throw new Error(data.error || 'Failed to save fuel issue.');
-      }
-
-      setStorage(data.storage);
-      setPreview(data.storage);
-      setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || accountBusinessName);
-      setAssets(data.assets ?? []);
-      setDoneAction('asset_issue');
-      setNotice(null);
-      setIsDone(true);
+      const endpoint = `/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/issue`;
+      const clientEventId = createOfflineClientEventId('fuel-ledger-issue');
+      const payload = {
+        assetId,
+        litres: Number(litres),
+        assetFuelPercentBefore: Number(fuelPercentText(assetFuelPercentBefore)),
+        assetFuelPercentAfter: Number(fuelPercentText(assetFuelPercentAfter)),
+        assetUsageReading: usageNotApplicable ? null : Number(assetUsageReading),
+        operatorName,
+        activityText,
+        workAreaText,
+        note,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        locationText: locationTextForCoordinates(coordinates),
+        clientEventId,
+        clientCapturedAt: coordinates.capturedAtIso,
+        gpsAccuracyMeters: gpsAccuracyPayload(coordinates),
+      };
 
       try {
-        window.history.replaceState({ aim4priceFuelQrDone: true }, '', window.location.href);
-      } catch {
-        // Ignore history replacement errors.
-      }
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = (await response.json()) as PayloadResponse & { event?: FuelLedgerEvent };
 
-      window.setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 80);
+        if (!response.ok || !data.ok || !data.storage) {
+          throw new Error(data.error || 'Failed to save fuel issue.');
+        }
+
+        setStorage(data.storage);
+        setPreview(data.storage);
+        setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || accountBusinessName);
+        setAssets(data.assets ?? []);
+        finishScan('asset_issue');
+      } catch (error) {
+        if (isOfflineNetworkError(error)) {
+          await enqueueOfflineMutation({
+            id: clientEventId,
+            kind: 'fuel-ledger-issue',
+            endpoint,
+            payload,
+          });
+          setPendingSyncCount(await getOfflineMutationCount(FUEL_OFFLINE_KINDS));
+          finishScan('asset_issue', LOCAL_SAVE_MESSAGE);
+          return;
+        }
+
+        throw error;
+      }
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save fuel issue.' });
     } finally {
@@ -647,42 +742,53 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
         throw new Error('GPS location is required. Enable location and capture GPS again.');
       }
 
-      const response = await fetch(`/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/refill`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          litres: litresNumber,
-          operatorName,
-          note: refillNote,
-          latitude: coordinates.latitude,
-          longitude: coordinates.longitude,
-          locationText: `GPS ${coordinates.latitude.toFixed(6)}, ${coordinates.longitude.toFixed(6)}`,
-        }),
-      });
-      const data = (await response.json()) as PayloadResponse & { event?: FuelLedgerEvent };
-
-      if (!response.ok || !data.ok || !data.storage) {
-        throw new Error(data.error || 'Failed to save storage refill.');
-      }
-
-      setStorage(data.storage);
-      setPreview(data.storage);
-      setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || accountBusinessName);
-      setAssets(data.assets ?? []);
-      setDoneAction('storage_refill');
-      setNotice(null);
-      setIsDone(true);
+      const endpoint = `/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/refill`;
+      const clientEventId = createOfflineClientEventId('fuel-ledger-refill');
+      const payload = {
+        litres: litresNumber,
+        operatorName,
+        note: refillNote,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        locationText: locationTextForCoordinates(coordinates),
+        clientEventId,
+        clientCapturedAt: coordinates.capturedAtIso,
+        gpsAccuracyMeters: gpsAccuracyPayload(coordinates),
+      };
 
       try {
-        window.history.replaceState({ aim4priceFuelQrDone: true }, '', window.location.href);
-      } catch {
-        // Ignore history replacement errors.
-      }
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = (await response.json()) as PayloadResponse & { event?: FuelLedgerEvent };
 
-      window.setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 80);
+        if (!response.ok || !data.ok || !data.storage) {
+          throw new Error(data.error || 'Failed to save storage refill.');
+        }
+
+        setStorage(data.storage);
+        setPreview(data.storage);
+        setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || accountBusinessName);
+        setAssets(data.assets ?? []);
+        finishScan('storage_refill');
+      } catch (error) {
+        if (isOfflineNetworkError(error)) {
+          await enqueueOfflineMutation({
+            id: clientEventId,
+            kind: 'fuel-ledger-refill',
+            endpoint,
+            payload,
+          });
+          setPendingSyncCount(await getOfflineMutationCount(FUEL_OFFLINE_KINDS));
+          finishScan('storage_refill', LOCAL_SAVE_MESSAGE);
+          return;
+        }
+
+        throw error;
+      }
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save storage refill.' });
     } finally {
@@ -704,35 +810,60 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
         throw new Error('Enter the dipstick note before saving.');
       }
 
-      const response = await fetch(`/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/dipstick`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dipstickNote: noteText }),
-      });
-      const data = (await response.json()) as PayloadResponse;
-
-      if (!response.ok || !data.ok || !data.storage) {
-        throw new Error(data.error || 'Failed to save dipstick note.');
+      if (operatorName.trim().length < 2) {
+        throw new Error('Enter your name before saving the dipstick note.');
       }
 
-      setStorage(data.storage);
-      setPreview(data.storage);
-      setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || accountBusinessName);
-      setAssets(data.assets ?? []);
-      setDoneAction('dipstick_note');
-      setNotice(null);
-      setIsDone(true);
+      if (!coordinates) {
+        throw new Error('GPS location is required. Enable location and capture GPS again.');
+      }
+
+      const endpoint = `/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/dipstick`;
+      const clientEventId = createOfflineClientEventId('fuel-ledger-dipstick');
+      const payload = {
+        dipstickNote: noteText,
+        operatorName,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        locationText: locationTextForCoordinates(coordinates),
+        clientEventId,
+        clientCapturedAt: coordinates.capturedAtIso,
+        gpsAccuracyMeters: gpsAccuracyPayload(coordinates),
+      };
 
       try {
-        window.history.replaceState({ aim4priceFuelQrDone: true }, '', window.location.href);
-      } catch {
-        // Ignore history replacement errors.
-      }
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = (await response.json()) as PayloadResponse;
 
-      window.setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 80);
+        if (!response.ok || !data.ok || !data.storage) {
+          throw new Error(data.error || 'Failed to save dipstick note.');
+        }
+
+        setStorage(data.storage);
+        setPreview(data.storage);
+        setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || accountBusinessName);
+        setAssets(data.assets ?? []);
+        finishScan('dipstick_note');
+      } catch (error) {
+        if (isOfflineNetworkError(error)) {
+          await enqueueOfflineMutation({
+            id: clientEventId,
+            kind: 'fuel-ledger-dipstick',
+            endpoint,
+            payload,
+          });
+          setPendingSyncCount(await getOfflineMutationCount(FUEL_OFFLINE_KINDS));
+          finishScan('dipstick_note', LOCAL_SAVE_MESSAGE);
+          return;
+        }
+
+        throw error;
+      }
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save dipstick note.' });
     } finally {
@@ -1177,7 +1308,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       <main className={styles.scanPage}>
         <section className={styles.thankYouScreen}>
           <h1>{doneCopy[doneAction].title}</h1>
-          <p>{doneCopy[doneAction].message}</p>
+          <p>{doneOverrideMessage || doneCopy[doneAction].message}</p>
         </section>
       </main>
     );
@@ -1187,6 +1318,11 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     <main className={styles.scanPage}>
       <div className={styles.scanShell}>
         {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
+        {pendingSyncCount > 0 ? (
+          <div className={`${styles.notice} ${styles.noticeSuccess}`}>
+            {pendingSyncCount === 1 ? '1 phone-saved fuel update is waiting to sync.' : `${pendingSyncCount} phone-saved fuel updates are waiting to sync.`}
+          </div>
+        ) : null}
 
         {unauthenticated ? (
           <section className={`${styles.pinStepCard} ${!coordinates ? styles.pinStepCardBlocked : ''}`}>
