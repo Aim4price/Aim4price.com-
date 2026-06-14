@@ -1410,11 +1410,13 @@ function isBlankReportValue(value: string): boolean {
 }
 
 function normalizeReportPhotoUrl(value: unknown): string {
-  const url = String(value ?? '').trim().slice(0, 2000);
+  const rawUrl = String(value ?? '').trim();
 
-  if (!url) {
+  if (!rawUrl) {
     return '';
   }
+
+  const url = rawUrl.startsWith('data:') ? rawUrl : rawUrl.slice(0, 2000);
 
   if (url.startsWith('/') && !url.startsWith('//') && typeof window !== 'undefined' && window.location?.origin) {
     return `${window.location.origin}${url}`;
