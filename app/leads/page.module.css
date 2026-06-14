@@ -1900,6 +1900,72 @@
   background: linear-gradient(180deg, #eef3f6 0%, #dde7ee 100%) !important;
 }
 
+.leadPreviewOpenButton {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.leadPreviewOpenButton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(8, 20, 32, 0) 58%, rgba(8, 20, 32, 0.28) 100%);
+  opacity: 0;
+  transition: opacity 160ms ease;
+  pointer-events: none;
+}
+
+.leadPreviewOpenButton:hover::after,
+.leadPreviewOpenButton:focus-visible::after {
+  opacity: 1;
+}
+
+.leadPreviewOpenButton:focus-visible {
+  outline: 3px solid rgba(48, 118, 181, 0.48);
+  outline-offset: 3px;
+}
+
+.leadPreviewOpenLabel {
+  position: absolute;
+  right: 0.58rem;
+  bottom: 0.58rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.62rem;
+  padding: 0 0.62rem;
+  border: 1px solid rgba(255, 255, 255, 0.66);
+  border-radius: 999px;
+  background: rgba(15, 31, 42, 0.76);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(0.26rem);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.leadPreviewOpenButton:hover .leadPreviewOpenLabel,
+.leadPreviewOpenButton:focus-visible .leadPreviewOpenLabel {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .leadPreviewImage,
 .leadPreviewPlaceholder {
   width: 100% !important;
@@ -2020,8 +2086,8 @@
 .ownerPhotoPreviewModal {
   position: relative;
   z-index: 2;
-  width: min(92vw, 820px);
-  max-height: min(88vh, 760px);
+  width: min(94vw, 1120px);
+  max-height: min(90vh, 880px);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 0.85rem;
@@ -2095,7 +2161,7 @@
   position: relative;
   display: grid;
   place-items: center;
-  min-height: min(58vh, 470px);
+  min-height: min(70vh, 620px);
   overflow: hidden;
   border: 1px solid rgba(211, 224, 235, 0.98);
   border-radius: 1.08rem;
@@ -2114,7 +2180,7 @@
   width: auto;
   height: auto;
   max-width: 100%;
-  max-height: min(64vh, 540px);
+  max-height: min(76vh, 720px);
   object-fit: contain;
 }
 
