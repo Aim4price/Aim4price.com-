@@ -357,12 +357,18 @@ export async function POST(request: NextRequest) {
       });
 
       try {
+        const marketAdjustmentDeltaExVat = selectedMethod === 'market' && genericResult.aim4priceValueExVat !== null
+          ? Math.round(savedRun.selectedValueExVat - genericResult.aim4priceValueExVat)
+          : null;
         const asset = await createAssetRegisterItemFromGenericValuation({
           userId: session.user.id,
           valuationRunId: savedRun.runId,
           result: genericResult,
           selectedMethod,
           selectedValueExVat: savedRun.selectedValueExVat,
+          marketValueExVat: selectedMethod === 'market' ? savedRun.selectedValueExVat : genericResult.marketAverageExVat,
+          marketAdjustmentDeltaExVat,
+          marketRawAverageExVat: genericResult.marketAverageExVat,
           note: '',
           photos: photoUrls,
         });
@@ -416,12 +422,18 @@ export async function POST(request: NextRequest) {
     );
 
     try {
+      const marketAdjustmentDeltaExVat = input.selectedMethod === 'market' && valuationResult.aim4priceValueExVat !== null
+        ? Math.round(selectedValueExVat - valuationResult.aim4priceValueExVat)
+        : null;
       const asset = await createAssetRegisterItemFromValuation({
         userId: session.user.id,
         valuationRunId: savedRun.runId,
         result: valuationResult,
         selectedMethod: input.selectedMethod,
         selectedValueExVat,
+        marketValueExVat: input.selectedMethod === 'market' ? selectedValueExVat : valuationResult.marketMid,
+        marketAdjustmentDeltaExVat,
+        marketRawAverageExVat: valuationResult.marketMid,
         year: input.year,
         hours: input.hours,
         note: '',
