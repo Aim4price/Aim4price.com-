@@ -2736,6 +2736,203 @@ function toAbsoluteUrl(value?: string | null): string | null {
   }
 }
 
+type PrintableImageOptions = {
+  maxDimension?: number;
+  mimeType?: 'image/jpeg' | 'image/png' | 'image/webp';
+  quality?: number;
+};
+
+const PRINT_REGISTER_THUMB_MAX_DIMENSION = 420;
+const PRINT_ASSET_SHEET_PHOTO_MAX_DIMENSION = 1280;
+const PRINT_LOGO_MAX_DIMENSION = 900;
+const PRINT_IMAGE_CONCURRENCY = 4;
+
+function isDataUrl(value: string): boolean {
+  return /^data:/i.test(value.trim());
+}
+
+function readFetchableImageUrl(value?: string | null): string | null {
+  const url = toAbsoluteUrl(value);
+
+  if (!url) {
+    return null;
+  }
+
+  return url;
+}
+
+function blobToDataUrl(blob: Blob): Promise<string | null> {
+  if (typeof FileReader === 'undefined') {
+    return Promise.resolve(null);
+  }
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+
+    reader.addEventListener('load', () => {
+      resolve(typeof reader.result === 'string' ? reader.result : null);
+    }, { once: true });
+    reader.addEventListener('error', () => resolve(null), { once: true });
+    reader.readAsDataURL(blob);
+  });
+}
+
+function loadImageElement(src: string): Promise<HTMLImageElement | null> {
+  if (typeof Image === 'undefined') {
+    return Promise.resolve(null);
+  }
+
+  return new Promise((resolve) => {
+    const image = new Image();
+
+    image.addEventListener('load', () => resolve(image), { once: true });
+    image.addEventListener('error', () => resolve(null), { once: true });
+    image.src = src;
+  });
+}
+
+async function resizeImageBlobForPrint(blob: Blob, options: PrintableImageOptions): Promise<string | null> {
+  if (typeof document === 'undefined' || typeof URL === 'undefined') {
+    return null;
+  }
+
+  const sourceUrl = URL.createObjectURL(blob);
+
+  try {
+    const image = await loadImageElement(sourceUrl);
+
+    if (!image) {
+      return null;
+    }
+
+    const naturalWidth = image.naturalWidth || image.width;
+    const naturalHeight = image.naturalHeight || image.height;
+
+    if (!naturalWidth || !naturalHeight) {
+      return null;
+    }
+
+    const maxDimension = Math.max(1, Math.round(options.maxDimension ?? PRINT_ASSET_SHEET_PHOTO_MAX_DIMENSION));
+    const scale = Math.min(1, maxDimension / Math.max(naturalWidth, naturalHeight));
+    const canvas = document.createElement('canvas');
+
+    canvas.width = Math.max(1, Math.round(naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(naturalHeight * scale));
+
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      return null;
+    }
+
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    return canvas.toDataURL(options.mimeType ?? 'image/jpeg', options.quality ?? 0.84);
+  } catch {
+    return null;
+  } finally {
+    URL.revokeObjectURL(sourceUrl);
+  }
+}
+
+async function preparePrintableImageUrl(value?: string | null, options: PrintableImageOptions = {}): Promise<string | null> {
+  const url = readFetchableImageUrl(value);
+
+  if (!url) {
+    return null;
+  }
+
+  if (isDataUrl(url) || typeof fetch === 'undefined') {
+    return url;
+  }
+
+  try {
+    const response = await fetch(url, {
+      credentials: 'include',
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return url;
+    }
+
+    const blob = await response.blob();
+
+    if (!blob.size) {
+      return url;
+    }
+
+    const contentType = String(response.headers.get('content-type') || blob.type || '').toLowerCase();
+
+    if (contentType && !contentType.startsWith('image/') && contentType !== 'application/octet-stream') {
+      return url;
+    }
+
+    return (await resizeImageBlobForPrint(blob, options)) ?? (await blobToDataUrl(blob)) ?? url;
+  } catch {
+    return url;
+  }
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(Math.max(1, concurrency), items.length);
+
+  await Promise.all(Array.from({ length: workerCount }, async () => {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+    }
+  }));
+
+  return results;
+}
+
+async function preparePrintableImageUrls(values: string[], options: PrintableImageOptions = {}): Promise<string[]> {
+  const urls = normalizePhotos(values);
+  const preparedUrls = await mapWithConcurrency(urls, PRINT_IMAGE_CONCURRENCY, (url) => preparePrintableImageUrl(url, options));
+  const seen = new Set<string>();
+
+  return preparedUrls
+    .filter((url): url is string => Boolean(url))
+    .filter((url) => {
+      if (seen.has(url)) {
+        return false;
+      }
+
+      seen.add(url);
+      return true;
+    });
+}
+
+async function buildPrintableAssetThumbnailMap(reportAssets: RegisterAsset[]): Promise<Map<string, string>> {
+  const rows = await mapWithConcurrency(reportAssets, PRINT_IMAGE_CONCURRENCY, async (asset) => {
+    const photoUrl = await preparePrintableImageUrl(assetPreviewImage(asset), {
+      maxDimension: PRINT_REGISTER_THUMB_MAX_DIMENSION,
+      mimeType: 'image/jpeg',
+      quality: 0.82,
+    });
+
+    return [asset.id, photoUrl] as const;
+  });
+
+  const thumbnailMap = new Map<string, string>();
+
+  rows.forEach(([assetId, photoUrl]) => {
+    if (photoUrl) {
+      thumbnailMap.set(assetId, photoUrl);
+    }
+  });
+
+  return thumbnailMap;
+}
+
 function buildAssetScanUrl(asset: RegisterAsset): string | null {
   const publicAssetCode = String(asset.publicAssetCode ?? '').trim();
 
@@ -5873,10 +6070,18 @@ export default function AssetRegisterClient() {
     }
   }
 
-  function handlePrintAssetSheet(asset: RegisterAsset) {
-    const assetPhotoUrls = asset.photos
-      .map((photo) => toAbsoluteUrl(photo))
-      .filter((photoUrl): photoUrl is string => Boolean(photoUrl));
+  async function handlePrintAssetSheet(asset: RegisterAsset) {
+    const [reportLogoUrl, assetPhotoUrls] = await Promise.all([
+      preparePrintableImageUrl(getRegisterReportLogoUrl(activeRegister), {
+        maxDimension: PRINT_LOGO_MAX_DIMENSION,
+        mimeType: 'image/png',
+      }),
+      preparePrintableImageUrls(asset.photos, {
+        maxDimension: PRINT_ASSET_SHEET_PHOTO_MAX_DIMENSION,
+        mimeType: 'image/jpeg',
+        quality: 0.86,
+      }),
+    ]);
     const documentsCount = assetDocuments(asset).length;
     const ownerProfile = reportProfile;
     const profileLocation = [ownerProfile?.townCity, ownerProfile?.province]
@@ -5925,7 +6130,7 @@ export default function AssetRegisterClient() {
     ];
 
     const didOpen = openAssetSheetPrint({
-      logoUrl: getRegisterReportLogoUrl(activeRegister),
+      logoUrl: reportLogoUrl ?? getRegisterReportLogoUrl(activeRegister),
       generatedAt: formatDate(new Date().toISOString()),
       assetBadge: familyLabel,
       heroTitle: asset.title,
@@ -6405,9 +6610,16 @@ export default function AssetRegisterClient() {
     const ownerName = buildOwnerName(profile);
     const ownerEmail = profile?.marketplaceEmail?.trim() || '—';
     const ownerPhone = profile?.phone?.trim() || '—';
+    const [reportLogoUrl, reportPhotoUrlByAssetId] = await Promise.all([
+      preparePrintableImageUrl(getRegisterReportLogoUrl(activeRegister), {
+        maxDimension: PRINT_LOGO_MAX_DIMENSION,
+        mimeType: 'image/png',
+      }),
+      buildPrintableAssetThumbnailMap(reportAssets),
+    ]);
 
     const didOpen = openAssetRegisterSummaryPrint({
-      logoUrl: getRegisterReportLogoUrl(activeRegister),
+      logoUrl: reportLogoUrl ?? getRegisterReportLogoUrl(activeRegister),
       generatedAt: formatDate(new Date().toISOString()),
       reportTitle: `${reportOption.label} Report`,
       reportSubtitle: 'Aim4price asset register',
@@ -6462,7 +6674,7 @@ export default function AssetRegisterClient() {
           licenseRegistrationNumber: readLicenseRegistrationNumber(asset) || undefined,
           documents: documentsCount ? `${documentsCount} saved` : 'None',
           updated: assetStatusDateLabel(asset),
-          photoUrl: toAbsoluteUrl(assetPreviewImage(asset)) ?? null,
+          photoUrl: reportPhotoUrlByAssetId.get(asset.id) ?? toAbsoluteUrl(assetPreviewImage(asset)) ?? null,
         };
       }),
       footerNote:
