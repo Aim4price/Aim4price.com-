@@ -104,6 +104,9 @@ export type SaveScanAssetEventInput = {
   latitude?: number | null;
   longitude?: number | null;
   locationText?: string | null;
+  clientEventId?: string | null;
+  clientCapturedAt?: string | null;
+  gpsAccuracyMeters?: number | null;
 };
 
 type ScanAccessRow = {
@@ -195,6 +198,28 @@ function asId(value: unknown): string {
 function asNumber(value: unknown): number | null {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeClientEventId(value: unknown): string | null {
+  const normalized = asText(value)
+    .replace(/[^a-zA-Z0-9:._-]/g, '')
+    .slice(0, 140);
+  return normalized || null;
+}
+
+function normalizeClientCapturedAt(value: unknown): string | null {
+  const text = asText(value);
+  if (!text) return null;
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
+function normalizeGpsAccuracyMeters(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 50000) return null;
+  return Math.round(parsed * 100) / 100;
 }
 
 function asBoolean(value: unknown): boolean | null {
@@ -1016,6 +1041,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
   asset: ScanSafeAsset;
   event: ScanEventRecord;
 }> {
+  await ensureFuelLedgerTables();
   const db = getDb();
   const normalizedCode = normalizePublicAssetCode(input.publicAssetCode);
 
@@ -1111,6 +1137,59 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         ? input.longitude
         : null;
     const nextLocationText = asText(input.locationText) || null;
+    const clientEventId = normalizeClientEventId(input.clientEventId);
+    const clientCapturedAt = normalizeClientCapturedAt(input.clientCapturedAt);
+    const gpsAccuracyMeters = normalizeGpsAccuracyMeters(input.gpsAccuracyMeters);
+
+    if (clientEventId) {
+      const existingEvent = await client.query<ScanEventRow>(
+        `
+          select
+            e.id,
+            e.actor_type,
+            e.operator_name,
+            e.activity_text,
+            e.work_area_text,
+            e.hours,
+            e.fuel_percent,
+            e.fuel_litres,
+            e.fuel_storage_id,
+            e.fuel_storage_event_id,
+            e.condition,
+            e.note,
+            e.photo_urls,
+            e.latitude,
+            e.longitude,
+            e.location_text,
+            e.maintenance_noted_at,
+            e.created_at,
+            null::uuid as fuel_ledger_storage_id,
+            null::numeric as fuel_ledger_litres,
+            null::text as fuel_storage_name,
+            null::text as fuel_storage_public_code,
+            null::text as fuel_ledger_event_type,
+            null::numeric as fuel_storage_level_before_litres,
+            null::numeric as fuel_storage_level_after_litres,
+            null::integer as asset_fuel_percent_before,
+            null::integer as asset_fuel_percent_after,
+            null::numeric as asset_usage_reading
+          from public.asset_scan_events e
+          where e.asset_id::text = $1 and e.client_event_id = $2
+          order by e.created_at desc, e.id desc
+          limit 1
+        `,
+        [currentAsset.id, clientEventId],
+      );
+
+      const duplicateEvent = existingEvent.rows[0];
+      if (duplicateEvent) {
+        await client.query('COMMIT');
+        return {
+          asset: currentAsset,
+          event: mapScanEventRow(duplicateEvent),
+        };
+      }
+    }
 
     if (nextHours !== null && currentUsageMode === 'percent') {
       throw new Error('USAGE_MODE_PERCENT_CANNOT_ACCEPT_HOURS');
@@ -1170,6 +1249,10 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           latitude,
           longitude,
           location_text,
+          client_event_id,
+          client_captured_at,
+          synced_at,
+          gps_accuracy_meters,
           created_at
         )
         values (
@@ -1184,7 +1267,11 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           $9::double precision,
           $10::double precision,
           $11::text,
-          now()
+          $12::text,
+          $13::timestamptz,
+          now(),
+          $14::double precision,
+          coalesce($13::timestamptz, now())
         )
         returning
           id,
@@ -1212,6 +1299,9 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         nextLatitude,
         nextLongitude,
         nextLocationText,
+        clientEventId,
+        clientCapturedAt,
+        gpsAccuracyMeters,
       ],
     );
 
@@ -1227,7 +1317,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
             fuel_percent = coalesce($3::integer, fuel_percent),
             condition = coalesce($4::text, condition),
             photo_urls = $5::jsonb,
-            last_scanned_at = now(),
+            last_scanned_at = coalesce($11::timestamptz, now()),
             last_known_lat = coalesce($6::double precision, last_known_lat),
             last_known_lng = coalesce($7::double precision, last_known_lng),
             last_known_location_text = coalesce($8::text, last_known_location_text),
@@ -1291,6 +1381,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         nextLocationText,
         JSON.stringify(nextSpecsJson),
         nextLifeWorkedPercent,
+        clientCapturedAt,
       ],
     );
 
