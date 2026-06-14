@@ -23613,3 +23613,66 @@ button.documentOpenLink {
     font-size: clamp(1.98rem, 11vw, 2.65rem) !important;
   }
 }
+
+/* === Asset Register right-edge alignment patch: June 2026 === */
+@media (min-width: 761px) {
+  .registerPanel {
+    padding-right: 0 !important;
+  }
+
+  .registerHeader,
+  .assetSummaryCarousel,
+  .toolbar,
+  .assetList {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .registerHeader .ownerRegisterHeaderActions {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .registerHeader .sharedRegisterHeaderActions {
+    grid-template-columns: minmax(0, 18rem) !important;
+    justify-content: end !important;
+  }
+
+  .registerHeader .headerActions > .secondaryButton,
+  .registerHeader .headerActions > .assetFilterWrap,
+  .registerHeader .headerActions .filterTriggerButton,
+  .toolbar,
+  .searchWrap,
+  .assetCard {
+    min-width: 0 !important;
+  }
+
+  .toolbar {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: stretch !important;
+  }
+
+  .toolbarActions {
+    flex: 0 0 auto !important;
+    min-width: fit-content !important;
+  }
+
+  .assetCard {
+    width: 100% !important;
+  }
+
+  .assetSummaryCarousel > .assetSummaryArrow:last-of-type {
+    right: 0.18rem !important;
+  }
+}
+
+@media (min-width: 981px) {
+  .registerHeader .ownerRegisterHeaderActions {
+    gap: clamp(0.95rem, 1.42vw, 1.35rem) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .registerPanel {
+    padding-right: 0.9rem !important;
+  }
+}
