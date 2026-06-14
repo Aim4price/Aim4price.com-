@@ -104,6 +104,12 @@ type LeadPartnerNote = {
   updatedAtIso?: string;
 };
 
+type OwnerPhotoPreview = {
+  urls: string[];
+  index: number;
+  title: string;
+};
+
 type PartnerNoteResponse = {
   ok: boolean;
   note?: LeadPartnerNote;
@@ -1317,6 +1323,7 @@ export default function LeadsClient() {
   const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [leadPhotoIndexes, setLeadPhotoIndexes] = useState<Record<string, number>>({});
+  const [ownerPhotoPreview, setOwnerPhotoPreview] = useState<OwnerPhotoPreview | null>(null);
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
   const [emailLead, setEmailLead] = useState<AssetLead | null>(null);
   const [emailSubjectDraft, setEmailSubjectDraft] = useState('');
@@ -2063,6 +2070,33 @@ export default function LeadsClient() {
     setLeadPhotoIndex(lead.id, nextIndex);
   }
 
+  function openOwnerPhotoPreview(lead: AssetLead, urls: string[], index: number) {
+    const normalizedUrls = urls.map(normalizeLeadPhotoUrl).filter(Boolean);
+
+    if (!normalizedUrls.length) return;
+
+    setOwnerPhotoPreview({
+      urls: normalizedUrls,
+      index: Math.min(Math.max(index, 0), normalizedUrls.length - 1),
+      title: assetTitle(lead),
+    });
+  }
+
+  function closeOwnerPhotoPreview() {
+    setOwnerPhotoPreview(null);
+  }
+
+  function cycleOwnerPhotoPreview(direction: -1 | 1) {
+    setOwnerPhotoPreview((current) => {
+      if (!current || current.urls.length <= 1) return current;
+
+      return {
+        ...current,
+        index: (current.index + direction + current.urls.length) % current.urls.length,
+      };
+    });
+  }
+
   function renderLeadAssetStatusMark(value: AssetStatusChoice) {
     const status = normalizeAssetStatusChoice(value);
     const config = {
@@ -2102,9 +2136,16 @@ export default function LeadsClient() {
           {sharedPhotos.length ? (
             <div className={styles.ownerSharedPhotoGrid} aria-label="Attached owner photos">
               {sharedPhotos.map((url, index) => (
-                <a key={`${url}-${index}`} href={url} target="_blank" rel="noreferrer" className={styles.ownerSharedPhotoLink}>
+                <button
+                  type="button"
+                  key={`${url}-${index}`}
+                  className={styles.ownerSharedPhotoLink}
+                  onClick={() => openOwnerPhotoPreview(lead, sharedPhotos, index)}
+                  aria-label={`Open owner attached photo ${index + 1}`}
+                >
                   <img src={url} alt={`Owner attached photo ${index + 1}`} />
-                </a>
+                  <span className={styles.ownerSharedPhotoOpenLabel}>Open</span>
+                </button>
               ))}
             </div>
           ) : null}
@@ -2169,12 +2210,12 @@ export default function LeadsClient() {
 
     return (
       <div className={`${assetStyles.assetBody} ${styles.leadAssetBody}`} id={`lead-panel-${lead.id}`}>
-        <div className={assetStyles.previewWrap}>
-          <div className={assetStyles.previewStage}>
+        <div className={`${assetStyles.previewWrap} ${styles.leadPreviewWrap}`}>
+          <div className={`${assetStyles.previewStage} ${styles.leadPreviewStage}`}>
             {photo ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photo} alt={`${assetTitle(lead)} photo ${photoIndex + 1}`} className={assetStyles.previewImage} />
+                <img src={photo} alt={`${assetTitle(lead)} photo ${photoIndex + 1}`} className={`${assetStyles.previewImage} ${styles.leadPreviewImage}`} />
 
                 {hasMultiplePhotos ? (
                   <>
@@ -2203,7 +2244,7 @@ export default function LeadsClient() {
                 ) : null}
               </>
             ) : (
-              <div className={assetStyles.previewPlaceholder}>
+              <div className={`${assetStyles.previewPlaceholder} ${styles.leadPreviewPlaceholder}`}>
                 <div className={assetStyles.previewPlaceholderBadges}>
                   <span className={`${assetStyles.badge} ${assetStyles.badgeNeutral} ${assetStyles.previewPlaceholderBadge}`}>
                     {familyLabel}
@@ -2214,7 +2255,7 @@ export default function LeadsClient() {
           </div>
 
           {hasMultiplePhotos ? (
-            <div className={assetStyles.previewThumbRow}>
+            <div className={`${assetStyles.previewThumbRow} ${styles.leadPreviewThumbRow}`}>
               {photos.map((thumbnail, index) => {
                 const isActivePhoto = index === photoIndex;
 
@@ -2222,12 +2263,12 @@ export default function LeadsClient() {
                   <button
                     type="button"
                     key={`${lead.id}-lead-photo-${index}`}
-                    className={`${assetStyles.previewThumbButton} ${isActivePhoto ? assetStyles.previewThumbButtonActive : ''}`}
+                    className={`${assetStyles.previewThumbButton} ${styles.leadPreviewThumbButton} ${isActivePhoto ? assetStyles.previewThumbButtonActive : ''}`}
                     onClick={() => setLeadPhotoIndex(lead.id, index)}
                     aria-label={`View photo ${index + 1}`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={thumbnail} alt={`${assetTitle(lead)} thumbnail ${index + 1}`} className={assetStyles.previewThumbImage} />
+                    <img src={thumbnail} alt={`${assetTitle(lead)} thumbnail ${index + 1}`} className={`${assetStyles.previewThumbImage} ${styles.leadPreviewThumbImage}`} />
                   </button>
                 );
               })}
@@ -2290,6 +2331,12 @@ export default function LeadsClient() {
       </div>
     );
   }
+
+  const ownerPhotoPreviewIndex = ownerPhotoPreview
+    ? Math.min(Math.max(ownerPhotoPreview.index, 0), ownerPhotoPreview.urls.length - 1)
+    : 0;
+  const ownerPhotoPreviewUrl = ownerPhotoPreview?.urls[ownerPhotoPreviewIndex] ?? '';
+  const hasMultipleOwnerPreviewPhotos = Boolean(ownerPhotoPreview && ownerPhotoPreview.urls.length > 1);
 
   return (
     <main className={`${assetStyles.page} ${styles.leadsPage}`}>
@@ -2873,6 +2920,51 @@ export default function LeadsClient() {
                   <span>{isDeletingLead ? 'Deleting...' : 'Yes, delete lead'}</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {ownerPhotoPreview && ownerPhotoPreviewUrl ? (
+        <div className={`${assetStyles.modalOverlay} ${styles.ownerPhotoPreviewOverlay}`}>
+          <div className={assetStyles.modalBackdrop} onClick={closeOwnerPhotoPreview} />
+
+          <div className={styles.ownerPhotoPreviewModal} role="dialog" aria-modal="true" aria-labelledby="owner-photo-preview-title">
+            <div className={styles.ownerPhotoPreviewHeader}>
+              <div>
+                <strong id="owner-photo-preview-title">{ownerPhotoPreview.title}</strong>
+                <span>Owner photo {ownerPhotoPreviewIndex + 1} of {ownerPhotoPreview.urls.length}</span>
+              </div>
+
+              <button type="button" className={styles.ownerPhotoPreviewCloseButton} onClick={closeOwnerPhotoPreview} aria-label="Close owner photo preview">
+                <CloseIcon className={assetStyles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={styles.ownerPhotoPreviewFrame}>
+              <img src={ownerPhotoPreviewUrl} alt={`Owner attached photo ${ownerPhotoPreviewIndex + 1}`} />
+
+              {hasMultipleOwnerPreviewPhotos ? (
+                <>
+                  <button
+                    type="button"
+                    className={`${styles.ownerPhotoPreviewNavButton} ${styles.ownerPhotoPreviewNavPrevious}`}
+                    onClick={() => cycleOwnerPhotoPreview(-1)}
+                    aria-label="Show previous owner photo"
+                  >
+                    <ChevronLeftIcon className={assetStyles.buttonIcon} />
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.ownerPhotoPreviewNavButton} ${styles.ownerPhotoPreviewNavNext}`}
+                    onClick={() => cycleOwnerPhotoPreview(1)}
+                    aria-label="Show next owner photo"
+                  >
+                    <ChevronRightIcon className={assetStyles.buttonIcon} />
+                  </button>
+                </>
+              ) : null}
             </div>
           </div>
         </div>
