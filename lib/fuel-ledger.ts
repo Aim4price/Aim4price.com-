@@ -319,6 +319,28 @@ function normalizeCoordinate(value: unknown, maxAbsolute: number): number | null
   return parsed;
 }
 
+function normalizeClientEventId(value: unknown): string | null {
+  const normalized = asText(value)
+    .replace(/[^a-zA-Z0-9:._-]/g, '')
+    .slice(0, 140);
+  return normalized || null;
+}
+
+function normalizeClientCapturedAt(value: unknown): string | null {
+  const text = asText(value);
+  if (!text) return null;
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
+function normalizeGpsAccuracyMeters(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 50000) return null;
+  return Math.round(parsed * 100) / 100;
+}
+
 function normalizeFuelType(value: unknown): string {
   const normalized = String(value ?? '').trim().toLowerCase();
 
@@ -684,6 +706,10 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       longitude double precision,
       location_text text,
       maintenance_noted_at timestamptz,
+      client_event_id text,
+      client_captured_at timestamptz,
+      synced_at timestamptz,
+      gps_accuracy_meters double precision,
       created_at timestamptz not null default now()
     );
 
@@ -703,7 +729,15 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       add column if not exists longitude double precision,
       add column if not exists location_text text,
       add column if not exists maintenance_noted_at timestamptz,
+      add column if not exists client_event_id text,
+      add column if not exists client_captured_at timestamptz,
+      add column if not exists synced_at timestamptz,
+      add column if not exists gps_accuracy_meters double precision,
       add column if not exists created_at timestamptz not null default now();
+
+    create unique index if not exists idx_asset_scan_events_client_event_id
+      on public.asset_scan_events(client_event_id)
+      where client_event_id is not null;
 
     create table if not exists public.fuel_storage_units (
       id uuid primary key default gen_random_uuid(),
@@ -783,6 +817,10 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       latitude double precision,
       longitude double precision,
       location_text text,
+      client_event_id text,
+      client_captured_at timestamptz,
+      synced_at timestamptz,
+      gps_accuracy_meters double precision,
       created_at timestamptz not null default now()
     );
 
@@ -804,6 +842,10 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       add column if not exists latitude double precision,
       add column if not exists longitude double precision,
       add column if not exists location_text text,
+      add column if not exists client_event_id text,
+      add column if not exists client_captured_at timestamptz,
+      add column if not exists synced_at timestamptz,
+      add column if not exists gps_accuracy_meters double precision,
       add column if not exists created_at timestamptz not null default now();
 
     alter table if exists public.fuel_storage_events drop constraint if exists fuel_storage_events_event_type_check;
@@ -818,6 +860,10 @@ export async function ensureFuelLedgerTables(): Promise<void> {
 
     create index if not exists idx_fuel_storage_events_asset_created
       on public.fuel_storage_events(asset_register_item_id, created_at desc);
+
+    create unique index if not exists idx_fuel_storage_events_client_event_id
+      on public.fuel_storage_events(client_event_id)
+      where client_event_id is not null;
   `);
 
   fuelLedgerTablesEnsured = true;
@@ -1226,31 +1272,126 @@ export async function saveFuelStoragePin(userId: string, storageId: string, pin:
   return mapStorageRow(row);
 }
 
-export async function saveFuelStorageDipstickNote(userId: string, storageId: string, input: { dipstickNote?: unknown }): Promise<FuelLedgerStorage> {
+export async function saveFuelStorageDipstickNote(
+  userId: string,
+  storageId: string,
+  input: {
+    dipstickNote?: unknown;
+    operatorName?: unknown;
+    latitude?: unknown;
+    longitude?: unknown;
+    locationText?: unknown;
+    clientEventId?: unknown;
+    clientCapturedAt?: unknown;
+    gpsAccuracyMeters?: unknown;
+    createEvent?: boolean;
+  },
+): Promise<FuelLedgerStorage> {
   await ensureFuelLedgerTables();
   const db = getDb();
+  const client = await db.connect();
   const dipstickNote = asText(input.dipstickNote).slice(0, 700);
+  const operatorName = asText(input.operatorName).slice(0, 80) || 'QR scanner';
+  const latitude = normalizeCoordinate(input.latitude, 90);
+  const longitude = normalizeCoordinate(input.longitude, 180);
+  const locationText = latitude !== null && longitude !== null
+    ? asText(input.locationText) || `GPS ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+    : asText(input.locationText) || null;
+  const clientEventId = normalizeClientEventId(input.clientEventId);
+  const clientCapturedAt = normalizeClientCapturedAt(input.clientCapturedAt);
+  const gpsAccuracyMeters = normalizeGpsAccuracyMeters(input.gpsAccuracyMeters);
 
-  const result = await db.query<FuelStorageRow>(
-    `
-      update public.fuel_storage_units
-      set
-        dipstick_note = nullif($3, ''),
-        dipstick_note_updated_at = case when nullif($3, '') is null then null else now() end,
-        updated_at = now()
-      where user_id = $1 and id::text = $2
-      returning ${fuelStorageSelectSql()}
-    `,
-    [userId, storageId, dipstickNote],
-  );
+  try {
+    await client.query('BEGIN');
 
-  const row = result.rows[0];
-  if (!row) {
-    throw new Error('Fuel storage not found.');
+    const storageResult = await client.query<FuelStorageRow>(
+      `
+        select ${fuelStorageSelectSql()}
+        from public.fuel_storage_units
+        where user_id = $1 and id::text = $2
+        for update
+      `,
+      [userId, storageId],
+    );
+
+    const currentStorage = storageResult.rows[0] ? mapStorageRow(storageResult.rows[0]) : null;
+    if (!currentStorage) {
+      throw new Error('Fuel storage not found.');
+    }
+
+    if (input.createEvent && clientEventId) {
+      const existingEvent = await client.query<FuelEventRow>(
+        `
+          select ${fuelEventSelectSql()}
+          from public.fuel_storage_events e
+          left join public.fuel_storage_units s on s.id = e.storage_id
+          left join public.asset_register_items a on a.id::text = e.asset_register_item_id
+          where e.storage_id::text = $1 and e.client_event_id = $2
+          order by e.created_at desc, e.id desc
+          limit 1
+        `,
+        [storageId, clientEventId],
+      );
+
+      if (existingEvent.rows[0]) {
+        await client.query('COMMIT');
+        return currentStorage;
+      }
+    }
+
+    const updated = await client.query<FuelStorageRow>(
+      `
+        update public.fuel_storage_units
+        set
+          dipstick_note = nullif($3, ''),
+          dipstick_note_updated_at = case when nullif($3, '') is null then null else now() end,
+          updated_at = now()
+        where user_id = $1 and id::text = $2
+        returning ${fuelStorageSelectSql()}
+      `,
+      [userId, storageId, dipstickNote],
+    );
+
+    const row = updated.rows[0];
+    if (!row) {
+      throw new Error('Fuel storage not found.');
+    }
+
+    if (input.createEvent) {
+      await insertFuelStorageEvent(client, {
+        storageId,
+        userId,
+        eventType: 'dip',
+        assetId: null,
+        litres: 0,
+        storageLevelBefore: currentStorage.currentLitres,
+        storageLevelAfter: currentStorage.currentLitres,
+        assetFuelPercentBefore: null,
+        assetFuelPercentAfter: null,
+        assetUsageReading: null,
+        operatorName,
+        activityText: 'Dipstick note',
+        workAreaText: null,
+        note: dipstickNote || 'Dipstick note cleared.',
+        latitude,
+        longitude,
+        locationText,
+        clientEventId,
+        clientCapturedAt,
+        gpsAccuracyMeters,
+      });
+    }
+
+    await client.query('COMMIT');
+    return mapStorageRow(row);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
-
-  return mapStorageRow(row);
 }
+
 
 export async function archiveFuelStorage(userId: string, storageId: string): Promise<void> {
   await ensureFuelLedgerTables();
@@ -1333,6 +1474,9 @@ export async function recordFuelStorageStock(
     latitude?: unknown;
     longitude?: unknown;
     locationText?: unknown;
+    clientEventId?: unknown;
+    clientCapturedAt?: unknown;
+    gpsAccuracyMeters?: unknown;
   },
 ): Promise<{ storage: FuelLedgerStorage; event: FuelLedgerEvent }> {
   await ensureFuelLedgerTables();
@@ -1345,6 +1489,9 @@ export async function recordFuelStorageStock(
   const locationText = latitude !== null && longitude !== null
     ? asText(input.locationText) || `GPS ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
     : asText(input.locationText) || null;
+  const clientEventId = normalizeClientEventId(input.clientEventId);
+  const clientCapturedAt = normalizeClientCapturedAt(input.clientCapturedAt);
+  const gpsAccuracyMeters = normalizeGpsAccuracyMeters(input.gpsAccuracyMeters);
 
   try {
     await client.query('BEGIN');
@@ -1362,6 +1509,30 @@ export async function recordFuelStorageStock(
     const storage = storageResult.rows[0] ? mapStorageRow(storageResult.rows[0]) : null;
     if (!storage) {
       throw new Error('Fuel storage not found.');
+    }
+
+    if (clientEventId) {
+      const existingEvent = await client.query<FuelEventRow>(
+        `
+          select ${fuelEventSelectSql()}
+          from public.fuel_storage_events e
+          left join public.fuel_storage_units s on s.id = e.storage_id
+          left join public.asset_register_items a on a.id::text = e.asset_register_item_id
+          where e.storage_id::text = $1 and e.client_event_id = $2
+          order by e.created_at desc, e.id desc
+          limit 1
+        `,
+        [storageId, clientEventId],
+      );
+
+      const duplicateEvent = existingEvent.rows[0];
+      if (duplicateEvent) {
+        await client.query('COMMIT');
+        return {
+          storage,
+          event: mapFuelEventRow(duplicateEvent),
+        };
+      }
     }
 
     const before = storage.currentLitres;
@@ -1402,6 +1573,9 @@ export async function recordFuelStorageStock(
       latitude,
       longitude,
       locationText,
+      clientEventId,
+      clientCapturedAt,
+      gpsAccuracyMeters,
     });
 
     await client.query('COMMIT');
@@ -1438,6 +1612,9 @@ async function insertFuelStorageEvent(
     latitude: number | null;
     longitude: number | null;
     locationText: string | null;
+    clientEventId?: string | null;
+    clientCapturedAt?: string | null;
+    gpsAccuracyMeters?: number | null;
   },
 ): Promise<FuelLedgerEvent> {
   const inserted = await client.query<{ id: string }>(
@@ -1460,9 +1637,13 @@ async function insertFuelStorageEvent(
         latitude,
         longitude,
         location_text,
+        client_event_id,
+        client_captured_at,
+        synced_at,
+        gps_accuracy_meters,
         created_at
       )
-      values ($1::uuid, $2, $3, $4, $5::numeric, $6::numeric, $7::numeric, $8::integer, $9::integer, $10::numeric, $11, $12, $13, $14, $15::double precision, $16::double precision, $17, now())
+      values ($1::uuid, $2, $3, $4, $5::numeric, $6::numeric, $7::numeric, $8::integer, $9::integer, $10::numeric, $11, $12, $13, $14, $15::double precision, $16::double precision, $17, $18::text, $19::timestamptz, now(), $20::double precision, coalesce($19::timestamptz, now()))
       returning id::text
     `,
     [
@@ -1483,6 +1664,9 @@ async function insertFuelStorageEvent(
       input.latitude,
       input.longitude,
       input.locationText,
+      input.clientEventId ?? null,
+      input.clientCapturedAt ?? null,
+      input.gpsAccuracyMeters ?? null,
     ],
   );
 
@@ -1527,6 +1711,9 @@ export async function recordFuelAssetIssue(
     latitude?: unknown;
     longitude?: unknown;
     locationText?: unknown;
+    clientEventId?: unknown;
+    clientCapturedAt?: unknown;
+    gpsAccuracyMeters?: unknown;
     actorType?: FuelScanActorType;
   },
 ): Promise<{ storage: FuelLedgerStorage; event: FuelLedgerEvent; assets: FuelLedgerAsset[] }> {
@@ -1565,6 +1752,9 @@ export async function recordFuelAssetIssue(
   }
 
   const locationText = asText(input.locationText) || `GPS ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+  const clientEventId = normalizeClientEventId(input.clientEventId);
+  const clientCapturedAt = normalizeClientCapturedAt(input.clientCapturedAt);
+  const gpsAccuracyMeters = normalizeGpsAccuracyMeters(input.gpsAccuracyMeters);
 
   try {
     await client.query('BEGIN');
@@ -1582,6 +1772,33 @@ export async function recordFuelAssetIssue(
 
     if (!storage) {
       throw new Error('Fuel storage not found.');
+    }
+
+    if (clientEventId) {
+      const existingEvent = await client.query<FuelEventRow>(
+        `
+          select ${fuelEventSelectSql()}
+          from public.fuel_storage_events e
+          left join public.fuel_storage_units s on s.id = e.storage_id
+          left join public.asset_register_items a on a.id::text = e.asset_register_item_id
+          where e.storage_id::text = $1 and e.client_event_id = $2
+          order by e.created_at desc, e.id desc
+          limit 1
+        `,
+        [input.storageId, clientEventId],
+      );
+
+      const duplicateEvent = existingEvent.rows[0];
+      if (duplicateEvent) {
+        await client.query('COMMIT');
+        committed = true;
+        const assets = await listFuelAssetsForUser(input.userId);
+        return {
+          storage,
+          event: mapFuelEventRow(duplicateEvent),
+          assets,
+        };
+      }
     }
 
     if (storage.currentLitres + 0.001 < litres) {
@@ -1667,6 +1884,9 @@ export async function recordFuelAssetIssue(
       latitude,
       longitude,
       locationText,
+      clientEventId,
+      clientCapturedAt,
+      gpsAccuracyMeters,
     });
 
     await client.query(
@@ -1675,7 +1895,7 @@ export async function recordFuelAssetIssue(
         set
           fuel_percent = $3::integer,
           hours = case when $4::numeric is null then hours else $4::numeric end,
-          last_scanned_at = now(),
+          last_scanned_at = coalesce($9::timestamptz, now()),
           last_known_lat = $5::double precision,
           last_known_lng = $6::double precision,
           last_known_location_text = $7,
@@ -1683,7 +1903,7 @@ export async function recordFuelAssetIssue(
           updated_at = now()
         where user_id = $1 and id::text = $2
       `,
-      [input.userId, input.assetId, assetFuelPercentAfter, assetUsageReading, latitude, longitude, locationText, JSON.stringify(nextSpecsJson)],
+      [input.userId, input.assetId, assetFuelPercentAfter, assetUsageReading, latitude, longitude, locationText, JSON.stringify(nextSpecsJson), clientCapturedAt],
     );
 
     await client.query(
@@ -1705,9 +1925,13 @@ export async function recordFuelAssetIssue(
           latitude,
           longitude,
           location_text,
+          client_event_id,
+          client_captured_at,
+          synced_at,
+          gps_accuracy_meters,
           created_at
         )
-        values ($1::uuid, $2, $3, $4, $5, $6::numeric, $7::integer, $8::numeric, $9::uuid, $10::uuid, null, $11, '[]'::jsonb, $12::double precision, $13::double precision, $14, now())
+        values ($1::uuid, $2, $3, $4, $5, $6::numeric, $7::integer, $8::numeric, $9::uuid, $10::uuid, null, $11, '[]'::jsonb, $12::double precision, $13::double precision, $14, $15::text, $16::timestamptz, now(), $17::double precision, coalesce($16::timestamptz, now()))
       `,
       [
         input.assetId,
@@ -1724,6 +1948,9 @@ export async function recordFuelAssetIssue(
         latitude,
         longitude,
         locationText,
+        clientEventId,
+        clientCapturedAt,
+        gpsAccuracyMeters,
       ],
     );
 
