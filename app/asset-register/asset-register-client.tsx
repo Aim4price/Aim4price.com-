@@ -481,6 +481,9 @@ type RevalueAssetApiResponse = {
   marketCount?: number;
   marketSources?: PricingMarketSource[];
   marketMatchStrategy?: string;
+  marketAdjustmentExVat?: number | null;
+  marketRawAverageExVat?: number | null;
+  marketValueMode?: 'aim4price_delta' | 'market_average' | string;
   replacementPriceUsedExVat?: number | null;
   error?: string;
 };
@@ -9094,7 +9097,7 @@ export default function AssetRegisterClient() {
                 >
                   <TrendIcon className={styles.buttonIcon} />
                   <span>
-                    <strong>Newest market price</strong>
+                    <strong>Update market price</strong>
                   </span>
                 </button>
 
@@ -9143,7 +9146,9 @@ export default function AssetRegisterClient() {
 
             <div className={`${styles.modalScrollBody} ${styles.pricingResultBody}`}>
               {pricingPreview.method === 'market' ? (
-                <p className={styles.pricingPreviewIntroCopy}>Market preview only. Nothing changes in the Asset Register until you save the new value.</p>
+                <p className={styles.pricingPreviewIntroCopy}>
+                  Market preview only. When saved, Aim4price keeps the market-vs-Aim4price difference and applies it to future recalculations.
+                </p>
               ) : null}
 
               {pricingPreview.method === 'aim4price' ? (
@@ -9335,6 +9340,12 @@ export default function AssetRegisterClient() {
                             <span>Pricing method:</span>
                             <strong>{methodLabel(pricingPreview.result.selectedMethod ?? pricingPreview.result.item.selectedMethod)}</strong>
                           </div>
+                          {pricingPreview.result.marketAdjustmentExVat !== null && typeof pricingPreview.result.marketAdjustmentExVat !== 'undefined' ? (
+                            <div>
+                              <span>Market adjustment:</span>
+                              <strong>{formatMoneyDifference(pricingPreview.result.marketAdjustmentExVat)}</strong>
+                            </div>
+                          ) : null}
                         </div>
                       </section>
 
