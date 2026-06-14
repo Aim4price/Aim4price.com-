@@ -21,6 +21,9 @@ type ScanEventRequest = {
   photoUrls?: unknown;
   latitude?: unknown;
   longitude?: unknown;
+  clientEventId?: unknown;
+  clientCapturedAt?: unknown;
+  gpsAccuracyMeters?: unknown;
 };
 
 function asText(value: unknown): string {
@@ -53,6 +56,28 @@ function normalizeCoordinates(value: unknown, maxAbsolute: number): number | nul
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || Math.abs(parsed) > maxAbsolute) return null;
   return parsed;
+}
+
+function normalizeClientEventId(value: unknown): string | null {
+  const normalized = asText(value)
+    .replace(/[^a-zA-Z0-9:._-]/g, '')
+    .slice(0, 140);
+  return normalized || null;
+}
+
+function normalizeClientCapturedAt(value: unknown): string | null {
+  const text = asText(value);
+  if (!text) return null;
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
+function normalizeGpsAccuracyMeters(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 50000) return null;
+  return Math.round(parsed * 100) / 100;
 }
 
 function normalizePhotoUrls(value: unknown): string[] {
@@ -111,6 +136,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     photoUrls: normalizePhotoUrls(body.photoUrls),
     latitude: normalizeCoordinates(body.latitude, 90),
     longitude: normalizeCoordinates(body.longitude, 180),
+    clientEventId: normalizeClientEventId(body.clientEventId),
+    clientCapturedAt: normalizeClientCapturedAt(body.clientCapturedAt),
+    gpsAccuracyMeters: normalizeGpsAccuracyMeters(body.gpsAccuracyMeters),
   };
 
   if (payload.operatorName.length < 2) {
@@ -144,6 +172,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       latitude: payload.latitude,
       longitude: payload.longitude,
       locationText,
+      clientEventId: payload.clientEventId,
+      clientCapturedAt: payload.clientCapturedAt,
+      gpsAccuracyMeters: payload.gpsAccuracyMeters,
     });
 
     const recentEvents = await listRecentScanEvents(saved.asset.id, 8);
