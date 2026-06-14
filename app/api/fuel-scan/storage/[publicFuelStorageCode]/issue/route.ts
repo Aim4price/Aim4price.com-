@@ -23,6 +23,9 @@ type FuelIssueRequest = {
   latitude?: unknown;
   longitude?: unknown;
   locationText?: unknown;
+  clientEventId?: unknown;
+  clientCapturedAt?: unknown;
+  gpsAccuracyMeters?: unknown;
 };
 
 function normalizeFuelCode(value: unknown): string {
@@ -84,6 +87,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       latitude: body.latitude,
       longitude: body.longitude,
       locationText: body.locationText,
+      clientEventId: body.clientEventId,
+      clientCapturedAt: body.clientCapturedAt,
+      gpsAccuracyMeters: body.gpsAccuracyMeters,
       actorType: 'scan_pin',
     });
 
