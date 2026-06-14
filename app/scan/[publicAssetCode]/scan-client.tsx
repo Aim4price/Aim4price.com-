@@ -9,8 +9,16 @@ import {
   type FormEvent,
 } from "react";
 import styles from "./page.module.css";
+import {
+  createOfflineClientEventId,
+  enqueueOfflineMutation,
+  getOfflineMutationCount,
+  isOfflineNetworkError,
+  syncOfflineMutations,
+} from "../../../lib/offline-mutation-queue";
 
 type NoticeTone = "success" | "error";
+type PendingSyncKind = "asset-scan-update";
 type EditorKey = "usage" | "fuel" | "service" | "photos";
 type LocationState = "idle" | "capturing" | "ready" | "error";
 type ScanAssetUsageMode = "hours" | "percent" | "km" | "none";
@@ -146,6 +154,9 @@ type PendingScanUpdate = {
   photoUrls: string[];
   latitude: string;
   longitude: string;
+  gpsAccuracyMeters: string;
+  clientCapturedAt: string;
+  clientEventId: string;
   hasUsage: boolean;
   hasFuel: boolean;
   hasService: boolean;
@@ -304,6 +315,9 @@ const initialPendingUpdate: PendingScanUpdate = {
   photoUrls: [],
   latitude: "",
   longitude: "",
+  gpsAccuracyMeters: "",
+  clientCapturedAt: "",
+  clientEventId: "",
   hasUsage: false,
   hasFuel: false,
   hasService: false,
@@ -319,6 +333,7 @@ type QrScanSessionState = {
   assetId?: string;
   latitude?: string;
   longitude?: string;
+  gpsAccuracyMeters?: string;
   locationMessage?: string;
   locationCapturedAtIso?: string;
   usageMode?: ScanAssetUsageMode;
@@ -393,6 +408,7 @@ function readQrScanSession(publicAssetCode: string): QrScanSessionState | null {
       assetId: normalizeSessionString(parsed.assetId, 80) || undefined,
       latitude: normalizeSessionString(parsed.latitude, 64) || undefined,
       longitude: normalizeSessionString(parsed.longitude, 64) || undefined,
+      gpsAccuracyMeters: normalizeSessionString(parsed.gpsAccuracyMeters, 64) || undefined,
       locationMessage: normalizeSessionString(parsed.locationMessage, 240) || undefined,
       locationCapturedAtIso: normalizeSessionString(parsed.locationCapturedAtIso, 80) || undefined,
       usageMode: normalizeSessionUsageMode(parsed.usageMode),
@@ -469,6 +485,18 @@ function applySessionLocationToDraft(draft: DraftState, session: QrScanSessionSt
     longitude: draft.longitude || session?.longitude || "",
   };
 }
+
+function pendingLocationMetadata(session: QrScanSessionState | null): Pick<PendingScanUpdate, "gpsAccuracyMeters" | "clientCapturedAt"> {
+  return {
+    gpsAccuracyMeters: session?.gpsAccuracyMeters || "",
+    clientCapturedAt: session?.locationCapturedAtIso || "",
+  };
+}
+
+function scanLocationPayloadText(value: string | undefined): string {
+  return String(value ?? "").trim();
+}
+
 
 function sessionUsageForAsset(
   asset: ScanSafeAsset,
@@ -1227,6 +1255,8 @@ export default function ScanClient({
   const [pin, setPin] = useState("");
   const [operatorName, setOperatorName] = useState("");
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const [doneMessage, setDoneMessage] = useState("The QR update session is closed.");
   const [isSubmittingPin, setIsSubmittingPin] = useState(false);
   const [isLoadingAsset, setIsLoadingAsset] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -1300,6 +1330,7 @@ export default function ScanClient({
       ...initialPendingUpdate,
       latitude: restoredDraft.latitude,
       longitude: restoredDraft.longitude,
+      ...pendingLocationMetadata(restoredSession),
     });
     setPin("");
     setIsUnavailable(false);
@@ -1310,6 +1341,7 @@ export default function ScanClient({
     setActiveEditor(null);
     setShowLocationReminder(false);
     setIsDone(false);
+    setDoneMessage("The QR update session is closed.");
     setHasCompletedRequiredUsageUpdate(false);
     setShowServiceDetailsStep(false);
     setShowServicePhotoStep(false);
@@ -1383,6 +1415,48 @@ export default function ScanClient({
     const timeout = window.setTimeout(() => setNotice(null), 3600);
     return () => window.clearTimeout(timeout);
   }, [notice]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const kinds: PendingSyncKind[] = ["asset-scan-update"];
+
+    async function refreshPendingCount() {
+      const count = await getOfflineMutationCount(kinds);
+      if (isMounted) setPendingSyncCount(count);
+    }
+
+    async function syncQueuedUpdates() {
+      const result = await syncOfflineMutations({ kinds });
+      if (!isMounted) return;
+      setPendingSyncCount(result.pendingCount);
+      if (result.syncedCount > 0) {
+        setNotice({
+          tone: "success",
+          message: result.syncedCount === 1 ? "Saved phone update synced." : `${result.syncedCount} saved phone updates synced.`,
+        });
+      }
+    }
+
+    void refreshPendingCount();
+    void syncQueuedUpdates();
+
+    const handleOnline = () => void syncQueuedUpdates();
+    const handleFocus = () => void syncQueuedUpdates();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") void syncQueuedUpdates();
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (!activeEditor && !isShareModalOpen) return undefined;
@@ -2102,17 +2176,20 @@ export default function ScanClient({
         (position) => {
           const latitude = String(position.coords.latitude);
           const longitude = String(position.coords.longitude);
+          const gpsAccuracyMeters = Number.isFinite(position.coords.accuracy) ? String(position.coords.accuracy) : "";
+          const locationCapturedAtIso = new Date(position.timestamp || Date.now()).toISOString();
           const locationText = GPS_READY_SESSION_MESSAGE;
           const savedSession = updateQrScanSession(normalizedCode, (current) => ({
             ...current,
             assetId: asset?.id || current.assetId,
             latitude,
             longitude,
+            gpsAccuracyMeters,
             locationMessage: locationText,
-            locationCapturedAtIso: new Date().toISOString(),
+            locationCapturedAtIso,
           }));
           setDraft((current) => ({ ...current, latitude, longitude }));
-          setPendingUpdate((current) => ({ ...current, latitude, longitude }));
+          setPendingUpdate((current) => ({ ...current, latitude, longitude, gpsAccuracyMeters, clientCapturedAt: locationCapturedAtIso }));
           setLocationState("ready");
           setLocationMessage(sessionLocationMessage(savedSession));
           if (!isAutomatic && asset) setNotice({ tone: "success", message: "Location captured." });
@@ -2238,6 +2315,8 @@ export default function ScanClient({
     const storedSession = readQrScanSession(normalizedCode);
     const savedLatitude = draft.latitude || storedSession?.latitude || "";
     const savedLongitude = draft.longitude || storedSession?.longitude || "";
+    const savedGpsAccuracyMeters = storedSession?.gpsAccuracyMeters || pendingUpdate.gpsAccuracyMeters || "";
+    const savedClientCapturedAt = storedSession?.locationCapturedAtIso || pendingUpdate.clientCapturedAt || "";
 
     if (savedLatitude && savedLongitude) {
       updateQrScanSession(normalizedCode, (current) => ({
@@ -2245,6 +2324,8 @@ export default function ScanClient({
         assetId: asset.id,
         latitude: savedLatitude,
         longitude: savedLongitude,
+        gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
+        locationCapturedAtIso: savedClientCapturedAt || current.locationCapturedAtIso,
         locationMessage: current.locationMessage || GPS_READY_SESSION_MESSAGE,
       }));
     }
@@ -2260,6 +2341,8 @@ export default function ScanClient({
           lifeWorkedPercent: stagedPercent,
           latitude: savedLatitude || current.latitude,
           longitude: savedLongitude || current.longitude,
+          gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
+          clientCapturedAt: savedClientCapturedAt || current.clientCapturedAt,
           hasUsage: true,
         }));
         updateQrScanSession(normalizedCode, (current) => ({
@@ -2271,6 +2354,8 @@ export default function ScanClient({
           hasUsage: true,
           latitude: savedLatitude || current.latitude,
           longitude: savedLongitude || current.longitude,
+          gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
+          locationCapturedAtIso: savedClientCapturedAt || current.locationCapturedAtIso,
           locationMessage: current.locationMessage || GPS_READY_SESSION_MESSAGE,
         }));
         setAsset((current) => current ? { ...current, lifeWorkedPercent: parsedPercent } : current);
@@ -2284,6 +2369,8 @@ export default function ScanClient({
           lifeWorkedPercent: "",
           latitude: savedLatitude || current.latitude,
           longitude: savedLongitude || current.longitude,
+          gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
+          clientCapturedAt: savedClientCapturedAt || current.clientCapturedAt,
           hasUsage: true,
         }));
         updateQrScanSession(normalizedCode, (current) => ({
@@ -2295,6 +2382,8 @@ export default function ScanClient({
           hasUsage: true,
           latitude: savedLatitude || current.latitude,
           longitude: savedLongitude || current.longitude,
+          gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
+          locationCapturedAtIso: savedClientCapturedAt || current.locationCapturedAtIso,
           locationMessage: current.locationMessage || GPS_READY_SESSION_MESSAGE,
         }));
         setAsset((current) => current ? { ...current, hours: parsedHours } : current);
@@ -2312,6 +2401,8 @@ export default function ScanClient({
         fuelPercent: stagedFuel,
         latitude: savedLatitude || current.latitude,
         longitude: savedLongitude || current.longitude,
+        gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
+        clientCapturedAt: savedClientCapturedAt || current.clientCapturedAt,
         hasFuel: true,
       }));
       setAsset((current) => current ? { ...current, fuelPercent: parsedFuel } : current);
@@ -2327,6 +2418,8 @@ export default function ScanClient({
         photoUrls: mergeUniqueStrings([...current.photoUrls, ...stagedPhotos], MAX_QR_PHOTOS),
         latitude: savedLatitude || current.latitude,
         longitude: savedLongitude || current.longitude,
+        gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
+        clientCapturedAt: savedClientCapturedAt || current.clientCapturedAt,
         hasService: true,
         hasPhotos: stagedPhotos.length > 0 || current.hasPhotos,
       }));
@@ -2347,6 +2440,8 @@ export default function ScanClient({
         photoUrls: mergeUniqueStrings([...current.photoUrls, ...stagedPhotos], MAX_QR_PHOTOS),
         latitude: savedLatitude || current.latitude,
         longitude: savedLongitude || current.longitude,
+        gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
+        clientCapturedAt: savedClientCapturedAt || current.clientCapturedAt,
         hasPhotos: stagedPhotos.length > 0 || current.hasPhotos,
       }));
       setAsset((current) => current
@@ -2392,6 +2487,9 @@ export default function ScanClient({
     const storedSessionUsage = sessionUsageForAsset(asset, storedSession);
     const finalLatitude = pendingUpdate.latitude || draft.latitude || storedSession?.latitude || "";
     const finalLongitude = pendingUpdate.longitude || draft.longitude || storedSession?.longitude || "";
+    const finalGpsAccuracyMeters = pendingUpdate.gpsAccuracyMeters || storedSession?.gpsAccuracyMeters || "";
+    const finalClientCapturedAt = pendingUpdate.clientCapturedAt || storedSession?.locationCapturedAtIso || new Date().toISOString();
+    const finalClientEventId = pendingUpdate.clientEventId || createOfflineClientEventId("asset-scan-update");
     const sessionUsageAsset = savedAsset ?? asset;
     const sessionHours = asset.usageMode === "hours" || asset.usageMode === "km"
       ? pendingUpdate.hours || storedSessionUsage.hours || (sessionUsageAsset.hours !== null && Number.isFinite(sessionUsageAsset.hours) ? String(Math.round(sessionUsageAsset.hours)) : "")
@@ -2411,28 +2509,41 @@ export default function ScanClient({
       return null;
     }
 
+    const endpoint = `/api/scan/assets/${encodeURIComponent(normalizedCode)}/event`;
+    const payload = {
+      operatorName: operatorName.trim(),
+      hours: sessionHours,
+      lifeWorkedPercent:
+        (pendingUpdate.hasUsage || storedSessionUsage.hasUsage) && asset.usageMode === "percent"
+          ? sessionLifeWorkedPercent
+          : "",
+      fuelPercent: pendingUpdate.hasFuel && asset.canUpdateFuel ? pendingUpdate.fuelPercent : "",
+      note: pendingUpdate.notes.join("\n\n---\n\n"),
+      photoUrls: pendingUpdate.photoUrls,
+      latitude: scanLocationPayloadText(finalLatitude),
+      longitude: scanLocationPayloadText(finalLongitude),
+      clientCapturedAt: finalClientCapturedAt,
+      gpsAccuracyMeters: scanLocationPayloadText(finalGpsAccuracyMeters),
+      clientEventId: finalClientEventId,
+    };
+
+    setPendingUpdate((current) => ({
+      ...current,
+      clientEventId: current.clientEventId || finalClientEventId,
+      clientCapturedAt: current.clientCapturedAt || finalClientCapturedAt,
+      gpsAccuracyMeters: current.gpsAccuracyMeters || finalGpsAccuracyMeters,
+    }));
+
     setIsSaving(true);
 
     try {
       const response = await fetch(
-        `/api/scan/assets/${encodeURIComponent(normalizedCode)}/event`,
+        endpoint,
         {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            operatorName: operatorName.trim(),
-            hours: sessionHours,
-            lifeWorkedPercent:
-              (pendingUpdate.hasUsage || storedSessionUsage.hasUsage) && asset.usageMode === "percent"
-                ? sessionLifeWorkedPercent
-                : "",
-            fuelPercent: pendingUpdate.hasFuel && asset.canUpdateFuel ? pendingUpdate.fuelPercent : "",
-            note: pendingUpdate.notes.join("\n\n---\n\n"),
-            photoUrls: pendingUpdate.photoUrls,
-            latitude: finalLatitude,
-            longitude: finalLongitude,
-          }),
+          body: JSON.stringify(payload),
         },
       );
       const data = (await response.json().catch(() => null)) as SaveScanEventResponse | null;
@@ -2454,6 +2565,8 @@ export default function ScanClient({
         hasUsage: current.hasUsage || pendingUpdate.hasUsage || storedSessionUsage.hasUsage,
         latitude: finalLatitude || current.latitude,
         longitude: finalLongitude || current.longitude,
+        gpsAccuracyMeters: finalGpsAccuracyMeters || current.gpsAccuracyMeters,
+        locationCapturedAtIso: finalClientCapturedAt || current.locationCapturedAtIso,
         locationMessage: current.locationMessage || GPS_READY_SESSION_MESSAGE,
       }));
       setAsset(savedAssetFromResponse);
@@ -2466,6 +2579,8 @@ export default function ScanClient({
         ...initialPendingUpdate,
         latitude: finalLatitude,
         longitude: finalLongitude,
+        gpsAccuracyMeters: finalGpsAccuracyMeters,
+        clientCapturedAt: finalClientCapturedAt,
       });
       setDraft(applySessionLocationToDraft({ ...initialDraft, latitude: finalLatitude, longitude: finalLongitude }, savedSession));
       if (finalLatitude && finalLongitude) {
@@ -2474,6 +2589,30 @@ export default function ScanClient({
       }
       return savedAssetFromResponse;
     } catch (error) {
+      if (isOfflineNetworkError(error)) {
+        await enqueueOfflineMutation({
+          id: finalClientEventId,
+          kind: "asset-scan-update",
+          endpoint,
+          payload,
+        });
+        const nextCount = await getOfflineMutationCount(["asset-scan-update"]);
+        setPendingSyncCount(nextCount);
+        setPendingUpdate({
+          ...initialPendingUpdate,
+          latitude: finalLatitude,
+          longitude: finalLongitude,
+          gpsAccuracyMeters: finalGpsAccuracyMeters,
+          clientCapturedAt: finalClientCapturedAt,
+        });
+        setDraft({ ...initialDraft, latitude: finalLatitude, longitude: finalLongitude });
+        setLocationState("ready");
+        setLocationMessage(GPS_READY_SESSION_MESSAGE);
+        setDoneMessage("Saved on this phone. It will sync when signal returns.");
+        setNotice({ tone: "success", message: "Saved on this phone. It will sync when signal returns." });
+        return asset;
+      }
+
       setNotice({
         tone: "error",
         message: error instanceof Error ? error.message : "Failed to save the QR update.",
@@ -2564,7 +2703,7 @@ export default function ScanClient({
       <main className={styles.page}>
         <section className={styles.thankYouScreen}>
           <h1>Thank you.</h1>
-          <p>The QR update session is closed.</p>
+          <p>{doneMessage}</p>
         </section>
       </main>
     );
@@ -2576,6 +2715,14 @@ export default function ScanClient({
         {notice ? (
           <div className={`${styles.notice} ${notice.tone === "success" ? styles.noticeSuccess : styles.noticeError}`}>
             {notice.message}
+          </div>
+        ) : null}
+
+        {pendingSyncCount > 0 ? (
+          <div className={`${styles.notice} ${styles.noticeSuccess}`}>
+            {pendingSyncCount === 1
+              ? "1 saved phone update will sync when signal returns."
+              : `${pendingSyncCount} saved phone updates will sync when signal returns.`}
           </div>
         ) : null}
 
