@@ -13,6 +13,9 @@ type FuelRefillRequest = {
   latitude?: unknown;
   longitude?: unknown;
   locationText?: unknown;
+  clientEventId?: unknown;
+  clientCapturedAt?: unknown;
+  gpsAccuracyMeters?: unknown;
 };
 
 function normalizeFuelCode(value: unknown): string {
@@ -69,6 +72,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       latitude,
       longitude,
       locationText: asText(body.locationText) || `GPS ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+      clientEventId: body.clientEventId,
+      clientCapturedAt: body.clientCapturedAt,
+      gpsAccuracyMeters: body.gpsAccuracyMeters,
     });
 
     const payload = await getFuelScanPayload(access.ownerUserId, access.storage.id);
