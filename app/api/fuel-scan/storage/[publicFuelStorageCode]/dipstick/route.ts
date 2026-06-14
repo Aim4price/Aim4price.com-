@@ -5,7 +5,16 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type RouteContext = { params: { publicFuelStorageCode: string } };
-type DipstickNoteRequest = { dipstickNote?: unknown };
+type DipstickNoteRequest = {
+  dipstickNote?: unknown;
+  operatorName?: unknown;
+  latitude?: unknown;
+  longitude?: unknown;
+  locationText?: unknown;
+  clientEventId?: unknown;
+  clientCapturedAt?: unknown;
+  gpsAccuracyMeters?: unknown;
+};
 
 function normalizeFuelCode(value: unknown): string {
   return String(value ?? '').trim().replace(/\s+/g, '').toUpperCase();
@@ -13,6 +22,13 @@ function normalizeFuelCode(value: unknown): string {
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function asCoordinate(value: unknown, maxAbsolute: number): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || Math.abs(parsed) > maxAbsolute) return null;
+  return parsed;
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -39,8 +55,29 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ ok: false, error: 'Enter the dipstick note before saving.' }, { status: 400 });
   }
 
+  const operatorName = asText(body.operatorName);
+  if (operatorName.length < 2) {
+    return NextResponse.json({ ok: false, error: 'Enter your name before saving the dipstick note.' }, { status: 400 });
+  }
+
+  const latitude = asCoordinate(body.latitude, 90);
+  const longitude = asCoordinate(body.longitude, 180);
+  if (latitude === null || longitude === null) {
+    return NextResponse.json({ ok: false, error: 'GPS location is required. Enable location and capture GPS again.' }, { status: 400 });
+  }
+
   try {
-    await saveFuelStorageDipstickNote(access.ownerUserId, access.storage.id, { dipstickNote });
+    await saveFuelStorageDipstickNote(access.ownerUserId, access.storage.id, {
+      dipstickNote,
+      operatorName,
+      latitude,
+      longitude,
+      locationText: asText(body.locationText) || `GPS ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+      clientEventId: body.clientEventId,
+      clientCapturedAt: body.clientCapturedAt,
+      gpsAccuracyMeters: body.gpsAccuracyMeters,
+      createEvent: true,
+    });
     const payload = await getFuelScanPayload(access.ownerUserId, access.storage.id);
     return NextResponse.json({ ok: true, ...payload });
   } catch (error) {
