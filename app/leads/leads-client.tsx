@@ -104,12 +104,10 @@ type LeadPartnerNote = {
   updatedAtIso?: string;
 };
 
-type LeadPhotoPreview = {
+type OwnerPhotoPreview = {
   urls: string[];
   index: number;
   title: string;
-  label: string;
-  altPrefix: string;
 };
 
 type PartnerNoteResponse = {
@@ -1325,7 +1323,7 @@ export default function LeadsClient() {
   const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [leadPhotoIndexes, setLeadPhotoIndexes] = useState<Record<string, number>>({});
-  const [leadPhotoPreview, setLeadPhotoPreview] = useState<LeadPhotoPreview | null>(null);
+  const [ownerPhotoPreview, setOwnerPhotoPreview] = useState<OwnerPhotoPreview | null>(null);
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
   const [emailLead, setEmailLead] = useState<AssetLead | null>(null);
   const [emailSubjectDraft, setEmailSubjectDraft] = useState('');
@@ -1472,35 +1470,6 @@ export default function LeadsClient() {
     const timeout = window.setTimeout(() => setNotice(null), 4200);
     return () => window.clearTimeout(timeout);
   }, [notice]);
-
-  useEffect(() => {
-    if (!leadPhotoPreview) return undefined;
-
-    function handlePhotoPreviewKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setLeadPhotoPreview(null);
-        return;
-      }
-
-      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
-        return;
-      }
-
-      event.preventDefault();
-      setLeadPhotoPreview((current) => {
-        if (!current || current.urls.length <= 1) return current;
-
-        const direction = event.key === 'ArrowLeft' ? -1 : 1;
-        return {
-          ...current,
-          index: (current.index + direction + current.urls.length) % current.urls.length,
-        };
-      });
-    }
-
-    window.addEventListener('keydown', handlePhotoPreviewKeyDown);
-    return () => window.removeEventListener('keydown', handlePhotoPreviewKeyDown);
-  }, [leadPhotoPreview]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -2101,34 +2070,24 @@ export default function LeadsClient() {
     setLeadPhotoIndex(lead.id, nextIndex);
   }
 
-  function openLeadPhotoPreview(lead: AssetLead, urls: string[], index: number, label: string, altPrefix: string) {
+  function openOwnerPhotoPreview(lead: AssetLead, urls: string[], index: number) {
     const normalizedUrls = urls.map(normalizeLeadPhotoUrl).filter(Boolean);
 
     if (!normalizedUrls.length) return;
 
-    setLeadPhotoPreview({
+    setOwnerPhotoPreview({
       urls: normalizedUrls,
       index: Math.min(Math.max(index, 0), normalizedUrls.length - 1),
       title: assetTitle(lead),
-      label,
-      altPrefix,
     });
   }
 
-  function openOwnerPhotoPreview(lead: AssetLead, urls: string[], index: number) {
-    openLeadPhotoPreview(lead, urls, index, 'Owner photo', 'Owner attached photo');
+  function closeOwnerPhotoPreview() {
+    setOwnerPhotoPreview(null);
   }
 
-  function openAssetPhotoPreview(lead: AssetLead, urls: string[], index: number) {
-    openLeadPhotoPreview(lead, urls, index, 'Asset photo', `${assetTitle(lead)} photo`);
-  }
-
-  function closeLeadPhotoPreview() {
-    setLeadPhotoPreview(null);
-  }
-
-  function cycleLeadPhotoPreview(direction: -1 | 1) {
-    setLeadPhotoPreview((current) => {
+  function cycleOwnerPhotoPreview(direction: -1 | 1) {
+    setOwnerPhotoPreview((current) => {
       if (!current || current.urls.length <= 1) return current;
 
       return {
@@ -2255,16 +2214,8 @@ export default function LeadsClient() {
           <div className={`${assetStyles.previewStage} ${styles.leadPreviewStage}`}>
             {photo ? (
               <>
-                <button
-                  type="button"
-                  className={styles.leadPreviewOpenButton}
-                  onClick={() => openAssetPhotoPreview(lead, photos, photoIndex)}
-                  aria-label={`Open ${assetTitle(lead)} photo ${photoIndex + 1} full screen`}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photo} alt={`${assetTitle(lead)} photo ${photoIndex + 1}`} className={`${assetStyles.previewImage} ${styles.leadPreviewImage}`} />
-                  <span className={styles.leadPreviewOpenLabel}>Open</span>
-                </button>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photo} alt={`${assetTitle(lead)} photo ${photoIndex + 1}`} className={`${assetStyles.previewImage} ${styles.leadPreviewImage}`} />
 
                 {hasMultiplePhotos ? (
                   <>
@@ -2381,11 +2332,11 @@ export default function LeadsClient() {
     );
   }
 
-  const leadPhotoPreviewIndex = leadPhotoPreview
-    ? Math.min(Math.max(leadPhotoPreview.index, 0), leadPhotoPreview.urls.length - 1)
+  const ownerPhotoPreviewIndex = ownerPhotoPreview
+    ? Math.min(Math.max(ownerPhotoPreview.index, 0), ownerPhotoPreview.urls.length - 1)
     : 0;
-  const leadPhotoPreviewUrl = leadPhotoPreview?.urls[leadPhotoPreviewIndex] ?? '';
-  const hasMultipleLeadPreviewPhotos = Boolean(leadPhotoPreview && leadPhotoPreview.urls.length > 1);
+  const ownerPhotoPreviewUrl = ownerPhotoPreview?.urls[ownerPhotoPreviewIndex] ?? '';
+  const hasMultipleOwnerPreviewPhotos = Boolean(ownerPhotoPreview && ownerPhotoPreview.urls.length > 1);
 
   return (
     <main className={`${assetStyles.page} ${styles.leadsPage}`}>
@@ -2974,32 +2925,32 @@ export default function LeadsClient() {
         </div>
       ) : null}
 
-      {leadPhotoPreview && leadPhotoPreviewUrl ? (
+      {ownerPhotoPreview && ownerPhotoPreviewUrl ? (
         <div className={`${assetStyles.modalOverlay} ${styles.ownerPhotoPreviewOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={closeLeadPhotoPreview} />
+          <div className={assetStyles.modalBackdrop} onClick={closeOwnerPhotoPreview} />
 
-          <div className={styles.ownerPhotoPreviewModal} role="dialog" aria-modal="true" aria-labelledby="lead-photo-preview-title">
+          <div className={styles.ownerPhotoPreviewModal} role="dialog" aria-modal="true" aria-labelledby="owner-photo-preview-title">
             <div className={styles.ownerPhotoPreviewHeader}>
               <div>
-                <strong id="lead-photo-preview-title">{leadPhotoPreview.title}</strong>
-                <span>{leadPhotoPreview.label} {leadPhotoPreviewIndex + 1} of {leadPhotoPreview.urls.length}</span>
+                <strong id="owner-photo-preview-title">{ownerPhotoPreview.title}</strong>
+                <span>Owner photo {ownerPhotoPreviewIndex + 1} of {ownerPhotoPreview.urls.length}</span>
               </div>
 
-              <button type="button" className={styles.ownerPhotoPreviewCloseButton} onClick={closeLeadPhotoPreview} aria-label="Close photo preview">
+              <button type="button" className={styles.ownerPhotoPreviewCloseButton} onClick={closeOwnerPhotoPreview} aria-label="Close owner photo preview">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
 
             <div className={styles.ownerPhotoPreviewFrame}>
-              <img src={leadPhotoPreviewUrl} alt={`${leadPhotoPreview.altPrefix} ${leadPhotoPreviewIndex + 1}`} />
+              <img src={ownerPhotoPreviewUrl} alt={`Owner attached photo ${ownerPhotoPreviewIndex + 1}`} />
 
-              {hasMultipleLeadPreviewPhotos ? (
+              {hasMultipleOwnerPreviewPhotos ? (
                 <>
                   <button
                     type="button"
                     className={`${styles.ownerPhotoPreviewNavButton} ${styles.ownerPhotoPreviewNavPrevious}`}
-                    onClick={() => cycleLeadPhotoPreview(-1)}
-                    aria-label="Show previous photo"
+                    onClick={() => cycleOwnerPhotoPreview(-1)}
+                    aria-label="Show previous owner photo"
                   >
                     <ChevronLeftIcon className={assetStyles.buttonIcon} />
                   </button>
@@ -3007,8 +2958,8 @@ export default function LeadsClient() {
                   <button
                     type="button"
                     className={`${styles.ownerPhotoPreviewNavButton} ${styles.ownerPhotoPreviewNavNext}`}
-                    onClick={() => cycleLeadPhotoPreview(1)}
-                    aria-label="Show next photo"
+                    onClick={() => cycleOwnerPhotoPreview(1)}
+                    aria-label="Show next owner photo"
                   >
                     <ChevronRightIcon className={assetStyles.buttonIcon} />
                   </button>
