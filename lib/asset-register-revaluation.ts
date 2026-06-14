@@ -49,6 +49,9 @@ export type AssetRevaluationResult = {
   marketCount?: number;
   marketSources?: AssetRevaluationMarketSource[];
   marketMatchStrategy?: string;
+  marketAdjustmentExVat?: number | null;
+  marketRawAverageExVat?: number | null;
+  marketValueMode?: 'aim4price_delta' | 'market_average';
   replacementPriceUsedExVat?: number | null;
 };
 
@@ -99,6 +102,16 @@ function asInteger(value: unknown): number | null {
 function roundMoneyValue(value: unknown): number | null {
   const parsed = asNumber(value);
   return parsed === null ? null : Math.round(parsed);
+}
+
+function roundFiniteValue(value: unknown): number | null {
+  const parsed = asNumber(value);
+  return parsed === null ? null : Math.round(parsed);
+}
+
+function positiveMoneyValue(value: unknown): number | null {
+  const parsed = roundFiniteValue(value);
+  return parsed !== null && parsed > 0 ? parsed : null;
 }
 
 function requireSelectedValue(value: unknown): number {
@@ -213,6 +226,102 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function readNestedRecord(source: Record<string, unknown>, key: string): Record<string, unknown> {
   return asRecord(source[key]);
+}
+
+const MARKET_ADJUSTMENT_DELTA_KEYS = [
+  'marketAim4priceDeltaExVat',
+  'market_aim4price_delta_ex_vat',
+  'marketAdjustmentExVat',
+  'market_adjustment_ex_vat',
+  'marketValueAdjustmentExVat',
+  'market_value_adjustment_ex_vat',
+] as const;
+
+function readNumberFromRecord(source: Record<string, unknown>, keys: readonly string[]): number | null {
+  for (const key of keys) {
+    const parsed = roundFiniteValue(source[key]);
+    if (parsed !== null) return parsed;
+  }
+
+  return null;
+}
+
+function readStoredMarketAdjustmentDelta(asset: AssetRegisterItem): number | null {
+  return readNumberFromRecord(asset.specsJson ?? {}, MARKET_ADJUSTMENT_DELTA_KEYS);
+}
+
+function deriveExistingMarketAdjustmentDelta(asset: AssetRegisterItem): number | null {
+  const storedDelta = readStoredMarketAdjustmentDelta(asset);
+  if (storedDelta !== null) return storedDelta;
+
+  if (asset.selectedMethod !== 'market') {
+    return null;
+  }
+
+  const previousAim4priceValueExVat = roundFiniteValue(asset.aim4priceValueExVat);
+  const previousMarketValueExVat = roundFiniteValue(asset.value) ?? roundFiniteValue(asset.marketMidExVat);
+
+  if (previousAim4priceValueExVat === null || previousMarketValueExVat === null) {
+    return null;
+  }
+
+  return previousMarketValueExVat - previousAim4priceValueExVat;
+}
+
+function hasUsableMarketAdjustment(asset: AssetRegisterItem, aim4priceValueExVat: unknown): boolean {
+  return roundFiniteValue(aim4priceValueExVat) !== null && deriveExistingMarketAdjustmentDelta(asset) !== null;
+}
+
+function resolveMarketValueSelection(input: {
+  asset: AssetRegisterItem;
+  aim4priceValueExVat: unknown;
+  rawMarketValueExVat: unknown;
+  explicitMarketSelection?: boolean;
+}): {
+  selectedValueExVat: number;
+  marketValueExVat: number;
+  marketAdjustmentDeltaExVat: number | null;
+  rawMarketValueExVat: number | null;
+  marketValueMode: 'aim4price_delta' | 'market_average';
+} {
+  const aim4priceValueExVat = positiveMoneyValue(input.aim4priceValueExVat);
+  const rawMarketValueExVat = positiveMoneyValue(input.rawMarketValueExVat);
+  const storedDelta = deriveExistingMarketAdjustmentDelta(input.asset);
+  const shouldResetMarketAnchor = input.explicitMarketSelection === true && rawMarketValueExVat !== null;
+
+  if (!shouldResetMarketAnchor && storedDelta !== null && aim4priceValueExVat !== null) {
+    const adjustedMarketValueExVat = Math.max(0, Math.round(aim4priceValueExVat + storedDelta));
+    return {
+      selectedValueExVat: adjustedMarketValueExVat,
+      marketValueExVat: adjustedMarketValueExVat,
+      marketAdjustmentDeltaExVat: storedDelta,
+      rawMarketValueExVat,
+      marketValueMode: 'aim4price_delta',
+    };
+  }
+
+  if (rawMarketValueExVat !== null) {
+    return {
+      selectedValueExVat: rawMarketValueExVat,
+      marketValueExVat: rawMarketValueExVat,
+      marketAdjustmentDeltaExVat: aim4priceValueExVat === null ? null : rawMarketValueExVat - aim4priceValueExVat,
+      rawMarketValueExVat,
+      marketValueMode: aim4priceValueExVat === null ? 'market_average' : 'aim4price_delta',
+    };
+  }
+
+  if (storedDelta !== null && aim4priceValueExVat !== null) {
+    const adjustedMarketValueExVat = Math.max(0, Math.round(aim4priceValueExVat + storedDelta));
+    return {
+      selectedValueExVat: adjustedMarketValueExVat,
+      marketValueExVat: adjustedMarketValueExVat,
+      marketAdjustmentDeltaExVat: storedDelta,
+      rawMarketValueExVat,
+      marketValueMode: 'aim4price_delta',
+    };
+  }
+
+  throw new Error('SELECTED_METHOD_NOT_AVAILABLE');
 }
 
 function normalizeCondition(value: unknown): ConditionKey | null {
@@ -336,6 +445,7 @@ function buildPreviewAssetFromTractorValuation(input: {
   result: Awaited<ReturnType<typeof runServerValuation>>;
   selectedMethod: MethodKey;
   selectedValueExVat: number;
+  marketValueExVat?: number | null;
   year: number;
   hours: number;
   condition: ConditionKey;
@@ -360,7 +470,7 @@ function buildPreviewAssetFromTractorValuation(input: {
     hours: Math.max(0, Math.round(input.hours)),
     condition: input.condition,
     aim4priceValueExVat: roundMoneyValue(input.result.aim4priceValueExVat),
-    marketMidExVat: roundMoneyValue(input.result.marketMid),
+    marketMidExVat: roundMoneyValue(input.marketValueExVat) ?? roundMoneyValue(input.result.marketMid),
     updatedAtIso: new Date().toISOString(),
   };
 }
@@ -370,6 +480,7 @@ function buildPreviewAssetFromGenericValuation(input: {
   result: Awaited<ReturnType<typeof runGenericValuation>>;
   selectedMethod: GenericSelectedMethod;
   selectedValueExVat: number;
+  marketValueExVat?: number | null;
 }): AssetRegisterItem {
   const replacementPriceExVat = resolveReplacementPrice(input.result.replacementPriceUsedExVat);
 
@@ -402,7 +513,7 @@ function buildPreviewAssetFromGenericValuation(input: {
     hours: input.result.usageAmount ?? null,
     condition: input.result.condition,
     aim4priceValueExVat: roundMoneyValue(input.result.aim4priceValueExVat),
-    marketMidExVat: roundMoneyValue(input.result.marketAverageExVat),
+    marketMidExVat: roundMoneyValue(input.marketValueExVat) ?? roundMoneyValue(input.result.marketAverageExVat),
     updatedAtIso: new Date().toISOString(),
   };
 }
@@ -453,8 +564,16 @@ function resolvePreferredMethod(asset: AssetRegisterItem, row: ValuationRunRow, 
   return normalizeMethod(preferredMethod) ?? normalizeMethod(asset.selectedMethod) ?? normalizeMethod(row.selected_method) ?? 'aim4price';
 }
 
-function resolveTractorMethod(preferredMethod: RevaluePreference, result: Awaited<ReturnType<typeof runServerValuation>>): MethodKey {
+function resolveTractorMethod(
+  preferredMethod: RevaluePreference,
+  result: Awaited<ReturnType<typeof runServerValuation>>,
+  marketAdjustmentAvailable = false,
+): MethodKey {
   const preferred = preferredMethod === 'market' || preferredMethod === 'aim4price' ? preferredMethod : 'aim4price';
+
+  if (preferred === 'market' && marketAdjustmentAvailable) {
+    return 'market';
+  }
 
   if (getSelectedMethodValue(result, preferred) !== null) {
     return preferred;
@@ -474,8 +593,13 @@ function resolveTractorMethod(preferredMethod: RevaluePreference, result: Awaite
 function resolveGenericMethod(
   preferredMethod: RevaluePreference,
   result: Awaited<ReturnType<typeof runGenericValuation>>,
+  marketAdjustmentAvailable = false,
 ): GenericSelectedMethod {
   const preferred = preferredMethod === 'market' || preferredMethod === 'aim4price' ? preferredMethod : 'aim4price';
+
+  if (preferred === 'market' && marketAdjustmentAvailable) {
+    return 'market';
+  }
 
   if (getGenericSelectedMethodValue(result, preferred) !== null) {
     return preferred;
@@ -497,6 +621,7 @@ async function revalueTractorAsset(input: {
   asset: AssetRegisterItem;
   row: ValuationRunRow;
   preferredMethod: RevaluePreference;
+  explicitMarketSelection?: boolean;
   previewOnly?: boolean;
   replacementPriceExVat?: number | null;
   saveReplacementPrice?: boolean;
@@ -550,8 +675,17 @@ async function revalueTractorAsset(input: {
   };
 
   const result = await runServerValuation(valuationInput);
-  const selectedMethod = resolveTractorMethod(input.preferredMethod, result);
-  const selectedValueExVat = requireSelectedValue(getSelectedMethodValue(result, selectedMethod));
+  const marketAdjustmentAvailable = hasUsableMarketAdjustment(input.asset, result.aim4priceValueExVat);
+  const selectedMethod = resolveTractorMethod(input.preferredMethod, result, marketAdjustmentAvailable);
+  const marketSelection = selectedMethod === 'market'
+    ? resolveMarketValueSelection({
+        asset: input.asset,
+        aim4priceValueExVat: result.aim4priceValueExVat,
+        rawMarketValueExVat: result.marketMid,
+        explicitMarketSelection: input.explicitMarketSelection,
+      })
+    : null;
+  const selectedValueExVat = marketSelection?.selectedValueExVat ?? requireSelectedValue(getSelectedMethodValue(result, selectedMethod));
   const warning = selectedMethod !== input.preferredMethod ? 'Market value was unavailable, so Aim4price value was used.' : undefined;
   const marketEvidence = buildTractorMarketEvidence(result);
 
@@ -562,6 +696,7 @@ async function revalueTractorAsset(input: {
         result,
         selectedMethod,
         selectedValueExVat,
+        marketValueExVat: marketSelection?.marketValueExVat,
         year,
         hours,
         condition,
@@ -572,6 +707,9 @@ async function revalueTractorAsset(input: {
       newValueExVat: selectedValueExVat,
       warning,
       previewOnly: true,
+      marketAdjustmentExVat: marketSelection?.marketAdjustmentDeltaExVat ?? null,
+      marketRawAverageExVat: marketSelection?.rawMarketValueExVat ?? roundMoneyValue(result.marketMid),
+      marketValueMode: marketSelection?.marketValueMode,
       replacementPriceUsedExVat: roundMoneyValue(result.replacementPriceUsedExVat),
       ...marketEvidence,
     };
@@ -581,6 +719,7 @@ async function revalueTractorAsset(input: {
     {
       ...valuationInput,
       selectedMethod,
+      selectedValueOverrideExVat: selectedValueExVat,
       valuationVersion: 'v1-revalue',
       userId: input.userId,
     },
@@ -592,7 +731,10 @@ async function revalueTractorAsset(input: {
     valuationRunId: saved.runId,
     result,
     selectedMethod,
-    selectedValueExVat: saved.selectedValueExVat,
+    selectedValueExVat,
+    marketValueExVat: marketSelection?.marketValueExVat,
+    marketAdjustmentDeltaExVat: marketSelection?.marketAdjustmentDeltaExVat,
+    marketRawAverageExVat: marketSelection?.rawMarketValueExVat,
     year,
     hours,
     condition,
@@ -604,8 +746,11 @@ async function revalueTractorAsset(input: {
     valuationRunId: saved.runId,
     selectedMethod,
     oldValueExVat: input.asset.value,
-    newValueExVat: saved.selectedValueExVat,
+    newValueExVat: selectedValueExVat,
     warning,
+    marketAdjustmentExVat: marketSelection?.marketAdjustmentDeltaExVat ?? null,
+    marketRawAverageExVat: marketSelection?.rawMarketValueExVat ?? roundMoneyValue(result.marketMid),
+    marketValueMode: marketSelection?.marketValueMode,
     replacementPriceUsedExVat: roundMoneyValue(result.replacementPriceUsedExVat),
     ...marketEvidence,
   };
@@ -616,6 +761,7 @@ async function revalueGenericAsset(input: {
   asset: AssetRegisterItem;
   row: ValuationRunRow;
   preferredMethod: RevaluePreference;
+  explicitMarketSelection?: boolean;
   previewOnly?: boolean;
   replacementPriceExVat?: number | null;
   saveReplacementPrice?: boolean;
@@ -683,8 +829,17 @@ async function revalueGenericAsset(input: {
     userReplacementPriceExVat,
     userReplacementPriceYear: asInteger(payloadInput.userReplacementPriceYear ?? input.row.user_replacement_price_year),
   });
-  const selectedMethod = resolveGenericMethod(input.preferredMethod, result);
-  const selectedValueExVat = requireSelectedValue(getGenericSelectedMethodValue(result, selectedMethod));
+  const marketAdjustmentAvailable = hasUsableMarketAdjustment(input.asset, result.aim4priceValueExVat);
+  const selectedMethod = resolveGenericMethod(input.preferredMethod, result, marketAdjustmentAvailable);
+  const marketSelection = selectedMethod === 'market'
+    ? resolveMarketValueSelection({
+        asset: input.asset,
+        aim4priceValueExVat: result.aim4priceValueExVat,
+        rawMarketValueExVat: result.marketAverageExVat,
+        explicitMarketSelection: input.explicitMarketSelection,
+      })
+    : null;
+  const selectedValueExVat = marketSelection?.selectedValueExVat ?? requireSelectedValue(getGenericSelectedMethodValue(result, selectedMethod));
   const warning = selectedMethod !== input.preferredMethod ? 'Market value was unavailable, so Aim4price value was used.' : undefined;
   const marketEvidence = buildGenericMarketEvidence(result);
 
@@ -695,6 +850,7 @@ async function revalueGenericAsset(input: {
         result,
         selectedMethod,
         selectedValueExVat,
+        marketValueExVat: marketSelection?.marketValueExVat,
       }),
       valuationRunId: input.asset.valuationRunId ?? Number(input.row.id),
       selectedMethod,
@@ -702,6 +858,9 @@ async function revalueGenericAsset(input: {
       newValueExVat: selectedValueExVat,
       warning,
       previewOnly: true,
+      marketAdjustmentExVat: marketSelection?.marketAdjustmentDeltaExVat ?? null,
+      marketRawAverageExVat: marketSelection?.rawMarketValueExVat ?? roundMoneyValue(result.marketAverageExVat),
+      marketValueMode: marketSelection?.marketValueMode,
       replacementPriceUsedExVat: roundMoneyValue(result.replacementPriceUsedExVat),
       ...marketEvidence,
     };
@@ -711,6 +870,7 @@ async function revalueGenericAsset(input: {
     userId: input.userId,
     result,
     selectedMethod,
+    selectedValueOverrideExVat: selectedValueExVat,
     valuationVersion: 'generic-v1-revalue',
   });
   const item = await updateAssetRegisterItemFromGenericValuation({
@@ -719,7 +879,10 @@ async function revalueGenericAsset(input: {
     valuationRunId: saved.runId,
     result,
     selectedMethod,
-    selectedValueExVat: saved.selectedValueExVat,
+    selectedValueExVat,
+    marketValueExVat: marketSelection?.marketValueExVat,
+    marketAdjustmentDeltaExVat: marketSelection?.marketAdjustmentDeltaExVat,
+    marketRawAverageExVat: marketSelection?.rawMarketValueExVat,
     saveReplacementPrice: input.saveReplacementPrice === true,
   });
 
@@ -728,8 +891,11 @@ async function revalueGenericAsset(input: {
     valuationRunId: saved.runId,
     selectedMethod,
     oldValueExVat: input.asset.value,
-    newValueExVat: saved.selectedValueExVat,
+    newValueExVat: selectedValueExVat,
     warning,
+    marketAdjustmentExVat: marketSelection?.marketAdjustmentDeltaExVat ?? null,
+    marketRawAverageExVat: marketSelection?.rawMarketValueExVat ?? roundMoneyValue(result.marketAverageExVat),
+    marketValueMode: marketSelection?.marketValueMode,
     replacementPriceUsedExVat: roundMoneyValue(result.replacementPriceUsedExVat),
     ...marketEvidence,
   };
@@ -759,7 +925,9 @@ export async function revalueAssetRegisterItem(input: {
     throw new Error('VALUATION_RUN_NOT_FOUND');
   }
 
+  const requestedMethod = normalizeMethod(input.selectedMethod);
   const preferredMethod = resolvePreferredMethod(asset, row, input.selectedMethod);
+  const explicitMarketSelection = requestedMethod === 'market';
   const familyKey = asText(row.family_key || asset.equipmentFamilyKey).toLowerCase();
   const equipmentType = asText(row.equipment_type).toLowerCase();
 
@@ -769,6 +937,7 @@ export async function revalueAssetRegisterItem(input: {
       asset,
       row,
       preferredMethod,
+      explicitMarketSelection,
       previewOnly: input.previewOnly,
       replacementPriceExVat: input.replacementPriceExVat,
       saveReplacementPrice: input.saveReplacementPrice,
@@ -780,6 +949,7 @@ export async function revalueAssetRegisterItem(input: {
     asset,
     row,
     preferredMethod,
+    explicitMarketSelection,
     previewOnly: input.previewOnly,
     replacementPriceExVat: input.replacementPriceExVat,
     saveReplacementPrice: input.saveReplacementPrice,

@@ -451,6 +451,45 @@ function buildCurrentValuationSpecs(
   };
 }
 
+function withMarketValueAdjustmentSpecs(
+  specs: Record<string, unknown>,
+  context: {
+    selectedMethod: AssetRegisterItemMethod;
+    marketValueExVat?: number | null;
+    marketAdjustmentDeltaExVat?: number | null;
+    marketRawAverageExVat?: number | null;
+    aim4priceValueExVat?: number | null;
+  },
+): Record<string, unknown> {
+  const delta = roundFiniteNumber(context.marketAdjustmentDeltaExVat);
+
+  if (context.selectedMethod !== 'market' || delta === null) {
+    return specs;
+  }
+
+  const adjustedMarketValueExVat = roundFiniteNumber(context.marketValueExVat);
+  const rawMarketAverageExVat = roundFiniteNumber(context.marketRawAverageExVat);
+  const aim4priceValueExVat = roundFiniteNumber(context.aim4priceValueExVat);
+
+  return {
+    ...specs,
+    marketValueMode: 'aim4price_delta',
+    market_value_mode: 'aim4price_delta',
+    marketValueIsAim4priceDelta: true,
+    market_value_is_aim4price_delta: true,
+    marketAim4priceDeltaExVat: delta,
+    market_aim4price_delta_ex_vat: delta,
+    marketAdjustmentExVat: delta,
+    market_adjustment_ex_vat: delta,
+    marketAdjustmentBaseAim4priceExVat: aim4priceValueExVat,
+    market_adjustment_base_aim4price_ex_vat: aim4priceValueExVat,
+    marketAdjustmentBaseMarketExVat: adjustedMarketValueExVat,
+    market_adjustment_base_market_ex_vat: adjustedMarketValueExVat,
+    marketAdjustmentRawMarketExVat: rawMarketAverageExVat,
+    market_adjustment_raw_market_ex_vat: rawMarketAverageExVat,
+  };
+}
+
 function hasValueChanged(left: unknown, right: unknown): boolean {
   if ((left === null || typeof left === 'undefined' || left === '') && (right === null || typeof right === 'undefined' || right === '')) {
     return false;
@@ -578,6 +617,11 @@ function normalizeReplacementPriceExVat(value: unknown): number | null {
 
 function replacementPriceFromSpecs(specs: Record<string, unknown>): number | null {
   return normalizeReplacementPriceExVat(numberFromRecord(specs, [...REPLACEMENT_PRICE_SPEC_KEYS]));
+}
+
+function roundFiniteNumber(value: unknown): number | null {
+  const numeric = asNumber(value);
+  return numeric === null ? null : Math.round(numeric);
 }
 
 function asStringArray(value: unknown): string[] {
@@ -1744,6 +1788,9 @@ export async function updateAssetRegisterItemFromValuation(input: {
   result: Result;
   selectedMethod: MethodKey;
   selectedValueExVat: number;
+  marketValueExVat?: number | null;
+  marketAdjustmentDeltaExVat?: number | null;
+  marketRawAverageExVat?: number | null;
   year: number;
   hours: number;
   condition: ConditionKey;
@@ -1767,6 +1814,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   const now = new Date();
   const model = input.result.model;
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const marketValueExVat = roundFiniteNumber(input.marketValueExVat) ?? toRoundedNumber(input.result.marketMid);
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(input.result.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(input.result.userReplacementPriceExVat);
 
@@ -1795,7 +1843,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['hours', 'engine_hours'], Math.max(0, Math.round(input.hours)));
   pushField(fields, schema, ['condition'], input.condition);
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(input.result.aim4priceValueExVat));
-  pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(input.result.marketMid));
+  pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], marketValueExVat);
   if (input.saveReplacementPrice === true) {
     pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], replacementPriceUsedExVat);
     pushField(fields, schema, ['user_replacement_price_ex_vat'], userReplacementPriceExVat);
@@ -1805,14 +1853,23 @@ export async function updateAssetRegisterItemFromValuation(input: {
     fields,
     schema,
     ['specs_json'],
-    buildCurrentValuationSpecs(existing.specsJson, valuationSpecsJson, {
-      valuationRunId: input.valuationRunId,
-      selectedValueExVat,
-      hours: input.hours,
-      lifeWorkedPercent: null,
-      condition: input.condition,
-      now,
-    }),
+    withMarketValueAdjustmentSpecs(
+      buildCurrentValuationSpecs(existing.specsJson, valuationSpecsJson, {
+        valuationRunId: input.valuationRunId,
+        selectedValueExVat,
+        hours: input.hours,
+        lifeWorkedPercent: null,
+        condition: input.condition,
+        now,
+      }),
+      {
+        selectedMethod: input.selectedMethod,
+        marketValueExVat,
+        marketAdjustmentDeltaExVat: input.marketAdjustmentDeltaExVat,
+        marketRawAverageExVat: input.marketRawAverageExVat ?? input.result.marketMid,
+        aim4priceValueExVat: input.result.aim4priceValueExVat,
+      },
+    ),
     '::jsonb',
   );
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
@@ -1845,6 +1902,9 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   result: GenericValuationResult;
   selectedMethod: GenericSelectedMethod;
   selectedValueExVat: number;
+  marketValueExVat?: number | null;
+  marketAdjustmentDeltaExVat?: number | null;
+  marketRawAverageExVat?: number | null;
   saveReplacementPrice?: boolean;
 }): Promise<AssetRegisterItem> {
   const db = getDb();
@@ -1865,6 +1925,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   const now = new Date();
   const valuationResult = input.result;
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const marketValueExVat = roundFiniteNumber(input.marketValueExVat) ?? toRoundedNumber(valuationResult.marketAverageExVat);
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat);
 
@@ -1893,14 +1954,23 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
     fields,
     schema,
     ['specs_json'],
-    buildCurrentValuationSpecs(existing.specsJson, valuationResult.specsJson ?? {}, {
-      valuationRunId: input.valuationRunId,
-      selectedValueExVat,
-      hours: valuationResult.usageAmount ?? null,
-      lifeWorkedPercent: valuationResult.lifeWorkedPercent,
-      condition: valuationResult.condition,
-      now,
-    }),
+    withMarketValueAdjustmentSpecs(
+      buildCurrentValuationSpecs(existing.specsJson, valuationResult.specsJson ?? {}, {
+        valuationRunId: input.valuationRunId,
+        selectedValueExVat,
+        hours: valuationResult.usageAmount ?? null,
+        lifeWorkedPercent: valuationResult.lifeWorkedPercent,
+        condition: valuationResult.condition,
+        now,
+      }),
+      {
+        selectedMethod: input.selectedMethod,
+        marketValueExVat,
+        marketAdjustmentDeltaExVat: input.marketAdjustmentDeltaExVat,
+        marketRawAverageExVat: input.marketRawAverageExVat ?? valuationResult.marketAverageExVat,
+        aim4priceValueExVat: valuationResult.aim4priceValueExVat,
+      },
+    ),
     '::jsonb',
   );
   pushField(fields, schema, ['depreciation_method_used'], valuationResult.depreciationMethodUsed);
@@ -1917,7 +1987,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['hours', 'engine_hours'], valuationResult.usageAmount ?? null);
   pushField(fields, schema, ['condition'], valuationResult.condition);
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
-  pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(valuationResult.marketAverageExVat));
+  pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], marketValueExVat);
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
   const update = buildUpdateSetClause(fields);
@@ -1960,6 +2030,9 @@ export async function createAssetRegisterItemFromValuation(input: {
   result: Result;
   selectedMethod: MethodKey;
   selectedValueExVat: number;
+  marketValueExVat?: number | null;
+  marketAdjustmentDeltaExVat?: number | null;
+  marketRawAverageExVat?: number | null;
   year: number;
   hours: number;
   note?: string | null;
@@ -1987,6 +2060,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   const title = `${model.brandName} ${model.modelName}`.trim();
   const now = new Date();
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const marketValueExVat = roundFiniteNumber(input.marketValueExVat) ?? toRoundedNumber(valuationResult.marketMid);
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat);
 
@@ -2017,10 +2091,33 @@ export async function createAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['hours', 'engine_hours'], Math.max(0, Math.round(input.hours)));
   pushField(fields, schema, ['condition'], typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good');
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
-  pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(valuationResult.marketMid));
+  pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], marketValueExVat);
   pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], replacementPriceUsedExVat);
   pushField(fields, schema, ['user_replacement_price_ex_vat'], userReplacementPriceExVat);
   pushField(fields, schema, ['replacement_price_basis'], valuationResult.replacementPriceBasis);
+  pushField(
+    fields,
+    schema,
+    ['specs_json'],
+    withMarketValueAdjustmentSpecs(
+      buildCurrentValuationSpecs({}, isRecord(valuationRow.specs_json) ? valuationRow.specs_json : {}, {
+        valuationRunId: input.valuationRunId,
+        selectedValueExVat,
+        hours: input.hours,
+        lifeWorkedPercent: null,
+        condition: typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good',
+        now,
+      }),
+      {
+        selectedMethod: input.selectedMethod,
+        marketValueExVat,
+        marketAdjustmentDeltaExVat: input.marketAdjustmentDeltaExVat,
+        marketRawAverageExVat: input.marketRawAverageExVat ?? valuationResult.marketMid,
+        aim4priceValueExVat: valuationResult.aim4priceValueExVat,
+      },
+    ),
+    '::jsonb',
+  );
   pushField(fields, schema, ['note', 'notes', 'description'], cleanAssetRegisterNote(input.note) || null);
   pushPhotoField(fields, schema, input.photos ?? []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
@@ -2065,6 +2162,9 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   result: GenericValuationResult;
   selectedMethod: GenericSelectedMethod;
   selectedValueExVat: number;
+  marketValueExVat?: number | null;
+  marketAdjustmentDeltaExVat?: number | null;
+  marketRawAverageExVat?: number | null;
   note?: string | null;
   photos?: string[];
 }): Promise<AssetRegisterItem> {
@@ -2093,6 +2193,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
     .trim();
   const now = new Date();
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const marketValueExVat = roundFiniteNumber(input.marketValueExVat) ?? toRoundedNumber(valuationResult.marketAverageExVat);
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat);
 
@@ -2120,7 +2221,29 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['model_name', 'model'], valuationResult.typedModelName || 'Specs-based valuation');
   pushField(fields, schema, ['typed_model_name'], valuationResult.typedModelName || null);
   pushField(fields, schema, ['normalized_typed_model_name'], valuationResult.normalizedTypedModelName || null);
-  pushField(fields, schema, ['specs_json'], valuationResult.specsJson ?? {}, '::jsonb');
+  pushField(
+    fields,
+    schema,
+    ['specs_json'],
+    withMarketValueAdjustmentSpecs(
+      buildCurrentValuationSpecs({}, valuationResult.specsJson ?? {}, {
+        valuationRunId: input.valuationRunId,
+        selectedValueExVat,
+        hours: valuationResult.usageAmount ?? null,
+        lifeWorkedPercent: valuationResult.lifeWorkedPercent,
+        condition: valuationResult.condition,
+        now,
+      }),
+      {
+        selectedMethod: input.selectedMethod,
+        marketValueExVat,
+        marketAdjustmentDeltaExVat: input.marketAdjustmentDeltaExVat,
+        marketRawAverageExVat: input.marketRawAverageExVat ?? valuationResult.marketAverageExVat,
+        aim4priceValueExVat: valuationResult.aim4priceValueExVat,
+      },
+    ),
+    '::jsonb',
+  );
   pushField(fields, schema, ['depreciation_method_used'], valuationResult.depreciationMethodUsed);
   pushField(fields, schema, ['replacement_price_basis'], valuationResult.replacementPriceBasis);
   pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], replacementPriceUsedExVat);
@@ -2133,7 +2256,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['hours', 'engine_hours'], valuationResult.usageAmount ?? null);
   pushField(fields, schema, ['condition'], valuationResult.condition);
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
-  pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], toRoundedNumber(valuationResult.marketAverageExVat));
+  pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], marketValueExVat);
   pushField(fields, schema, ['note', 'notes', 'description'], cleanAssetRegisterNote(input.note) || null);
   pushPhotoField(fields, schema, input.photos ?? []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);

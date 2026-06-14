@@ -8,6 +8,7 @@ export type MethodKey = 'aim4price' | 'market';
 
 export type SaveValuationRunInput = RunValuationInput & {
   selectedMethod: MethodKey;
+  selectedValueOverrideExVat?: number | null;
   valuationVersion?: string | null;
   userId?: string | null;
 };
@@ -34,6 +35,11 @@ type InsertedValuationRunRow = {
 
 function roundMoney(value: number): number {
   return Math.round(value);
+}
+
+function roundMoneyOrNull(value: unknown): number | null {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.round(numeric) : null;
 }
 
 function toNumberOrNull(value: unknown): number | null {
@@ -120,7 +126,8 @@ export async function saveValuationRunFromResult(
   input: SaveValuationRunInput,
   result: Result,
 ): Promise<SaveValuationRunResult> {
-  const selectedValueExVat = getSelectedMethodValue(result, input.selectedMethod);
+  const selectedMethodValueExVat = getSelectedMethodValue(result, input.selectedMethod);
+  const selectedValueExVat = roundMoneyOrNull(input.selectedValueOverrideExVat) ?? selectedMethodValueExVat;
   if (selectedValueExVat === null) throw new Error('SELECTED_METHOD_NOT_AVAILABLE');
 
   const catalogLink = await fetchCatalogLink(String(result.model.id));
@@ -215,6 +222,7 @@ export type SaveGenericValuationRunInput = {
   userId?: string | null;
   result: GenericValuationResult;
   selectedMethod: GenericSelectedMethod;
+  selectedValueOverrideExVat?: number | null;
   valuationVersion?: string | null;
 };
 
@@ -234,7 +242,8 @@ function getGenericMarketListingIds(result: GenericValuationResult): number[] {
 export async function saveGenericValuationRunFromResult(
   input: SaveGenericValuationRunInput,
 ): Promise<SaveGenericValuationRunResult> {
-  const selectedValueExVat = getGenericSelectedMethodValue(input.result, input.selectedMethod);
+  const selectedMethodValueExVat = getGenericSelectedMethodValue(input.result, input.selectedMethod);
+  const selectedValueExVat = roundMoneyOrNull(input.selectedValueOverrideExVat) ?? selectedMethodValueExVat;
   if (selectedValueExVat === null) throw new Error('SELECTED_METHOD_NOT_AVAILABLE');
 
   const db = getDb();
