@@ -32,21 +32,17 @@ const EXPORT_DETAILS_SECTION_ROW = 5;
 const EXPORT_NOTE_SECTION_ROW = 13;
 const EXPORT_NOTE_START_ROW = EXPORT_NOTE_SECTION_ROW + 1;
 const SUMMARY_SECTION_ROW = 17;
-const SUMMARY_ROW_COUNT = 12;
+const SUMMARY_ROW_COUNT = 8;
 const TABLE_HEADER_ROW = SUMMARY_SECTION_ROW + 1 + SUMMARY_ROW_COUNT + 1;
 const DATA_START_ROW = TABLE_HEADER_ROW + 1;
 
 const REGISTER_VALUE_EX_VAT_COLUMN = 'M';
 const REGISTER_VALUE_INCL_VAT_COLUMN = 'N';
-const AIM4PRICE_VALUE_EX_VAT_COLUMN = 'O';
-const AIM4PRICE_VALUE_INCL_VAT_COLUMN = 'P';
-const MARKET_VALUE_EX_VAT_COLUMN = 'Q';
-const MARKET_VALUE_INCL_VAT_COLUMN = 'R';
-const FINANCE_STATUS_COLUMN = 'T';
-const INSURANCE_STATUS_COLUMN = 'V';
-const LICENSE_STATUS_COLUMN = 'X';
-const REPLACEMENT_VALUE_EX_VAT_COLUMN = 'Z';
-const REPLACEMENT_VALUE_INCL_VAT_COLUMN = 'AA';
+const FINANCE_STATUS_COLUMN = 'O';
+const INSURANCE_STATUS_COLUMN = 'Q';
+const LICENSE_STATUS_COLUMN = 'S';
+const REPLACEMENT_VALUE_EX_VAT_COLUMN = 'U';
+const REPLACEMENT_VALUE_INCL_VAT_COLUMN = 'V';
 
 const TABLE_HEADERS = [
   'Asset title',
@@ -63,11 +59,6 @@ const TABLE_HEADERS = [
   'Condition',
   'Register value ex VAT',
   'Register value incl VAT',
-  'Aim4price value ex VAT',
-  'Aim4price value incl VAT',
-  'Market value ex VAT',
-  'Market value incl VAT',
-  'Selected method',
   'Finance status',
   'Finance notes',
   'Insurance status',
@@ -90,11 +81,6 @@ const WORKBOOK_COLUMN_WIDTHS = [
   12,
   14,
   14,
-  18,
-  18,
-  18,
-  20,
-  20,
   18,
   18,
   18,
@@ -442,22 +428,6 @@ function replacementValueInclVatTotal(items: AssetRegisterItem[]): number {
   return items.reduce((sum, item) => sum + moneyInclVatTotal(replacementPriceExVat(item)), 0);
 }
 
-function aim4priceValueTotal(items: AssetRegisterItem[]): number {
-  return items.reduce((sum, item) => sum + Math.round(numericValue(item.aim4priceValueExVat) ?? 0), 0);
-}
-
-function aim4priceValueInclVatTotal(items: AssetRegisterItem[]): number {
-  return items.reduce((sum, item) => sum + moneyInclVatTotal(item.aim4priceValueExVat), 0);
-}
-
-function marketValueTotal(items: AssetRegisterItem[]): number {
-  return items.reduce((sum, item) => sum + Math.round(numericValue(item.marketMidExVat) ?? 0), 0);
-}
-
-function marketValueInclVatTotal(items: AssetRegisterItem[]): number {
-  return items.reduce((sum, item) => sum + moneyInclVatTotal(item.marketMidExVat), 0);
-}
-
 function countFinanced(items: AssetRegisterItem[]): number {
   return items.filter((item) => readFinanceStatusChoice(item) === 'yes').length;
 }
@@ -517,8 +487,6 @@ function buildTableHeaderRow(): XlsxCellValue[] {
 function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] {
   const usage = usageDisplay(item);
   const rowNumber = DATA_START_ROW + index;
-  const aim4priceValue = numericValue(item.aim4priceValueExVat);
-  const marketValue = numericValue(item.marketMidExVat);
   const financeStatus = readFinanceStatusChoice(item);
   const insuranceStatus = readInsuranceStatusChoice(item);
   const licenseStatus = readLicenseStatusChoice(item);
@@ -539,11 +507,6 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
     textOrNaCell(conditionLabel(item.condition)),
     moneyCell(item.value),
     vatIncludedFormulaCell(REGISTER_VALUE_EX_VAT_COLUMN, rowNumber, item.value),
-    aim4priceValue === null ? naCell() : moneyCell(aim4priceValue),
-    aim4priceValue === null ? naCell() : vatIncludedFormulaCell(AIM4PRICE_VALUE_EX_VAT_COLUMN, rowNumber, aim4priceValue),
-    marketValue === null ? naCell() : moneyCell(marketValue),
-    marketValue === null ? naCell() : vatIncludedFormulaCell(MARKET_VALUE_EX_VAT_COLUMN, rowNumber, marketValue),
-    textOrNaCell(methodLabel(item.selectedMethod)),
     statusCellForChoice(financeStatus, 'Financed', 'Not financed'),
     textOrNaCell(item.financeNote, 'note'),
     statusCellForChoice(insuranceStatus, 'Insured', 'Not insured'),
@@ -564,10 +527,6 @@ function buildFormulaRange(column: string, dataRowCount: number): string | null 
 function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
   const registerValueExVatRange = buildFormulaRange(REGISTER_VALUE_EX_VAT_COLUMN, items.length);
   const registerValueInclVatRange = buildFormulaRange(REGISTER_VALUE_INCL_VAT_COLUMN, items.length);
-  const aim4priceValueExVatRange = buildFormulaRange(AIM4PRICE_VALUE_EX_VAT_COLUMN, items.length);
-  const aim4priceValueInclVatRange = buildFormulaRange(AIM4PRICE_VALUE_INCL_VAT_COLUMN, items.length);
-  const marketValueExVatRange = buildFormulaRange(MARKET_VALUE_EX_VAT_COLUMN, items.length);
-  const marketValueInclVatRange = buildFormulaRange(MARKET_VALUE_INCL_VAT_COLUMN, items.length);
   const financeRange = buildFormulaRange(FINANCE_STATUS_COLUMN, items.length);
   const insuranceRange = buildFormulaRange(INSURANCE_STATUS_COLUMN, items.length);
   const licenseRange = buildFormulaRange(LICENSE_STATUS_COLUMN, items.length);
@@ -600,28 +559,6 @@ function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
     [
       textCell('Licensed assets', 'metaLabel'),
       licenseRange ? formulaCell(`COUNTIF(${licenseRange},"Licensed")`, countLicensed(items)) : numberCell(0),
-    ],
-    [
-      textCell('Aim4price values ex VAT', 'metaLabel'),
-      aim4priceValueExVatRange
-        ? formulaCell(`SUM(${aim4priceValueExVatRange})`, aim4priceValueTotal(items), 'currency')
-        : moneyCell(0),
-    ],
-    [
-      textCell('Aim4price values incl VAT', 'metaLabel'),
-      aim4priceValueInclVatRange
-        ? formulaCell(`SUM(${aim4priceValueInclVatRange})`, aim4priceValueInclVatTotal(items), 'currency')
-        : moneyCell(0),
-    ],
-    [
-      textCell('Market values ex VAT', 'metaLabel'),
-      marketValueExVatRange ? formulaCell(`SUM(${marketValueExVatRange})`, marketValueTotal(items), 'currency') : moneyCell(0),
-    ],
-    [
-      textCell('Market values incl VAT', 'metaLabel'),
-      marketValueInclVatRange
-        ? formulaCell(`SUM(${marketValueInclVatRange})`, marketValueInclVatTotal(items), 'currency')
-        : moneyCell(0),
     ],
     [
       textCell('Replacement value ex VAT', 'metaLabel'),
