@@ -2121,8 +2121,10 @@ export default function ValuationClient() {
     if (!selectedSector) {
       return (
         <div className={styles.sectorStart}>
-          <h2 className={styles.stepTitle}>Choose sector</h2>
-          <p className={styles.stepText}>Pick the sector first. Hover over a card to preview that sector.</p>
+          <div className={styles.sectorIntro}>
+            <h2 className={styles.stepTitle}>Choose sector</h2>
+            <p className={styles.stepText}>Pick the sector first. Hover over a card to preview that sector.</p>
+          </div>
 
           <div className={styles.sectorLargeGrid}>
             {SECTOR_OPTIONS.map((sector) => {
@@ -3444,13 +3446,14 @@ export default function ValuationClient() {
     !finalSaveHasPendingReplacementPrice;
   const finalSaveTitle = finalSaveIntent === 'marketplace' ? 'Save & Send to Marketplace' : 'Save to Asset Register';
   const finalSaveCta = finalSaveIntent === 'marketplace' ? 'Save and continue to Marketplace' : 'Confirm and save';
+  const isSectorIntroStep = step === 1 && !selectedSector;
 
   return (
     <main className={styles.page}>
       <AppHeader active="valuation" />
       <div className={styles.container}>
-        <section className={styles.wizardShell}>
-          <div id="valuation-wizard-card" className={styles.wizardCard}>
+        <section className={`${styles.wizardShell} ${isSectorIntroStep ? styles.sectorWizardShell : ''}`}>
+          <div id="valuation-wizard-card" className={`${styles.wizardCard} ${isSectorIntroStep ? styles.sectorWizardCard : ''}`}>
             {step > 1 ? (
               <div className={styles.wizardHeader}>
                 <div className={styles.stepper}>
@@ -3470,7 +3473,7 @@ export default function ValuationClient() {
               </div>
             ) : null}
 
-            <div className={styles.stepContent}>
+            <div className={`${styles.stepContent} ${isSectorIntroStep ? styles.sectorStepContent : ''}`}>
               {renderStepBody()}
               {message ? <div className={styles.message}>{message}</div> : null}
             </div>

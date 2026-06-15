@@ -9241,3 +9241,125 @@
     font-size: clamp(2rem, 11vw, 2.75rem);
   }
 }
+
+
+/* === Valuation first page spacing pass === */
+.sectorWizardShell {
+  width: min(100%, 1088px);
+}
+
+.sectorWizardCard {
+  border-radius: 1.85rem;
+}
+
+.sectorStepContent {
+  padding: clamp(1.55rem, 2.1vw, 2.25rem) clamp(1.15rem, 2.35vw, 2rem) 1.45rem;
+}
+
+.sectorStart {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: clamp(1.25rem, 1.7vw, 1.75rem);
+}
+
+.sectorIntro {
+  width: min(100%, 980px);
+  display: grid;
+  gap: 0.42rem;
+  margin: 0 auto;
+}
+
+.sectorIntro .stepTitle {
+  margin: 0;
+  max-width: none;
+  text-align: left;
+  white-space: normal;
+  font-size: clamp(2.7rem, 4.35vw, 4rem);
+  line-height: 0.96;
+  letter-spacing: -0.068em;
+}
+
+.sectorIntro .stepText {
+  max-width: 42rem;
+  margin: 0;
+  text-align: left;
+  color: #53645d;
+  font-size: clamp(0.98rem, 1.05vw, 1.08rem);
+  line-height: 1.6;
+}
+
+.sectorLargeGrid {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  gap: clamp(1rem, 1.45vw, 1.35rem);
+}
+
+.sectorBigCard {
+  min-height: clamp(13.6rem, 16vw, 15.9rem);
+}
+
+.sectorBigCardContent {
+  padding: clamp(1.1rem, 1.65vw, 1.45rem);
+}
+
+.sectorCardTopRow {
+  min-height: 2.05rem;
+}
+
+.sectorLabelWrap {
+  gap: 0.34rem;
+}
+
+.sectorLabel,
+.sectorBigCard .sectorLabel {
+  font-size: clamp(2rem, 2.9vw, 2.75rem);
+}
+
+.wizardFooterSingle {
+  padding-top: 1rem;
+}
+
+@media (max-width: 900px) {
+  .sectorStepContent {
+    padding: 1.35rem 1rem 1.15rem;
+  }
+
+  .sectorLargeGrid {
+    width: min(100%, 760px);
+    gap: 0.95rem;
+  }
+
+  .sectorBigCard {
+    min-height: 13.25rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .sectorStart {
+    gap: 1rem;
+  }
+
+  .sectorIntro {
+    gap: 0.35rem;
+  }
+
+  .sectorIntro .stepTitle {
+    font-size: clamp(2.15rem, 11vw, 3rem);
+  }
+
+  .sectorIntro .stepText {
+    font-size: 0.96rem;
+    line-height: 1.55;
+  }
+
+  .sectorLargeGrid {
+    width: min(100%, 520px);
+    gap: 0.85rem;
+  }
+
+  .sectorBigCard {
+    min-height: 12rem;
+    border-radius: 1.35rem;
+  }
+}
