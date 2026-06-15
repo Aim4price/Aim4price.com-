@@ -54,7 +54,7 @@ type EquipmentFamiliesApiResponse = {
   families?: EquipmentFamilyRecord[];
 };
 
-type SectorKey = 'agricultural' | 'construction' | 'industrial';
+type SectorKey = 'agricultural' | 'construction' | 'industrial' | 'motor';
 type DistanceFilterValue = 'all' | '50' | '100' | '250' | '500';
 type ConditionFilterValue = '' | 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 
@@ -93,6 +93,7 @@ const SECTOR_OPTIONS: SectorOption[] = [
   { key: 'agricultural', label: 'Agriculture', shortLabel: 'Agri' },
   { key: 'construction', label: 'Construction', shortLabel: 'Build' },
   { key: 'industrial', label: 'Industrial', shortLabel: 'Industry' },
+  { key: 'motor', label: 'Motor', shortLabel: 'Motor' },
 ];
 
 const FALLBACK_FAMILIES: FamilyOption[] = [
@@ -114,6 +115,12 @@ const FALLBACK_FAMILIES: FamilyOption[] = [
   { sectorKey: 'industrial', familyKey: 'compressors', familyLabel: 'Compressors', sortOrder: 3 },
   { sectorKey: 'industrial', familyKey: 'warehouse_equipment', familyLabel: 'Warehouse equipment', sortOrder: 4 },
   { sectorKey: 'industrial', familyKey: 'industrial_tools', familyLabel: 'Industrial tools', sortOrder: 5 },
+  { sectorKey: 'motor', familyKey: 'bakkies_ldvs', familyLabel: 'Bakkies / LDVs', sortOrder: 1 },
+  { sectorKey: 'motor', familyKey: 'cars_suvs', familyLabel: 'Cars / SUVs', sortOrder: 2 },
+  { sectorKey: 'motor', familyKey: 'light_commercial_vehicles', familyLabel: 'Light commercial vehicles', sortOrder: 3 },
+  { sectorKey: 'motor', familyKey: 'trucks', familyLabel: 'Trucks', sortOrder: 4 },
+  { sectorKey: 'motor', familyKey: 'trailers', familyLabel: 'Trailers', sortOrder: 5 },
+  { sectorKey: 'motor', familyKey: 'buses', familyLabel: 'Buses', sortOrder: 6 },
 ];
 
 const CONDITION_OPTIONS: Array<{ value: ConditionFilterValue; label: string }> = [
@@ -500,6 +507,7 @@ function normalizeSectorKey(value: unknown): SectorKey | '' {
   if (normalized === 'agriculture' || normalized === 'agricultural') return 'agricultural';
   if (normalized === 'construction') return 'construction';
   if (normalized === 'industrial' || normalized === 'industry') return 'industrial';
+  if (normalized === 'motor' || normalized === 'vehicle' || normalized === 'vehicles') return 'motor';
   return '';
 }
 
@@ -513,6 +521,10 @@ function inferSectorFromListing(listing: MarketplaceListing): SectorKey {
   const searchText = [listing.title, listing.description, listing.modelName, listing.brandName, listing.assetKind]
     .join(' ')
     .toLowerCase();
+
+  if (/vehicle|bakkie|hilux|ranger|ldv|pickup|ute|car|suv|truck|bus/.test(searchText)) {
+    return 'motor';
+  }
 
   if (/excavator|tlb|backhoe|loader|grader|dumper|compactor|roller|skid/.test(searchText)) {
     return 'construction';
@@ -539,7 +551,7 @@ function inferFamilyLabel(listing: MarketplaceListing): string {
 
   const assetKind = normalize(listing.assetKind);
 
-  if (assetKind === 'vehicle') return 'Vehicles';
+  if (assetKind === 'vehicle') return 'Bakkies / LDVs';
   if (assetKind === 'tools' || assetKind === 'tool') return 'Tools';
   if (assetKind === 'equipment') return 'Equipment';
   if (assetKind === 'manual' || assetKind === 'other') return 'Other';
@@ -547,7 +559,10 @@ function inferFamilyLabel(listing: MarketplaceListing): string {
 
   const modelText = [listing.title, listing.modelName, listing.description].join(' ').toLowerCase();
 
-  if (/vehicle|bakkie|hilux|truck|ldv|pickup|ute|car/.test(modelText)) return 'Vehicles';
+  if (/truck/.test(modelText)) return 'Trucks';
+  if (/bus/.test(modelText)) return 'Buses';
+  if (/car|suv/.test(modelText)) return 'Cars / SUVs';
+  if (/vehicle|bakkie|hilux|ranger|ldv|pickup|ute/.test(modelText)) return 'Bakkies / LDVs';
   if (/combine/.test(modelText)) return 'Combines';
   if (/baler/.test(modelText)) return 'Balers';
   if (/sprayer/.test(modelText)) return 'Sprayers';
@@ -584,7 +599,7 @@ function isTractorListing(listing: MarketplaceListing): boolean {
 function getListingPrimaryFamilyLabel(listing: MarketplaceListing): string {
   const assetKind = getListingAssetKind(listing);
 
-  if (assetKind === 'vehicle') return 'Vehicles';
+  if (assetKind === 'vehicle') return 'Bakkies / LDVs';
   if (assetKind === 'tools' || assetKind === 'tool') return 'Tools';
   if (assetKind === 'equipment') return 'Equipment';
   if (assetKind === 'manual' || assetKind === 'other') return 'Other';
@@ -1765,6 +1780,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
         agricultural: [],
         construction: [],
         industrial: [],
+        motor: [],
       },
     );
   }, [families]);
@@ -1776,7 +1792,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
         accumulator[sectorKey] += 1;
         return accumulator;
       },
-      { agricultural: 0, construction: 0, industrial: 0 },
+      { agricultural: 0, construction: 0, industrial: 0, motor: 0 },
     );
   }, [items]);
 
