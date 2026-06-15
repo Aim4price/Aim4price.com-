@@ -9102,3 +9102,142 @@
     flex-direction: column-reverse;
   }
 }
+
+/* === AIM4 sector cards: balanced 2x2 layout + mobile video previews === */
+.sectorLargeGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(100%, 980px);
+  margin: 0.35rem auto 0;
+  gap: clamp(1rem, 1.45vw, 1.35rem);
+}
+
+.sectorBigCard {
+  min-height: clamp(15.5rem, 20vw, 18rem);
+  border-radius: 1.75rem;
+  border-color: rgba(255, 255, 255, 0.1);
+  background:
+    radial-gradient(circle at 16% 0%, rgba(92, 167, 136, 0.22), transparent 31%),
+    linear-gradient(135deg, #0f3329 0%, #123d31 52%, #0b2a22 100%);
+  box-shadow:
+    0 28px 52px rgba(13, 36, 28, 0.14),
+    0 10px 22px rgba(13, 36, 28, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.sectorBigCard:hover,
+.sectorBigCard:focus-visible {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 34px 64px rgba(13, 36, 28, 0.22),
+    0 0 0 4px rgba(26, 89, 68, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.sectorBigCardContent {
+  padding: clamp(1.2rem, 1.8vw, 1.55rem);
+}
+
+.sectorLabelWrap {
+  max-width: 100%;
+}
+
+.sectorLabel,
+.sectorBigCard .sectorLabel {
+  max-width: none;
+  font-size: clamp(2rem, 3.2vw, 3rem);
+  line-height: 0.96;
+  letter-spacing: -0.065em;
+}
+
+.sectorCardHint,
+.sectorBigCard .sectorCardHint {
+  font-size: clamp(0.95rem, 1.2vw, 1.08rem);
+  font-weight: 800;
+}
+
+.sectorVideo {
+  opacity: 0;
+  object-fit: cover;
+  transform: scale(1.025);
+  filter: saturate(1.08) contrast(1.04) brightness(1.02);
+  transition:
+    opacity 260ms ease,
+    transform 620ms ease,
+    filter 260ms ease;
+}
+
+.sectorBigCard:hover .sectorVideo,
+.sectorBigCard:focus-visible .sectorVideo,
+.sectorBigCard:focus .sectorVideo,
+.sectorVideoMobileActive {
+  opacity: 1;
+  transform: scale(1.065);
+  filter: saturate(1.2) contrast(1.08) brightness(1.04);
+}
+
+.sectorVideoOverlay {
+  background:
+    radial-gradient(circle at 16% 0%, rgba(255, 255, 255, 0.13), transparent 34%),
+    linear-gradient(180deg, rgba(7, 23, 18, 0.18) 0%, rgba(7, 23, 18, 0.16) 38%, rgba(4, 13, 10, 0.62) 100%);
+}
+
+.sectorBigCard:hover .sectorVideoOverlay,
+.sectorBigCard:focus-visible .sectorVideoOverlay,
+.sectorBigCard:focus .sectorVideoOverlay {
+  background:
+    radial-gradient(circle at 16% 0%, rgba(255, 255, 255, 0.18), transparent 36%),
+    linear-gradient(180deg, rgba(6, 19, 15, 0.06) 0%, rgba(6, 19, 15, 0.1) 34%, rgba(4, 13, 10, 0.52) 100%);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .sectorVideo {
+    opacity: 1;
+    transform: scale(1.055);
+    filter: saturate(1.18) contrast(1.06) brightness(1.03);
+  }
+
+  .sectorVideoOverlay {
+    background:
+      radial-gradient(circle at 16% 0%, rgba(255, 255, 255, 0.15), transparent 35%),
+      linear-gradient(180deg, rgba(7, 23, 18, 0.08) 0%, rgba(7, 23, 18, 0.12) 34%, rgba(4, 13, 10, 0.56) 100%);
+  }
+}
+
+@media (max-width: 900px) {
+  .sectorLargeGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(100%, 760px);
+  }
+
+  .sectorBigCard {
+    min-height: 14.5rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .sectorLargeGrid {
+    grid-template-columns: 1fr;
+    width: min(100%, 520px);
+    gap: 0.95rem;
+  }
+
+  .sectorStart .stepTitle,
+  .sectorStart .stepText {
+    text-align: left;
+  }
+
+  .sectorBigCard {
+    min-height: 13.2rem;
+    border-radius: 1.45rem;
+  }
+
+  .sectorBigCardContent {
+    padding: 1.1rem;
+  }
+
+  .sectorLabel,
+  .sectorBigCard .sectorLabel {
+    font-size: clamp(2rem, 11vw, 2.75rem);
+  }
+}

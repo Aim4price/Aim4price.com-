@@ -285,7 +285,7 @@ const SECTOR_OPTIONS: Array<{ key: SectorKey; label: string; available: boolean;
   { key: 'agricultural', label: SECTOR_LABELS.agricultural, available: true, videoSrc: '/brand/valuation/Agriculture.mp4' },
   { key: 'construction', label: SECTOR_LABELS.construction, available: true, videoSrc: '/brand/valuation/Construction.mp4' },
   { key: 'industrial', label: SECTOR_LABELS.industrial, available: true, videoSrc: '/brand/valuation/Industrial.mp4' },
-  { key: 'motor', label: SECTOR_LABELS.motor, available: true, videoSrc: '/brand/valuation/Industrial.mp4' },
+  { key: 'motor', label: SECTOR_LABELS.motor, available: true, videoSrc: '/brand/valuation/Motor.mp4' },
 ];
 
 const TRACTOR_TYPE_OPTIONS: Array<{ value: TractorType; label: string }> = [
@@ -735,6 +735,24 @@ export default function ValuationClient() {
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const [replacementPanelOpen, setReplacementPanelOpen] = useState(false);
   const marketplacePhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const [shouldAutoPlaySectorVideos, setShouldAutoPlaySectorVideos] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
+
+    const mediaQuery = window.matchMedia('(hover: none), (pointer: coarse), (max-width: 720px)');
+    const updateAutoPlayState = () => setShouldAutoPlaySectorVideos(mediaQuery.matches);
+
+    updateAutoPlayState();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', updateAutoPlayState);
+      return () => mediaQuery.removeEventListener('change', updateAutoPlayState);
+    }
+
+    mediaQuery.addListener(updateAutoPlayState);
+    return () => mediaQuery.removeListener(updateAutoPlayState);
+  }, []);
 
   const selectedFamily = useMemo(
     () => families.find((family) => family.familyKey === familyKey) ?? null,
@@ -2115,17 +2133,26 @@ export default function ValuationClient() {
                   type="button"
                   className={`${styles.sectorBigCard} ${isAvailable ? styles.sectorBigCardLive : styles.sectorBigCardSoon}`}
                   onClick={() => handleSectorSelect(sector.key)}
-                  onMouseEnter={(event) => playSectorPreview(event.currentTarget)}
-                  onMouseLeave={(event) => resetSectorPreview(event.currentTarget)}
-                  onFocus={(event) => playSectorPreview(event.currentTarget)}
-                  onBlur={(event) => resetSectorPreview(event.currentTarget)}
+                  onMouseEnter={(event) => {
+                    if (!shouldAutoPlaySectorVideos) playSectorPreview(event.currentTarget);
+                  }}
+                  onMouseLeave={(event) => {
+                    if (!shouldAutoPlaySectorVideos) resetSectorPreview(event.currentTarget);
+                  }}
+                  onFocus={(event) => {
+                    if (!shouldAutoPlaySectorVideos) playSectorPreview(event.currentTarget);
+                  }}
+                  onBlur={(event) => {
+                    if (!shouldAutoPlaySectorVideos) resetSectorPreview(event.currentTarget);
+                  }}
                   aria-label={isAvailable ? `Choose ${sector.label}` : `${sector.label} coming soon`}
                 >
                   <video
-                    className={styles.sectorVideo}
+                    className={`${styles.sectorVideo} ${shouldAutoPlaySectorVideos ? styles.sectorVideoMobileActive : ''}`}
                     muted
                     loop
                     playsInline
+                    autoPlay={shouldAutoPlaySectorVideos}
                     preload="auto"
                     poster=""
                   >
