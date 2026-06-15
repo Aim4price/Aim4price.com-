@@ -13,7 +13,18 @@ import {
   type TractorCatalogRow,
   type TractorType,
 } from '../../lib/tractor-data';
-import { SECTOR_LABELS, type CatalogMode, type SectorKey, type UsageMetricType } from '../../lib/equipment-types';
+import {
+  SECTOR_LABELS,
+  getUsageDisplayUnit,
+  getUsageFieldLabel,
+  getUsageSentenceLabel,
+  getUsageShortUnit,
+  getUnknownUsageButtonLabel,
+  getKnownUsageButtonLabel,
+  type CatalogMode,
+  type SectorKey,
+  type UsageMetricType,
+} from '../../lib/equipment-types';
 import { conditionLabel, money, type Result } from '../../lib/tractor-logic';
 import {
   getGuestValuationCount,
@@ -272,8 +283,9 @@ const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
 
 const SECTOR_OPTIONS: Array<{ key: SectorKey; label: string; available: boolean; videoSrc: string }> = [
   { key: 'agricultural', label: SECTOR_LABELS.agricultural, available: true, videoSrc: '/brand/valuation/Agriculture.mp4' },
-  { key: 'construction', label: SECTOR_LABELS.construction, available: false, videoSrc: '/brand/valuation/Construction.mp4' },
-  { key: 'industrial', label: SECTOR_LABELS.industrial, available: false, videoSrc: '/brand/valuation/Industrial.mp4' },
+  { key: 'construction', label: SECTOR_LABELS.construction, available: true, videoSrc: '/brand/valuation/Construction.mp4' },
+  { key: 'industrial', label: SECTOR_LABELS.industrial, available: true, videoSrc: '/brand/valuation/Industrial.mp4' },
+  { key: 'motor', label: SECTOR_LABELS.motor, available: true, videoSrc: '/brand/valuation/Industrial.mp4' },
 ];
 
 const TRACTOR_TYPE_OPTIONS: Array<{ value: TractorType; label: string }> = [
@@ -367,8 +379,11 @@ function formatCatalogModeLabel(mode: CatalogMode): string {
   return 'Specs pathway';
 }
 
-function formatUsageMetricLabel(metric: UsageMetricType): string {
-  return metric === 'hours' ? 'Hours' : 'Worked percentage';
+function formatUsageMetricLabel(metric: UsageMetricType, sectorKey?: SectorKey | null): string {
+  const unit = getUsageDisplayUnit(sectorKey, metric);
+  if (unit === 'km') return 'Kilometres';
+  if (unit === 'percent') return 'Worked percentage';
+  return 'Hours';
 }
 
 function formatPercent(value: number | null): string {
@@ -386,9 +401,17 @@ function formatListingYear(value: number | null | undefined): string | null {
   return String(Math.round(value));
 }
 
-function formatListingHours(value: number | null | undefined): string | null {
+function formatListingUsageAmount(
+  value: number | null | undefined,
+  sectorKey?: SectorKey | string | null,
+  usageMetricType?: UsageMetricType | string | null,
+): string | null {
   if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) return null;
-  return `${formatWholeNumber(value)} hours`;
+  return `${formatWholeNumber(value)} ${getUsageShortUnit(sectorKey, usageMetricType)}`;
+}
+
+function formatListingHours(value: number | null | undefined): string | null {
+  return formatListingUsageAmount(value, 'agricultural', 'hours');
 }
 
 function normalizeExternalUrl(value: string | null | undefined): string | null {
@@ -417,10 +440,10 @@ function formatTractorMarketMeta(listing: Result['marketSources'][number]): stri
   ]);
 }
 
-function formatGenericMarketMeta(listing: MarketMatch): string {
+function formatGenericMarketMeta(listing: MarketMatch, result: GenericValuationResult): string {
   return joinMeta([
     formatListingYear(listing.yearModel),
-    formatListingHours(listing.usageAmount),
+    formatListingUsageAmount(listing.usageAmount, result.sector.key, result.family.usageMetricType),
     listing.condition ? conditionLabel(listing.condition as ConditionKey) : null,
     listing.matchReason,
   ]);
@@ -510,6 +533,8 @@ type ConfidenceContext = {
   yearKnown: boolean;
   hoursKnown: boolean;
   workedPercentKnown: boolean;
+  usageSentenceLabel: string;
+  marketUsageToleranceLabel: string;
 };
 
 function confidenceFromCoverageBand(band: Result['coverageBand']): 'High' | 'Medium' | 'Low' {
@@ -571,7 +596,7 @@ function getConfidenceNote(state: ValuationResultState | null, context: Confiden
     if (context.selectedMethod === 'market') {
       const count = state.result.marketAverageCount;
       return count > 0
-        ? `${count} marketplace listing${count === 1 ? '' : 's'} matched within 2 model years and 1,000 hours/usage.`
+        ? `${count} marketplace listing${count === 1 ? '' : 's'} matched within 2 model years and ${context.marketUsageToleranceLabel}.`
         : 'No usable marketplace listing was found for this machine yet.';
     }
 
@@ -581,19 +606,19 @@ function getConfidenceNote(state: ValuationResultState | null, context: Confiden
   if (context.selectedMethod === 'market') {
     const count = state.result.marketCount;
     return count > 0
-      ? `${count} usable market listing${count === 1 ? '' : 's'} within 2 model years and 1,000 hours.`
+      ? `${count} usable market listing${count === 1 ? '' : 's'} within 2 model years and ${context.marketUsageToleranceLabel}.`
       : 'No usable market listing was found for this exact tractor yet.';
   }
 
   if (context.hoursKnown) {
-    return 'Exact model, manufacturing year, engine hours and condition were captured.';
+    return `Exact model, manufacturing year, ${context.usageSentenceLabel} and condition were captured.`;
   }
 
   if (context.workedPercentKnown) {
     return 'Exact model was captured, but usage was estimated from worked percentage.';
   }
 
-  return 'Exact model was captured, but confidence improves when real hours are supplied.';
+  return `Exact model was captured, but confidence improves when real ${context.usageSentenceLabel} are supplied.`;
 }
 
 function buildSpecPayload(specQuestions: SpecQuestion[], specAnswers: Record<string, string>): Record<string, unknown> {
@@ -720,6 +745,11 @@ export default function ValuationClient() {
     () => tractorModels.find((model) => model.id === modelId) ?? null,
     [tractorModels, modelId],
   );
+  const selectedUsageDisplayUnit = getUsageDisplayUnit(selectedSector, selectedFamily?.usageMetricType);
+  const selectedUsageFieldLabel = getUsageFieldLabel(selectedSector, selectedFamily?.usageMetricType);
+  const selectedUsageSentenceLabel = getUsageSentenceLabel(selectedSector, selectedFamily?.usageMetricType);
+  const selectedUsageShortUnit = getUsageShortUnit(selectedSector, selectedFamily?.usageMetricType);
+  const selectedMarketUsageToleranceLabel = selectedUsageDisplayUnit === 'km' ? '50,000 km' : '1,000 hours';
   const filteredFamilies = useMemo(() => {
     const query = familySearch.trim().toLowerCase();
     const matches = families.filter((family) =>
@@ -1137,7 +1167,7 @@ export default function ValuationClient() {
     if (!selectedBrand) return 'Choose a brand first.';
 
     const genericPath = flowMode === 'generic_specs';
-    const selfPropelled = selectedFamily?.isPropelled || selectedFamily?.usageMetricType === 'hours';
+    const selfPropelled = selectedFamily?.isPropelled || selectedFamily?.usageMetricType === 'hours' || selectedFamily?.usageMetricType === 'km';
     const showHoursInput = !genericPath || selfPropelled;
 
     if (!yearStepComplete) return 'Choose the machine manufacturing year or mark it as unknown.';
@@ -1149,11 +1179,11 @@ export default function ValuationClient() {
     }
 
     if (!usageStepComplete) {
-      return showHoursInput ? 'Enter the machine hours or estimate how much it has worked.' : 'Estimate how much the machine has worked.';
+      return showHoursInput ? `Enter the ${selectedUsageFieldLabel.toLowerCase()} or estimate how much it has worked.` : 'Estimate how much the machine has worked.';
     }
 
     if (showHoursInput && !usageNumber && lifeWorkedPercentNumber === null) {
-      return 'Enter machine hours or estimate how much the machine has worked.';
+      return `Enter ${selectedUsageFieldLabel.toLowerCase()} or estimate how much the machine has worked.`;
     }
 
     if (!showHoursInput && lifeWorkedPercentNumber === null) {
@@ -1466,7 +1496,7 @@ export default function ValuationClient() {
     const result = resultState.result;
     const usageLabel =
       result.usageAmount !== null
-        ? `${formatWholeNumber(result.usageAmount)} ${result.family.usageMetricType === 'hours' ? 'hours' : '%'}`
+        ? `${formatWholeNumber(result.usageAmount)} ${getUsageShortUnit(result.sector.key, result.family.usageMetricType)}`
         : result.lifeWorkedPercent !== null
           ? `${formatPercent(result.lifeWorkedPercent)} worked`
           : null;
@@ -2561,8 +2591,8 @@ export default function ValuationClient() {
 
   function getUsageAnswerLabel(showHoursInput: boolean): string {
     if (!usageStepComplete) return 'Not answered';
-    const hours = toNumberOrNull(usageAmount);
-    if (showHoursInput && hours !== null) return `${hours.toLocaleString('en-ZA')} hours`;
+    const usage = toNumberOrNull(usageAmount);
+    if (showHoursInput && usage !== null) return `${usage.toLocaleString('en-ZA')} ${selectedUsageShortUnit}`;
     const workedPercent = toPercentOrNull(lifeWorkedPercent);
     if (workedPercent !== null) return `${workedPercent}% worked`;
     return 'Not answered';
@@ -2602,7 +2632,7 @@ export default function ValuationClient() {
     if (usageModalMode === 'hours' && showHoursInput) {
       const hours = toNumberOrNull(usageAmount);
       if (hours === null) {
-        setMessage('Enter the machine hours, or choose that you do not know the hours.');
+        setMessage(`Enter the ${selectedUsageFieldLabel.toLowerCase()}, or choose that you do not know it.`);
         return;
       }
 
@@ -2750,10 +2780,10 @@ export default function ValuationClient() {
           <div className={styles.detailsModalHeader}>
             <div>
               <span className={styles.currentEyebrow}>Step 2</span>
-              <h3 className={styles.detailsModalTitle}>{usageModalMode === 'hours' && showHoursInput ? 'Machine hours' : 'Worked percentage'}</h3>
+              <h3 className={styles.detailsModalTitle}>{usageModalMode === 'hours' && showHoursInput ? selectedUsageFieldLabel : 'Worked percentage'}</h3>
               <p className={styles.detailsModalText}>
                 {usageModalMode === 'hours' && showHoursInput
-                  ? 'Enter the engine or machine hours if they are available.'
+                  ? selectedUsageDisplayUnit === 'km' ? 'Enter the odometer kilometres if they are available.' : 'Enter the engine or machine hours if they are available.'
                   : 'Estimate how much of the machine\'s working life has already been used.'}
               </p>
             </div>
@@ -2765,13 +2795,13 @@ export default function ValuationClient() {
           {usageModalMode === 'hours' && showHoursInput ? (
             <>
               <label className={`${styles.field} ${styles.modalInputField}`}>
-                <span className={styles.fieldLabel}>Enter hours</span>
+                <span className={styles.fieldLabel}>Enter {selectedUsageFieldLabel.toLowerCase()}</span>
                 <input
                   type="text"
                   inputMode="numeric"
                   value={usageAmount}
                   onChange={(event) => setUsageAmount(event.target.value)}
-                  placeholder="e.g. 3500"
+                  placeholder={selectedUsageDisplayUnit === 'km' ? 'e.g. 196000' : 'e.g. 3500'}
                 />
               </label>
 
@@ -2783,7 +2813,7 @@ export default function ValuationClient() {
                   setUsageModalMode('percent');
                 }}
               >
-                I do not know the engine hours
+                {getUnknownUsageButtonLabel(selectedSector, selectedFamily?.usageMetricType)}
               </button>
             </>
           ) : (
@@ -2815,7 +2845,7 @@ export default function ValuationClient() {
 
               {showHoursInput ? (
                 <button type="button" className={styles.unknownAnswerButton} onClick={() => setUsageModalMode('hours')}>
-                  I know the engine hours
+                  {getKnownUsageButtonLabel(selectedSector, selectedFamily?.usageMetricType)}
                 </button>
               ) : null}
             </>
@@ -2892,9 +2922,9 @@ export default function ValuationClient() {
 
   function renderDetailsStep() {
     const genericPath = flowMode === 'generic_specs';
-    const selfPropelled = selectedFamily?.isPropelled || selectedFamily?.usageMetricType === 'hours';
+    const selfPropelled = selectedFamily?.isPropelled || selectedFamily?.usageMetricType === 'hours' || selectedFamily?.usageMetricType === 'km';
     const showHoursInput = !genericPath || selfPropelled;
-    const usageTitle = showHoursInput ? 'Machine hours' : 'Worked percentage';
+    const usageTitle = showHoursInput ? selectedUsageFieldLabel : 'Worked percentage';
 
     return (
       <div>
@@ -3031,6 +3061,8 @@ export default function ValuationClient() {
       yearKnown: !yearModelUnknown,
       hoursKnown: usageNumber !== null,
       workedPercentKnown: lifeWorkedPercentNumber !== null && usageNumber === null,
+      usageSentenceLabel: selectedUsageSentenceLabel,
+      marketUsageToleranceLabel: selectedMarketUsageToleranceLabel,
     };
     const confidenceText = getConfidenceLabel(resultState, confidenceContext);
     const confidenceNote = getConfidenceNote(resultState, confidenceContext);
@@ -3045,10 +3077,13 @@ export default function ValuationClient() {
     const resultCondition = isGeneric ? genericResult?.condition ?? condition : condition;
     const resultYear = isGeneric ? genericResult?.year ?? yearNumber : yearModelUnknown ? CURRENT_YEAR : yearNumber;
     const yearSummary = yearModelUnknown ? 'Unknown' : String(resultYear);
+    const resultUsageShortUnit = isGeneric && genericResult
+      ? getUsageShortUnit(genericResult.sector.key, genericResult.family.usageMetricType)
+      : 'hours';
     const usageSummary = isGeneric && genericSelectedCalculation
-      ? `${formatPercent(genericSelectedCalculation.lifeWorkedPercent)} worked${genericSelectedCalculation.estimatedHours ? ` • ${genericSelectedCalculation.estimatedHours.toLocaleString('en-ZA')} estimated hours` : ''}`
+      ? `${formatPercent(genericSelectedCalculation.lifeWorkedPercent)} worked${genericSelectedCalculation.estimatedHours ? ` • ${genericSelectedCalculation.estimatedHours.toLocaleString('en-ZA')} estimated ${resultUsageShortUnit}` : ''}`
       : usageNumber
-        ? `${usageNumber.toLocaleString('en-ZA')} hours`
+        ? `${usageNumber.toLocaleString('en-ZA')} ${resultUsageShortUnit}`
         : lifeWorkedPercentNumber !== null
           ? `${formatPercent(lifeWorkedPercentNumber)} worked`
           : 'Usage captured';
@@ -3059,7 +3094,7 @@ export default function ValuationClient() {
       ? `Current basis: your replacement price of ${money(genericResult.userReplacementCalculation.replacementPriceExVat)}`
       : `Current basis: saved replacement estimate of ${money(genericResult?.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}`;
     const replacementBasisText = isGeneric ? genericReplacementBasisText : tractorReplacementBasisText;
-    const marketEvidenceInfo = 'Market evidence only uses listings within 2 model years and 1,000 hours/usage of your machine. Confidence: Low = no listings, Medium = 3–5 listings, High = more than 5 listings.';
+    const marketEvidenceInfo = `Market evidence only uses listings within 2 model years and ${selectedMarketUsageToleranceLabel} of your machine. Confidence: Low = no listings, Medium = 3–5 listings, High = more than 5 listings.`;
     const resultValueSizeClass = getResultValueSizeClass(headlineValue);
     const actionRestrictionNote = !canSaveToAssetRegister && canUseMarketplacePublishFlow
       ? 'Dealer and auctioneer accounts can save and send a valuation to Marketplace. Asset Register-only saving is owner-only.'
@@ -3294,7 +3329,7 @@ export default function ValuationClient() {
                   <span className={styles.marketEvidenceInfoTooltip} role="tooltip">
                     <strong>Market evidence rules</strong>
                     <span>Only listings within <b>2 model years</b>.</span>
-                    <span>Only listings within <b>1,000 hours / usage</b>.</span>
+                    <span>Only listings within <b>{selectedMarketUsageToleranceLabel}</b>.</span>
                     <span><b>Confidence:</b> Low = 0–2, Medium = 3–5, High = 6+ listings.</span>
                   </span>
                 </span>
@@ -3319,7 +3354,7 @@ export default function ValuationClient() {
                       <small className={styles.marketEvidencePrice}>{money(listing.advertisedPriceExVat)}</small>
                     </div>
                     <strong>{listing.title}</strong>
-                    <p className={styles.marketEvidenceMeta}>{formatGenericMarketMeta(listing)}</p>
+                    <p className={styles.marketEvidenceMeta}>{formatGenericMarketMeta(listing, genericResult)}</p>
                     {sourceHref ? (
                       <a className={styles.marketEvidenceLink} href={sourceHref} target="_blank" rel="noreferrer">
                         Open listing →
