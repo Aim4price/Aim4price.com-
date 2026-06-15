@@ -2266,17 +2266,16 @@ export default function ValuationClient() {
   function renderBrandStep() {
     return (
       <div className={styles.equipmentStage}>
-        <div className={styles.equipmentStageTop}>
-          <button type="button" className={styles.stageBackButton} onClick={() => setStep(1)}>
-            Change equipment type
-          </button>
+        <div className={`${styles.equipmentStageTop} ${styles.equipmentStageTopSolo}`}>
           {selectedFamily ? <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span> : null}
         </div>
 
-        <h2 className={styles.stepTitle}>Choose brand</h2>
-        <p className={styles.stepText}>Search or choose the brand. Selecting one moves to the next step automatically.</p>
+        <div className={styles.equipmentStageIntro}>
+          <h2 className={styles.stepTitle}>Choose brand</h2>
+          <p className={styles.stepText}>Search or choose the brand. Selecting one moves to the next step automatically.</p>
+        </div>
 
-        <div className={`${styles.currentCard} ${styles.equipmentPickerCard}`} style={{ marginTop: '1rem' }}>
+        <div className={`${styles.currentCard} ${styles.equipmentPickerCard}`}>
           <div className={styles.equipmentPickerHead}>
             <div>
               <span className={styles.fieldLabel}>Search brand</span>
