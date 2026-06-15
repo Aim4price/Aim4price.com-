@@ -6,6 +6,30 @@ import styles from './AppFooter.module.css';
 
 const footerContentId = 'aim4price-footer-content';
 
+const valueHighlights = [
+  'Machinery value estimates',
+  'QR-code asset registers',
+  'Marketplace partner contacts',
+];
+
+const toolLinks = [
+  { href: '/', label: 'Home' },
+  { href: '/valuation', label: 'Get Estimate' },
+  { href: '/asset-register', label: 'Asset Registers' },
+  { href: '/marketplace', label: 'Marketplace' },
+  { href: '/account', label: 'My Account' },
+];
+
+const companyLinks = [
+  { href: '/about-us', label: 'About Aim4price' },
+  { href: '/contact-us', label: 'Contact Us' },
+];
+
+const legalLinks = [
+  { href: '/privacy-policy', label: 'Privacy Policy' },
+  { href: '/terms-of-service', label: 'Terms of Service' },
+];
+
 function FacebookIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -41,6 +65,7 @@ function ChevronIcon() {
 export default function AppFooter() {
   const footerRef = useRef<HTMLElement | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const currentYear = new Date().getFullYear();
 
   function handleFooterToggle() {
     const nextExpanded = !isExpanded;
@@ -68,9 +93,16 @@ export default function AppFooter() {
                   <span className={styles.brandName}>Aim4price</span>
 
                   <p className={styles.brandText}>
-                    Agricultural and industrial machinery pricing, asset register, and marketplace
-                    tools built for clearer decisions.
+                    Aim4price helps you estimate what machinery is worth, keep your assets
+                    organised with QR codes, and connect with dealers, insurers and finance
+                    providers in one place.
                   </p>
+
+                  <ul className={styles.valueList} aria-label="Aim4price key tools">
+                    {valueHighlights.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
 
                   <div className={styles.socialGroup} aria-label="Aim4price social channels">
                     <span className={styles.socialLabel}>Social</span>
@@ -92,27 +124,40 @@ export default function AppFooter() {
                 </section>
 
                 <div className={styles.linksGrid}>
-                  <nav className={styles.linkColumn} aria-label="Explore footer links">
-                    <h3>Explore</h3>
-                    <Link href="/">Home</Link>
-                    <Link href="/valuation">Estimate</Link>
-                    <Link href="/asset-register">Asset Register</Link>
-                    <Link href="/marketplace">Marketplace</Link>
-                    <Link href="/account">Account</Link>
+                  <nav className={styles.linkColumn} aria-label="Aim4price tools footer links">
+                    <h3>Tools</h3>
+                    {toolLinks.map((link) => (
+                      <Link key={link.href} href={link.href}>
+                        {link.label}
+                      </Link>
+                    ))}
                   </nav>
 
                   <nav className={styles.linkColumn} aria-label="Company footer links">
                     <h3>Company</h3>
-                    <Link href="/about-us">About Us</Link>
-                    <Link href="/contact-us">Contact Us</Link>
+                    {companyLinks.map((link) => (
+                      <Link key={link.href} href={link.href}>
+                        {link.label}
+                      </Link>
+                    ))}
                   </nav>
 
                   <nav className={styles.linkColumn} aria-label="Legal footer links">
                     <h3>Legal</h3>
-                    <Link href="/privacy-policy">Privacy Policy</Link>
-                    <Link href="/terms-of-service">Terms of Service</Link>
+                    {legalLinks.map((link) => (
+                      <Link key={link.href} href={link.href}>
+                        {link.label}
+                      </Link>
+                    ))}
                   </nav>
                 </div>
+              </div>
+
+              <div className={styles.bottomRow}>
+                <p>
+                  © {currentYear} Aim4price. Built for farmers, contractors, dealers, insurers and
+                  finance teams who need clearer machinery information.
+                </p>
               </div>
             </div>
           </div>
