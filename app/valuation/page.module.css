@@ -9550,3 +9550,115 @@
     height: 2.3rem;
   }
 }
+
+/* === Equipment and brand dropdown scrollbar refinement === */
+.equipmentDropdownMenu {
+  max-height: min(19rem, 52vh);
+  padding-right: 0.58rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(18, 100, 77, 0.68) rgba(235, 244, 240, 0.74);
+}
+
+.equipmentDropdownMenu:hover {
+  scrollbar-color: rgba(18, 100, 77, 0.86) rgba(230, 241, 236, 0.92);
+}
+
+.equipmentDropdownMenu::-webkit-scrollbar {
+  width: 0.72rem;
+  height: 0.72rem;
+}
+
+.equipmentDropdownMenu::-webkit-scrollbar-track,
+.equipmentDropdownMenu::-webkit-scrollbar-track-piece {
+  margin: 0.82rem 0.12rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(238, 246, 242, 0.84) 0%, rgba(226, 239, 233, 0.86) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(17, 56, 45, 0.06),
+    inset 0 1px 2px rgba(15, 53, 42, 0.04);
+}
+
+.equipmentDropdownMenu:hover::-webkit-scrollbar-track,
+.equipmentDropdownMenu:hover::-webkit-scrollbar-track-piece {
+  background: linear-gradient(180deg, rgba(235, 245, 240, 0.98) 0%, rgba(220, 236, 229, 0.98) 100%);
+}
+
+.equipmentDropdownMenu::-webkit-scrollbar-thumb {
+  min-height: 3.75rem;
+  border: 0.18rem solid rgba(255, 255, 255, 0.96);
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(55, 154, 118, 0.82) 0%,
+    rgba(18, 100, 77, 0.9) 56%,
+    rgba(13, 74, 58, 0.94) 100%
+  );
+  background-clip: padding-box;
+  box-shadow:
+    0 5px 12px rgba(13, 74, 58, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.equipmentDropdownMenu:hover::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgba(55, 154, 118, 0.98) 0%,
+    rgba(18, 100, 77, 0.98) 56%,
+    rgba(11, 69, 53, 1) 100%
+  );
+  background-clip: padding-box;
+}
+
+.equipmentDropdownMenu::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(67, 171, 132, 1) 0%,
+    rgba(20, 115, 87, 1) 52%,
+    rgba(9, 60, 47, 1) 100%
+  );
+  background-clip: padding-box;
+}
+
+.equipmentDropdownMenu::-webkit-scrollbar-button,
+.equipmentDropdownMenu::-webkit-scrollbar-button:single-button,
+.equipmentDropdownMenu::-webkit-scrollbar-button:vertical:start:decrement,
+.equipmentDropdownMenu::-webkit-scrollbar-button:vertical:end:increment,
+.equipmentDropdownMenu::-webkit-scrollbar-button:horizontal:start:decrement,
+.equipmentDropdownMenu::-webkit-scrollbar-button:horizontal:end:increment,
+.equipmentDropdownMenu::-webkit-scrollbar-corner,
+.equipmentDropdownMenu::-webkit-resizer {
+  display: none;
+  width: 0;
+  height: 0;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  background-image: none;
+  -webkit-appearance: none;
+}
+
+@media (max-width: 640px) {
+  .equipmentDropdownMenu {
+    max-height: min(18rem, 48vh);
+    padding-right: 0.46rem;
+    scrollbar-gutter: auto;
+  }
+
+  .equipmentDropdownMenu::-webkit-scrollbar {
+    width: 0.54rem;
+    height: 0.54rem;
+  }
+
+  .equipmentDropdownMenu::-webkit-scrollbar-track,
+  .equipmentDropdownMenu::-webkit-scrollbar-track-piece {
+    margin: 0.68rem 0.06rem;
+  }
+
+  .equipmentDropdownMenu::-webkit-scrollbar-thumb {
+    border-width: 0.13rem;
+  }
+}
