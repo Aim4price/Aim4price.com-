@@ -9,7 +9,15 @@ import {
   currentBaseYear,
   tractorLifetimeHours,
 } from './valuation/shared';
-import type { CatalogMode, EquipmentFamilyKey, SectorKey, UsageMetricType, ValuationMode } from './equipment-types';
+import {
+  getUsageSentenceLabel,
+  isUsageAmountMetric,
+  type CatalogMode,
+  type EquipmentFamilyKey,
+  type SectorKey,
+  type UsageMetricType,
+  type ValuationMode,
+} from './equipment-types';
 
 export type GenericCondition = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 export type GenericSelectedMethod = 'aim4price' | 'market';
@@ -325,7 +333,7 @@ function positivePercent(value: unknown): number | null {
   return clamp(numeric, 0, 100);
 }
 
-function positiveHours(value: unknown): number | null {
+function positiveUsageAmount(value: unknown): number | null {
   const numeric = toNumber(value);
   if (numeric === null || numeric <= 0) return null;
   return Math.round(numeric);
@@ -350,12 +358,30 @@ function resolveLifeWorkedPercent(input: DepreciationInput, fallbackPercent: num
 function resolveMaxLifetimeHours(input: DepreciationInput): number {
   const specs = input.specsJson;
   const explicit =
-    positiveHours(specs.max_lifetime_hours) ??
-    positiveHours(specs.expected_lifetime_hours) ??
-    positiveHours(specs.lifetime_hours) ??
-    positiveHours(specs.design_life_hours);
+    positiveUsageAmount(specs.max_lifetime_hours) ??
+    positiveUsageAmount(specs.expected_lifetime_hours) ??
+    positiveUsageAmount(specs.lifetime_hours) ??
+    positiveUsageAmount(specs.design_life_hours) ??
+    positiveUsageAmount(specs.max_lifetime_km) ??
+    positiveUsageAmount(specs.expected_lifetime_km) ??
+    positiveUsageAmount(specs.lifetime_km) ??
+    positiveUsageAmount(specs.design_life_km);
 
   if (explicit !== null) return explicit;
+
+  const familyKey = cleanText(input.familyKey).toLowerCase();
+
+  // Motor uses the existing engine-hours depreciation path. In this case
+  // maxLifetimeHours is intentionally interpreted as max lifetime kilometres.
+  if (input.usageMetricType === 'km') {
+    if (familyKey.includes('car') || familyKey.includes('suv')) return 300_000;
+    if (familyKey.includes('bakkie') || familyKey.includes('ldv') || familyKey.includes('pickup')) return 350_000;
+    if (familyKey.includes('light_commercial') || familyKey.includes('van')) return 450_000;
+    if (familyKey.includes('truck')) return 800_000;
+    if (familyKey.includes('bus')) return 900_000;
+    if (familyKey.includes('trailer')) return 700_000;
+    return 350_000;
+  }
 
   if (input.familyKey === 'tractors') {
     const powerKw = toNumber(specs.power_kw) ?? 75;
@@ -363,11 +389,16 @@ function resolveMaxLifetimeHours(input: DepreciationInput): number {
     return tractorLifetimeHours(tractorType, powerKw);
   }
 
-  if (cleanText(input.familyKey).includes('harvester')) return 8_000;
-  if (cleanText(input.familyKey).includes('sprayer')) return 8_000;
-  if (cleanText(input.familyKey).includes('loader')) return 10_000;
-  if (cleanText(input.familyKey).includes('excavator')) return 12_000;
-  if (cleanText(input.familyKey).includes('forklift')) return 12_000;
+  if (familyKey.includes('harvester')) return 8_000;
+  if (familyKey.includes('sprayer')) return 8_000;
+  if (familyKey.includes('loader')) return 10_000;
+  if (familyKey.includes('excavator')) return 12_000;
+  if (familyKey.includes('forklift')) return 12_000;
+  if (familyKey.includes('generator')) return 15_000;
+  if (familyKey.includes('compressor')) return 12_000;
+  if (familyKey.includes('telehandler')) return 10_000;
+  if (familyKey.includes('grader')) return 12_000;
+  if (familyKey.includes('roller') || familyKey.includes('compactor')) return 10_000;
 
   return 12_000;
 }
@@ -399,7 +430,7 @@ function resolveDepreciation(input: DepreciationInput): {
   averageDepPct: number | null;
 } {
   if (!input.replacementPrice || input.replacementPrice <= 0) {
-    const fallbackMethod: DepreciationMethodUsed = input.isPropelled || input.usageMetricType === 'hours'
+    const fallbackMethod: DepreciationMethodUsed = input.isPropelled || isUsageAmountMetric(input.usageMetricType)
       ? 'semi_depreciation'
       : 'percentage_depreciation';
 
@@ -409,7 +440,7 @@ function resolveDepreciation(input: DepreciationInput): {
       lifeWorkedPercent: null,
       lifeRemainingPercent: null,
       estimatedHours: null,
-      maxLifetimeHours: input.isPropelled || input.usageMetricType === 'hours' ? resolveMaxLifetimeHours(input) : null,
+      maxLifetimeHours: input.isPropelled || isUsageAmountMetric(input.usageMetricType) ? resolveMaxLifetimeHours(input) : null,
       ageDepPct: null,
       usageDepPct: null,
       averageDepPct: null,
@@ -418,9 +449,9 @@ function resolveDepreciation(input: DepreciationInput): {
 
   const yearForDepreciation = input.yearModelUnknown ? currentBaseYear() : Math.round(input.year);
 
-  if (input.isPropelled || input.usageMetricType === 'hours') {
+  if (input.isPropelled || isUsageAmountMetric(input.usageMetricType)) {
     const maxLifetimeHours = resolveMaxLifetimeHours(input);
-    const knownHours = positiveHours(input.usageAmount);
+    const knownHours = positiveUsageAmount(input.usageAmount);
 
     if (knownHours !== null) {
       const calculated = calculateEngineHoursValue({
@@ -557,13 +588,23 @@ function confidenceLabel(score: number): 'High' | 'Medium' | 'Low' {
   return 'Low';
 }
 
-function withinMarketTolerance(match: MarketMatch, targetYear: number | null, targetUsageAmount: number | null): boolean {
+function marketUsageTolerance(sectorKey: SectorKey): number {
+  return sectorKey === 'motor' ? 50_000 : 1_000;
+}
+
+function withinMarketTolerance(
+  match: MarketMatch,
+  targetYear: number | null,
+  targetUsageAmount: number | null,
+  sectorKey: SectorKey,
+): boolean {
   if (targetYear !== null) {
     if (match.yearModel === null || Math.abs(match.yearModel - targetYear) > 2) return false;
   }
 
   if (targetUsageAmount !== null && targetUsageAmount > 0) {
-    if (match.usageAmount === null || Math.abs(match.usageAmount - targetUsageAmount) > 1_000) return false;
+    const tolerance = marketUsageTolerance(sectorKey);
+    if (match.usageAmount === null || Math.abs(match.usageAmount - targetUsageAmount) > tolerance) return false;
   }
 
   return true;
@@ -1127,7 +1168,7 @@ export async function findMarketVaultMatches(input: {
     if (exact.rows.length) {
       const exactMatches = exact.rows
         .map((row) => mapMarketRow(row, 1, typedModelKeys.hasApprovedAlias ? 'Typed model or approved alias match' : 'Exact typed model match'))
-        .filter((match) => withinMarketTolerance(match, targetYear, targetUsageAmount));
+        .filter((match) => withinMarketTolerance(match, targetYear, targetUsageAmount, input.sectorKey));
 
       if (exactMatches.length) {
         return {
@@ -1182,7 +1223,7 @@ export async function findMarketVaultMatches(input: {
       return mapMarketRow(row, score, input.brandSlug ? 'Brand + similar specs' : 'Family + similar specs');
     })
     .filter((match) => match.matchScore >= 0.45 || Object.keys(specsJson).length === 0)
-    .filter((match) => withinMarketTolerance(match, targetYear, targetUsageAmount))
+    .filter((match) => withinMarketTolerance(match, targetYear, targetUsageAmount, input.sectorKey))
     .sort((left, right) => right.matchScore - left.matchScore || right.id - left.id)
     .slice(0, limit);
 
@@ -1314,11 +1355,13 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   if (typedModelName && market.strategy !== 'exact_model') notes.push('No exact model market match found. Using broader brand/family spec evidence.');
   if (!marketAverageCount) notes.push('No marketplace average found yet. Aim4price used replacement price and depreciation only.');
 
+  const usageSentenceLabel = getUsageSentenceLabel(family.sectorKey, family.usageMetricType);
+
   if (selectedCalculation.depreciationMethodUsed === 'full_depreciation') {
-    notes.push('Full depreciation used: year, engine hours and condition.');
+    notes.push(`Full depreciation used: year, ${usageSentenceLabel} and condition.`);
   } else if (selectedCalculation.depreciationMethodUsed === 'semi_depreciation') {
     notes.push(
-      `Semi depreciation used: hours were estimated from ${selectedCalculation.lifeWorkedPercent ?? 0}% worked of ${selectedCalculation.maxLifetimeHours ?? 0} lifetime hours.`,
+      `Semi depreciation used: ${usageSentenceLabel} were estimated from ${selectedCalculation.lifeWorkedPercent ?? 0}% worked of ${selectedCalculation.maxLifetimeHours ?? 0} lifetime ${usageSentenceLabel}.`,
     );
   } else {
     notes.push('Percentage depreciation used: valuation is based on how much the equipment has worked, then adjusted for condition.');

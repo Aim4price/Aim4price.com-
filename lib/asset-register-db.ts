@@ -451,6 +451,32 @@ function buildCurrentValuationSpecs(
   };
 }
 
+function getGenericAssetRegisterKind(result: GenericValuationResult): AssetRegisterItemKind {
+  return result.sector.key === 'motor' || result.family.usageMetricType === 'km' ? 'vehicle' : 'equipment';
+}
+
+function withGenericUsageMetadata(
+  specs: Record<string, unknown>,
+  result: GenericValuationResult,
+): Record<string, unknown> {
+  const usageMetric = result.sector.key === 'motor' || result.family.usageMetricType === 'km' ? 'km' : 'hours';
+
+  return {
+    ...specs,
+    usageMetric,
+    usage_metric: usageMetric,
+    usageUnit: usageMetric,
+    usage_unit: usageMetric,
+    usageMetricType: result.family.usageMetricType,
+    usage_metric_type: result.family.usageMetricType,
+    sectorKey: result.sector.key,
+    sector_key: result.sector.key,
+    familyKey: result.family.key,
+    family_key: result.family.key,
+  };
+}
+
+
 function withMarketValueAdjustmentSpecs(
   specs: Record<string, unknown>,
   context: {
@@ -1924,6 +1950,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
 
   const now = new Date();
   const valuationResult = input.result;
+  const nextKind = getGenericAssetRegisterKind(valuationResult);
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
   const marketValueExVat = roundFiniteNumber(input.marketValueExVat) ?? toRoundedNumber(valuationResult.marketAverageExVat);
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
@@ -1941,7 +1968,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['sector_id'], valuationResult.sector.id);
   pushField(fields, schema, ['equipment_family_id'], valuationResult.family.id);
   pushField(fields, schema, ['equipment_model_id'], null);
-  pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], 'equipment');
+  pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
   pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], selectedValueExVat);
   pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], input.selectedMethod);
   pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], selectedValueExVat);
@@ -1955,14 +1982,17 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
     schema,
     ['specs_json'],
     withMarketValueAdjustmentSpecs(
-      buildCurrentValuationSpecs(existing.specsJson, valuationResult.specsJson ?? {}, {
-        valuationRunId: input.valuationRunId,
-        selectedValueExVat,
-        hours: valuationResult.usageAmount ?? null,
-        lifeWorkedPercent: valuationResult.lifeWorkedPercent,
-        condition: valuationResult.condition,
-        now,
-      }),
+      withGenericUsageMetadata(
+        buildCurrentValuationSpecs(existing.specsJson, valuationResult.specsJson ?? {}, {
+          valuationRunId: input.valuationRunId,
+          selectedValueExVat,
+          hours: valuationResult.usageAmount ?? null,
+          lifeWorkedPercent: valuationResult.lifeWorkedPercent,
+          condition: valuationResult.condition,
+          now,
+        }),
+        valuationResult,
+      ),
       {
         selectedMethod: input.selectedMethod,
         marketValueExVat,
@@ -2186,6 +2216,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   }
 
   const valuationResult = input.result;
+  const nextKind = getGenericAssetRegisterKind(valuationResult);
   const title = [valuationResult.brand.name, valuationResult.typedModelName || valuationResult.family.label]
     .map((part) => asText(part))
     .filter(Boolean)
@@ -2211,7 +2242,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['sector_id'], valuationResult.sector.id);
   pushField(fields, schema, ['equipment_family_id'], valuationResult.family.id);
   pushField(fields, schema, ['equipment_model_id'], null);
-  pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], 'equipment');
+  pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
   pushField(fields, schema, ['title', 'name', 'asset_name'], title);
   pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], selectedValueExVat);
   pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], input.selectedMethod);
@@ -2226,14 +2257,17 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
     schema,
     ['specs_json'],
     withMarketValueAdjustmentSpecs(
-      buildCurrentValuationSpecs({}, valuationResult.specsJson ?? {}, {
-        valuationRunId: input.valuationRunId,
-        selectedValueExVat,
-        hours: valuationResult.usageAmount ?? null,
-        lifeWorkedPercent: valuationResult.lifeWorkedPercent,
-        condition: valuationResult.condition,
-        now,
-      }),
+      withGenericUsageMetadata(
+        buildCurrentValuationSpecs({}, valuationResult.specsJson ?? {}, {
+          valuationRunId: input.valuationRunId,
+          selectedValueExVat,
+          hours: valuationResult.usageAmount ?? null,
+          lifeWorkedPercent: valuationResult.lifeWorkedPercent,
+          condition: valuationResult.condition,
+          now,
+        }),
+        valuationResult,
+      ),
       {
         selectedMethod: input.selectedMethod,
         marketValueExVat,
@@ -2267,7 +2301,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
     registerId: activeRegister.id,
     valuationRunId: input.valuationRunId,
     title,
-    kind: 'equipment',
+    kind: nextKind,
     selectedMethod: input.selectedMethod,
     selectedValueExVat,
     note: cleanAssetRegisterNote(input.note) || null,
