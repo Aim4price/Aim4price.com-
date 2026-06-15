@@ -2185,17 +2185,16 @@ export default function ValuationClient() {
 
     return (
       <div className={styles.equipmentStage}>
-        <div className={styles.equipmentStageTop}>
-          <button type="button" className={styles.stageBackButton} onClick={resetToSectorSelection}>
-            Change sector
-          </button>
+        <div className={`${styles.equipmentStageTop} ${styles.equipmentStageTopSolo}`}>
           <span className={styles.selectedSummaryPill}>{SECTOR_LABELS[selectedSector]}</span>
         </div>
 
-        <h2 className={styles.stepTitle}>Choose equipment type</h2>
-        <p className={styles.stepText}>Search or choose the machine type. Selecting one moves to the brand step automatically.</p>
+        <div className={styles.equipmentStageIntro}>
+          <h2 className={styles.stepTitle}>Choose equipment type</h2>
+          <p className={styles.stepText}>Search or choose the machine type. Selecting one moves to the brand step automatically.</p>
+        </div>
 
-        <div className={`${styles.currentCard} ${styles.equipmentPickerCard}`} style={{ marginTop: '1rem' }}>
+        <div className={`${styles.currentCard} ${styles.equipmentPickerCard}`}>
           <div className={styles.equipmentPickerHead}>
             <div>
               <span className={styles.fieldLabel}>Search equipment type</span>
@@ -2227,7 +2226,11 @@ export default function ValuationClient() {
               aria-expanded={equipmentDropdownOpen}
             >
               <span>{selectedFamily ? selectedFamily.familyLabel : familiesLoading ? 'Loading equipment types...' : 'Select equipment type...'}</span>
-              <span className={styles.equipmentDropdownChevron}>⌄</span>
+              <span className={styles.equipmentDropdownChevron} aria-hidden="true">
+                <svg viewBox="0 0 20 20" focusable="false">
+                  <path d="M5.5 7.5 10 12l4.5-4.5" />
+                </svg>
+              </span>
             </button>
 
             {equipmentDropdownOpen ? (
@@ -2305,7 +2308,11 @@ export default function ValuationClient() {
               aria-expanded={brandDropdownOpen}
             >
               <span>{selectedBrand ? selectedBrand.name : brandsLoading ? 'Loading brands...' : 'Select brand...'}</span>
-              <span className={styles.equipmentDropdownChevron}>⌄</span>
+              <span className={styles.equipmentDropdownChevron} aria-hidden="true">
+                <svg viewBox="0 0 20 20" focusable="false">
+                  <path d="M5.5 7.5 10 12l4.5-4.5" />
+                </svg>
+              </span>
             </button>
 
             {brandDropdownOpen ? (
@@ -2506,7 +2513,11 @@ export default function ValuationClient() {
                   disabled={modelsLoading || !tractorModels.length}
                 >
                   <span>{formatTractorModelLabel(selectedModel)}</span>
-                  <span className={styles.equipmentDropdownChevron}>⌄</span>
+                  <span className={styles.equipmentDropdownChevron} aria-hidden="true">
+                    <svg viewBox="0 0 20 20" focusable="false">
+                      <path d="M5.5 7.5 10 12l4.5-4.5" />
+                    </svg>
+                  </span>
                 </button>
 
                 {modelDropdownOpen || modelQuery ? (
