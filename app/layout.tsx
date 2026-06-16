@@ -12,11 +12,13 @@ export const metadata: Metadata = {
     'Discover machinery values, build asset registers, and browse the marketplace from one clear workflow.',
   icons: {
     icon: [
-      { url: '/favicon.ico?v=2', sizes: 'any' },
-      { url: '/favicon-32x32.png?v=2', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon.ico?v=3', sizes: 'any' },
+      { url: '/favicon-16x16.png?v=3', type: 'image/png', sizes: '16x16' },
+      { url: '/favicon-32x32.png?v=3', type: 'image/png', sizes: '32x32' },
+      { url: '/icon.png?v=3', type: 'image/png', sizes: '512x512' },
     ],
-    shortcut: ['/favicon.ico?v=2'],
-    apple: [{ url: '/apple-touch-icon.png?v=2', sizes: '180x180', type: 'image/png' }],
+    shortcut: ['/favicon.ico?v=3'],
+    apple: [{ url: '/apple-touch-icon.png?v=3', sizes: '180x180', type: 'image/png' }],
   },
 };
 
@@ -30,9 +32,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Montserrat:wght@100..900&display=swap"
           rel="stylesheet"
         />
-        <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2" />
       </head>
       <body>
         <div className="appRoot">
