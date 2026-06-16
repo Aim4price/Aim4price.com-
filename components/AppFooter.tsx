@@ -6,12 +6,6 @@ import styles from './AppFooter.module.css';
 
 const footerContentId = 'aim4price-footer-content';
 
-const valueHighlights = [
-  'Machinery value estimates',
-  'QR-code asset registers',
-  'Marketplace partner contacts',
-];
-
 const toolLinks = [
   { href: '/', label: 'Home' },
   { href: '/valuation', label: 'Get Estimate' },
@@ -93,16 +87,14 @@ export default function AppFooter() {
                   <span className={styles.brandName}>Aim4price</span>
 
                   <p className={styles.brandText}>
-                    Aim4price helps you estimate what machinery is worth, keep your assets
-                    organised with QR codes, and connect with dealers, insurers and finance
-                    providers in one place.
+                    Aim4price helps you estimate what an asset is worth, save its records with a
+                    QR code, and find the right dealer, insurer or finance partner when you need
+                    one.
                   </p>
 
-                  <ul className={styles.valueList} aria-label="Aim4price key tools">
-                    {valueHighlights.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
+                  <p className={styles.brandSupport}>
+                    Built for agricultural, construction, industrial and motor assets.
+                  </p>
 
                   <div className={styles.socialGroup} aria-label="Aim4price social channels">
                     <span className={styles.socialLabel}>Social</span>
@@ -155,8 +147,8 @@ export default function AppFooter() {
 
               <div className={styles.bottomRow}>
                 <p>
-                  © {currentYear} Aim4price. Built for farmers, contractors, dealers, insurers and
-                  finance teams who need clearer machinery information.
+                  © {currentYear} Aim4price. Clearer asset values, cleaner records and easier
+                  partner contacts.
                 </p>
               </div>
             </div>
