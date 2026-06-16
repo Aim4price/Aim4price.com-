@@ -79,10 +79,8 @@ export default function HomePage() {
                 </h1>
 
                 <p className={styles.heroText}>
-                  Aim4price helps machinery owners, financiers, insurers and dealers
-                  <br className={styles.heroTextBreak} />
-                  make confident decisions with estimates, asset records, and marketplace tools
-                  built for South Africa.
+                  Aim4price helps South African machinery owners, financiers, insurers and dealers
+                  value, save, manage and market assets securely in one place.
                 </p>
 
                 <div className={styles.heroActions}>
