@@ -87,9 +87,8 @@ export default function AppFooter() {
                   <span className={styles.brandName}>Aim4price</span>
 
                   <p className={styles.brandText}>
-                    Aim4price helps you estimate what an asset is worth, save its records with a
-                    QR code, and find the right dealer, insurer or finance partner when you need
-                    one.
+                    Aim4price helps South African machinery owners, financiers, insurers and dealers
+                    value, save, manage and market assets securely in one place.
                   </p>
 
                   <p className={styles.brandSupport}>
