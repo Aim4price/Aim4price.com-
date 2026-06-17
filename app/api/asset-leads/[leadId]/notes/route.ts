@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../../../lib/auth-session';
+import { recordAdminUsageEventSafely } from '../../../../../lib/admin-usage-events';
+import { getServerSession, isAdminSupportSession } from '../../../../../lib/auth-session';
 import { createAssetLeadNote } from '../../../../../lib/partner-access';
 
 export const runtime = 'nodejs';
@@ -29,6 +30,14 @@ type PreparedPdfAttachment = {
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
+}
+
+function getUsageUserId(session: Awaited<ReturnType<typeof getServerSession>>): string | null {
+  if (!session?.user?.id || isAdminSupportSession(session)) {
+    return null;
+  }
+
+  return session.user.id;
 }
 
 function isFile(value: FormDataEntryValue | null): value is File {
@@ -121,6 +130,20 @@ export async function POST(request: NextRequest, context: RouteContext) {
       noteText: body.noteText,
       attachment: body.attachment,
     });
+
+    const usageUserId = getUsageUserId(session);
+    if (usageUserId) {
+      await recordAdminUsageEventSafely({
+        userId: usageUserId,
+        eventType: 'message_sent_leave_note',
+        eventSource: 'asset-lead-note',
+        metadata: {
+          leadId: context.params.leadId,
+          noteId: note.id,
+          hasAttachment: Boolean(body.attachment),
+        },
+      });
+    }
 
     return NextResponse.json({ ok: true, note });
   } catch (error) {
