@@ -1,3 +1,4 @@
+import { redirectAdminToAdmin } from '../../../lib/account-access';
 import ScanClient from './scan-client';
 
 export const runtime = 'nodejs';
@@ -9,6 +10,8 @@ type PageProps = {
   };
 };
 
-export default function ScanAssetPage({ params }: PageProps) {
+export default async function ScanAssetPage({ params }: PageProps) {
+  await redirectAdminToAdmin();
+
   return <ScanClient publicAssetCode={params.publicAssetCode ?? ''} />;
 }
