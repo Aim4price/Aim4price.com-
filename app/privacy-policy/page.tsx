@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import AppHeader from '../../components/AppHeader';
+import { redirectAdminToAdmin } from '../../lib/account-access';
 import styles from '../legal-page.module.css';
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const LAST_UPDATED = '08 April 2026';
 const LEGAL_EMAIL = 'legal@aim4price.com'; // Replace before launch
@@ -37,7 +41,9 @@ const rightsList = [
   'lodge a complaint with the relevant regulator if you believe your rights have been infringed.',
 ];
 
-export default function PrivacyPolicyPage() {
+export default async function PrivacyPolicyPage() {
+  await redirectAdminToAdmin();
+
   return (
     <main className={styles.page}>
       <AppHeader active="home" />
