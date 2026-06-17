@@ -1,239 +1,118 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { recordAdminUsageEventSafely } from '../../../lib/admin-usage-events';
-import { getServerSession, isAdminSupportSession } from '../../../lib/auth-session';
-import { getAccountProfile } from '../../../lib/account-profile';
-import {
-  createAssetRegister,
-  deleteAssetRegister,
-  getSelectedAssetRegister,
-  listAssetRegisters,
-  selectAssetRegister,
-  updateAssetRegister,
-} from '../../../lib/asset-registers';
+import { getAnyServerSession } from '../../../lib/auth-session';
+import { isSectorKey, type SectorKey } from '../../../lib/equipment-types';
+import { runGenericValuation, type GenericCondition } from '../../../lib/generic-valuation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type AssetRegisterBody = {
-  action?: unknown;
-  registerId?: unknown;
-  targetRegisterId?: unknown;
-  businessName?: unknown;
-  email?: unknown;
-  phone?: unknown;
-  address?: unknown;
-  addressLine1?: unknown;
-  logoUrls?: unknown;
-  showLogosOnRegister?: unknown;
+type Body = {
+  sectorKey?: unknown;
+  familyKey?: unknown;
+  brandSlug?: unknown;
+  typedModelName?: unknown;
+  specsJson?: unknown;
+  year?: unknown;
+  yearModelUnknown?: unknown;
+  usageAmount?: unknown;
+  lifeWorkedPercent?: unknown;
+  condition?: unknown;
+  userReplacementPriceExVat?: unknown;
+  userReplacementPriceYear?: unknown;
 };
 
-function unauthorized() {
-  return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
+function parseBoolean(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === 'true' || normalized === '1' || normalized === 'yes';
+  }
+  return false;
 }
 
-async function requireOwnerAccount(user: { id: string; name?: string | null; email?: string | null }) {
-  const profile = await getAccountProfile(user);
-
-  if (profile.accountType !== 'owner') {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: 'Asset Registers are only available to owner accounts.',
-      },
-      { status: 403 },
-    );
-  }
-
+function normalizeCondition(value: unknown): GenericCondition | null {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (['excellent', 'good', 'fair', 'used', 'serious'].includes(normalized)) return normalized as GenericCondition;
   return null;
 }
 
-function readRegisterInput(body: AssetRegisterBody) {
-  const input: {
-    businessName: string;
-    email: string;
-    phone: string;
-    addressLine1: string;
-    logoUrls?: string[] | null;
-    showLogosOnRegister?: boolean | null;
-  } = {
-    businessName: String(body.businessName ?? '').trim(),
-    email: String(body.email ?? '').trim(),
-    phone: String(body.phone ?? '').trim(),
-    addressLine1: String(body.addressLine1 ?? body.address ?? '').trim(),
-  };
+function normalizeReplacementPrice(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined') return null;
 
-  if (Object.prototype.hasOwnProperty.call(body, 'logoUrls')) {
-    input.logoUrls = Array.isArray(body.logoUrls)
-      ? body.logoUrls.map((logoUrl) => String(logoUrl ?? '').trim()).filter(Boolean).slice(0, 1)
-      : [];
-  }
-
-  if (Object.prototype.hasOwnProperty.call(body, 'showLogosOnRegister')) {
-    const normalizedVisibility = String(body.showLogosOnRegister ?? '').trim().toLowerCase();
-    input.showLogosOnRegister = typeof body.showLogosOnRegister === 'boolean'
-      ? body.showLogosOnRegister
-      : !['false', '0', 'no', 'off', 'hide', 'hidden'].includes(normalizedVisibility);
-  }
-
-  return input;
+  const numeric = Number(String(value).replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(numeric) && numeric > 0 ? Math.round(numeric) : null;
 }
 
-function getUsageUserId(session: Awaited<ReturnType<typeof getServerSession>>): string | null {
-  if (!session?.user?.id || isAdminSupportSession(session)) {
-    return null;
-  }
-
-  return session.user.id;
-}
-
-function errorResponse(error: unknown, fallback: string) {
-  if (error instanceof Error) {
-    if (error.message === 'ASSET_REGISTER_NAME_REQUIRED') {
-      return NextResponse.json({ ok: false, error: 'Business name is required.' }, { status: 400 });
-    }
-
-    if (error.message === 'ASSET_REGISTER_NOT_FOUND') {
-      return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
-    }
-
-    if (error.message === 'ASSET_REGISTER_LAST_REGISTER') {
-      return NextResponse.json({ ok: false, error: 'You must keep at least one asset register on the account.' }, { status: 400 });
-    }
-
-    if (error.message === 'ASSET_REGISTER_DELETE_TARGET_REQUIRED') {
-      return NextResponse.json(
-        { ok: false, error: 'Choose another asset register to receive these assets before removing this register.' },
-        { status: 400 },
-      );
-    }
-
-    if (error.message === 'ASSET_REGISTER_DELETE_TARGET_INVALID') {
-      return NextResponse.json({ ok: false, error: 'Choose a different target asset register.' }, { status: 400 });
-    }
-
-    if (error.message) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-    }
-  }
-
-  return NextResponse.json({ ok: false, error: fallback }, { status: 500 });
-}
-
-export async function GET() {
-  const session = await getServerSession();
-
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
-
-  const ownerError = await requireOwnerAccount(session.user);
-  if (ownerError) return ownerError;
-
+async function getUsageUserId(): Promise<string | null> {
   try {
-    const registers = await listAssetRegisters(session.user.id);
-    const selectedRegister = registers.find((register) => register.isSelected) ?? await getSelectedAssetRegister(session.user.id);
-    return NextResponse.json({ ok: true, registers, selectedRegister });
-  } catch (error) {
-    console.error('asset registers GET failed', error);
-    return errorResponse(error, 'Failed to load asset registers.');
+    const session = await getAnyServerSession();
+    return session?.user?.id ?? null;
+  } catch {
+    return null;
   }
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession();
-
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
-
-  const ownerError = await requireOwnerAccount(session.user);
-  if (ownerError) return ownerError;
-
   try {
-    const body = (await request.json()) as AssetRegisterBody;
-    const register = await createAssetRegister(session.user.id, readRegisterInput(body));
+    const body = (await request.json()) as Body;
+    const sectorKey = String(body.sectorKey ?? '').trim();
+    const familyKey = String(body.familyKey ?? '').trim();
+    const brandSlug = String(body.brandSlug ?? '').trim();
+    const year = Number(body.year);
+    const yearModelUnknown = parseBoolean(body.yearModelUnknown);
+    const condition = normalizeCondition(body.condition);
+    const userReplacementPriceExVat = normalizeReplacementPrice(body.userReplacementPriceExVat);
+    const userReplacementPriceYear = Number(body.userReplacementPriceYear);
+    const resolvedReplacementPriceYear = userReplacementPriceExVat === null
+      ? null
+      : Number.isInteger(userReplacementPriceYear) && userReplacementPriceYear > 1900
+        ? userReplacementPriceYear
+        : new Date().getFullYear();
+
+    if (!isSectorKey(sectorKey)) {
+      return NextResponse.json({ ok: false, error: 'Valid sectorKey is required.' }, { status: 400 });
+    }
+
+    if (!familyKey || !brandSlug || !Number.isInteger(year) || !condition) {
+      return NextResponse.json(
+        { ok: false, error: 'familyKey, brandSlug, year and condition are required.' },
+        { status: 400 },
+      );
+    }
+
+    const result = await runGenericValuation({
+      sectorKey: sectorKey as SectorKey,
+      familyKey,
+      brandSlug,
+      typedModelName: String(body.typedModelName ?? '').trim() || null,
+      specsJson: body.specsJson && typeof body.specsJson === 'object' ? (body.specsJson as Record<string, unknown>) : {},
+      year,
+      yearModelUnknown,
+      usageAmount: body.usageAmount === null || typeof body.usageAmount === 'undefined' ? null : Number(body.usageAmount),
+      lifeWorkedPercent:
+        body.lifeWorkedPercent === null || typeof body.lifeWorkedPercent === 'undefined'
+          ? null
+          : Number(body.lifeWorkedPercent),
+      condition,
+      userReplacementPriceExVat,
+      userReplacementPriceYear: resolvedReplacementPriceYear,
+    });
+
     await recordAdminUsageEventSafely({
-      userId: getUsageUserId(session),
-      eventType: 'asset_register_created',
-      eventSource: 'asset-registers',
-      metadata: { registerId: register.id },
+      userId: await getUsageUserId(),
+      eventType: 'free_estimate_completed',
+      eventSource: 'generic-valuations',
+      metadata: { sectorKey, familyKey, brandSlug },
     });
-    const registers = await listAssetRegisters(session.user.id);
-    const selectedRegister = registers.find((entry) => entry.isSelected) ?? await getSelectedAssetRegister(session.user.id);
-    return NextResponse.json({ ok: true, register, registers, selectedRegister });
+
+    return NextResponse.json({ ok: true, result });
   } catch (error) {
-    console.error('asset registers POST failed', error);
-    return errorResponse(error, 'Failed to create asset register.');
-  }
-}
-
-export async function PUT(request: NextRequest) {
-  const session = await getServerSession();
-
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
-
-  const ownerError = await requireOwnerAccount(session.user);
-  if (ownerError) return ownerError;
-
-  try {
-    const body = (await request.json()) as AssetRegisterBody;
-    const registerId = String(body.registerId ?? '').trim();
-
-    if (!registerId) {
-      return NextResponse.json({ ok: false, error: 'Asset register id is required.' }, { status: 400 });
-    }
-
-    const action = String(body.action ?? '').trim().toLowerCase();
-    const register = action === 'select'
-      ? await selectAssetRegister(session.user.id, registerId)
-      : await updateAssetRegister(session.user.id, registerId, readRegisterInput(body));
-    const registers = await listAssetRegisters(session.user.id);
-    const selectedRegister = registers.find((entry) => entry.isSelected) ?? await getSelectedAssetRegister(session.user.id);
-    return NextResponse.json({ ok: true, register, registers, selectedRegister });
-  } catch (error) {
-    console.error('asset registers PUT failed', error);
-    return errorResponse(error, 'Failed to update asset register.');
-  }
-}
-
-export async function DELETE(request: NextRequest) {
-  const session = await getServerSession();
-
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
-
-  const ownerError = await requireOwnerAccount(session.user);
-  if (ownerError) return ownerError;
-
-  try {
-    const body = (await request.json().catch(() => ({}))) as AssetRegisterBody;
-    const registerId = String(body.registerId ?? '').trim();
-    const targetRegisterId = String(body.targetRegisterId ?? '').trim();
-
-    if (!registerId) {
-      return NextResponse.json({ ok: false, error: 'Asset register id is required.' }, { status: 400 });
-    }
-
-    const result = await deleteAssetRegister({
-      userId: session.user.id,
-      registerId,
-      targetRegisterId: targetRegisterId || null,
-    });
-    const registers = await listAssetRegisters(session.user.id);
-    const selectedRegister = registers.find((entry) => entry.isSelected) ?? result.selectedRegister;
-
-    return NextResponse.json({
-      ok: true,
-      deletedRegisterId: result.deletedRegisterId,
-      movedCount: result.movedCount,
-      registers,
-      selectedRegister,
-    });
-  } catch (error) {
-    console.error('asset registers DELETE failed', error);
-    return errorResponse(error, 'Failed to remove asset register.');
+    console.error('generic-valuations route failed', error);
+    return NextResponse.json(
+      { ok: false, error: error instanceof Error ? error.message : 'Failed to calculate generic valuation.' },
+      { status: 500 },
+    );
   }
 }
