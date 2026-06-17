@@ -1,18 +1,14 @@
-import { redirect } from 'next/navigation';
-import { getAccountProfile } from '../../lib/account-profile';
-import { getServerSession } from '../../lib/auth-session';
-import LeadsClient from './leads-client';
+import { redirect } from "next/navigation";
+import { getAccountProfile } from "../../lib/account-profile";
+import { requireActivePageAccess } from "../../lib/account-access";
+import LeadsClient from "./leads-client";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
-const PARTNER_ACCOUNT_TYPES = new Set(['dealer', 'finance', 'insurance']);
+const PARTNER_ACCOUNT_TYPES = new Set(["dealer", "finance", "insurance"]);
 
 export default async function LeadsPage() {
-  const session = await getServerSession();
-
-  if (!session) {
-    redirect('/auth#signup');
-  }
+  const { session } = await requireActivePageAccess();
 
   const profile = await getAccountProfile({
     id: session.user.id,
@@ -21,7 +17,7 @@ export default async function LeadsPage() {
   });
 
   if (!PARTNER_ACCOUNT_TYPES.has(profile.accountType)) {
-    redirect('/account');
+    redirect("/account");
   }
 
   return <LeadsClient />;
