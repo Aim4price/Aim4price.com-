@@ -1,16 +1,11 @@
-import { redirect } from 'next/navigation';
-import { getServerSession } from '../../lib/auth-session';
-import AssetMapClient from './asset-map-client';
+import { requireActivePageAccess } from "../../lib/account-access";
+import AssetMapClient from "./asset-map-client";
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export default async function AssetMapPage() {
-  const session = await getServerSession();
-
-  if (!session) {
-    redirect('/auth#signup');
-  }
+  await requireActivePageAccess();
 
   return <AssetMapClient />;
 }
