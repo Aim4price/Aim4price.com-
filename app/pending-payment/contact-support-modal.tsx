@@ -9,7 +9,7 @@ const SUPPORT_PHONE_TEL = '0625721650';
 const SUPPORT_WHATSAPP_URL = 'https://wa.me/27625721650';
 const SUPPORT_EMAIL = 'aim4price@gmail.com';
 
-function IconBase(props: SVGProps<SVGSVGElement>) {
+function IconBase({ children, ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg
       aria-hidden="true"
@@ -18,17 +18,19 @@ function IconBase(props: SVGProps<SVGSVGElement>) {
       stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
-      strokeWidth="1.8"
+      strokeWidth="1.85"
       viewBox="0 0 24 24"
       {...props}
-    />
+    >
+      {children}
+    </svg>
   );
 }
 
 function PhoneIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
-      <path d="M6.6 5.4 8.7 4a1.6 1.6 0 0 1 2.25.52l1.1 1.95a1.7 1.7 0 0 1-.34 2.05l-1.07 1.02a10.5 10.5 0 0 0 3.82 3.82l1.02-1.07a1.7 1.7 0 0 1 2.05-.34l1.95 1.1A1.6 1.6 0 0 1 20 15.3l-1.4 2.1c-.44.66-1.23 1.02-2.02.9C10.7 17.42 6.58 13.3 5.7 7.42c-.12-.79.24-1.58.9-2.02Z" />
+      <path d="M7.1 5.2 9.02 4a1.45 1.45 0 0 1 2 .48l1 1.76a1.55 1.55 0 0 1-.28 1.82l-.98 1.02a10.1 10.1 0 0 0 4.14 4.14l1.02-.98a1.55 1.55 0 0 1 1.82-.28l1.76 1a1.45 1.45 0 0 1 .48 2L18.8 16.9a2.3 2.3 0 0 1-2.22 1.05C10.9 17.2 6.8 13.1 6.05 7.42A2.3 2.3 0 0 1 7.1 5.2Z" />
     </IconBase>
   );
 }
@@ -36,17 +38,18 @@ function PhoneIcon(props: SVGProps<SVGSVGElement>) {
 function EmailIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
-      <path d="M4.75 6.75h14.5v10.5H4.75z" />
-      <path d="m5.25 7.25 6.75 5.2 6.75-5.2" />
+      <rect x="4.75" y="6.75" width="14.5" height="10.5" rx="1.35" />
+      <path d="m5.35 7.55 6.65 5.1 6.65-5.1" />
     </IconBase>
   );
 }
 
-function WhatsAppIcon(props: SVGProps<SVGSVGElement>) {
+function ChatIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
-      <path d="M7.7 18.7 4.9 19.5l.82-2.7A7.15 7.15 0 1 1 7.7 18.7Z" />
-      <path d="M9.15 8.85c.18-.4.36-.42.6-.42h.42c.14 0 .33.04.5.38.18.36.6 1.28.65 1.38.05.11.08.25.02.39-.06.15-.1.24-.22.37-.1.13-.24.28-.34.38-.11.11-.22.24-.1.46.11.22.5.86 1.08 1.4.74.66 1.35.87 1.58.97.22.11.36.09.49-.06.14-.16.56-.65.7-.87.15-.22.3-.18.5-.11.21.07 1.32.62 1.55.73.22.11.37.17.43.27.06.1.06.58-.13 1.13-.19.55-1.1 1.05-1.53 1.09-.4.04-.9.06-1.46-.09-.34-.09-.78-.25-1.34-.5-2.35-1.02-3.9-3.4-4.02-3.56-.12-.17-.96-1.28-.96-2.44 0-1.17.6-1.74.82-1.98.21-.24.48-.3.76-.3" />
+      <path d="M7.18 17.78 4.75 18.5l.72-2.46a7.35 7.35 0 1 1 1.71 1.74Z" />
+      <path d="M8.4 10.15h7.2" />
+      <path d="M8.4 13.15h4.95" />
     </IconBase>
   );
 }
@@ -143,7 +146,7 @@ export default function ContactSupportModal() {
                 rel="noreferrer"
                 target="_blank"
               >
-                <WhatsAppIcon className={styles.contactActionIcon} />
+                <ChatIcon className={styles.contactActionIcon} />
                 <span>WhatsApp</span>
               </a>
             </div>
