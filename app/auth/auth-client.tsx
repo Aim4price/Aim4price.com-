@@ -32,6 +32,7 @@ type SignupFormState = {
   introducedByOption: SignupIntroducedByOption;
   introducedByName: string;
   name: string;
+  phone: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -109,6 +110,7 @@ const initialSignupState: SignupFormState = {
   introducedByOption: "",
   introducedByName: "",
   name: "",
+  phone: "",
   email: "",
   password: "",
   confirmPassword: "",
@@ -269,6 +271,7 @@ async function saveSignupProfileFallback(
   accountType: SignupAccountType,
   accountSubtype: SignupAccountSubtype,
   displayName: string,
+  phone: string,
 ) {
   await fetch("/api/account-profile", {
     method: "PUT",
@@ -280,6 +283,7 @@ async function saveSignupProfileFallback(
       accountType,
       accountSubtype,
       displayName,
+      phone,
     }),
   }).catch(() => null);
 }
@@ -363,11 +367,13 @@ export default function AuthClient() {
     setNotice(null);
 
     const name = signupForm.name.trim();
+    const phone = signupForm.phone.trim();
     const email = signupForm.email.trim();
     const introducedByName = signupForm.introducedByName.trim();
 
     if (
       !name ||
+      !phone ||
       !email ||
       !signupForm.password ||
       !signupForm.confirmPassword
@@ -375,7 +381,7 @@ export default function AuthClient() {
       setNotice({
         tone: "error",
         title: "Missing information",
-        text: "Complete all required fields before creating your account.",
+        text: "Complete your name, contact number, email and password before creating your account.",
       });
       return;
     }
@@ -432,6 +438,7 @@ export default function AuthClient() {
         name,
         email,
         password: signupForm.password,
+        phone,
         accountType: signupForm.accountType,
         accountSubtype: signupForm.accountSubtype,
         introducedByOption: signupForm.introducedByOption,
@@ -446,6 +453,7 @@ export default function AuthClient() {
         signupForm.accountType,
         signupForm.accountSubtype,
         name,
+        phone,
       );
 
       setSignupForm(initialSignupState);
@@ -758,6 +766,25 @@ export default function AuthClient() {
                       setSignupForm((current) => ({
                         ...current,
                         name: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span className={styles.label}>Contact number</span>
+                  <input
+                    type="tel"
+                    name="phone"
+                    autoComplete="tel"
+                    inputMode="tel"
+                    placeholder="Phone or WhatsApp number"
+                    className={styles.input}
+                    value={signupForm.phone}
+                    onChange={(event) =>
+                      setSignupForm((current) => ({
+                        ...current,
+                        phone: event.target.value,
                       }))
                     }
                   />
