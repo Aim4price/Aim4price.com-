@@ -463,7 +463,7 @@ export async function ensureAccountProfileColumns(): Promise<void> {
     update account_profiles
     set
       account_status = case
-        when account_status is null or trim(account_status) = '' then 'active'
+        when account_status is null or trim(account_status) = '' then 'pending_payment'
         when lower(replace(trim(account_status), '-', '_')) in ('pending_payment', 'active', 'suspended')
           then lower(replace(trim(account_status), '-', '_'))
         else 'pending_payment'
@@ -476,6 +476,19 @@ export async function ensureAccountProfileColumns(): Promise<void> {
         else 'direct'
       end,
       introduced_by_name = nullif(trim(coalesce(introduced_by_name, '')), '')
+  `);
+
+  await db.query(`
+    do $$
+    begin
+      if to_regclass('public."user"') is not null then
+        update account_profiles ap
+        set account_status = 'active', updated_at = now()
+        from public."user" u
+        where ap.user_id = u.id
+          and lower(trim(coalesce(u.email, ''))) = 'aim4price@gmail.com';
+      end if;
+    end $$
   `);
 
   await db.query(`

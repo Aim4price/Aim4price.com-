@@ -29,17 +29,29 @@ export async function getAccountAccess(user: {
   };
 }
 
+export async function redirectAdminToAdmin(): Promise<void> {
+  const session = await getAnyServerSession();
+
+  if (session?.user?.id && isAim4priceAdminEmail(session.user.email)) {
+    redirect("/admin");
+  }
+}
+
 export async function requireActivePageAccess() {
   const session = await getAnyServerSession();
 
   if (!session?.user?.id) {
-    redirect("/auth#signup");
+    redirect("/auth#login");
   }
 
   const access = await getAccountAccess({
     id: session.user.id,
     email: session.user.email,
   });
+
+  if (access.isAdmin) {
+    redirect("/admin");
+  }
 
   if (!access.isActive) {
     redirect("/pending-payment");

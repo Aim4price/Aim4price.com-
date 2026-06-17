@@ -43,8 +43,26 @@ function normalizeTrustedOrigin(value: string): string | null {
   }
 }
 
-function readTrustedOrigins(): string[] {
+function readAuthBaseUrl(): string {
+  const normalized = normalizeTrustedOrigin(
+    process.env.BETTER_AUTH_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.RAILWAY_PUBLIC_DOMAIN ||
+      "",
+  );
+
+  if (normalized) {
+    return normalized;
+  }
+
+  return process.env.NODE_ENV === "production"
+    ? "https://aim4price.com"
+    : "http://localhost:3000";
+}
+
+function readTrustedOrigins(authBaseUrl: string): string[] {
   const configuredOrigins = [
+    authBaseUrl,
     process.env.BETTER_AUTH_TRUSTED_ORIGINS,
     process.env.NEXT_PUBLIC_SITE_URL,
     process.env.BETTER_AUTH_URL,
@@ -66,23 +84,23 @@ function readTrustedOrigins(): string[] {
   );
 }
 
+const authBaseUrl = readAuthBaseUrl();
+
 export const auth = betterAuth({
   database: getDb(),
-  baseURL: process.env.BETTER_AUTH_URL,
+  baseURL: authBaseUrl,
   secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins: readTrustedOrigins(),
+  trustedOrigins: readTrustedOrigins(authBaseUrl),
   emailAndPassword: {
     enabled: true,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url, token }) => {
       const resetUrl = buildAim4priceResetPasswordUrl(token, url);
 
-      void sendAim4priceResetPasswordEmail({
+      await sendAim4priceResetPasswordEmail({
         to: user.email,
         name: user.name,
         resetUrl,
-      }).catch((error) => {
-        console.error("Failed to send Aim4price reset password email", error);
       });
     },
   },

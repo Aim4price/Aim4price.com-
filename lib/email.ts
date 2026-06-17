@@ -12,13 +12,15 @@ function readEnv(name: string): string {
 
 export function getSiteOrigin(): string {
   const explicit =
-    readEnv("NEXT_PUBLIC_SITE_URL") ||
     readEnv("BETTER_AUTH_URL") ||
+    readEnv("NEXT_PUBLIC_SITE_URL") ||
     readEnv("RAILWAY_PUBLIC_DOMAIN") ||
     readEnv("VERCEL_URL");
 
   if (!explicit) {
-    return "http://localhost:3000";
+    return process.env.NODE_ENV === "production"
+      ? "https://aim4price.com"
+      : "http://localhost:3000";
   }
 
   const withProtocol = /^https?:\/\//i.test(explicit)
@@ -29,7 +31,9 @@ export function getSiteOrigin(): string {
     const parsed = new URL(withProtocol);
     return parsed.origin;
   } catch {
-    return "http://localhost:3000";
+    return process.env.NODE_ENV === "production"
+      ? "https://aim4price.com"
+      : "http://localhost:3000";
   }
 }
 
@@ -56,7 +60,7 @@ function getEmailFromAddress(): string {
   return (
     readEnv("AIM4PRICE_RESET_EMAIL_FROM") ||
     readEnv("AIM4PRICE_EMAIL_FROM") ||
-    "Aim4price <noreply@aim4price.com>"
+    "Aim4price <reset@aim4price.com>"
   );
 }
 
@@ -74,7 +78,13 @@ export async function sendAim4priceEmail(
   const apiKey = readEnv("RESEND_API_KEY");
 
   if (!apiKey) {
-    console.warn("RESEND_API_KEY is not set. Aim4price email was not sent.", {
+    const message = "RESEND_API_KEY is not set. Aim4price email was not sent.";
+
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(message);
+    }
+
+    console.warn(message, {
       to: input.to,
       subject: input.subject,
     });

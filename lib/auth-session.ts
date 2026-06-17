@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { isAim4priceAdminEmail } from "./account-constants";
 import { isAccountActive } from "./account-profile";
 import { auth } from "./auth";
 
@@ -6,6 +7,7 @@ type ServerSession = Awaited<ReturnType<typeof auth.api.getSession>>;
 
 type SessionOptions = {
   requireActive?: boolean;
+  allowAdmin?: boolean;
 };
 
 async function readAuthSession(): Promise<ServerSession> {
@@ -25,6 +27,10 @@ export async function getServerSession(
 
   if (!session?.user?.id) {
     return session;
+  }
+
+  if (!options.allowAdmin && isAim4priceAdminEmail(session.user.email)) {
+    return null;
   }
 
   if (options.requireActive === false) {
