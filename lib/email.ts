@@ -37,6 +37,21 @@ export function getResetPasswordRedirectUrl(): string {
   return `${getSiteOrigin()}/reset-password`;
 }
 
+export function buildAim4priceResetPasswordUrl(
+  token: string | null | undefined,
+  fallbackUrl?: string,
+): string {
+  const cleanedToken = typeof token === "string" ? token.trim() : "";
+
+  if (!cleanedToken) {
+    return fallbackUrl || getResetPasswordRedirectUrl();
+  }
+
+  const resetUrl = new URL(getResetPasswordRedirectUrl());
+  resetUrl.searchParams.set("token", cleanedToken);
+  return resetUrl.toString();
+}
+
 function getEmailFromAddress(): string {
   return (
     readEnv("AIM4PRICE_RESET_EMAIL_FROM") ||
