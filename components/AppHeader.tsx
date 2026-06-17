@@ -686,6 +686,15 @@ export default function AppHeader({
     try {
       setIsSigningOut(true);
 
+      await fetch('/api/admin/users', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'close_account' }),
+      }).catch(() => null);
+
       await fetch('/api/auth/sign-out', {
         method: 'POST',
         credentials: 'include',
