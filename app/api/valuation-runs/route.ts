@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../lib/auth-session';
+import { recordAdminUsageEventsSafely, type AdminUsageEventInput } from '../../../lib/admin-usage-events';
+import { getServerSession, isAdminSupportSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
 import {
   createAssetRegisterItemFromGenericValuation,
@@ -213,6 +214,60 @@ function formatUnknownError(error: unknown): string {
   return 'Failed to save to asset register.';
 }
 
+function getUsageUserId(session: Awaited<ReturnType<typeof getServerSession>>): string | null {
+  if (!session?.user?.id || isAdminSupportSession(session)) {
+    return null;
+  }
+
+  return session.user.id;
+}
+
+async function recordSavedValuationUsage(input: {
+  userId: string | null;
+  assetId: string;
+  runId: number;
+  selectedMethod: string;
+  valuationMode: 'tractor' | 'generic';
+  saveForMarketplace: boolean;
+}): Promise<void> {
+  if (!input.userId) {
+    return;
+  }
+
+  const metadata = {
+    assetId: input.assetId,
+    runId: input.runId,
+    selectedMethod: input.selectedMethod,
+    valuationMode: input.valuationMode,
+    saveForMarketplace: input.saveForMarketplace,
+  };
+  const events: AdminUsageEventInput[] = [
+    {
+      userId: input.userId,
+      eventType: 'paid_estimate_completed',
+      eventSource: 'valuation-runs',
+      metadata,
+    },
+    {
+      userId: input.userId,
+      eventType: 'asset_saved',
+      eventSource: 'valuation-runs',
+      metadata,
+    },
+  ];
+
+  if (input.selectedMethod === 'aim4price') {
+    events.push({
+      userId: input.userId,
+      eventType: 'aim4price_asset_saved',
+      eventSource: 'valuation-runs',
+      metadata,
+    });
+  }
+
+  await recordAdminUsageEventsSafely(events);
+}
+
 function buildFriendlyError(error: unknown): { status: number; message: string } {
   const message = formatUnknownError(error);
 
@@ -373,6 +428,15 @@ export async function POST(request: NextRequest) {
           photos: photoUrls,
         });
 
+        await recordSavedValuationUsage({
+          userId: getUsageUserId(session),
+          assetId: asset.id,
+          runId: savedRun.runId,
+          selectedMethod,
+          valuationMode: 'generic',
+          saveForMarketplace,
+        });
+
         return NextResponse.json<SaveValuationRunApiResponse>({
           ok: true,
           runId: savedRun.runId,
@@ -438,6 +502,15 @@ export async function POST(request: NextRequest) {
         hours: input.hours,
         note: '',
         photos: photoUrls,
+      });
+
+      await recordSavedValuationUsage({
+        userId: getUsageUserId(session),
+        assetId: asset.id,
+        runId: savedRun.runId,
+        selectedMethod: input.selectedMethod,
+        valuationMode: 'tractor',
+        saveForMarketplace,
       });
 
       return NextResponse.json<SaveValuationRunApiResponse>({
