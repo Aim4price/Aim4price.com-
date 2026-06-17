@@ -123,6 +123,7 @@ export const auth = betterAuth({
                   "introducedByOption",
                 ),
                 introducedByName: readSignupField(context, "introducedByName"),
+                phone: readSignupField(context, "phone"),
               },
             );
           } catch (error) {

@@ -5,7 +5,11 @@ import {
   type AccountStatus,
 } from "./account-constants";
 import { getAccountStatusForUser } from "./account-profile";
-import { getAnyServerSession } from "./auth-session";
+import {
+  getAnyServerSession,
+  getServerSession,
+  isAdminSupportSession,
+} from "./auth-session";
 
 export type AccountAccessResult = {
   status: AccountStatus;
@@ -38,15 +42,29 @@ export async function redirectAdminToAdmin(): Promise<void> {
 }
 
 export async function requireActivePageAccess() {
-  const session = await getAnyServerSession();
+  const realSession = await getAnyServerSession();
 
-  if (!session?.user?.id) {
+  if (!realSession?.user?.id) {
     redirect("/auth#login");
   }
 
+  const effectiveSession = await getServerSession({ requireActive: false });
+
+  if (isAdminSupportSession(effectiveSession)) {
+    return {
+      session: effectiveSession,
+      access: {
+        status: "active" as AccountStatus,
+        isAdmin: false,
+        isActive: true,
+        statusLabel: "Active",
+      },
+    };
+  }
+
   const access = await getAccountAccess({
-    id: session.user.id,
-    email: session.user.email,
+    id: realSession.user.id,
+    email: realSession.user.email,
   });
 
   if (access.isAdmin) {
@@ -57,7 +75,7 @@ export async function requireActivePageAccess() {
     redirect("/pending-payment");
   }
 
-  return { session, access };
+  return { session: realSession, access };
 }
 
 export async function requireAdminPageAccess() {

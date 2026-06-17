@@ -623,6 +623,7 @@ export async function createInitialAccountProfile(
     accountSubtype?: unknown;
     introducedByOption?: unknown;
     introducedByName?: unknown;
+    phone?: unknown;
   },
 ): Promise<void> {
   await ensureAccountProfileColumns();
@@ -643,12 +644,14 @@ export async function createInitialAccountProfile(
     introducedByOption === "other"
       ? cleanIntroducedByName(input?.introducedByName)
       : "";
+  const phone = asText(input?.phone);
 
   await db.query(
     `
       insert into account_profiles (
         user_id,
         display_name,
+        phone,
         account_type,
         account_subtype,
         account_status,
@@ -657,12 +660,15 @@ export async function createInitialAccountProfile(
         created_at,
         updated_at
       )
-      values ($1, $2, $3, $4, $5, $6, $7, now(), now())
-      on conflict (user_id) do nothing
+      values ($1, $2, $3, $4, $5, $6, $7, $8, now(), now())
+      on conflict (user_id) do update set
+        phone = coalesce(nullif(account_profiles.phone, ''), excluded.phone),
+        updated_at = now()
     `,
     [
       user.id,
       asText(user.name) || null,
+      phone || null,
       initialAccountType,
       initialAccountSubtype,
       initialAccountStatus,

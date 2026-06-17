@@ -1,3 +1,4 @@
+import { deleteUserWorkspaceData } from "./account-deletion";
 import {
   accountStatusLabel,
   cleanIntroducedByName,
@@ -14,6 +15,7 @@ export type AdminUserRow = {
   userId: string;
   name: string;
   email: string;
+  phone: string;
   accountType: string;
   accountSubtype: string;
   introducedBy: string;
@@ -30,6 +32,7 @@ type DbAdminUserRow = {
   auth_name: string | null;
   email: string | null;
   display_name: string | null;
+  phone: string | null;
   account_type: string | null;
   account_subtype: string | null;
   account_status: string | null;
@@ -38,6 +41,12 @@ type DbAdminUserRow = {
   password_set: boolean | null;
   auth_created_at: string | Date | null;
   profile_created_at: string | Date | null;
+};
+
+type AdminUserIdentity = {
+  id: string;
+  name: string | null;
+  email: string | null;
 };
 
 function asText(value: unknown): string {
@@ -66,6 +75,7 @@ function mapAdminUserRow(row: DbAdminUserRow): AdminUserRow {
     userId: row.user_id,
     name: asText(row.display_name) || asText(row.auth_name) || "Unnamed user",
     email: asText(row.email),
+    phone: asText(row.phone),
     accountType: asText(row.account_type) || "owner",
     accountSubtype: asText(row.account_subtype) || "farmer",
     introducedBy: resolveIntroducedByDisplay(
@@ -81,6 +91,27 @@ function mapAdminUserRow(row: DbAdminUserRow): AdminUserRow {
   };
 }
 
+async function getAdminUserIdentity(userId: string): Promise<AdminUserIdentity> {
+  const db = getDb();
+  const result = await db.query<AdminUserIdentity>(
+    `
+      select id, name, email
+      from "user"
+      where id = $1
+      limit 1
+    `,
+    [userId],
+  );
+
+  const user = result.rows[0];
+
+  if (!user) {
+    throw new Error("User not found.");
+  }
+
+  return user;
+}
+
 export async function listAdminUsers(): Promise<AdminUserRow[]> {
   await ensureAccountProfileColumns();
 
@@ -92,6 +123,7 @@ export async function listAdminUsers(): Promise<AdminUserRow[]> {
         u.name as auth_name,
         u.email as email,
         ap.display_name,
+        ap.phone,
         ap.account_type,
         ap.account_subtype,
         ap.account_status,
@@ -123,31 +155,13 @@ export async function setAdminUserAccountStatus(
   await ensureAccountProfileColumns();
 
   const normalizedStatus = normalizeAccountStatus(status);
-  const db = getDb();
-  const userResult = await db.query<{
-    id: string;
-    name: string | null;
-    email: string | null;
-  }>(
-    `
-      select id, name, email
-      from "user"
-      where id = $1
-      limit 1
-    `,
-    [userId],
-  );
-
-  const user = userResult.rows[0];
-
-  if (!user) {
-    throw new Error("User not found.");
-  }
+  const user = await getAdminUserIdentity(userId);
 
   if (isAim4priceAdminEmail(user.email) && normalizedStatus !== "active") {
     throw new Error("The Aim4price admin account must remain active.");
   }
 
+  const db = getDb();
   await db.query(
     `
       insert into account_profiles (
@@ -171,22 +185,59 @@ export async function setAdminUserAccountStatus(
 }
 
 export async function findAdminUserEmail(userId: string): Promise<string> {
-  const db = getDb();
-  const result = await db.query<{ email: string | null }>(
-    `
-      select email
-      from "user"
-      where id = $1
-      limit 1
-    `,
-    [userId],
-  );
-
-  const email = asText(result.rows[0]?.email);
+  const user = await getAdminUserIdentity(userId);
+  const email = asText(user.email);
 
   if (!email) {
     throw new Error("User email not found.");
   }
 
   return email;
+}
+
+export async function assertAdminCanOpenUser(userId: string): Promise<string> {
+  const email = await findAdminUserEmail(userId);
+
+  if (isAim4priceAdminEmail(email)) {
+    throw new Error("The Aim4price admin account cannot be opened as a customer account.");
+  }
+
+  return email;
+}
+
+async function deleteFromAuthTables(userId: string): Promise<void> {
+  const db = getDb();
+  const tableResult = await db.query<{ table_name: string }>(
+    `
+      select table_name
+      from information_schema.tables
+      where table_schema = any (current_schemas(false))
+        and table_name = any($1::text[])
+    `,
+    [["session", "account", "user"]],
+  );
+  const tables = new Set(tableResult.rows.map((row) => row.table_name));
+
+  if (tables.has("session")) {
+    await db.query('delete from "session" where "userId" = $1', [userId]);
+  }
+
+  if (tables.has("account")) {
+    await db.query('delete from "account" where "userId" = $1', [userId]);
+  }
+
+  if (tables.has("user")) {
+    await db.query('delete from "user" where id = $1', [userId]);
+  }
+}
+
+export async function deleteAdminManagedUser(userId: string): Promise<void> {
+  const user = await getAdminUserIdentity(userId);
+
+  if (isAim4priceAdminEmail(user.email)) {
+    throw new Error("The Aim4price admin account cannot be deleted from this page.");
+  }
+
+  await deleteUserWorkspaceData(user.id);
+  await deleteFromAuthTables(user.id);
 }
