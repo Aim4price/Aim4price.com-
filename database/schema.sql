@@ -50,3 +50,5 @@
 --   25-asset-register-upload-file-bytes-compat.sql
 --   26-users-page-request-controls-and-messages.sql
 --   27-user-message-document-attachments.sql
+--   28-aim4-four-sector-foundation.sql
+--   29-manual-activation-and-introduced-by.sql
