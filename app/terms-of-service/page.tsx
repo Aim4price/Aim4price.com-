@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import AppHeader from '../../components/AppHeader';
+import { redirectAdminToAdmin } from '../../lib/account-access';
 import styles from '../legal-page.module.css';
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const LAST_UPDATED = '08 April 2026';
 const LEGAL_EMAIL = 'legal@aim4price.com'; // Replace before launch
@@ -20,7 +24,9 @@ const prohibitedUse = [
   'interfere with platform security, availability, performance, or normal operation;',
 ];
 
-export default function TermsOfServicePage() {
+export default async function TermsOfServicePage() {
+  await redirectAdminToAdmin();
+
   return (
     <main className={styles.page}>
       <AppHeader active="home" />
