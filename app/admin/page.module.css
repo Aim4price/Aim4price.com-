@@ -115,6 +115,7 @@
   border-radius: 999px;
   color: #17362c;
   background: #ffffff;
+  text-decoration: none;
   font: inherit;
   font-size: 0.84rem;
   font-weight: 850;
@@ -193,7 +194,7 @@
 
 .userTable {
   width: 100%;
-  min-width: 1900px;
+  min-width: 2025px;
   table-layout: auto;
   border-collapse: separate;
   border-spacing: 0;
@@ -272,6 +273,11 @@
 
 .userTable th:nth-child(10),
 .userTable td:nth-child(10) {
+  min-width: 125px;
+}
+
+.userTable th:nth-child(11),
+.userTable td:nth-child(11) {
   min-width: 525px;
 }
 

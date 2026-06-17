@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import styles from "./page.module.css";
 
@@ -18,6 +19,7 @@ type AdminUserRow = {
   accountStatus: AccountStatus;
   accountStatusLabel: string;
   passwordStatus: "Set" | "Not set";
+  lastActiveAtIso: string | null;
   createdAtIso: string | null;
 };
 
@@ -55,6 +57,29 @@ function formatDate(value: string | null): string {
   }).format(parsed);
 }
 
+function formatLastActive(value: string | null): string {
+  if (!value) return "Never";
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Never";
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfParsedDay = new Date(
+    parsed.getFullYear(),
+    parsed.getMonth(),
+    parsed.getDate(),
+  );
+  const dayDifference = Math.round(
+    (startOfToday.getTime() - startOfParsedDay.getTime()) / 86_400_000,
+  );
+
+  if (dayDifference === 0) return "Today";
+  if (dayDifference === 1) return "Yesterday";
+
+  return formatDate(value);
+}
+
 function formatAccountValue(value: string): string {
   return value
     .split(/[-_]/g)
@@ -89,6 +114,7 @@ function matchesSearch(user: AdminUserRow, searchTerm: string): boolean {
     user.introducedBy,
     user.accountStatusLabel,
     user.passwordStatus,
+    formatLastActive(user.lastActiveAtIso),
     formatDate(user.createdAtIso),
   ]
     .join(" ")
@@ -234,6 +260,10 @@ export default function AdminClient({
             />
           </label>
 
+          <Link href="/admin/dashboard" className={styles.signOutButton}>
+            Dashboard
+          </Link>
+
           <button
             type="button"
             className={styles.signOutButton}
@@ -267,6 +297,7 @@ export default function AdminClient({
                 <th>Introduced by</th>
                 <th>Payment/account status</th>
                 <th>Password</th>
+                <th>Last active</th>
                 <th>Created</th>
                 <th>Actions</th>
               </tr>
@@ -274,7 +305,7 @@ export default function AdminClient({
             <tbody>
               {visibleUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className={styles.emptyCell}>
+                  <td colSpan={11} className={styles.emptyCell}>
                     No matching users found.
                   </td>
                 </tr>
@@ -313,6 +344,11 @@ export default function AdminClient({
                           }
                         >
                           {user.passwordStatus}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={styles.mutedText}>
+                          {formatLastActive(user.lastActiveAtIso)}
                         </span>
                       </td>
                       <td>{formatDate(user.createdAtIso)}</td>
