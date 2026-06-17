@@ -1,7 +1,8 @@
 import { Buffer } from 'node:buffer';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
-import { getServerSession } from '../../../../lib/auth-session';
+import { recordAdminUsageEventSafely } from '../../../../lib/admin-usage-events';
+import { getServerSession, isAdminSupportSession } from '../../../../lib/auth-session';
 import { createUserMessage, type UserMessageType } from '../../../../lib/user-messages';
 import { normalizePartnerType } from '../../../../lib/partner-access';
 
@@ -30,6 +31,14 @@ function extractErrorMessage(error: unknown, fallback: string): string {
 
 function normalizeMessageType(value: string): UserMessageType {
   return value.toLowerCase() === 'ad' ? 'ad' : 'message';
+}
+
+function getUsageUserId(session: Awaited<ReturnType<typeof getServerSession>>): string | null {
+  if (!session?.user?.id || isAdminSupportSession(session)) {
+    return null;
+  }
+
+  return session.user.id;
 }
 
 export async function POST(request: NextRequest) {
@@ -81,6 +90,22 @@ export async function POST(request: NextRequest) {
       documentMimeType: documentFile?.type ?? '',
       documentBytes,
     });
+
+    const usageUserId = getUsageUserId(session);
+    if (usageUserId) {
+      await recordAdminUsageEventSafely({
+        userId: usageUserId,
+        eventType: 'message_sent_options',
+        eventSource: 'users-messages',
+        metadata: {
+          messageId: message.id,
+          ownerUserId,
+          messageType,
+          hasImage: Boolean(imageBytes),
+          hasDocument: Boolean(documentBytes),
+        },
+      });
+    }
 
     return NextResponse.json({ ok: true, message });
   } catch (error) {
