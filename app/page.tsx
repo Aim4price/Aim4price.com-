@@ -1,7 +1,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { redirectAdminToAdmin } from '../lib/account-access';
 import AppHeader from '../components/AppHeader';
 import styles from './page.module.css';
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type WorkflowStep = {
   number: string;
@@ -35,7 +39,9 @@ const workflowSteps: WorkflowStep[] = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  await redirectAdminToAdmin();
+
   return (
     <main className={styles.page}>
       <AppHeader active="home" />
