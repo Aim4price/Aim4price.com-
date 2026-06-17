@@ -177,7 +177,11 @@
   padding: 1rem;
   border-radius: 1.18rem;
   border: 1px solid rgba(18, 45, 37, 0.08);
-  background: linear-gradient(180deg, rgba(248, 251, 249, 0.94) 0%, rgba(255, 255, 255, 0.96) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(248, 251, 249, 0.94) 0%,
+    rgba(255, 255, 255, 0.96) 100%
+  );
 }
 
 .field {
@@ -199,6 +203,22 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.85rem;
+}
+
+.inlineTextButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #174d3e;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+
+.inlineTextButton:hover {
+  color: #10392c;
 }
 
 .helperText {
@@ -236,7 +256,9 @@
   background-position:
     calc(100% - 1.25rem) 50%,
     calc(100% - 0.95rem) 50%;
-  background-size: 0.36rem 0.36rem, 0.36rem 0.36rem;
+  background-size:
+    0.36rem 0.36rem,
+    0.36rem 0.36rem;
   background-repeat: no-repeat;
   cursor: pointer;
   font-weight: 700;
@@ -372,6 +394,7 @@
 .input:focus-visible,
 .select:focus-visible,
 .passwordToggle:focus-visible,
+.inlineTextButton:focus-visible,
 .primaryButton:focus-visible,
 .footerButton:focus-visible {
   outline: 3px solid rgba(23, 77, 62, 0.18);
