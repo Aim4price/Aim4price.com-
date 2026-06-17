@@ -30,7 +30,6 @@ type NoticeTone = "success" | "error" | "info";
 type SelectOption<T extends string> = {
   value: T;
   label: string;
-  description?: string;
 };
 
 type AuthNotice = {
@@ -67,26 +66,10 @@ const POST_LOGIN_REDIRECT = "/asset-register";
 const ADMIN_EMAIL = "aim4price@gmail.com";
 
 const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<SelectOption<SignupAccountType>> = [
-  {
-    value: "owner",
-    label: "Asset owner",
-    description: "Farmers, contractors and equipment owners",
-  },
-  {
-    value: "finance",
-    label: "Finance provider",
-    description: "Banks, finance houses and asset finance teams",
-  },
-  {
-    value: "insurance",
-    label: "Insurance provider",
-    description: "Short-term insurers and claims teams",
-  },
-  {
-    value: "dealer",
-    label: "Dealer / auctioneer",
-    description: "Machinery dealers, brokers and auctioneers",
-  },
+  { value: "owner", label: "Asset owner" },
+  { value: "finance", label: "Finance provider" },
+  { value: "insurance", label: "Insurance provider" },
+  { value: "dealer", label: "Dealer / auctioneer" },
 ];
 
 const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
@@ -94,86 +77,30 @@ const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
   Array<SelectOption<SignupAccountSubtype>>
 > = {
   owner: [
-    {
-      value: "farmer",
-      label: "Farmer / farm owner",
-      description: "Agricultural equipment owner",
-    },
-    {
-      value: "contractor",
-      label: "Contractor / operator",
-      description: "Hires out or operates equipment",
-    },
-    {
-      value: "construction-company",
-      label: "Construction company",
-      description: "Owns construction equipment",
-    },
-    {
-      value: "asset-owner",
-      label: "Private / fleet asset owner",
-      description: "Owns machinery, vehicles or equipment",
-    },
+    { value: "farmer", label: "Farmer / farm owner" },
+    { value: "contractor", label: "Contractor / operator" },
+    { value: "construction-company", label: "Construction company" },
+    { value: "asset-owner", label: "Private / fleet asset owner" },
   ],
   finance: [
-    {
-      value: "bank",
-      label: "Bank / finance institution",
-      description: "Bank or formal finance provider",
-    },
-    {
-      value: "finance-house",
-      label: "Equipment finance house",
-      description: "Asset finance and instalment-sale teams",
-    },
-    {
-      value: "accountant",
-      label: "Accountant / asset adviser",
-      description: "Advises clients on asset values",
-    },
+    { value: "bank", label: "Bank / finance institution" },
+    { value: "finance-house", label: "Equipment finance house" },
+    { value: "accountant", label: "Accountant / asset adviser" },
   ],
   insurance: [
-    {
-      value: "short-term-insurer",
-      label: "Short-term insurance provider",
-      description: "Policy, claims or underwriting team",
-    },
+    { value: "short-term-insurer", label: "Short-term insurance provider" },
   ],
   dealer: [
-    {
-      value: "machinery-dealer",
-      label: "Machinery dealer",
-      description: "Buys, sells or trades equipment",
-    },
-    {
-      value: "auctioneer",
-      label: "Auctioneer / broker",
-      description: "Runs auctions or introduces deals",
-    },
+    { value: "machinery-dealer", label: "Machinery dealer" },
+    { value: "auctioneer", label: "Auctioneer / broker" },
   ],
 };
 
 const INTRODUCED_BY_OPTIONS: Array<SelectOption<SignupIntroducedByOption>> = [
-  {
-    value: "kuyler",
-    label: "Kuyler Geldenhuys",
-    description: "Aim4price",
-  },
-  {
-    value: "andre",
-    label: "Andre Van Rooyen",
-    description: "Aim4price",
-  },
-  {
-    value: "direct",
-    label: "No one / direct signup",
-    description: "Found Aim4price yourself",
-  },
-  {
-    value: "other",
-    label: "Other person or source",
-    description: "Enter the name below",
-  },
+  { value: "kuyler", label: "Kuyler Geldenhuys" },
+  { value: "andre", label: "Andre Van Rooyen" },
+  { value: "direct", label: "No one / direct signup" },
+  { value: "other", label: "Other person or source" },
 ];
 
 function CustomSelect<T extends string>({
@@ -268,10 +195,7 @@ function CustomSelect<T extends string>({
         onKeyDown={handleButtonKeyDown}
       >
         <span className={styles.customSelectButtonCopy}>
-          <strong>{selectedOption?.label ?? placeholder}</strong>
-          {selectedOption?.description ? (
-            <span>{selectedOption.description}</span>
-          ) : null}
+          {selectedOption?.label ?? placeholder}
         </span>
         <span className={styles.customSelectChevron} aria-hidden="true" />
       </button>
@@ -300,8 +224,7 @@ function CustomSelect<T extends string>({
                   handleOptionKeyDown(event, option.value)
                 }
               >
-                <span>{option.label}</span>
-                {option.description ? <small>{option.description}</small> : null}
+                {option.label}
               </div>
             );
           })}
@@ -907,7 +830,7 @@ export default function AuthClient() {
                     name="introducedByOption"
                     value={signupForm.introducedByOption}
                     options={INTRODUCED_BY_OPTIONS}
-                    placeholder="Select who introduced you"
+                    placeholder="Choose one"
                     onChange={(value) => {
                       setSignupForm((current) => ({
                         ...current,

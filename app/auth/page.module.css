@@ -321,31 +321,16 @@
 
 .customSelectButtonCopy {
   min-width: 0;
-  display: grid;
-  gap: 0.16rem;
-}
-
-.customSelectButtonCopy strong {
   overflow: hidden;
   color: #203831;
-  font-size: 0.95rem;
-  line-height: 1.15;
+  font-size: 0.96rem;
+  line-height: 1.2;
   font-weight: 850;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.customSelectButtonCopy span {
-  overflow: hidden;
-  color: #74827c;
-  font-size: 0.74rem;
-  line-height: 1.22;
-  font-weight: 720;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.customSelectPlaceholder .customSelectButtonCopy strong {
+.customSelectPlaceholder .customSelectButtonCopy {
   color: #81908a;
 }
 
@@ -383,13 +368,17 @@
 }
 
 .customSelectOption {
-  display: grid;
-  gap: 0.18rem;
+  display: flex;
+  align-items: center;
+  min-height: 2.7rem;
   padding: 0.72rem 0.82rem;
   border: 1px solid transparent;
   border-radius: 0.78rem;
   background: #ffffff;
   color: #203831;
+  font-size: 0.92rem;
+  line-height: 1.2;
+  font-weight: 850;
   cursor: pointer;
   transition:
     background 160ms ease,
@@ -406,20 +395,6 @@
 .customSelectOptionSelected {
   border-color: rgba(23, 77, 62, 0.16);
   background: rgba(44, 173, 126, 0.11);
-}
-
-.customSelectOption span {
-  color: #203831;
-  font-size: 0.9rem;
-  line-height: 1.18;
-  font-weight: 850;
-}
-
-.customSelectOption small {
-  color: #75837d;
-  font-size: 0.74rem;
-  line-height: 1.26;
-  font-weight: 700;
 }
 
 .passwordWrap {
