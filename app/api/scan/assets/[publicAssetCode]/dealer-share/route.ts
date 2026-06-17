@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { recordAdminUsageEventSafely } from '../../../../../../lib/admin-usage-events';
 import { authorizeScanAccess } from '../../../../../../lib/scan-auth';
 import { normalizePublicAssetCode } from '../../../../../../lib/scan-assets';
 import { createAssetLead, listPartnerDirectory } from '../../../../../../lib/partner-access';
@@ -184,6 +185,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
         ownerMessageAttachments,
         messageAttachments: ownerMessageAttachments,
         ownerSharePhotoCount: sharePhotoUrls.length,
+      },
+    });
+
+    await recordAdminUsageEventSafely({
+      userId: access.ownerUserId,
+      eventType: 'message_sent_qr_share',
+      eventSource: 'scan-dealer-share',
+      metadata: {
+        leadId: lead.id,
+        assetId: access.asset.id,
+        partnerUserId,
+        photoCount: sharePhotoUrls.length,
       },
     });
 
