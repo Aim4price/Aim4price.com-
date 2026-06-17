@@ -2,30 +2,30 @@
   min-height: 100vh;
   color: var(--text-strong);
   background:
-    radial-gradient(circle at 12% 8%, rgba(31, 108, 83, 0.08) 0, transparent 28rem),
-    radial-gradient(circle at 88% 12%, rgba(62, 110, 213, 0.08) 0, transparent 30rem),
+    radial-gradient(circle at 12% 8%, rgba(31, 108, 83, 0.07) 0, transparent 28rem),
+    radial-gradient(circle at 88% 14%, rgba(62, 110, 213, 0.055) 0, transparent 29rem),
     linear-gradient(180deg, #f7f9f8 0%, #eef3f1 48%, #fbfcfb 100%);
 }
 
 .shell {
   width: var(--shell-narrow-width);
   margin: 0 auto;
-  padding: clamp(2.25rem, 5.5vw, 5rem) 0 clamp(3.5rem, 7vw, 6rem);
+  padding: clamp(2rem, 5vw, 4.5rem) 0 clamp(3rem, 6vw, 5.25rem);
 }
 
 .panel {
   position: relative;
   overflow: hidden;
-  padding: clamp(1.25rem, 2.6vw, 2rem);
-  border-radius: 1.45rem;
+  padding: clamp(1.15rem, 2.6vw, 1.9rem);
   border: 1px solid rgba(18, 45, 37, 0.08);
+  border-radius: 1.32rem;
   background:
-    radial-gradient(circle at 0% 0%, rgba(31, 138, 102, 0.075), transparent 22rem),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 250, 0.98) 100%);
+    radial-gradient(circle at 0% 0%, rgba(31, 138, 102, 0.07), transparent 20rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.985) 0%, rgba(248, 251, 250, 0.97) 100%);
   box-shadow:
-    0 24px 56px rgba(18, 45, 37, 0.075),
+    0 24px 54px rgba(18, 45, 37, 0.07),
     0 8px 20px rgba(18, 45, 37, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
 }
 
 .panel::before {
@@ -33,132 +33,75 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.64), transparent 42%);
-}
-
-.contentGrid,
-.actions {
-  position: relative;
-  z-index: 1;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58), transparent 43%);
 }
 
 .contentGrid {
+  position: relative;
+  z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(17rem, 23rem);
-  align-items: stretch;
-  gap: clamp(1rem, 2vw, 1.35rem);
+  grid-template-columns: minmax(0, 1fr) minmax(16.5rem, 20.75rem);
+  align-items: center;
+  gap: clamp(1.15rem, 3vw, 2rem);
 }
 
 .copyBlock {
   min-width: 0;
   display: grid;
-  align-content: center;
-  gap: clamp(0.8rem, 1.4vw, 1.05rem);
-  padding: clamp(0.15rem, 1vw, 0.45rem);
+  gap: clamp(0.72rem, 1.25vw, 0.96rem);
+  padding: clamp(0.05rem, 0.8vw, 0.35rem);
 }
 
 .stateLabel {
   display: block;
   margin: 0;
   color: #1f6c53;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   line-height: 1.25;
   font-weight: 820;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.155em;
+  word-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .title {
-  max-width: 42rem;
+  max-width: 39rem;
   margin: 0;
   color: #16362c;
-  font-size: clamp(2.25rem, 5.4vw, 4.6rem);
-  line-height: 0.98;
-  letter-spacing: -0.06em;
-  font-weight: 850;
+  font-size: clamp(2rem, 4.15vw, 3.45rem);
+  line-height: 1.055;
+  letter-spacing: -0.045em;
+  font-weight: 840;
   text-wrap: balance;
 }
 
 .text {
-  max-width: 39rem;
+  max-width: 38rem;
   margin: 0;
   color: #60716a;
-  font-size: clamp(0.98rem, 1.15vw, 1.08rem);
-  line-height: 1.7;
-  letter-spacing: -0.006em;
+  font-size: clamp(0.98rem, 1.1vw, 1.06rem);
+  line-height: 1.64;
+  letter-spacing: -0.004em;
   text-wrap: balance;
-}
-
-.summaryCard {
-  min-width: 0;
-  display: grid;
-  align-content: center;
-  gap: 1rem;
-  padding: clamp(1rem, 1.8vw, 1.25rem);
-  border-radius: 1.08rem;
-  border: 1px solid rgba(18, 45, 37, 0.085);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(246, 249, 248, 0.96) 100%);
-  box-shadow:
-    0 14px 30px rgba(18, 45, 37, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
-}
-
-.summaryRow {
-  min-width: 0;
-  display: grid;
-  gap: 0.35rem;
-}
-
-.summaryRow span {
-  color: #7a8792;
-  font-size: 0.73rem;
-  font-weight: 780;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.summaryRow strong {
-  min-width: 0;
-  color: #17362c;
-  font-size: clamp(1rem, 1.35vw, 1.16rem);
-  line-height: 1.25;
-  font-weight: 780;
-  overflow-wrap: anywhere;
-}
-
-.summaryRule {
-  width: 100%;
-  height: 1px;
-  background: rgba(18, 45, 37, 0.085);
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.7rem;
-  margin-top: clamp(1.15rem, 2vw, 1.5rem);
+  align-items: center;
+  gap: 0.68rem;
+  margin-top: clamp(0.18rem, 0.8vw, 0.45rem);
 }
 
 .primaryButton,
 .secondaryButton,
-.modalPrimaryButton,
-.modalSecondaryButton,
-.closeButton {
+.contactAction,
+.closeButton,
+.modalCloseButton {
   appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 3.18rem;
-  padding: 0 1.18rem;
-  border-radius: 0.88rem;
   border: 1px solid transparent;
-  font-size: 0.95rem;
-  line-height: 1;
-  font-weight: 760;
-  letter-spacing: -0.008em;
+  font: inherit;
   text-decoration: none;
-  white-space: nowrap;
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -168,54 +111,112 @@
 }
 
 .primaryButton,
-.modalPrimaryButton {
+.secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.95rem;
+  padding: 0 1.12rem;
+  border-radius: 0.72rem;
+  font-size: 0.94rem;
+  line-height: 1;
+  font-weight: 760;
+  letter-spacing: -0.006em;
+  white-space: nowrap;
+}
+
+.primaryButton {
   color: #ffffff;
   background: linear-gradient(180deg, #1f7d5d 0%, #15533f 100%);
   border-color: rgba(9, 49, 37, 0.32);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 14px 28px rgba(10, 38, 30, 0.16);
+    0 13px 25px rgba(10, 38, 30, 0.15);
 }
 
-.secondaryButton,
-.modalSecondaryButton,
-.closeButton {
+.secondaryButton {
   color: #1f4c3f;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.92);
   border-color: rgba(18, 45, 37, 0.1);
-  box-shadow: 0 10px 22px rgba(18, 45, 37, 0.045);
+  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.04);
 }
 
 .primaryButton:hover,
 .secondaryButton:hover,
-.modalPrimaryButton:hover,
-.modalSecondaryButton:hover,
-.closeButton:hover {
+.contactAction:hover,
+.closeButton:hover,
+.modalCloseButton:hover {
   transform: translateY(-1px);
 }
 
 .primaryButton:hover,
-.modalPrimaryButton:hover {
+.contactActionPrimary:hover {
   background: linear-gradient(180deg, #238a66 0%, #176046 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    0 17px 30px rgba(10, 38, 30, 0.19);
+    0 16px 28px rgba(10, 38, 30, 0.18);
 }
 
 .secondaryButton:hover,
-.modalSecondaryButton:hover,
-.closeButton:hover {
+.contactAction:not(.contactActionPrimary):hover,
+.closeButton:hover,
+.modalCloseButton:hover {
   border-color: rgba(23, 77, 62, 0.17);
   background: #ffffff;
 }
 
 .primaryButton:focus-visible,
 .secondaryButton:focus-visible,
-.modalPrimaryButton:focus-visible,
-.modalSecondaryButton:focus-visible,
-.closeButton:focus-visible {
+.contactAction:focus-visible,
+.closeButton:focus-visible,
+.modalCloseButton:focus-visible {
   outline: 3px solid rgba(23, 77, 62, 0.18);
   outline-offset: 3px;
+}
+
+.summaryCard {
+  min-width: 0;
+  align-self: center;
+  display: grid;
+  gap: 0.78rem;
+  padding: clamp(0.92rem, 1.5vw, 1.12rem);
+  border: 1px solid rgba(18, 45, 37, 0.085);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(246, 249, 248, 0.96) 100%);
+  box-shadow:
+    0 14px 28px rgba(18, 45, 37, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.summaryRow {
+  min-width: 0;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.summaryRow span {
+  color: #7a8792;
+  font-size: 0.69rem;
+  line-height: 1.25;
+  font-weight: 790;
+  letter-spacing: 0.115em;
+  word-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.summaryRow strong {
+  min-width: 0;
+  color: #17362c;
+  font-size: clamp(0.96rem, 1.2vw, 1.08rem);
+  line-height: 1.28;
+  font-weight: 760;
+  overflow-wrap: anywhere;
+}
+
+.summaryRule {
+  width: 100%;
+  height: 1px;
+  background: rgba(18, 45, 37, 0.08);
 }
 
 .modalBackdrop {
@@ -225,35 +226,44 @@
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(9, 18, 31, 0.36);
+  background: rgba(9, 18, 31, 0.34);
   backdrop-filter: blur(14px);
 }
 
 .modalCard {
-  width: min(100%, 35rem);
-  padding: clamp(1.1rem, 2.2vw, 1.45rem);
-  border-radius: 1.28rem;
+  width: min(100%, 34rem);
+  padding: clamp(1.08rem, 2.3vw, 1.48rem);
   border: 1px solid rgba(18, 45, 37, 0.08);
+  border-radius: 1.22rem;
   background:
-    radial-gradient(circle at 0% 0%, rgba(31, 138, 102, 0.05), transparent 17rem),
-    rgba(255, 255, 255, 0.98);
+    radial-gradient(circle at 0% 0%, rgba(31, 138, 102, 0.05), transparent 16rem),
+    rgba(255, 255, 255, 0.985);
   box-shadow:
     0 24px 58px rgba(9, 18, 31, 0.18),
     0 8px 22px rgba(18, 45, 37, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.modalHeaderText {
+  min-width: 0;
   display: grid;
-  gap: 0.4rem;
+  gap: 0.36rem;
+  padding-top: 0.05rem;
 }
 
 .modalHeader h2 {
   margin: 0;
   color: #17362c;
-  font-size: clamp(1.45rem, 2.3vw, 1.9rem);
-  line-height: 1.05;
-  letter-spacing: -0.045em;
+  font-size: clamp(1.45rem, 2.3vw, 1.82rem);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
   font-weight: 830;
 }
 
@@ -261,16 +271,35 @@
   margin: 0;
   color: #667586;
   font-size: 0.96rem;
-  line-height: 1.55;
+  line-height: 1.52;
+}
+
+.modalCloseButton {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  padding: 0;
+  border-radius: 0.68rem;
+  color: #426058;
+  background: rgba(247, 250, 249, 0.92);
+  border-color: rgba(18, 45, 37, 0.08);
+  box-shadow: none;
+  font-size: 1.35rem;
+  line-height: 1;
+  font-weight: 420;
 }
 
 .contactDetails {
   display: grid;
-  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.72rem;
   margin-top: 1.05rem;
-  padding: 1rem;
-  border-radius: 1rem;
+  padding: 0.86rem;
   border: 1px solid rgba(18, 45, 37, 0.08);
+  border-radius: 0.92rem;
   background: linear-gradient(180deg, #f9fbfc 0%, #f3f7f6 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
@@ -278,72 +307,142 @@
 .contactDetails div {
   min-width: 0;
   display: grid;
-  gap: 0.24rem;
+  gap: 0.22rem;
 }
 
 .contactDetails span {
   color: #7a8792;
-  font-size: 0.72rem;
-  font-weight: 780;
-  letter-spacing: 0.08em;
+  font-size: 0.69rem;
+  line-height: 1.25;
+  font-weight: 790;
+  letter-spacing: 0.115em;
+  word-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .contactDetails strong {
   min-width: 0;
   color: #17362c;
-  font-size: 1.02rem;
+  font-size: 0.99rem;
   line-height: 1.25;
   font-weight: 760;
   overflow-wrap: anywhere;
 }
 
-.modalActions {
+.contactActions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.65rem;
-  margin-top: 1rem;
+  gap: 0.62rem;
+  margin-top: 0.92rem;
 }
 
-.modalPrimaryButton,
-.modalSecondaryButton {
+.contactAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
   width: 100%;
+  min-height: 2.85rem;
+  padding: 0 0.78rem;
+  border-radius: 0.72rem;
+  color: #1f4c3f;
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(18, 45, 37, 0.1);
+  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.04);
+  font-size: 0.94rem;
+  line-height: 1;
+  font-weight: 760;
+  letter-spacing: -0.006em;
+  white-space: nowrap;
+}
+
+.contactActionPrimary {
+  color: #ffffff;
+  background: linear-gradient(180deg, #1f7d5d 0%, #15533f 100%);
+  border-color: rgba(9, 49, 37, 0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 13px 25px rgba(10, 38, 30, 0.15);
+}
+
+.contactActionIcon {
+  flex: 0 0 auto;
+  width: 1.08rem;
+  height: 1.08rem;
+  transform: translateY(0.01rem);
 }
 
 .closeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  margin-top: 0.65rem;
+  min-height: 2.65rem;
+  margin-top: 0.62rem;
+  padding: 0 1rem;
+  border-radius: 0.72rem;
+  color: #526a62;
   background: transparent;
+  border-color: transparent;
   box-shadow: none;
+  font-size: 0.92rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.004em;
+}
+
+.closeButton:hover {
+  color: #1f4c3f;
+  background: rgba(247, 250, 249, 0.86);
 }
 
 @media (max-width: 860px) {
   .contentGrid {
     grid-template-columns: 1fr;
+    align-items: start;
   }
 
   .summaryCard {
-    align-content: start;
+    align-self: start;
+    width: 100%;
   }
 }
 
 @media (max-width: 560px) {
   .shell {
-    padding-top: 1.15rem;
+    padding-top: 1.1rem;
   }
 
   .panel {
-    padding: 1rem;
-    border-radius: 1.18rem;
+    padding: 0.96rem;
+    border-radius: 1.12rem;
+  }
+
+  .copyBlock {
+    gap: 0.72rem;
+    padding: 0;
+  }
+
+  .title {
+    font-size: clamp(1.82rem, 9.5vw, 2.35rem);
+    line-height: 1.08;
+    letter-spacing: -0.04em;
+  }
+
+  .text {
+    font-size: 0.96rem;
+    line-height: 1.58;
   }
 
   .actions,
-  .modalActions {
+  .contactActions,
+  .contactDetails {
     grid-template-columns: 1fr;
   }
 
   .actions {
     display: grid;
+    gap: 0.62rem;
   }
 
   .primaryButton,
@@ -351,7 +450,15 @@
     width: 100%;
   }
 
+  .modalBackdrop {
+    padding: 0.82rem;
+  }
+
   .modalCard {
-    border-radius: 1.16rem;
+    border-radius: 1.08rem;
+  }
+
+  .modalHeader {
+    gap: 0.72rem;
   }
 }

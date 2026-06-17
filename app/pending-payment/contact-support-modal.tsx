@@ -1,38 +1,60 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import type { SVGProps } from 'react';
+import { useEffect, useId, useState } from 'react';
 import styles from './page.module.css';
 
-type ContactSupportModalProps = {
-  accountEmail: string | null | undefined;
-  statusLabel: string;
-};
-
 const SUPPORT_PHONE_DISPLAY = '062 572 1650';
-const SUPPORT_PHONE_TEL = '+27625721650';
-const SUPPORT_WHATSAPP = '27625721650';
+const SUPPORT_PHONE_TEL = '0625721650';
+const SUPPORT_WHATSAPP_URL = 'https://wa.me/27625721650';
 const SUPPORT_EMAIL = 'aim4price@gmail.com';
 
-export default function ContactSupportModal({
-  accountEmail,
-  statusLabel,
-}: ContactSupportModalProps) {
+function IconBase(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      focusable="false"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+      viewBox="0 0 24 24"
+      {...props}
+    />
+  );
+}
+
+function PhoneIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M6.6 5.4 8.7 4a1.6 1.6 0 0 1 2.25.52l1.1 1.95a1.7 1.7 0 0 1-.34 2.05l-1.07 1.02a10.5 10.5 0 0 0 3.82 3.82l1.02-1.07a1.7 1.7 0 0 1 2.05-.34l1.95 1.1A1.6 1.6 0 0 1 20 15.3l-1.4 2.1c-.44.66-1.23 1.02-2.02.9C10.7 17.42 6.58 13.3 5.7 7.42c-.12-.79.24-1.58.9-2.02Z" />
+    </IconBase>
+  );
+}
+
+function EmailIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M4.75 6.75h14.5v10.5H4.75z" />
+      <path d="m5.25 7.25 6.75 5.2 6.75-5.2" />
+    </IconBase>
+  );
+}
+
+function WhatsAppIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M7.7 18.7 4.9 19.5l.82-2.7A7.15 7.15 0 1 1 7.7 18.7Z" />
+      <path d="M9.15 8.85c.18-.4.36-.42.6-.42h.42c.14 0 .33.04.5.38.18.36.6 1.28.65 1.38.05.11.08.25.02.39-.06.15-.1.24-.22.37-.1.13-.24.28-.34.38-.11.11-.22.24-.1.46.11.22.5.86 1.08 1.4.74.66 1.35.87 1.58.97.22.11.36.09.49-.06.14-.16.56-.65.7-.87.15-.22.3-.18.5-.11.21.07 1.32.62 1.55.73.22.11.37.17.43.27.06.1.06.58-.13 1.13-.19.55-1.1 1.05-1.53 1.09-.4.04-.9.06-1.46-.09-.34-.09-.78-.25-1.34-.5-2.35-1.02-3.9-3.4-4.02-3.56-.12-.17-.96-1.28-.96-2.44 0-1.17.6-1.74.82-1.98.21-.24.48-.3.76-.3" />
+    </IconBase>
+  );
+}
+
+export default function ContactSupportModal() {
   const [isOpen, setIsOpen] = useState(false);
-
-  const supportLinks = useMemo(() => {
-    const safeEmail = accountEmail?.trim() || 'the email linked to my account';
-    const safeStatus = statusLabel?.trim() || 'account access';
-    const message = `Hi Aim4price, I need help with my account status. Status: ${safeStatus}. Signed in as: ${safeEmail}.`;
-    const subject = encodeURIComponent('Aim4price account support');
-    const body = encodeURIComponent(message);
-    const whatsappText = encodeURIComponent(message);
-
-    return {
-      call: `tel:${SUPPORT_PHONE_TEL}`,
-      email: `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`,
-      whatsapp: `https://wa.me/${SUPPORT_WHATSAPP}?text=${whatsappText}`,
-    };
-  }, [accountEmail, statusLabel]);
+  const titleId = useId();
+  const descriptionId = useId();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -70,21 +92,20 @@ export default function ContactSupportModal({
           onClick={() => setIsOpen(false)}
         >
           <section
-            aria-labelledby="contact-support-title"
+            aria-describedby={descriptionId}
+            aria-labelledby={titleId}
             aria-modal="true"
-            className={styles.modal}
+            className={styles.modalCard}
             role="dialog"
             onClick={(event) => event.stopPropagation()}
           >
             <div className={styles.modalHeader}>
-              <div>
-                <span className={styles.modalKicker}>Aim4price support</span>
-                <h2 id="contact-support-title" className={styles.modalTitle}>
-                  How would you like to contact us?
-                </h2>
+              <div className={styles.modalHeaderText}>
+                <h2 id={titleId}>Contact Aim4price</h2>
+                <p id={descriptionId}>Choose how you would like to contact us.</p>
               </div>
               <button
-                aria-label="Close contact options"
+                aria-label="Close contact modal"
                 className={styles.modalCloseButton}
                 type="button"
                 onClick={() => setIsOpen(false)}
@@ -93,33 +114,47 @@ export default function ContactSupportModal({
               </button>
             </div>
 
-            <p className={styles.modalText}>
-              Use these options for payment approval, account activation, or a
-              suspended-account review. Include the email address shown on this page
-              when contacting support.
-            </p>
-
-            <div className={styles.contactOptions}>
-              <a className={styles.contactOption} href={supportLinks.call}>
-                <span className={styles.contactOptionLabel}>Call</span>
+            <div className={styles.contactDetails} aria-label="Aim4price contact details">
+              <div>
+                <span>Number</span>
                 <strong>{SUPPORT_PHONE_DISPLAY}</strong>
-              </a>
-
-              <a className={styles.contactOption} href={supportLinks.email}>
-                <span className={styles.contactOptionLabel}>Email</span>
+              </div>
+              <div>
+                <span>Email</span>
                 <strong>{SUPPORT_EMAIL}</strong>
-              </a>
+              </div>
+            </div>
 
+            <div className={styles.contactActions}>
               <a
-                className={styles.contactOption}
-                href={supportLinks.whatsapp}
+                className={`${styles.contactAction} ${styles.contactActionPrimary}`}
+                href={`tel:${SUPPORT_PHONE_TEL}`}
+              >
+                <PhoneIcon className={styles.contactActionIcon} />
+                <span>Call</span>
+              </a>
+              <a className={styles.contactAction} href={`mailto:${SUPPORT_EMAIL}`}>
+                <EmailIcon className={styles.contactActionIcon} />
+                <span>Email</span>
+              </a>
+              <a
+                className={styles.contactAction}
+                href={SUPPORT_WHATSAPP_URL}
                 rel="noreferrer"
                 target="_blank"
               >
-                <span className={styles.contactOptionLabel}>WhatsApp</span>
-                <strong>{SUPPORT_PHONE_DISPLAY}</strong>
+                <WhatsAppIcon className={styles.contactActionIcon} />
+                <span>WhatsApp</span>
               </a>
             </div>
+
+            <button
+              type="button"
+              className={styles.closeButton}
+              onClick={() => setIsOpen(false)}
+            >
+              Close
+            </button>
           </section>
         </div>
       ) : null}
