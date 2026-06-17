@@ -1,3 +1,4 @@
+import { redirectAdminToAdmin } from '../../../lib/account-access';
 import FuelScanClient from './fuel-scan-client';
 
 export const runtime = 'nodejs';
@@ -9,6 +10,8 @@ type FuelScanPageProps = {
   };
 };
 
-export default function FuelScanPage({ params }: FuelScanPageProps) {
+export default async function FuelScanPage({ params }: FuelScanPageProps) {
+  await redirectAdminToAdmin();
+
   return <FuelScanClient publicFuelStorageCode={params.publicFuelStorageCode} />;
 }
