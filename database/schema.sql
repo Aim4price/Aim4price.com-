@@ -52,3 +52,4 @@
 --   27-user-message-document-attachments.sql
 --   28-aim4-four-sector-foundation.sql
 --   29-manual-activation-and-introduced-by.sql
+--   30-admin-only-access-hardening.sql
