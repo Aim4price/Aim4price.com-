@@ -1,5 +1,18 @@
-import { getDb } from './db';
-import { getOrCreatePrimaryAssetRegister, updateAssetRegisterLogo } from './asset-registers';
+import { getDb } from "./db";
+import {
+  accountStatusLabel,
+  cleanIntroducedByName,
+  isAim4priceAdminEmail,
+  normalizeAccountStatus,
+  normalizeIntroducedByOption,
+  resolveIntroducedByDisplay,
+  type AccountStatus,
+  type IntroducedByOption,
+} from "./account-constants";
+import {
+  getOrCreatePrimaryAssetRegister,
+  updateAssetRegisterLogo,
+} from "./asset-registers";
 
 export type AccountProfile = {
   userId: string;
@@ -13,6 +26,11 @@ export type AccountProfile = {
   phone: string;
   accountType: string;
   accountSubtype: string;
+  accountStatus: AccountStatus;
+  accountStatusLabel: string;
+  introducedByOption: IntroducedByOption;
+  introducedByName: string;
+  introducedByDisplay: string;
   vatNumber: string;
   province: string;
   townCity: string;
@@ -81,6 +99,9 @@ type AccountProfileRow = {
   phone: string | null;
   account_type: string | null;
   account_subtype: string | null;
+  account_status: string | null;
+  introduced_by_option: string | null;
+  introduced_by_name: string | null;
   vat_number: string | null;
   province: string | null;
   town_city: string | null;
@@ -122,72 +143,109 @@ const MAX_WEBSITE_URL_LENGTH = 300;
 let accountProfileColumnsEnsured = false;
 
 function asText(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function normalizeAccountType(value: unknown): string {
-  const normalized = asText(value).toLowerCase().replace(/[\s_]+/g, '-');
+  const normalized = asText(value)
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-");
 
   if (
-    normalized === 'bank' ||
-    normalized === 'finance-house' ||
-    normalized === 'accountant' ||
-    normalized === 'accounting' ||
-    normalized === 'finance'
+    normalized === "bank" ||
+    normalized === "finance-house" ||
+    normalized === "accountant" ||
+    normalized === "accounting" ||
+    normalized === "finance"
   ) {
-    return 'finance';
+    return "finance";
   }
 
-  if (normalized === 'auction-house' || normalized === 'auctioneer' || normalized === 'dealer') {
-    return 'dealer';
+  if (
+    normalized === "auction-house" ||
+    normalized === "auctioneer" ||
+    normalized === "dealer"
+  ) {
+    return "dealer";
   }
 
-  if (normalized === 'broker' || normalized === 'insurer' || normalized === 'insurance' || normalized === 'short-term-insurer') {
-    return 'insurance';
+  if (
+    normalized === "broker" ||
+    normalized === "insurer" ||
+    normalized === "insurance" ||
+    normalized === "short-term-insurer"
+  ) {
+    return "insurance";
   }
 
-  return 'owner';
+  return "owner";
 }
 
 function normalizeAccountSubtype(accountType: string, value: unknown): string {
-  const normalized = asText(value).toLowerCase().replace(/[\s_]+/g, '-');
+  const normalized = asText(value)
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-");
   const allowedByType: Record<string, Set<string>> = {
-    owner: new Set(['farmer', 'contractor', 'construction-company', 'asset-owner']),
-    finance: new Set(['bank', 'finance-house', 'accountant']),
-    insurance: new Set(['short-term-insurer', 'insurer', 'broker', 'insurance-broker']),
-    dealer: new Set(['machinery-dealer', 'auctioneer', 'auction-house']),
+    owner: new Set([
+      "farmer",
+      "contractor",
+      "construction-company",
+      "asset-owner",
+    ]),
+    finance: new Set(["bank", "finance-house", "accountant"]),
+    insurance: new Set([
+      "short-term-insurer",
+      "insurer",
+      "broker",
+      "insurance-broker",
+    ]),
+    dealer: new Set(["machinery-dealer", "auctioneer", "auction-house"]),
   };
   const defaults: Record<string, string> = {
-    owner: 'farmer',
-    finance: 'bank',
-    insurance: 'short-term-insurer',
-    dealer: 'machinery-dealer',
+    owner: "farmer",
+    finance: "bank",
+    insurance: "short-term-insurer",
+    dealer: "machinery-dealer",
   };
 
-  if (accountType === 'insurance' && ['insurer', 'broker', 'insurance-broker'].includes(normalized)) {
-    return 'short-term-insurer';
+  if (
+    accountType === "insurance" &&
+    ["insurer", "broker", "insurance-broker"].includes(normalized)
+  ) {
+    return "short-term-insurer";
   }
 
-  if (accountType === 'dealer' && normalized === 'auction-house') {
-    return 'auctioneer';
+  if (accountType === "dealer" && normalized === "auction-house") {
+    return "auctioneer";
   }
 
   if (allowedByType[accountType]?.has(normalized)) {
     return normalized;
   }
 
-  return defaults[accountType] ?? 'farmer';
+  return defaults[accountType] ?? "farmer";
 }
 
-function resolveAccountType(accountType: unknown, accountSubtype: unknown): string {
+function resolveAccountType(
+  accountType: unknown,
+  accountSubtype: unknown,
+): string {
   const normalizedType = normalizeAccountType(accountType);
-  const normalizedSubtype = asText(accountSubtype).toLowerCase().replace(/[\s_]+/g, '-');
+  const normalizedSubtype = asText(accountSubtype)
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-");
 
   if (
-    normalizedType === 'finance' &&
-    ['insurer', 'insurance', 'short-term-insurer', 'broker', 'insurance-broker'].includes(normalizedSubtype)
+    normalizedType === "finance" &&
+    [
+      "insurer",
+      "insurance",
+      "short-term-insurer",
+      "broker",
+      "insurance-broker",
+    ].includes(normalizedSubtype)
   ) {
-    return 'insurance';
+    return "insurance";
   }
 
   return normalizedType;
@@ -195,12 +253,17 @@ function resolveAccountType(accountType: unknown, accountSubtype: unknown): stri
 
 function normalizeDirectoryStatus(value: unknown): string {
   const normalized = asText(value).toLowerCase();
-  if (normalized === 'pending' || normalized === 'hidden' || normalized === 'rejected') return normalized;
-  return 'approved';
+  if (
+    normalized === "pending" ||
+    normalized === "hidden" ||
+    normalized === "rejected"
+  )
+    return normalized;
+  return "approved";
 }
 
 function asNullableNumber(value: unknown): number | null {
-  if (value === null || typeof value === 'undefined' || value === '') {
+  if (value === null || typeof value === "undefined" || value === "") {
     return null;
   }
 
@@ -217,22 +280,25 @@ function sanitizeLogoUrl(value: unknown): string {
   return sanitizeImageUrl(value, MAX_LOGO_URL_LENGTH);
 }
 
-function sanitizeImageUrl(value: unknown, maxLength = MAX_BUSINESS_PHOTO_URL_LENGTH): string {
+function sanitizeImageUrl(
+  value: unknown,
+  maxLength = MAX_BUSINESS_PHOTO_URL_LENGTH,
+): string {
   const next = asText(value);
 
   if (!next || next.length > maxLength) {
-    return '';
+    return "";
   }
 
   if (/^data:image\/(png|jpe?g|webp);base64,[a-z0-9+/=\s]+$/i.test(next)) {
-    return next.replace(/\s+/g, '');
+    return next.replace(/\s+/g, "");
   }
 
-  if (next.startsWith('/') || next.startsWith('https://')) {
+  if (next.startsWith("/") || next.startsWith("https://")) {
     return next;
   }
 
-  return '';
+  return "";
 }
 
 function asStringArray(value: unknown): string[] {
@@ -240,7 +306,7 @@ function asStringArray(value: unknown): string[] {
     return value.map((entry) => asText(entry)).filter(Boolean);
   }
 
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     const trimmed = value.trim();
 
     if (!trimmed) {
@@ -249,7 +315,9 @@ function asStringArray(value: unknown): string[] {
 
     try {
       const parsed = JSON.parse(trimmed) as unknown;
-      return Array.isArray(parsed) ? parsed.map((entry) => asText(entry)).filter(Boolean) : [];
+      return Array.isArray(parsed)
+        ? parsed.map((entry) => asText(entry)).filter(Boolean)
+        : [];
     } catch {
       return [];
     }
@@ -284,7 +352,7 @@ function sanitizeWebsiteUrl(value: unknown): string {
   const raw = asText(value);
 
   if (!raw || raw.length > MAX_WEBSITE_URL_LENGTH) {
-    return '';
+    return "";
   }
 
   const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
@@ -292,17 +360,17 @@ function sanitizeWebsiteUrl(value: unknown): string {
   try {
     const parsed = new URL(withProtocol);
 
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return '';
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return "";
     }
 
-    if (!parsed.hostname || !parsed.hostname.includes('.')) {
-      return '';
+    if (!parsed.hostname || !parsed.hostname.includes(".")) {
+      return "";
     }
 
     return parsed.href.slice(0, MAX_WEBSITE_URL_LENGTH);
   } catch {
-    return '';
+    return "";
   }
 }
 
@@ -324,6 +392,9 @@ export async function ensureAccountProfileColumns(): Promise<void> {
       phone text,
       account_type text not null default 'owner',
       account_subtype text,
+      account_status text not null default 'pending_payment',
+      introduced_by_option text not null default 'direct',
+      introduced_by_name text,
       vat_number text,
       province text,
       town_city text,
@@ -360,6 +431,9 @@ export async function ensureAccountProfileColumns(): Promise<void> {
       add column if not exists phone text,
       add column if not exists account_type text not null default 'owner',
       add column if not exists account_subtype text,
+      add column if not exists account_status text,
+      add column if not exists introduced_by_option text,
+      add column if not exists introduced_by_name text,
       add column if not exists vat_number text,
       add column if not exists province text,
       add column if not exists town_city text,
@@ -387,6 +461,33 @@ export async function ensureAccountProfileColumns(): Promise<void> {
 
   await db.query(`
     update account_profiles
+    set
+      account_status = case
+        when account_status is null or trim(account_status) = '' then 'active'
+        when lower(replace(trim(account_status), '-', '_')) in ('pending_payment', 'active', 'suspended')
+          then lower(replace(trim(account_status), '-', '_'))
+        else 'pending_payment'
+      end,
+      introduced_by_option = case
+        when lower(replace(trim(coalesce(introduced_by_option, '')), '-', '_')) in ('kuyler', 'andre', 'direct', 'other')
+          then lower(replace(trim(introduced_by_option), '-', '_'))
+        when lower(replace(trim(coalesce(introduced_by_option, '')), '-', '_')) in ('no_one', 'none', 'direct_signup')
+          then 'direct'
+        else 'direct'
+      end,
+      introduced_by_name = nullif(trim(coalesce(introduced_by_name, '')), '')
+  `);
+
+  await db.query(`
+    alter table account_profiles
+      alter column account_status set default 'pending_payment',
+      alter column account_status set not null,
+      alter column introduced_by_option set default 'direct',
+      alter column introduced_by_option set not null
+  `);
+
+  await db.query(`
+    update account_profiles
     set extra_photo_urls = '[]'::jsonb
     where extra_photo_urls is null
   `);
@@ -407,6 +508,11 @@ export async function ensureAccountProfileColumns(): Promise<void> {
       on account_profiles(account_type, partner_directory_enabled, partner_directory_status, province, town_city)
   `);
 
+  await db.query(`
+    create index if not exists idx_account_profiles_account_status
+      on account_profiles(account_status)
+  `);
+
   accountProfileColumnsEnsured = true;
 }
 
@@ -416,7 +522,15 @@ function mapAccountProfileRow(
 ): AccountProfile {
   const fallbackName = asText(user.name);
   const displayName = asText(row?.display_name) || fallbackName;
-  const accountType = resolveAccountType(row?.account_type, row?.account_subtype);
+  const accountType = resolveAccountType(
+    row?.account_type,
+    row?.account_subtype,
+  );
+  const accountStatus = normalizeAccountStatus(row?.account_status);
+  const introducedByOption = normalizeIntroducedByOption(
+    row?.introduced_by_option,
+  );
+  const introducedByName = cleanIntroducedByName(row?.introduced_by_name);
 
   return {
     userId: user.id,
@@ -425,11 +539,19 @@ function mapAccountProfileRow(
     email: asText(user.email),
     logoUrl: sanitizeLogoUrl(row?.logo_url),
     websiteUrl: sanitizeWebsiteUrl(row?.website_url),
-    extraPhotoUrls: [],
+    extraPhotoUrls: sanitizeExtraPhotoUrls(row?.extra_photo_urls),
     businessName: asText(row?.business_name),
     phone: asText(row?.phone),
     accountType,
     accountSubtype: normalizeAccountSubtype(accountType, row?.account_subtype),
+    accountStatus,
+    accountStatusLabel: accountStatusLabel(accountStatus),
+    introducedByOption,
+    introducedByName,
+    introducedByDisplay: resolveIntroducedByDisplay(
+      introducedByOption,
+      introducedByName,
+    ),
     vatNumber: asText(row?.vat_number),
     province: asText(row?.province),
     townCity: asText(row?.town_city),
@@ -441,7 +563,9 @@ function mapAccountProfileRow(
     marketplaceEmail: asText(row?.marketplace_email),
     marketplaceLocation: asText(row?.marketplace_location),
     partnerDirectoryEnabled: Boolean(row?.partner_directory_enabled),
-    partnerDirectoryStatus: normalizeDirectoryStatus(row?.partner_directory_status),
+    partnerDirectoryStatus: normalizeDirectoryStatus(
+      row?.partner_directory_status,
+    ),
     partnerDescription: asText(row?.partner_description),
     partnerLatitude: asNullableNumber(row?.partner_latitude),
     partnerLongitude: asNullableNumber(row?.partner_longitude),
@@ -453,7 +577,10 @@ function mapAccountProfileRow(
   };
 }
 
-async function syncPrimaryAssetRegisterLogo(userId: string, logoUrl: string): Promise<void> {
+async function syncPrimaryAssetRegisterLogo(
+  userId: string,
+  logoUrl: string,
+): Promise<void> {
   const normalizedLogoUrl = sanitizeLogoUrl(logoUrl);
   const primaryRegister = await getOrCreatePrimaryAssetRegister(userId);
 
@@ -478,13 +605,31 @@ function mapAccountScanPinRow(row?: AccountScanPinRow): AccountScanPinStatus {
 
 export async function createInitialAccountProfile(
   user: { id: string; name?: string | null; email?: string | null },
-  input?: { accountType?: unknown; accountSubtype?: unknown },
+  input?: {
+    accountType?: unknown;
+    accountSubtype?: unknown;
+    introducedByOption?: unknown;
+    introducedByName?: unknown;
+  },
 ): Promise<void> {
   await ensureAccountProfileColumns();
 
   const db = getDb();
   const initialAccountType = normalizeAccountType(input?.accountType);
-  const initialAccountSubtype = normalizeAccountSubtype(initialAccountType, input?.accountSubtype);
+  const initialAccountSubtype = normalizeAccountSubtype(
+    initialAccountType,
+    input?.accountSubtype,
+  );
+  const initialAccountStatus = isAim4priceAdminEmail(user.email)
+    ? "active"
+    : "pending_payment";
+  const introducedByOption = normalizeIntroducedByOption(
+    input?.introducedByOption,
+  );
+  const introducedByName =
+    introducedByOption === "other"
+      ? cleanIntroducedByName(input?.introducedByName)
+      : "";
 
   await db.query(
     `
@@ -493,13 +638,24 @@ export async function createInitialAccountProfile(
         display_name,
         account_type,
         account_subtype,
+        account_status,
+        introduced_by_option,
+        introduced_by_name,
         created_at,
         updated_at
       )
-      values ($1, $2, $3, $4, now(), now())
+      values ($1, $2, $3, $4, $5, $6, $7, now(), now())
       on conflict (user_id) do nothing
     `,
-    [user.id, asText(user.name) || null, initialAccountType, initialAccountSubtype],
+    [
+      user.id,
+      asText(user.name) || null,
+      initialAccountType,
+      initialAccountSubtype,
+      initialAccountStatus,
+      introducedByOption,
+      introducedByName || null,
+    ],
   );
 }
 
@@ -524,6 +680,9 @@ export async function getAccountProfile(user: {
         phone,
         account_type,
         account_subtype,
+        account_status,
+        introduced_by_option,
+        introduced_by_name,
         vat_number,
         province,
         town_city,
@@ -574,7 +733,10 @@ export async function upsertAccountProfile(
 
   const existingAccount = existingAccountTypeResult.rows[0];
   const normalizedAccountType = existingAccount
-    ? resolveAccountType(existingAccount.account_type, existingAccount.account_subtype)
+    ? resolveAccountType(
+        existingAccount.account_type,
+        existingAccount.account_subtype,
+      )
     : resolveAccountType(input.accountType, input.accountSubtype);
   const normalizedAccountSubtype = normalizeAccountSubtype(
     normalizedAccountType,
@@ -583,14 +745,21 @@ export async function upsertAccountProfile(
   const normalizedLogoUrl = sanitizeLogoUrl(input.logoUrl);
   const previousLogoUrl = sanitizeLogoUrl(existingAccount?.logo_url);
   const shouldSyncPrimaryLogo =
-    normalizedAccountType === 'owner' && (input.syncPrimaryLogoToRegister === true || normalizedLogoUrl !== previousLogoUrl);
-  const normalizedMarketplaceEmail = asText(input.marketplaceEmail).toLowerCase();
+    normalizedAccountType === "owner" &&
+    (input.syncPrimaryLogoToRegister === true ||
+      normalizedLogoUrl !== previousLogoUrl);
+  const normalizedMarketplaceEmail = asText(
+    input.marketplaceEmail,
+  ).toLowerCase();
   const normalizedWebsiteUrl = sanitizeWebsiteUrl(input.websiteUrl);
   const normalizedExtraPhotoUrls: string[] = [];
   const normalizedLatitude = asNullableNumber(input.partnerLatitude);
   const normalizedLongitude = asNullableNumber(input.partnerLongitude);
-  const normalizedServiceRadiusKm = asNullableInteger(input.partnerServiceRadiusKm);
-  const partnerDirectoryEnabled = normalizedAccountType !== 'owner' && Boolean(input.partnerDirectoryEnabled);
+  const normalizedServiceRadiusKm = asNullableInteger(
+    input.partnerServiceRadiusKm,
+  );
+  const partnerDirectoryEnabled =
+    normalizedAccountType !== "owner" && Boolean(input.partnerDirectoryEnabled);
 
   const result = await db.query<AccountProfileRow>(
     `
@@ -668,6 +837,9 @@ export async function upsertAccountProfile(
         phone,
         account_type,
         account_subtype,
+        account_status,
+        introduced_by_option,
+        introduced_by_name,
         vat_number,
         province,
         town_city,
@@ -723,15 +895,53 @@ export async function upsertAccountProfile(
   const savedProfile = mapAccountProfileRow(result.rows[0], user);
 
   if (shouldSyncPrimaryLogo) {
-    await syncPrimaryAssetRegisterLogo(user.id, savedProfile.logoUrl).catch((error) => {
-      console.warn('Failed to sync account logo to primary asset register.', error);
-    });
+    await syncPrimaryAssetRegisterLogo(user.id, savedProfile.logoUrl).catch(
+      (error) => {
+        console.warn(
+          "Failed to sync account logo to primary asset register.",
+          error,
+        );
+      },
+    );
   }
 
   return savedProfile;
 }
 
-export async function getAccountScanPinStatus(userId: string): Promise<AccountScanPinStatus> {
+export async function getAccountStatusForUser(user: {
+  id: string;
+  email?: string | null;
+}): Promise<AccountStatus> {
+  if (isAim4priceAdminEmail(user.email)) {
+    return "active";
+  }
+
+  await ensureAccountProfileColumns();
+
+  const db = getDb();
+  const result = await db.query<{ account_status: string | null }>(
+    `
+      select account_status
+      from account_profiles
+      where user_id = $1
+      limit 1
+    `,
+    [user.id],
+  );
+
+  return normalizeAccountStatus(result.rows[0]?.account_status);
+}
+
+export async function isAccountActive(user: {
+  id: string;
+  email?: string | null;
+}): Promise<boolean> {
+  return (await getAccountStatusForUser(user)) === "active";
+}
+
+export async function getAccountScanPinStatus(
+  userId: string,
+): Promise<AccountScanPinStatus> {
   await ensureAccountProfileColumns();
 
   const db = getDb();
@@ -752,7 +962,10 @@ export async function getAccountScanPinStatus(userId: string): Promise<AccountSc
   return mapAccountScanPinRow(result.rows[0]);
 }
 
-export async function saveAccountScanPin(userId: string, scanPinHash: string): Promise<AccountScanPinStatus> {
+export async function saveAccountScanPin(
+  userId: string,
+  scanPinHash: string,
+): Promise<AccountScanPinStatus> {
   await ensureAccountProfileColumns();
 
   const db = getDb();
@@ -787,7 +1000,9 @@ export async function saveAccountScanPin(userId: string, scanPinHash: string): P
   return mapAccountScanPinRow(result.rows[0]);
 }
 
-export async function disableAccountScanPin(userId: string): Promise<AccountScanPinStatus> {
+export async function disableAccountScanPin(
+  userId: string,
+): Promise<AccountScanPinStatus> {
   await ensureAccountProfileColumns();
 
   const db = getDb();
