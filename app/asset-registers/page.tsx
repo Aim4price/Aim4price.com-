@@ -1,16 +1,12 @@
-import { redirect } from 'next/navigation';
-import { getAccountProfile } from '../../lib/account-profile';
-import { getServerSession } from '../../lib/auth-session';
-import AssetRegistersClient from './asset-registers-client';
+import { redirect } from "next/navigation";
+import { getAccountProfile } from "../../lib/account-profile";
+import { requireActivePageAccess } from "../../lib/account-access";
+import AssetRegistersClient from "./asset-registers-client";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export default async function AssetRegistersPage() {
-  const session = await getServerSession();
-
-  if (!session) {
-    redirect('/auth#signup');
-  }
+  const { session } = await requireActivePageAccess();
 
   const profile = await getAccountProfile({
     id: session.user.id,
@@ -18,8 +14,8 @@ export default async function AssetRegistersPage() {
     email: session.user.email,
   });
 
-  if (profile.accountType !== 'owner') {
-    redirect('/leads');
+  if (profile.accountType !== "owner") {
+    redirect("/leads");
   }
 
   return <AssetRegistersClient />;
