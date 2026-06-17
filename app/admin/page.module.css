@@ -33,6 +33,10 @@
   padding: clamp(1.25rem, 2vw, 1.7rem);
   border-radius: 1.4rem;
   color: #ffffff;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
   background:
     radial-gradient(
       circle at 10% 0%,
@@ -49,6 +53,42 @@
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+
+.heroCopy {
+  min-width: 0;
+}
+
+.signOutButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.6rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.signOutButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+.signOutButton:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
 }
 
 .hero h1 {
@@ -247,6 +287,15 @@
 }
 
 @media (max-width: 640px) {
+  .hero {
+    flex-direction: column;
+  }
+
+  .signOutButton {
+    width: 100%;
+    justify-content: center;
+  }
+
   .shell {
     width: min(calc(100% - 1rem), 1500px);
     padding-top: 0.8rem;

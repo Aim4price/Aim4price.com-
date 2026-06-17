@@ -1,4 +1,3 @@
-import AppHeader from "../../components/AppHeader";
 import { requireAdminPageAccess } from "../../lib/account-access";
 import { listAdminUsers } from "../../lib/admin-users";
 import AdminClient from "./admin-client";
@@ -13,7 +12,6 @@ export default async function AdminPage() {
 
   return (
     <main className={styles.page}>
-      <AppHeader active="none" />
       <AdminClient initialUsers={users} />
     </main>
   );

@@ -69,6 +69,7 @@ export default function AdminClient({
   const [users, setUsers] = useState<AdminUserRow[]>(initialUsers);
   const [notice, setNotice] = useState<Notice>(null);
   const [busyUserAction, setBusyUserAction] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const counts = useMemo(
     () => ({
@@ -81,6 +82,26 @@ export default function AdminClient({
     }),
     [users],
   );
+
+
+  async function handleSignOut() {
+    try {
+      setIsSigningOut(true);
+
+      await fetch("/api/auth/sign-out", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({}),
+      });
+    } finally {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem("aim4price-tractors-kit-register");
+        window.localStorage.removeItem("aim4price-tractors-kit-marketplace");
+        window.location.assign("/");
+      }
+    }
+  }
 
   async function runAction(user: AdminUserRow, action: AdminAction) {
     setNotice(null);
@@ -127,7 +148,7 @@ export default function AdminClient({
   return (
     <section className={styles.shell}>
       <section className={styles.hero}>
-        <div>
+        <div className={styles.heroCopy}>
           <p className={styles.eyebrow}>Aim4price admin</p>
           <h1>Account management</h1>
           <p>
@@ -135,6 +156,15 @@ export default function AdminClient({
             send reset-password emails without ever exposing passwords.
           </p>
         </div>
+
+        <button
+          type="button"
+          className={styles.signOutButton}
+          onClick={handleSignOut}
+          disabled={isSigningOut}
+        >
+          {isSigningOut ? "Signing out..." : "Sign out"}
+        </button>
       </section>
 
       <section className={styles.summaryGrid} aria-label="Account summary">
@@ -199,7 +229,11 @@ export default function AdminClient({
                   </td>
                 </tr>
               ) : (
-                users.map((user) => (
+                users.map((user) => {
+                  const isProtectedAdmin =
+                    user.email.trim().toLowerCase() === "aim4price@gmail.com";
+
+                  return (
                   <tr key={user.userId}>
                     <td data-label="Name">
                       <strong className={styles.nameCell}>{user.name}</strong>
@@ -250,6 +284,7 @@ export default function AdminClient({
                           onClick={() => runAction(user, "pending")}
                           disabled={
                             busyUserAction !== null ||
+                            isProtectedAdmin ||
                             user.accountStatus === "pending_payment"
                           }
                         >
@@ -262,6 +297,7 @@ export default function AdminClient({
                           onClick={() => runAction(user, "suspend")}
                           disabled={
                             busyUserAction !== null ||
+                            isProtectedAdmin ||
                             user.accountStatus === "suspended"
                           }
                         >
@@ -281,7 +317,8 @@ export default function AdminClient({
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
