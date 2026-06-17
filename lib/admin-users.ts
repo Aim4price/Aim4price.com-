@@ -24,6 +24,7 @@ export type AdminUserRow = {
   accountStatus: AccountStatus;
   accountStatusLabel: string;
   passwordStatus: "Set" | "Not set";
+  lastActiveAtIso: string | null;
   createdAtIso: string | null;
 };
 
@@ -39,6 +40,7 @@ type DbAdminUserRow = {
   introduced_by_option: string | null;
   introduced_by_name: string | null;
   password_set: boolean | null;
+  last_active_at: string | Date | null;
   auth_created_at: string | Date | null;
   profile_created_at: string | Date | null;
 };
@@ -87,6 +89,7 @@ function mapAdminUserRow(row: DbAdminUserRow): AdminUserRow {
     accountStatus,
     accountStatusLabel: accountStatusLabel(accountStatus),
     passwordStatus: row.password_set ? "Set" : "Not set",
+    lastActiveAtIso: toIso(row.last_active_at),
     createdAtIso: toIso(row.auth_created_at) || toIso(row.profile_created_at),
   };
 }
@@ -137,6 +140,7 @@ export async function listAdminUsers(): Promise<AdminUserRow[]> {
             and coalesce(a.password, '') <> ''
           limit 1
         ) as password_set,
+        ap.last_active_at,
         u."createdAt" as auth_created_at,
         ap.created_at as profile_created_at
       from "user" u

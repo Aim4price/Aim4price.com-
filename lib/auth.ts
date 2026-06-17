@@ -5,6 +5,7 @@ import {
 } from "./email";
 import { deleteUserWorkspaceData } from "./account-deletion";
 import { createInitialAccountProfile } from "./account-profile";
+import { recordAdminUsageEventSafely } from "./admin-usage-events";
 import { getDb } from "./db";
 
 function readSignupField(context: unknown, fieldName: string): unknown {
@@ -101,6 +102,12 @@ export const auth = betterAuth({
         to: user.email,
         name: user.name,
         resetUrl,
+      });
+
+      await recordAdminUsageEventSafely({
+        userId: typeof user.id === "string" ? user.id : null,
+        eventType: "password_reset_clicked",
+        eventSource: "auth-password-reset",
       });
     },
   },

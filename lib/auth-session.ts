@@ -1,6 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { isAim4priceAdminEmail } from "./account-constants";
-import { isAccountActive } from "./account-profile";
+import { isAccountActive, markAccountLastActive } from "./account-profile";
+import { recordAdminUsageEventSafely } from "./admin-usage-events";
 import { auth } from "./auth";
 import { getDb } from "./db";
 
@@ -151,6 +152,26 @@ export function isAdminSupportSession(
   );
 }
 
+async function markRealUserActivity(session: NonNullServerSession): Promise<void> {
+  try {
+    const didUpdate = await markAccountLastActive({
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    });
+
+    if (didUpdate) {
+      await recordAdminUsageEventSafely({
+        userId: session.user.id,
+        eventType: "user_activity_ping",
+        eventSource: "server_session",
+      });
+    }
+  } catch (error) {
+    console.warn("Aim4price last-active timestamp was not updated.", error);
+  }
+}
+
 export async function getAnyServerSession(): Promise<ServerSession> {
   return readAuthSession();
 }
@@ -175,13 +196,19 @@ export async function getServerSession(
   }
 
   if (options.requireActive === false) {
+    await markRealUserActivity(session);
     return session;
   }
 
-  return (await isAccountActive({
+  const isActive = await isAccountActive({
     id: session.user.id,
     email: session.user.email,
-  }))
-    ? session
-    : null;
+  });
+
+  if (!isActive) {
+    return null;
+  }
+
+  await markRealUserActivity(session);
+  return session;
 }

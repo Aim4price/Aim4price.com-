@@ -416,6 +416,7 @@ export async function ensureAccountProfileColumns(): Promise<void> {
       scan_pin_hash text,
       scan_pin_enabled boolean not null default false,
       scan_pin_updated_at timestamptz,
+      last_active_at timestamptz,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     )
@@ -455,6 +456,7 @@ export async function ensureAccountProfileColumns(): Promise<void> {
       add column if not exists scan_pin_hash text,
       add column if not exists scan_pin_enabled boolean not null default false,
       add column if not exists scan_pin_updated_at timestamptz,
+      add column if not exists last_active_at timestamptz,
       add column if not exists created_at timestamptz not null default now(),
       add column if not exists updated_at timestamptz not null default now()
   `);
@@ -524,6 +526,11 @@ export async function ensureAccountProfileColumns(): Promise<void> {
   await db.query(`
     create index if not exists idx_account_profiles_account_status
       on account_profiles(account_status)
+  `);
+
+  await db.query(`
+    create index if not exists idx_account_profiles_last_active_at
+      on account_profiles(last_active_at desc)
   `);
 
   accountProfileColumnsEnsured = true;
@@ -956,6 +963,50 @@ export async function isAccountActive(user: {
   email?: string | null;
 }): Promise<boolean> {
   return (await getAccountStatusForUser(user)) === "active";
+}
+
+export async function markAccountLastActive(user: {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+}): Promise<boolean> {
+  const userId = asText(user.id);
+
+  if (!userId) {
+    return false;
+  }
+
+  await ensureAccountProfileColumns();
+
+  const db = getDb();
+  const initialAccountStatus = isAim4priceAdminEmail(user.email)
+    ? "active"
+    : "pending_payment";
+  const result = await db.query<{ user_id: string }>(
+    `
+      insert into account_profiles (
+        user_id,
+        display_name,
+        account_type,
+        account_subtype,
+        account_status,
+        introduced_by_option,
+        last_active_at,
+        created_at,
+        updated_at
+      )
+      values ($1, $2, 'owner', 'farmer', $3, 'direct', now(), now(), now())
+      on conflict (user_id)
+      do update set
+        last_active_at = now()
+      where account_profiles.last_active_at is null
+        or account_profiles.last_active_at < now() - interval '5 minutes'
+      returning user_id
+    `,
+    [userId, asText(user.name) || null, initialAccountStatus],
+  );
+
+  return (result.rowCount ?? 0) > 0;
 }
 
 export async function getAccountScanPinStatus(
