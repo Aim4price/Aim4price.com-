@@ -1843,6 +1843,11 @@ export default function AccountClient() {
               </div>
 
               <div className={styles.metricTile}>
+                <span>Contact number</span>
+                <strong>{profileDraft.phone.trim() || "Not saved"}</strong>
+              </div>
+
+              <div className={styles.metricTile}>
                 <span>Profile progress</span>
                 <strong>
                   {completedFields}/{PROFILE_COMPLETION_TOTAL}
