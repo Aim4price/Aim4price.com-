@@ -1,0 +1,125 @@
+.page {
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(42, 103, 78, 0.08),
+      transparent 31rem
+    ),
+    linear-gradient(180deg, #f6f8f5 0%, #ffffff 55%, #eef4ef 100%);
+  color: #183a31;
+}
+
+.shell {
+  width: min(100% - 2rem, 48rem);
+  margin: 0 auto;
+  padding: clamp(3rem, 7vw, 6rem) 0;
+  display: grid;
+  gap: 1.15rem;
+}
+
+.badge {
+  width: fit-content;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(27, 89, 68, 0.12);
+  background: rgba(255, 255, 255, 0.82);
+  color: #1c6048;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.title {
+  max-width: 44rem;
+  margin: 0;
+  font-size: clamp(2.25rem, 7vw, 4.6rem);
+  line-height: 0.96;
+  letter-spacing: -0.065em;
+  font-weight: 950;
+  text-wrap: balance;
+}
+
+.text {
+  max-width: 41rem;
+  margin: 0;
+  color: #64756e;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.infoCard {
+  margin-top: 0.75rem;
+  padding: 1.1rem;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.55rem 1rem;
+  border-radius: 1.2rem;
+  border: 1px solid rgba(24, 58, 49, 0.09);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 18px 45px rgba(22, 55, 44, 0.08);
+}
+
+.infoLabel {
+  color: #7b8a84;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.email,
+.status {
+  color: #203831;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.primaryButton,
+.secondaryButton {
+  min-height: 3.1rem;
+  padding: 0 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.primaryButton {
+  border: 1px solid #164835;
+  background: #164835;
+  color: #ffffff;
+  box-shadow: 0 16px 30px rgba(22, 72, 53, 0.18);
+}
+
+.secondaryButton {
+  border: 1px solid rgba(24, 58, 49, 0.12);
+  background: #ffffff;
+  color: #1f4c3f;
+}
+
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible {
+  outline: 3px solid rgba(23, 77, 62, 0.18);
+  outline-offset: 3px;
+}
+
+@media (max-width: 560px) {
+  .infoCard {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
