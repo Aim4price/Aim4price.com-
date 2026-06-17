@@ -9,6 +9,7 @@ type AdminUserRow = {
   userId: string;
   name: string;
   email: string;
+  phone: string;
   accountType: string;
   accountSubtype: string;
   introducedBy: string;
@@ -25,9 +26,16 @@ type ApiResponse = {
   users?: AdminUserRow[];
   message?: string;
   error?: string;
+  redirectUrl?: string;
 };
 
-type AdminAction = "activate" | "pending" | "suspend" | "send_reset";
+type AdminAction =
+  | "activate"
+  | "pending"
+  | "suspend"
+  | "send_reset"
+  | "open_account"
+  | "delete_user";
 
 type Notice = {
   tone: "success" | "error";
@@ -49,7 +57,7 @@ function formatDate(value: string | null): string {
 
 function formatAccountValue(value: string): string {
   return value
-    .split("-")
+    .split(/[-_]/g)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 }
@@ -61,32 +69,78 @@ function statusClassName(status: AccountStatus): string {
   return `${styles.statusPill} ${styles.statusPending}`;
 }
 
+function normalizeSearchValue(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function matchesSearch(user: AdminUserRow, searchTerm: string): boolean {
+  const query = normalizeSearchValue(searchTerm);
+
+  if (!query) {
+    return true;
+  }
+
+  const haystack = [
+    user.name,
+    user.email,
+    user.phone,
+    user.accountType,
+    user.accountSubtype,
+    user.introducedBy,
+    user.accountStatusLabel,
+    user.passwordStatus,
+    formatDate(user.createdAtIso),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  return haystack.includes(query);
+}
+
+function getActionText(action: AdminAction, user: AdminUserRow): string {
+  if (action === "activate") return `${user.email} activated.`;
+  if (action === "pending") return `${user.email} set back to pending.`;
+  if (action === "suspend") return `${user.email} suspended.`;
+  if (action === "send_reset") return `Reset email sent to ${user.email}.`;
+  if (action === "open_account") return `Opening ${user.email}.`;
+  return `${user.email} deleted.`;
+}
+
+function getBusyText(action: AdminAction): string {
+  if (action === "activate") return "Activating...";
+  if (action === "pending") return "Updating...";
+  if (action === "suspend") return "Suspending...";
+  if (action === "send_reset") return "Sending...";
+  if (action === "open_account") return "Opening...";
+  return "Deleting...";
+}
+
 export default function AdminClient({
   initialUsers,
 }: {
   initialUsers: AdminUserRow[];
 }) {
   const [users, setUsers] = useState<AdminUserRow[]>(initialUsers);
+  const [searchTerm, setSearchTerm] = useState("");
   const [notice, setNotice] = useState<Notice>(null);
   const [busyUserAction, setBusyUserAction] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const counts = useMemo(
-    () => ({
-      total: users.length,
-      active: users.filter((user) => user.accountStatus === "active").length,
-      pending: users.filter((user) => user.accountStatus === "pending_payment")
-        .length,
-      suspended: users.filter((user) => user.accountStatus === "suspended")
-        .length,
-    }),
-    [users],
+  const visibleUsers = useMemo(
+    () => users.filter((user) => matchesSearch(user, searchTerm)),
+    [users, searchTerm],
   );
-
 
   async function handleSignOut() {
     try {
       setIsSigningOut(true);
+
+      await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "close_account" }),
+      }).catch(() => null);
 
       await fetch("/api/auth/sign-out", {
         method: "POST",
@@ -104,6 +158,19 @@ export default function AdminClient({
   }
 
   async function runAction(user: AdminUserRow, action: AdminAction) {
+    if (action === "delete_user") {
+      const confirmation =
+        typeof window !== "undefined"
+          ? window.prompt(
+              `Type DELETE to permanently delete ${user.email} and that account's saved Aim4price workspace data.`,
+            )
+          : null;
+
+      if (confirmation !== "DELETE") {
+        return;
+      }
+    }
+
     setNotice(null);
     setBusyUserAction(`${user.userId}:${action}`);
 
@@ -117,23 +184,22 @@ export default function AdminClient({
 
       const data = (await response.json()) as ApiResponse;
 
-      if (!response.ok || !data.ok || !data.users) {
+      if (!response.ok || !data.ok) {
         throw new Error(data.error || "Admin action failed.");
       }
 
-      setUsers(data.users);
+      if (data.users) {
+        setUsers(data.users);
+      }
+
       setNotice({
         tone: "success",
-        message:
-          data.message ||
-          (action === "activate"
-            ? `${user.email} activated.`
-            : action === "pending"
-              ? `${user.email} set back to pending.`
-              : action === "suspend"
-                ? `${user.email} suspended.`
-                : `Reset email sent to ${user.email}.`),
+        message: data.message || getActionText(action, user),
       });
+
+      if (action === "open_account" && data.redirectUrl && typeof window !== "undefined") {
+        window.location.assign(data.redirectUrl);
+      }
     } catch (error) {
       setNotice({
         tone: "error",
@@ -147,42 +213,35 @@ export default function AdminClient({
 
   return (
     <section className={styles.shell}>
-      <section className={styles.hero}>
-        <div className={styles.heroCopy}>
+      <section className={styles.topBar}>
+        <div className={styles.titleBlock}>
           <p className={styles.eyebrow}>Aim4price admin</p>
-          <h1>Account management</h1>
-          <p>
-            Activate paid accounts manually, suspend access where needed, and
-            send reset-password emails without ever exposing passwords.
-          </p>
+          <h1>Users</h1>
+          <span>
+            Showing {visibleUsers.length} of {users.length} account
+            {users.length === 1 ? "" : "s"}
+          </span>
         </div>
 
-        <button
-          type="button"
-          className={styles.signOutButton}
-          onClick={handleSignOut}
-          disabled={isSigningOut}
-        >
-          {isSigningOut ? "Signing out..." : "Sign out"}
-        </button>
-      </section>
+        <div className={styles.toolbar}>
+          <label className={styles.searchField}>
+            <span>Search users</span>
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search name, email, number, type or status"
+            />
+          </label>
 
-      <section className={styles.summaryGrid} aria-label="Account summary">
-        <div className={styles.summaryCard}>
-          <span>Total users</span>
-          <strong>{counts.total}</strong>
-        </div>
-        <div className={styles.summaryCard}>
-          <span>Active</span>
-          <strong>{counts.active}</strong>
-        </div>
-        <div className={styles.summaryCard}>
-          <span>Pending payment</span>
-          <strong>{counts.pending}</strong>
-        </div>
-        <div className={styles.summaryCard}>
-          <span>Suspended</span>
-          <strong>{counts.suspended}</strong>
+          <button
+            type="button"
+            className={styles.signOutButton}
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+          >
+            {isSigningOut ? "Signing out..." : "Sign out"}
+          </button>
         </div>
       </section>
 
@@ -195,23 +254,14 @@ export default function AdminClient({
         </div>
       ) : null}
 
-      <section className={styles.tableCard}>
-        <div className={styles.tableHeader}>
-          <div>
-            <h2>Users</h2>
-            <p>
-              One admin table for payment status, account status, introduced-by
-              tracking and password reset actions.
-            </p>
-          </div>
-        </div>
-
+      <section className={styles.tableCard} aria-label="User accounts">
         <div className={styles.tableWrap}>
           <table className={styles.userTable}>
             <thead>
               <tr>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Number</th>
                 <th>Account type</th>
                 <th>Subtype</th>
                 <th>Introduced by</th>
@@ -222,101 +272,128 @@ export default function AdminClient({
               </tr>
             </thead>
             <tbody>
-              {users.length === 0 ? (
+              {visibleUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className={styles.emptyCell}>
-                    No users found yet.
+                  <td colSpan={10} className={styles.emptyCell}>
+                    No matching users found.
                   </td>
                 </tr>
               ) : (
-                users.map((user) => {
+                visibleUsers.map((user) => {
                   const isProtectedAdmin =
                     user.email.trim().toLowerCase() === "aim4price@gmail.com";
 
                   return (
-                  <tr key={user.userId}>
-                    <td data-label="Name">
-                      <strong className={styles.nameCell}>{user.name}</strong>
-                    </td>
-                    <td data-label="Email">{user.email}</td>
-                    <td data-label="Account type">
-                      {formatAccountValue(user.accountType)}
-                    </td>
-                    <td data-label="Subtype">
-                      {formatAccountValue(user.accountSubtype)}
-                    </td>
-                    <td data-label="Introduced by">{user.introducedBy}</td>
-                    <td data-label="Status">
-                      <span className={statusClassName(user.accountStatus)}>
-                        {user.accountStatusLabel}
-                      </span>
-                    </td>
-                    <td data-label="Password">
-                      <span
-                        className={
-                          user.passwordStatus === "Set"
-                            ? styles.passwordSet
-                            : styles.passwordMissing
-                        }
-                      >
-                        {user.passwordStatus}
-                      </span>
-                    </td>
-                    <td data-label="Created">
-                      {formatDate(user.createdAtIso)}
-                    </td>
-                    <td data-label="Actions">
-                      <div className={styles.actionGroup}>
-                        <button
-                          type="button"
-                          onClick={() => runAction(user, "activate")}
-                          disabled={
-                            busyUserAction !== null ||
-                            user.accountStatus === "active"
+                    <tr key={user.userId}>
+                      <td>
+                        <strong className={styles.nameCell}>{user.name}</strong>
+                      </td>
+                      <td>{user.email}</td>
+                      <td>
+                        {user.phone ? (
+                          <span className={styles.phoneCell}>{user.phone}</span>
+                        ) : (
+                          <span className={styles.mutedText}>Not saved</span>
+                        )}
+                      </td>
+                      <td>{formatAccountValue(user.accountType)}</td>
+                      <td>{formatAccountValue(user.accountSubtype)}</td>
+                      <td>{user.introducedBy}</td>
+                      <td>
+                        <span className={statusClassName(user.accountStatus)}>
+                          {user.accountStatusLabel}
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          className={
+                            user.passwordStatus === "Set"
+                              ? styles.passwordSet
+                              : styles.passwordMissing
                           }
                         >
-                          {busyUserAction === `${user.userId}:activate`
-                            ? "Activating..."
-                            : "Activate account"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => runAction(user, "pending")}
-                          disabled={
-                            busyUserAction !== null ||
-                            isProtectedAdmin ||
-                            user.accountStatus === "pending_payment"
-                          }
-                        >
-                          {busyUserAction === `${user.userId}:pending`
-                            ? "Updating..."
-                            : "Set pending"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => runAction(user, "suspend")}
-                          disabled={
-                            busyUserAction !== null ||
-                            isProtectedAdmin ||
-                            user.accountStatus === "suspended"
-                          }
-                        >
-                          {busyUserAction === `${user.userId}:suspend`
-                            ? "Suspending..."
-                            : "Suspend"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => runAction(user, "send_reset")}
-                          disabled={busyUserAction !== null}
-                        >
-                          {busyUserAction === `${user.userId}:send_reset`
-                            ? "Sending..."
-                            : "Send reset email"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                          {user.passwordStatus}
+                        </span>
+                      </td>
+                      <td>{formatDate(user.createdAtIso)}</td>
+                      <td>
+                        <div className={styles.actionGroup}>
+                          <button
+                            type="button"
+                            className={styles.openButton}
+                            onClick={() => runAction(user, "open_account")}
+                            disabled={busyUserAction !== null || isProtectedAdmin}
+                          >
+                            {busyUserAction === `${user.userId}:open_account`
+                              ? getBusyText("open_account")
+                              : "Open"}
+                          </button>
+
+                          <button
+                            type="button"
+                            className={styles.activateButton}
+                            onClick={() => runAction(user, "activate")}
+                            disabled={
+                              busyUserAction !== null ||
+                              user.accountStatus === "active"
+                            }
+                          >
+                            {busyUserAction === `${user.userId}:activate`
+                              ? getBusyText("activate")
+                              : "Activate"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => runAction(user, "pending")}
+                            disabled={
+                              busyUserAction !== null ||
+                              isProtectedAdmin ||
+                              user.accountStatus === "pending_payment"
+                            }
+                          >
+                            {busyUserAction === `${user.userId}:pending`
+                              ? getBusyText("pending")
+                              : "Pending"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => runAction(user, "suspend")}
+                            disabled={
+                              busyUserAction !== null ||
+                              isProtectedAdmin ||
+                              user.accountStatus === "suspended"
+                            }
+                          >
+                            {busyUserAction === `${user.userId}:suspend`
+                              ? getBusyText("suspend")
+                              : "Suspend"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => runAction(user, "send_reset")}
+                            disabled={busyUserAction !== null}
+                          >
+                            {busyUserAction === `${user.userId}:send_reset`
+                              ? getBusyText("send_reset")
+                              : "Reset"}
+                          </button>
+
+                          <button
+                            type="button"
+                            className={styles.deleteButton}
+                            onClick={() => runAction(user, "delete_user")}
+                            disabled={busyUserAction !== null || isProtectedAdmin}
+                          >
+                            {busyUserAction === `${user.userId}:delete_user`
+                              ? getBusyText("delete_user")
+                              : "Delete"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   );
                 })
               )}
