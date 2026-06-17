@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { recordAdminUsageEventSafely } from '../../../lib/admin-usage-events';
+import { getAnyServerSession } from '../../../lib/auth-session';
 import { runServerValuation } from '../../../lib/server-valuation';
 import type { ConditionKey } from '../../../lib/tractor-data';
 import type { GpsType, RunValuationInput } from '../../../lib/tractor-logic';
@@ -108,6 +110,15 @@ function badRequest(message: string) {
   );
 }
 
+async function getUsageUserId(): Promise<string | null> {
+  try {
+    const session = await getAnyServerSession();
+    return session?.user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function handleValuation(input: RunValuationInput | null) {
   if (!input) {
     return badRequest('modelId, year, hours and condition are required.');
@@ -115,6 +126,13 @@ async function handleValuation(input: RunValuationInput | null) {
 
   try {
     const result = await runServerValuation(input);
+
+    await recordAdminUsageEventSafely({
+      userId: await getUsageUserId(),
+      eventType: 'free_estimate_completed',
+      eventSource: 'tractor-valuations',
+      metadata: { modelId: input.modelId },
+    });
 
     return NextResponse.json<TractorValuationApiResponse>({
       ok: true,
