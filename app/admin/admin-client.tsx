@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styles from "./page.module.css";
 
 type AccountStatus = "pending_payment" | "active" | "suspended";
@@ -43,6 +43,8 @@ type Notice = {
   tone: "success" | "error";
   message: string;
 } | null;
+
+const ADMIN_PAGE_SIZE = 10;
 
 function formatDate(value: string | null): string {
   if (!value) return "Unknown";
@@ -151,11 +153,38 @@ export default function AdminClient({
   const [notice, setNotice] = useState<Notice>(null);
   const [busyUserAction, setBusyUserAction] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const visibleUsers = useMemo(
     () => users.filter((user) => matchesSearch(user, searchTerm)),
     [users, searchTerm],
   );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const pageCount = Math.max(
+    1,
+    Math.ceil(visibleUsers.length / ADMIN_PAGE_SIZE),
+  );
+  const currentPageNumber = Math.min(currentPage, pageCount);
+  const pageStartIndex =
+    visibleUsers.length === 0
+      ? 0
+      : (currentPageNumber - 1) * ADMIN_PAGE_SIZE;
+  const pageEndIndex =
+    visibleUsers.length === 0
+      ? 0
+      : Math.min(pageStartIndex + ADMIN_PAGE_SIZE, visibleUsers.length);
+  const paginatedUsers = visibleUsers.slice(pageStartIndex, pageEndIndex);
+  const visibleAccountLabel = visibleUsers.length === 1 ? "account" : "accounts";
+  const pageRangeLabel =
+    visibleUsers.length === 0
+      ? `No matching accounts${users.length ? ` out of ${users.length} total` : ""}`
+      : `Showing ${pageStartIndex + 1}-${pageEndIndex} of ${visibleUsers.length} ${visibleAccountLabel}${
+          searchTerm.trim() ? ` (${users.length} total)` : ""
+        }`;
 
   async function handleSignOut() {
     try {
@@ -243,10 +272,7 @@ export default function AdminClient({
         <div className={styles.titleBlock}>
           <p className={styles.eyebrow}>Aim4price admin</p>
           <h1>Users</h1>
-          <span>
-            Showing {visibleUsers.length} of {users.length} account
-            {users.length === 1 ? "" : "s"}
-          </span>
+          <span>{pageRangeLabel}</span>
         </div>
 
         <div className={styles.toolbar}>
@@ -310,7 +336,7 @@ export default function AdminClient({
                   </td>
                 </tr>
               ) : (
-                visibleUsers.map((user) => {
+                paginatedUsers.map((user) => {
                   const isProtectedAdmin =
                     user.email.trim().toLowerCase() === "aim4price@gmail.com";
 
@@ -435,6 +461,46 @@ export default function AdminClient({
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className={styles.paginationBar} aria-label="Admin users pagination">
+          <span>
+            Page {currentPageNumber} of {pageCount}
+          </span>
+          <div className={styles.paginationControls}>
+            <button
+              type="button"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPageNumber === 1}
+            >
+              First
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setCurrentPage((page) => Math.max(1, page - 1))
+              }
+              disabled={currentPageNumber === 1}
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setCurrentPage((page) => Math.min(pageCount, page + 1))
+              }
+              disabled={currentPageNumber === pageCount}
+            >
+              Next
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage(pageCount)}
+              disabled={currentPageNumber === pageCount}
+            >
+              Last
+            </button>
+          </div>
         </div>
       </section>
     </section>

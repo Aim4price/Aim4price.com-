@@ -159,12 +159,14 @@
 
 .tableCard {
   min-width: 0;
+  display: grid;
+  gap: 0.75rem;
 }
 
 .tableWrap {
   overflow-x: auto;
   overflow-y: auto;
-  max-height: calc(100vh - 10.4rem);
+  max-height: calc(100vh - 13rem);
   border: 1px solid #dfe8e3;
   border-radius: 1.1rem;
   background: #ffffff;
@@ -432,6 +434,64 @@
   text-align: center !important;
 }
 
+.paginationBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.74rem 0.85rem;
+  border: 1px solid #dfe8e3;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 32px rgba(18, 45, 37, 0.045);
+}
+
+.paginationBar span {
+  color: #60716a;
+  font-size: 0.84rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.42rem;
+  flex-wrap: wrap;
+}
+
+.paginationControls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.24rem;
+  padding: 0 0.82rem;
+  border: 1px solid #d7e1dc;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #17362c;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 850;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.paginationControls button:hover:not(:disabled) {
+  background: #f5f8f6;
+  border-color: #c7d6ce;
+}
+
+.paginationControls button:disabled {
+  opacity: 0.46;
+  cursor: not-allowed;
+}
+
 @media (max-width: 980px) {
   .topBar {
     align-items: stretch;
@@ -468,6 +528,19 @@
   }
 
   .tableWrap {
-    max-height: calc(100vh - 14.5rem);
+    max-height: calc(100vh - 18rem);
+  }
+
+  .paginationBar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .paginationControls {
+    justify-content: stretch;
+  }
+
+  .paginationControls button {
+    flex: 1 1 6rem;
   }
 }
