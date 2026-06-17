@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../lib/auth-session';
+import { recordAdminUsageEventSafely } from '../../../lib/admin-usage-events';
+import { getServerSession, isAdminSupportSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
 import {
   createAssetRegister,
@@ -77,6 +78,14 @@ function readRegisterInput(body: AssetRegisterBody) {
   return input;
 }
 
+function getUsageUserId(session: Awaited<ReturnType<typeof getServerSession>>): string | null {
+  if (!session?.user?.id || isAdminSupportSession(session)) {
+    return null;
+  }
+
+  return session.user.id;
+}
+
 function errorResponse(error: unknown, fallback: string) {
   if (error instanceof Error) {
     if (error.message === 'ASSET_REGISTER_NAME_REQUIRED') {
@@ -143,6 +152,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as AssetRegisterBody;
     const register = await createAssetRegister(session.user.id, readRegisterInput(body));
+    await recordAdminUsageEventSafely({
+      userId: getUsageUserId(session),
+      eventType: 'asset_register_created',
+      eventSource: 'asset-registers',
+      metadata: { registerId: register.id },
+    });
     const registers = await listAssetRegisters(session.user.id);
     const selectedRegister = registers.find((entry) => entry.isSelected) ?? await getSelectedAssetRegister(session.user.id);
     return NextResponse.json({ ok: true, register, registers, selectedRegister });
