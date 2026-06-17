@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { redirectAdminToAdmin } from '../../lib/account-access';
 import { getAccountProfile } from '../../lib/account-profile';
 import { getServerSession } from '../../lib/auth-session';
 import {
@@ -147,6 +148,8 @@ export async function generateMetadata({ searchParams }: MarketplacePageProps): 
 }
 
 export default async function MarketplacePage({ searchParams }: MarketplacePageProps) {
+  await redirectAdminToAdmin();
+
   const session = await getServerSession();
   let accountType = session?.user?.id ? 'owner' : 'public';
 
