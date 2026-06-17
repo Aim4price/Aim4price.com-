@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import styles from "./page.module.css";
 
 type Mode = "signup" | "login" | "forgot";
@@ -19,6 +26,12 @@ type SignupAccountSubtype =
   | "auctioneer";
 type SignupIntroducedByOption = "" | "kuyler" | "andre" | "direct" | "other";
 type NoticeTone = "success" | "error" | "info";
+
+type SelectOption<T extends string> = {
+  value: T;
+  label: string;
+  description?: string;
+};
 
 type AuthNotice = {
   tone: NoticeTone;
@@ -53,50 +66,250 @@ const AUTH_BASE_PATH = "/api/auth";
 const POST_LOGIN_REDIRECT = "/asset-register";
 const ADMIN_EMAIL = "aim4price@gmail.com";
 
-const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<{
-  value: SignupAccountType;
-  label: string;
-}> = [
-  { value: "owner", label: "Owner" },
-  { value: "finance", label: "Finance" },
-  { value: "insurance", label: "Insurer" },
-  { value: "dealer", label: "Dealer" },
+const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<SelectOption<SignupAccountType>> = [
+  {
+    value: "owner",
+    label: "Asset owner",
+    description: "Farmers, contractors and equipment owners",
+  },
+  {
+    value: "finance",
+    label: "Finance provider",
+    description: "Banks, finance houses and asset finance teams",
+  },
+  {
+    value: "insurance",
+    label: "Insurance provider",
+    description: "Short-term insurers and claims teams",
+  },
+  {
+    value: "dealer",
+    label: "Dealer / auctioneer",
+    description: "Machinery dealers, brokers and auctioneers",
+  },
 ];
 
 const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
   SignupAccountType,
-  Array<{
-    value: SignupAccountSubtype;
-    label: string;
-  }>
+  Array<SelectOption<SignupAccountSubtype>>
 > = {
   owner: [
-    { value: "farmer", label: "Farmer" },
-    { value: "contractor", label: "Contractor" },
-    { value: "construction-company", label: "Construction Company" },
-    { value: "asset-owner", label: "Asset Owner" },
+    {
+      value: "farmer",
+      label: "Farmer / farm owner",
+      description: "Agricultural equipment owner",
+    },
+    {
+      value: "contractor",
+      label: "Contractor / operator",
+      description: "Hires out or operates equipment",
+    },
+    {
+      value: "construction-company",
+      label: "Construction company",
+      description: "Owns construction equipment",
+    },
+    {
+      value: "asset-owner",
+      label: "Private / fleet asset owner",
+      description: "Owns machinery, vehicles or equipment",
+    },
   ],
   finance: [
-    { value: "bank", label: "Bank" },
-    { value: "finance-house", label: "Finance House" },
-    { value: "accountant", label: "Accountant" },
+    {
+      value: "bank",
+      label: "Bank / finance institution",
+      description: "Bank or formal finance provider",
+    },
+    {
+      value: "finance-house",
+      label: "Equipment finance house",
+      description: "Asset finance and instalment-sale teams",
+    },
+    {
+      value: "accountant",
+      label: "Accountant / asset adviser",
+      description: "Advises clients on asset values",
+    },
   ],
-  insurance: [{ value: "short-term-insurer", label: "Short-Term Insurer" }],
+  insurance: [
+    {
+      value: "short-term-insurer",
+      label: "Short-term insurance provider",
+      description: "Policy, claims or underwriting team",
+    },
+  ],
   dealer: [
-    { value: "machinery-dealer", label: "Machinery Dealer" },
-    { value: "auctioneer", label: "Auctioneer" },
+    {
+      value: "machinery-dealer",
+      label: "Machinery dealer",
+      description: "Buys, sells or trades equipment",
+    },
+    {
+      value: "auctioneer",
+      label: "Auctioneer / broker",
+      description: "Runs auctions or introduces deals",
+    },
   ],
 };
 
-const INTRODUCED_BY_OPTIONS: Array<{
-  value: Exclude<SignupIntroducedByOption, "">;
-  label: string;
-}> = [
-  { value: "kuyler", label: "Kuyler" },
-  { value: "andre", label: "Andre" },
-  { value: "direct", label: "No one / direct signup" },
-  { value: "other", label: "Other" },
+const INTRODUCED_BY_OPTIONS: Array<SelectOption<SignupIntroducedByOption>> = [
+  {
+    value: "kuyler",
+    label: "Kuyler Geldenhuys",
+    description: "Aim4price",
+  },
+  {
+    value: "andre",
+    label: "Andre Van Rooyen",
+    description: "Aim4price",
+  },
+  {
+    value: "direct",
+    label: "No one / direct signup",
+    description: "Found Aim4price yourself",
+  },
+  {
+    value: "other",
+    label: "Other person or source",
+    description: "Enter the name below",
+  },
 ];
+
+function CustomSelect<T extends string>({
+  name,
+  value,
+  options,
+  onChange,
+  placeholder = "Select an option",
+}: {
+  name: string;
+  value: T;
+  options: Array<SelectOption<T>>;
+  onChange: (value: T) => void;
+  placeholder?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const selectedOption = options.find((option) => option.value === value);
+  const buttonId = `${name}-dropdown-button`;
+  const listboxId = `${name}-dropdown-listbox`;
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target;
+
+      if (
+        target instanceof Node &&
+        rootRef.current &&
+        !rootRef.current.contains(target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleDocumentKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    document.addEventListener("keydown", handleDocumentKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+      document.removeEventListener("keydown", handleDocumentKeyDown);
+    };
+  }, [isOpen]);
+
+  const commitChange = (nextValue: T) => {
+    onChange(nextValue);
+    setIsOpen(false);
+  };
+
+  const handleButtonKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setIsOpen(true);
+    }
+  };
+
+  const handleOptionKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+    nextValue: T,
+  ) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      commitChange(nextValue);
+    }
+  };
+
+  return (
+    <div
+      ref={rootRef}
+      className={`${styles.customSelect} ${isOpen ? styles.customSelectOpen : ""}`}
+    >
+      <input type="hidden" name={name} value={value} />
+      <button
+        id={buttonId}
+        type="button"
+        className={`${styles.customSelectButton} ${!selectedOption ? styles.customSelectPlaceholder : ""}`}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls={listboxId}
+        onClick={() => setIsOpen((current) => !current)}
+        onKeyDown={handleButtonKeyDown}
+      >
+        <span className={styles.customSelectButtonCopy}>
+          <strong>{selectedOption?.label ?? placeholder}</strong>
+          {selectedOption?.description ? (
+            <span>{selectedOption.description}</span>
+          ) : null}
+        </span>
+        <span className={styles.customSelectChevron} aria-hidden="true" />
+      </button>
+
+      {isOpen ? (
+        <div
+          id={listboxId}
+          className={styles.customSelectMenu}
+          role="listbox"
+          aria-labelledby={buttonId}
+        >
+          {options.map((option) => {
+            const isSelected = option.value === value;
+
+            return (
+              <div
+                key={option.value}
+                role="option"
+                tabIndex={0}
+                aria-selected={isSelected}
+                className={`${styles.customSelectOption} ${
+                  isSelected ? styles.customSelectOptionSelected : ""
+                }`}
+                onClick={() => commitChange(option.value)}
+                onKeyDown={(event) =>
+                  handleOptionKeyDown(event, option.value)
+                }
+              >
+                <span>{option.label}</span>
+                {option.description ? <small>{option.description}</small> : null}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 function getDefaultSubtype(
   accountType: SignupAccountType,
@@ -650,68 +863,52 @@ export default function AuthClient() {
                 noValidate
               >
                 <div className={styles.signupTypeRow}>
-                  <label className={styles.field}>
+                  <div className={styles.field}>
                     <span className={styles.label}>Choose account type</span>
-                    <select
+                    <CustomSelect
                       name="accountType"
-                      className={styles.select}
                       value={signupForm.accountType}
-                      onChange={(event) => {
-                        const nextAccountType = event.target
-                          .value as SignupAccountType;
+                      options={SIGNUP_ACCOUNT_TYPE_OPTIONS}
+                      onChange={(nextAccountType) => {
                         setSignupForm((current) => ({
                           ...current,
                           accountType: nextAccountType,
                           accountSubtype: getDefaultSubtype(nextAccountType),
                         }));
                       }}
-                    >
-                      {SIGNUP_ACCOUNT_TYPE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                    />
+                  </div>
 
-                  <label className={styles.field}>
+                  <div className={styles.field}>
                     <span className={styles.label}>
                       Which best describes you?
                     </span>
-                    <select
+                    <CustomSelect
                       name="accountSubtype"
-                      className={styles.select}
                       value={signupForm.accountSubtype}
-                      onChange={(event) =>
+                      options={
+                        SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[signupForm.accountType]
+                      }
+                      onChange={(nextAccountSubtype) =>
                         setSignupForm((current) => ({
                           ...current,
-                          accountSubtype: event.target
-                            .value as SignupAccountSubtype,
+                          accountSubtype: nextAccountSubtype,
                         }))
                       }
-                    >
-                      {SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[
-                        signupForm.accountType
-                      ].map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                    />
+                  </div>
                 </div>
 
-                <label className={styles.field}>
+                <div className={styles.field}>
                   <span className={styles.label}>
                     Who introduced you to Aim4price?
                   </span>
-                  <select
+                  <CustomSelect
                     name="introducedByOption"
-                    className={styles.select}
                     value={signupForm.introducedByOption}
-                    onChange={(event) => {
-                      const value = event.target
-                        .value as SignupIntroducedByOption;
+                    options={INTRODUCED_BY_OPTIONS}
+                    placeholder="Select who introduced you"
+                    onChange={(value) => {
                       setSignupForm((current) => ({
                         ...current,
                         introducedByOption: value,
@@ -719,16 +916,8 @@ export default function AuthClient() {
                           value === "other" ? current.introducedByName : "",
                       }));
                     }}
-                    required
-                  >
-                    <option value="">Select introduced by</option>
-                    {INTRODUCED_BY_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  />
+                </div>
 
                 {signupForm.introducedByOption === "other" ? (
                   <label className={styles.field}>
