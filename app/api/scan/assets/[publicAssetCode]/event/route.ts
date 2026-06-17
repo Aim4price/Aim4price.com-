@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { recordAdminUsageEventsSafely, type AdminUsageEventInput } from '../../../../../../lib/admin-usage-events';
 import { authorizeScanAccess } from '../../../../../../lib/scan-auth';
 import { listRecentScanEvents, normalizePublicAssetCode, saveScanAssetEvent } from '../../../../../../lib/scan-assets';
 import { MAX_ASSET_REGISTER_PHOTOS } from '../../../../../../lib/asset-register-uploads';
@@ -178,6 +179,33 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
 
     const recentEvents = await listRecentScanEvents(saved.asset.id, 8);
+    const metadata = {
+      assetId: saved.asset.id,
+      eventId: saved.event.id,
+      actorType: access.accessMode,
+      publicAssetCode,
+      hasNote: Boolean(payload.note),
+      photoCount: payload.photoUrls.length,
+    };
+    const usageEvents: AdminUsageEventInput[] = [
+      {
+        userId: access.ownerUserId,
+        eventType: 'qr_asset_updated',
+        eventSource: 'scan-asset-event',
+        metadata,
+      },
+    ];
+
+    if (payload.note) {
+      usageEvents.push({
+        userId: access.ownerUserId,
+        eventType: 'maintenance_note_left',
+        eventSource: 'scan-asset-event',
+        metadata,
+      });
+    }
+
+    await recordAdminUsageEventsSafely(usageEvents);
 
     return NextResponse.json({
       ok: true,
