@@ -5,12 +5,18 @@ import {
   type AccountStatus,
 } from "../../../../lib/account-constants";
 import {
+  ADMIN_SUPPORT_COOKIE_MAX_AGE_SECONDS,
+  ADMIN_SUPPORT_COOKIE_NAME,
+  getAnyServerSession,
+} from "../../../../lib/auth-session";
+import {
+  assertAdminCanOpenUser,
+  deleteAdminManagedUser,
   findAdminUserEmail,
   listAdminUsers,
   setAdminUserAccountStatus,
 } from "../../../../lib/admin-users";
 import { auth } from "../../../../lib/auth";
-import { getAnyServerSession } from "../../../../lib/auth-session";
 import { getResetPasswordRedirectUrl } from "../../../../lib/email";
 
 export const runtime = "nodejs";
@@ -22,7 +28,14 @@ const ALLOWED_STATUSES = new Set<AccountStatus>([
   "suspended",
 ]);
 
-type AdminAction = "activate" | "pending" | "suspend" | "send_reset";
+type AdminAction =
+  | "activate"
+  | "pending"
+  | "suspend"
+  | "send_reset"
+  | "open_account"
+  | "close_account"
+  | "delete_user";
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ ok: false, error: message }, { status });
@@ -50,6 +63,33 @@ function readActionStatus(action: AdminAction): AccountStatus | null {
   if (action === "pending") return "pending_payment";
   if (action === "suspend") return "suspended";
   return null;
+}
+
+function withClearedAdminSupportCookie(response: NextResponse): NextResponse {
+  response.cookies.set(ADMIN_SUPPORT_COOKIE_NAME, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  });
+
+  return response;
+}
+
+function withAdminSupportCookie(
+  response: NextResponse,
+  userId: string,
+): NextResponse {
+  response.cookies.set(ADMIN_SUPPORT_COOKIE_NAME, userId, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: ADMIN_SUPPORT_COOKIE_MAX_AGE_SECONDS,
+  });
+
+  return response;
 }
 
 export async function GET() {
@@ -86,17 +126,48 @@ export async function POST(request: Request) {
     return jsonError("Invalid request body.");
   }
 
-  const userId = typeof body.userId === "string" ? body.userId.trim() : "";
   const action =
     typeof body.action === "string"
       ? (body.action.trim() as AdminAction)
       : ("" as AdminAction);
+
+  if (action === "close_account") {
+    return withClearedAdminSupportCookie(
+      NextResponse.json({ ok: true, message: "Admin support access closed." }),
+    );
+  }
+
+  const userId = typeof body.userId === "string" ? body.userId.trim() : "";
 
   if (!userId) {
     return jsonError("Missing user ID.");
   }
 
   try {
+    if (action === "open_account") {
+      const email = await assertAdminCanOpenUser(userId);
+      const users = await listAdminUsers();
+      return withAdminSupportCookie(
+        NextResponse.json({
+          ok: true,
+          users,
+          redirectUrl: "/account",
+          message: `Admin support access opened for ${email}.`,
+        }),
+        userId,
+      );
+    }
+
+    if (action === "delete_user") {
+      await deleteAdminManagedUser(userId);
+      const users = await listAdminUsers();
+      return NextResponse.json({
+        ok: true,
+        users,
+        message: "Account deleted.",
+      });
+    }
+
     if (action === "send_reset") {
       const email = await findAdminUserEmail(userId);
       await auth.api.requestPasswordReset({
