@@ -1,0 +1,254 @@
+.page {
+  min-height: 100vh;
+  color: #142f28;
+  background: #f6f8f7;
+}
+
+.shell {
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.35rem clamp(1rem, 3vw, 4rem) 3rem;
+  box-sizing: border-box;
+  display: grid;
+  gap: 1rem;
+}
+
+.topBar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 0.25rem 0 0.45rem;
+}
+
+.titleBlock {
+  min-width: 15rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.18rem;
+  color: #60716a;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.titleBlock h1 {
+  margin: 0;
+  color: #0e2e26;
+  font-size: clamp(2rem, 3vw, 2.75rem);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.titleBlock span {
+  display: inline-block;
+  margin-top: 0.42rem;
+  color: #697973;
+  font-size: 0.93rem;
+  font-weight: 720;
+  white-space: nowrap;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.adminButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.9rem;
+  padding: 0 1.15rem;
+  border: 1px solid #d7e1dc;
+  border-radius: 999px;
+  color: #17362c;
+  background: #ffffff;
+  text-decoration: none;
+  font-size: 0.84rem;
+  font-weight: 850;
+  white-space: nowrap;
+  box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.adminButton:hover {
+  background: #f9fbfa;
+  border-color: #c6d5cd;
+}
+
+.summaryNote {
+  padding: 0.9rem 1rem;
+  border: 1px solid #dfe8e3;
+  border-radius: 1rem;
+  color: #52645d;
+  background: #ffffff;
+  font-size: 0.91rem;
+  line-height: 1.45;
+  box-shadow: 0 14px 34px rgba(18, 45, 37, 0.045);
+}
+
+.summaryNote strong {
+  color: #17362c;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.card,
+.storageCard {
+  border: 1px solid #dfe8e3;
+  border-radius: 1.1rem;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(18, 45, 37, 0.055);
+}
+
+.card {
+  min-height: 11rem;
+  padding: 1rem;
+  display: grid;
+  align-content: space-between;
+  gap: 1rem;
+}
+
+.cardHeader {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.card h2,
+.storageCard h2 {
+  margin: 0;
+  color: #12362d;
+  font-size: 1.02rem;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.card p {
+  margin: 0;
+  color: #697973;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  font-weight: 650;
+}
+
+.values {
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.valueRow,
+.storageRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.valueRow dt,
+.storageRow span {
+  margin: 0;
+  color: #60716a;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.valueRow dd {
+  margin: 0;
+  display: grid;
+  justify-items: end;
+  gap: 0.1rem;
+  text-align: right;
+}
+
+.valueRow strong,
+.storageRow strong {
+  color: #17362c;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.valueRow dd span {
+  color: #8b9a94;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.storageCard {
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: minmax(14rem, 0.35fr) 1fr;
+  gap: 1.25rem;
+}
+
+.storageRows {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.storageRow {
+  min-height: 2.5rem;
+  padding: 0 0.85rem;
+  border: 1px solid #e5ede8;
+  border-radius: 0.85rem;
+  background: #f9fbfa;
+}
+
+@media (max-width: 1180px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .topBar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .toolbar {
+    justify-content: stretch;
+  }
+
+  .adminButton {
+    flex: 1 1 0;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .storageCard {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .shell {
+    padding: 0.9rem 0.65rem 2rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    flex-direction: column;
+  }
+
+  .adminButton {
+    width: 100%;
+  }
+}
