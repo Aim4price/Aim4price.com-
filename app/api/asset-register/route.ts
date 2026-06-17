@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../lib/auth-session';
+import { recordAdminUsageEventSafely } from '../../../lib/admin-usage-events';
+import { getServerSession, isAdminSupportSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { attachOpenPartnerNotesToAssets } from '../../../lib/partner-access';
 import { attachLatestMaintenanceStatusToAssets } from '../../../lib/scan-assets';
@@ -41,6 +42,14 @@ type ErrorLike = {
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
+}
+
+function getUsageUserId(session: Awaited<ReturnType<typeof getServerSession>>): string | null {
+  if (!session?.user?.id || isAdminSupportSession(session)) {
+    return null;
+  }
+
+  return session.user.id;
 }
 
 
@@ -453,6 +462,16 @@ export async function POST(request: NextRequest) {
       condition: normalizeCondition(body.condition),
     });
 
+    const usageUserId = getUsageUserId(session);
+    if (usageUserId) {
+      await recordAdminUsageEventSafely({
+        userId: usageUserId,
+        eventType: 'asset_saved',
+        eventSource: 'asset-register',
+        metadata: { assetId: item.id, kind: item.kind, selectedMethod: 'manual' },
+      });
+    }
+
     return NextResponse.json({ ok: true, item });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_REGISTER_NOT_FOUND') {
@@ -566,6 +585,17 @@ export async function PUT(request: NextRequest) {
     const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [item]);
     const [itemWithMaintenanceStatus] = await attachLatestMaintenanceStatusToAssets(itemWithPartnerNote ? [itemWithPartnerNote] : [item]);
 
+    const usageUserId = getUsageUserId(session);
+    if (usageUserId) {
+      await recordAdminUsageEventSafely({
+        userId: usageUserId,
+        eventType: 'asset_updated',
+        eventSource: 'asset-register',
+        metadata: { assetId: item.id, kind: item.kind },
+      });
+    }
+
+
     return NextResponse.json({ ok: true, item: itemWithMaintenanceStatus ?? itemWithPartnerNote ?? item });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
@@ -643,6 +673,16 @@ export async function PATCH(request: NextRequest) {
 
     const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [item]);
     const [itemWithMaintenanceStatus] = await attachLatestMaintenanceStatusToAssets(itemWithPartnerNote ? [itemWithPartnerNote] : [item]);
+
+    const usageUserId = getUsageUserId(session);
+    if (usageUserId) {
+      await recordAdminUsageEventSafely({
+        userId: usageUserId,
+        eventType: 'asset_updated',
+        eventSource: 'asset-register-media',
+        metadata: { assetId: item.id },
+      });
+    }
 
     return NextResponse.json({ ok: true, item: itemWithMaintenanceStatus ?? itemWithPartnerNote ?? item });
   } catch (error) {
