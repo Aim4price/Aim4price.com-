@@ -8329,7 +8329,7 @@
   }
 }
 
-/* === Valuation fixes: remove footer gap and market evidence info === */
+/* === Valuation fixes: remove footer gap and retired valuation evidence spacing === */
 .page {
   min-height: auto;
   padding-bottom: 0;
@@ -8570,7 +8570,7 @@
   }
 }
 
-/* Marketplace estimate-to-listing flow */
+/* Aim4price estimate-to-listing flow */
 .marketplaceIntroOverlay {
   position: fixed;
   inset: 0;
