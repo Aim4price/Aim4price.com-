@@ -400,33 +400,6 @@ function pdfFileSlug(value: string): string {
   return parts.join('-') || 'Valuation';
 }
 
-function filenameFromContentDisposition(value: string | null): string | null {
-  if (!value) return null;
-
-  const utfMatch = /filename\*=UTF-8''([^;]+)/i.exec(value);
-  if (utfMatch?.[1]) {
-    try {
-      return decodeURIComponent(utfMatch[1].replace(/"/g, '').trim());
-    } catch {
-      return utfMatch[1].replace(/"/g, '').trim();
-    }
-  }
-
-  const basicMatch = /filename="?([^";]+)"?/i.exec(value);
-  return basicMatch?.[1]?.trim() || null;
-}
-
-function triggerBlobDownload(blob: Blob, fileName: string) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 function toNumberOrNull(value: unknown): number | null {
   const numeric = parseFlexibleNumber(value);
   return numeric !== null && numeric > 0 ? numeric : null;
@@ -1843,32 +1816,36 @@ export default function ValuationClient() {
     setPdfError('');
 
     try {
-      const response = await fetch('/api/valuation/report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const targetName = `aim4price-valuation-report-${pdfFileSlug(payload.machineTitle)}-${Date.now()}`;
+      const reportWindow = window.open('', targetName);
 
-      if (!response.ok) {
-        let errorMessage = 'Failed to create the valuation PDF.';
-        try {
-          const data = (await response.json()) as { error?: string };
-          errorMessage = data.error || errorMessage;
-        } catch {
-          // Keep the default message when the server did not return JSON.
-        }
-        throw new Error(errorMessage);
+      if (!reportWindow) {
+        throw new Error('The PDF report window was blocked. Allow pop-ups for Aim4price, then try again.');
       }
 
-      const blob = await response.blob();
-      const fileName = filenameFromContentDisposition(response.headers.get('Content-Disposition'))
-        || `Aim4price-Valuation-${pdfFileSlug(payload.machineTitle)}.pdf`;
-      triggerBlobDownload(blob, fileName);
+      reportWindow.document.write('<!doctype html><title>Preparing Aim4price report...</title><body style="font-family: Arial, sans-serif; padding: 24px; color: #111827;">Preparing Aim4price valuation report...</body>');
+      reportWindow.document.close();
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/api/valuation/report';
+      form.target = targetName;
+      form.style.display = 'none';
+
+      const payloadInput = document.createElement('input');
+      payloadInput.type = 'hidden';
+      payloadInput.name = 'payload';
+      payloadInput.value = JSON.stringify(payload);
+      form.appendChild(payloadInput);
+
+      document.body.appendChild(form);
+      form.submit();
+      window.setTimeout(() => form.remove(), 0);
     } catch (error) {
       console.error(error);
-      setPdfError(error instanceof Error ? error.message : 'Failed to create the valuation PDF.');
+      setPdfError(error instanceof Error ? error.message : 'Failed to create the valuation PDF report.');
     } finally {
-      setPdfLoading(false);
+      window.setTimeout(() => setPdfLoading(false), 700);
     }
   }
 
