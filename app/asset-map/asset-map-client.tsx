@@ -246,7 +246,7 @@ function formatMoney(value: number | null | undefined): string {
 
 function methodLabel(value?: string | null): string {
   const normalized = String(value ?? '').trim().toLowerCase();
-  if (normalized === 'market') return 'Market';
+  if (normalized === 'market') return 'Aim4price';
   if (normalized === 'manual') return 'Manual';
   if (normalized === 'generic') return 'Aim4price';
   if (normalized === 'tractor') return 'Aim4price';
