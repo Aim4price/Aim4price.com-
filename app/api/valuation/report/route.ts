@@ -144,16 +144,50 @@ function isBlankReportValue(value: unknown): boolean {
   return !normalized || /^(-|—|n\/a|null|undefined)$/i.test(normalized);
 }
 
+function isRemovedReportRowLabel(label: string): boolean {
+  const normalized = normalizeSpaces(label);
+  return (
+    /^(Selected Value|Selected Value Type)$/i.test(normalized) ||
+    /^Estimate Source\s*\/\s*Selected Value Type$/i.test(normalized)
+  );
+}
+
+function normalizeUsageSummaryForReport(value: unknown, fallback = 'Usage captured'): string {
+  const cleaned = readString(value, fallback);
+  const parts = cleaned.split(/\s*•\s*/).map(normalizeSpaces).filter(Boolean);
+
+  if (parts.length <= 1) return cleaned;
+
+  const actualUsage = parts.find((part) => /\b(km|hours?|hrs?)\b/i.test(part) && !/\bestimated\b/i.test(part));
+  if (actualUsage) return actualUsage;
+
+  const percentageWorked = parts.find((part) => /%/.test(part));
+  if (percentageWorked) return percentageWorked;
+
+  return parts[0] ?? cleaned;
+}
+
 function normalizeReportRows(value: unknown): ValuationReportKeyValue[] {
   if (!Array.isArray(value)) return [];
 
   return value
     .filter(isPlainRecord)
-    .map((row) => ({
-      label: normalizeSpaces(row.label).replace(/Marketplace\s+Value/gi, 'Aim4price Value'),
-      value: normalizeSpaces(row.value).replace(/Marketplace\s+Value/gi, 'Aim4price Value'),
-    }))
-    .filter((row) => row.label && !/^Market\s+Evidence$/i.test(row.label) && !isBlankReportValue(row.value));
+    .map((row) => {
+      const label = normalizeSpaces(row.label).replace(/Marketplace\s+Value/gi, 'Aim4price Value');
+      const value = normalizeSpaces(row.value).replace(/Marketplace\s+Value/gi, 'Aim4price Value');
+
+      return {
+        label,
+        value: /^Usage$/i.test(label) ? normalizeUsageSummaryForReport(value, '') : value,
+      };
+    })
+    .filter(
+      (row) =>
+        row.label &&
+        !isRemovedReportRowLabel(row.label) &&
+        !/^Market\s+Evidence$/i.test(row.label) &&
+        !isBlankReportValue(row.value),
+    );
 }
 
 function normalizeSelectedMethodLabel(value: unknown): string {
@@ -230,7 +264,7 @@ function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationR
   const selectedMethodLabel = normalizeSelectedMethodLabel(value.selectedMethodLabel);
   const confidenceText = normalizeConfidenceText(value.confidenceText);
   const yearSummary = readString(value.yearSummary, 'Unknown');
-  const usageSummary = readString(value.usageSummary, 'Usage captured');
+  const usageSummary = normalizeUsageSummaryForReport(value.usageSummary);
   const conditionSummary = readString(value.conditionSummary, 'Condition captured');
   const valuationPath = readString(value.valuationPath, 'Estimate');
   const replacementPriceExVat = readNumber(value.replacementPriceExVat);
@@ -246,7 +280,6 @@ function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationR
     pushRow(fallbackAssetRows, 'Replacement Price', `${formatReportMoney(replacementPriceExVat)} excl. VAT`);
   }
   pushRow(fallbackAssetRows, 'Estimate Path', valuationPath);
-  pushRow(fallbackAssetRows, 'Estimate Source / Selected Value Type', selectedMethodLabel);
 
   const fallbackClientRows: ValuationReportKeyValue[] = [
     { label: 'Business Name', value: 'Aim4price' },
@@ -255,7 +288,6 @@ function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationR
   ];
 
   const fallbackRecordRows: ValuationReportKeyValue[] = [
-    { label: 'Selected Value', value: selectedMethodLabel },
     { label: 'Confidence', value: confidenceText },
     { label: 'Generated', value: generatedLabel },
   ];
