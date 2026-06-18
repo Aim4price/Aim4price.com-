@@ -359,6 +359,35 @@ const SECTOR_OPTIONS: Array<{ key: SectorKey; label: string; available: boolean;
   { key: 'motor', label: SECTOR_LABELS.motor, available: true, videoSrc: '/brand/valuation/Motor.mp4' },
 ];
 
+type ValuationSearchPlaceholderKey = 'family' | 'brand' | 'model' | 'manualModel';
+
+const VALUATION_SEARCH_PLACEHOLDERS: Record<SectorKey, Record<ValuationSearchPlaceholderKey, string>> = {
+  agricultural: {
+    family: 'e.g. tractor, baler, spreader',
+    brand: 'e.g. John Deere, New Holland, Case IH',
+    model: 'e.g. 6155M, 7610, 7810',
+    manualModel: 'e.g. 6155M',
+  },
+  industrial: {
+    family: 'e.g. forklift, compressor, generator',
+    brand: 'e.g. Toyota, Hyster, Atlas Copco',
+    model: 'e.g. 8FG25, H2.5FT, XAS 186',
+    manualModel: 'e.g. 8FG25',
+  },
+  construction: {
+    family: 'e.g. excavator, TLB, wheel loader',
+    brand: 'e.g. CAT, JCB, Komatsu',
+    model: 'e.g. 3CX, 320D, WA380',
+    manualModel: 'e.g. 3CX',
+  },
+  motor: {
+    family: 'e.g. bakkie, SUV, sedan',
+    brand: 'e.g. Toyota, Ford, Isuzu',
+    model: 'e.g. Hilux, Ranger, D-Max',
+    manualModel: 'e.g. Hilux 2.4 GD-6',
+  },
+};
+
 const TRACTOR_TYPE_OPTIONS: Array<{ value: TractorType; label: string }> = [
   { value: 'field', label: 'Field' },
   { value: 'orchard', label: 'Orchard' },
@@ -411,7 +440,7 @@ function getSpecsTitle(sectorKey?: SectorKey | null): string {
 }
 
 function getGenericEstimatePathCopy(sectorKey?: SectorKey | null): string {
-  return `Aim4price uses the brand, catalogue model, condition, usage and ${getSpecsLabel(sectorKey)} for this estimate path.`;
+  return `Aim4price uses the brand, condition, usage and ${getSpecsLabel(sectorKey)} for this estimate path.`;
 }
 
 function getGpsTypeLabel(value: GpsType): string {
@@ -513,6 +542,32 @@ function formatPercent(value: number | null): string {
 function formatWholeNumber(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return 'N/A';
   return Math.round(value).toLocaleString('en-ZA');
+}
+
+function getSearchPlaceholder(sectorKey: SectorKey | null | undefined, key: ValuationSearchPlaceholderKey): string {
+  return VALUATION_SEARCH_PLACEHOLDERS[sectorKey ?? 'agricultural'][key];
+}
+
+function formatSingleUsageSummary(args: {
+  actualUsageAmount?: number | null;
+  lifeWorkedPercent?: number | null;
+  sectorKey?: SectorKey | string | null;
+  usageMetricType?: UsageMetricType | string | null;
+  fallbackUnit?: string;
+  fallback?: string;
+}): string {
+  const actualUsageAmount = args.actualUsageAmount ?? null;
+  if (actualUsageAmount !== null && Number.isFinite(actualUsageAmount) && actualUsageAmount > 0) {
+    const unit = args.fallbackUnit ?? getUsageShortUnit(args.sectorKey, args.usageMetricType);
+    return `${formatWholeNumber(actualUsageAmount)} ${unit}`;
+  }
+
+  const lifeWorkedPercent = args.lifeWorkedPercent ?? null;
+  if (lifeWorkedPercent !== null && Number.isFinite(lifeWorkedPercent)) {
+    return `${formatPercent(lifeWorkedPercent)} worked`;
+  }
+
+  return args.fallback ?? 'Usage captured';
 }
 
 function formatListingYear(value: number | null | undefined): string | null {
@@ -916,8 +971,11 @@ export default function ValuationClient() {
   const [marketplacePublishError, setMarketplacePublishError] = useState('');
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const [replacementPanelOpen, setReplacementPanelOpen] = useState(false);
+  const [completionToastVisible, setCompletionToastVisible] = useState(false);
   const marketplacePhotoInputRef = useRef<HTMLInputElement | null>(null);
   const genericModelPrefilledSpecKeysRef = useRef<Set<string>>(new Set());
+  const requiredQuestionsCompletedRef = useRef(false);
+  const completionToastTimerRef = useRef<number | null>(null);
   const [shouldAutoPlaySectorVideos, setShouldAutoPlaySectorVideos] = useState(false);
 
   useEffect(() => {
@@ -950,7 +1008,6 @@ export default function ValuationClient() {
     () => genericCatalogModels.find((model) => String(model.id) === genericModelId) ?? null,
     [genericCatalogModels, genericModelId],
   );
-  const genericModelRequired = selectedSector === 'motor' && flowMode === 'generic_specs';
   const submittedGenericModelName = genericModelMode === 'catalog'
     ? getGenericModelSubmitName(selectedGenericModel)
     : normalizeText(typedModelName);
@@ -1004,6 +1061,9 @@ export default function ValuationClient() {
   }, [brands, brandSearch]);
 
   const exactTractorAvailable = selectedFamily?.familyKey === 'tractors' && selectedFamily.catalogMode === 'hybrid';
+  const genericExactModelPath = flowMode === 'exact_model' && !exactTractorAvailable;
+  const genericValuationPath = flowMode === 'generic_specs' || genericExactModelPath;
+  const genericModelRequired = genericExactModelPath;
   const tractorSetupComplete = Boolean(tractorType && drive && cab);
   const filteredModels = useMemo(() => {
     const query = modelQuery.trim().toLowerCase();
@@ -1067,22 +1127,52 @@ export default function ValuationClient() {
   const specsJson = useMemo(() => buildSpecPayload(specQuestions, specAnswers), [specQuestions, specAnswers]);
   const enrichedSpecsJson = useMemo(
     () => ({
-      ...(flowMode === 'generic_specs' && selectedGenericModel ? normalizeGenericSpecsRecord(selectedGenericModel.specsJson) : {}),
+      ...(genericValuationPath && selectedGenericModel ? normalizeGenericSpecsRecord(selectedGenericModel.specsJson) : {}),
       ...specsJson,
       ...(lifeWorkedPercentNumber !== null ? { life_worked_percent: lifeWorkedPercentNumber } : {}),
       ...(yearModelUnknown ? { year_model_unknown: true } : {}),
     }),
-    [flowMode, selectedGenericModel, specsJson, lifeWorkedPercentNumber, yearModelUnknown],
+    [genericValuationPath, selectedGenericModel, specsJson, lifeWorkedPercentNumber, yearModelUnknown],
   );
   const headlineValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
   const normalizedSignedInAccountType = normalizeAccountType(accountType);
   const isDealerAccount = normalizedSignedInAccountType === 'dealer';
   const canUseMarketplacePublishFlow = isSignedIn && (normalizedSignedInAccountType === 'owner' || normalizedSignedInAccountType === 'dealer');
   const canSaveToAssetRegister = isSignedIn && normalizedSignedInAccountType === 'owner';
+  const requiredSpecQuestionsCompleted = Boolean(
+    conditionStepComplete &&
+      genericValuationPath &&
+      specQuestions.length > 0 &&
+      specQuestions.every((question) => !question.isRequired || isSpecQuestionAnswered(question, specAnswers[question.specKey])),
+  );
+
   useEffect(() => {
     const target = document.getElementById('valuation-wizard-card');
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [step]);
+
+  useEffect(() => {
+    if (requiredSpecQuestionsCompleted && !requiredQuestionsCompletedRef.current) {
+      setCompletionToastVisible(true);
+
+      if (completionToastTimerRef.current) {
+        window.clearTimeout(completionToastTimerRef.current);
+      }
+
+      completionToastTimerRef.current = window.setTimeout(() => {
+        setCompletionToastVisible(false);
+        completionToastTimerRef.current = null;
+      }, 2600);
+    }
+
+    requiredQuestionsCompletedRef.current = requiredSpecQuestionsCompleted;
+  }, [requiredSpecQuestionsCompleted]);
+
+  useEffect(() => () => {
+    if (completionToastTimerRef.current) {
+      window.clearTimeout(completionToastTimerRef.current);
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1235,7 +1325,7 @@ export default function ValuationClient() {
     const sectorForRequest = selectedSector;
     const familyForRequest = selectedFamily;
     const familyKeyForRequest = familyForRequest.familyKey;
-    const nextFlowMode: FlowMode = familyKeyForRequest === 'tractors' && familyForRequest.catalogMode === 'hybrid' ? '' : 'generic_specs';
+    const nextFlowMode: FlowMode = '';
 
     setResultState(null);
     setSelectedMethod('aim4price');
@@ -1306,7 +1396,7 @@ export default function ValuationClient() {
     setSpecQuestions([]);
     setSpecAnswers({});
 
-    if (!selectedFamily || !selectedSector || flowMode !== 'generic_specs') {
+    if (!selectedFamily || !selectedSector || !genericValuationPath) {
       return () => {
         ignore = true;
       };
@@ -1336,7 +1426,7 @@ export default function ValuationClient() {
     return () => {
       ignore = true;
     };
-  }, [selectedFamily, selectedSector, flowMode]);
+  }, [selectedFamily, selectedSector, genericValuationPath]);
 
   useEffect(() => {
     if (!brandSlug || flowMode !== 'exact_model' || !tractorType || !drive || !cab) {
@@ -1385,7 +1475,7 @@ export default function ValuationClient() {
   }, [brandSlug, flowMode, tractorType, drive, cab]);
 
   useEffect(() => {
-    if (!selectedSector || !selectedFamily || !brandSlug || flowMode !== 'generic_specs') {
+    if (!selectedSector || !selectedFamily || !brandSlug || !genericValuationPath) {
       setGenericCatalogModels([]);
       setGenericModelsLoading(false);
       clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
@@ -1425,12 +1515,12 @@ export default function ValuationClient() {
     return () => {
       ignore = true;
     };
-  }, [selectedSector, selectedFamily, brandSlug, flowMode]);
+  }, [selectedSector, selectedFamily, brandSlug, genericValuationPath]);
 
   useEffect(() => {
-    if (flowMode !== 'generic_specs' || genericModelMode !== 'catalog' || !selectedGenericModel) return;
+    if (!genericValuationPath || genericModelMode !== 'catalog' || !selectedGenericModel) return;
     applyGenericModelSpecDefaults(selectedGenericModel);
-  }, [flowMode, genericModelMode, selectedGenericModel, specQuestions]);
+  }, [genericValuationPath, genericModelMode, selectedGenericModel, specQuestions]);
 
   function resetResult() {
     setResultState(null);
@@ -1509,12 +1599,16 @@ export default function ValuationClient() {
   }
 
   function validateGenericModelSelection(): string | null {
-    if (flowMode !== 'generic_specs') return null;
+    if (!genericValuationPath) return null;
 
     const manualModelName = normalizeText(typedModelName);
 
-    if (genericModelRequired && !selectedGenericModel && !manualModelName) {
-      return 'Choose a model or select Model not listed and enter the model name.';
+    if (genericModelRequired && !selectedGenericModel) {
+      if (genericModelsLoading) return 'Catalogue models are still loading. Please wait.';
+
+      return genericCatalogModels.length
+        ? 'Choose a catalogue model first, or switch to the flexible specs path.'
+        : `No catalogue models are available yet for this brand and ${getAssetTypeLabel(selectedSector)}. Use the flexible specs path.`;
     }
 
     if (genericModelMode === 'manual' && !manualModelName) return 'Enter the model name.';
@@ -1552,7 +1646,7 @@ export default function ValuationClient() {
     if (!selectedFamily) return `Choose an ${getAssetTypeLabel(selectedSector)} first.`;
     if (!selectedBrand) return 'Choose a brand first.';
 
-    const genericPath = flowMode === 'generic_specs';
+    const genericPath = genericValuationPath;
     const selfPropelled = selectedFamily?.isPropelled || selectedFamily?.usageMetricType === 'hours' || selectedFamily?.usageMetricType === 'km';
     const showHoursInput = !genericPath || selfPropelled;
 
@@ -1577,10 +1671,10 @@ export default function ValuationClient() {
     }
 
     if (!conditionStepComplete || !condition) return 'Choose the condition.';
-    if (flowMode === 'exact_model' && !tractorSetupComplete) return 'Complete the type, drive and cab setup first.';
-    if (flowMode === 'exact_model' && !selectedModel) return `Choose the exact model or use ${getSpecsLabel(selectedSector)}.`;
+    if (flowMode === 'exact_model' && exactTractorAvailable && !tractorSetupComplete) return 'Complete the type, drive and cab setup first.';
+    if (flowMode === 'exact_model' && exactTractorAvailable && !selectedModel) return `Choose the exact model or use ${getSpecsLabel(selectedSector)}.`;
 
-    if (flowMode === 'generic_specs') {
+    if (genericValuationPath) {
       const genericModelMessage = validateGenericModelSelection();
       if (genericModelMessage) return genericModelMessage;
 
@@ -1719,7 +1813,7 @@ export default function ValuationClient() {
     setSavedMarketplaceAssetId(null);
 
     try {
-      if (flowMode === 'exact_model' && selectedModel) {
+      if (flowMode === 'exact_model' && exactTractorAvailable && selectedModel) {
         const response = await fetch('/api/tractor-valuations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1872,12 +1966,17 @@ export default function ValuationClient() {
 
     if (resultState.kind === 'tractor') {
       const model = resultState.result.model;
-      const titleUsage = usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber);
+      const titleUsage = formatSingleUsageSummary({
+        actualUsageAmount: usageNumber,
+        lifeWorkedPercent: lifeWorkedPercentNumber,
+        fallbackUnit: 'hours',
+        fallback: '',
+      });
       return [
         model.brandName,
         model.modelName,
         yearModelUnknown ? null : String(yearNumber),
-        titleUsage ? `${formatWholeNumber(titleUsage)} hours` : null,
+        titleUsage || null,
         conditionLabel(condition),
       ]
         .filter(Boolean)
@@ -1885,12 +1984,13 @@ export default function ValuationClient() {
     }
 
     const result = resultState.result;
-    const usageLabel =
-      result.usageAmount !== null
-        ? `${formatWholeNumber(result.usageAmount)} ${getUsageShortUnit(result.sector.key, result.family.usageMetricType)}`
-        : result.lifeWorkedPercent !== null
-          ? `${formatPercent(result.lifeWorkedPercent)} worked`
-          : null;
+    const usageLabel = formatSingleUsageSummary({
+      actualUsageAmount: result.usageAmount,
+      lifeWorkedPercent: result.lifeWorkedPercent,
+      sectorKey: result.sector.key,
+      usageMetricType: result.family.usageMetricType,
+      fallback: '',
+    }) || null;
 
     return [
       result.brand.name,
@@ -1934,13 +2034,13 @@ export default function ValuationClient() {
     const resultUsageShortUnit = isGeneric && genericResult
       ? getUsageShortUnit(genericResult.sector.key, genericResult.family.usageMetricType)
       : 'hours';
-    const usageSummary = isGeneric && genericSelectedCalculation
-      ? `${formatPercent(genericSelectedCalculation.lifeWorkedPercent)} worked${genericSelectedCalculation.estimatedHours ? ` • ${genericSelectedCalculation.estimatedHours.toLocaleString('en-ZA')} estimated ${resultUsageShortUnit}` : ''}`
-      : usageNumber
-        ? `${usageNumber.toLocaleString('en-ZA')} ${resultUsageShortUnit}`
-        : lifeWorkedPercentNumber !== null
-          ? `${formatPercent(lifeWorkedPercentNumber)} worked`
-          : 'Usage captured';
+    const usageSummary = formatSingleUsageSummary({
+      actualUsageAmount: isGeneric ? genericResult?.usageAmount ?? usageNumber : usageNumber,
+      lifeWorkedPercent: isGeneric ? genericResult?.lifeWorkedPercent ?? lifeWorkedPercentNumber : lifeWorkedPercentNumber,
+      sectorKey: genericResult?.sector.key ?? selectedSector,
+      usageMetricType: genericResult?.family.usageMetricType ?? selectedFamily?.usageMetricType,
+      fallbackUnit: resultUsageShortUnit,
+    });
     const tractorReplacementBasisText = tractorResult?.userReplacementPriceExVat && replacementPriceBasis === 'user'
       ? `Current basis: your replacement price of ${money(tractorResult.userReplacementPriceExVat)}`
       : `Current basis: saved replacement price of ${money(tractorResult?.replacementPriceUsedExVat ?? exactModel?.aim4priceReplacementExVat ?? null)}`;
@@ -1999,7 +2099,6 @@ export default function ValuationClient() {
       { label: 'Condition', value: conditionLabel(resultCondition) },
       { label: 'Replacement Price', value: moneyExVat(replacementPriceExVat) },
       { label: 'Estimate Path', value: valuationPath },
-      { label: 'Estimate Source / Selected Value Type', value: selectedMethodLabel },
     ]);
 
     const signedInBusinessName = accountProfile?.businessName || accountProfile?.displayName || accountProfile?.name;
@@ -2028,7 +2127,6 @@ export default function ValuationClient() {
         ]);
 
     const recordRows = compactPdfRows([
-      { label: 'Selected Value', value: selectedMethodLabel },
       { label: 'Confidence', value: confidenceText.replace(/^Confidence:\s*/i, '') },
       { label: 'Generated', value: formatPdfReportDate(generatedAt) },
     ]);
@@ -2547,19 +2645,19 @@ export default function ValuationClient() {
       return;
     }
     if (step === 3) {
-      if (exactTractorAvailable && !flowMode) {
+      if (!flowMode) {
         setMessage('Choose an estimate path first.');
         return;
       }
-      if (flowMode === 'exact_model' && !tractorSetupComplete) {
+      if (flowMode === 'exact_model' && exactTractorAvailable && !tractorSetupComplete) {
         setMessage('Complete the type, drive and cab setup first.');
         return;
       }
-      if (flowMode === 'exact_model' && !selectedModel) {
+      if (flowMode === 'exact_model' && exactTractorAvailable && !selectedModel) {
         setMessage(`Choose an exact model or continue using ${getSpecsLabel(selectedSector)}.`);
         return;
       }
-      if (flowMode === 'generic_specs') {
+      if (genericValuationPath) {
         const genericModelMessage = validateGenericModelSelection();
         if (genericModelMessage) {
           setMessage(genericModelMessage);
@@ -2835,7 +2933,7 @@ export default function ValuationClient() {
                 setEquipmentDropdownOpen(true);
               }}
               onFocus={() => setEquipmentDropdownOpen(true)}
-              placeholder={selectedSector === 'motor' ? 'e.g. bakkie, SUV, sedan' : 'e.g. baler, tractor, spreader'}
+              placeholder={getSearchPlaceholder(selectedSector, 'family')}
               autoComplete="off"
             />
           </label>
@@ -2916,7 +3014,7 @@ export default function ValuationClient() {
                 setBrandDropdownOpen(true);
               }}
               onFocus={() => setBrandDropdownOpen(true)}
-              placeholder={selectedSector === 'motor' ? 'e.g. Toyota, Ford, Isuzu' : 'e.g. Claas, John Deere, New Holland'}
+              placeholder={getSearchPlaceholder(selectedSector, 'brand')}
               autoComplete="off"
             />
           </label>
@@ -2971,18 +3069,6 @@ export default function ValuationClient() {
   }
 
   function renderPathStep() {
-    if (!exactTractorAvailable) {
-      return (
-        <div>
-          <h2 className={styles.stepTitle}>{getSpecsTitle(selectedSector)} path</h2>
-          <p className={styles.stepText}>
-            {getGenericEstimatePathCopy(selectedSector)}
-          </p>
-          {renderGenericModelPicker()}
-        </div>
-      );
-    }
-
     return (
       <div>
         <h2 className={styles.stepTitle}>Choose estimate path</h2>
@@ -3026,8 +3112,13 @@ export default function ValuationClient() {
         </div>
 
         {!flowMode ? <div className={styles.pathSelectionPlaceholder}>Select one of the two paths above to continue.</div> : null}
-        {flowMode === 'exact_model' ? renderTractorModelPicker() : null}
-        {flowMode === 'generic_specs' ? renderGenericModelPicker() : null}
+        {flowMode === 'exact_model' && exactTractorAvailable ? renderTractorModelPicker() : null}
+        {genericExactModelPath ? renderGenericModelPicker() : null}
+        {flowMode === 'generic_specs' ? (
+          <div className={styles.pathSelectionPlaceholder}>
+            {getGenericEstimatePathCopy(selectedSector)} Continue to answer the {getSpecsLabel(selectedSector)} questions.
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -3121,7 +3212,7 @@ export default function ValuationClient() {
                     setModelDropdownOpen(true);
                   }}
                   onFocus={() => setModelDropdownOpen(true)}
-                  placeholder="e.g. 6155M, 7610, 7810"
+                  placeholder={getSearchPlaceholder(selectedSector, 'model')}
                   autoComplete="off"
                 />
               </label>
@@ -3178,9 +3269,9 @@ export default function ValuationClient() {
       : genericModelMode === 'manual'
         ? 'Model not listed'
         : 'Choose model';
-    const modelPickerTitle = genericModelRequired ? 'Choose the model' : 'Choose a catalogue model';
+    const modelPickerTitle = genericModelRequired ? 'Choose exact catalogue model' : 'Choose a catalogue model';
     const modelPickerHint = genericModelRequired
-      ? 'Select the closest model from the catalogue. If the model is missing, choose Model not listed and enter it manually.'
+      ? `Select the exact or closest model from the ${getAssetNounLabel(selectedSector)} catalogue before continuing.`
       : 'Select the closest catalogue model to improve matching, or use Model not listed when the catalogue does not have it yet.';
 
     return (
@@ -3210,7 +3301,7 @@ export default function ValuationClient() {
                   setGenericModelDropdownOpen(true);
                 }}
                 onFocus={() => setGenericModelDropdownOpen(true)}
-                placeholder={selectedSector === 'motor' ? 'e.g. Hilux, Ranger, D-Max' : 'Search model name'}
+                placeholder={getSearchPlaceholder(selectedSector, 'model')}
                 autoComplete="off"
               />
             </label>
@@ -3258,25 +3349,42 @@ export default function ValuationClient() {
               ) : null}
             </div>
 
-            <div className={styles.inlineOptionRow}>
-              <button
-                type="button"
-                className={`${styles.inlineOptionButton} ${genericModelMode === 'manual' ? styles.inlineOptionButtonActive : ''}`}
-                onClick={handleGenericModelNotListed}
-              >
-                Model not listed
-              </button>
-            </div>
+            {!genericModelRequired ? (
+              <div className={styles.inlineOptionRow}>
+                <button
+                  type="button"
+                  className={`${styles.inlineOptionButton} ${genericModelMode === 'manual' ? styles.inlineOptionButtonActive : ''}`}
+                  onClick={handleGenericModelNotListed}
+                >
+                  Model not listed
+                </button>
+              </div>
+            ) : null}
 
             {genericModelsLoading ? <p className={styles.fieldHint}>Loading catalogue models...</p> : null}
             {!genericCatalogModels.length && !genericModelsLoading ? (
-              <p className={styles.message}>No catalogue models found for this brand and {getAssetTypeLabel(selectedSector)}. Choose Model not listed and enter the model name.</p>
+              <div className={styles.catalogEmptyState}>
+                <p className={styles.message}>No catalogue models found for this brand and {getAssetTypeLabel(selectedSector)} yet.</p>
+                {genericModelRequired ? (
+                  <button
+                    type="button"
+                    className={styles.inlineOptionButton}
+                    onClick={() => {
+                      setFlowMode('generic_specs');
+                      clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
+                      resetResult();
+                    }}
+                  >
+                    Use flexible specs path
+                  </button>
+                ) : null}
+              </div>
             ) : null}
             {genericCatalogModels.length > 0 && !filteredGenericModels.length && !genericModelsLoading ? (
-              <p className={styles.message}>No matching catalogue model. Clear the search or choose Model not listed.</p>
+              <p className={styles.message}>No matching catalogue model. Clear the search{genericModelRequired ? ' or use the flexible specs path.' : ' or choose Model not listed.'}</p>
             ) : null}
 
-            {genericModelMode === 'manual' ? (
+            {genericModelMode === 'manual' && !genericModelRequired ? (
               <label className={styles.field}>
                 <span className={styles.fieldLabel}>Enter model name</span>
                 <input
@@ -3285,7 +3393,7 @@ export default function ValuationClient() {
                     setTypedModelName(event.target.value);
                     resetResult();
                   }}
-                  placeholder={selectedSector === 'motor' ? 'e.g. Hilux 2.4 GD-6' : 'Enter model name'}
+                  placeholder={getSearchPlaceholder(selectedSector, 'manualModel')}
                   required
                   autoComplete="off"
                 />
@@ -3739,13 +3847,12 @@ export default function ValuationClient() {
           })}
         </div>
 
-        {requiredAnswered ? <p className={styles.completionHint}>Required questions completed. You can now get the estimate.</p> : null}
       </div>
     );
   }
 
   function renderDetailsStep() {
-    const genericPath = flowMode === 'generic_specs';
+    const genericPath = genericValuationPath;
     const selfPropelled = selectedFamily?.isPropelled || selectedFamily?.usageMetricType === 'hours' || selectedFamily?.usageMetricType === 'km';
     const showHoursInput = !genericPath || selfPropelled;
     const usageTitle = showHoursInput ? selectedUsageFieldLabel : 'Worked percentage';
@@ -3931,13 +4038,13 @@ export default function ValuationClient() {
     const resultUsageShortUnit = isGeneric && genericResult
       ? getUsageShortUnit(genericResult.sector.key, genericResult.family.usageMetricType)
       : 'hours';
-    const usageSummary = isGeneric && genericSelectedCalculation
-      ? `${formatPercent(genericSelectedCalculation.lifeWorkedPercent)} worked${genericSelectedCalculation.estimatedHours ? ` • ${genericSelectedCalculation.estimatedHours.toLocaleString('en-ZA')} estimated ${resultUsageShortUnit}` : ''}`
-      : usageNumber
-        ? `${usageNumber.toLocaleString('en-ZA')} ${resultUsageShortUnit}`
-        : lifeWorkedPercentNumber !== null
-          ? `${formatPercent(lifeWorkedPercentNumber)} worked`
-          : 'Usage captured';
+    const usageSummary = formatSingleUsageSummary({
+      actualUsageAmount: isGeneric ? genericResult?.usageAmount ?? usageNumber : usageNumber,
+      lifeWorkedPercent: isGeneric ? genericResult?.lifeWorkedPercent ?? lifeWorkedPercentNumber : lifeWorkedPercentNumber,
+      sectorKey: genericResult?.sector.key ?? selectedSector,
+      usageMetricType: genericResult?.family.usageMetricType ?? selectedFamily?.usageMetricType,
+      fallbackUnit: resultUsageShortUnit,
+    });
     const tractorReplacementBasisText = tractorResult?.userReplacementPriceExVat && replacementPriceBasis === 'user'
       ? `Current basis: your replacement price of ${money(tractorResult.userReplacementPriceExVat)}`
       : `Current basis: saved replacement price of ${money(tractorResult?.replacementPriceUsedExVat ?? tractorResult?.model.aim4priceReplacementExVat ?? null)}`;
@@ -4167,6 +4274,11 @@ export default function ValuationClient() {
   return (
     <main className={styles.page}>
       <AppHeader active="valuation" />
+      {completionToastVisible ? (
+        <div className={styles.completionToast} role="status" aria-live="polite">
+          Required questions completed. You can now get the estimate.
+        </div>
+      ) : null}
       <div className={styles.container}>
         <section className={`${styles.wizardShell} ${isSectorIntroStep ? styles.sectorWizardShell : ''}`}>
           <div id="valuation-wizard-card" className={`${styles.wizardCard} ${isSectorIntroStep ? styles.sectorWizardCard : ''}`}>
