@@ -6,9 +6,9 @@ type SendAim4priceEmailInput = {
   replyTo?: string;
 };
 
-const AIM4PRICE_EMAIL_FONT_STACK = '"Montserrat", Arial, Helvetica, sans-serif';
-const AIM4PRICE_EMAIL_LOGO_URL =
-  "https://www.aim4price.com/brand/Aim4price_Home_Logo.png";
+const AIM4PRICE_EMAIL_FONT_STACK =
+  'Montserrat, Arial, Helvetica, sans-serif';
+const AIM4PRICE_EMAIL_LOGO_PATH = "/brand/aim4price-mark-white.png";
 const AIM4PRICE_POSITIONING_TEXT =
   "Aim4price helps machinery owners, financiers, insurers and dealers make confident decisions with estimates, saved asset records and marketplace tools built for South Africa.";
 
@@ -41,6 +41,10 @@ export function getSiteOrigin(): string {
       ? "https://aim4price.com"
       : "http://localhost:3000";
   }
+}
+
+function getPublicAssetUrl(path: string): string {
+  return new URL(path, getSiteOrigin()).toString();
 }
 
 export function getResetPasswordRedirectUrl(): string {
@@ -142,6 +146,7 @@ export async function sendAim4priceResetPasswordEmail(input: {
   const displayName = normalizeTextValue(input.name) || "there";
   const safeName = escapeHtml(displayName);
   const safeUrl = escapeHtml(input.resetUrl);
+  const logoUrl = escapeHtml(getPublicAssetUrl(AIM4PRICE_EMAIL_LOGO_PATH));
   const subject = "Reset your Aim4price password";
   const text = [
     `Hi ${displayName},`,
@@ -152,6 +157,8 @@ export async function sendAim4priceResetPasswordEmail(input: {
     input.resetUrl,
     "",
     "If you did not request this reset, you can safely ignore this email. Your current password will remain unchanged.",
+    "",
+    "This is an automated security email from Aim4price. Please do not share this reset link with anyone.",
     "",
     AIM4PRICE_POSITIONING_TEXT,
     "",
@@ -165,29 +172,46 @@ export async function sendAim4priceResetPasswordEmail(input: {
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="x-apple-disable-message-reformatting" />
+        <meta name="color-scheme" content="light" />
+        <meta name="supported-color-schemes" content="light" />
         <title>Reset your Aim4price password</title>
+        <style>
+          @media only screen and (max-width: 620px) {
+            .email-shell { padding: 22px 12px 26px !important; }
+            .email-card { border-radius: 22px !important; }
+            .email-header { padding: 30px 24px 34px !important; border-radius: 22px 22px 0 0 !important; }
+            .email-body { padding: 34px 24px 36px !important; border-radius: 0 0 22px 22px !important; }
+            .email-title { font-size: 31px !important; line-height: 1.12 !important; }
+            .email-copy { font-size: 15px !important; }
+            .email-button a { display: block !important; text-align: center !important; }
+            .email-icon-cell { display: none !important; }
+          }
+        </style>
       </head>
-      <body style='margin:0;padding:0;background:#f4f3ef;color:#111111;font-family:${AIM4PRICE_EMAIL_FONT_STACK};-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;'>
-        <div style='display:none;max-height:0;max-width:0;opacity:0;overflow:hidden;font-size:1px;line-height:1px;color:#f4f3ef;'>
+      <body style="margin:0;padding:0;background:#f3f3f0;color:#151515;font-family:${AIM4PRICE_EMAIL_FONT_STACK};-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+        <div style="display:none;max-height:0;max-width:0;opacity:0;overflow:hidden;font-size:1px;line-height:1px;color:#f3f3f0;mso-hide:all;">
           Use the secure Aim4price link to set a new password for your account.
         </div>
 
-        <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='width:100%;margin:0;padding:0;background:#f4f3ef;border-collapse:collapse;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin:0;padding:0;background:#f3f3f0;border-collapse:collapse;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
           <tr>
-            <td align='center' style='padding:40px 14px 36px;'>
-              <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='width:100%;max-width:640px;margin:0 auto;border-collapse:collapse;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
+            <td align="center" class="email-shell" style="padding:44px 16px 38px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:680px;margin:0 auto;border-collapse:collapse;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
                 <tr>
-                  <td style='padding:0;'>
-                    <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='width:100%;border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid #d9d7d0;border-radius:28px;box-shadow:0 22px 58px rgba(17,17,17,0.10);overflow:hidden;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
+                  <td style="padding:0;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="email-card" style="width:100%;border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid #d8d8d3;border-radius:30px;box-shadow:0 24px 70px rgba(17,17,17,0.12);overflow:hidden;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
                       <tr>
-                        <td style='padding:34px 44px 38px;background:#111111;border-radius:28px 28px 0 0;color:#ffffff;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
-                          <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='width:100%;border-collapse:collapse;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
+                        <td class="email-header" style="padding:44px 54px 50px;background:#111214;background-image:linear-gradient(135deg,#1b1c1f 0%,#111214 52%,#080809 100%);border-radius:30px 30px 0 0;color:#ffffff;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
+                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
                             <tr>
-                              <td align='left' style='padding:0 0 28px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
-                                <table role='presentation' cellspacing='0' cellpadding='0' border='0' style='border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid #2f2f2f;border-radius:18px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
+                              <td align="left" style="padding:0 0 42px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
                                   <tr>
-                                    <td align='center' style='padding:12px 18px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
-                                      <img src='${AIM4PRICE_EMAIL_LOGO_URL}' width='300' alt='Aim4price' style='display:block;width:300px;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;' />
+                                    <td valign="middle" style="padding:0 13px 0 0;line-height:0;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
+                                      <img src="${logoUrl}" width="54" height="42" alt="Aim4price" style="display:block;width:54px;height:auto;border:0;outline:none;text-decoration:none;" />
+                                    </td>
+                                    <td valign="middle" style="padding:0;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
+                                      <div style="margin:0;font-size:23px;line-height:1;font-weight:900;letter-spacing:-0.5px;text-transform:uppercase;color:#ffffff;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">AIM4PRICE</div>
                                     </td>
                                   </tr>
                                 </table>
@@ -195,48 +219,74 @@ export async function sendAim4priceResetPasswordEmail(input: {
                             </tr>
                           </table>
 
-                          <div style='margin:0 0 12px;font-size:11px;line-height:1.3;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:#bdbdbd;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>Password reset</div>
-                          <h1 style='margin:0 0 14px;font-size:34px;line-height:1.12;font-weight:900;letter-spacing:-0.8px;color:#ffffff;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>Reset your password</h1>
-                          <p style='margin:0;max-width:470px;font-size:15px;line-height:1.75;font-weight:500;color:#d9d9d9;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>A secure link was requested for your Aim4price account. Use it only if you started this password reset.</p>
+                          <div style="margin:0 0 15px;font-size:12px;line-height:1.3;font-weight:800;letter-spacing:5px;text-transform:uppercase;color:#bcbec2;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">Password reset</div>
+                          <h1 class="email-title" style="margin:0 0 16px;font-size:42px;line-height:1.08;font-weight:900;letter-spacing:-1.4px;color:#ffffff;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">Reset your password</h1>
+                          <p class="email-copy" style="margin:0;max-width:510px;font-size:17px;line-height:1.72;font-weight:500;color:#f0f0f0;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">A secure link was requested for your Aim4price account. Use it only if you started this password reset.</p>
                         </td>
                       </tr>
 
                       <tr>
-                        <td style='padding:42px 44px 42px;background:#ffffff;border-radius:0 0 28px 28px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
-                          <p style='margin:0 0 18px;font-size:17px;line-height:1.65;font-weight:600;color:#111111;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>Hi ${safeName},</p>
+                        <td class="email-body" style="padding:46px 54px 46px;background:#ffffff;border-radius:0 0 30px 30px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
+                          <p style="margin:0 0 22px;font-size:24px;line-height:1.35;font-weight:900;letter-spacing:-0.4px;color:#171717;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">Hi ${safeName},</p>
 
-                          <p style='margin:0;font-size:16px;line-height:1.78;font-weight:500;color:#555555;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>We received a request to reset your Aim4price password. Use the button below to create a new password for your account.</p>
+                          <p style="margin:0;max-width:535px;font-size:17px;line-height:1.82;font-weight:500;color:#4f5258;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">We received a request to reset your Aim4price password. Use the button below to create a new password for your account.</p>
 
-                          <table role='presentation' cellspacing='0' cellpadding='0' border='0' style='border-collapse:collapse;margin:32px 0 34px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" class="email-button" style="border-collapse:collapse;margin:34px 0 36px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
                             <tr>
-                              <td align='center' bgcolor='#111111' style='border-radius:999px;background:#111111;box-shadow:0 12px 24px rgba(17,17,17,0.20);'>
-                                <a href='${safeUrl}' style='display:inline-block;padding:16px 30px;border-radius:999px;background:#111111;color:#ffffff;font-size:15px;line-height:1.2;font-weight:900;letter-spacing:-0.1px;text-decoration:none;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>Set new password</a>
+                              <td align="center" bgcolor="#111214" style="border-radius:10px;background:#111214;box-shadow:0 12px 22px rgba(17,18,20,0.22);">
+                                <a href="${safeUrl}" style="display:inline-block;padding:18px 28px;border-radius:10px;background:#111214;color:#ffffff;font-size:16px;line-height:1.2;font-weight:900;letter-spacing:-0.1px;text-decoration:none;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">Set new password&nbsp;&nbsp;&rarr;</a>
                               </td>
                             </tr>
                           </table>
 
-                          <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='width:100%;border-collapse:separate;border-spacing:0;margin:0 0 30px;background:#fafafa;border:1px solid #dedede;border-radius:18px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
+                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:separate;border-spacing:0;margin:0 0 30px;background:#ffffff;border:1px solid #d9dce1;border-radius:16px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
                             <tr>
-                              <td style='padding:24px 24px 25px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
-                                <p style='margin:0 0 8px;font-size:15px;line-height:1.45;font-weight:900;color:#111111;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>Button not working?</p>
-                                <p style='margin:0 0 14px;font-size:13px;line-height:1.65;font-weight:500;color:#707070;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>Copy and paste this secure link into your browser:</p>
-                                <a href='${safeUrl}' style='display:block;font-size:13px;line-height:1.65;font-weight:700;color:#111111;text-decoration:underline;word-break:break-all;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>${safeUrl}</a>
+                              <td style="padding:28px 28px 28px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
+                                  <tr>
+                                    <td valign="top" width="54" class="email-icon-cell" style="width:54px;padding:0 20px 0 0;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
+                                      <table role="presentation" width="54" height="54" cellspacing="0" cellpadding="0" border="0" style="width:54px;height:54px;border-collapse:separate;border-spacing:0;background:#f0f1f3;border-radius:50%;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
+                                        <tr>
+                                          <td align="center" valign="middle" style="font-size:24px;line-height:1;color:#111214;font-family:Arial, Helvetica, sans-serif;">&#128279;</td>
+                                        </tr>
+                                      </table>
+                                    </td>
+                                    <td valign="top" style="padding:0;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
+                                      <p style="margin:0 0 8px;font-size:18px;line-height:1.35;font-weight:900;color:#171717;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">Button not working?</p>
+                                      <p style="margin:0 0 18px;font-size:14px;line-height:1.65;font-weight:500;color:#62656b;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">Copy and paste this secure link into your browser:</p>
+                                      <div style="height:1px;line-height:1px;background:#e5e7eb;margin:0 0 18px;font-size:1px;">&nbsp;</div>
+                                      <a href="${safeUrl}" style="display:block;font-size:14px;line-height:1.7;font-weight:800;color:#111214;text-decoration:none;word-break:break-all;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">${safeUrl}</a>
+                                    </td>
+                                  </tr>
+                                </table>
                               </td>
                             </tr>
                           </table>
 
-                          <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='width:100%;border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid #e4e4e4;border-radius:16px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
+                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:separate;border-spacing:0;background:#fbfbfb;border:1px solid #dedfe3;border-radius:16px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
                             <tr>
-                              <td style='padding:20px 22px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
-                                <p style='margin:0;font-size:14px;line-height:1.75;font-weight:500;color:#5f5f5f;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>If you did not request this reset, you can safely ignore this email. Your current password will remain unchanged.</p>
+                              <td valign="middle" width="60" class="email-icon-cell" style="width:60px;padding:24px 0 24px 28px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
+                                <table role="presentation" width="48" height="48" cellspacing="0" cellpadding="0" border="0" style="width:48px;height:48px;border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid #e6e7ea;border-radius:50%;box-shadow:0 8px 18px rgba(17,17,17,0.08);font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
+                                  <tr>
+                                    <td align="center" valign="middle" style="font-size:23px;line-height:1;color:#111214;font-family:Arial, Helvetica, sans-serif;">&#128737;</td>
+                                  </tr>
+                                </table>
+                              </td>
+                              <td style="padding:24px 28px 24px 16px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
+                                <p style="margin:0;font-size:16px;line-height:1.76;font-weight:500;color:#383b40;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">If you did not request this reset, you can safely ignore this email. Your current password will remain unchanged.</p>
                               </td>
                             </tr>
                           </table>
 
-                          <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='width:100%;border-collapse:collapse;margin:34px 0 0;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
+                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;margin:38px 0 0;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
                             <tr>
-                              <td style='padding:24px 0 0;border-top:1px solid #e8e8e8;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
-                                <p style='margin:0;font-size:12px;line-height:1.7;font-weight:500;color:#8a8a8a;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>This is an automated security email from Aim4price. Please do not share this reset link with anyone.</p>
+                              <td valign="middle" style="width:46%;padding:0;border-top:1px solid #e5e5e5;font-size:1px;line-height:1px;">&nbsp;</td>
+                              <td align="center" valign="middle" style="width:8%;padding:0 10px;font-family:Arial, Helvetica, sans-serif;font-size:18px;line-height:1;color:#c9ccd1;">&#128737;</td>
+                              <td valign="middle" style="width:46%;padding:0;border-top:1px solid #e5e5e5;font-size:1px;line-height:1px;">&nbsp;</td>
+                            </tr>
+                            <tr>
+                              <td colspan="3" align="center" style="padding:24px 0 0;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
+                                <p style="margin:0 auto;max-width:410px;font-size:13px;line-height:1.72;font-weight:500;color:#858990;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">This is an automated security email from Aim4price. Please do not share this reset link with anyone.</p>
                               </td>
                             </tr>
                           </table>
@@ -247,8 +297,8 @@ export async function sendAim4priceResetPasswordEmail(input: {
                 </tr>
 
                 <tr>
-                  <td align='center' style='padding:24px 22px 0;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>
-                    <p style='margin:0;font-size:12px;line-height:1.75;font-weight:500;color:#777777;font-family:${AIM4PRICE_EMAIL_FONT_STACK};'>${AIM4PRICE_POSITIONING_TEXT}</p>
+                  <td align="center" style="padding:24px 24px 0;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
+                    <p style="margin:0;font-size:12px;line-height:1.75;font-weight:500;color:#777b82;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">${AIM4PRICE_POSITIONING_TEXT}</p>
                   </td>
                 </tr>
               </table>
