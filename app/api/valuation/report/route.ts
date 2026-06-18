@@ -52,7 +52,7 @@ type NormalizedValuationReport = {
 const AIM4PRICE_EMAIL = 'aim4price@gmail.com';
 const AIM4PRICE_PHONE = '0625721650';
 const FOOTER_DISCLAIMER =
-  'Values are indicative Aim4price estimates based on replacement price, saved asset information, age, usage, condition and available asset inputs. This is not a certified valuation, inspection report or guarantee of selling price.';
+  'Values are indicative Aim4price estimates based on replacement price, saved asset information, age, usage, condition and available asset inputs. This is not a certified appraisal, inspection report or guarantee of selling price.';
 const VALUATION_REPORT_LOGO_PUBLIC_PATH = '/brand/aim4price-mark-black.png';
 let cachedValuationReportLogoDataUri: string | null | undefined;
 
@@ -136,7 +136,7 @@ function formatReportMoney(value: number | null): string {
 
 function pdfFileSlug(value: string): string {
   const parts = String(value ?? '').match(/[A-Za-z0-9]+/g) ?? [];
-  return parts.join('-') || 'Valuation';
+  return parts.join('-') || 'Estimate';
 }
 
 function isBlankReportValue(value: unknown): boolean {
@@ -198,7 +198,7 @@ async function readRequestPayload(request: NextRequest): Promise<unknown> {
     const rawPayload = formData.get('payload');
 
     if (typeof rawPayload !== 'string' || !rawPayload.trim()) {
-      throw new Error('A valuation report payload is required.');
+      throw new Error('An estimate report payload is required.');
     }
 
     return JSON.parse(rawPayload);
@@ -206,7 +206,7 @@ async function readRequestPayload(request: NextRequest): Promise<unknown> {
 
   const rawBody = await request.text();
   if (!rawBody.trim()) {
-    throw new Error('A valuation report payload is required.');
+    throw new Error('An estimate report payload is required.');
   }
 
   return JSON.parse(rawBody);
@@ -214,17 +214,17 @@ async function readRequestPayload(request: NextRequest): Promise<unknown> {
 
 function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationReport {
   if (!isPlainRecord(value)) {
-    throw new Error('Invalid valuation report payload.');
+    throw new Error('Invalid estimate report payload.');
   }
 
   const selectedValueExVat = readNumber(value.selectedValueExVat);
   if (selectedValueExVat === null) {
-    throw new Error('A selected valuation amount is required before the PDF report can be created.');
+    throw new Error('A selected estimate amount is required before the PDF report can be created.');
   }
 
   const generatedAt = readDate(value.generatedAt);
   const generatedLabel = formatReportDate(generatedAt);
-  const machineTitle = readString(value.machineTitle, 'Aim4price valuation');
+  const machineTitle = readString(value.machineTitle, 'Aim4price estimate');
   const familyLabel = readString(value.familyLabel, readString(value.sectorLabel, 'Asset'));
   const brandName = readString(value.brandName);
   const selectedMethodLabel = normalizeSelectedMethodLabel(value.selectedMethodLabel);
@@ -232,7 +232,7 @@ function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationR
   const yearSummary = readString(value.yearSummary, 'Unknown');
   const usageSummary = readString(value.usageSummary, 'Usage captured');
   const conditionSummary = readString(value.conditionSummary, 'Condition captured');
-  const valuationPath = readString(value.valuationPath, 'Valuation');
+  const valuationPath = readString(value.valuationPath, 'Estimate');
   const replacementPriceExVat = readNumber(value.replacementPriceExVat);
 
   const fallbackAssetRows: ValuationReportKeyValue[] = [];
@@ -245,8 +245,8 @@ function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationR
   if (replacementPriceExVat !== null) {
     pushRow(fallbackAssetRows, 'Replacement Price', `${formatReportMoney(replacementPriceExVat)} excl. VAT`);
   }
-  pushRow(fallbackAssetRows, 'Valuation Path', valuationPath);
-  pushRow(fallbackAssetRows, 'Valuation Source / Selected Value Type', selectedMethodLabel);
+  pushRow(fallbackAssetRows, 'Estimate Path', valuationPath);
+  pushRow(fallbackAssetRows, 'Estimate Source / Selected Value Type', selectedMethodLabel);
 
   const fallbackClientRows: ValuationReportKeyValue[] = [
     { label: 'Business Name', value: 'Aim4price' },
@@ -260,7 +260,7 @@ function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationR
     { label: 'Generated', value: generatedLabel },
   ];
 
-  const fileName = `Aim4price-Valuation-${pdfFileSlug(machineTitle)}.pdf`;
+  const fileName = `Aim4price-Estimate-${pdfFileSlug(machineTitle)}.pdf`;
 
   const assetDetailRows = normalizeReportRows(value.assetDetailRows);
   const clientRows = normalizeReportRows(value.clientRows);
@@ -876,7 +876,7 @@ function renderValuationReportHtml(payload: NormalizedValuationReport): string {
   </head>
   <body>
     <div class="assetReportScreenBar">
-      <div class="assetReportScreenText">Save or print this valuation report. In the print dialog, choose <strong>Save as PDF</strong>.</div>
+      <div class="assetReportScreenText">Save or print this estimate report. In the print dialog, choose <strong>Save as PDF</strong>.</div>
       <div class="assetReportScreenActions">
         <button type="button" class="assetReportButton" onclick="window.close()">Close</button>
         <button type="button" class="assetReportButton assetReportButtonPrimary" onclick="window.print()">Save PDF / Print</button>
@@ -888,8 +888,8 @@ function renderValuationReportHtml(payload: NormalizedValuationReport): string {
         <header class="assetReportHeader">
           <div class="assetReportLogoWrap"><img class="assetReportLogo" src="${escapeHtml(payload.logoUrl)}" alt="Aim4price logo" /></div>
           <div class="assetReportDocumentTitle">
-            <strong>Asset Valuation Report</strong>
-            <span>Aim4price valuation report</span>
+            <strong>Asset Estimate Report</strong>
+            <span>Aim4price estimate report</span>
           </div>
           <div class="assetReportHeaderMeta">
             <div class="assetReportMetaLine"><span>Generated</span><strong>${escapeHtml(payload.generatedLabel)}</strong></div>
@@ -1014,7 +1014,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('valuation report failed', error);
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : 'Failed to create valuation PDF report.' },
+      { ok: false, error: error instanceof Error ? error.message : 'Failed to create estimate PDF report.' },
       { status: 400 },
     );
   }
