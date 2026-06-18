@@ -1,0 +1,5 @@
+Deleted retired valuation-side Market Vault API route:
+- app/api/market-vault/matches/route.ts
+
+Deleted retired external listing import template:
+- database/templates/market_vault_listings.csv
