@@ -294,14 +294,10 @@ function replacementPriceExVat(item: AssetRegisterItem): number | null {
   return null;
 }
 
-function methodLabel(value: AssetRegisterItem['selectedMethod']): string {
-  return (
-    {
-      aim4price: 'Aim4price',
-      market: 'Market',
-      manual: 'Manual',
-    }[value] ?? 'Manual'
-  );
+function methodLabel(value: AssetRegisterItem['selectedMethod'] | string | null | undefined): string {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === 'manual') return 'Manual';
+  return 'Aim4price';
 }
 
 function kindLabel(asset: AssetRegisterItem): string {
@@ -982,7 +978,7 @@ function buildFullRegisterPdf(items: AssetRegisterItem[], profile: AccountProfil
   state.y -= 18;
   drawPdfWrappedText(
     state,
-    'Values are indicative estimates based on saved Aim4price asset-register information and available pricing inputs. Values exclude VAT unless stated otherwise. This is not a certified valuation, inspection report or guarantee of selling price. Final values remain subject to physical inspection, documents, attachments, condition, location and live market demand.',
+    'Values are indicative Aim4price estimates based on replacement price, saved asset information, age, usage, condition and available asset inputs. Values exclude VAT unless stated otherwise. This is not a certified valuation, inspection report or guarantee of selling price.',
     PDF_MARGIN,
     PDF_PAGE_WIDTH - PDF_MARGIN * 2,
     8.2,
