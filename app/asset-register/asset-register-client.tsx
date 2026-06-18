@@ -78,8 +78,8 @@ function getRegisterSummaryCardsPerView(): number {
 }
 
 type AssetKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools';
-type AssetMethod = 'aim4price' | 'market' | 'manual';
-type RevalueMethod = Exclude<AssetMethod, 'manual'>;
+type AssetMethod = 'aim4price' | 'manual';
+type RevalueMethod = 'aim4price';
 type RevalueReplacementMode = 'saved' | 'custom';
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
@@ -445,27 +445,6 @@ type ProjectionApiResponse = {
   error?: string;
 };
 
-type PricingMarketSource = {
-  id: string | number;
-  title: string;
-  sourceName?: string | null;
-  sourceUrl?: string | null;
-  advertisedPriceExVat?: number | null;
-  priceExVat?: number | null;
-  askingPriceExVat?: number | null;
-  price?: number | null;
-  yearModel?: number | null;
-  year?: number | null;
-  hours?: number | null;
-  usageAmount?: number | null;
-  location?: string | null;
-  province?: string | null;
-  area?: string | null;
-  condition?: string | null;
-  matchReason?: string | null;
-  dateAdvertised?: string | null;
-};
-
 type RevalueAssetApiResponse = {
   ok: boolean;
   item?: RegisterAsset;
@@ -479,7 +458,7 @@ type RevalueAssetApiResponse = {
   marketLowExVat?: number | null;
   marketHighExVat?: number | null;
   marketCount?: number;
-  marketSources?: PricingMarketSource[];
+  marketSources?: unknown[];
   marketMatchStrategy?: string;
   marketAdjustmentExVat?: number | null;
   marketRawAverageExVat?: number | null;
@@ -1297,70 +1276,6 @@ function formatWholeNumber(value: number | null | undefined): string {
   return Math.round(value).toLocaleString('en-ZA');
 }
 
-function formatListingYear(value: number | null | undefined): string | null {
-  if (value === null || value === undefined || !Number.isFinite(value) || value < 1950) return null;
-  return String(Math.round(value));
-}
-
-function formatListingHours(value: number | null | undefined): string | null {
-  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) return null;
-  return `${formatWholeNumber(value)} hours`;
-}
-
-function normalizeExternalUrl(value: string | null | undefined): string | null {
-  const trimmed = String(value ?? '').trim();
-  if (!trimmed) return null;
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  if (/^[a-z0-9.-]+\.[a-z]{2,}/i.test(trimmed)) return `https://${trimmed}`;
-  return null;
-}
-
-function joinMeta(parts: Array<string | null | undefined>): string {
-  const cleanParts = parts.map((part) => String(part ?? '').trim()).filter(Boolean);
-  return cleanParts.length ? cleanParts.join(' • ') : 'Details not captured';
-}
-
-function formatMarketSourceLabel(value: string | null | undefined): string {
-  const label = String(value ?? '').trim();
-  return label || 'Marketplace listing';
-}
-
-function formatMarketCondition(value: string | null | undefined): string | null {
-  const normalized = String(value ?? '').trim().toLowerCase();
-  if (!normalized) return null;
-
-  if (normalized === 'excellent' || normalized === 'good' || normalized === 'fair' || normalized === 'used' || normalized === 'serious') {
-    return conditionLabel(normalized as AssetConditionValue);
-  }
-
-  return value ?? null;
-}
-
-function marketSourcePrice(source: PricingMarketSource): number | null {
-  const value = source.advertisedPriceExVat ?? source.priceExVat ?? source.askingPriceExVat ?? source.price;
-  return typeof value === 'number' && Number.isFinite(value) ? value : null;
-}
-
-function marketSourceLocation(source: PricingMarketSource): string | null {
-  const explicitLocation = String(source.location ?? '').trim();
-  if (explicitLocation && !explicitLocation.toLowerCase().includes('unknown')) return explicitLocation;
-
-  const area = String(source.area ?? '').trim();
-  const province = String(source.province ?? '').trim();
-  const joined = [area, province].filter((part) => part && part.toLowerCase() !== 'unknown').join(', ');
-  return joined || null;
-}
-
-function formatPricingMarketMeta(source: PricingMarketSource): string {
-  return joinMeta([
-    formatListingYear(source.yearModel ?? source.year),
-    formatListingHours(source.hours ?? source.usageAmount),
-    marketSourceLocation(source),
-    formatMarketCondition(source.condition),
-    source.matchReason,
-  ]);
-}
-
 function parseMoneyInput(value: unknown): number | null {
   const digits = String(value ?? '').replace(/[^0-9]/g, '');
   if (!digits) return null;
@@ -1472,14 +1387,10 @@ function assetStatusDateLabel(asset: RegisterAsset): string {
     : `Saved ${formatDate(asset.createdAtIso)}`;
 }
 
-function methodLabel(value: AssetMethod): string {
-  return (
-    {
-      aim4price: 'Aim4price',
-      market: 'Market',
-      manual: 'Manual',
-    }[value] ?? 'Manual'
-  );
+function methodLabel(value: AssetMethod | string | null | undefined): string {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === 'manual') return 'Manual';
+  return 'Aim4price';
 }
 
 function kindLabel(value: AssetKind): string {
@@ -2389,7 +2300,6 @@ function buildSavedItemFromAsset(asset: RegisterAsset) {
     yearModel: asset.yearModel ?? undefined,
     hours: asset.hours ?? undefined,
     aim4priceValueExVat: asset.aim4priceValueExVat,
-    marketMidExVat: asset.marketMidExVat,
     note: getManualAssetNote(asset.note) || undefined,
     createdAtIso: asset.createdAtIso,
     updatedAtIso: asset.updatedAtIso,
@@ -3035,15 +2945,6 @@ function buildAssetSheetMethodCards(asset: RegisterAsset): ReportMethodCard[] {
       value: money(asset.aim4priceValueExVat),
       note: 'Pricing engine output.',
       selected: asset.selectedMethod === 'aim4price',
-    });
-  }
-
-  if (asset.marketMidExVat !== null) {
-    cards.push({
-      label: 'Market',
-      value: money(asset.marketMidExVat),
-      note: 'Saved market midpoint.',
-      selected: asset.selectedMethod === 'market',
     });
   }
 
@@ -5852,7 +5753,7 @@ export default function AssetRegisterClient() {
       }
 
       const updatedMethod = data.selectedMethod ?? updatedAsset.selectedMethod;
-      const updateLabel = updatedMethod === 'market' ? 'market price' : 'Aim4price price';
+      const updateLabel = 'Aim4price value';
       const marketplaceNote = isLiveOnMarketplace(asset) ? ' Marketplace asking price was not changed.' : '';
       setNotice({
         tone: 'success',
@@ -5875,16 +5776,15 @@ export default function AssetRegisterClient() {
     options?: { replacementMode?: RevalueReplacementMode | null; replacementPriceExVat?: number | null },
   ) {
     const replacementPriceExVat =
-      method === 'aim4price' &&
       typeof options?.replacementPriceExVat === 'number' &&
       Number.isFinite(options.replacementPriceExVat) &&
       options.replacementPriceExVat > 0
         ? Math.round(options.replacementPriceExVat)
         : null;
-    const replacementMode = method === 'aim4price' ? options?.replacementMode ?? 'saved' : null;
-    const shouldSendReplacementOverride = method === 'aim4price' && replacementPriceExVat !== null;
+    const replacementMode = options?.replacementMode ?? 'saved';
+    const shouldSendReplacementOverride = replacementPriceExVat !== null;
 
-    if (method !== 'aim4price' || replacementMode !== 'custom') {
+    if (replacementMode !== 'custom') {
       setSaveReplacementPriceWithRevalue(false);
     }
 
@@ -5990,7 +5890,7 @@ export default function AssetRegisterClient() {
       setIsPricingModalOpen(false);
 
       const updatedMethod = data.selectedMethod ?? updatedAsset.selectedMethod;
-      const updateLabel = updatedMethod === 'market' ? 'market price' : 'Aim4price value';
+      const updateLabel = 'Aim4price value';
       const marketplaceNote = isLiveOnMarketplace(asset) ? ' Marketplace asking price was not changed.' : '';
       const replacementNote = shouldPersistReplacementPrice && replacementPriceExVat !== null
         ? ` Replacement price saved at ${money(replacementPriceExVat)}.`
@@ -6460,8 +6360,7 @@ export default function AssetRegisterClient() {
       isLicensed: licenseStatus === 'yes',
       licenseRegistrationNumber: readLicenseRegistrationNumber(asset),
       aim4priceValueExVat: asset.aim4priceValueExVat,
-      marketMidExVat: asset.marketMidExVat,
-      photoUrl: toAbsoluteUrl(assetPreviewImage(asset)),
+        photoUrl: toAbsoluteUrl(assetPreviewImage(asset)),
       createdAtIso: asset.createdAtIso,
       updatedAtIso: asset.updatedAtIso,
     };
@@ -9092,18 +8991,6 @@ export default function AssetRegisterClient() {
                 <button
                   type="button"
                   className={styles.pricingOptionButton}
-                  disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
-                  onClick={() => void openRevaluePreviewDialog(activeAsset, 'market')}
-                >
-                  <TrendIcon className={styles.buttonIcon} />
-                  <span>
-                    <strong>Update market price</strong>
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  className={styles.pricingOptionButton}
                   disabled={!canProjectFuturePrice(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
                   onClick={() => openProjectionModal(activeAsset)}
                 >
@@ -9145,14 +9032,7 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.pricingResultBody}`}>
-              {pricingPreview.method === 'market' ? (
-                <p className={styles.pricingPreviewIntroCopy}>
-                  Market preview only. When saved, Aim4price keeps the market-vs-Aim4price difference and applies it to future recalculations.
-                </p>
-              ) : null}
-
-              {pricingPreview.method === 'aim4price' ? (
-                <>
+              <>
                   {pricingPreviewWizardStep === 1 ? (
                     <section className={`${styles.revalueReplacementPanel} ${styles.revalueSavedStepPanel}`}>
                       <div className={styles.revalueReplacementHeader}>
@@ -9295,118 +9175,6 @@ export default function AssetRegisterClient() {
                     ) : null
                   ) : null}
                 </>
-              ) : (
-                <>
-                  {isLoadingPricingPreview ? (
-                    <div className={styles.pricingPreviewStatus}>Calculating new value...</div>
-                  ) : pricingPreview.error ? (
-                    <div className={`${styles.pricingPreviewStatus} ${styles.pricingPreviewError}`}>
-                      <strong>Could not calculate preview</strong>
-                      <span>{pricingPreview.error}</span>
-                    </div>
-                  ) : pricingPreview.result?.item ? (
-                    <>
-                      <section className={`${styles.revalueReplacementPanel} ${styles.revaluePreviewPanel}`} aria-live="polite">
-                        <div className={styles.revalueReplacementHeader}>
-                          <div>
-                            <span>Preview</span>
-                            <h4>Preview value</h4>
-                          </div>
-                        </div>
-
-                        <div className={styles.pricingResultHero}>
-                          <span>New asset value</span>
-                          <strong>{money(pricingPreviewNewValueExVat)}</strong>
-                          <p>This is the value that will be saved if you continue.</p>
-                        </div>
-
-                        <div className={styles.pricingCompareGrid}>
-                          <div>
-                            <span>Current value</span>
-                            <strong>{money(pricingPreviewOldValueExVat)}</strong>
-                          </div>
-                          <div>
-                            <span>New value</span>
-                            <strong>{money(pricingPreviewNewValueExVat)}</strong>
-                          </div>
-                          <div>
-                            <span>Difference</span>
-                            <strong>{formatMoneyDifference(pricingPreviewDifferenceExVat)}</strong>
-                          </div>
-                        </div>
-
-                        <div className={styles.revalueReplacementSummary}>
-                          <div>
-                            <span>Pricing method:</span>
-                            <strong>{methodLabel(pricingPreview.result.selectedMethod ?? pricingPreview.result.item.selectedMethod)}</strong>
-                          </div>
-                          {pricingPreview.result.marketAdjustmentExVat !== null && typeof pricingPreview.result.marketAdjustmentExVat !== 'undefined' ? (
-                            <div>
-                              <span>Market adjustment:</span>
-                              <strong>{formatMoneyDifference(pricingPreview.result.marketAdjustmentExVat)}</strong>
-                            </div>
-                          ) : null}
-                        </div>
-                      </section>
-
-                      <section className={styles.marketEvidenceCard}>
-                        <div className={styles.marketEvidenceHeader}>
-                          <div>
-                            <h3>Market evidence</h3>
-                            <p>Listings used after model, year, usage and price checks.</p>
-                          </div>
-                          <span className={styles.marketEvidenceCount}>
-                            {(pricingPreview.result.marketCount ?? pricingPreview.result.marketSources?.length ?? 0) > 0
-                              ? `${pricingPreview.result.marketCount ?? pricingPreview.result.marketSources?.length ?? 0} used`
-                              : 'No matches'}
-                          </span>
-                        </div>
-
-                        {(pricingPreview.result.marketAverageExVat ?? pricingPreview.result.newValueExVat ?? pricingPreview.result.item.marketMidExVat) !== null ? (
-                          <div className={styles.marketEvidenceSummary}>
-                            <span>Marketplace average</span>
-                            <strong>{money(pricingPreview.result.marketAverageExVat ?? pricingPreview.result.newValueExVat ?? pricingPreview.result.item.marketMidExVat)}</strong>
-                          </div>
-                        ) : null}
-
-                        {pricingPreview.result.marketSources?.length ? (
-                          pricingPreview.result.marketSources.map((source) => {
-                            const sourceHref = normalizeExternalUrl(source.sourceUrl);
-                            const price = marketSourcePrice(source);
-
-                            return (
-                              <article key={String(source.id)} className={styles.marketEvidenceItem}>
-                                <div className={styles.marketEvidenceItemHeader}>
-                                  <span>{formatMarketSourceLabel(source.sourceName)}</span>
-                                  <small className={styles.marketEvidencePrice}>{money(price)}</small>
-                                </div>
-                                <strong>{source.title || 'Marketplace listing'}</strong>
-                                <p className={styles.marketEvidenceMeta}>{formatPricingMarketMeta(source)}</p>
-                                {sourceHref ? (
-                                  <a className={styles.marketEvidenceLink} href={sourceHref} target="_blank" rel="noreferrer">
-                                    Open listing →
-                                  </a>
-                                ) : (
-                                  <span className={styles.marketEvidenceNoLink}>No source link saved</span>
-                                )}
-                              </article>
-                            );
-                          })
-                        ) : (
-                          <div className={styles.marketEvidenceEmpty}>
-                            <strong>No matching marketplace average yet</strong>
-                            <p>When Aim4price finds similar listings, they will appear here as supporting evidence.</p>
-                          </div>
-                        )}
-                      </section>
-
-                      {pricingPreview.result.warning ? (
-                        <p className={styles.pricingPreviewWarning}>{pricingPreview.result.warning}</p>
-                      ) : null}
-                    </>
-                  ) : null}
-                </>
-              )}
             </div>
 
             <div
