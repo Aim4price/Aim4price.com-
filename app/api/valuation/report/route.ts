@@ -11,14 +11,6 @@ type ValuationReportKeyValue = {
   value: string;
 };
 
-type ValuationReportMarketSource = {
-  sourceName: string;
-  title: string;
-  priceExVat: number | null;
-  details: string;
-  sourceUrl?: string | null;
-};
-
 type ValuationReportPayload = {
   generatedAt: string;
   machineTitle: string;
@@ -29,8 +21,6 @@ type ValuationReportPayload = {
   selectedMethodLabel: string;
   selectedValueExVat: number;
   aim4priceValueExVat: number | null;
-  marketplaceValueExVat: number | null;
-  marketCount: number;
   confidenceText: string;
   confidenceNote: string;
   yearSummary: string;
@@ -38,8 +28,6 @@ type ValuationReportPayload = {
   conditionSummary: string;
   replacementPriceExVat: number | null;
   replacementBasisText: string;
-  marketEvidenceInfo: string;
-  marketSources: ValuationReportMarketSource[];
   notes: string[];
   assetDetailRows: ValuationReportKeyValue[];
   clientRows: ValuationReportKeyValue[];
@@ -64,7 +52,7 @@ type NormalizedValuationReport = {
 const AIM4PRICE_EMAIL = 'aim4price@gmail.com';
 const AIM4PRICE_PHONE = '0625721650';
 const FOOTER_DISCLAIMER =
-  'Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition, location and live market demand.';
+  'Values are indicative Aim4price estimates based on replacement price, saved asset information, age, usage, condition and available asset inputs. This is not a certified valuation, inspection report or guarantee of selling price.';
 const VALUATION_REPORT_LOGO_PUBLIC_PATH = '/brand/aim4price-mark-black.png';
 let cachedValuationReportLogoDataUri: string | null | undefined;
 
@@ -162,15 +150,15 @@ function normalizeReportRows(value: unknown): ValuationReportKeyValue[] {
   return value
     .filter(isPlainRecord)
     .map((row) => ({
-      label: normalizeSpaces(row.label),
-      value: normalizeSpaces(row.value),
+      label: normalizeSpaces(row.label).replace(/Marketplace\s+Value/gi, 'Aim4price Value'),
+      value: normalizeSpaces(row.value).replace(/Marketplace\s+Value/gi, 'Aim4price Value'),
     }))
-    .filter((row) => row.label && !isBlankReportValue(row.value));
+    .filter((row) => row.label && !/^Market\s+Evidence$/i.test(row.label) && !isBlankReportValue(row.value));
 }
 
 function normalizeSelectedMethodLabel(value: unknown): string {
   const cleaned = readString(value, 'Aim4price Value');
-  if (/market/i.test(cleaned)) return 'Marketplace Value';
+  if (/market/i.test(cleaned)) return 'Aim4price Value';
   if (/aim4price/i.test(cleaned)) return 'Aim4price Value';
   return cleaned;
 }
@@ -183,10 +171,6 @@ function normalizeConfidenceText(value: unknown): string {
   return cleaned || 'Low';
 }
 
-function marketEvidenceText(marketCount: number): string {
-  if (!Number.isFinite(marketCount) || marketCount <= 0) return 'No matches';
-  return `${marketCount} match${marketCount === 1 ? '' : 'es'}`;
-}
 
 function pushRow(rows: ValuationReportKeyValue[], label: string, value: unknown) {
   const cleaned = normalizeSpaces(value);
@@ -245,7 +229,6 @@ function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationR
   const brandName = readString(value.brandName);
   const selectedMethodLabel = normalizeSelectedMethodLabel(value.selectedMethodLabel);
   const confidenceText = normalizeConfidenceText(value.confidenceText);
-  const marketCount = readNumber(value.marketCount) ?? 0;
   const yearSummary = readString(value.yearSummary, 'Unknown');
   const usageSummary = readString(value.usageSummary, 'Usage captured');
   const conditionSummary = readString(value.conditionSummary, 'Condition captured');
@@ -274,7 +257,6 @@ function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationR
   const fallbackRecordRows: ValuationReportKeyValue[] = [
     { label: 'Selected Value', value: selectedMethodLabel },
     { label: 'Confidence', value: confidenceText },
-    { label: 'Market Evidence', value: marketEvidenceText(marketCount) },
     { label: 'Generated', value: generatedLabel },
   ];
 
