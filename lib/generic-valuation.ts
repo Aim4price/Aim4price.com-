@@ -112,6 +112,7 @@ export type GenericValuationInput = {
   familyKey: EquipmentFamilyKey;
   brandSlug: string;
   typedModelName?: string | null;
+  saveModelCandidate?: boolean | null;
   specsJson?: Record<string, unknown> | null;
   year: number;
   yearModelUnknown?: boolean | null;
@@ -935,6 +936,41 @@ export async function saveModelCandidate(input: {
   ];
 
   try {
+    const existingModel = await db.query(
+      `
+        select 1
+        from public.equipment_models em
+        join public.equipment_families ef
+          on ef.id = em.equipment_family_id
+        join public.sectors s
+          on s.id = ef.sector_id
+        left join public.brands b
+          on b.id = em.brand_id
+        where s.sector_key = $1
+          and ef.family_key = $2
+          and ($3::text = '' or b.slug = $3)
+          and coalesce(em.is_generic_fallback, false) = false
+          and (
+            public.aim4price_normalize_key(coalesce(em.normalized_model_name, '')) = $6
+            or public.aim4price_normalize_key(coalesce(em.model_name, '')) = $6
+            or public.aim4price_normalize_key(coalesce(em.display_name, '')) = $6
+            or exists (
+              select 1
+              from public.equipment_model_aliases ema
+              where ema.equipment_model_id = em.id
+                and (
+                  public.aim4price_normalize_key(coalesce(ema.normalized_alias, '')) = $6
+                  or public.aim4price_normalize_key(coalesce(ema.alias_text, '')) = $6
+                )
+            )
+          )
+        limit 1
+      `,
+      params.slice(0, 6),
+    );
+
+    if ((existingModel.rowCount ?? 0) > 0) return;
+
     const updated = await db.query(
       `
         with target as (
@@ -1382,7 +1418,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     }
   }
 
-  if (typedModelName) {
+  if (typedModelName && input.saveModelCandidate) {
     await saveModelCandidate({
       sectorKey: input.sectorKey,
       familyKey: input.familyKey,
