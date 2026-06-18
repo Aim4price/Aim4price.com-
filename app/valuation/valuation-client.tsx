@@ -3453,14 +3453,6 @@ export default function ValuationClient() {
     const replacementBasisText = isGeneric ? genericReplacementBasisText : tractorReplacementBasisText;
     const marketEvidenceInfo = `Market evidence only uses listings within 2 model years and ${selectedMarketUsageToleranceLabel} of your machine. Confidence: Low = no listings, Medium = 3–5 listings, High = more than 5 listings.`;
     const resultValueSizeClass = getResultValueSizeClass(headlineValue);
-    const actionRestrictionNote = !canSaveToAssetRegister && canUseMarketplacePublishFlow
-      ? 'Dealer and auctioneer accounts can save and send a valuation to Marketplace. Asset Register-only saving is owner-only.'
-      : canSaveToAssetRegister && !canUseMarketplacePublishFlow
-        ? 'This account can save valuations to the Asset Register, but cannot publish marketplace listings.'
-        : !canSaveToAssetRegister && !canUseMarketplacePublishFlow
-          ? 'This account type cannot save valuations or publish marketplace listings from Get Estimate.'
-          : '';
-
     return (
       <div className={styles.resultsLayout}>
         <div className={styles.resultsMain}>
@@ -3513,61 +3505,7 @@ export default function ValuationClient() {
             </button>
           </section>
 
-          <section className={styles.resultFinalActions}>
-            <div className={styles.resultFinalActionsCopy}>
-              <span>Final actions</span>
-              <h3>Save this valuation</h3>
-              <p>Review the result first. Then save it to your Asset Register or save it and continue to the Marketplace listing flow.</p>
-            </div>
-
-            {isSignedIn ? (
-              <>
-                <div className={styles.resultFinalActionsButtons}>
-                  <button
-                    type="button"
-                    className={styles.resultPdfActionButton}
-                    onClick={downloadValuationPdf}
-                    disabled={pdfLoading || headlineValue === null}
-                  >
-                    {pdfLoading ? 'Preparing PDF...' : 'Download PDF report'}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.resultPrimaryActionButton}
-                    onClick={saveToAssetRegister}
-                    disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
-                  >
-                    {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to Asset Register'}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.resultAlternateActionButton}
-                    onClick={saveAndSendToMarketplace}
-                    disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || !canUseMarketplacePublishFlow || headlineValue === null}
-                  >
-                    {saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : 'Save & Send to Marketplace'}
-                  </button>
-                </div>
-                {actionRestrictionNote ? <p className={styles.resultActionNote}>{actionRestrictionNote}</p> : null}
-              </>
-            ) : (
-              <div className={styles.resultSignedOutNotice}>
-                <div className={styles.resultSignedOutCopy}>
-                  <strong>Save or export this valuation</strong>
-                  <p>Download the PDF now, or create an account to save it to your Asset Register and Marketplace workflow.</p>
-                </div>
-                <div className={styles.resultSignedOutActions}>
-                  <button type="button" onClick={downloadValuationPdf} disabled={pdfLoading || headlineValue === null}>
-                    {pdfLoading ? 'Preparing PDF...' : 'Download PDF'}
-                  </button>
-                  <button type="button" onClick={() => router.push('/auth#signup')}>
-                    Create account or sign in
-                  </button>
-                </div>
-              </div>
-            )}
-            {pdfError ? <p className={styles.resultActionError}>{pdfError}</p> : null}
-          </section>
+          {pdfError ? <p className={styles.resultActionError}>{pdfError}</p> : null}
 
           {(isGeneric && genericResult) || tractorResult ? (
             <section className={styles.resultAccordion}>
@@ -3829,9 +3767,29 @@ export default function ValuationClient() {
               </button>
               {step === 1 ? null : step === 5 ? (
                 <div className={styles.resultActionGroup}>
+                  {isSignedIn ? (
+                    <>
+                      <button
+                        type="button"
+                        className={styles.resultAlternateActionButton}
+                        onClick={saveAndSendToMarketplace}
+                        disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || !canUseMarketplacePublishFlow || headlineValue === null}
+                      >
+                        {saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : isPublishingMarketplace ? 'Sending...' : 'Save & Send to Marketplace'}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.resultPrimaryActionButton}
+                        onClick={saveToAssetRegister}
+                        disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
+                      >
+                        {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to Asset Register'}
+                      </button>
+                    </>
+                  ) : null}
                   <button
                     type="button"
-                    className={styles.primaryButton}
+                    className={styles.resultPdfActionButton}
                     onClick={downloadValuationPdf}
                     disabled={pdfLoading || !resultState || headlineValue === null}
                   >
