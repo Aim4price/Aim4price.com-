@@ -82,6 +82,42 @@ type SpecQuestion = {
   options: SpecOption[];
 };
 
+type GenericCatalogModel = {
+  id: number;
+  sectorId: number;
+  sectorKey: SectorKey;
+  familyId: number;
+  familyKey: string;
+  familyLabel: string;
+  usageMetricType: UsageMetricType;
+  valuationMode: string;
+  catalogMode: CatalogMode;
+  isPropelled: boolean;
+  brandId: number | null;
+  brandSlug: string;
+  brandName: string;
+  legacyTractorCatalogId: number | null;
+  modelName: string;
+  variantName: string | null;
+  normalizedModelName: string;
+  displayName: string;
+  yearStart: number | null;
+  yearEnd: number | null;
+  powerKw: number | null;
+  tractorType: string | null;
+  driveType: string | null;
+  cabType: string | null;
+  workingWidthM: number | null;
+  rowsCount: number | null;
+  tankCapacityL: number | null;
+  aim4priceReplacementPriceExVat: number | null;
+  replacementPriceYear: number | null;
+  isGenericFallback: boolean;
+  specsJson: Record<string, unknown>;
+  isActive: boolean;
+};
+
+type GenericModelSelectionMode = 'catalog' | 'manual' | '';
 
 type GenericValuationCalculation = {
   replacementPriceBasis: ReplacementPriceBasis;
@@ -190,6 +226,13 @@ type SpecQuestionsApiResponse = {
 type TractorModelsApiResponse = {
   ok: boolean;
   models?: TractorCatalogRow[];
+  error?: string;
+};
+
+type EquipmentModelsApiResponse = {
+  ok: boolean;
+  count?: number;
+  models?: GenericCatalogModel[];
   error?: string;
 };
 
@@ -543,6 +586,90 @@ function formatTractorModelDetail(model: TractorCatalogRow): string {
   return `${model.powerKw} kW • ${model.yearStart}-${model.yearEnd}`;
 }
 
+function normalizeGenericSpecsRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+function formatGenericModelLabel(model: GenericCatalogModel | null): string {
+  if (!model) return 'Select model...';
+
+  const brandName = normalizeText(model.brandName);
+  const displayName = normalizeText(model.displayName);
+  const modelName = normalizeText(model.modelName);
+  const baseName = displayName || modelName;
+
+  if (!baseName) return brandName || 'Unnamed model';
+  if (!brandName) return baseName;
+  if (baseName.toLowerCase().includes(brandName.toLowerCase())) return baseName;
+  return `${brandName} ${baseName}`.trim();
+}
+
+function getGenericModelSubmitName(model: GenericCatalogModel | null): string {
+  if (!model) return '';
+  return normalizeText(model.modelName) || normalizeText(model.displayName);
+}
+
+function formatModelYearRange(start: number | null, end: number | null): string | null {
+  if (start && end) return start === end ? String(start) : `${start}-${end}`;
+  if (start) return `${start}+`;
+  if (end) return `up to ${end}`;
+  return null;
+}
+
+function firstSpecText(specsJson: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = specsJson[key];
+    const text = normalizeText(value);
+    if (text) return text;
+  }
+
+  return null;
+}
+
+function formatGenericModelDetail(model: GenericCatalogModel): string {
+  const specsJson = normalizeGenericSpecsRecord(model.specsJson);
+  const parts = [
+    normalizeText(model.variantName) || null,
+    formatModelYearRange(model.yearStart, model.yearEnd),
+    model.powerKw && model.powerKw > 0 ? `${model.powerKw} kW` : null,
+    firstSpecText(specsJson, ['body_type', 'vehicle_type', 'type', 'transmission', 'fuel_type', 'drivetrain', 'drive_type']),
+  ].filter((part): part is string => Boolean(part));
+
+  const uniqueParts = parts.filter((part, index) => parts.findIndex((candidate) => candidate.toLowerCase() === part.toLowerCase()) === index);
+  return uniqueParts.length ? uniqueParts.join(' • ') : `${model.familyLabel || 'Catalogue'} model`;
+}
+
+function getModelSpecAnswerValue(question: SpecQuestion, rawValue: unknown): string {
+  if (rawValue === null || typeof rawValue === 'undefined') return '';
+
+  if (question.inputType === 'boolean') {
+    if (typeof rawValue === 'boolean') return rawValue ? 'true' : 'false';
+    const normalized = normalizeText(rawValue).toLowerCase();
+    if (['true', '1', 'yes', 'y'].includes(normalized)) return 'true';
+    if (['false', '0', 'no', 'n'].includes(normalized)) return 'false';
+    return '';
+  }
+
+  if (question.inputType === 'number' || question.inputType === 'money') {
+    const numberValue = parseFlexibleNumber(rawValue);
+    return numberValue === null ? '' : String(numberValue);
+  }
+
+  const textValue = normalizeText(rawValue);
+  if (!textValue) return '';
+
+  if (question.inputType === 'select' && question.options.length) {
+    const normalizedText = textValue.toLowerCase();
+    const matchingOption = question.options.find(
+      (option) => option.optionValue.toLowerCase() === normalizedText || option.optionLabel.toLowerCase() === normalizedText,
+    );
+    return matchingOption?.optionValue ?? '';
+  }
+
+  return textValue;
+}
+
 function getTractorValue(result: Result, method: MethodKey): number | null {
   if (method === 'market') return result.marketMid;
   return result.aim4priceValueExVat;
@@ -779,6 +906,12 @@ export default function ValuationClient() {
   const [modelQuery, setModelQuery] = useState('');
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const [modelId, setModelId] = useState('');
+  const [genericCatalogModels, setGenericCatalogModels] = useState<GenericCatalogModel[]>([]);
+  const [genericModelsLoading, setGenericModelsLoading] = useState(false);
+  const [genericModelQuery, setGenericModelQuery] = useState('');
+  const [genericModelDropdownOpen, setGenericModelDropdownOpen] = useState(false);
+  const [genericModelId, setGenericModelId] = useState('');
+  const [genericModelMode, setGenericModelMode] = useState<GenericModelSelectionMode>('');
   const [specQuestions, setSpecQuestions] = useState<SpecQuestion[]>([]);
   const [specAnswers, setSpecAnswers] = useState<Record<string, string>>({});
   const [typedModelName, setTypedModelName] = useState('');
@@ -822,6 +955,7 @@ export default function ValuationClient() {
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const [replacementPanelOpen, setReplacementPanelOpen] = useState(false);
   const marketplacePhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const genericModelPrefilledSpecKeysRef = useRef<Set<string>>(new Set());
   const [shouldAutoPlaySectorVideos, setShouldAutoPlaySectorVideos] = useState(false);
 
   useEffect(() => {
@@ -850,6 +984,15 @@ export default function ValuationClient() {
     () => tractorModels.find((model) => model.id === modelId) ?? null,
     [tractorModels, modelId],
   );
+  const selectedGenericModel = useMemo(
+    () => genericCatalogModels.find((model) => String(model.id) === genericModelId) ?? null,
+    [genericCatalogModels, genericModelId],
+  );
+  const genericModelRequired = selectedSector === 'motor' && flowMode === 'generic_specs';
+  const submittedGenericModelName = genericModelMode === 'catalog'
+    ? getGenericModelSubmitName(selectedGenericModel)
+    : normalizeText(typedModelName);
+  const shouldSaveGenericModelCandidate = genericModelMode === 'manual' && Boolean(normalizeText(typedModelName));
   const selectedUsageDisplayUnit = getUsageDisplayUnit(selectedSector, selectedFamily?.usageMetricType);
   const selectedUsageFieldLabel = getUsageFieldLabel(selectedSector, selectedFamily?.usageMetricType);
   const selectedUsageSentenceLabel = getUsageSentenceLabel(selectedSector, selectedFamily?.usageMetricType);
@@ -922,6 +1065,39 @@ export default function ValuationClient() {
 
     return [...matches].sort((a, b) => scoreModel(a) - scoreModel(b) || a.modelName.localeCompare(b.modelName));
   }, [modelQuery, tractorModels]);
+  const filteredGenericModels = useMemo(() => {
+    const query = genericModelQuery.trim().toLowerCase();
+    const matches = genericCatalogModels.filter((model) => {
+      const specsJson = normalizeGenericSpecsRecord(model.specsJson);
+      const searchableSpecs = Object.values(specsJson)
+        .map((value) => normalizeText(value))
+        .filter(Boolean)
+        .join(' ');
+
+      return searchIncludes(
+        `${formatGenericModelLabel(model)} ${model.brandName} ${model.displayName} ${model.modelName} ${model.variantName ?? ''} ${searchableSpecs}`,
+        genericModelQuery,
+      );
+    });
+
+    if (!query) return matches;
+
+    function scoreGenericModel(model: GenericCatalogModel): number {
+      const label = formatGenericModelLabel(model).toLowerCase();
+      const modelName = model.modelName.toLowerCase();
+      const displayName = model.displayName.toLowerCase();
+
+      if (modelName === query || displayName === query || label === query) return 0;
+      if (modelName.startsWith(query)) return 1;
+      if (displayName.startsWith(query)) return 2;
+      if (label.startsWith(query)) return 3;
+      if (modelName.includes(query)) return 4;
+      if (displayName.includes(query) || label.includes(query)) return 5;
+      return 6;
+    }
+
+    return [...matches].sort((a, b) => scoreGenericModel(a) - scoreGenericModel(b) || formatGenericModelLabel(a).localeCompare(formatGenericModelLabel(b)));
+  }, [genericCatalogModels, genericModelQuery]);
 
   const yearNumber = Number(year);
   const usageNumber = toNumberOrNull(usageAmount);
@@ -929,11 +1105,12 @@ export default function ValuationClient() {
   const specsJson = useMemo(() => buildSpecPayload(specQuestions, specAnswers), [specQuestions, specAnswers]);
   const enrichedSpecsJson = useMemo(
     () => ({
+      ...(flowMode === 'generic_specs' && selectedGenericModel ? normalizeGenericSpecsRecord(selectedGenericModel.specsJson) : {}),
       ...specsJson,
       ...(lifeWorkedPercentNumber !== null ? { life_worked_percent: lifeWorkedPercentNumber } : {}),
       ...(yearModelUnknown ? { year_model_unknown: true } : {}),
     }),
-    [specsJson, lifeWorkedPercentNumber, yearModelUnknown],
+    [flowMode, selectedGenericModel, specsJson, lifeWorkedPercentNumber, yearModelUnknown],
   );
   const headlineValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
   const normalizedSignedInAccountType = normalizeAccountType(accountType);
@@ -1032,8 +1209,12 @@ export default function ValuationClient() {
     setDrive('');
     setCab('');
     setTractorModels([]);
+    setGenericCatalogModels([]);
+    setGenericModelsLoading(false);
+    clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
     setSpecQuestions([]);
     setSpecAnswers({});
+    genericModelPrefilledSpecKeysRef.current = new Set();
     setYear(String(CURRENT_YEAR));
     setYearModelUnknown(false);
     setUsageAmount('');
@@ -1109,6 +1290,9 @@ export default function ValuationClient() {
     setDrive('');
     setCab('');
     setTractorModels([]);
+    setGenericCatalogModels([]);
+    setGenericModelsLoading(false);
+    clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
     setTypedModelName('');
     setYear(String(CURRENT_YEAR));
     setUsageAmount('');
@@ -1236,6 +1420,54 @@ export default function ValuationClient() {
     };
   }, [brandSlug, flowMode, tractorType, drive, cab]);
 
+  useEffect(() => {
+    if (!selectedSector || !selectedFamily || !brandSlug || flowMode !== 'generic_specs') {
+      setGenericCatalogModels([]);
+      setGenericModelsLoading(false);
+      clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
+      return;
+    }
+
+    const sectorForRequest = selectedSector;
+    const familyKeyForRequest = selectedFamily.familyKey;
+    const brandSlugForRequest = brandSlug;
+
+    let ignore = false;
+    setGenericModelsLoading(true);
+    setGenericCatalogModels([]);
+    clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
+
+    async function loadGenericCatalogModels() {
+      try {
+        const params = new URLSearchParams({
+          sectorKey: sectorForRequest,
+          familyKey: familyKeyForRequest,
+          brandSlug: brandSlugForRequest,
+          limit: '500',
+        });
+        const response = await fetch(`/api/equipment-models?${params.toString()}`, { cache: 'no-store' });
+        const data = (await response.json()) as EquipmentModelsApiResponse;
+        if (!response.ok || !data.ok || !Array.isArray(data.models)) throw new Error(data.error ?? 'Failed to load catalogue models.');
+        if (!ignore) setGenericCatalogModels(data.models);
+      } catch (error) {
+        console.error(error);
+        if (!ignore) setGenericCatalogModels([]);
+      } finally {
+        if (!ignore) setGenericModelsLoading(false);
+      }
+    }
+
+    void loadGenericCatalogModels();
+    return () => {
+      ignore = true;
+    };
+  }, [selectedSector, selectedFamily, brandSlug, flowMode]);
+
+  useEffect(() => {
+    if (flowMode !== 'generic_specs' || genericModelMode !== 'catalog' || !selectedGenericModel) return;
+    applyGenericModelSpecDefaults(selectedGenericModel);
+  }, [flowMode, genericModelMode, selectedGenericModel, specQuestions]);
+
   function resetResult() {
     setResultState(null);
     setSelectedMethod('aim4price');
@@ -1247,6 +1479,85 @@ export default function ValuationClient() {
     setSavedMarketplaceAssetId(null);
   }
 
+  function removeGenericModelPrefilledAnswers() {
+    const prefilledKeys = genericModelPrefilledSpecKeysRef.current;
+    if (!prefilledKeys.size) return;
+
+    setSpecAnswers((current) => {
+      let changed = false;
+      const next = { ...current };
+
+      for (const key of prefilledKeys) {
+        if (Object.prototype.hasOwnProperty.call(next, key)) {
+          delete next[key];
+          changed = true;
+        }
+      }
+
+      return changed ? next : current;
+    });
+    genericModelPrefilledSpecKeysRef.current = new Set();
+  }
+
+  function clearGenericModelSelection(options: { clearManual?: boolean; clearPrefilledSpecs?: boolean } = {}) {
+    setGenericModelId('');
+    setGenericModelQuery('');
+    setGenericModelDropdownOpen(false);
+    setGenericModelMode('');
+    if (options.clearManual) setTypedModelName('');
+    if (options.clearPrefilledSpecs) removeGenericModelPrefilledAnswers();
+  }
+
+  function applyGenericModelSpecDefaults(model: GenericCatalogModel) {
+    const modelSpecs = normalizeGenericSpecsRecord(model.specsJson);
+
+    setSpecAnswers((current) => {
+      const next = { ...current };
+      let changed = false;
+
+      for (const key of genericModelPrefilledSpecKeysRef.current) {
+        if (Object.prototype.hasOwnProperty.call(next, key)) {
+          delete next[key];
+          changed = true;
+        }
+      }
+
+      const nextPrefilledKeys = new Set<string>();
+
+      if (!Object.keys(modelSpecs).length || !specQuestions.length) {
+        genericModelPrefilledSpecKeysRef.current = nextPrefilledKeys;
+        return changed ? next : current;
+      }
+
+      for (const question of specQuestions) {
+        if (normalizeText(next[question.specKey])) continue;
+        const answerValue = getModelSpecAnswerValue(question, modelSpecs[question.specKey]);
+        if (!answerValue) continue;
+
+        next[question.specKey] = answerValue;
+        nextPrefilledKeys.add(question.specKey);
+        changed = true;
+      }
+
+      genericModelPrefilledSpecKeysRef.current = nextPrefilledKeys;
+      return changed ? next : current;
+    });
+  }
+
+  function validateGenericModelSelection(): string | null {
+    if (flowMode !== 'generic_specs') return null;
+
+    const manualModelName = normalizeText(typedModelName);
+
+    if (genericModelRequired && !selectedGenericModel && !manualModelName) {
+      return 'Choose a model or select Model not listed and enter the model name.';
+    }
+
+    if (genericModelMode === 'manual' && !manualModelName) return 'Enter the model name.';
+
+    return null;
+  }
+
   function resetDetailsFlow() {
     setYear(String(CURRENT_YEAR));
     setYearModelUnknown(false);
@@ -1255,6 +1566,8 @@ export default function ValuationClient() {
     setUserReplacementPrice('');
     setCondition('good');
     setSpecAnswers({});
+    genericModelPrefilledSpecKeysRef.current = new Set();
+    clearGenericModelSelection({ clearManual: true });
     setYearStepComplete(false);
     setUsageStepComplete(false);
     setConditionStepComplete(false);
@@ -1264,6 +1577,7 @@ export default function ValuationClient() {
   }
 
   function setSpecAnswer(key: string, value: string) {
+    genericModelPrefilledSpecKeysRef.current.delete(key);
     setSpecAnswers((current) => ({ ...current, [key]: value }));
     resetResult();
   }
@@ -1301,6 +1615,9 @@ export default function ValuationClient() {
     if (flowMode === 'exact_model' && !selectedModel) return 'Choose the exact model or use machine specs.';
 
     if (flowMode === 'generic_specs') {
+      const genericModelMessage = validateGenericModelSelection();
+      if (genericModelMessage) return genericModelMessage;
+
       for (const question of specQuestions) {
         if (question.isRequired && !isSpecQuestionAnswered(question, specAnswers[question.specKey])) {
           return `Answer: ${question.label}.`;
@@ -1336,7 +1653,8 @@ export default function ValuationClient() {
           sectorKey: selectedSector,
           familyKey: selectedFamily.familyKey,
           brandSlug: selectedBrand.slug,
-          typedModelName,
+          typedModelName: submittedGenericModelName,
+          saveModelCandidate: shouldSaveGenericModelCandidate,
           specsJson: enrichedSpecsJson,
           year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
           yearModelUnknown,
@@ -1466,7 +1784,8 @@ export default function ValuationClient() {
             sectorKey: selectedSector,
             familyKey: selectedFamily.familyKey,
             brandSlug: selectedBrand.slug,
-            typedModelName,
+            typedModelName: submittedGenericModelName,
+            saveModelCandidate: shouldSaveGenericModelCandidate,
             specsJson: enrichedSpecsJson,
             year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
             yearModelUnknown,
@@ -1641,8 +1960,9 @@ export default function ValuationClient() {
     };
     const confidenceText = getConfidenceLabel(resultState, confidenceContext);
     const confidenceNote = getConfidenceNote(resultState, confidenceContext);
+    const genericModelNameForResult = genericResult?.typedModelName || getGenericModelSubmitName(selectedGenericModel) || normalizeText(typedModelName);
     const machineTitle = isGeneric
-      ? `${genericResult?.brand.name ?? selectedBrand?.name ?? ''} ${genericResult?.typedModelName || genericResult?.family.label || selectedFamily?.familyLabel || ''}`.trim()
+      ? `${genericResult?.brand.name ?? selectedBrand?.name ?? ''} ${genericModelNameForResult || genericResult?.family.label || selectedFamily?.familyLabel || ''}`.trim()
       : `${exactModel?.brandName ?? selectedBrand?.name ?? ''} ${exactModel?.modelName ?? ''}`.trim();
     const resultCondition: ConditionKey = isGeneric ? genericResult?.condition ?? condition : condition;
     const resultYear = isGeneric ? genericResult?.year ?? yearNumber : yearModelUnknown ? CURRENT_YEAR : yearNumber;
@@ -1687,7 +2007,7 @@ export default function ValuationClient() {
       : 'Agricultural';
     const familyLabel = isGeneric ? genericResult?.family.label ?? selectedFamily?.familyLabel ?? 'N/A' : 'Tractors';
     const brandName = isGeneric ? genericResult?.brand.name ?? selectedBrand?.name ?? 'N/A' : exactModel?.brandName ?? selectedBrand?.name ?? 'N/A';
-    const modelName = isGeneric ? genericResult?.typedModelName ?? '' : exactModel?.modelName ?? '';
+    const modelName = isGeneric ? genericModelNameForResult : exactModel?.modelName ?? '';
     const valuationPath = flowMode === 'exact_model' ? 'Exact model' : flowMode === 'generic_specs' ? 'Machine specs' : formatCatalogModeLabel(selectedFamily?.catalogMode ?? 'generic_specs');
     const selectedMethodLabel = selectedValueTypeLabel(selectedMethod);
     const generatedAt = new Date();
@@ -2298,6 +2618,13 @@ export default function ValuationClient() {
         setMessage('Choose an exact model or continue using machine specs.');
         return;
       }
+      if (flowMode === 'generic_specs') {
+        const genericModelMessage = validateGenericModelSelection();
+        if (genericModelMessage) {
+          setMessage(genericModelMessage);
+          return;
+        }
+      }
     }
     if (step === 4) {
       void calculateValuation();
@@ -2325,8 +2652,12 @@ export default function ValuationClient() {
     setDrive('');
     setCab('');
     setTractorModels([]);
+    setGenericCatalogModels([]);
+    setGenericModelsLoading(false);
+    clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
     setSpecQuestions([]);
     setSpecAnswers({});
+    genericModelPrefilledSpecKeysRef.current = new Set();
     setUsageAmount('');
     setLifeWorkedPercent('');
     setUserReplacementPrice('');
@@ -2361,6 +2692,9 @@ export default function ValuationClient() {
     setDrive('');
     setCab('');
     setTractorModels([]);
+    setGenericCatalogModels([]);
+    setGenericModelsLoading(false);
+    clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
     setBrandSearch('');
     setBrandDropdownOpen(false);
     setBrandSlug('');
@@ -2382,6 +2716,9 @@ export default function ValuationClient() {
     setDrive('');
     setCab('');
     setTractorModels([]);
+    setGenericCatalogModels([]);
+    setGenericModelsLoading(false);
+    clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
     resetResult();
     setStep(3);
   }
@@ -2420,6 +2757,30 @@ export default function ValuationClient() {
     setMessage('');
     resetResult();
     setStep(4);
+  }
+
+  function handleGenericModelSelection(nextModelId: number) {
+    const matchingModel = genericCatalogModels.find((model) => model.id === nextModelId);
+    if (!matchingModel) return;
+
+    setGenericModelId(String(matchingModel.id));
+    setGenericModelMode('catalog');
+    setGenericModelQuery('');
+    setGenericModelDropdownOpen(false);
+    setTypedModelName('');
+    setMessage('');
+    applyGenericModelSpecDefaults(matchingModel);
+    resetResult();
+  }
+
+  function handleGenericModelNotListed() {
+    setGenericModelId('');
+    setGenericModelMode('manual');
+    setGenericModelQuery('');
+    setGenericModelDropdownOpen(false);
+    removeGenericModelPrefilledAnswers();
+    setMessage('');
+    resetResult();
   }
 
   function handleBack() {
@@ -2672,9 +3033,9 @@ export default function ValuationClient() {
         <div>
           <h2 className={styles.stepTitle}>Machine specs path</h2>
           <p className={styles.stepText}>
-            Aim4price is building exact model data across all equipment types. For now, this valuation uses brand, condition, worked percentage and family specs.
+            Aim4price uses the brand, catalogue model, condition, usage and family specs for this valuation path.
           </p>
-          {renderTypedModelBox()}
+          {renderGenericModelPicker()}
         </div>
       );
     }
@@ -2723,7 +3084,7 @@ export default function ValuationClient() {
 
         {!flowMode ? <div className={styles.pathSelectionPlaceholder}>Select one of the two paths above to continue.</div> : null}
         {flowMode === 'exact_model' ? renderTractorModelPicker() : null}
-        {flowMode === 'generic_specs' ? renderTypedModelBox() : null}
+        {flowMode === 'generic_specs' ? renderGenericModelPicker() : null}
       </div>
     );
   }
@@ -2868,23 +3229,127 @@ export default function ValuationClient() {
     );
   }
 
-  function renderTypedModelBox() {
+  function renderGenericModelPicker() {
+    const selectedModelLabel = selectedGenericModel
+      ? formatGenericModelLabel(selectedGenericModel)
+      : genericModelMode === 'manual'
+        ? 'Model not listed'
+        : 'Choose model';
+    const modelPickerTitle = genericModelRequired ? 'Choose the model' : 'Choose a catalogue model';
+    const modelPickerHint = genericModelRequired
+      ? 'Select the closest model from the catalogue. If the model is missing, choose Model not listed and enter it manually.'
+      : 'Select the closest catalogue model to improve matching, or use Model not listed when the catalogue does not have it yet.';
+
     return (
-      <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
-        <h3 className={styles.currentTitle}>Provide an optional model name</h3>
-        <p className={styles.currentHint}>This improves market matching, but leaving it blank will not block the valuation process.</p>
-        <div className={styles.inputGrid}>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Model name, optional</span>
-            <input
-              value={typedModelName}
-              onChange={(event) => {
-                setTypedModelName(event.target.value);
-                resetResult();
-              }}
-              placeholder="Model XYZ"
-            />
-          </label>
+      <div className={`${styles.currentCard} ${styles.tractorSetupCard}`} style={{ marginTop: '1rem' }}>
+        <div className={styles.currentCardHead}>
+          <div>
+            <h3 className={styles.currentTitle}>{modelPickerTitle}</h3>
+            <p className={styles.currentHint}>{modelPickerHint}</p>
+          </div>
+          <span className={styles.equipmentCountPill}>{genericModelsLoading ? 'Loading' : `${genericCatalogModels.length} models`}</span>
+        </div>
+
+        <div className={styles.tractorSetupProgress}>
+          <div className={`${styles.inlineSetupGroup} ${styles.modelSetupGroup}`}>
+            <div className={styles.inlineSetupHeader}>
+              <span className={styles.fieldLabel}>Model</span>
+              <strong>{selectedModelLabel}</strong>
+            </div>
+
+            <label className={`${styles.field} ${styles.searchPanel}`}>
+              <span className={styles.fieldLabel}>Search catalogue models</span>
+              <input
+                className={styles.searchInput}
+                value={genericModelQuery}
+                onChange={(event) => {
+                  setGenericModelQuery(event.target.value);
+                  setGenericModelDropdownOpen(true);
+                }}
+                onFocus={() => setGenericModelDropdownOpen(true)}
+                placeholder={selectedSector === 'motor' ? 'e.g. Hilux, Ranger, D-Max' : 'Search model name'}
+                autoComplete="off"
+              />
+            </label>
+
+            <div className={styles.equipmentDropdownWrap}>
+              <button
+                type="button"
+                className={`${styles.equipmentDropdownTrigger} ${genericModelDropdownOpen || genericModelQuery ? styles.equipmentDropdownTriggerOpen : ''}`}
+                onClick={() => setGenericModelDropdownOpen((value) => !value)}
+                disabled={genericModelsLoading}
+                aria-expanded={genericModelDropdownOpen}
+              >
+                <span>
+                  {selectedGenericModel
+                    ? formatGenericModelLabel(selectedGenericModel)
+                    : genericModelsLoading
+                      ? 'Loading catalogue models...'
+                      : 'Select the closest model from the catalogue'}
+                </span>
+                <span className={styles.equipmentDropdownChevron} aria-hidden="true">
+                  <svg viewBox="0 0 20 20" focusable="false">
+                    <path d="M5.5 7.5 10 12l4.5-4.5" />
+                  </svg>
+                </span>
+              </button>
+
+              {genericModelDropdownOpen || genericModelQuery ? (
+                <div className={styles.equipmentDropdownMenu}>
+                  {filteredGenericModels.length ? (
+                    filteredGenericModels.map((model) => (
+                      <button
+                        key={model.id}
+                        type="button"
+                        className={`${styles.equipmentDropdownOption} ${genericModelId === String(model.id) ? styles.equipmentDropdownOptionActive : ''}`}
+                        onClick={() => handleGenericModelSelection(model.id)}
+                      >
+                        <span className={styles.modelOptionText}>{formatGenericModelLabel(model)}</span>
+                        <span className={styles.modelOptionMeta}>{formatGenericModelDetail(model)}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className={styles.equipmentDropdownEmpty}>No matching catalogue model found.</div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+
+            <div className={styles.inlineOptionRow}>
+              <button
+                type="button"
+                className={`${styles.inlineOptionButton} ${genericModelMode === 'manual' ? styles.inlineOptionButtonActive : ''}`}
+                onClick={handleGenericModelNotListed}
+              >
+                Model not listed
+              </button>
+            </div>
+
+            {genericModelsLoading ? <p className={styles.fieldHint}>Loading catalogue models...</p> : null}
+            {!genericCatalogModels.length && !genericModelsLoading ? (
+              <p className={styles.message}>No catalogue models found for this brand and equipment type. Choose Model not listed and enter the model name.</p>
+            ) : null}
+            {genericCatalogModels.length > 0 && !filteredGenericModels.length && !genericModelsLoading ? (
+              <p className={styles.message}>No matching catalogue model. Clear the search or choose Model not listed.</p>
+            ) : null}
+
+            {genericModelMode === 'manual' ? (
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>Enter model name</span>
+                <input
+                  value={typedModelName}
+                  onChange={(event) => {
+                    setTypedModelName(event.target.value);
+                    resetResult();
+                  }}
+                  placeholder={selectedSector === 'motor' ? 'e.g. Hilux 2.4 GD-6' : 'Enter model name'}
+                  required
+                  autoComplete="off"
+                />
+                <span className={styles.fieldHint}>This will be saved as a model candidate for catalogue review.</span>
+              </label>
+            ) : null}
+          </div>
         </div>
       </div>
     );
@@ -3428,8 +3893,9 @@ export default function ValuationClient() {
       : confidenceText.toLowerCase().includes('medium')
         ? styles.resultHeroMedium
         : styles.resultHeroLow;
+    const genericModelNameForResult = genericResult?.typedModelName || getGenericModelSubmitName(selectedGenericModel) || normalizeText(typedModelName);
     const machineTitle = isGeneric
-      ? `${genericResult?.family.label ?? 'Machine'} • ${genericResult?.brand.name ?? 'Brand'}${genericResult?.typedModelName ? ` • ${genericResult.typedModelName}` : ''}`
+      ? `${genericResult?.family.label ?? 'Machine'} • ${genericResult?.brand.name ?? 'Brand'}${genericModelNameForResult ? ` • ${genericModelNameForResult}` : ''}`
       : `${tractorResult?.model.brandName ?? ''} ${tractorResult?.model.modelName ?? ''}`.trim();
     const resultCondition = isGeneric ? genericResult?.condition ?? condition : condition;
     const resultYear = isGeneric ? genericResult?.year ?? yearNumber : yearModelUnknown ? CURRENT_YEAR : yearNumber;
