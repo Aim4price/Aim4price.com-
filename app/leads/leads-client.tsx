@@ -796,7 +796,7 @@ function assetValue(lead: AssetLead): number {
     return asNumber(snapshot?.totalValue ?? snapshot?.registerValue ?? snapshot?.value) ?? 0;
   }
 
-  return asNumber(lead.assetSnapshot.value ?? lead.assetSnapshot.selectedValueExVat ?? lead.assetSnapshot.aim4priceValueExVat ?? lead.assetSnapshot.marketMidExVat) ?? 0;
+  return asNumber(lead.assetSnapshot.value ?? lead.assetSnapshot.selectedValueExVat ?? lead.assetSnapshot.aim4priceValueExVat) ?? 0;
 }
 
 function leadSharedPhotoUrls(lead: AssetLead): string[] {
@@ -914,7 +914,7 @@ function leadAssetMeta(lead: AssetLead): string {
 function methodLabel(value: unknown): string {
   const normalized = asText(value).toLowerCase();
   if (normalized === 'aim4price') return 'Aim4price';
-  if (normalized === 'market') return 'Market';
+  if (normalized === 'market') return 'Aim4price';
   if (normalized === 'manual') return 'Manual';
   if (normalized === 'department') return 'Department';
   return 'Saved';
@@ -969,7 +969,7 @@ function getPdfReportOption(reportKind: PdfReportKind): PdfReportOption {
 }
 
 function snapshotAssetValue(asset: Record<string, unknown>): number {
-  return Math.round(asNumber(asset.value ?? asset.selectedValueExVat ?? asset.aim4priceValueExVat ?? asset.marketMidExVat) ?? 0);
+  return Math.round(asNumber(asset.value ?? asset.selectedValueExVat ?? asset.aim4priceValueExVat) ?? 0);
 }
 
 const SNAPSHOT_REPLACEMENT_PRICE_KEYS = [
@@ -1087,10 +1087,9 @@ function buildClientRows(lead: AssetLead): Array<{ label: string; value: string 
 }
 
 function buildMethodCards(lead: AssetLead): ReportMethodCard[] {
-  const selected = asText(lead.assetSnapshot.selectedMethod) || 'aim4price';
+  const selected = asText(lead.assetSnapshot.selectedMethod).toLowerCase() || 'aim4price';
   const cards: ReportMethodCard[] = [];
   const aim4priceValue = asNumber(lead.assetSnapshot.aim4priceValueExVat);
-  const marketValue = asNumber(lead.assetSnapshot.marketMidExVat);
   const selectedValue = assetValue(lead);
 
   if (aim4priceValue !== null) {
@@ -1098,16 +1097,7 @@ function buildMethodCards(lead: AssetLead): ReportMethodCard[] {
       label: 'Aim4price value',
       value: formatCurrency(aim4priceValue),
       note: 'Calculated platform value excluding VAT.',
-      selected: selected === 'aim4price',
-    });
-  }
-
-  if (marketValue !== null) {
-    cards.push({
-      label: 'Market value',
-      value: formatCurrency(marketValue),
-      note: 'Market comparison midpoint excluding VAT.',
-      selected: selected === 'market',
+      selected: selected === 'aim4price' || selected === 'market',
     });
   }
 
