@@ -345,7 +345,7 @@ const MAX_MARKETPLACE_PHOTOS = 12;
 const MARKETPLACE_INTRO_DISMISSED_KEY = 'aim4price-marketplace-intro-dismissed';
 
 const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
-  { step: 1, label: 'Machine' },
+  { step: 1, label: 'Equipment' },
   { step: 2, label: 'Brand' },
   { step: 3, label: 'Path' },
   { step: 4, label: 'Specs' },
@@ -374,6 +374,49 @@ const CAB_OPTIONS: Array<{ value: CabType; label: string }> = [
   { value: 'cab', label: 'Cab' },
   { value: 'open-station', label: 'Open station' },
 ];
+
+const GPS_TYPE_OPTIONS: Array<{ value: GpsType; label: string }> = [
+  { value: 'guidance-only', label: 'Guidance only' },
+  { value: 'full-autosteer', label: 'Full autosteer' },
+];
+
+type DropdownOption = { value: string; label: string };
+
+function sentenceCase(value: string): string {
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+}
+
+function getAssetTypeLabel(sectorKey?: SectorKey | null): string {
+  return sectorKey === 'motor' ? 'vehicle type' : 'equipment type';
+}
+
+function getAssetItemLabel(sectorKey?: SectorKey | null): string {
+  return sectorKey === 'motor' ? 'vehicle' : 'equipment';
+}
+
+function getAssetNounLabel(sectorKey?: SectorKey | null): string {
+  return sectorKey === 'motor' ? 'vehicle' : 'equipment';
+}
+
+function getAssetNounTitle(sectorKey?: SectorKey | null): string {
+  return sentenceCase(getAssetNounLabel(sectorKey));
+}
+
+function getSpecsLabel(sectorKey?: SectorKey | null): string {
+  return sectorKey === 'motor' ? 'vehicle specs' : 'equipment specs';
+}
+
+function getSpecsTitle(sectorKey?: SectorKey | null): string {
+  return sentenceCase(getSpecsLabel(sectorKey));
+}
+
+function getGenericEstimatePathCopy(sectorKey?: SectorKey | null): string {
+  return `Aim4price uses the brand, catalogue model, condition, usage and ${getSpecsLabel(sectorKey)} for this estimate path.`;
+}
+
+function getGpsTypeLabel(value: GpsType): string {
+  return GPS_TYPE_OPTIONS.find((option) => option.value === value)?.label ?? 'Guidance only';
+}
 
 function playSectorPreview(card: HTMLButtonElement) {
   const video = card.querySelector('video');
@@ -428,7 +471,7 @@ function createMarketplacePhotoId(): string {
 
 function pdfFileSlug(value: string): string {
   const parts = String(value ?? '').match(/[A-Za-z0-9]+/g) ?? [];
-  return parts.join('-') || 'Valuation';
+  return parts.join('-') || 'Estimate';
 }
 
 function toNumberOrNull(value: unknown): number | null {
@@ -696,7 +739,7 @@ function getConfidenceClass(state: ValuationResultState | null, context: Confide
 }
 
 function getConfidenceNote(state: ValuationResultState | null, context: ConfidenceContext): string {
-  if (!state) return 'Run a valuation to calculate confidence.';
+  if (!state) return 'Run an estimate to calculate confidence.';
 
   if (state.kind === 'generic') {
     return 'Aim4price confidence uses the replacement-price band, captured specs, age, usage and condition.';
@@ -831,6 +874,7 @@ export default function ValuationClient() {
   const [genericModelMode, setGenericModelMode] = useState<GenericModelSelectionMode>('');
   const [specQuestions, setSpecQuestions] = useState<SpecQuestion[]>([]);
   const [specAnswers, setSpecAnswers] = useState<Record<string, string>>({});
+  const [openSpecDropdownKey, setOpenSpecDropdownKey] = useState<string | null>(null);
   const [typedModelName, setTypedModelName] = useState('');
   const [year, setYear] = useState(String(CURRENT_YEAR));
   const [usageAmount, setUsageAmount] = useState('');
@@ -839,6 +883,7 @@ export default function ValuationClient() {
   const [frontLoader, setFrontLoader] = useState(false);
   const [gpsEnabled, setGpsEnabled] = useState(false);
   const [gpsType, setGpsType] = useState<GpsType>('guidance-only');
+  const [gpsTypeDropdownOpen, setGpsTypeDropdownOpen] = useState(false);
   const [gpsYear, setGpsYear] = useState('');
   const [userReplacementPrice, setUserReplacementPrice] = useState('');
   const [replacementPriceBasis, setReplacementPriceBasis] = useState<ReplacementPriceBasis>('aim4price');
@@ -1131,6 +1176,8 @@ export default function ValuationClient() {
     clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
     setSpecQuestions([]);
     setSpecAnswers({});
+    setOpenSpecDropdownKey(null);
+    setGpsTypeDropdownOpen(false);
     genericModelPrefilledSpecKeysRef.current = new Set();
     setYear(String(CURRENT_YEAR));
     setYearModelUnknown(false);
@@ -1483,6 +1530,8 @@ export default function ValuationClient() {
     setUserReplacementPrice('');
     setCondition('good');
     setSpecAnswers({});
+    setOpenSpecDropdownKey(null);
+    setGpsTypeDropdownOpen(false);
     genericModelPrefilledSpecKeysRef.current = new Set();
     clearGenericModelSelection({ clearManual: true });
     setYearStepComplete(false);
@@ -1500,36 +1549,36 @@ export default function ValuationClient() {
   }
 
   function validateDetails(): string | null {
-    if (!selectedFamily) return 'Choose an equipment family first.';
+    if (!selectedFamily) return `Choose an ${getAssetTypeLabel(selectedSector)} first.`;
     if (!selectedBrand) return 'Choose a brand first.';
 
     const genericPath = flowMode === 'generic_specs';
     const selfPropelled = selectedFamily?.isPropelled || selectedFamily?.usageMetricType === 'hours' || selectedFamily?.usageMetricType === 'km';
     const showHoursInput = !genericPath || selfPropelled;
 
-    if (!yearStepComplete) return 'Choose the machine manufacturing year or mark it as unknown.';
+    if (!yearStepComplete) return `Choose the ${getAssetNounLabel(selectedSector)} manufacturing year or mark it as unknown.`;
 
     if (!yearModelUnknown) {
       if (!Number.isInteger(yearNumber) || yearNumber < 1950 || yearNumber > CURRENT_YEAR) {
-        return 'Enter a valid machine manufacturing year or mark the year as unknown.';
+        return `Enter a valid ${getAssetNounLabel(selectedSector)} manufacturing year or mark the year as unknown.`;
       }
     }
 
     if (!usageStepComplete) {
-      return showHoursInput ? `Enter the ${selectedUsageFieldLabel.toLowerCase()} or estimate how much it has worked.` : 'Estimate how much the machine has worked.';
+      return showHoursInput ? `Enter the ${selectedUsageFieldLabel.toLowerCase()} or estimate how much it has worked.` : `Estimate how much the ${getAssetNounLabel(selectedSector)} has worked.`;
     }
 
     if (showHoursInput && !usageNumber && lifeWorkedPercentNumber === null) {
-      return `Enter ${selectedUsageFieldLabel.toLowerCase()} or estimate how much the machine has worked.`;
+      return `Enter ${selectedUsageFieldLabel.toLowerCase()} or estimate how much the ${getAssetNounLabel(selectedSector)} has worked.`;
     }
 
     if (!showHoursInput && lifeWorkedPercentNumber === null) {
-      return 'Estimate how much the machine has worked as a percentage.';
+      return `Estimate how much the ${getAssetNounLabel(selectedSector)} has worked as a percentage.`;
     }
 
     if (!conditionStepComplete || !condition) return 'Choose the condition.';
     if (flowMode === 'exact_model' && !tractorSetupComplete) return 'Complete the type, drive and cab setup first.';
-    if (flowMode === 'exact_model' && !selectedModel) return 'Choose the exact model or use machine specs.';
+    if (flowMode === 'exact_model' && !selectedModel) return `Choose the exact model or use ${getSpecsLabel(selectedSector)}.`;
 
     if (flowMode === 'generic_specs') {
       const genericModelMessage = validateGenericModelSelection();
@@ -1631,7 +1680,7 @@ export default function ValuationClient() {
         }),
       });
       const data = (await response.json()) as TractorValuationApiResponse;
-      if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to recalculate tractor valuation.');
+      if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to recalculate tractor estimate.');
       setResultState({ kind: 'tractor', result: data.result });
       setReplacementPriceBasis(priceExVat ? 'user' : 'aim4price');
       setSelectedMethod('aim4price');
@@ -1639,7 +1688,7 @@ export default function ValuationClient() {
       setReplacementPanelOpen(!finalSaveIntent);
     } catch (error) {
       console.error(error);
-      setError(error instanceof Error ? error.message : 'Failed to recalculate tractor valuation.');
+      setError(error instanceof Error ? error.message : 'Failed to recalculate tractor estimate.');
     } finally {
       setReplacementRecalculateLoading(false);
     }
@@ -1658,7 +1707,7 @@ export default function ValuationClient() {
     }
 
     if (!isSignedIn && guestValuationCount >= 3) {
-      setMessage('You have used your 3 free valuations. Please create an account or log in to continue.');
+      setMessage('You have used your 3 free estimates. Please create an account or log in to continue.');
       router.push('/auth#signup');
       return;
     }
@@ -1688,7 +1737,7 @@ export default function ValuationClient() {
           }),
         });
         const data = (await response.json()) as TractorValuationApiResponse;
-        if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to calculate tractor valuation.');
+        if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to calculate tractor estimate.');
         setResultState({ kind: 'tractor', result: data.result });
         setReplacementPriceBasis(data.result.replacementPriceBasis ?? 'aim4price');
         setSelectedMethod('aim4price');
@@ -1714,7 +1763,7 @@ export default function ValuationClient() {
           }),
         });
         const data = (await response.json()) as GenericValuationApiResponse;
-        if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to calculate generic valuation.');
+        if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to calculate generic estimate.');
         setResultState({ kind: 'generic', result: data.result });
         setReplacementPriceBasis(data.result.replacementPriceBasis ?? 'aim4price');
         setSelectedMethod('aim4price');
@@ -1727,7 +1776,7 @@ export default function ValuationClient() {
       setStep(5);
     } catch (error) {
       console.error(error);
-      setMessage(error instanceof Error ? error.message : 'Failed to calculate valuation.');
+      setMessage(error instanceof Error ? error.message : 'Failed to calculate estimate.');
     } finally {
       setValuationLoading(false);
     }
@@ -1735,7 +1784,7 @@ export default function ValuationClient() {
 
   function buildValuationSavePayload(options: { saveForMarketplace?: boolean; photos?: string[] } = {}): Record<string, unknown> {
     if (!resultState) {
-      throw new Error('Run a valuation before saving.');
+      throw new Error('Run an estimate before saving.');
     }
 
     const marketplaceFields = options.saveForMarketplace
@@ -1905,7 +1954,7 @@ export default function ValuationClient() {
     const familyLabel = isGeneric ? genericResult?.family.label ?? selectedFamily?.familyLabel ?? 'N/A' : 'Tractors';
     const brandName = isGeneric ? genericResult?.brand.name ?? selectedBrand?.name ?? 'N/A' : exactModel?.brandName ?? selectedBrand?.name ?? 'N/A';
     const modelName = isGeneric ? genericModelNameForResult : exactModel?.modelName ?? '';
-    const valuationPath = flowMode === 'exact_model' ? 'Exact model' : flowMode === 'generic_specs' ? 'Machine specs' : formatCatalogModeLabel(selectedFamily?.catalogMode ?? 'generic_specs');
+    const valuationPath = flowMode === 'exact_model' ? 'Exact model' : flowMode === 'generic_specs' ? getSpecsTitle(selectedSector) : formatCatalogModeLabel(selectedFamily?.catalogMode ?? 'generic_specs');
     const selectedMethodLabel = selectedValueTypeLabel(selectedMethod);
     const generatedAt = new Date();
     const replacementPriceExVat = getCurrentResultReplacementPriceExVat();
@@ -1949,8 +1998,8 @@ export default function ValuationClient() {
       { label: 'Usage', value: usageSummary },
       { label: 'Condition', value: conditionLabel(resultCondition) },
       { label: 'Replacement Price', value: moneyExVat(replacementPriceExVat) },
-      { label: 'Valuation Path', value: valuationPath },
-      { label: 'Valuation Source / Selected Value Type', value: selectedMethodLabel },
+      { label: 'Estimate Path', value: valuationPath },
+      { label: 'Estimate Source / Selected Value Type', value: selectedMethodLabel },
     ]);
 
     const signedInBusinessName = accountProfile?.businessName || accountProfile?.displayName || accountProfile?.name;
@@ -1986,7 +2035,7 @@ export default function ValuationClient() {
 
     return {
       generatedAt: generatedAt.toISOString(),
-      machineTitle: machineTitle || 'Aim4price valuation',
+      machineTitle: machineTitle || 'Aim4price estimate',
       sectorLabel,
       familyLabel,
       brandName,
@@ -2003,8 +2052,8 @@ export default function ValuationClient() {
       replacementBasisText,
       notes: [
         'Values exclude VAT unless stated otherwise.',
-        'This is an indicative Aim4price estimate, not a certified valuation or inspection report.',
-        'Values are indicative Aim4price estimates based on replacement price, saved asset information, age, usage, condition and available asset inputs. This is not a certified valuation, inspection report or guarantee of selling price.',
+        'This is an indicative Aim4price estimate, not a certified appraisal or inspection report.',
+        'Values are indicative Aim4price estimates based on replacement price, saved asset information, age, usage, condition and available asset inputs. This is not a certified appraisal, inspection report or guarantee of selling price.',
       ],
       assetDetailRows,
       clientRows: safeClientRows,
@@ -2014,13 +2063,13 @@ export default function ValuationClient() {
 
   async function downloadValuationPdf() {
     if (!resultState) {
-      setPdfError('Run a valuation before downloading the PDF report.');
+      setPdfError('Run an estimate before downloading the PDF report.');
       return;
     }
 
     const payload = buildValuationPdfPayload();
     if (!payload) {
-      setPdfError('The valuation report could not be prepared.');
+      setPdfError('The estimate report could not be prepared.');
       return;
     }
 
@@ -2028,14 +2077,14 @@ export default function ValuationClient() {
     setPdfError('');
 
     try {
-      const targetName = `aim4price-valuation-report-${pdfFileSlug(payload.machineTitle)}-${Date.now()}`;
+      const targetName = `aim4price-estimate-report-${pdfFileSlug(payload.machineTitle)}-${Date.now()}`;
       const reportWindow = window.open('', targetName);
 
       if (!reportWindow) {
         throw new Error('The PDF report window was blocked. Allow pop-ups for Aim4price, then try again.');
       }
 
-      reportWindow.document.write('<!doctype html><title>Preparing Aim4price report...</title><body style="font-family: Arial, sans-serif; padding: 24px; color: #111827;">Preparing Aim4price valuation report...</body>');
+      reportWindow.document.write('<!doctype html><title>Preparing Aim4price report...</title><body style="font-family: Arial, sans-serif; padding: 24px; color: #111827;">Preparing Aim4price estimate report...</body>');
       reportWindow.document.close();
 
       const form = document.createElement('form');
@@ -2055,7 +2104,7 @@ export default function ValuationClient() {
       window.setTimeout(() => form.remove(), 0);
     } catch (error) {
       console.error(error);
-      setPdfError(error instanceof Error ? error.message : 'Failed to create the valuation PDF report.');
+      setPdfError(error instanceof Error ? error.message : 'Failed to create the estimate PDF report.');
     } finally {
       window.setTimeout(() => setPdfLoading(false), 700);
     }
@@ -2097,17 +2146,17 @@ export default function ValuationClient() {
 
   function openFinalSaveModal(intent: FinalSaveIntent) {
     if (!resultState) {
-      setMessage('Run an estimate before saving this valuation.');
+      setMessage('Run an estimate before saving.');
       return;
     }
 
     if (!isSignedIn) {
-      setMessage('Create an account or sign in to save this valuation to your Asset Register or send it to Marketplace.');
+      setMessage('Create an account or sign in to save this estimate to your Asset Register or send it to Marketplace.');
       return;
     }
 
     if (intent === 'asset-register' && !canSaveToAssetRegister) {
-      setMessage('Only owner accounts can save valuations to the Asset Register.');
+      setMessage('Only owner accounts can save estimates to the Asset Register.');
       return;
     }
 
@@ -2117,7 +2166,7 @@ export default function ValuationClient() {
     }
 
     if (headlineValue === null) {
-      setMessage('Choose an available valuation method first.');
+      setMessage('Choose an available estimate value first.');
       return;
     }
 
@@ -2170,12 +2219,12 @@ export default function ValuationClient() {
     const setError = options.setError ?? setMessage;
 
     if (!resultState) {
-      setError('Run a valuation before saving.');
+      setError('Run an estimate before saving.');
       return null;
     }
 
     if (!isSignedIn) {
-      setError('Create an account or sign in to save this valuation to your Asset Register or send it to Marketplace.');
+      setError('Create an account or sign in to save this estimate to your Asset Register or send it to Marketplace.');
       return null;
     }
 
@@ -2185,13 +2234,13 @@ export default function ValuationClient() {
         return null;
       }
     } else if (!canSaveToAssetRegister) {
-      setError('Only owner accounts can save valuations to the Asset Register.');
+      setError('Only owner accounts can save estimates to the Asset Register.');
       return null;
     }
 
     const selectedValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
     if (selectedValue === null) {
-      setError('Choose an available valuation method first.');
+      setError('Choose an available estimate value first.');
       return null;
     }
 
@@ -2223,7 +2272,7 @@ export default function ValuationClient() {
       const data = (await response.json()) as SaveValuationRunApiResponse;
 
       if (!response.ok || !data.ok) {
-        throw new Error(data.error ?? 'Failed to save valuation.');
+        throw new Error(data.error ?? 'Failed to save estimate.');
       }
 
       if (options.redirectToAssetRegister) {
@@ -2233,7 +2282,7 @@ export default function ValuationClient() {
       return data;
     } catch (error) {
       console.error(error);
-      setError(error instanceof Error ? error.message : 'Failed to save valuation.');
+      setError(error instanceof Error ? error.message : 'Failed to save estimate.');
       return null;
     } finally {
       setSaveLoading(false);
@@ -2254,7 +2303,7 @@ export default function ValuationClient() {
 
     if (isMarketplaceSave) {
       if (!saved.assetId) {
-        setFinalSaveError('The valuation saved, but no asset id was returned for the marketplace listing.');
+        setFinalSaveError('The estimate saved, but no asset id was returned for the marketplace listing.');
         return;
       }
 
@@ -2490,7 +2539,7 @@ export default function ValuationClient() {
   function handleNext() {
     setMessage('');
     if (step === 1 && !selectedFamily) {
-      setMessage('Choose an equipment family first.');
+      setMessage(`Choose an ${getAssetTypeLabel(selectedSector)} first.`);
       return;
     }
     if (step === 2 && !selectedBrand) {
@@ -2499,7 +2548,7 @@ export default function ValuationClient() {
     }
     if (step === 3) {
       if (exactTractorAvailable && !flowMode) {
-        setMessage('Choose a valuation path first.');
+        setMessage('Choose an estimate path first.');
         return;
       }
       if (flowMode === 'exact_model' && !tractorSetupComplete) {
@@ -2507,7 +2556,7 @@ export default function ValuationClient() {
         return;
       }
       if (flowMode === 'exact_model' && !selectedModel) {
-        setMessage('Choose an exact model or continue using machine specs.');
+        setMessage(`Choose an exact model or continue using ${getSpecsLabel(selectedSector)}.`);
         return;
       }
       if (flowMode === 'generic_specs') {
@@ -2549,6 +2598,8 @@ export default function ValuationClient() {
     clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
     setSpecQuestions([]);
     setSpecAnswers({});
+    setOpenSpecDropdownKey(null);
+    setGpsTypeDropdownOpen(false);
     genericModelPrefilledSpecKeysRef.current = new Set();
     setUsageAmount('');
     setLifeWorkedPercent('');
@@ -2744,7 +2795,7 @@ export default function ValuationClient() {
 
                     <span className={styles.sectorLabelWrap}>
                       <strong className={styles.sectorLabel}>{sector.label}</strong>
-                      {isAvailable ? <span className={styles.sectorCardHint}>Open valuation flow</span> : null}
+                      {isAvailable ? <span className={styles.sectorCardHint}>Open estimate flow</span> : null}
                     </span>
                   </span>
                 </button>
@@ -2762,15 +2813,15 @@ export default function ValuationClient() {
         </div>
 
         <div className={styles.equipmentStageIntro}>
-          <h2 className={styles.stepTitle}>Choose equipment type</h2>
-          <p className={styles.stepText}>Search or choose the machine type. Selecting one moves to the brand step automatically.</p>
+          <h2 className={styles.stepTitle}>Choose {getAssetTypeLabel(selectedSector)}</h2>
+          <p className={styles.stepText}>Search or choose the {getAssetTypeLabel(selectedSector)}. Selecting one moves to the brand step automatically.</p>
         </div>
 
         <div className={`${styles.currentCard} ${styles.equipmentPickerCard}`}>
           <div className={styles.equipmentPickerHead}>
             <div>
-              <span className={styles.fieldLabel}>Search equipment type</span>
-              <p className={styles.equipmentPickerHint}>Type a normal word, then pick the matching machine from the dropdown.</p>
+              <span className={styles.fieldLabel}>Search {getAssetTypeLabel(selectedSector)}</span>
+              <p className={styles.equipmentPickerHint}>Type a normal word, then pick the matching {getAssetItemLabel(selectedSector)} from the dropdown.</p>
             </div>
             <span className={styles.equipmentCountPill}>{familiesLoading ? 'Loading' : `${filteredFamilies.length} found`}</span>
           </div>
@@ -2784,7 +2835,7 @@ export default function ValuationClient() {
                 setEquipmentDropdownOpen(true);
               }}
               onFocus={() => setEquipmentDropdownOpen(true)}
-              placeholder="e.g. baler, tractor, spreader"
+              placeholder={selectedSector === 'motor' ? 'e.g. bakkie, SUV, sedan' : 'e.g. baler, tractor, spreader'}
               autoComplete="off"
             />
           </label>
@@ -2797,7 +2848,7 @@ export default function ValuationClient() {
               disabled={familiesLoading || !filteredFamilies.length}
               aria-expanded={equipmentDropdownOpen}
             >
-              <span>{selectedFamily ? selectedFamily.familyLabel : familiesLoading ? 'Loading equipment types...' : 'Select equipment type...'}</span>
+              <span>{selectedFamily ? selectedFamily.familyLabel : familiesLoading ? `Loading ${getAssetTypeLabel(selectedSector)}s...` : `Select ${getAssetTypeLabel(selectedSector)}...`}</span>
               <span className={styles.equipmentDropdownChevron} aria-hidden="true">
                 <svg viewBox="0 0 20 20" focusable="false">
                   <path d="M5.5 7.5 10 12l4.5-4.5" />
@@ -2819,16 +2870,16 @@ export default function ValuationClient() {
                     </button>
                   ))
                 ) : (
-                  <div className={styles.equipmentDropdownEmpty}>No matching equipment type found.</div>
+                  <div className={styles.equipmentDropdownEmpty}>No matching {getAssetTypeLabel(selectedSector)} found.</div>
                 )}
               </div>
             ) : null}
           </div>
 
-          {familiesLoading ? <p className={styles.fieldHint}>Loading equipment types...</p> : null}
+          {familiesLoading ? <p className={styles.fieldHint}>Loading {getAssetTypeLabel(selectedSector)}s...</p> : null}
 
           {!filteredFamilies.length && !familiesLoading ? (
-            <p className={styles.message}>No matching equipment type found. Clear the search or import the family into the equipment catalogue.</p>
+            <p className={styles.message}>No matching {getAssetTypeLabel(selectedSector)} found. Clear the search or import it into the {selectedSector === 'motor' ? 'vehicle catalogue' : 'equipment catalogue'}.</p>
           ) : null}
         </div>
       </div>
@@ -2865,7 +2916,7 @@ export default function ValuationClient() {
                 setBrandDropdownOpen(true);
               }}
               onFocus={() => setBrandDropdownOpen(true)}
-              placeholder="e.g. Claas, John Deere, New Holland"
+              placeholder={selectedSector === 'motor' ? 'e.g. Toyota, Ford, Isuzu' : 'e.g. Claas, John Deere, New Holland'}
               autoComplete="off"
             />
           </label>
@@ -2909,10 +2960,10 @@ export default function ValuationClient() {
           {brandsLoading ? <p className={styles.fieldHint}>Loading brands...</p> : null}
 
           {!brands.length && !brandsLoading ? (
-            <p className={styles.message}>No brands are linked to this equipment type yet. Add brands for this family before running valuations.</p>
+            <p className={styles.message}>No brands are linked to this {getAssetTypeLabel(selectedSector)} yet. Add brands for this {getAssetTypeLabel(selectedSector)} before running estimates.</p>
           ) : null}
           {brands.length > 0 && !filteredBrands.length && !brandsLoading ? (
-            <p className={styles.message}>No matching brand. Clear the search or choose another machine type.</p>
+            <p className={styles.message}>No matching brand. Clear the search or choose another {getAssetTypeLabel(selectedSector)}.</p>
           ) : null}
         </div>
       </div>
@@ -2923,9 +2974,9 @@ export default function ValuationClient() {
     if (!exactTractorAvailable) {
       return (
         <div>
-          <h2 className={styles.stepTitle}>Machine specs path</h2>
+          <h2 className={styles.stepTitle}>{getSpecsTitle(selectedSector)} path</h2>
           <p className={styles.stepText}>
-            Aim4price uses the brand, catalogue model, condition, usage and family specs for this valuation path.
+            {getGenericEstimatePathCopy(selectedSector)}
           </p>
           {renderGenericModelPicker()}
         </div>
@@ -2934,7 +2985,7 @@ export default function ValuationClient() {
 
     return (
       <div>
-        <h2 className={styles.stepTitle}>Choose valuation path</h2>
+        <h2 className={styles.stepTitle}>Choose estimate path</h2>
         <p className={styles.stepText}>Choose one path first. Aim4price only shows the matching setup after you select it.</p>
 
         <div className={`${styles.choiceGrid} ${styles.pathChoiceGrid} ${styles.pathChoiceDeck}`}>
@@ -2953,7 +3004,7 @@ export default function ValuationClient() {
           >
             <span className={styles.pathChoiceCardEyebrow}>Recommended</span>
             <strong>Use exact model</strong>
-            <span className={styles.choiceCardNote}>Best when you know the model and want the clearest valuation path.</span>
+            <span className={styles.choiceCardNote}>Best when you know the model and want the clearest estimate path.</span>
           </button>
 
           <button
@@ -2969,7 +3020,7 @@ export default function ValuationClient() {
             }}
           >
             <span className={styles.pathChoiceCardEyebrow}>Flexible</span>
-            <strong>Use machine specs</strong>
+            <strong>Use {getSpecsLabel(selectedSector)}</strong>
             <span className={styles.choiceCardNote}>Use this when exact model data is not available or you are unsure of the exact model.</span>
           </button>
         </div>
@@ -3112,7 +3163,7 @@ export default function ValuationClient() {
               </div>
 
               {modelsLoading ? <p className={styles.fieldHint}>Loading exact models...</p> : null}
-              {!tractorModels.length && !modelsLoading ? <p className={styles.message}>No exact models found for this setup. Use machine specs instead.</p> : null}
+              {!tractorModels.length && !modelsLoading ? <p className={styles.message}>No exact models found for this setup. Use {getSpecsLabel(selectedSector)} instead.</p> : null}
               {tractorModels.length > 0 && !filteredModels.length && !modelsLoading ? <p className={styles.message}>No matching model. Clear the search or choose another setup.</p> : null}
             </div>
           ) : null}
@@ -3197,7 +3248,7 @@ export default function ValuationClient() {
                         onClick={() => handleGenericModelSelection(model.id)}
                       >
                         <span className={styles.modelOptionText}>{formatGenericModelLabel(model)}</span>
-                        <span className={styles.modelOptionMeta}>{formatGenericModelDetail(model)}</span>
+                        {selectedSector === 'motor' ? null : <span className={styles.modelOptionMeta}>{formatGenericModelDetail(model)}</span>}
                       </button>
                     ))
                   ) : (
@@ -3219,7 +3270,7 @@ export default function ValuationClient() {
 
             {genericModelsLoading ? <p className={styles.fieldHint}>Loading catalogue models...</p> : null}
             {!genericCatalogModels.length && !genericModelsLoading ? (
-              <p className={styles.message}>No catalogue models found for this brand and equipment type. Choose Model not listed and enter the model name.</p>
+              <p className={styles.message}>No catalogue models found for this brand and {getAssetTypeLabel(selectedSector)}. Choose Model not listed and enter the model name.</p>
             ) : null}
             {genericCatalogModels.length > 0 && !filteredGenericModels.length && !genericModelsLoading ? (
               <p className={styles.message}>No matching catalogue model. Clear the search or choose Model not listed.</p>
@@ -3247,39 +3298,98 @@ export default function ValuationClient() {
     );
   }
 
+  function renderCustomDropdownField(args: {
+    dropdownKey: string;
+    label: string;
+    value: string;
+    placeholder: string;
+    options: DropdownOption[];
+    onChange: (value: string) => void;
+    helpText?: string | null;
+  }) {
+    const selectedOption = args.options.find((option) => option.value === args.value);
+    const open = openSpecDropdownKey === args.dropdownKey;
+
+    return (
+      <div key={args.dropdownKey} className={styles.field}>
+        <span className={styles.fieldLabel}>{args.label}</span>
+        <div className={`${styles.equipmentDropdownWrap} ${styles.specDropdownWrap}`}>
+          <button
+            type="button"
+            className={`${styles.equipmentDropdownTrigger} ${styles.specDropdownTrigger} ${open ? styles.equipmentDropdownTriggerOpen : ''}`}
+            onClick={() => setOpenSpecDropdownKey((current) => current === args.dropdownKey ? null : args.dropdownKey)}
+            aria-expanded={open}
+          >
+            <span>{selectedOption?.label ?? args.placeholder}</span>
+            <span className={styles.equipmentDropdownChevron} aria-hidden="true">
+              <svg viewBox="0 0 20 20" focusable="false">
+                <path d="M5.5 7.5 10 12l4.5-4.5" />
+              </svg>
+            </span>
+          </button>
+
+          {open ? (
+            <div className={`${styles.equipmentDropdownMenu} ${styles.specDropdownMenu}`}>
+              <button
+                type="button"
+                className={`${styles.equipmentDropdownOption} ${styles.specDropdownOption} ${!args.value ? styles.equipmentDropdownOptionActive : ''}`}
+                onClick={() => {
+                  args.onChange('');
+                  setOpenSpecDropdownKey(null);
+                }}
+              >
+                <span>{args.placeholder}</span>
+              </button>
+              {args.options.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`${styles.equipmentDropdownOption} ${styles.specDropdownOption} ${args.value === option.value ? styles.equipmentDropdownOptionActive : ''}`}
+                  onClick={() => {
+                    args.onChange(option.value);
+                    setOpenSpecDropdownKey(null);
+                  }}
+                >
+                  <span>{option.label}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        {args.helpText ? <span className={styles.fieldHint}>{args.helpText}</span> : null}
+      </div>
+    );
+  }
+
   function renderSpecInput(question: SpecQuestion) {
     const value = specAnswers[question.specKey] ?? '';
     const label = `${question.label}${question.unit ? ` (${question.unit})` : ''}${question.isRequired ? ' *' : ''}`;
 
     if (question.inputType === 'select') {
-      return (
-        <label key={question.specKey} className={styles.field}>
-          <span className={styles.fieldLabel}>{label}</span>
-          <select value={value} onChange={(event) => setSpecAnswer(question.specKey, event.target.value)}>
-            <option value="">Choose...</option>
-            {question.options.map((option) => (
-              <option key={option.optionValue} value={option.optionValue}>
-                {option.optionLabel}
-              </option>
-            ))}
-          </select>
-          {question.helpText ? <span className={styles.fieldHint}>{question.helpText}</span> : null}
-        </label>
-      );
+      return renderCustomDropdownField({
+        dropdownKey: `spec-${question.specKey}`,
+        label,
+        value,
+        placeholder: 'Choose...',
+        options: question.options.map((option) => ({ value: option.optionValue, label: option.optionLabel })),
+        onChange: (nextValue) => setSpecAnswer(question.specKey, nextValue),
+        helpText: question.helpText,
+      });
     }
 
     if (question.inputType === 'boolean') {
-      return (
-        <label key={question.specKey} className={styles.field}>
-          <span className={styles.fieldLabel}>{label}</span>
-          <select value={value} onChange={(event) => setSpecAnswer(question.specKey, event.target.value)}>
-            <option value="">Choose...</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
-          {question.helpText ? <span className={styles.fieldHint}>{question.helpText}</span> : null}
-        </label>
-      );
+      return renderCustomDropdownField({
+        dropdownKey: `spec-${question.specKey}`,
+        label,
+        value,
+        placeholder: 'Choose...',
+        options: [
+          { value: 'true', label: 'Yes' },
+          { value: 'false', label: 'No' },
+        ],
+        onChange: (nextValue) => setSpecAnswer(question.specKey, nextValue),
+        helpText: question.helpText,
+      });
     }
 
     return (
@@ -3379,13 +3489,13 @@ export default function ValuationClient() {
     const yearSliderStyle = { '--year-progress': `${yearSliderProgress}%` } as CSSProperties;
 
     return (
-      <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose machine manufacturing year">
+      <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label={`Choose ${getAssetNounLabel(selectedSector)} manufacturing year`}>
         <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
         <div className={`${styles.detailsModal} ${styles.yearDetailsModal}`}>
           <div className={styles.detailsModalHeader}>
             <div>
               <span className={styles.currentEyebrow}>Step 1</span>
-              <h3 className={styles.detailsModalTitle}>Machine manufacturing year</h3>
+              <h3 className={styles.detailsModalTitle}>{getAssetNounTitle(selectedSector)} manufacturing year</h3>
               <p className={styles.detailsModalText}>Slide to the year, fine-tune it if needed, then continue.</p>
             </div>
             <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">
@@ -3488,7 +3598,7 @@ export default function ValuationClient() {
     const percentageValue = toPercentOrNull(lifeWorkedPercent) ?? 50;
 
     return (
-      <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Enter machine usage">
+      <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label={`Enter ${getAssetNounLabel(selectedSector)} usage`}>
         <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
         <div className={styles.detailsModal}>
           <div className={styles.detailsModalHeader}>
@@ -3497,8 +3607,8 @@ export default function ValuationClient() {
               <h3 className={styles.detailsModalTitle}>{usageModalMode === 'hours' && showHoursInput ? selectedUsageFieldLabel : 'Worked percentage'}</h3>
               <p className={styles.detailsModalText}>
                 {usageModalMode === 'hours' && showHoursInput
-                  ? selectedUsageDisplayUnit === 'km' ? 'Enter the odometer kilometres if they are available.' : 'Enter the engine or machine hours if they are available.'
-                  : 'Estimate how much of the machine\'s working life has already been used.'}
+                  ? selectedUsageDisplayUnit === 'km' ? 'Enter the odometer kilometres if they are available.' : 'Enter the engine or equipment hours if they are available.'
+                  : `Estimate how much of the ${getAssetNounLabel(selectedSector)}'s working life has already been used.`}
               </p>
             </div>
             <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">
@@ -3629,7 +3739,7 @@ export default function ValuationClient() {
           })}
         </div>
 
-        {requiredAnswered ? <p className={styles.completionHint}>Required questions completed. You can now get the valuation.</p> : null}
+        {requiredAnswered ? <p className={styles.completionHint}>Required questions completed. You can now get the estimate.</p> : null}
       </div>
     );
   }
@@ -3642,7 +3752,7 @@ export default function ValuationClient() {
 
     return (
       <div>
-        <h2 className={styles.stepTitle}>{genericPath ? 'Machine specs' : 'Tractor details'}</h2>
+        <h2 className={styles.stepTitle}>{genericPath ? getSpecsTitle(selectedSector) : 'Tractor details'}</h2>
         <p className={styles.stepText}>Answer one step at a time. Aim4price only reveals the next question after the current one is saved.</p>
 
         <div className={styles.specFlowStack}>
@@ -3656,7 +3766,7 @@ export default function ValuationClient() {
           >
             <span className={`${styles.specStepNumber} ${yearStepComplete ? styles.specStepNumberDone : ''}`}>{yearStepComplete ? '✓' : 1}</span>
             <span className={styles.specStepContent}>
-              <strong>Machine manufacturing year</strong>
+              <strong>{getAssetNounTitle(selectedSector)} manufacturing year</strong>
               <small>{yearStepComplete ? getYearAnswerLabel() : 'Choose the manufacturing year to start.'}</small>
             </span>
             <span className={styles.specStepAction}>{yearStepComplete ? 'Edit' : 'Choose year'}</span>
@@ -3728,13 +3838,41 @@ export default function ValuationClient() {
             </div>
             {gpsEnabled ? (
               <div className={styles.inputGrid} style={{ marginTop: '1rem' }}>
-                <label className={styles.field}>
+                <div className={styles.field}>
                   <span className={styles.fieldLabel}>GPS type</span>
-                  <select value={gpsType} onChange={(event) => setGpsType(event.target.value as GpsType)}>
-                    <option value="guidance-only">Guidance only</option>
-                    <option value="full-autosteer">Full autosteer</option>
-                  </select>
-                </label>
+                  <div className={`${styles.equipmentDropdownWrap} ${styles.specDropdownWrap}`}>
+                    <button
+                      type="button"
+                      className={`${styles.equipmentDropdownTrigger} ${styles.specDropdownTrigger} ${gpsTypeDropdownOpen ? styles.equipmentDropdownTriggerOpen : ''}`}
+                      onClick={() => setGpsTypeDropdownOpen((open) => !open)}
+                      aria-expanded={gpsTypeDropdownOpen}
+                    >
+                      <span>{getGpsTypeLabel(gpsType)}</span>
+                      <span className={styles.equipmentDropdownChevron} aria-hidden="true">
+                        <svg viewBox="0 0 20 20" focusable="false">
+                          <path d="M5.5 7.5 10 12l4.5-4.5" />
+                        </svg>
+                      </span>
+                    </button>
+                    {gpsTypeDropdownOpen ? (
+                      <div className={`${styles.equipmentDropdownMenu} ${styles.specDropdownMenu}`}>
+                        {GPS_TYPE_OPTIONS.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            className={`${styles.equipmentDropdownOption} ${styles.specDropdownOption} ${gpsType === option.value ? styles.equipmentDropdownOptionActive : ''}`}
+                            onClick={() => {
+                              setGpsType(option.value);
+                              setGpsTypeDropdownOpen(false);
+                            }}
+                          >
+                            <span>{option.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
                 <label className={styles.field}>
                   <span className={styles.fieldLabel}>GPS year</span>
                   <input value={gpsYear} onChange={(event) => setGpsYear(event.target.value)} placeholder="Optional" />
@@ -3754,8 +3892,8 @@ export default function ValuationClient() {
     if (!resultState) {
       return (
         <div>
-          <h2 className={styles.stepTitle}>No valuation yet</h2>
-          <p className={styles.stepText}>Go back and calculate a valuation first.</p>
+          <h2 className={styles.stepTitle}>No estimate yet</h2>
+          <p className={styles.stepText}>Go back and calculate an estimate first.</p>
         </div>
       );
     }
@@ -3785,7 +3923,7 @@ export default function ValuationClient() {
         : styles.resultHeroLow;
     const genericModelNameForResult = genericResult?.typedModelName || getGenericModelSubmitName(selectedGenericModel) || normalizeText(typedModelName);
     const machineTitle = isGeneric
-      ? `${genericResult?.family.label ?? 'Machine'} • ${genericResult?.brand.name ?? 'Brand'}${genericModelNameForResult ? ` • ${genericModelNameForResult}` : ''}`
+      ? `${genericResult?.family.label ?? getAssetNounTitle(selectedSector)} • ${genericResult?.brand.name ?? 'Brand'}${genericModelNameForResult ? ` • ${genericModelNameForResult}` : ''}`
       : `${tractorResult?.model.brandName ?? ''} ${tractorResult?.model.modelName ?? ''}`.trim();
     const resultCondition = isGeneric ? genericResult?.condition ?? condition : condition;
     const resultYear = isGeneric ? genericResult?.year ?? yearNumber : yearModelUnknown ? CURRENT_YEAR : yearNumber;
@@ -3837,20 +3975,6 @@ export default function ValuationClient() {
               </div>
             </div>
           </section>
-
-          <section className={styles.resultMethodGrid}>
-            <button
-              type="button"
-              className={`${styles.resultMethodCard} ${selectedMethod === 'aim4price' ? styles.resultMethodCardActive : ''}`}
-              onClick={() => setSelectedMethod('aim4price')}
-            >
-              <span className={styles.resultMethodLabel}>Aim4price value</span>
-              <strong>{money(aimValue)}</strong>
-              <small>{replacementPriceBasis === 'user' ? 'Using your replacement price' : 'Using saved replacement price'}</small>
-            </button>
-          </section>
-
-          {pdfError ? <p className={styles.resultActionError}>{pdfError}</p> : null}
 
           {(isGeneric && genericResult) || tractorResult ? (
             <section className={styles.resultAccordion}>
@@ -3970,6 +4094,52 @@ export default function ValuationClient() {
           ) : null}
         </div>
 
+        <aside className={styles.resultsSide}>
+          <section className={styles.resultFinalActions} aria-label="Estimate actions">
+            <div className={styles.resultFinalActionsCopy}>
+              <span>Estimate actions</span>
+              <h3>Next steps</h3>
+              <p>Download the estimate PDF, send the asset to Marketplace, or save it to your Asset Register.</p>
+            </div>
+
+            <div className={styles.resultFinalActionsButtons}>
+              <button
+                type="button"
+                className={styles.resultPdfActionButton}
+                onClick={downloadValuationPdf}
+                disabled={pdfLoading || !resultState || headlineValue === null}
+              >
+                {pdfLoading ? 'Preparing PDF...' : 'Download PDF'}
+              </button>
+              {isSignedIn ? (
+                <>
+                  <button
+                    type="button"
+                    className={styles.resultAlternateActionButton}
+                    onClick={saveAndSendToMarketplace}
+                    disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || !canUseMarketplacePublishFlow || headlineValue === null}
+                  >
+                    {saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : isPublishingMarketplace ? 'Sending...' : 'Send to Marketplace'}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.resultPrimaryActionButton}
+                    onClick={saveToAssetRegister}
+                    disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
+                  >
+                    {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to Asset Register'}
+                  </button>
+                </>
+              ) : (
+                <div className={styles.resultSignedOutNotice}>
+                  <p>Sign in to save this estimate to your Asset Register or send it to Marketplace.</p>
+                </div>
+              )}
+            </div>
+
+            {pdfError ? <p className={styles.resultActionError}>{pdfError}</p> : null}
+          </section>
+        </aside>
       </div>
     );
   }
@@ -3990,7 +4160,7 @@ export default function ValuationClient() {
     Number.isFinite(finalSaveReplacementPrice) &&
     finalSaveReplacementPrice > 0 &&
     !finalSaveHasPendingReplacementPrice;
-  const finalSaveTitle = finalSaveIntent === 'marketplace' ? 'Save & Send to Marketplace' : 'Save to Asset Register';
+  const finalSaveTitle = finalSaveIntent === 'marketplace' ? 'Send to Marketplace' : 'Save to Asset Register';
   const finalSaveCta = finalSaveIntent === 'marketplace' ? 'Save and continue to Marketplace' : 'Confirm and save';
   const isSectorIntroStep = step === 1 && !selectedSector;
 
@@ -4011,7 +4181,7 @@ export default function ValuationClient() {
                         <span className={`${styles.stepperBullet} ${active ? styles.stepperBulletActive : ''} ${complete ? styles.stepperBulletComplete : ''}`}>
                           {complete ? '✓' : item.step}
                         </span>
-                        <span className={`${styles.stepperLabel} ${active ? styles.stepperLabelActive : ''} ${complete ? styles.stepperLabelComplete : ''}`}>{item.label}</span>
+                        <span className={`${styles.stepperLabel} ${active ? styles.stepperLabelActive : ''} ${complete ? styles.stepperLabelComplete : ''}`}>{item.step === 1 ? getAssetNounTitle(selectedSector) : item.label}</span>
                       </div>
                     );
                   })}
@@ -4029,44 +4199,14 @@ export default function ValuationClient() {
                 Back
               </button>
               {step === 1 ? null : step === 5 ? (
-                <div className={styles.resultActionGroup}>
-                  {isSignedIn ? (
-                    <>
-                      <button
-                        type="button"
-                        className={styles.resultAlternateActionButton}
-                        onClick={saveAndSendToMarketplace}
-                        disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || !canUseMarketplacePublishFlow || headlineValue === null}
-                      >
-                        {saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : isPublishingMarketplace ? 'Sending...' : 'Save & Send to Marketplace'}
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.resultPrimaryActionButton}
-                        onClick={saveToAssetRegister}
-                        disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
-                      >
-                        {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to Asset Register'}
-                      </button>
-                    </>
-                  ) : null}
-                  <button
-                    type="button"
-                    className={styles.resultPdfActionButton}
-                    onClick={downloadValuationPdf}
-                    disabled={pdfLoading || !resultState || headlineValue === null}
-                  >
-                    {pdfLoading ? 'Preparing PDF...' : 'Download PDF'}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.secondaryButton}
-                    onClick={resetToSectorSelection}
-                    disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading}
-                  >
-                    New valuation
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={resetToSectorSelection}
+                  disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading}
+                >
+                  New estimate
+                </button>
               ) : (
                 <button
                   type="button"
@@ -4074,7 +4214,7 @@ export default function ValuationClient() {
                   onClick={handleNext}
                   disabled={valuationLoading || (step === 2 && (brandsLoading || !selectedBrand))}
                 >
-                  {valuationLoading ? 'Calculating...' : step === 4 ? 'Get Valuation' : 'Continue'}
+                  {valuationLoading ? 'Calculating...' : step === 4 ? 'Get Estimate' : 'Continue'}
                 </button>
               )}
             </div>
