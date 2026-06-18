@@ -1,3 +1,6 @@
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -62,6 +65,31 @@ const AIM4PRICE_EMAIL = 'aim4price@gmail.com';
 const AIM4PRICE_PHONE = '0625721650';
 const FOOTER_DISCLAIMER =
   'Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition, location and live market demand.';
+const VALUATION_REPORT_LOGO_PUBLIC_PATH = '/brand/aim4price-mark-black.png';
+let cachedValuationReportLogoDataUri: string | null | undefined;
+
+async function getValuationReportLogoUrl(request: NextRequest): Promise<string> {
+  const fallbackLogoUrl = new URL(VALUATION_REPORT_LOGO_PUBLIC_PATH, request.url).toString();
+
+  if (cachedValuationReportLogoDataUri) {
+    return cachedValuationReportLogoDataUri;
+  }
+
+  if (cachedValuationReportLogoDataUri === null) {
+    return fallbackLogoUrl;
+  }
+
+  try {
+    const logoPath = path.join(process.cwd(), 'public', 'brand', 'aim4price-mark-black.png');
+    const logoBuffer = await readFile(logoPath);
+    cachedValuationReportLogoDataUri = `data:image/png;base64,${logoBuffer.toString('base64')}`;
+    return cachedValuationReportLogoDataUri;
+  } catch (error) {
+    console.warn('valuation report logo fallback used', error);
+    cachedValuationReportLogoDataUri = null;
+    return fallbackLogoUrl;
+  }
+}
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -200,7 +228,7 @@ async function readRequestPayload(request: NextRequest): Promise<unknown> {
   return JSON.parse(rawBody);
 }
 
-function normalizePayload(value: unknown, request: NextRequest): NormalizedValuationReport {
+function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationReport {
   if (!isPlainRecord(value)) {
     throw new Error('Invalid valuation report payload.');
   }
@@ -251,7 +279,6 @@ function normalizePayload(value: unknown, request: NextRequest): NormalizedValua
   ];
 
   const fileName = `Aim4price-Valuation-${pdfFileSlug(machineTitle)}.pdf`;
-  const logoUrl = new URL('/brand/aim4price-mark-black.png', request.url).toString();
 
   const assetDetailRows = normalizeReportRows(value.assetDetailRows);
   const clientRows = normalizeReportRows(value.clientRows);
@@ -990,7 +1017,8 @@ function renderValuationReportHtml(payload: NormalizedValuationReport): string {
 export async function POST(request: NextRequest) {
   try {
     const rawPayload = await readRequestPayload(request);
-    const payload = normalizePayload(rawPayload, request);
+    const logoUrl = await getValuationReportLogoUrl(request);
+    const payload = normalizePayload(rawPayload, logoUrl);
     const html = renderValuationReportHtml(payload);
 
     return new NextResponse(html, {
