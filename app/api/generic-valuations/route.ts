@@ -12,6 +12,7 @@ type Body = {
   familyKey?: unknown;
   brandSlug?: unknown;
   typedModelName?: unknown;
+  saveModelCandidate?: unknown;
   specsJson?: unknown;
   year?: unknown;
   yearModelUnknown?: unknown;
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
       familyKey,
       brandSlug,
       typedModelName: String(body.typedModelName ?? '').trim() || null,
+      saveModelCandidate: parseBoolean(body.saveModelCandidate),
       specsJson: body.specsJson && typeof body.specsJson === 'object' ? (body.specsJson as Record<string, unknown>) : {},
       year,
       yearModelUnknown,
