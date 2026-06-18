@@ -11,7 +11,6 @@
 --   equipment_families
 --   equipment_models
 --   equipment_model_aliases
---   market_vault_listings
 --   valuation_runs
 --   asset_register_items
 --   tractor_catalog (temporary tractor bridge while tractors remain the first live family)
@@ -53,3 +52,5 @@
 --   28-aim4-four-sector-foundation.sql
 --   29-manual-activation-and-introduced-by.sql
 --   30-admin-only-access-hardening.sql
+--   32-remove-market-valuation-references.sql
+--   33-drop-market-vault-listings.sql
