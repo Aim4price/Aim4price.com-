@@ -277,6 +277,11 @@ type ValuationPdfMarketSource = {
   sourceUrl?: string | null;
 };
 
+type ValuationPdfKeyValue = {
+  label: string;
+  value: string;
+};
+
 type ValuationPdfPayload = {
   generatedAt: string;
   machineTitle: string;
@@ -299,6 +304,9 @@ type ValuationPdfPayload = {
   marketEvidenceInfo: string;
   marketSources: ValuationPdfMarketSource[];
   notes: string[];
+  assetDetailRows: ValuationPdfKeyValue[];
+  clientRows: ValuationPdfKeyValue[];
+  recordRows: ValuationPdfKeyValue[];
 };
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -388,10 +396,8 @@ function createMarketplacePhotoId(): string {
 }
 
 function pdfFileSlug(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'valuation';
+  const parts = String(value ?? '').match(/[A-Za-z0-9]+/g) ?? [];
+  return parts.join('-') || 'Valuation';
 }
 
 function filenameFromContentDisposition(value: string | null): string | null {
@@ -735,6 +741,46 @@ function getSpecQuestionAnswerLabel(question: SpecQuestion, value: string | unde
   }
 
   return cleaned;
+}
+
+function formatPdfReportDate(value: Date): string {
+  return value.toLocaleDateString('en-ZA', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+  });
+}
+
+function normalizePdfValue(value: unknown): string {
+  return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function isPresentPdfValue(value: unknown): boolean {
+  const cleaned = normalizePdfValue(value);
+  return Boolean(cleaned) && !/^(-|n\/a|null|undefined)$/i.test(cleaned);
+}
+
+function compactPdfRows(rows: Array<{ label: string; value: unknown }>): ValuationPdfKeyValue[] {
+  return rows
+    .map((row) => ({ label: normalizePdfValue(row.label), value: normalizePdfValue(row.value) }))
+    .filter((row) => row.label && isPresentPdfValue(row.value));
+}
+
+function moneyExVat(value: number | null): string {
+  return value === null ? '' : `${money(value)} excl. VAT`;
+}
+
+function selectedValueTypeLabel(method: MethodKey): string {
+  return method === 'market' ? 'Marketplace Value' : 'Aim4price Value';
+}
+
+function marketEvidenceSummary(count: number): string {
+  return count > 0 ? `${count} match${count === 1 ? '' : 'es'}` : 'No matches';
+}
+
+function normalizeReportEmail(value: unknown): string {
+  const cleaned = normalizePdfValue(value);
+  return cleaned && cleaned.includes('@') ? cleaned : '';
 }
 
 export default function ValuationClient() {
@@ -1600,11 +1646,12 @@ export default function ValuationClient() {
   }
 
   function buildValuationPdfPayload(): ValuationPdfPayload | null {
-    if (!resultState) return null;
+    if (!resultState || headlineValue === null) return null;
 
     const isGeneric = resultState.kind === 'generic';
     const genericResult = isGeneric ? resultState.result : null;
     const tractorResult = resultState.kind === 'tractor' ? resultState.result : null;
+    const exactModel = tractorResult?.model ?? selectedModel;
     const marketValue = isGeneric ? genericResult?.marketAverageExVat ?? null : tractorResult?.marketMid ?? null;
     const genericSelectedCalculation = genericResult ? getGenericCalculation(genericResult, replacementPriceBasis) : null;
     const aimValue = isGeneric
@@ -1623,7 +1670,7 @@ export default function ValuationClient() {
     const confidenceNote = getConfidenceNote(resultState, confidenceContext);
     const machineTitle = isGeneric
       ? `${genericResult?.brand.name ?? selectedBrand?.name ?? ''} ${genericResult?.typedModelName || genericResult?.family.label || selectedFamily?.familyLabel || ''}`.trim()
-      : `${tractorResult?.model.brandName ?? selectedBrand?.name ?? ''} ${tractorResult?.model.modelName ?? selectedModel?.modelName ?? ''}`.trim();
+      : `${exactModel?.brandName ?? selectedBrand?.name ?? ''} ${exactModel?.modelName ?? ''}`.trim();
     const resultCondition: ConditionKey = isGeneric ? genericResult?.condition ?? condition : condition;
     const resultYear = isGeneric ? genericResult?.year ?? yearNumber : yearModelUnknown ? CURRENT_YEAR : yearNumber;
     const yearSummary = yearModelUnknown ? 'Unknown' : String(resultYear);
@@ -1639,7 +1686,7 @@ export default function ValuationClient() {
           : 'Usage captured';
     const tractorReplacementBasisText = tractorResult?.userReplacementPriceExVat && replacementPriceBasis === 'user'
       ? `Current basis: your replacement price of ${money(tractorResult.userReplacementPriceExVat)}`
-      : `Current basis: saved replacement price of ${money(tractorResult?.replacementPriceUsedExVat ?? tractorResult?.model.aim4priceReplacementExVat ?? null)}`;
+      : `Current basis: saved replacement price of ${money(tractorResult?.replacementPriceUsedExVat ?? exactModel?.aim4priceReplacementExVat ?? null)}`;
     const genericReplacementBasisText = genericResult?.userReplacementCalculation && replacementPriceBasis === 'user'
       ? `Current basis: your replacement price of ${money(genericResult.userReplacementCalculation.replacementPriceExVat)}`
       : `Current basis: saved replacement estimate of ${money(genericResult?.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}`;
@@ -1665,15 +1712,97 @@ export default function ValuationClient() {
     const sectorLabel = isGeneric
       ? genericResult?.sector.label ?? (selectedSector ? SECTOR_LABELS[selectedSector] : 'N/A')
       : 'Agricultural';
+    const familyLabel = isGeneric ? genericResult?.family.label ?? selectedFamily?.familyLabel ?? 'N/A' : 'Tractors';
+    const brandName = isGeneric ? genericResult?.brand.name ?? selectedBrand?.name ?? 'N/A' : exactModel?.brandName ?? selectedBrand?.name ?? 'N/A';
+    const modelName = isGeneric ? genericResult?.typedModelName ?? '' : exactModel?.modelName ?? '';
+    const valuationPath = flowMode === 'exact_model' ? 'Exact model' : flowMode === 'generic_specs' ? 'Machine specs' : formatCatalogModeLabel(selectedFamily?.catalogMode ?? 'generic_specs');
+    const selectedMethodLabel = selectedValueTypeLabel(selectedMethod);
+    const generatedAt = new Date();
+    const replacementPriceExVat = getCurrentResultReplacementPriceExVat();
+
+    function genericSpecDisplayValue(matchers: string[]): string {
+      if (!genericResult) return '';
+      const question = specQuestions.find((item) => {
+        const haystack = `${item.specKey} ${item.label}`.toLowerCase();
+        return matchers.some((matcher) => haystack.includes(matcher.toLowerCase()));
+      });
+      if (!question) return '';
+      const rawAnswer = specAnswers[question.specKey];
+      const rawFromResult = genericResult.specsJson[question.specKey];
+      const value = rawAnswer !== undefined && rawAnswer !== '' ? rawAnswer : rawFromResult !== undefined ? String(rawFromResult) : '';
+      const displayValue = getSpecQuestionAnswerLabel(question, value);
+      return displayValue === 'Not answered' ? '' : displayValue;
+    }
+
+    const powerValue = isGeneric
+      ? genericSpecDisplayValue(['power', 'power_kw', 'kw', 'horsepower', 'hp'])
+      : exactModel ? `${exactModel.powerKw} kW` : '';
+    const typeValue = isGeneric
+      ? genericSpecDisplayValue(['type', 'machine type', 'body type', 'vehicle type'])
+      : exactModel ? getTractorTypeLabel(exactModel.tractorType) : '';
+    const driveValue = isGeneric
+      ? genericSpecDisplayValue(['drive', 'drivetrain'])
+      : exactModel ? getDriveLabel(exactModel.drive) : '';
+    const cabValue = isGeneric
+      ? genericSpecDisplayValue(['cab', 'station', 'rops'])
+      : exactModel ? getCabLabel(exactModel.cab) : '';
+
+    const assetDetailRows = compactPdfRows([
+      { label: 'Category', value: familyLabel },
+      { label: 'Brand', value: brandName },
+      { label: 'Model', value: modelName },
+      { label: 'Power', value: powerValue },
+      { label: 'Type', value: typeValue },
+      { label: 'Drive', value: driveValue },
+      { label: 'Cab', value: cabValue },
+      { label: 'Year', value: yearSummary },
+      { label: 'Usage', value: usageSummary },
+      { label: 'Condition', value: conditionLabel(resultCondition) },
+      { label: 'Replacement Price', value: moneyExVat(replacementPriceExVat) },
+      { label: 'Valuation Path', value: valuationPath },
+      { label: 'Valuation Source / Selected Value Type', value: selectedMethodLabel },
+    ]);
+
+    const signedInBusinessName = accountProfile?.businessName || accountProfile?.displayName || accountProfile?.name;
+    const signedInPhone = accountProfile?.marketplacePhone || accountProfile?.phone;
+    const signedInEmail = normalizeReportEmail(accountProfile?.marketplaceEmail) || normalizeReportEmail(accountProfile?.email);
+    const signedInLocation = accountProfile?.marketplaceLocation || [accountProfile?.townCity, accountProfile?.province].filter(Boolean).join(', ');
+    const clientRows = isSignedIn
+      ? compactPdfRows([
+          { label: 'Business Name', value: signedInBusinessName },
+          { label: 'Contact Details', value: signedInPhone },
+          { label: 'Business Email', value: signedInEmail },
+          { label: 'Location / Address', value: signedInLocation },
+        ])
+      : compactPdfRows([
+          { label: 'Business Name', value: 'Aim4price' },
+          { label: 'Contact Details', value: '0625721650' },
+          { label: 'Business Email', value: 'aim4price@gmail.com' },
+        ]);
+
+    const safeClientRows = clientRows.length
+      ? clientRows
+      : compactPdfRows([
+          { label: 'Business Name', value: 'Aim4price' },
+          { label: 'Contact Details', value: '0625721650' },
+          { label: 'Business Email', value: 'aim4price@gmail.com' },
+        ]);
+
+    const recordRows = compactPdfRows([
+      { label: 'Selected Value', value: selectedMethodLabel },
+      { label: 'Confidence', value: confidenceText.replace(/^Confidence:\s*/i, '') },
+      { label: 'Market Evidence', value: marketEvidenceSummary(marketCount) },
+      { label: 'Generated', value: formatPdfReportDate(generatedAt) },
+    ]);
 
     return {
-      generatedAt: new Date().toISOString(),
+      generatedAt: generatedAt.toISOString(),
       machineTitle: machineTitle || 'Aim4price valuation',
       sectorLabel,
-      familyLabel: isGeneric ? genericResult?.family.label ?? selectedFamily?.familyLabel ?? 'N/A' : 'Tractors',
-      brandName: isGeneric ? genericResult?.brand.name ?? selectedBrand?.name ?? 'N/A' : tractorResult?.model.brandName ?? selectedBrand?.name ?? 'N/A',
-      valuationPath: flowMode === 'exact_model' ? 'Exact model' : flowMode === 'generic_specs' ? 'Machine specs' : formatCatalogModeLabel(selectedFamily?.catalogMode ?? 'generic_specs'),
-      selectedMethodLabel: selectedMethod === 'market' ? 'Marketplace value' : 'Aim4price value',
+      familyLabel,
+      brandName,
+      valuationPath,
+      selectedMethodLabel,
       selectedValueExVat: headlineValue,
       aim4priceValueExVat: aimValue,
       marketplaceValueExVat: marketValue,
@@ -1683,7 +1812,7 @@ export default function ValuationClient() {
       yearSummary,
       usageSummary,
       conditionSummary: conditionLabel(resultCondition),
-      replacementPriceExVat: getCurrentResultReplacementPriceExVat(),
+      replacementPriceExVat,
       replacementBasisText,
       marketEvidenceInfo,
       marketSources,
@@ -1692,6 +1821,9 @@ export default function ValuationClient() {
         'This is an indicative Aim4price estimate, not a certified valuation or inspection report.',
         'Final value remains subject to physical inspection, documents, attachments, location and live market demand.',
       ],
+      assetDetailRows,
+      clientRows: safeClientRows,
+      recordRows,
     };
   }
 
@@ -1730,7 +1862,7 @@ export default function ValuationClient() {
 
       const blob = await response.blob();
       const fileName = filenameFromContentDisposition(response.headers.get('Content-Disposition'))
-        || `aim4price-valuation-${pdfFileSlug(payload.machineTitle)}-${new Date().toISOString().slice(0, 10)}.pdf`;
+        || `Aim4price-Valuation-${pdfFileSlug(payload.machineTitle)}.pdf`;
       triggerBlobDownload(blob, fileName);
     } catch (error) {
       console.error(error);
