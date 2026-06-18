@@ -18,12 +18,6 @@ from public.equipment_families
 where sector_id not in (1, 2, 3)
 
 union all
-select 'market_vault_listings_old_sector_refs', count(*)::bigint
-from public.market_vault_listings
-where sector_id is not null
-  and sector_id not in (1, 2, 3)
-
-union all
 select 'valuation_runs_old_sector_refs', count(*)::bigint
 from public.valuation_runs
 where sector_id is not null

@@ -37,9 +37,13 @@ ALTER TABLE IF EXISTS public.valuation_runs
   ADD COLUMN IF NOT EXISTS max_lifetime_hours numeric(14,2);
 
 UPDATE public.valuation_runs
+SET selected_method = 'aim4price'
+WHERE selected_method = 'market';
+
+UPDATE public.valuation_runs
 SET selected_method = 'manual'
 WHERE selected_method IS NOT NULL
-  AND selected_method NOT IN ('aim4price', 'market', 'manual');
+  AND selected_method NOT IN ('aim4price', 'manual');
 
 UPDATE public.valuation_runs
 SET
@@ -72,7 +76,7 @@ ALTER TABLE public.valuation_runs
   ADD CONSTRAINT valuation_runs_condition_check
     CHECK (condition IS NULL OR condition IN ('excellent', 'good', 'fair', 'used', 'serious')),
   ADD CONSTRAINT valuation_runs_selected_method_check
-    CHECK (selected_method IS NULL OR selected_method IN ('aim4price', 'market', 'manual'));
+    CHECK (selected_method IS NULL OR selected_method IN ('aim4price', 'manual'));
 
 CREATE INDEX IF NOT EXISTS idx_valuation_runs_user_created
   ON public.valuation_runs(user_id, created_at DESC);
@@ -115,9 +119,13 @@ ALTER TABLE IF EXISTS public.asset_register_items
   ADD COLUMN IF NOT EXISTS marketplace_area text;
 
 UPDATE public.asset_register_items
+SET selected_method = 'aim4price'
+WHERE selected_method = 'market';
+
+UPDATE public.asset_register_items
 SET selected_method = 'manual'
 WHERE selected_method IS NOT NULL
-  AND selected_method NOT IN ('aim4price', 'market', 'manual');
+  AND selected_method NOT IN ('aim4price', 'manual');
 
 UPDATE public.asset_register_items
 SET
@@ -165,7 +173,7 @@ ALTER TABLE public.asset_register_items
   ADD CONSTRAINT asset_register_items_condition_check
     CHECK (condition IS NULL OR condition IN ('excellent', 'good', 'fair', 'used', 'serious')),
   ADD CONSTRAINT asset_register_items_selected_method_check
-    CHECK (selected_method IS NULL OR selected_method IN ('aim4price', 'market', 'manual')),
+    CHECK (selected_method IS NULL OR selected_method IN ('aim4price', 'manual')),
   ADD CONSTRAINT asset_register_items_marketplace_status_check
     CHECK (marketplace_status IN ('draft', 'live', 'withdrawn'));
 

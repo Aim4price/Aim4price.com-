@@ -30,18 +30,6 @@ where ef.sector_id = s.id
   and s.sector_key in ('agricultural', 'industrial', 'construction')
   and ef.sector_id not in (1, 2, 3);
 
-update public.market_vault_listings m
-set sector_id = case s.sector_key
-  when 'agricultural' then 1
-  when 'industrial' then 2
-  when 'construction' then 3
-  else m.sector_id
-end
-from public.sectors s
-where m.sector_id = s.id
-  and s.sector_key in ('agricultural', 'industrial', 'construction')
-  and m.sector_id not in (1, 2, 3);
-
 update public.valuation_runs v
 set sector_id = case s.sector_key
   when 'agricultural' then 1
