@@ -2,8 +2,8 @@
 // Postgres-first shared types and lightweight constants.
 //
 // Important:
-// - This file no longer holds prototype tractor or market seed data.
-// - Live machinery and listings must come from Postgres.
+// - This file no longer holds prototype tractor seed data.
+// - Live machinery must come from Postgres.
 // - We keep the exported types and a few compatibility helpers so the rest of the
 //   codebase can be migrated step-by-step without breaking TypeScript imports.
 
@@ -200,12 +200,8 @@ export function calculateValuation(input: {
   }
 
   const selectedCondition = getConditionByKey(input.conditionKey);
-  const comparableListings = getComparableListings({
-    modelId: selectedModel.id,
-    yearModel: input.yearModel,
-    hours: input.hours,
-  });
-  const selectedComparable = comparableListings[0] ?? null;
+  const comparableListings: MarketplaceListing[] = [];
+  const selectedComparable = null;
 
   const age = Math.max(0, new Date().getFullYear() - input.yearModel);
   const ageFactor = Math.max(0.5, 1 - age * 0.055);
@@ -215,17 +211,13 @@ export function calculateValuation(input: {
     selectedModel.replacementPriceExVat * ageFactor * usageAdjustment * selectedCondition.factor,
   );
 
-  const marketPrices = comparableListings.map((listing) => listing.askingPriceExVat);
-  const marketRangeLowExVat = marketPrices.length ? Math.min(...marketPrices) : aim4priceValueExVat;
-  const marketRangeHighExVat = marketPrices.length ? Math.max(...marketPrices) : aim4priceValueExVat;
-  const marketAverageExVat = marketPrices.length
-    ? Math.round(marketPrices.reduce((sum, value) => sum + value, 0) / marketPrices.length)
-    : aim4priceValueExVat;
+  const marketRangeLowExVat = aim4priceValueExVat;
+  const marketRangeHighExVat = aim4priceValueExVat;
+  const marketAverageExVat = aim4priceValueExVat;
 
-  const selectedValueExVat = marketPrices.length ? marketAverageExVat : aim4priceValueExVat;
+  const selectedValueExVat = aim4priceValueExVat;
 
-  const confidence: 'high' | 'medium' | 'low' =
-    comparableListings.length >= 5 ? 'high' : comparableListings.length >= 2 ? 'medium' : 'low';
+  const confidence: 'high' | 'medium' | 'low' = aim4priceValueExVat > 0 ? 'medium' : 'low';
 
   return {
     selectedModel,

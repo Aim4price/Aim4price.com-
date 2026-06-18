@@ -20,7 +20,7 @@ import {
 } from './equipment-types';
 
 export type GenericCondition = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
-export type GenericSelectedMethod = 'aim4price' | 'market';
+export type GenericSelectedMethod = 'aim4price';
 export type DepreciationMethodUsed = 'full_depreciation' | 'semi_depreciation' | 'percentage_depreciation';
 export type ReplacementPriceBasis = 'aim4price' | 'user';
 
@@ -404,21 +404,6 @@ function resolveMaxLifetimeHours(input: DepreciationInput): number {
   return 12_000;
 }
 
-function spreadForMarketCount(marketAverageCount: number): number {
-  if (marketAverageCount >= 3) return 0.12;
-  if (marketAverageCount >= 1) return 0.17;
-  return 0.22;
-}
-
-function marketWeightFor(strategy: GenericValuationResult['marketMatchStrategy'], marketAverageCount: number): number {
-  if (marketAverageCount <= 0) return 0;
-  if (strategy === 'exact_model') return 0.55;
-  if (strategy === 'typed_model') return 0.50;
-  if (strategy === 'brand_specs') return 0.42;
-  if (strategy === 'family_specs') return 0.28;
-  return 0;
-}
-
 function resolveDepreciation(input: DepreciationInput): {
   method: DepreciationMethodUsed;
   depreciationBaseValueExVat: number | null;
@@ -525,23 +510,10 @@ function resolveDepreciation(input: DepreciationInput): {
 
 function buildCalculation(input: DepreciationInput & {
   replacementPriceBasis: ReplacementPriceBasis;
-  marketAverageExVat: number | null;
-  marketAverageCount: number;
-  marketMatchStrategy: GenericValuationResult['marketMatchStrategy'];
 }): GenericValuationCalculation {
   const depreciation = resolveDepreciation(input);
-  const marketWeight = marketWeightFor(input.marketMatchStrategy, input.marketAverageCount);
-  let aim4priceValueExVat = depreciation.depreciationBaseValueExVat;
-
-  if (depreciation.depreciationBaseValueExVat !== null && input.marketAverageExVat !== null && marketWeight > 0) {
-    aim4priceValueExVat = roundMoney(
-      depreciation.depreciationBaseValueExVat * (1 - marketWeight) + input.marketAverageExVat * marketWeight,
-    );
-  } else if (depreciation.depreciationBaseValueExVat === null && input.marketAverageExVat !== null) {
-    aim4priceValueExVat = input.marketAverageExVat;
-  }
-
-  const spread = spreadForMarketCount(input.marketAverageCount);
+  const aim4priceValueExVat = depreciation.depreciationBaseValueExVat;
+  const spread = 0.08;
   const valuationLowExVat = aim4priceValueExVat === null ? null : roundMoney(aim4priceValueExVat * (1 - spread));
   const valuationHighExVat = aim4priceValueExVat === null ? null : roundMoney(aim4priceValueExVat * (1 + spread));
 
@@ -554,7 +526,7 @@ function buildCalculation(input: DepreciationInput & {
     valuationLowExVat,
     valuationMidExVat: aim4priceValueExVat,
     valuationHighExVat,
-    marketWeight,
+    marketWeight: 0,
     lifeWorkedPercent: depreciation.lifeWorkedPercent,
     lifeRemainingPercent: depreciation.lifeRemainingPercent,
     estimatedHours: depreciation.estimatedHours,
@@ -565,84 +537,10 @@ function buildCalculation(input: DepreciationInput & {
   };
 }
 
-function marketAverage(matches: MarketMatch[]): number | null {
-  const prices = matches.map((match) => match.advertisedPriceExVat).filter((value) => Number.isFinite(value) && value > 0);
-  if (!prices.length) return null;
-  return roundMoney(prices.reduce((total, price) => total + price, 0) / prices.length);
-}
-
-function confidenceLabelFromMarketCount(count: number): 'High' | 'Medium' | 'Low' {
-  if (count > 5) return 'High';
-  if (count >= 3) return 'Medium';
-  return 'Low';
-}
-
-function confidenceScoreFromMarketCount(count: number): number {
-  if (count > 5) return 0.82;
-  if (count >= 3) return 0.58;
-  return 0.28;
-}
-
 function confidenceLabel(score: number): 'High' | 'Medium' | 'Low' {
   if (score >= 0.74) return 'High';
   if (score >= 0.50) return 'Medium';
   return 'Low';
-}
-
-function marketUsageTolerance(sectorKey: SectorKey): number {
-  return sectorKey === 'motor' ? 50_000 : 1_000;
-}
-
-function withinMarketTolerance(
-  match: MarketMatch,
-  targetYear: number | null,
-  targetUsageAmount: number | null,
-  sectorKey: SectorKey,
-): boolean {
-  if (targetYear !== null) {
-    if (match.yearModel === null || Math.abs(match.yearModel - targetYear) > 2) return false;
-  }
-
-  if (targetUsageAmount !== null && targetUsageAmount > 0) {
-    const tolerance = marketUsageTolerance(sectorKey);
-    if (match.usageAmount === null || Math.abs(match.usageAmount - targetUsageAmount) > tolerance) return false;
-  }
-
-  return true;
-}
-
-function scoreSpecs(candidateSpecs: Record<string, unknown>, inputSpecs: Record<string, unknown>, questions: SpecQuestion[]): number {
-  const keys = questions.filter((question) => question.useForMarketMatching).map((question) => question.specKey);
-  const effectiveKeys = keys.length ? keys : Object.keys(inputSpecs);
-  if (!effectiveKeys.length) return 0.25;
-
-  let score = 0;
-  let considered = 0;
-
-  for (const key of effectiveKeys) {
-    const inputValue = inputSpecs[key];
-    if (inputValue === null || typeof inputValue === 'undefined' || inputValue === '') continue;
-    considered += 1;
-
-    const candidateValue = candidateSpecs[key];
-    if (candidateValue === null || typeof candidateValue === 'undefined' || candidateValue === '') continue;
-
-    const inputNumber = toNumber(inputValue);
-    const candidateNumber = toNumber(candidateValue);
-    if (inputNumber !== null && candidateNumber !== null) {
-      const tolerance = Math.max(0.01, Math.abs(inputNumber) * 0.2);
-      const delta = Math.abs(inputNumber - candidateNumber);
-      score += Math.max(0, 1 - delta / tolerance);
-      continue;
-    }
-
-    if (compareSpecValue(inputValue, candidateValue)) {
-      score += 1;
-    }
-  }
-
-  if (!considered) return 0.25;
-  return Math.max(0, Math.min(1, score / considered));
 }
 
 export async function listFamilySpecQuestions(input: {
@@ -1144,159 +1042,6 @@ async function collectTypedModelKeys(input: {
   return { keys: [...keys], hasApprovedAlias: result.rows.length > 0 };
 }
 
-export async function findMarketVaultMatches(input: {
-  sectorKey: SectorKey;
-  familyKey: EquipmentFamilyKey;
-  brandSlug?: string | null;
-  typedModelName?: string | null;
-  specsJson?: Record<string, unknown> | null;
-  questions?: SpecQuestion[];
-  targetYear?: number | null;
-  targetUsageAmount?: number | null;
-  limit?: number;
-}): Promise<{ strategy: GenericValuationResult['marketMatchStrategy']; matches: MarketMatch[] }> {
-  const db = getDb();
-  const specsJson = normalizeSpecsJson(input.specsJson);
-  const typedModelKey = normalizeModelKey(input.typedModelName);
-  const limit = Math.min(50, Math.max(5, Math.round(Number(input.limit) || 12)));
-  const targetYear = toInteger(input.targetYear);
-  const targetUsageAmount = toNumber(input.targetUsageAmount);
-
-  if (typedModelKey) {
-    const typedModelKeys = await collectTypedModelKeys({
-      sectorKey: input.sectorKey,
-      familyKey: input.familyKey,
-      brandSlug: input.brandSlug,
-      typedModelKey,
-    });
-    const exact = await db.query<DbRecord>(
-      `
-        select
-          mvl.id,
-          coalesce(mvl.title, concat_ws(' ', mvl.brand_name, mvl.model_name, mvl.model_name_raw)) as title,
-          coalesce(b.name, mvl.brand_name_snapshot, mvl.brand_name, '') as brand_name,
-          coalesce(mvl.model_name_raw, mvl.model_name, '') as model_name,
-          coalesce(mvl.normalized_model_name, public.aim4price_normalize_key(coalesce(mvl.model_name_raw, mvl.model_name, ''))) as normalized_model_name,
-          mvl.advertised_price_ex_vat,
-          mvl.year_model,
-          coalesce(mvl.usage_amount, mvl.hours) as usage_amount,
-          mvl.condition,
-          mvl.source_name,
-          mvl.source_url,
-          mvl.date_advertised,
-          mvl.specs_json
-        from public.market_vault_listings mvl
-        join public.equipment_families ef on ef.id = mvl.equipment_family_id
-        join public.sectors s on s.id = ef.sector_id
-        left join public.brands b on b.id = mvl.brand_id
-        where s.sector_key = $1
-          and ef.family_key = $2
-          and coalesce(mvl.is_sold, false) = false
-          and mvl.advertised_price_ex_vat is not null
-          and mvl.advertised_price_ex_vat > 0
-          and coalesce(mvl.normalized_model_name, public.aim4price_normalize_key(coalesce(mvl.model_name_raw, mvl.model_name, ''))) = any($3::text[])
-        order by mvl.date_advertised desc nulls last, mvl.id desc
-        limit $4
-      `,
-      [input.sectorKey, input.familyKey, typedModelKeys.keys, limit],
-    );
-
-    if (exact.rows.length) {
-      const exactMatches = exact.rows
-        .map((row) => mapMarketRow(row, 1, typedModelKeys.hasApprovedAlias ? 'Typed model or approved alias match' : 'Exact typed model match'))
-        .filter((match) => withinMarketTolerance(match, targetYear, targetUsageAmount, input.sectorKey));
-
-      if (exactMatches.length) {
-        return {
-          strategy: typedModelKeys.hasApprovedAlias ? 'typed_model' : 'exact_model',
-          matches: exactMatches,
-        };
-      }
-    }
-  }
-
-  const values: unknown[] = [input.sectorKey, input.familyKey, limit * 4];
-  const brandCondition = input.brandSlug ? 'and b.slug = $4' : '';
-  if (input.brandSlug) values.push(input.brandSlug);
-
-  const candidates = await db.query<DbRecord>(
-    `
-      select
-        mvl.id,
-        coalesce(mvl.title, concat_ws(' ', mvl.brand_name, mvl.model_name, mvl.model_name_raw)) as title,
-        coalesce(b.name, mvl.brand_name_snapshot, mvl.brand_name, '') as brand_name,
-        coalesce(mvl.model_name_raw, mvl.model_name, '') as model_name,
-        coalesce(mvl.normalized_model_name, public.aim4price_normalize_key(coalesce(mvl.model_name_raw, mvl.model_name, ''))) as normalized_model_name,
-        mvl.advertised_price_ex_vat,
-        mvl.year_model,
-        coalesce(mvl.usage_amount, mvl.hours) as usage_amount,
-        mvl.condition,
-        mvl.source_name,
-        mvl.source_url,
-        mvl.date_advertised,
-        mvl.specs_json
-      from public.market_vault_listings mvl
-      join public.equipment_families ef on ef.id = mvl.equipment_family_id
-      join public.sectors s on s.id = ef.sector_id
-      left join public.brands b on b.id = coalesce(mvl.brand_id, (select id from public.brands where lower(name) = lower(mvl.brand_name) limit 1))
-      where s.sector_key = $1
-        and ef.family_key = $2
-        and coalesce(mvl.is_sold, false) = false
-        and mvl.advertised_price_ex_vat is not null
-        and mvl.advertised_price_ex_vat > 0
-        ${brandCondition}
-      order by mvl.date_advertised desc nulls last, mvl.id desc
-      limit $3
-    `,
-    values,
-  );
-
-  const questions = input.questions ?? (await listFamilySpecQuestions({ sectorKey: input.sectorKey, familyKey: input.familyKey, includeInactive: true }));
-  const scored = candidates.rows
-    .map((row) => {
-      const candidateSpecs = normalizeSpecsJson(row.specs_json);
-      const score = scoreSpecs(candidateSpecs, specsJson, questions);
-      return mapMarketRow(row, score, input.brandSlug ? 'Brand + similar specs' : 'Family + similar specs');
-    })
-    .filter((match) => match.matchScore >= 0.45 || Object.keys(specsJson).length === 0)
-    .filter((match) => withinMarketTolerance(match, targetYear, targetUsageAmount, input.sectorKey))
-    .sort((left, right) => right.matchScore - left.matchScore || right.id - left.id)
-    .slice(0, limit);
-
-  if (scored.length) {
-    return {
-      strategy: input.brandSlug ? 'brand_specs' : 'family_specs',
-      matches: scored,
-    };
-  }
-
-  if (input.brandSlug) {
-    return findMarketVaultMatches({ ...input, brandSlug: null, limit });
-  }
-
-  return { strategy: 'none', matches: [] };
-}
-
-function mapMarketRow(row: DbRecord, matchScore: number, matchReason: string): MarketMatch {
-  return {
-    id: Number(row.id),
-    title: cleanText(row.title),
-    brandName: cleanText(row.brand_name),
-    modelName: cleanText(row.model_name),
-    normalizedModelName: cleanText(row.normalized_model_name),
-    advertisedPriceExVat: Number(row.advertised_price_ex_vat) || 0,
-    yearModel: toInteger(row.year_model),
-    usageAmount: toNumber(row.usage_amount),
-    condition: cleanText(row.condition) || null,
-    sourceName: cleanText(row.source_name),
-    sourceUrl: cleanText(row.source_url),
-    dateAdvertised: cleanText(row.date_advertised) || null,
-    specsJson: normalizeSpecsJson(row.specs_json),
-    matchScore,
-    matchReason,
-  };
-}
-
 export async function runGenericValuation(input: GenericValuationInput): Promise<GenericValuationResult> {
   const rawSpecsJson = normalizeSpecsJson(input.specsJson);
   const lifeWorkedPercent = positivePercent(input.lifeWorkedPercent);
@@ -1331,20 +1076,10 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
       ? Math.round((replacementPriceMinExVat + replacementPriceMaxExVat) / 2)
       : null;
 
-  const questions = await listFamilySpecQuestions({ sectorKey: input.sectorKey, familyKey: input.familyKey, includeInactive: true });
-  const market = await findMarketVaultMatches({
-    sectorKey: input.sectorKey,
-    familyKey: input.familyKey,
-    brandSlug: input.brandSlug,
-    typedModelName,
-    specsJson,
-    questions,
-    targetYear: input.yearModelUnknown ? null : input.year,
-    targetUsageAmount: input.usageAmount ?? null,
-    limit: 12,
-  });
-  const marketAverageExVat = marketAverage(market.matches);
-  const marketAverageCount = market.matches.length;
+  const marketAverageExVat: number | null = null;
+  const marketAverageCount = 0;
+  const marketMatchStrategy: GenericValuationResult['marketMatchStrategy'] = 'none';
+  const marketSources: MarketMatch[] = [];
 
   const commonCalculationInput = {
     year: input.year,
@@ -1356,9 +1091,6 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     isPropelled: family.isPropelled,
     familyKey: family.key,
     specsJson,
-    marketAverageExVat,
-    marketAverageCount,
-    marketMatchStrategy: market.strategy,
   };
 
   const aim4priceReplacementCalculation = buildCalculation({
@@ -1383,13 +1115,12 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const valuationMidExVat = selectedCalculation.valuationMidExVat;
   const valuationHighExVat = selectedCalculation.valuationHighExVat;
 
-  const confidenceScore = confidenceScoreFromMarketCount(marketAverageCount);
-  const calculatedConfidenceLabel = confidenceLabelFromMarketCount(marketAverageCount);
+  const confidenceScore = aim4priceValueExVat !== null ? 0.58 : 0.28;
+  const calculatedConfidenceLabel = confidenceLabel(confidenceScore);
 
   const notes: string[] = [];
   if (!replacementBand && !userReplacementPriceExVat) notes.push('No replacement price band matched yet. Add a band or enter a user replacement price.');
-  if (typedModelName && market.strategy !== 'exact_model') notes.push('No exact model market match found. Using broader brand/family spec evidence.');
-  if (!marketAverageCount) notes.push('No marketplace average found yet. Aim4price used replacement price and depreciation only.');
+  notes.push('Aim4price used replacement price, usage, age, condition and specs.');
 
   const usageSentenceLabel = getUsageSentenceLabel(family.sectorKey, family.usageMetricType);
 
@@ -1427,7 +1158,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
       rawModelName: typedModelName,
       sourceType: 'user_input',
       specsJson,
-      confidence: market.strategy === 'exact_model' ? 0.8 : 0.55,
+      confidence: 0.55,
     });
   }
 
@@ -1461,8 +1192,8 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     aim4priceValueExVat,
     marketAverageExVat,
     marketAverageCount,
-    marketMatchStrategy: market.strategy,
-    marketSources: market.matches,
+    marketMatchStrategy,
+    marketSources,
     valuationLowExVat,
     valuationMidExVat,
     valuationHighExVat,
@@ -1471,7 +1202,6 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     notes,
   };
 }
-export function getGenericSelectedMethodValue(result: GenericValuationResult, method: GenericSelectedMethod): number | null {
-  if (method === 'market') return result.marketAverageExVat;
+export function getGenericSelectedMethodValue(result: GenericValuationResult, _method: GenericSelectedMethod): number | null {
   return result.valuationMidExVat ?? result.aim4priceValueExVat;
 }

@@ -1,5 +1,5 @@
 import {
-  listings as marketVaultListings,
+  listings as prototypeMarketplaceListings,
   tractors,
   type CabType,
   type DriveType,
@@ -239,7 +239,7 @@ function normalizeImageUrls(value: unknown, imageSrc: string): string[] {
   return Array.from(new Set(urls));
 }
 
-function fromMarketVaultListing(
+function fromPrototypeMarketplaceListing(
   listing: TractorMarketplaceListing,
   index: number,
 ): MarketplaceListing {
@@ -292,8 +292,8 @@ function fromMarketVaultListing(
   };
 }
 
-export const seedMarketplaceListings: MarketplaceListing[] = marketVaultListings.map(
-  fromMarketVaultListing,
+export const seedMarketplaceListings: MarketplaceListing[] = prototypeMarketplaceListings.map(
+  fromPrototypeMarketplaceListing,
 );
 
 function normalizeStoredListing(value: unknown): MarketplaceListing | null {

@@ -11,12 +11,11 @@ import {
   runGenericValuation,
   type GenericCondition,
   type GenericSelectedMethod,
-  type MarketMatch,
 } from './generic-valuation';
 import { getSelectedMethodValue, saveGenericValuationRunFromResult, saveValuationRunFromResult, type MethodKey } from './valuation-runs';
 import { runServerValuation } from './server-valuation';
 import type { GpsType, RunValuationInput } from './tractor-logic';
-import type { ConditionKey, MarketplaceListing } from './tractor-data';
+import type { ConditionKey } from './tractor-data';
 
 export type AssetRevaluationMarketSource = {
   id: string | number;
@@ -137,60 +136,17 @@ function optionalReplacementPrice(value: unknown): number | null {
   return parsed !== null && parsed > 0 ? parsed : null;
 }
 
-function mapTractorMarketSource(listing: MarketplaceListing): AssetRevaluationMarketSource {
+function neutralMarketEvidence(): Pick<
+  AssetRevaluationResult,
+  'marketAverageExVat' | 'marketLowExVat' | 'marketHighExVat' | 'marketCount' | 'marketSources' | 'marketMatchStrategy'
+> {
   return {
-    id: listing.id,
-    title: listing.title,
-    sourceName: listing.sourceName || 'Marketplace listing',
-    sourceUrl: listing.sourceUrl || null,
-    advertisedPriceExVat: Math.round(Number(listing.advertisedPriceExVat || listing.priceExVat || listing.askingPriceExVat || 0)),
-    yearModel: Number.isFinite(listing.yearModel) ? Math.round(listing.yearModel) : null,
-    hours: Number.isFinite(listing.hours) ? Math.round(listing.hours) : null,
-    usageAmount: Number.isFinite(listing.hours) ? Math.round(listing.hours) : null,
-    location: listing.location || null,
-    province: listing.province || null,
-    area: listing.area || null,
-    condition: null,
-    matchReason: null,
-    dateAdvertised: listing.dateAdvertised || null,
-  };
-}
-
-function mapGenericMarketSource(match: MarketMatch): AssetRevaluationMarketSource {
-  return {
-    id: match.id,
-    title: match.title,
-    sourceName: match.sourceName || 'Marketplace listing',
-    sourceUrl: match.sourceUrl || null,
-    advertisedPriceExVat: Math.round(Number(match.advertisedPriceExVat || 0)),
-    yearModel: match.yearModel ?? null,
-    hours: match.usageAmount ?? null,
-    usageAmount: match.usageAmount ?? null,
-    location: null,
-    province: null,
-    area: null,
-    condition: match.condition ?? null,
-    matchReason: match.matchReason || null,
-    dateAdvertised: match.dateAdvertised ?? null,
-  };
-}
-
-function buildTractorMarketEvidence(result: Awaited<ReturnType<typeof runServerValuation>>): Pick<AssetRevaluationResult, 'marketAverageExVat' | 'marketLowExVat' | 'marketHighExVat' | 'marketCount' | 'marketSources'> {
-  return {
-    marketAverageExVat: roundMoneyValue(result.marketMid),
-    marketLowExVat: roundMoneyValue(result.marketLow),
-    marketHighExVat: roundMoneyValue(result.marketHigh),
-    marketCount: result.marketCount,
-    marketSources: result.marketSources.map(mapTractorMarketSource),
-  };
-}
-
-function buildGenericMarketEvidence(result: Awaited<ReturnType<typeof runGenericValuation>>): Pick<AssetRevaluationResult, 'marketAverageExVat' | 'marketCount' | 'marketSources' | 'marketMatchStrategy'> {
-  return {
-    marketAverageExVat: roundMoneyValue(result.marketAverageExVat),
-    marketCount: result.marketAverageCount,
-    marketSources: result.marketSources.map(mapGenericMarketSource),
-    marketMatchStrategy: result.marketMatchStrategy,
+    marketAverageExVat: null,
+    marketLowExVat: null,
+    marketHighExVat: null,
+    marketCount: 0,
+    marketSources: [],
+    marketMatchStrategy: 'none',
   };
 }
 
@@ -228,102 +184,6 @@ function readNestedRecord(source: Record<string, unknown>, key: string): Record<
   return asRecord(source[key]);
 }
 
-const MARKET_ADJUSTMENT_DELTA_KEYS = [
-  'marketAim4priceDeltaExVat',
-  'market_aim4price_delta_ex_vat',
-  'marketAdjustmentExVat',
-  'market_adjustment_ex_vat',
-  'marketValueAdjustmentExVat',
-  'market_value_adjustment_ex_vat',
-] as const;
-
-function readNumberFromRecord(source: Record<string, unknown>, keys: readonly string[]): number | null {
-  for (const key of keys) {
-    const parsed = roundFiniteValue(source[key]);
-    if (parsed !== null) return parsed;
-  }
-
-  return null;
-}
-
-function readStoredMarketAdjustmentDelta(asset: AssetRegisterItem): number | null {
-  return readNumberFromRecord(asset.specsJson ?? {}, MARKET_ADJUSTMENT_DELTA_KEYS);
-}
-
-function deriveExistingMarketAdjustmentDelta(asset: AssetRegisterItem): number | null {
-  const storedDelta = readStoredMarketAdjustmentDelta(asset);
-  if (storedDelta !== null) return storedDelta;
-
-  if (asset.selectedMethod !== 'market') {
-    return null;
-  }
-
-  const previousAim4priceValueExVat = roundFiniteValue(asset.aim4priceValueExVat);
-  const previousMarketValueExVat = roundFiniteValue(asset.value) ?? roundFiniteValue(asset.marketMidExVat);
-
-  if (previousAim4priceValueExVat === null || previousMarketValueExVat === null) {
-    return null;
-  }
-
-  return previousMarketValueExVat - previousAim4priceValueExVat;
-}
-
-function hasUsableMarketAdjustment(asset: AssetRegisterItem, aim4priceValueExVat: unknown): boolean {
-  return roundFiniteValue(aim4priceValueExVat) !== null && deriveExistingMarketAdjustmentDelta(asset) !== null;
-}
-
-function resolveMarketValueSelection(input: {
-  asset: AssetRegisterItem;
-  aim4priceValueExVat: unknown;
-  rawMarketValueExVat: unknown;
-  explicitMarketSelection?: boolean;
-}): {
-  selectedValueExVat: number;
-  marketValueExVat: number;
-  marketAdjustmentDeltaExVat: number | null;
-  rawMarketValueExVat: number | null;
-  marketValueMode: 'aim4price_delta' | 'market_average';
-} {
-  const aim4priceValueExVat = positiveMoneyValue(input.aim4priceValueExVat);
-  const rawMarketValueExVat = positiveMoneyValue(input.rawMarketValueExVat);
-  const storedDelta = deriveExistingMarketAdjustmentDelta(input.asset);
-  const shouldResetMarketAnchor = input.explicitMarketSelection === true && rawMarketValueExVat !== null;
-
-  if (!shouldResetMarketAnchor && storedDelta !== null && aim4priceValueExVat !== null) {
-    const adjustedMarketValueExVat = Math.max(0, Math.round(aim4priceValueExVat + storedDelta));
-    return {
-      selectedValueExVat: adjustedMarketValueExVat,
-      marketValueExVat: adjustedMarketValueExVat,
-      marketAdjustmentDeltaExVat: storedDelta,
-      rawMarketValueExVat,
-      marketValueMode: 'aim4price_delta',
-    };
-  }
-
-  if (rawMarketValueExVat !== null) {
-    return {
-      selectedValueExVat: rawMarketValueExVat,
-      marketValueExVat: rawMarketValueExVat,
-      marketAdjustmentDeltaExVat: aim4priceValueExVat === null ? null : rawMarketValueExVat - aim4priceValueExVat,
-      rawMarketValueExVat,
-      marketValueMode: aim4priceValueExVat === null ? 'market_average' : 'aim4price_delta',
-    };
-  }
-
-  if (storedDelta !== null && aim4priceValueExVat !== null) {
-    const adjustedMarketValueExVat = Math.max(0, Math.round(aim4priceValueExVat + storedDelta));
-    return {
-      selectedValueExVat: adjustedMarketValueExVat,
-      marketValueExVat: adjustedMarketValueExVat,
-      marketAdjustmentDeltaExVat: storedDelta,
-      rawMarketValueExVat,
-      marketValueMode: 'aim4price_delta',
-    };
-  }
-
-  throw new Error('SELECTED_METHOD_NOT_AVAILABLE');
-}
-
 function normalizeCondition(value: unknown): ConditionKey | null {
   const normalized = asText(value).toLowerCase();
 
@@ -346,7 +206,7 @@ function normalizeGenericCondition(value: unknown): GenericCondition | null {
 
 function normalizeMethod(value: unknown): MethodKey | null {
   const normalized = asText(value).toLowerCase();
-  if (normalized === 'aim4price' || normalized === 'market') return normalized;
+  if (normalized === 'aim4price' || normalized === 'market') return 'aim4price';
   return null;
 }
 
@@ -445,7 +305,6 @@ function buildPreviewAssetFromTractorValuation(input: {
   result: Awaited<ReturnType<typeof runServerValuation>>;
   selectedMethod: MethodKey;
   selectedValueExVat: number;
-  marketValueExVat?: number | null;
   year: number;
   hours: number;
   condition: ConditionKey;
@@ -470,7 +329,7 @@ function buildPreviewAssetFromTractorValuation(input: {
     hours: Math.max(0, Math.round(input.hours)),
     condition: input.condition,
     aim4priceValueExVat: roundMoneyValue(input.result.aim4priceValueExVat),
-    marketMidExVat: roundMoneyValue(input.marketValueExVat) ?? roundMoneyValue(input.result.marketMid),
+    marketMidExVat: null,
     updatedAtIso: new Date().toISOString(),
   };
 }
@@ -480,7 +339,6 @@ function buildPreviewAssetFromGenericValuation(input: {
   result: Awaited<ReturnType<typeof runGenericValuation>>;
   selectedMethod: GenericSelectedMethod;
   selectedValueExVat: number;
-  marketValueExVat?: number | null;
 }): AssetRegisterItem {
   const replacementPriceExVat = resolveReplacementPrice(input.result.replacementPriceUsedExVat);
 
@@ -513,7 +371,7 @@ function buildPreviewAssetFromGenericValuation(input: {
     hours: input.result.usageAmount ?? null,
     condition: input.result.condition,
     aim4priceValueExVat: roundMoneyValue(input.result.aim4priceValueExVat),
-    marketMidExVat: roundMoneyValue(input.marketValueExVat) ?? roundMoneyValue(input.result.marketAverageExVat),
+    marketMidExVat: null,
     updatedAtIso: new Date().toISOString(),
   };
 }
@@ -565,52 +423,22 @@ function resolvePreferredMethod(asset: AssetRegisterItem, row: ValuationRunRow, 
 }
 
 function resolveTractorMethod(
-  preferredMethod: RevaluePreference,
+  _preferredMethod: RevaluePreference,
   result: Awaited<ReturnType<typeof runServerValuation>>,
-  marketAdjustmentAvailable = false,
 ): MethodKey {
-  const preferred = preferredMethod === 'market' || preferredMethod === 'aim4price' ? preferredMethod : 'aim4price';
-
-  if (preferred === 'market' && marketAdjustmentAvailable) {
-    return 'market';
-  }
-
-  if (getSelectedMethodValue(result, preferred) !== null) {
-    return preferred;
-  }
-
   if (result.aim4priceValueExVat !== null) {
     return 'aim4price';
-  }
-
-  if (result.marketMid !== null) {
-    return 'market';
   }
 
   throw new Error('No valuation method is available for this asset right now.');
 }
 
 function resolveGenericMethod(
-  preferredMethod: RevaluePreference,
+  _preferredMethod: RevaluePreference,
   result: Awaited<ReturnType<typeof runGenericValuation>>,
-  marketAdjustmentAvailable = false,
 ): GenericSelectedMethod {
-  const preferred = preferredMethod === 'market' || preferredMethod === 'aim4price' ? preferredMethod : 'aim4price';
-
-  if (preferred === 'market' && marketAdjustmentAvailable) {
-    return 'market';
-  }
-
-  if (getGenericSelectedMethodValue(result, preferred) !== null) {
-    return preferred;
-  }
-
-  if (result.aim4priceValueExVat !== null) {
+  if (result.aim4priceValueExVat !== null || result.valuationMidExVat !== null) {
     return 'aim4price';
-  }
-
-  if (result.marketAverageExVat !== null) {
-    return 'market';
   }
 
   throw new Error('No valuation method is available for this asset right now.');
@@ -621,7 +449,6 @@ async function revalueTractorAsset(input: {
   asset: AssetRegisterItem;
   row: ValuationRunRow;
   preferredMethod: RevaluePreference;
-  explicitMarketSelection?: boolean;
   previewOnly?: boolean;
   replacementPriceExVat?: number | null;
   saveReplacementPrice?: boolean;
@@ -675,19 +502,10 @@ async function revalueTractorAsset(input: {
   };
 
   const result = await runServerValuation(valuationInput);
-  const marketAdjustmentAvailable = hasUsableMarketAdjustment(input.asset, result.aim4priceValueExVat);
-  const selectedMethod = resolveTractorMethod(input.preferredMethod, result, marketAdjustmentAvailable);
-  const marketSelection = selectedMethod === 'market'
-    ? resolveMarketValueSelection({
-        asset: input.asset,
-        aim4priceValueExVat: result.aim4priceValueExVat,
-        rawMarketValueExVat: result.marketMid,
-        explicitMarketSelection: input.explicitMarketSelection,
-      })
-    : null;
-  const selectedValueExVat = marketSelection?.selectedValueExVat ?? requireSelectedValue(getSelectedMethodValue(result, selectedMethod));
-  const warning = selectedMethod !== input.preferredMethod ? 'Market value was unavailable, so Aim4price value was used.' : undefined;
-  const marketEvidence = buildTractorMarketEvidence(result);
+  const selectedMethod = resolveTractorMethod(input.preferredMethod, result);
+  const selectedValueExVat = requireSelectedValue(getSelectedMethodValue(result, selectedMethod));
+  const warning = undefined;
+  const marketEvidence = neutralMarketEvidence();
 
   if (input.previewOnly) {
     return {
@@ -696,7 +514,6 @@ async function revalueTractorAsset(input: {
         result,
         selectedMethod,
         selectedValueExVat,
-        marketValueExVat: marketSelection?.marketValueExVat,
         year,
         hours,
         condition,
@@ -707,9 +524,8 @@ async function revalueTractorAsset(input: {
       newValueExVat: selectedValueExVat,
       warning,
       previewOnly: true,
-      marketAdjustmentExVat: marketSelection?.marketAdjustmentDeltaExVat ?? null,
-      marketRawAverageExVat: marketSelection?.rawMarketValueExVat ?? roundMoneyValue(result.marketMid),
-      marketValueMode: marketSelection?.marketValueMode,
+      marketAdjustmentExVat: null,
+      marketRawAverageExVat: null,
       replacementPriceUsedExVat: roundMoneyValue(result.replacementPriceUsedExVat),
       ...marketEvidence,
     };
@@ -732,9 +548,6 @@ async function revalueTractorAsset(input: {
     result,
     selectedMethod,
     selectedValueExVat,
-    marketValueExVat: marketSelection?.marketValueExVat,
-    marketAdjustmentDeltaExVat: marketSelection?.marketAdjustmentDeltaExVat,
-    marketRawAverageExVat: marketSelection?.rawMarketValueExVat,
     year,
     hours,
     condition,
@@ -748,9 +561,8 @@ async function revalueTractorAsset(input: {
     oldValueExVat: input.asset.value,
     newValueExVat: selectedValueExVat,
     warning,
-    marketAdjustmentExVat: marketSelection?.marketAdjustmentDeltaExVat ?? null,
-    marketRawAverageExVat: marketSelection?.rawMarketValueExVat ?? roundMoneyValue(result.marketMid),
-    marketValueMode: marketSelection?.marketValueMode,
+    marketAdjustmentExVat: null,
+    marketRawAverageExVat: null,
     replacementPriceUsedExVat: roundMoneyValue(result.replacementPriceUsedExVat),
     ...marketEvidence,
   };
@@ -761,7 +573,6 @@ async function revalueGenericAsset(input: {
   asset: AssetRegisterItem;
   row: ValuationRunRow;
   preferredMethod: RevaluePreference;
-  explicitMarketSelection?: boolean;
   previewOnly?: boolean;
   replacementPriceExVat?: number | null;
   saveReplacementPrice?: boolean;
@@ -829,19 +640,10 @@ async function revalueGenericAsset(input: {
     userReplacementPriceExVat,
     userReplacementPriceYear: asInteger(payloadInput.userReplacementPriceYear ?? input.row.user_replacement_price_year),
   });
-  const marketAdjustmentAvailable = hasUsableMarketAdjustment(input.asset, result.aim4priceValueExVat);
-  const selectedMethod = resolveGenericMethod(input.preferredMethod, result, marketAdjustmentAvailable);
-  const marketSelection = selectedMethod === 'market'
-    ? resolveMarketValueSelection({
-        asset: input.asset,
-        aim4priceValueExVat: result.aim4priceValueExVat,
-        rawMarketValueExVat: result.marketAverageExVat,
-        explicitMarketSelection: input.explicitMarketSelection,
-      })
-    : null;
-  const selectedValueExVat = marketSelection?.selectedValueExVat ?? requireSelectedValue(getGenericSelectedMethodValue(result, selectedMethod));
-  const warning = selectedMethod !== input.preferredMethod ? 'Market value was unavailable, so Aim4price value was used.' : undefined;
-  const marketEvidence = buildGenericMarketEvidence(result);
+  const selectedMethod = resolveGenericMethod(input.preferredMethod, result);
+  const selectedValueExVat = requireSelectedValue(getGenericSelectedMethodValue(result, selectedMethod));
+  const warning = undefined;
+  const marketEvidence = neutralMarketEvidence();
 
   if (input.previewOnly) {
     return {
@@ -850,7 +652,6 @@ async function revalueGenericAsset(input: {
         result,
         selectedMethod,
         selectedValueExVat,
-        marketValueExVat: marketSelection?.marketValueExVat,
       }),
       valuationRunId: input.asset.valuationRunId ?? Number(input.row.id),
       selectedMethod,
@@ -858,9 +659,8 @@ async function revalueGenericAsset(input: {
       newValueExVat: selectedValueExVat,
       warning,
       previewOnly: true,
-      marketAdjustmentExVat: marketSelection?.marketAdjustmentDeltaExVat ?? null,
-      marketRawAverageExVat: marketSelection?.rawMarketValueExVat ?? roundMoneyValue(result.marketAverageExVat),
-      marketValueMode: marketSelection?.marketValueMode,
+      marketAdjustmentExVat: null,
+      marketRawAverageExVat: null,
       replacementPriceUsedExVat: roundMoneyValue(result.replacementPriceUsedExVat),
       ...marketEvidence,
     };
@@ -880,9 +680,6 @@ async function revalueGenericAsset(input: {
     result,
     selectedMethod,
     selectedValueExVat,
-    marketValueExVat: marketSelection?.marketValueExVat,
-    marketAdjustmentDeltaExVat: marketSelection?.marketAdjustmentDeltaExVat,
-    marketRawAverageExVat: marketSelection?.rawMarketValueExVat,
     saveReplacementPrice: input.saveReplacementPrice === true,
   });
 
@@ -893,9 +690,8 @@ async function revalueGenericAsset(input: {
     oldValueExVat: input.asset.value,
     newValueExVat: selectedValueExVat,
     warning,
-    marketAdjustmentExVat: marketSelection?.marketAdjustmentDeltaExVat ?? null,
-    marketRawAverageExVat: marketSelection?.rawMarketValueExVat ?? roundMoneyValue(result.marketAverageExVat),
-    marketValueMode: marketSelection?.marketValueMode,
+    marketAdjustmentExVat: null,
+    marketRawAverageExVat: null,
     replacementPriceUsedExVat: roundMoneyValue(result.replacementPriceUsedExVat),
     ...marketEvidence,
   };
@@ -925,9 +721,7 @@ export async function revalueAssetRegisterItem(input: {
     throw new Error('VALUATION_RUN_NOT_FOUND');
   }
 
-  const requestedMethod = normalizeMethod(input.selectedMethod);
   const preferredMethod = resolvePreferredMethod(asset, row, input.selectedMethod);
-  const explicitMarketSelection = requestedMethod === 'market';
   const familyKey = asText(row.family_key || asset.equipmentFamilyKey).toLowerCase();
   const equipmentType = asText(row.equipment_type).toLowerCase();
 
@@ -937,7 +731,6 @@ export async function revalueAssetRegisterItem(input: {
       asset,
       row,
       preferredMethod,
-      explicitMarketSelection,
       previewOnly: input.previewOnly,
       replacementPriceExVat: input.replacementPriceExVat,
       saveReplacementPrice: input.saveReplacementPrice,
@@ -949,7 +742,6 @@ export async function revalueAssetRegisterItem(input: {
     asset,
     row,
     preferredMethod,
-    explicitMarketSelection,
     previewOnly: input.previewOnly,
     replacementPriceExVat: input.replacementPriceExVat,
     saveReplacementPrice: input.saveReplacementPrice,

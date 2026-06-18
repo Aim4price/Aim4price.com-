@@ -4,7 +4,7 @@ import { runServerValuation } from './server-valuation';
 import type { Result, RunValuationInput } from './tractor-logic';
 import { getGenericSelectedMethodValue, type GenericSelectedMethod, type GenericValuationResult } from './generic-valuation';
 
-export type MethodKey = 'aim4price' | 'market';
+export type MethodKey = 'aim4price';
 
 export type SaveValuationRunInput = RunValuationInput & {
   selectedMethod: MethodKey;
@@ -59,15 +59,12 @@ function parseGpsYear(value: number | string | null | undefined): number | null 
   return parsed;
 }
 
-export function getSelectedMethodValue(result: Result, method: MethodKey): number | null {
-  if (method === 'market') return result.marketMid;
+export function getSelectedMethodValue(result: Result, _method: MethodKey): number | null {
   return result.aim4priceValueExVat;
 }
 
-function getMarketListingIds(result: Result): number[] {
-  return result.marketSources
-    .map((listing) => toIntegerOrNull(listing.id))
-    .filter((value): value is number => value !== null);
+function getMarketListingIds(_result: Result): number[] {
+  return [];
 }
 
 async function fetchCatalogLink(modelId: string): Promise<CatalogLinkRow | null> {
@@ -116,7 +113,7 @@ function buildValuationPayload(input: SaveValuationRunInput, result: Result, sel
       replacementPriceBasis: result.replacementPriceBasis,
       replacementPriceUsedExVat: result.replacementPriceUsedExVat,
       userReplacementPriceExVat: result.userReplacementPriceExVat,
-      selectedMethod: input.selectedMethod,
+      selectedMethod: 'aim4price',
       selectedValueExVat,
     },
   };
@@ -126,7 +123,8 @@ export async function saveValuationRunFromResult(
   input: SaveValuationRunInput,
   result: Result,
 ): Promise<SaveValuationRunResult> {
-  const selectedMethodValueExVat = getSelectedMethodValue(result, input.selectedMethod);
+  const selectedMethod: MethodKey = 'aim4price';
+  const selectedMethodValueExVat = getSelectedMethodValue(result, selectedMethod);
   const selectedValueExVat = roundMoneyOrNull(input.selectedValueOverrideExVat) ?? selectedMethodValueExVat;
   if (selectedValueExVat === null) throw new Error('SELECTED_METHOD_NOT_AVAILABLE');
 
@@ -190,7 +188,7 @@ export async function saveValuationRunFromResult(
       result.marketHigh,
       result.marketCount,
       marketListingIds,
-      input.selectedMethod,
+      selectedMethod,
       roundMoney(selectedValueExVat),
       valuationVersion,
       JSON.stringify(valuationPayload),
@@ -233,16 +231,15 @@ export type SaveGenericValuationRunResult = {
   result: GenericValuationResult;
 };
 
-function getGenericMarketListingIds(result: GenericValuationResult): number[] {
-  return result.marketSources
-    .map((listing) => toIntegerOrNull(listing.id))
-    .filter((value): value is number => value !== null);
+function getGenericMarketListingIds(_result: GenericValuationResult): number[] {
+  return [];
 }
 
 export async function saveGenericValuationRunFromResult(
   input: SaveGenericValuationRunInput,
 ): Promise<SaveGenericValuationRunResult> {
-  const selectedMethodValueExVat = getGenericSelectedMethodValue(input.result, input.selectedMethod);
+  const selectedMethod: GenericSelectedMethod = 'aim4price';
+  const selectedMethodValueExVat = getGenericSelectedMethodValue(input.result, selectedMethod);
   const selectedValueExVat = roundMoneyOrNull(input.selectedValueOverrideExVat) ?? selectedMethodValueExVat;
   if (selectedValueExVat === null) throw new Error('SELECTED_METHOD_NOT_AVAILABLE');
 
@@ -269,7 +266,7 @@ export async function saveGenericValuationRunFromResult(
       userReplacementPriceYear: result.userReplacementPriceYear,
     },
     output: result,
-    selectedMethod: input.selectedMethod,
+    selectedMethod,
     selectedReplacementPriceBasis: result.replacementPriceBasis,
     selectedDepreciationMethod: result.depreciationMethodUsed,
     selectedLifeWorkedPercent: result.lifeWorkedPercent,
@@ -330,11 +327,11 @@ export async function saveGenericValuationRunFromResult(
       0,
       result.aim4priceValueExVat,
       null,
-      result.marketAverageExVat,
       null,
-      result.marketAverageCount,
+      null,
+      0,
       marketListingIds,
-      input.selectedMethod,
+      selectedMethod,
       selectedValue,
       valuationVersion,
       JSON.stringify(valuationPayload),
@@ -348,9 +345,9 @@ export async function saveGenericValuationRunFromResult(
       result.replacementPriceUsedExVat,
       result.userReplacementPriceExVat,
       result.userReplacementPriceYear,
-      result.marketMatchStrategy,
-      result.marketAverageExVat,
-      result.marketAverageCount,
+      'none',
+      null,
+      0,
       result.valuationLowExVat,
       result.valuationMidExVat,
       result.valuationHighExVat,

@@ -25,7 +25,7 @@ export type Result = {
   marketSources: MarketplaceListing[];
   coverageBand: 'green' | 'amber' | 'red';
   previewValueExVat: number | null;
-  previewLabel: 'Market average' | 'Aim4price Value';
+  previewLabel: 'Aim4price Value';
   baseAim4priceValueExVat: number | null;
   baseMarketLow: number | null;
   baseMarketHigh: number | null;

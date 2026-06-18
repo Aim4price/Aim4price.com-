@@ -477,43 +477,29 @@ function withGenericUsageMetadata(
 }
 
 
-function withMarketValueAdjustmentSpecs(
-  specs: Record<string, unknown>,
-  context: {
-    selectedMethod: AssetRegisterItemMethod;
-    marketValueExVat?: number | null;
-    marketAdjustmentDeltaExVat?: number | null;
-    marketRawAverageExVat?: number | null;
-    aim4priceValueExVat?: number | null;
-  },
-): Record<string, unknown> {
-  const delta = roundFiniteNumber(context.marketAdjustmentDeltaExVat);
+const RETIRED_MARKET_VALUATION_SPEC_KEYS = [
+  'marketValueMode',
+  'market_value_mode',
+  'marketValueIsAim4priceDelta',
+  'market_value_is_aim4price_delta',
+  'marketAim4priceDeltaExVat',
+  'market_aim4price_delta_ex_vat',
+  'marketAdjustmentExVat',
+  'market_adjustment_ex_vat',
+  'marketAdjustmentBaseAim4priceExVat',
+  'market_adjustment_base_aim4price_ex_vat',
+  'marketAdjustmentBaseMarketExVat',
+  'market_adjustment_base_market_ex_vat',
+  'marketAdjustmentRawMarketExVat',
+  'market_adjustment_raw_market_ex_vat',
+];
 
-  if (context.selectedMethod !== 'market' || delta === null) {
-    return specs;
+function stripMarketValuationSpecs(specs: Record<string, unknown>): Record<string, unknown> {
+  const cleaned = { ...specs };
+  for (const key of RETIRED_MARKET_VALUATION_SPEC_KEYS) {
+    delete cleaned[key];
   }
-
-  const adjustedMarketValueExVat = roundFiniteNumber(context.marketValueExVat);
-  const rawMarketAverageExVat = roundFiniteNumber(context.marketRawAverageExVat);
-  const aim4priceValueExVat = roundFiniteNumber(context.aim4priceValueExVat);
-
-  return {
-    ...specs,
-    marketValueMode: 'aim4price_delta',
-    market_value_mode: 'aim4price_delta',
-    marketValueIsAim4priceDelta: true,
-    market_value_is_aim4price_delta: true,
-    marketAim4priceDeltaExVat: delta,
-    market_aim4price_delta_ex_vat: delta,
-    marketAdjustmentExVat: delta,
-    market_adjustment_ex_vat: delta,
-    marketAdjustmentBaseAim4priceExVat: aim4priceValueExVat,
-    market_adjustment_base_aim4price_ex_vat: aim4priceValueExVat,
-    marketAdjustmentBaseMarketExVat: adjustedMarketValueExVat,
-    market_adjustment_base_market_ex_vat: adjustedMarketValueExVat,
-    marketAdjustmentRawMarketExVat: rawMarketAverageExVat,
-    market_adjustment_raw_market_ex_vat: rawMarketAverageExVat,
-  };
+  return cleaned;
 }
 
 function hasValueChanged(left: unknown, right: unknown): boolean {
@@ -746,10 +732,8 @@ function normalizeKind(value: unknown): AssetRegisterItemKind {
 
 function normalizeMethod(value: unknown): AssetRegisterItemMethod {
   const normalized = String(value ?? '').trim().toLowerCase();
-
-  return normalized === 'aim4price' || normalized === 'market' || normalized === 'manual'
-    ? normalized
-    : 'manual';
+  if (normalized === 'market') return 'aim4price';
+  return normalized === 'aim4price' || normalized === 'manual' ? normalized : 'manual';
 }
 
 function normalizeCondition(value: unknown): AssetRegisterItemCondition {
@@ -1840,7 +1824,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   const now = new Date();
   const model = input.result.model;
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
-  const marketValueExVat = roundFiniteNumber(input.marketValueExVat) ?? toRoundedNumber(input.result.marketMid);
+  const marketValueExVat: number | null = null;
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(input.result.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(input.result.userReplacementPriceExVat);
 
@@ -1879,7 +1863,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
     fields,
     schema,
     ['specs_json'],
-    withMarketValueAdjustmentSpecs(
+    stripMarketValuationSpecs(
       buildCurrentValuationSpecs(existing.specsJson, valuationSpecsJson, {
         valuationRunId: input.valuationRunId,
         selectedValueExVat,
@@ -1888,13 +1872,6 @@ export async function updateAssetRegisterItemFromValuation(input: {
         condition: input.condition,
         now,
       }),
-      {
-        selectedMethod: input.selectedMethod,
-        marketValueExVat,
-        marketAdjustmentDeltaExVat: input.marketAdjustmentDeltaExVat,
-        marketRawAverageExVat: input.marketRawAverageExVat ?? input.result.marketMid,
-        aim4priceValueExVat: input.result.aim4priceValueExVat,
-      },
     ),
     '::jsonb',
   );
@@ -1952,7 +1929,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   const valuationResult = input.result;
   const nextKind = getGenericAssetRegisterKind(valuationResult);
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
-  const marketValueExVat = roundFiniteNumber(input.marketValueExVat) ?? toRoundedNumber(valuationResult.marketAverageExVat);
+  const marketValueExVat: number | null = null;
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat);
 
@@ -1981,7 +1958,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
     fields,
     schema,
     ['specs_json'],
-    withMarketValueAdjustmentSpecs(
+    stripMarketValuationSpecs(
       withGenericUsageMetadata(
         buildCurrentValuationSpecs(existing.specsJson, valuationResult.specsJson ?? {}, {
           valuationRunId: input.valuationRunId,
@@ -1993,13 +1970,6 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
         }),
         valuationResult,
       ),
-      {
-        selectedMethod: input.selectedMethod,
-        marketValueExVat,
-        marketAdjustmentDeltaExVat: input.marketAdjustmentDeltaExVat,
-        marketRawAverageExVat: input.marketRawAverageExVat ?? valuationResult.marketAverageExVat,
-        aim4priceValueExVat: valuationResult.aim4priceValueExVat,
-      },
     ),
     '::jsonb',
   );
@@ -2090,7 +2060,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   const title = `${model.brandName} ${model.modelName}`.trim();
   const now = new Date();
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
-  const marketValueExVat = roundFiniteNumber(input.marketValueExVat) ?? toRoundedNumber(valuationResult.marketMid);
+  const marketValueExVat: number | null = null;
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat);
 
@@ -2129,7 +2099,7 @@ export async function createAssetRegisterItemFromValuation(input: {
     fields,
     schema,
     ['specs_json'],
-    withMarketValueAdjustmentSpecs(
+    stripMarketValuationSpecs(
       buildCurrentValuationSpecs({}, isRecord(valuationRow.specs_json) ? valuationRow.specs_json : {}, {
         valuationRunId: input.valuationRunId,
         selectedValueExVat,
@@ -2138,13 +2108,6 @@ export async function createAssetRegisterItemFromValuation(input: {
         condition: typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good',
         now,
       }),
-      {
-        selectedMethod: input.selectedMethod,
-        marketValueExVat,
-        marketAdjustmentDeltaExVat: input.marketAdjustmentDeltaExVat,
-        marketRawAverageExVat: input.marketRawAverageExVat ?? valuationResult.marketMid,
-        aim4priceValueExVat: valuationResult.aim4priceValueExVat,
-      },
     ),
     '::jsonb',
   );
@@ -2224,7 +2187,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
     .trim();
   const now = new Date();
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
-  const marketValueExVat = roundFiniteNumber(input.marketValueExVat) ?? toRoundedNumber(valuationResult.marketAverageExVat);
+  const marketValueExVat: number | null = null;
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat);
 
@@ -2256,7 +2219,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
     fields,
     schema,
     ['specs_json'],
-    withMarketValueAdjustmentSpecs(
+    stripMarketValuationSpecs(
       withGenericUsageMetadata(
         buildCurrentValuationSpecs({}, valuationResult.specsJson ?? {}, {
           valuationRunId: input.valuationRunId,
@@ -2268,13 +2231,6 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
         }),
         valuationResult,
       ),
-      {
-        selectedMethod: input.selectedMethod,
-        marketValueExVat,
-        marketAdjustmentDeltaExVat: input.marketAdjustmentDeltaExVat,
-        marketRawAverageExVat: input.marketRawAverageExVat ?? valuationResult.marketAverageExVat,
-        aim4priceValueExVat: valuationResult.aim4priceValueExVat,
-      },
     ),
     '::jsonb',
   );
