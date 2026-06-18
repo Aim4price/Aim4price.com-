@@ -269,6 +269,38 @@ type MarketplaceApiResponse = {
   error?: string;
 };
 
+type ValuationPdfMarketSource = {
+  sourceName: string;
+  title: string;
+  priceExVat: number | null;
+  details: string;
+  sourceUrl?: string | null;
+};
+
+type ValuationPdfPayload = {
+  generatedAt: string;
+  machineTitle: string;
+  sectorLabel: string;
+  familyLabel: string;
+  brandName: string;
+  valuationPath: string;
+  selectedMethodLabel: string;
+  selectedValueExVat: number | null;
+  aim4priceValueExVat: number | null;
+  marketplaceValueExVat: number | null;
+  marketCount: number;
+  confidenceText: string;
+  confidenceNote: string;
+  yearSummary: string;
+  usageSummary: string;
+  conditionSummary: string;
+  replacementPriceExVat: number | null;
+  replacementBasisText: string;
+  marketEvidenceInfo: string;
+  marketSources: ValuationPdfMarketSource[];
+  notes: string[];
+};
+
 const CURRENT_YEAR = new Date().getFullYear();
 const MAX_MARKETPLACE_PHOTOS = 12;
 const MARKETPLACE_INTRO_DISMISSED_KEY = 'aim4price-marketplace-intro-dismissed';
@@ -353,6 +385,40 @@ function normalizeAccountType(value: unknown): string {
 
 function createMarketplacePhotoId(): string {
   return `marketplace-photo-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function pdfFileSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'valuation';
+}
+
+function filenameFromContentDisposition(value: string | null): string | null {
+  if (!value) return null;
+
+  const utfMatch = /filename\*=UTF-8''([^;]+)/i.exec(value);
+  if (utfMatch?.[1]) {
+    try {
+      return decodeURIComponent(utfMatch[1].replace(/"/g, '').trim());
+    } catch {
+      return utfMatch[1].replace(/"/g, '').trim();
+    }
+  }
+
+  const basicMatch = /filename="?([^";]+)"?/i.exec(value);
+  return basicMatch?.[1]?.trim() || null;
+}
+
+function triggerBlobDownload(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function toNumberOrNull(value: unknown): number | null {
@@ -720,6 +786,8 @@ export default function ValuationClient() {
   const [valuationLoading, setValuationLoading] = useState(false);
   const [replacementRecalculateLoading, setReplacementRecalculateLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState('');
   const [finalSaveIntent, setFinalSaveIntent] = useState<FinalSaveIntent | null>(null);
   const [finalSaveError, setFinalSaveError] = useState('');
   const [savedMarketplaceAssetId, setSavedMarketplaceAssetId] = useState<string | null>(null);
@@ -1156,6 +1224,7 @@ export default function ValuationClient() {
     setReplacementPanelOpen(false);
     setFinalSaveIntent(null);
     setFinalSaveError('');
+    setPdfError('');
     setSavedMarketplaceAssetId(null);
   }
 
@@ -1528,6 +1597,147 @@ export default function ValuationClient() {
     ]
       .filter(Boolean)
       .join(' • ');
+  }
+
+  function buildValuationPdfPayload(): ValuationPdfPayload | null {
+    if (!resultState) return null;
+
+    const isGeneric = resultState.kind === 'generic';
+    const genericResult = isGeneric ? resultState.result : null;
+    const tractorResult = resultState.kind === 'tractor' ? resultState.result : null;
+    const marketValue = isGeneric ? genericResult?.marketAverageExVat ?? null : tractorResult?.marketMid ?? null;
+    const genericSelectedCalculation = genericResult ? getGenericCalculation(genericResult, replacementPriceBasis) : null;
+    const aimValue = isGeneric
+      ? genericSelectedCalculation?.valuationMidExVat ?? null
+      : tractorResult?.aim4priceValueExVat ?? null;
+    const marketCount = isGeneric ? genericResult?.marketAverageCount ?? 0 : tractorResult?.marketCount ?? 0;
+    const confidenceContext: ConfidenceContext = {
+      selectedMethod,
+      yearKnown: !yearModelUnknown,
+      hoursKnown: usageNumber !== null,
+      workedPercentKnown: lifeWorkedPercentNumber !== null && usageNumber === null,
+      usageSentenceLabel: selectedUsageSentenceLabel,
+      marketUsageToleranceLabel: selectedMarketUsageToleranceLabel,
+    };
+    const confidenceText = getConfidenceLabel(resultState, confidenceContext);
+    const confidenceNote = getConfidenceNote(resultState, confidenceContext);
+    const machineTitle = isGeneric
+      ? `${genericResult?.brand.name ?? selectedBrand?.name ?? ''} ${genericResult?.typedModelName || genericResult?.family.label || selectedFamily?.familyLabel || ''}`.trim()
+      : `${tractorResult?.model.brandName ?? selectedBrand?.name ?? ''} ${tractorResult?.model.modelName ?? selectedModel?.modelName ?? ''}`.trim();
+    const resultCondition: ConditionKey = isGeneric ? genericResult?.condition ?? condition : condition;
+    const resultYear = isGeneric ? genericResult?.year ?? yearNumber : yearModelUnknown ? CURRENT_YEAR : yearNumber;
+    const yearSummary = yearModelUnknown ? 'Unknown' : String(resultYear);
+    const resultUsageShortUnit = isGeneric && genericResult
+      ? getUsageShortUnit(genericResult.sector.key, genericResult.family.usageMetricType)
+      : 'hours';
+    const usageSummary = isGeneric && genericSelectedCalculation
+      ? `${formatPercent(genericSelectedCalculation.lifeWorkedPercent)} worked${genericSelectedCalculation.estimatedHours ? ` • ${genericSelectedCalculation.estimatedHours.toLocaleString('en-ZA')} estimated ${resultUsageShortUnit}` : ''}`
+      : usageNumber
+        ? `${usageNumber.toLocaleString('en-ZA')} ${resultUsageShortUnit}`
+        : lifeWorkedPercentNumber !== null
+          ? `${formatPercent(lifeWorkedPercentNumber)} worked`
+          : 'Usage captured';
+    const tractorReplacementBasisText = tractorResult?.userReplacementPriceExVat && replacementPriceBasis === 'user'
+      ? `Current basis: your replacement price of ${money(tractorResult.userReplacementPriceExVat)}`
+      : `Current basis: saved replacement price of ${money(tractorResult?.replacementPriceUsedExVat ?? tractorResult?.model.aim4priceReplacementExVat ?? null)}`;
+    const genericReplacementBasisText = genericResult?.userReplacementCalculation && replacementPriceBasis === 'user'
+      ? `Current basis: your replacement price of ${money(genericResult.userReplacementCalculation.replacementPriceExVat)}`
+      : `Current basis: saved replacement estimate of ${money(genericResult?.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}`;
+    const replacementBasisText = isGeneric ? genericReplacementBasisText : tractorReplacementBasisText;
+    const marketEvidenceInfo = `Market evidence only uses listings within 2 model years and ${selectedMarketUsageToleranceLabel} of your machine. Confidence: Low = no listings, Medium = 3–5 listings, High = more than 5 listings.`;
+    const marketSources: ValuationPdfMarketSource[] = isGeneric && genericResult
+      ? genericResult.marketSources.slice(0, 6).map((listing) => ({
+          sourceName: formatMarketSourceLabel(listing.sourceName),
+          title: listing.title,
+          priceExVat: listing.advertisedPriceExVat,
+          details: formatGenericMarketMeta(listing, genericResult),
+          sourceUrl: normalizeExternalUrl(listing.sourceUrl),
+        }))
+      : tractorResult
+        ? tractorResult.marketSources.slice(0, 6).map((listing) => ({
+            sourceName: formatMarketSourceLabel(listing.sourceName),
+            title: listing.title,
+            priceExVat: listing.advertisedPriceExVat,
+            details: formatTractorMarketMeta(listing),
+            sourceUrl: normalizeExternalUrl(listing.sourceUrl),
+          }))
+        : [];
+    const sectorLabel = isGeneric
+      ? genericResult?.sector.label ?? (selectedSector ? SECTOR_LABELS[selectedSector] : 'N/A')
+      : 'Agricultural';
+
+    return {
+      generatedAt: new Date().toISOString(),
+      machineTitle: machineTitle || 'Aim4price valuation',
+      sectorLabel,
+      familyLabel: isGeneric ? genericResult?.family.label ?? selectedFamily?.familyLabel ?? 'N/A' : 'Tractors',
+      brandName: isGeneric ? genericResult?.brand.name ?? selectedBrand?.name ?? 'N/A' : tractorResult?.model.brandName ?? selectedBrand?.name ?? 'N/A',
+      valuationPath: flowMode === 'exact_model' ? 'Exact model' : flowMode === 'generic_specs' ? 'Machine specs' : formatCatalogModeLabel(selectedFamily?.catalogMode ?? 'generic_specs'),
+      selectedMethodLabel: selectedMethod === 'market' ? 'Marketplace value' : 'Aim4price value',
+      selectedValueExVat: headlineValue,
+      aim4priceValueExVat: aimValue,
+      marketplaceValueExVat: marketValue,
+      marketCount,
+      confidenceText,
+      confidenceNote,
+      yearSummary,
+      usageSummary,
+      conditionSummary: conditionLabel(resultCondition),
+      replacementPriceExVat: getCurrentResultReplacementPriceExVat(),
+      replacementBasisText,
+      marketEvidenceInfo,
+      marketSources,
+      notes: [
+        'Values exclude VAT unless stated otherwise.',
+        'This is an indicative Aim4price estimate, not a certified valuation or inspection report.',
+        'Final value remains subject to physical inspection, documents, attachments, location and live market demand.',
+      ],
+    };
+  }
+
+  async function downloadValuationPdf() {
+    if (!resultState) {
+      setPdfError('Run a valuation before downloading the PDF report.');
+      return;
+    }
+
+    const payload = buildValuationPdfPayload();
+    if (!payload) {
+      setPdfError('The valuation report could not be prepared.');
+      return;
+    }
+
+    setPdfLoading(true);
+    setPdfError('');
+
+    try {
+      const response = await fetch('/api/valuation/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to create the valuation PDF.';
+        try {
+          const data = (await response.json()) as { error?: string };
+          errorMessage = data.error || errorMessage;
+        } catch {
+          // Keep the default message when the server did not return JSON.
+        }
+        throw new Error(errorMessage);
+      }
+
+      const blob = await response.blob();
+      const fileName = filenameFromContentDisposition(response.headers.get('Content-Disposition'))
+        || `aim4price-valuation-${pdfFileSlug(payload.machineTitle)}-${new Date().toISOString().slice(0, 10)}.pdf`;
+      triggerBlobDownload(blob, fileName);
+    } catch (error) {
+      console.error(error);
+      setPdfError(error instanceof Error ? error.message : 'Failed to create the valuation PDF.');
+    } finally {
+      setPdfLoading(false);
+    }
   }
 
   function buildDefaultMarketplaceDraft(): MarketplacePublishDraft {
@@ -2414,7 +2624,6 @@ export default function ValuationClient() {
       <div className={`${styles.currentCard} ${styles.tractorSetupCard}`} style={{ marginTop: '1rem' }}>
         <div className={styles.currentCardHead}>
           <div>
-            <span className={styles.currentEyebrow}>Exact model setup</span>
             <h3 className={styles.currentTitle}>Find the tractor model</h3>
             <p className={styles.currentHint}>Choose the basic setup first. The model list appears after type, drive and cab are selected.</p>
           </div>
@@ -3207,6 +3416,14 @@ export default function ValuationClient() {
                 <div className={styles.resultFinalActionsButtons}>
                   <button
                     type="button"
+                    className={styles.resultPdfActionButton}
+                    onClick={downloadValuationPdf}
+                    disabled={pdfLoading || headlineValue === null}
+                  >
+                    {pdfLoading ? 'Preparing PDF...' : 'Download PDF report'}
+                  </button>
+                  <button
+                    type="button"
                     className={styles.resultPrimaryActionButton}
                     onClick={saveToAssetRegister}
                     disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
@@ -3226,12 +3443,21 @@ export default function ValuationClient() {
               </>
             ) : (
               <div className={styles.resultSignedOutNotice}>
-                <p>Create an account or sign in to save this valuation to your Asset Register or send it to Marketplace.</p>
-                <button type="button" onClick={() => router.push('/auth#signup')}>
-                  Create account or sign in
-                </button>
+                <div className={styles.resultSignedOutCopy}>
+                  <strong>Save or export this valuation</strong>
+                  <p>Download the PDF now, or create an account to save it to your Asset Register and Marketplace workflow.</p>
+                </div>
+                <div className={styles.resultSignedOutActions}>
+                  <button type="button" onClick={downloadValuationPdf} disabled={pdfLoading || headlineValue === null}>
+                    {pdfLoading ? 'Preparing PDF...' : 'Download PDF'}
+                  </button>
+                  <button type="button" onClick={() => router.push('/auth#signup')}>
+                    Create account or sign in
+                  </button>
+                </div>
               </div>
             )}
+            {pdfError ? <p className={styles.resultActionError}>{pdfError}</p> : null}
           </section>
 
           {(isGeneric && genericResult) || tractorResult ? (
@@ -3494,6 +3720,14 @@ export default function ValuationClient() {
               </button>
               {step === 1 ? null : step === 5 ? (
                 <div className={styles.resultActionGroup}>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={downloadValuationPdf}
+                    disabled={pdfLoading || !resultState || headlineValue === null}
+                  >
+                    {pdfLoading ? 'Preparing PDF...' : 'Download PDF'}
+                  </button>
                   <button
                     type="button"
                     className={styles.secondaryButton}

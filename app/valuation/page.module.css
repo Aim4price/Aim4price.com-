@@ -9662,3 +9662,250 @@
     border-width: 0.13rem;
   }
 }
+
+/* === Valuation clarity pass: header alignment, cleaner final actions and PDF controls === */
+.stepContent > div:not(.sectorStart) > .stepTitle {
+  max-width: none;
+  margin: 0;
+  text-align: left;
+  font-size: clamp(2.45rem, 4vw, 3.45rem);
+  line-height: 1.02;
+  letter-spacing: -0.058em;
+  text-wrap: balance;
+}
+
+.stepContent > div:not(.sectorStart) > .stepText {
+  max-width: 72rem;
+  margin: 0.45rem 0 0;
+  text-align: left;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.equipmentStage {
+  position: relative;
+  gap: 1rem;
+}
+
+.equipmentStageTopSolo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  min-height: 0;
+  height: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+.equipmentStageTopSolo .selectedSummaryPill {
+  pointer-events: auto;
+}
+
+.equipmentStageIntro {
+  margin: 0;
+  gap: 0.46rem;
+  padding-right: clamp(8.5rem, 18vw, 13rem);
+}
+
+.equipmentStageIntro .stepTitle {
+  max-width: none;
+  margin: 0;
+  text-align: left;
+  font-size: clamp(2.7rem, 4.35vw, 3.85rem);
+  line-height: 1.02;
+  letter-spacing: -0.064em;
+}
+
+.equipmentStageIntro .stepText {
+  max-width: 72rem;
+  margin: 0;
+  text-align: left;
+  line-height: 1.55;
+}
+
+.equipmentStageIntro + .equipmentPickerCard {
+  margin-top: 0.38rem;
+}
+
+.currentCardHead > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.42rem;
+}
+
+.currentTitle {
+  margin: 0;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.currentHint {
+  max-width: 66rem;
+  text-wrap: pretty;
+}
+
+.tractorSetupCard {
+  margin-top: 1.1rem !important;
+}
+
+.tractorSetupCard .currentTitle {
+  margin: 0;
+}
+
+.pathChoiceDeck {
+  margin-top: 1.15rem;
+}
+
+.pathChoiceGrid .choiceCard {
+  min-height: 8.05rem;
+}
+
+.specFlowStack {
+  margin-top: 1.55rem;
+}
+
+.resultPdfActionButton {
+  display: inline-flex;
+  min-height: 3.25rem;
+  min-width: 14.2rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.35rem;
+  border: 1px solid rgba(18, 82, 62, 0.24);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(26, 89, 68, 0.08), transparent 36%),
+    #ffffff;
+  color: #15513f;
+  font: inherit;
+  font-weight: 820;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(16, 42, 34, 0.08);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    opacity 160ms ease;
+}
+
+.resultPdfActionButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(18, 82, 62, 0.38);
+  box-shadow: 0 16px 30px rgba(16, 42, 34, 0.11);
+}
+
+.resultPdfActionButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+
+.resultSignedOutNotice {
+  align-items: stretch;
+  padding: 1.1rem;
+  border-color: rgba(23, 77, 62, 0.14);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(26, 89, 68, 0.08), transparent 32%),
+    linear-gradient(135deg, rgba(250, 255, 252, 0.98) 0%, rgba(255, 250, 240, 0.96) 100%);
+  box-shadow:
+    0 16px 34px rgba(16, 42, 34, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.resultSignedOutCopy {
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.resultSignedOutCopy strong {
+  color: #123f34;
+  font-size: 1.06rem;
+  line-height: 1.2;
+  letter-spacing: -0.018em;
+}
+
+.resultSignedOutCopy p {
+  max-width: 46rem;
+  color: #5e6d67;
+}
+
+.resultSignedOutActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.72rem;
+  flex-wrap: wrap;
+}
+
+.resultSignedOutActions button:first-child {
+  border: 1px solid rgba(18, 82, 62, 0.22);
+  background: #ffffff;
+  color: #15513f;
+  box-shadow: 0 10px 20px rgba(16, 42, 34, 0.07);
+}
+
+.resultActionError {
+  margin: -0.3rem 0 0;
+  padding: 0.82rem 0.95rem;
+  border-radius: 0.9rem;
+  background: #fff1f0;
+  color: #a1271f;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.42;
+}
+
+.resultActionGroup .primaryButton {
+  min-width: 10.8rem;
+}
+
+.resultActionGroup .secondaryButton {
+  min-width: 10.2rem;
+}
+
+@media (max-width: 900px) {
+  .equipmentStageTopSolo {
+    position: static;
+    height: auto;
+    min-height: auto;
+    justify-content: flex-start;
+    margin-bottom: 0.25rem;
+  }
+
+  .equipmentStageIntro {
+    padding-right: 0;
+  }
+
+  .resultSignedOutNotice,
+  .resultSignedOutActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .resultSignedOutActions button,
+  .resultPdfActionButton {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .stepContent > div:not(.sectorStart) > .stepTitle,
+  .equipmentStageIntro .stepTitle {
+    font-size: clamp(2.1rem, 11vw, 3rem);
+    line-height: 1.04;
+  }
+
+  .stepContent > div:not(.sectorStart) > .stepText,
+  .equipmentStageIntro .stepText {
+    font-size: 0.98rem;
+    line-height: 1.55;
+  }
+
+  .pathChoiceGrid .choiceCard {
+    min-height: auto;
+  }
+}
