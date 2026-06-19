@@ -2621,3 +2621,155 @@
 .modalScrollBody {
   min-width: 0;
 }
+
+/* === Fuel page responsive consolidation pass === */
+.page,
+.shell,
+.ledgerPanel,
+.storageList,
+.storageCard,
+.modalCard,
+.exportModal,
+.qrModal,
+.deleteConfirmModal {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.shell *,
+.modalCard *,
+.exportModal *,
+.qrModal *,
+.deleteConfirmModal * {
+  min-width: 0;
+}
+
+.searchInput,
+.field input,
+.field select,
+.field textarea,
+.storageNameField input,
+.locationLabelField input,
+.pinField input,
+.reportSelectButton,
+.storageFuelTypeButton {
+  width: 100%;
+  min-width: 0;
+}
+
+.storageInfo,
+.storageDetails,
+.storageWarningNote,
+.deleteConfirmAsset,
+.exportOptionTitleBlock,
+.qrPreviewCard {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 960px) {
+  .topActions,
+  .topActionButtons,
+  .panelHeader,
+  .storageHeaderAside,
+  .formGrid,
+  .exportChoices,
+  .exportActions,
+  .deleteConfirmActions,
+  .modalActions,
+  .fuelModalFooter,
+  .unitActions {
+    grid-template-columns: 1fr !important;
+    display: grid !important;
+    width: 100%;
+  }
+
+  .topActionButtons > *,
+  .exportActions > *,
+  .deleteConfirmActions > *,
+  .modalActions > *,
+  .fuelModalFooter > *,
+  .unitActions > * {
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell {
+    width: min(calc(100% - 1rem), 48rem) !important;
+    padding-top: 0.95rem;
+  }
+
+  .ledgerPanel,
+  .storageCard,
+  .modalCard,
+  .exportModal,
+  .qrModal,
+  .deleteConfirmModal {
+    border-radius: 1.2rem !important;
+  }
+
+  .pageTitleBlock h1 {
+    font-size: clamp(1.85rem, 9vw, 2.45rem) !important;
+  }
+
+  .storageCard {
+    padding: 0.9rem !important;
+  }
+
+  .storageDetails,
+  .storageProgressBlock,
+  .reportFilterBox {
+    grid-template-columns: 1fr !important;
+  }
+
+  .primaryButton,
+  .secondaryButton,
+  .topActionButton,
+  .topAddButton,
+  .topReportButton,
+  .mobileQuickButton,
+  .fuelModalPrimaryButton,
+  .fuelModalCancelButton,
+  .exportPrimaryButton,
+  .exportSecondaryButton,
+  .qrPrimaryActionButton,
+  .deleteConfirmButton,
+  .deleteUnitButton,
+  .changePinButton,
+  .clearDipstickButton {
+    width: 100%;
+    min-height: var(--tap-target-min, 44px) !important;
+  }
+
+  .modalOverlay,
+  .modalBackdrop,
+  .subModalOverlay,
+  .confirmDeleteOverlay {
+    align-items: center !important;
+    padding: 0.75rem !important;
+    overflow: hidden !important;
+  }
+
+  .modalCard,
+  .modalCardSmall,
+  .exportModal,
+  .qrModal,
+  .deleteConfirmModal {
+    width: min(100%, 48rem) !important;
+    max-height: calc(100dvh - 1.5rem) !important;
+    overflow: hidden !important;
+  }
+
+  .modalScrollBody,
+  .exportModalScrollBody,
+  .qrModalScrollBody,
+  .exportModalBody,
+  .qrModalBody,
+  .deleteConfirmContent {
+    max-height: calc(100dvh - 10rem) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
