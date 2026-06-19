@@ -5,6 +5,11 @@ import {
   calculateTractorGpsValue,
   calculateTractorLoaderValue,
 } from './valuation/tractors';
+import {
+  getAdvancedConditionFactorOverride,
+  normalizeAdvancedAssumptions,
+  tractorLifetimeHours,
+} from './valuation/shared';
 import type {
   CabType,
   DriveType,
@@ -221,10 +226,22 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
       : null;
   const replacementPriceBasis: Result['replacementPriceBasis'] = userReplacementPriceExVat ? 'user' : 'aim4price';
   const replacementPriceUsedExVat = userReplacementPriceExVat ?? model.aim4priceReplacementExVat ?? null;
+  const defaultMaxLifetimeHours = tractorLifetimeHours(model.tractorType, model.powerKw);
+  const advancedAssumptions = normalizeAdvancedAssumptions(input.advancedAssumptions, 'hours');
+  const maxLifetimeHours = advancedAssumptions?.maxLifetimeUsage ?? defaultMaxLifetimeHours;
+  const conditionFactorOverride = getAdvancedConditionFactorOverride(advancedAssumptions);
+  const assumptionOptions = { maxLifetimeHours, conditionFactorOverride };
 
-  const baseAim4priceValueExVat = calculateTractorAim4priceValue(model, safeYear, safeHours, input.condition, userReplacementPriceExVat);
+  const baseAim4priceValueExVat = calculateTractorAim4priceValue(
+    model,
+    safeYear,
+    safeHours,
+    input.condition,
+    userReplacementPriceExVat,
+    assumptionOptions,
+  );
 
-  const frontPtoValueExVat = calculateTractorFrontPtoValue(model, safeYear, safeHours, input.condition, Boolean(input.frontPto));
+  const frontPtoValueExVat = calculateTractorFrontPtoValue(model, safeYear, safeHours, input.condition, Boolean(input.frontPto), assumptionOptions);
   const frontLoaderValueExVat = calculateTractorLoaderValue(model, safeYear, Boolean(input.frontLoader));
   const gpsValueExVat = calculateTractorGpsValue(model, Boolean(input.gpsEnabled), input.gpsType, input.gpsYear, safeYear);
   const extrasValueExVat = frontPtoValueExVat + frontLoaderValueExVat + gpsValueExVat;
@@ -255,5 +272,7 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
     replacementPriceBasis,
     replacementPriceUsedExVat,
     userReplacementPriceExVat,
+    maxLifetimeHours,
+    advancedAssumptions,
   };
 }

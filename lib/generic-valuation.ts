@@ -7,7 +7,11 @@ import {
   calculatePercentUsedValue,
   clamp,
   currentBaseYear,
+  getAdvancedConditionFactorOverride,
+  normalizeAdvancedAssumptions,
   tractorLifetimeHours,
+  type AdvancedAssumptionsInput,
+  type NormalizedAdvancedAssumptions,
 } from './valuation/shared';
 import {
   getUsageSentenceLabel,
@@ -41,6 +45,7 @@ export type GenericValuationCalculation = {
   ageDepPct: number | null;
   usageDepPct: number | null;
   averageDepPct: number | null;
+  advancedAssumptions: NormalizedAdvancedAssumptions | null;
 };
 
 export type SpecQuestion = {
@@ -121,6 +126,7 @@ export type GenericValuationInput = {
   condition: GenericCondition;
   userReplacementPriceExVat?: number | null;
   userReplacementPriceYear?: number | null;
+  advancedAssumptions?: AdvancedAssumptionsInput | null;
 };
 
 export type GenericValuationResult = {
@@ -154,6 +160,7 @@ export type GenericValuationResult = {
   lifeRemainingPercent: number | null;
   estimatedHours: number | null;
   maxLifetimeHours: number | null;
+  advancedAssumptions: NormalizedAdvancedAssumptions | null;
   aim4priceReplacementCalculation: GenericValuationCalculation | null;
   userReplacementCalculation: GenericValuationCalculation | null;
   selectedCalculation: GenericValuationCalculation | null;
@@ -326,6 +333,7 @@ type DepreciationInput = {
   isPropelled: boolean;
   familyKey: EquipmentFamilyKey;
   specsJson: Record<string, unknown>;
+  advancedAssumptions: NormalizedAdvancedAssumptions | null;
 };
 
 function positivePercent(value: unknown): number | null {
@@ -357,6 +365,9 @@ function resolveLifeWorkedPercent(input: DepreciationInput, fallbackPercent: num
 }
 
 function resolveMaxLifetimeHours(input: DepreciationInput): number {
+  const advancedLifetime = positiveUsageAmount(input.advancedAssumptions?.maxLifetimeUsage);
+  if (advancedLifetime !== null) return advancedLifetime;
+
   const specs = input.specsJson;
   const explicit =
     positiveUsageAmount(specs.max_lifetime_hours) ??
@@ -447,6 +458,7 @@ function resolveDepreciation(input: DepreciationInput): {
         condition: input.condition,
         maxLifetimeHours,
         floorPercent: DEFAULT_ENGINE_FLOOR_PERCENT,
+        conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
       });
       const lifeWorkedPercent = clamp(Math.round((knownHours / maxLifetimeHours) * 100), 0, 100);
 
@@ -472,6 +484,7 @@ function resolveDepreciation(input: DepreciationInput): {
       condition: input.condition,
       maxLifetimeHours,
       floorPercent: DEFAULT_ENGINE_FLOOR_PERCENT,
+      conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
     });
 
     return {
@@ -493,6 +506,7 @@ function resolveDepreciation(input: DepreciationInput): {
     percentUsed: lifeWorkedPercent,
     condition: input.condition,
     floorPercent: DEFAULT_NON_PROPELLED_FLOOR_PERCENT,
+    conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
   });
 
   return {
@@ -534,6 +548,7 @@ function buildCalculation(input: DepreciationInput & {
     ageDepPct: depreciation.ageDepPct,
     usageDepPct: depreciation.usageDepPct,
     averageDepPct: depreciation.averageDepPct,
+    advancedAssumptions: input.advancedAssumptions ?? null,
   };
 }
 
@@ -1054,6 +1069,8 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const family = await fetchFamilyContext(input.sectorKey, input.familyKey);
   if (!family) throw new Error('FAMILY_NOT_FOUND');
 
+  const advancedAssumptions = normalizeAdvancedAssumptions(input.advancedAssumptions, family.usageMetricType);
+
   const brand = await fetchBrandContext(family.id, input.brandSlug);
   if (!brand) throw new Error('BRAND_NOT_FOUND_FOR_FAMILY');
 
@@ -1091,6 +1108,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     isPropelled: family.isPropelled,
     familyKey: family.key,
     specsJson,
+    advancedAssumptions,
   };
 
   const aim4priceReplacementCalculation = buildCalculation({
@@ -1121,6 +1139,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const notes: string[] = [];
   if (!replacementBand && !userReplacementPriceExVat) notes.push('No replacement price band matched yet. Add a band or enter a user replacement price.');
   notes.push('Aim4price used replacement price, usage, age, condition and specs.');
+  if (advancedAssumptions) notes.push('Advanced assumptions were applied to this valuation run.');
 
   const usageSentenceLabel = getUsageSentenceLabel(family.sectorKey, family.usageMetricType);
 
@@ -1185,6 +1204,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     lifeRemainingPercent: selectedCalculation.lifeRemainingPercent,
     estimatedHours: selectedCalculation.estimatedHours,
     maxLifetimeHours: selectedCalculation.maxLifetimeHours,
+    advancedAssumptions,
     aim4priceReplacementCalculation,
     userReplacementCalculation,
     selectedCalculation,

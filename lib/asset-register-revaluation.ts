@@ -184,6 +184,20 @@ function readNestedRecord(source: Record<string, unknown>, key: string): Record<
   return asRecord(source[key]);
 }
 
+function firstNonEmptyRecord(...records: Record<string, unknown>[]): Record<string, unknown> | null {
+  return records.find((record) => Object.keys(record).length > 0) ?? null;
+}
+
+function readSavedAdvancedAssumptions(
+  payloadInput: Record<string, unknown>,
+  payloadOutput?: Record<string, unknown>,
+): Record<string, unknown> | null {
+  return firstNonEmptyRecord(
+    readNestedRecord(payloadInput, 'advancedAssumptions'),
+    payloadOutput ? readNestedRecord(payloadOutput, 'advancedAssumptions') : {},
+  );
+}
+
 function normalizeCondition(value: unknown): ConditionKey | null {
   const normalized = asText(value).toLowerCase();
 
@@ -456,6 +470,7 @@ async function revalueTractorAsset(input: {
   const payload = asRecord(input.row.valuation_payload);
   const payloadInput = readNestedRecord(payload, 'input');
   const payloadOutput = readNestedRecord(payload, 'output');
+  const advancedAssumptions = readSavedAdvancedAssumptions(payloadInput, payloadOutput);
   const modelId = requireText(
     payloadInput.modelId ?? input.row.equipment_model_id ?? input.row.model_id ?? input.asset.equipmentModelId,
     'This tractor is missing its original model link, so Aim4price cannot re-run the estimate yet.',
@@ -499,6 +514,7 @@ async function revalueTractorAsset(input: {
       asNumber(payloadInput.userReplacementPriceExVat) ??
       asNumber(payloadOutput.userReplacementPriceExVat) ??
       asNumber(input.row.user_replacement_price_ex_vat),
+    advancedAssumptions,
   };
 
   const result = await runServerValuation(valuationInput);
@@ -579,6 +595,8 @@ async function revalueGenericAsset(input: {
 }): Promise<AssetRevaluationResult> {
   const payload = asRecord(input.row.valuation_payload);
   const payloadInput = readNestedRecord(payload, 'input');
+  const payloadOutput = readNestedRecord(payload, 'output');
+  const advancedAssumptions = readSavedAdvancedAssumptions(payloadInput, payloadOutput);
   const sectorKeyRaw = payloadInput.sectorKey ?? input.row.sector_key;
 
   if (!isSectorKey(sectorKeyRaw)) {
@@ -639,6 +657,7 @@ async function revalueGenericAsset(input: {
     condition,
     userReplacementPriceExVat,
     userReplacementPriceYear: asInteger(payloadInput.userReplacementPriceYear ?? input.row.user_replacement_price_year),
+    advancedAssumptions,
   });
   const selectedMethod = resolveGenericMethod(input.preferredMethod, result);
   const selectedValueExVat = requireSelectedValue(getGenericSelectedMethodValue(result, selectedMethod));

@@ -1,4 +1,5 @@
 import type { ConditionKey, MarketplaceListing, TractorCatalogRow } from './tractor-data';
+import type { AdvancedAssumptionsInput, NormalizedAdvancedAssumptions } from './valuation/shared';
 
 export type GpsType = 'full-autosteer' | 'guidance-only';
 
@@ -13,6 +14,7 @@ export type RunValuationInput = {
   gpsType?: GpsType | null;
   gpsYear?: number | string | null;
   userReplacementPriceExVat?: number | null;
+  advancedAssumptions?: AdvancedAssumptionsInput | null;
 };
 
 export type Result = {
@@ -37,6 +39,8 @@ export type Result = {
   replacementPriceBasis: 'aim4price' | 'user';
   replacementPriceUsedExVat: number | null;
   userReplacementPriceExVat: number | null;
+  maxLifetimeHours: number | null;
+  advancedAssumptions: NormalizedAdvancedAssumptions | null;
 };
 
 export const conditionLabel = (key: ConditionKey): string =>

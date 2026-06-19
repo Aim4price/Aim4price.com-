@@ -2089,6 +2089,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['power_kw', 'kw', 'power'], model.powerKw);
   pushField(fields, schema, ['year_model', 'year'], Math.round(input.year));
   pushField(fields, schema, ['hours', 'engine_hours'], Math.max(0, Math.round(input.hours)));
+  pushField(fields, schema, ['max_lifetime_hours'], valuationResult.maxLifetimeHours);
   pushField(fields, schema, ['condition'], typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good');
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], marketValueExVat);
