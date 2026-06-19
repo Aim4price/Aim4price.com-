@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEventHandler, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -144,9 +144,11 @@ type SmartLinkProps = {
   href: string;
   className: string;
   children: ReactNode;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
 };
 
 const NOTIFICATIONS_PER_PAGE = 4;
+const MOBILE_MENU_ID = 'app-header-mobile-menu';
 
 const BASE_NAV_ITEMS: NavItem[] = [
   { key: 'home', href: '/', label: 'Home' },
@@ -182,7 +184,7 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
   ];
 }
 
-function SmartLink({ href, className, children }: SmartLinkProps) {
+function SmartLink({ href, className, children, onClick }: SmartLinkProps) {
   const isAnchorLike =
     href.startsWith('#') ||
     href.startsWith('http://') ||
@@ -192,14 +194,14 @@ function SmartLink({ href, className, children }: SmartLinkProps) {
 
   if (isAnchorLike) {
     return (
-      <a href={href} className={className}>
+      <a href={href} className={className} onClick={onClick}>
         {children}
       </a>
     );
   }
 
   return (
-    <Link href={href} className={className}>
+    <Link href={href} className={className} onClick={onClick}>
       {children}
     </Link>
   );
@@ -367,6 +369,7 @@ export default function AppHeader({
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const [notifications, setNotifications] = useState<HeaderNotificationItem[]>([]);
@@ -441,6 +444,7 @@ export default function AppHeader({
     function handleEscape(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         setMenuOpen(false);
+        setMobileMenuOpen(false);
         setNotificationOpen(false);
         setActiveContactRequest(null);
         setActiveUserMessage(null);
@@ -458,7 +462,13 @@ export default function AppHeader({
     };
   }, []);
 
-  const hasBlockingModal = notificationOpen || Boolean(activeContactRequest) || Boolean(activeUserMessage) || Boolean(notificationDetailError);
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setMenuOpen(false);
+  }, [pathname]);
+
+  const hasBlockingModal =
+    mobileMenuOpen || notificationOpen || Boolean(activeContactRequest) || Boolean(activeUserMessage) || Boolean(notificationDetailError);
 
   useEffect(() => {
     if (!hasBlockingModal || typeof document === 'undefined') return;
@@ -582,6 +592,7 @@ export default function AppHeader({
       const nextOpen = !current;
       if (nextOpen) {
         setMenuOpen(false);
+        setMobileMenuOpen(false);
         closeNotificationDetailModal();
         markNotificationsSeen();
       }
@@ -592,6 +603,24 @@ export default function AppHeader({
   function handleNotificationLinkClick() {
     markNotificationsSeen();
     setNotificationOpen(false);
+  }
+
+  function handleMobileMenuToggle() {
+    setMobileMenuOpen((current) => {
+      const nextOpen = !current;
+
+      if (nextOpen) {
+        setMenuOpen(false);
+        setNotificationOpen(false);
+        closeNotificationDetailModal();
+      }
+
+      return nextOpen;
+    });
+  }
+
+  function closeMobileMenu() {
+    setMobileMenuOpen(false);
   }
 
   async function handleOpenContactRequestNotification(contactRequestId: string) {
@@ -707,6 +736,7 @@ export default function AppHeader({
       clearLegacyPrototypeStorage();
       setSession(null);
       setMenuOpen(false);
+      setMobileMenuOpen(false);
       setNotificationOpen(false);
       setNotifications([]);
       setIsSigningOut(false);
@@ -1203,17 +1233,23 @@ export default function AppHeader({
                       className={styles.accountButton}
                       aria-expanded={menuOpen}
                       aria-haspopup="menu"
+                      aria-controls={menuOpen ? 'header-account-menu' : undefined}
+                      aria-label="Open account menu"
                       onClick={() => {
+                        setMobileMenuOpen(false);
                         setNotificationOpen(false);
                         setMenuOpen((current) => !current);
                       }}
                     >
                       <AccountProfileIcon className={styles.accountAvatar} />
-                      <span className={styles.accountButtonText}>My Account</span>
+                      <span className={styles.accountButtonText}>
+                        <span className={styles.accountButtonTextFull}>My Account</span>
+                        <span className={styles.accountButtonTextCompact}>Account</span>
+                      </span>
                     </button>
 
                     {menuOpen ? (
-                      <div className={styles.accountPopover} role="menu">
+                      <div id="header-account-menu" className={styles.accountPopover} role="menu">
                         <div className={styles.accountSummary}>
                           <AccountProfileIcon className={styles.accountAvatarLarge} />
                           <div className={styles.accountSummaryText}>
@@ -1268,8 +1304,76 @@ export default function AppHeader({
                   </SmartLink>
                 </>
               )}
+
+              <button
+                type="button"
+                className={`${styles.mobileMenuButton} ${mobileMenuOpen ? styles.mobileMenuButtonActive : ''}`}
+                aria-expanded={mobileMenuOpen}
+                aria-controls={MOBILE_MENU_ID}
+                aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                onClick={handleMobileMenuToggle}
+              >
+                <span className={styles.mobileMenuIcon} aria-hidden="true">
+                  <span className={styles.mobileMenuIconLine} />
+                </span>
+                <span className={styles.mobileMenuButtonText}>Menu</span>
+                <svg className={styles.mobileMenuChevron} viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                  <path
+                    d="M5.55 7.45a1 1 0 0 1 1.42 0L10 10.49l3.03-3.04a1 1 0 1 1 1.42 1.42l-3.74 3.73a1 1 0 0 1-1.42 0L5.55 8.87a1 1 0 0 1 0-1.42Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
             </div>
           </div>
+
+          {mobileMenuOpen ? (
+            <div id={MOBILE_MENU_ID} className={styles.mobileMenuPanel}>
+              <div className={styles.mobileMenuHeader}>
+                <div className={styles.mobileMenuHeaderCopy}>
+                  <span className={styles.mobileMenuKicker}>Navigation</span>
+                  <strong className={styles.mobileMenuTitle}>Menu</strong>
+                </div>
+                <button
+                  type="button"
+                  className={styles.mobileMenuCloseButton}
+                  aria-label="Close navigation menu"
+                  onClick={closeMobileMenu}
+                >
+                  ×
+                </button>
+              </div>
+
+              <nav className={styles.mobileMenuNav} aria-label="Mobile navigation">
+                {navItems.map((item) => {
+                  const isActive = active === item.key;
+
+                  return (
+                    <Link
+                      key={`mobile-${item.key}-${item.href}`}
+                      href={item.href}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`${styles.mobileMenuNavLink} ${isActive ? styles.mobileMenuNavLinkActive : ''}`}
+                      onClick={closeMobileMenu}
+                    >
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              {!isLoadingSession && !session ? (
+                <div className={styles.mobileMenuAuthActions}>
+                  <SmartLink href={loginHref} className={styles.mobileMenuAuthLink} onClick={closeMobileMenu}>
+                    Login
+                  </SmartLink>
+                  <SmartLink href={primaryHref} className={`${styles.mobileMenuAuthLink} ${styles.mobileMenuAuthLinkPrimary}`} onClick={closeMobileMenu}>
+                    {ctaLabel}
+                  </SmartLink>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </header>
       {notificationPortal}
