@@ -2532,3 +2532,148 @@
     width: 100%;
   }
 }
+
+/* === Account responsive consolidation pass === */
+.page,
+.shell,
+.accountHero,
+.topGrid,
+.card,
+.overviewCard,
+.quickActionsCard,
+.securityCard,
+.modalCard,
+.accountScrollableModalCard,
+.partnerDirectoryModalCard,
+.accountActionModalCard {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.shell *,
+.modalCard *,
+.accountScrollableModalCard *,
+.partnerDirectoryModalCard *,
+.accountActionModalCard * {
+  min-width: 0;
+}
+
+.field input,
+.field select,
+.field textarea,
+.modalField input,
+.modalField select,
+.modalField textarea,
+.readOnlyValue {
+  width: 100%;
+  min-width: 0;
+}
+
+.heroCopy,
+.metricTile,
+.quickActionButton,
+.readOnlyValue,
+.partnerMapField,
+.partnerDescriptionField {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1080px) {
+  .topGrid,
+  .securityGrid,
+  .businessMediaEditorGrid,
+  .marketplaceFields,
+  .directoryForm,
+  .partnerMapCanvas {
+    grid-template-columns: 1fr !important;
+  }
+
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .shell {
+    width: min(calc(100% - 1rem), 48rem) !important;
+    padding-top: 0.95rem;
+  }
+
+  .accountHero,
+  .card,
+  .overviewCard,
+  .quickActionsCard,
+  .securityCard {
+    border-radius: 1.2rem !important;
+  }
+
+  .accountHero {
+    grid-template-columns: 1fr !important;
+    gap: 0.9rem !important;
+    padding: 1rem !important;
+  }
+
+  .heroCopy h1 {
+    font-size: clamp(1.8rem, 9vw, 2.35rem) !important;
+  }
+
+  .metricGrid,
+  .pinGrid,
+  .businessMediaControls,
+  .securityActions,
+  .actionsRow,
+  .modalActions,
+  .marketplaceActions,
+  .partnerMapActions,
+  .partnerMapFooter {
+    grid-template-columns: 1fr !important;
+    display: grid !important;
+    width: 100%;
+  }
+
+  .primaryButton,
+  .secondaryButton,
+  .ghostButton,
+  .dangerButton,
+  .uploadButton,
+  .quickActionButton,
+  .modalActions > *,
+  .actionsRow > *,
+  .securityActions > *,
+  .businessMediaControls > *,
+  .marketplaceActions > *,
+  .partnerMapActions > * {
+    width: 100%;
+    min-height: var(--tap-target-min, 44px);
+  }
+
+  .modalBackdrop {
+    padding: 0.75rem !important;
+    align-items: center !important;
+    overflow: hidden !important;
+  }
+
+  .modalCard,
+  .accountScrollableModalCard,
+  .partnerDirectoryModalCard,
+  .accountActionModalCard,
+  .accountActionModalCardNarrow {
+    width: min(100%, 48rem) !important;
+    max-height: calc(100dvh - 1.5rem) !important;
+    border-radius: 1.25rem !important;
+    overflow: hidden !important;
+  }
+
+  .accountModalScrollContent,
+  .accountModalScrollViewport,
+  .accountModalScrollShell,
+  .modalForm,
+  .form,
+  .compactEditForm {
+    max-height: calc(100dvh - 10rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
