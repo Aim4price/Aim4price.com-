@@ -482,3 +482,63 @@
     transform: none;
   }
 }
+
+/* === Footer mobile rhythm refinements === */
+.footer,
+.shell,
+.topRow,
+.linksGrid,
+.linkColumn,
+.bottomRow {
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .topRow {
+    gap: 2rem;
+  }
+
+  .linksGrid {
+    grid-template-columns: repeat(2, minmax(0, max-content));
+    justify-content: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .topRow {
+    padding-top: 2.15rem;
+    padding-bottom: 1.55rem;
+  }
+
+  .brandName {
+    white-space: normal;
+  }
+
+  .brandText,
+  .brandSupport {
+    max-width: 100%;
+  }
+
+  .linksGrid {
+    width: 100%;
+    grid-template-columns: 1fr;
+    gap: 1.22rem;
+  }
+
+  .linkColumn a {
+    min-height: 2.2rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .footerDock {
+    min-height: 4.25rem;
+  }
+
+  .footerToggle {
+    width: 3rem;
+    height: 3rem;
+  }
+}
+

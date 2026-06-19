@@ -1594,3 +1594,284 @@
     width: 100%;
   }
 }
+
+/* === Compact phone/tablet header pass === */
+.header,
+.inner,
+.nav,
+.navRail,
+.actions,
+.actionsRail {
+  max-width: 100%;
+}
+
+.navRail,
+.actionsRail,
+.accountPopover,
+.notificationModal,
+.notificationDetailModal {
+  min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .inner {
+    width: min(calc(100% - 2rem), 1180px);
+    min-height: auto;
+    padding: 0.68rem 0 0.76rem;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "brand actions"
+      "nav nav";
+    align-items: center;
+    gap: 0.58rem 0.82rem;
+  }
+
+  .brand {
+    grid-area: brand;
+    justify-self: start;
+  }
+
+  .nav {
+    grid-area: nav;
+    width: 100%;
+    justify-self: stretch;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+
+  .actions {
+    grid-area: actions;
+    width: auto;
+    min-width: 0;
+    justify-self: end;
+    justify-content: flex-end;
+  }
+
+  .brandLogo {
+    width: clamp(8.8rem, 15vw, 11.2rem);
+    max-height: 2.55rem;
+  }
+
+  .navRail {
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 0.38rem;
+    padding: 0.25rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    border-radius: 1.05rem;
+  }
+
+  .navRail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .navLink {
+    flex: 0 0 auto;
+    min-width: max-content;
+    min-height: 2.75rem;
+    padding: 0 0.92rem;
+    border-radius: 0.85rem;
+    font-size: 0.9rem;
+  }
+
+  .actionsRail {
+    width: auto;
+    max-width: 100%;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    padding: 0.28rem;
+    border-radius: 1.05rem;
+  }
+
+  .signupButton,
+  .loginButton,
+  .accountButton,
+  .notificationButton {
+    min-height: 2.75rem;
+    border-radius: 0.85rem;
+    font-size: 0.9rem;
+  }
+
+  .accountMenu {
+    width: min(11.25rem, 100%);
+    flex: 0 1 11.25rem;
+    min-width: 0;
+  }
+
+  .accountButton {
+    min-width: 0;
+  }
+
+  .accountButtonText {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 720px) {
+  .inner {
+    width: min(calc(100% - 1.1rem), 46rem);
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "brand actions"
+      "nav nav";
+    align-items: center;
+    padding: 0.54rem 0 0.62rem;
+    gap: 0.48rem 0.55rem;
+  }
+
+  .brand,
+  .nav,
+  .actions {
+    min-width: 0;
+  }
+
+  .brandLogo {
+    width: clamp(7.35rem, 30vw, 8.85rem);
+    max-height: 2.15rem;
+  }
+
+  .navRail {
+    width: 100%;
+    display: flex;
+    grid-template-columns: none;
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+    padding: 0.18rem;
+    border: 1px solid rgba(18, 45, 37, 0.065);
+    background: rgba(255, 255, 255, 0.84);
+    box-shadow: none;
+  }
+
+  .navLink {
+    min-height: 2.55rem;
+    min-width: max-content;
+    padding: 0 0.76rem;
+    border-radius: 0.78rem;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    font-size: 0.82rem;
+  }
+
+  .navLinkActive {
+    background: #ffffff;
+    border-color: rgba(18, 45, 37, 0.08);
+    box-shadow: 0 7px 16px rgba(18, 45, 37, 0.05);
+  }
+
+  .actionsRail {
+    width: auto;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.3rem;
+    padding: 0;
+    background: none;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .actionDivider {
+    display: none;
+  }
+
+  .loginButton,
+  .signupButton,
+  .accountButton {
+    flex: 0 1 auto;
+    min-height: 2.55rem;
+    padding: 0 0.62rem;
+    border-radius: 0.78rem;
+    font-size: 0.82rem;
+    box-shadow: 0 6px 14px rgba(18, 45, 37, 0.045);
+  }
+
+  .notificationButton {
+    width: 2.55rem;
+    min-width: 2.55rem;
+    min-height: 2.55rem;
+    border-radius: 0.78rem;
+  }
+
+  .notificationIcon {
+    width: 1.02rem;
+    height: 1.02rem;
+  }
+
+  .accountMenu {
+    width: min(10.4rem, 100%);
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .accountButton {
+    gap: 0.45rem;
+    padding-left: 0.55rem;
+    padding-right: 0.65rem;
+  }
+
+  .accountAvatar {
+    width: 1.65rem;
+    height: 1.65rem;
+  }
+
+  .accountPopover {
+    position: fixed;
+    top: 6.45rem;
+    left: 0.75rem;
+    right: 0.75rem;
+    width: auto;
+    max-width: none;
+    max-height: calc(100dvh - 7.25rem);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .notificationModalBackdrop,
+  .notificationDetailBackdrop {
+    padding: 0.75rem;
+  }
+
+  .notificationModal,
+  .notificationDetailModal {
+    max-height: calc(100dvh - 1.5rem);
+  }
+}
+
+@media (max-width: 390px) {
+  .inner {
+    width: min(calc(100% - 0.82rem), 44rem);
+    gap: 0.42rem;
+  }
+
+  .brandLogo {
+    width: 7.2rem;
+  }
+
+  .loginButton,
+  .signupButton,
+  .accountButton {
+    padding: 0 0.5rem;
+    font-size: 0.78rem;
+  }
+
+  .signupButton {
+    max-width: 7.55rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .accountButtonText {
+    max-width: 6.5rem;
+  }
+}
+
