@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { recordAdminUsageEventSafely } from '../../../lib/admin-usage-events';
+import { getAccountProfile } from '../../../lib/account-profile';
 import { getAnyServerSession } from '../../../lib/auth-session';
 import { runServerValuation } from '../../../lib/server-valuation';
 import type { ConditionKey } from '../../../lib/tractor-data';
 import type { GpsType, RunValuationInput } from '../../../lib/tractor-logic';
+import { advancedAssumptionsWereRequested } from '../../../lib/valuation/shared';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -57,6 +59,11 @@ function buildInputFromSearchParams(request: NextRequest): RunValuationInput | n
     return null;
   }
 
+  const advancedAssumptions = {
+    maxLifetimeUsage: searchParams.get('maxLifetimeUsage') ?? searchParams.get('maxLifetimeHours'),
+    conditionFactorPercent: searchParams.get('conditionFactorPercent'),
+  };
+
   return {
     modelId,
     year,
@@ -68,6 +75,7 @@ function buildInputFromSearchParams(request: NextRequest): RunValuationInput | n
     gpsType: normalizeGpsType(searchParams.get('gpsType')),
     gpsYear: searchParams.get('gpsYear'),
     userReplacementPriceExVat: Number(searchParams.get('userReplacementPriceExVat')) || null,
+    advancedAssumptions: advancedAssumptionsWereRequested(advancedAssumptions) ? advancedAssumptions : null,
   };
 }
 
@@ -97,6 +105,7 @@ function buildInputFromBody(body: Partial<RunValuationInput> | null | undefined)
       typeof body.userReplacementPriceExVat === 'number' && Number.isFinite(body.userReplacementPriceExVat) && body.userReplacementPriceExVat > 0
         ? body.userReplacementPriceExVat
         : null,
+    advancedAssumptions: body.advancedAssumptions ?? null,
   };
 }
 
@@ -108,6 +117,30 @@ function badRequest(message: string) {
     },
     { status: 400 },
   );
+}
+
+
+async function hasActiveAdvancedAccess(): Promise<boolean> {
+  const session = await getAnyServerSession();
+  const user = session?.user;
+  if (!user?.id) return false;
+  const profile = await getAccountProfile({ id: user.id, name: user.name, email: user.email });
+  return profile.accountStatus === 'active';
+}
+
+function advancedAccessDenied() {
+  return NextResponse.json<TractorValuationApiResponse>(
+    {
+      ok: false,
+      error: 'Advanced assumptions are available for active Aim4price accounts.',
+    },
+    { status: 403 },
+  );
+}
+
+function isAdvancedValidationError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.message.startsWith('Expected lifetime') || error.message.startsWith('Condition retained value');
 }
 
 async function getUsageUserId(): Promise<string | null> {
@@ -122,6 +155,10 @@ async function getUsageUserId(): Promise<string | null> {
 async function handleValuation(input: RunValuationInput | null) {
   if (!input) {
     return badRequest('modelId, year, hours and condition are required.');
+  }
+
+  if (advancedAssumptionsWereRequested(input.advancedAssumptions) && !(await hasActiveAdvancedAccess())) {
+    return advancedAccessDenied();
   }
 
   try {
@@ -148,6 +185,16 @@ async function handleValuation(input: RunValuationInput | null) {
           error: 'Selected tractor model was not found in the database.',
         },
         { status: 404 },
+      );
+    }
+
+    if (isAdvancedValidationError(error)) {
+      return NextResponse.json<TractorValuationApiResponse>(
+        {
+          ok: false,
+          error: error instanceof Error ? error.message : 'Invalid advanced assumptions.',
+        },
+        { status: 400 },
       );
     }
 
