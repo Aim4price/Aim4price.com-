@@ -1297,3 +1297,97 @@
     min-height: 2.5rem;
   }
 }
+
+/* === Asset Map responsive consolidation pass === */
+.page,
+.shell,
+.mapWorkspace,
+.mapStage,
+.mapCanvas,
+.assetSidebar,
+.selectedAssetCard,
+.assetCard {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.shell *,
+.assetSidebar *,
+.selectedAssetCard *,
+.assetCard * {
+  min-width: 0;
+}
+
+.searchInput {
+  width: 100%;
+  min-width: 0;
+}
+
+.assetSidebarTitle,
+.assetCardHeader,
+.assetCardMeta,
+.selectedAssetTitleGroup,
+.selectedValueBlock,
+.selectedDetailGrid {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .topActions,
+  .topActionButtons,
+  .panelHeader,
+  .selectedAssetContent,
+  .selectedActionRow,
+  .selectedDetailGrid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100%;
+  }
+
+  .mapWorkspace {
+    grid-template-columns: 1fr !important;
+  }
+
+  .assetSidebar,
+  .assetSidebarCollapsed {
+    position: static !important;
+    width: 100% !important;
+    max-height: none !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .shell {
+    width: min(calc(100% - 1rem), 48rem) !important;
+    padding-top: 0.95rem;
+  }
+
+  .pageTitleBlock h1 {
+    font-size: clamp(1.85rem, 9vw, 2.45rem) !important;
+  }
+
+  .mapStage,
+  .assetSidebar,
+  .selectedAssetCard,
+  .assetCard {
+    border-radius: 1.2rem !important;
+  }
+
+  .mapCanvas {
+    min-height: min(56dvh, 28rem) !important;
+  }
+
+  .primaryAction,
+  .secondaryAction,
+  .topActionButton,
+  .topRefreshButton,
+  .topReportButton,
+  .selectedActionButton,
+  .assetCardButton,
+  .sidebarToggleButton,
+  .layerButton {
+    width: 100%;
+    min-height: var(--tap-target-min, 44px) !important;
+  }
+}
+
