@@ -3407,3 +3407,156 @@
   padding-top: 0.46rem;
   padding-bottom: 0.46rem;
 }
+
+/* === Users responsive consolidation pass === */
+.page,
+.shell,
+.heroPanel,
+.controlsPanel,
+.summaryCarousel,
+.cardStack,
+.ownerCard,
+.messageCard,
+.filterModal,
+.actionModal,
+.detailPanel,
+.filePreviewCard,
+.incomingAttachmentViewer {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.shell *,
+.filterModal *,
+.actionModal *,
+.ownerCard *,
+.messageCard *,
+.detailPanel * {
+  min-width: 0;
+}
+
+.searchBox input,
+.filterField input,
+.filterField select,
+.textAreaField textarea,
+.customSelectButton,
+.fileUploadField input {
+  width: 100%;
+  min-width: 0;
+}
+
+.ownerIdentity,
+.ownerDetails,
+.messageCardCopy,
+.incomingMessageBody,
+.contactDetailPanel,
+.filePreviewMeta,
+.requestBody,
+.popiaNoticeBody {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1080px) {
+  .toolbar,
+  .summaryTrack,
+  .controlsPanel,
+  .sendChoiceGrid,
+  .detailGrid,
+  .contactRows,
+  .requestActions,
+  .ownerActionRow,
+  .modalActions,
+  .filterModalForm,
+  .usersPaginationControls,
+  .incomingAttachmentActions {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell {
+    width: min(calc(100% - 1rem), 48rem) !important;
+    padding-top: 0.95rem;
+  }
+
+  .heroPanel,
+  .controlsPanel,
+  .summaryCard,
+  .ownerCard,
+  .messageCard,
+  .filterModal,
+  .actionModal,
+  .detailPanel,
+  .filePreviewCard {
+    border-radius: 1.2rem !important;
+  }
+
+  .heroPanel h1 {
+    font-size: clamp(1.85rem, 9vw, 2.45rem) !important;
+  }
+
+  .summaryTrack,
+  .toolbar,
+  .controlsPanel,
+  .sendChoiceGrid,
+  .ownerActionRow,
+  .requestActions,
+  .modalActions,
+  .filterModalForm,
+  .usersPaginationControls,
+  .usersPaginationPages,
+  .incomingAttachmentActions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100%;
+  }
+
+  .primaryButton,
+  .secondaryButton,
+  .outlineButton,
+  .denyButton,
+  .filterButton,
+  .sendOwnerButton,
+  .shareButton,
+  .ownerRequestButton,
+  .ownerDetailsButton,
+  .compactDetailButton,
+  .attachmentActionButton,
+  .fileUploadButton,
+  .usersPaginationButton,
+  .usersPaginationPageButton,
+  .modalActions > *,
+  .requestActions > *,
+  .ownerActionRow > * {
+    width: 100%;
+    min-height: var(--tap-target-min, 44px) !important;
+  }
+
+  .filterOverlay,
+  .actionModalOverlay,
+  .modalBackdrop {
+    align-items: center !important;
+    padding: 0.75rem !important;
+    overflow: hidden !important;
+  }
+
+  .filterModal,
+  .actionModal,
+  .detailPanel,
+  .incomingAttachmentViewer {
+    width: min(100%, 48rem) !important;
+    max-height: calc(100dvh - 1.5rem) !important;
+    overflow: hidden !important;
+  }
+
+  .sendForm,
+  .requestBody,
+  .incomingAttachmentContent,
+  .popiaNoticeBody {
+    max-height: calc(100dvh - 10rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
