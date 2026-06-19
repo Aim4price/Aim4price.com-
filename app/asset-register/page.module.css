@@ -23613,3 +23613,460 @@ button.documentOpenLink {
     font-size: clamp(1.98rem, 11vw, 2.65rem) !important;
   }
 }
+
+/* === Asset Register mobile/tablet consolidation pass === */
+.page,
+.shell,
+.registerPanel,
+.registerHeader,
+.heroSummaryRow,
+.assetList,
+.assetCard,
+.assetHeader,
+.assetBody,
+.toolbar,
+.modalOverlay,
+.assetFormModal,
+.exportModal,
+.marketplaceModal,
+.qrModal,
+.optionsModal,
+.deleteConfirmModal,
+.pricingResultModal,
+.summaryModal,
+.registerShareModal,
+.assetReportModal,
+.assetFuelReportModal,
+.assetQuoteModal,
+.assetQuoteStepModal,
+.assetQuotePartnerPickerModal,
+.assetQuoteMessageStepModal,
+.projectionModal {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.registerPanel *,
+.assetCard *,
+.modalCard *,
+.assetFormModal *,
+.exportModal *,
+.marketplaceModal *,
+.qrModal *,
+.optionsModal *,
+.pricingResultModal *,
+.summaryModal *,
+.assetQuoteModal * {
+  min-width: 0;
+}
+
+.searchInput,
+.field input,
+.field select,
+.field textarea,
+.manualTitleField input,
+.manualValueField input,
+.manualCurrencyInput input,
+.marketplaceField input,
+.marketplaceField textarea,
+.assetQuoteMessageField textarea,
+.revalueReplacementField input,
+.projectionYearSelectField select {
+  width: 100%;
+  min-width: 0;
+}
+
+.assetTitleBlock h2,
+.valueBlock strong,
+.heroSummaryValue,
+.heroRegisterValue,
+.assetDocumentLink,
+.documentDraftRow,
+.marketplaceTitlePreview,
+.summaryReplacementMainValue,
+.assetQuotePartnerCopy,
+.assetQuoteSelectedCompanyTitle {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1180px) {
+  .shell {
+    width: min(calc(100% - 1.5rem), 1180px);
+  }
+
+  .registerPanel {
+    padding: 1rem;
+    border-radius: 1.55rem;
+  }
+
+  .heroSummaryRow,
+  .summaryRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .heroRegisterTile,
+  .registerValueTile {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .registerHeader,
+  .ownerRegisterHeaderActions,
+  .sharedRegisterHeaderActions,
+  .headerActions,
+  .toolbar,
+  .toolbarActions,
+  .topActions {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .assetHeader,
+  .assetHeaderAside,
+  .assetBody,
+  .marketplaceBodyGrid,
+  .assetQuoteChoiceGrid,
+  .assetQuoteMapShell,
+  .assetQuotePartnerBody,
+  .assetQuoteMessageStepBody,
+  .manualStageGrid,
+  .manualPrimaryFields,
+  .manualOptionalGrid,
+  .manualValueGrid,
+  .pricingOptionsGrid,
+  .pricingCompareGrid,
+  .revalueDecisionActions,
+  .projectionInputRow {
+    grid-template-columns: 1fr !important;
+  }
+
+  .assetHeaderActions,
+  .assetFormActions,
+  .formActions,
+  .modalActions,
+  .exportActions,
+  .marketplaceActions,
+  .deleteConfirmActions,
+  .assetFuelReportActions,
+  .assetQuoteStepFooter,
+  .pricingPreviewActions,
+  .emptyStateActions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100%;
+  }
+
+  .assetHeaderActions > *,
+  .headerActions > *,
+  .toolbarActions > *,
+  .assetFormActions > *,
+  .formActions > *,
+  .modalActions > *,
+  .exportActions > *,
+  .marketplaceActions > *,
+  .deleteConfirmActions > *,
+  .assetFuelReportActions > *,
+  .pricingPreviewActions > * {
+    width: 100%;
+  }
+
+  .previewWrap {
+    max-width: 100%;
+  }
+
+  .previewThumbRow,
+  .photoGrid,
+  .marketplacePhotoStrip,
+  .maintenanceDonePhotoStrip,
+  .ownerSharedPhotoGrid,
+  .assetQuoteSelectedMediaGrid {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell {
+    width: min(calc(100% - 1rem), 48rem) !important;
+    padding: 0.95rem 0 2.4rem;
+  }
+
+  .registerPanel {
+    padding: 0.72rem !important;
+    border-radius: 1.25rem !important;
+  }
+
+  .registerHeader,
+  .ownerRegisterHeaderActions,
+  .sharedRegisterHeaderActions,
+  .headerActions,
+  .toolbar,
+  .toolbarActions,
+  .topActions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 0.72rem !important;
+  }
+
+  .registerTitleBlock h1,
+  .businessRegisterTitleBlock h1 {
+    font-size: clamp(1.78rem, 9vw, 2.35rem) !important;
+    line-height: 1.02 !important;
+  }
+
+  .heroSummaryRow,
+  .summaryRow,
+  .assetDetailsGrid,
+  .summaryValueTableRow,
+  .summaryBreakdownValues,
+  .assetReportOptionsGrid,
+  .registerShareOptionGrid,
+  .pdfReportChoices,
+  .addAssetChoiceGrid,
+  .optionsGrid,
+  .assetOptionsGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .heroSummaryTile,
+  .summaryTile,
+  .heroRegisterTile,
+  .registerValueTile,
+  .assetCard,
+  .assetDetailsPanel,
+  .assetDocumentsPanel,
+  .summaryCurrentPanel,
+  .summaryReplacementPanel,
+  .manualStageCard,
+  .manualSingleStageCard,
+  .manualCompactStageCard,
+  .marketplacePhotosPanel,
+  .marketplaceSellerPanel,
+  .assetQuoteChoiceCard,
+  .assetQuoteSelectedCompanyPanel,
+  .assetQuotePartnerCard {
+    border-radius: 1.15rem !important;
+  }
+
+  .heroSummaryTile,
+  .summaryTile,
+  .heroRegisterTile,
+  .registerValueTile {
+    min-height: 0 !important;
+    padding: 1rem !important;
+  }
+
+  .heroSummaryValue,
+  .heroRegisterValue,
+  .summaryTile strong,
+  .registerValueTile strong {
+    font-size: clamp(2rem, 10vw, 2.8rem) !important;
+    white-space: normal !important;
+  }
+
+  .vatToggleGroup {
+    width: 100%;
+  }
+
+  .vatToggleButton {
+    flex: 1 1 0;
+    min-height: var(--tap-target-min, 44px);
+  }
+
+  .assetList {
+    gap: 0.88rem;
+  }
+
+  .assetCard {
+    padding: 0.9rem !important;
+  }
+
+  .assetHeader {
+    gap: 0.75rem !important;
+  }
+
+  .valueBlock {
+    justify-items: start !important;
+    text-align: left !important;
+    padding: 0 !important;
+    min-width: 0 !important;
+  }
+
+  .valueBlock strong {
+    font-size: clamp(1.9rem, 9vw, 2.6rem) !important;
+    white-space: normal !important;
+  }
+
+  .previewImage,
+  .previewPlaceholder {
+    height: clamp(12.5rem, 54vw, 16rem) !important;
+    min-height: clamp(12.5rem, 54vw, 16rem) !important;
+  }
+
+  .photoGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .primaryButton,
+  .secondaryButton,
+  .optionsButton,
+  .expandButton,
+  .toolbarPrimaryButton,
+  .toolbarRefreshButton,
+  .toolbarShareButton,
+  .toolbarDownloadButton,
+  .headerShareButton,
+  .headerDownloadButton,
+  .headerOptionsButton,
+  .cardOptionsButton,
+  .cardViewDetailsButton,
+  .cardManageButton,
+  .optionActionButton,
+  .optionFeaturedButton,
+  .optionDangerButton,
+  .exportPrimaryButton,
+  .exportSecondaryButton,
+  .qrPrimaryActionButton,
+  .assetQuoteBackButton,
+  .assetQuoteAllCompaniesButton,
+  .revalueSecondaryButton,
+  .projectionFullWidthButton {
+    width: 100%;
+    min-height: var(--tap-target-min, 44px) !important;
+  }
+
+  .modalOverlay,
+  .confirmDeleteOverlay,
+  .subModalOverlay,
+  .summaryModalOverlay,
+  .pricingPreviewOverlay,
+  .assetQuoteStepOverlay {
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.75rem !important;
+    overflow: hidden !important;
+  }
+
+  .assetFormModal,
+  .exportModal,
+  .marketplaceModal,
+  .qrModal,
+  .optionsModal,
+  .deleteConfirmModal,
+  .pricingResultModal,
+  .summaryModal,
+  .registerShareModal,
+  .assetReportModal,
+  .assetFuelReportModal,
+  .assetQuoteModal,
+  .assetQuoteStepModal,
+  .assetQuotePartnerPickerModal,
+  .assetQuoteMessageStepModal,
+  .projectionModal,
+  .addAssetChoiceModal {
+    width: min(100%, 48rem) !important;
+    max-height: calc(100dvh - 1.5rem) !important;
+    border-radius: 1.25rem !important;
+    overflow: hidden !important;
+  }
+
+  .assetFormModal,
+  .exportModal,
+  .marketplaceModal,
+  .qrModal,
+  .optionsModal,
+  .projectionModal {
+    padding: 1rem !important;
+  }
+
+  .assetFormModalHeader,
+  .exportModalHeader,
+  .marketplaceModalHeader,
+  .qrModalHeader,
+  .optionsModalHeader,
+  .projectionModalHeader,
+  .modalHeader,
+  .pricingResultHeader,
+  .summaryModalHeader,
+  .assetReportModalHeader,
+  .assetFuelReportFilterBox,
+  .assetQuoteModalHeader,
+  .assetQuoteStepHeader {
+    gap: 0.72rem !important;
+    margin-bottom: 0.78rem !important;
+    padding-bottom: 0.78rem !important;
+  }
+
+  .modalHeader h3,
+  .optionsModalHeader h3,
+  .assetFormModalHeader h3,
+  .exportModalHeader h3,
+  .marketplaceModalHeader h3,
+  .qrModalHeader h3,
+  .projectionModalHeader h3,
+  .pricingResultHeader h3,
+  .summaryModalHeader h3,
+  .assetReportModalHeader h3,
+  .assetQuoteStepHeader h3 {
+    font-size: clamp(1.32rem, 7.4vw, 1.75rem) !important;
+  }
+
+  .modalScrollBody,
+  .optionsScrollBody,
+  .qrModalScrollBody,
+  .projectionScrollBody,
+  .exportModalScrollBody,
+  .marketplaceModalScrollBody,
+  .manualStepScrollBody,
+  .summaryModalBody,
+  .assetReportModalBody,
+  .assetFuelReportModal,
+  .assetQuoteScrollBody,
+  .assetQuoteStepBody,
+  .assetQuoteMessagePanel,
+  .pricingResultBody {
+    max-height: calc(100dvh - 10.5rem) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .formActions,
+  .modalActions,
+  .assetFormActions,
+  .exportActions,
+  .marketplaceActions,
+  .deleteConfirmActions,
+  .assetQuoteStepFooter,
+  .pricingPreviewActions {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    padding-top: 0.75rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.96) 28%, rgba(255, 255, 255, 0.99) 100%);
+  }
+}
+
+@media (max-width: 420px) {
+  .shell {
+    width: min(calc(100% - 0.72rem), 44rem) !important;
+  }
+
+  .registerPanel,
+  .assetCard {
+    padding: 0.7rem !important;
+  }
+
+  .photoGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .heroSummaryValue,
+  .heroRegisterValue,
+  .valueBlock strong {
+    font-size: clamp(1.85rem, 11vw, 2.4rem) !important;
+  }
+}
+
