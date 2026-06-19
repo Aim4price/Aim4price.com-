@@ -567,3 +567,59 @@
     gap: 0.25rem;
   }
 }
+
+/* === Auth mobile safety pass === */
+.page,
+.shell,
+.frame,
+.authCard,
+.form,
+.field,
+.signupTypeRow {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.authCard * {
+  min-width: 0;
+}
+
+.input,
+.select,
+.customSelectButton {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .shell {
+    width: min(calc(100% - 1rem), 41rem);
+    padding: 0.85rem 0 2.4rem;
+  }
+
+  .homeLink,
+  .primaryButton,
+  .modeButton,
+  .passwordToggle {
+    min-height: var(--tap-target-min, 44px);
+  }
+
+  .authTitle {
+    font-size: clamp(1.9rem, 8vw, 2.45rem);
+  }
+
+  .authText {
+    font-size: 0.96rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .frame {
+    padding: 0.42rem;
+  }
+
+  .authCard {
+    padding: 0.95rem;
+  }
+}
+
