@@ -28,6 +28,7 @@ type NavItem = {
 type AccountMenuItem = {
   href: string;
   label: string;
+  mobileOnly?: boolean;
 };
 
 type SessionResponse = {
@@ -161,12 +162,12 @@ const BASE_NAV_ITEMS: NavItem[] = [
 ];
 
 const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
-  { href: '/', label: 'Home' },
+  { href: '/', label: 'Home', mobileOnly: true },
   { href: '/account', label: 'Account Details' },
-  { href: '/asset-register', label: 'Asset Register' },
+  { href: '/asset-register', label: 'Asset Register', mobileOnly: true },
   { href: '/companies', label: 'Companies' },
-  { href: '/valuation', label: 'Get Estimate' },
-  { href: '/marketplace', label: 'Marketplace' },
+  { href: '/valuation', label: 'Get Estimate', mobileOnly: true },
+  { href: '/marketplace', label: 'Marketplace', mobileOnly: true },
   { href: '/asset-map', label: 'My Asset Map' },
   { href: '/fuel', label: 'My Fuel Ledger' },
 ];
@@ -1275,7 +1276,7 @@ export default function AppHeader({
                       aria-expanded={menuOpen}
                       aria-haspopup="menu"
                       aria-controls={menuOpen ? 'header-account-menu' : undefined}
-                      aria-label="Open account and navigation menu"
+                      aria-label="Open account menu"
                       onClick={handleAccountMenuToggle}
                     >
                       <AccountProfileIcon className={styles.accountAvatar} />
@@ -1301,6 +1302,13 @@ export default function AppHeader({
 
                         {ACCOUNT_MENU_ITEMS.map((item) => {
                           const isActive = isAccountMenuLinkActive(item.href);
+                          const menuLinkClassName = [
+                            styles.menuLink,
+                            isActive ? styles.menuLinkActive : '',
+                            item.mobileOnly ? styles.menuLinkMobileOnly : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ');
 
                           return (
                             <Link
@@ -1308,7 +1316,7 @@ export default function AppHeader({
                               href={item.href}
                               role="menuitem"
                               aria-current={isActive ? 'page' : undefined}
-                              className={`${styles.menuLink} ${isActive ? styles.menuLinkActive : ''}`}
+                              className={menuLinkClassName}
                               onClick={closeAccountMenu}
                             >
                               {item.label}

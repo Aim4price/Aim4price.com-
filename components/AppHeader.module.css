@@ -2425,3 +2425,104 @@
     font-size: 0.8rem;
   }
 }
+
+
+/* === Header account dropdown desktop/mobile separation === */
+.actionsRail {
+  position: relative;
+}
+
+.accountMenu {
+  position: static;
+}
+
+.accountButtonMenuMark,
+.menuLinkMobileOnly {
+  display: none;
+}
+
+.accountPopover {
+  left: 0.38rem;
+  right: 0.38rem;
+  width: auto;
+  max-width: none;
+}
+
+@media (max-width: 1180px) {
+  .accountPopover {
+    left: 0.28rem;
+    right: 0.28rem;
+    width: auto;
+    max-width: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .accountButtonMenuMark {
+    display: inline-flex;
+    order: initial;
+    margin-left: auto;
+  }
+
+  .menuLinkMobileOnly {
+    display: inline-flex;
+  }
+
+  .accountButton {
+    justify-content: flex-start;
+    min-width: 9.65rem;
+    gap: 0.56rem;
+  }
+
+  .accountButton > .accountAvatar {
+    display: inline-flex;
+  }
+
+  .accountButtonText {
+    flex: 1 1 auto;
+  }
+
+  .accountButtonTextFull {
+    display: inline;
+  }
+
+  .accountButtonTextCompact {
+    display: none;
+  }
+
+  .accountPopover {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
+    max-height: calc(100dvh - 5.35rem);
+  }
+}
+
+@media (max-width: 720px) {
+  .accountButton {
+    min-width: 9.35rem;
+    gap: 0.52rem;
+  }
+
+  .accountPopover {
+    top: calc(100% + 0.46rem);
+    left: 0;
+    right: 0;
+    max-height: calc(100dvh - 5rem);
+  }
+}
+
+@media (max-width: 430px) {
+  .accountButton {
+    min-width: 9.05rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .accountButton {
+    min-width: 8.85rem;
+  }
+}
