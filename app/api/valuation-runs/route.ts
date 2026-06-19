@@ -20,6 +20,7 @@ import type { ConditionKey } from '../../../lib/tractor-data';
 import type { GpsType, RunValuationInput } from '../../../lib/tractor-logic';
 import { isSectorKey, type SectorKey } from '../../../lib/equipment-types';
 import { runGenericValuation, type GenericCondition, type GenericSelectedMethod } from '../../../lib/generic-valuation';
+import { advancedAssumptionsWereRequested } from '../../../lib/valuation/shared';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -158,6 +159,7 @@ function buildInput(
     gpsType: normalizeGpsType(body.gpsType),
     gpsYear: body.gpsYear ?? null,
     userReplacementPriceExVat,
+    advancedAssumptions: body.advancedAssumptions ?? null,
     selectedMethod,
     valuationVersion: String(body.valuationVersion ?? 'v1').trim() || 'v1',
     userId: null,
@@ -288,6 +290,13 @@ function buildFriendlyError(error: unknown): { status: number; message: string }
     };
   }
 
+  if (message.startsWith('Expected lifetime') || message.startsWith('Condition retained value')) {
+    return {
+      status: 400,
+      message,
+    };
+  }
+
   if (
     message.includes('valuation_runs_cab_type_check') ||
     message.includes('valuation_runs_drive_type_check') ||
@@ -334,6 +343,7 @@ export async function POST(request: NextRequest) {
       lifeWorkedPercent?: unknown;
       userReplacementPriceExVat?: unknown;
       userReplacementPriceYear?: unknown;
+      advancedAssumptions?: unknown;
       saveForMarketplace?: unknown;
       photos?: unknown;
     };
@@ -346,6 +356,16 @@ export async function POST(request: NextRequest) {
       name: session.user.name,
       email: session.user.email,
     });
+    if (advancedAssumptionsWereRequested(body.advancedAssumptions) && profile.accountStatus !== 'active') {
+      return NextResponse.json<SaveValuationRunApiResponse>(
+        {
+          ok: false,
+          error: 'Advanced assumptions are available for active Aim4price accounts.',
+        },
+        { status: 403 },
+      );
+    }
+
     const accountType = String(profile.accountType ?? '').trim().toLowerCase();
     const canSaveAssetRegister = accountType === 'owner';
     const canSaveMarketplaceAsset = saveForMarketplace && (accountType === 'owner' || accountType === 'dealer');
@@ -398,6 +418,7 @@ export async function POST(request: NextRequest) {
         condition,
         userReplacementPriceExVat,
         userReplacementPriceYear: resolvedReplacementPriceYear,
+        advancedAssumptions: body.advancedAssumptions ?? null,
       });
 
       const savedRun = await saveGenericValuationRunFromResult({
