@@ -10542,3 +10542,137 @@
   }
 }
 
+
+/* Final valuation VAT display and advanced assumptions */
+.resultValueLine {
+  flex-wrap: wrap;
+  white-space: normal;
+  overflow: visible;
+}
+
+.resultVatLabel {
+  padding: 0.32rem 0.58rem;
+  border-radius: 999px;
+  border: 1px solid rgba(13, 90, 60, 0.16);
+  background: rgba(255, 255, 255, 0.72);
+  font-size: clamp(0.78rem, 1.3vw, 0.95rem);
+  letter-spacing: 0.035em;
+  line-height: 1;
+}
+
+.resultVatToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  width: fit-content;
+  margin-top: 0.85rem;
+  padding: 0.28rem;
+  border-radius: 999px;
+  border: 1px solid rgba(17, 56, 45, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.resultVatToggleButton {
+  min-height: 2.35rem;
+  padding: 0 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #315145;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.resultVatToggleButtonActive {
+  color: #ffffff;
+  background: linear-gradient(180deg, #1a5944 0%, #124334 100%);
+  box-shadow: 0 8px 18px rgba(17, 63, 50, 0.16);
+}
+
+.advancedAssumptionsLocked {
+  opacity: 0.88;
+}
+
+.advancedAssumptionsLocked .resultAccordionAction {
+  color: #6a756f;
+  background: rgba(245, 247, 246, 0.92);
+}
+
+.advancedLockedCopy,
+.advancedDisclaimer,
+.advancedFieldHelp,
+.advancedError,
+.preEstimateDisclaimer {
+  margin: 0;
+  line-height: 1.52;
+}
+
+.advancedLockedCopy {
+  color: #65766e;
+  font-size: 0.95rem;
+}
+
+.advancedDisclaimer {
+  margin-top: 1rem;
+  color: #5c6d66;
+  font-size: 0.95rem;
+}
+
+.advancedAssumptionsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.advancedFieldHelp {
+  display: block;
+  margin-top: 0.35rem;
+  color: #718179;
+  font-size: 0.82rem;
+}
+
+.advancedError {
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(143, 45, 34, 0.18);
+  background: rgba(255, 246, 244, 0.9);
+  color: #8f2d22;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.preEstimateDisclaimer {
+  flex: 1 1 24rem;
+  max-width: 46rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(17, 56, 45, 0.08);
+  background: rgba(247, 250, 249, 0.72);
+  color: #64736c;
+  font-size: 0.86rem;
+}
+
+@media (max-width: 860px) {
+  .resultVatToggle {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .resultVatToggleButton {
+    flex: 1 1 0;
+  }
+
+  .advancedAssumptionsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .preEstimateDisclaimer {
+    flex-basis: auto;
+    max-width: none;
+    width: 100%;
+  }
+}

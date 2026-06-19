@@ -27,6 +27,16 @@ import {
 } from '../../lib/equipment-types';
 import { conditionLabel, money, type Result } from '../../lib/tractor-logic';
 import {
+  ADVANCED_CONDITION_FACTOR_MAX_PERCENT,
+  ADVANCED_CONDITION_FACTOR_MIN_PERCENT,
+  ADVANCED_LIFETIME_HOURS_MAX,
+  ADVANCED_LIFETIME_HOURS_MIN,
+  ADVANCED_LIFETIME_KM_MAX,
+  ADVANCED_LIFETIME_KM_MIN,
+  CONDITION_FACTORS,
+  type NormalizedAdvancedAssumptions,
+} from '../../lib/valuation/shared';
+import {
   getGuestValuationCount,
   incrementGuestValuationCount,
 } from '../../lib/guest-valuation-limit';
@@ -37,9 +47,15 @@ type FlowMode = 'exact_model' | 'generic_specs' | '';
 type FinalSaveIntent = 'asset-register' | 'marketplace';
 type GpsType = 'full-autosteer' | 'guidance-only';
 type ReplacementPriceBasis = 'aim4price' | 'user';
+type VatDisplayMode = 'excl' | 'incl';
 type DepreciationMethodUsed = 'full_depreciation' | 'semi_depreciation' | 'percentage_depreciation';
 type DetailsModal = 'year' | 'usage' | null;
 type UsageModalMode = 'hours' | 'percent';
+
+type AdvancedAssumptionsRequest = {
+  maxLifetimeUsage?: number | null;
+  conditionFactorPercent?: number | null;
+};
 
 type EquipmentFamilyRecord = {
   id: number;
@@ -133,6 +149,7 @@ type GenericValuationCalculation = {
   lifeRemainingPercent: number | null;
   estimatedHours: number | null;
   maxLifetimeHours: number | null;
+  advancedAssumptions: NormalizedAdvancedAssumptions | null;
   ageDepPct: number | null;
   usageDepPct: number | null;
   averageDepPct: number | null;
@@ -184,6 +201,7 @@ type GenericValuationResult = {
   lifeRemainingPercent: number | null;
   estimatedHours: number | null;
   maxLifetimeHours: number | null;
+  advancedAssumptions: NormalizedAdvancedAssumptions | null;
   aim4priceReplacementCalculation: GenericValuationCalculation | null;
   userReplacementCalculation: GenericValuationCalculation | null;
   selectedCalculation: GenericValuationCalculation | null;
@@ -264,6 +282,8 @@ type AccountProfile = Partial<{
   businessName: string;
   phone: string;
   accountType: string;
+  accountStatus: 'pending_payment' | 'active' | 'suspended' | string;
+  accountStatusLabel: string;
   province: string;
   townCity: string;
   marketplaceSellerName: string;
@@ -341,6 +361,7 @@ type ValuationPdfPayload = {
 };
 
 const CURRENT_YEAR = new Date().getFullYear();
+const VAT_RATE = 0.15;
 const MAX_MARKETPLACE_PHOTOS = 12;
 const MARKETPLACE_INTRO_DISMISSED_KEY = 'aim4price-marketplace-intro-dismissed';
 
@@ -889,6 +910,62 @@ function moneyExVat(value: number | null): string {
   return value === null ? '' : `${money(value)} excl. VAT`;
 }
 
+function toVatIncluded(value: number | null): number | null {
+  return value === null || !Number.isFinite(value) ? null : value * (1 + VAT_RATE);
+}
+
+function getVatDisplayValue(value: number | null, mode: VatDisplayMode): number | null {
+  return mode === 'incl' ? toVatIncluded(value) : value;
+}
+
+function getVatDisplayLabel(mode: VatDisplayMode): 'VAT excluded' | 'VAT included' {
+  return mode === 'incl' ? 'VAT included' : 'VAT excluded';
+}
+
+function formatPlainNumber(value: number | null | undefined): string {
+  if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return '';
+  return Math.round(value).toLocaleString('en-ZA');
+}
+
+function formatAdvancedPercent(value: number | null | undefined): string {
+  if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return '';
+  return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, '');
+}
+
+function getDefaultConditionFactorPercent(conditionKey: ConditionKey): number {
+  return Math.round((CONDITION_FACTORS[conditionKey] ?? CONDITION_FACTORS.good) * 100);
+}
+
+function hasAppliedAdvancedAssumptions(advancedAssumptions: NormalizedAdvancedAssumptions | null | undefined): boolean {
+  return Boolean(
+    advancedAssumptions &&
+      (advancedAssumptions.maxLifetimeUsage !== null || advancedAssumptions.conditionFactorPercent !== null),
+  );
+}
+
+function getAppliedAdvancedAssumptionsFromState(state: ValuationResultState | null): NormalizedAdvancedAssumptions | null {
+  if (!state) return null;
+  return state.result.advancedAssumptions ?? null;
+}
+
+function getResultMaxLifetimeUsage(state: ValuationResultState | null): number | null {
+  if (!state) return null;
+  if (state.kind === 'generic') return state.result.maxLifetimeHours ?? state.result.selectedCalculation?.maxLifetimeHours ?? null;
+  return state.result.maxLifetimeHours ?? null;
+}
+
+function getResultUsageMetricType(state: ValuationResultState | null): UsageMetricType {
+  return state?.kind === 'generic' ? state.result.family.usageMetricType : 'hours';
+}
+
+function getResultSectorKey(state: ValuationResultState | null): SectorKey {
+  return state?.kind === 'generic' ? state.result.sector.key : 'agricultural';
+}
+
+function getLifetimeUnitLabel(metric: UsageMetricType): string {
+  return metric === 'km' ? 'kilometres' : 'hours';
+}
+
 function selectedValueTypeLabel(_method: MethodKey): string {
   return 'Aim4price Value';
 }
@@ -954,6 +1031,12 @@ export default function ValuationClient() {
   const [message, setMessage] = useState('');
   const [valuationLoading, setValuationLoading] = useState(false);
   const [replacementRecalculateLoading, setReplacementRecalculateLoading] = useState(false);
+  const [vatDisplayMode, setVatDisplayMode] = useState<VatDisplayMode>('excl');
+  const [advancedPanelOpen, setAdvancedPanelOpen] = useState(false);
+  const [advancedLifetimeUsage, setAdvancedLifetimeUsage] = useState('');
+  const [advancedConditionFactorPercent, setAdvancedConditionFactorPercent] = useState('');
+  const [advancedRecalculateLoading, setAdvancedRecalculateLoading] = useState(false);
+  const [advancedError, setAdvancedError] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState('');
@@ -1135,6 +1218,9 @@ export default function ValuationClient() {
     [genericValuationPath, selectedGenericModel, specsJson, lifeWorkedPercentNumber, yearModelUnknown],
   );
   const headlineValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
+  const headlineDisplayValue = getVatDisplayValue(headlineValue, vatDisplayMode);
+  const headlineVatLabel = getVatDisplayLabel(vatDisplayMode);
+  const canUseAdvancedAssumptions = isSignedIn && accountProfile?.accountStatus === 'active';
   const normalizedSignedInAccountType = normalizeAccountType(accountType);
   const isDealerAccount = normalizedSignedInAccountType === 'dealer';
   const canUseMarketplacePublishFlow = isSignedIn && (normalizedSignedInAccountType === 'owner' || normalizedSignedInAccountType === 'dealer');
@@ -1150,6 +1236,25 @@ export default function ValuationClient() {
     const target = document.getElementById('valuation-wizard-card');
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [step]);
+
+  useEffect(() => {
+    if (!resultState) {
+      setAdvancedLifetimeUsage('');
+      setAdvancedConditionFactorPercent('');
+      setAdvancedError('');
+      return;
+    }
+
+    const appliedAdvancedAssumptions = getAppliedAdvancedAssumptionsFromState(resultState);
+    const defaultLifetime = getResultMaxLifetimeUsage(resultState);
+    const resultCondition = resultState.kind === 'generic' ? resultState.result.condition : condition;
+    const conditionFactorPercent =
+      appliedAdvancedAssumptions?.conditionFactorPercent ?? getDefaultConditionFactorPercent(resultCondition);
+
+    setAdvancedLifetimeUsage(defaultLifetime !== null ? String(Math.round(defaultLifetime)) : '');
+    setAdvancedConditionFactorPercent(formatAdvancedPercent(conditionFactorPercent));
+    setAdvancedError('');
+  }, [resultState, condition]);
 
   useEffect(() => {
     if (requiredSpecQuestionsCompleted && !requiredQuestionsCompletedRef.current) {
@@ -1527,6 +1632,12 @@ export default function ValuationClient() {
     setSelectedMethod('aim4price');
     setReplacementPriceBasis('aim4price');
     setReplacementPanelOpen(false);
+    setVatDisplayMode('excl');
+    setAdvancedPanelOpen(false);
+    setAdvancedLifetimeUsage('');
+    setAdvancedConditionFactorPercent('');
+    setAdvancedRecalculateLoading(false);
+    setAdvancedError('');
     setFinalSaveIntent(null);
     setFinalSaveError('');
     setPdfError('');
@@ -1689,6 +1800,144 @@ export default function ValuationClient() {
   }
 
 
+  function getCurrentAdvancedAssumptionsForRequest(): NormalizedAdvancedAssumptions | null {
+    return getAppliedAdvancedAssumptionsFromState(resultState);
+  }
+
+  function buildAdvancedAssumptionsRequestFromFields(): AdvancedAssumptionsRequest | null {
+    if (!resultState) {
+      setAdvancedError('Run an estimate before changing advanced assumptions.');
+      return null;
+    }
+
+    const usageMetricType = getResultUsageMetricType(resultState);
+    const lifetimeUnitLabel = getLifetimeUnitLabel(usageMetricType);
+    const lifetimeShortUnit = getUsageShortUnit(getResultSectorKey(resultState), usageMetricType);
+    const lifetimeMin = usageMetricType === 'km' ? ADVANCED_LIFETIME_KM_MIN : ADVANCED_LIFETIME_HOURS_MIN;
+    const lifetimeMax = usageMetricType === 'km' ? ADVANCED_LIFETIME_KM_MAX : ADVANCED_LIFETIME_HOURS_MAX;
+    const lifetimeText = normalizeText(advancedLifetimeUsage);
+    const conditionText = normalizeText(advancedConditionFactorPercent);
+    const lifetimeValue = lifetimeText ? parseMoneyInput(lifetimeText) : null;
+    const conditionPercent = conditionText ? parseFlexibleNumber(conditionText) : null;
+
+    if (!lifetimeText) {
+      setAdvancedError(`Enter expected lifetime ${lifetimeUnitLabel}.`);
+      return null;
+    }
+
+    if (lifetimeValue === null || lifetimeValue < lifetimeMin || lifetimeValue > lifetimeMax) {
+      setAdvancedError(
+        `Expected lifetime ${lifetimeUnitLabel} must be between ${formatPlainNumber(lifetimeMin)} and ${formatPlainNumber(lifetimeMax)} ${lifetimeShortUnit}.`,
+      );
+      return null;
+    }
+
+    if (conditionPercent === null) {
+      setAdvancedError('Enter a condition retained value percentage.');
+      return null;
+    }
+
+    if (
+      conditionPercent < ADVANCED_CONDITION_FACTOR_MIN_PERCENT ||
+      conditionPercent > ADVANCED_CONDITION_FACTOR_MAX_PERCENT
+    ) {
+      setAdvancedError(
+        `Condition retained value must be between ${ADVANCED_CONDITION_FACTOR_MIN_PERCENT}% and ${ADVANCED_CONDITION_FACTOR_MAX_PERCENT}%.`,
+      );
+      return null;
+    }
+
+    return {
+      maxLifetimeUsage: Math.round(lifetimeValue),
+      conditionFactorPercent: Math.round(conditionPercent * 10) / 10,
+    };
+  }
+
+  async function updateAdvancedAssumptionsAndRecalculate() {
+    if (!resultState) {
+      setAdvancedError('Run an estimate before changing advanced assumptions.');
+      return;
+    }
+
+    if (!canUseAdvancedAssumptions) {
+      setAdvancedError('Advanced assumptions are available for active Aim4price accounts.');
+      return;
+    }
+
+    const advancedAssumptions = buildAdvancedAssumptionsRequestFromFields();
+    if (!advancedAssumptions) return;
+
+    setAdvancedRecalculateLoading(true);
+    setAdvancedError('');
+    setMessage('');
+
+    try {
+      if (resultState.kind === 'generic') {
+        const currentResult = resultState.result;
+        const userReplacementPriceExVat =
+          replacementPriceBasis === 'user'
+            ? currentResult.userReplacementPriceExVat ?? currentResult.userReplacementCalculation?.replacementPriceExVat ?? null
+            : null;
+
+        const response = await fetch('/api/generic-valuations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sectorKey: currentResult.sector.key,
+            familyKey: currentResult.family.key,
+            brandSlug: currentResult.brand.slug,
+            typedModelName: currentResult.typedModelName,
+            saveModelCandidate: false,
+            specsJson: currentResult.specsJson,
+            year: currentResult.year,
+            yearModelUnknown: Boolean(currentResult.specsJson.year_model_unknown ?? yearModelUnknown),
+            usageAmount: currentResult.usageAmount,
+            lifeWorkedPercent: currentResult.lifeWorkedPercent,
+            condition: currentResult.condition,
+            userReplacementPriceExVat,
+            userReplacementPriceYear: userReplacementPriceExVat ? currentResult.userReplacementPriceYear ?? CURRENT_YEAR : null,
+            advancedAssumptions,
+          }),
+        });
+        const data = (await response.json()) as GenericValuationApiResponse;
+        if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to recalculate with advanced assumptions.');
+        setResultState({ kind: 'generic', result: data.result });
+        setReplacementPriceBasis(data.result.replacementPriceBasis ?? replacementPriceBasis);
+      } else {
+        const currentResult = resultState.result;
+        const response = await fetch('/api/tractor-valuations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            modelId: currentResult.model.id,
+            year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
+            hours: usageNumber ?? estimateHoursFromWorkedPercent(currentResult.model, lifeWorkedPercentNumber) ?? 0,
+            condition,
+            frontPto,
+            frontLoader,
+            gpsEnabled,
+            gpsType,
+            gpsYear,
+            userReplacementPriceExVat: replacementPriceBasis === 'user' ? currentResult.userReplacementPriceExVat ?? null : null,
+            advancedAssumptions,
+          }),
+        });
+        const data = (await response.json()) as TractorValuationApiResponse;
+        if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to recalculate with advanced assumptions.');
+        setResultState({ kind: 'tractor', result: data.result });
+        setReplacementPriceBasis(data.result.replacementPriceBasis ?? replacementPriceBasis);
+      }
+
+      setSelectedMethod('aim4price');
+      setSavedMarketplaceAssetId(null);
+    } catch (error) {
+      console.error(error);
+      setAdvancedError(error instanceof Error ? error.message : 'Failed to recalculate with advanced assumptions.');
+    } finally {
+      setAdvancedRecalculateLoading(false);
+    }
+  }
+
   async function calculateGenericWithReplacementPrice(priceExVat: number, setError: (message: string) => void = setMessage) {
     if (!selectedSector || !selectedFamily || !selectedBrand) {
       setError('Choose a sector, family and brand first.');
@@ -1704,6 +1953,7 @@ export default function ValuationClient() {
     setReplacementRecalculateLoading(true);
     setMessage('');
     setError('');
+    const advancedAssumptions = getCurrentAdvancedAssumptionsForRequest();
 
     try {
       const response = await fetch('/api/generic-valuations', {
@@ -1723,6 +1973,7 @@ export default function ValuationClient() {
           condition,
           userReplacementPriceExVat: priceExVat,
           userReplacementPriceYear: CURRENT_YEAR,
+          advancedAssumptions,
         }),
       });
       const data = (await response.json()) as GenericValuationApiResponse;
@@ -1755,6 +2006,7 @@ export default function ValuationClient() {
     setReplacementRecalculateLoading(true);
     setMessage('');
     setError('');
+    const advancedAssumptions = getCurrentAdvancedAssumptionsForRequest();
 
     try {
       const response = await fetch('/api/tractor-valuations', {
@@ -1771,6 +2023,7 @@ export default function ValuationClient() {
           gpsType,
           gpsYear,
           userReplacementPriceExVat: priceExVat,
+          advancedAssumptions,
         }),
       });
       const data = (await response.json()) as TractorValuationApiResponse;
@@ -1807,6 +2060,9 @@ export default function ValuationClient() {
     }
 
     setMessage('');
+    setVatDisplayMode('excl');
+    setAdvancedPanelOpen(false);
+    setAdvancedError('');
     setValuationLoading(true);
     setFinalSaveIntent(null);
     setFinalSaveError('');
@@ -1902,6 +2158,7 @@ export default function ValuationClient() {
         gpsType,
         gpsYear,
         userReplacementPriceExVat: replacementPriceForSave,
+        advancedAssumptions: resultState.result.advancedAssumptions ?? null,
         selectedMethod: 'aim4price',
         valuationVersion: 'v1',
         ...marketplaceFields,
@@ -1925,6 +2182,7 @@ export default function ValuationClient() {
       condition: resultState.result.condition,
       userReplacementPriceExVat: replacementPriceForSave,
       userReplacementPriceYear: replacementPriceYearForSave,
+      advancedAssumptions: resultState.result.advancedAssumptions ?? null,
       selectedMethod: 'aim4price',
       valuationVersion: 'generic-v1',
       ...marketplaceFields,
@@ -2058,6 +2316,27 @@ export default function ValuationClient() {
     const selectedMethodLabel = selectedValueTypeLabel(selectedMethod);
     const generatedAt = new Date();
     const replacementPriceExVat = getCurrentResultReplacementPriceExVat();
+    const appliedAdvancedAssumptions = getAppliedAdvancedAssumptionsFromState(resultState);
+    const advancedAssumptionsApplied = hasAppliedAdvancedAssumptions(appliedAdvancedAssumptions);
+    const advancedUsageMetricType = getResultUsageMetricType(resultState);
+    const advancedUsageShortUnit = getUsageShortUnit(getResultSectorKey(resultState), advancedUsageMetricType);
+    const advancedRecordRows = advancedAssumptionsApplied
+      ? compactPdfRows([
+          { label: 'Advanced assumptions', value: 'Applied' },
+          {
+            label: 'Lifetime assumption',
+            value: appliedAdvancedAssumptions?.maxLifetimeUsage !== null
+              ? `${formatPlainNumber(appliedAdvancedAssumptions?.maxLifetimeUsage)} ${advancedUsageShortUnit}`
+              : '',
+          },
+          {
+            label: 'Condition retained value',
+            value: appliedAdvancedAssumptions?.conditionFactorPercent !== null
+              ? `${formatAdvancedPercent(appliedAdvancedAssumptions?.conditionFactorPercent)}%`
+              : '',
+          },
+        ])
+      : [];
 
     function genericSpecDisplayValue(matchers: string[]): string {
       if (!genericResult) return '';
@@ -2126,10 +2405,13 @@ export default function ValuationClient() {
           { label: 'Business Email', value: 'aim4price@gmail.com' },
         ]);
 
-    const recordRows = compactPdfRows([
-      { label: 'Confidence', value: confidenceText.replace(/^Confidence:\s*/i, '') },
-      { label: 'Generated', value: formatPdfReportDate(generatedAt) },
-    ]);
+    const recordRows = [
+      ...compactPdfRows([
+        { label: 'Confidence', value: confidenceText.replace(/^Confidence:\s*/i, '') },
+        { label: 'Generated', value: formatPdfReportDate(generatedAt) },
+      ]),
+      ...advancedRecordRows,
+    ];
 
     return {
       generatedAt: generatedAt.toISOString(),
@@ -4052,7 +4334,15 @@ export default function ValuationClient() {
       ? `Current basis: your replacement price of ${money(genericResult.userReplacementCalculation.replacementPriceExVat)}`
       : `Current basis: saved replacement estimate of ${money(genericResult?.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}`;
     const replacementBasisText = isGeneric ? genericReplacementBasisText : tractorReplacementBasisText;
-    const resultValueSizeClass = getResultValueSizeClass(headlineValue);
+    const resultValueSizeClass = getResultValueSizeClass(headlineDisplayValue);
+    const resultUsageMetricType = getResultUsageMetricType(resultState);
+    const resultSectorKey = getResultSectorKey(resultState);
+    const advancedLifetimeShortUnit = getUsageShortUnit(resultSectorKey, resultUsageMetricType);
+    const advancedLifetimeMin = resultUsageMetricType === 'km' ? ADVANCED_LIFETIME_KM_MIN : ADVANCED_LIFETIME_HOURS_MIN;
+    const advancedLifetimeMax = resultUsageMetricType === 'km' ? ADVANCED_LIFETIME_KM_MAX : ADVANCED_LIFETIME_HOURS_MAX;
+    const advancedLifetimeInputLabel = resultUsageMetricType === 'km' ? 'Expected lifetime kilometres' : 'Expected lifetime hours';
+    const appliedAdvancedAssumptions = getAppliedAdvancedAssumptionsFromState(resultState);
+    const customAdvancedAssumptionsApplied = hasAppliedAdvancedAssumptions(appliedAdvancedAssumptions);
     return (
       <div className={styles.resultsLayout}>
         <div className={styles.resultsMain}>
@@ -4062,9 +4352,29 @@ export default function ValuationClient() {
               <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span>
             </div>
             <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
-              <strong className={styles.resultValue}>{money(headlineValue)}</strong>
-              {headlineValue !== null ? <span className={styles.resultVatLabel}>+ VAT</span> : null}
+              <strong className={styles.resultValue}>{money(headlineDisplayValue)}</strong>
+              {headlineDisplayValue !== null ? <span className={styles.resultVatLabel}>{headlineVatLabel}</span> : null}
             </div>
+            {headlineValue !== null ? (
+              <div className={styles.resultVatToggle} role="group" aria-label="VAT display mode">
+                <button
+                  type="button"
+                  className={`${styles.resultVatToggleButton} ${vatDisplayMode === 'excl' ? styles.resultVatToggleButtonActive : ''}`}
+                  onClick={() => setVatDisplayMode('excl')}
+                  aria-pressed={vatDisplayMode === 'excl'}
+                >
+                  VAT excluded
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.resultVatToggleButton} ${vatDisplayMode === 'incl' ? styles.resultVatToggleButtonActive : ''}`}
+                  onClick={() => setVatDisplayMode('incl')}
+                  aria-pressed={vatDisplayMode === 'incl'}
+                >
+                  VAT included
+                </button>
+              </div>
+            ) : null}
             <p className={styles.resultMachineTitle}>{machineTitle}</p>
             <p className={styles.resultConfidenceNote}>{confidenceNote}</p>
             <div className={styles.resultFactsGrid}>
@@ -4081,6 +4391,81 @@ export default function ValuationClient() {
                 <strong>{conditionLabel(resultCondition)}</strong>
               </div>
             </div>
+          </section>
+
+          <section className={`${styles.resultAccordion} ${!canUseAdvancedAssumptions ? styles.advancedAssumptionsLocked : ''}`}>
+            <button
+              type="button"
+              className={styles.resultAccordionToggle}
+              onClick={() => setAdvancedPanelOpen((open) => !open)}
+              aria-expanded={advancedPanelOpen}
+            >
+              <span className={styles.resultAccordionTitleGroup}>
+                <strong>Advanced assumptions</strong>
+                <small>
+                  {canUseAdvancedAssumptions
+                    ? customAdvancedAssumptionsApplied
+                      ? 'Custom assumptions are applied to this estimate.'
+                      : 'Adjust this valuation run only.'
+                    : 'Advanced assumptions are available for active Aim4price accounts.'}
+                </small>
+              </span>
+              <span className={styles.resultAccordionAction}>{advancedPanelOpen ? 'Hide' : canUseAdvancedAssumptions ? 'Edit' : 'Locked'}</span>
+            </button>
+
+            {advancedPanelOpen ? (
+              <div className={styles.resultAccordionBody}>
+                {!canUseAdvancedAssumptions ? (
+                  <p className={styles.advancedLockedCopy}>Advanced assumptions are available for active Aim4price accounts.</p>
+                ) : (
+                  <>
+                    <p className={styles.advancedDisclaimer}>
+                      Changing these assumptions can materially change the estimate. Use this only when you have asset-specific knowledge.
+                    </p>
+                    <div className={styles.advancedAssumptionsGrid}>
+                      <label className={styles.field}>
+                        <span className={styles.fieldLabel}>{advancedLifetimeInputLabel}</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={advancedLifetimeUsage}
+                          onChange={(event) => setAdvancedLifetimeUsage(event.target.value)}
+                          placeholder={resultUsageMetricType === 'km' ? 'e.g. 350,000' : 'e.g. 12,000'}
+                        />
+                        <small className={styles.advancedFieldHelp}>
+                          Allowed range: {formatPlainNumber(advancedLifetimeMin)} to {formatPlainNumber(advancedLifetimeMax)} {advancedLifetimeShortUnit}.
+                        </small>
+                      </label>
+
+                      <label className={styles.field}>
+                        <span className={styles.fieldLabel}>Condition retained value %</span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={advancedConditionFactorPercent}
+                          onChange={(event) => setAdvancedConditionFactorPercent(event.target.value)}
+                          placeholder="e.g. 85"
+                        />
+                        <small className={styles.advancedFieldHelp}>
+                          Allowed range: {ADVANCED_CONDITION_FACTOR_MIN_PERCENT}% to {ADVANCED_CONDITION_FACTOR_MAX_PERCENT}%. This does not change the selected condition label.
+                        </small>
+                      </label>
+                    </div>
+
+                    {advancedError ? <p className={styles.advancedError}>{advancedError}</p> : null}
+
+                    <button
+                      type="button"
+                      className={styles.assetButton}
+                      onClick={updateAdvancedAssumptionsAndRecalculate}
+                      disabled={advancedRecalculateLoading || replacementRecalculateLoading || saveLoading}
+                    >
+                      {advancedRecalculateLoading ? 'Recalculating...' : 'Update assumptions and recalculate'}
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : null}
           </section>
 
           {(isGeneric && genericResult) || tractorResult ? (
@@ -4115,8 +4500,8 @@ export default function ValuationClient() {
                         }}
                       >
                         <span>Saved price basis</span>
-                        <strong>{money(genericResult.aim4priceReplacementCalculation?.valuationMidExVat ?? null)}</strong>
-                        <small>New price used: {money(genericResult.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}</small>
+                        <strong>{money(getVatDisplayValue(genericResult.aim4priceReplacementCalculation?.valuationMidExVat ?? null, vatDisplayMode))}</strong>
+                        <small>Estimate {headlineVatLabel.toLowerCase()}. New price used: {moneyExVat(genericResult.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}</small>
                       </button>
 
                       <button
@@ -4131,8 +4516,8 @@ export default function ValuationClient() {
                         disabled={!genericResult.userReplacementCalculation}
                       >
                         <span>Updated price basis</span>
-                        <strong>{money(genericResult.userReplacementCalculation?.valuationMidExVat ?? null)}</strong>
-                        <small>New price used: {money(genericResult.userReplacementCalculation?.replacementPriceExVat ?? null)}</small>
+                        <strong>{money(getVatDisplayValue(genericResult.userReplacementCalculation?.valuationMidExVat ?? null, vatDisplayMode))}</strong>
+                        <small>Estimate {headlineVatLabel.toLowerCase()}. New price used: {moneyExVat(genericResult.userReplacementCalculation?.replacementPriceExVat ?? null)}</small>
                       </button>
                     </div>
                   ) : tractorResult ? (
@@ -4146,8 +4531,8 @@ export default function ValuationClient() {
                         }}
                       >
                         <span>Saved price basis</span>
-                        <strong>{money(replacementPriceBasis === 'aim4price' ? tractorResult.aim4priceValueExVat : null)}</strong>
-                        <small>New price used: {money(tractorResult.model.aim4priceReplacementExVat)}</small>
+                        <strong>{money(getVatDisplayValue(replacementPriceBasis === 'aim4price' ? tractorResult.aim4priceValueExVat : null, vatDisplayMode))}</strong>
+                        <small>Estimate {headlineVatLabel.toLowerCase()}. New price used: {moneyExVat(tractorResult.model.aim4priceReplacementExVat)}</small>
                       </button>
 
                       <button
@@ -4162,8 +4547,8 @@ export default function ValuationClient() {
                         disabled={!tractorResult.userReplacementPriceExVat}
                       >
                         <span>Updated price basis</span>
-                        <strong>{money(replacementPriceBasis === 'user' ? tractorResult.aim4priceValueExVat : null)}</strong>
-                        <small>New price used: {money(tractorResult.userReplacementPriceExVat ?? null)}</small>
+                        <strong>{money(getVatDisplayValue(replacementPriceBasis === 'user' ? tractorResult.aim4priceValueExVat : null, vatDisplayMode))}</strong>
+                        <small>Estimate {headlineVatLabel.toLowerCase()}. New price used: {moneyExVat(tractorResult.userReplacementPriceExVat ?? null)}</small>
                       </button>
                     </div>
                   ) : null}
@@ -4182,7 +4567,7 @@ export default function ValuationClient() {
                     <button
                       type="button"
                       className={styles.assetButton}
-                      disabled={!userPriceInput || replacementRecalculateLoading}
+                      disabled={!userPriceInput || replacementRecalculateLoading || advancedRecalculateLoading}
                       onClick={() => {
                         if (!userPriceInput) return;
                         if (isGeneric) {
@@ -4214,7 +4599,7 @@ export default function ValuationClient() {
                 type="button"
                 className={styles.resultPdfActionButton}
                 onClick={downloadValuationPdf}
-                disabled={pdfLoading || !resultState || headlineValue === null}
+                disabled={pdfLoading || advancedRecalculateLoading || !resultState || headlineValue === null}
               >
                 {pdfLoading ? 'Preparing PDF...' : 'Download PDF'}
               </button>
@@ -4224,7 +4609,7 @@ export default function ValuationClient() {
                     type="button"
                     className={styles.resultAlternateActionButton}
                     onClick={saveAndSendToMarketplace}
-                    disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || !canUseMarketplacePublishFlow || headlineValue === null}
+                    disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canUseMarketplacePublishFlow || headlineValue === null}
                   >
                     {saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : isPublishingMarketplace ? 'Sending...' : 'Send to Marketplace'}
                   </button>
@@ -4232,7 +4617,7 @@ export default function ValuationClient() {
                     type="button"
                     className={styles.resultPrimaryActionButton}
                     onClick={saveToAssetRegister}
-                    disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
+                    disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
                   >
                     {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to Asset Register'}
                   </button>
@@ -4310,12 +4695,17 @@ export default function ValuationClient() {
               <button type="button" className={styles.secondaryButton} onClick={handleBack} disabled={valuationLoading || saveLoading}>
                 Back
               </button>
+              {step === 4 ? (
+                <p className={styles.preEstimateDisclaimer}>
+                  Aim4price provides an indicative estimate only. It is not a certified valuation or inspection report. Final value should still be checked against asset condition, documents, location and current market demand.
+                </p>
+              ) : null}
               {step === 1 ? null : step === 5 ? (
                 <button
                   type="button"
                   className={styles.secondaryButton}
                   onClick={resetToSectorSelection}
-                  disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading}
+                  disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading}
                 >
                   New estimate
                 </button>
@@ -4348,7 +4738,7 @@ export default function ValuationClient() {
               className={styles.finalSaveClose}
               onClick={closeFinalSaveModal}
               aria-label="Close final save step"
-              disabled={saveLoading || replacementRecalculateLoading}
+              disabled={saveLoading || replacementRecalculateLoading || advancedRecalculateLoading}
             >
               ×
             </button>
@@ -4390,7 +4780,7 @@ export default function ValuationClient() {
                 type="button"
                 className={styles.finalReplacementRecalculateButton}
                 onClick={recalculateFinalReplacementPrice}
-                disabled={!finalSaveInputPrice || replacementRecalculateLoading || saveLoading}
+                disabled={!finalSaveInputPrice || replacementRecalculateLoading || advancedRecalculateLoading || saveLoading}
               >
                 {replacementRecalculateLoading ? 'Recalculating...' : 'Update and recalculate'}
               </button>
@@ -4409,7 +4799,7 @@ export default function ValuationClient() {
                 type="button"
                 className={styles.secondaryButton}
                 onClick={closeFinalSaveModal}
-                disabled={saveLoading || replacementRecalculateLoading}
+                disabled={saveLoading || replacementRecalculateLoading || advancedRecalculateLoading}
               >
                 Close
               </button>
@@ -4417,7 +4807,7 @@ export default function ValuationClient() {
                 type="button"
                 className={styles.primaryButton}
                 onClick={confirmFinalSaveAction}
-                disabled={saveLoading || replacementRecalculateLoading || !finalSaveCanConfirm}
+                disabled={saveLoading || replacementRecalculateLoading || advancedRecalculateLoading || !finalSaveCanConfirm}
               >
                 {saveLoading ? 'Saving...' : finalSaveCta}
               </button>
