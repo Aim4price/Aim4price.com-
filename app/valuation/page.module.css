@@ -10209,3 +10209,336 @@
     border-radius: 1rem;
   }
 }
+
+/* === Valuation phone/tablet completion pass === */
+.page,
+.container,
+.wizardShell,
+.sectorWizardShell,
+.wizardCard,
+.sectorWizardCard,
+.currentCard,
+.equipmentPickerCard,
+.resultHero,
+.resultFinalActions,
+.marketplaceIntroModal,
+.marketplacePublishModal,
+.finalSaveModal,
+.detailsModal,
+.yearDetailsModal {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.wizardCard *,
+.sectorWizardCard *,
+.currentCard *,
+.resultHero *,
+.resultFinalActions *,
+.marketplaceIntroModal *,
+.marketplacePublishModal *,
+.finalSaveModal *,
+.detailsModal * {
+  min-width: 0;
+}
+
+.field input,
+.field select,
+.field textarea,
+.modalInputField input,
+.marketplaceField input,
+.marketplaceField textarea,
+.finalReplacementField input {
+  width: 100%;
+  min-width: 0;
+}
+
+.equipmentDropdownOption,
+.specDropdownOption,
+.resultMachineTitle,
+.currentTitle,
+.selectedSummaryPill,
+.marketplaceTitlePreview {
+  overflow-wrap: anywhere;
+}
+
+.equipmentDropdownMenu,
+.specDropdownMenu {
+  max-height: min(18rem, 46dvh);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 721px) and (max-width: 900px) {
+  .sectorLargeGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .sectorBigCard {
+    min-height: 13.5rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .container {
+    padding-top: 1.15rem;
+  }
+
+  .wizardHeader {
+    padding: 0.7rem 0.75rem;
+  }
+
+  .stepper {
+    width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.45rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 0.05rem;
+  }
+
+  .stepper::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stepperItem {
+    flex: 0 0 auto;
+    min-width: max-content;
+    padding: 0.28rem 0.48rem;
+  }
+
+  .stepperBullet {
+    width: 1.84rem;
+    height: 1.84rem;
+  }
+
+  .stepperLabel {
+    max-width: 8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .resultsLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .resultsSide,
+  .resultFinalActions {
+    width: 100%;
+  }
+
+  .marketplacePublishGrid,
+  .marketplaceSellerGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .container {
+    width: min(calc(100% - 1rem), 48rem);
+    padding-top: 0.95rem;
+  }
+
+  .wizardCard,
+  .sectorWizardCard,
+  .currentCard,
+  .equipmentPickerCard {
+    border-radius: 1.28rem;
+  }
+
+  .stepContent,
+  .specStepContent {
+    padding: 1.05rem 0.9rem;
+  }
+
+  .sectorStepContent {
+    padding: 1rem 0.8rem;
+  }
+
+  .stepTitle {
+    font-size: clamp(1.9rem, 9vw, 2.55rem);
+    line-height: 1.02;
+  }
+
+  .stepText,
+  .sectorIntro {
+    font-size: 0.98rem;
+    line-height: 1.5;
+  }
+
+  .sectorLargeGrid {
+    grid-template-columns: 1fr;
+    gap: 0.82rem;
+    width: 100%;
+  }
+
+  .sectorBigCard {
+    min-height: 11.2rem;
+    border-radius: 1.18rem;
+  }
+
+  .sectorBigCardContent {
+    padding: 0.95rem;
+  }
+
+  .sectorLabel {
+    font-size: clamp(1.55rem, 8vw, 2rem);
+    line-height: 1;
+  }
+
+  .liveBadge,
+  .soonBadge {
+    min-height: 1.72rem;
+    padding: 0 0.68rem;
+    font-size: 0.68rem;
+  }
+
+  .pathChoiceGrid,
+  .choiceGrid,
+  .conditionButtonGrid,
+  .replacementOptionGrid,
+  .finalSaveSummaryGrid,
+  .finalReplacementPanel,
+  .inputGrid,
+  .inlineOptionRow,
+  .yearSecondaryControls,
+  .marketplaceSummaryGrid,
+  .marketplacePhotoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pathChoiceCard,
+  .choiceCard,
+  .replacementOptionCard,
+  .conditionChoiceButton,
+  .inlineOptionButton {
+    min-height: 2.9rem;
+  }
+
+  .pathChoiceCard {
+    padding: 1rem;
+    gap: 0.42rem;
+  }
+
+  .pathChoiceCard::after,
+  .pathChoiceCard.choiceCardActive::after {
+    top: 1.4rem;
+    right: 0.9rem;
+  }
+
+  .progressiveQuestionStack {
+    gap: 0.72rem;
+  }
+
+  .progressiveQuestionCard,
+  .specStepCard,
+  .tractorSetupCard,
+  .replacementInputPanel,
+  .yearSliderPanel {
+    border-radius: 1.05rem;
+  }
+
+  .equipmentDropdownTrigger,
+  .specDropdownTrigger,
+  .searchInput,
+  .field input,
+  .field select,
+  .field textarea,
+  .modalInputField input,
+  .marketplaceField input,
+  .marketplaceField textarea {
+    min-height: var(--tap-target-min, 44px);
+  }
+
+  .detailsModalOverlay,
+  .finalSaveOverlay,
+  .marketplaceIntroOverlay,
+  .marketplacePublishOverlay {
+    align-items: center;
+    padding: 0.75rem;
+    overflow: hidden;
+  }
+
+  .detailsModal,
+  .yearDetailsModal,
+  .finalSaveModal,
+  .marketplaceIntroModal,
+  .marketplacePublishModal {
+    width: min(100%, 48rem);
+    max-height: calc(100dvh - 1.5rem);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 1.25rem;
+  }
+
+  .detailsModalText,
+  .finalSaveSummaryCard,
+  .marketplacePublishPanel,
+  .marketplacePhotoPanel {
+    overflow-wrap: anywhere;
+  }
+
+  .detailsModalActions,
+  .finalSaveActions,
+  .marketplaceIntroActions,
+  .marketplacePublishActions,
+  .wizardFooter {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+  }
+
+  .primaryButton,
+  .secondaryButton,
+  .resultPdfActionButton,
+  .resultAlternateActionButton,
+  .resultPrimaryActionButton,
+  .detailsModalActions button,
+  .marketplaceIntroActions a,
+  .marketplacePublishActions button,
+  .finalSaveActions button {
+    width: 100%;
+    min-height: var(--tap-target-min, 44px);
+  }
+
+  .resultHero {
+    padding: 1rem;
+    border-radius: 1.25rem;
+  }
+
+  .resultValue {
+    font-size: clamp(2.25rem, 12vw, 3.2rem);
+  }
+
+  .resultFactsGrid,
+  .resultMethodGrid,
+  .resultFinalActionsButtons {
+    grid-template-columns: 1fr;
+  }
+
+  .resultFinalActions {
+    border-radius: 1.18rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .stepperItem:not(.stepperItemActive) .stepperLabel {
+    display: none;
+  }
+
+  .stepperItem {
+    padding-right: 0.32rem;
+  }
+
+  .stepperItemActive {
+    padding-right: 0.58rem;
+  }
+}
+
