@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { recordAdminUsageEventSafely } from '../../../lib/admin-usage-events';
+import { getAccountProfile } from '../../../lib/account-profile';
 import { getAnyServerSession } from '../../../lib/auth-session';
 import { isSectorKey, type SectorKey } from '../../../lib/equipment-types';
 import { runGenericValuation, type GenericCondition } from '../../../lib/generic-valuation';
+import { advancedAssumptionsWereRequested } from '../../../lib/valuation/shared';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,6 +23,7 @@ type Body = {
   condition?: unknown;
   userReplacementPriceExVat?: unknown;
   userReplacementPriceYear?: unknown;
+  advancedAssumptions?: unknown;
 };
 
 function parseBoolean(value: unknown): boolean {
@@ -44,6 +47,27 @@ function normalizeReplacementPrice(value: unknown): number | null {
 
   const numeric = Number(String(value).replace(/[^0-9.-]/g, ''));
   return Number.isFinite(numeric) && numeric > 0 ? Math.round(numeric) : null;
+}
+
+
+async function hasActiveAdvancedAccess(): Promise<boolean> {
+  const session = await getAnyServerSession();
+  const user = session?.user;
+  if (!user?.id) return false;
+  const profile = await getAccountProfile({ id: user.id, name: user.name, email: user.email });
+  return profile.accountStatus === 'active';
+}
+
+function advancedAccessDenied() {
+  return NextResponse.json(
+    { ok: false, error: 'Advanced assumptions are available for active Aim4price accounts.' },
+    { status: 403 },
+  );
+}
+
+function isAdvancedValidationError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.message.startsWith('Expected lifetime') || error.message.startsWith('Condition retained value');
 }
 
 async function getUsageUserId(): Promise<string | null> {
@@ -83,6 +107,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (advancedAssumptionsWereRequested(body.advancedAssumptions) && !(await hasActiveAdvancedAccess())) {
+      return advancedAccessDenied();
+    }
+
     const result = await runGenericValuation({
       sectorKey: sectorKey as SectorKey,
       familyKey,
@@ -100,6 +128,7 @@ export async function POST(request: NextRequest) {
       condition,
       userReplacementPriceExVat,
       userReplacementPriceYear: resolvedReplacementPriceYear,
+      advancedAssumptions: body.advancedAssumptions ?? null,
     });
 
     await recordAdminUsageEventSafely({
@@ -114,7 +143,7 @@ export async function POST(request: NextRequest) {
     console.error('generic-valuations route failed', error);
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : 'Failed to calculate generic valuation.' },
-      { status: 500 },
+      { status: isAdvancedValidationError(error) ? 400 : 500 },
     );
   }
 }
