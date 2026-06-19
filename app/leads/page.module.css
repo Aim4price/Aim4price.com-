@@ -2180,3 +2180,139 @@
     max-height: 58vh;
   }
 }
+
+/* === Leads responsive consolidation pass === */
+.leadsPage,
+.leadsRegisterPanel,
+.leadStack,
+.leadThread,
+.leadAssetCard,
+.leadFilterModal,
+.leadEmailModal,
+.leadReportModal,
+.leadDeleteModal,
+.ownerPhotoPreviewModal,
+.fullRegisterLeadCard {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.leadsRegisterPanel *,
+.leadThread *,
+.leadAssetCard *,
+.leadFilterModal *,
+.leadEmailModal *,
+.leadReportModal *,
+.leadDeleteModal *,
+.fullRegisterLeadCard * {
+  min-width: 0;
+}
+
+.leadFilterField input,
+.leadFilterField select,
+.leadEmailField input,
+.leadEmailField textarea,
+.leadNoteAttachmentDropzone,
+.leadSearchToolbar input {
+  width: 100%;
+  min-width: 0;
+}
+
+.clientIdentity,
+.clientPanel,
+.leadValueBlock,
+.leadAssetHeaderAside,
+.leadEmailDraftPanel,
+.fullRegisterPdfPanel,
+.ownerSharedPhotoNote {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .leadsRegisterHeader,
+  .leadToolbarActions,
+  .leadSearchToolbar,
+  .leadFilterForm,
+  .leadFilterActions,
+  .leadEmailActions,
+  .leadNoteActions,
+  .leadDeleteActions,
+  .clientActionRow,
+  .manageOptionsGrid,
+  .leadSummaryRow,
+  .fullRegisterStatsGrid,
+  .leadAssetBody,
+  .leadAssetHeader,
+  .leadAssetHeaderActions {
+    grid-template-columns: 1fr !important;
+    display: grid !important;
+    width: 100%;
+  }
+
+  .leadToolbarActions > *,
+  .leadFilterActions > *,
+  .leadEmailActions > *,
+  .leadNoteActions > *,
+  .leadDeleteActions > *,
+  .clientActionRow > *,
+  .leadAssetHeaderActions > * {
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .leadsPage {
+    padding-inline: 0.5rem !important;
+  }
+
+  .leadsRegisterPanel,
+  .leadThread,
+  .leadAssetCard,
+  .clientPanel,
+  .fullRegisterLeadCard,
+  .fullRegisterStatsPanel {
+    border-radius: 1.2rem !important;
+  }
+
+  .leadsHeroTitleBlock h1 {
+    font-size: clamp(1.85rem, 9vw, 2.45rem) !important;
+  }
+
+  .openLeadButton,
+  .markDoneLeadButton,
+  .doneLeadPill,
+  .deleteLeadButton,
+  .closeLeadButton,
+  .leadRefreshButton,
+  .leadFilterButton,
+  .leadPaginationButton,
+  .leadManageButton,
+  .whatsAppActionButton {
+    width: 100%;
+    min-height: var(--tap-target-min, 44px) !important;
+  }
+
+  .leadFilterDropdown,
+  .leadFilterModal,
+  .leadEmailModal,
+  .leadReportModal,
+  .leadDeleteModal,
+  .ownerPhotoPreviewModal {
+    width: min(100%, 48rem) !important;
+    max-height: calc(100dvh - 1.5rem) !important;
+    overflow: hidden !important;
+    border-radius: 1.25rem !important;
+  }
+
+  .leadFilterIntro,
+  .leadEmailDraftPanel,
+  .leadReportModal,
+  .leadDeleteContent,
+  .fullRegisterLeadBody {
+    max-height: calc(100dvh - 10rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
