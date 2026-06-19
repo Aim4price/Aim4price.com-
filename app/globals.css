@@ -113,3 +113,78 @@ h4,
     --shell-gutter: 0.85rem;
   }
 }
+
+/* === Mobile/tablet responsive foundation pass === */
+:root {
+  --mobile-gutter: 0.85rem;
+  --tablet-gutter: 1.15rem;
+  --tap-target-min: 44px;
+}
+
+html,
+body {
+  max-width: 100%;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  width: 100%;
+  min-width: 0;
+  overscroll-behavior-x: none;
+}
+
+.appRoot,
+.appRoot > main,
+main {
+  min-width: 0;
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: rgba(23, 77, 62, 0.12);
+}
+
+@supports not (overflow: clip) {
+  body {
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 1180px) {
+  :root {
+    --shell-gutter: var(--tablet-gutter);
+  }
+}
+
+@media (max-width: 720px) {
+  :root {
+    --shell-gutter: var(--mobile-gutter);
+  }
+}
+
+@media (max-width: 420px) {
+  :root {
+    --shell-gutter: 0.68rem;
+  }
+}
+
