@@ -23,12 +23,19 @@ export type TractorValuationModel = {
   gpsSupported: boolean;
 };
 
+
+type TractorAssumptionOptions = {
+  maxLifetimeHours?: number | null;
+  conditionFactorOverride?: number | null;
+};
+
 export function calculateTractorAim4priceValue(
   model: TractorValuationModel,
   yearModel: number,
   hours: number,
   condition: ConditionKey,
   replacementPriceOverrideExVat?: number | null,
+  options?: TractorAssumptionOptions,
 ): number {
   const replacementPriceExVat =
     typeof replacementPriceOverrideExVat === 'number' && Number.isFinite(replacementPriceOverrideExVat) && replacementPriceOverrideExVat > 0
@@ -40,8 +47,9 @@ export function calculateTractorAim4priceValue(
     yearModel,
     hours,
     condition,
-    maxLifetimeHours: tractorLifetimeHours(model.tractorType, model.powerKw),
+    maxLifetimeHours: options?.maxLifetimeHours ?? tractorLifetimeHours(model.tractorType, model.powerKw),
     floorPercent: DEFAULT_ENGINE_FLOOR_PERCENT,
+    conditionFactorOverride: options?.conditionFactorOverride,
   }).finalValueExVat;
 }
 
@@ -51,6 +59,7 @@ export function calculateTractorFrontPtoValue(
   hours: number,
   condition: ConditionKey,
   enabled: boolean,
+  options?: TractorAssumptionOptions,
 ): number {
   if (!enabled || !model.frontPtoSupported || model.powerKw < 70) {
     return 0;
@@ -61,8 +70,9 @@ export function calculateTractorFrontPtoValue(
     yearModel,
     hours,
     condition,
-    maxLifetimeHours: tractorLifetimeHours(model.tractorType, model.powerKw),
+    maxLifetimeHours: options?.maxLifetimeHours ?? tractorLifetimeHours(model.tractorType, model.powerKw),
     floorPercent: DEFAULT_ENGINE_FLOOR_PERCENT,
+    conditionFactorOverride: options?.conditionFactorOverride,
   }).finalValueExVat;
 }
 
