@@ -25,6 +25,11 @@ type NavItem = {
   label: string;
 };
 
+type AccountMenuItem = {
+  href: string;
+  label: string;
+};
+
 type SessionResponse = {
   ok: boolean;
   signedIn: boolean;
@@ -155,6 +160,17 @@ const BASE_NAV_ITEMS: NavItem[] = [
   { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
 ];
 
+const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
+  { href: '/', label: 'Home' },
+  { href: '/account', label: 'Account Details' },
+  { href: '/asset-register', label: 'Asset Register' },
+  { href: '/companies', label: 'Companies' },
+  { href: '/valuation', label: 'Get Estimate' },
+  { href: '/marketplace', label: 'Marketplace' },
+  { href: '/asset-map', label: 'My Asset Map' },
+  { href: '/fuel', label: 'My Fuel Ledger' },
+];
+
 function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
   if (accountType === null) {
     return BASE_NAV_ITEMS;
@@ -179,7 +195,7 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
 
   return [
     ...BASE_NAV_ITEMS,
-    { key: 'asset-register', href: '/asset-register', label: 'Asset Registers' },
+    { key: 'asset-register', href: '/asset-register', label: 'Asset Register' },
     { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
   ];
 }
@@ -545,8 +561,7 @@ export default function AppHeader({
   }, [session?.id, pathname]);
 
   const accountName = useMemo(() => session?.name?.trim() || 'Aim4price User', [session]);
-  const accountType = session?.accountType ?? null;
-  const isOwnerAccount = accountType === 'owner';
+  const isOwnerAccount = session?.accountType === 'owner';
   const navAccountType = isLoadingSession ? null : (session?.accountType ?? 'public');
   const navItems = useMemo(() => buildNavItems(navAccountType), [navAccountType]);
   const latestNotificationTime = useMemo(
@@ -585,6 +600,32 @@ export default function AppHeader({
     setActiveUserMessage(null);
     setActiveMessageAttachmentIndex(0);
     setNotificationDetailError(null);
+  }
+
+  function closeAccountMenu() {
+    setMenuOpen(false);
+  }
+
+  function handleAccountMenuToggle() {
+    setMenuOpen((current) => {
+      const nextOpen = !current;
+
+      if (nextOpen) {
+        setMobileMenuOpen(false);
+        setNotificationOpen(false);
+        closeNotificationDetailModal();
+      }
+
+      return nextOpen;
+    });
+  }
+
+  function isAccountMenuLinkActive(href: string): boolean {
+    if (href === '/') {
+      return pathname === '/';
+    }
+
+    return pathname === href || pathname.startsWith(`${href}/`);
   }
 
   function handleNotificationToggle() {
@@ -1230,21 +1271,22 @@ export default function AppHeader({
                   <div className={styles.accountMenu} ref={accountMenuRef}>
                     <button
                       type="button"
-                      className={styles.accountButton}
+                      className={`${styles.accountButton} ${menuOpen ? styles.accountButtonActive : ''}`}
                       aria-expanded={menuOpen}
                       aria-haspopup="menu"
                       aria-controls={menuOpen ? 'header-account-menu' : undefined}
-                      aria-label="Open account menu"
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        setNotificationOpen(false);
-                        setMenuOpen((current) => !current);
-                      }}
+                      aria-label="Open account and navigation menu"
+                      onClick={handleAccountMenuToggle}
                     >
                       <AccountProfileIcon className={styles.accountAvatar} />
                       <span className={styles.accountButtonText}>
                         <span className={styles.accountButtonTextFull}>My Account</span>
-                        <span className={styles.accountButtonTextCompact}>Account</span>
+                        <span className={styles.accountButtonTextCompact}>Menu</span>
+                      </span>
+                      <span className={styles.accountButtonMenuMark} aria-hidden="true">
+                        <span className={styles.accountButtonMenuIcon}>
+                          <span className={styles.accountButtonMenuIconLine} />
+                        </span>
                       </span>
                     </button>
 
@@ -1257,28 +1299,26 @@ export default function AppHeader({
                           </div>
                         </div>
 
-                        <Link href="/account" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                          Account Details
-                        </Link>
+                        {ACCOUNT_MENU_ITEMS.map((item) => {
+                          const isActive = isAccountMenuLinkActive(item.href);
 
-                        {isOwnerAccount ? (
-                          <>
-                            <Link href="/companies" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                              Companies
+                          return (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              role="menuitem"
+                              aria-current={isActive ? 'page' : undefined}
+                              className={`${styles.menuLink} ${isActive ? styles.menuLinkActive : ''}`}
+                              onClick={closeAccountMenu}
+                            >
+                              {item.label}
                             </Link>
-
-                            <Link href="/asset-map" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                              My Asset Map
-                            </Link>
-
-                            <Link href="/fuel" className={styles.menuLink} onClick={() => setMenuOpen(false)}>
-                              My Fuel Ledger
-                            </Link>
-                          </>
-                        ) : null}
+                          );
+                        })}
 
                         <button
                           type="button"
+                          role="menuitem"
                           className={styles.menuDangerButton}
                           onClick={handleSignOut}
                           disabled={isSigningOut}
@@ -1305,29 +1345,31 @@ export default function AppHeader({
                 </>
               )}
 
-              <button
-                type="button"
-                className={`${styles.mobileMenuButton} ${mobileMenuOpen ? styles.mobileMenuButtonActive : ''}`}
-                aria-expanded={mobileMenuOpen}
-                aria-controls={MOBILE_MENU_ID}
-                aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-                onClick={handleMobileMenuToggle}
-              >
-                <span className={styles.mobileMenuIcon} aria-hidden="true">
-                  <span className={styles.mobileMenuIconLine} />
-                </span>
-                <span className={styles.mobileMenuButtonText}>Menu</span>
-                <svg className={styles.mobileMenuChevron} viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-                  <path
-                    d="M5.55 7.45a1 1 0 0 1 1.42 0L10 10.49l3.03-3.04a1 1 0 1 1 1.42 1.42l-3.74 3.73a1 1 0 0 1-1.42 0L5.55 8.87a1 1 0 0 1 0-1.42Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </button>
+              {!isLoadingSession && !session ? (
+                <button
+                  type="button"
+                  className={`${styles.mobileMenuButton} ${mobileMenuOpen ? styles.mobileMenuButtonActive : ''}`}
+                  aria-expanded={mobileMenuOpen}
+                  aria-controls={MOBILE_MENU_ID}
+                  aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                  onClick={handleMobileMenuToggle}
+                >
+                  <span className={styles.mobileMenuIcon} aria-hidden="true">
+                    <span className={styles.mobileMenuIconLine} />
+                  </span>
+                  <span className={styles.mobileMenuButtonText}>Menu</span>
+                  <svg className={styles.mobileMenuChevron} viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                    <path
+                      d="M5.55 7.45a1 1 0 0 1 1.42 0L10 10.49l3.03-3.04a1 1 0 1 1 1.42 1.42l-3.74 3.73a1 1 0 0 1-1.42 0L5.55 8.87a1 1 0 0 1 0-1.42Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+              ) : null}
             </div>
           </div>
 
-          {mobileMenuOpen ? (
+          {mobileMenuOpen && !session ? (
             <div id={MOBILE_MENU_ID} className={styles.mobileMenuPanel}>
               <div className={styles.mobileMenuHeader}>
                 <div className={styles.mobileMenuHeaderCopy}>
