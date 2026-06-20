@@ -251,7 +251,7 @@ export async function listEquipmentBrands(input?: {
         min(sort_order) as sort_order
       from combined
       group by id, slug, name
-      order by min(sort_order) asc, name asc
+      order by case when lower(slug) = 'unknown' then 0 else 1 end asc, min(sort_order) asc, name asc
     `,
     values,
   );
