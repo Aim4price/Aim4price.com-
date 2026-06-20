@@ -1668,6 +1668,7 @@
 .navRail,
 .actions,
 .actionsRail,
+.mobileMenuBackdrop,
 .mobileMenuPanel {
   max-width: 100%;
 }
@@ -1677,6 +1678,7 @@
 .accountPopover,
 .notificationModal,
 .notificationDetailModal,
+.mobileMenuBackdrop,
 .mobileMenuPanel,
 .mobileMenuNavLink,
 .mobileMenuAuthLink,
@@ -1686,6 +1688,7 @@
 }
 
 .mobileMenuButton,
+.mobileMenuBackdrop,
 .mobileMenuPanel {
   display: none;
 }
@@ -1776,6 +1779,23 @@
 
 .mobileMenuButtonActive .mobileMenuChevron {
   transform: rotate(180deg);
+}
+
+.mobileMenuBackdrop {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 4.75rem);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10020;
+  box-sizing: border-box;
+  width: auto;
+  max-width: 100%;
+  min-height: calc(100dvh - 4.75rem);
+  overflow: hidden;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+  background: transparent;
 }
 
 .mobileMenuPanel {
@@ -2185,8 +2205,19 @@
     display: inline-flex;
   }
 
+  .mobileMenuBackdrop {
+    display: block;
+  }
+
   .mobileMenuPanel {
     display: grid;
+    pointer-events: auto;
+  }
+
+  .mobileMenuNav,
+  .mobileMenuAuthActions,
+  .mobileMenuAccountActions {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .actionDivider {
@@ -2367,6 +2398,11 @@
     display: inline;
   }
 
+  .mobileMenuBackdrop {
+    top: calc(env(safe-area-inset-top) + 4.35rem);
+    min-height: calc(100dvh - 4.35rem);
+  }
+
   .mobileMenuPanel {
     top: calc(env(safe-area-inset-top) + 4.35rem);
     right: max(0.55rem, env(safe-area-inset-right));
@@ -2452,6 +2488,11 @@
     padding: 0 0.68rem;
   }
 
+  .mobileMenuBackdrop {
+    top: calc(env(safe-area-inset-top) + 4.15rem);
+    min-height: calc(100dvh - 4.15rem);
+  }
+
   .mobileMenuPanel {
     top: calc(env(safe-area-inset-top) + 4.15rem);
     right: max(0.45rem, env(safe-area-inset-right));
@@ -2487,6 +2528,11 @@
 
   .mobileMenuButton {
     padding: 0 0.62rem;
+  }
+
+  .mobileMenuBackdrop {
+    top: calc(env(safe-area-inset-top) + 4.05rem);
+    min-height: calc(100dvh - 4.05rem);
   }
 
   .mobileMenuPanel {

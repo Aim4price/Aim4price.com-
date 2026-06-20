@@ -1060,6 +1060,109 @@ export default function AppHeader({
     );
   }
 
+  function renderMobileMenuPanel() {
+    return (
+      <section
+        id={MOBILE_MENU_ID}
+        className={styles.mobileMenuPanel}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile menu"
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <div className={styles.mobileMenuHeader}>
+          <div className={styles.mobileMenuHeaderCopy}>
+            <span className={styles.mobileMenuKicker}>{session ? 'Account navigation' : 'Navigation'}</span>
+            <strong className={styles.mobileMenuTitle}>Menu</strong>
+            {session ? <span className={styles.mobileMenuAccountName}>{accountName}</span> : null}
+          </div>
+          <button
+            type="button"
+            className={styles.mobileMenuCloseButton}
+            aria-label="Close navigation menu"
+            onClick={closeMobileMenu}
+          >
+            ×
+          </button>
+        </div>
+
+        <nav className={styles.mobileMenuNav} aria-label={session ? 'Account mobile navigation' : 'Mobile navigation'}>
+          {session
+            ? ACCOUNT_MENU_ITEMS.map((item) => {
+                const isActive = isAccountMenuLinkActive(item.href);
+
+                return (
+                  <Link
+                    key={`mobile-account-${item.href}`}
+                    href={item.href}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`${styles.mobileMenuNavLink} ${isActive ? styles.mobileMenuNavLinkActive : ''}`}
+                    onClick={closeMobileMenu}
+                  >
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })
+            : navItems.map((item) => {
+                const isActive = active === item.key;
+
+                return (
+                  <Link
+                    key={`mobile-${item.key}-${item.href}`}
+                    href={item.href}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`${styles.mobileMenuNavLink} ${isActive ? styles.mobileMenuNavLinkActive : ''}`}
+                    onClick={closeMobileMenu}
+                  >
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+        </nav>
+
+        {session ? (
+          <div className={styles.mobileMenuAccountActions}>
+            <button
+              type="button"
+              className={styles.mobileMenuDangerButton}
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+            >
+              {isSigningOut ? 'Signing out...' : 'Sign out'}
+            </button>
+          </div>
+        ) : (
+          <div className={styles.mobileMenuAuthActions}>
+            <SmartLink href={loginHref} className={styles.mobileMenuAuthLink} onClick={closeMobileMenu}>
+              Login
+            </SmartLink>
+            <SmartLink href={primaryHref} className={`${styles.mobileMenuAuthLink} ${styles.mobileMenuAuthLinkPrimary}`} onClick={closeMobileMenu}>
+              {ctaLabel}
+            </SmartLink>
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  const mobileMenuPortal =
+    mobileMenuOpen && canUseNotificationPortal
+      ? createPortal(
+          <div
+            className={styles.mobileMenuBackdrop}
+            role="presentation"
+            onPointerDown={(event) => {
+              if (event.target === event.currentTarget) {
+                closeMobileMenu();
+              }
+            }}
+          >
+            {renderMobileMenuPanel()}
+          </div>,
+          document.body,
+        )
+      : null;
+
   const notificationPortal =
     notificationOpen && canUseNotificationPortal
       ? createPortal(
@@ -1371,84 +1474,9 @@ export default function AppHeader({
               ) : null}
             </div>
           </div>
-
-          {mobileMenuOpen ? (
-            <div id={MOBILE_MENU_ID} className={styles.mobileMenuPanel} role="dialog" aria-modal="true" aria-label="Mobile menu">
-              <div className={styles.mobileMenuHeader}>
-                <div className={styles.mobileMenuHeaderCopy}>
-                  <span className={styles.mobileMenuKicker}>{session ? 'Account navigation' : 'Navigation'}</span>
-                  <strong className={styles.mobileMenuTitle}>Menu</strong>
-                  {session ? <span className={styles.mobileMenuAccountName}>{accountName}</span> : null}
-                </div>
-                <button
-                  type="button"
-                  className={styles.mobileMenuCloseButton}
-                  aria-label="Close navigation menu"
-                  onClick={closeMobileMenu}
-                >
-                  ×
-                </button>
-              </div>
-
-              <nav className={styles.mobileMenuNav} aria-label={session ? 'Account mobile navigation' : 'Mobile navigation'}>
-                {session
-                  ? ACCOUNT_MENU_ITEMS.map((item) => {
-                      const isActive = isAccountMenuLinkActive(item.href);
-
-                      return (
-                        <Link
-                          key={`mobile-account-${item.href}`}
-                          href={item.href}
-                          aria-current={isActive ? 'page' : undefined}
-                          className={`${styles.mobileMenuNavLink} ${isActive ? styles.mobileMenuNavLinkActive : ''}`}
-                          onClick={closeMobileMenu}
-                        >
-                          <span>{item.label}</span>
-                        </Link>
-                      );
-                    })
-                  : navItems.map((item) => {
-                      const isActive = active === item.key;
-
-                      return (
-                        <Link
-                          key={`mobile-${item.key}-${item.href}`}
-                          href={item.href}
-                          aria-current={isActive ? 'page' : undefined}
-                          className={`${styles.mobileMenuNavLink} ${isActive ? styles.mobileMenuNavLinkActive : ''}`}
-                          onClick={closeMobileMenu}
-                        >
-                          <span>{item.label}</span>
-                        </Link>
-                      );
-                    })}
-              </nav>
-
-              {session ? (
-                <div className={styles.mobileMenuAccountActions}>
-                  <button
-                    type="button"
-                    className={styles.mobileMenuDangerButton}
-                    onClick={handleSignOut}
-                    disabled={isSigningOut}
-                  >
-                    {isSigningOut ? 'Signing out...' : 'Sign out'}
-                  </button>
-                </div>
-              ) : (
-                <div className={styles.mobileMenuAuthActions}>
-                  <SmartLink href={loginHref} className={styles.mobileMenuAuthLink} onClick={closeMobileMenu}>
-                    Login
-                  </SmartLink>
-                  <SmartLink href={primaryHref} className={`${styles.mobileMenuAuthLink} ${styles.mobileMenuAuthLinkPrimary}`} onClick={closeMobileMenu}>
-                    {ctaLabel}
-                  </SmartLink>
-                </div>
-              )}
-            </div>
-          ) : null}
         </div>
       </header>
+      {mobileMenuPortal}
       {notificationPortal}
       {notificationDetailPortal}
     </>
