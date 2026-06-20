@@ -363,7 +363,9 @@ type ValuationPdfPayload = {
 const CURRENT_YEAR = new Date().getFullYear();
 const VAT_RATE = 0.15;
 const UNKNOWN_BRAND_SLUG = 'unknown';
-const UNKNOWN_BRAND_NAME = 'Unknown';
+const UNKNOWN_BRAND_NAME = 'Brand not listed';
+const UNLISTED_BRAND_NAME_SPEC_KEY = 'unlisted_brand_name';
+const TYPED_BRAND_NAME_SPEC_KEY = 'typed_brand_name';
 const UNKNOWN_BRAND_OPTION: BrandRow = { name: UNKNOWN_BRAND_NAME, slug: UNKNOWN_BRAND_SLUG };
 const MAX_MARKETPLACE_PHOTOS = 12;
 const MARKETPLACE_INTRO_DISMISSED_KEY = 'aim4price-marketplace-intro-dismissed';
@@ -501,9 +503,28 @@ function isUnknownBrandSlug(value: unknown): boolean {
   return normalizeText(value).toLowerCase() === UNKNOWN_BRAND_SLUG;
 }
 
+function getUnlistedBrandNameFromSpecs(specsJson?: Record<string, unknown> | null): string {
+  if (!specsJson) return '';
+  return normalizeText(specsJson[UNLISTED_BRAND_NAME_SPEC_KEY] ?? specsJson[TYPED_BRAND_NAME_SPEC_KEY]);
+}
+
+function getDisplayBrandName(
+  brand?: { slug?: string | null; name?: string | null } | null,
+  specsJson?: Record<string, unknown> | null,
+  manualBrandName?: string,
+): string {
+  const enteredBrandName = normalizeText(manualBrandName) || getUnlistedBrandNameFromSpecs(specsJson);
+  const brandName = normalizeText(brand?.name);
+
+  if (isUnknownBrandSlug(brand?.slug) || brandName.toLowerCase() === 'unknown') {
+    return enteredBrandName || UNKNOWN_BRAND_NAME;
+  }
+
+  return brandName || enteredBrandName || UNKNOWN_BRAND_NAME;
+}
+
 function getAdvancedConditionQuestionLabel(value: ConditionKey): string {
-  if (value === 'serious') return 'Serious';
-  return sentenceCase(value);
+  return value;
 }
 
 function shouldShowAdvancedLifetimeInput(
@@ -1015,6 +1036,7 @@ export default function ValuationClient() {
   const [brandSearch, setBrandSearch] = useState('');
   const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
   const [brandSlug, setBrandSlug] = useState('');
+  const [unlistedBrandName, setUnlistedBrandName] = useState('');
   const [flowMode, setFlowMode] = useState<FlowMode>('');
   const [tractorType, setTractorType] = useState<TractorType | ''>('');
   const [drive, setDrive] = useState<DriveType | ''>('');
@@ -1113,7 +1135,8 @@ export default function ValuationClient() {
     const seenSlugs = new Set<string>([UNKNOWN_BRAND_SLUG]);
     const realBrands = brands.filter((brand) => {
       const slug = normalizeText(brand.slug).toLowerCase();
-      if (!slug || seenSlugs.has(slug)) return false;
+      const name = normalizeText(brand.name);
+      if (!slug || !name || seenSlugs.has(slug)) return false;
       seenSlugs.add(slug);
       return true;
     });
@@ -1150,7 +1173,7 @@ export default function ValuationClient() {
       : genericModelMode === 'manual'
         ? normalizeText(typedModelName)
         : '';
-  const shouldSaveGenericModelCandidate = genericModelMode === 'manual' && Boolean(normalizeText(typedModelName));
+  const shouldSaveGenericModelCandidate = genericModelMode === 'manual' && !selectedBrandIsUnknown && Boolean(normalizeText(typedModelName));
   const selectedUsageDisplayUnit = getUsageDisplayUnit(selectedSector, selectedFamily?.usageMetricType);
   const selectedUsageFieldLabel = getUsageFieldLabel(selectedSector, selectedFamily?.usageMetricType);
   const selectedUsageSentenceLabel = getUsageSentenceLabel(selectedSector, selectedFamily?.usageMetricType);
@@ -1267,15 +1290,22 @@ export default function ValuationClient() {
   const usageNumber = toNumberOrNull(usageAmount);
   const lifeWorkedPercentNumber = toPercentOrNull(lifeWorkedPercent);
   const specsJson = useMemo(() => buildSpecPayload(specQuestions, specAnswers), [specQuestions, specAnswers]);
-  const enrichedSpecsJson = useMemo(
-    () => ({
+  const enrichedSpecsJson = useMemo(() => {
+    const typedUnlistedBrandName = selectedBrandIsUnknown ? normalizeText(unlistedBrandName) : '';
+
+    return {
       ...(genericValuationPath && selectedGenericModel ? normalizeGenericSpecsRecord(selectedGenericModel.specsJson) : {}),
       ...specsJson,
+      ...(typedUnlistedBrandName
+        ? {
+            [UNLISTED_BRAND_NAME_SPEC_KEY]: typedUnlistedBrandName,
+            [TYPED_BRAND_NAME_SPEC_KEY]: typedUnlistedBrandName,
+          }
+        : {}),
       ...(lifeWorkedPercentNumber !== null ? { life_worked_percent: lifeWorkedPercentNumber } : {}),
       ...(yearModelUnknown ? { year_model_unknown: true } : {}),
-    }),
-    [genericValuationPath, selectedGenericModel, specsJson, lifeWorkedPercentNumber, yearModelUnknown],
-  );
+    };
+  }, [genericValuationPath, selectedGenericModel, specsJson, selectedBrandIsUnknown, unlistedBrandName, lifeWorkedPercentNumber, yearModelUnknown]);
   const headlineValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
   const headlineDisplayValue = getVatDisplayValue(headlineValue, vatDisplayMode);
   const headlineVatLabel = getVatDisplayLabel(vatDisplayMode);
@@ -1417,6 +1447,7 @@ export default function ValuationClient() {
     setBrandDropdownOpen(false);
     setBrands([]);
     setBrandSlug('');
+    setUnlistedBrandName('');
     setTypedModelName('');
     setModelQuery('');
     setModelDropdownOpen(false);
@@ -1501,6 +1532,7 @@ export default function ValuationClient() {
     setBrandSearch('');
     setBrandDropdownOpen(false);
     setBrandSlug('');
+    setUnlistedBrandName('');
     setBrands([]);
     setModelQuery('');
     setModelDropdownOpen(false);
@@ -1970,7 +2002,7 @@ export default function ValuationClient() {
     }
 
     if (!canUseAdvancedAssumptions) {
-      setAdvancedError('Advanced assumptions are available for active Aim4price accounts.');
+      setAdvancedError('Advanced assumptions are for active Aim4price accounts only.');
       return;
     }
 
@@ -2361,7 +2393,7 @@ export default function ValuationClient() {
     }) || null;
 
     return [
-      result.brand.name,
+      getDisplayBrandName(result.brand, result.specsJson),
       result.typedModelName || result.family.label,
       result.year,
       usageLabel,
@@ -2393,8 +2425,9 @@ export default function ValuationClient() {
     const confidenceText = getConfidenceLabel(resultState, confidenceContext);
     const confidenceNote = getConfidenceNote(resultState, confidenceContext);
     const genericModelNameForResult = genericResult?.typedModelName || getGenericModelSubmitName(selectedGenericModel) || normalizeText(typedModelName);
+    const genericBrandNameForPdf = getDisplayBrandName(genericResult?.brand ?? selectedBrand, genericResult?.specsJson, unlistedBrandName);
     const machineTitle = isGeneric
-      ? `${genericResult?.brand.name ?? selectedBrand?.name ?? ''} ${genericModelNameForResult || genericResult?.family.label || selectedFamily?.familyLabel || ''}`.trim()
+      ? `${genericBrandNameForPdf} ${genericModelNameForResult || genericResult?.family.label || selectedFamily?.familyLabel || ''}`.trim()
       : `${exactModel?.brandName ?? selectedBrand?.name ?? ''} ${exactModel?.modelName ?? ''}`.trim();
     const resultCondition: ConditionKey = isGeneric ? genericResult?.condition ?? condition : condition;
     const resultYear = isGeneric ? genericResult?.year ?? yearNumber : yearModelUnknown ? CURRENT_YEAR : yearNumber;
@@ -2420,7 +2453,7 @@ export default function ValuationClient() {
       ? genericResult?.sector.label ?? (selectedSector ? SECTOR_LABELS[selectedSector] : 'N/A')
       : 'Agricultural';
     const familyLabel = isGeneric ? genericResult?.family.label ?? selectedFamily?.familyLabel ?? 'N/A' : 'Tractors';
-    const brandName = isGeneric ? genericResult?.brand.name ?? selectedBrand?.name ?? 'N/A' : exactModel?.brandName ?? selectedBrand?.name ?? 'N/A';
+    const brandName = isGeneric ? genericBrandNameForPdf || 'N/A' : exactModel?.brandName ?? selectedBrand?.name ?? 'N/A';
     const modelName = isGeneric ? genericModelNameForResult : exactModel?.modelName ?? '';
     const valuationPath = flowMode === 'exact_model' ? 'Exact model' : flowMode === 'generic_specs' ? getSpecsTitle(selectedSector) : formatCatalogModeLabel(selectedFamily?.catalogMode ?? 'generic_specs');
     const selectedMethodLabel = selectedValueTypeLabel(selectedMethod);
@@ -3073,6 +3106,7 @@ export default function ValuationClient() {
     setEquipmentDropdownOpen(false);
     setBrands([]);
     setBrandSlug('');
+    setUnlistedBrandName('');
     setBrandSearch('');
     setBrandDropdownOpen(false);
     setTypedModelName('');
@@ -3133,6 +3167,7 @@ export default function ValuationClient() {
     setBrandSearch('');
     setBrandDropdownOpen(false);
     setBrandSlug('');
+    setUnlistedBrandName('');
     resetResult();
     setStep(2);
   }
@@ -3143,6 +3178,7 @@ export default function ValuationClient() {
     const nextBrandIsUnknown = isUnknownBrandSlug(nextBrandSlug);
 
     setBrandSlug(nextBrandSlug);
+    setUnlistedBrandName('');
     setFlowMode(nextBrandIsUnknown ? 'generic_specs' : '');
     setBrandSearch('');
     setBrandDropdownOpen(false);
@@ -3467,7 +3503,7 @@ export default function ValuationClient() {
           {brandsLoading ? <p className={styles.fieldHint}>Loading brands...</p> : null}
 
           {!brands.length && !brandsLoading ? (
-            <p className={styles.message}>Only Unknown is available until brands are linked to this {getAssetTypeLabel(selectedSector)}.</p>
+            <p className={styles.message}>Only Brand not listed is available until brands are linked to this {getAssetTypeLabel(selectedSector)}.</p>
           ) : null}
           {brands.length > 0 && !filteredBrands.length && !brandsLoading ? (
             <p className={styles.message}>No matching brand. Clear the search or choose another {getAssetTypeLabel(selectedSector)}.</p>
@@ -3528,7 +3564,7 @@ export default function ValuationClient() {
               }}
             >
               <strong>Use {getSpecsLabel(selectedSector)}</strong>
-              <span className={styles.choiceCardNote}>Use this when exact model data is not available or you are unsure of the exact model.</span>
+              <span className={styles.choiceCardNote}>Use when exact model data is unavailable or the model is uncertain.</span>
             </button>
           ) : null}
         </div>
@@ -3537,23 +3573,10 @@ export default function ValuationClient() {
           <div className={styles.pathSelectionPlaceholder}>Checking exact model availability...</div>
         ) : null}
 
-        {selectedBrandIsUnknown ? (
-          <div className={styles.pathSelectionPlaceholder}>Brand is marked as Unknown, so Aim4price will use {getSpecsLabel(selectedSector)}.</div>
-        ) : null}
-
-        {!selectedBrandIsUnknown && genericModelAvailabilityChecked && !exactModelRowsAvailable ? (
-          <div className={styles.pathSelectionPlaceholder}>No exact catalogue models are available for this brand and {getAssetTypeLabel(selectedSector)}. Aim4price will use {getSpecsLabel(selectedSector)}.</div>
-        ) : null}
-
         {!flowMode ? <div className={styles.pathSelectionPlaceholder}>Select a path above to continue.</div> : null}
         {flowMode === 'exact_model' && exactTractorAvailable && showExactPathCard ? renderTractorModelPicker() : null}
         {genericExactModelPath && showExactPathCard ? renderGenericModelPicker() : null}
-        {flowMode === 'generic_specs' ? (
-          <div className={styles.pathSelectionPlaceholder}>
-            {getGenericEstimatePathCopy(selectedSector)}
-          </div>
-        ) : null}
-        {flowMode === 'generic_specs' && selectedBrandIsUnknown ? renderUnknownModelChoice() : null}
+        {flowMode === 'generic_specs' ? renderUnknownModelChoice() : null}
       </div>
     );
   }
@@ -3839,6 +3862,22 @@ export default function ValuationClient() {
             <p className={styles.currentHint}>Enter the model when you know it, or continue with the model marked as unknown.</p>
           </div>
         </div>
+
+        {selectedBrandIsUnknown ? (
+          <label className={`${styles.field} ${styles.unlistedBrandNameField}`}>
+            <span className={styles.fieldLabel}>Enter brand name</span>
+            <input
+              value={unlistedBrandName}
+              onChange={(event) => {
+                setUnlistedBrandName(event.target.value);
+                resetResult();
+              }}
+              placeholder="e.g. Toyota, JCB, Mahindra"
+              autoComplete="off"
+            />
+            <span className={styles.fieldHint}>Optional. This name is saved with the estimate details, without adding a new catalogue brand.</span>
+          </label>
+        ) : null}
 
         <div className={styles.inlineOptionRow}>
           <button
@@ -4504,7 +4543,7 @@ export default function ValuationClient() {
         ? styles.resultHeroMedium
         : styles.resultHeroLow;
     const genericModelNameForResult = genericResult?.typedModelName || getGenericModelSubmitName(selectedGenericModel) || normalizeText(typedModelName);
-    const genericBrandNameForResult = genericResult?.brand.name ?? selectedBrand?.name ?? 'Brand';
+    const genericBrandNameForResult = getDisplayBrandName(genericResult?.brand ?? selectedBrand, genericResult?.specsJson, unlistedBrandName);
     const genericFamilyLabelForResult = genericResult?.family.label ?? selectedFamily?.familyLabel ?? getAssetNounTitle(selectedSector);
     const resultBrandIsUnknown = isUnknownBrandSlug(genericResult?.brand.slug ?? selectedBrand?.slug);
     const machineTitle = isGeneric
@@ -4538,11 +4577,11 @@ export default function ValuationClient() {
     const advancedLifetimeShortUnit = getUsageShortUnit(resultSectorKey, resultUsageMetricType);
     const advancedLifetimeMin = resultUsageMetricType === 'km' ? ADVANCED_LIFETIME_KM_MIN : ADVANCED_LIFETIME_HOURS_MIN;
     const advancedLifetimeMax = resultUsageMetricType === 'km' ? ADVANCED_LIFETIME_KM_MAX : ADVANCED_LIFETIME_HOURS_MAX;
-    const advancedLifetimeInputLabel = resultUsageMetricType === 'km' ? 'Expected lifetime km' : 'Expected lifetime hours';
+    const advancedLifetimeInputLabel = resultUsageMetricType === 'km' ? 'Expected lifetime in km' : 'Expected lifetime in hours';
     const appliedAdvancedAssumptions = getAppliedAdvancedAssumptionsFromState(resultState);
     const customAdvancedAssumptionsApplied = hasAppliedAdvancedAssumptions(appliedAdvancedAssumptions);
     const advancedShowLifetimeInput = shouldShowAdvancedLifetimeInput(resultState, usageNumber, lifeWorkedPercentNumber);
-    const advancedConditionQuestionLabel = `For ${getAdvancedConditionQuestionLabel(resultCondition)} condition, what % of full value should remain?`;
+    const advancedConditionQuestionLabel = `What is ${getAdvancedConditionQuestionLabel(resultCondition)} condition out of 100%?`;
     const advancedControlsDisabled = !canUseAdvancedAssumptions || advancedRecalculateLoading || replacementRecalculateLoading || saveLoading;
     return (
       <div className={styles.resultsLayout}>
@@ -4607,7 +4646,7 @@ export default function ValuationClient() {
                     ? customAdvancedAssumptionsApplied
                       ? 'Custom assumptions applied.'
                       : 'Fine-tune this estimate only.'
-                    : 'For active Aim4price users only.'}
+                    : 'For active Aim4price accounts only.'}
                 </small>
               </span>
               <span className={styles.resultAccordionAction}>{advancedPanelOpen ? 'Hide' : canUseAdvancedAssumptions ? 'Edit' : 'Locked'}</span>
@@ -4616,13 +4655,18 @@ export default function ValuationClient() {
             {advancedPanelOpen ? (
               <div className={styles.resultAccordionBody}>
                 {!canUseAdvancedAssumptions ? (
-                  <p className={styles.advancedLockedCopy}>Advanced assumptions are for active Aim4price users only.</p>
+                  null
                 ) : (
                   <p className={styles.advancedDisclaimer}>Use only when you know this specific asset.</p>
                 )}
 
-                <div className={`${styles.advancedControlsPreview} ${!canUseAdvancedAssumptions ? styles.advancedControlsLocked : ''}`}>
-                  <div className={styles.advancedAssumptionsGrid}>
+                <div className={`${styles.advancedControlsPreview} ${!canUseAdvancedAssumptions ? styles.advancedControlsPreviewLocked : ''}`}>
+                  {!canUseAdvancedAssumptions ? (
+                    <p className={styles.advancedLockedCopy}>Advanced assumptions are for active Aim4price accounts only.</p>
+                  ) : null}
+
+                  <div className={`${styles.advancedControlsContent} ${!canUseAdvancedAssumptions ? styles.advancedControlsLocked : ''}`}>
+                    <div className={styles.advancedAssumptionsGrid}>
                     {advancedShowLifetimeInput ? (
                       <label className={styles.field}>
                         <span className={styles.fieldLabel}>{advancedLifetimeInputLabel}</span>
@@ -4656,14 +4700,15 @@ export default function ValuationClient() {
 
                   {canUseAdvancedAssumptions && advancedError ? <p className={styles.advancedError}>{advancedError}</p> : null}
 
-                  <button
-                    type="button"
-                    className={styles.assetButton}
-                    onClick={updateAdvancedAssumptionsAndRecalculate}
-                    disabled={advancedControlsDisabled}
-                  >
-                    {advancedRecalculateLoading ? 'Recalculating...' : 'Update assumptions and recalculate'}
-                  </button>
+                    <button
+                      type="button"
+                      className={styles.assetButton}
+                      onClick={updateAdvancedAssumptionsAndRecalculate}
+                      disabled={advancedControlsDisabled}
+                    >
+                      {advancedRecalculateLoading ? 'Recalculating...' : 'Update assumptions and recalculate'}
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -4757,7 +4802,7 @@ export default function ValuationClient() {
 
                   <div className={styles.replacementInputPanel}>
                     <label className={styles.field}>
-                      <span className={styles.fieldLabel}>Updated replacement price excl. VAT</span>
+                      <span className={styles.fieldLabel}>Cost to replace new (excl. VAT)</span>
                       <input
                         type="text"
                         inputMode="decimal"
