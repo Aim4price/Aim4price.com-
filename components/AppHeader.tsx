@@ -1353,11 +1353,12 @@ export default function AppHeader({
                 </>
               )}
 
-              {!isLoadingSession && !session ? (
+              {!isLoadingSession ? (
                 <button
                   type="button"
                   className={`${styles.mobileMenuButton} ${mobileMenuOpen ? styles.mobileMenuButtonActive : ''}`}
                   aria-expanded={mobileMenuOpen}
+                  aria-haspopup="dialog"
                   aria-controls={MOBILE_MENU_ID}
                   aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
                   onClick={handleMobileMenuToggle}
@@ -1366,23 +1367,18 @@ export default function AppHeader({
                     <span className={styles.mobileMenuIconLine} />
                   </span>
                   <span className={styles.mobileMenuButtonText}>Menu</span>
-                  <svg className={styles.mobileMenuChevron} viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-                    <path
-                      d="M5.55 7.45a1 1 0 0 1 1.42 0L10 10.49l3.03-3.04a1 1 0 1 1 1.42 1.42l-3.74 3.73a1 1 0 0 1-1.42 0L5.55 8.87a1 1 0 0 1 0-1.42Z"
-                      fill="currentColor"
-                    />
-                  </svg>
                 </button>
               ) : null}
             </div>
           </div>
 
-          {mobileMenuOpen && !session ? (
-            <div id={MOBILE_MENU_ID} className={styles.mobileMenuPanel}>
+          {mobileMenuOpen ? (
+            <div id={MOBILE_MENU_ID} className={styles.mobileMenuPanel} role="dialog" aria-modal="true" aria-label="Mobile menu">
               <div className={styles.mobileMenuHeader}>
                 <div className={styles.mobileMenuHeaderCopy}>
-                  <span className={styles.mobileMenuKicker}>Navigation</span>
+                  <span className={styles.mobileMenuKicker}>{session ? 'Account navigation' : 'Navigation'}</span>
                   <strong className={styles.mobileMenuTitle}>Menu</strong>
+                  {session ? <span className={styles.mobileMenuAccountName}>{accountName}</span> : null}
                 </div>
                 <button
                   type="button"
@@ -1394,25 +1390,52 @@ export default function AppHeader({
                 </button>
               </div>
 
-              <nav className={styles.mobileMenuNav} aria-label="Mobile navigation">
-                {navItems.map((item) => {
-                  const isActive = active === item.key;
+              <nav className={styles.mobileMenuNav} aria-label={session ? 'Account mobile navigation' : 'Mobile navigation'}>
+                {session
+                  ? ACCOUNT_MENU_ITEMS.map((item) => {
+                      const isActive = isAccountMenuLinkActive(item.href);
 
-                  return (
-                    <Link
-                      key={`mobile-${item.key}-${item.href}`}
-                      href={item.href}
-                      aria-current={isActive ? 'page' : undefined}
-                      className={`${styles.mobileMenuNavLink} ${isActive ? styles.mobileMenuNavLinkActive : ''}`}
-                      onClick={closeMobileMenu}
-                    >
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
+                      return (
+                        <Link
+                          key={`mobile-account-${item.href}`}
+                          href={item.href}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={`${styles.mobileMenuNavLink} ${isActive ? styles.mobileMenuNavLinkActive : ''}`}
+                          onClick={closeMobileMenu}
+                        >
+                          <span>{item.label}</span>
+                        </Link>
+                      );
+                    })
+                  : navItems.map((item) => {
+                      const isActive = active === item.key;
+
+                      return (
+                        <Link
+                          key={`mobile-${item.key}-${item.href}`}
+                          href={item.href}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={`${styles.mobileMenuNavLink} ${isActive ? styles.mobileMenuNavLinkActive : ''}`}
+                          onClick={closeMobileMenu}
+                        >
+                          <span>{item.label}</span>
+                        </Link>
+                      );
+                    })}
               </nav>
 
-              {!isLoadingSession && !session ? (
+              {session ? (
+                <div className={styles.mobileMenuAccountActions}>
+                  <button
+                    type="button"
+                    className={styles.mobileMenuDangerButton}
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                  >
+                    {isSigningOut ? 'Signing out...' : 'Sign out'}
+                  </button>
+                </div>
+              ) : (
                 <div className={styles.mobileMenuAuthActions}>
                   <SmartLink href={loginHref} className={styles.mobileMenuAuthLink} onClick={closeMobileMenu}>
                     Login
@@ -1421,7 +1444,7 @@ export default function AppHeader({
                     {ctaLabel}
                   </SmartLink>
                 </div>
-              ) : null}
+              )}
             </div>
           ) : null}
         </div>
