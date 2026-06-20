@@ -4653,7 +4653,7 @@ export default function ValuationClient() {
             </button>
 
             {advancedPanelOpen ? (
-              <div className={styles.resultAccordionBody}>
+              <div className={styles.resultAccordionBody} style={{ paddingTop: '1rem' }}>
                 <div className={`${styles.advancedControlsPreview} ${!canUseAdvancedAssumptions ? styles.advancedControlsPreviewLocked : ''}`}>
                   {!canUseAdvancedAssumptions ? (
                     <p className={styles.advancedLockedCopy}>Advanced assumptions are for active Aim4price accounts only.</p>
