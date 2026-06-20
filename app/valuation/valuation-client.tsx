@@ -4581,7 +4581,7 @@ export default function ValuationClient() {
     const appliedAdvancedAssumptions = getAppliedAdvancedAssumptionsFromState(resultState);
     const customAdvancedAssumptionsApplied = hasAppliedAdvancedAssumptions(appliedAdvancedAssumptions);
     const advancedShowLifetimeInput = shouldShowAdvancedLifetimeInput(resultState, usageNumber, lifeWorkedPercentNumber);
-    const advancedConditionQuestionLabel = `What is ${getAdvancedConditionQuestionLabel(resultCondition)} condition out of 100%?`;
+    const advancedConditionQuestionLabel = `What is ${getAdvancedConditionQuestionLabel(resultCondition)} out of 100%?`;
     const advancedControlsDisabled = !canUseAdvancedAssumptions || advancedRecalculateLoading || replacementRecalculateLoading || saveLoading;
     return (
       <div className={styles.resultsLayout}>
@@ -4654,12 +4654,6 @@ export default function ValuationClient() {
 
             {advancedPanelOpen ? (
               <div className={styles.resultAccordionBody}>
-                {!canUseAdvancedAssumptions ? (
-                  null
-                ) : (
-                  <p className={styles.advancedDisclaimer}>Use only when you know this specific asset.</p>
-                )}
-
                 <div className={`${styles.advancedControlsPreview} ${!canUseAdvancedAssumptions ? styles.advancedControlsPreviewLocked : ''}`}>
                   {!canUseAdvancedAssumptions ? (
                     <p className={styles.advancedLockedCopy}>Advanced assumptions are for active Aim4price accounts only.</p>
