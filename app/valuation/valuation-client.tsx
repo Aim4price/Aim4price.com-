@@ -133,7 +133,7 @@ type GenericCatalogModel = {
   isActive: boolean;
 };
 
-type GenericModelSelectionMode = 'catalog' | 'manual' | '';
+type GenericModelSelectionMode = 'catalog' | 'manual' | 'unknown' | '';
 
 type GenericValuationCalculation = {
   replacementPriceBasis: ReplacementPriceBasis;
@@ -362,6 +362,9 @@ type ValuationPdfPayload = {
 
 const CURRENT_YEAR = new Date().getFullYear();
 const VAT_RATE = 0.15;
+const UNKNOWN_BRAND_SLUG = 'unknown';
+const UNKNOWN_BRAND_NAME = 'Unknown';
+const UNKNOWN_BRAND_OPTION: BrandRow = { name: UNKNOWN_BRAND_NAME, slug: UNKNOWN_BRAND_SLUG };
 const MAX_MARKETPLACE_PHOTOS = 12;
 const MARKETPLACE_INTRO_DISMISSED_KEY = 'aim4price-marketplace-intro-dismissed';
 
@@ -461,7 +464,7 @@ function getSpecsTitle(sectorKey?: SectorKey | null): string {
 }
 
 function getGenericEstimatePathCopy(sectorKey?: SectorKey | null): string {
-  return `Aim4price uses the brand, condition, usage and ${getSpecsLabel(sectorKey)} for this estimate path.`;
+  return `Aim4price uses a few key ${getSpecsLabel(sectorKey)} questions to help calculate a value. Continue to answer the questions.`;
 }
 
 function getGpsTypeLabel(value: GpsType): string {
@@ -492,6 +495,29 @@ function previousStep(step: Step): Step {
 
 function normalizeText(value: unknown): string {
   return String(value ?? '').trim();
+}
+
+function isUnknownBrandSlug(value: unknown): boolean {
+  return normalizeText(value).toLowerCase() === UNKNOWN_BRAND_SLUG;
+}
+
+function getAdvancedConditionQuestionLabel(value: ConditionKey): string {
+  if (value === 'serious') return 'Serious';
+  return sentenceCase(value);
+}
+
+function shouldShowAdvancedLifetimeInput(
+  state: ValuationResultState | null,
+  tractorUsageAmount: number | null,
+  tractorLifeWorkedPercent: number | null,
+): boolean {
+  if (!state) return true;
+
+  if (state.kind === 'generic') {
+    return !(state.result.usageAmount === null && state.result.lifeWorkedPercent !== null);
+  }
+
+  return !(tractorUsageAmount === null && tractorLifeWorkedPercent !== null);
 }
 
 function parseFlexibleNumber(value: unknown): number | null {
@@ -1000,6 +1026,7 @@ export default function ValuationClient() {
   const [modelId, setModelId] = useState('');
   const [genericCatalogModels, setGenericCatalogModels] = useState<GenericCatalogModel[]>([]);
   const [genericModelsLoading, setGenericModelsLoading] = useState(false);
+  const [genericModelLookupKey, setGenericModelLookupKey] = useState('');
   const [genericModelQuery, setGenericModelQuery] = useState('');
   const [genericModelDropdownOpen, setGenericModelDropdownOpen] = useState(false);
   const [genericModelId, setGenericModelId] = useState('');
@@ -1082,7 +1109,33 @@ export default function ValuationClient() {
     () => families.find((family) => family.familyKey === familyKey) ?? null,
     [families, familyKey],
   );
-  const selectedBrand = useMemo(() => brands.find((brand) => brand.slug === brandSlug) ?? null, [brands, brandSlug]);
+  const brandsWithUnknown = useMemo(() => {
+    const seenSlugs = new Set<string>([UNKNOWN_BRAND_SLUG]);
+    const realBrands = brands.filter((brand) => {
+      const slug = normalizeText(brand.slug).toLowerCase();
+      if (!slug || seenSlugs.has(slug)) return false;
+      seenSlugs.add(slug);
+      return true;
+    });
+
+    return [UNKNOWN_BRAND_OPTION, ...realBrands];
+  }, [brands]);
+
+  const selectedBrand = useMemo(
+    () => brandsWithUnknown.find((brand) => brand.slug === brandSlug) ?? null,
+    [brandsWithUnknown, brandSlug],
+  );
+  const selectedBrandIsUnknown = isUnknownBrandSlug(selectedBrand?.slug ?? brandSlug);
+  const currentGenericModelLookupKey = `${selectedSector ?? ''}|${selectedFamily?.familyKey ?? ''}|${brandSlug}`;
+  const genericModelAvailabilityChecked = Boolean(
+    selectedSector &&
+      selectedFamily &&
+      brandSlug &&
+      !selectedBrandIsUnknown &&
+      !genericModelsLoading &&
+      genericModelLookupKey === currentGenericModelLookupKey,
+  );
+  const exactModelRowsAvailable = genericModelAvailabilityChecked && genericCatalogModels.length > 0;
   const selectedModel = useMemo(
     () => tractorModels.find((model) => model.id === modelId) ?? null,
     [tractorModels, modelId],
@@ -1091,9 +1144,12 @@ export default function ValuationClient() {
     () => genericCatalogModels.find((model) => String(model.id) === genericModelId) ?? null,
     [genericCatalogModels, genericModelId],
   );
-  const submittedGenericModelName = genericModelMode === 'catalog'
-    ? getGenericModelSubmitName(selectedGenericModel)
-    : normalizeText(typedModelName);
+  const submittedGenericModelName =
+    genericModelMode === 'catalog'
+      ? getGenericModelSubmitName(selectedGenericModel)
+      : genericModelMode === 'manual'
+        ? normalizeText(typedModelName)
+        : '';
   const shouldSaveGenericModelCandidate = genericModelMode === 'manual' && Boolean(normalizeText(typedModelName));
   const selectedUsageDisplayUnit = getUsageDisplayUnit(selectedSector, selectedFamily?.usageMetricType);
   const selectedUsageFieldLabel = getUsageFieldLabel(selectedSector, selectedFamily?.usageMetricType);
@@ -1124,9 +1180,12 @@ export default function ValuationClient() {
   }, [families, familySearch]);
   const filteredBrands = useMemo(() => {
     const query = brandSearch.trim().toLowerCase();
-    const matches = brands.filter((brand) => searchIncludes(`${brand.name} ${brand.slug}`, brandSearch));
+    const realMatches = brandsWithUnknown.filter((brand) => {
+      if (isUnknownBrandSlug(brand.slug)) return false;
+      return searchIncludes(`${brand.name} ${brand.slug}`, brandSearch);
+    });
 
-    if (!query) return matches;
+    if (!query) return [UNKNOWN_BRAND_OPTION, ...realMatches];
 
     function scoreBrand(brand: BrandRow): number {
       const name = brand.name.toLowerCase();
@@ -1140,11 +1199,11 @@ export default function ValuationClient() {
       return 5;
     }
 
-    return [...matches].sort((a, b) => scoreBrand(a) - scoreBrand(b) || a.name.localeCompare(b.name));
-  }, [brands, brandSearch]);
+    return [UNKNOWN_BRAND_OPTION, ...realMatches.sort((a, b) => scoreBrand(a) - scoreBrand(b) || a.name.localeCompare(b.name))];
+  }, [brandsWithUnknown, brandSearch]);
 
   const exactTractorAvailable = selectedFamily?.familyKey === 'tractors' && selectedFamily.catalogMode === 'hybrid';
-  const genericExactModelPath = flowMode === 'exact_model' && !exactTractorAvailable;
+  const genericExactModelPath = flowMode === 'exact_model' && !exactTractorAvailable && exactModelRowsAvailable && !selectedBrandIsUnknown;
   const genericValuationPath = flowMode === 'generic_specs' || genericExactModelPath;
   const genericModelRequired = genericExactModelPath;
   const tractorSetupComplete = Boolean(tractorType && drive && cab);
@@ -1368,6 +1427,7 @@ export default function ValuationClient() {
     setTractorModels([]);
     setGenericCatalogModels([]);
     setGenericModelsLoading(false);
+    setGenericModelLookupKey('');
     clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
     setSpecQuestions([]);
     setSpecAnswers({});
@@ -1451,6 +1511,7 @@ export default function ValuationClient() {
     setTractorModels([]);
     setGenericCatalogModels([]);
     setGenericModelsLoading(false);
+    setGenericModelLookupKey('');
     clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
     setTypedModelName('');
     setYear(String(CURRENT_YEAR));
@@ -1534,7 +1595,7 @@ export default function ValuationClient() {
   }, [selectedFamily, selectedSector, genericValuationPath]);
 
   useEffect(() => {
-    if (!brandSlug || flowMode !== 'exact_model' || !tractorType || !drive || !cab) {
+    if (!brandSlug || selectedBrandIsUnknown || !exactTractorAvailable || !exactModelRowsAvailable || flowMode !== 'exact_model' || !tractorType || !drive || !cab) {
       setTractorModels([]);
       setModelId('');
       setModelDropdownOpen(false);
@@ -1577,23 +1638,28 @@ export default function ValuationClient() {
     return () => {
       ignore = true;
     };
-  }, [brandSlug, flowMode, tractorType, drive, cab]);
+  }, [brandSlug, selectedBrandIsUnknown, exactTractorAvailable, exactModelRowsAvailable, flowMode, tractorType, drive, cab]);
 
   useEffect(() => {
-    if (!selectedSector || !selectedFamily || !brandSlug || !genericValuationPath) {
+    if (!selectedSector || !selectedFamily || !brandSlug || selectedBrandIsUnknown) {
       setGenericCatalogModels([]);
       setGenericModelsLoading(false);
-      clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
+      setGenericModelLookupKey('');
+      if (!selectedBrandIsUnknown) {
+        clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
+      }
       return;
     }
 
     const sectorForRequest = selectedSector;
     const familyKeyForRequest = selectedFamily.familyKey;
     const brandSlugForRequest = brandSlug;
+    const lookupKeyForRequest = currentGenericModelLookupKey;
 
     let ignore = false;
     setGenericModelsLoading(true);
     setGenericCatalogModels([]);
+    setGenericModelLookupKey('');
     clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
 
     async function loadGenericCatalogModels() {
@@ -1607,10 +1673,16 @@ export default function ValuationClient() {
         const response = await fetch(`/api/equipment-models?${params.toString()}`, { cache: 'no-store' });
         const data = (await response.json()) as EquipmentModelsApiResponse;
         if (!response.ok || !data.ok || !Array.isArray(data.models)) throw new Error(data.error ?? 'Failed to load catalogue models.');
-        if (!ignore) setGenericCatalogModels(data.models);
+        if (!ignore) {
+          setGenericCatalogModels(data.models);
+          setGenericModelLookupKey(lookupKeyForRequest);
+        }
       } catch (error) {
         console.error(error);
-        if (!ignore) setGenericCatalogModels([]);
+        if (!ignore) {
+          setGenericCatalogModels([]);
+          setGenericModelLookupKey(lookupKeyForRequest);
+        }
       } finally {
         if (!ignore) setGenericModelsLoading(false);
       }
@@ -1620,7 +1692,38 @@ export default function ValuationClient() {
     return () => {
       ignore = true;
     };
-  }, [selectedSector, selectedFamily, brandSlug, genericValuationPath]);
+  }, [selectedSector, selectedFamily, brandSlug, selectedBrandIsUnknown, currentGenericModelLookupKey]);
+
+  useEffect(() => {
+    if (!selectedFamily || !brandSlug) return;
+
+    if (selectedBrandIsUnknown) {
+      if (flowMode !== 'generic_specs') setFlowMode('generic_specs');
+      setModelId('');
+      setModelQuery('');
+      setModelDropdownOpen(false);
+      setTractorModels([]);
+      setModelsLoading(false);
+      return;
+    }
+
+    if (genericModelAvailabilityChecked && !exactModelRowsAvailable && flowMode !== 'generic_specs') {
+      setFlowMode('generic_specs');
+      setModelId('');
+      setModelQuery('');
+      setModelDropdownOpen(false);
+      setTractorModels([]);
+      setModelsLoading(false);
+      resetResult();
+    }
+  }, [
+    selectedFamily,
+    brandSlug,
+    selectedBrandIsUnknown,
+    genericModelAvailabilityChecked,
+    exactModelRowsAvailable,
+    flowMode,
+  ]);
 
   useEffect(() => {
     if (!genericValuationPath || genericModelMode !== 'catalog' || !selectedGenericModel) return;
@@ -1714,12 +1817,18 @@ export default function ValuationClient() {
 
     const manualModelName = normalizeText(typedModelName);
 
+    if (selectedBrandIsUnknown) {
+      if (genericModelMode === 'manual' && !manualModelName) return 'Enter the model name or choose Model unknown.';
+      if (genericModelMode !== 'manual' && genericModelMode !== 'unknown') return 'Enter a model name or choose Model unknown.';
+      return null;
+    }
+
     if (genericModelRequired && !selectedGenericModel) {
       if (genericModelsLoading) return 'Catalogue models are still loading. Please wait.';
 
       return genericCatalogModels.length
-        ? 'Choose a catalogue model first, or switch to the flexible specs path.'
-        : `No catalogue models are available yet for this brand and ${getAssetTypeLabel(selectedSector)}. Use the flexible specs path.`;
+        ? 'Choose a catalogue model first.'
+        : `No catalogue models are available yet for this brand and ${getAssetTypeLabel(selectedSector)}. Aim4price will use ${getSpecsLabel(selectedSector)}.`;
     }
 
     if (genericModelMode === 'manual' && !manualModelName) return 'Enter the model name.';
@@ -1783,7 +1892,7 @@ export default function ValuationClient() {
 
     if (!conditionStepComplete || !condition) return 'Choose the condition.';
     if (flowMode === 'exact_model' && exactTractorAvailable && !tractorSetupComplete) return 'Complete the type, drive and cab setup first.';
-    if (flowMode === 'exact_model' && exactTractorAvailable && !selectedModel) return `Choose the exact model or use ${getSpecsLabel(selectedSector)}.`;
+    if (flowMode === 'exact_model' && exactTractorAvailable && !selectedModel) return 'Choose the exact model first.';
 
     if (genericValuationPath) {
       const genericModelMessage = validateGenericModelSelection();
@@ -1817,15 +1926,16 @@ export default function ValuationClient() {
     const lifetimeMax = usageMetricType === 'km' ? ADVANCED_LIFETIME_KM_MAX : ADVANCED_LIFETIME_HOURS_MAX;
     const lifetimeText = normalizeText(advancedLifetimeUsage);
     const conditionText = normalizeText(advancedConditionFactorPercent);
+    const showLifetimeInput = shouldShowAdvancedLifetimeInput(resultState, usageNumber, lifeWorkedPercentNumber);
     const lifetimeValue = lifetimeText ? parseMoneyInput(lifetimeText) : null;
     const conditionPercent = conditionText ? parseFlexibleNumber(conditionText) : null;
 
-    if (!lifetimeText) {
+    if (showLifetimeInput && !lifetimeText) {
       setAdvancedError(`Enter expected lifetime ${lifetimeUnitLabel}.`);
       return null;
     }
 
-    if (lifetimeValue === null || lifetimeValue < lifetimeMin || lifetimeValue > lifetimeMax) {
+    if (showLifetimeInput && (lifetimeValue === null || lifetimeValue < lifetimeMin || lifetimeValue > lifetimeMax)) {
       setAdvancedError(
         `Expected lifetime ${lifetimeUnitLabel} must be between ${formatPlainNumber(lifetimeMin)} and ${formatPlainNumber(lifetimeMax)} ${lifetimeShortUnit}.`,
       );
@@ -1833,7 +1943,7 @@ export default function ValuationClient() {
     }
 
     if (conditionPercent === null) {
-      setAdvancedError('Enter a condition retained value percentage.');
+      setAdvancedError('Enter the condition percentage.');
       return null;
     }
 
@@ -1842,13 +1952,13 @@ export default function ValuationClient() {
       conditionPercent > ADVANCED_CONDITION_FACTOR_MAX_PERCENT
     ) {
       setAdvancedError(
-        `Condition retained value must be between ${ADVANCED_CONDITION_FACTOR_MIN_PERCENT}% and ${ADVANCED_CONDITION_FACTOR_MAX_PERCENT}%.`,
+        `Condition percentage must be between ${ADVANCED_CONDITION_FACTOR_MIN_PERCENT}% and ${ADVANCED_CONDITION_FACTOR_MAX_PERCENT}%.`,
       );
       return null;
     }
 
     return {
-      maxLifetimeUsage: Math.round(lifetimeValue),
+      maxLifetimeUsage: showLifetimeInput && lifetimeValue !== null ? Math.round(lifetimeValue) : null,
       conditionFactorPercent: Math.round(conditionPercent * 10) / 10,
     };
   }
@@ -2936,7 +3046,7 @@ export default function ValuationClient() {
         return;
       }
       if (flowMode === 'exact_model' && exactTractorAvailable && !selectedModel) {
-        setMessage(`Choose an exact model or continue using ${getSpecsLabel(selectedSector)}.`);
+        setMessage('Choose an exact model first.');
         return;
       }
       if (genericValuationPath) {
@@ -2975,6 +3085,7 @@ export default function ValuationClient() {
     setTractorModels([]);
     setGenericCatalogModels([]);
     setGenericModelsLoading(false);
+    setGenericModelLookupKey('');
     clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
     setSpecQuestions([]);
     setSpecAnswers({});
@@ -3017,6 +3128,7 @@ export default function ValuationClient() {
     setTractorModels([]);
     setGenericCatalogModels([]);
     setGenericModelsLoading(false);
+    setGenericModelLookupKey('');
     clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
     setBrandSearch('');
     setBrandDropdownOpen(false);
@@ -3028,7 +3140,10 @@ export default function ValuationClient() {
   function handleBrandSelection(nextBrandSlug: string) {
     if (!nextBrandSlug) return;
 
+    const nextBrandIsUnknown = isUnknownBrandSlug(nextBrandSlug);
+
     setBrandSlug(nextBrandSlug);
+    setFlowMode(nextBrandIsUnknown ? 'generic_specs' : '');
     setBrandSearch('');
     setBrandDropdownOpen(false);
     setTypedModelName('');
@@ -3041,6 +3156,7 @@ export default function ValuationClient() {
     setTractorModels([]);
     setGenericCatalogModels([]);
     setGenericModelsLoading(false);
+    setGenericModelLookupKey('');
     clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
     resetResult();
     setStep(3);
@@ -3101,6 +3217,17 @@ export default function ValuationClient() {
     setGenericModelMode('manual');
     setGenericModelQuery('');
     setGenericModelDropdownOpen(false);
+    removeGenericModelPrefilledAnswers();
+    setMessage('');
+    resetResult();
+  }
+
+  function handleGenericModelUnknown() {
+    setGenericModelId('');
+    setGenericModelMode('unknown');
+    setGenericModelQuery('');
+    setGenericModelDropdownOpen(false);
+    setTypedModelName('');
     removeGenericModelPrefilledAnswers();
     setMessage('');
     resetResult();
@@ -3304,7 +3431,7 @@ export default function ValuationClient() {
           <div className={styles.equipmentDropdownWrap}>
             <button
               type="button"
-              className={`${styles.equipmentDropdownTrigger} ${brandDropdownOpen ? styles.equipmentDropdownTriggerOpen : ''}`}
+              className={`${styles.equipmentDropdownTrigger} ${brandDropdownOpen ? styles.equipmentDropdownTriggerOpen : ''} ${selectedBrandIsUnknown ? styles.equipmentDropdownTriggerWarning : ''}`}
               onClick={() => setBrandDropdownOpen((value) => !value)}
               disabled={brandsLoading || !filteredBrands.length}
               aria-expanded={brandDropdownOpen}
@@ -3324,7 +3451,7 @@ export default function ValuationClient() {
                     <button
                       key={brand.slug}
                       type="button"
-                      className={`${styles.equipmentDropdownOption} ${brandSlug === brand.slug ? styles.equipmentDropdownOptionActive : ''}`}
+                      className={`${styles.equipmentDropdownOption} ${isUnknownBrandSlug(brand.slug) ? styles.equipmentDropdownOptionWarning : ''} ${brandSlug === brand.slug ? styles.equipmentDropdownOptionActive : ''}`}
                       onClick={() => handleBrandSelection(brand.slug)}
                     >
                       <span>{brand.name}</span>
@@ -3340,7 +3467,7 @@ export default function ValuationClient() {
           {brandsLoading ? <p className={styles.fieldHint}>Loading brands...</p> : null}
 
           {!brands.length && !brandsLoading ? (
-            <p className={styles.message}>No brands are linked to this {getAssetTypeLabel(selectedSector)} yet. Add brands for this {getAssetTypeLabel(selectedSector)} before running estimates.</p>
+            <p className={styles.message}>Only Unknown is available until brands are linked to this {getAssetTypeLabel(selectedSector)}.</p>
           ) : null}
           {brands.length > 0 && !filteredBrands.length && !brandsLoading ? (
             <p className={styles.message}>No matching brand. Clear the search or choose another {getAssetTypeLabel(selectedSector)}.</p>
@@ -3351,56 +3478,82 @@ export default function ValuationClient() {
   }
 
   function renderPathStep() {
+    const exactModelSelectionLocked = Boolean(
+      flowMode === 'exact_model' &&
+        ((exactTractorAvailable && selectedModel) || (!exactTractorAvailable && selectedGenericModel)),
+    );
+    const showExactPathCard = !selectedBrandIsUnknown && exactModelRowsAvailable;
+    const showSpecsPathCard = !exactModelSelectionLocked;
+    const pathCardCount = (showExactPathCard ? 1 : 0) + (showSpecsPathCard ? 1 : 0);
+    const pathDeckClassName = `${styles.choiceGrid} ${styles.pathChoiceGrid} ${styles.pathChoiceDeck} ${pathCardCount === 1 ? styles.pathChoiceDeckSingle : ''}`;
+
     return (
       <div>
         <h2 className={styles.stepTitle}>Choose estimate path</h2>
         <p className={styles.stepText}>Choose one path first. Aim4price only shows the matching setup after you select it.</p>
 
-        <div className={`${styles.choiceGrid} ${styles.pathChoiceGrid} ${styles.pathChoiceDeck}`}>
-          <button
-            type="button"
-            className={`${styles.choiceCard} ${styles.pathChoiceCard} ${flowMode === 'exact_model' ? styles.choiceCardActive : ''}`}
-            onClick={() => {
-              setFlowMode('exact_model');
-              setTypedModelName('');
-              setTractorType('');
-              setDrive('');
-              setCab('');
-              resetExactModelSelection();
-              resetDetailsFlow();
-            }}
-          >
-            <span className={styles.pathChoiceCardEyebrow}>Recommended</span>
-            <strong>Use exact model</strong>
-            <span className={styles.choiceCardNote}>Best when you know the model and want the clearest estimate path.</span>
-          </button>
+        <div className={pathDeckClassName}>
+          {showExactPathCard ? (
+            <button
+              type="button"
+              className={`${styles.choiceCard} ${styles.pathChoiceCard} ${exactModelSelectionLocked ? styles.pathChoiceCardLocked : ''} ${flowMode === 'exact_model' ? styles.choiceCardActive : ''}`}
+              onClick={() => {
+                if (exactModelSelectionLocked) return;
+                setFlowMode('exact_model');
+                setTypedModelName('');
+                setGenericModelMode('');
+                setTractorType('');
+                setDrive('');
+                setCab('');
+                resetExactModelSelection();
+                resetDetailsFlow();
+              }}
+            >
+              <strong>Use exact model</strong>
+              <span className={styles.choiceCardNote}>Best when you know the model and want the clearest estimate path.</span>
+            </button>
+          ) : null}
 
-          <button
-            type="button"
-            className={`${styles.choiceCard} ${styles.pathChoiceCard} ${flowMode === 'generic_specs' ? styles.choiceCardActive : ''}`}
-            onClick={() => {
-              setFlowMode('generic_specs');
-              setTractorType('');
-              setDrive('');
-              setCab('');
-              resetExactModelSelection();
-              resetDetailsFlow();
-            }}
-          >
-            <span className={styles.pathChoiceCardEyebrow}>Flexible</span>
-            <strong>Use {getSpecsLabel(selectedSector)}</strong>
-            <span className={styles.choiceCardNote}>Use this when exact model data is not available or you are unsure of the exact model.</span>
-          </button>
+          {showSpecsPathCard ? (
+            <button
+              type="button"
+              className={`${styles.choiceCard} ${styles.pathChoiceCard} ${flowMode === 'generic_specs' ? styles.choiceCardActive : ''}`}
+              onClick={() => {
+                setFlowMode('generic_specs');
+                setTractorType('');
+                setDrive('');
+                setCab('');
+                resetExactModelSelection();
+                resetDetailsFlow();
+              }}
+            >
+              <strong>Use {getSpecsLabel(selectedSector)}</strong>
+              <span className={styles.choiceCardNote}>Use this when exact model data is not available or you are unsure of the exact model.</span>
+            </button>
+          ) : null}
         </div>
 
-        {!flowMode ? <div className={styles.pathSelectionPlaceholder}>Select one of the two paths above to continue.</div> : null}
-        {flowMode === 'exact_model' && exactTractorAvailable ? renderTractorModelPicker() : null}
-        {genericExactModelPath ? renderGenericModelPicker() : null}
+        {!selectedBrandIsUnknown && genericModelsLoading ? (
+          <div className={styles.pathSelectionPlaceholder}>Checking exact model availability...</div>
+        ) : null}
+
+        {selectedBrandIsUnknown ? (
+          <div className={styles.pathSelectionPlaceholder}>Brand is marked as Unknown, so Aim4price will use {getSpecsLabel(selectedSector)}.</div>
+        ) : null}
+
+        {!selectedBrandIsUnknown && genericModelAvailabilityChecked && !exactModelRowsAvailable ? (
+          <div className={styles.pathSelectionPlaceholder}>No exact catalogue models are available for this brand and {getAssetTypeLabel(selectedSector)}. Aim4price will use {getSpecsLabel(selectedSector)}.</div>
+        ) : null}
+
+        {!flowMode ? <div className={styles.pathSelectionPlaceholder}>Select a path above to continue.</div> : null}
+        {flowMode === 'exact_model' && exactTractorAvailable && showExactPathCard ? renderTractorModelPicker() : null}
+        {genericExactModelPath && showExactPathCard ? renderGenericModelPicker() : null}
         {flowMode === 'generic_specs' ? (
           <div className={styles.pathSelectionPlaceholder}>
-            {getGenericEstimatePathCopy(selectedSector)} Continue to answer the {getSpecsLabel(selectedSector)} questions.
+            {getGenericEstimatePathCopy(selectedSector)}
           </div>
         ) : null}
+        {flowMode === 'generic_specs' && selectedBrandIsUnknown ? renderUnknownModelChoice() : null}
       </div>
     );
   }
@@ -3550,10 +3703,12 @@ export default function ValuationClient() {
       ? formatGenericModelLabel(selectedGenericModel)
       : genericModelMode === 'manual'
         ? 'Model not listed'
-        : 'Choose model';
+        : genericModelMode === 'unknown'
+          ? 'Model unknown'
+          : 'Choose model';
     const modelPickerTitle = genericModelRequired ? 'Choose exact catalogue model' : 'Choose a catalogue model';
     const modelPickerHint = genericModelRequired
-      ? `Select the exact or closest model from the ${getAssetNounLabel(selectedSector)} catalogue before continuing.`
+      ? `Select the exact model from the ${getAssetNounLabel(selectedSector)} catalogue before continuing.`
       : 'Select the closest catalogue model to improve matching, or use Model not listed when the catalogue does not have it yet.';
 
     return (
@@ -3647,23 +3802,10 @@ export default function ValuationClient() {
             {!genericCatalogModels.length && !genericModelsLoading ? (
               <div className={styles.catalogEmptyState}>
                 <p className={styles.message}>No catalogue models found for this brand and {getAssetTypeLabel(selectedSector)} yet.</p>
-                {genericModelRequired ? (
-                  <button
-                    type="button"
-                    className={styles.inlineOptionButton}
-                    onClick={() => {
-                      setFlowMode('generic_specs');
-                      clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
-                      resetResult();
-                    }}
-                  >
-                    Use flexible specs path
-                  </button>
-                ) : null}
               </div>
             ) : null}
             {genericCatalogModels.length > 0 && !filteredGenericModels.length && !genericModelsLoading ? (
-              <p className={styles.message}>No matching catalogue model. Clear the search{genericModelRequired ? ' or use the flexible specs path.' : ' or choose Model not listed.'}</p>
+              <p className={styles.message}>No matching catalogue model. Clear the search{genericModelRequired ? ' or choose another catalogue model.' : ' or choose Model not listed.'}</p>
             ) : null}
 
             {genericModelMode === 'manual' && !genericModelRequired ? (
@@ -3684,6 +3826,57 @@ export default function ValuationClient() {
             ) : null}
           </div>
         </div>
+      </div>
+    );
+  }
+
+  function renderUnknownModelChoice() {
+    return (
+      <div className={`${styles.currentCard} ${styles.unknownModelCard}`} style={{ marginTop: '1rem' }}>
+        <div className={styles.currentCardHead}>
+          <div>
+            <h3 className={styles.currentTitle}>Model details</h3>
+            <p className={styles.currentHint}>Enter the model when you know it, or continue with the model marked as unknown.</p>
+          </div>
+        </div>
+
+        <div className={styles.inlineOptionRow}>
+          <button
+            type="button"
+            className={`${styles.inlineOptionButton} ${genericModelMode === 'manual' ? styles.inlineOptionButtonActive : ''}`}
+            onClick={handleGenericModelNotListed}
+          >
+            Enter model manually
+          </button>
+          <button
+            type="button"
+            className={`${styles.inlineOptionButton} ${genericModelMode === 'unknown' ? styles.inlineOptionButtonActive : ''}`}
+            onClick={handleGenericModelUnknown}
+          >
+            Model unknown
+          </button>
+        </div>
+
+        {genericModelMode === 'manual' ? (
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Enter model name</span>
+            <input
+              value={typedModelName}
+              onChange={(event) => {
+                setTypedModelName(event.target.value);
+                resetResult();
+              }}
+              placeholder={getSearchPlaceholder(selectedSector, 'manualModel')}
+              required
+              autoComplete="off"
+            />
+            <span className={styles.fieldHint}>This will be used only as the typed model name for this estimate.</span>
+          </label>
+        ) : null}
+
+        {genericModelMode === 'unknown' ? (
+          <p className={styles.fieldHint}>The estimate will continue without a model name.</p>
+        ) : null}
       </div>
     );
   }
@@ -4311,8 +4504,13 @@ export default function ValuationClient() {
         ? styles.resultHeroMedium
         : styles.resultHeroLow;
     const genericModelNameForResult = genericResult?.typedModelName || getGenericModelSubmitName(selectedGenericModel) || normalizeText(typedModelName);
+    const genericBrandNameForResult = genericResult?.brand.name ?? selectedBrand?.name ?? 'Brand';
+    const genericFamilyLabelForResult = genericResult?.family.label ?? selectedFamily?.familyLabel ?? getAssetNounTitle(selectedSector);
+    const resultBrandIsUnknown = isUnknownBrandSlug(genericResult?.brand.slug ?? selectedBrand?.slug);
     const machineTitle = isGeneric
-      ? `${genericResult?.family.label ?? getAssetNounTitle(selectedSector)} • ${genericResult?.brand.name ?? 'Brand'}${genericModelNameForResult ? ` • ${genericModelNameForResult}` : ''}`
+      ? resultBrandIsUnknown
+        ? `${genericBrandNameForResult} ${genericModelNameForResult || genericFamilyLabelForResult}`.trim()
+        : `${genericFamilyLabelForResult} • ${genericBrandNameForResult}${genericModelNameForResult ? ` • ${genericModelNameForResult}` : ''}`
       : `${tractorResult?.model.brandName ?? ''} ${tractorResult?.model.modelName ?? ''}`.trim();
     const resultCondition = isGeneric ? genericResult?.condition ?? condition : condition;
     const resultYear = isGeneric ? genericResult?.year ?? yearNumber : yearModelUnknown ? CURRENT_YEAR : yearNumber;
@@ -4340,9 +4538,12 @@ export default function ValuationClient() {
     const advancedLifetimeShortUnit = getUsageShortUnit(resultSectorKey, resultUsageMetricType);
     const advancedLifetimeMin = resultUsageMetricType === 'km' ? ADVANCED_LIFETIME_KM_MIN : ADVANCED_LIFETIME_HOURS_MIN;
     const advancedLifetimeMax = resultUsageMetricType === 'km' ? ADVANCED_LIFETIME_KM_MAX : ADVANCED_LIFETIME_HOURS_MAX;
-    const advancedLifetimeInputLabel = resultUsageMetricType === 'km' ? 'Expected lifetime kilometres' : 'Expected lifetime hours';
+    const advancedLifetimeInputLabel = resultUsageMetricType === 'km' ? 'Expected lifetime km' : 'Expected lifetime hours';
     const appliedAdvancedAssumptions = getAppliedAdvancedAssumptionsFromState(resultState);
     const customAdvancedAssumptionsApplied = hasAppliedAdvancedAssumptions(appliedAdvancedAssumptions);
+    const advancedShowLifetimeInput = shouldShowAdvancedLifetimeInput(resultState, usageNumber, lifeWorkedPercentNumber);
+    const advancedConditionQuestionLabel = `For ${getAdvancedConditionQuestionLabel(resultCondition)} condition, what % of full value should remain?`;
+    const advancedControlsDisabled = !canUseAdvancedAssumptions || advancedRecalculateLoading || replacementRecalculateLoading || saveLoading;
     return (
       <div className={styles.resultsLayout}>
         <div className={styles.resultsMain}>
@@ -4353,28 +4554,27 @@ export default function ValuationClient() {
             </div>
             <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
               <strong className={styles.resultValue}>{money(headlineDisplayValue)}</strong>
-              {headlineDisplayValue !== null ? <span className={styles.resultVatLabel}>{headlineVatLabel}</span> : null}
+              {headlineValue !== null ? (
+                <div className={`${styles.resultVatToggle} ${styles.resultVatToggleInline}`} role="group" aria-label="VAT display mode">
+                  <button
+                    type="button"
+                    className={`${styles.resultVatToggleButton} ${vatDisplayMode === 'excl' ? styles.resultVatToggleButtonActive : ''}`}
+                    onClick={() => setVatDisplayMode('excl')}
+                    aria-pressed={vatDisplayMode === 'excl'}
+                  >
+                    VAT excluded
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.resultVatToggleButton} ${vatDisplayMode === 'incl' ? styles.resultVatToggleButtonActive : ''}`}
+                    onClick={() => setVatDisplayMode('incl')}
+                    aria-pressed={vatDisplayMode === 'incl'}
+                  >
+                    VAT included
+                  </button>
+                </div>
+              ) : null}
             </div>
-            {headlineValue !== null ? (
-              <div className={styles.resultVatToggle} role="group" aria-label="VAT display mode">
-                <button
-                  type="button"
-                  className={`${styles.resultVatToggleButton} ${vatDisplayMode === 'excl' ? styles.resultVatToggleButtonActive : ''}`}
-                  onClick={() => setVatDisplayMode('excl')}
-                  aria-pressed={vatDisplayMode === 'excl'}
-                >
-                  VAT excluded
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.resultVatToggleButton} ${vatDisplayMode === 'incl' ? styles.resultVatToggleButtonActive : ''}`}
-                  onClick={() => setVatDisplayMode('incl')}
-                  aria-pressed={vatDisplayMode === 'incl'}
-                >
-                  VAT included
-                </button>
-              </div>
-            ) : null}
             <p className={styles.resultMachineTitle}>{machineTitle}</p>
             <p className={styles.resultConfidenceNote}>{confidenceNote}</p>
             <div className={styles.resultFactsGrid}>
@@ -4393,7 +4593,7 @@ export default function ValuationClient() {
             </div>
           </section>
 
-          <section className={`${styles.resultAccordion} ${!canUseAdvancedAssumptions ? styles.advancedAssumptionsLocked : ''}`}>
+          <section className={`${styles.resultAccordion} ${styles.advancedAccordion} ${!canUseAdvancedAssumptions ? styles.advancedAssumptionsLocked : ''}`}>
             <button
               type="button"
               className={styles.resultAccordionToggle}
@@ -4405,9 +4605,9 @@ export default function ValuationClient() {
                 <small>
                   {canUseAdvancedAssumptions
                     ? customAdvancedAssumptionsApplied
-                      ? 'Custom assumptions are applied to this estimate.'
-                      : 'Adjust this valuation run only.'
-                    : 'Advanced assumptions are available for active Aim4price accounts.'}
+                      ? 'Custom assumptions applied.'
+                      : 'Fine-tune this estimate only.'
+                    : 'For active Aim4price users only.'}
                 </small>
               </span>
               <span className={styles.resultAccordionAction}>{advancedPanelOpen ? 'Hide' : canUseAdvancedAssumptions ? 'Edit' : 'Locked'}</span>
@@ -4416,13 +4616,14 @@ export default function ValuationClient() {
             {advancedPanelOpen ? (
               <div className={styles.resultAccordionBody}>
                 {!canUseAdvancedAssumptions ? (
-                  <p className={styles.advancedLockedCopy}>Advanced assumptions are available for active Aim4price accounts.</p>
+                  <p className={styles.advancedLockedCopy}>Advanced assumptions are for active Aim4price users only.</p>
                 ) : (
-                  <>
-                    <p className={styles.advancedDisclaimer}>
-                      Changing these assumptions can materially change the estimate. Use this only when you have asset-specific knowledge.
-                    </p>
-                    <div className={styles.advancedAssumptionsGrid}>
+                  <p className={styles.advancedDisclaimer}>Use only when you know this specific asset.</p>
+                )}
+
+                <div className={`${styles.advancedControlsPreview} ${!canUseAdvancedAssumptions ? styles.advancedControlsLocked : ''}`}>
+                  <div className={styles.advancedAssumptionsGrid}>
+                    {advancedShowLifetimeInput ? (
                       <label className={styles.field}>
                         <span className={styles.fieldLabel}>{advancedLifetimeInputLabel}</span>
                         <input
@@ -4431,45 +4632,46 @@ export default function ValuationClient() {
                           value={advancedLifetimeUsage}
                           onChange={(event) => setAdvancedLifetimeUsage(event.target.value)}
                           placeholder={resultUsageMetricType === 'km' ? 'e.g. 350,000' : 'e.g. 12,000'}
+                          disabled={!canUseAdvancedAssumptions}
                         />
                         <small className={styles.advancedFieldHelp}>
                           Allowed range: {formatPlainNumber(advancedLifetimeMin)} to {formatPlainNumber(advancedLifetimeMax)} {advancedLifetimeShortUnit}.
                         </small>
                       </label>
+                    ) : null}
 
-                      <label className={styles.field}>
-                        <span className={styles.fieldLabel}>Condition retained value %</span>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={advancedConditionFactorPercent}
-                          onChange={(event) => setAdvancedConditionFactorPercent(event.target.value)}
-                          placeholder="e.g. 85"
-                        />
-                        <small className={styles.advancedFieldHelp}>
-                          Allowed range: {ADVANCED_CONDITION_FACTOR_MIN_PERCENT}% to {ADVANCED_CONDITION_FACTOR_MAX_PERCENT}%. This does not change the selected condition label.
-                        </small>
-                      </label>
-                    </div>
+                    <label className={styles.field}>
+                      <span className={styles.fieldLabel}>{advancedConditionQuestionLabel}</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={advancedConditionFactorPercent}
+                        onChange={(event) => setAdvancedConditionFactorPercent(event.target.value)}
+                        placeholder="e.g. 85"
+                        disabled={!canUseAdvancedAssumptions}
+                      />
+                      <small className={styles.advancedFieldHelp}>100% = full value before condition adjustment.</small>
+                    </label>
+                  </div>
 
-                    {advancedError ? <p className={styles.advancedError}>{advancedError}</p> : null}
+                  {canUseAdvancedAssumptions && advancedError ? <p className={styles.advancedError}>{advancedError}</p> : null}
 
-                    <button
-                      type="button"
-                      className={styles.assetButton}
-                      onClick={updateAdvancedAssumptionsAndRecalculate}
-                      disabled={advancedRecalculateLoading || replacementRecalculateLoading || saveLoading}
-                    >
-                      {advancedRecalculateLoading ? 'Recalculating...' : 'Update assumptions and recalculate'}
-                    </button>
-                  </>
-                )}
+                  <button
+                    type="button"
+                    className={styles.assetButton}
+                    onClick={updateAdvancedAssumptionsAndRecalculate}
+                    disabled={advancedControlsDisabled}
+                  >
+                    {advancedRecalculateLoading ? 'Recalculating...' : 'Update assumptions and recalculate'}
+                  </button>
+                </div>
               </div>
             ) : null}
           </section>
 
+
           {(isGeneric && genericResult) || tractorResult ? (
-            <section className={styles.resultAccordion}>
+            <section className={`${styles.resultAccordion} ${styles.replacementAccordion}`}>
               <button
                 type="button"
                 className={styles.resultAccordionToggle}
