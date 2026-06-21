@@ -571,36 +571,57 @@ export async function captureAssetDepreciationSnapshotForAssetId(input: {
       `
         select
           a.id,
-          a.user_id,
-          a.register_id,
-          a.valuation_run_id,
-          a.title,
-          a.kind,
-          a.sector_id,
-          coalesce(a.equipment_family_id, vr.equipment_family_id) as equipment_family_id,
-          coalesce(ef.family_key, '') as equipment_family_key,
-          coalesce(ef.family_label, '') as equipment_family_label,
-          a.brand_name,
-          a.model_name,
-          a.typed_model_name,
-          a.year_model,
-          a.hours,
-          a.life_worked_percent,
-          a.life_remaining_percent,
-          a.condition,
-          a.replacement_price_used_ex_vat,
-          a.user_replacement_price_ex_vat,
-          a.value,
-          a.selected_value_ex_vat,
-          a.selected_method,
-          a.depreciation_method_used,
-          coalesce(a.specs_json, '{}'::jsonb) as specs_json
+          to_jsonb(a)->>'user_id' as user_id,
+          to_jsonb(a)->>'register_id' as register_id,
+          to_jsonb(a)->>'valuation_run_id' as valuation_run_id,
+          to_jsonb(a)->>'title' as title,
+          to_jsonb(a)->>'kind' as kind,
+          to_jsonb(a)->>'sector_id' as sector_id,
+          coalesce(to_jsonb(a)->>'equipment_family_id', to_jsonb(vr)->>'equipment_family_id') as equipment_family_id,
+          coalesce(to_jsonb(ef)->>'family_key', '') as equipment_family_key,
+          coalesce(to_jsonb(ef)->>'family_label', '') as equipment_family_label,
+          to_jsonb(a)->>'brand_name' as brand_name,
+          to_jsonb(a)->>'model_name' as model_name,
+          to_jsonb(a)->>'typed_model_name' as typed_model_name,
+          to_jsonb(a)->>'year_model' as year_model,
+          to_jsonb(a)->>'hours' as hours,
+          to_jsonb(a)->>'life_worked_percent' as life_worked_percent,
+          to_jsonb(a)->>'life_remaining_percent' as life_remaining_percent,
+          to_jsonb(a)->>'condition' as condition,
+          to_jsonb(a)->>'replacement_price_used_ex_vat' as replacement_price_used_ex_vat,
+          to_jsonb(a)->>'user_replacement_price_ex_vat' as user_replacement_price_ex_vat,
+          coalesce(
+            to_jsonb(a)->>'value',
+            to_jsonb(a)->>'selected_value_ex_vat',
+            to_jsonb(a)->>'selected_value',
+            to_jsonb(a)->>'saved_value_ex_vat',
+            to_jsonb(a)->>'aim4price_value_ex_vat',
+            to_jsonb(a)->>'aim4price_value'
+          ) as value,
+          coalesce(
+            to_jsonb(a)->>'selected_value_ex_vat',
+            to_jsonb(a)->>'value',
+            to_jsonb(a)->>'selected_value',
+            to_jsonb(a)->>'saved_value_ex_vat',
+            to_jsonb(a)->>'aim4price_value_ex_vat',
+            to_jsonb(a)->>'aim4price_value',
+            to_jsonb(vr)->>'selected_value_ex_vat',
+            to_jsonb(vr)->>'valuation_mid_ex_vat',
+            to_jsonb(vr)->>'aim4price_value_ex_vat',
+            to_jsonb(vr)->>'aim4price_value'
+          ) as selected_value_ex_vat,
+          to_jsonb(a)->>'selected_method' as selected_method,
+          to_jsonb(a)->>'depreciation_method_used' as depreciation_method_used,
+          case
+            when jsonb_typeof(to_jsonb(a)->'specs_json') = 'object' then to_jsonb(a)->'specs_json'
+            else '{}'::jsonb
+          end as specs_json
         from public.asset_register_items a
         left join public.valuation_runs vr
-          on vr.id = a.valuation_run_id
+          on vr.id::text = to_jsonb(a)->>'valuation_run_id'
         left join public.equipment_families ef
-          on ef.id = coalesce(a.equipment_family_id, vr.equipment_family_id)
-        where a.user_id = $1
+          on ef.id::text = coalesce(to_jsonb(a)->>'equipment_family_id', to_jsonb(vr)->>'equipment_family_id')
+        where to_jsonb(a)->>'user_id' = $1
           and a.id = $2::uuid
         limit 1
       `,
