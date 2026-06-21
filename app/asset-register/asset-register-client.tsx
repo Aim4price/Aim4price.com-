@@ -89,10 +89,10 @@ type ManualAssetStep = 1 | 2 | 3 | 4;
 type ExportFormat = 'pdf' | 'xlsx';
 type ExportStep = 'format' | 'pdf-report';
 type PdfReportKind = 'full' | 'financed' | 'insured' | 'licensed' | 'not-financed' | 'not-insured' | 'not-licensed';
-type AssetPdfReportKind = 'fuel' | 'maintenance';
+type AssetPdfReportKind = 'fuel' | 'maintenance' | 'depreciation';
 type AssetReportFormat = 'pdf' | 'xlsx';
 type AssetReportSelectKey = 'type' | 'year' | 'month';
-type AssetReportStep = 'options' | 'fuel-filter' | 'maintenance-filter';
+type AssetReportStep = 'options' | 'fuel-filter' | 'maintenance-filter' | 'depreciation-filter';
 
 type AssetPdfReportFilters = {
   year?: string;
@@ -3354,6 +3354,8 @@ export default function AssetRegisterClient() {
   const [assetMaintenanceReportType, setAssetMaintenanceReportType] = useState('all');
   const [assetMaintenanceReportYear, setAssetMaintenanceReportYear] = useState('all');
   const [assetMaintenanceReportMonth, setAssetMaintenanceReportMonth] = useState('all');
+  const [assetDepreciationReportYear, setAssetDepreciationReportYear] = useState('all');
+  const [assetDepreciationReportMonth, setAssetDepreciationReportMonth] = useState('all');
   const [openAssetReportSelect, setOpenAssetReportSelect] = useState<AssetReportSelectKey | null>(null);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
@@ -4810,6 +4812,8 @@ export default function AssetRegisterClient() {
     setAssetMaintenanceReportType('all');
     setAssetMaintenanceReportYear('all');
     setAssetMaintenanceReportMonth('all');
+    setAssetDepreciationReportYear('all');
+    setAssetDepreciationReportMonth('all');
     setOpenAssetReportSelect(null);
     setIsAssetReportModalOpen(true);
   }
@@ -4822,6 +4826,8 @@ export default function AssetRegisterClient() {
     setAssetMaintenanceReportType('all');
     setAssetMaintenanceReportYear('all');
     setAssetMaintenanceReportMonth('all');
+    setAssetDepreciationReportYear('all');
+    setAssetDepreciationReportMonth('all');
     setOpenAssetReportSelect(null);
   }
 
@@ -6109,7 +6115,9 @@ export default function AssetRegisterClient() {
   }
 
   function assetReportLabel(reportKind: AssetPdfReportKind): string {
-    return reportKind === 'fuel' ? 'Fuel report' : 'Maintenance report';
+    if (reportKind === 'fuel') return 'Fuel report';
+    if (reportKind === 'depreciation') return 'Market depreciation timeline';
+    return 'Maintenance report';
   }
 
   function handleOpenAssetPdfReport(asset: RegisterAsset, reportKind: AssetPdfReportKind, filters?: AssetPdfReportFilters): boolean {
@@ -6183,6 +6191,13 @@ export default function AssetRegisterClient() {
     setOpenAssetReportSelect(null);
   }
 
+  function openAssetDepreciationReportFilter() {
+    setAssetReportStep('depreciation-filter');
+    setAssetDepreciationReportYear('all');
+    setAssetDepreciationReportMonth('all');
+    setOpenAssetReportSelect(null);
+  }
+
   function backToAssetReportOptions() {
     setAssetReportStep('options');
     setOpenAssetReportSelect(null);
@@ -6219,6 +6234,17 @@ export default function AssetRegisterClient() {
     setOpenAssetReportSelect(null);
   }
 
+  function selectAssetDepreciationReportYear(value: string) {
+    setAssetDepreciationReportYear(value);
+    setAssetDepreciationReportMonth('all');
+    setOpenAssetReportSelect(null);
+  }
+
+  function selectAssetDepreciationReportMonth(value: string) {
+    setAssetDepreciationReportMonth(value);
+    setOpenAssetReportSelect(null);
+  }
+
   async function handleDownloadFilteredFuelReport(asset: RegisterAsset, format: AssetReportFormat = 'pdf') {
     const filters: AssetPdfReportFilters = {
       year: assetFuelReportYear,
@@ -6250,6 +6276,24 @@ export default function AssetRegisterClient() {
     }
 
     const didOpen = handleOpenAssetPdfReport(asset, 'maintenance', filters);
+
+    if (didOpen) {
+      closeActionDialog();
+    }
+  }
+
+  async function handleDownloadFilteredDepreciationReport(asset: RegisterAsset, format: AssetReportFormat = 'pdf') {
+    const filters: AssetPdfReportFilters = {
+      year: assetDepreciationReportYear,
+      month: assetDepreciationReportYear === 'all' ? 'all' : assetDepreciationReportMonth,
+    };
+
+    if (format === 'xlsx') {
+      await handleDownloadAssetReportXlsx(asset, 'depreciation', filters);
+      return;
+    }
+
+    const didOpen = handleOpenAssetPdfReport(asset, 'depreciation', filters);
 
     if (didOpen) {
       closeActionDialog();
@@ -9251,7 +9295,9 @@ export default function AssetRegisterClient() {
                     ? 'Export fuel report'
                     : assetReportStep === 'maintenance-filter'
                       ? 'Export maintenance report'
-                      : 'Download reports'}
+                      : assetReportStep === 'depreciation-filter'
+                        ? 'Export depreciation timeline'
+                        : 'Download reports'}
                 </h3>
                 <p>{activeAsset.title}</p>
               </div>
@@ -9349,6 +9395,45 @@ export default function AssetRegisterClient() {
                     </button>
                   </div>
                 </>
+              ) : assetReportStep === 'depreciation-filter' ? (
+                <>
+                  <div className={styles.assetFuelReportFilterBox}>
+                    <ReportSelect
+                      label="Year"
+                      value={assetDepreciationReportYear}
+                      options={assetReportYearOptions}
+                      isOpen={openAssetReportSelect === 'year'}
+                      onToggle={() => toggleAssetReportSelect('year')}
+                      onChange={selectAssetDepreciationReportYear}
+                    />
+
+                    <ReportSelect
+                      label="Month"
+                      value={assetDepreciationReportMonth}
+                      options={assetReportMonthOptions}
+                      isOpen={openAssetReportSelect === 'month'}
+                      disabled={assetDepreciationReportYear === 'all'}
+                      onToggle={() => toggleAssetReportSelect('month')}
+                      onChange={selectAssetDepreciationReportMonth}
+                    />
+                  </div>
+
+                  <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
+                    <button type="button" className={styles.secondaryButton} onClick={backToAssetReportOptions}>Back</button>
+                    <button type="button" className={styles.primaryButton} onClick={() => void handleDownloadFilteredDepreciationReport(activeAsset, 'pdf')}>
+                      <PdfIcon className={styles.buttonIcon} />
+                      <span>Download PDF</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.primaryButton} ${styles.assetReportExcelButton}`}
+                      onClick={() => void handleDownloadFilteredDepreciationReport(activeAsset, 'xlsx')}
+                    >
+                      <SpreadsheetIcon className={styles.buttonIcon} />
+                      <span>Download Excel</span>
+                    </button>
+                  </div>
+                </>
               ) : (
                 <div className={styles.assetReportOptionsGrid}>
                   <button type="button" className={styles.assetReportOptionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
@@ -9374,6 +9459,14 @@ export default function AssetRegisterClient() {
                         <span>
                           <strong>Download maintenance report</strong>
                           <small>Filter by type, year and month, then download PDF or Excel.</small>
+                        </span>
+                      </button>
+
+                      <button type="button" className={styles.assetReportOptionButton} onClick={openAssetDepreciationReportFilter}>
+                        <DocumentIcon className={styles.buttonIcon} />
+                        <span>
+                          <strong>Download depreciation timeline</strong>
+                          <small>Market value history, yearly movement and depreciation log.</small>
                         </span>
                       </button>
                     </>
