@@ -840,15 +840,16 @@ function parseMaintenanceEvent(event: ScanEventRecord): MaintenanceEntry | null 
   };
 }
 
-function renderRows(rows: KeyValueRow[], emptyText = 'No details available.'): string {
+function renderRows(rows: KeyValueRow[], emptyText = 'No details available.', className = ''): string {
   const visibleRows = rows.filter((row) => String(row.label ?? '').trim());
+  const rowsClassName = ['assetReportRows', className.trim()].filter(Boolean).join(' ');
 
   if (!visibleRows.length) {
     return `<div class="assetReportEmpty">${escapeHtml(emptyText)}</div>`;
   }
 
   return `
-    <div class="assetReportRows">
+    <div class="${escapeHtml(rowsClassName)}">
       ${visibleRows
         .map(
           (row) => `
@@ -1307,7 +1308,11 @@ function buildDepreciationBody(
         </div>
         <strong>${escapeHtml(formatNumber(summary.snapshotCount))} ${summary.snapshotCount === 1 ? 'snapshot' : 'snapshots'}</strong>
       </div>
-      ${renderRows(buildDepreciationSummaryRows(summary), 'No depreciation summary available yet.')}
+      ${renderRows(
+        buildDepreciationSummaryRows(summary),
+        'No depreciation summary available yet.',
+        'assetReportDepreciationSummaryRows',
+      )}
     </section>
 
     <section class="assetReportSection assetReportWideSection">
@@ -1789,6 +1794,20 @@ function buildReportHtml(options: {
         line-height: 1.3;
         font-weight: 700;
         word-break: break-word;
+      }
+
+      .assetReportDepreciationSummaryRows .assetReportRow {
+        grid-template-columns: 60mm minmax(0, 1fr);
+        column-gap: 10px;
+        min-height: 18px;
+      }
+
+      .assetReportDepreciationSummaryRows .assetReportRow span,
+      .assetReportDepreciationSummaryRows .assetReportRow strong {
+        white-space: nowrap;
+        word-break: keep-all;
+        overflow-wrap: normal;
+        hyphens: none;
       }
 
       .assetReportTechnical .assetReportRows {
