@@ -13,12 +13,15 @@
 --   equipment_model_aliases
 --   valuation_runs
 --   asset_register_items
+--   asset_depreciation_snapshots
 --   tractor_catalog (temporary tractor bridge while tractors remain the first live family)
 --
 -- Core idea:
 --   - replacement prices live directly on equipment_models
 --   - depreciation logic lives in GitHub code
 --   - generic fallback rows live inside equipment_models
+--   - market depreciation snapshots are saved from asset-register value/usage/condition changes
+--   - depreciation timeline reports are market history reports, not SARS tax-depreciation reports
 --   - sectors are fixed to 1=agricultural, 2=industrial, 3=construction
 --
 -- Current migration order:
@@ -52,5 +55,8 @@
 --   28-aim4-four-sector-foundation.sql
 --   29-manual-activation-and-introduced-by.sql
 --   30-admin-only-access-hardening.sql
+--   31-admin-dashboard-usage-tracking.sql
 --   32-remove-market-valuation-references.sql
 --   33-drop-market-vault-listings.sql
+--   34-unknown-brand-family-links.sql
+--   35-asset-depreciation-timeline.sql
