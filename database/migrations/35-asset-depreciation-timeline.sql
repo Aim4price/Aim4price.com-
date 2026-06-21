@@ -2,10 +2,109 @@
 -- Persistent market depreciation snapshots for Aim4price Asset Register reports.
 -- This is a market-value history log, not a SARS tax-depreciation calculation.
 -- Safe to run more than once after the asset register migrations.
+-- v2 safety fix: the backfill does not assume that asset_register_items.value exists.
 
 begin;
 
 create extension if not exists pgcrypto;
+
+create or replace function pg_temp.aim4price_to_numeric(raw_value text)
+returns numeric
+language plpgsql
+immutable
+as $$
+declare
+  cleaned text;
+begin
+  if raw_value is null then
+    return null;
+  end if;
+
+  cleaned := nullif(regexp_replace(trim(raw_value), '[^0-9.\-]+', '', 'g'), '');
+
+  if cleaned is null or cleaned !~ '^-?[0-9]+(\.[0-9]+)?$' then
+    return null;
+  end if;
+
+  return cleaned::numeric;
+exception when others then
+  return null;
+end;
+$$;
+
+create or replace function pg_temp.aim4price_to_integer(raw_value text)
+returns integer
+language plpgsql
+immutable
+as $$
+declare
+  parsed numeric;
+begin
+  parsed := pg_temp.aim4price_to_numeric(raw_value);
+  if parsed is null then
+    return null;
+  end if;
+
+  return round(parsed)::integer;
+exception when others then
+  return null;
+end;
+$$;
+
+create or replace function pg_temp.aim4price_to_bigint(raw_value text)
+returns bigint
+language plpgsql
+immutable
+as $$
+declare
+  parsed numeric;
+begin
+  parsed := pg_temp.aim4price_to_numeric(raw_value);
+  if parsed is null then
+    return null;
+  end if;
+
+  return round(parsed)::bigint;
+exception when others then
+  return null;
+end;
+$$;
+
+create or replace function pg_temp.aim4price_to_uuid(raw_value text)
+returns uuid
+language plpgsql
+immutable
+as $$
+begin
+  if raw_value is null or trim(raw_value) = '' then
+    return null;
+  end if;
+
+  if trim(raw_value) !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    return null;
+  end if;
+
+  return trim(raw_value)::uuid;
+exception when others then
+  return null;
+end;
+$$;
+
+create or replace function pg_temp.aim4price_to_timestamptz(raw_value text)
+returns timestamptz
+language plpgsql
+immutable
+as $$
+begin
+  if raw_value is null or trim(raw_value) = '' then
+    return null;
+  end if;
+
+  return trim(raw_value)::timestamptz;
+exception when others then
+  return null;
+end;
+$$;
 
 create table if not exists public.asset_depreciation_snapshots (
   id uuid primary key default gen_random_uuid(),
@@ -126,6 +225,112 @@ create index if not exists idx_asset_depreciation_snapshots_asset_captured
 create index if not exists idx_asset_depreciation_snapshots_user_captured
   on public.asset_depreciation_snapshots(user_id, captured_at desc);
 
+with source_assets as (
+  select
+    ai.id as asset_register_item_id,
+    to_jsonb(ai) as ai_json,
+    to_jsonb(vr) as vr_json,
+    to_jsonb(ef) as ef_json
+  from public.asset_register_items ai
+  left join public.valuation_runs vr
+    on vr.id::text = to_jsonb(ai)->>'valuation_run_id'
+  left join public.equipment_families ef
+    on ef.id::text = coalesce(to_jsonb(ai)->>'equipment_family_id', to_jsonb(vr)->>'equipment_family_id')
+), normalized_assets as (
+  select
+    nullif(trim(ai_json->>'user_id'), '') as user_id,
+    pg_temp.aim4price_to_uuid(ai_json->>'register_id') as register_id,
+    asset_register_item_id,
+    pg_temp.aim4price_to_bigint(ai_json->>'valuation_run_id') as valuation_run_id,
+    coalesce(
+      pg_temp.aim4price_to_timestamptz(ai_json->>'updated_at'),
+      pg_temp.aim4price_to_timestamptz(ai_json->>'created_at'),
+      now()
+    ) as captured_at,
+    coalesce(nullif(trim(ai_json->>'title'), ''), 'Asset') as asset_title,
+    nullif(trim(ai_json->>'kind'), '') as asset_kind,
+    pg_temp.aim4price_to_bigint(ai_json->>'sector_id') as sector_id,
+    coalesce(
+      pg_temp.aim4price_to_bigint(ai_json->>'equipment_family_id'),
+      pg_temp.aim4price_to_bigint(vr_json->>'equipment_family_id')
+    ) as equipment_family_id,
+    nullif(trim(ef_json->>'family_key'), '') as equipment_family_key,
+    nullif(trim(ef_json->>'family_label'), '') as equipment_family_label,
+    coalesce(
+      nullif(trim(ai_json->>'brand_name'), ''),
+      nullif(trim(vr_json->>'brand_name'), '')
+    ) as brand_name,
+    coalesce(
+      nullif(trim(ai_json->>'model_name'), ''),
+      nullif(trim(ai_json->>'typed_model_name'), ''),
+      nullif(trim(vr_json->>'model_name'), ''),
+      nullif(trim(vr_json->>'typed_model_name'), '')
+    ) as model_name,
+    pg_temp.aim4price_to_integer(ai_json->>'year_model') as year_model,
+    coalesce(
+      pg_temp.aim4price_to_numeric(ai_json->>'hours'),
+      pg_temp.aim4price_to_numeric(ai_json->>'estimated_hours'),
+      pg_temp.aim4price_to_numeric(ai_json->'specs_json'->>'usageAmount'),
+      pg_temp.aim4price_to_numeric(ai_json->'specs_json'->>'usage_amount'),
+      pg_temp.aim4price_to_numeric(ai_json->'specs_json'->>'engine_hours'),
+      pg_temp.aim4price_to_numeric(ai_json->'specs_json'->>'km')
+    ) as usage_amount,
+    case
+      when lower(coalesce(ai_json->>'kind', '')) = 'vehicle' then 'km'
+      when lower(coalesce(
+        ai_json->'specs_json'->>'usageMetric',
+        ai_json->'specs_json'->>'usage_metric',
+        ai_json->'specs_json'->>'usageUnit',
+        ai_json->'specs_json'->>'usage_unit',
+        ai_json->'specs_json'->>'usageMetricType',
+        ai_json->'specs_json'->>'usage_metric_type',
+        ef_json->>'usage_metric_type',
+        ''
+      )) in ('km', 'kms', 'kilometres', 'kilometers') then 'km'
+      when lower(coalesce(
+        ai_json->'specs_json'->>'usageMetric',
+        ai_json->'specs_json'->>'usage_metric',
+        ai_json->'specs_json'->>'usageUnit',
+        ai_json->'specs_json'->>'usage_unit',
+        ai_json->'specs_json'->>'usageMetricType',
+        ai_json->'specs_json'->>'usage_metric_type',
+        ef_json->>'usage_metric_type',
+        ''
+      )) in ('percent', 'percentage', 'percent_used', 'wear_class') then 'percent'
+      else 'hours'
+    end as usage_metric,
+    pg_temp.aim4price_to_numeric(ai_json->>'life_worked_percent') as life_worked_percent,
+    pg_temp.aim4price_to_numeric(ai_json->>'life_remaining_percent') as life_remaining_percent,
+    nullif(trim(ai_json->>'condition'), '') as condition,
+    coalesce(
+      pg_temp.aim4price_to_numeric(ai_json->>'replacement_price_used_ex_vat'),
+      pg_temp.aim4price_to_numeric(ai_json->>'user_replacement_price_ex_vat'),
+      pg_temp.aim4price_to_numeric(ai_json->'specs_json'->>'replacementPriceExVat'),
+      pg_temp.aim4price_to_numeric(ai_json->'specs_json'->>'replacement_price_ex_vat'),
+      pg_temp.aim4price_to_numeric(ai_json->'specs_json'->>'replacementPrice'),
+      pg_temp.aim4price_to_numeric(ai_json->'specs_json'->>'replacement_price'),
+      pg_temp.aim4price_to_numeric(vr_json->>'replacement_price_used_ex_vat'),
+      pg_temp.aim4price_to_numeric(vr_json->>'user_replacement_price_ex_vat')
+    ) as replacement_price_ex_vat,
+    coalesce(
+      pg_temp.aim4price_to_numeric(ai_json->>'selected_value_ex_vat'),
+      pg_temp.aim4price_to_numeric(ai_json->>'value'),
+      pg_temp.aim4price_to_numeric(ai_json->>'selected_value'),
+      pg_temp.aim4price_to_numeric(ai_json->>'saved_value_ex_vat'),
+      pg_temp.aim4price_to_numeric(ai_json->>'aim4price_value_ex_vat'),
+      pg_temp.aim4price_to_numeric(ai_json->>'aim4price_value'),
+      pg_temp.aim4price_to_numeric(vr_json->>'selected_value_ex_vat'),
+      pg_temp.aim4price_to_numeric(vr_json->>'valuation_mid_ex_vat'),
+      pg_temp.aim4price_to_numeric(vr_json->>'aim4price_value_ex_vat'),
+      pg_temp.aim4price_to_numeric(vr_json->>'aim4price_value')
+    ) as estimated_value_ex_vat,
+    nullif(trim(ai_json->>'selected_method'), '') as selected_method,
+    nullif(trim(ai_json->>'depreciation_method_used'), '') as depreciation_method_used,
+    coalesce(ai_json->'specs_json', '{}'::jsonb) as specs_json,
+    pg_temp.aim4price_to_timestamptz(ai_json->>'updated_at') as source_updated_at,
+    pg_temp.aim4price_to_timestamptz(ai_json->>'created_at') as source_created_at
+  from source_assets
+)
 insert into public.asset_depreciation_snapshots (
   user_id,
   register_id,
@@ -159,59 +364,51 @@ insert into public.asset_depreciation_snapshots (
   created_at
 )
 select
-  ai.user_id,
-  ai.register_id,
-  ai.id,
-  ai.valuation_run_id,
-  coalesce(ai.updated_at, ai.created_at, now()) as captured_at,
+  user_id,
+  register_id,
+  asset_register_item_id,
+  valuation_run_id,
+  captured_at,
   'backfill_current_asset_state' as event_type,
   'migration_35' as event_source,
-  coalesce(nullif(trim(ai.title), ''), 'Asset') as asset_title,
-  ai.kind as asset_kind,
-  ai.sector_id,
-  coalesce(ai.equipment_family_id, vr.equipment_family_id) as equipment_family_id,
-  ef.family_key,
-  ef.family_label,
-  coalesce(nullif(trim(ai.brand_name), ''), nullif(trim(vr.brand_name), '')) as brand_name,
-  coalesce(nullif(trim(ai.model_name), ''), nullif(trim(coalesce(vr.model_name, vr.typed_model_name, '')), '')) as model_name,
-  ai.year_model,
-  ai.hours as usage_amount,
-  case
-    when lower(coalesce(ai.kind, '')) = 'vehicle' then 'km'
-    when lower(coalesce(ai.specs_json->>'usageMetric', ai.specs_json->>'usage_metric', ai.specs_json->>'usageUnit', ai.specs_json->>'usage_unit', ai.specs_json->>'usageMetricType', ai.specs_json->>'usage_metric_type', '')) in ('km', 'kms', 'kilometres', 'kilometers') then 'km'
-    when lower(coalesce(ai.specs_json->>'usageMetric', ai.specs_json->>'usage_metric', ai.specs_json->>'usageUnit', ai.specs_json->>'usage_unit', ai.specs_json->>'usageMetricType', ai.specs_json->>'usage_metric_type', '')) in ('percent', 'percentage', 'percent_used', 'wear_class') then 'percent'
-    else 'hours'
-  end as usage_metric,
-  ai.life_worked_percent,
-  ai.life_remaining_percent,
-  ai.condition,
-  coalesce(ai.replacement_price_used_ex_vat, ai.user_replacement_price_ex_vat) as replacement_price_ex_vat,
-  coalesce(ai.selected_value_ex_vat, ai.value) as estimated_value_ex_vat,
-  ai.selected_method,
-  ai.depreciation_method_used,
+  asset_title,
+  asset_kind,
+  sector_id,
+  equipment_family_id,
+  equipment_family_key,
+  equipment_family_label,
+  brand_name,
+  model_name,
+  year_model,
+  usage_amount,
+  usage_metric,
+  life_worked_percent,
+  life_remaining_percent,
+  condition,
+  replacement_price_ex_vat,
+  estimated_value_ex_vat,
+  selected_method,
+  depreciation_method_used,
   null::numeric(14,2) as previous_estimated_value_ex_vat,
   null::numeric(14,2) as depreciation_since_previous_ex_vat,
   null::numeric(8,4) as depreciation_since_previous_percent,
   jsonb_build_object(
     'backfilledBy', '35-asset-depreciation-timeline.sql',
-    'sourceUpdatedAt', ai.updated_at,
-    'sourceCreatedAt', ai.created_at
+    'backfillVersion', 2,
+    'sourceUpdatedAt', source_updated_at,
+    'sourceCreatedAt', source_created_at
   ) as metadata_json,
   now() as created_at
-from public.asset_register_items ai
-left join public.valuation_runs vr
-  on vr.id = ai.valuation_run_id
-left join public.equipment_families ef
-  on ef.id = coalesce(ai.equipment_family_id, vr.equipment_family_id)
-where ai.user_id is not null
-  and trim(ai.user_id) <> ''
-  and ai.id is not null
-  and coalesce(ai.selected_value_ex_vat, ai.value) is not null
-  and coalesce(ai.selected_value_ex_vat, ai.value) > 0
+from normalized_assets
+where user_id is not null
+  and trim(user_id) <> ''
+  and asset_register_item_id is not null
+  and estimated_value_ex_vat is not null
+  and estimated_value_ex_vat > 0
   and not exists (
     select 1
     from public.asset_depreciation_snapshots ads
-    where ads.asset_register_item_id = ai.id
+    where ads.asset_register_item_id = normalized_assets.asset_register_item_id
       and ads.event_type = 'backfill_current_asset_state'
   );
 
