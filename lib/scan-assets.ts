@@ -1,6 +1,7 @@
 import { getDb } from './db';
 import { MAX_ASSET_REGISTER_PHOTOS } from './asset-register-uploads';
 import { ensureFuelLedgerTables } from './fuel-ledger';
+import { captureAssetDepreciationSnapshotForAssetId } from './asset-depreciation-timeline';
 
 export type ScanAssetQrStatus = 'active' | 'transferred' | 'retired' | 'deleted' | '';
 export type ScanAssetUsageMode = 'hours' | 'percent' | 'km' | 'none';
@@ -1230,6 +1231,11 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
       }
     }
 
+    const shouldCaptureDepreciationSnapshot =
+      (nextHours !== null && nextHours !== currentAsset.hours) ||
+      (nextLifeWorkedPercent !== null && nextLifeWorkedPercent !== currentLifeWorkedPercent) ||
+      Boolean(nextCondition && currentAsset.condition && nextCondition !== currentAsset.condition);
+
     const baseSpecsJson = nextLifeWorkedPercent !== null
       ? applyLifeWorkedPercent(asRecord(existingRow.specs_json), nextLifeWorkedPercent)
       : asRecord(existingRow.specs_json);
@@ -1394,9 +1400,29 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
       throw new Error('Failed to save scan update.');
     }
 
+    const asset = mapScanSafeAsset(assetRow);
+    const event = mapScanEventRow(eventRow);
+
+    if (shouldCaptureDepreciationSnapshot) {
+      await captureAssetDepreciationSnapshotForAssetId({
+        userId: currentAsset.userId,
+        assetId: currentAsset.id,
+        eventType: 'qr_scan_update',
+        eventSource: 'asset-register-qr-scan',
+        capturedAt: event.createdAtIso,
+        metadata: {
+          scanEventId: event.id,
+          publicAssetCode: normalizedCode,
+          valuationNeedsUpdate: valuationStaleReasons.length > 0,
+          valuationStaleReasons,
+          usageMode: currentUsageMode,
+        },
+      });
+    }
+
     return {
-      asset: mapScanSafeAsset(assetRow),
-      event: mapScanEventRow(eventRow),
+      asset,
+      event,
     };
   } catch (error) {
     await client.query('ROLLBACK');

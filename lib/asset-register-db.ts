@@ -8,6 +8,7 @@ import type { CabType, ConditionKey, DriveType, TractorType } from './tractor-da
 import type { MethodKey } from './valuation-runs';
 import type { Result } from './tractor-logic';
 import type { GenericSelectedMethod, GenericValuationResult } from './generic-valuation';
+import { captureAssetDepreciationSnapshot } from './asset-depreciation-timeline';
 
 export type AssetRegisterItemKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools';
 export type AssetRegisterItemMethod = MethodKey | 'manual';
@@ -1636,7 +1637,15 @@ export async function createManualAssetRegisterItem(
     throw new Error('ASSET_CREATE_FAILED');
   }
 
-  return mapAssetRegisterRow(row);
+  const item = mapAssetRegisterRow(row);
+  await captureAssetDepreciationSnapshot({
+    asset: item,
+    eventType: 'manual_asset_created',
+    eventSource: 'asset-register-manual-create',
+    metadata: { registerId: activeRegister.id },
+  });
+
+  return item;
 }
 
 
@@ -1740,6 +1749,14 @@ export async function updateAssetRegisterItem(
     nextCondition,
   });
   const nextSpecsJson = markValuationNeedsUpdate(baseSpecsJson, staleReasons, now);
+  const shouldCaptureDepreciationSnapshot =
+    hasValueChanged(existing.value, nextValue) ||
+    hasValueChanged(existing.selectedValueExVat, nextValue) ||
+    hasValueChanged(existing.hours, nextHours) ||
+    hasValueChanged(existingLifeWorkedPercent, nextLifeWorkedPercent) ||
+    hasValueChanged(existing.condition, nextCondition) ||
+    hasValueChanged(existing.yearModel, nextYearModel) ||
+    hasValueChanged(existing.replacementPriceExVat, nextReplacementPriceExVat);
 
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
   pushField(fields, schema, ['title', 'name', 'asset_name'], asText(input.title));
@@ -1787,7 +1804,20 @@ export async function updateAssetRegisterItem(
     throw new Error('ASSET_UPDATE_FAILED');
   }
 
-  return mapAssetRegisterRow(row);
+  const item = mapAssetRegisterRow(row);
+  if (shouldCaptureDepreciationSnapshot) {
+    await captureAssetDepreciationSnapshot({
+      asset: item,
+      eventType: 'manual_asset_updated',
+      eventSource: 'asset-register-manual-update',
+      metadata: {
+        valuationNeedsUpdate: staleReasons.length > 0,
+        valuationStaleReasons: staleReasons,
+      },
+    });
+  }
+
+  return item;
 }
 
 
@@ -1895,7 +1925,19 @@ export async function updateAssetRegisterItemFromValuation(input: {
     throw new Error('ASSET_UPDATE_FAILED');
   }
 
-  return mapAssetRegisterRow(row);
+  const item = mapAssetRegisterRow(row);
+  await captureAssetDepreciationSnapshot({
+    asset: item,
+    eventType: 'automatic_revaluation_saved',
+    eventSource: 'asset-register-revalue-tractor',
+    metadata: {
+      valuationRunId: input.valuationRunId,
+      selectedMethod: input.selectedMethod,
+      saveReplacementPrice: input.saveReplacementPrice === true,
+    },
+  });
+
+  return item;
 }
 
 export async function updateAssetRegisterItemFromGenericValuation(input: {
@@ -2008,7 +2050,19 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
     throw new Error('ASSET_UPDATE_FAILED');
   }
 
-  return mapAssetRegisterRow(row);
+  const item = mapAssetRegisterRow(row);
+  await captureAssetDepreciationSnapshot({
+    asset: item,
+    eventType: 'automatic_revaluation_saved',
+    eventSource: 'asset-register-revalue-generic',
+    metadata: {
+      valuationRunId: input.valuationRunId,
+      selectedMethod: input.selectedMethod,
+      saveReplacementPrice: input.saveReplacementPrice === true,
+    },
+  });
+
+  return item;
 }
 
 export async function deleteAssetRegisterItem(userId: string, assetId: string): Promise<void> {
@@ -2146,7 +2200,18 @@ export async function createAssetRegisterItemFromValuation(input: {
     throw new Error('ASSET_CREATE_FAILED');
   }
 
-  return mapAssetRegisterRow(row);
+  const item = mapAssetRegisterRow(row);
+  await captureAssetDepreciationSnapshot({
+    asset: item,
+    eventType: 'valuation_asset_saved',
+    eventSource: 'tractor-valuation-save',
+    metadata: {
+      valuationRunId: input.valuationRunId,
+      selectedMethod: input.selectedMethod,
+    },
+  });
+
+  return item;
 }
 
 export async function createAssetRegisterItemFromGenericValuation(input: {
@@ -2278,7 +2343,18 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
     throw new Error('ASSET_CREATE_FAILED');
   }
 
-  return mapAssetRegisterRow(row);
+  const item = mapAssetRegisterRow(row);
+  await captureAssetDepreciationSnapshot({
+    asset: item,
+    eventType: 'valuation_asset_saved',
+    eventSource: 'generic-valuation-save',
+    metadata: {
+      valuationRunId: input.valuationRunId,
+      selectedMethod: input.selectedMethod,
+    },
+  });
+
+  return item;
 }
 
 function toRoundedNumber(value: number | null): number | null {
