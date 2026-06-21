@@ -140,10 +140,49 @@ const MAX_LOGO_URL_LENGTH = 3_000_000;
 const MAX_BUSINESS_EXTRA_PHOTOS = 6;
 const MAX_BUSINESS_PHOTO_URL_LENGTH = 7_000_000;
 const MAX_WEBSITE_URL_LENGTH = 300;
+const SOUTH_AFRICAN_PROVINCES = [
+  "Eastern Cape",
+  "Free State",
+  "Gauteng",
+  "KwaZulu-Natal",
+  "Limpopo",
+  "Mpumalanga",
+  "Northern Cape",
+  "North West",
+  "Western Cape",
+] as const;
 let accountProfileColumnsEnsured = false;
 
 function asText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeProvince(value: unknown): string {
+  const raw = asText(value);
+
+  if (!raw) {
+    return "";
+  }
+
+  const normalized = raw
+    .toLowerCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (normalized === "kzn") {
+    return "KwaZulu-Natal";
+  }
+
+  return (
+    SOUTH_AFRICAN_PROVINCES.find(
+      (province) =>
+        province
+          .toLowerCase()
+          .replace(/[-_]+/g, " ")
+          .replace(/\s+/g, " ") === normalized,
+    ) ?? raw
+  );
 }
 
 function normalizeAccountType(value: unknown): string {
@@ -164,7 +203,9 @@ function normalizeAccountType(value: unknown): string {
   if (
     normalized === "auction-house" ||
     normalized === "auctioneer" ||
-    normalized === "dealer"
+    normalized === "dealer" ||
+    normalized === "machinery-dealer" ||
+    normalized === "motor-dealer"
   ) {
     return "dealer";
   }
@@ -199,7 +240,12 @@ function normalizeAccountSubtype(accountType: string, value: unknown): string {
       "broker",
       "insurance-broker",
     ]),
-    dealer: new Set(["machinery-dealer", "auctioneer", "auction-house"]),
+    dealer: new Set([
+      "machinery-dealer",
+      "motor-dealer",
+      "auctioneer",
+      "auction-house",
+    ]),
   };
   const defaults: Record<string, string> = {
     owner: "farmer",
@@ -630,6 +676,7 @@ export async function createInitialAccountProfile(
     accountSubtype?: unknown;
     introducedByOption?: unknown;
     introducedByName?: unknown;
+    province?: unknown;
     phone?: unknown;
   },
 ): Promise<void> {
@@ -651,6 +698,7 @@ export async function createInitialAccountProfile(
     introducedByOption === "other"
       ? cleanIntroducedByName(input?.introducedByName)
       : "";
+  const province = normalizeProvince(input?.province);
   const phone = asText(input?.phone);
 
   await db.query(
@@ -664,12 +712,14 @@ export async function createInitialAccountProfile(
         account_status,
         introduced_by_option,
         introduced_by_name,
+        province,
         created_at,
         updated_at
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, now(), now())
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), now())
       on conflict (user_id) do update set
         phone = coalesce(nullif(account_profiles.phone, ''), excluded.phone),
+        province = coalesce(nullif(account_profiles.province, ''), excluded.province),
         updated_at = now()
     `,
     [
@@ -681,6 +731,7 @@ export async function createInitialAccountProfile(
       initialAccountStatus,
       introducedByOption,
       introducedByName || null,
+      province || null,
     ],
   );
 }
@@ -898,7 +949,7 @@ export async function upsertAccountProfile(
       normalizedAccountType,
       normalizedAccountSubtype,
       asText(input.vatNumber) || null,
-      asText(input.province) || null,
+      normalizeProvince(input.province) || null,
       asText(input.townCity) || null,
       asText(input.addressLine1) || null,
       asText(input.addressLine2) || null,

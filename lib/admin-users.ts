@@ -18,6 +18,7 @@ export type AdminUserRow = {
   phone: string;
   accountType: string;
   accountSubtype: string;
+  province: string;
   introducedBy: string;
   introducedByOption: string;
   introducedByName: string;
@@ -36,6 +37,7 @@ type DbAdminUserRow = {
   phone: string | null;
   account_type: string | null;
   account_subtype: string | null;
+  province: string | null;
   account_status: string | null;
   introduced_by_option: string | null;
   introduced_by_name: string | null;
@@ -80,6 +82,7 @@ function mapAdminUserRow(row: DbAdminUserRow): AdminUserRow {
     phone: asText(row.phone),
     accountType: asText(row.account_type) || "owner",
     accountSubtype: asText(row.account_subtype) || "farmer",
+    province: asText(row.province),
     introducedBy: resolveIntroducedByDisplay(
       introducedByOption,
       introducedByName,
@@ -129,6 +132,7 @@ export async function listAdminUsers(): Promise<AdminUserRow[]> {
         ap.phone,
         ap.account_type,
         ap.account_subtype,
+        ap.province,
         ap.account_status,
         ap.introduced_by_option,
         ap.introduced_by_name,
