@@ -113,70 +113,6 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.86);
 }
 
-.pageZoomControl {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.16rem;
-  min-height: 3.28rem;
-  padding: 0.22rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(23, 77, 62, 0.1);
-  background: #ffffff;
-  box-shadow: 0 10px 22px rgba(18, 45, 37, 0.055);
-}
-
-.pageZoomButton,
-.pageZoomValueButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.44rem;
-  border: 1px solid transparent;
-  border-radius: 0.74rem;
-  background: transparent;
-  color: #42514b;
-  font: inherit;
-  line-height: 1;
-  font-weight: 850;
-  cursor: pointer;
-  transition:
-    transform 180ms ease,
-    background 180ms ease,
-    border-color 180ms ease,
-    color 180ms ease,
-    opacity 180ms ease;
-}
-
-.pageZoomButton {
-  width: 2.08rem;
-  min-width: 2.08rem;
-  padding: 0;
-  font-size: 1.16rem;
-}
-
-.pageZoomValueButton {
-  min-width: 3.24rem;
-  padding: 0 0.54rem;
-  font-size: 0.78rem;
-  letter-spacing: -0.01em;
-}
-
-.pageZoomButton:hover:not(:disabled),
-.pageZoomValueButton:hover:not(:disabled) {
-  color: #17362c;
-  background: rgba(23, 77, 62, 0.06);
-  border-color: rgba(23, 77, 62, 0.1);
-  transform: translateY(-1px);
-}
-
-.pageZoomButton:disabled,
-.pageZoomValueButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.42;
-  transform: none;
-}
-
 .actionDivider {
   display: inline-flex;
   align-items: center;
@@ -2185,30 +2121,10 @@
   .signupButton,
   .loginButton,
   .accountButton,
-  .notificationButton,
-  .pageZoomControl {
+  .notificationButton {
     min-height: 2.85rem;
     border-radius: 0.86rem;
     font-size: 0.9rem;
-  }
-
-  .pageZoomControl {
-    padding: 0.2rem;
-  }
-
-  .pageZoomButton,
-  .pageZoomValueButton {
-    min-height: 2.32rem;
-    border-radius: 0.7rem;
-  }
-
-  .pageZoomButton {
-    width: 1.96rem;
-    min-width: 1.96rem;
-  }
-
-  .pageZoomValueButton {
-    min-width: 3rem;
   }
 
   .accountMenu {
@@ -2287,10 +2203,6 @@
 
   .mobileMenuButton {
     display: inline-flex;
-  }
-
-  .pageZoomControl {
-    display: none;
   }
 
   .mobileMenuBackdrop {
