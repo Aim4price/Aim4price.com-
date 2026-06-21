@@ -23,8 +23,20 @@ type SignupAccountSubtype =
   | "accountant"
   | "short-term-insurer"
   | "machinery-dealer"
+  | "motor-dealer"
   | "auctioneer";
 type SignupIntroducedByOption = "" | "kuyler" | "andre" | "direct" | "other";
+type SignupProvince =
+  | ""
+  | "Eastern Cape"
+  | "Free State"
+  | "Gauteng"
+  | "KwaZulu-Natal"
+  | "Limpopo"
+  | "Mpumalanga"
+  | "Northern Cape"
+  | "North West"
+  | "Western Cape";
 type NoticeTone = "success" | "error" | "info";
 
 type SelectOption<T extends string> = {
@@ -43,6 +55,7 @@ type SignupFormState = {
   accountSubtype: SignupAccountSubtype;
   introducedByOption: SignupIntroducedByOption;
   introducedByName: string;
+  province: SignupProvince;
   name: string;
   phone: string;
   email: string;
@@ -92,6 +105,7 @@ const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
   ],
   dealer: [
     { value: "machinery-dealer", label: "Machinery dealer" },
+    { value: "motor-dealer", label: "Motor dealer" },
     { value: "auctioneer", label: "Auctioneer / broker" },
   ],
 };
@@ -101,6 +115,18 @@ const INTRODUCED_BY_OPTIONS: Array<SelectOption<SignupIntroducedByOption>> = [
   { value: "andre", label: "Andre Van Rooyen" },
   { value: "direct", label: "No one / direct signup" },
   { value: "other", label: "Other person or source" },
+];
+
+const PROVINCE_OPTIONS: Array<SelectOption<Exclude<SignupProvince, "">>> = [
+  { value: "Eastern Cape", label: "Eastern Cape" },
+  { value: "Free State", label: "Free State" },
+  { value: "Gauteng", label: "Gauteng" },
+  { value: "KwaZulu-Natal", label: "KwaZulu-Natal" },
+  { value: "Limpopo", label: "Limpopo" },
+  { value: "Mpumalanga", label: "Mpumalanga" },
+  { value: "Northern Cape", label: "Northern Cape" },
+  { value: "North West", label: "North West" },
+  { value: "Western Cape", label: "Western Cape" },
 ];
 
 function CustomSelect<T extends string>({
@@ -245,6 +271,7 @@ const initialSignupState: SignupFormState = {
   accountSubtype: "farmer",
   introducedByOption: "",
   introducedByName: "",
+  province: "",
   name: "",
   phone: "",
   email: "",
@@ -406,6 +433,7 @@ async function postAuth(path: string, body: Record<string, unknown>) {
 async function saveSignupProfileFallback(
   accountType: SignupAccountType,
   accountSubtype: SignupAccountSubtype,
+  province: Exclude<SignupProvince, "">,
   displayName: string,
   phone: string,
 ) {
@@ -418,6 +446,7 @@ async function saveSignupProfileFallback(
     body: JSON.stringify({
       accountType,
       accountSubtype,
+      province,
       displayName,
       phone,
     }),
@@ -506,6 +535,7 @@ export default function AuthClient() {
     const phone = signupForm.phone.trim();
     const email = signupForm.email.trim();
     const introducedByName = signupForm.introducedByName.trim();
+    const province = signupForm.province;
 
     if (
       !name ||
@@ -536,6 +566,15 @@ export default function AuthClient() {
         tone: "error",
         title: "Introduced by name required",
         text: "Enter the name or source that introduced you to Aim4price.",
+      });
+      return;
+    }
+
+    if (!province) {
+      setNotice({
+        tone: "error",
+        title: "Province required",
+        text: "Select your province before creating your Aim4price account.",
       });
       return;
     }
@@ -577,6 +616,7 @@ export default function AuthClient() {
         phone,
         accountType: signupForm.accountType,
         accountSubtype: signupForm.accountSubtype,
+        province,
         introducedByOption: signupForm.introducedByOption,
         introducedByName:
           signupForm.introducedByOption === "other" ? introducedByName : "",
@@ -588,6 +628,7 @@ export default function AuthClient() {
       await saveSignupProfileFallback(
         signupForm.accountType,
         signupForm.accountSubtype,
+        province,
         name,
         phone,
       );
@@ -864,6 +905,22 @@ export default function AuthClient() {
                     />
                   </label>
                 ) : null}
+
+                <div className={styles.field}>
+                  <span className={styles.label}>Province</span>
+                  <CustomSelect
+                    name="province"
+                    value={signupForm.province}
+                    options={PROVINCE_OPTIONS}
+                    placeholder="Choose province"
+                    onChange={(province) => {
+                      setSignupForm((current) => ({
+                        ...current,
+                        province,
+                      }));
+                    }}
+                  />
+                </div>
 
                 <label className={styles.field}>
                   <span className={styles.label}>Full name</span>
