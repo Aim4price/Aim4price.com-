@@ -4,12 +4,20 @@ import { getAccountProfile, type AccountProfile } from '../../../../lib/account-
 import { getAssetRegisterItemById, type AssetRegisterItem } from '../../../../lib/asset-register-db';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
 import { listScanEventsForAsset, type ScanEventRecord } from '../../../../lib/scan-assets';
+import {
+  buildDepreciationAnnualSummary,
+  buildDepreciationTimelineSummary,
+  listAssetDepreciationSnapshotsForAsset,
+  type AssetDepreciationSnapshot,
+  type DepreciationAnnualSummary,
+  type DepreciationTimelineSummary,
+} from '../../../../lib/asset-depreciation-timeline';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxPrimitiveCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type PdfReportKind = 'fuel' | 'maintenance';
+type PdfReportKind = 'fuel' | 'maintenance' | 'depreciation';
 type ReportFormat = 'pdf' | 'xlsx';
 
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
@@ -51,6 +59,7 @@ type MaintenanceEntry = {
 const REPORT_LABELS: Record<PdfReportKind, string> = {
   fuel: 'Fuel Report',
   maintenance: 'Maintenance Report',
+  depreciation: 'Market Depreciation Timeline',
 };
 
 const MAINTENANCE_TYPE_LABELS: Record<MaintenanceReportType, string> = {
@@ -210,6 +219,16 @@ function normalizeReportKind(value: unknown): PdfReportKind | null {
     normalized === 'maintainance-report'
   ) {
     return 'maintenance';
+  }
+
+  if (
+    normalized === 'depreciation' ||
+    normalized === 'depreciation-report' ||
+    normalized === 'depreciation-timeline' ||
+    normalized === 'market-depreciation' ||
+    normalized === 'market-depreciation-timeline'
+  ) {
+    return 'depreciation';
   }
 
   return null;
@@ -391,6 +410,71 @@ function formatMoney(value: number | null | undefined): string {
   }
 
   return `R ${formatNumber(value)}`;
+}
+
+function formatMoneyExVat(value: number | null | undefined): string {
+  const formatted = formatMoney(value);
+  return formatted === '-' ? '-' : `${formatted} excl. VAT`;
+}
+
+function formatSignedMoney(value: number | null | undefined): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return '-';
+  }
+
+  if (Math.abs(value) < 0.005) {
+    return 'R 0';
+  }
+
+  const prefix = value < 0 ? '-R ' : 'R ';
+  return `${prefix}${formatNumber(Math.abs(value))}`;
+}
+
+function formatMovementPercent(value: number | null | undefined): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return '-';
+  }
+
+  return `${formatNumber(value, 2)}%`;
+}
+
+function movementPercentForExcel(value: number | null | undefined): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+
+  return Math.round((value / 100) * 1_000_000) / 1_000_000;
+}
+
+function formatDepreciationUsage(amount: number | null | undefined, metric: string): string {
+  if (typeof amount !== 'number' || !Number.isFinite(amount)) {
+    return '-';
+  }
+
+  const normalizedMetric = String(metric ?? '').trim().toLowerCase();
+  if (normalizedMetric === 'percent') {
+    return `${formatNumber(amount, Number.isInteger(amount) ? 0 : 1)}% worked`;
+  }
+
+  if (normalizedMetric === 'km') {
+    return `${formatNumber(amount)} km`;
+  }
+
+  return `${formatNumber(amount)} hours`;
+}
+
+function formatDepreciationEventLabel(eventType: string): string {
+  const normalized = String(eventType ?? '').trim().toLowerCase();
+
+  return (
+    {
+      backfill_current_asset_state: 'Current asset state',
+      manual_asset_created: 'Manual asset created',
+      manual_asset_updated: 'Manual asset updated',
+      valuation_asset_saved: 'Valuation saved',
+      automatic_revaluation_saved: 'Revaluation saved',
+      qr_scan_update: 'QR scan update',
+      asset_snapshot: 'Asset snapshot',
+    }[normalized] ?? displayValue(eventType, 'Asset snapshot')
+  );
 }
 
 function formatFuel(value: number | null | undefined): string {
@@ -1127,9 +1211,186 @@ function buildMaintenanceBody(asset: AssetRegisterItem, entries: MaintenanceEntr
   `;
 }
 
+function buildDepreciationReportSummary(
+  asset: AssetRegisterItem,
+  summary: DepreciationTimelineSummary,
+): ReportSummary {
+  return {
+    label: 'Current Estimated Value',
+    value: formatMoney(summary.currentValueExVat ?? asset.selectedValueExVat ?? asset.value),
+    subtext: 'VAT excluded',
+    basis: 'Saved asset-register values',
+    updated: formatDate(summary.latestSnapshotDateIso || asset.updatedAtIso),
+  };
+}
+
+function buildDepreciationRecordRows(
+  asset: AssetRegisterItem,
+  snapshots: AssetDepreciationSnapshot[],
+  summary: DepreciationTimelineSummary,
+  dateRangeLabel = 'All available entries',
+): KeyValueRow[] {
+  return [
+    { label: 'Report Period', value: dateRangeLabel },
+    { label: 'Snapshots', value: String(snapshots.length) },
+    { label: 'Opening Value', value: formatMoney(summary.openingTimelineValueExVat) },
+    { label: 'Current Value', value: formatMoney(summary.currentValueExVat ?? asset.selectedValueExVat ?? asset.value) },
+    { label: 'Total Depreciation', value: formatSignedMoney(summary.totalMarketDepreciationExVat) },
+    { label: 'Total Movement', value: formatMovementPercent(summary.totalMovementPercent) },
+    { label: 'First Snapshot', value: formatDate(summary.firstSnapshotDateIso) },
+    { label: 'Latest Snapshot', value: formatDate(summary.latestSnapshotDateIso) },
+    { label: 'Latest Usage', value: formatDepreciationUsage(summary.latestUsageAmount, summary.latestUsageMetric) },
+    { label: 'Latest Condition', value: formatCondition(summary.latestCondition || asset.condition) },
+    { label: 'Replacement Price', value: formatMoneyExVat(summary.replacementPriceUsedExVat ?? readAssetReplacementPriceExVat(asset)) },
+    { label: 'Updated', value: formatDate(summary.latestSnapshotDateIso || asset.updatedAtIso) },
+  ];
+}
+
+function buildDepreciationSummaryRows(summary: DepreciationTimelineSummary): KeyValueRow[] {
+  return [
+    { label: 'Opening timeline value', value: formatMoney(summary.openingTimelineValueExVat) },
+    { label: 'Current value', value: formatMoney(summary.currentValueExVat) },
+    { label: 'Total market depreciation', value: formatSignedMoney(summary.totalMarketDepreciationExVat) },
+    { label: 'Total movement %', value: formatMovementPercent(summary.totalMovementPercent) },
+    { label: 'First snapshot date', value: formatDateTime(summary.firstSnapshotDateIso) },
+    { label: 'Latest snapshot date', value: formatDateTime(summary.latestSnapshotDateIso) },
+    { label: 'Snapshot count', value: String(summary.snapshotCount) },
+    { label: 'Latest usage', value: formatDepreciationUsage(summary.latestUsageAmount, summary.latestUsageMetric) },
+    { label: 'Latest condition', value: formatCondition(summary.latestCondition) },
+    { label: 'Replacement price used', value: formatMoneyExVat(summary.replacementPriceUsedExVat) },
+  ];
+}
+
+function buildDepreciationTimelineBodyRows(snapshots: AssetDepreciationSnapshot[]): string[][] {
+  return snapshots.map((snapshot) => [
+    escapeHtml(formatDateTime(snapshot.capturedAtIso)),
+    escapeHtml(formatDepreciationEventLabel(snapshot.eventType)),
+    escapeHtml(formatDepreciationUsage(snapshot.usageAmount, snapshot.usageMetric)),
+    escapeHtml(formatCondition(snapshot.condition)),
+    escapeHtml(formatMoneyExVat(snapshot.replacementPriceExVat)),
+    `<strong>${escapeHtml(formatMoney(snapshot.estimatedValueExVat))}</strong>`,
+    `<strong>${escapeHtml(formatSignedMoney(snapshot.depreciationSincePreviousExVat))}</strong>`,
+    escapeHtml(formatMovementPercent(snapshot.depreciationSincePreviousPercent)),
+  ]);
+}
+
+function buildDepreciationAnnualBodyRows(annualSummaries: DepreciationAnnualSummary[]): string[][] {
+  return annualSummaries.map((summary) => {
+    const usageCondition = [
+      formatDepreciationUsage(summary.latestUsageAmount, summary.latestUsageMetric),
+      formatCondition(summary.latestCondition),
+    ].filter((value) => value && value !== '-').join(' / ') || '-';
+
+    return [
+      escapeHtml(String(summary.year)),
+      escapeHtml(formatMoney(summary.openingValueExVat)),
+      `<strong>${escapeHtml(formatMoney(summary.closingValueExVat))}</strong>`,
+      `<strong>${escapeHtml(formatSignedMoney(summary.yearlyDepreciationExVat))}</strong>`,
+      escapeHtml(formatMovementPercent(summary.yearlyMovementPercent)),
+      escapeHtml(formatNumber(summary.snapshotCount)),
+      escapeHtml(usageCondition),
+    ];
+  });
+}
+
+function buildDepreciationBody(
+  snapshots: AssetDepreciationSnapshot[],
+  summary: DepreciationTimelineSummary,
+  annualSummaries: DepreciationAnnualSummary[],
+): string {
+  return `
+    <section class="assetReportSection assetReportWideSection">
+      <div class="assetReportSectionHeading">
+        <div>
+          <h2>Depreciation Summary</h2>
+          <p>Market value movement based on saved Aim4price asset-register values and valuation-relevant updates.</p>
+        </div>
+        <strong>${escapeHtml(formatNumber(summary.snapshotCount))} ${summary.snapshotCount === 1 ? 'snapshot' : 'snapshots'}</strong>
+      </div>
+      ${renderRows(buildDepreciationSummaryRows(summary), 'No depreciation summary available yet.')}
+    </section>
+
+    <section class="assetReportSection assetReportWideSection">
+      <div class="assetReportSectionHeading">
+        <div>
+          <h2>Timeline Table</h2>
+          <p>Each line records the saved market value, usage, condition and movement from the previous saved snapshot.</p>
+        </div>
+        <strong>${escapeHtml(formatNumber(snapshots.length))} ${snapshots.length === 1 ? 'entry' : 'entries'}</strong>
+      </div>
+      ${renderTable({
+        className: 'assetReportDepreciationTimelineTable',
+        headers: [
+          'Date',
+          'Event',
+          'Usage',
+          'Condition',
+          'Replacement price',
+          'Estimated value',
+          'Movement since previous',
+          'Movement %',
+        ],
+        rows: buildDepreciationTimelineBodyRows(snapshots),
+        emptyText: 'No depreciation snapshots have been recorded for this asset yet.',
+      })}
+    </section>
+
+    <section class="assetReportSection assetReportWideSection">
+      <div class="assetReportSectionHeading">
+        <div>
+          <h2>Annual Summary</h2>
+          <p>Year-by-year opening value, closing value and market movement from saved timeline snapshots.</p>
+        </div>
+        <strong>${escapeHtml(formatNumber(annualSummaries.length))} ${annualSummaries.length === 1 ? 'year' : 'years'}</strong>
+      </div>
+      ${renderTable({
+        className: 'assetReportAnnualTable',
+        headers: [
+          'Year',
+          'Opening value',
+          'Closing value',
+          'Yearly depreciation',
+          'Yearly movement %',
+          'Snapshots',
+          'Latest usage / condition',
+        ],
+        rows: buildDepreciationAnnualBodyRows(annualSummaries),
+        emptyText: 'No annual depreciation summary is available yet.',
+      })}
+    </section>
+  `;
+}
+
+function buildDepreciationReport(
+  asset: AssetRegisterItem,
+  snapshots: AssetDepreciationSnapshot[],
+  ownerDetails: OwnerReportDetails,
+  generatedAt: string,
+  logoUrl: string,
+  dateRangeLabel = 'All available entries',
+): string {
+  const summary = buildDepreciationTimelineSummary(snapshots, asset);
+  const annualSummaries = buildDepreciationAnnualSummary(snapshots);
+
+  return buildReportHtml({
+    reportKind: 'depreciation',
+    asset,
+    ownerDetails,
+    generatedAt,
+    logoUrl,
+    summary: buildDepreciationReportSummary(asset, summary),
+    recordRows: buildDepreciationRecordRows(asset, snapshots, summary, dateRangeLabel),
+    bodyHtml: buildDepreciationBody(snapshots, summary, annualSummaries),
+  });
+}
+
 function buildReportDisclaimer(reportKind: PdfReportKind): string {
   if (reportKind === 'fuel') {
     return 'Fuel readings, litres and before-fill values are operational records captured from asset QR updates and Fuel Ledger storage QR entries. Before-fill litres are calculated from litres issued and the asset fuel percentage movement, and final fuel use remains subject to physical verification.';
+  }
+
+  if (reportKind === 'depreciation') {
+    return 'Values are indicative market estimates based on saved Aim4price asset-register information and available pricing inputs. This market depreciation timeline is not a certified valuation, inspection report, SARS tax-depreciation calculation or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition, location and live market demand.';
   }
 
   return 'Maintenance records are based on QR updates saved as checked, serviced or repaired. This is an operational maintenance trail and not a certified mechanical inspection report.';
@@ -1149,14 +1410,17 @@ function buildReportHtml(options: {
   const asset = options.asset;
   const safeTitle = escapeHtml(asset.title || 'Asset');
   const disclaimer = buildReportDisclaimer(options.reportKind);
-  const isFuelReport = options.reportKind === 'fuel';
-  const pageSize = isFuelReport ? 'A4 landscape' : 'A4';
-  const pageWidth = isFuelReport ? '297mm' : '210mm';
-  const pageMinHeight = isFuelReport ? '210mm' : '297mm';
-  const pageMargin = isFuelReport ? '6mm 6mm 7mm' : '8mm 9mm 8mm';
-  const pagePadding = isFuelReport ? '7mm 6mm 7mm' : '11mm 11mm 9mm';
-  const innerMinHeight = isFuelReport ? 'calc(210mm - 14mm)' : 'calc(297mm - 20mm)';
-  const printPageMinHeight = isFuelReport ? '197mm' : '281mm';
+  const isWideReport = options.reportKind === 'fuel' || options.reportKind === 'depreciation';
+  const printInstruction = options.reportKind === 'depreciation'
+    ? 'Save or print this market depreciation timeline.'
+    : `Save or print this ${reportTitle.toLowerCase()}.`;
+  const pageSize = isWideReport ? 'A4 landscape' : 'A4';
+  const pageWidth = isWideReport ? '297mm' : '210mm';
+  const pageMinHeight = isWideReport ? '210mm' : '297mm';
+  const pageMargin = isWideReport ? '6mm 6mm 7mm' : '8mm 9mm 8mm';
+  const pagePadding = isWideReport ? '7mm 6mm 7mm' : '11mm 11mm 9mm';
+  const innerMinHeight = isWideReport ? 'calc(210mm - 14mm)' : 'calc(297mm - 20mm)';
+  const printPageMinHeight = isWideReport ? '197mm' : '281mm';
   const printInnerMinHeight = printPageMinHeight;
 
   return `<!doctype html>
@@ -1718,6 +1982,64 @@ function buildReportHtml(options: {
       .assetReportFuelTable th:nth-child(15),
       .assetReportFuelTable td:nth-child(15) { width: 35mm; }
 
+      .assetReportTable tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .assetReportDepreciationTimelineTable th,
+      .assetReportDepreciationTimelineTable td {
+        padding: 6px 4.5px 6px 0;
+        font-size: 6.25px;
+        line-height: 1.32;
+      }
+
+      .assetReportDepreciationTimelineTable th {
+        font-size: 5.65px;
+        line-height: 1.18;
+      }
+
+      .assetReportDepreciationTimelineTable th:nth-child(1),
+      .assetReportDepreciationTimelineTable td:nth-child(1) { width: 24mm; }
+      .assetReportDepreciationTimelineTable th:nth-child(2),
+      .assetReportDepreciationTimelineTable td:nth-child(2) { width: 31mm; }
+      .assetReportDepreciationTimelineTable th:nth-child(3),
+      .assetReportDepreciationTimelineTable td:nth-child(3) { width: 22mm; }
+      .assetReportDepreciationTimelineTable th:nth-child(4),
+      .assetReportDepreciationTimelineTable td:nth-child(4) { width: 22mm; }
+      .assetReportDepreciationTimelineTable th:nth-child(5),
+      .assetReportDepreciationTimelineTable td:nth-child(5) { width: 28mm; }
+      .assetReportDepreciationTimelineTable th:nth-child(6),
+      .assetReportDepreciationTimelineTable td:nth-child(6) { width: 26mm; }
+      .assetReportDepreciationTimelineTable th:nth-child(7),
+      .assetReportDepreciationTimelineTable td:nth-child(7) { width: 31mm; }
+      .assetReportDepreciationTimelineTable th:nth-child(8),
+      .assetReportDepreciationTimelineTable td:nth-child(8) { width: 18mm; }
+
+      .assetReportAnnualTable th,
+      .assetReportAnnualTable td {
+        padding: 6px 5px 6px 0;
+        font-size: 7px;
+        line-height: 1.34;
+      }
+
+      .assetReportAnnualTable th {
+        font-size: 6.35px;
+      }
+
+      .assetReportAnnualTable th:nth-child(1),
+      .assetReportAnnualTable td:nth-child(1) { width: 18mm; }
+      .assetReportAnnualTable th:nth-child(2),
+      .assetReportAnnualTable td:nth-child(2),
+      .assetReportAnnualTable th:nth-child(3),
+      .assetReportAnnualTable td:nth-child(3),
+      .assetReportAnnualTable th:nth-child(4),
+      .assetReportAnnualTable td:nth-child(4) { width: 29mm; }
+      .assetReportAnnualTable th:nth-child(5),
+      .assetReportAnnualTable td:nth-child(5) { width: 24mm; }
+      .assetReportAnnualTable th:nth-child(6),
+      .assetReportAnnualTable td:nth-child(6) { width: 18mm; }
+
       .assetReportScanTable th:nth-child(1),
       .assetReportScanTable td:nth-child(1) {
         width: 25mm;
@@ -2017,7 +2339,7 @@ function buildReportHtml(options: {
   </head>
   <body>
     <div class="assetReportScreenBar">
-      <div class="assetReportScreenText">Save or print this ${escapeHtml(reportTitle.toLowerCase())}. In the print dialog, choose <strong>Save as PDF</strong>.</div>
+      <div class="assetReportScreenText">${escapeHtml(printInstruction)} In the print dialog, choose <strong>Save as PDF</strong>.</div>
       <div class="assetReportScreenActions">
         <button type="button" class="assetReportButton" onclick="window.close()">Close</button>
         <button type="button" class="assetReportButton assetReportButtonPrimary" onclick="window.print()">Save PDF / Print</button>
@@ -2467,6 +2789,164 @@ function buildMaintenanceReportWorkbook(
   ];
 }
 
+function buildDepreciationReportWorkbook(
+  asset: AssetRegisterItem,
+  snapshots: AssetDepreciationSnapshot[],
+  annualSummaries: DepreciationAnnualSummary[],
+  summary: DepreciationTimelineSummary,
+  ownerDetails: OwnerReportDetails,
+  generatedAt: string,
+  dateRangeLabel = 'All available entries',
+): XlsxSheet[] {
+  const recordRows = buildDepreciationRecordRows(asset, snapshots, summary, dateRangeLabel);
+  const timelineHeaders = [
+    'Captured date',
+    'Event type',
+    'Event source',
+    'Asset title',
+    'Brand',
+    'Model',
+    'Year model',
+    'Usage amount',
+    'Usage metric',
+    'Condition',
+    'Replacement price excl. VAT',
+    'Estimated value excl. VAT',
+    'Previous value excl. VAT',
+    'Depreciation since previous excl. VAT',
+    'Depreciation since previous %',
+    'Selected method',
+    'Valuation run id',
+  ];
+  const timelineHeaderRow = 7;
+  const timelineRows: XlsxCellValue[][] = [
+    fullWidthRow(`${asset.title || 'Asset'} - Market Depreciation Timeline`, 'title', timelineHeaders.length),
+    fullWidthRow(`Filtered report: ${dateRangeLabel}`, 'subtitle', timelineHeaders.length),
+    fullWidthRow('Saved market value snapshots exported from the Aim4price asset register.', 'note', timelineHeaders.length),
+    [],
+    [
+      styled('Asset', 'metaLabel'),
+      styled(asset.title || '', 'metaValue'),
+      styled('Serial number', 'metaLabel'),
+      styled(asset.serialNumber || '', 'metaValue'),
+      styled('Plate / QR', 'metaLabel'),
+      styled(asset.plateLabel || asset.publicAssetCode || '', 'metaValue'),
+    ],
+    [],
+    timelineHeaders.map((header) => styled(header, 'tableHeader')),
+    ...snapshots.map((snapshot) => [
+      styled(formatExcelDateTime(snapshot.capturedAtIso), 'text'),
+      styled(snapshot.eventType, 'text'),
+      styled(snapshot.eventSource, 'text'),
+      styled(snapshot.assetTitle, 'text'),
+      styled(snapshot.brandName, 'text'),
+      styled(snapshot.modelName, 'text'),
+      styled(numberForExcel(snapshot.yearModel, 0), 'integer'),
+      styled(numberForExcel(snapshot.usageAmount), 'decimal'),
+      styled(snapshot.usageMetric, 'text'),
+      styled(formatCondition(snapshot.condition), 'text'),
+      styled(numberForExcel(snapshot.replacementPriceExVat), 'currency'),
+      styled(numberForExcel(snapshot.estimatedValueExVat), 'currency'),
+      styled(numberForExcel(snapshot.previousEstimatedValueExVat), 'currency'),
+      styled(numberForExcel(snapshot.depreciationSincePreviousExVat), 'currency'),
+      styled(movementPercentForExcel(snapshot.depreciationSincePreviousPercent), 'percent'),
+      styled(snapshot.selectedMethod, 'text'),
+      styled(numberForExcel(snapshot.valuationRunId, 0), 'integer'),
+    ]),
+  ];
+
+  const annualHeaders = [
+    'Year',
+    'Opening value',
+    'Closing value',
+    'Yearly depreciation',
+    'Yearly movement %',
+    'Snapshots',
+    'Latest usage / condition',
+  ];
+  const annualHeaderRow = 7;
+  const annualRows: XlsxCellValue[][] = [
+    fullWidthRow(`${asset.title || 'Asset'} - Annual Summary`, 'title', annualHeaders.length),
+    fullWidthRow(`Filtered report: ${dateRangeLabel}`, 'subtitle', annualHeaders.length),
+    fullWidthRow('Year-by-year market movement from saved depreciation timeline snapshots.', 'note', annualHeaders.length),
+    [],
+    [
+      styled('Asset', 'metaLabel'),
+      styled(asset.title || '', 'metaValue'),
+      styled('Current value', 'metaLabel'),
+      styled(numberForExcel(summary.currentValueExVat), 'currency'),
+      styled('Total movement', 'metaLabel'),
+      styled(movementPercentForExcel(summary.totalMovementPercent), 'percent'),
+    ],
+    [],
+    annualHeaders.map((header) => styled(header, 'tableHeader')),
+    ...annualSummaries.map((item) => {
+      const usageCondition = [
+        formatDepreciationUsage(item.latestUsageAmount, item.latestUsageMetric),
+        formatCondition(item.latestCondition),
+      ].filter((value) => value && value !== '-').join(' / ');
+
+      return [
+        styled(item.year, 'integer'),
+        styled(numberForExcel(item.openingValueExVat), 'currency'),
+        styled(numberForExcel(item.closingValueExVat), 'currency'),
+        styled(numberForExcel(item.yearlyDepreciationExVat), 'currency'),
+        styled(movementPercentForExcel(item.yearlyMovementPercent), 'percent'),
+        styled(item.snapshotCount, 'integer'),
+        styled(usageCondition, 'text'),
+      ];
+    }),
+  ];
+
+  return [
+    buildReportSummaryWorkbookSheet({
+      reportKind: 'depreciation',
+      asset,
+      ownerDetails,
+      generatedAt,
+      dateRangeLabel,
+      recordRows,
+    }),
+    {
+      name: 'Timeline',
+      rows: timelineRows,
+      columns: [20, 26, 26, 30, 18, 22, 14, 16, 14, 18, 22, 22, 22, 26, 20, 18, 16],
+      merges: [
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: timelineHeaders.length },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: timelineHeaders.length },
+        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: timelineHeaders.length },
+      ],
+      freezeRow: timelineHeaderRow,
+      autoFilter: {
+        fromRow: timelineHeaderRow,
+        fromColumn: 1,
+        toRow: Math.max(timelineHeaderRow, timelineHeaderRow + snapshots.length),
+        toColumn: timelineHeaders.length,
+      },
+      tabColor: '10382F',
+    },
+    {
+      name: 'Annual Summary',
+      rows: annualRows,
+      columns: [14, 22, 22, 24, 20, 14, 34],
+      merges: [
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: annualHeaders.length },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: annualHeaders.length },
+        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: annualHeaders.length },
+      ],
+      freezeRow: annualHeaderRow,
+      autoFilter: {
+        fromRow: annualHeaderRow,
+        fromColumn: 1,
+        toRow: Math.max(annualHeaderRow, annualHeaderRow + annualSummaries.length),
+        toColumn: annualHeaders.length,
+      },
+      tabColor: '176B4F',
+    },
+  ];
+}
+
+
 export async function GET(request: NextRequest) {
   const session = await getServerSession();
 
@@ -2493,7 +2973,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!reportKind) {
-    return NextResponse.json({ ok: false, error: 'Report type must be fuel or maintenance.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Report type must be fuel, maintenance or depreciation.' }, { status: 400 });
   }
 
   const asset = await getAssetRegisterItemById(session.user.id, assetId);
@@ -2502,11 +2982,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
   }
 
-  const events = await listScanEventsForAsset(asset.id, 500, {
-    fromIso: reportDateRange.fromIso,
-    toIso: reportDateRange.toIso,
-    onlyFuel: reportKind === 'fuel',
-  });
   const ownerProfile = await getAccountProfile({
     id: session.user.id,
     name: session.user.name,
@@ -2517,6 +2992,52 @@ export async function GET(request: NextRequest) {
   const logoUrl = await getAssetRegisterReportLogoUrl(session.user.id, asset.registerId).catch(() => '');
 
   const baseFileName = `${slugifyFileSegment(asset.title)}-${slugifyFileSegment(asset.plateLabel || asset.publicAssetCode || asset.id)}-${slugifyFileSegment(REPORT_LABELS[reportKind])}`;
+
+  if (reportKind === 'depreciation') {
+    const snapshots = await listAssetDepreciationSnapshotsForAsset({
+      userId: session.user.id,
+      assetId: asset.id,
+      fromIso: reportDateRange.fromIso,
+      toIso: reportDateRange.toIso,
+    });
+    const timelineSummary = buildDepreciationTimelineSummary(snapshots, asset);
+    const annualSummary = buildDepreciationAnnualSummary(snapshots);
+
+    if (reportFormat === 'xlsx') {
+      const workbook = createXlsxWorkbook(
+        buildDepreciationReportWorkbook(asset, snapshots, annualSummary, timelineSummary, ownerDetails, generatedAt, reportDateRange.label),
+      );
+
+      return new NextResponse(workbook, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': `attachment; filename="${baseFileName}.xlsx"`,
+          'Content-Length': String(workbook.length),
+          'Cache-Control': 'private, no-store',
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
+    }
+
+    const html = buildDepreciationReport(asset, snapshots, ownerDetails, generatedAt, logoUrl, reportDateRange.label);
+
+    return new NextResponse(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'private, no-store',
+        'Content-Disposition': `inline; filename="${baseFileName}.html"`,
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  }
+
+  const events = await listScanEventsForAsset(asset.id, 500, {
+    fromIso: reportDateRange.fromIso,
+    toIso: reportDateRange.toIso,
+    onlyFuel: reportKind === 'fuel',
+  });
 
   if (reportFormat === 'xlsx') {
     const workbook = createXlsxWorkbook(
