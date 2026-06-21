@@ -44,7 +44,16 @@ type Notice = {
   message: string;
 } | null;
 
+type SignupDateFilter = "all" | "week" | "month" | "year";
+
 const ADMIN_PAGE_SIZE = 10;
+
+const SIGNUP_DATE_FILTER_LABELS: Record<SignupDateFilter, string> = {
+  all: "All signups",
+  week: "This week",
+  month: "This month",
+  year: "This year",
+};
 
 function formatDate(value: string | null): string {
   if (!value) return "Unknown";
@@ -125,6 +134,64 @@ function matchesSearch(user: AdminUserRow, searchTerm: string): boolean {
   return haystack.includes(query);
 }
 
+function getSignupDateRange(filter: SignupDateFilter): {
+  start: Date;
+  end: Date;
+} | null {
+  if (filter === "all") {
+    return null;
+  }
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if (filter === "week") {
+    const daysSinceMonday = (today.getDay() + 6) % 7;
+    const start = new Date(today);
+    start.setDate(today.getDate() - daysSinceMonday);
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 7);
+
+    return { start, end };
+  }
+
+  if (filter === "month") {
+    return {
+      start: new Date(today.getFullYear(), today.getMonth(), 1),
+      end: new Date(today.getFullYear(), today.getMonth() + 1, 1),
+    };
+  }
+
+  return {
+    start: new Date(today.getFullYear(), 0, 1),
+    end: new Date(today.getFullYear() + 1, 0, 1),
+  };
+}
+
+function matchesSignupDateFilter(
+  user: AdminUserRow,
+  filter: SignupDateFilter,
+): boolean {
+  const range = getSignupDateRange(filter);
+
+  if (!range) {
+    return true;
+  }
+
+  if (!user.createdAtIso) {
+    return false;
+  }
+
+  const createdAt = new Date(user.createdAtIso);
+
+  if (Number.isNaN(createdAt.getTime())) {
+    return false;
+  }
+
+  return createdAt >= range.start && createdAt < range.end;
+}
+
 function getActionText(action: AdminAction, user: AdminUserRow): string {
   if (action === "activate") return `${user.email} activated.`;
   if (action === "pending") return `${user.email} set back to pending.`;
@@ -150,19 +217,26 @@ export default function AdminClient({
 }) {
   const [users, setUsers] = useState<AdminUserRow[]>(initialUsers);
   const [searchTerm, setSearchTerm] = useState("");
+  const [signupDateFilter, setSignupDateFilter] =
+    useState<SignupDateFilter>("all");
   const [notice, setNotice] = useState<Notice>(null);
   const [busyUserAction, setBusyUserAction] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
   const visibleUsers = useMemo(
-    () => users.filter((user) => matchesSearch(user, searchTerm)),
-    [users, searchTerm],
+    () =>
+      users.filter(
+        (user) =>
+          matchesSearch(user, searchTerm) &&
+          matchesSignupDateFilter(user, signupDateFilter),
+      ),
+    [users, searchTerm, signupDateFilter],
   );
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, signupDateFilter]);
 
   const pageCount = Math.max(
     1,
@@ -179,11 +253,13 @@ export default function AdminClient({
       : Math.min(pageStartIndex + ADMIN_PAGE_SIZE, visibleUsers.length);
   const paginatedUsers = visibleUsers.slice(pageStartIndex, pageEndIndex);
   const visibleAccountLabel = visibleUsers.length === 1 ? "account" : "accounts";
+  const hasActiveFilters =
+    searchTerm.trim().length > 0 || signupDateFilter !== "all";
   const pageRangeLabel =
     visibleUsers.length === 0
       ? `No matching accounts${users.length ? ` out of ${users.length} total` : ""}`
       : `Showing ${pageStartIndex + 1}-${pageEndIndex} of ${visibleUsers.length} ${visibleAccountLabel}${
-          searchTerm.trim() ? ` (${users.length} total)` : ""
+          hasActiveFilters ? ` (${users.length} total)` : ""
         }`;
 
   async function handleSignOut() {
@@ -286,6 +362,25 @@ export default function AdminClient({
             />
           </label>
 
+          <label className={styles.signupFilter}>
+            <span>Filter signups</span>
+            <select
+              value={signupDateFilter}
+              onChange={(event) =>
+                setSignupDateFilter(event.target.value as SignupDateFilter)
+              }
+              aria-label="Filter signups by signup date"
+            >
+              {Object.entries(SIGNUP_DATE_FILTER_LABELS).map(
+                ([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ),
+              )}
+            </select>
+          </label>
+
           <Link href="/admin/dashboard" className={styles.signOutButton}>
             Dashboard
           </Link>
@@ -324,7 +419,7 @@ export default function AdminClient({
                 <th>Payment/account status</th>
                 <th>Password</th>
                 <th>Last active</th>
-                <th>Created</th>
+                <th>Signed up</th>
                 <th>Actions</th>
               </tr>
             </thead>

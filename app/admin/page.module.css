@@ -104,6 +104,53 @@
   box-shadow: 0 0 0 4px rgba(23, 77, 62, 0.08);
 }
 
+.signupFilter {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 0.33rem;
+  min-width: 9.4rem;
+}
+
+.signupFilter span {
+  color: #52645d;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.signupFilter select {
+  width: 100%;
+  min-height: 2.9rem;
+  padding: 0 1rem;
+  border: 1px solid #d7e1dc;
+  border-radius: 999px;
+  color: #17362c;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 850;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.signupFilter select:hover {
+  background: #f9fbfa;
+  border-color: #c6d5cd;
+}
+
+.signupFilter select:focus {
+  outline: none;
+  border-color: rgba(23, 77, 62, 0.42);
+  box-shadow: 0 0 0 4px rgba(23, 77, 62, 0.08);
+}
+
 .signOutButton {
   flex: 0 0 auto;
   display: inline-flex;
@@ -523,6 +570,8 @@
     flex-direction: column;
   }
 
+  .signupFilter,
+  .signupFilter select,
   .signOutButton {
     width: 100%;
   }
