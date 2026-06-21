@@ -13,6 +13,7 @@ type AdminUserRow = {
   phone: string;
   accountType: string;
   accountSubtype: string;
+  province: string;
   introducedBy: string;
   introducedByOption: string;
   introducedByName: string;
@@ -44,7 +45,21 @@ type Notice = {
   message: string;
 } | null;
 
+const SOUTH_AFRICAN_PROVINCES = [
+  "Eastern Cape",
+  "Free State",
+  "Gauteng",
+  "KwaZulu-Natal",
+  "Limpopo",
+  "Mpumalanga",
+  "Northern Cape",
+  "North West",
+  "Western Cape",
+] as const;
+
 type SignupDateFilter = "all" | "week" | "month" | "year";
+type ProvinceName = (typeof SOUTH_AFRICAN_PROVINCES)[number];
+type ProvinceFilter = "all" | "__unknown__" | ProvinceName;
 
 const ADMIN_PAGE_SIZE = 10;
 
@@ -54,6 +69,15 @@ const SIGNUP_DATE_FILTER_LABELS: Record<SignupDateFilter, string> = {
   month: "This month",
   year: "This year",
 };
+
+const PROVINCE_FILTER_OPTIONS: Array<{ value: ProvinceFilter; label: string }> = [
+  { value: "all", label: "All provinces" },
+  ...SOUTH_AFRICAN_PROVINCES.map((province) => ({
+    value: province,
+    label: province,
+  })),
+  { value: "__unknown__", label: "Unknown / not saved" },
+];
 
 function formatDate(value: string | null): string {
   if (!value) return "Unknown";
@@ -98,6 +122,37 @@ function formatAccountValue(value: string): string {
     .join(" ");
 }
 
+function normalizeProvinceSearchValue(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function getCanonicalProvince(value: string): ProvinceName | "" {
+  const normalized = normalizeProvinceSearchValue(value);
+
+  if (!normalized) {
+    return "";
+  }
+
+  if (normalized === "kzn") {
+    return "KwaZulu-Natal";
+  }
+
+  return (
+    SOUTH_AFRICAN_PROVINCES.find(
+      (province) => normalizeProvinceSearchValue(province) === normalized,
+    ) ?? ""
+  );
+}
+
+function formatProvince(value: string): string {
+  const province = value.trim();
+  return getCanonicalProvince(province) || province || "Not saved";
+}
+
 function statusClassName(status: AccountStatus): string {
   if (status === "active") return `${styles.statusPill} ${styles.statusActive}`;
   if (status === "suspended")
@@ -122,6 +177,8 @@ function matchesSearch(user: AdminUserRow, searchTerm: string): boolean {
     user.phone,
     user.accountType,
     user.accountSubtype,
+    user.province,
+    formatProvince(user.province),
     user.introducedBy,
     user.accountStatusLabel,
     user.passwordStatus,
@@ -132,6 +189,28 @@ function matchesSearch(user: AdminUserRow, searchTerm: string): boolean {
     .toLowerCase();
 
   return haystack.includes(query);
+}
+
+function matchesProvinceFilter(
+  user: AdminUserRow,
+  filter: ProvinceFilter,
+): boolean {
+  if (filter === "all") {
+    return true;
+  }
+
+  const province = user.province.trim();
+
+  if (filter === "__unknown__") {
+    return !province;
+  }
+
+  const canonicalUserProvince = getCanonicalProvince(province);
+
+  return canonicalUserProvince
+    ? canonicalUserProvince === filter
+    : normalizeProvinceSearchValue(province) ===
+        normalizeProvinceSearchValue(filter);
 }
 
 function getSignupDateRange(filter: SignupDateFilter): {
@@ -219,6 +298,7 @@ export default function AdminClient({
   const [searchTerm, setSearchTerm] = useState("");
   const [signupDateFilter, setSignupDateFilter] =
     useState<SignupDateFilter>("all");
+  const [provinceFilter, setProvinceFilter] = useState<ProvinceFilter>("all");
   const [notice, setNotice] = useState<Notice>(null);
   const [busyUserAction, setBusyUserAction] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -229,14 +309,15 @@ export default function AdminClient({
       users.filter(
         (user) =>
           matchesSearch(user, searchTerm) &&
-          matchesSignupDateFilter(user, signupDateFilter),
+          matchesSignupDateFilter(user, signupDateFilter) &&
+          matchesProvinceFilter(user, provinceFilter),
       ),
-    [users, searchTerm, signupDateFilter],
+    [users, searchTerm, signupDateFilter, provinceFilter],
   );
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, signupDateFilter]);
+  }, [searchTerm, signupDateFilter, provinceFilter]);
 
   const pageCount = Math.max(
     1,
@@ -254,7 +335,9 @@ export default function AdminClient({
   const paginatedUsers = visibleUsers.slice(pageStartIndex, pageEndIndex);
   const visibleAccountLabel = visibleUsers.length === 1 ? "account" : "accounts";
   const hasActiveFilters =
-    searchTerm.trim().length > 0 || signupDateFilter !== "all";
+    searchTerm.trim().length > 0 ||
+    signupDateFilter !== "all" ||
+    provinceFilter !== "all";
   const pageRangeLabel =
     visibleUsers.length === 0
       ? `No matching accounts${users.length ? ` out of ${users.length} total` : ""}`
@@ -358,7 +441,7 @@ export default function AdminClient({
               type="search"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search name, email, number, type or status"
+              placeholder="Search name, email, number, type, province or status"
             />
           </label>
 
@@ -378,6 +461,23 @@ export default function AdminClient({
                   </option>
                 ),
               )}
+            </select>
+          </label>
+
+          <label className={`${styles.signupFilter} ${styles.provinceFilter}`}>
+            <span>Province</span>
+            <select
+              value={provinceFilter}
+              onChange={(event) =>
+                setProvinceFilter(event.target.value as ProvinceFilter)
+              }
+              aria-label="Filter users by province"
+            >
+              {PROVINCE_FILTER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -415,6 +515,7 @@ export default function AdminClient({
                 <th>Number</th>
                 <th>Account type</th>
                 <th>Subtype</th>
+                <th>Province</th>
                 <th>Introduced by</th>
                 <th>Payment/account status</th>
                 <th>Password</th>
@@ -426,7 +527,7 @@ export default function AdminClient({
             <tbody>
               {visibleUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className={styles.emptyCell}>
+                  <td colSpan={12} className={styles.emptyCell}>
                     No matching users found.
                   </td>
                 </tr>
@@ -450,6 +551,13 @@ export default function AdminClient({
                       </td>
                       <td>{formatAccountValue(user.accountType)}</td>
                       <td>{formatAccountValue(user.accountSubtype)}</td>
+                      <td>
+                        {user.province.trim() ? (
+                          formatProvince(user.province)
+                        ) : (
+                          <span className={styles.mutedText}>Not saved</span>
+                        )}
+                      </td>
                       <td>{user.introducedBy}</td>
                       <td>
                         <span className={statusClassName(user.accountStatus)}>
